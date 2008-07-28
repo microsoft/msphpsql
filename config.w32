@@ -1,0 +1,40 @@
+//----------------------------------------------------------------------------------------------------------------------------------
+// File: config.w32
+//
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//
+// Contents: JScript build configuration used by buildconf.bat
+// 
+// Comments:
+//
+// License: This software is released under the Microsoft Public License.  A copy of the license agreement 
+//          may be found online at http://www.codeplex.com/SQL2K5PHP/license.
+//----------------------------------------------------------------------------------------------------------------------------------
+
+ARG_ENABLE("sqlsrv", "enable MS SQL Server extension", "no");
+
+if( PHP_SQLSRV != "no" ) {
+
+	if (CHECK_LIB("odbc32.lib", "sqlsrv") && CHECK_LIB("odbccp32.lib", "sqlsrv") && 
+        CHECK_LIB("version.lib", "sqlsrv") && CHECK_LIB("psapi.lib", "sqlsrv")) {
+
+        EXTENSION("sqlsrv", "conn.cpp init.cpp stmt.cpp util.cpp stream.cpp" )
+        CHECK_HEADER_ADD_INCLUDE('sql.h', 'CFLAGS_SQLSRV_ODBC');
+        CHECK_HEADER_ADD_INCLUDE('sqlext.h', 'CFLAGS_SQLSRV_ODBC');
+        ADD_FLAG( 'LDFLAGS_SQLSRV', '/NXCOMPAT /DYNAMICBASE' );
+        ADD_FLAG( 'CFLAGS_SQLSRV', '/EHsc' );
+        // if debug is included, the math.h header file defines a number of inline functions which are 
+        // not inlined when debug is enabled (optimizations disabled).  This results in duplicate entries
+        // in each obj file, which prevents proper linking.
+        if( PHP_DEBUG == "yes" ) {
+            ADD_FLAG( 'CFLAGS_SQLSRV', '/D ZEND_WIN32_FORCE_INLINE' );
+        }
+        ADD_FLAG( 'CFLAGS_SQLSRV', '/WX' );
+        ADD_FLAG( 'CFLAGS_SQLSRV', '/GS' );
+        // a template is defined in this header file which doesn't allow the extension to compile
+        // because we've wrapped our PHP headers with extern "C".  The sqlsrv extension uses none of 
+        // the functionality in WinSock, so we define the include guard to prevent the file from being included.
+        // This is required for Visual C++ 2005 Express with the Platform SDK 2003 R2.
+        ADD_FLAG( 'CFLAGS_SQLSRV', '/D_WSPIAPI_H_' );
+    }
+}
