@@ -127,10 +127,10 @@ OACR_WARNING_DISABLE( UNANNOTATED_BUFFER, "STREAMS_DC is a Zend macro that evals
 // return value.  There is only one valid way to open a stream, using sqlsrv_get_field on
 // certain field types.  A sqlsrv stream may only be opened in read mode.
 static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, 
-                                          __in char*, __in char* mode, 
-                                          int options, __in char **, 
-                                          php_stream_context* 
-                                          STREAMS_DC TSRMLS_DC )
+                                  __in char*, __in char* mode, 
+                                  int options, __in char **, 
+                                  php_stream_context* 
+                                  STREAMS_DC TSRMLS_DC )
 {
 #if ZEND_DEBUG
     SQLSRV_UNUSED( __zend_orig_lineno );
@@ -150,7 +150,7 @@ static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper,
         php_stream_wrapper_log_error( wrapper, options TSRMLS_CC, "Invalid option: no options except REPORT_ERRORS may be specified with a sqlsrv stream" );
         return NULL;
     }
-    
+
     // allocate the stream from PHP
     php_stream* php_str = php_stream_alloc( &sqlsrv_stream_ops, ss, 0, mode );
     if( php_str != NULL ) {

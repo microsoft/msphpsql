@@ -29,10 +29,6 @@ int current_log_subsystem = LOG_CONN;
 
 // an arbitrary figure that should be large enough for most connection strings.
 const int DEFAULT_CONN_STR_LEN = 2048;
-// the largest packet size that can be sent with the default options that we use
-// without causing a warning to happen at login time.  If the warning did occur,
-// it would cause an error when 'WarningsReturnAsErrors' is set to true.
-const int DEFAULT_PACKET_SIZE = 32564;
 // PHP streams generally return no more than 8k.
 const int PHP_STREAM_BUFFER_SIZE = 8192;
 // connection timeout string
@@ -176,20 +172,15 @@ PHP_FUNCTION( sqlsrv_connect )
         handle_warning( &SQLSRV_G( henv_context )->ctx, LOG_CONN, _FN_, NULL TSRMLS_CC );
     }
 
-    // set the packet size to ~32k
-    r = SQLSetConnectAttr( conn->ctx.handle, SQL_ATTR_PACKET_SIZE, reinterpret_cast<SQLPOINTER>( DEFAULT_PACKET_SIZE ), SQL_IS_UINTEGER );
-    CHECK_SQL_ERROR( r, conn, _FN_, NULL, SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle ); RETURN_FALSE; );
-    CHECK_SQL_WARNING( r ,conn, _FN_, NULL );
-
-    try {    
+    try {
 
         r = build_connection_string_and_set_conn_attr( conn, server, options_z, conn_str TSRMLS_CC );
         CHECK_SQL_ERROR( r, SQLSRV_G( henv_context ), _FN_, NULL,
                          memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
                          conn_str.clear();
-            SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle ); 
-            conn->ctx.handle = NULL; 
-            RETURN_FALSE );
+                         SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle ); 
+                         conn->ctx.handle = NULL; 
+                         RETURN_FALSE );
     }
     catch( std::bad_alloc& ex ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
@@ -212,15 +203,15 @@ PHP_FUNCTION( sqlsrv_connect )
         conn->ctx.handle = SQL_NULL_HANDLE;
         RETURN_FALSE;
     }
-    
-        SQLSRV_STATIC_ASSERT( sizeof( char ) == sizeof( SQLCHAR ));    // make sure that cast below is valid
-        r = SQLDriverConnect( conn->ctx.handle, NULL, reinterpret_cast<SQLCHAR*>( const_cast<char*>( conn_str.c_str() )),
-                              static_cast<SQLSMALLINT>( conn_str.length() ), NULL, 
-                               0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-        // Would rather use std::fill here, but that gives a warning about not being able to inline
+
+    SQLSRV_STATIC_ASSERT( sizeof( char ) == sizeof( SQLCHAR ));    // make sure that cast below is valid
+    r = SQLDriverConnect( conn->ctx.handle, NULL, reinterpret_cast<SQLCHAR*>( const_cast<char*>( conn_str.c_str() )),
+                          static_cast<SQLSMALLINT>( conn_str.length() ), NULL, 
+                          0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+    // Would rather use std::fill here, but that gives a warning about not being able to inline
     // the iterator functions, so we use this instead.
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
-        conn_str.clear();
+    memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+    conn_str.clear();
 
     CHECK_SQL_ERROR( r, conn, _FN_, NULL, 
         SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle ); conn->ctx.handle = SQL_NULL_HANDLE; RETURN_FALSE );
@@ -890,7 +881,7 @@ struct _attr_return {
     // or set to NO_ATTRIBUTE if it's not a connection attribute
     int  attr;
     // the value of the attribute if it's a connection attribute rather than a connection string keyword
-    int  value;
+    int  value;             
     char* str_value;        // connection string keyword if that's what it is
     unsigned int str_len;   // length of the connection string keyword (save ourselves a strlen)
     bool add;               // see build_connect_string_and_attr for this field's use

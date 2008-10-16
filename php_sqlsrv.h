@@ -457,7 +457,7 @@ struct sqlsrv_error {
     char const* sqlstate;
     char const* native_message;
     int native_code;
-    bool format;
+    bool format; 
 };
 
 // defintions for PHP specific errors returned by sqlsrv
@@ -629,7 +629,7 @@ inline bool is_truncated_warning( SQLCHAR* state )
 
 
 // generic functions used to validate parameters to a PHP function.
-// Register an invalid parameter error and returns NULL when parameters don't match the spec given. 
+// Register an invalid parameter error and returns NULL when parameters don't match the spec given.
 // Each function is nearly identical, except the number of parameters each accepts.  
 // We do this since template functions can't be variadic.
 

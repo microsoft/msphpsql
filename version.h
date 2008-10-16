@@ -11,9 +11,9 @@
 //          may be found online at http://www.codeplex.com/SQL2K5PHP/license.
 //----------------------------------------------------------------------------------------------------------------------------------
 
-#define VER_FILEVERSION_STR "1.0.0.0"
-#define _FILEVERSION 1,0,0,0
+#define VER_FILEVERSION_STR "1.0.1015.0"
+#define _FILEVERSION 1,0,1015,0
 #define SQLVERSION_MAJOR 1
 #define SQLVERSION_MINOR 0
-#define SQLVERSION_MMDD 0
+#define SQLVERSION_MMDD 1015
 #define SQLVERSION_REVISION 0

@@ -242,7 +242,7 @@ PHP_FUNCTION( sqlsrv_errors )
             zend_hash_destroy( Z_ARRVAL_P( both_z ));
             RETURN_FALSE;
         }
-
+            
 
         if( Z_TYPE_P( SQLSRV_G( warnings )) == IS_ARRAY && !sqlsrv_merge_zend_hash( both_z, SQLSRV_G( warnings ) TSRMLS_CC )) {
             zend_hash_destroy( Z_ARRVAL_P( both_z ));
@@ -573,7 +573,7 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
     int zr = SUCCESS;
     int reported_before = 0;
     int ignored_before = 0;
-    
+
     LOG( SEV_NOTICE, LOG_UTIL, "handle_errors_and_warnings: entering" );
     
     // create an array of arrays
@@ -592,13 +592,13 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
     if( ignored_chain != NULL ) {
 
         if( Z_TYPE_P( *ignored_chain ) == IS_NULL ) {
-        ignored_chain_was_null = true;
+            ignored_chain_was_null = true;
             ignored_before = 0;
-        zr = array_init( *ignored_chain );
-        if( zr == FAILURE ) {
-            DIE( "Fatal error in handle_errors_and_warnings" );
+            zr = array_init( *ignored_chain );
+            if( zr == FAILURE ) {
+                DIE( "Fatal error in handle_errors_and_warnings" );
+            }
         }
-    }
         else {
             ignored_before = zend_hash_num_elements( Z_ARRVAL_PP( ignored_chain ));
         }

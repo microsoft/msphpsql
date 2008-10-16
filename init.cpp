@@ -210,15 +210,15 @@ zend_module_entry g_sqlsrv_module_entry =
     "sqlsrv", 
     sqlsrv_functions,           // exported function table
     // initialization and shutdown functions
-    PHP_MINIT(sqlsrv), 
+    PHP_MINIT(sqlsrv),
     PHP_MSHUTDOWN(sqlsrv), 
     PHP_RINIT(sqlsrv), 
     PHP_RSHUTDOWN(sqlsrv), 
-    PHP_MINFO(sqlsrv), 
+    PHP_MINFO(sqlsrv),
     // version of the extension.  Matches the version resource of the extension dll
     VER_FILEVERSION_STR,
     PHP_MODULE_GLOBALS(sqlsrv),
-    NULL,
+    NULL,           
     NULL,
     NULL,
     STANDARD_MODULE_PROPERTIES_EX

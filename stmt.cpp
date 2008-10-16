@@ -1006,12 +1006,12 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
                                              column_size, decimal_digits TSRMLS_CC );
                 // an error occurred, so return false
                 if( param_z == NULL ) {
-                    return false;
-                }
-            }
+                            return false;
+                        }
+                    }
             // otherwise use the defaults
             else {
-
+            
                 bool success = determine_param_defaults( stmt, _FN_, param_z, i, php_type, direction, sql_type, 
                                                          sql_c_type, column_size, decimal_digits TSRMLS_CC );
                 if( !success ) {
@@ -1138,17 +1138,25 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
         if( sql_string != NULL ) DIE( "sqlsrv_stmt_common_execute: sql_string must be NULL when direct = false");
         r = SQLExecute( stmt->ctx.handle );
     }
-    if( r != SQL_NEED_DATA ) {
+
+    // if stream parameters were bound
+    if( r == SQL_NEED_DATA ) {
+
+        // if they are to be sent at execute time, then send them now.
+        if( stmt->send_at_exec == true ) {
+
+            zval return_value;
+            while( send_stream_packet( stmt, &return_value, _FN_ TSRMLS_CC )) { }
+            if( Z_TYPE( return_value ) != IS_NULL ) {
+                return false;
+            }
+        }
+    }
+    // if a result set was generated, check for errors.  Otherwise, it completed successfully but no data was
+    // generated.
+    else if( r != SQL_NO_DATA ) {
         CHECK_SQL_ERROR( r, stmt, _FN_, NULL, SQLFreeStmt( stmt->ctx.handle, SQL_RESET_PARAMS ); return false; );
         CHECK_SQL_WARNING( r, stmt, _FN_, NULL );
-    }
-    else if( stmt->send_at_exec == true ) {
-
-        zval return_value;
-        while( send_stream_packet( stmt, &return_value, _FN_ TSRMLS_CC )) { }
-        if( Z_TYPE( return_value ) != IS_NULL ) {
-            return false;
-        }
     }
     
     // false means to not release the datetime buffers we just allocated.
@@ -1315,7 +1323,7 @@ bool check_for_next_stream_parameter( __inout sqlsrv_stmt* stmt, __out zval* ret
         stmt->current_parameter_read = 0;
     }
     // otherwise if it wasn't an error, we've exhausted the bound parameters, so return that we're done
-    else if( SQL_SUCCEEDED( r )) {
+    else if( SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
         CHECK_SQL_WARNING( r, stmt, "sqlsrv_send_stream_data", NULL );             
         RETVAL_NULL();
         return false;
@@ -1969,8 +1977,8 @@ void get_field_as_string( sqlsrv_stmt const* s, SQLSMALLINT c_type, SQLUSMALLINT
             }
         }
         else {
-        CHECK_SQL_ERROR( r, s, _FN_, NULL, efree( field ); RETURN_FALSE; );
-    }
+            CHECK_SQL_ERROR( r, s, _FN_, NULL, efree( field ); RETURN_FALSE; );
+        }
     }
     else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_2005_MAX_FIELD_SIZE ) {
         // only allow binary retrievals for char and binary types.  All others get a char type automatically.
