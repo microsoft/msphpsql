@@ -6,7 +6,7 @@
 //
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //
-// Contents: Declarations for the SQL Server 2005 Driver for PHP 1.0
+// Contents: Declarations for the SQL Server Driver for PHP 1.0
 // 
 // Comments: Also contains "internal" declarations shared across source files. 
 //
@@ -61,6 +61,10 @@ typedef int socklen_t;
 
 #pragma warning(pop)
 
+#if PHP_MAJOR_VERSION > 5 || PHP_MAJOR_VERSION < 5 || ( PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 2 ) || ( PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION > 3 )
+#error Trying to compile "Microsoft SQL Server Driver for PHP" with an unsupported version of PHP
+#endif
+
 #if ZEND_DEBUG
 // debug build causes warning C4505 to pop up from the Zend header files
 #pragma warning( disable: 4505 )
@@ -101,6 +105,12 @@ template <>
 struct sqlsrv_static_assert<true> { static const int value = 1; };
 
 #define SQLSRV_STATIC_ASSERT( c )   (sqlsrv_static_assert<(c) != 0>() )
+
+#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 2
+#define Z_SET_ISREF_P( pzval )      ((pzval)->is_ref = 1)
+#define Z_SET_ISREF_PP( ppzval )    Z_SET_ISREF_P(*(ppzval))
+#define Z_REFCOUNT_P( pzval )       ((pzval)->refcount)
+#endif
 
 
 //**********************************************************************************************************************************
@@ -182,10 +192,21 @@ struct sqlsrv_fetch_field {
     unsigned int len;
 };
 
+// holds the string output parameter information
+struct sqlsrv_output_string {
+    zval* string_z;
+    int param_num;  // used to index into the params_ind_ptr of sqlsrv_stmt to get the length of the output string
+
+    sqlsrv_output_string( zval* str_z, int param ) : string_z( str_z ), param_num( param ) 
+    {
+    }
+};
+
 // *** statement resource structure *** 
 struct sqlsrv_stmt {
 
-    void new_result_set( bool release_datetime_buffers = true );
+    void free_param_data( void );
+    void new_result_set( void );
 
     sqlsrv_context ctx;
     sqlsrv_conn*   conn;
@@ -201,7 +222,9 @@ struct sqlsrv_stmt {
     bool past_fetch_end;
     bool past_next_result_end;
     zval* params_z;
+    SQLINTEGER* params_ind_ptr;
     zval* param_datetime_buffers;
+    zval* param_output_strings;     // list of output string parameters that need null terminating for proper length
     void* param_buffer;
     int param_buffer_size;
     bool send_at_exec;
@@ -500,9 +523,14 @@ extern sqlsrv_error SQLSRV_ERROR_COMMIT_FAILED[];
 extern sqlsrv_error SQLSRV_ERROR_ROLLBACK_FAILED[];
 extern sqlsrv_error SQLSRV_ERROR_AUTO_COMMIT_STILL_OFF[];
 extern sqlsrv_error SQLSRV_ERROR_REGISTER_RESOURCE[];
+extern sqlsrv_error SQLSRV_ERROR_DRIVER_NOT_INSTALLED[];
 
 // definitions for PHP specific warnings returned by sqlsrv
 extern sqlsrv_error SQLSRV_WARNING_FIELD_NAME_EMPTY[];
+
+
+// definitios for PHP warnings returned via php_error
+extern sqlsrv_error PHP_WARNING_VAR_NOT_REFERENCE[];
 
 enum error_handling_flags {
     SQLSRV_ERR_ERRORS,
@@ -1072,6 +1100,15 @@ public:
     {
         return sqlsrv_auto_ptr<zval, zval_auto_ptr>::operator=( ptr );
     }
+
+#if PHP_MAJOR_VERSION > 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3)
+    // New for 5.3.  5.3.x now uses an augmented zval, called a zval_gc_info which contains
+    // information about the gc buffer it was allocated from
+    operator zval_gc_info*()
+    {
+        return reinterpret_cast<zval_gc_info*>( _ptr );
+    }
+#endif
 
 private:
 

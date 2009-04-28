@@ -40,11 +40,21 @@ const int INFO_BUFFER_LEN = 256;
 // number of segments in a version resource
 const int VERSION_SUBVERSIONS = 4;
 
+// url table for driver links based on processor
+struct _platform_url {
+    const char* platform;
+    const char* url;
+} driver_info[] = {
+    { "x86", "http://go.microsoft.com/fwlink/?LinkId=137108" },
+    { "x64", "http://go.microsoft.com/fwlink/?LinkId=137109" },
+    { "ia64", "http://go.microsoft.com/fwlink/?LinkId=137110" }
+};
 
 // *** internal function prototypes ***
 sqlsrv_stmt* allocate_stmt( sqlsrv_conn* conn, zval const* options_z, char const* _FN_ TSRMLS_DC );
 SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn const* conn, const char* server, zval const* options, 
                                                      __inout std::string& connection_string TSRMLS_DC );
+struct _platform_url* get_driver_info( void );
 bool mark_params_by_reference( zval** params_zz, char const* _FN_ TSRMLS_DC );
 void sqlsrv_conn_common_close( sqlsrv_conn* c, const char* function, bool check_errors TSRMLS_DC );
 
@@ -213,6 +223,19 @@ PHP_FUNCTION( sqlsrv_connect )
     memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
     conn_str.clear();
 
+    if( !SQL_SUCCEEDED( r )) {
+        SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
+        SQLSMALLINT len;
+        SQLRETURN r = SQLGetDiagField( SQL_HANDLE_DBC, conn->ctx.handle, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
+        // if the SQLSTATE is IM002, that means that the driver is not installed
+        if( SQL_SUCCEEDED( r ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && state[4] == '2' ) {
+            struct _platform_url* info = get_driver_info();
+            handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_DRIVER_NOT_INSTALLED TSRMLS_CC, info->platform, info->url );
+            SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle );
+            conn->ctx.handle = SQL_NULL_HANDLE;
+            RETURN_FALSE;
+        }
+    }
     CHECK_SQL_ERROR( r, conn, _FN_, NULL, 
         SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle ); conn->ctx.handle = SQL_NULL_HANDLE; RETURN_FALSE );
     CHECK_SQL_WARNING( r, conn, _FN_, NULL );
@@ -237,7 +260,7 @@ PHP_FUNCTION( sqlsrv_connect )
 // the call to sqlsrv_begin_transaction and before any calls to sqlsrv_rollback
 // or sqlsrv_commit.
 //
-// The SQL Server 2005 Driver for PHP is in auto-commit mode by default. This
+// The SQL Server Driver for PHP is in auto-commit mode by default. This
 // means that all queries are automatically committed upon success unless they
 // have been designated as part of an explicit transaction by using
 // sqlsrv_begin_transaction.
@@ -444,7 +467,7 @@ void __cdecl sqlsrv_conn_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC )
 // connection to the auto-commit mode. The current transaction includes all
 // statements on the specified connection that were executed after the call to
 // sqlsrv_begin_transaction and before any calls to sqlsrv_rollback or
-// sqlsrv_commit.  The SQL Server 2005 Driver for PHP is in auto-commit mode by
+// sqlsrv_commit.  The SQL Server Driver for PHP is in auto-commit mode by
 // default. This means that all queries are automatically committed upon success
 // unless they have been designated as part of an explicit transaction by using
 // sqlsrv_begin_transaction.  If sqlsrv_commit is called on a connection that is
@@ -552,9 +575,10 @@ PHP_FUNCTION( sqlsrv_prepare )
 
     stmt->prepared = true;
 
-    if( !mark_params_by_reference( &params_z, _FN_ TSRMLS_CC )) {
-        RETURN_FALSE;
-    }
+     if( !mark_params_by_reference( &params_z, _FN_ TSRMLS_CC )) {
+         free_odbc_resources( stmt TSRMLS_CC );
+         RETURN_FALSE;
+     }
 
     stmt->params_z = params_z;
 
@@ -639,12 +663,18 @@ PHP_FUNCTION( sqlsrv_query )
         RETURN_FALSE;
     }
 
-    if( !mark_params_by_reference( &params_z, _FN_ TSRMLS_CC )) {
+    // if it's not a NULL pointer and not an array, return an error
+    if( params_z && Z_TYPE_P( params_z ) != IS_ARRAY ) {
         free_odbc_resources( stmt TSRMLS_CC );
+        handle_error( NULL, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER TSRMLS_CC, _FN_ );
         RETURN_FALSE;
     }
 
     stmt->params_z = params_z;
+    // zval_add_ref released in free_odbc_resources
+    if( params_z ) {
+        zval_add_ref( &params_z );
+    }
 
     executed = sqlsrv_stmt_common_execute( stmt, sql_string, sql_len, true, _FN_ TSRMLS_CC );
 
@@ -687,7 +717,7 @@ PHP_FUNCTION( sqlsrv_query )
 // statements on the specified connection that were executed after the call to
 // sqlsrv_begin_transaction and before any calls to sqlsrv_rollback or
 // sqlsrv_commit.
-// The SQL Server 2005 Driver for PHP is in auto-commit mode by default. This
+// The SQL Server Driver for PHP is in auto-commit mode by default. This
 // means that all queries are automatically committed upon success unless they
 // have been designated as part of an explicit transaction by using
 // sqlsrv_begin_transaction.
@@ -1116,7 +1146,9 @@ sqlsrv_stmt* allocate_stmt( __in sqlsrv_conn* conn, zval const* options_z, char 
     stmt->current_parameter = NULL;
     stmt->current_parameter_read = 0;
     stmt->params_z = NULL;
+    stmt->params_ind_ptr = NULL;
     stmt->param_datetime_buffers = NULL;
+    stmt->param_output_strings = NULL;
     stmt->param_buffer = param_buffer;
     stmt->param_buffer_size = PHP_STREAM_BUFFER_SIZE;
     stmt->send_at_exec = true;
@@ -1226,13 +1258,20 @@ bool mark_params_by_reference( __inout zval** params_zz, char const* _FN_ TSRMLS
          zend_hash_has_more_elements( params_ht ) == SUCCESS;
          zend_hash_move_forward( params_ht ), ++i ) {
 
-
         zr = zend_hash_get_current_data_ex( params_ht, reinterpret_cast<void**>( &param ), NULL );
         CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, zval_ptr_dtor( params_zz ); return false; );
 
         // if it's a sole variable
         if( Z_TYPE_PP( param ) != IS_ARRAY ) {
-            (*param)->is_ref = 1;   // mark it as a reference
+            if( !PZVAL_IS_REF( *param ) && Z_REFCOUNT_P( *param ) > 1 ) {
+                // 10 should be sufficient for adding up to a 3 digit number to the message
+                int warning_len = strlen( PHP_WARNING_VAR_NOT_REFERENCE->native_message ) + 10;
+                emalloc_auto_ptr<char> warning;
+                warning = static_cast<char*>( emalloc( warning_len ));
+                snprintf( warning, warning_len, PHP_WARNING_VAR_NOT_REFERENCE->native_message, i );
+                php_error( E_WARNING, warning );
+            }
+            Z_SET_ISREF_PP( param );   // mark it as a reference
         }
         // else mark [0] as a reference
         else {
@@ -1243,11 +1282,39 @@ bool mark_params_by_reference( __inout zval** params_zz, char const* _FN_ TSRMLS
                 zval_ptr_dtor( params_zz );
                 return false;
             }
-            (*var)->is_ref = 1;
+            if( !PZVAL_IS_REF( *var ) && Z_REFCOUNT_P( *var ) > 1 ) {
+                // 10 should be sufficient for adding up to a 3 digit number to the message
+                int warning_len = strlen( PHP_WARNING_VAR_NOT_REFERENCE->native_message ) + 10;
+                emalloc_auto_ptr<char> warning;
+                warning = static_cast<char*>( emalloc( warning_len ));
+                snprintf( warning, warning_len, PHP_WARNING_VAR_NOT_REFERENCE->native_message, i );
+                php_error( E_WARNING, warning );
+            }
+            Z_SET_ISREF_PP( var );
         }
     }
 
     return true;
+}
+
+struct _platform_url* get_driver_info( void )
+{
+    SYSTEM_INFO sys_info;
+
+    GetSystemInfo( &sys_info );
+
+    switch( sys_info.wProcessorArchitecture ) {
+
+        case PROCESSOR_ARCHITECTURE_INTEL:
+            return &driver_info[0];
+        case PROCESSOR_ARCHITECTURE_AMD64:
+            return &driver_info[1];
+        case PROCESSOR_ARCHITECTURE_IA64:
+            return &driver_info[2];
+        default:
+            DIE( "Unknown Windows processor architecture" );
+            return NULL;
+    }
 }
 
 }   // namespace

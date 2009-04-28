@@ -3,7 +3,7 @@
 //
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //
-// Contents: Utility functions for the SQL Server 2005 Driver for PHP 1.0
+// Contents: Utility functions for the SQL Server Driver for PHP 1.0
 // 
 // Comments: Mostly error handling and some type handling
 //
@@ -165,6 +165,10 @@ sqlsrv_error SQLSRV_ERROR_AUTO_COMMIT_STILL_OFF[] = {
 sqlsrv_error SQLSRV_ERROR_REGISTER_RESOURCE[] = {
     { IMSSP, "Registering the %1!s! resource failed.", -39, true }
 };
+sqlsrv_error SQLSRV_ERROR_DRIVER_NOT_INSTALLED[] = {
+    { IMSSP, "The SQL Server Driver for PHP requires the SQL Server 2005 Native Client ODBC Driver to communicate with SQL Server.  "
+             "That ODBC Driver is not currently installed.  Accessing the following URL will download the SQL Server 2005 Native Client ODBC driver for %1!s!: %2!s!", -40, true }
+};
 
 
 // internal warning definitions
@@ -173,6 +177,11 @@ sqlsrv_error SQLSRV_WARNING_FIELD_NAME_EMPTY[] = {
 };
 
 
+// This warning is special since it's reported by php_error rather than sqlsrv_errors.  That's also why it has 
+// a printf format specification instead of a FormatMessage format specification.
+sqlsrv_error PHP_WARNING_VAR_NOT_REFERENCE[] = {
+    { SSPWARN, "Variable parameter %d not passed by reference (prefaced with an &).  Variable parameters passed to sqlsrv_prepare should be passed by reference, not by value.  For more information, see sqlsrv_prepare in the API Reference section of the product documentation.", -101, true }
+};
 
 // sqlsrv_errors( [int $errorsAndOrWarnings] )
 //
@@ -237,7 +246,7 @@ PHP_FUNCTION( sqlsrv_errors )
             zval_ptr_dtor( &both_z );
             RETURN_FALSE;
         }
-        both_z->is_ref = 1;
+        Z_SET_ISREF_P( both_z );
         if( Z_TYPE_P( SQLSRV_G( errors )) == IS_ARRAY && !sqlsrv_merge_zend_hash( both_z, SQLSRV_G( errors ) TSRMLS_CC )) {
             zend_hash_destroy( Z_ARRVAL_P( both_z ));
             RETURN_FALSE;

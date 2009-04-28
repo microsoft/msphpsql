@@ -1,17 +1,17 @@
 
-* Notes about changes to the SQL Server 2005 Driver for PHP October 2008 Cumulative Update (CU) *
+* Notes about changes to the SQL Server Driver for PHP April 2009 Cumulative Update (CU) *
 
 For details about the changes included in this CU, please see our blog at
 http://blogs.msdn.com/sqlphp or see the SQLServerDriverForPHP_Readme.htm 
 file that is part of the download package.
 
-* Notes about compiling the SQL Server 2005 Driver for PHP October 2008 CU *
+* Notes about compiling the SQL Server Driver for PHP April 2009 CU *
 
 Prerequisites: You must first be able to build PHP without including
-the SQL Server 2005 Driver for PHP extension.  For help with doing this, see 
+the SQL Server Driver for PHP extension.  For help with doing this, see 
 the official PHP website, http://php.net.
 
-To compile the SQL Server 2005 Driver for PHP:
+To compile the SQL Server Driver for PHP:
 
 1) Copy the source code into the ext\sqlsrv directory.
 

@@ -40,11 +40,11 @@ const size_t DATETIME_CLASS_NAME_LEN = sizeof( DATETIME_CLASS_NAME ) - 1;
 const char DATETIME_FORMAT[] = "Y-m-d H:i:s.u";
 const size_t DATETIME_FORMAT_LEN = sizeof( DATETIME_FORMAT );
 
-// constants for maximums in SQL Server 2005
-const int SQL_SERVER_2005_MAX_FIELD_SIZE = 8000;
-const int SQL_SERVER_2005_MAX_PRECISION = 38;
-const int SQL_SERVER_2005_DEFAULT_PRECISION = 18;
-const int SQL_SERVER_2005_DEFAULT_SCALE = 0;
+// constants for maximums in SQL Server 
+const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
+const int SQL_SERVER_MAX_PRECISION = 38;
+const int SQL_SERVER_DEFAULT_PRECISION = 18;
+const int SQL_SERVER_DEFAULT_SCALE = 0;
 
 // base allocation size when retrieving a string field
 const int INITIAL_FIELD_STRING_LEN = 256;
@@ -69,6 +69,7 @@ const char STDCLASS_NAME_LEN = sizeof( STDCLASS_NAME ) - 1;
 // *** internal function prototypes ***
 
 // These are arranged alphabetically.  They are all used by the sqlsrv statement functions.
+bool adjust_output_string_lengths( sqlsrv_stmt* stmt, const char* _FN_ TSRMLS_DC );
 SQLSMALLINT binary_or_char_encoding( SQLSMALLINT c_type );
 bool check_for_next_stream_parameter( sqlsrv_stmt* stmt, zval* return_value TSRMLS_DC );
 void close_active_stream( sqlsrv_stmt* s TSRMLS_DC );
@@ -81,6 +82,7 @@ sqlsrv_sqltype determine_sql_type( int php_type, int encoding, zval const* value
 void fetch_common( sqlsrv_stmt* stmt, int fetch_type, zval* return_value, const char* _FN_, bool allow_empty_field_names TSRMLS_DC );
 void get_field_common( sqlsrv_stmt* s, const char* _FN_, sqlsrv_phptype sqlsrv_phptype, SQLUSMALLINT field_index, zval**field_value TSRMLS_DC );
 void get_field_as_string( sqlsrv_stmt const* s, SQLSMALLINT c_type, SQLUSMALLINT field_index, zval* return_value, const char* _FN_ TSRMLS_DC );
+SQLRETURN has_rows( sqlsrv_stmt* stmt, bool& rows_present );
 bool is_fixed_size_type( SQLINTEGER sql_type );
 bool is_streamable_type( SQLINTEGER sql_type );
 bool is_valid_sqlsrv_sqltype( sqlsrv_sqltype type );
@@ -203,15 +205,6 @@ PHP_FUNCTION( sqlsrv_free_stmt )
 
     // this frees up the php resources as well
     remove_from_connection( stmt TSRMLS_CC );
-
-    // cause any variables still holding a reference to this to be invalid so they cause
-    // an error when passed to a sqlsrv function.  There's nothing we can do if the
-    // removal fails, so we just log it and move on.
-    int zr = zend_hash_index_del( &EG( regular_list ), Z_RESVAL_P( stmt_r ));
-    if( zr == FAILURE ) {
-        LOG( SEV_ERROR, LOG_STMT, "Failed to remove stmt resource %d", Z_RESVAL_P( stmt_r ));
-    }
-    ZVAL_NULL( stmt_r );
 
     RETURN_TRUE;
 }
@@ -382,7 +375,7 @@ PHP_FUNCTION( sqlsrv_fetch_array )
 // class property, a property with the result set field name is added to the
 // object and the result set value is applied to the property. For more
 // information about calling sqlsrv_fetch_object with the $className parameter,
-// see How to: Retrieve Data as an Object (SQL Server 2005 Driver for PHP).
+// see How to: Retrieve Data as an Object (SQL Server Driver for PHP).
 // 
 // If a field with no name is returned, sqlsrv_fetch_object will discard the
 // field value and issue a warning.
@@ -491,12 +484,20 @@ PHP_FUNCTION( sqlsrv_fetch_object )
         fci.retval_ptr_ptr = &ctor_retval_z;
         fci.param_count = num_params;
         fci.params = params_m;  // purposefully not transferred since ownership isn't actually transferred.
+#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 2
         fci.object_pp = &return_value;
+#else
+        fci.object_ptr = return_value;
+#endif
         memset( &fcic, 0, sizeof( fcic ));
         fcic.initialized = 1;
         fcic.function_handler = (*class_entry)->constructor;
         fcic.calling_scope = *class_entry;
+#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 2
         fcic.object_pp = &return_value;
+#else
+        fcic.object_ptr = return_value;
+#endif
         zr = zend_call_function( &fci, &fcic TSRMLS_CC );
         if( zr == FAILURE ) {
             zval_ptr_dtor( &return_value );
@@ -655,7 +656,7 @@ PHP_FUNCTION( sqlsrv_field_metadata )
 // $fieldIndex: The index of the field to be retrieved. Indexes begin at zero.
 // $getAsType [OPTIONAL]: A SQLSRV constant (SQLSRV_PHPTYPE) that determines
 // the PHP data type for the returned data. For information about supported data
-// types, see SQLSRV Constants (SQL Server 2005 Driver for PHP). If no return
+// types, see SQLSRV Constants (SQL Server Driver for PHP). If no return
 // type is specified, a default PHP type will be returned. For information about
 // default PHP types, see Default PHP Data Types. For information about
 // specifying PHP data types, see How to: Specify PHP Data Types.
@@ -753,6 +754,13 @@ PHP_FUNCTION( sqlsrv_next_result )
     // call the ODBC API that does what we want
     r = SQLMoreResults( stmt->ctx.handle );
     if( r == SQL_NO_DATA ) {
+
+        if( stmt->param_output_strings ) {
+            if( !adjust_output_string_lengths( stmt, _FN_ TSRMLS_CC )) {
+                RETURN_FALSE;
+            }
+        }
+
         // if we're at the end, then return NULL
         stmt->past_next_result_end = true;
         RETURN_NULL();
@@ -955,7 +963,6 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
 {
     SQLRETURN r;
     SQLSMALLINT i;
-    emalloc_auto_ptr<SQLINTEGER> ind_ptr;
 
     close_active_stream( stmt TSRMLS_CC );
 
@@ -967,6 +974,8 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
         } while( r != SQL_NO_DATA );
     }
 
+    stmt->free_param_data();
+
     stmt->executed = false;
 
     if( stmt->params_z ) {
@@ -974,7 +983,12 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
     
         HashTable* params_ht = Z_ARRVAL_P( stmt->params_z );
 
-        ind_ptr = static_cast<SQLINTEGER*>( emalloc( zend_hash_num_elements( params_ht ) * sizeof( SQLINTEGER )));
+        // allocate the buffer size array used by SQLBindParameter if it wasn't allocated by a 
+        // previous execution.  The size of the array cannot change because the number of parameters
+        // cannot change in between executions.
+        if( stmt->params_ind_ptr == NULL ) {
+            stmt->params_ind_ptr = static_cast<SQLINTEGER*>( emalloc( zend_hash_num_elements( params_ht ) * sizeof( SQLINTEGER )));
+        }
 
         for( i = 1, zend_hash_internal_pointer_reset( params_ht );
              zend_hash_has_more_elements( params_ht ) == SUCCESS;
@@ -1026,27 +1040,47 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
                         SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE, SQLFreeStmt( stmt->ctx.handle, SQL_RESET_PARAMS ); return false; );
                     buffer = NULL;
                     buffer_len = 0;
-                    ind_ptr[ i-1 ] = SQL_NULL_DATA;
+                    stmt->params_ind_ptr[ i-1 ] = SQL_NULL_DATA;
                     break;
                 case IS_LONG:
                     buffer = &param_z->value;
                     buffer_len = sizeof( param_z->value.lval );
-                    ind_ptr[ i-1 ] = buffer_len;
+                    stmt->params_ind_ptr[ i-1 ] = buffer_len;
                     break;
                 case IS_DOUBLE:
                     buffer = &param_z->value;
                     buffer_len = sizeof( param_z->value.dval );
-                    ind_ptr[ i-1 ] = buffer_len;
+                    stmt->params_ind_ptr[ i-1 ] = buffer_len;
                     break;
                 case IS_STRING:
                     buffer = Z_STRVAL_PP( &param_z );
                     buffer_len = Z_STRLEN_PP( &param_z );
-                    ind_ptr[ i-1 ] = buffer_len;
                     // resize the buffer to match the column size if it's smaller
                     // than the buffer given already
-                    if(( direction == SQL_PARAM_INPUT_OUTPUT || direction == SQL_PARAM_OUTPUT ) && buffer_len < column_size ) {
+                    if(( direction == SQL_PARAM_INPUT_OUTPUT || direction == SQL_PARAM_OUTPUT )) {
+                        if( stmt->param_output_strings == NULL ) {
+                            ALLOC_INIT_ZVAL( stmt->param_output_strings );
+                            int zr = array_init( stmt->param_output_strings );
+                            CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return false );
+                        }
+                        // if we don't have enough space, then reallocate the buffer (and copy its contents)
+                        // the string keeps its original content until it is updated by the output, at which
+                        // time its length will be set to match the output in adjust_output_string_parameters
+                        if( buffer_len < column_size ) {
                         buffer = static_cast<char*>( erealloc( buffer, column_size + 1 ));
+                        buffer_len = column_size + 1;
+                            reinterpret_cast<char*>( buffer )[ column_size ] = '\0';
+                            ZVAL_STRINGL( param_z, reinterpret_cast<char*>( buffer ), Z_STRLEN_P( param_z ), 0 );
+                        }
+                        // register the output string so that it will be updated when adjust_output_string_parameters is called
+                        sqlsrv_output_string output_string( param_z, i - 1 );
+                        HashTable* strings_ht = Z_ARRVAL_P( stmt->param_output_strings );
+                        int next_index = zend_hash_next_free_element( strings_ht );
+                        int zr = zend_hash_index_update( strings_ht, next_index, &output_string, sizeof( output_string ), NULL );
+                        CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return false );
+                        zval_add_ref( &param_z );   // we have a reference to the param in the statement
                     }
+                    stmt->params_ind_ptr[ i-1 ] = buffer_len;
                     break;
                 case IS_OBJECT:
                 {
@@ -1100,7 +1134,7 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
                     CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return false );
                     buffer_len = Z_STRLEN_P( buffer_z );
                     buffer_z.transferred();
-                    ind_ptr[ i-1 ] = buffer_len;
+                    stmt->params_ind_ptr[ i-1 ] = buffer_len;
                     break;
                 }
                 case IS_RESOURCE:
@@ -1112,7 +1146,7 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
                     buffer = param_z;
                     zval_add_ref( &param_z ); // so that it doesn't go away while we're using it
                     buffer_len = 0;
-                    ind_ptr[ i-1 ] = SQL_DATA_AT_EXEC;
+                    stmt->params_ind_ptr[ i-1 ] = SQL_DATA_AT_EXEC;
                     break;                    
                 }
                 default:
@@ -1123,7 +1157,7 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
 
             if( direction  < 0 || direction > 0xffff ) DIE( "direction not valid SQLSMALLINT" );
             r = SQLBindParameter( stmt->ctx.handle, i, static_cast<SQLSMALLINT>( direction ), sql_c_type, sql_type.typeinfo.type, column_size, decimal_digits,
-                                  buffer, buffer_len, &ind_ptr[ i-1 ] );
+                                  buffer, buffer_len, &stmt->params_ind_ptr[ i-1 ] );
             CHECK_SQL_ERROR( r, stmt, _FN_, NULL, SQLFreeStmt( stmt->ctx.handle, SQL_RESET_PARAMS ); return false; );
             CHECK_SQL_WARNING( r, stmt, _FN_, NULL );
         }
@@ -1152,15 +1186,35 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
             }
         }
     }
-    // if a result set was generated, check for errors.  Otherwise, it completed successfully but no data was
-    // generated.
-    else if( r != SQL_NO_DATA ) {
+    // if no result set was generated just adjust any output string parameter lengths
+    else if( r == SQL_NO_DATA ) {
+        bool adjusted = adjust_output_string_lengths( stmt, _FN_ TSRMLS_CC );
+        if( !adjusted ) {
+            return false;
+        }
+    }
+    else {
+
         CHECK_SQL_ERROR( r, stmt, _FN_, NULL, SQLFreeStmt( stmt->ctx.handle, SQL_RESET_PARAMS ); return false; );
         CHECK_SQL_WARNING( r, stmt, _FN_, NULL );
+
+        // if we succeeded and are still here, then handle output string parameters
+        if( SQL_SUCCEEDED( r )) {
+
+            bool rows_present;
+            r = has_rows( stmt, rows_present );
+            CHECK_SQL_ERROR( r, stmt, _FN_, NULL, SQLFreeStmt( stmt->ctx.handle, SQL_RESET_PARAMS ); return false; );
+            CHECK_SQL_WARNING( r, stmt, _FN_, NULL );
+            if( !rows_present ) {
+                bool adjusted = adjust_output_string_lengths( stmt, _FN_ TSRMLS_CC );
+                if( !adjusted ) {
+                    return false;
+                }
+            }
+        }
     }
     
-    // false means to not release the datetime buffers we just allocated.
-    stmt->new_result_set( false );
+    stmt->new_result_set();
     stmt->executed = true;
 
     return true;
@@ -1177,6 +1231,10 @@ void free_odbc_resources( sqlsrv_stmt* stmt TSRMLS_DC )
     if( stmt->params_z ) {
         zval_ptr_dtor( &stmt->params_z );
         stmt->params_z = NULL;
+        // free the parameter size buffer if we had one (if the statement was executed)
+        if( stmt->params_ind_ptr ) {
+            efree( stmt->params_ind_ptr );
+        }
     }
 
     close_active_stream( stmt TSRMLS_CC );
@@ -1188,9 +1246,9 @@ void free_odbc_resources( sqlsrv_stmt* stmt TSRMLS_DC )
 
     r = SQLFreeHandle( SQL_HANDLE_STMT, stmt->ctx.handle );
     
-    // we don't check errors here because the error log may have already gone away.  We just log them.
+    // we don't handle errors here because the error log may have already gone away.  We just log them.
     if( !SQL_SUCCEEDED( r ) ) {
-        LOG( SEV_ERROR, LOG_STMT, "Failed to free handle for stmt resource %d", stmt->conn_index );
+        LOG( SEV_ERROR, LOG_STMT, "Failed to free statement handle %1!d!", stmt->ctx.handle );
     }
 
     // mark the statement as closed
@@ -1207,16 +1265,22 @@ void free_php_resources( zval* stmt_z TSRMLS_DC )
         return;
     }
 
+    stmt->free_param_data();
+
     // cause any variables still holding a reference to this to be invalid so
     // they cause an error when passed to a sqlsrv function.  If the removal fails, 
     // we log it.
     int zr = zend_hash_index_del( &EG( regular_list ), Z_RESVAL_P( stmt_z ));
     if( zr == FAILURE ) {
-        LOG( SEV_ERROR, LOG_STMT, "Failed to remove stmt resource %d", Z_RESVAL_P( stmt_z ));
+        LOG( SEV_ERROR, LOG_STMT, "Failed to remove stmt resource %1!d!", Z_RESVAL_P( stmt_z ));
+    }
+    else {
+
+        // stmt won't leak if this isn't hit, since Zend cleans up the heap at the end of each request/script
+        efree( stmt );
     }
 
     ZVAL_NULL( stmt_z );
-    efree( stmt );
     zval_ptr_dtor( &stmt_z );
 }
 
@@ -1241,7 +1305,7 @@ void sqlsrv_stmt_hash_dtor( void* stmt_ptr )
 {
     zval* stmt_z = *(static_cast<zval**>( stmt_ptr ));
 
-    if( stmt_z->refcount <= 0 ) {
+    if( Z_REFCOUNT_P( stmt_z ) <= 0 ) {
         DIE( "Statement refcount should be > 0 when deleting from the connection's statement list" );
     }
 
@@ -1277,10 +1341,27 @@ void __cdecl sqlsrv_stmt_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC )
     }
 }
 
+// centralized place to release all the parameter data that accrues during the execution
+// phase.
+void sqlsrv_stmt::free_param_data( void )
+{
+    // if we allocated any output string parameters in a previous execution, release them here.
+    if( param_output_strings ) {
+        zval_ptr_dtor( &param_output_strings );
+        param_output_strings = NULL;
+    }
+
+    // if we allocated any datetime strings in a previous execution, release them here.
+    if( param_datetime_buffers ) {
+        zval_ptr_dtor( &param_datetime_buffers );
+        param_datetime_buffers = NULL;
+    }
+}
+
 
 // to be called whenever a new result set is created, such as after an
 // execute or next_result.  Resets the state variables.
-void sqlsrv_stmt::new_result_set( bool release_datetime_buffers )
+void sqlsrv_stmt::new_result_set( void )
 {
     fetch_called = false;
     if( fetch_fields ) {
@@ -1294,17 +1375,49 @@ void sqlsrv_stmt::new_result_set( bool release_datetime_buffers )
     last_field_index = -1;
     past_fetch_end = false;
     past_next_result_end = false;
-
-    // if we allocated any datetime strings, release them here.
-    if( param_datetime_buffers && release_datetime_buffers ) {
-        zval_ptr_dtor( &param_datetime_buffers );
-        param_datetime_buffers = NULL;
-    }
 }
 
 // *** internal functions ***
 
 namespace {
+
+SQLRETURN has_rows( sqlsrv_stmt* stmt, bool& rows_present )
+{
+    // Use SQLNumResultCols to determine if we have rows or not.
+    SQLRETURN r;
+    SQLSMALLINT num_cols;
+    r = SQLNumResultCols( stmt->ctx.handle, &num_cols );
+    rows_present = (num_cols != 0);
+    return r;
+}
+
+// adjust_output_string_lengths
+// called after all result sets are consumed or if there are no results sets, this function adjusts the length
+// of any output string parameters to the length returned by ODBC in the ind_ptr buffer passed as to SQLBindParameter
+bool adjust_output_string_lengths( sqlsrv_stmt* stmt, const char* _FN_ TSRMLS_DC )
+{
+    if( stmt->param_output_strings == NULL ) 
+        return true;
+
+    HashTable* params_ht = Z_ARRVAL_P( stmt->param_output_strings );
+
+    for( zend_hash_internal_pointer_reset( params_ht );
+         zend_hash_has_more_elements( params_ht ) == SUCCESS;
+         zend_hash_move_forward( params_ht ) ) {
+
+        sqlsrv_output_string *output_string;
+        int zr = zend_hash_get_current_data( params_ht, (void**) &output_string );
+        CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, zval_ptr_dtor( &stmt->param_output_strings ); return false; );
+        char* str = Z_STRVAL_P( output_string->string_z );
+        int str_len = stmt->params_ind_ptr[ output_string->param_num ];
+        ZVAL_STRINGL( output_string->string_z, str, str_len, 0 );
+    }
+
+    zval_ptr_dtor( &stmt->param_output_strings );
+    stmt->param_output_strings = NULL;
+
+    return true;
+}
 
 // check_for_next_stream_parameter
 // check for the next stream parameter.  Returns true if another parameter is ready, false if either an error
@@ -1575,7 +1688,7 @@ sqlsrv_sqltype determine_sql_type( int php_type, int encoding, zval const* value
             else {
                 sql_type.typeinfo.type = SQL_VARBINARY;
             }
-            if( Z_STRLEN_P( value ) > SQL_SERVER_2005_MAX_FIELD_SIZE ) {
+            if( Z_STRLEN_P( value ) > SQL_SERVER_MAX_FIELD_SIZE ) {
                 sql_type.typeinfo.size = SQLSRV_SIZE_MAX_TYPE;
             }
             else {
@@ -1722,7 +1835,7 @@ bool determine_column_size_or_precision( sqlsrv_sqltype sqlsrv_type, __out SQLUI
             if( *column_size == SQLSRV_SIZE_MAX_TYPE ) {
                 *column_size = SQL_SS_LENGTH_UNLIMITED;
             }
-            else if( *column_size > SQL_SERVER_2005_MAX_FIELD_SIZE || *column_size == SQLSRV_INVALID_SIZE ) {
+            else if( *column_size > SQL_SERVER_MAX_FIELD_SIZE || *column_size == SQLSRV_INVALID_SIZE ) {
                 *column_size = SQLSRV_INVALID_SIZE;
                 return false;
             }
@@ -1980,7 +2093,7 @@ void get_field_as_string( sqlsrv_stmt const* s, SQLSMALLINT c_type, SQLUSMALLINT
             CHECK_SQL_ERROR( r, s, _FN_, NULL, efree( field ); RETURN_FALSE; );
         }
     }
-    else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_2005_MAX_FIELD_SIZE ) {
+    else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_MAX_FIELD_SIZE ) {
         // only allow binary retrievals for char and binary types.  All others get a char type automatically.
         if( is_fixed_size_type( sql_type )) {
             c_type = SQL_C_CHAR;
@@ -2047,7 +2160,7 @@ void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, int type )
         }
     }
 
-    int max_size = SQL_SERVER_2005_MAX_FIELD_SIZE;
+    int max_size = SQL_SERVER_MAX_FIELD_SIZE;
     // size is actually the number of characters, not the number of bytes, so if they ask for a 
     // 2 byte per character type, then we half the maximum size allowed.
     if( type == SQL_WVARCHAR || type == SQL_WCHAR ) {
@@ -2076,15 +2189,15 @@ void type_and_precision_calc( INTERNAL_FUNCTION_PARAMETERS, int type )
     SQLSRV_UNUSED( this_ptr );
     SQLSRV_UNUSED( return_value_ptr );
 
-    long prec = SQL_SERVER_2005_DEFAULT_PRECISION;
-    long scale = SQL_SERVER_2005_DEFAULT_SCALE;
+    long prec = SQL_SERVER_DEFAULT_PRECISION;
+    long scale = SQL_SERVER_DEFAULT_SCALE;
 
     if( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "|ll", &prec, &scale ) == FAILURE ) {
                                     
         return;
     }
     
-    if( prec > SQL_SERVER_2005_MAX_PRECISION ) {
+    if( prec > SQL_SERVER_MAX_PRECISION ) {
         LOG( SEV_ERROR, LOG_STMT, "Invalid precision.  Precision can't be > 38" );
         prec = SQLSRV_INVALID_PRECISION;
     }
@@ -2511,7 +2624,7 @@ zval* parse_param_array( sqlsrv_stmt const* stmt, const char* _FN_, const zval* 
         if( Z_TYPE_PP( var_or_val ) == IS_NULL ) {
             Z_TYPE_PP( var_or_val ) = php_type;
             if( php_type == IS_STRING ) {
-                Z_STRVAL_PP( var_or_val ) = static_cast<char*>( emalloc( column_size ));
+                ZVAL_STRINGL( *var_or_val, static_cast<char*>( emalloc( column_size )), column_size, 0 /* don't dup the string */ );
             }
         }
         else {

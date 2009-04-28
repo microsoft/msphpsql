@@ -126,7 +126,7 @@ OACR_WARNING_DISABLE( UNANNOTATED_BUFFER, "STREAMS_DC is a Zend macro that evals
 // open a stream and return the sqlsrv_stream_ops function table as part of the
 // return value.  There is only one valid way to open a stream, using sqlsrv_get_field on
 // certain field types.  A sqlsrv stream may only be opened in read mode.
-static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, 
+php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, 
                                   __in char*, __in char* mode, 
                                   int options, __in char **, 
                                   php_stream_context* 

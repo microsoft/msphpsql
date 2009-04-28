@@ -58,9 +58,9 @@ BEGIN
             VALUE "FileDescription", FILE_DESCRIPTION "\0"
             VALUE "FileVersion", STRVER4(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD, SQLVERSION_REVISION)
             VALUE "InternalName", FILE_NAME "\0"
-            VALUE "LegalCopyright", "© 2008 Microsoft Corp.  All Rights Reserved.\0"
+            VALUE "LegalCopyright", "© 2009 Microsoft Corp.  All Rights Reserved.\0"
             VALUE "OriginalFilename", FILE_NAME "\0"
-            VALUE "ProductName", "Microsoft SQL Server 2005 Driver for PHP\0"
+            VALUE "ProductName", "Microsoft SQL Server Driver for PHP\0"
             VALUE "ProductVersion", STRVER3(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD)
             VALUE "URL", "http://www.microsoft.com\0"
        END

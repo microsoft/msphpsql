@@ -3,7 +3,7 @@
 //
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //
-// Contents: The initialization routines for the SQL Server 2005 Driver for PHP 1.0
+// Contents: The initialization routines for the SQL Server Driver for PHP 1.0
 // 
 // Comments:
 //
@@ -495,9 +495,9 @@ PHP_RINIT_FUNCTION(sqlsrv)
     SQLSRV_G( henv_context )->ctx.handle = g_henv_cp;
     SQLSRV_G( henv_context )->ctx.handle_type = SQL_HANDLE_ENV;
     ALLOC_INIT_ZVAL( SQLSRV_G( errors ));
-    SQLSRV_G( errors )->is_ref = 1;
+    Z_SET_ISREF_PP( &SQLSRV_G( errors ) );
     ALLOC_INIT_ZVAL( SQLSRV_G( warnings ));
-    SQLSRV_G( warnings )->is_ref = 1;
+    Z_SET_ISREF_PP( &SQLSRV_G( warnings ) );
 
     // read INI settings
     SQLSRV_G( warnings_return_as_errors ) = INI_BOOL( INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS );
