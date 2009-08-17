@@ -6,12 +6,12 @@
 //
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //
-// Contents: Declarations for the SQL Server Driver for PHP 1.0
+// Contents: Declarations for the extension
 // 
 // Comments: Also contains "internal" declarations shared across source files. 
 //
 // License: This software is released under the Microsoft Public License.  A copy of the license agreement 
-//          may be found online at http://www.codeplex.com/SQL2K5PHP/license.
+//          may be found online at http://www.codeplex.com/SQLSRVPHP/license.
 //----------------------------------------------------------------------------------------------------------------------------------
 
 #ifdef HAVE_CONFIG_H
@@ -32,6 +32,7 @@ OACR_WARNING_DISABLE( ALLOC_SIZE_OVERFLOW, "Third party code." )
 OACR_WARNING_DISABLE( INDEX_NEGATIVE, "Third party code." )
 OACR_WARNING_DISABLE( UNANNOTATED_BUFFER, "Third party code." )
 OACR_WARNING_DISABLE( INDEX_UNDERFLOW, "Third party code." )
+OACR_WARNING_DISABLE( REALLOCLEAK, "Third party code." )
 #endif
 
 extern "C" {
@@ -96,6 +97,8 @@ OACR_WARNING_POP
 #define SQL_SS_UDT (-151)
 #define SQL_COPT_SS_TXN_ISOLATION 1227
 #define SQL_TXN_SS_SNAPSHOT                 0x00000020L
+#define SQL_SS_TIME2                        (-154)
+#define SQL_SS_TIMESTAMPOFFSET              (-155)
 
 // static assert for enforcing compile time conditions
 template <bool b>
@@ -107,161 +110,14 @@ struct sqlsrv_static_assert<true> { static const int value = 1; };
 #define SQLSRV_STATIC_ASSERT( c )   (sqlsrv_static_assert<(c) != 0>() )
 
 #if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 2
-#define Z_SET_ISREF_P( pzval )      ((pzval)->is_ref = 1)
-#define Z_SET_ISREF_PP( ppzval )    Z_SET_ISREF_P(*(ppzval))
-#define Z_REFCOUNT_P( pzval )       ((pzval)->refcount)
+#define Z_SET_ISREF_P( pzval )     ((pzval)->is_ref = 1)
+#define Z_SET_ISREF_PP( ppzval )   Z_SET_ISREF_P(*(ppzval))
+#define Z_REFCOUNT_P( pzval )      ((pzval)->refcount)
 #endif
 
-
 //**********************************************************************************************************************************
-// Initialization Functions
+// Constants and Types for sqlsrv data types and encodings
 //**********************************************************************************************************************************
-
-// module initialization
-PHP_MINIT_FUNCTION(sqlsrv);
-// module shutdown function
-PHP_MSHUTDOWN_FUNCTION(sqlsrv);
-// request initialization function
-PHP_RINIT_FUNCTION(sqlsrv);
-// request shutdown function
-PHP_RSHUTDOWN_FUNCTION(sqlsrv);
-// module info function (info returned by phpinfo())
-PHP_MINFO_FUNCTION(sqlsrv);
-
-// sqlsrv_context
-// a sqlsrv_context is the agnostic way to represent a handle and its type.  This is used primarily when handling errors and
-// warnings.  We pass this in and the error handling can use the handle and its type to get the diagnostic records from 
-// SQLGetDiagRec.
-struct sqlsrv_context {
-    SQLHANDLE    handle;
-    SQLSMALLINT  handle_type;
-};
-
-// variables set during initialization (move these to init.cpp)
-extern zend_module_entry g_sqlsrv_module_entry;   // describes the extension to PHP
-extern HMODULE g_sqlsrv_hmodule;                  // used for getting the version information
-extern SQLHANDLE g_henv_ncp;                      // used to create connection handles with connection pooling off
-extern SQLHANDLE g_henv_cp;                       // used to create connection handles with connection pooling on
-
-
-//**********************************************************************************************************************************
-// Connection
-//**********************************************************************************************************************************
-
-// *** connection resource structure ***
-// this is the resource structure returned when a connection is made.
-struct sqlsrv_conn {
-
-    // instance variables
-    sqlsrv_context ctx;             // see sqlsrv_context
-    HashTable*     stmts;           // collection of statements allocated from this connection
-    bool           in_transaction;  // flag set when inside a transaction and used for checking validity of tran API calls
-    
-    // static variables used in process_params
-    static char* resource_name; // char because const char forces casting all over the place.  Just easier to leave it char here.
-    static int descriptor;
-};
-
-// environment context used by sqlsrv_connect for when a connection error occurs.
-struct sqlsrv_henv {
-    sqlsrv_context ctx;
-};
-
-// *** connection functions ***
-PHP_FUNCTION(sqlsrv_connect);
-PHP_FUNCTION(sqlsrv_begin_transaction);
-PHP_FUNCTION(sqlsrv_client_info);
-PHP_FUNCTION(sqlsrv_close);
-PHP_FUNCTION(sqlsrv_commit);
-PHP_FUNCTION(sqlsrv_query);
-PHP_FUNCTION(sqlsrv_prepare);
-PHP_FUNCTION(sqlsrv_rollback);
-PHP_FUNCTION(sqlsrv_server_info);
-
-// resource destructor
-void __cdecl sqlsrv_conn_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC );
-
-
-//**********************************************************************************************************************************
-// Statement
-//**********************************************************************************************************************************
-
-// holds the field names for reuse by sqlsrv_fetch_array/object as keys
-struct sqlsrv_fetch_field {
-    char* name;
-    unsigned int len;
-};
-
-// holds the string output parameter information
-struct sqlsrv_output_string {
-    zval* string_z;
-    int param_num;  // used to index into the params_ind_ptr of sqlsrv_stmt to get the length of the output string
-
-    sqlsrv_output_string( zval* str_z, int param ) : string_z( str_z ), param_num( param ) 
-    {
-    }
-};
-
-// *** statement resource structure *** 
-struct sqlsrv_stmt {
-
-    void free_param_data( void );
-    void new_result_set( void );
-
-    sqlsrv_context ctx;
-    sqlsrv_conn*   conn;
-    zval* current_parameter;
-    unsigned int current_parameter_read;
-    bool executed;
-    bool prepared;
-    bool fetch_called;
-    // field names for the current result set for use by sqlsrv_fetch_array/object as keys
-    sqlsrv_fetch_field* fetch_fields;
-    int fetch_fields_count;
-    int last_field_index;
-    bool past_fetch_end;
-    bool past_next_result_end;
-    zval* params_z;
-    SQLINTEGER* params_ind_ptr;
-    zval* param_datetime_buffers;
-    zval* param_output_strings;     // list of output string parameters that need null terminating for proper length
-    void* param_buffer;
-    int param_buffer_size;
-    bool send_at_exec;
-    int conn_index;
-    zval* active_stream;
-
-
-    // static variables used in process_params
-    static char* resource_name; // char because const char forces casting all over the place in ODBC functions
-    static int descriptor;
-};
-
-// *** statement functions ***
-PHP_FUNCTION(sqlsrv_cancel);
-PHP_FUNCTION(sqlsrv_execute);
-PHP_FUNCTION(sqlsrv_fetch);
-PHP_FUNCTION(sqlsrv_fetch_array);
-PHP_FUNCTION(sqlsrv_fetch_object);
-PHP_FUNCTION(sqlsrv_field_metadata);
-PHP_FUNCTION(sqlsrv_free_stmt);
-PHP_FUNCTION(sqlsrv_get_field);
-PHP_FUNCTION(sqlsrv_next_result);
-PHP_FUNCTION(sqlsrv_num_fields);
-PHP_FUNCTION(sqlsrv_rows_affected);
-PHP_FUNCTION(sqlsrv_send_stream_data);
-
-// resource destructor
-void __cdecl sqlsrv_stmt_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC );
-
-// "internal" statement functions used by sqlsrv_query and sqlsrv_close
-bool sqlsrv_stmt_common_execute( sqlsrv_stmt* s, const SQLCHAR* sql_string, int sql_len, bool direct, const char* function TSRMLS_DC );
-void sqlsrv_stmt_hash_dtor( void* stmt );
-void free_odbc_resources( sqlsrv_stmt* stmt TSRMLS_DC );
-void free_php_resources( zval* stmt_z TSRMLS_DC );
-void remove_from_connection( sqlsrv_stmt* stmt TSRMLS_DC );
-
-// *** constants ***
 
 // types for conversions on output parameters (though they can be used for input parameters, they are ignored)
 enum SQLSRV_PHPTYPE {
@@ -282,6 +138,8 @@ enum SQLSRV_ENCODING {
     SQLSRV_ENCODING_INVALID,        // unknown or invalid encoding.  Used to initialize variables.
     SQLSRV_ENCODING_BINARY,         // use SQL_C_BINARY when using SQLGetData
     SQLSRV_ENCODING_CHAR,           // use SQL_C_CHAR when using SQLGetData
+    SQLSRV_ENCODING_SYSTEM = SQLSRV_ENCODING_CHAR,         
+    SQLSRV_ENCODING_DEFAULT,        // use what is the connection's default
 };
 
 // the array keys used when returning a row via sqlsrv_fetch_array and sqlsrv_fetch_object.
@@ -318,11 +176,241 @@ union sqlsrv_phptype {
 
     struct typeinfo_t {
         unsigned type:8;
-        int encoding:16;
+        unsigned encoding:16;
     } typeinfo;
 
     long value;
 };
+
+
+// supported server versions (determined at connection time)
+enum SERVER_VERSION {
+    SERVER_VERSION_UNKNOWN = -1,
+    SERVER_VERSION_2000 = 8,
+    SERVER_VERSION_2005,
+    SERVER_VERSION_2008, // use this for anything 2008 or later
+};
+
+
+//**********************************************************************************************************************************
+// Initialization Functions
+//**********************************************************************************************************************************
+
+// module initialization
+PHP_MINIT_FUNCTION(sqlsrv);
+// module shutdown function
+PHP_MSHUTDOWN_FUNCTION(sqlsrv);
+// request initialization function
+PHP_RINIT_FUNCTION(sqlsrv);
+// request shutdown function
+PHP_RSHUTDOWN_FUNCTION(sqlsrv);
+// module info function (info returned by phpinfo())
+PHP_MINFO_FUNCTION(sqlsrv);
+
+// sqlsrv_context
+// a sqlsrv_context is the agnostic way to represent a handle and its type.  This is used primarily when handling errors and
+// warnings.  We pass this in and the error handling can use the handle and its type to get the diagnostic records from 
+// SQLGetDiagRec.
+struct sqlsrv_context {
+
+    SQLHANDLE    handle;
+    SQLSMALLINT  handle_type;
+
+    sqlsrv_context( SQLSMALLINT type ) :
+        handle( SQL_NULL_HANDLE ),
+        handle_type( type )
+    {
+    }
+
+    sqlsrv_context( SQLHANDLE h, SQLSMALLINT t ) :
+        handle( h ),
+        handle_type( t )
+    {
+    }
+};
+
+// variables set during initialization (move these to init.cpp)
+extern zend_module_entry g_sqlsrv_module_entry;   // describes the extension to PHP
+extern HMODULE g_sqlsrv_hmodule;                  // used for getting the version information
+extern SQLHANDLE g_henv_ncp;                      // used to create connection handles with connection pooling off
+extern SQLHANDLE g_henv_cp;                       // used to create connection handles with connection pooling on
+
+// maps an IANA encoding to a code page
+struct sqlsrv_encoding {
+
+    const char* iana;
+    unsigned int iana_len;
+    unsigned int code_page;
+    bool not_for_connection;
+
+    sqlsrv_encoding( const char* iana, unsigned int code_page, bool not_for_conn = false ):
+        iana( iana ), iana_len( strlen( iana )), code_page( code_page ), not_for_connection( not_for_conn )
+    {
+    }
+};
+
+//**********************************************************************************************************************************
+// Connection
+//**********************************************************************************************************************************
+
+// *** connection resource structure ***
+// this is the resource structure returned when a connection is made.
+struct sqlsrv_conn {
+
+    // instance variables
+    sqlsrv_context ctx;                // see sqlsrv_context
+    HashTable*     stmts;              // collection of statements allocated from this connection
+    bool           in_transaction;     // flag set when inside a transaction and used for checking validity of tran API calls
+    bool           date_as_string;     // date/datetime/datetimeoffset/etc. fields return as strings rather than PHP DateTime objects
+    unsigned int   default_encoding;   // encoding set with the "CharSet" connection option
+    SERVER_VERSION server_version;     // version of the server that we're connected to
+
+    // initialize with default values
+    sqlsrv_conn( void ) :
+        ctx( SQL_HANDLE_DBC ),
+        stmts( NULL ),
+        in_transaction( false ),
+        default_encoding( SQLSRV_ENCODING_CHAR ),
+        date_as_string( false )
+    {
+    }
+
+    // static variables used in process_params
+    static char* resource_name; // char because const char forces casting all over the place.  Just easier to leave it char here.
+    static int descriptor;
+};
+
+// environment context used by sqlsrv_connect for when a connection error occurs.
+struct sqlsrv_henv {
+
+    sqlsrv_context ctx;
+
+    sqlsrv_henv( SQLHANDLE handle ) :
+        ctx( handle, SQL_HANDLE_ENV )
+    {
+    }
+};
+
+// *** connection functions ***
+PHP_FUNCTION(sqlsrv_connect);
+PHP_FUNCTION(sqlsrv_begin_transaction);
+PHP_FUNCTION(sqlsrv_client_info);
+PHP_FUNCTION(sqlsrv_close);
+PHP_FUNCTION(sqlsrv_commit);
+PHP_FUNCTION(sqlsrv_query);
+PHP_FUNCTION(sqlsrv_prepare);
+PHP_FUNCTION(sqlsrv_rollback);
+PHP_FUNCTION(sqlsrv_server_info);
+
+// resource destructor
+void __cdecl sqlsrv_conn_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC );
+
+
+//**********************************************************************************************************************************
+// Statement
+//**********************************************************************************************************************************
+
+// holds the field names for reuse by sqlsrv_fetch_array/object as keys
+struct sqlsrv_fetch_field {
+    char* name;
+    unsigned int len;
+};
+
+// holds the stream param and the encoding that it was assigned
+struct sqlsrv_stream_encoding {
+    zval* stream_z;
+    unsigned int encoding;
+
+    sqlsrv_stream_encoding( zval* str_z, unsigned int enc ) :
+        stream_z( str_z ), encoding( enc )
+    {
+    }
+};
+
+// holds the string output parameter information
+struct sqlsrv_output_string {
+    zval* string_z;
+    unsigned int encoding;
+    int param_num;  // used to index into the ind_or_len of the statement
+
+    sqlsrv_output_string( zval* str_z, unsigned int enc, int num ) :
+        string_z( str_z ), encoding( enc ), param_num( num )
+    {
+    }
+
+};
+
+// *** statement resource structure *** 
+struct sqlsrv_stmt {
+
+    void free_param_data( void );
+    void new_result_set( void );
+
+    sqlsrv_context ctx;                   // context that holds the statement handle
+    sqlsrv_conn*   conn;                  // connection that created this statement
+    zval* current_stream;                 // current stream sending data to the server as an input parameter
+    unsigned int current_stream_read;     // if we read an empty PHP stream, we send an empty string to the server
+    unsigned int current_stream_encoding; // code page of the stream's encoding
+    bool executed;                        // whether the statement has been executed yet (used for error messages)
+    bool prepared;                        // whether the statement has been prepared yet (used for error messages)
+    bool fetch_called;                    // used by sqlsrv_get_field to return an informative error if fetch not yet called 
+                                          // (a common mistake)
+    sqlsrv_fetch_field* fetch_fields;     // field names for the current result set for use by 
+                                          // sqlsrv_fetch_array/object as keys
+    int fetch_fields_count;
+    int last_field_index;                 // last field retrieved by sqlsrv_get_field
+    bool past_fetch_end;                  // sqlsrv_fetch sets when the statement goes beyond the last row
+    bool past_next_result_end;            // sqlsrv_next_resultset sets when the statement goes beyond the last results
+    zval* params_z;                       // hold parameters passed to sqlsrv_prepare but not used until sqlsrv_execute
+    SQLINTEGER* params_ind_ptr;           // buffer to hold the sizes returend by ODBC 
+    zval* param_datetime_buffers;         // track which datetime parameter to convert from string to datetime objects
+    zval* param_streams;                  // track which streams to send data to the server
+    zval* param_strings;                  // track which output strings need to be converted to UTF-8
+    void* param_buffer;                   // bufffer which param data from streams is read in and processed
+    int param_buffer_size;
+    bool send_at_exec;                    // determines if all the data is sent from a stream input parameter when sqlsrv_execute is called
+    int conn_index;                       // index into the connection hash that contains this statement structure
+    zval* active_stream;                  // the currently active stream reading data from the database
+    bool scrollable;                      // determines if the statement was created with the Scrollable query attribute 
+                                          // (don't have to use ODBC to find out)
+    bool scroll_is_dynamic;               // if scrollable, is it a dynamic cursor.  sqlsrv_num_rows uses this information
+    bool has_rows;                        // has_rows is set if there are actual rows in the row set
+
+    sqlsrv_stmt( void ) :
+        ctx( SQL_HANDLE_STMT )
+    {
+    }
+
+    // static variables used in process_params
+    static char* resource_name; // char because const char forces casting all over the place in ODBC functions
+    static int descriptor;
+};
+
+// *** statement functions ***
+PHP_FUNCTION(sqlsrv_cancel);
+PHP_FUNCTION(sqlsrv_execute);
+PHP_FUNCTION(sqlsrv_fetch);
+PHP_FUNCTION(sqlsrv_fetch_array);
+PHP_FUNCTION(sqlsrv_fetch_object);
+PHP_FUNCTION(sqlsrv_field_metadata);
+PHP_FUNCTION(sqlsrv_free_stmt);
+PHP_FUNCTION(sqlsrv_get_field);
+PHP_FUNCTION(sqlsrv_has_rows);
+PHP_FUNCTION(sqlsrv_next_result);
+PHP_FUNCTION(sqlsrv_num_fields);
+PHP_FUNCTION(sqlsrv_num_rows);
+PHP_FUNCTION(sqlsrv_rows_affected);
+PHP_FUNCTION(sqlsrv_send_stream_data);
+
+// resource destructor
+void __cdecl sqlsrv_stmt_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC );
+
+// "internal" statement functions shared by functions in conn.cpp and stmt.cpp
+bool sqlsrv_stmt_common_execute( sqlsrv_stmt* s, const SQLCHAR* sql_string, int sql_len, bool direct, const char* function TSRMLS_DC );
+void free_odbc_resources( sqlsrv_stmt* stmt TSRMLS_DC );
+void free_stmt_resource( zval* stmt_z TSRMLS_DC );
+
+// *** constants ***
 
 // *** variables ***
 
@@ -369,6 +457,10 @@ struct sqlsrv_stream {
 
 extern php_stream_wrapper g_sqlsrv_stream_wrapper;
 
+// buffer size allocated to retrieve data from a PHP stream.  This number
+// was chosen since PHP doesn't return more than 8k at a time even if
+// the amount requested was more.
+const int PHP_STREAM_BUFFER_SIZE = 8192;
 
 //**********************************************************************************************************************************
 // Global variables
@@ -390,6 +482,7 @@ unsigned int log_subsystems;
 zend_bool warnings_return_as_errors;
 // special list of warnings to ignore even if warnings are treated as errors
 HashTable* warnings_to_ignore;
+HashTable* encodings;
 
 ZEND_END_MODULE_GLOBALS(sqlsrv)
 
@@ -454,6 +547,48 @@ enum logging_severity {
 
 // a macro to log entering a function.  used at the top of each API function.
 #define LOG_FUNCTION  LOG( SEV_NOTICE, LOG_STMT, "%1!s!: entering", _FN_ );
+
+// new memory allocation/free debugging facilities to help us verify that all allocations are being 
+// released in a timely manner and not just at the end of the script.  
+// Zend has memory logging and checking, but it can generate a lot of noise for just one extension.
+// It's meant for internal use but might be useful for people adding features to our extension.
+// To use it, uncomment the #define below and compile in Debug NTS.  All allocations and releases
+// must be done with sqlsrv_malloc and sqlsrv_free.
+// #define SQLSRV_MEM_DEBUG  1
+#if defined( PHP_DEBUG ) && !defined( ZTS ) && defined( SQLSRV_MEM_DEBUG )
+
+// macro to log memory allocation and frees locations and their sizes
+inline void* emalloc_trace( size_t size, const char* file, int line )
+{
+    void* ptr = emalloc( size );
+    LOG( SEV_NOTICE, LOG_STMT, "emalloc returned %4!08x!: %1!d! bytes at %2!s!:%3!d!", size, file, line, ptr );
+    return ptr;
+}
+
+inline void* erealloc_trace( void* original, size_t size, const char* file, int line )
+{
+    void* ptr = erealloc( original, size );
+    LOG( SEV_NOTICE, LOG_STMT, "erealloc returned %5!08x! from %4!08x!: %1!d! bytes at %2!s!:%3!d!", size, file, line, ptr, original );
+    return ptr;
+}
+
+inline void efree_trace( void* ptr, const char* file, int line )
+{
+    LOG( SEV_NOTICE, LOG_STMT, "efree %1!08x! at %2!s!:%3!d!", ptr, file, line );
+    efree( ptr );
+}
+
+#define sqlsrv_malloc( size ) emalloc_trace( size, __FILE__, __LINE__ )
+#define sqlsrv_realloc( buffer, size ) erealloc_trace( buffer, size, __FILE__, __LINE__ )
+#define sqlsrv_free( ptr ) efree_trace( ptr, __FILE__, __LINE__ )
+
+#else
+
+#define sqlsrv_malloc( size ) emalloc( size )
+#define sqlsrv_realloc( buffer, size ) erealloc( buffer, size )
+#define sqlsrv_free( ptr )  efree( ptr )
+
+#endif
 
 
 //**********************************************************************************************************************************
@@ -523,15 +658,30 @@ extern sqlsrv_error SQLSRV_ERROR_COMMIT_FAILED[];
 extern sqlsrv_error SQLSRV_ERROR_ROLLBACK_FAILED[];
 extern sqlsrv_error SQLSRV_ERROR_AUTO_COMMIT_STILL_OFF[];
 extern sqlsrv_error SQLSRV_ERROR_REGISTER_RESOURCE[];
+extern sqlsrv_error SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE[];
+extern sqlsrv_error SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE[];
+extern sqlsrv_error SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE[];
+extern sqlsrv_error SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE[];
+extern sqlsrv_error SQLSRV_ERROR_INVALID_CONN_ENCODING[];
+extern sqlsrv_error SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE[];
+extern sqlsrv_error SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE[];
+extern sqlsrv_error SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING[];
 extern sqlsrv_error SQLSRV_ERROR_DRIVER_NOT_INSTALLED[];
+extern sqlsrv_error SQLSRV_ERROR_MARS_OFF[];
+extern sqlsrv_error SQLSRV_ERROR_STATEMENT_NOT_SCROLLABLE[];
+extern sqlsrv_error SQLSRV_ERROR_STATEMENT_SCROLLABLE[];
+extern sqlsrv_error SQLSRV_ERROR_INVALID_FETCH_STYLE[];
+extern sqlsrv_error SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE[];
+extern sqlsrv_error SQLSRV_ERROR_INVALID_SERVER_VERSION[];
 
 // definitions for PHP specific warnings returned by sqlsrv
 extern sqlsrv_error SQLSRV_WARNING_FIELD_NAME_EMPTY[];
 
-
-// definitios for PHP warnings returned via php_error
+// definitions for PHP warnings returned via php_error rather than sqlsrv_errors
 extern sqlsrv_error PHP_WARNING_VAR_NOT_REFERENCE[];
 
+
+// flags passed to sqlsrv_errors to filter its return values
 enum error_handling_flags {
     SQLSRV_ERR_ERRORS,
     SQLSRV_ERR_WARNINGS,
@@ -542,12 +692,27 @@ enum error_handling_flags {
 PHP_FUNCTION(sqlsrv_errors);
 PHP_FUNCTION(sqlsrv_warnings);
 
+// convert from the default encoding specified by the "CharacterSet"
+// connection option to UTF-16.  mbcs_len and utf16_len are sizes in
+// bytes.  The return is the number of UTF-16 characters in the string
+// returned in utf16_out_string.
+unsigned int convert_string_from_default_encoding( unsigned int php_encoding, char const* mbcs_in_string,
+                                                   unsigned int mbcs_len, __out wchar_t* utf16_out_string,
+                                                   unsigned int utf16_len );
+// create a wide char string from the passed in mbcs string.  NULL is returned if the string
+// could not be created.  No error is posted by this function.  utf16_len is the number of
+// wchar_t characters, not the number of bytes.
+wchar_t* utf16_string_from_mbcs_string( unsigned int php_encoding, const char* mbcs_string, 
+                                        unsigned int mbcs_len, __out unsigned int* utf16_len );
+
 // *** internal error macros and functions ***
 bool handle_error( sqlsrv_context const* ctx, int log_subsystem, const char* function, 
                    sqlsrv_error const* ssphp TSRMLS_DC, ... );
 void handle_warning( sqlsrv_context const* ctx, int log_subsystem, const char* function, 
                      sqlsrv_error const* ssphp TSRMLS_DC, ... );
 void __cdecl sqlsrv_error_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC );
+const char* get_last_error_message( DWORD last_error = 0 );
+
 
 // PHP equivalent of ASSERT.  C asserts cause a dialog to show and halt the process which
 // we don't want on a web server
@@ -958,16 +1123,18 @@ public:
         return _ptr;
     }
 
-    // cast to T** used by many functions
-    T** operator&()
-    {
-        return &_ptr;
-    }
-
     // value from reference operator (i.e., i = *(&i); or *i = blah;)
     T& operator*()
     {
         return *_ptr;
+    }
+
+    // allow the use of the address-of operator to simulate a **.
+    // Note: this operator conflicts with storing these within an STL container.  If you need
+    // to do that, then redefine this as getpp and change instances of &auto_ptr to auto_ptr.getpp()
+    T** operator&( void )
+    {
+        return &_ptr;
     }
 
 protected:
@@ -977,18 +1144,10 @@ protected:
     {
     }
 
-    sqlsrv_auto_ptr( sqlsrv_auto_ptr const& src )
+    sqlsrv_auto_ptr( sqlsrv_auto_ptr& src )
     {
         if( _ptr ) {
             static_cast<Subclass*>(this)->reset( src._ptr );
-        }
-        src.transferred();
-    }
-
-    sqlsrv_auto_ptr( typename Subclass const& src )
-    {
-        if( _ptr ) {
-            static_cast<Subclass*>( this )->reset( src._ptr );
         }
         src.transferred();
     }
@@ -1006,36 +1165,43 @@ protected:
     
 };
 
-// an auto_ptr for emalloc/efree.  When allocating a chunk of memory using emalloc, wrap that pointer
-// in a variable of emalloc_auto_ptr.  emalloc_auto_ptr will "own" that block and assure that it is
+// an auto_ptr for sqlsrv_malloc/sqlsrv_free.  When allocating a chunk of memory using sqlsrv_malloc, wrap that pointer
+// in a variable of sqlsrv_malloc_auto_ptr.  sqlsrv_malloc_auto_ptr will "own" that block and assure that it is
 // freed until the variable is destroyed (out of scope) or ownership is transferred using the function
 // "transferred".
 template <typename T>
-class emalloc_auto_ptr : public sqlsrv_auto_ptr<T, emalloc_auto_ptr<T> > {
+class sqlsrv_malloc_auto_ptr : public sqlsrv_auto_ptr<T, sqlsrv_malloc_auto_ptr<T> > {
 
 public:
 
-    emalloc_auto_ptr( void ) :
-        sqlsrv_auto_ptr<T, emalloc_auto_ptr<T> >( NULL )
+    sqlsrv_malloc_auto_ptr( void ) :
+        sqlsrv_auto_ptr<T, sqlsrv_malloc_auto_ptr<T> >( NULL )
     {
     }
 
-    emalloc_auto_ptr( const emalloc_auto_ptr& src )
+    sqlsrv_malloc_auto_ptr( const sqlsrv_malloc_auto_ptr& src ) :
+        sqlsrv_auto_ptr<T, sqlsrv_malloc_auto_ptr<T> >( src )
     {
-        sqlsrv_auto_ptr<T, emalloc_auto_ptr<T> >::sqlsrv_auto_ptr( src );
     }
 
     // free the original pointer and assign a new pointer. Use NULL to simply free the pointer.
     void reset( T* ptr = NULL )
     {
         if( _ptr )
-            efree( (void*) _ptr );
+            sqlsrv_free( (void*) _ptr );
         _ptr = ptr;
     }
 
     T* operator=( T* ptr )
     {
-        return sqlsrv_auto_ptr<T, emalloc_auto_ptr<T> >::operator=( ptr );
+        return sqlsrv_auto_ptr<T, sqlsrv_malloc_auto_ptr<T> >::operator=( ptr );
+    }
+
+    sqlsrv_malloc_auto_ptr<T> operator=( sqlsrv_malloc_auto_ptr<T>& src )
+    {
+        T* p = src.get();
+        src.transferred();
+        this->_ptr = p;
     }
 };
 
@@ -1100,13 +1266,10 @@ public:
     {
         return sqlsrv_auto_ptr<zval, zval_auto_ptr>::operator=( ptr );
     }
-
 #if PHP_MAJOR_VERSION > 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3)
-    // New for 5.3.  5.3.x now uses an augmented zval, called a zval_gc_info which contains
-    // information about the gc buffer it was allocated from
-    operator zval_gc_info*()
+    operator zval_gc_info*( void )
     {
-        return reinterpret_cast<zval_gc_info*>( _ptr );
+        return reinterpret_cast<zval_gc_info*>(_ptr);
     }
 #endif
 

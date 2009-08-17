@@ -5,10 +5,8 @@
 //
 // Contents: Routines that use connection handles
 // 
-// Comments:
-//
 // License: This software is released under the Microsoft Public License.  A copy of the license agreement 
-//          may be found online at http://www.codeplex.com/SQL2K5PHP/license.
+//          may be found online at http://www.codeplex.com/SQLSRVPHP/license.
 //----------------------------------------------------------------------------------------------------------------------------------
 
 #include "php_sqlsrv.h"
@@ -29,12 +27,17 @@ int current_log_subsystem = LOG_CONN;
 
 // an arbitrary figure that should be large enough for most connection strings.
 const int DEFAULT_CONN_STR_LEN = 2048;
-// PHP streams generally return no more than 8k.
-const int PHP_STREAM_BUFFER_SIZE = 8192;
-// connection timeout string
+// statement option for setting a query timeout
 const char QUERY_TIMEOUT[] = "QueryTimeout";
-// option for sending streams at execute time
+// statement option for sending streams at execute time
 const char SEND_STREAMS_AT_EXEC[] = "SendStreamParamsAtExec";
+// query options for cursor types
+const char QUERY_OPTION_SCROLLABLE_STATIC[] = "static";
+const char QUERY_OPTION_SCROLLABLE_DYNAMIC[] = "dynamic";
+const char QUERY_OPTION_SCROLLABLE_KEYSET[] = "keyset";
+const char QUERY_OPTION_SCROLLABLE_FORWARD[] = "forward";
+// statment option to create a scrollable result set
+const char SCROLLABLE[] = "Scrollable";
 // length of buffer used to retrieve information for client and server info buffers
 const int INFO_BUFFER_LEN = 256;
 // number of segments in a version resource
@@ -52,11 +55,12 @@ struct _platform_url {
 
 // *** internal function prototypes ***
 sqlsrv_stmt* allocate_stmt( sqlsrv_conn* conn, zval const* options_z, char const* _FN_ TSRMLS_DC );
-SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn const* conn, const char* server, zval const* options, 
+SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* server, zval const* options, 
                                                      __inout std::string& connection_string TSRMLS_DC );
+SQLRETURN determine_server_version( sqlsrv_conn* conn, const char* _FN_ TSRMLS_DC );
 struct _platform_url* get_driver_info( void );
 bool mark_params_by_reference( zval** params_zz, char const* _FN_ TSRMLS_DC );
-void sqlsrv_conn_common_close( sqlsrv_conn* c, const char* function, bool check_errors TSRMLS_DC );
+void sqlsrv_conn_close_stmts( sqlsrv_conn* conn TSRMLS_DC );
 
 }
 
@@ -74,12 +78,18 @@ char* sqlsrv_conn::resource_name = "sqlsrv_conn";
 
 namespace ConnOptions {
 
+// most of these strings are the same for both the sqlsrv_connect connection option
+// and the name put into the connection string. MARS is the only one that's different.
 const char APP[] = "APP";
+const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char Database[] = "Database";
+const char DateAsString[] = "ReturnDatesAsStrings";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
 const char LoginTimeout[] = "LoginTimeout";
+const char MARS_Option[] = "MultipleActiveResultSets";
+const char MARS_ODBC[] = "MARS_Connection";
 const char PWD[] = "PWD";
 const char QuotedId[] = "QuotedId";
 const char TraceFile[] = "TraceFile";
@@ -140,20 +150,16 @@ PHP_FUNCTION( sqlsrv_connect )
     }
 
     conn_str.reserve( DEFAULT_CONN_STR_LEN );
-    emalloc_auto_ptr<sqlsrv_conn> conn;
-    conn = static_cast<sqlsrv_conn*>( emalloc( sizeof( sqlsrv_conn )));
+    sqlsrv_malloc_auto_ptr<sqlsrv_conn> conn;
+    conn = new ( sqlsrv_malloc( sizeof( sqlsrv_conn ))) sqlsrv_conn;
     hash_auto_ptr stmts;
     ALLOC_HASHTABLE( stmts );
 
-    zr = zend_hash_init( stmts, 10, NULL, sqlsrv_stmt_hash_dtor, 0 );
+    zr = zend_hash_init( stmts, 10, NULL /*hash function*/, NULL /* dtor */, 0 /* persistent */ );
     if( zr == FAILURE ) {
         handle_error( NULL, LOG_CONN, _FN_, SQLSRV_ERROR_ZEND_HASH TSRMLS_CC );
         RETURN_FALSE;
     }
-
-    conn->ctx.handle = NULL;
-    conn->ctx.handle_type = SQL_HANDLE_DBC;
-    conn->in_transaction = false;
 
     SQLHANDLE henv = g_henv_cp;   // by default use the connection pooling henv
     // check the connection pooling setting to determine which henv to use to allocate the connection handle
@@ -188,9 +194,9 @@ PHP_FUNCTION( sqlsrv_connect )
         CHECK_SQL_ERROR( r, SQLSRV_G( henv_context ), _FN_, NULL,
                          memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
                          conn_str.clear();
-                         SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle ); 
-                         conn->ctx.handle = NULL; 
-                         RETURN_FALSE );
+            SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle ); 
+            conn->ctx.handle = NULL; 
+            RETURN_FALSE );
     }
     catch( std::bad_alloc& ex ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
@@ -214,20 +220,31 @@ PHP_FUNCTION( sqlsrv_connect )
         RETURN_FALSE;
     }
 
-    SQLSRV_STATIC_ASSERT( sizeof( char ) == sizeof( SQLCHAR ));    // make sure that cast below is valid
-    r = SQLDriverConnect( conn->ctx.handle, NULL, reinterpret_cast<SQLCHAR*>( const_cast<char*>( conn_str.c_str() )),
-                          static_cast<SQLSMALLINT>( conn_str.length() ), NULL, 
+    // convert our connection string to UTF-16 before connecting with SQLDriverConnnectW
+    wchar_t* wconn_string;
+    unsigned int wconn_len = (conn_str.length() + 1) * sizeof( wchar_t );
+    wconn_string = utf16_string_from_mbcs_string( conn->default_encoding, conn_str.c_str(), conn_str.length(), &wconn_len );
+    if( wconn_string == NULL ) {
+        handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE TSRMLS_CC, get_last_error_message() );
+        SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle );
+        conn->ctx.handle = SQL_NULL_HANDLE;
+        RETURN_FALSE;
+    }
+    
+    r = SQLDriverConnectW( conn->ctx.handle, NULL, reinterpret_cast<SQLWCHAR*>( wconn_string ),
+                           static_cast<SQLSMALLINT>( wconn_len ), NULL, 
                           0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-    // Would rather use std::fill here, but that gives a warning about not being able to inline
-    // the iterator functions, so we use this instead.
+    // clear the connection string from memory to remove sensitive data (such as a password).
     memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+    memset( wconn_string, 0, wconn_len * sizeof( wchar_t )); // wconn_len is the number of characters, not bytes
     conn_str.clear();
+    sqlsrv_free( wconn_string );
 
     if( !SQL_SUCCEEDED( r )) {
         SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
         SQLSMALLINT len;
         SQLRETURN r = SQLGetDiagField( SQL_HANDLE_DBC, conn->ctx.handle, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
-        // if the SQLSTATE is IM002, that means that the driver is not installed
+        // if it's a IM002, meaning that the driver is not installed
         if( SQL_SUCCEEDED( r ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && state[4] == '2' ) {
             struct _platform_url* info = get_driver_info();
             handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_DRIVER_NOT_INSTALLED TSRMLS_CC, info->platform, info->url );
@@ -239,6 +256,15 @@ PHP_FUNCTION( sqlsrv_connect )
     CHECK_SQL_ERROR( r, conn, _FN_, NULL, 
         SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle ); conn->ctx.handle = SQL_NULL_HANDLE; RETURN_FALSE );
     CHECK_SQL_WARNING( r, conn, _FN_, NULL );
+
+    // determine the version of the server we're connected to.  The server version is left in the 
+    // connection upon return.
+    r = determine_server_version( conn, _FN_  TSRMLS_CC );
+    if( !SQL_SUCCEEDED( r )) {
+        SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle );
+        conn->ctx.handle = SQL_NULL_HANDLE;
+        RETURN_FALSE;
+    }
 
     zr = ZEND_REGISTER_RESOURCE( return_value, conn, sqlsrv_conn::descriptor );
     if( zr == FAILURE ) {
@@ -309,8 +335,8 @@ PHP_FUNCTION( sqlsrv_client_info )
     sqlsrv_conn* conn = NULL;
     zval* client_info = NULL;
     SQLSMALLINT info_len = 0;
-    emalloc_auto_ptr<char> buffer;
-    emalloc_auto_ptr<char> ver;
+    sqlsrv_malloc_auto_ptr<char> buffer;
+    sqlsrv_malloc_auto_ptr<char> ver;
     DWORD ver_size = (~0U);
     DWORD winRC = S_OK; 
     DWORD place_holder = 0;
@@ -326,7 +352,7 @@ PHP_FUNCTION( sqlsrv_client_info )
     zr = array_init( return_value );
     CHECK_ZEND_ERROR( zr, NULL, RETURN_FALSE );
     
-    buffer = static_cast<char*>( emalloc( INFO_BUFFER_LEN ));
+    buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
     rc = SQLGetInfo( conn->ctx.handle, SQL_DRIVER_NAME, buffer,  INFO_BUFFER_LEN, &info_len );
     CHECK_SQL_ERROR( rc, conn, _FN_, NULL, RETURN_FALSE );
     MAKE_STD_ZVAL( client_info );
@@ -335,7 +361,7 @@ PHP_FUNCTION( sqlsrv_client_info )
     CHECK_ZEND_ERROR( zr, NULL, RETURN_FALSE );
     buffer.transferred();
     
-    buffer = static_cast<char*>( emalloc( INFO_BUFFER_LEN ));
+    buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
     rc = SQLGetInfo( conn->ctx.handle, SQL_DRIVER_ODBC_VER, buffer,  INFO_BUFFER_LEN, &info_len );
     CHECK_SQL_ERROR( rc, conn, _FN_, NULL, RETURN_FALSE );
     MAKE_STD_ZVAL( client_info );
@@ -344,7 +370,7 @@ PHP_FUNCTION( sqlsrv_client_info )
     CHECK_ZEND_ERROR( zr, NULL, RETURN_FALSE );
     buffer.transferred();
 
-    buffer = static_cast<char*>( emalloc( INFO_BUFFER_LEN ));
+    buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
     rc = SQLGetInfo( conn->ctx.handle, SQL_DRIVER_VER, buffer,  INFO_BUFFER_LEN, &info_len );
     CHECK_SQL_ERROR( rc, conn, _FN_, NULL, RETURN_FALSE );
     MAKE_STD_ZVAL( client_info );
@@ -353,12 +379,12 @@ PHP_FUNCTION( sqlsrv_client_info )
     CHECK_ZEND_ERROR( zr, NULL, RETURN_FALSE );
     buffer.transferred();
 
-    buffer = static_cast<char*>( emalloc( MAX_PATH + 1 ));
+    buffer = static_cast<char*>( sqlsrv_malloc( MAX_PATH + 1 ));
     winRC = GetModuleFileNameEx( GetCurrentProcess(), g_sqlsrv_hmodule, buffer, MAX_PATH );
     CHECK_SQL_ERROR_EX( winRC == 0, conn, _FN_, SQLSRV_ERROR_FILE_VERSION, RETURN_FALSE );
     ver_size = GetFileVersionInfoSize( buffer, &place_holder );
     CHECK_SQL_ERROR_EX( ver_size == 0, conn, _FN_, SQLSRV_ERROR_FILE_VERSION, RETURN_FALSE );
-    ver = static_cast<char*>( emalloc( ver_size ) );
+    ver = static_cast<char*>( sqlsrv_malloc( ver_size ) );
     winRC = GetFileVersionInfo( buffer, 0, ver_size, ver );
     CHECK_SQL_ERROR_EX( winRC == FALSE, conn, _FN_, SQLSRV_ERROR_FILE_VERSION, RETURN_FALSE );
     winRC = VerQueryValue( ver, "\\", reinterpret_cast<LPVOID*>( &ver_info ), &unused );
@@ -430,8 +456,6 @@ PHP_FUNCTION( sqlsrv_close )
         RETURN_FALSE;
     }
 
-    sqlsrv_conn_common_close( conn, _FN_, true TSRMLS_CC );
-    
     // cause any variables still holding a reference to this to be invalid so they cause
     // an error when passed to a sqlsrv function.  There's nothing we can do if the 
     // removal fails, so we just log it and move on.
@@ -454,9 +478,25 @@ void __cdecl sqlsrv_conn_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC )
     DECL_FUNC_NAME( "sqlsrv_conn_dtor" );
     LOG_FUNCTION;
     
-    sqlsrv_conn_common_close( conn, _FN_, false TSRMLS_CC );
+    sqlsrv_conn_close_stmts( conn TSRMLS_CC );
 
-    efree( conn );
+    // rollback any transaction in progress (we don't care about the return result)
+    SQLEndTran( SQL_HANDLE_DBC, conn->ctx.handle, SQL_ROLLBACK );
+
+    // disconnect from the server
+    SQLRETURN r = SQLDisconnect( conn->ctx.handle );
+    if( !SQL_SUCCEEDED( r )) { 
+        LOG( SEV_ERROR, LOG_CONN, "Disconnect failed when closing the connection." );
+    }
+
+    // free the connection handle
+    r = SQLFreeHandle( SQL_HANDLE_DBC, conn->ctx.handle );
+    if( !SQL_SUCCEEDED( r )) { 
+        LOG( SEV_ERROR, LOG_CONN, "Failed to free the connection handle when destroying the connection resource" );
+    }
+    conn->ctx.handle = NULL;
+
+    sqlsrv_free( conn );
     rsrc->ptr = NULL;
 }
 
@@ -550,7 +590,7 @@ PHP_FUNCTION( sqlsrv_prepare )
     SQLSRV_UNUSED( return_value_ptr );
 
     sqlsrv_conn* conn = NULL;
-    emalloc_auto_ptr<sqlsrv_stmt> stmt;
+    sqlsrv_malloc_auto_ptr<sqlsrv_stmt> stmt;
     char *sql_string = NULL;
     int sql_len = 0;
     zval* params_z = NULL;
@@ -569,33 +609,55 @@ PHP_FUNCTION( sqlsrv_prepare )
     }
 
     SQLSRV_STATIC_ASSERT( sizeof(SQLCHAR) == sizeof(char) );
-    r = SQLPrepare( stmt->ctx.handle, reinterpret_cast<SQLCHAR*>( sql_string ), SQL_NTS );
+    wchar_t* wsql_string;
+    unsigned int wsql_len = 0;
+    // if the string is empty, we initialize the fields and skip since an empty string is a 
+    // failure case for utf16_string_from_mbcs_string 
+    if( sql_len == 0 || ( sql_string[0] == '\0' && sql_len == 1 )) {
+        wsql_string = reinterpret_cast<wchar_t*>( sqlsrv_malloc( 1 ));
+        wsql_string[0] = '\0';
+        wsql_len = 0;
+    }
+    else {
+        wsql_string = utf16_string_from_mbcs_string( stmt->conn->default_encoding, reinterpret_cast<const char*>( sql_string ), sql_len,
+                                                     &wsql_len );
+        if( wsql_string == NULL ) {
+            handle_error( &stmt->ctx, LOG_STMT, _FN_, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE TSRMLS_CC, get_last_error_message() );
+            free_odbc_resources( stmt TSRMLS_CC );
+            RETURN_FALSE;
+        }
+    }
+    r = SQLPrepareW( stmt->ctx.handle, reinterpret_cast<SQLWCHAR*>( wsql_string ), wsql_len );
+    sqlsrv_free( wsql_string );
     CHECK_SQL_ERROR( r, stmt, _FN_, NULL, free_odbc_resources( stmt TSRMLS_CC ); RETURN_FALSE );
     CHECK_SQL_WARNING( r, stmt, _FN_, NULL );
 
     stmt->prepared = true;
 
-     if( !mark_params_by_reference( &params_z, _FN_ TSRMLS_CC )) {
-         free_odbc_resources( stmt TSRMLS_CC );
-         RETURN_FALSE;
-     }
+    if( !mark_params_by_reference( &params_z, _FN_ TSRMLS_CC )) {
+        free_odbc_resources( stmt TSRMLS_CC );
+        RETURN_FALSE;
+    }
 
     stmt->params_z = params_z;
 
+    // register the statement with the PHP runtime
     zval_auto_ptr stmt_z;
     ALLOC_INIT_ZVAL( stmt_z );
     int zr = ZEND_REGISTER_RESOURCE( stmt_z, stmt, sqlsrv_stmt::descriptor );
     if( zr == FAILURE ) {
         free_odbc_resources( stmt TSRMLS_CC );
-        free_php_resources( stmt_z TSRMLS_CC );
         handle_error( NULL, LOG_CONN, _FN_, SQLSRV_ERROR_REGISTER_RESOURCE TSRMLS_CC, "statement" );
         RETURN_FALSE;
     }
 
+    // store the resource id with the connection so the connection can release this statement
+    // when it closes.
     next_index = zend_hash_next_free_element( conn->stmts );
-    if( zend_hash_index_update( conn->stmts, next_index, &stmt_z, sizeof( zval* ), NULL ) == FAILURE ) {
-        free_odbc_resources( stmt TSRMLS_CC );
-        free_php_resources( stmt_z TSRMLS_CC );
+    long rsrc_idx = Z_RESVAL_P( stmt_z );
+    if( zend_hash_index_update( conn->stmts, next_index, &rsrc_idx, sizeof( long ), NULL /*output*/ ) == FAILURE ) {
+        stmt->conn = NULL;  // tell the statement that it isn't part of the connection so don't try to remove itself
+        free_stmt_resource( stmt_z TSRMLS_CC );
         handle_error( NULL, LOG_CONN, _FN_, SQLSRV_ERROR_ZEND_HASH TSRMLS_CC );
         RETURN_FALSE;
     }
@@ -604,7 +666,6 @@ PHP_FUNCTION( sqlsrv_prepare )
 
     zval_ptr_dtor( &return_value );
     *return_value_ptr = stmt_z;
-    zval_add_ref( &stmt_z );    // two references to the zval, one returned and another in the connection
     stmt_z.transferred();
 }
 
@@ -645,7 +706,7 @@ PHP_FUNCTION( sqlsrv_query )
     SQLSRV_UNUSED( return_value_ptr );
 
     sqlsrv_conn* conn = NULL;
-    emalloc_auto_ptr<sqlsrv_stmt> stmt;
+    sqlsrv_malloc_auto_ptr<sqlsrv_stmt> stmt;
     SQLCHAR *sql_string = NULL;
     int sql_len = 0;
     zval* params_z = NULL;
@@ -666,6 +727,7 @@ PHP_FUNCTION( sqlsrv_query )
     // if it's not a NULL pointer and not an array, return an error
     if( params_z && Z_TYPE_P( params_z ) != IS_ARRAY ) {
         free_odbc_resources( stmt TSRMLS_CC );
+        stmt->free_param_data();
         handle_error( NULL, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER TSRMLS_CC, _FN_ );
         RETURN_FALSE;
     }
@@ -680,23 +742,27 @@ PHP_FUNCTION( sqlsrv_query )
 
     if( !executed ) {
         free_odbc_resources( stmt TSRMLS_CC );
+        stmt->free_param_data();
         RETURN_FALSE;
     }
 
+    // register the statement with the PHP runtime
     zval_auto_ptr stmt_z;
     ALLOC_INIT_ZVAL( stmt_z );
     int zr = ZEND_REGISTER_RESOURCE( stmt_z, stmt, sqlsrv_stmt::descriptor );
     if( zr == FAILURE ) {
         free_odbc_resources( stmt TSRMLS_CC );
-        free_php_resources( stmt_z TSRMLS_CC );
         handle_error( NULL, LOG_CONN, _FN_, SQLSRV_ERROR_REGISTER_RESOURCE TSRMLS_CC, "statement" );
         RETURN_FALSE;
     }
 
+    // store the resource id with the connection so the connection can release this statement
+    // when it closes.
     next_index = zend_hash_next_free_element( conn->stmts );
-    if( zend_hash_index_update( conn->stmts, next_index, &stmt_z, sizeof( zval* ), NULL ) == FAILURE ) {
-        free_odbc_resources( stmt TSRMLS_CC );
-        free_php_resources( stmt_z TSRMLS_CC );
+    long rsrc_idx = Z_RESVAL_P( stmt_z );
+    if( zend_hash_index_update( conn->stmts, next_index, &rsrc_idx, sizeof( long ), NULL /*output*/ ) == FAILURE ) {
+        stmt->conn = NULL;  // tell the statement that it isn't part of the connection so don't try to remove itself
+        free_stmt_resource( stmt_z TSRMLS_CC );
         handle_error( NULL, LOG_CONN, _FN_, SQLSRV_ERROR_ZEND_HASH TSRMLS_CC );
         RETURN_FALSE;
     }
@@ -705,7 +771,6 @@ PHP_FUNCTION( sqlsrv_query )
 
     zval_ptr_dtor( &return_value );
     *return_value_ptr = stmt_z;
-    zval_add_ref( &stmt_z );    // two references to the zval, one returned and another in the connection
     stmt_z.transferred();
 }
 
@@ -790,7 +855,7 @@ PHP_FUNCTION( sqlsrv_server_info )
     int zr = SUCCESS;
     sqlsrv_conn* conn = NULL;
     zval* server_info;
-    emalloc_auto_ptr<char> p;
+    sqlsrv_malloc_auto_ptr<char> p;
     SQLSMALLINT info_len;
 
     DECL_FUNC_NAME( "sqlsrv_server_info" );
@@ -801,7 +866,7 @@ PHP_FUNCTION( sqlsrv_server_info )
     zr = array_init( return_value );
     CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_SERVER_INFO, RETURN_FALSE );
     
-    p = static_cast<char*>( emalloc( INFO_BUFFER_LEN ));
+    p = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
     r = SQLGetInfo( conn->ctx.handle, SQL_DATABASE_NAME, p, INFO_BUFFER_LEN, &info_len );
     CHECK_SQL_ERROR( r, conn, _FN_, NULL, RETURN_FALSE );
     CHECK_SQL_WARNING( r, conn, _FN_, NULL );
@@ -812,7 +877,7 @@ PHP_FUNCTION( sqlsrv_server_info )
     CHECK_SQL_WARNING( r, conn, _FN_, NULL );
     p.transferred();
 
-    p = static_cast<char*>( emalloc( INFO_BUFFER_LEN ));
+    p = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
     r = SQLGetInfo( conn->ctx.handle, SQL_DBMS_VER, p,  INFO_BUFFER_LEN, &info_len );
     CHECK_SQL_ERROR( r, conn, _FN_, NULL, RETURN_FALSE );
     CHECK_SQL_WARNING( r, conn, _FN_, NULL );
@@ -822,7 +887,7 @@ PHP_FUNCTION( sqlsrv_server_info )
     CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_SERVER_INFO, RETURN_FALSE );
     p.transferred();
 
-    p = static_cast<char*>( emalloc( INFO_BUFFER_LEN ));
+    p = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
     r = SQLGetInfo( conn->ctx.handle, SQL_SERVER_NAME, p,  INFO_BUFFER_LEN, &info_len );
     CHECK_SQL_ERROR( r, conn, _FN_, NULL, RETURN_FALSE );
     CHECK_SQL_WARNING( r, conn, _FN_, NULL );
@@ -837,37 +902,55 @@ PHP_FUNCTION( sqlsrv_server_info )
 
 namespace {
 
-// common close, used by close and dtor
-void sqlsrv_conn_common_close( __inout sqlsrv_conn* conn, const char* _FN_, bool check_errors TSRMLS_DC )
+// must close all statement handles opened by this connection before closing the connection
+// no errors are returned, since close should always succeed
+
+void sqlsrv_conn_close_stmts( sqlsrv_conn* conn TSRMLS_DC )
 {
-    SQLRETURN r = SQL_SUCCESS;
+    // test prerequisites
+    if( conn->ctx.handle == NULL ) DIE( "Connection handle is NULL.  Trying to destroy an already destroyed connection." );
+    if( !conn->stmts ) DIE( "Connection doesn't contain a statement array." );
 
-    if( conn->ctx.handle == NULL )
-        return;
+    // loop through the stmts hash table and destroy each stmt resource so we can close the 
+    // ODBC connection
+    for( zend_hash_internal_pointer_reset( conn->stmts );
+         zend_hash_has_more_elements( conn->stmts ) == SUCCESS;
+         zend_hash_move_forward( conn->stmts )) {
 
-    // close the statements and roll back transactions
-    if( conn->stmts ) {
+        long* rsrc_idx_ptr;
 
-        zend_hash_destroy( conn->stmts );
-        FREE_HASHTABLE( conn->stmts );
-        conn->stmts = NULL;
+        // get the resource id for the next statement created with this connection
+        int zr = zend_hash_get_current_data( conn->stmts, reinterpret_cast<void**>( &rsrc_idx_ptr ));
+        if( zr == FAILURE ) {
+            LOG( SEV_ERROR, LOG_CONN, "Failed to retrieve a statement resource from the connection" );
+        }
+        long rsrc_idx = *rsrc_idx_ptr;
+
+        // see if the statement is still valid, and if not skip to the next one
+        // presumably this should never happen because if it's in the list, it should still be valid
+        // by virtue that a statement resource should remove itself from its connection when it is
+        // destroyed in sqlsrv_stmt_dtor.  However, rather than die (assert), we simply skip this resource
+        // and move to the next one.
+        sqlsrv_stmt* stmt;
+        int type;
+        stmt = static_cast<sqlsrv_stmt*>( zend_list_find( rsrc_idx, &type ));
+        if( stmt == NULL || type != sqlsrv_stmt::descriptor ) {
+            LOG( SEV_ERROR, LOG_CONN, "Non existent statement found in connection.  Statements should remove themselves"
+                                      " from the connection so this shouldn't be out of sync." );
+            continue;
+        }
+
+        // delete the statement by deleting it from Zend's resource list, which will force its destruction
+        stmt->conn = NULL;
+        zr = zend_hash_index_del( &EG( regular_list ), rsrc_idx );
+        if( zr == FAILURE ) {
+            LOG( SEV_ERROR, LOG_CONN, "Failed to remove statement resource %1!d! when closing the connection", rsrc_idx );
+        }
     }
-    else {
-        DIE( "Connection doesn't contain a statement array!" );
-    }
 
-    // rollback any transaction in progress (we don't care about the return result)
-    SQLEndTran( SQL_HANDLE_DBC, conn->ctx.handle, SQL_ROLLBACK );
-
-    // disconnect from the server
-    r = SQLDisconnect( conn->ctx.handle );
-    if( check_errors ) { CHECK_SQL_ERROR( r, conn, _FN_, NULL, NULL, 1==1 ); }
-
-    // free the connection handle
-    r = SQLFreeHandle( SQL_HANDLE_DBC, conn->ctx.handle );
-    if( check_errors ) { CHECK_SQL_ERROR( r, conn, _FN_, NULL, 1 == 1 ); }
-    CHECK_SQL_WARNING( r, conn, _FN_, NULL );
-    conn->ctx.handle = NULL;
+    zend_hash_destroy( conn->stmts );
+    FREE_HASHTABLE( conn->stmts );
+    conn->stmts = NULL;
 }
 
 #define NO_ATTRIBUTE -1
@@ -879,131 +962,337 @@ enum CONN_ATTR_TYPE {
     CONN_ATTR_STRING,
 };
 
-// list of valid attributes used by validate_connection_attribute below
-struct connection_attribute {
-    const char *        name;
-    int                 name_len;
+// a connection option that includes the callback function that handles that option (e.g., adds it to the connection string or sets an attribute)
+struct connection_option {
+    // the name of the option as passed in by the user
+    const char *        sqlsrv_name;
+    unsigned int        sqlsrv_len;
+    // the name of the option in the ODBC connection string
+    const char *        odbc_name;
+    unsigned int        odbc_len;
     enum CONN_ATTR_TYPE value_type;
-    int                 attr;
-    bool                add;
-} conn_attrs[] = {
-    { ConnOptions::APP, sizeof( ConnOptions::APP ), CONN_ATTR_STRING, NO_ATTRIBUTE, true },
-    { ConnOptions::ConnectionPooling, sizeof( ConnOptions::ConnectionPooling ), CONN_ATTR_BOOL, NO_ATTRIBUTE, false },
-    { ConnOptions::Database, sizeof( ConnOptions::Database ), CONN_ATTR_STRING, NO_ATTRIBUTE, true },
-    { ConnOptions::Encrypt, sizeof( ConnOptions::Encrypt ), CONN_ATTR_BOOL, NO_ATTRIBUTE, true },
-    { ConnOptions::Failover_Partner, sizeof( ConnOptions::Failover_Partner ), CONN_ATTR_STRING, NO_ATTRIBUTE, true },
-    { ConnOptions::LoginTimeout, sizeof( ConnOptions::LoginTimeout ), CONN_ATTR_INT, SQL_ATTR_LOGIN_TIMEOUT, true },
-    { ConnOptions::PWD, sizeof( ConnOptions::PWD ), CONN_ATTR_STRING, NO_ATTRIBUTE, true },
-    { ConnOptions::QuotedId, sizeof( ConnOptions::QuotedId ), CONN_ATTR_BOOL, NO_ATTRIBUTE, true },
-    { ConnOptions::TraceFile, sizeof( ConnOptions::TraceFile ), CONN_ATTR_STRING, SQL_ATTR_TRACEFILE, true },
-    { ConnOptions::TraceOn, sizeof( ConnOptions::TraceOn ), CONN_ATTR_BOOL, SQL_ATTR_TRACE, true },
-    { ConnOptions::TrustServerCertificate, sizeof( ConnOptions::TrustServerCertificate ), CONN_ATTR_BOOL, NO_ATTRIBUTE, true },
-    { ConnOptions::TransactionIsolation, sizeof( ConnOptions::TransactionIsolation ), CONN_ATTR_INT, SQL_COPT_SS_TXN_ISOLATION, true },
-    { ConnOptions::UID, sizeof( ConnOptions::UID ), CONN_ATTR_STRING, NO_ATTRIBUTE, true },
-    { ConnOptions::WSID, sizeof( ConnOptions::WSID ), CONN_ATTR_STRING, NO_ATTRIBUTE, true }
+    // process the connection type
+    // return whether or not the function was successful in processing the connection option
+    bool                (*func)( connection_option const*, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC );
 };
 
-// return structure from validate
-typedef
-struct _attr_return {
-    bool success;   // if the attribute was validated
-    // if it's a connection attribute rather than a connection string keyword, this is set to the attribute (SQL_ATTR_*)
-    // or set to NO_ATTRIBUTE if it's not a connection attribute
-    int  attr;
-    // the value of the attribute if it's a connection attribute rather than a connection string keyword
-    int  value;             
-    char* str_value;        // connection string keyword if that's what it is
-    unsigned int str_len;   // length of the connection string keyword (save ourselves a strlen)
-    bool add;               // see build_connect_string_and_attr for this field's use
-}
-attr_return;
+// connection attribute functions
+template <unsigned int Attr>
+struct int_conn_attr_func {
+
+    static bool func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    {
+        SQLRETURN r = SQLSetConnectAttr( conn->ctx.handle, Attr, reinterpret_cast<SQLPOINTER>( Z_LVAL_P( value )), SQL_IS_UINTEGER );
+        CHECK_SQL_ERROR( r, conn, "sqlsrv_connect", NULL, return false );
+        return true;
+    }
+};
+
+template <unsigned int Attr>
+struct bool_conn_attr_func {
+
+    static bool func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    {
+        SQLRETURN r = SQLSetConnectAttr( conn->ctx.handle, Attr, reinterpret_cast<SQLPOINTER>( zend_is_true( value )), SQL_IS_UINTEGER );
+        CHECK_SQL_ERROR( r, conn, "sqlsrv_connect", NULL, return false );
+        return true;
+    }
+};
+
+template <unsigned int Attr>
+struct str_conn_attr_func {
+
+    static bool func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    {
+        SQLRETURN r = SQLSetConnectAttr( conn->ctx.handle, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )), Z_STRLEN_P( value ));
+        CHECK_SQL_ERROR( r, conn, "sqlsrv_connect", NULL, return false );
+        return true;
+    }
+};
+
+    // boolean connection string
+struct bool_conn_str_func {
+
+    static bool func( connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
+    {
+        TSRMLS_C;
+        char const* val_str;
+        if( zend_is_true( value )) {
+            val_str = "yes";
+        }
+        else {
+            val_str = "no";
+        }
+        conn_str += option->odbc_name;
+        conn_str += "={";
+        conn_str += val_str;
+        conn_str += "};";
+
+        return true;
+    }
+};
+
+    // simply add the parsed value to the connection string
+struct conn_str_append_func {
+
+    static bool func( connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
+    {
+        // wrap a connection option in a quote.  It is presumed that any charactes that need to be escaped will
+        // be escaped, such as a closing }.
+        TSRMLS_C;
+        const char* val_str = Z_STRVAL_P( value );
+        int val_len = Z_STRLEN_P( value );
+        if( val_len > 0 && val_str[0] == '{' && val_str[ val_len - 1 ] == '}' ) {
+            ++val_str;
+            val_len -= 2;
+        }
+        conn_str += option->odbc_name;
+        conn_str += "={";
+        conn_str.append( val_str, val_len );
+        conn_str += "};";
+
+        return true;
+    }
+};
 
 
-// validates a single key/value pair from the attributes given to sqlsrv_connect.
+struct conn_char_set_func {
+
+    static bool func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    {
+        convert_to_string( value );
+        const char* encoding = Z_STRVAL_P( value );
+        unsigned int encoding_len = Z_STRLEN_P( value );
+
+        for( zend_hash_internal_pointer_reset( SQLSRV_G( encodings ));
+             zend_hash_has_more_elements( SQLSRV_G( encodings )) == SUCCESS;
+             zend_hash_move_forward( SQLSRV_G( encodings ) ) ) {
+
+            sqlsrv_encoding* table_encoding;
+            zend_hash_get_current_data( SQLSRV_G( encodings ), (void**) &table_encoding );
+
+            if( encoding_len == table_encoding->iana_len && 
+                !stricmp( encoding, table_encoding->iana )) {
+
+                if( table_encoding->not_for_connection ) {
+                    handle_error( &conn->ctx, LOG_CONN, "sqlsrv_connect", SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING TSRMLS_CC, encoding );
+                    return false;
+                }
+
+                conn->default_encoding = table_encoding->code_page;
+                return true;
+            }
+        }
+
+        handle_error( &conn->ctx, LOG_CONN, "sqlsrv_connect", SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING TSRMLS_CC, encoding );
+        return false;
+    }
+};
+
+struct date_as_string_func {
+
+    static bool func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    {
+        TSRMLS_C;   // show as used to avoid a warning
+        if( zend_is_true( value )) {
+            conn->date_as_string = true;
+        }
+        else {
+            conn->date_as_string = false;
+        }
+
+        return true;
+    }
+};
+
+// do nothing for connection pooling since we handled it earlier when
+// deciding which environment handle to use.
+struct conn_null_func {
+
+    static bool func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC )
+    {
+        TSRMLS_C;
+        return true;
+    }
+};
+
+// list of valid attributes used by validate_connection_option below
+const connection_option conn_opts[] = {
+    { 
+        ConnOptions::APP,
+        sizeof( ConnOptions::APP ),
+        ConnOptions::APP,
+        sizeof( ConnOptions::APP ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func 
+    },
+    {
+        ConnOptions::CharacterSet,
+        sizeof( ConnOptions::CharacterSet ),
+        ConnOptions::CharacterSet,
+        sizeof( ConnOptions::CharacterSet ),
+        CONN_ATTR_STRING,
+        conn_char_set_func::func
+    },
+    {
+        ConnOptions::ConnectionPooling,
+        sizeof( ConnOptions::ConnectionPooling ),
+        ConnOptions::ConnectionPooling,
+        sizeof( ConnOptions::ConnectionPooling ),
+        CONN_ATTR_BOOL,
+        conn_null_func::func
+    },
+    {
+        ConnOptions::Database,
+        sizeof( ConnOptions::Database ),
+        ConnOptions::Database,
+        sizeof( ConnOptions::Database ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        ConnOptions::DateAsString,
+        sizeof( ConnOptions::DateAsString ),
+        ConnOptions::DateAsString,
+        sizeof( ConnOptions::DateAsString ),
+        CONN_ATTR_BOOL,
+        date_as_string_func::func
+    },
+    {
+        ConnOptions::Encrypt, 
+        sizeof( ConnOptions::Encrypt ),
+        ConnOptions::Encrypt, 
+        sizeof( ConnOptions::Encrypt ),
+        CONN_ATTR_BOOL,
+        bool_conn_str_func::func
+    },
+    { 
+        ConnOptions::Failover_Partner,
+        sizeof( ConnOptions::Failover_Partner ), 
+        ConnOptions::Failover_Partner,
+        sizeof( ConnOptions::Failover_Partner ), 
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        ConnOptions::LoginTimeout,
+        sizeof( ConnOptions::LoginTimeout ),
+        ConnOptions::LoginTimeout,
+        sizeof( ConnOptions::LoginTimeout ),
+        CONN_ATTR_INT,
+        int_conn_attr_func<SQL_ATTR_LOGIN_TIMEOUT>::func 
+    },
+    {
+        ConnOptions::MARS_Option,
+        sizeof( ConnOptions::MARS_Option ),
+        ConnOptions::MARS_ODBC,
+        sizeof( ConnOptions::MARS_ODBC ),
+        CONN_ATTR_BOOL,
+        bool_conn_str_func::func
+    },
+    {
+        ConnOptions::PWD,
+        sizeof( ConnOptions::PWD ),
+        ConnOptions::PWD,
+        sizeof( ConnOptions::PWD ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        ConnOptions::QuotedId,
+        sizeof( ConnOptions::QuotedId ),
+        ConnOptions::QuotedId,
+        sizeof( ConnOptions::QuotedId ),
+        CONN_ATTR_BOOL,
+        bool_conn_str_func::func
+    },
+    {
+        ConnOptions::TraceFile,
+        sizeof( ConnOptions::TraceFile ), 
+        ConnOptions::TraceFile,
+        sizeof( ConnOptions::TraceFile ), 
+        CONN_ATTR_STRING,
+        str_conn_attr_func<SQL_ATTR_TRACEFILE>::func 
+    },
+    {
+        ConnOptions::TraceOn,
+        sizeof( ConnOptions::TraceOn ),
+        ConnOptions::TraceOn,
+        sizeof( ConnOptions::TraceOn ),
+        CONN_ATTR_BOOL,
+        bool_conn_attr_func<SQL_ATTR_TRACE>::func
+    },
+    {
+        ConnOptions::TransactionIsolation,
+        sizeof( ConnOptions::TransactionIsolation ),
+        ConnOptions::TransactionIsolation,
+        sizeof( ConnOptions::TransactionIsolation ),
+        CONN_ATTR_INT,
+        int_conn_attr_func<SQL_COPT_SS_TXN_ISOLATION>::func
+    },
+    {
+        ConnOptions::TrustServerCertificate,
+        sizeof( ConnOptions::TrustServerCertificate ),
+        ConnOptions::TrustServerCertificate,
+        sizeof( ConnOptions::TrustServerCertificate ),
+        CONN_ATTR_BOOL,
+        bool_conn_str_func::func
+    },
+    {
+        ConnOptions::UID,
+        sizeof( ConnOptions::UID ),
+        ConnOptions::UID,
+        sizeof( ConnOptions::UID ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        ConnOptions::WSID,
+        sizeof( ConnOptions::WSID ),
+        ConnOptions::WSID,
+        sizeof( ConnOptions::WSID ),
+        CONN_ATTR_STRING, 
+        conn_str_append_func::func
+    },
+};
+
+// validates a single key/value pair from the options given to sqlsrv_connect.
 // to validate means to verify that it is a legal key from the list of keys in conn_attrs (above)
 // and to verify the type.
 // string attributes are scanned to make sure that all } are properly escaped as }}.
 
-const attr_return validate_connection_attribute( sqlsrv_conn const* conn, const char* key, int key_len, zval const* value_z TSRMLS_DC )
+connection_option const* validate_connection_option( sqlsrv_conn const* conn, const char* key, unsigned int key_len, zval const* value_z TSRMLS_DC )
 {
-    int attr_idx = 0;
-    attr_return ret;
+    int opt_idx = 0;
 
-    // initialize our default return values
-    ret.success = false;
-    ret.attr = NO_ATTRIBUTE;
-    ret.value = 0;
-    ret.str_value = NULL;
-    ret.str_len = 0;
-
-    for( attr_idx = 0; attr_idx < ( sizeof( conn_attrs ) / sizeof( conn_attrs[0] )); ++attr_idx ) {
+    for( opt_idx = 0; opt_idx < ( sizeof( conn_opts ) / sizeof( conn_opts[0] )); ++opt_idx ) {
         
-        if( key_len == conn_attrs[ attr_idx ].name_len && !stricmp( key, conn_attrs[ attr_idx ].name )) {
+        if( key_len == conn_opts[ opt_idx ].sqlsrv_len && !stricmp( key, conn_opts[ opt_idx ].sqlsrv_name )) {
 
-            switch( conn_attrs[ attr_idx ].value_type ) {
+            switch( conn_opts[ opt_idx ].value_type ) {
 
                 case CONN_ATTR_BOOL:                        
                     // bool attributes can be either strings to be appended to the connection string
                     // as yes or no or integral connection attributes.  This will have to be reworked
                     // if we ever introduce a boolean connection option that maps to a string connection
                     // attribute.
-                    ret.success = true;
-                    ret.attr = conn_attrs[ attr_idx ].attr;
-                    ret.add = conn_attrs[ attr_idx ].add;
-                    // here we short circuit the ConnectionPooling option because it was already handled
-                    if( conn_attrs[ attr_idx ].name == ConnOptions::ConnectionPooling ) {
-                        return ret;
-                    }
-                    if( zend_is_true( const_cast<zval*>( value_z ))) {
-                        if( ret.attr == NO_ATTRIBUTE ) {
-                            ret.str_value = estrdup( "yes" );      // for connection strings
-                            ret.str_len = 3;
-                        }
-                        else {
-                            ret.value = true;           // for connection attributes
-                        }
-                    }
-                    else {
-                        if( ret.attr == NO_ATTRIBUTE ) {
-                            ret.str_value = estrdup( "no" );  // for connection strings
-                            ret.str_len = 2;
-                        }
-                        else {
-                            ret.value = false;      // for connection attributes
-                        }
-                    }
                     break;
                 case CONN_ATTR_INT:
                 {
-                    CHECK_SQL_ERROR_EX( Z_TYPE_P( value_z ) != IS_LONG, conn, "sqlsrv_connect", SQLSRV_ERROR_INVALID_OPTION, ret.success = false; return ret; );
-                    ret.value = Z_LVAL_P( value_z );
-                    ret.attr = conn_attrs[ attr_idx ].attr;
-                    ret.success = true;
-                    ret.add = conn_attrs[ attr_idx ].add;
-                    return ret;
+                    CHECK_SQL_ERROR_EX( Z_TYPE_P( value_z ) != IS_LONG, conn, "sqlsrv_connect", SQLSRV_ERROR_INVALID_OPTION, return NULL; );
+                    break;
                 }
                 case CONN_ATTR_STRING:
                 {
-                    CHECK_SQL_ERROR_EX( Z_TYPE_P( value_z ) != IS_STRING, conn, "sqlsrv_connect", SQLSRV_ERROR_INVALID_OPTION, ret.success = false; return ret; );
+                    CHECK_SQL_ERROR_EX( Z_TYPE_P( value_z ) != IS_STRING, conn, "sqlsrv_connect", SQLSRV_ERROR_INVALID_OPTION, return NULL );
                     char* value = Z_STRVAL_P( value_z );
                     int value_len = Z_STRLEN_P( value_z );
-                    ret.success = true;
                     // if the value is already quoted, then only analyse the part inside the quotes and return it as 
                     // unquoted since we quote it when adding it to the connection string.
                     if( value_len > 0 && value[0] == '{' && value[ value_len - 1 ] == '}' ) {
                         ++value;
-                        --value_len;
-                        value = estrndup( value, value_len );
-                        value[ value_len - 1 ] = '\0';
+                        value_len -= 2;
                     }
-                    // duplicate the string so when we free it, it won't be a user string we're freeing
-                    else {
-                        value = estrndup( value, value_len );
-                    }
-                    ret.attr = conn_attrs[ attr_idx ].attr;
-                    ret.add = conn_attrs[ attr_idx ].add;
-                    ret.str_value = value;
-                    ret.str_len = value_len;
                     // check to make sure that all right braces are escaped
                     int i = 0;
                     while( ( value[i] != '}' || ( value[i] == '}' && value[i+1] == '}' )) && i < value_len ) {
@@ -1012,23 +1301,20 @@ const attr_return validate_connection_attribute( sqlsrv_conn const* conn, const 
                             ++i;
                         ++i;
                     }
-                    if( value[i] == '}' ) {
+                    if( i < value_len && value[i] == '}' ) {
                         handle_error( &conn->ctx, LOG_CONN, "sqlsrv_connect", SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED TSRMLS_CC, key );
-                        efree( value );
-                        ret.str_value = NULL;
-                        ret.success = false;
-                        return ret;
+                        return NULL;
                     }
                     break;
                 }
             }
 
-            return ret;
+            return &conn_opts[ opt_idx ];
          }
     }
     
     handle_error( &conn->ctx, LOG_CONN, "sqlsrv_connect", SQLSRV_ERROR_INVALID_OPTION TSRMLS_CC, key );
-    return ret;
+    return NULL;
 }
 
 
@@ -1037,17 +1323,18 @@ const attr_return validate_connection_attribute( sqlsrv_conn const* conn, const 
 // passed to the connection, and then break them out ourselves and either set attributes or put the
 // option in the connection string.
 
-SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn const* conn, const char* server, zval const* options, 
+SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* server, zval const* options, 
                                                      __inout std::string& connection_string TSRMLS_DC )
 {
     bool credentials_mentioned = false;
-    attr_return ret;
+    bool mars_mentioned = false;
+    connection_option const* conn_opt;
     int zr = SUCCESS;
 
     DECL_FUNC_NAME( "sqlsrv_connect" );
 
     // put the driver and server as the first components of the connection string
-    connection_string = "Driver={SQL Native Client};Server=";
+    connection_string = "Driver={SQL Server Native Client 10.0};Server=";
     connection_string += server;
     connection_string += ";";
 
@@ -1077,42 +1364,22 @@ SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn const* conn, co
         zr = zend_hash_get_current_data( oht, (void**) &data );
         CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return SQL_ERROR; );
 
-        ret = validate_connection_attribute( conn, key, key_len, *data TSRMLS_CC );
-        if( !ret.success ) {
+        conn_opt = validate_connection_option( conn, key, key_len, *data TSRMLS_CC );
+        if( !conn_opt ) {
             return SQL_ERROR;
         }
  
         // if a user id is given ,then don't use a trusted connection
-        if( !stricmp( key, "UID" )) {
+        if( ( key_len == sizeof( ConnOptions::UID )) && !stricmp( key, ConnOptions::UID )) {
             credentials_mentioned = true;
         }
+        if( (key_len == sizeof( ConnOptions::MARS_Option )) && !stricmp( key, ConnOptions::MARS_Option )) {
+            mars_mentioned = true;
+        }
         
-        if( NO_ATTRIBUTE == ret.attr ) {
-            // some options are already handled (e.g., ConnectionPooling) so don't add them to the connection string
-            if( ret.add ) {
-                // if it's not an attribute, then it's a connection string keyword.  Add it quoted.
-                connection_string += key;
-                connection_string += "={";
-                connection_string += ret.str_value;
-                connection_string += "};";
-            }
-        }
-        else {
-            SQLRETURN r;
-            // if it's a string attribute, the str_value member will be the string to set, otherwise the str_value will be null
-            // and ret.value will be the integer value to set the attribute to.
-            if( ret.str_value == NULL ) {
-                r = SQLSetConnectAttr( conn->ctx.handle, ret.attr, reinterpret_cast<SQLPOINTER>( ret.value ), SQL_IS_UINTEGER );
-            }
-            else {
-                r = SQLSetConnectAttr( conn->ctx.handle, ret.attr, reinterpret_cast<SQLPOINTER>( const_cast<char*>( ret.str_value )), ret.str_len );
-            }
-            CHECK_SQL_ERROR( r, conn, "sqlsrv_connect", NULL, return SQL_ERROR );
-            CHECK_SQL_WARNING( r, conn, "sqlsrv_connect", NULL );
-        }
-
-        if( ret.str_value != NULL ) {
-            efree( ret.str_value );
+        bool f = conn_opt->func( conn_opt, *data, conn, connection_string TSRMLS_CC );
+        if( !f ) {
+            return SQL_ERROR;
         }
     }
 
@@ -1120,10 +1387,132 @@ SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn const* conn, co
     if( !credentials_mentioned ) {
         connection_string += "Trusted_Connection={Yes};";
     }
-    // always have mars enabled.
-    connection_string += "Mars_Connection={Yes};";
+
+    // MARS on if not explicitly turned off
+    if( !mars_mentioned ) {
+        connection_string += "MARS_Connection={Yes};";
+    }
 
     return SQL_SUCCESS;
+}
+
+struct stmt_option;
+
+struct stmt_option_functor {
+
+    virtual bool operator()( sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, zval* /*value_z*/,
+                             const char* /*_FN_*/ TSRMLS_DC )
+    {
+        TSRMLS_C;
+        DIE( "Not implemented" );
+        return false;
+    }
+};
+
+// used to hold the table for statment options
+struct stmt_option {
+
+    const char* name;
+    long name_len;
+    // callback that actually handles the work of the option
+    stmt_option_functor* func;
+};
+
+struct stmt_option_query_timeout : public stmt_option_functor {
+
+    virtual bool operator()( sqlsrv_stmt* stmt, stmt_option const* opt, zval* value_z, const char* _FN_ TSRMLS_DC )
+    {
+        SQLRETURN r = SQL_SUCCESS;
+        if( Z_TYPE_P( value_z ) != IS_LONG ) {
+            convert_to_string( value_z );
+            handle_error( NULL, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_OPTION_VALUE TSRMLS_CC, Z_STRVAL_P( value_z ), opt->name );
+            return false;
+        }
+        r = SQLSetStmtAttr( stmt->ctx.handle, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>( Z_LVAL_P( value_z )), SQL_IS_UINTEGER );
+        CHECK_SQL_ERROR( r, stmt, _FN_, NULL, return false; );
+        char lock_timeout_sql[ 32 ];
+        int written = sprintf_s( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", Z_LVAL_P( value_z ) * 1000 );
+        if( written == -1 || written == sizeof( lock_timeout_sql )) {
+            DIE( "sprintf_s failed.  Shouldn't ever fail." );
+        }
+        r = SQLExecDirect( stmt->ctx.handle, reinterpret_cast<SQLCHAR*>( lock_timeout_sql ), SQL_NTS );
+        CHECK_SQL_ERROR( r, stmt, _FN_, NULL, return false; );
+        return true;
+    }
+};
+
+struct stmt_option_send_at_exec : public stmt_option_functor {
+
+    virtual bool operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z, const char* /*_FN_*/ TSRMLS_DC )
+    {
+        TSRMLS_C;
+        stmt->send_at_exec = ( zend_is_true( value_z )) ? true : false;
+        return true;
+    }
+};
+
+struct stmt_option_scrollable : public stmt_option_functor {
+
+    virtual bool operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z, const char* _FN_ TSRMLS_DC )
+    {
+        SQLRETURN r = SQL_SUCCESS;
+        if( Z_TYPE_P( value_z ) != IS_STRING ) {
+            handle_error( &stmt->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE TSRMLS_CC );
+            return false;
+        }
+        const char* scroll_type = Z_STRVAL_P( value_z );
+        // keep the flag for use by other procedures rather than have to query ODBC for the value
+        stmt->scrollable = true;
+        stmt->scroll_is_dynamic = false;
+        // find which cursor type they would like and set the ODBC statement attribute as such
+        if( !stricmp( scroll_type, QUERY_OPTION_SCROLLABLE_STATIC )) {
+            r = SQLSetStmtAttr( stmt->ctx.handle, SQL_ATTR_CURSOR_TYPE, reinterpret_cast<SQLPOINTER>( SQL_CURSOR_STATIC ), SQL_IS_UINTEGER );
+            CHECK_SQL_ERROR( r, stmt, _FN_, NULL, return false; );
+        }
+        else if( !stricmp( scroll_type, QUERY_OPTION_SCROLLABLE_DYNAMIC )) {
+            stmt->scroll_is_dynamic = true;     // this cursor is dynamic
+            r = SQLSetStmtAttr( stmt->ctx.handle, SQL_ATTR_CURSOR_TYPE, reinterpret_cast<SQLPOINTER>( SQL_CURSOR_DYNAMIC ), SQL_IS_UINTEGER );
+            CHECK_SQL_ERROR( r, stmt, _FN_, NULL, return false; );
+        }
+        else if( !stricmp( scroll_type, QUERY_OPTION_SCROLLABLE_KEYSET )) {
+            r = SQLSetStmtAttr( stmt->ctx.handle, SQL_ATTR_CURSOR_TYPE, reinterpret_cast<SQLPOINTER>( SQL_CURSOR_KEYSET_DRIVEN ), SQL_IS_UINTEGER );
+            CHECK_SQL_ERROR( r, stmt, _FN_, NULL, return false; );
+        }
+        // use a boring, old (but very performant :)) forward only cursor
+        else if( !stricmp( scroll_type, QUERY_OPTION_SCROLLABLE_FORWARD )) {
+            stmt->scrollable = false;   // reset since forward isn't scrollable
+            r = SQLSetStmtAttr( stmt->ctx.handle, SQL_ATTR_CURSOR_TYPE, reinterpret_cast<SQLPOINTER>( SQL_CURSOR_FORWARD_ONLY ), SQL_IS_UINTEGER );
+            CHECK_SQL_ERROR( r, stmt, _FN_, NULL, return false; );
+        }
+        // didn't match any of the cursor types
+        else {
+            handle_error( &stmt->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE TSRMLS_CC );
+            return false;
+        }
+        return true;
+    }
+};
+
+struct stmt_option stmt_opts[] = {
+    { QUERY_TIMEOUT, sizeof( QUERY_TIMEOUT ),  new stmt_option_query_timeout },
+    { SEND_STREAMS_AT_EXEC, sizeof( SEND_STREAMS_AT_EXEC ), new stmt_option_send_at_exec },
+    { SCROLLABLE, sizeof( SCROLLABLE ), new stmt_option_scrollable }
+};
+
+// return the option from the stmt_opts array that matches the key.  If no option found,
+// NULL is returned.
+stmt_option* validate_stmt_option( const char* key, long key_len )
+{
+    for( int i = 0; i < sizeof( stmt_opts ) / sizeof( stmt_option ); ++i ) {
+
+        // if we find the key we're looking for, return it
+        if( key_len == stmt_opts[ i ].name_len && !stricmp( stmt_opts[ i ].name, key )) {
+
+            return &stmt_opts[ i ];
+        }
+    }
+
+    return NULL;    // no option found
 }
 
 
@@ -1133,28 +1522,41 @@ SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn const* conn, co
 sqlsrv_stmt* allocate_stmt( __in sqlsrv_conn* conn, zval const* options_z, char const* _FN_ TSRMLS_DC )
 {
     SQLRETURN r = SQL_SUCCESS;
-    emalloc_auto_ptr<sqlsrv_stmt> stmt;
-    stmt = static_cast<sqlsrv_stmt*>( emalloc( sizeof( sqlsrv_stmt )));
-    emalloc_auto_ptr<char> param_buffer;
-    param_buffer = static_cast<char*>( emalloc( PHP_STREAM_BUFFER_SIZE ));
+    sqlsrv_malloc_auto_ptr<sqlsrv_stmt> stmt;
+    stmt = new ( sqlsrv_malloc( sizeof( sqlsrv_stmt ))) sqlsrv_stmt;
+    sqlsrv_malloc_auto_ptr<char> param_buffer;
+    param_buffer = static_cast<char*>( sqlsrv_malloc( PHP_STREAM_BUFFER_SIZE ));
 
+    // we don't put all this initialization in a constructor since it would serve little purpose
+    // and would complicate the handling of the allocation/deallocation of param_buffer member.
+    // The param_buffer member would have to be freed within a destructor if it were allocated
+    // within the constructor, which would preclude the use of the sqlsrv_auto_ptr.  Also, the
+    // instance itself would have to use the placement new or override new since we must use
+    // emalloc rather than the default new.  And since this is the only place we allocate the
+    // statement, it's better to just keep it localized to here.
     stmt->ctx.handle_type = SQL_HANDLE_STMT;
 
     stmt->conn = conn;
     stmt->executed = false;
     stmt->prepared = false;
-    stmt->current_parameter = NULL;
-    stmt->current_parameter_read = 0;
+    stmt->current_stream = NULL;
+    stmt->current_stream_read = 0;
+    stmt->current_stream_encoding = SQLSRV_ENCODING_CHAR;
     stmt->params_z = NULL;
     stmt->params_ind_ptr = NULL;
     stmt->param_datetime_buffers = NULL;
-    stmt->param_output_strings = NULL;
+    stmt->param_strings = NULL;
+    stmt->param_streams = NULL;
     stmt->param_buffer = param_buffer;
     stmt->param_buffer_size = PHP_STREAM_BUFFER_SIZE;
     stmt->send_at_exec = true;
     stmt->conn_index = -1;
     stmt->fetch_fields = NULL;
     stmt->fetch_fields_count = 0;
+    stmt->scrollable = false;
+    stmt->scroll_is_dynamic = false;
+    stmt->has_rows = false;
+
     stmt->new_result_set();
 
     stmt->active_stream = NULL;
@@ -1188,29 +1590,17 @@ sqlsrv_stmt* allocate_stmt( __in sqlsrv_conn* conn, zval const* options_z, char 
             int zr = zend_hash_get_current_data( Z_ARRVAL_P( options_z ), (void**) &value_z );
             CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return NULL );
 
-            if( !stricmp( key, QUERY_TIMEOUT )) {
-                if( Z_TYPE_P( *value_z ) != IS_LONG ) {
-                    convert_to_string( *value_z );
-                    handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_OPTION_VALUE TSRMLS_CC, Z_STRVAL_PP( value_z ), key );
+            stmt_option* stmt_opt = validate_stmt_option( key, key_len );
+            // if the key didn't match, then return the error to the script
+            if( !stmt_opt ) {
+                handle_error( &stmt->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_OPTION_KEY TSRMLS_CC, key );
                     SQLFreeHandle( stmt->ctx.handle_type, stmt->ctx.handle ); 
                     return NULL;
                 }
-                r = SQLSetStmtAttr( stmt->ctx.handle, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>( Z_LVAL_P( *value_z )), SQL_IS_UINTEGER );
-                CHECK_SQL_ERROR( r, stmt, _FN_, NULL, SQLFreeHandle( stmt->ctx.handle_type, stmt->ctx.handle ); return NULL; );
-                char lock_timeout_sql[ 1024 ];
-                int written = sprintf_s( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", Z_LVAL_PP( value_z ) * 1000 );
-                if( written == -1 || written == sizeof( lock_timeout_sql )) {
-                    DIE( "sprintf_s failed.  Shouldn't ever fail." );
-                }
-                r = SQLExecDirect( stmt->ctx.handle, reinterpret_cast<SQLCHAR*>( lock_timeout_sql ), SQL_NTS );
-                CHECK_SQL_ERROR( r, stmt, _FN_, NULL, SQLFreeHandle( stmt->ctx.handle_type, stmt->ctx.handle ); return NULL; );
-            }
-            else if( key_len == ( sizeof( SEND_STREAMS_AT_EXEC )) && !stricmp( key, SEND_STREAMS_AT_EXEC )) {
-                stmt->send_at_exec = ( zend_is_true( *value_z )) ? true : false;
-            }
-            // if didn't match one of the standard options, then the key is an error
-            else {
-                handle_error( &stmt->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_OPTION_KEY TSRMLS_CC, key );
+            // perform the actions the statement option needs done
+            bool attr_set = (*stmt_opt->func)( stmt, stmt_opt, *value_z, _FN_ TSRMLS_CC );
+            // any errors should have been posted in the callback
+            if( !attr_set ) {
                 SQLFreeHandle( stmt->ctx.handle_type, stmt->ctx.handle );
                 return NULL;
             }
@@ -1228,7 +1618,8 @@ sqlsrv_stmt* allocate_stmt( __in sqlsrv_conn* conn, zval const* options_z, char 
 
 // mark parameters passed into sqlsrv_prepare and sqlsrv_query as reference parameters so that
 // they may be updated later in the script and subsequent sqlsrv_execute calls will use the
-// new values.
+// new values.  Marking them as references "pins" them to their memory location so that 
+// the buffer we give to ODBC can be relied on to be there.
 
 bool mark_params_by_reference( __inout zval** params_zz, char const* _FN_ TSRMLS_DC )
 {
@@ -1258,6 +1649,7 @@ bool mark_params_by_reference( __inout zval** params_zz, char const* _FN_ TSRMLS
          zend_hash_has_more_elements( params_ht ) == SUCCESS;
          zend_hash_move_forward( params_ht ), ++i ) {
 
+
         zr = zend_hash_get_current_data_ex( params_ht, reinterpret_cast<void**>( &param ), NULL );
         CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, zval_ptr_dtor( params_zz ); return false; );
 
@@ -1266,12 +1658,12 @@ bool mark_params_by_reference( __inout zval** params_zz, char const* _FN_ TSRMLS
             if( !PZVAL_IS_REF( *param ) && Z_REFCOUNT_P( *param ) > 1 ) {
                 // 10 should be sufficient for adding up to a 3 digit number to the message
                 int warning_len = strlen( PHP_WARNING_VAR_NOT_REFERENCE->native_message ) + 10;
-                emalloc_auto_ptr<char> warning;
-                warning = static_cast<char*>( emalloc( warning_len ));
+                sqlsrv_malloc_auto_ptr<char> warning;
+                warning = static_cast<char*>( sqlsrv_malloc( warning_len ));
                 snprintf( warning, warning_len, PHP_WARNING_VAR_NOT_REFERENCE->native_message, i );
                 php_error( E_WARNING, warning );
             }
-            Z_SET_ISREF_PP( param );   // mark it as a reference
+            Z_SET_ISREF_PP( param ); // mark it as a reference
         }
         // else mark [0] as a reference
         else {
@@ -1285,12 +1677,12 @@ bool mark_params_by_reference( __inout zval** params_zz, char const* _FN_ TSRMLS
             if( !PZVAL_IS_REF( *var ) && Z_REFCOUNT_P( *var ) > 1 ) {
                 // 10 should be sufficient for adding up to a 3 digit number to the message
                 int warning_len = strlen( PHP_WARNING_VAR_NOT_REFERENCE->native_message ) + 10;
-                emalloc_auto_ptr<char> warning;
-                warning = static_cast<char*>( emalloc( warning_len ));
+                sqlsrv_malloc_auto_ptr<char> warning;
+                warning = static_cast<char*>( sqlsrv_malloc( warning_len ));
                 snprintf( warning, warning_len, PHP_WARNING_VAR_NOT_REFERENCE->native_message, i );
                 php_error( E_WARNING, warning );
             }
-            Z_SET_ISREF_PP( var );
+            Z_SET_ISREF_PP( var ); // mark it as a reference
         }
     }
 
@@ -1314,6 +1706,43 @@ struct _platform_url* get_driver_info( void )
         default:
             DIE( "Unknown Windows processor architecture" );
             return NULL;
+    }
+}
+
+// some features require a server of a certain version or later
+// this function determines the version of the server we're connected to
+// and stores it in the connection.  Any errors are logged before return.
+// SQL_ERROR is returned when the server version is either undetermined
+// or is invalid (< 2000).
+
+SQLRETURN determine_server_version( sqlsrv_conn* conn, const char* _FN_ TSRMLS_DC )
+{
+    SQLSMALLINT info_len;
+    char p[ INFO_BUFFER_LEN ];
+    SQLRETURN r = SQLGetInfo( conn->ctx.handle, SQL_DBMS_VER, p, INFO_BUFFER_LEN, &info_len );
+    CHECK_SQL_ERROR( r, conn, _FN_, NULL, return r; );
+    CHECK_SQL_WARNING( r, conn, _FN_, NULL );
+
+    char version_major_str[ 3 ];
+    SERVER_VERSION version_major;
+    memcpy( version_major_str, p, 2 );
+    version_major_str[ 2 ] = '\0';
+    version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
+
+    if( errno == ERANGE || errno == EINVAL ) {
+        conn->server_version = SERVER_VERSION_UNKNOWN;
+        handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_SERVER_VERSION TSRMLS_CC, version_major );
+        return SQL_ERROR;
+    }
+
+    if( version_major >= SERVER_VERSION_2000 ) {
+        conn->server_version = version_major;
+        return SQL_SUCCESS;
+    }
+    else {
+        conn->server_version = SERVER_VERSION_UNKNOWN;
+        handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_SERVER_VERSION TSRMLS_CC, version_major );
+        return SQL_ERROR;
     }
 }
 

@@ -3,12 +3,12 @@
 //
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //
-// Contents: The initialization routines for the SQL Server Driver for PHP 1.0
+// Contents: initialization routines for the extension
 // 
 // Comments:
 //
 // License: This software is released under the Microsoft Public License.  A copy of the license agreement 
-//          may be found online at http://www.codeplex.com/SQL2K5PHP/license.
+//          may be found online at http://www.codeplex.com/SQLSRVPHP/license.
 //----------------------------------------------------------------------------------------------------------------------------------
 
 #include "php_sqlsrv.h"
@@ -105,11 +105,19 @@ ZEND_BEGIN_ARG_INFO_EX( sqlsrv_get_field_arginfo, 0, 0, 2 )
     ZEND_ARG_INFO( 0, "type" )
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO( sqlsrv_has_rows_arginfo, 0 )
+    ZEND_ARG_INFO( 0, "statement resource" )
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO( sqlsrv_next_result_arginfo, 0 )
     ZEND_ARG_INFO( 0, "statement resource" )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_num_fields_arginfo, 0 )
+    ZEND_ARG_INFO( 0, "statement resource" )
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO( sqlsrv_num_rows_arginfo, 0 )
     ZEND_ARG_INFO( 0, "statement resource" )
 ZEND_END_ARG_INFO()
 
@@ -135,11 +143,11 @@ ZEND_BEGIN_ARG_INFO( sqlsrv_rows_affected_arginfo, 0 )
     ZEND_ARG_INFO( 0, "statement resource" )
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO( sqlsrv_server_info_arginfo, 0 )
+ZEND_BEGIN_ARG_INFO( sqlsrv_send_stream_data_arginfo, 0 )
     ZEND_ARG_INFO( 0, "statement resource" )
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO( sqlsrv_send_stream_data_arginfo, 0 )
+ZEND_BEGIN_ARG_INFO( sqlsrv_server_info_arginfo, 0 )
     ZEND_ARG_INFO( 0, "statement resource" )
 ZEND_END_ARG_INFO()
 
@@ -174,8 +182,10 @@ zend_function_entry sqlsrv_functions[] = {
     PHP_FE( sqlsrv_free_stmt, sqlsrv_close_arginfo )
     PHP_FE( sqlsrv_get_config, sqlsrv_get_config_arginfo )
     PHP_FE( sqlsrv_get_field, sqlsrv_get_field_arginfo )
+    PHP_FE( sqlsrv_has_rows, sqlsrv_has_rows_arginfo )
     PHP_FE( sqlsrv_next_result, sqlsrv_next_result_arginfo )
     PHP_FE( sqlsrv_num_fields, sqlsrv_num_fields_arginfo )
+    PHP_FE( sqlsrv_num_rows, sqlsrv_num_rows_arginfo )
     PHP_FE( sqlsrv_prepare, sqlsrv_prepare_arginfo )
     PHP_FE( sqlsrv_query, sqlsrv_query_arginfo )
     PHP_FE( sqlsrv_rollback, sqlsrv_rollback_arginfo )
@@ -192,7 +202,7 @@ zend_function_entry sqlsrv_functions[] = {
     PHP_FE( SQLSRV_SQLTYPE_NVARCHAR, sqlsrv_sqltype_size_arginfo )
     PHP_FE( SQLSRV_SQLTYPE_VARBINARY, sqlsrv_sqltype_size_arginfo )
     PHP_FE( SQLSRV_SQLTYPE_VARCHAR, sqlsrv_sqltype_size_arginfo )
-    {NULL, NULL, NULL}
+    {NULL, NULL, NULL}   // end of the table
 };
 
 // module global variables (initialized in MINIT and freed in MSHUTDOWN)
@@ -343,6 +353,22 @@ PHP_MINIT_FUNCTION(sqlsrv)
     REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_UDT",              SQL_SS_UDT, CONST_PERSISTENT | CONST_CS );
     REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_UNIQUEIDENTIFIER", SQL_GUID, CONST_PERSISTENT | CONST_CS );
     REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_XML",              SQL_SS_XML, CONST_PERSISTENT | CONST_CS );
+    constant_type.typeinfo.type = SQL_TYPE_DATE;
+    constant_type.typeinfo.size = 10;
+    constant_type.typeinfo.scale = 0;
+    REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_DATE",             constant_type.value, CONST_PERSISTENT | CONST_CS );
+    constant_type.typeinfo.type = SQL_SS_TIME2;
+    constant_type.typeinfo.size = 16;
+    constant_type.typeinfo.scale = 7;
+    REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_TIME",             constant_type.value, CONST_PERSISTENT | CONST_CS );
+    constant_type.typeinfo.type = SQL_SS_TIMESTAMPOFFSET;
+    constant_type.typeinfo.size = 34;
+    constant_type.typeinfo.scale = 7;
+    REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_DATETIMEOFFSET",   constant_type.value, CONST_PERSISTENT | CONST_CS );
+    constant_type.typeinfo.type = SQL_TYPE_TIMESTAMP;
+    constant_type.typeinfo.size = 27;
+    constant_type.typeinfo.scale = 7;
+    REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_DATETIME2",        constant_type.value, CONST_PERSISTENT | CONST_CS );
 
     REGISTER_LONG_CONSTANT( "SQLSRV_PARAM_IN",        SQL_PARAM_INPUT, CONST_PERSISTENT | CONST_CS );
     REGISTER_LONG_CONSTANT( "SQLSRV_PARAM_OUT",       SQL_PARAM_OUTPUT, CONST_PERSISTENT | CONST_CS );
@@ -353,6 +379,18 @@ PHP_MINIT_FUNCTION(sqlsrv)
     REGISTER_LONG_CONSTANT( "SQLSRV_TXN_REPEATABLE_READ",  SQL_TXN_REPEATABLE_READ, CONST_PERSISTENT | CONST_CS );
     REGISTER_LONG_CONSTANT( "SQLSRV_TXN_SERIALIZABLE",     SQL_TXN_SERIALIZABLE, CONST_PERSISTENT | CONST_CS );
     REGISTER_LONG_CONSTANT( "SQLSRV_TXN_SNAPSHOT",         SQL_TXN_SS_SNAPSHOT, CONST_PERSISTENT | CONST_CS );
+
+    REGISTER_LONG_CONSTANT( "SQLSRV_SCROLL_NEXT",     SQL_FETCH_NEXT, CONST_PERSISTENT | CONST_CS );
+    REGISTER_LONG_CONSTANT( "SQLSRV_SCROLL_PRIOR",    SQL_FETCH_PRIOR, CONST_PERSISTENT | CONST_CS );
+    REGISTER_LONG_CONSTANT( "SQLSRV_SCROLL_FIRST",    SQL_FETCH_FIRST, CONST_PERSISTENT | CONST_CS );
+    REGISTER_LONG_CONSTANT( "SQLSRV_SCROLL_LAST",     SQL_FETCH_LAST, CONST_PERSISTENT | CONST_CS );
+    REGISTER_LONG_CONSTANT( "SQLSRV_SCROLL_ABSOLUTE", SQL_FETCH_ABSOLUTE, CONST_PERSISTENT | CONST_CS );
+    REGISTER_LONG_CONSTANT( "SQLSRV_SCROLL_RELATIVE", SQL_FETCH_RELATIVE, CONST_PERSISTENT | CONST_CS );
+
+    REGISTER_STRING_CONSTANT( "SQLSRV_CURSOR_FORWARD", "forward", CONST_PERSISTENT | CONST_CS );
+    REGISTER_STRING_CONSTANT( "SQLSRV_CURSOR_STATIC",  "static", CONST_PERSISTENT | CONST_CS );
+    REGISTER_STRING_CONSTANT( "SQLSRV_CURSOR_DYNAMIC", "dynamic", CONST_PERSISTENT | CONST_CS );
+    REGISTER_STRING_CONSTANT( "SQLSRV_CURSOR_KEYSET",  "keyset", CONST_PERSISTENT | CONST_CS );
 
     if( php_register_url_stream_wrapper( SQLSRV_STREAM_WRAPPER, &g_sqlsrv_stream_wrapper TSRMLS_CC ) == FAILURE ) {
         LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT_FUNCTION: stream registration failed" );
@@ -371,9 +409,7 @@ PHP_MINIT_FUNCTION(sqlsrv)
         return FAILURE;
     }
 
-    sqlsrv_henv henv_ctx;
-    henv_ctx.ctx.handle = g_henv_ncp;
-    henv_ctx.ctx.handle_type = SQL_HANDLE_ENV;
+    sqlsrv_henv henv_ctx( g_henv_cp );
 
     // set to ODBC 3
     r = SQLSetEnvAttr( g_henv_ncp, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>( SQL_OV_ODBC3 ), SQL_IS_INTEGER );
@@ -448,8 +484,6 @@ PHP_MSHUTDOWN_FUNCTION(sqlsrv)
 {
     SQLSRV_UNUSED( type );
 
-    LOG( SEV_NOTICE, LOG_INIT, "sqlsrv: entering mshutdown" );
-    
     UNREGISTER_INI_ENTRIES();
 
     if( g_henv_ncp != SQL_NULL_HANDLE ) {
@@ -491,13 +525,11 @@ PHP_RINIT_FUNCTION(sqlsrv)
     SQLSRV_G( log_subsystems ) = 0;
     SQLSRV_G( log_severity ) = SEV_ERROR;
     SQLSRV_G( warnings_return_as_errors ) = true;
-    SQLSRV_G( henv_context ) = static_cast<sqlsrv_henv*>( emalloc( sizeof( sqlsrv_henv )));
-    SQLSRV_G( henv_context )->ctx.handle = g_henv_cp;
-    SQLSRV_G( henv_context )->ctx.handle_type = SQL_HANDLE_ENV;
+    SQLSRV_G( henv_context ) = new ( sqlsrv_malloc( sizeof( sqlsrv_henv ))) sqlsrv_henv( g_henv_cp );
     ALLOC_INIT_ZVAL( SQLSRV_G( errors ));
-    Z_SET_ISREF_PP( &SQLSRV_G( errors ) );
+    Z_SET_ISREF_P( SQLSRV_G( errors ));
     ALLOC_INIT_ZVAL( SQLSRV_G( warnings ));
-    Z_SET_ISREF_PP( &SQLSRV_G( warnings ) );
+    Z_SET_ISREF_P( SQLSRV_G( warnings ));
 
     // read INI settings
     SQLSRV_G( warnings_return_as_errors ) = INI_BOOL( INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS );
@@ -561,19 +593,38 @@ PHP_RINIT_FUNCTION(sqlsrv)
     to_ignore.native_message = NULL;
     to_ignore.native_code = -1;
     to_ignore.format = false;
-    zr = zend_hash_next_index_insert( SQLSRV_G( warnings_to_ignore ), &to_ignore, sizeof( sqlsrv_error ), NULL );
+    zr = zend_hash_next_index_insert( SQLSRV_G( warnings_to_ignore ), &to_ignore, sizeof( sqlsrv_error ), NULL /*no pointer to the new value necessasry*/ );
     if( zr == FAILURE ) {
         LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
         return FAILURE;
     }
-    // packet size warning
-    to_ignore.sqlstate = "01S02";
-    to_ignore.native_message = NULL;
-    to_ignore.native_code = 0;
-    to_ignore.format = false;
-    zr = zend_hash_next_index_insert( SQLSRV_G( warnings_to_ignore ), &to_ignore, sizeof( sqlsrv_error ), NULL );
+
+    // supported encodings
+    ALLOC_HASHTABLE( SQLSRV_G( encodings ));
+    zr = zend_hash_init( SQLSRV_G( encodings ), 5, NULL /*use standard hash function*/, NULL /*no resource destructor*/, 0 /*not persistent*/ );
     if( zr == FAILURE ) {
-        LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
+        LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: encodings hash table failure" );
+        return FAILURE;
+    }
+
+    sqlsrv_encoding sql_enc_char( "char", SQLSRV_ENCODING_CHAR );
+    zr = zend_hash_next_index_insert( SQLSRV_G( encodings ), &sql_enc_char, sizeof( sqlsrv_encoding ), NULL /*no pointer to the new value necessasry*/ );
+    if( zr == FAILURE ) {
+        LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: encodings hash table failure" );
+        return FAILURE;
+    }
+    
+    sqlsrv_encoding sql_enc_bin( "binary", SQLSRV_ENCODING_BINARY, true );
+    zr = zend_hash_next_index_insert( SQLSRV_G( encodings ), &sql_enc_bin, sizeof( sqlsrv_encoding ), NULL  /*no pointer to the new value necessasry*/ );
+    if( zr == FAILURE ) {
+        LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: encodings hash table failure" );
+        return FAILURE;
+    }
+
+    sqlsrv_encoding sql_enc_utf8( "utf-8", CP_UTF8 );
+    zr = zend_hash_next_index_insert( SQLSRV_G( encodings ), &sql_enc_utf8, sizeof( sqlsrv_encoding ), NULL  /*no pointer to the new value necessasry*/ );
+    if( zr == FAILURE ) {
+        LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: encodings hash table failure" );
         return FAILURE;
     }
  
@@ -601,7 +652,7 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
         zend_hash_destroy( SQLSRV_G( warnings_to_ignore ));
         FREE_HASHTABLE( SQLSRV_G( warnings_to_ignore ));
     }
-    efree( SQLSRV_G( henv_context ));
+    sqlsrv_free( SQLSRV_G( henv_context ));
 
     // verify memory at the end of the request (in debug mode only)
     full_mem_check(MEMCHECK_SILENT);

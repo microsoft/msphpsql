@@ -3,12 +3,12 @@
 //
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //
-// Contents: Utility functions for the SQL Server Driver for PHP 1.0
+// Contents: Utility functions used by both connection or statement functions
 // 
 // Comments: Mostly error handling and some type handling
 //
 // License: This software is released under the Microsoft Public License.  A copy of the license agreement 
-//          may be found online at http://www.codeplex.com/SQL2K5PHP/license.
+//          may be found online at http://www.codeplex.com/SQLSRVPHP/license.
 //----------------------------------------------------------------------------------------------------------------------------------
 
 #include "php_sqlsrv.h"
@@ -32,8 +32,12 @@ const char SSPWARN[] = "01SSP";
 const int LOG_MSG_SIZE = 2048;
 char log_msg[ LOG_MSG_SIZE ];
 
+// buffer use to hold a formatted error message returned by get_last_error_message
+const int ERR_MSG_SIZE = 2048;
+char err_msg[ ERR_MSG_SIZE ];
+
 // internal error that says that FormatMessage failed
-const char* internal_format_error = "An internal error occurred.  FormatMessage failed writing an error message.";
+const char internal_format_error[] = "An internal error occurred.  FormatMessage failed writing an error message.";
 
 // *** internal functions ***
 bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chain, zval** ignored_chain, int log_severity, int log_subsystem, 
@@ -80,7 +84,7 @@ sqlsrv_error SQLSRV_ERROR_STATEMENT_NOT_EXECUTED[] = {
     { IMSSP, "The statement must be executed before results can be retrieved.", -11, false }
 };
 sqlsrv_error SQLSRV_ERROR_ALREADY_IN_TXN[] = {
-    { IMSSP, "Cannot begin a transaction until the current transaction has been completed by calling either sqlsrv_commit or sqlsrv_rollback.", -12, false }
+   { IMSSP, "Cannot begin a transaction until the current transaction has been completed by calling either sqlsrv_commit or sqlsrv_rollback.", -12, false }
 };
 sqlsrv_error SQLSRV_ERROR_NOT_IN_TXN[] = {
     { IMSSP, "A transaction must be started by calling sqlsrv_begin_transaction before calling sqlsrv_commit or sqlsrv_rollback.", -13, false }
@@ -110,7 +114,7 @@ sqlsrv_error SQLSRV_ERROR_SERVER_INFO[] = {
     { IMSSP, "An error occurred while retrieving the server information.", -21, false }
 };
 sqlsrv_error SQLSRV_ERROR_FETCH_PAST_END[] = {
-    { IMSSP, "There are no more rows in the active result set.", -22, false }
+    { IMSSP, "There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.", -22, false }
 };
 sqlsrv_error SQLSRV_ERROR_STATEMENT_NOT_PREPARED[] = {
     { IMSSP, "A statement must be prepared with sqlsrv_prepare before calling sqlsrv_execute.", -23, false }
@@ -165,9 +169,53 @@ sqlsrv_error SQLSRV_ERROR_AUTO_COMMIT_STILL_OFF[] = {
 sqlsrv_error SQLSRV_ERROR_REGISTER_RESOURCE[] = {
     { IMSSP, "Registering the %1!s! resource failed.", -39, true }
 };
+sqlsrv_error SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE[] = {
+    { IMSSP, "An error occurred translating string for input param %1!d! to UCS-2: %2!s!", -40, true }
+};
+sqlsrv_error SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE[] = {
+    { IMSSP, "An error occurred translating string for an output param to UTF-8: %1!s!", -41, true }
+};
+sqlsrv_error SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE[] = {
+    { IMSSP, "An error occurred translating string for a field to UTF-8: %1!s!", -42, true }
+};
+sqlsrv_error SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE[] = {
+    { IMSSP, "An error occurred translating a PHP stream from UTF-8 to UTF-16: %1!s!", -43, true }
+};
+sqlsrv_error SQLSRV_ERROR_INVALID_CONN_ENCODING[] = {
+    { IMSSP, "An invalid '%1!s!' encoding was specified in the CharacterSet connection option", -44, true }
+};
+sqlsrv_error SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE[] = {
+    { IMSSP, "An error occurred translating the query string to UTF-16: %1!s!", -46, true }
+};
+sqlsrv_error SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE[] = {
+    { IMSSP, "An error occurred translating the connection string to UTF-16: %1!s!", -47, true }
+};
+sqlsrv_error SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING[] = {
+    { IMSSP, "The encoding '%1!s!' is not a supported encoding for the CharacterSet connection option.", -48, true }
+};
 sqlsrv_error SQLSRV_ERROR_DRIVER_NOT_INSTALLED[] = {
-    { IMSSP, "The SQL Server Driver for PHP requires the SQL Server 2005 Native Client ODBC Driver to communicate with SQL Server.  "
-             "That ODBC Driver is not currently installed.  Accessing the following URL will download the SQL Server 2005 Native Client ODBC driver for %1!s!: %2!s!", -40, true }
+    { IMSSP, "The SQL Server Driver for PHP requires the SQL Server 2008 Native Client ODBC Driver (SP1 or later) to communicate with SQL Server.  "
+             "That ODBC Driver is not currently installed.  Accessing the following URL will download the SQL Server 2008 Native Client ODBC driver for %1!s!: %2!s!", -49, true }
+};
+sqlsrv_error SQLSRV_ERROR_MARS_OFF[] = {
+    { IMSSP, "The connection cannot process this operation because there is a statement with pending results.  "
+             "To make the connection available for other queries, either fetch all results or cancel or free the statement.  "
+             "For more information, see the product documentation about the MultipleActiveResultSets connection option.", -49, false }
+};
+sqlsrv_error SQLSRV_ERROR_STATEMENT_NOT_SCROLLABLE[] = {
+    { IMSSP, "This function only works with statements that have static or keyset scrollable cursors.", -50, false }
+};
+sqlsrv_error SQLSRV_ERROR_STATEMENT_SCROLLABLE[] = {
+    { IMSSP, "This function only works with statements that are not scrollable.", -51, false }
+};
+sqlsrv_error SQLSRV_ERROR_INVALID_FETCH_STYLE[] = {
+    { IMSSP, "The scroll type passed to sqlsrv_fetch, sqlsrv_fetch_array, or sqlsrv_fetch_object was not valid.  Please use one of the SQLSRV_SCROLL constants.", -53, false }
+};
+sqlsrv_error SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE[] = {
+    { IMSSP, "The value passed for the 'Scrollable' statement option is invalid.  Please use 'static', 'dynamic', 'keyset', or 'forward'.", -54, false }
+};
+sqlsrv_error SQLSRV_ERROR_INVALID_SERVER_VERSION[] = {
+    { IMSSP, "Attempted to connect to a server of version %1!d!.  Only connections to SQL Server 2000 (8) or later are supported.", -55, true }
 };
 
 
@@ -180,8 +228,10 @@ sqlsrv_error SQLSRV_WARNING_FIELD_NAME_EMPTY[] = {
 // This warning is special since it's reported by php_error rather than sqlsrv_errors.  That's also why it has 
 // a printf format specification instead of a FormatMessage format specification.
 sqlsrv_error PHP_WARNING_VAR_NOT_REFERENCE[] = {
-    { SSPWARN, "Variable parameter %d not passed by reference (prefaced with an &).  Variable parameters passed to sqlsrv_prepare should be passed by reference, not by value.  For more information, see sqlsrv_prepare in the API Reference section of the product documentation.", -101, true }
+    { SSPWARN, "Variable parameter %d not passed by reference (prefaced with an &).  Variable parameters passed to sqlsrv_prepare should be passed by reference, not by value.  "
+               "For more information, see sqlsrv_prepare in the API Reference section of the product documentation.", -101, true }
 };
+
 
 // sqlsrv_errors( [int $errorsAndOrWarnings] )
 //
@@ -497,6 +547,58 @@ bool check_sqlsrv_warnings( bool condition, sqlsrv_context const* ctx, int log_s
     return true;   
 }
 
+// convert from the default encoding specified by the "CharacterSet"
+// connection option to UTF-16.  mbcs_len and utf16_len are sizes in
+// bytes.  The return is the number of UTF-16 characters in the string
+// returned in utf16_out_string.  An empty string passed in will result as
+// a failure since MBTWC returns 0 for both an empty string and failure
+// to convert.
+unsigned int convert_string_from_default_encoding( unsigned int php_encoding, char const* mbcs_in_string,
+                                                   unsigned int mbcs_len, __out_bcount(utf16_len) wchar_t* utf16_out_string,
+                                                   unsigned int utf16_len )
+{
+    unsigned int win_encoding = CP_ACP;
+    switch( php_encoding ) {
+        case SQLSRV_ENCODING_CHAR:
+            win_encoding = CP_ACP;
+            break;
+        // this shouldn't ever be set
+        case SQLSRV_ENCODING_BINARY:
+            DIE( "Invalid encoding" );
+            break;
+        default:
+            win_encoding = php_encoding;
+            break;
+    }
+    unsigned int required_len = MultiByteToWideChar( win_encoding, MB_ERR_INVALID_CHARS, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
+    if( required_len == 0 ) {
+        return 0;
+    }
+    utf16_out_string[ required_len ] = '\0';
+
+    return required_len;
+}
+
+// thin wrapper around convert_string_from_default_encoding that handles
+// allocation of the destination string.  An empty string passed in returns
+// failure since it's a failure case for convert_string_from_default_encoding.
+wchar_t* utf16_string_from_mbcs_string( unsigned int php_encoding, const char* mbcs_string, unsigned int mbcs_len, unsigned int* utf16_len )
+{
+    *utf16_len = (mbcs_len + 1) * sizeof( wchar_t );
+    wchar_t* utf16_string = reinterpret_cast<wchar_t*>( sqlsrv_malloc( *utf16_len ));
+    *utf16_len = convert_string_from_default_encoding( php_encoding, mbcs_string, mbcs_len, 
+                                                      utf16_string, *utf16_len );
+    if( *utf16_len == 0 ) {
+        // we preserve the error and reset it because sqlsrv_free resets the last error
+        DWORD last_error = GetLastError();
+        sqlsrv_free( utf16_string );
+        SetLastError( last_error );
+        return NULL;
+    }
+
+    return utf16_string;
+}
+
 // wrapper for errors around the common handle_errors_and_warnings
 bool handle_error( sqlsrv_context const* ctx, int log_subsystem, const char* _FN_, sqlsrv_error const* ssphp TSRMLS_DC, ... )
 {
@@ -555,6 +657,27 @@ void write_to_log( unsigned int severity, unsigned int subsystem TSRMLS_DC, cons
 
     va_end( args );
 }
+
+// return an error message for GetLastError using FormatMessage.
+// this function returns the msg pointer so that it may be used within
+// another function call such as handle_error
+const char* get_last_error_message( DWORD last_error )
+{
+    if( last_error == 0 ) {
+        last_error = GetLastError();
+    }
+
+    DWORD r = FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM, NULL, last_error, MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ),
+                             err_msg, sizeof( err_msg ), NULL );
+
+    if( r == 0 ) {
+        SQLSRV_STATIC_ASSERT( sizeof( internal_format_error ) < sizeof( err_msg ));
+        std::copy( internal_format_error, internal_format_error + sizeof( internal_format_error ), err_msg );
+    }
+
+    return err_msg;
+}
+
 
 // *** internal function implementations *** 
 
@@ -621,12 +744,12 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
     // the break at the end of the loop assures that we don't get stuck here.
     while( ssphp ) {
 
-        emalloc_auto_ptr<sqlsrv_error> ssphp_new;
-        emalloc_auto_ptr<const char> ssphp_new_message;
+        sqlsrv_malloc_auto_ptr<sqlsrv_error> ssphp_new;
+        sqlsrv_malloc_auto_ptr<const char> ssphp_new_message;
 
         if( ssphp->format ) {
-            ssphp_new = static_cast<sqlsrv_error*>( emalloc( sizeof( sqlsrv_error )));
-            ssphp_new->native_message = ssphp_new_message = static_cast<char const*>( emalloc( SQL_MAX_MESSAGE_LENGTH ));
+            ssphp_new = static_cast<sqlsrv_error*>( sqlsrv_malloc( sizeof( sqlsrv_error )));
+            ssphp_new->native_message = ssphp_new_message = static_cast<char const*>( sqlsrv_malloc( SQL_MAX_MESSAGE_LENGTH ));
             ssphp_new->sqlstate = ssphp->sqlstate;
             ssphp_new->native_code = ssphp->native_code;
             DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, const_cast<LPSTR>( ssphp->native_message ), 0, 0, 
