@@ -43,22 +43,15 @@ const int INFO_BUFFER_LEN = 256;
 // number of segments in a version resource
 const int VERSION_SUBVERSIONS = 4;
 
-// url table for driver links based on processor
-struct _platform_url {
-    const char* platform;
-    const char* url;
-} driver_info[] = {
-    { "x86", "http://go.microsoft.com/fwlink/?LinkId=137108" },
-    { "x64", "http://go.microsoft.com/fwlink/?LinkId=137109" },
-    { "ia64", "http://go.microsoft.com/fwlink/?LinkId=137110" }
-};
+// processor architectures
+const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
 // *** internal function prototypes ***
 sqlsrv_stmt* allocate_stmt( sqlsrv_conn* conn, zval const* options_z, char const* _FN_ TSRMLS_DC );
 SQLRETURN build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* server, zval const* options, 
                                                      __inout std::string& connection_string TSRMLS_DC );
 SQLRETURN determine_server_version( sqlsrv_conn* conn, const char* _FN_ TSRMLS_DC );
-struct _platform_url* get_driver_info( void );
+const char* get_processor_arch( void );
 bool mark_params_by_reference( zval** params_zz, char const* _FN_ TSRMLS_DC );
 void sqlsrv_conn_close_stmts( sqlsrv_conn* conn TSRMLS_DC );
 
@@ -201,20 +194,20 @@ PHP_FUNCTION( sqlsrv_connect )
     catch( std::bad_alloc& ex ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
         conn_str.clear();
-        LOG( SEV_ERROR, LOG_CONN, "C++ exception returned: %s", ex.what() );
+        LOG( SEV_ERROR, LOG_CONN, "C++ exception returned: %1!s!", ex.what() );
         LOG( SEV_ERROR, LOG_CONN, "C++ memory allocation failure building the connection string." );
         DIE( "C++ memory allocation failure building the connection string." );
     }
     catch( std::out_of_range const& ex ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
         conn_str.clear();
-        LOG( SEV_ERROR, LOG_CONN, "C++ exception returned: %s", ex.what() );
+        LOG( SEV_ERROR, LOG_CONN, "C++ exception returned: %1!s!", ex.what() );
         RETURN_FALSE;
     }
     catch( std::length_error const& ex ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
         conn_str.clear();
-        LOG( SEV_ERROR, LOG_CONN, "C++ exception returned: %s", ex.what() );
+        LOG( SEV_ERROR, LOG_CONN, "C++ exception returned: %1!s!", ex.what() );
         SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle );
         conn->ctx.handle = SQL_NULL_HANDLE;
         RETURN_FALSE;
@@ -246,8 +239,8 @@ PHP_FUNCTION( sqlsrv_connect )
         SQLRETURN r = SQLGetDiagField( SQL_HANDLE_DBC, conn->ctx.handle, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
         // if it's a IM002, meaning that the driver is not installed
         if( SQL_SUCCEEDED( r ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && state[4] == '2' ) {
-            struct _platform_url* info = get_driver_info();
-            handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_DRIVER_NOT_INSTALLED TSRMLS_CC, info->platform, info->url );
+            const char* arch = get_processor_arch();
+            handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_DRIVER_NOT_INSTALLED TSRMLS_CC, arch );
             SQLFreeHandle( conn->ctx.handle_type, conn->ctx.handle );
             conn->ctx.handle = SQL_NULL_HANDLE;
             RETURN_FALSE;
@@ -461,7 +454,7 @@ PHP_FUNCTION( sqlsrv_close )
     // removal fails, so we just log it and move on.
     int zr = zend_hash_index_del( &EG( regular_list ), Z_RESVAL_P( conn_r ));
     if( zr == FAILURE ) {
-        LOG( SEV_ERROR, LOG_CONN, "Failed to remove connection resource %d", Z_RESVAL_P( conn_r ));
+        LOG( SEV_ERROR, LOG_CONN, "Failed to remove connection resource %1!d!", Z_RESVAL_P( conn_r ));
     }
     ZVAL_NULL( conn_r );
 
@@ -1689,20 +1682,21 @@ bool mark_params_by_reference( __inout zval** params_zz, char const* _FN_ TSRMLS
     return true;
 }
 
-struct _platform_url* get_driver_info( void )
+const char* get_processor_arch( void )
 {
     SYSTEM_INFO sys_info;
-
-    GetSystemInfo( &sys_info );
-
+    GetSystemInfo( &sys_info);
     switch( sys_info.wProcessorArchitecture ) {
 
         case PROCESSOR_ARCHITECTURE_INTEL:
-            return &driver_info[0];
+           return PROCESSOR_ARCH[0];
+
         case PROCESSOR_ARCHITECTURE_AMD64:
-            return &driver_info[1];
+            return PROCESSOR_ARCH[1];
+
         case PROCESSOR_ARCHITECTURE_IA64:
-            return &driver_info[2];
+            return PROCESSOR_ARCH[2];
+
         default:
             DIE( "Unknown Windows processor architecture" );
             return NULL;
@@ -1729,21 +1723,16 @@ SQLRETURN determine_server_version( sqlsrv_conn* conn, const char* _FN_ TSRMLS_D
     version_major_str[ 2 ] = '\0';
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
 
-    if( errno == ERANGE || errno == EINVAL ) {
+    if( version_major == 0 || errno == ERANGE || errno == EINVAL ) {
         conn->server_version = SERVER_VERSION_UNKNOWN;
-        handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_SERVER_VERSION TSRMLS_CC, version_major );
+        handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_UNKNOWN_SERVER_VERSION TSRMLS_CC );
         return SQL_ERROR;
     }
 
-    if( version_major >= SERVER_VERSION_2000 ) {
-        conn->server_version = version_major;
-        return SQL_SUCCESS;
-    }
-    else {
-        conn->server_version = SERVER_VERSION_UNKNOWN;
-        handle_error( &conn->ctx, LOG_CONN, _FN_, SQLSRV_ERROR_INVALID_SERVER_VERSION TSRMLS_CC, version_major );
-        return SQL_ERROR;
-    }
+    // SNAC won't connect to versions older than SQL Server 2000, so we know that the version is at least
+    // that high
+    conn->server_version = version_major;
+    return SQL_SUCCESS;
 }
 
 }   // namespace

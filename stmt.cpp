@@ -115,7 +115,7 @@ bool calc_string_size( sqlsrv_stmt const* s, SQLUSMALLINT field_index, SQLUINTEG
 bool check_for_next_stream_parameter( sqlsrv_stmt* stmt, zval* return_value, const char* _FN_ TSRMLS_DC );
 void close_active_stream( sqlsrv_stmt* s TSRMLS_DC );
 bool convert_input_param_to_utf16( zval* input_param_z, zval* convert_param_z );
-bool convert_string_from_utf16( sqlsrv_phptype sqlsrv_phptype, char** string, SQLINTEGER& len );
+bool convert_string_from_utf16( unsigned int encoding, char** string, SQLINTEGER& len );
 SQLSMALLINT determine_c_type( int php_type, int encoding );
 bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, SQLUINTEGER* column_size, SQLSMALLINT* decimal_digits );
 bool determine_param_defaults( sqlsrv_stmt const* stmt, const char* _FN_, zval const* param_z, int param_num, zend_uchar& php_type, int& direction, 
@@ -1242,7 +1242,7 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
             SQLUINTEGER column_size = 0;
             SQLSMALLINT decimal_digits = 0;
             SQLPOINTER buffer = NULL;
-            SQLUINTEGER buffer_len = 0;
+            SQLLEN buffer_len = 0;
             sqlsrv_sqltype sql_type;
             sqlsrv_phptype sqlsrv_phptype;
             sql_type.typeinfo.type = SQL_BINARY;
@@ -1302,6 +1302,7 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
                 case IS_STRING:
                     buffer = Z_STRVAL_PP( &param_z );
                     buffer_len = Z_STRLEN_PP( &param_z );
+                    stmt->params_ind_ptr[ i-1 ] = buffer_len;
                     if( direction == SQL_PARAM_INPUT && sqlsrv_phptype.typeinfo.encoding == CP_UTF8 ) {
 
                         zval_auto_ptr wbuffer_z;
@@ -1317,68 +1318,96 @@ bool sqlsrv_stmt_common_execute( sqlsrv_stmt* stmt, const SQLCHAR* sql_string, i
                         // memory added here is released upon function exit
                         add_next_index_zval( wbuffer_allocs, wbuffer_z );
                         wbuffer_z.transferred();
+                        stmt->params_ind_ptr[ i-1 ] = buffer_len;
                     }
-                    // if the output params zval in the statement isn't initialized, do so
-                    if( direction != SQL_PARAM_INPUT && stmt->param_strings == NULL ) {
-                        ALLOC_INIT_ZVAL( stmt->param_strings );
-                        int zr = array_init( stmt->param_strings );
-                        CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return false );
-                    }
-                    if( direction == SQL_PARAM_OUTPUT ) {
-                        // if the current buffer size is smaller than the necessary size, resize the buffer and set the zval to use it.
-                        if( buffer_len < column_size ) {
-                        buffer = static_cast<char*>( sqlsrv_realloc( buffer, column_size + 1 ));
-                            buffer_len = column_size + 1;
-                            ZVAL_STRINGL( param_z, reinterpret_cast<char*>( buffer ), buffer_len, 0 );
+                    // if it is an output or input/output string parameters
+                    if( direction != SQL_PARAM_INPUT  ) {
+
+                        // lazy allocate the array that holds the output string parameters.  These are held so that their lengths
+                        // may be adjusted after output strings are fully retrieved.
+                        if( stmt->param_strings == NULL ) {
+                            ALLOC_INIT_ZVAL( stmt->param_strings );
+                            int zr = array_init( stmt->param_strings );
+                            CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return false );
                         }
-                        // save the parameter to be adjusted and/or converted after the results are processed
-                        sqlsrv_output_string output_string( param_z, sqlsrv_phptype.typeinfo.encoding, i - 1 );
-                        HashTable* strings_ht = Z_ARRVAL_P( stmt->param_strings );
-                        int next_index = zend_hash_next_free_element( strings_ht );
-                        int zr = zend_hash_index_update( strings_ht, next_index, &output_string, sizeof( output_string ), NULL );
-                        CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return false );
-                        zval_add_ref( &param_z );   // we have a reference to the param
-                    }
-                    if( direction == SQL_PARAM_INPUT_OUTPUT ) {
 
-                        buffer = Z_STRVAL_PP( &param_z );
-                        buffer_len = Z_STRLEN_PP( &param_z );
-
-                        if( sqlsrv_phptype.typeinfo.encoding == CP_UTF8 ) {
+                        // if it's a UTF-8 input output parameter (signified by the C type being SQL_C_WCHAR)
+                        // or if the PHP type is a binary encoded string with a N(VAR)CHAR/NTEXTSQL type,
+                        // convert it to wchar first
+                        if( direction == SQL_PARAM_INPUT_OUTPUT && 
+                            (sql_c_type == SQL_C_WCHAR || 
+                            (sql_c_type == SQL_C_BINARY && 
+                               (sql_type.typeinfo.type == SQL_WCHAR || 
+                                sql_type.typeinfo.type == SQL_WVARCHAR ||
+                                sql_type.typeinfo.type == SQL_WLONGVARCHAR )))) {
 
                             bool converted = convert_input_param_to_utf16( param_z, param_z );
                             if( !converted ) {
                                 handle_error( &stmt->ctx, LOG_STMT, _FN_, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE TSRMLS_CC, i, get_last_error_message() );
                                 return false;
                             }
-                            // free the original buffer and set to our converted buffer
-                            sqlsrv_free( buffer );
-                            buffer = Z_STRVAL_PP( &param_z );
-                            buffer_len = Z_STRLEN_PP( &param_z );
-                            // save the parameter to be adjusted and/or converted after the results are processed
-                            sqlsrv_output_string output_string( param_z, sqlsrv_phptype.typeinfo.encoding, i - 1 );
-                            HashTable* strings_ht = Z_ARRVAL_P( stmt->param_strings );
-                            int next_index = zend_hash_next_free_element( strings_ht );
-                            int zr = zend_hash_index_update( strings_ht, next_index, &output_string, sizeof( output_string ), NULL );
-                            CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return false );
-                            zval_add_ref( &param_z );
+                            efree( buffer );
+                            buffer = Z_STRVAL_P( param_z );
+                            buffer_len = Z_STRLEN_P( param_z );
+                        }                        
+
+                        // calculate the necessary size for the output buffer and reallocate the buffer given if necessary.
+
+                        // verify there is enough buffer space to hold the output parameter and set variables for the
+                        // correct sizes
+                        SQLLEN expected_len;
+                        SQLLEN buffer_null_extra;
+                        SQLLEN elem_size;
+                        SQLLEN without_null_len;
+                        // calculate the size of each 'element' represented by column_size.  WCHAR is of course 2,
+                        // as is a n(var)char/ntext field being returned as a binary field.
+                        elem_size = (sql_c_type == SQL_C_WCHAR || (sql_c_type == SQL_C_BINARY && (sql_type.typeinfo.type == SQL_WCHAR || sql_type.typeinfo.type == SQL_WVARCHAR))) ? 2 : 1;
+                        // account for the NULL terminator returned by ODBC and needed by Zend to avoid a "String not null terminated" debug warning
+                        expected_len = column_size * elem_size + elem_size;
+                        // binary fields aren't null terminated, so we need to account for that in our buffer length calcuations
+                        buffer_null_extra = (sql_c_type == SQL_C_BINARY) ? elem_size : 0;
+                        // this is the size of the string for Zend and for the StrLen parameter to SQLBindParameter
+                        without_null_len = column_size * elem_size;
+                        // increment to include the null terminator
+                        buffer_len += elem_size;
+                        // if the current buffer size is smaller than the necessary size, resize the buffer and set the zval to the new
+                        // length.
+                        if( buffer_len < expected_len ) {
+                            if( expected_len < expected_len - buffer_null_extra ) {
+                                DIE( "Integer overflow/underflow caused a corrupt field length." );
+                                return false;   // avoid a static analysis error
+                            }
+                            // allocate enough space to ALWAYS include the NULL regardless of the type being retrieved since
+                            // we set the last byte(s) to be NULL to avoid the debug build warning from the Zend engine about 
+                            // not having a NULL terminator on a string.
+                            buffer = static_cast<char*>( sqlsrv_realloc( buffer, expected_len ));
+                            buffer_len = expected_len;  // set the buffer_len to the new allocation size (includes the null terminator taken out below)
+                            // A zval string len doesn't include the null.  This calculates the length it should be
+                            // regardless of whether the ODBC type contains the NULL or not.
+                            ZVAL_STRINGL( param_z, reinterpret_cast<char*>( buffer ), without_null_len, 0 );
+                            // null terminate the string to avoid a warning in debug PHP builds
+                            (static_cast<char*>(buffer))[ without_null_len ] = '\0';
                         }
-                        // if the current buffer size is smaller than the necessary size, resize the buffer and set the zval to use it.
-                        if( buffer_len < column_size ) {
-                            buffer = static_cast<char*>( sqlsrv_realloc( buffer, column_size + 1 ));
-                            buffer_len = column_size;
-                            ZVAL_STRINGL( param_z, reinterpret_cast<char*>( buffer ), buffer_len, 0 );
-                        }
+                        // buffer_len is the length passed to SQLBindParameter.  It must contain the space for NULL in the
+                        // buffer when retrieving anything but SQLSRV_ENC_BINARY/SQL_C_BINARY
+                        buffer_len -= buffer_null_extra;
+                        // The StrLen_Ind_Ptr parameter of SQLBindParameter should contain the length of the buffer minus
+                        // any NULL needed.  This should never be less than the output length required.  If it is more,
+                        // the error 22001 is returned by ODBC.
+                        stmt->params_ind_ptr[ i-1 ] = buffer_len - (elem_size - buffer_null_extra);
+
+                        // save the parameter to be adjusted and/or converted after the results are processed
+                        sqlsrv_output_string output_string( param_z, sqlsrv_phptype.typeinfo.encoding, i - 1, buffer_len );
+                        HashTable* strings_ht = Z_ARRVAL_P( stmt->param_strings );
+                        int next_index = zend_hash_next_free_element( strings_ht );
+                        int zr = zend_hash_index_update( strings_ht, next_index, &output_string, sizeof( output_string ), NULL );
+                        CHECK_ZEND_ERROR( zr, SQLSRV_ERROR_ZEND_HASH, return false );
+                        zval_add_ref( &param_z );   // we have a reference to the param
                     }
-                    // correct the column size to be number of characters, not the number of bytes.
-                    if( sql_type.typeinfo.type == SQL_WCHAR || sql_type.typeinfo.type == SQL_WVARCHAR ) {
-                        column_size /= sizeof( wchar_t );
-                    }
-                    stmt->params_ind_ptr[ i-1 ] = buffer_len;
                     break;
                 case IS_OBJECT:
                 {
-                    char* class_name;
+                    sqlsrv_malloc_auto_ptr<char> class_name;
                     zend_uint class_name_len;
                     zval_auto_ptr function_z;
                     zval_auto_ptr buffer_z;
@@ -1705,43 +1734,28 @@ bool adjust_output_lengths_and_encodings( sqlsrv_stmt* stmt, const char* _FN_ TS
 
         // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
         char* str = Z_STRVAL_P( output_string->string_z );
-        int str_len = stmt->params_ind_ptr[ output_string->param_num ];
+        SQLLEN str_len = stmt->params_ind_ptr[ output_string->param_num ];
+        if( str_len == SQL_NULL_DATA ) {
+            ZVAL_NULL( output_string->string_z );
+            continue;
+        }
 
+        // if it's not in the 8 bit encodings, then it's in UTF-16
         if( output_string->encoding != SQLSRV_ENCODING_CHAR && output_string->encoding != SQLSRV_ENCODING_BINARY ) {
 
-            str_len >>= 1; // from # of bytes to # of wchars
-            ++str_len;     // include the NULL character
-
-            // get the size of the wide char string
-            int enc_size = WideCharToMultiByte( output_string->encoding, 0, reinterpret_cast<wchar_t*>( str ), str_len, NULL, 0, NULL, NULL );
-            // if no errors occurred
-            if( enc_size != 0 ) {
-                // allocate a buffer large enough
-                char* enc_buffer = reinterpret_cast<char*>( sqlsrv_malloc( enc_size + 1 ));
-                // convert the string
-                int r = WideCharToMultiByte( CP_UTF8, 0, reinterpret_cast<wchar_t*>( str ), str_len, enc_buffer, enc_size, NULL, NULL );
-                // if an error occurred during conversion
-                if( r == 0 ) {
-                    // free the UTF-8 string and leave the current output param alone
-                    sqlsrv_free( enc_buffer );
-                    converted = false;
-                }
-                else {
-                    --enc_size;
-                    // swap the converted string for the original string
-                    enc_buffer[ enc_size ] = '\0';
-                    ZVAL_STRINGL( output_string->string_z, enc_buffer, enc_size, 0 );
-                    sqlsrv_free( str );
-                }
-            }
-            else {
-                converted = false;
+            bool converted = convert_string_from_utf16( output_string->encoding, &str, str_len );
+            if( !converted ) {
+                return false;
             }
         }
-        else {
-            ZVAL_STRINGL( output_string->string_z, str, str_len, 0 );
-            str[ str_len ] = '\0';  // null terminate the string to avoid the debug php warning
+        else if( output_string->encoding == SQLSRV_ENCODING_BINARY && str_len < output_string->original_buffer_len ) {
+            // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
+            // so we do that here if the length of the returned data is less than the original allocation.  The original
+            // allocation null terminates the buffer already.
+            str[ str_len ] = '\0';
         }
+        // set the string length
+        ZVAL_STRINGL( output_string->string_z, str, str_len, 0 );
     }
 
     zval_ptr_dtor( &stmt->param_strings );
@@ -2197,7 +2211,6 @@ sqlsrv_phptype determine_sqlsrv_php_type( sqlsrv_stmt const* stmt, SQLINTEGER sq
 
 // put in the column size and scale/decimal digits of the sql server type
 // these values are taken from the MSDN page at http://msdn2.microsoft.com/en-us/library/ms711786(VS.85).aspx
-// column_size is actually the size of the field in bytes, so a nvarchar(4000) is 8000 bytes
 bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLUINTEGER* column_size, __out SQLSMALLINT* decimal_digits )
 {
     *decimal_digits = 0;
@@ -2257,7 +2270,6 @@ bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype
                 *column_size = SQL_SS_LENGTH_UNLIMITED;
                 break;
             }
-            *column_size *= 2;  // convert to byte size from wchar size
             if( *column_size > SQL_SERVER_MAX_FIELD_SIZE || *column_size == SQLSRV_INVALID_SIZE ) {
                 *column_size = SQLSRV_INVALID_SIZE;
                 return false;
@@ -2489,20 +2501,33 @@ void close_active_stream( __inout sqlsrv_stmt* stmt TSRMLS_DC )
     }
 }
 
-// convert a string from utf-16 to another encoding and return the new string.  The utf-16 string is released
-// by this function if no errors occurred.  Otherwise the parameters are not changed.
+// convert a string from utf-16 to the encoding and return the new string in the pointer parameter and new
+// length in the len parameter.  If no errors occurred during convertion, true is returned and the original
+// utf-16 string is released by this function if no errors occurred.  Otherwise the parameters are not changed
+// and false is returned.
 
-bool convert_string_from_utf16( sqlsrv_phptype sqlsrv_phptype, char** string, SQLINTEGER& len )
+bool convert_string_from_utf16( unsigned int encoding, char** string, SQLINTEGER& len )
 {
     char* utf16_string = *string;
     unsigned int utf16_len = len / 2;  // from # of bytes to # of wchars
     char *enc_string = NULL;
     unsigned int enc_len = 0;
 
-    ++utf16_len;     // include the NULL character
+    // for the empty string, we simply returned we converted it
+    if( len == 0 && *string[0] == '\0' ) {
+        return true;
+    }
+
+    // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
+    // an error.   This happens only on XP.
+    DWORD flags = 0;
+    if( encoding == CP_UTF8 && g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
+        // Vista (and later) will detect invalid UTF-16 characters and raise an error.
+        flags = WC_ERR_INVALID_CHARS;
+    }
 
     // calculate the number of characters needed
-    enc_len = WideCharToMultiByte( sqlsrv_phptype.typeinfo.encoding, 0,
+    enc_len = WideCharToMultiByte( encoding, flags,
                                    reinterpret_cast<LPCWSTR>( utf16_string ), utf16_len, 
                                    NULL, 0, NULL, NULL );
     if( enc_len == 0 ) {
@@ -2510,17 +2535,18 @@ bool convert_string_from_utf16( sqlsrv_phptype sqlsrv_phptype, char** string, SQ
     }
     // we must allocate a new buffer because it is possible that a UTF-8 string is longer than
     // the corresponding UTF-16 string, so we cannot use an inplace conversion
-    enc_string = reinterpret_cast<char*>( sqlsrv_malloc( enc_len + 1 ));
-    int rc = WideCharToMultiByte( sqlsrv_phptype.typeinfo.encoding, 0,
+    enc_string = reinterpret_cast<char*>( sqlsrv_malloc( enc_len + 1 /* NULL char*/ ));
+    int rc = WideCharToMultiByte( encoding, flags,
                                   reinterpret_cast<LPCWSTR>( utf16_string ), utf16_len, 
                                   enc_string, enc_len, NULL, NULL );
     if( rc == 0 ) {
         return false;
     }
 
+    enc_string[ enc_len ] = '\0';   // null terminate the encoded string
     sqlsrv_free( utf16_string );
     *string = enc_string;
-    len = enc_len - 1;
+    len = enc_len;
 
     return true;
 }
@@ -2699,7 +2725,7 @@ void get_field_as_string( sqlsrv_stmt const* s, sqlsrv_phptype sqlsrv_phptype, S
         }
 
         if( c_type == SQL_C_WCHAR ) {
-            bool converted = convert_string_from_utf16( sqlsrv_phptype, &field, field_len );
+            bool converted = convert_string_from_utf16( sqlsrv_phptype.typeinfo.encoding, &field, field_len );
             if( !converted ) {
                 handle_error( &s->ctx, LOG_STMT, _FN_, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE TSRMLS_CC, get_last_error_message() );
                 sqlsrv_free( field );
@@ -2739,7 +2765,7 @@ void get_field_as_string( sqlsrv_stmt const* s, sqlsrv_phptype sqlsrv_phptype, S
 
         if( c_type == SQL_C_WCHAR ) {
             
-            bool converted = convert_string_from_utf16( sqlsrv_phptype, &field, field_len );
+            bool converted = convert_string_from_utf16( sqlsrv_phptype.typeinfo.encoding, &field, field_len );
             if( !converted ) {
                 handle_error( &s->ctx, LOG_STMT, _FN_, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE TSRMLS_CC, get_last_error_message() );
                 sqlsrv_free( field );
@@ -2995,8 +3021,8 @@ void fetch_common( __inout sqlsrv_stmt* stmt, int fetch_type, long fetch_style, 
         SQLLEN field_type;
         SQLLEN field_len;
         sqlsrv_phptype sqlsrv_php_type;
-        // we don't use a zend_auto_ptr because ownership is transferred to the fields hash table
-        // that will be destroyed if an error occurs.
+        // this zval_auto_ptr is never transferred because we rely on its destructor to decrement the reference count
+        // we increment its reference count within each fetch type (below)
         zval_auto_ptr field;
         
         MAKE_STD_ZVAL( field );

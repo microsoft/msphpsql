@@ -101,8 +101,16 @@ size_t sqlsrv_stream_read( php_stream* stream, __out_bcount(count) char* buf, si
 
     // convert it to UTF-8 if that's what's needed
     if( c_type == SQL_C_WCHAR ) {
+
         count *= 2;    // undo the shift to use the full buffer
-        int w = WideCharToMultiByte( ss->encoding, 0, reinterpret_cast<LPCWSTR>( ss->stmt->param_buffer ),
+        // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
+        // an error.  This happens only on XP.
+        DWORD flags = 0;
+        if( ss->encoding == CP_UTF8 && g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
+            // Vista (and later) will detect invalid UTF-16 characters and raise an error.
+            flags = WC_ERR_INVALID_CHARS;
+        }
+        int w = WideCharToMultiByte( ss->encoding, flags, reinterpret_cast<LPCWSTR>( ss->stmt->param_buffer ),
                                      read >> 1, buf, count, NULL, NULL );
         if( w == 0 ) {
             stream->eof = 1;

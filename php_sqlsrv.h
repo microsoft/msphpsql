@@ -80,6 +80,11 @@ OACR_WARNING_POP
 #include <sql.h>
 #include <sqlext.h>
 
+#if !defined(WC_ERR_INVALID_CHARS)
+// imported from winnls.h as it isn't included by 5.3.0
+#define WC_ERR_INVALID_CHARS      0x00000080  // error for invalid chars
+#endif
+
 // PHP defines inline as __forceinline, which in debug mode causes a warning to be emitted when 
 // we use std::copy, which causes compilation to fail since we compile with warnings as errors.
 #if defined(ZEND_DEBUG) && defined(inline)
@@ -99,6 +104,8 @@ OACR_WARNING_POP
 #define SQL_TXN_SS_SNAPSHOT                 0x00000020L
 #define SQL_SS_TIME2                        (-154)
 #define SQL_SS_TIMESTAMPOFFSET              (-155)
+
+
 
 // static assert for enforcing compile time conditions
 template <bool b>
@@ -234,6 +241,9 @@ extern zend_module_entry g_sqlsrv_module_entry;   // describes the extension to 
 extern HMODULE g_sqlsrv_hmodule;                  // used for getting the version information
 extern SQLHANDLE g_henv_ncp;                      // used to create connection handles with connection pooling off
 extern SQLHANDLE g_henv_cp;                       // used to create connection handles with connection pooling on
+extern OSVERSIONINFO g_osversion;                 // used to determine which OS we're running in
+
+const int SQLSRV_OS_VISTA_OR_LATER = 6;           // major version for Vista
 
 // maps an IANA encoding to a code page
 struct sqlsrv_encoding {
@@ -332,9 +342,10 @@ struct sqlsrv_output_string {
     zval* string_z;
     unsigned int encoding;
     int param_num;  // used to index into the ind_or_len of the statement
+    SQLLEN original_buffer_len; // used to make sure the returned length didn't overflow the buffer
 
-    sqlsrv_output_string( zval* str_z, unsigned int enc, int num ) :
-        string_z( str_z ), encoding( enc ), param_num( num )
+    sqlsrv_output_string( zval* str_z, unsigned int enc, int num, SQLUINTEGER buffer_len ) :
+        string_z( str_z ), encoding( enc ), param_num( num ), original_buffer_len( buffer_len )
     {
     }
 
@@ -362,7 +373,7 @@ struct sqlsrv_stmt {
     bool past_fetch_end;                  // sqlsrv_fetch sets when the statement goes beyond the last row
     bool past_next_result_end;            // sqlsrv_next_resultset sets when the statement goes beyond the last results
     zval* params_z;                       // hold parameters passed to sqlsrv_prepare but not used until sqlsrv_execute
-    SQLINTEGER* params_ind_ptr;           // buffer to hold the sizes returend by ODBC 
+    SQLLEN* params_ind_ptr;               // buffer to hold the sizes returned by ODBC 
     zval* param_datetime_buffers;         // track which datetime parameter to convert from string to datetime objects
     zval* param_streams;                  // track which streams to send data to the server
     zval* param_strings;                  // track which output strings need to be converted to UTF-8
@@ -482,6 +493,7 @@ unsigned int log_subsystems;
 zend_bool warnings_return_as_errors;
 // special list of warnings to ignore even if warnings are treated as errors
 HashTable* warnings_to_ignore;
+// encodings we understand
 HashTable* encodings;
 
 ZEND_END_MODULE_GLOBALS(sqlsrv)
@@ -672,7 +684,7 @@ extern sqlsrv_error SQLSRV_ERROR_STATEMENT_NOT_SCROLLABLE[];
 extern sqlsrv_error SQLSRV_ERROR_STATEMENT_SCROLLABLE[];
 extern sqlsrv_error SQLSRV_ERROR_INVALID_FETCH_STYLE[];
 extern sqlsrv_error SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE[];
-extern sqlsrv_error SQLSRV_ERROR_INVALID_SERVER_VERSION[];
+extern sqlsrv_error SQLSRV_ERROR_UNKNOWN_SERVER_VERSION[];
 
 // definitions for PHP specific warnings returned by sqlsrv
 extern sqlsrv_error SQLSRV_WARNING_FIELD_NAME_EMPTY[];

@@ -195,7 +195,7 @@ sqlsrv_error SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING[] = {
 };
 sqlsrv_error SQLSRV_ERROR_DRIVER_NOT_INSTALLED[] = {
     { IMSSP, "The SQL Server Driver for PHP requires the SQL Server 2008 Native Client ODBC Driver (SP1 or later) to communicate with SQL Server.  "
-             "That ODBC Driver is not currently installed.  Accessing the following URL will download the SQL Server 2008 Native Client ODBC driver for %1!s!: %2!s!", -49, true }
+             "That ODBC Driver is not currently installed. Access the following URL to download the SQL Server 2008 Native Client ODBC driver for %1!s!: http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
 };
 sqlsrv_error SQLSRV_ERROR_MARS_OFF[] = {
     { IMSSP, "The connection cannot process this operation because there is a statement with pending results.  "
@@ -214,8 +214,8 @@ sqlsrv_error SQLSRV_ERROR_INVALID_FETCH_STYLE[] = {
 sqlsrv_error SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE[] = {
     { IMSSP, "The value passed for the 'Scrollable' statement option is invalid.  Please use 'static', 'dynamic', 'keyset', or 'forward'.", -54, false }
 };
-sqlsrv_error SQLSRV_ERROR_INVALID_SERVER_VERSION[] = {
-    { IMSSP, "Attempted to connect to a server of version %1!d!.  Only connections to SQL Server 2000 (8) or later are supported.", -55, true }
+sqlsrv_error SQLSRV_ERROR_UNKNOWN_SERVER_VERSION[] = {
+    { IMSSP, "Failed to retrieve the server version.  Unable to continue.", -55, false }
 };
 
 
@@ -784,6 +784,8 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
             zval_ptr_dtor( &ssphp_z );
             break;
         }
+        // increasing the ref count since we've added it to the ssphp_z array twice
+        zval_add_ref( &temp );
         MAKE_STD_ZVAL( temp );
         ZVAL_LONG( temp, ssphp->native_code );
         zr = add_next_index_zval( ssphp_z, temp );
@@ -796,6 +798,8 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
             zval_ptr_dtor( &ssphp_z );
             break;
         }
+        // increasing the ref count since we've added it to the ssphp_z array twice
+        zval_add_ref( &temp );
         MAKE_STD_ZVAL( temp );
         ZVAL_STRING( temp, const_cast<char*>( ssphp->native_message ), 1 );
         zr = add_next_index_zval( ssphp_z, temp );
@@ -808,6 +812,8 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
             zval_ptr_dtor( &ssphp_z );
             break;
         }
+        // increasing the ref count since we've added it to the ssphp_z array twice
+        zval_add_ref( &temp );
 
         if( ignore_warning( ssphp->sqlstate, ssphp->native_code TSRMLS_CC ) && ignored_chain != NULL ) {
             zr = add_next_index_zval( *ignored_chain, ssphp_z );
@@ -861,6 +867,8 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
                 zval_ptr_dtor( &ssphp_z );
                 continue;
             }
+            // increasing the ref count since we've added it to the ssphp_z array twice
+            zval_add_ref( &temp );
             MAKE_STD_ZVAL( temp );
             ZVAL_LONG( temp, native_error );
             zr = add_next_index_zval( ssphp_z, temp );
@@ -873,6 +881,8 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
                 zval_ptr_dtor( &ssphp_z );
                 continue;
             }
+            // increasing the ref count since we've added it to the ssphp_z array twice
+            zval_add_ref( &temp );
             MAKE_STD_ZVAL( temp );
             ZVAL_STRINGL( temp, reinterpret_cast<char*>(  message_text ), message_len, 1 );
             zr = add_next_index_zval( ssphp_z, temp );
@@ -885,6 +895,8 @@ bool handle_errors_and_warnings( sqlsrv_context const* ctx, zval** reported_chai
                 zval_ptr_dtor( &ssphp_z );
                 continue;
             }
+            // increasing the ref count since we've added it to the ssphp_z array twice
+            zval_add_ref( &temp );
 
             if( ignore_warning( reinterpret_cast<const char*>( sql_state ), native_error TSRMLS_CC ) && ignored_chain != NULL ) {
                 zr = add_next_index_zval( *ignored_chain, ssphp_z );

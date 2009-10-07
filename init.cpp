@@ -209,6 +209,7 @@ zend_function_entry sqlsrv_functions[] = {
 HMODULE g_sqlsrv_hmodule = NULL;
 HENV g_henv_ncp = SQL_NULL_HANDLE;
 HENV g_henv_cp = SQL_NULL_HANDLE;
+OSVERSIONINFO g_osversion;
 
 
 // the structure returned to Zend that exposes the extension to the Zend engine.
@@ -471,6 +472,15 @@ PHP_MINIT_FUNCTION(sqlsrv)
     }
     CHECK_SQL_WARNING( r, (&henv_ctx), _FN_, NULL );
 
+    // get the version of the OS we're running on.  For now this governs certain flags used by
+    // WideCharToMultiByte.  It might be relevant to other things in the future.
+    g_osversion.dwOSVersionInfoSize = sizeof( g_osversion );
+    BOOL ver_return = GetVersionEx( &g_osversion );
+    if( !ver_return ) {
+        LOG( SEV_ERROR, LOG_INIT, "Failed to retrieve Windows version information." );
+        return FAILURE;
+    }
+
     return SUCCESS;
 }
 
@@ -542,7 +552,7 @@ PHP_RINIT_FUNCTION(sqlsrv)
 
     // initialize list of warnings to ignore
     ALLOC_HASHTABLE( SQLSRV_G( warnings_to_ignore ));
-    int zr = zend_hash_init( SQLSRV_G( warnings_to_ignore ), 5, NULL, NULL, 0 );
+    int zr = zend_hash_init( SQLSRV_G( warnings_to_ignore ), 6, NULL, NULL, 0 );
     if( zr == FAILURE ) {
         LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
         return FAILURE;
@@ -558,6 +568,7 @@ PHP_RINIT_FUNCTION(sqlsrv)
         LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
         return FAILURE;
     }
+
     // changed language warning
     to_ignore.sqlstate = "01000";
     to_ignore.native_message = NULL;
@@ -568,6 +579,7 @@ PHP_RINIT_FUNCTION(sqlsrv)
         LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
         return FAILURE;
     }
+
     // option value changed
     to_ignore.sqlstate = "01S02";
     to_ignore.native_message = NULL;
@@ -578,6 +590,7 @@ PHP_RINIT_FUNCTION(sqlsrv)
         LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
         return FAILURE;
     }
+
     // cursor operation conflict
     to_ignore.sqlstate = "01001";
     to_ignore.native_message = NULL;
@@ -588,12 +601,24 @@ PHP_RINIT_FUNCTION(sqlsrv)
         LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
         return FAILURE;
     }
-    // null value eliminiated in set function
+
+    // null value eliminated in set function
     to_ignore.sqlstate = "01003";
     to_ignore.native_message = NULL;
     to_ignore.native_code = -1;
     to_ignore.format = false;
     zr = zend_hash_next_index_insert( SQLSRV_G( warnings_to_ignore ), &to_ignore, sizeof( sqlsrv_error ), NULL /*no pointer to the new value necessasry*/ );
+    if( zr == FAILURE ) {
+        LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
+        return FAILURE;
+    }
+    
+    // SQL Azure warning: This session has been assigned a tracing id of ..
+    to_ignore.sqlstate = "01000";
+    to_ignore.native_message = NULL;
+    to_ignore.native_code = 40608;
+    to_ignore.format = false;
+    zr = zend_hash_next_index_insert( SQLSRV_G( warnings_to_ignore ), &to_ignore, sizeof( sqlsrv_error ), NULL );
     if( zr == FAILURE ) {
         LOG( SEV_ERROR, LOG_INIT, "PHP_RINIT: warnings hash table failure" );
         return FAILURE;
@@ -651,6 +676,10 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
     if( SQLSRV_G( warnings_to_ignore )) {
         zend_hash_destroy( SQLSRV_G( warnings_to_ignore ));
         FREE_HASHTABLE( SQLSRV_G( warnings_to_ignore ));
+    }
+    if( SQLSRV_G( encodings )) {
+        zend_hash_destroy( SQLSRV_G( encodings ));
+        FREE_HASHTABLE( SQLSRV_G( encodings ));
     }
     sqlsrv_free( SQLSRV_G( henv_context ));
 
