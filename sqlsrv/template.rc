@@ -1,21 +1,28 @@
 //----------------------------------------------------------------------------------------------------------------------------------
 // File: template.rc
 //
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//
 // Contents: Version resource
 // 
-// Comments:
+// Copyright 2010 Microsoft Corporation
 //
-// License: This software is released under the Microsoft Public License.  A copy of the license agreement 
-//          may be found online at http://www.codeplex.com/SQLSRVPHP/license.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//
+// You may obtain a copy of the License at:
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //----------------------------------------------------------------------------------------------------------------------------------
 
 #ifdef APSTUDIO_INVOKED
 # error dont edit with MSVC
 #endif
 
-#include "winres.h"
+#include "winresrc.h"
 #include "main/php_version.h"
 #include "version.h"
 
@@ -55,12 +62,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "This product includes PHP software that is freely available from http://www.php.net/software/.  © 1997-2009 The PHP Group.  All rights reserved.\0"
             VALUE "CompanyName", "Microsoft Corp.\0"
-            VALUE "FileDescription", "Microsoft SQL Server Driver for PHP\0"
+            VALUE "FileDescription", "Microsoft Drivers for PHP for SQL Server (SQLSRV Driver)\0"
             VALUE "FileVersion", STRVER4(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD, SQLVERSION_REVISION)
             VALUE "InternalName", FILE_NAME "\0"
-            VALUE "LegalCopyright", "© 2009 Microsoft Corp.  All Rights Reserved.\0"
+            VALUE "LegalCopyright", "Copyright 2010 Microsoft Corporation.\0"
             VALUE "OriginalFilename", FILE_NAME "\0"
-            VALUE "ProductName", "Microsoft SQL Server Driver for PHP\0"
+            VALUE "ProductName", "Microsoft Drivers for PHP for SQL Server\0"
             VALUE "ProductVersion", STRVER3(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD)
             VALUE "URL", "http://www.microsoft.com\0"
        END
