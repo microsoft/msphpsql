@@ -1113,8 +1113,8 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, int unquoted_len
         }
     }
 
-    *quoted_len = unquoted_len + 1 + quotes_needed;       // include the NULL terminator in case it isn't included already
-    *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len ));
+    *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.    
+    *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len + 1 )); // include space for null terminator. 
     unsigned int out_current = 0;
 
     // insert initial quote

@@ -22,15 +22,15 @@ ARG_ENABLE("sqlsrv", "enable MS SQL Server extension", "no");
 
 if( PHP_SQLSRV != "no" ) {
 
-	if (CHECK_LIB("odbc32.lib", "sqlsrv") && CHECK_LIB("odbccp32.lib", "sqlsrv") && 
-        CHECK_LIB("version.lib", "sqlsrv") && CHECK_LIB("psapi.lib", "sqlsrv")) {
-        
-        EXTENSION("sqlsrv", "conn.cpp init.cpp stmt.cpp util.cpp core_init.cpp core_conn.cpp core_stmt.cpp core_util.cpp core_stream.cpp"  )
+    if (CHECK_LIB("odbc32.lib", "sqlsrv") && CHECK_LIB("odbccp32.lib", "sqlsrv") && 
+       CHECK_LIB("version.lib", "sqlsrv") && CHECK_LIB("psapi.lib", "sqlsrv")) {
+       
+       EXTENSION("sqlsrv", "conn.cpp init.cpp stmt.cpp util.cpp core_init.cpp core_conn.cpp core_stmt.cpp core_util.cpp core_stream.cpp"  )
 
-        CHECK_HEADER_ADD_INCLUDE('sql.h', 'CFLAGS_SQLSRV_ODBC');
-        CHECK_HEADER_ADD_INCLUDE('sqlext.h', 'CFLAGS_SQLSRV_ODBC');
-        ADD_FLAG( 'LDFLAGS_SQLSRV', '/NXCOMPAT /DYNAMICBASE' );
-        ADD_FLAG( 'CFLAGS_SQLSRV', '/EHsc' );
-        ADD_FLAG( 'CFLAGS_SQLSRV', '/GS' );
-    }
+       CHECK_HEADER_ADD_INCLUDE('sql.h', 'CFLAGS_SQLSRV_ODBC');
+       CHECK_HEADER_ADD_INCLUDE('sqlext.h', 'CFLAGS_SQLSRV_ODBC');
+       ADD_FLAG( 'LDFLAGS_SQLSRV', '/NXCOMPAT /DYNAMICBASE' );
+       ADD_FLAG( 'CFLAGS_SQLSRV', '/EHsc' );
+       ADD_FLAG( 'CFLAGS_SQLSRV', '/GS' );
+   }
 }

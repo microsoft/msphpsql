@@ -1618,7 +1618,18 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, unsigned int paramno, zval const*
     switch( php_type ) {
     
         case IS_NULL:
-            sql_c_type = SQL_C_CHAR;
+            switch( encoding ) {
+                // The c type is set to match to the corresponding sql_type. For NULL cases, if the server type 
+                // is a binary type, than the server expects the sql_type to be binary type as well, otherwise
+                // an error stating "Implicit conversion not allowed.." is thrown by the server. 
+                // For all other server types, setting the sql_type to sql_char works fine.
+                case SQLSRV_ENCODING_BINARY:
+                    sql_c_type = SQL_C_BINARY;
+                    break;
+                default:
+                    sql_c_type = SQL_C_CHAR;
+                    break;
+            }
             break;
         case IS_BOOL:
         case IS_LONG:
@@ -1670,7 +1681,18 @@ void default_sql_type( sqlsrv_stmt* stmt, unsigned int paramno, zval* param_z, S
     switch( php_type ) {
     
         case IS_NULL:
-            sql_type = SQL_CHAR;
+            switch( encoding ) { 
+                // Use the encoding to guess whether the sql_type is binary type or char type. For NULL cases,  
+                // if the server type is a binary type, than the server expects the sql_type to be binary type 
+                // as well, otherwise an error stating "Implicit conversion not allowed.." is thrown by the  
+                // server. For all other server types, setting the sql_type to sql_char works fine.
+                case SQLSRV_ENCODING_BINARY:
+                    sql_type = SQL_BINARY;
+                    break;
+                default:
+                    sql_type = SQL_CHAR;
+                    break;
+            }
             break;
         case IS_BOOL:
         case IS_LONG:
@@ -1838,7 +1860,7 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
                     if( output_param->encoding != SQLSRV_ENCODING_CHAR && output_param->encoding != SQLSRV_ENCODING_BINARY ) {
 
                         bool converted = convert_string_from_utf16( output_param->encoding, &str, str_len );
-                        CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE ) {
+                        CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
                             throw core::CoreException();
                         }
                     }

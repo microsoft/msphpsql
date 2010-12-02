@@ -18,9 +18,9 @@
 // limitations under the License.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#define VER_FILEVERSION_STR "2.0.0.0"
-#define _FILEVERSION 2,0,0,0
+#define VER_FILEVERSION_STR "2.0.0.200"
+#define _FILEVERSION 2,0,0,200
 #define SQLVERSION_MAJOR 2
 #define SQLVERSION_MINOR 0
 #define SQLVERSION_MMDD 0
-#define SQLVERSION_REVISION 0
+#define SQLVERSION_REVISION 200

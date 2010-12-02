@@ -1815,13 +1815,13 @@ void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, int fetch_type, __out zv
     if(( fetch_type & SQLSRV_FETCH_ASSOC ) && stmt->fetch_field_names == NULL ) {
 
         SQLSMALLINT field_name_len;
-        char field_name_temp[ SQL_MAX_COLUMN_NAME_LEN ];
+        char field_name_temp[ SS_MAXCOLNAMELEN+1 ];
         sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
         field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
 
         for( int i = 0; i < num_cols; ++i ) {
 
-            core::SQLColAttribute( stmt, i + 1, SQL_DESC_NAME, field_name_temp, SQL_MAX_COLUMN_NAME_LEN, &field_name_len, NULL 
+            core::SQLColAttribute( stmt, i + 1, SQL_DESC_NAME, field_name_temp, SS_MAXCOLNAMELEN+1, &field_name_len, NULL 
                                    TSRMLS_CC ); 
             field_names[ i ].name = static_cast<char*>( sqlsrv_malloc( field_name_len + 1 ));
             memcpy( (void*) field_names[ i ].name, field_name_temp, field_name_len );
