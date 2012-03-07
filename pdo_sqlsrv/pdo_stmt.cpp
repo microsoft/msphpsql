@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDOStatement object for the PDO_SQLSRV
 // 
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,10 @@ SQLSMALLINT odbc_fetch_orientation[] =
 const int SQL_SERVER_IDENT_SIZE_MAX = 128;
 
 inline SQLSMALLINT pdo_fetch_ori_to_odbc_fetch_ori (enum pdo_fetch_orientation ori)
-{    
+{
+    SQLSRV_ASSERT( ori >= PDO_FETCH_ORI_NEXT && ori <= PDO_FETCH_ORI_REL, "Fetch orientation out of range." );
+    OACR_WARNING_SUPPRESS( 26001, "Buffer length verified above" );
+    OACR_WARNING_SUPPRESS( 26000, "Buffer length verified above" );
     return odbc_fetch_orientation[ori];
 }
 
@@ -60,7 +63,8 @@ SQLSRV_PHPTYPE pdo_type_to_sqlsrv_php_type( sqlsrv_stmt* driver_stmt, enum pdo_p
             return SQLSRV_PHPTYPE_NULL;
         
         case PDO_PARAM_LOB:
-            return SQLSRV_PHPTYPE_STREAM;
+            // TODO: This will eventually be changed to SQLSRV_PHPTYPE_STREAM when output streaming is implemented.
+            return SQLSRV_PHPTYPE_STRING;
 
         case PDO_PARAM_STMT:
             THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_PDO_STMT_UNSUPPORTED );
@@ -71,31 +75,6 @@ SQLSRV_PHPTYPE pdo_type_to_sqlsrv_php_type( sqlsrv_stmt* driver_stmt, enum pdo_p
     }
     
     return SQLSRV_PHPTYPE_INVALID; // to prevent compiler warning 
-}
-  
-// Returns PDO type for a given SQLSRV type. See pdo_param_type
-// for list of supported pdo types.
-inline pdo_param_type sqlsrv_php_type_to_pdo_type( enum SQLSRV_PHPTYPE sqlsrv_php_type )
-{
-    switch( sqlsrv_php_type ) {
-
-        case SQLSRV_PHPTYPE_INT:
-        case SQLSRV_PHPTYPE_FLOAT:
-            return PDO_PARAM_INT;
-
-        case SQLSRV_PHPTYPE_DATETIME:
-        case SQLSRV_PHPTYPE_STRING:
-            return PDO_PARAM_STR;
-
-        case SQLSRV_PHPTYPE_STREAM:
-            return PDO_PARAM_LOB;
-
-        case SQLSRV_PHPTYPE_NULL:
-            return PDO_PARAM_NULL;
-
-        default:
-            DIE( "sqlsrv_php_type_to_pdo_type: Unexpected sqlsrv_php_type encountered." );
-    }
 }
 
 // Returns a pdo type for a given SQL type. See pdo_param_type
@@ -124,6 +103,7 @@ inline pdo_param_type sql_type_to_pdo_type( SQLSMALLINT sql_type )
         case SQL_SS_TIME2:
         case SQL_SS_TIMESTAMPOFFSET:
         case SQL_SS_UDT:
+        case SQL_SS_VARIANT:
         case SQL_SS_XML:
         case SQL_TYPE_DATE:
         case SQL_TYPE_TIMESTAMP:
@@ -173,6 +153,25 @@ void set_stmt_cursors( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
     core_sqlsrv_set_scrollable( stmt, odbc_cursor_type TSRMLS_CC ); 
 }
 
+void set_stmt_cursor_scroll_type( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
+{
+    if( Z_TYPE_P( value_z ) != IS_LONG ) {
+
+        THROW_PDO_ERROR( stmt, PDO_SQLSRV_ERROR_INVALID_CURSOR_TYPE );
+    }
+
+    if( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
+
+        THROW_PDO_ERROR( stmt, PDO_SQLSRV_ERROR_INVALID_CURSOR_WITH_SCROLL_TYPE );
+    }
+
+    long odbc_cursor_type = Z_LVAL_P( value_z );
+
+    core_sqlsrv_set_scrollable( stmt, odbc_cursor_type TSRMLS_CC ); 
+
+    return;
+}
+
 // Sets the statement encoding. Default encoding on the statement 
 // implies use the connection's encoding.
 void set_stmt_encoding( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
@@ -201,17 +200,87 @@ void set_stmt_encoding( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
     }
 }
 
+// internal helper function to free meta data structures allocated
+void meta_data_free( field_meta_data* meta )
+{
+    sqlsrv_free( meta );
+}
+
+zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void** in_val, SQLLEN field_len )
+{
+    zval* out_zval = NULL;
+
+    switch( sqlsrv_php_type ) {
+       
+        case SQLSRV_PHPTYPE_INT:
+        case SQLSRV_PHPTYPE_FLOAT:       
+        {
+            ALLOC_INIT_ZVAL( out_zval );
+            if( *in_val == NULL ) {
+                ZVAL_NULL( out_zval );
+            }
+            else {
+
+                if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
+                    ZVAL_LONG( out_zval, **( reinterpret_cast<long**>( in_val )));
+                }
+                else {
+                    ZVAL_DOUBLE( out_zval, **( reinterpret_cast<double**>( in_val )));    
+                }
+            }
+
+            if( *in_val ) {
+                sqlsrv_free( *in_val );
+            }
+
+            break;
+        }
+
+        case SQLSRV_PHPTYPE_STRING:
+        case SQLSRV_PHPTYPE_STREAM:     // TODO: this will be moved when output streaming is implemented
+         {
+            ALLOC_INIT_ZVAL( out_zval );
+
+            if( *in_val == NULL ) {
+
+                ZVAL_NULL( out_zval );
+            }
+            else {
+
+                ZVAL_STRINGL( out_zval, reinterpret_cast<char*>( *in_val ), field_len, 0 /*duplicate*/ );
+            }
+            break;
+        }
+            
+        case SQLSRV_PHPTYPE_DATETIME:
+            DIE( "Unsupported php type" );
+            out_zval = ( reinterpret_cast<zval*>( *in_val ));
+            break;
+
+        case SQLSRV_PHPTYPE_NULL:
+            ALLOC_INIT_ZVAL( out_zval );
+            ZVAL_NULL( out_zval );
+            break;
+
+        default:
+            DIE( "Unknown php type" );
+            break;
+    }
+
+    return out_zval;
+}
+
 }       // namespace 
 
 int pdo_sqlsrv_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC);
 int pdo_sqlsrv_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC);
 int pdo_sqlsrv_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation ori,
-                    long offset TSRMLS_DC);
+                          long offset TSRMLS_DC);
 int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
-                         struct pdo_bound_param_data *param, enum pdo_param_event event_type TSRMLS_DC);
+                               struct pdo_bound_param_data *param, enum pdo_param_event event_type TSRMLS_DC);
 int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC);
 int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
-                           char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC);
+                                 char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC);
 int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, long attr, zval *val TSRMLS_DC);
 int pdo_sqlsrv_stmt_get_attr(pdo_stmt_t *stmt, long attr, zval *return_value TSRMLS_DC);
 int pdo_sqlsrv_stmt_get_col_meta(pdo_stmt_t *stmt, long colno, zval *return_value TSRMLS_DC);
@@ -243,11 +312,24 @@ void stmt_option_encoding:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*
 {
     set_stmt_encoding( stmt, value_z TSRMLS_CC );
 }
+
 void stmt_option_direct_query:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
 {
     pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
     pdo_stmt->direct_query = ( zend_is_true( value_z )) ? true : false;
 }
+
+void stmt_option_cursor_scroll_type:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+{
+    set_stmt_cursor_scroll_type( stmt, value_z TSRMLS_CC );
+}
+
+void stmt_option_emulate_prepares:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+{
+    pdo_stmt_t *pdo_stmt = static_cast<pdo_stmt_t*>( stmt->driver() );
+    pdo_stmt->supports_placeholders = ( zend_is_true( value_z )) ? PDO_PLACEHOLDER_NONE : PDO_PLACEHOLDER_POSITIONAL;
+}
+
 
 // log a function entry point
 #define PDO_LOG_STMT_ENTRY \
@@ -256,6 +338,19 @@ void stmt_option_direct_query:: operator()( sqlsrv_stmt* stmt, stmt_option const
     driver_stmt->set_func( __FUNCTION__ ); \
     LOG( SEV_NOTICE, __FUNCTION__ ## ": entering" ); \
 }
+
+// PDO SQLSRV statement destructor
+pdo_sqlsrv_stmt::~pdo_sqlsrv_stmt( void )
+{
+    std::for_each( current_meta_data.begin(), current_meta_data.end(), meta_data_free );
+    current_meta_data.clear();
+
+    if( bound_column_param_types ) {
+        sqlsrv_free( bound_column_param_types );
+        bound_column_param_types = NULL;
+    }
+}
+
 
 // pdo_sqlsrv_stmt_close_cursor
 // Close any open cursors on the statement. Maps to PDO function PDOStatement::closeCursor.
@@ -337,7 +432,7 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
     
     // Set the namelen
     column_data->namelen = core_meta_data->field_name_len;
-   
+
     // Set the maxlen
     column_data->maxlen = ( core_meta_data->field_precision > 0 ) ? core_meta_data->field_precision : core_meta_data->field_size;
         
@@ -345,10 +440,14 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
     column_data->precision = core_meta_data->field_scale;
 
     // Set the param_type    
-    column_data->param_type = sql_type_to_pdo_type( core_meta_data->field_type );
+    column_data->param_type = PDO_PARAM_ZVAL; 
     
-    // always good to call destructor for allocations done through placement new operator.
-    core_meta_data->~field_meta_data();
+    // store the field data for use by pdo_sqlsrv_stmt_get_col_data
+    pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
+    SQLSRV_ASSERT( driver_stmt != NULL, "Invalid driver statement in pdo_sqlsrv_stmt_describe_col" );
+    driver_stmt->current_meta_data.push_back( core_meta_data.get() );
+    SQLSRV_ASSERT( driver_stmt->current_meta_data.size() == colno + 1, "Meta data vector out of sync with column numbers" );
+    core_meta_data.transferred();
 
     return 1;
 }
@@ -407,8 +506,24 @@ int pdo_sqlsrv_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
                 core_sqlsrv_next_result( driver_stmt TSRMLS_CC, false );
             }
         }
+        
+        const char* query = NULL;
+        unsigned int query_len = 0;
 
-        core_sqlsrv_execute( driver_stmt TSRMLS_CC, driver_stmt->query, driver_stmt->query_len );
+        // if the user is doing a direct query (PDO::SQLSRV_ATTR_DIRECT_QUERY), set the query here
+        if( driver_stmt->direct_query ) {
+            query = stmt->query_string;
+            query_len = stmt->query_stringlen;
+            }
+
+        // if the user is using prepare emulation (PDO::ATTR_EMULATE_PREPARES), set the query to the 
+        // subtituted query provided by PDO
+        if( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+            query = stmt->active_query_string;
+            query_len = stmt->active_query_stringlen;
+        }
+
+        core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
 
         stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
 
@@ -468,16 +583,48 @@ int pdo_sqlsrv_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation ori,
         
         SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_fetch: pdo_stmt object was null" );
 
-        sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+        pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_fetch: driver_data object was null" );
+
+        // set the types for bound columns to zval so that PDO does no conversion when the value
+        // is returned by pdo_sqlsrv_get_col_data.  Remember the types that were bound by the user
+        // and use it to manually convert data types
+        if( stmt->bound_columns ) {
+
+            pdo_bound_param_data* bind_data = NULL;
+
+            if( !driver_stmt->bound_column_param_types ) {
+                driver_stmt->bound_column_param_types = 
+                    reinterpret_cast<pdo_param_type*>( sqlsrv_malloc( stmt->column_count, sizeof( pdo_param_type ), 0 ));
+                std::fill( driver_stmt->bound_column_param_types, driver_stmt->bound_column_param_types + stmt->column_count,
+                           PDO_PARAM_ZVAL );
+            }
+
+            for( long i = 0; i < stmt->column_count; ++i ) {
+
+                if( zend_hash_index_find( stmt->bound_columns, i, (void**) &bind_data ) == FAILURE && 
+                    zend_hash_find( stmt->bound_columns, stmt->columns[ i ].name, stmt->columns[ i ].namelen, 
+                                    (void**) &bind_data ) == FAILURE ) {
+
+                    driver_stmt->bound_column_param_types[ i ] = PDO_PARAM_ZVAL;
+                    continue;
+                }
+
+                if( bind_data->param_type != PDO_PARAM_ZVAL ) {
+
+                    driver_stmt->bound_column_param_types[ i ] = bind_data->param_type;
+                    bind_data->param_type = PDO_PARAM_ZVAL;
+                }
+            }
+        }
 
         SQLSMALLINT odbc_fetch_ori = pdo_fetch_ori_to_odbc_fetch_ori( ori );
         bool data = core_sqlsrv_fetch( driver_stmt, odbc_fetch_ori, offset TSRMLS_CC );
 
         // support for the PDO rowCount method.  Since rowCount doesn't call a method, PDO relies on us to fill the 
         // pdo_stmt_t::row_count member
-        if( driver_stmt->past_fetch_end || driver_stmt->scrollable ) {
+        if( driver_stmt->past_fetch_end || driver_stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY ) {
 
             stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
 
@@ -531,7 +678,7 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
 
         SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_get_col_data: pdo_stmt object was null" );
 
-        sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+        pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
         
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_get_col_data: driver_data object was null" );
 
@@ -547,12 +694,21 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
         
         // translate the pdo type to a type the core layer understands
         sqlsrv_phptype sqlsrv_php_type;
-        sqlsrv_php_type.typeinfo.type = pdo_type_to_sqlsrv_php_type( driver_stmt, column_data->param_type TSRMLS_CC );
+        SQLSRV_ASSERT( colno >= 0 && colno < static_cast<int>( driver_stmt->current_meta_data.size()),
+                       "Invalid column number in pdo_sqlsrv_stmt_get_col_data" );
+        sqlsrv_php_type = driver_stmt->sql_type_to_php_type( driver_stmt->current_meta_data[ colno ]->field_type,
+                                                             driver_stmt->current_meta_data[ colno ]->field_size, true );
 
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
         sqlsrv_php_type.typeinfo.encoding = driver_stmt->encoding();
 
-        if( stmt->bound_columns ) {
+        // if a column is bound to a type different than the column type, figure out a way to convert it to the 
+        // type they want
+        if( stmt->bound_columns && driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_ZVAL ) {
+
+            sqlsrv_php_type.typeinfo.type = pdo_type_to_sqlsrv_php_type( driver_stmt, 
+                                                                         driver_stmt->bound_column_param_types[ colno ] 
+                                                                         TSRMLS_CC );
 
             pdo_bound_param_data* bind_data = NULL;
             int zr = zend_hash_index_find( stmt->bound_columns, colno, (void**) &bind_data );
@@ -560,13 +716,15 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
             if( bind_data != NULL && bind_data->driver_params != NULL ) {
 
                 CHECK_CUSTOM_ERROR( Z_TYPE_P( bind_data->driver_params ) != IS_LONG, driver_stmt, 
-                                    PDO_SQLSRV_ERROR_INVALID_COLUMN_DRIVER_DATA, colno ) {
+                                    PDO_SQLSRV_ERROR_INVALID_COLUMN_DRIVER_DATA, colno + 1 ) {
                     throw pdo::PDOException();
                 }
 
-                CHECK_CUSTOM_ERROR( bind_data->param_type != PDO_PARAM_STR && bind_data->param_type != PDO_PARAM_LOB,
-                                    driver_stmt, PDO_SQLSRV_ERROR_COLUMN_TYPE_DOES_NOT_SUPPORT_ENCODING, colno ) {
-                    throw pdo::PDOException();
+                CHECK_CUSTOM_ERROR( driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_STR 
+                                    && driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_LOB, driver_stmt,
+                                    PDO_SQLSRV_ERROR_COLUMN_TYPE_DOES_NOT_SUPPORT_ENCODING, colno + 1 ) {
+
+                        throw pdo::PDOException();
                 }
 
                 sqlsrv_php_type.typeinfo.encoding = Z_LVAL_P( bind_data->driver_params );
@@ -582,9 +740,15 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
                 }
             }
         }
-
+        
+        SQLSRV_PHPTYPE sqlsrv_phptype_out = SQLSRV_PHPTYPE_INVALID;
         core_sqlsrv_get_field( driver_stmt, colno, sqlsrv_php_type, false, reinterpret_cast<void**>( ptr ), 
-                               reinterpret_cast<SQLLEN*>( len ), true, NULL TSRMLS_CC );
+                               reinterpret_cast<SQLLEN*>( len ), true, &sqlsrv_phptype_out TSRMLS_CC );
+        zval** zval_ptr = reinterpret_cast<zval**>( sqlsrv_malloc( sizeof( zval* )));
+        *zval_ptr = reinterpret_cast<zval*>( convert_to_zval( sqlsrv_phptype_out, reinterpret_cast<void**>( ptr ), *len ));
+        *ptr = reinterpret_cast<char*>( zval_ptr );
+
+        *len = sizeof( zval );
 
         return 1;        
     }
@@ -631,6 +795,14 @@ int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, long attr, zval *val TSRMLS_DC)
            
             case SQLSRV_ATTR_QUERY_TIMEOUT:
                 core_sqlsrv_set_query_timeout( driver_stmt, val TSRMLS_CC );
+                break;
+
+            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:
+                THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_CURSOR_ATTR_AT_PREPARE_ONLY );
+                break;
+
+            case SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE:
+                core_sqlsrv_set_buffered_query_limit( driver_stmt, val TSRMLS_CC );
                 break;
 
             default:
@@ -685,9 +857,23 @@ int pdo_sqlsrv_stmt_get_attr( pdo_stmt_t *stmt, long attr, zval *return_value TS
             
             case PDO_ATTR_CURSOR:
             {
-                ZVAL_LONG( return_value, ( driver_stmt->scrollable ? PDO_CURSOR_SCROLL : PDO_CURSOR_FWDONLY )); 
+                ZVAL_LONG( return_value, ( driver_stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY ? 
+                                           PDO_CURSOR_SCROLL : PDO_CURSOR_FWDONLY )); 
                 break;
             }
+
+            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:
+            {
+                ZVAL_LONG( return_value, driver_stmt->cursor_type ); 
+                break;
+            }
+
+            case SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE:
+            {
+                ZVAL_LONG( return_value, driver_stmt->buffered_query_limit ); 
+                break;
+            }
+
             case SQLSRV_ATTR_QUERY_TIMEOUT:
             {
                 ZVAL_LONG( return_value, ( driver_stmt->query_timeout == QUERY_TIMEOUT_INVALID ? 0 : driver_stmt->query_timeout ));
@@ -755,7 +941,8 @@ int pdo_sqlsrv_stmt_get_col_meta(pdo_stmt_t *stmt, long colno, zval *return_valu
         // get the PHP type of the column.  The types returned here mirror the types returned by debug_zval_dump when 
         // given a variable of the same type.  However, debug_zval_dump also gives the length of a string, and we only
         // say string, since the length is given in another field of the metadata array.
-        switch( sql_type_to_pdo_type( core_meta_data->field_type )) {
+        long pdo_type = sql_type_to_pdo_type( core_meta_data->field_type );
+        switch( pdo_type ) {
             case PDO_PARAM_STR:
                 add_assoc_string( return_value, "native_type", "string", 1 );
                 break;
@@ -770,7 +957,11 @@ int pdo_sqlsrv_stmt_get_col_meta(pdo_stmt_t *stmt, long colno, zval *return_valu
         core::SQLColAttribute( driver_stmt, (SQLUSMALLINT) colno + 1, SQL_DESC_TABLE_NAME, table_name, SQL_SERVER_IDENT_SIZE_MAX,
                                &out_buff_len, &field_type_num TSRMLS_CC );
         add_assoc_string( return_value, "table", table_name, 1 );
-    
+
+        if( stmt->columns[ colno ].param_type == PDO_PARAM_ZVAL ) {
+            add_assoc_long( return_value, "pdo_type", pdo_type );
+        }
+
         // this will ensure that the field_name field, which is an auto pointer gets freed.
         (*core_meta_data).~field_meta_data();
     }
@@ -807,11 +998,15 @@ int pdo_sqlsrv_stmt_next_rowset(pdo_stmt_t *stmt TSRMLS_DC)
 
         SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: pdo_stmt object was null" );
 
-        sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+        pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
         core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ) TSRMLS_CC );
+
+        // clear the current meta data since the new result will generate new meta data
+        std::for_each( driver_stmt->current_meta_data.begin(), driver_stmt->current_meta_data.end(), meta_data_free );
+        driver_stmt->current_meta_data.clear();
 
         // if there are no more result sets, return that it failed.
         if( driver_stmt->past_next_result_end == true ) {
@@ -822,7 +1017,6 @@ int pdo_sqlsrv_stmt_next_rowset(pdo_stmt_t *stmt TSRMLS_DC)
 
         // return the row count regardless if there are any rows or not
         stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
-
     }
     catch( core::CoreException& ) {
 
@@ -971,7 +1165,7 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
                     // 2.0 driver.  To be consistent and avoid surprises of one object type working and others
                     // not, we block all objects here.
                     CHECK_CUSTOM_ERROR( direction != SQL_PARAM_OUTPUT && Z_TYPE_P( param->parameter ) == IS_OBJECT,
-                                        driver_stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE ) {
+                                        driver_stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param->paramno + 1 ) {
                         throw pdo::PDOException();
                     }
                     // the encoding by default is that set on the statement
@@ -987,7 +1181,7 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
                             throw pdo::PDOException();
                         }
                         CHECK_CUSTOM_ERROR( pdo_type != PDO_PARAM_STR && pdo_type != PDO_PARAM_LOB, driver_stmt,
-                                            PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM_TYPE, param->paramno ) {
+                                            PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM_TYPE, param->paramno + 1 ) {
                             throw pdo::PDOException();
                         }
                         encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL_P( param->driver_params ));
@@ -999,7 +1193,7 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
                                 break;
                             default:
                                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM_ENCODING,
-                                                 param->paramno );
+                                                 param->paramno + 1 );
                                 break;
                         }
                     }

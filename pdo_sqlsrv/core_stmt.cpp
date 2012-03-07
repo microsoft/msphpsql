@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use statement handles shared between sqlsrv and pdo_sqlsrv
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,8 +28,10 @@ struct field_cache {
 
     void* value;
     SQLLEN len;
+    sqlsrv_phptype type;
 
-    field_cache( void* field_value, SQLLEN field_len )
+    field_cache( void* field_value, SQLLEN field_len, sqlsrv_phptype t )
+        : type( t )
     {
         // if the value is NULL, then just record a NULL pointer
         if( field_value != NULL ) {
@@ -105,7 +107,6 @@ void send_param_streams( sqlsrv_stmt* stmt TSRMLS_DC );
 void sqlsrv_output_param_dtor( void* data );
 // called when a bound stream parameter is to be destroyed.
 void sqlsrv_stream_dtor( void* data );
-sqlsrv_phptype sql_type_to_php_type( sqlsrv_stmt const* stmt, SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string );
 bool is_streamable_type( SQLINTEGER sql_type );
 
 }
@@ -116,7 +117,8 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
     conn( c ),
     executed( false ),
     past_fetch_end( false ),
-    scrollable( false ),
+    current_results( NULL ),
+    cursor_type( SQL_CURSOR_FORWARD_ONLY ),
     has_rows( false ),
     fetch_called( false ),
     last_field_index( -1 ),
@@ -126,6 +128,7 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
     current_stream( NULL, SQLSRV_ENCODING_DEFAULT ),
     current_stream_read( 0 ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
+    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     active_stream( NULL )
 {
     // initialize the input string parameters array (which holds zvals)
@@ -165,6 +168,14 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
         TSRMLS_FETCH();
         close_active_stream( this TSRMLS_CC );
     }   
+
+    // delete any current results
+    if( current_results ) {
+        current_results->~sqlsrv_result_set();
+        efree( current_results );
+        current_results = NULL;
+    }
+
     invalidate();
     zval_ptr_dtor( &param_input_strings );
     zval_ptr_dtor( &output_params );
@@ -192,13 +203,28 @@ void sqlsrv_stmt::free_param_data( TSRMLS_D )
 // to be called whenever a new result set is created, such as after an
 // execute or next_result.  Resets the state variables.
 
-void sqlsrv_stmt::new_result_set( void )
+void sqlsrv_stmt::new_result_set( TSRMLS_D )
 {
     this->fetch_called = false;
     this->has_rows = false;
     this->past_next_result_end = false;
     this->past_fetch_end = false;
     this->last_field_index = -1;
+
+    // delete any current results
+    if( current_results ) {
+        current_results->~sqlsrv_result_set();
+        efree( current_results );
+        current_results = NULL;
+    }
+
+    // create a new result set
+    if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {
+        current_results = new (sqlsrv_malloc( sizeof( sqlsrv_buffered_result_set ))) sqlsrv_buffered_result_set( this TSRMLS_CC );
+    }
+    else {
+        current_results = new (sqlsrv_malloc( sizeof( sqlsrv_odbc_result_set ))) sqlsrv_odbc_result_set( this );
+    }
 }
 
 // core_sqlsrv_create_stmt
@@ -247,16 +273,15 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
                 int type = zend_hash_get_current_key_ex( options_ht, &key, &key_len, &index, 0, NULL );
                 
                 // The driver layer should ensure a valid key.
-                SQLSRV_ASSERT( (type == HASH_KEY_IS_LONG), "allocate_stmt: Invalid statment option key provided" );
+                DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "allocate_stmt: Invalid statment option key provided." );
                 
                 core::sqlsrv_zend_hash_get_current_data( *(stmt->conn), options_ht, (void**) &value_z TSRMLS_CC );
                     
                 const stmt_option* stmt_opt = get_stmt_option( stmt->conn, index, valid_stmt_opts TSRMLS_CC );
                 
-                // if the key didn't match, then return the error to the script
-                if( !stmt_opt ) {
-                    THROW_CORE_ERROR( stmt->conn, SQLSRV_ERROR_INVALID_OPTION_KEY );
-                }
+                // if the key didn't match, then return the error to the script.
+                // The driver layer should ensure that the key is valid.
+                DEBUG_SQLSRV_ASSERT( stmt_opt != NULL, "allocate_stmt: unexpected null value for statement option." ); 
                 
                 // perform the actions the statement option needs done. 
                 (*stmt_opt->func)( stmt, stmt_opt, *value_z TSRMLS_CC );
@@ -273,6 +298,8 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
     catch( core::CoreException& )
     {
         if( stmt ) {
+
+            conn->set_last_error( stmt->last_error() );
             stmt->~sqlsrv_stmt();
         }
 
@@ -321,7 +348,7 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, unsigned int param_num, int dire
     try {
 
     // check is only < because params are 0 based
-    CHECK_CUSTOM_ERROR( param_num >= SQL_SERVER_MAX_PARAMS, stmt, SQLSRV_ERROR_MAX_PARAMS_EXCEEDED, param_num ) {
+    CHECK_CUSTOM_ERROR( param_num >= SQL_SERVER_MAX_PARAMS, stmt, SQLSRV_ERROR_MAX_PARAMS_EXCEEDED, param_num + 1 ) {
         throw core::CoreException();
     }
 
@@ -498,6 +525,27 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, unsigned int param_num, int dire
                 // save the parameter to be adjusted and/or converted after the results are processed
                 sqlsrv_output_param output_param( param_z, encoding, param_num, buffer_len );
                 save_output_param_for_later( stmt, output_param TSRMLS_CC );
+
+                // For output parameters, if we set the column_size to be same as the buffer_len, 
+                // than if there is a truncation due to the data coming from the server being 
+                // greater than the column_size, we don't get any truncation error. In order to
+                // avoid this silent truncation, we set the column_size to be "MAX" size for 
+                // string types. This will guarantee that there is no silent truncation for 
+                // output parameters.
+                if( direction == SQL_PARAM_OUTPUT ) {
+                    
+                    switch( sql_type ) {
+
+                        case SQL_VARBINARY:
+                        case SQL_VARCHAR:
+                        case SQL_WVARCHAR: 
+                            column_size = SQL_SS_LENGTH_UNLIMITED;
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
             }
             break;
         case IS_RESOURCE:
@@ -516,22 +564,33 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, unsigned int param_num, int dire
         case IS_OBJECT:
         {
             SQLSRV_ASSERT( direction == SQL_PARAM_INPUT, "Invalid output param type.  The driver layer should catch this." ); 
-            sqlsrv_malloc_auto_ptr<char> class_name;
-            zend_uint class_name_len;
             zval_auto_ptr function_z;
             zval_auto_ptr buffer_z;
             zval_auto_ptr format_z;
             zval* params[1];
+            bool valid_class_name_found = false;
 
-            int zr = zend_get_object_classname( param_z, &class_name, &class_name_len TSRMLS_CC );
-            CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
+            zend_class_entry *class_entry = zend_get_class_entry( param_z TSRMLS_CC );
+
+            while( class_entry != NULL ) {
+                
+                if( class_entry->name_length == DateTime::DATETIME_CLASS_NAME_LEN && class_entry->name != NULL && 
+                    stricmp( class_entry->name, DateTime::DATETIME_CLASS_NAME ) == 0 ) {
+                    valid_class_name_found = true;
+                    break;
+                }
+
+                else {
+
+                    // Check the parent 
+                    class_entry = class_entry->parent;
+                }
+            }
+
+            CHECK_CUSTOM_ERROR( !valid_class_name_found, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
                 throw core::CoreException();
             }
-            CHECK_CUSTOM_ERROR( class_name_len != DateTime::DATETIME_CLASS_NAME_LEN || 
-                                stricmp( class_name, DateTime::DATETIME_CLASS_NAME ),
-                                stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
-                throw core::CoreException();
-            }
+
             ALLOC_INIT_ZVAL( buffer_z );
             ALLOC_INIT_ZVAL( function_z );
             ALLOC_INIT_ZVAL( format_z );
@@ -554,7 +613,7 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, unsigned int param_num, int dire
             params[0] = format_z;
             // This is equivalent to the PHP code: $param_z->format( $format_z ); where param_z is the
             // DateTime object and $format_z is the format string.
-            zr = call_user_function( EG( function_table ), &param_z, function_z, buffer_z, 1, params TSRMLS_CC );
+            int zr = call_user_function( EG( function_table ), &param_z, function_z, buffer_z, 1, params TSRMLS_CC );
             CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
                 throw core::CoreException();
             }
@@ -602,6 +661,8 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, unsigned int param_num, int dire
 
 void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_len )
 {
+    try {
+
     // close the stream to release the resource
     close_active_stream( stmt TSRMLS_CC );
 
@@ -632,7 +693,7 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_
         r = core::SQLExecute( stmt TSRMLS_CC );
     }
 
-    stmt->new_result_set();
+    stmt->new_result_set( TSRMLS_C );
     stmt->executed = true;
 
     // if data is needed (streams were bound) and they should be sent at execute time, then do so now
@@ -645,6 +706,19 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_
     if( stmt->send_streams_at_exec && (r == SQL_NO_DATA || !core_sqlsrv_has_any_result( stmt TSRMLS_CC ))) {
 
         finalize_output_parameters( stmt TSRMLS_CC );
+    }
+
+    }
+    catch( core::CoreException& e ) {
+
+        // if the statement executed but failed in a subsequent operation before returning, 
+        // we need to cancel the statement
+        if( stmt->executed ) {
+            SQLCancel( stmt->handle() );
+            // stmt->executed = false; should this be reset if something fails?
+        }
+
+        throw e;
     }
 }
 
@@ -689,20 +763,19 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLLEN
 
         // if the statement has rows and is not scrollable but doesn't yet have
         // fetch_called, this must be the first time we've called sqlsrv_fetch.  
-        if( !stmt->scrollable && stmt->has_rows && !stmt->fetch_called ) {
+        if( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY && stmt->has_rows && !stmt->fetch_called ) {
             stmt->fetch_called = true;
             return true;
         }
 
         // move to the record requested.  For absolute records, we use a 0 based offset, so +1 since 
         // SQLFetchScroll uses a 1 based offset, otherwise for relative, just use the fetch_offset provided.
-        SQLRETURN r = core::SQLFetchScroll( stmt, fetch_orientation, 
-                                            ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 
-                                            TSRMLS_CC );
-        
+        SQLRETURN r = stmt->current_results->fetch( fetch_orientation, 
+                                                    ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 
+                                                    TSRMLS_CC );
         if( r == SQL_NO_DATA ) {
             // if this is a forward only cursor, mark that we've passed the end so future calls result in an error
-            if( !stmt->scrollable ) {
+            if( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
                 stmt->past_fetch_end = true;
             }
             return false;
@@ -812,13 +885,18 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
             if( cached->value == NULL ) {
                 *field_value = NULL;
                 *field_len = 0;
+                if( sqlsrv_php_type_out ) { *sqlsrv_php_type_out = SQLSRV_PHPTYPE_NULL; }
             }
             else {
                 
-                *field_value = sqlsrv_malloc( cached->len + 1 );
+                *field_value = sqlsrv_malloc( cached->len, sizeof( char ), 1 );
                 memcpy( *field_value, cached->value, cached->len );
-                reinterpret_cast<char*>( *field_value )[ cached->len ] = '\0';  // prevent the 'string not null terminated' warning
+                if( cached->type.typeinfo.type == SQLSRV_PHPTYPE_STRING ) {
+                    // prevent the 'string not null terminated' warning
+                    reinterpret_cast<char*>( *field_value )[ cached->len ] = '\0';
+                }
                 *field_len = cached->len;
+                if( sqlsrv_php_type_out ) { *sqlsrv_php_type_out = static_cast<SQLSRV_PHPTYPE>( cached->type.typeinfo.type ); }
             }
             return;
         }
@@ -878,7 +956,7 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 
         // if the user wants us to cache the field, we'll do it
         if( cache_field ) {
-            field_cache cache( *field_value, *field_len );
+            field_cache cache( *field_value, *field_len, sqlsrv_php_type );
             core::sqlsrv_zend_hash_index_update( *stmt, Z_ARRVAL_P( stmt->field_cache ), field_index, &cache, 
                                                  sizeof( field_cache ) TSRMLS_CC );
         }
@@ -913,7 +991,7 @@ bool core_sqlsrv_has_any_result( sqlsrv_stmt* stmt TSRMLS_DC )
 // Returns
 // Nothing, exception thrown if problem occurs
 
-void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params )
+void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params, bool throw_on_errors )
 {
     try {
 
@@ -928,7 +1006,13 @@ void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_
 
         close_active_stream( stmt TSRMLS_CC );
 
-        SQLRETURN r = core::SQLMoreResults( stmt TSRMLS_CC );
+        SQLRETURN r;
+        if( throw_on_errors ) {
+            r = core::SQLMoreResults( stmt TSRMLS_CC );
+        }
+        else {
+            r = SQLMoreResults( stmt->handle() );
+        }
 
         if( r == SQL_NO_DATA ) {
 
@@ -942,7 +1026,7 @@ void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_
             return;
         }
 
-        stmt->new_result_set();
+        stmt->new_result_set( TSRMLS_C );
     }
     catch( core::CoreException& e ) {
 
@@ -991,41 +1075,61 @@ void core_sqlsrv_set_scrollable( sqlsrv_stmt* stmt, unsigned int cursor_type TSR
             case SQL_CURSOR_STATIC:
                 core::SQLSetStmtAttr( stmt, SQL_ATTR_CURSOR_TYPE, 
                                       reinterpret_cast<SQLPOINTER>( SQL_CURSOR_STATIC ), SQL_IS_UINTEGER TSRMLS_CC );
-                stmt->scrollable = true;
-                stmt->scroll_is_dynamic = false;    
                 break;
 
             case SQL_CURSOR_DYNAMIC:
                 core::SQLSetStmtAttr( stmt, SQL_ATTR_CURSOR_TYPE, 
                                       reinterpret_cast<SQLPOINTER>( SQL_CURSOR_DYNAMIC ), SQL_IS_UINTEGER TSRMLS_CC );
-                stmt->scrollable = true;
-                stmt->scroll_is_dynamic = true;     // this cursor is dynamic
                 break;
 
             case SQL_CURSOR_KEYSET_DRIVEN:
                 core::SQLSetStmtAttr( stmt, SQL_ATTR_CURSOR_TYPE, 
                                       reinterpret_cast<SQLPOINTER>( SQL_CURSOR_KEYSET_DRIVEN ), SQL_IS_UINTEGER TSRMLS_CC );
-                stmt->scrollable = true;
-                stmt->scroll_is_dynamic = false;    
                 break;
         
             case SQL_CURSOR_FORWARD_ONLY:
                 core::SQLSetStmtAttr( stmt, SQL_ATTR_CURSOR_TYPE, 
                                       reinterpret_cast<SQLPOINTER>( SQL_CURSOR_FORWARD_ONLY ), SQL_IS_UINTEGER TSRMLS_CC );
-                stmt->scrollable = false;   // reset since forward isn't scrollable
-                stmt->scroll_is_dynamic = false;    
+                break;
+
+            case SQLSRV_CURSOR_BUFFERED:
+                core::SQLSetStmtAttr( stmt, SQL_ATTR_CURSOR_TYPE, 
+                                      reinterpret_cast<SQLPOINTER>( SQL_CURSOR_FORWARD_ONLY ), SQL_IS_UINTEGER TSRMLS_CC );
                 break;
 
             default:
                 THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE );
                 break;
         }
+
+        stmt->cursor_type = cursor_type;
+
     }
-    
     catch( core::CoreException& ) {
         throw;
     }
 }
+
+void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
+{
+    if( Z_TYPE_P( value_z ) != IS_LONG ) {
+
+        THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_BUFFER_LIMIT );
+    }
+
+    core_sqlsrv_set_buffered_query_limit( stmt, Z_LVAL_P( value_z ) TSRMLS_CC );
+}
+
+void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, long limit TSRMLS_DC )
+{
+    if( limit <= 0 ) {
+
+        THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_BUFFER_LIMIT );
+    }
+
+    stmt->buffered_query_limit = limit;
+}
+
 
 // Overloaded. Extracts the long value and calls the core_sqlsrv_set_query_timeout
 // which accepts timeout parameter as a long. If the zval is not of type long 
@@ -1038,7 +1142,7 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
         if( Z_TYPE_P( value_z ) != IS_LONG || Z_LVAL_P( value_z ) < 0 ) {
 
             convert_to_string( value_z );       
-            THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_OPTION_VALUE, Z_STRVAL_P( value_z ) );
+            THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE, Z_STRVAL_P( value_z ) );
         }
 
         core_sqlsrv_set_query_timeout( stmt, Z_LVAL_P( value_z ) TSRMLS_CC );
@@ -1214,6 +1318,11 @@ void stmt_option_send_at_exec:: operator()( sqlsrv_stmt* stmt, stmt_option const
     core_sqlsrv_set_send_at_exec( stmt, value_z TSRMLS_CC );    
 }
 
+void stmt_option_buffered_query_limit:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+{
+    core_sqlsrv_set_buffered_query_limit( stmt, value_z TSRMLS_CC );
+}
+
 
 // internal function to release the active stream.  Called by each main API function
 // that will alter the statement and cancel any retrieval of data from a stream.
@@ -1382,9 +1491,13 @@ void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
                 sqlsrv_malloc_auto_ptr<long> field_value_temp;  
                 field_value_temp = static_cast<long*>( sqlsrv_malloc( sizeof( long )));
 
-                SQLRETURN r = core::SQLGetData( stmt, field_index + 1, SQL_C_LONG, field_value_temp, 0, 
-                                                field_len, true /*handle_warning*/ TSRMLS_CC );
+                SQLRETURN r = stmt->current_results->get_data(field_index + 1, SQL_C_LONG, field_value_temp, sizeof( long ), 
+                                                              field_len, true /*handle_warning*/ TSRMLS_CC );
                 
+                CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+                    throw core::CoreException();
+                }
+
                 CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
                     throw core::CoreException();
                 }
@@ -1404,9 +1517,13 @@ void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
                 sqlsrv_malloc_auto_ptr<double> field_value_temp;  
                 field_value_temp = static_cast<double*>( sqlsrv_malloc( sizeof( double )));
 
-                SQLRETURN r = core::SQLGetData( stmt, field_index + 1, SQL_C_DOUBLE, field_value_temp, 0, 
-                                                field_len, true /*handle_warning*/ TSRMLS_CC );
+                SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_DOUBLE, field_value_temp, sizeof( double ), 
+                                                               field_len, true /*handle_warning*/ TSRMLS_CC );
                 
+                CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+                    throw core::CoreException();
+                }
+
                 CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
                     throw core::CoreException ();
                 }
@@ -1440,8 +1557,8 @@ void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
                 ALLOC_INIT_ZVAL( function_z );
                 ALLOC_INIT_ZVAL( return_value_z );
 
-                SQLRETURN r = core::SQLGetData( stmt, field_index + 1, SQL_C_CHAR, field_value_temp, MAX_DATETIME_STRING_LEN, 
-                                                field_len, true TSRMLS_CC ); 
+                SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_CHAR, field_value_temp, 
+                                                               MAX_DATETIME_STRING_LEN, field_len, true TSRMLS_CC ); 
 
                 CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
                     throw core::CoreException ();
@@ -1511,6 +1628,11 @@ void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
 
                 break;
             }
+
+            case SQLSRV_PHPTYPE_NULL:
+                *field_value = NULL;
+                *field_len = 0;
+                break;
 
             default:
                 DIE( "core_get_field_common: Unexpected sqlsrv_phptype provided" );
@@ -1630,7 +1752,7 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, unsigned int paramno, zval const*
                     sql_c_type = SQL_C_CHAR;
                     break;
             }
-            break;
+	    break;
         case IS_BOOL:
         case IS_LONG:
             sql_c_type = SQL_C_LONG;
@@ -1951,8 +2073,8 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
             
             field_value_temp = static_cast<char*>( sqlsrv_malloc( field_len_temp + extra + 1 ));
             
-            r = core::SQLGetData( stmt, field_index + 1, c_type, field_value_temp, ( field_len_temp + extra ), 
-                                  &field_len_temp, false /*handle_warning*/ TSRMLS_CC );
+            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, ( field_len_temp + extra ), 
+                                                 &field_len_temp, false /*handle_warning*/ TSRMLS_CC );
             
             CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
                 throw core::CoreException ();
@@ -1969,7 +2091,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
                 SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
                 SQLSMALLINT len;
                 
-                core::SQLGetDiagField( stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
+                stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
                     
                 if( is_truncated_warning( state ) ) {
                         
@@ -1993,8 +2115,9 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
                             field_len_temp -= initial_field_len;
 
                             // Get the rest of the data.
-                            r = core::SQLGetData( stmt, field_index + 1, c_type, field_value_temp + initial_field_len,                          
-                                                  field_len_temp + extra, &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
+                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + initial_field_len,
+                                                                 field_len_temp + extra, &dummy_field_len, 
+                                                                 false /*handle_warning*/ TSRMLS_CC );
 
                             // the last packet will contain the actual amount retrieved, not SQL_NO_TOTAL
                             // so we calculate the actual length of the string with that.
@@ -2019,8 +2142,9 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
                         field_len_temp -= INITIAL_FIELD_STRING_LEN;
                         
                         // Get the rest of the data.
-                        r = core::SQLGetData( stmt, field_index + 1, c_type, field_value_temp + INITIAL_FIELD_STRING_LEN,
-                                              field_len_temp + extra, &dummy_field_len, true /*handle_warning*/ TSRMLS_CC );
+                        r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + INITIAL_FIELD_STRING_LEN,
+                                                             field_len_temp + extra, &dummy_field_len, 
+                                                             true /*handle_warning*/ TSRMLS_CC );
 
                         if( dummy_field_len == SQL_NULL_DATA ) {
                             *field_value = NULL;
@@ -2072,9 +2196,11 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
             field_value_temp = static_cast<char*>( sqlsrv_malloc( sql_display_size + extra + 1 ));
             
             // get the data
-            r = core::SQLGetData( stmt, field_index + 1, c_type, field_value_temp, sql_display_size, 
-                                  &field_len_temp, true /*handle_warning*/ TSRMLS_CC );
-            
+            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, sql_display_size, 
+                                                 &field_len_temp, true /*handle_warning*/ TSRMLS_CC );
+            CHECK_SQL_ERROR( r, stmt ) {
+                throw core::CoreException();
+            }
             CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
                 throw core::CoreException ();
             } 

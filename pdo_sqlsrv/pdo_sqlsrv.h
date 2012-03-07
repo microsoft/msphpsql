@@ -6,7 +6,7 @@
 //
 // Contents: Declarations for the extension
 // 
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,10 @@ extern "C" {
 
 }
 
+#include <vector>
+#include <map>
+
+
 //*********************************************************************************************************************************
 // Constants and Types
 //*********************************************************************************************************************************
@@ -43,6 +47,8 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_ENCODING = PDO_ATTR_DRIVER_SPECIFIC,
     SQLSRV_ATTR_QUERY_TIMEOUT,
     SQLSRV_ATTR_DIRECT_QUERY,
+    SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
+    SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -65,6 +71,7 @@ extern "C" {
 ZEND_BEGIN_MODULE_GLOBALS(pdo_sqlsrv)
 
 unsigned int log_severity;
+long client_buffer_max_size;
 
 ZEND_END_MODULE_GLOBALS(pdo_sqlsrv)
 
@@ -81,12 +88,15 @@ ZEND_EXTERN_MODULE_GLOBALS(pdo_sqlsrv);
 
 // INI settings and constants
 // (these are defined as macros to allow concatenation as we do below)
+#define INI_PDO_SQLSRV_CLIENT_BUFFER_MAX_SIZE "client_buffer_max_kb_size"
 #define INI_PDO_SQLSRV_LOG   "log_severity"
 #define INI_PREFIX           "pdo_sqlsrv."
 
 PHP_INI_BEGIN()
     STD_PHP_INI_ENTRY( INI_PREFIX INI_PDO_SQLSRV_LOG , "0", PHP_INI_ALL, OnUpdateLong, log_severity,
                          zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals )
+    STD_PHP_INI_ENTRY( INI_PREFIX INI_PDO_SQLSRV_CLIENT_BUFFER_MAX_SIZE , INI_BUFFERED_QUERY_LIMIT_DEFAULT, PHP_INI_ALL, OnUpdateLong, 
+                       client_buffer_max_size, zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals )
 PHP_INI_END()
 
 // henv context for creating connections
@@ -166,14 +176,9 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     zval* stmts;
     bool direct_query;
     long query_timeout;
+    long client_buffer_max_size;
 
-    pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC ) :
-        sqlsrv_conn( h, e, driver, SQLSRV_ENCODING_UTF8 TSRMLS_CC ),
-        stmts( NULL ),
-        direct_query( false ),
-        query_timeout( QUERY_TIMEOUT_INVALID )
-    {
-    }
+    pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC );
 };
 
 
@@ -196,6 +201,16 @@ struct stmt_option_direct_query : public stmt_option_functor {
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_cursor_scroll_type : public stmt_option_functor {
+
+    virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
+};
+
+struct stmt_option_emulate_prepares : public stmt_option_functor {
+
+    virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
+};
+
 extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
 
 // a core layer pdo stmt object. This object inherits and overrides the callbacks necessary
@@ -204,28 +219,22 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     pdo_sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC ) :
         sqlsrv_stmt( c, handle, e, drv TSRMLS_CC ), 
         direct_query( false ),
-        query( NULL ),
-        query_len( 0 )
+        bound_column_param_types( NULL )
     {
         pdo_sqlsrv_dbh* db = static_cast<pdo_sqlsrv_dbh*>( c );
         direct_query = db->direct_query;
     }
 
-    virtual ~pdo_sqlsrv_stmt( void )
-    {
-        if( query ) {
-            sqlsrv_free( query );
-            query = NULL;
-        }
-    }
+    virtual ~pdo_sqlsrv_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     // for PDO, everything is a string, so we return SQLSRV_PHPTYPE_STRING for all SQL types
     virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
 
     bool direct_query;          // flag set if the query should be executed directly or prepared
-    char* query;                // if the query should be executed directly, this holds the query to execute
-    unsigned int query_len;     // length of the query string.
+    // meta data for current result set
+    std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
+    pdo_param_type* bound_column_param_types;
 };
 
 
@@ -345,6 +354,8 @@ enum PDO_ERROR_CODES {
     PDO_SQLSRV_ERROR_DQ_ATTR_AT_PREPARE_ONLY,
     PDO_SQLSRV_ERROR_INVALID_COLUMN_INDEX,
     PDO_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE,
+    PDO_SQLSRV_ERROR_INVALID_CURSOR_WITH_SCROLL_TYPE,
+
 };
 
 extern pdo_error PDO_ERRORS[];
@@ -368,8 +379,8 @@ namespace pdo {
 // called pdo_parse_params in php_pdo_driver.h
 // we renamed it for 2 reasons: 1) we can't have the same name since it would conflict with our dynamic linking, and 
 // 2) this is a more precise name
-extern int (*pdo_subst_params_named_to_positional)(pdo_stmt_t *stmt, char *inquery, int inquery_len, 
-                                             char **outquery, int *outquery_len TSRMLS_DC);
+extern int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, int inquery_len, 
+                                     char **outquery, int *outquery_len TSRMLS_DC);
 
 // logger for pdo_sqlsrv called by the core layer when it wants to log something with the LOG macro
 void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );

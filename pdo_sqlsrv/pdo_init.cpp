@@ -3,7 +3,7 @@
 //
 // Contents: initialization routines for PDO_SQLSRV
 // 
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -134,8 +134,8 @@ zend_module_entry g_pdo_sqlsrv_module_entry =
 
 // functions dynamically linked from the PDO (or PHP) dll and called by other parts of the driver
 zend_class_entry* (*pdo_get_exception_class)( void );
-int (*pdo_subst_params_named_to_positional)(pdo_stmt_t *stmt, char *inquery, int inquery_len, 
-                                            char **outquery, int *outquery_len TSRMLS_DC);
+int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, int inquery_len, 
+                              char **outquery, int *outquery_len TSRMLS_DC);
 
 // Module initialization
 // This function is called once per execution of the Zend engine
@@ -206,11 +206,11 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
         return FAILURE;
     }
 
-    pdo_subst_params_named_to_positional = 
+    pdo_subst_named_params = 
         reinterpret_cast<int (*)(pdo_stmt_t *stmt, char *inquery, int inquery_len, 
                                  char **outquery, int *outquery_len TSRMLS_DC)>( 
                                      GetProcAddress( pdo_hmodule, "pdo_parse_params" ));
-    if( pdo_subst_params_named_to_positional == NULL ) {
+    if( pdo_subst_named_params == NULL ) {
         LOG( SEV_ERROR, "Failed to register driver." );
         return FAILURE;
     }
@@ -242,16 +242,6 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
         REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( pdo_attr_constants[i].name, pdo_attr_constants[i].value TSRMLS_CC );
     
     }
-
-    // used for the size for output parameters: PDO::PARAM_INT and PDO::PARAM_BOOL use the default size of int,
-    // PDO::PARAM_STR uses the size of the string in the variable
-    REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( "SQLSRV_PARAM_OUT_DEFAULT_SIZE", -1 TSRMLS_CC );
-
-    // encoding attributes
-    REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( "SQLSRV_ENCODING_DEFAULT", SQLSRV_ENCODING_DEFAULT TSRMLS_CC );
-    REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( "SQLSRV_ENCODING_SYSTEM",  SQLSRV_ENCODING_SYSTEM TSRMLS_CC );
-    REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( "SQLSRV_ENCODING_BINARY",  SQLSRV_ENCODING_BINARY TSRMLS_CC );
-    REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( "SQLSRV_ENCODING_UTF8",    SQLSRV_ENCODING_UTF8 TSRMLS_CC );
 
     REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_READ_UNCOMMITTED", PDOTxnIsolationValues::READ_UNCOMMITTED  TSRMLS_CC );
     REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_READ_COMMITTED", PDOTxnIsolationValues::READ_COMMITTED TSRMLS_CC );
@@ -383,10 +373,30 @@ namespace {
 
     // array of pdo constants.
     sqlsrv_attr_pdo_constant pdo_attr_constants[] = {
-        
+
+        // driver specific attributes
         { "SQLSRV_ATTR_ENCODING"            , SQLSRV_ATTR_ENCODING },
         { "SQLSRV_ATTR_QUERY_TIMEOUT"       , SQLSRV_ATTR_QUERY_TIMEOUT },
         { "SQLSRV_ATTR_DIRECT_QUERY"        , SQLSRV_ATTR_DIRECT_QUERY },
+        { "SQLSRV_ATTR_CURSOR_SCROLL_TYPE"  , SQLSRV_ATTR_CURSOR_SCROLL_TYPE },
+        { "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
+
+        // used for the size for output parameters: PDO::PARAM_INT and PDO::PARAM_BOOL use the default size of int,
+        // PDO::PARAM_STR uses the size of the string in the variable
+        { "SQLSRV_PARAM_OUT_DEFAULT_SIZE"   , -1 },
+
+        // encoding attributes
+        { "SQLSRV_ENCODING_DEFAULT"         , SQLSRV_ENCODING_DEFAULT },
+        { "SQLSRV_ENCODING_SYSTEM"          , SQLSRV_ENCODING_SYSTEM },
+        { "SQLSRV_ENCODING_BINARY"          , SQLSRV_ENCODING_BINARY },
+        { "SQLSRV_ENCODING_UTF8"            , SQLSRV_ENCODING_UTF8 },
+
+        // cursor types (can be assigned to SQLSRV_ATTR_CURSOR_SCROLL_TYPE
+        { "SQLSRV_CURSOR_STATIC"            , SQL_CURSOR_STATIC },
+        { "SQLSRV_CURSOR_DYNAMIC"           , SQL_CURSOR_DYNAMIC },
+        { "SQLSRV_CURSOR_KEYSET"            , SQL_CURSOR_KEYSET_DRIVEN },
+        { "SQLSRV_CURSOR_BUFFERED"          , SQLSRV_CURSOR_BUFFERED },
+
         { NULL , 0 } // terminate the table
     };
 }

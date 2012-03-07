@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -147,7 +147,8 @@ wchar_t* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 
-bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_error* error, logging_severity severity TSRMLS_DC )
+bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_error_auto_ptr& error, logging_severity severity 
+                                 TSRMLS_DC )
 {
     SQLHANDLE h = ctx.handle();
     SQLSMALLINT h_type = ctx.handle_type();
@@ -165,22 +166,50 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
     SQLINTEGER message_len = 0;
     SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ];
     SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ];
+    SQLSRV_ENCODING enc = ctx.encoding();
 
-    r = SQLGetDiagRecW( h_type, h, record_number, wsqlstate, &error->native_code, wnative_message,
-                        SQL_MAX_MESSAGE_LENGTH + 1, &wmessage_len );
-    // don't use the CHECK* macros here since it will trigger reentry into the error handling system
-    if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
-        return false;
-    }
+    switch( h_type ) {
 
-    // convert the error into the encoding of the context
-    error->sqlstate = reinterpret_cast<SQLCHAR*>( wsqlstate );
-    convert_string_from_utf16( ctx.encoding(), reinterpret_cast<char**>( &error->sqlstate ), sqlstate_len, 
-                               false /*no free*/ );
-    error->native_message = reinterpret_cast<SQLCHAR*>( wnative_message );
-    message_len = wmessage_len * sizeof( wchar_t );
-    convert_string_from_utf16( ctx.encoding(), reinterpret_cast<char**>( &error->native_message ), message_len, 
-                               false /*no free*/ );
+        case SQL_HANDLE_STMT:
+            {
+                sqlsrv_stmt* stmt = static_cast<sqlsrv_stmt*>( &ctx );
+                if( stmt->current_results != NULL ) {
+
+                    error = stmt->current_results->get_diag_rec( record_number );
+                    // don't use the CHECK* macros here since it will trigger reentry into the error handling system
+                    if( error == NULL ) {
+                        return false;
+                    }
+                    break;
+                }
+
+                // convert the error into the encoding of the context
+                if( enc == SQLSRV_ENCODING_DEFAULT ) {
+                    enc = stmt->conn->encoding();
+                }
+            }
+
+
+        default:
+
+            error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
+            r = SQLGetDiagRecW( h_type, h, record_number, wsqlstate, &error->native_code, wnative_message,
+                                SQL_MAX_MESSAGE_LENGTH + 1, &wmessage_len );
+            // don't use the CHECK* macros here since it will trigger reentry into the error handling system
+            if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
+                return false;
+            }
+
+            error->sqlstate = reinterpret_cast<SQLCHAR*>( wsqlstate );
+            convert_string_from_utf16( enc, reinterpret_cast<char**>( &error->sqlstate ), sqlstate_len, 
+                                       false /*no free*/ );
+            error->native_message = reinterpret_cast<SQLCHAR*>( wnative_message );
+            message_len = wmessage_len * sizeof( wchar_t );
+            convert_string_from_utf16( enc, reinterpret_cast<char**>( &error->native_message ), message_len, 
+                                       false /*no free*/ );
+            break;
+	}
+
 
     // log the error first
     LOG( severity, "%1!s!: SQLSTATE = %2!s!", ctx.func(), error->sqlstate );
@@ -194,9 +223,10 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
 
 // format and return a driver specfic error
 void core_sqlsrv_format_driver_error( sqlsrv_context& ctx, sqlsrv_error_const const* custom_error, 
-                                      sqlsrv_error* formatted_error, logging_severity severity TSRMLS_DC, va_list* args )
+                                      sqlsrv_error_auto_ptr& formatted_error, logging_severity severity TSRMLS_DC, va_list* args )
 {
     // allocate space for the formatted message
+    formatted_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
     formatted_error->sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
     formatted_error->native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_MESSAGE_LENGTH + 1 ));
 

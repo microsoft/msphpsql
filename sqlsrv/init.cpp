@@ -2,7 +2,7 @@
 // File: init.cpp
 // Contents: initialization routines for the extension
 // 
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,134 +46,137 @@ unsigned int current_log_subsystem = LOG_INIT;
 // argument info structures for functions, arranged alphabetically.
 // see zend_API.h in the PHP sources for more information about these macros
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_begin_transaction_arginfo, 0, 0, 1 )
-    ZEND_ARG_INFO( 0, "connection resource" )
+    ZEND_ARG_INFO( 0, conn )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_cancel_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_close_arginfo, 0, 0, 1 )
-    ZEND_ARG_INFO( 0, "connection resource" )
+    ZEND_ARG_INFO( 0, conn )
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX( sqlsrv_client_info_arginfo, 0, 0, 0 )
-    ZEND_ARG_INFO( 0, "connection resource" )
+ZEND_BEGIN_ARG_INFO_EX( sqlsrv_client_info_arginfo, 0, 0, 1 )
+    ZEND_ARG_INFO( 0, conn )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_commit_arginfo, 0, 0, 1 )
-    ZEND_ARG_INFO( 0, "connection resource" )
+    ZEND_ARG_INFO( 0, conn )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_configure_arginfo, 0, 0, 2 )
-    ZEND_ARG_INFO( 0, "option name" )
-    ZEND_ARG_INFO( 0, "value" )
+    ZEND_ARG_INFO( 0, setting )
+    ZEND_ARG_INFO( 0, value )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_connect_arginfo, 0, 0, 1 )
-    ZEND_ARG_INFO( 0, "server" )
-    ZEND_ARG_ARRAY_INFO( 0, "options", 0 )
+    ZEND_ARG_INFO( 0, server_name )
+    ZEND_ARG_ARRAY_INFO( 0, connection_info, 0 )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_errors_arginfo, 0, 1, 0 )
-    ZEND_ARG_INFO( 0, "flags (errors, warnings, or all)" )
+    ZEND_ARG_INFO( 0, errors_and_or_warnings )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_execute_arginfo, 0, 0, 1 )
-    ZEND_ARG_INFO( 0, "statement resource" )
-    ZEND_ARG_INFO( 0, "parameters" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_fetch_arginfo, 0, 0, 1 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_fetch_array_arginfo, 0, 1, 1 )
-    ZEND_ARG_INFO( 0, "statement resource" )
-    ZEND_ARG_INFO( 0, "array type" )
+    ZEND_ARG_INFO( 0, stmt )
+    ZEND_ARG_INFO( 0, fetch_type )
+    ZEND_ARG_INFO( 0, row )
+    ZEND_ARG_INFO( 0, offset )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_fetch_object_arginfo, 0, 1, 1 )
-    ZEND_ARG_INFO( 0, "statement resource" )
-    ZEND_ARG_INFO( 0, "class name" )
-    ZEND_ARG_INFO( 0, "ctor params" )
+    ZEND_ARG_INFO( 0, stmt )
+    ZEND_ARG_INFO( 0, class_name )
+    ZEND_ARG_INFO( 0, ctor_params )
+    ZEND_ARG_INFO( 0, row )
+    ZEND_ARG_INFO( 0, offset )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_field_metadata_arginfo, 0, 1, 1 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_free_stmt_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_get_config_arginfo, 0, 0, 1 )
-    ZEND_ARG_INFO( 0, "option name" )
+    ZEND_ARG_INFO( 0, setting )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_get_field_arginfo, 0, 1, 2 )
-    ZEND_ARG_INFO( 0, "statement resource" )
-    ZEND_ARG_INFO( 0, "field index" )
-    ZEND_ARG_INFO( 0, "type" )
+    ZEND_ARG_INFO( 0, stmt )
+    ZEND_ARG_INFO( 0, field_index )
+    ZEND_ARG_INFO( 0, get_as_type )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_has_rows_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_next_result_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_num_fields_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_num_rows_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_prepare_arginfo, 0, 1, 2 )
-    ZEND_ARG_INFO( 0, "connection resource" )
-    ZEND_ARG_INFO( 0, "sql command" )
-    ZEND_ARG_INFO( 0, "parameters" )
-    ZEND_ARG_ARRAY_INFO( 0, "options", 0 )
+    ZEND_ARG_INFO( 0, conn )
+    ZEND_ARG_INFO( 0, tsql )
+    ZEND_ARG_INFO( 0, params )
+    ZEND_ARG_INFO( 0, options )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_query_arginfo, 0, 1, 2 )
-    ZEND_ARG_INFO( 0, "connection resource" )
-    ZEND_ARG_INFO( 0, "sql command" )
-    ZEND_ARG_INFO( 0, "parameters" )
-    ZEND_ARG_ARRAY_INFO( 0, "options", 0 )
+    ZEND_ARG_INFO( 0, conn )
+    ZEND_ARG_INFO( 0, tsql )
+    ZEND_ARG_INFO( 0, params )
+    ZEND_ARG_INFO( 0, options )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_rollback_arginfo, 0, 0, 1 )
-    ZEND_ARG_INFO( 0, "connection resource" )
+    ZEND_ARG_INFO( 0, conn )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_rows_affected_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_send_stream_data_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_server_info_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "statement resource" )
+    ZEND_ARG_INFO( 0, stmt )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_sqltype_size_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "size" )
+    ZEND_ARG_INFO( 0, size )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_sqltype_precision_scale_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "precision" )
-    ZEND_ARG_INFO( 0, "scale" )
+    ZEND_ARG_INFO( 0, precision )
+    ZEND_ARG_INFO( 0, scale )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO( sqlsrv_phptype_encoding_arginfo, 0 )
-    ZEND_ARG_INFO( 0, "encoding" )
+    ZEND_ARG_INFO( 0, encoding )
 ZEND_END_ARG_INFO()
 
 // function table with associated arginfo structures
@@ -290,7 +293,8 @@ PHP_MINIT_FUNCTION(sqlsrv)
     REGISTER_LONG_CONSTANT( "SQLSRV_LOG_SEVERITY_ALL", -1, CONST_PERSISTENT | CONST_CS ); // -1 so that all the bits are set
 
     // register connection resource
-    ss_sqlsrv_conn::descriptor = zend_register_list_destructors_ex( sqlsrv_conn_dtor, NULL, "SQL Server Connection", module_number );
+    ss_sqlsrv_conn::descriptor = zend_register_list_destructors_ex( sqlsrv_conn_dtor, NULL, "SQL Server Connection", 
+                                                                    module_number );
 
     if( ss_sqlsrv_conn::descriptor == FAILURE ) {
         LOG( SEV_ERROR, "%1!s!: connection resource registration failed", _FN_ );
@@ -319,8 +323,8 @@ PHP_MINIT_FUNCTION(sqlsrv)
     REGISTER_STRING_CONSTANT( "SQLSRV_ENC_BINARY", "binary", CONST_PERSISTENT | CONST_CS );
     REGISTER_STRING_CONSTANT( "SQLSRV_ENC_CHAR",   "char", CONST_PERSISTENT | CONST_CS );
     
-    REGISTER_LONG_CONSTANT( "SQLSRV_NULLABLE_YES",     0, CONST_PERSISTENT | CONST_CS );
-    REGISTER_LONG_CONSTANT( "SQLSRV_NULLABLE_NO",      1, CONST_PERSISTENT | CONST_CS );
+    REGISTER_LONG_CONSTANT( "SQLSRV_NULLABLE_NO",      0, CONST_PERSISTENT | CONST_CS );
+    REGISTER_LONG_CONSTANT( "SQLSRV_NULLABLE_YES",     1, CONST_PERSISTENT | CONST_CS );
     REGISTER_LONG_CONSTANT( "SQLSRV_NULLABLE_UNKNOWN", 2, CONST_PERSISTENT | CONST_CS );
 
     REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_BIGINT",           SQL_BIGINT, CONST_PERSISTENT | CONST_CS );
@@ -394,6 +398,7 @@ PHP_MINIT_FUNCTION(sqlsrv)
     REGISTER_STRING_CONSTANT( "SQLSRV_CURSOR_STATIC",  "static", CONST_PERSISTENT | CONST_CS );
     REGISTER_STRING_CONSTANT( "SQLSRV_CURSOR_DYNAMIC", "dynamic", CONST_PERSISTENT | CONST_CS );
     REGISTER_STRING_CONSTANT( "SQLSRV_CURSOR_KEYSET",  "keyset", CONST_PERSISTENT | CONST_CS );
+    REGISTER_STRING_CONSTANT( "SQLSRV_CURSOR_CLIENT_BUFFERED",  "buffered", CONST_PERSISTENT | CONST_CS );
 
     try {
 
@@ -601,9 +606,16 @@ PHP_RINIT_FUNCTION(sqlsrv)
    
     LOG_FUNCTION( "PHP_RINIT for php_sqlsrv" );
 
+    // read INI settings
+    SQLSRV_G( warnings_return_as_errors ) = INI_BOOL( INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS );
+    SQLSRV_G( log_severity ) = INI_INT( INI_PREFIX INI_LOG_SEVERITY );
+    SQLSRV_G( log_subsystems ) = INI_INT( INI_PREFIX INI_LOG_SUBSYSTEMS );
+    SQLSRV_G( buffered_query_limit ) = INI_INT( INI_PREFIX INI_BUFFERED_QUERY_LIMIT );
+
     LOG( SEV_NOTICE, INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS " = %1!s!", SQLSRV_G( warnings_return_as_errors ) ? "On" : "Off");
     LOG( SEV_NOTICE, INI_PREFIX INI_LOG_SEVERITY " = %1!d!", SQLSRV_G( log_severity ));
     LOG( SEV_NOTICE, INI_PREFIX INI_LOG_SUBSYSTEMS " = %1!d!", SQLSRV_G( log_subsystems ));
+    LOG( SEV_NOTICE, INI_PREFIX INI_BUFFERED_QUERY_LIMIT " = %1!d!", SQLSRV_G( buffered_query_limit ));
 
     // verify memory at the end of the request (in debug mode only)
     full_mem_check(MEMCHECK_SILENT);
@@ -626,7 +638,7 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
     zval_ptr_dtor( &SQLSRV_G( errors ));
     zval_ptr_dtor( &SQLSRV_G( warnings ));
 
-    // verify memory at the end of the request (in debug mode only)
+    // verify memory at the end of the request (in debug mode only)	
     full_mem_check(MEMCHECK_SILENT);
 
     return SUCCESS;

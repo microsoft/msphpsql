@@ -8,7 +8,7 @@
 //
 // Comments: Also contains "internal" declarations shared across source files. 
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -169,19 +169,11 @@ struct stmt_option_scrollable : public stmt_option_functor {
 // This object inherits and overrides the callbacks necessary
 struct ss_sqlsrv_stmt : public sqlsrv_stmt {
 
-    ss_sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC ) :
-        sqlsrv_stmt( c, handle, e, drv TSRMLS_CC ),
-        prepared( false ),
-        conn_index( -1 ),
-        params_z( NULL ),
-        fetch_field_names( NULL ),
-        fetch_fields_count ( 0 )
-    {
-    }
+    ss_sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC );
 
     virtual ~ss_sqlsrv_stmt( void );
 
-    void new_result_set( void ); 
+    void new_result_set( TSRMLS_D ); 
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
@@ -278,10 +270,11 @@ zval* errors;
 zval* warnings;
 
 // flags for error handling and logging (set via sqlsrv_configure or php.ini)
-unsigned int log_severity;
-unsigned int log_subsystems;
-unsigned int current_subsystem;
+long log_severity;
+long log_subsystems;
+long current_subsystem;
 zend_bool warnings_return_as_errors;
+long buffered_query_limit;
 
 ZEND_END_MODULE_GLOBALS(sqlsrv)
 
@@ -301,6 +294,7 @@ ZEND_EXTERN_MODULE_GLOBALS(sqlsrv);
 #define INI_WARNINGS_RETURN_AS_ERRORS   "WarningsReturnAsErrors"
 #define INI_LOG_SEVERITY                "LogSeverity"
 #define INI_LOG_SUBSYSTEMS              "LogSubsystems"
+#define INI_BUFFERED_QUERY_LIMIT        "ClientBufferMaxKBSize"
 #define INI_PREFIX                      "sqlsrv."
 
 PHP_INI_BEGIN()
@@ -310,6 +304,8 @@ PHP_INI_BEGIN()
                        sqlsrv_globals )
     STD_PHP_INI_ENTRY( INI_PREFIX INI_LOG_SUBSYSTEMS, "0", PHP_INI_ALL, OnUpdateLong, log_subsystems, zend_sqlsrv_globals, 
                        sqlsrv_globals )
+    STD_PHP_INI_ENTRY( INI_PREFIX INI_BUFFERED_QUERY_LIMIT, INI_BUFFERED_QUERY_LIMIT_DEFAULT, PHP_INI_ALL, OnUpdateLong, buffered_query_limit,
+                       zend_sqlsrv_globals, sqlsrv_globals )
 PHP_INI_END()
 
 //*********************************************************************************************************************************
@@ -366,7 +362,6 @@ bool ss_error_handler( sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool
 
 // *** extension error functions ***
 PHP_FUNCTION(sqlsrv_errors);
-PHP_FUNCTION(sqlsrv_warnings);
 
 // convert from the default encoding specified by the "CharacterSet"
 // connection option to UTF-16.  mbcs_len and utf16_len are sizes in
@@ -461,7 +456,8 @@ public:
 #define LOG_FUNCTION( function_name ) \
    const char* _FN_ = function_name; \
    SQLSRV_G( current_subsystem ) = current_log_subsystem; \
-   LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); 
+   LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); \
+   CheckMemory _check_memory_;
 
 #define SET_FUNCTION_NAME( context ) \
 { \
@@ -480,6 +476,22 @@ enum logging_subsystems {
     LOG_ALL  = -1,
 };
 
+struct CheckMemory {
+
+    CheckMemory( void )
+    {
+        // test the integrity of the Zend heap.
+        full_mem_check(MEMCHECK_SILENT);
+    }
+
+    ~CheckMemory( void )
+    {
+        // test the integrity of the Zend heap.
+        full_mem_check(MEMCHECK_SILENT);
+    }
+};
+
+
 //*********************************************************************************************************************************
 // Utility Functions
 //*********************************************************************************************************************************
@@ -497,9 +509,6 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
     zval* rsrc;
     H* h;
     
-    // test the integrity of the Zend heap.
-    full_mem_check(MEMCHECK_SILENT);
-
     // reset the errors from the previous API call
     reset_errors( TSRMLS_C );
 
@@ -529,8 +538,8 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         int result = SUCCESS;
         
         // dummy context to pass to the error handler
-        sqlsrv_context *error_ctx = new sqlsrv_context( 0, ss_error_handler, NULL );
-        error_ctx->set_func( calling_func );
+        sqlsrv_context error_ctx( 0, ss_error_handler, NULL );;
+        error_ctx.set_func( calling_func );
 
         switch( param_count ) {
 
@@ -574,7 +583,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
             }
         }
 
-        CHECK_CUSTOM_ERROR(( result == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, calling_func ) {
+        CHECK_CUSTOM_ERROR(( result == FAILURE ), &error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, calling_func ) {
             
             throw ss::SSException();
         }
@@ -582,7 +591,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         // get the resource registered 
         h = static_cast<H*>( zend_fetch_resource( &rsrc TSRMLS_CC, -1, H::resource_name, NULL, 1, H::descriptor ));
         
-        CHECK_CUSTOM_ERROR(( h == NULL ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, calling_func ) {
+        CHECK_CUSTOM_ERROR(( h == NULL ), &error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, calling_func ) {
 
             throw ss::SSException();
         }

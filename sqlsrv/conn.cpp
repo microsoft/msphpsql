@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -162,6 +162,7 @@ namespace SSStmtOptionNames {
     const char QUERY_TIMEOUT[]= "QueryTimeout";
     const char SEND_STREAMS_AT_EXEC[] = "SendStreamParamsAtExec";
     const char SCROLLABLE[] = "Scrollable";
+    const char CLIENT_BUFFER_MAX_SIZE[] = INI_BUFFERED_QUERY_LIMIT;
 }
 
 namespace SSConnOptionNames {
@@ -169,6 +170,8 @@ namespace SSConnOptionNames {
 // most of these strings are the same for both the sqlsrv_connect connection option
 // and the name put into the connection string. MARS is the only one that's different.
 const char APP[] = "APP";
+const char ApplicationIntent[] = "ApplicationIntent";
+const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char Database[] = "Database";
@@ -177,6 +180,7 @@ const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
+const char MultiSubnetFailover[] = "MultiSubnetFailover";
 const char PWD[] = "PWD";
 const char QuotedId[] = "QuotedId";
 const char TraceFile[] = "TraceFile";
@@ -213,6 +217,12 @@ const stmt_option SS_STMT_OPTS[] = {
         SQLSRV_STMT_OPTION_SCROLLABLE, 
         new stmt_option_scrollable
     },
+    { 
+        SSStmtOptionNames::CLIENT_BUFFER_MAX_SIZE, 
+        sizeof( SSStmtOptionNames::CLIENT_BUFFER_MAX_SIZE ),
+        SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE, 
+        new stmt_option_buffered_query_limit
+    },
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, NULL },
 };
 
@@ -227,6 +237,24 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::APP ),
         CONN_ATTR_STRING,
         conn_str_append_func::func 
+    },
+    { 
+        SSConnOptionNames::ApplicationIntent,
+        sizeof( SSConnOptionNames::ApplicationIntent ),
+        SQLSRV_CONN_OPTION_APPLICATION_INTENT,
+        ODBCConnOptions::ApplicationIntent,
+        sizeof( ODBCConnOptions::ApplicationIntent ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func 
+    },
+    {
+        SSConnOptionNames::AttachDBFileName,
+        sizeof( SSConnOptionNames::AttachDBFileName ),
+        SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
+        ODBCConnOptions::AttachDBFileName,
+        sizeof( ODBCConnOptions::AttachDBFileName ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
     },
     {
         SSConnOptionNames::CharacterSet,
@@ -288,6 +316,15 @@ const connection_option SS_CONN_OPTS[] = {
         SQLSRV_CONN_OPTION_MARS,
         ODBCConnOptions::MARS_ODBC,
         sizeof( ODBCConnOptions::MARS_ODBC ),
+        CONN_ATTR_BOOL,
+        bool_conn_str_func::func
+    },
+    {
+        SSConnOptionNames::MultiSubnetFailover,
+        sizeof( SSConnOptionNames::MultiSubnetFailover ),
+        SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
+        ODBCConnOptions::MultiSubnetFailover,
+        sizeof( ODBCConnOptions::MultiSubnetFailover ),
         CONN_ATTR_BOOL,
         bool_conn_str_func::func
     },
@@ -868,6 +905,19 @@ PHP_FUNCTION( sqlsrv_prepare )
         
         }
 
+        if( params_z && Z_TYPE_P( params_z ) != IS_ARRAY ) {
+            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+        }
+
+        if( options_z && Z_TYPE_P( options_z ) != IS_ARRAY ) {
+            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+        }
+
+        if( sql == NULL ) {
+
+            DIE( "sqlsrv_query: sql string was null." );
+        }
+
         stmt = static_cast<ss_sqlsrv_stmt*>( core_sqlsrv_create_stmt( conn, core::allocate_stmt<ss_sqlsrv_stmt>, 
                                                                       ss_stmt_options_ht, SS_STMT_OPTS, 
                                                                       ss_error_handler, NULL TSRMLS_CC ) );
@@ -977,6 +1027,14 @@ PHP_FUNCTION( sqlsrv_query )
                                          0 /*persistent*/ TSRMLS_CC );
             
             validate_stmt_options( *conn, options_z, ss_stmt_options_ht TSRMLS_CC );    
+        }
+
+        if( params_z && Z_TYPE_P( params_z ) != IS_ARRAY ) {
+            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+        }
+
+        if( options_z && Z_TYPE_P( options_z ) != IS_ARRAY ) {
+            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
         }
 
         if( sql == NULL ) {

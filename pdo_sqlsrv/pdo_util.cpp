@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -144,8 +144,8 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_UNESCAPED_RIGHT_BRACE_IN_DSN,
-        { IMSSP, (SQLCHAR*) "An unescaped right brace (}) was found in the DSN string for keyword  '%1!s!'.  All right braces must be escaped "
-        "with another right brace (}}).", -22, true }
+        { IMSSP, (SQLCHAR*) "An unescaped right brace (}) was found in the DSN string for keyword  '%1!s!'.  All right braces "
+          "must be escaped with another right brace (}}).", -22, true }
     },
     {
         SQLSRV_ERROR_INVALID_OPTION_TYPE_INT,
@@ -184,8 +184,8 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Invalid option key %1!s! specified.", -30, true }
     },
     {
-        SQLSRV_ERROR_INVALID_OPTION_VALUE,
-        { IMSSP, (SQLCHAR*) "Invalid value specified for option %1!s!.", -31, true }
+        SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE,
+        { IMSSP, (SQLCHAR*) "Invalid value %1!s! specified for option PDO::SQLSRV_ATTR_QUERY_TIMEOUT.", -31, true }
     },
     {
         SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE,
@@ -238,7 +238,8 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         PDO_SQLSRV_ERROR_INVALID_CURSOR_TYPE,
-        { IMSSP, (SQLCHAR*) "An invalid cursor type was specified for the PDO cursor attribute", -44, false }
+        { IMSSP, (SQLCHAR*) "An invalid cursor type was specified for either PDO::ATTR_CURSOR or "
+          "PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE", -44, false }
     },
     {
         PDO_SQLSRV_ERROR_PARAM_PARSE,
@@ -277,8 +278,8 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         PDO_SQLSRV_ERROR_CURSOR_ATTR_AT_PREPARE_ONLY,
-        { IMSSP, (SQLCHAR*) "The PDO::ATTR_CURSOR attribute may only be set in the $driver_options array of PDO::prepare.",
-          -53, false }
+        { IMSSP, (SQLCHAR*) "The PDO::ATTR_CURSOR and PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE attributes may only be set in the "
+          "$driver_options array of PDO::prepare.", -53, false }
     },
     {
         SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED,
@@ -340,16 +341,32 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         PDO_SQLSRV_ERROR_EXTRA_SEMI_COLON_IN_DSN_STRING,
-        { IMSSP, (SQLCHAR*) "An extra semi-colon was encountered in the DSN string at character (byte-count) position '%1!d!' .", -66, true }
+        { IMSSP, (SQLCHAR*) "An extra semi-colon was encountered in the DSN string at character (byte-count) position '%1!d!' .",
+          -66, true }
     },
     {
         PDO_SQLSRV_ERROR_RCB_MISSING_IN_DSN_VALUE,
-        { IMSSP, (SQLCHAR*) "An expected right brace (}) was not found in the DSN string for the value of the keyword '%1!s!'.", -67, true }
+        { IMSSP, (SQLCHAR*) "An expected right brace (}) was not found in the DSN string for the value of the keyword '%1!s!'.",
+          -67, true }
     },
     {
         PDO_SQLSRV_ERROR_DQ_ATTR_AT_PREPARE_ONLY,
         { IMSSP, (SQLCHAR*) "The PDO::SQLSRV_ATTR_DIRECT_QUERY attribute may only be set in the $driver_options array of "
           "PDO::prepare.", -68, false }
+    },
+    {
+        PDO_SQLSRV_ERROR_INVALID_CURSOR_WITH_SCROLL_TYPE,
+        { IMSSP, (SQLCHAR*) "The PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE attribute may only be set when PDO::ATTR_CURSOR is set to "
+          "PDO::CURSOR_SCROLL in the $driver_options array of PDO::prepare.", -69, false }
+    },
+    {
+        SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
+        { IMSSP, (SQLCHAR*) "The PDO::SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE attribute is not a number or the number is not "
+          "positive. Only positive numbers are valid for this attribute.", -70, false }
+    },
+    {
+        SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
+        { IMSSP, (SQLCHAR*) "Memory limit of %1!d! KB exceeded for buffered query", -71, true }
     },
 
     { -1, {} }
@@ -378,7 +395,6 @@ bool pdo_sqlsrv_handle_env_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
     SQLSRV_ASSERT(( dbh != NULL ), "pdo_sqlsrv_handle_env_error: pdo_dbh_t was null" );
     
     sqlsrv_error_auto_ptr error;
-    error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error;
 
     if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
 
@@ -386,7 +402,8 @@ bool pdo_sqlsrv_handle_env_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
     }
     else {
 
-        core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
     strcpy_s( dbh->error_code, sizeof( pdo_error_type ), reinterpret_cast<const char*>( error->sqlstate ));
@@ -420,14 +437,14 @@ bool pdo_sqlsrv_handle_dbh_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
     SQLSRV_ASSERT( dbh != NULL, "pdo_sqlsrv_handle_dbh_error: Null dbh passed" );
 
     sqlsrv_error_auto_ptr error;
-    error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error;
 
     if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
         
         core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR TSRMLS_CC, print_args );
     }
     else {
-        core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
     SQLSRV_STATIC_ASSERT( sizeof( error->sqlstate ) <= sizeof( dbh->error_code ));
@@ -474,13 +491,13 @@ bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_erro
     SQLSRV_ASSERT( pdo_stmt != NULL && pdo_stmt->dbh != NULL, "pdo_sqlsrv_handle_stmt_error: Null statement or dbh passed" );
 
     sqlsrv_error_auto_ptr error;
-    error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error;
 
     if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
         core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR TSRMLS_CC, print_args );
     }
     else {
-        core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
     SQLSRV_STATIC_ASSERT( sizeof( error->sqlstate ) <= sizeof( pdo_stmt->error_code ));

@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use connection handles shared between sqlsrv and pdo_sqlsrv
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ const int INFO_BUFFER_LEN = 256;
 const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
 // ODBC driver name.
-const char CONNECTION_STRING_DRIVER_NAME[] = "Driver={SQL Server Native Client 10.0};";
+const char CONNECTION_STRING_DRIVER_NAME[] = "Driver={SQL Server Native Client 11.0};";
 
 // default options if only the server is specified
 const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes}";
@@ -562,6 +562,20 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
             return;
         }
 
+        // workaround for a bug in ODBC Driver Manager wherein the Driver Manager creates a 0 KB file 
+        // if the TraceFile option is set, even if the "TraceOn" is not present or the "TraceOn"
+        // flag is set to false.
+        if( zend_hash_index_exists( options, SQLSRV_CONN_OPTION_TRACE_FILE )) {
+            
+            zval** trace_value = NULL;
+            int zr = zend_hash_index_find( options, SQLSRV_CONN_OPTION_TRACE_ON, (void**)&trace_value );
+            
+            if( zr == FAILURE || !zend_is_true( *trace_value )) {
+           
+                zend_hash_index_del( options, SQLSRV_CONN_OPTION_TRACE_FILE );
+            }
+        }
+
         for( zend_hash_internal_pointer_reset( options );
              zend_hash_has_more_elements( options ) == SUCCESS;
              zend_hash_move_forward( options )) {
@@ -573,10 +587,10 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
             zval** data = NULL;
 
             type = zend_hash_get_current_key_ex( options, &key, &key_len, &index, 0, NULL );
-            CHECK_CUSTOM_ERROR(( type != HASH_KEY_IS_LONG ), conn, SQLSRV_ERROR_INVALID_OPTION_KEY ) {
-                throw core::CoreException();
-            }
             
+            // The driver layer should ensure a valid key.
+            DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
+           
             core::sqlsrv_zend_hash_get_current_data( *conn, options, (void**) &data TSRMLS_CC );
 
             conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
@@ -660,13 +674,14 @@ void determine_server_version( sqlsrv_conn* conn TSRMLS_DC )
     char p[ INFO_BUFFER_LEN ];
     core::SQLGetInfo( conn, SQL_DBMS_VER, p, INFO_BUFFER_LEN, &info_len TSRMLS_CC );
 
+    errno = 0;
     char version_major_str[ 3 ];
     SERVER_VERSION version_major;
     memcpy( version_major_str, p, 2 );
     version_major_str[ 2 ] = '\0';
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
 
-    CHECK_CUSTOM_ERROR( version_major == 0 || errno == ERANGE || errno == EINVAL, conn, SQLSRV_ERROR_UNKNOWN_SERVER_VERSION )
+    CHECK_CUSTOM_ERROR( version_major == 0 && ( errno == ERANGE || errno == EINVAL ), conn, SQLSRV_ERROR_UNKNOWN_SERVER_VERSION )
     {
         throw core::CoreException();
     }

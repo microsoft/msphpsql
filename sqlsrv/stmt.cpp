@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use statement handles
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -112,6 +112,18 @@ namespace SSCursorTypes {
     const char QUERY_OPTION_SCROLLABLE_DYNAMIC[] = "dynamic";
     const char QUERY_OPTION_SCROLLABLE_KEYSET[] = "keyset";
     const char QUERY_OPTION_SCROLLABLE_FORWARD[] = "forward";
+    const char QUERY_OPTION_SCROLLABLE_BUFFERED[] = "buffered";
+}
+
+ss_sqlsrv_stmt::ss_sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC ) :
+    sqlsrv_stmt( c, handle, e, drv TSRMLS_CC ),
+    prepared( false ),
+    conn_index( -1 ),
+    params_z( NULL ),
+    fetch_field_names( NULL ),
+    fetch_fields_count ( 0 )
+{
+    core_sqlsrv_set_buffered_query_limit( this, SQLSRV_G( buffered_query_limit ) TSRMLS_CC );
 }
 
 ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
@@ -132,8 +144,8 @@ ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
 }    
 
 // to be called whenever a new result set is created, such as after an
-// execute or next_result.  Resets the state variables.
-void ss_sqlsrv_stmt::new_result_set( void ) 
+// execute or next_result.  Resets the state variables and calls the subclass.
+void ss_sqlsrv_stmt::new_result_set( TSRMLS_D ) 
 {
     if( fetch_field_names != NULL ) {
 
@@ -146,7 +158,7 @@ void ss_sqlsrv_stmt::new_result_set( void )
 
     fetch_field_names = NULL;
     fetch_fields_count = 0;
-    sqlsrv_stmt::new_result_set();
+    sqlsrv_stmt::new_result_set( TSRMLS_C );
 }
 
 // Returns a php type for a given sql type. Also sets the encoding wherever applicable. 
@@ -164,6 +176,7 @@ sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUIN
         case SQL_GUID:
         case SQL_NUMERIC:
         case SQL_WCHAR:
+        case SQL_SS_VARIANT:
             ss_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
             ss_phptype.typeinfo.encoding = this->conn->encoding();
             break;
@@ -272,7 +285,7 @@ PHP_FUNCTION( sqlsrv_execute )
             // to prepare to execute the next statement, we skip any remaining results (and skip parameter finalization too)
             while( stmt->past_next_result_end == false ) {
 
-                core_sqlsrv_next_result( stmt TSRMLS_CC, false );
+                core_sqlsrv_next_result( stmt TSRMLS_CC, false, false );
             }
         }
 
@@ -597,11 +610,11 @@ PHP_FUNCTION( sqlsrv_rows_affected )
 
         // make sure it is not scrollable.  This function should only work for inserts, updates, and deletes,
         // but this is the best we can do to enforce that.
-        CHECK_CUSTOM_ERROR( stmt->scrollable, stmt, SS_SQLSRV_ERROR_STATEMENT_SCROLLABLE ) {
+        CHECK_CUSTOM_ERROR( stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY, stmt, SS_SQLSRV_ERROR_STATEMENT_SCROLLABLE ) {
             throw ss::SSException();
         }
 
-        rows = core::SQLRowCount( stmt TSRMLS_CC );
+        rows = stmt->current_results->row_count( TSRMLS_C );
         RETURN_LONG( rows );
     }
 
@@ -645,11 +658,12 @@ PHP_FUNCTION( sqlsrv_num_rows )
 
         // make sure that the statement is scrollable and the cursor is not dynamic.
         // if the cursor is dynamic, then the number of rows returned is always -1.
-        CHECK_CUSTOM_ERROR( !stmt->scrollable || stmt->scroll_is_dynamic, stmt, SS_SQLSRV_ERROR_STATEMENT_NOT_SCROLLABLE ) {
+        CHECK_CUSTOM_ERROR( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY || stmt->cursor_type == SQL_CURSOR_DYNAMIC, stmt, 
+                            SS_SQLSRV_ERROR_STATEMENT_NOT_SCROLLABLE ) {
             throw ss::SSException();
         }
 
-        rows = core::SQLRowCount( stmt TSRMLS_CC );
+        rows = stmt->current_results->row_count( TSRMLS_C );
         RETURN_LONG( rows );
     }
 
@@ -1147,7 +1161,7 @@ PHP_FUNCTION(SQLSRV_SQLTYPE_VARCHAR)
 
 void mark_params_by_reference( ss_sqlsrv_stmt* stmt, zval* params_z TSRMLS_DC )
 {
-    SQLSRV_ASSERT( stmt->params_z == NULL, "mark_params_by_reference: parameters list  shouldn't be present" );
+    SQLSRV_ASSERT( stmt->params_z == NULL, "mark_params_by_reference: parameters list shouldn't be present" );
 
     if( params_z == NULL ) {
         return;
@@ -1259,7 +1273,7 @@ void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC )
 
                 zval** var = NULL;
                 int zr = zend_hash_index_find( Z_ARRVAL_PP( param_z ), 0, reinterpret_cast<void**>( &var ));
-                CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index ) {
+                CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1 ) {
                     zval_ptr_dtor( &params_z );
                     throw ss::SSException();
                 }
@@ -1413,7 +1427,8 @@ PHP_FUNCTION( sqlsrv_free_stmt )
         }
 
         // verify the resource so we know we're deleting a statement
-        stmt = static_cast<ss_sqlsrv_stmt*>( zend_fetch_resource( &stmt_r TSRMLS_CC, -1, ss_sqlsrv_stmt::resource_name, NULL, 1, ss_sqlsrv_stmt::descriptor ));
+        stmt = static_cast<ss_sqlsrv_stmt*>( zend_fetch_resource( &stmt_r TSRMLS_CC, -1, ss_sqlsrv_stmt::resource_name, NULL, 
+                                                                  1, ss_sqlsrv_stmt::descriptor ));
         
         if( stmt == NULL ) {
 
@@ -1470,6 +1485,11 @@ void stmt_option_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* 
     else if( !stricmp( scroll_type, SSCursorTypes::QUERY_OPTION_SCROLLABLE_FORWARD )) {
         
         cursor_type = SQL_CURSOR_FORWARD_ONLY;
+    }
+
+    else if( !stricmp( scroll_type, SSCursorTypes::QUERY_OPTION_SCROLLABLE_BUFFERED )) {
+        
+        cursor_type = SQLSRV_CURSOR_BUFFERED;
     }
 
     else {
@@ -1533,6 +1553,11 @@ zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void** in_val, SQLLEN fie
 
            out_zval = ( reinterpret_cast<zval*>( *in_val ));
            break;
+
+        case SQLSRV_PHPTYPE_NULL:
+            ALLOC_INIT_ZVAL( out_zval );
+            ZVAL_NULL( out_zval );
+            break;
 
         default:
             DIE( "Unknown php type" );
@@ -1764,22 +1789,22 @@ void determine_stmt_has_rows( ss_sqlsrv_stmt* stmt TSRMLS_DC )
 
     // if the statement is scrollable, our work is easier though less performant.  We simply
     // fetch the first row, and then roll the cursor back to be prior to the first row
-    if( stmt->scrollable ) {
+    if( stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY ) {
 
-        r = core::SQLFetchScroll( stmt, SQL_FETCH_FIRST, 0 TSRMLS_CC );
+        r = stmt->current_results->fetch( SQL_FETCH_FIRST, 0 TSRMLS_CC );
         if( SQL_SUCCEEDED( r )) {
 
             stmt->has_rows = true;
             CHECK_SQL_WARNING( r, stmt );
             // restore the cursor to its original position.
-            r = SQLFetchScroll( stmt->handle(), SQL_FETCH_ABSOLUTE, 0 );
+            r = stmt->current_results->fetch( SQL_FETCH_ABSOLUTE, 0 TSRMLS_CC );
             SQLSRV_ASSERT(( r == SQL_NO_DATA ), "core_sqlsrv_has_rows: Should have scrolled the cursor to the beginning "
                           "of the result set." );
         }
     }
     else {
         
-        // otherwise, we fetch the first row, but record that we di.  sqlsrv_fetch checks this
+        // otherwise, we fetch the first row, but record that we did.  sqlsrv_fetch checks this
         // flag and simply skips the first fetch, knowing it was already done.  It records its own 
         // flags to know if it should fetch on subsequent calls.
 
@@ -1823,7 +1848,7 @@ void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, int fetch_type, __out zv
 
             core::SQLColAttribute( stmt, i + 1, SQL_DESC_NAME, field_name_temp, SS_MAXCOLNAMELEN+1, &field_name_len, NULL 
                                    TSRMLS_CC ); 
-            field_names[ i ].name = static_cast<char*>( sqlsrv_malloc( field_name_len + 1 ));
+            field_names[ i ].name = static_cast<char*>( sqlsrv_malloc( field_name_len, sizeof( char ), 1 ));
             memcpy( (void*) field_names[ i ].name, field_name_temp, field_name_len );
             field_names[ i ].name[ field_name_len ] = '\0';  // null terminate the field name since SQLColAttribute doesn't.
             field_names[ i ].len = field_name_len + 1;           
@@ -1908,7 +1933,7 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, unsigne
     if( zend_hash_has_more_elements( param_ht ) == FAILURE || 
             zend_hash_get_current_data( param_ht, (void**) &var_or_val ) == FAILURE ) {
 
-        THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index );
+        THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1 );
     }
 
     // if the direction is included, then use what they gave, otherwise INPUT is assumed
@@ -1921,7 +1946,7 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, unsigne
         }
         direction = Z_LVAL_PP( temp );
         CHECK_CUSTOM_ERROR( direction != SQL_PARAM_INPUT && direction != SQL_PARAM_OUTPUT && direction != SQL_PARAM_INPUT_OUTPUT,
-                            stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index ) {
+                            stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
             throw ss::SSException();
         }
     }

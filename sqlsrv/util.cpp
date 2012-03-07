@@ -5,7 +5,7 @@
 //
 // Comments: Mostly error handling and some type handling
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -218,8 +218,8 @@ ss_error SS_ERRORS[] = {
  
     // these three errors are returned for invalid options, so they are given the same number for compatibility with 1.1
     {
-        SQLSRV_ERROR_INVALID_OPTION_VALUE,
-        { IMSSP, (SQLCHAR*) "Invalid value specified for option %1!s!.", -33, true }
+        SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE,
+        { IMSSP, (SQLCHAR*) "Invalid value %1!s! specified for option SQLSRV_QUERY_TIMEOUT.", -33, true }
     },
 
     {
@@ -301,9 +301,8 @@ ss_error SS_ERRORS[] = {
 
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires either the Microsoft SQL Server 2008 Native Client (SP1 or later) or the " 
-        "Microsoft SQL Server 2008 R2 Native Client ODBC Driver to communicate with SQL Server.  Neither of those ODBC Drivers are currently installed. "
-        "Access the following URL to download the Microsoft SQL Server 2008 R2 Native Client ODBC driver for %1!s!: "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft SQL Server 2011 Native Client. "
+        "Access the following URL to download the Microsoft SQL Server 2011 Native Client ODBC driver for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
     },     
 
@@ -332,7 +331,7 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE,
         { IMSSP, (SQLCHAR*)"The value passed for the 'Scrollable' statement option is invalid.  Please use 'static', 'dynamic', "
-          "'keyset', or 'forward'.", -54, false }
+          "'keyset', 'forward', or 'buffered'.", -54, false }
     },
  
     {
@@ -353,6 +352,14 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, 
         { IMSSP, (SQLCHAR*) "String data, right truncated for output parameter %1!d!.", -58, true }
+    },
+    {
+        SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
+        { IMSSP, (SQLCHAR*) "Memory limit of %1!d! KB exceeded for buffered query", -59, true }
+    },
+    {
+        SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
+        { IMSSP, (SQLCHAR*) "Setting for " INI_BUFFERED_QUERY_LIMIT " was non-int or non-positive.", -60, false }
     },
 
     // internal warning definitions
@@ -402,7 +409,8 @@ bool ss_error_handler(sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool 
         severity = SEV_WARNING;
     }
 
-    return handle_errors_and_warnings( ctx, &SQLSRV_G( errors ), &SQLSRV_G( warnings ), severity, sqlsrv_error_code, warning, print_args TSRMLS_CC );
+    return handle_errors_and_warnings( ctx, &SQLSRV_G( errors ), &SQLSRV_G( warnings ), severity, sqlsrv_error_code, warning, 
+                                       print_args TSRMLS_CC );
 }
 
 // sqlsrv_errors( [int $errorsAndOrWarnings] )
@@ -595,6 +603,25 @@ PHP_FUNCTION( sqlsrv_configure )
             RETURN_TRUE;
         }
 
+        else if( !stricmp( option, INI_BUFFERED_QUERY_LIMIT )) {
+            
+            CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_LONG ), error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_ ) {
+
+                throw ss::SSException();
+            }
+
+            long buffered_query_limit = Z_LVAL_P( value_z );
+
+            CHECK_CUSTOM_ERROR( buffered_query_limit < 0, error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_ ) {
+
+                throw ss::SSException();
+            }
+
+            SQLSRV_G( buffered_query_limit ) = buffered_query_limit;
+            LOG( SEV_NOTICE, INI_PREFIX INI_BUFFERED_QUERY_LIMIT " = %1!d!", SQLSRV_G( buffered_query_limit ));
+            RETURN_TRUE;
+        }
+
         else {
 
             THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
@@ -664,6 +691,11 @@ PHP_FUNCTION( sqlsrv_get_config )
         else if( !stricmp( option, INI_LOG_SUBSYSTEMS )) {
 
             ZVAL_LONG( return_value, SQLSRV_G( log_subsystems ));
+            return;
+        }
+        else if( !stricmp( option, INI_BUFFERED_QUERY_LIMIT )) {
+
+            ZVAL_LONG( return_value, SQLSRV_G( buffered_query_limit ));
             return;
         }
         else {
@@ -772,8 +804,6 @@ bool handle_errors_and_warnings( sqlsrv_context& ctx, zval** reported_chain, zva
     int zr = SUCCESS;
     zval* error_z = NULL;
     sqlsrv_error_auto_ptr error;
-
-    error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error;
 
     // array of reported errors
     if( Z_TYPE_P( *reported_chain ) == IS_NULL ) {

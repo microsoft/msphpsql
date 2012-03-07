@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,6 +45,10 @@ OACR_WARNING_DISABLE( INDEX_NEGATIVE, "Third party code." )
 OACR_WARNING_DISABLE( UNANNOTATED_BUFFER, "Third party code." )
 OACR_WARNING_DISABLE( INDEX_UNDERFLOW, "Third party code." )
 OACR_WARNING_DISABLE( REALLOCLEAK, "Third party code." )
+OACR_WARNING_DISABLE( ALLOC_SIZE_OVERFLOW_WITH_ACCESS, "Third party code." )
+#else
+// define to eliminate static analysis hints in the code
+#define OACR_WARNING_SUPPRESS( warning, msg )
 #endif
 
 extern "C" {
@@ -88,8 +92,6 @@ OACR_WARNING_POP
 #include <sql.h>
 #include <sqlext.h>
 
-#include <deque>
-
 #if !defined(WC_ERR_INVALID_CHARS)
 // imported from winnls.h as it isn't included by 5.3.0
 #define WC_ERR_INVALID_CHARS      0x00000080  // error for invalid chars
@@ -101,8 +103,10 @@ OACR_WARNING_POP
 #undef inline
 #endif
 
+#include <deque>
+#include <map>
 #include <algorithm>
-
+#include <limits>
 #include <cassert>
 #include <strsafe.h>
 
@@ -217,8 +221,44 @@ struct sqlsrv_static_assert<true> { static const int value = 1; };
 
 
 //*********************************************************************************************************************************
+// Logging
+//*********************************************************************************************************************************
+// log_callback
+// a driver specific callback for logging messages
+// severity - severity of the message: notice, warning, or error
+// msg - the message to log in a FormatMessage style formatting
+// print_args - args to the message
+typedef void (*log_callback)( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );
+
+// each driver must register a log callback.  This should be the first thing a driver does.
+void core_sqlsrv_register_logger( log_callback );
+
+// a simple wrapper around a PHP error logging function.
+void write_to_log( unsigned int severity TSRMLS_DC, const char* msg, ... );
+
+// a macro to make it convenient to use the function.
+#define LOG( severity, msg, ...)    write_to_log( severity TSRMLS_CC, msg, __VA_ARGS__ )
+
+// mask for filtering which severities are written to the log
+enum logging_severity {
+    SEV_ERROR = 0x01,
+    SEV_WARNING = 0x02,
+    SEV_NOTICE = 0x04,
+    SEV_ALL = -1,
+};
+
+// Kill the PHP process and log the message to PHP
+void die( const char* msg, ... );
+#define DIE( msg, ... ) { die( msg, __VA_ARGS__ ); }
+
+
+//*********************************************************************************************************************************
 // Resource/Memory Management
 //*********************************************************************************************************************************
+
+// the macro max is defined and overrides the call to max in the allocator class
+#pragma push_macro( "max" )
+#undef max
 
 // new memory allocation/free debugging facilities to help us verify that all allocations are being 
 // released in a timely manner and not just at the end of the script.  
@@ -229,36 +269,89 @@ struct sqlsrv_static_assert<true> { static const int value = 1; };
 // #define SQLSRV_MEM_DEBUG  1
 #if defined( PHP_DEBUG ) && !defined( ZTS ) && defined( SQLSRV_MEM_DEBUG )
 
-// macro to log memory allocation and frees locations and their sizes
-inline void* emalloc_trace( size_t size, const char* file, int line )
+inline void* sqlsrv_malloc_trace( size_t size, const char* file, int line )
 {
     void* ptr = emalloc( size );
     LOG( SEV_NOTICE, "emalloc returned %4!08x!: %1!d! bytes at %2!s!:%3!d!", size, file, line, ptr );
     return ptr;
 }
 
-inline void* erealloc_trace( void* original, size_t size, const char* file, int line )
+inline void* sqlsrv_malloc_trace( size_t element_count, size_t element_size, size_t extra, const char* file, int line )
+{
+    OACR_WARNING_SUPPRESS( ALLOC_SIZE_OVERFLOW_IN_ALLOC_WRAPPER, "Overflow verified below" );
+
+    if(( element_count > 0 && element_size > 0 ) &&
+        ( element_count > element_size * element_count || element_size > element_size * element_count )) {
+          DIE( "Integer overflow in sqlsrv_malloc" );
+    }
+
+    if( element_size * element_count > element_size * element_count + extra ) {
+        DIE( "Integer overflow in sqlsrv_malloc" );
+    }
+
+    if( element_size * element_count + extra == 0 ) {
+        DIE( "Allocation size must be more than 0" );
+    }
+
+    void* ptr = emalloc( element_size * element_count + extra );
+    LOG( SEV_NOTICE, "emalloc returned %4!08x!: %1!d! bytes at %2!s!:%3!d!", size, file, line, ptr );
+    return ptr;
+}
+
+inline void* sqlsrv_realloc_trace( void* buffer, size_t size, const char* file, int line )
 {
     void* ptr = erealloc( original, size );
     LOG( SEV_NOTICE, "erealloc returned %5!08x! from %4!08x!: %1!d! bytes at %2!s!:%3!d!", size, file, line, ptr, original );
     return ptr;
 }
 
-inline void efree_trace( void* ptr, const char* file, int line )
+inline void sqlsrv_free_trace( void* ptr, const char* file, int line )
 {
     LOG( SEV_NOTICE, "efree %1!08x! at %2!s!:%3!d!", ptr, file, line );
     efree( ptr );
 }
 
-#define sqlsrv_malloc( size ) emalloc_trace( size, __FILE__, __LINE__ )
-#define sqlsrv_realloc( buffer, size ) erealloc_trace( buffer, size, __FILE__, __LINE__ )
-#define sqlsrv_free( ptr ) efree_trace( ptr, __FILE__, __LINE__ )
+#define sqlsrv_malloc( size ) sqlsrv_malloc_trace( size, __FILE__, __LINE__ )
+#define sqlsrv_malloc( count, size, extra ) sqlsrv_malloc_trace( count, size, extra, __FILE__, __LINE__ )
+#define sqlsrv_realloc( buffer, size ) sqlsrv_realloc_trace( buffer, size, __FILE__, __LINE__ )
+#define sqlsrv_free( ptr ) sqlsrv_free_trace( ptr, __FILE__, __LINE__ )
 
 #else
 
-#define sqlsrv_malloc( size ) emalloc( size )
-#define sqlsrv_realloc( buffer, size ) erealloc( buffer, size )
-#define sqlsrv_free( ptr )  efree( ptr )
+inline void* sqlsrv_malloc( size_t size )
+{
+    return emalloc( size );
+}
+
+inline void* sqlsrv_malloc( size_t element_count, size_t element_size, size_t extra )
+{
+    OACR_WARNING_SUPPRESS( ALLOC_SIZE_OVERFLOW_IN_ALLOC_WRAPPER, "Overflow verified below" );
+
+    if(( element_count > 0 && element_size > 0 ) &&
+        ( element_count > element_size * element_count || element_size > element_size * element_count )) {
+          DIE( "Integer overflow in sqlsrv_malloc" );
+    }
+
+    if( element_size * element_count > element_size * element_count + extra ) {
+        DIE( "Integer overflow in sqlsrv_malloc" );
+    }
+
+    if( element_size * element_count + extra == 0 ) {
+        DIE( "Allocation size must be more than 0" );
+    }
+
+    return emalloc( element_size * element_count + extra );
+}
+
+inline void* sqlsrv_realloc( void* buffer, size_t size )
+{
+    return erealloc( buffer, size );
+}
+
+inline void sqlsrv_free( void* ptr )
+{
+    efree( ptr );
+}
 
 #endif
 
@@ -272,6 +365,84 @@ template <typename T>
 struct remove_const<const T*> {
     typedef T* type;
 };
+
+// allocator that uses the zend memory manager to manage memory
+// this allows us to use STL classes that still work with Zend objects
+template<typename T>
+struct sqlsrv_allocator {
+   
+    // typedefs used by the STL classes
+    typedef T value_type;
+    typedef value_type* pointer;
+    typedef const value_type* const_pointer;
+    typedef value_type& reference;
+    typedef const value_type& const_reference;
+    typedef std::size_t size_type;
+    typedef std::ptrdiff_t difference_type;
+
+    // conversion typedef (used by list and other STL classes)
+    template<typename U>
+    struct rebind {
+        typedef sqlsrv_allocator<U> other;
+    };
+
+    inline sqlsrv_allocator() {}
+    inline ~sqlsrv_allocator() {}
+    inline sqlsrv_allocator( sqlsrv_allocator const& ) {}
+    template<typename U>
+    inline sqlsrv_allocator( sqlsrv_allocator<U> const& ) {}
+
+    // address (doesn't work if the class defines operator&)
+    inline pointer address( reference r )
+    { 
+        return &r; 
+    }
+
+    inline const_pointer address( const_reference r )
+    {
+        return &r;
+    }
+
+    // memory allocation/deallocation
+    inline pointer allocate( size_type cnt, 
+                             typename std::allocator<void>::const_pointer = 0 )
+    {
+        return reinterpret_cast<pointer>( sqlsrv_malloc(cnt, sizeof (T), 0)); 
+    }
+
+    inline void deallocate( pointer p, size_type ) 
+    { 
+        sqlsrv_free(p); 
+    }
+
+    // size
+    inline size_type max_size( void ) const 
+    { 
+        return std::numeric_limits<size_type>::max() / sizeof(T);
+    }
+
+    // object construction/destruction
+    inline void construct( pointer p, const T& t )
+    {
+        new(p) T(t);
+    }
+
+    inline void destroy(pointer p)
+    {
+        p->~T();
+    }
+
+    // equality operators
+    inline bool operator==( sqlsrv_allocator const& )
+    {
+        return true;
+    }
+
+    inline bool operator!=( sqlsrv_allocator const& a )
+    {
+        return !operator==(a);
+    }
+}; 
 
 
 // base class for auto_ptrs that we define below.  It provides common operators and functions 
@@ -398,6 +569,8 @@ protected:
 // in a variable of sqlsrv_malloc_auto_ptr.  sqlsrv_malloc_auto_ptr will "own" that block and assure that it is
 // freed until the variable is destroyed (out of scope) or ownership is transferred using the function
 // "transferred".
+// DO NOT CALL sqlsrv_realloc with a sqlsrv_malloc_auto_ptr.  Use the resize member function.
+
 template <typename T>
 class sqlsrv_malloc_auto_ptr : public sqlsrv_auto_ptr<T, sqlsrv_malloc_auto_ptr<T> > {
 
@@ -431,6 +604,13 @@ public:
         T* p = src.get();
         src.transferred();
         this->_ptr = p;
+    }
+
+    // DO NOT CALL sqlsrv_realloc with a sqlsrv_malloc_auto_ptr.  Use the resize member function.
+    // has the same parameter list as sqlsrv_realloc: new_size is the size in bytes of the newly allocated buffer
+    void resize( size_t new_size )
+    {
+        _ptr = reinterpret_cast<T*>( sqlsrv_realloc( _ptr, new_size ));
     }
 };
 
@@ -507,6 +687,9 @@ private:
     zval_auto_ptr( const zval_auto_ptr& src );
 };
 
+#pragma pop_macro( "max" )
+
+
 //*********************************************************************************************************************************
 // sqlsrv_error
 //*********************************************************************************************************************************
@@ -546,6 +729,11 @@ struct sqlsrv_error : public sqlsrv_error_const {
         format = printf_format;
     }
     
+    sqlsrv_error( sqlsrv_error_const const& prototype )
+    {
+        sqlsrv_error( prototype.sqlstate, prototype.native_message, prototype.native_code, prototype.format );
+    }
+
     ~sqlsrv_error( void )
     {
         if( sqlstate != NULL ) {
@@ -816,6 +1004,7 @@ enum SQLSRV_STMT_OPTIONS {
    SQLSRV_STMT_OPTION_QUERY_TIMEOUT,
    SQLSRV_STMT_OPTION_SEND_STREAMS_AT_EXEC,
    SQLSRV_STMT_OPTION_SCROLLABLE,
+   SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE,
 
    // Driver specific connection options
    SQLSRV_STMT_OPTION_DRIVER_SPECIFIC = 1000,
@@ -825,6 +1014,8 @@ enum SQLSRV_STMT_OPTIONS {
 namespace ODBCConnOptions {
 
 const char APP[] = "APP";
+const char ApplicationIntent[] = "ApplicationIntent";
+const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char Database[] = "Database";
@@ -832,6 +1023,7 @@ const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
 const char LoginTimeout[] = "LoginTimggeout";
 const char MARS_ODBC[] = "MARS_Connection";
+const char MultiSubnetFailover[] = "MultiSubnetFailover";
 const char QuotedId[] = "QuotedId";
 const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
@@ -861,6 +1053,9 @@ enum SQLSRV_CONN_OPTIONS {
    SQLSRV_CONN_OPTION_TRANS_ISOLATION,
    SQLSRV_CONN_OPTION_TRUST_SERVER_CERT,
    SQLSRV_CONN_OPTION_WSID,
+   SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
+   SQLSRV_CONN_OPTION_APPLICATION_INTENT,
+   SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
 
    // Driver specific connection options
    SQLSRV_CONN_OPTION_DRIVER_SPECIFIC = 1000,
@@ -963,6 +1158,11 @@ struct stmt_option_send_at_exec : public stmt_option_functor {
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* opt, zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_buffered_query_limit : public stmt_option_functor {
+
+    virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* opt, zval* value_z TSRMLS_DC );
+};
+
 // used to hold the table for statment options
 struct stmt_option {
 
@@ -1029,25 +1229,28 @@ struct sqlsrv_output_param {
     }
 };
 
+// forward decls
+struct sqlsrv_result_set;
+
 // *** Statement resource structure *** 
 struct sqlsrv_stmt : public sqlsrv_context {
 
     void free_param_data( TSRMLS_D );
-    virtual void new_result_set( void );
+    virtual void new_result_set( TSRMLS_D );
 
     sqlsrv_conn*   conn;                  // Connection that created this statement
    
     bool executed;                        // Whether the statement has been executed yet (used for error messages)
     bool past_fetch_end;                  // Core_sqlsrv_fetch sets this field when the statement goes beyond the last row
-    bool scrollable;                      // Determines if the statement was created with the Scrollable query attribute 
-                                          // (don't have to use ODBC to find out)
-    bool scroll_is_dynamic;               // if scrollable, is it a dynamic cursor.  
+    sqlsrv_result_set* current_results;   // Current result set
+    SQLULEN cursor_type;                  // Type of cursor for the current result set
     bool has_rows;                        // Has_rows is set if there are actual rows in the row set
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field
     bool past_next_result_end;            // core_sqlsrv_next_result sets this to true when the statement goes beyond the 
                                           // last results
     unsigned long query_timeout;          // maximum allowed statement execution time
+    unsigned long buffered_query_limit;   // maximum allowed memory for a buffered query (measured in KB)
 
     // holds output pointers for SQLBindParameter
     // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving
@@ -1101,6 +1304,9 @@ const int SQLSRV_DEFAULT_SIZE = -1;     // size given for an output parameter th
 // uninitialized query timeout value
 const unsigned int QUERY_TIMEOUT_INVALID = 0xffffffff;
 
+// special buffered query constant
+const size_t SQLSRV_CURSOR_BUFFERED = 0xfffffffeUL; // arbitrary number that doesn't map to any other SQL_CURSOR_* constant
+
 // factory to create a statement
 typedef sqlsrv_stmt* (*driver_stmt_factory)( sqlsrv_conn* conn, SQLHANDLE h, error_callback e, void* drv TSRMLS_DC );
 
@@ -1117,42 +1323,181 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
                             __out void** field_value, __out SQLLEN* field_length,  bool cache_field, 
                             __out SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC );
 bool core_sqlsrv_has_any_result( sqlsrv_stmt* stmt TSRMLS_DC );
-void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params = true );
+void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params = true, bool throw_on_errors = true );
 void core_sqlsrv_post_param( sqlsrv_stmt* stmt, unsigned int paramno, zval* param_z TSRMLS_DC );
 void core_sqlsrv_set_scrollable( sqlsrv_stmt* stmt, unsigned int cursor_type TSRMLS_DC );
 void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, long timeout TSRMLS_DC );
 void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC );
+void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
+void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, long limit TSRMLS_DC );
 
 
 //*********************************************************************************************************************************
-// Logging
+// Result Set
 //*********************************************************************************************************************************
-// log_callback
-// a driver specific callback for logging messages
-// severity - severity of the message: notice, warning, or error
-// msg - the message to log in a FormatMessage style formatting
-// print_args - args to the message
-typedef void (*log_callback)( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );
 
-// each driver must register a log callback.  This should be the first thing a driver does.
-void core_sqlsrv_register_logger( log_callback );
+// Abstract the result set so that a result set can either be used as is from ODBC or buffered.
+// This is not a complete abstraction of a result set.  Only enough is abstracted to allow for
+// information and capabilities normally not available when a result set is not buffered
+// (e.g., forward only vs buffered means row count is available and cursor movement is possible).
+// Otherwise, normal ODBC calls are still valid and should be used to get information about the
+// result set (e.g., SQLNumResultCols).
 
-// a simple wrapper around a PHP error logging function.
-void write_to_log( unsigned int severity TSRMLS_DC, const char* msg, ... );
+struct sqlsrv_result_set {
 
-// a macro to make it convenient to use the function.
-#define LOG( severity, msg, ...)    write_to_log( severity TSRMLS_CC, msg, __VA_ARGS__ )
+    sqlsrv_stmt* odbc;
 
-// mask for filtering which severities are written to the log
-enum logging_severity {
-    SEV_ERROR = 0x01,
-    SEV_WARNING = 0x02,
-    SEV_NOTICE = 0x04,
-    SEV_ALL = -1,
+    explicit sqlsrv_result_set( sqlsrv_stmt* );
+    virtual ~sqlsrv_result_set( void ) { }
+
+    virtual bool cached( int field_index ) = 0;
+    virtual SQLRETURN fetch( SQLSMALLINT fetch_orientation, SQLLEN fetch_offset TSRMLS_DC ) = 0;
+    virtual SQLRETURN get_data( SQLUSMALLINT field_index, SQLSMALLINT target_type,
+                                __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length,
+                                bool handle_warning TSRMLS_DC )= 0;
+    virtual SQLRETURN get_diag_field( SQLSMALLINT record_number, SQLSMALLINT diag_identifier, 
+                                      __out SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
+                                      __out SQLSMALLINT* out_buffer_length TSRMLS_DC ) = 0;
+    virtual sqlsrv_error* get_diag_rec( SQLSMALLINT record_number ) = 0;
+    virtual SQLLEN row_count( TSRMLS_D ) = 0;
 };
 
+struct sqlsrv_odbc_result_set : public sqlsrv_result_set {
+
+    explicit sqlsrv_odbc_result_set( sqlsrv_stmt* );
+    virtual ~sqlsrv_odbc_result_set( void );
+
+    virtual bool cached( int field_index ) { return false; }
+    virtual SQLRETURN fetch( SQLSMALLINT fetch_orientation, SQLLEN fetch_offset TSRMLS_DC );
+    virtual SQLRETURN get_data( SQLUSMALLINT field_index, SQLSMALLINT target_type,
+                                __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length,
+                                bool handle_warning TSRMLS_DC );
+    virtual SQLRETURN get_diag_field( SQLSMALLINT record_number, SQLSMALLINT diag_identifier, 
+                                      __out SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
+                                      __out SQLSMALLINT* out_buffer_length TSRMLS_DC );
+    virtual sqlsrv_error* get_diag_rec( SQLSMALLINT record_number );
+    virtual SQLLEN row_count( TSRMLS_D );
+
+ private:
+    // prevent invalid instantiations and assignments
+    sqlsrv_odbc_result_set( void );
+    sqlsrv_odbc_result_set( sqlsrv_odbc_result_set& );
+    sqlsrv_odbc_result_set& operator=( sqlsrv_odbc_result_set& );
+};
+
+struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
+
+    struct meta_data {
+        SQLSMALLINT type;
+        SQLSMALLINT c_type;     // convenience
+        SQLULEN offset;         // in bytes
+        SQLULEN length;         // in bytes
+        SQLSMALLINT scale;
+
+        static const SQLULEN SIZE_UNKNOWN = 0;
+    };
+
+    // default maximum amount of memory that a buffered query can consume
+    #define INI_BUFFERED_QUERY_LIMIT_DEFAULT    "10240" // default used by the php.ini settings
+    static const unsigned long BUFFERED_QUERY_LIMIT_DEFAULT = 10240;   // measured in KB
+    static const long BUFFERED_QUERY_LIMIT_INVALID = 0;
+
+    explicit sqlsrv_buffered_result_set( sqlsrv_stmt* odbc TSRMLS_DC );
+    virtual ~sqlsrv_buffered_result_set( void );
+
+    virtual bool cached( int field_index ) { return true; }
+    virtual SQLRETURN fetch( SQLSMALLINT fetch_orientation, SQLLEN fetch_offset TSRMLS_DC );
+    virtual SQLRETURN get_data( SQLUSMALLINT field_index, SQLSMALLINT target_type,
+                                __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length,
+                                bool handle_warning TSRMLS_DC );
+    virtual SQLRETURN get_diag_field( SQLSMALLINT record_number, SQLSMALLINT diag_identifier, 
+                                      __out SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
+                                      __out SQLSMALLINT* out_buffer_length TSRMLS_DC );
+    virtual sqlsrv_error* get_diag_rec( SQLSMALLINT record_number );
+    virtual SQLLEN row_count( TSRMLS_D );
+
+    // buffered result set specific 
+    SQLSMALLINT column_count( void )
+    {
+        return col_count;
+    }
+
+    struct meta_data& col_meta_data( SQLSMALLINT i )
+    {
+        return meta[i];
+    }
+
+ private:
+    // prevent invalid instantiations and assignments
+    sqlsrv_buffered_result_set( void );
+    sqlsrv_buffered_result_set( sqlsrv_buffered_result_set& );
+    sqlsrv_buffered_result_set& operator=( sqlsrv_buffered_result_set& );
+
+    HashTable* cache;                   // rows of data kept in index based hash table
+    SQLSMALLINT col_count;            // number of columns in the current result set
+    meta_data* meta;                    // metadata for fields in the cache
+    SQLLEN current;                     // 1 based, 0 means before first row
+    sqlsrv_error_auto_ptr last_error;   // if an error occurred, it is kept here
+    SQLUSMALLINT last_field_index;      // the last field data retrieved from
+    SQLLEN read_so_far;                 // position within string to read from (for partial reads of strings)
+    sqlsrv_malloc_auto_ptr<SQLCHAR> temp_string;   // temp buffer to hold a converted field while in use
+    SQLLEN temp_length;                 // number of bytes in the temp conversion buffer
+
+    typedef SQLRETURN (sqlsrv_buffered_result_set::*conv_fn)( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                                              __out SQLLEN* out_buffer_length );
+    typedef std::map< SQLINTEGER, std::map< SQLINTEGER, conv_fn > > conv_matrix_t;
+
+    // two dimentional sparse matrix that holds the [from][to] functions that do conversions
+    static conv_matrix_t conv_matrix;
+
+    // string conversion functions
+    SQLRETURN binary_to_wide_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                     __out SQLLEN* out_buffer_length );
+    SQLRETURN binary_to_system_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                       __out SQLLEN* out_buffer_length );
+    SQLRETURN system_to_wide_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                     __out SQLLEN* out_buffer_length );
+    SQLRETURN to_binary_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                __out SQLLEN* out_buffer_length );
+    SQLRETURN to_same_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                               __out SQLLEN* out_buffer_length );
+    SQLRETURN wide_to_system_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                     __out SQLLEN* out_buffer_length );
+
+    // long conversion functions
+    SQLRETURN to_long( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length );
+    SQLRETURN long_to_system_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                     __out SQLLEN* out_buffer_length );
+    SQLRETURN long_to_wide_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                     __out SQLLEN* out_buffer_length );
+    SQLRETURN long_to_double( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                              __out SQLLEN* out_buffer_length );
+
+    // double conversion functions
+    SQLRETURN to_double( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length );
+    SQLRETURN double_to_system_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                       __out SQLLEN* out_buffer_length );
+    SQLRETURN double_to_wide_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                     __out SQLLEN* out_buffer_length );
+    SQLRETURN double_to_long( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                              __out SQLLEN* out_buffer_length );
+
+    // string to number conversion functions
+    // Future: See if these can be converted directly to template member functions
+    SQLRETURN string_to_double( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                 __out SQLLEN* out_buffer_length );
+    SQLRETURN string_to_long( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                              __out SQLLEN* out_buffer_length );
+    SQLRETURN wstring_to_double( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                                 __out SQLLEN* out_buffer_length );
+    SQLRETURN wstring_to_long( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
+                               __out SQLLEN* out_buffer_length );
+
+    // utility functions for conversions
+    unsigned char* get_row( void );
+};
 
 //*********************************************************************************************************************************
 // Utility
@@ -1205,7 +1550,7 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_INVALID_CONNECTION_KEY,
     SQLSRV_ERROR_MAX_PARAMS_EXCEEDED,
     SQLSRV_ERROR_INVALID_OPTION_KEY,
-    SQLSRV_ERROR_INVALID_OPTION_VALUE,
+    SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE,
     SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE,
     SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE,
     SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED,
@@ -1215,6 +1560,8 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_STREAM_CREATE,
     SQLSRV_ERROR_MARS_OFF,
     SQLSRV_ERROR_FIELD_INDEX_ERROR,
+    SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
+    SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
@@ -1222,7 +1569,8 @@ enum SQLSRV_ERROR_CODES {
 };
 
 // the message returned by SQL Native Client
-const char CONNECTION_BUSY_ODBC_ERROR[] = "[Microsoft][SQL Server Native Client 10.0]Connection is busy with results for another command";
+const char CONNECTION_BUSY_ODBC_ERROR[] = "[Microsoft][SQL Server Native Client 11.0]Connection is busy with results for "
+    "another command";
 
 // SQLSTATE for all internal errors
 extern SQLCHAR IMSSP[];
@@ -1244,11 +1592,12 @@ enum error_handling_flags {
 // 2/code) driver specific error code
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
-bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_error* error, logging_severity severity TSRMLS_DC );
+bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, __out sqlsrv_error_auto_ptr& error, 
+                                 logging_severity severity TSRMLS_DC );
 
 // format and return a driver specfic error
 void core_sqlsrv_format_driver_error( sqlsrv_context& ctx, sqlsrv_error_const const* custom_error, 
-                                      sqlsrv_error* formatted_error, logging_severity severity TSRMLS_DC, va_list* args );
+                                      sqlsrv_error_auto_ptr& formatted_error, logging_severity severity TSRMLS_DC, va_list* args );
 
 
 // return the message for the HRESULT returned by GetLastError.  Some driver errors use this to
@@ -1278,10 +1627,6 @@ inline bool call_error_handler( sqlsrv_context* ctx, unsigned int sqlsrv_error_c
     return ignored;
 }
 
-// Kill the PHP process and log the message to PHP
-void die( const char* msg, ... );
-#define DIE( msg, ... ) { die( msg, __VA_ARGS__ ); }
-
 // PHP equivalent of ASSERT.  C asserts cause a dialog to show and halt the process which
 // we don't want on a web server
 
@@ -1299,7 +1644,6 @@ void die( const char* msg, ... );
     #define DEBUG_SQLSRV_ASSERT( condition, msg, ... ) ((void)0)
 
 #endif 
-
 
 // check to see if the sqlstate is 01004, truncated field retrieved.  Used for retrieving large fields.
 inline bool is_truncated_warning( SQLCHAR* state )

@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDO object for PDO_SQLSRV
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,12 +52,15 @@ namespace PDOConnOptionNames {
 
 const char Server[] = "Server";
 const char APP[] = "APP";
+const char ApplicationIntent[] = "ApplicationIntent";
+const char AttachDBFileName[] = "AttachDbFileName";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char Database[] = "Database";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
+const char MultiSubnetFailover[] = "MultiSubnetFailover";
 const char QuotedId[] = "QuotedId";
 const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
@@ -77,6 +80,9 @@ enum PDO_STMT_OPTIONS {
 
     PDO_STMT_OPTION_ENCODING = SQLSRV_STMT_OPTION_DRIVER_SPECIFIC,
     PDO_STMT_OPTION_DIRECT_QUERY,
+    PDO_STMT_OPTION_CURSOR_SCROLL_TYPE,
+    PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE,
+    PDO_STMT_OPTION_EMULATE_PREPARES,
 };
 
 // List of all the statement options supported by this driver.
@@ -86,6 +92,9 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, SQLSRV_STMT_OPTION_SCROLLABLE, new stmt_option_scrollable },
     { NULL, 0, PDO_STMT_OPTION_ENCODING, new stmt_option_encoding },
     { NULL, 0, PDO_STMT_OPTION_DIRECT_QUERY, new stmt_option_direct_query },
+    { NULL, 0, PDO_STMT_OPTION_CURSOR_SCROLL_TYPE, new stmt_option_cursor_scroll_type },
+    { NULL, 0, PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE, new stmt_option_buffered_query_limit },
+    { NULL, 0, PDO_STMT_OPTION_EMULATE_PREPARES, new stmt_option_emulate_prepares },
 
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, NULL},
 };
@@ -163,6 +172,24 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         conn_str_append_func::func 
     },
+    { 
+        PDOConnOptionNames::ApplicationIntent,
+        sizeof( PDOConnOptionNames::ApplicationIntent ),
+        SQLSRV_CONN_OPTION_APPLICATION_INTENT,
+        ODBCConnOptions::ApplicationIntent,
+        sizeof( ODBCConnOptions::ApplicationIntent ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func 
+    },
+    { 
+        PDOConnOptionNames::AttachDBFileName,
+        sizeof( PDOConnOptionNames::AttachDBFileName ),
+        SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
+        ODBCConnOptions::AttachDBFileName,
+        sizeof( ODBCConnOptions::AttachDBFileName ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func 
+    },
     {
         PDOConnOptionNames::ConnectionPooling,
         sizeof( PDOConnOptionNames::ConnectionPooling ),
@@ -214,6 +241,15 @@ const connection_option PDO_CONN_OPTS[] = {
         SQLSRV_CONN_OPTION_MARS,
         ODBCConnOptions::MARS_ODBC,
         sizeof( ODBCConnOptions::MARS_ODBC ),
+        CONN_ATTR_BOOL,
+        pdo_bool_conn_str_func::func
+    },
+    {
+        PDOConnOptionNames::MultiSubnetFailover,
+        sizeof( PDOConnOptionNames::MultiSubnetFailover ),
+        SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
+        ODBCConnOptions::MultiSubnetFailover,
+        sizeof( ODBCConnOptions::MultiSubnetFailover ),
         CONN_ATTR_BOOL,
         pdo_bool_conn_str_func::func
     },
@@ -331,6 +367,20 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
     driver_dbh->set_func( __FUNCTION__ ); \
     LOG( SEV_NOTICE, __FUNCTION__ ## ": entering" ); \
+}
+
+// constructor for the internal object for connections
+pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC ) :
+    sqlsrv_conn( h, e, driver, SQLSRV_ENCODING_UTF8 TSRMLS_CC ),
+    stmts( NULL ),
+    direct_query( false ),
+    query_timeout( QUERY_TIMEOUT_INVALID ),
+    client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size ) )
+{
+    if( client_buffer_max_size < 0 ) {
+        client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
+        LOG( SEV_WARNING, INI_PDO_SQLSRV_CLIENT_BUFFER_MAX_SIZE " set to a invalid value.  Resetting to default value." );
+    }
 }
 
 // pdo_sqlsrv_db_handle_factory
@@ -481,28 +531,15 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
     int sql_rewrite_len = 0;
     sqlsrv_malloc_auto_ptr<pdo_sqlsrv_stmt> driver_stmt;
 
-    try {
+    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
+    SQLSRV_ASSERT(( driver_dbh != NULL ), "pdo_sqlsrv_dbh_prepare: dbh->driver_data was null");
 
-        pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
-        SQLSRV_ASSERT(( driver_dbh != NULL ), "pdo_sqlsrv_dbh_prepare: dbh->driver_data was null");
+    try {
 
         // assign the methods for the statement object.  This is necessary even if the 
         // statement fails so the user can retrieve the error information.
         stmt->methods = &pdo_sqlsrv_stmt_methods;
         stmt->supports_placeholders = PDO_PLACEHOLDER_POSITIONAL;   // we support parameterized queries with ?, not names
-
-        // rewrite the query to map named parameters to positional parameters.  We do this rather than use the ODBC named
-        // parameters for consistency with the PDO MySQL and PDO ODBC drivers.
-        int zr = pdo_subst_params_named_to_positional( stmt, const_cast<char*>( sql ), sql_len, 
-                                                       &sql_rewrite, &sql_rewrite_len TSRMLS_CC );
-        CHECK_ZEND_ERROR( zr, driver_dbh, PDO_SQLSRV_ERROR_PARAM_PARSE ) {
-            throw core::CoreException();
-        }
-        // if parameter substitution happened, use that query instead of the original
-        if( sql_rewrite != NULL ) {
-            sql = sql_rewrite;
-            sql_len = sql_rewrite_len;
-        }
 
         // Initialize the options array to be passed to the core layer
         ALLOC_HASHTABLE( pdo_stmt_options_ht );
@@ -516,6 +553,13 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
                                                                               pdo_stmt_options_ht, PDO_STMT_OPTS, 
                                                                               pdo_sqlsrv_handle_stmt_error, stmt TSRMLS_CC ));
 
+        // if the user didn't set anything in the prepare options, then set the buffer limit
+        // to the value set on the connection.
+        if( driver_stmt->buffered_query_limit== sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ) {
+            
+             driver_stmt->buffered_query_limit = driver_dbh->client_buffer_max_size;
+        }
+
         // if the user didn't set anything in the prepare options, then set the query timeout 
         // to the value set on the connection.
         if(( driver_stmt->query_timeout == QUERY_TIMEOUT_INVALID ) && ( driver_dbh->query_timeout != QUERY_TIMEOUT_INVALID )) {
@@ -523,12 +567,24 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
             core_sqlsrv_set_query_timeout( driver_stmt, driver_dbh->query_timeout TSRMLS_CC );
         }
 
-        if( driver_stmt->direct_query ) {
+        // rewrite named parameters in the query to positional parameters if we aren't letting PDO do the
+        // parameter substitution for us
+        if( stmt->supports_placeholders != PDO_PLACEHOLDER_NONE ) {
 
-            driver_stmt->query = estrndup( sql, sql_len );
-            driver_stmt->query_len = sql_len;
+            // rewrite the query to map named parameters to positional parameters.  We do this rather than use the ODBC named
+            // parameters for consistency with the PDO MySQL and PDO ODBC drivers.
+            int zr = pdo_subst_named_params( stmt, const_cast<char*>( sql ), sql_len, &sql_rewrite, &sql_rewrite_len TSRMLS_CC );
+            CHECK_ZEND_ERROR( zr, driver_dbh, PDO_SQLSRV_ERROR_PARAM_PARSE ) {
+                throw core::CoreException();
+            }
+            // if parameter substitution happened, use that query instead of the original
+            if( sql_rewrite != NULL ) {
+                sql = sql_rewrite;
+                sql_len = sql_rewrite_len;
+            }
         }
-        else {
+
+        if( !driver_stmt->direct_query && stmt->supports_placeholders != PDO_PLACEHOLDER_NONE ) {
   
             core_sqlsrv_prepare( driver_stmt, sql, sql_len TSRMLS_CC );
         }
@@ -543,6 +599,14 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
         if( driver_stmt ) {
 
             driver_stmt->~pdo_sqlsrv_stmt();
+        }
+
+        // in the event that the statement caused an error that was copied to the connection, update the
+        // connection with the error's SQLSTATE.
+        if( driver_dbh->last_error() ) {
+
+            strcpy_s( dbh->error_code, sizeof( dbh->error_code ), 
+                      reinterpret_cast<const char*>( driver_dbh->last_error()->sqlstate ));
         }
 
         return 0;
@@ -819,9 +883,17 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, long attr, zval *val TSRMLS_DC )
             case SQLSRV_ATTR_QUERY_TIMEOUT:
                 if( Z_TYPE_P( val ) != IS_LONG || Z_LVAL_P( val ) < 0 ) {
                     convert_to_string( val );
-                    THROW_PDO_ERROR( driver_dbh, SQLSRV_ERROR_INVALID_OPTION_VALUE, Z_STRVAL_P( val ));
+                    THROW_PDO_ERROR( driver_dbh, SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE, Z_STRVAL_P( val ));
                 }
                 driver_dbh->query_timeout = Z_LVAL_P( val );
+                break;
+
+            case SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE:
+                if( Z_TYPE_P( val ) != IS_LONG || Z_LVAL_P( val ) <= 0 ) {
+                    convert_to_string( val );
+                    THROW_PDO_ERROR( driver_dbh, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, Z_STRVAL_P( val ));
+                }
+                driver_dbh->client_buffer_max_size = Z_LVAL_P( val );
                 break;
 
             // Not supported
@@ -829,7 +901,6 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, long attr, zval *val TSRMLS_DC )
             case PDO_ATTR_FETCH_CATALOG_NAMES: 
             case PDO_ATTR_PREFETCH:
             case PDO_ATTR_MAX_COLUMN_LEN:
-            case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR_NAME:	
             case PDO_ATTR_AUTOCOMMIT:
             case PDO_ATTR_PERSISTENT:
@@ -849,7 +920,9 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, long attr, zval *val TSRMLS_DC )
             }
 
             // Statement level only
-            case PDO_ATTR_CURSOR:	
+            case PDO_ATTR_EMULATE_PREPARES:
+            case PDO_ATTR_CURSOR:
+            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:	
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -895,7 +968,6 @@ int pdo_sqlsrv_dbh_get_attr( pdo_dbh_t *dbh, long attr, zval *return_value TSRML
             case PDO_ATTR_FETCH_CATALOG_NAMES: 
             case PDO_ATTR_PREFETCH:
             case PDO_ATTR_MAX_COLUMN_LEN:
-            case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR_NAME:
             case PDO_ATTR_AUTOCOMMIT:
             case PDO_ATTR_TIMEOUT:
@@ -904,8 +976,10 @@ int pdo_sqlsrv_dbh_get_attr( pdo_dbh_t *dbh, long attr, zval *return_value TSRML
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_UNSUPPORTED_DBH_ATTR );
             }
 
-             // Statement level only	
-            case PDO_ATTR_CURSOR:	
+             // Statement level only
+            case PDO_ATTR_EMULATE_PREPARES:
+            case PDO_ATTR_CURSOR:
+            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:	
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -954,6 +1028,12 @@ int pdo_sqlsrv_dbh_get_attr( pdo_dbh_t *dbh, long attr, zval *return_value TSRML
             case SQLSRV_ATTR_DIRECT_QUERY:
             {
                 ZVAL_BOOL( return_value, driver_dbh->direct_query );
+                break;
+            }
+
+            case SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE:
+            { 
+                ZVAL_LONG( return_value, driver_dbh->client_buffer_max_size );
                 break;
             }
 
@@ -1113,8 +1193,8 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, int unquoted_len
         }
     }
 
-    *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.    
-    *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len + 1 )); // include space for null terminator. 
+    *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
+    *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
     unsigned int out_current = 0;
 
     // insert initial quote
@@ -1163,29 +1243,42 @@ void add_stmt_option_key( sqlsrv_context& ctx, unsigned long key, HashTable* opt
      unsigned long option_key = -1;
      switch( key ) {
   
-        case PDO_ATTR_CURSOR:
-            option_key = SQLSRV_STMT_OPTION_SCROLLABLE;
-            break;
+         case PDO_ATTR_CURSOR:
+             option_key = SQLSRV_STMT_OPTION_SCROLLABLE;
+             break;
             
-        case SQLSRV_ATTR_ENCODING:
-            option_key = PDO_STMT_OPTION_ENCODING;
-            break;
+         case SQLSRV_ATTR_ENCODING:
+             option_key = PDO_STMT_OPTION_ENCODING;
+             break;
 
-        case SQLSRV_ATTR_QUERY_TIMEOUT:
-            option_key = SQLSRV_STMT_OPTION_QUERY_TIMEOUT;
-            break;
+         case SQLSRV_ATTR_QUERY_TIMEOUT:
+             option_key = SQLSRV_STMT_OPTION_QUERY_TIMEOUT;
+             break;
 
-        case PDO_ATTR_STATEMENT_CLASS:
-            break;
+         case PDO_ATTR_STATEMENT_CLASS:
+             break;
 
          case SQLSRV_ATTR_DIRECT_QUERY:
              option_key = PDO_STMT_OPTION_DIRECT_QUERY;
              break;
 
-        default:
-            CHECK_CUSTOM_ERROR( true, ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
-                throw core::CoreException();
-            }
+         case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:
+             option_key = PDO_STMT_OPTION_CURSOR_SCROLL_TYPE;
+             break;
+
+         case SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE:
+             option_key = PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE;
+             break;
+
+         case PDO_ATTR_EMULATE_PREPARES:
+             option_key = PDO_STMT_OPTION_EMULATE_PREPARES;
+             break;
+
+         default:
+             CHECK_CUSTOM_ERROR( true, ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
+                 throw core::CoreException();
+             }
+             break;
     }
 
     // if a PDO handled option makes it through (such as PDO_ATTR_STATEMENT_CLASS, just skip it

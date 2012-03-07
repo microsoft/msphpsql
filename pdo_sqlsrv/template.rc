@@ -3,7 +3,7 @@
 //
 // Contents: Version resource
 // 
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ BEGIN
             VALUE "FileDescription", "Microsoft Drivers for PHP for SQL Server (PDO Driver)\0"
             VALUE "FileVersion", STRVER4(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD, SQLVERSION_REVISION)
             VALUE "InternalName", FILE_NAME "\0"
-            VALUE "LegalCopyright", "Copyright 2010 Microsoft Corporation.\0"
+            VALUE "LegalCopyright", "Copyright Microsoft Corporation.\0"
             VALUE "OriginalFilename", FILE_NAME "\0"
             VALUE "ProductName", "Microsoft Drivers for PHP for SQL Server\0"
             VALUE "ProductVersion", STRVER3(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD)

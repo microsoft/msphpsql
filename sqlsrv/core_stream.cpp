@@ -3,7 +3,7 @@
 //
 // Contents: Implementation of PHP streams for reading SQL Server data
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -113,8 +113,9 @@ size_t sqlsrv_stream_read( php_stream* stream, __out_bcount(count) char* buf, si
 
             SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
             SQLSMALLINT len;
-            core::SQLGetDiagField( ss->stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
-            
+
+            ss->stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
+
             if( read == SQL_NO_TOTAL ) {
                 SQLSRV_ASSERT( is_truncated_warning( state ), "sqlsrv_stream_read: truncation warning was expected but it "
                                "did not occur." );
@@ -135,7 +136,7 @@ size_t sqlsrv_stream_read( php_stream* stream, __out_bcount(count) char* buf, si
                         read  = count - 1;
                         break;
                     default:
-                        DIE( "sqlsrv_stream_read: should have never reached in this switch case. ");
+                        DIE( "sqlsrv_stream_read: should have never reached in this switch case.");
                         break;
                 }
             }
