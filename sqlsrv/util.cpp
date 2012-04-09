@@ -301,8 +301,8 @@ ss_error SS_ERRORS[] = {
 
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft SQL Server 2011 Native Client. "
-        "Access the following URL to download the Microsoft SQL Server 2011 Native Client ODBC driver for %1!s!: "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft SQL Server 2012 Native Client. "
+        "Access the following URL to download the Microsoft SQL Server 2012 Native Client ODBC driver for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
     },     
 
@@ -729,6 +729,7 @@ void copy_error_to_zval( zval** error_z, sqlsrv_error_const* error, zval** repor
     zval_auto_ptr temp;
     MAKE_STD_ZVAL( temp );
     ZVAL_STRINGL( temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE, 1 );
+    zval_add_ref( &temp );
     if( add_next_index_zval( *error_z, temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
@@ -736,7 +737,7 @@ void copy_error_to_zval( zval** error_z, sqlsrv_error_const* error, zval** repor
     if( add_assoc_zval( *error_z, "SQLSTATE", temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
-    zval_add_ref( &temp );
+    temp.transferred();
 
     // native_code
     if( add_next_index_long( *error_z,  error->native_code ) == FAILURE ) {
@@ -750,6 +751,7 @@ void copy_error_to_zval( zval** error_z, sqlsrv_error_const* error, zval** repor
     // native_message
     MAKE_STD_ZVAL( temp );
     ZVAL_STRING( temp, reinterpret_cast<char*>( error->native_message), 1 );
+    zval_add_ref( &temp );
     if( add_next_index_zval( *error_z, temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
@@ -757,7 +759,6 @@ void copy_error_to_zval( zval** error_z, sqlsrv_error_const* error, zval** repor
     if( add_assoc_zval( *error_z, "message", temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
-    zval_add_ref( &temp );
     temp.transferred();
 
     // If it is an error or if warning_return_as_errors is true than

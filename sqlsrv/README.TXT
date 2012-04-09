@@ -28,7 +28,7 @@ Prerequisites:
 extensions.  For help with doing this, see the official PHP website,
 http://php.net.
 
-To compile the SQLSRV30 and PDO_SQLSRV30:
+To compile the SQLSRV301 and PDO_SQLSRV301:
 
 1) Copy the source code directories from this repository into the ext
 subdirectory.

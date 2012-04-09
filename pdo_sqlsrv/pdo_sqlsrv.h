@@ -219,6 +219,8 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     pdo_sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC ) :
         sqlsrv_stmt( c, handle, e, drv TSRMLS_CC ), 
         direct_query( false ),
+        direct_query_subst_string( NULL ),
+        direct_query_subst_string_len( 0 ),
         bound_column_param_types( NULL )
     {
         pdo_sqlsrv_dbh* db = static_cast<pdo_sqlsrv_dbh*>( c );
@@ -231,7 +233,10 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     // for PDO, everything is a string, so we return SQLSRV_PHPTYPE_STRING for all SQL types
     virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
 
-    bool direct_query;          // flag set if the query should be executed directly or prepared
+    bool direct_query;                        // flag set if the query should be executed directly or prepared
+    const char* direct_query_subst_string;    // if the query is direct, hold the substitution string if using named parameters
+    int direct_query_subst_string_len;        // length of query string used for direct queries
+
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
     pdo_param_type* bound_column_param_types;

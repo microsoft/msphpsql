@@ -113,15 +113,6 @@ OACR_WARNING_POP
 // included for SQL Server specific constants
 #include "sqlncli.h"
 
-// new PHP 5.3 macros redefined for PHP 5.2 backwards compatibility
-#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 2
-#define Z_ISREF_P( pzval )         ((pzval)->is_ref != 0)
-#define Z_ISREF_PP( ppzval )       Z_ISREF_P(*(ppzval))
-#define Z_SET_ISREF_P( pzval )     ((pzval)->is_ref = 1)
-#define Z_SET_ISREF_PP( ppzval )   Z_SET_ISREF_P(*(ppzval))
-#define Z_REFCOUNT_P( pzval )      ((pzval)->refcount)
-#endif
-
 //*********************************************************************************************************************************
 // Constants and Types
 //*********************************************************************************************************************************
@@ -1505,7 +1496,7 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 
 // Simple macro to alleviate unused variable warnings.  These are optimized out by the compiler.
 // We use this since the unused variables are buried in the PHP_FUNCTION macro.
-#define SQLSRV_UNUSED( var )   var = var
+#define SQLSRV_UNUSED( var )   var;
 
 // do a heap check in debug mode, but only print errors, not all of the allocations
 #define MEMCHECK_SILENT 1

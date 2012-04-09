@@ -349,6 +349,12 @@ pdo_sqlsrv_stmt::~pdo_sqlsrv_stmt( void )
         sqlsrv_free( bound_column_param_types );
         bound_column_param_types = NULL;
     }
+
+    if( direct_query_subst_string ) {
+        // we use efree rather than sqlsrv_free since sqlsrv_free may wrap another allocation scheme
+        // and we use estrdup to allocate this string, which uses emalloc
+        efree( reinterpret_cast<void*>( const_cast<char*>( direct_query_subst_string )));
+    }
 }
 
 
@@ -512,13 +518,15 @@ int pdo_sqlsrv_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 
         // if the user is doing a direct query (PDO::SQLSRV_ATTR_DIRECT_QUERY), set the query here
         if( driver_stmt->direct_query ) {
-            query = stmt->query_string;
-            query_len = stmt->query_stringlen;
-            }
+
+            query = driver_stmt->direct_query_subst_string;
+            query_len = driver_stmt->direct_query_subst_string_len;
+        }
 
         // if the user is using prepare emulation (PDO::ATTR_EMULATE_PREPARES), set the query to the 
         // subtituted query provided by PDO
         if( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+
             query = stmt->active_query_string;
             query_len = stmt->active_query_stringlen;
         }

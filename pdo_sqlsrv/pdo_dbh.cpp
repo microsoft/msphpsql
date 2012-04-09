@@ -26,17 +26,8 @@
 #include <string>
 #include <sstream>
 
-#if PHP_MAJOR_VERSION == 5
-#if PHP_MINOR_VERSION == 2 
 
-typedef function_entry pdo_sqlsrv_function_entry;
-
-#else
-
-typedef const function_entry pdo_sqlsrv_function_entry;
-
-#endif
-#endif
+typedef const zend_function_entry pdo_sqlsrv_function_entry;
 
 // *** internal variables and constants ***
 
@@ -588,7 +579,20 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
   
             core_sqlsrv_prepare( driver_stmt, sql, sql_len TSRMLS_CC );
         }
-    
+        else if( driver_stmt->direct_query ) {
+
+            if( driver_stmt->direct_query_subst_string ) {
+                // we use efree rather than sqlsrv_free since sqlsrv_free may wrap another allocation scheme
+                // and we use estrdup below to allocate the new string, which uses emalloc
+                efree( reinterpret_cast<void*>( const_cast<char*>( driver_stmt->direct_query_subst_string )));
+            }
+            driver_stmt->direct_query_subst_string = estrdup( sql );
+            driver_stmt->direct_query_subst_string_len = sql_len;
+        }
+        // else if stmt->support_placeholders == PDO_PLACEHOLDER_NONE means that stmt->active_query_string will be
+        // set to the substituted query
+
+   
         stmt->driver_data = driver_stmt;
         driver_stmt.transferred();                   
     }

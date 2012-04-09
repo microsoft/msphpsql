@@ -51,9 +51,9 @@ pdo_error PDO_ERRORS[] = {
     
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires either the Microsoft SQL Server 2008 Native Client (SP1 or later) or the " 
-        "Microsoft SQL Server 2008 R2 Native Client ODBC Driver to communicate with SQL Server. Neither of those ODBC Drivers are currently installed. " 
-        "Access the following URL to download the Microsoft SQL Server 2008 R2 Native Client ODBC driver for %1!s!: "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft SQL Server 2012 Native Client ODBC Driver to "
+        "communicate with SQL Server. Access the following URL to download the Microsoft SQL Server 2012 Native Client "
+        "ODBC driver for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -1, true }
     },  
     {

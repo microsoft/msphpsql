@@ -496,6 +496,16 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, unsigned int param_num, int dire
             ind_ptr = buffer_len;
             if( direction != SQL_PARAM_INPUT ) {
 
+#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 4
+                // PHP 5.4 added interned strings, so since we obviously want to change that string here in some fashion,
+                // we reallocate the string if it's interned
+                if( IS_INTERNED( buffer )) {
+                    ZVAL_STRINGL( param_z, static_cast<const char*>(buffer), buffer_len, 1 );
+                    buffer = Z_STRVAL_P( param_z );
+                    buffer_len = Z_STRLEN_P( param_z );
+                }
+#endif
+
                 // if it's a UTF-8 input output parameter (signified by the C type being SQL_C_WCHAR)
                 // or if the PHP type is a binary encoded string with a N(VAR)CHAR/NTEXTSQL type,
                 // convert it to wchar first
