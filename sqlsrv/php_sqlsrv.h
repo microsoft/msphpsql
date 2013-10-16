@@ -74,7 +74,7 @@ typedef int socklen_t;
 
 #pragma warning(pop)
 
-#if PHP_MAJOR_VERSION > 5 || PHP_MAJOR_VERSION < 5 || ( PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3 ) || ( PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION > 4 )
+#if PHP_MAJOR_VERSION > 5 || PHP_MAJOR_VERSION < 5 || ( PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3 )
 #error Trying to compile "Microsoft Drivers for PHP for SQL Server (SQLSRV Driver)" with an unsupported version of PHP
 #endif
 
