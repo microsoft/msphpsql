@@ -49,7 +49,7 @@ using the Visual C++ 2008 and 2010, Express and Standard compilers.
 
 ## Documentation
 
-This driver is documented on [Microsoft's Documentation web][phpdoc] site.
+This driver is documented on [Microsoft's Documentation web site][phpdoc].
 
 ## Changes
 
