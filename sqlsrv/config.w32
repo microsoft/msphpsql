@@ -1,0 +1,38 @@
+//----------------------------------------------------------------------------------------------------------------------------------
+// File: config.w32
+//
+// Contents: JScript build configuration used by buildconf.bat
+// 
+// Copyright Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//
+// You may obtain a copy of the License at:
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//----------------------------------------------------------------------------------------------------------------------------------
+
+ARG_ENABLE("sqlsrv", "enable Microsoft Drivers for PHP for SQL Server (SQLSRV driver)", "no");
+
+if( PHP_SQLSRV != "no" ) {
+
+    if (CHECK_LIB("odbc32.lib", "sqlsrv") && CHECK_LIB("odbccp32.lib", "sqlsrv") && 
+       CHECK_LIB("version.lib", "sqlsrv") && CHECK_LIB("psapi.lib", "sqlsrv")) {
+       
+       EXTENSION("sqlsrv", "conn.cpp init.cpp stmt.cpp util.cpp core_init.cpp core_conn.cpp core_stmt.cpp core_util.cpp core_stream.cpp core_results.cpp"  )
+
+       CHECK_HEADER_ADD_INCLUDE('sql.h', 'CFLAGS_SQLSRV_ODBC');
+       CHECK_HEADER_ADD_INCLUDE('sqlext.h', 'CFLAGS_SQLSRV_ODBC');
+       ADD_FLAG( 'LDFLAGS_SQLSRV', '/NXCOMPAT /DYNAMICBASE' );
+       ADD_FLAG( 'CFLAGS_SQLSRV', '/D ZEND_WIN32_FORCE_INLINE' );
+       ADD_FLAG( 'CFLAGS_SQLSRV', '/D _HAS_CPP0X=0' );
+       ADD_FLAG( 'CFLAGS_SQLSRV', '/EHsc' );
+       ADD_FLAG( 'CFLAGS_SQLSRV', '/GS' );
+   }
+}
