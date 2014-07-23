@@ -47,6 +47,10 @@ Also enable them within your PHP installation's php.ini file.
 This software has been compiled and tested under PHP 5.3.6 and later
 using the Visual C++ 2008 and 2010, Express and Standard compilers.
 
+## Documentation
+
+This driver is documented on [Microsoft's Documentation web site][phpdoc].
+
 ## Changes
 
 For details about the changes included in this release, please see our [blog][blog] or see the SQLSRV_Readme.htm 
@@ -75,3 +79,5 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the Apache
 [issues]: https://github.com/Azure/msphpsql/issues
 
 [phpweb]: http://php.net
+
+[phpdoc]: http://msdn.microsoft.com/en-us/library/dd903047%28SQL.11%29.aspx
