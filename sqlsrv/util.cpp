@@ -301,8 +301,8 @@ ss_error SS_ERRORS[] = {
 
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft SQL Server 2012 Native Client. "
-        "Access the following URL to download the Microsoft SQL Server 2012 Native Client ODBC driver for %1!s!: "
+        { IMSSP, (SQLCHAR*) "This extension requires the ODBC Driver 11 for SQL Server. "
+        "Access the following URL to download the ODBC Driver 11 for SQL Server for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
     },     
 
@@ -445,8 +445,8 @@ bool ss_error_handler(sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool 
 //             [SQLSTATE] => HYT00
 //             [1] => 0
 //             [code] => 0
-//             [2] => [Microsoft][SQL Native Client]Query timeout expired
-//             [message] => [Microsoft][SQL Native Client]Query timeout expired
+//             [2] => [Microsoft][ODBC Driver 11 for SQL Server]Query timeout expired
+//             [message] => [Microsoft][ODBC Driver 11 for SQL Server]Query timeout expired
 //         )
 // )
 

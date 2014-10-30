@@ -496,7 +496,7 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, unsigned int param_num, int dire
             ind_ptr = buffer_len;
             if( direction != SQL_PARAM_INPUT ) {
 
-#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 4
+#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 4
                 // PHP 5.4 added interned strings, so since we obviously want to change that string here in some fashion,
                 // we reallocate the string if it's interned
                 if( IS_INTERNED( buffer )) {
@@ -1762,7 +1762,7 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, unsigned int paramno, zval const*
                     sql_c_type = SQL_C_CHAR;
                     break;
             }
-	    break;
+        break;
         case IS_BOOL:
         case IS_LONG:
             sql_c_type = SQL_C_LONG;
@@ -1991,7 +1991,7 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
                     // if it's not in the 8 bit encodings, then it's in UTF-16
                     if( output_param->encoding != SQLSRV_ENCODING_CHAR && output_param->encoding != SQLSRV_ENCODING_BINARY ) {
 
-                        bool converted = convert_string_from_utf16( output_param->encoding, &str, str_len );
+                        bool converted = convert_string_from_utf16_inplace( output_param->encoding, &str, str_len );
                         CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
                             throw core::CoreException();
                         }
@@ -2179,7 +2179,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 
             if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_UTF8 ) {
 
-                bool converted = convert_string_from_utf16( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
+                bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
                                                             &field_value_temp, field_len_temp );
                 
                 CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
@@ -2223,7 +2223,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
             
             if( sqlsrv_php_type.typeinfo.encoding == CP_UTF8 ) {
 
-                bool converted = convert_string_from_utf16( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
+                bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
                                                             &field_value_temp, field_len_temp );
                     
                 CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {

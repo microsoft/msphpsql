@@ -153,14 +153,12 @@ struct row_dtor_closure {
 sqlsrv_error* odbc_get_diag_rec( sqlsrv_stmt* odbc, SQLSMALLINT record_number )
 {
     SQLWCHAR wsql_state[ SQL_SQLSTATE_BUFSIZE ];
-    SQLCHAR* sql_state = reinterpret_cast<SQLCHAR*>( wsql_state );
     SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ];
-    sqlsrv_malloc_auto_ptr<SQLCHAR> native_message;
     SQLINTEGER native_code;
-    SQLINTEGER message_len;
+    SQLSMALLINT wnative_message_len = 0;
 
     SQLRETURN r = SQLGetDiagRecW( SQL_HANDLE_STMT, odbc->handle(), record_number, wsql_state, &native_code, wnative_message, 
-                                  SQL_MAX_MESSAGE_LENGTH + 1, NULL );
+                                  SQL_MAX_MESSAGE_LENGTH + 1, &wnative_message_len );
     if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
         return NULL;
     }
@@ -172,13 +170,17 @@ sqlsrv_error* odbc_get_diag_rec( sqlsrv_stmt* odbc, SQLSMALLINT record_number )
     }
 
     // convert the error into the encoding of the context
-    message_len = SQL_SQLSTATE_BUFSIZE * sizeof(WCHAR);
-    convert_string_from_utf16( enc, reinterpret_cast<char**>( &sql_state ), message_len, 
-                               false /*no free*/ );
-    message_len = (SQL_MAX_MESSAGE_LENGTH + 1) * sizeof( WCHAR );
-    native_message = reinterpret_cast<SQLCHAR*>( wnative_message );
-    convert_string_from_utf16( enc, reinterpret_cast<char**>( &native_message ), message_len, 
-                               false /*no free*/ );
+    sqlsrv_malloc_auto_ptr<SQLCHAR> sql_state;
+    SQLINTEGER sql_state_len = 0;
+    if (!convert_string_from_utf16( enc, wsql_state, sizeof(wsql_state), (char**)&sql_state, sql_state_len )) {
+        return NULL;
+    }
+    
+    sqlsrv_malloc_auto_ptr<SQLCHAR> native_message;
+    SQLINTEGER native_message_len = 0;
+    if (!convert_string_from_utf16( enc, wnative_message, wnative_message_len, (char**)&native_message, native_message_len )) {
+        return NULL;
+    }
 
     return new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( (SQLCHAR*) sql_state, (SQLCHAR*) native_message, 
                                                                       native_code );

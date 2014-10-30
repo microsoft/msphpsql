@@ -43,7 +43,7 @@ const int INFO_BUFFER_LEN = 256;
 const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
 // ODBC driver name.
-const char CONNECTION_STRING_DRIVER_NAME[] = "Driver={SQL Server Native Client 11.0};";
+const char CONNECTION_STRING_DRIVER_NAME[] = "Driver={ODBC Driver 11 for SQL Server};";
 
 // default options if only the server is specified
 const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes}";

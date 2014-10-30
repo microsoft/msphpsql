@@ -71,15 +71,39 @@ void core_sqlsrv_register_logger( log_callback driver_logger )
 // utf-16 string is released by this function if no errors occurred.  Otherwise the parameters are not changed
 // and false is returned.
 
-bool convert_string_from_utf16( SQLSRV_ENCODING encoding, char** string, SQLINTEGER& len, bool free_utf16 )
+bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLINTEGER& len)
 {
-    char* utf16_string = *string;
-    unsigned int utf16_len = len / 2;  // from # of bytes to # of wchars
-    char *enc_string = NULL;
-    unsigned int enc_len = 0;
+    SQLSRV_ASSERT( string != NULL && *string != NULL, "String must be specified" );
 
     // for the empty string, we simply returned we converted it
     if( len == 0 && *string[0] == '\0' ) {
+        return true;
+    }
+
+    char* outString = NULL;
+    SQLINTEGER outLen = 0;
+    bool result = convert_string_from_utf16( encoding, reinterpret_cast<const wchar_t*>(*string), len / sizeof(wchar_t), &outString, outLen);
+
+    if (result)
+    {
+        sqlsrv_free( *string );
+        *string = outString;
+        len = outLen;
+    }
+
+    return result;
+}
+
+bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLINTEGER& cchOutLen )
+{
+    SQLSRV_ASSERT( inString != NULL, "Input string must be specified" );
+    SQLSRV_ASSERT( outString != NULL, "Output buffer pointer must be specified" );
+    SQLSRV_ASSERT( *outString == NULL, "Output buffer pointer must not be set" );
+
+    if (cchInLen == 0 && inString[0] == L'\0') {
+        *outString = reinterpret_cast<char*>( sqlsrv_malloc ( 1 ) );
+        *outString[0] = '\0';
+        cchOutLen = 0;
         return true;
     }
 
@@ -92,28 +116,26 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, char** string, SQLINTE
     }
 
     // calculate the number of characters needed
-    enc_len = WideCharToMultiByte( encoding, flags,
-                                   reinterpret_cast<LPCWSTR>( utf16_string ), utf16_len, 
+    cchOutLen = WideCharToMultiByte( encoding, flags,
+                                   inString, cchInLen, 
                                    NULL, 0, NULL, NULL );
-    if( enc_len == 0 ) {
-        return false;
-    }
-    // we must allocate a new buffer because it is possible that a UTF-8 string is longer than
-    // the corresponding UTF-16 string, so we cannot use an inplace conversion
-    enc_string = reinterpret_cast<char*>( sqlsrv_malloc( enc_len + 1 /* NULL char*/ ));
-    int rc = WideCharToMultiByte( encoding, flags,
-                                  reinterpret_cast<LPCWSTR>( utf16_string ), utf16_len, 
-                                  enc_string, enc_len, NULL, NULL );
-    if( rc == 0 ) {
+    if( cchOutLen == 0 ) {
         return false;
     }
 
-    enc_string[ enc_len ] = '\0';   // null terminate the encoded string
-    if( free_utf16 ) {
-        sqlsrv_free( utf16_string );
+    // Create a buffer to fit the encoded string
+    char* newString = reinterpret_cast<char*>( sqlsrv_malloc( cchOutLen + 1 /* NULL char*/ ));
+    int rc = WideCharToMultiByte( encoding, flags,
+                                  inString, cchInLen, 
+                                  newString, cchOutLen, NULL, NULL );
+    if( rc == 0 ) {
+        cchOutLen = 0;
+        sqlsrv_free( newString );
+        return false;
     }
-    *string = enc_string;
-    len = enc_len;
+
+    *outString = newString;
+    newString[cchOutLen] = '\0';   // null terminate the encoded string
 
     return true;
 }
@@ -161,9 +183,7 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
     int zr = SUCCESS;
     zval* temp = NULL;
     SQLRETURN r = SQL_SUCCESS;
-    SQLINTEGER sqlstate_len = SQL_SQLSTATE_BUFSIZE * sizeof( wchar_t );
     SQLSMALLINT wmessage_len = 0;
-    SQLINTEGER message_len = 0;
     SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ];
     SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ];
     SQLSRV_ENCODING enc = ctx.encoding();
@@ -200,15 +220,13 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
                 return false;
             }
 
-            error->sqlstate = reinterpret_cast<SQLCHAR*>( wsqlstate );
-            convert_string_from_utf16( enc, reinterpret_cast<char**>( &error->sqlstate ), sqlstate_len, 
-                                       false /*no free*/ );
-            error->native_message = reinterpret_cast<SQLCHAR*>( wnative_message );
-            message_len = wmessage_len * sizeof( wchar_t );
-            convert_string_from_utf16( enc, reinterpret_cast<char**>( &error->native_message ), message_len, 
-                                       false /*no free*/ );
+            SQLINTEGER sqlstate_len = 0;
+            convert_string_from_utf16(enc, wsqlstate, sizeof(wsqlstate), (char**)&error->sqlstate, sqlstate_len);
+
+            SQLINTEGER message_len = 0;
+            convert_string_from_utf16(enc, wnative_message, wmessage_len, (char**)&error->native_message, message_len);
             break;
-	}
+    }
 
 
     // log the error first

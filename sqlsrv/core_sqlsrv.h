@@ -6,21 +6,21 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Copyright Microsoft Corporation
+// Microsoft Drivers for PHP for SQL Server
+// Copyright (c) Microsoft Corporation. All rights reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-//
-// You may obtain a copy of the License at:
-// http://www.apache.org/licenses/LICENSE-2.0
-//
+// Licensed under the Apache License, Version 2.0 (the "License"); 
+// you may not use these files except in compliance with the License. 
+
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//---------------------------------------------------------------------------------------------------------------------------------
-
+// 
+//----------------------------------------------------------------------------------------------------------------------------------
 
 //*********************************************************************************************************************************
 // Includes
@@ -111,7 +111,7 @@ OACR_WARNING_POP
 #include <strsafe.h>
 
 // included for SQL Server specific constants
-#include "sqlncli.h"
+#include "msodbcsql.h"
 
 //*********************************************************************************************************************************
 // Constants and Types
@@ -1502,7 +1502,8 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 #define MEMCHECK_SILENT 1
 
 // utility functions shared by multiple callers across files
-bool convert_string_from_utf16( SQLSRV_ENCODING encoding, char** string, SQLINTEGER& len, bool free_utf16 = true );
+bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLINTEGER& len);
+bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLINTEGER& cchOutLen );
 wchar_t* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, 
                                         unsigned int mbcs_len, __out unsigned int* utf16_len );
 
@@ -1559,8 +1560,8 @@ enum SQLSRV_ERROR_CODES {
 
 };
 
-// the message returned by SQL Native Client
-const char CONNECTION_BUSY_ODBC_ERROR[] = "[Microsoft][SQL Server Native Client 11.0]Connection is busy with results for "
+// the message returned by ODBC Driver 11 for SQL Server
+const char CONNECTION_BUSY_ODBC_ERROR[] = "[Microsoft][ODBC Driver 11 for SQL Server]Connection is busy with results for "
     "another command";
 
 // SQLSTATE for all internal errors

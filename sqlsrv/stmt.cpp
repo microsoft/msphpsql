@@ -537,7 +537,7 @@ PHP_FUNCTION( sqlsrv_field_metadata )
 // specified statement active.  The first (or only) result returned by a batch
 // query or stored procedure is active without a call to sqlsrv_next_result.
 // Any output parameters bound are only available after sqlsrv_next_result returns
-// null as per SQL Native Client specs: http://msdn.microsoft.com/en-us/library/ms403283.aspx
+// null as per ODBC Driver 11 for SQL Server specs: http://msdn.microsoft.com/en-us/library/ms403283.aspx
 //
 // Parameters
 // $stmt: The executed statement on which the next result is made active.

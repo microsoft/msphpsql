@@ -405,7 +405,7 @@ const connection_option SS_CONN_OPTS[] = {
 // or port number (for example, "myServer, 1521") can be included as part of
 // this string. For a complete description of the options available for this
 // parameter, see the Server keyword in the ODBC Driver Connection String
-// Keywords section of Using Connection String Keywords with SQL Native Client.
+// Keywords section of Using Connection String Keywords with ODBC Driver 11 for SQL Server.
 //
 // $connectionInfo [OPTIONAL]: An associative array that contains connection
 // attributes (for example, array("Database" => "AdventureWorks")).
