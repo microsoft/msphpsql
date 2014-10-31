@@ -44,8 +44,8 @@ wish to do so, run "nmake clean" first.
 php_sqlsrv.dll and php_pdo_sqlsrv.dll to your PHP extension directory.
 Also enable them within your PHP installation's php.ini file.
 
-This software has been compiled and tested under PHP 5.3.6 and later
-using the Visual C++ 2008 and 2010, Express and Standard compilers.
+This software has been compiled and tested under PHP 5.4.32 and later
+using the Visual C++ 2008 and 2012, Express and Standard compilers.
 
 ## Documentation
 
