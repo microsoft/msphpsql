@@ -2,7 +2,7 @@
 
 **Welcome to the Microsoft Drivers for PHP for SQL Server project!**
 
-The Microsoft Drivers for PHP for SQL Server are PHP 5 extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The release contains two drivers, the SQLSRV driver and the PDO_SQLSRV driver. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including SQL Azure). These drivers rely on the Microsoft SQL Server Native Client's ODBC driver to handle the low-level communication with SQL Server.
+The Microsoft Drivers for PHP for SQL Server are PHP 5 extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The release contains two drivers, the SQLSRV driver and the PDO_SQLSRV driver. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including SQL Azure). These drivers rely on the Microsoft ODBC Driver 11 for SQL Server to handle the low-level communication with SQL Server.
 
 Microsoft has published the source code to the driver on this site. With each successive update, we will revisit this plan. We've seen too many projects over-reach in their plans to be responsive to the community. We would prefer to start with a more conservative approach and make sure we're successfully delivering on that before expanding. We understand that many developers will download the source code to create their own build(s) of the driver. However, Microsoft supports only the Microsoft signed versions of the driver.
 
