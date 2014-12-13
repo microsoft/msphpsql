@@ -12,7 +12,9 @@ The Microsoft Drivers for PHP for SQL Server Team
 
 ## Announcements
 
-Please visit the [blog][blog] for announcements.
+PHP 3.1 production pre-built driver is available for download here: http://www.microsoft.com/en-us/download/confirmation.aspx?id=20098
+
+Please visit the [blog][blog] for more announcements.
 
 ## Prerequisites
 
