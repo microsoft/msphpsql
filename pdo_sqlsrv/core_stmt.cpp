@@ -1605,7 +1605,7 @@ void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
                 php_stream* stream = NULL;
                 sqlsrv_stream* ss = NULL;
                 ALLOC_INIT_ZVAL( return_value_z );
-                SQLINTEGER sql_type;
+                SQLLEN sql_type;
 
                 SQLRETURN r = SQLColAttribute( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
                 CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
@@ -2105,7 +2105,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
                     
                 if( is_truncated_warning( state ) ) {
                         
-                    SQLINTEGER dummy_field_len;
+                    SQLLEN dummy_field_len;
 
                     // for XML (and possibly other conditions) the field length returned is not the real field length, so
                     // in every pass, we double the allocation size to retrieve all the contents.
