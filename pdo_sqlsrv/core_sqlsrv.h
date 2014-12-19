@@ -203,7 +203,7 @@ union sqlsrv_phptype {
 
 // static assert for enforcing compile time conditions
 template <bool b>
-struct sqlsrv_static_assert;
+struct sqlsrv_static_assert { static const int value; };
 
 template <>
 struct sqlsrv_static_assert<true> { static const int value = 1; };
