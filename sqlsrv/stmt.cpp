@@ -89,7 +89,7 @@ const char SS_SQLSRV_WARNING_PARAM_VAR_NOT_REF[] = "Variable parameter %d not pa
 zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void** in_val, SQLLEN field_len );
 void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, int fetch_type, __out zval* return_value, bool allow_empty_field_names 
                           TSRMLS_DC );
-bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLUINTEGER* column_size, 
+bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLULEN* column_size, 
                                          __out SQLSMALLINT* decimal_digits );
 sqlsrv_phptype determine_sqlsrv_php_type( sqlsrv_stmt const* stmt, SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string );
 void determine_stmt_has_rows( ss_sqlsrv_stmt* stmt TSRMLS_DC );
@@ -173,7 +173,9 @@ sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUIN
         case SQL_BIGINT:
         case SQL_CHAR:
         case SQL_DECIMAL:
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_NUMERIC:
         case SQL_WCHAR:
         case SQL_SS_VARIANT:
@@ -1569,7 +1571,7 @@ zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void** in_val, SQLLEN fie
 
 // put in the column size and scale/decimal digits of the sql server type
 // these values are taken from the MSDN page at http://msdn2.microsoft.com/en-us/library/ms711786(VS.85).aspx
-bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLUINTEGER* column_size, 
+bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLULEN* column_size, 
                                          __out SQLSMALLINT* decimal_digits )
 {
     *decimal_digits = 0;
@@ -1590,9 +1592,11 @@ bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype
         case SQL_TINYINT:
             *column_size = 3;
             break;
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
             *column_size = 36;
             break;
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_FLOAT:
             *column_size = 53;
             break;
@@ -1683,7 +1687,9 @@ sqlsrv_phptype determine_sqlsrv_php_type( ss_sqlsrv_stmt const* stmt, SQLINTEGER
         case SQL_BIGINT:
         case SQL_CHAR:
         case SQL_DECIMAL:
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_NUMERIC:
         case SQL_WCHAR:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
@@ -2104,7 +2110,9 @@ bool is_valid_sqlsrv_sqltype( sqlsrv_sqltype sql_type )
         case SQL_INTEGER:
         case SQL_SMALLINT:
         case SQL_TINYINT:
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_FLOAT:
         case SQL_REAL:
         case SQL_LONGVARBINARY:

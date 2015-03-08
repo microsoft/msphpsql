@@ -95,7 +95,9 @@ inline pdo_param_type sql_type_to_pdo_type( SQLSMALLINT sql_type )
         case SQL_DECIMAL:
         case SQL_DOUBLE: 
         case SQL_FLOAT:
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_LONGVARBINARY:
         case SQL_LONGVARCHAR:
         case SQL_NUMERIC:
@@ -1271,7 +1273,9 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
         case SQL_DECIMAL:
         case SQL_FLOAT:
         case SQL_REAL:
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_NUMERIC:
         case SQL_WCHAR:
         case SQL_VARCHAR:

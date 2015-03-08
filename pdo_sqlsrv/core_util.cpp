@@ -71,7 +71,7 @@ void core_sqlsrv_register_logger( log_callback driver_logger )
 // utf-16 string is released by this function if no errors occurred.  Otherwise the parameters are not changed
 // and false is returned.
 
-bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLINTEGER& len)
+bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLLEN& len)
 {
     SQLSRV_ASSERT( string != NULL && *string != NULL, "String must be specified" );
 

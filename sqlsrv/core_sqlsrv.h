@@ -203,7 +203,7 @@ union sqlsrv_phptype {
 
 // static assert for enforcing compile time conditions
 template <bool b>
-struct sqlsrv_static_assert;
+struct sqlsrv_static_assert { static const int value; };
 
 template <>
 struct sqlsrv_static_assert<true> { static const int value = 1; };
@@ -1502,7 +1502,7 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 #define MEMCHECK_SILENT 1
 
 // utility functions shared by multiple callers across files
-bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLINTEGER& len);
+bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLLEN& len);
 bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLINTEGER& cchOutLen );
 wchar_t* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, 
                                         unsigned int mbcs_len, __out unsigned int* utf16_len );
