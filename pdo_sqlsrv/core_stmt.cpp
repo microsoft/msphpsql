@@ -1390,7 +1390,9 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             case SQL_INTEGER:
             case SQL_SMALLINT:
             case SQL_TINYINT:
+#if (ODBCVER >= 0x0350)
             case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
             case SQL_FLOAT:
             case SQL_DOUBLE:
             case SQL_REAL:

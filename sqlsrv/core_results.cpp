@@ -313,7 +313,9 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
             // these types are the display size
             case SQL_BIGINT:
             case SQL_DECIMAL:
+#if (ODBCVER >= 0x0350)
             case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
             case SQL_NUMERIC:
                 core::SQLColAttribute( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL,
                                        reinterpret_cast<SQLLEN*>( &meta[i].length ) TSRMLS_CC );
@@ -396,7 +398,9 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
             case SQL_CHAR:
             case SQL_DATETIME:
             case SQL_DECIMAL:
+#if (ODBCVER >= 0x0350)
             case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
             case SQL_NUMERIC:
             case SQL_LONGVARCHAR:
             case SQL_TYPE_DATE:

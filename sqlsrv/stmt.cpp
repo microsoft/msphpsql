@@ -173,7 +173,9 @@ sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUIN
         case SQL_BIGINT:
         case SQL_CHAR:
         case SQL_DECIMAL:
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_NUMERIC:
         case SQL_WCHAR:
         case SQL_SS_VARIANT:
@@ -1590,9 +1592,11 @@ bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype
         case SQL_TINYINT:
             *column_size = 3;
             break;
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
             *column_size = 36;
             break;
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_FLOAT:
             *column_size = 53;
             break;
@@ -1683,7 +1687,9 @@ sqlsrv_phptype determine_sqlsrv_php_type( ss_sqlsrv_stmt const* stmt, SQLINTEGER
         case SQL_BIGINT:
         case SQL_CHAR:
         case SQL_DECIMAL:
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_NUMERIC:
         case SQL_WCHAR:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
@@ -2104,7 +2110,9 @@ bool is_valid_sqlsrv_sqltype( sqlsrv_sqltype sql_type )
         case SQL_INTEGER:
         case SQL_SMALLINT:
         case SQL_TINYINT:
+#if (ODBCVER >= 0x0350)
         case SQL_GUID:
+#endif  /* ODBCVER >= 0x0350 */
         case SQL_FLOAT:
         case SQL_REAL:
         case SQL_LONGVARBINARY:
