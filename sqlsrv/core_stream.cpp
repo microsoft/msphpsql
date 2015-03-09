@@ -3,19 +3,18 @@
 //
 // Contents: Implementation of PHP streams for reading SQL Server data
 //
-// Copyright Microsoft Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-//
-// You may obtain a copy of the License at:
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Microsoft Drivers 3.2 for PHP for SQL Server
+// Copyright(c) Microsoft Corporation
+// All rights reserved.
+// MIT License
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
+//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+//  and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+//  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "core_sqlsrv.h"
@@ -201,9 +200,13 @@ php_stream_ops sqlsrv_stream_ops = {
 // open a stream and return the sqlsrv_stream_ops function table as part of the
 // return value.  There is only one valid way to open a stream, using sqlsrv_get_field on
 // certain field types.  A sqlsrv stream may only be opened in read mode.
-
+#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 6
+static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, __in const char*, __in const char* mode, 
+                                         int options, __in char **, php_stream_context* STREAMS_DC TSRMLS_DC )
+#else
 static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, __in char*, __in char* mode, 
                                          int options, __in char **, php_stream_context* STREAMS_DC TSRMLS_DC )
+#endif
 {
 
 #if ZEND_DEBUG

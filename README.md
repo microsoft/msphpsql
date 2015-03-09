@@ -69,8 +69,7 @@ version numbers in the supported PHP extension.
 
 ## License
 
-The Microsoft Drivers for PHP for SQL Server are licensed under the Apache
-2.0 license.  See the LICENSE file for more details.
+The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.  See the LICENSE file for more details.
 
 [blog]: http://blogs.msdn.com/b/sqlphp/
 
