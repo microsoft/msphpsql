@@ -60,6 +60,9 @@ file that is part of the download package.
 
 Please visit the [project on Github][project] to view outstanding [issues][issues].
 
+## Downlod the driver
+The driver can be downloaded from the [Microsoft Download Center][link]
+
 ## Notes
 
 ####Note about version.h
@@ -80,3 +83,5 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.
 [phpweb]: http://php.net
 
 [phpdoc]: http://msdn.microsoft.com/en-us/library/dd903047%28SQL.11%29.aspx
+
+[link]: https://www.microsoft.com/en-us/download/details.aspx?id=20098
