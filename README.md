@@ -36,6 +36,7 @@ available.  It is possible (and even probable) that other extensions
 will have to be disabled or enabled for the compile to succeed.
 Search bing.com for configurations that have worked for other people.
   * It might be possible to compile these extensions as non-shared but that configuration has not been tested.
+  * NB: To build the driver with PHP 5.6.7 and later, you will need to specify the --with-odbcver=0x0380 argument to configure.js
 
 4. Run "nmake".  It is suggested that you run the entire build.  If you
 wish to do so, run "nmake clean" first.
