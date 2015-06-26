@@ -16,11 +16,11 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#define VER_FILEVERSION_STR "3.2.0.0"
-#define _FILEVERSION 3,2,0,0
+#define VER_FILEVERSION_STR "3.2.1.0"
+#define _FILEVERSION 3,2,1,0
 #define SQLVERSION_MAJOR 3
 #define SQLVERSION_MINOR 2
-#define SQLVERSION_MMDD 0
+#define SQLVERSION_MMDD 1
 #define SQLVERSION_REVISION 0
 
 

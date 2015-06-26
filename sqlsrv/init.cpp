@@ -469,6 +469,17 @@ PHP_MINIT_FUNCTION(sqlsrv)
         if( zr == FAILURE ) {
            throw ss::SSException();     
         }
+
+		// Full-text search condition contained noise words warning
+		error_to_ignore.sqlstate = (SQLCHAR*)"01000";
+		error_to_ignore.native_message = NULL;
+		error_to_ignore.native_code = 9927;
+		error_to_ignore.format = false;
+		zr = zend_hash_next_index_insert(g_ss_warnings_to_ignore_ht, &error_to_ignore, sizeof(sqlsrv_error_const), NULL);
+		if (zr == FAILURE) {
+			throw ss::SSException();
+		}
+
     }
     catch( ss::SSException& ) {
 
