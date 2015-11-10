@@ -1115,25 +1115,31 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
         BOOL default_char_used = FALSE;
         char default_char = '?';
 
-        // allocate enough to handle WC -> DBCS conversion if it happens
-        temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof( char ), sizeof(char)));
-        temp_length = WideCharToMultiByte( CP_ACP, 0, (LPCWSTR) field_data, field_len / sizeof(WCHAR), 
-                                           (LPSTR) temp_string.get(), field_len, &default_char, &default_char_used );
-        
-        if( temp_length == 0 ) {
+        if( field_len > 0 ) { // handle empty nvarchar
+            
+            // allocate enough to handle WC -> DBCS conversion if it happens
+            temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof( char ), sizeof(char)));
+            temp_length = WideCharToMultiByte( CP_ACP, 0, (LPCWSTR) field_data, field_len / sizeof(WCHAR), 
+                                            (LPSTR) temp_string.get(), field_len, &default_char, &default_char_used );
+            
+            if( temp_length == 0 ) {
 
-            switch( GetLastError() ) {
+                switch( GetLastError() ) {
 
-                case ERROR_NO_UNICODE_TRANSLATION:
-                    last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error )))
-                        sqlsrv_error( (SQLCHAR*) "IMSSP", (SQLCHAR*) "Invalid Unicode translation", -1 );
-                    break;
-                default:
-                    SQLSRV_ASSERT( false, "Severe error translating Unicode" );
-                    break;
+                    case ERROR_NO_UNICODE_TRANSLATION:
+                        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error )))
+                            sqlsrv_error( (SQLCHAR*) "IMSSP", (SQLCHAR*) "Invalid Unicode translation", -1 );
+                        break;
+                    default:
+                        SQLSRV_ASSERT( false, "Severe error translating Unicode" );
+                        break;
+                }
+
+                return SQL_ERROR;
             }
-
-            return SQL_ERROR;
+            
+        } else {
+            temp_length = 0;
         }
     }
 
