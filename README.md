@@ -10,7 +10,7 @@ The Microsoft Drivers for PHP for SQL Server Team
 
 ## Build
 
-Note: if you prefer, you can use the pre-compiled binary found [HERE]
+Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases/tag/v4.0.0)
 
 ####Prerequisites
 
