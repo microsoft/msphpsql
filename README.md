@@ -94,7 +94,9 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.
 ## Resources
 
 **Documentation**: [MSDN Online Documentation][phpdoc].  Please note that this documentation is not yet updated for PHP 7.
+
 **Team Blog**: Browse our blog for comments and announcements from the team in the [team blog][blog].
+
 **Known Issues**: Please visit the [project on Github][project] to view outstanding [issues][issues].
 
 [blog]: http://blogs.msdn.com/b/sqlphp/
