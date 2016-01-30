@@ -11,8 +11,8 @@ We hope you enjoy using the Microsoft Drivers for PHP for SQL Server.
 The Microsoft Drivers for PHP for SQL Server Team
 
 Announcements
-- **Jan 29, 2016:** A PHP7 branch is now active for the Alpha/Preview supporting PHP 7 
-Please visit the [blog][blog] for more announcements.
+- **Jan 29, 2016:** A PHP7 branch is now active for the Early Technical Preview supporting PHP 7 
+- Please visit the [blog][blog] for more announcements.
 
 ## Prerequisites
 
@@ -61,7 +61,7 @@ file that is part of the download package.
 
 Please visit the [project on Github][project] to view outstanding [issues][issues].
 
-## Downlod the driver
+## Download the driver
 The driver can be downloaded from the [Microsoft Download Center][link]
 
 ## Notes
