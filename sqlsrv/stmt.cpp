@@ -88,7 +88,7 @@ const char SS_SQLSRV_WARNING_PARAM_VAR_NOT_REF[] = "Variable parameter %d not pa
 
 /* internal functions */
 
-zval convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN field_len );
+zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN field_len );
 void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, zend_long fetch_type, __out zval* return_value, bool allow_empty_field_names 
                           TSRMLS_DC );
 bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLUINTEGER* column_size, 
@@ -1072,8 +1072,8 @@ PHP_FUNCTION( sqlsrv_get_field )
         core_sqlsrv_get_field( stmt, field_index, sqlsrv_php_type, false, &field_value, &field_len, false/*cache_field*/, 
                               &sqlsrv_php_type_out TSRMLS_CC );
 
-        zval retval_z = convert_to_zval(sqlsrv_php_type_out, field_value, field_len);
-        RETURN_ZVAL(&retval_z, 1, 1);
+        zval* retval_z = convert_to_zval(sqlsrv_php_type_out, field_value, field_len);
+        RETURN_ZVAL(retval_z, 1, 1);
     }
 
     catch( core::CoreException& ) {
@@ -1200,12 +1200,12 @@ void mark_params_by_reference( ss_sqlsrv_stmt* stmt, zval* params_z TSRMLS_DC )
 			CHECK_CUSTOM_ERROR(zr == FAILURE, stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1) {
 				throw ss::SSException();
 			}
-			ZVAL_MAKE_REF(var);
+            ZVAL_MAKE_REF(var);
 		}
     } 
 
     // save our parameters for later.
-    zval_add_ref( params_z );
+    Z_TRY_ADDREF_P(params_z);
     stmt->params_z = params_z;
 }
 
@@ -1484,70 +1484,52 @@ void stmt_option_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* 
 
 namespace {
     
-zval convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN field_len )
+zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN field_len )
 {
-    zval out_zval;
-    ZVAL_UNDEF( &out_zval );
+    zval* out_zval = NULL;
+
+    if (in_val == NULL) {
+
+        out_zval = (zval*)sqlsrv_malloc(sizeof(zval));
+        ZVAL_NULL(out_zval);
+        return out_zval;
+    }
 
     switch( sqlsrv_php_type ) {
        
         case SQLSRV_PHPTYPE_INT:
         case SQLSRV_PHPTYPE_FLOAT:       
         {
-            if( in_val == NULL ) {
-                ZVAL_NULL( &out_zval );
+            out_zval = (zval*)sqlsrv_malloc(sizeof(zval));
+            if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
+                ZVAL_LONG( out_zval,  *(reinterpret_cast<zend_long*>( in_val )));
             }
             else {
-
-                if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
-                    ZVAL_LONG( &out_zval,  *(reinterpret_cast<zend_long*>( in_val )));
-                }
-                else {
-                    ZVAL_DOUBLE( &out_zval, *(reinterpret_cast<double*>( in_val )));    
-                }
+                ZVAL_DOUBLE( out_zval, *(reinterpret_cast<double*>( in_val )));    
             }
-
-            if( in_val ) {
-                sqlsrv_free( in_val );
-            }
-
+            sqlsrv_free( in_val );
             break;
         }
 
         case SQLSRV_PHPTYPE_STRING:
         {
-       
-            if( in_val == NULL ) {
-
-                ZVAL_NULL( &out_zval );
-            }
-            else {
-
-                ZVAL_STRINGL( &out_zval, reinterpret_cast<char*>( in_val ), field_len);
-                sqlsrv_free( in_val );
-            }
+            out_zval = (zval*) sqlsrv_malloc( sizeof(zval) );
+            ZVAL_STRINGL( out_zval, reinterpret_cast<char*>( in_val ), field_len);
+            sqlsrv_free( in_val );
             break;
         }
             
         case SQLSRV_PHPTYPE_STREAM:
+        case SQLSRV_PHPTYPE_DATETIME :
 		{
-            out_zval = *(reinterpret_cast<zval*>( in_val ));
+            out_zval = (reinterpret_cast<zval*>( in_val ));
+            in_val = NULL;
             break;
 		}
 		
-        case SQLSRV_PHPTYPE_DATETIME:
-        {
-            if (in_val == NULL) {
-
-                ZVAL_NULL(&out_zval);
-            }
-            out_zval = *(reinterpret_cast<zval*>(in_val));
-            sqlsrv_free(in_val);
-           break;
-        }
-		
         case SQLSRV_PHPTYPE_NULL:
-            ZVAL_NULL( &out_zval );
+            out_zval = (zval*)sqlsrv_malloc(sizeof(zval));
+            ZVAL_NULL( out_zval );
             break;
 
         default:
@@ -1865,7 +1847,7 @@ void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, zend_long fetch_type, __
 
         core_sqlsrv_get_field( stmt, i, sqlsrv_php_type, true /*prefer string*/, 
                                &field_value, &field_len, false /*cache_field*/, &sqlsrv_php_type_out TSRMLS_CC );
-        field = convert_to_zval( sqlsrv_php_type_out, field_value, field_len );
+        field = *(convert_to_zval( sqlsrv_php_type_out, field_value, field_len ));
         
         if( fetch_type & SQLSRV_FETCH_NUMERIC ) {
             
@@ -1873,7 +1855,7 @@ void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, zend_long fetch_type, __
             CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
                 throw ss::SSException();
             }
-            zval_add_ref( &field );
+            Z_TRY_ADDREF_P(&field);
         }
 
         if( fetch_type & SQLSRV_FETCH_ASSOC ) {
@@ -1889,7 +1871,7 @@ void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, zend_long fetch_type, __
                 CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
                     throw ss::SSException();
                 }
-                zval_add_ref( &field );    
+                Z_TRY_ADDREF_P(&field);
             }
         }
     } //for loop
@@ -1938,6 +1920,11 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, zend_ul
                             stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
             throw ss::SSException();
         }
+
+        CHECK_CUSTOM_ERROR(!Z_ISREF_P(var_or_val) && (direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1) {
+            throw ss::SSException();
+        }
+       
     }
     else {
         direction = SQL_PARAM_INPUT;

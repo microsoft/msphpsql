@@ -360,6 +360,12 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
         { IMSSP, (SQLCHAR*) "Setting for " INI_BUFFERED_QUERY_LIMIT " was non-int or non-positive.", -60, false }
     },
+    {
+        SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF,
+        { IMSSP, (SQLCHAR*)"Variable parameter %1!d! not passed by reference (prefaced with an &).  "
+        "Output or bidirectional variable parameters (SQLSRV_PARAM_OUT and SQLSRV_PARAM_INOUT) passed to sqlsrv_prepare or sqlsrv_query should be passed by reference, not by value."
+        , -61, true }
+    },
 
     // internal warning definitions
     {
@@ -924,7 +930,7 @@ bool sqlsrv_merge_zend_hash( __inout zval* dest_z, zval const* src_z TSRMLS_DC )
             zend_hash_apply( Z_ARRVAL_P( dest_z ), sqlsrv_merge_zend_hash_dtor TSRMLS_CC );
             return false;
         }
-        zval_add_ref( value_z );
+        Z_TRY_ADDREF_P(value_z);
     }
 
     return true;

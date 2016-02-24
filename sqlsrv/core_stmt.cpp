@@ -547,7 +547,7 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, zend_ulong param_num, int directi
                 HashTable* streams_ht = Z_ARRVAL( stmt->param_streams );
                 core::sqlsrv_zend_hash_index_update_mem(*stmt, streams_ht, param_num, &stream_encoding, sizeof(stream_encoding) TSRMLS_CC);
                 buffer = reinterpret_cast<SQLPOINTER>( param_num );
-                zval_add_ref( param_z ); // so that it doesn't go away while we're using it
+                Z_TRY_ADDREF_P(param_z); // so that it doesn't go away while we're using it
                 buffer_len = 0;
                 ind_ptr = SQL_DATA_AT_EXEC;
             }
@@ -560,7 +560,7 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, zend_ulong param_num, int directi
             zval format_z;
             zval params[1];
             bool valid_class_name_found = false;
-
+         
             zend_class_entry *class_entry = Z_OBJCE_P(param_z TSRMLS_CC);
 
             while( class_entry != NULL ) {
@@ -581,7 +581,7 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, zend_ulong param_num, int directi
             CHECK_CUSTOM_ERROR( !valid_class_name_found, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
                 throw core::CoreException();
             }
-
+            
             // if the user specifies the 'date' sql type, giving it the normal format will cause a 'date overflow error'
             // meaning there is too much information in the character string.  If the user specifies the 'datetimeoffset'
             // sql type, it lacks the timezone.
@@ -604,12 +604,12 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, zend_ulong param_num, int directi
             CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
                 throw core::CoreException();
             }
-            buffer = Z_STRVAL_P( &buffer_z );
+            buffer = Z_STRVAL( buffer_z );
             zr = add_next_index_zval( &(stmt->param_datetime_buffers), &buffer_z );
             CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
                 throw core::CoreException();
             }
-            buffer_len = Z_STRLEN_P( &buffer_z );
+            buffer_len = Z_STRLEN( buffer_z ) - 1;
             ind_ptr = buffer_len;
             break;
         }            
@@ -2379,7 +2379,7 @@ void save_output_param_for_later( sqlsrv_stmt* stmt, sqlsrv_output_param& param 
     HashTable* param_ht = Z_ARRVAL( stmt->output_params );
     zend_ulong paramno = static_cast<zend_ulong>(param.param_num);
     core::sqlsrv_zend_hash_index_update_mem(*stmt, param_ht, paramno, &param, sizeof(sqlsrv_output_param));
-    zval_add_ref( param.param_z );   // we have a reference to the param
+    Z_TRY_ADDREF_P(param.param_z);   // we have a reference to the param
 }
 
 

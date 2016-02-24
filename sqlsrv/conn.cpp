@@ -900,7 +900,7 @@ PHP_FUNCTION( sqlsrv_prepare )
         //mark_params_by_reference( stmt, params_z TSRMLS_CC );
 		stmt->params_z = params_z;
 		if (params_z) {
-			zval_add_ref(params_z);
+            Z_TRY_ADDREF_P(params_z);
 		}
 
         stmt->prepared = true;
@@ -1020,7 +1020,7 @@ PHP_FUNCTION( sqlsrv_query )
 
         stmt->params_z = params_z;
         if( params_z ) {
-            zval_add_ref( params_z );
+            Z_TRY_ADDREF_P(params_z);
         }
 
         stmt->set_func( "sqlsrv_query" );
@@ -1204,7 +1204,7 @@ void add_stmt_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len,
         throw ss::SSException();
     }        
 
-    zval_add_ref( data );      // inc the ref count since this is going into the options_ht too.
+    Z_TRY_ADDREF_P(data);      // inc the ref count since this is going into the options_ht too.
     core::sqlsrv_zend_hash_index_update( ctx, options_ht, option_key, data TSRMLS_CC );
 }
 
@@ -1217,7 +1217,7 @@ void add_conn_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len,
         throw ss::SSException();
     }        
 
-    zval_add_ref( data );      // inc the ref count since this is going into the options_ht too.
+    Z_TRY_ADDREF_P(data);      // inc the ref count since this is going into the options_ht too.
     core::sqlsrv_zend_hash_index_update( ctx, options_ht, option_key, data TSRMLS_CC );
 }
 
