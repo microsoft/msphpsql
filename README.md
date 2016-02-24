@@ -8,6 +8,14 @@ This preview contains the SQLSRV driver for 32-bit PHP 7 with limitations (see L
 
 The Microsoft Drivers for PHP for SQL Server Team
 
+##Announcements
+
+Feb 23, 2016: Thanks to the community’s input, we have mostly been focusing on making updates to support native 64-bit and the PDO driver.  We will be sharing these updates in the coming weeks once we have something functional.  In the meantime, we have a couple of minor updates to the SQLSRV driver to share:
+- Fixed the ability to bind parameters with datetime types
+- Fixed output and bidirectional (input/output) parameters.  Note to users: we determined that output and bidirectional parameters now need to be passed in by reference (i.e. &$var) so that they can be updated with the output data and added an error check for these cases.
+- Updated refcounting to avoid unnecessary reference counting for scalar values
+
+
 ## Build
 
 Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases/tag/v4.0.0)
@@ -48,7 +56,7 @@ This software has been compiled and tested under PHP 7.0.2 using the Visual C++ 
 ## Sample Code
 For samples, please see the sample folder.  For setup instructions, see [here] [phpazure]
 
-## Changes and Limitations
+## Limitations
 
 This preview contains the 32-bit port for PHP 7 of the SQLSRV driver. The focus was on basic functionality. The following items are not supported:
 
@@ -58,8 +66,7 @@ This preview contains the 32-bit port for PHP 7 of the SQLSRV driver. The focus 
 - Retrieving stream data and metadata
 - Retrieving some varchar, nvarchar, ntext, binary, varbinary, uniqueidentifier, datetime, smalldatetime, and timestamp fields
 - Handle UTF8 strings
-- Bind parameters with datetime types, streams, and arrays within arrays without references
-- Retrieve SQLTYPE_VARCHAR as an output parameter
+- Retrieve strings as an output parameter
 - Fetch a user defined object into a class
 
 And some aspects of the following items need improvement:
