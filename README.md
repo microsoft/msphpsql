@@ -84,12 +84,15 @@ And some aspects of the following items need improvement:
 
 ##FAQs
 **Q:** Can we get dates for any of the Future Plans listed above?
+
 **A:** At this time, Microsoft is not able to announce dates. We are working extremely hard to release future versions of the driver. We will share future plans once they solidify over the next few weeks. 
 
 **Q:** What's next?
+
 **A:** On Jan 29, 2016, we have released the early technical preview for our PHP Driver. Our next step will be a Community Tech Preview with completed functionally, PDO support, and more.
 
 **Q:** Is Microsoft taking pull requests for this project?
+
 **A:** We will not be seeking to take pull requests until GA, Build Verification, and Fundamental tests are released. At this point Microsoft will also begin actively developing using this GitHub project as the prime repository.
 
 
