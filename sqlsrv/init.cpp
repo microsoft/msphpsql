@@ -36,6 +36,10 @@ HashTable* g_ss_warnings_to_ignore_ht = NULL;
 // encodings we understand
 HashTable* g_ss_encodings_ht = NULL;
 
+// Destructors called by Zend for each element in the hashtable
+void sqlsrv_error_const_dtor( zval* element );
+void sqlsrv_encoding_dtor( zval* element );
+
 // henv context for creating connections
 sqlsrv_context* g_henv_cp;
 sqlsrv_context* g_henv_ncp;
@@ -260,9 +264,9 @@ zend_module_entry g_sqlsrv_module_entry =
 PHP_MINIT_FUNCTION(sqlsrv)
 {
     SQLSRV_UNUSED( type );
-    
-    core_sqlsrv_register_logger( ss_sqlsrv_log );
 
+    core_sqlsrv_register_logger( ss_sqlsrv_log );
+	
     // our global variables are initialized in the RINIT function
 #if defined(ZTS) 
     if( ts_allocate_id( &sqlsrv_globals_id,
@@ -273,8 +277,8 @@ PHP_MINIT_FUNCTION(sqlsrv)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
-    SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_sqltype ) == sizeof( long ));
-    SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_phptype ) == sizeof( long ));
+	SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_sqltype ) == sizeof( zend_long ));
+    SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_phptype ) == sizeof( zend_long ));
 
     REGISTER_INI_ENTRIES();
 
@@ -408,7 +412,7 @@ PHP_MINIT_FUNCTION(sqlsrv)
 
 		// initialize list of warnings to ignore
         g_ss_warnings_to_ignore_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
-        zend_hash_init( g_ss_warnings_to_ignore_ht, 6, NULL, NULL, 1 );
+        zend_hash_init( g_ss_warnings_to_ignore_ht, 6, NULL, sqlsrv_error_const_dtor /*pDestructor*/, 1 );
 
         sqlsrv_error_const error_to_ignore;
 
@@ -486,7 +490,7 @@ PHP_MINIT_FUNCTION(sqlsrv)
     
         // supported encodings
         g_ss_encodings_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
-        zend_hash_init( g_ss_encodings_ht, 3, NULL /*use standard hash function*/, NULL /*no resource destructor*/, 1 /*persistent*/ );
+        zend_hash_init( g_ss_encodings_ht, 3, NULL /*use standard hash function*/, sqlsrv_encoding_dtor /*resource destructor*/, 1 /*persistent*/ );
 
         sqlsrv_encoding sql_enc_char( "char", SQLSRV_ENCODING_CHAR );
         if (NULL == zend_hash_next_index_insert_mem(g_ss_encodings_ht, (void*)&sql_enc_char, sizeof( sqlsrv_encoding ))) {
@@ -511,7 +515,7 @@ PHP_MINIT_FUNCTION(sqlsrv)
 
     // initialize list of sqlsrv errors
     g_ss_errors_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
-    ::zend_hash_init( g_ss_errors_ht, 50, NULL, NULL, 1 );
+    ::zend_hash_init( g_ss_errors_ht, 50, NULL, sqlsrv_error_const_dtor /*pDestructor*/, 1 );
 
     for( int i = 0; SS_ERRORS[ i ].error_code != UINT_MAX; ++i ) {
         if (NULL == ::zend_hash_index_update_mem( g_ss_errors_ht, SS_ERRORS[ i ].error_code,
@@ -545,6 +549,18 @@ PHP_MINIT_FUNCTION(sqlsrv)
     return SUCCESS;
 }
 
+// called by Zend for each parameter in the g_ss_warnings_to_ignore_ht and g_ss_errors_ht hash table when it is destroyed
+void sqlsrv_error_const_dtor( zval* elem ) {
+	sqlsrv_error_const* error_to_ignore = reinterpret_cast<sqlsrv_error_const*>( Z_PTR_P(elem) );
+	pefree(error_to_ignore, 1);
+}
+
+// called by Zend for each parameter in the g_ss_encodings_ht hash table when it is destroyed
+void sqlsrv_encoding_dtor( zval* elem ) {
+	sqlsrv_encoding* sql_enc = reinterpret_cast<sqlsrv_encoding*>( Z_PTR_P(elem) );
+	pefree(sql_enc, 1);
+}
+
 
 // Module shutdown function
 // Free the environment handles allocated in MINIT and unregister our stream wrapper.
@@ -554,7 +570,7 @@ PHP_MINIT_FUNCTION(sqlsrv)
 PHP_MSHUTDOWN_FUNCTION(sqlsrv)
 {
     SQLSRV_UNUSED( type );
-    
+	
     UNREGISTER_INI_ENTRIES();
 
     // clean up the list of sqlsrv errors

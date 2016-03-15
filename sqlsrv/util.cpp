@@ -567,7 +567,7 @@ PHP_FUNCTION( sqlsrv_configure )
                 throw ss::SSException();
             }   
         
-            long severity_mask = Z_LVAL_P( value_z );
+            zend_long severity_mask = Z_LVAL_P( value_z );
             // make sure they can't use 0 to shut off the masking in the severity
             if( severity_mask < SEV_ALL || severity_mask == 0 || severity_mask > (SEV_NOTICE + SEV_ERROR + SEV_WARNING) ) {
                 RETURN_FALSE;
@@ -586,7 +586,7 @@ PHP_FUNCTION( sqlsrv_configure )
                 throw ss::SSException();
             }
         
-            long subsystem_mask = Z_LVAL_P( value_z );
+            zend_long subsystem_mask = Z_LVAL_P( value_z );
 
             if( subsystem_mask < LOG_ALL || subsystem_mask > (LOG_INIT + LOG_CONN + LOG_STMT + LOG_UTIL) ) {
                 RETURN_FALSE;
@@ -604,7 +604,7 @@ PHP_FUNCTION( sqlsrv_configure )
                 throw ss::SSException();
             }
 
-            long buffered_query_limit = Z_LVAL_P( value_z );
+            zend_long buffered_query_limit = Z_LVAL_P( value_z );
 
             CHECK_CUSTOM_ERROR( buffered_query_limit < 0, error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_ ) {
 

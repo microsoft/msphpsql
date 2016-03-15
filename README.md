@@ -4,13 +4,17 @@
 
 The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
 
-This preview contains the SQLSRV driver for 32-bit PHP 7 with limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, the PDO_SQLSRV driver, 64-bit support and more (see Plans below for more details).
+This preview contains the SQLSRV driver for PHP 7 with limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, the PDO_SQLSRV driver and more (see Plans below for more details).
 
 The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
 
-Feb 23, 2016: Thanks to the community’s input, we have mostly been focusing on making updates to support native 64-bit and the PDO driver.  We will be sharing these updates in the coming weeks once we have something functional.  In the meantime, we have a couple of minor updates to the SQLSRV driver to share:
+March 15, 2016 (4.0.2): 64-bit support is now available for the SQLSRV driver.  We also have some additional minor improvements to share:
+- Fixed the ability to retrieve strings as an output parameter
+- Fixed a number of memory leaks in initialization
+
+Feb 23, 2016 (4.0.1): Thanks to the community’s input, we have mostly been focusing on making updates to support native 64-bit and the PDO driver.  We will be sharing these updates in the coming weeks once we have something functional.  In the meantime, we have a couple of minor updates to the SQLSRV driver to share:
 - Fixed the ability to bind parameters with datetime types
 - Fixed output and bidirectional (input/output) parameters.  Note to users: we determined that output and bidirectional parameters now need to be passed in by reference (i.e. &$var) so that they can be updated with the output data and added an error check for these cases.
 - Updated refcounting to avoid unnecessary reference counting for scalar values
@@ -18,7 +22,7 @@ Feb 23, 2016: Thanks to the community’s input, we have mostly been focusing on
 
 ## Build
 
-Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases/tag/v4.0.0)
+Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/tree/PHP-7.0/binaries)
 
 ####Prerequisites
 
@@ -36,7 +40,7 @@ You must first be able to build PHP 7 without including these extensions.  For h
 
 5. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll to your PHP extension directory.
 
-This software has been compiled and tested under PHP 7.0.2 using the Visual C++ 2015 compiler.
+This software has been compiled and tested under PHP 7.0.4 using the Visual C++ 2015 compiler.
 
 ## Install
 
@@ -58,20 +62,22 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 
 ## Limitations
 
-This preview contains the 32-bit port for PHP 7 of the SQLSRV driver. The focus was on basic functionality. The following items are not supported:
+This preview contains the PHP 7 port of the SQLSRV driver. The focus was on basic functionality. The following items are not supported:
 
 - PDO
-- Native 64 Bit
 - Backwards compatibility with PHP 5
 - Retrieving stream data and metadata
 - Retrieving some varchar, nvarchar, ntext, binary, varbinary, uniqueidentifier, datetime, smalldatetime, and timestamp fields
 - Handle UTF8 strings
-- Retrieve strings as an output parameter
 - Fetch a user defined object into a class
 
 And some aspects of the following items need improvement:
 - Memory management
 - Logging and error handling
+
+Known issues for 64-bit only:
+- Retrieving integers as output parameters
+- Re-preparing the same statement with referenced datetime parameters
 
 
 ## Future Plans
@@ -124,5 +130,4 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.
 [odbc]: https://www.microsoft.com/en-us/download/details.aspx?id=36434
 
 [phpazure]: https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-php-simple-windows/
-
 

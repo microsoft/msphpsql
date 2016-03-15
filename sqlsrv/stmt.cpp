@@ -91,13 +91,13 @@ const char SS_SQLSRV_WARNING_PARAM_VAR_NOT_REF[] = "Variable parameter %d not pa
 zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN field_len );
 void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, zend_long fetch_type, __out zval* return_value, bool allow_empty_field_names 
                           TSRMLS_DC );
-bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLUINTEGER* column_size, 
-                                         __out SQLSMALLINT* decimal_digits );
+bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLULEN* column_size,
+ __out SQLSMALLINT* decimal_digits );
 sqlsrv_phptype determine_sqlsrv_php_type( sqlsrv_stmt const* stmt, SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string );
 void determine_stmt_has_rows( ss_sqlsrv_stmt* stmt TSRMLS_DC );
 bool is_valid_sqlsrv_phptype( sqlsrv_phptype type );
 bool is_valid_sqlsrv_sqltype( sqlsrv_sqltype type );
-void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, zend_ulong index, __out int& direction,
+void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, zend_ulong index, __out SQLSMALLINT& direction,
                         __out SQLSRV_PHPTYPE& php_out_type, __out SQLSRV_ENCODING& encoding, __out SQLSMALLINT& sql_type, 
                         __out SQLULEN& column_size, __out SQLSMALLINT& decimal_digits TSRMLS_DC );
 void type_and_encoding( INTERNAL_FUNCTION_PARAMETERS, int type );
@@ -596,7 +596,7 @@ PHP_FUNCTION( sqlsrv_rows_affected )
     LOG_FUNCTION( "sqlsrv_rows_affected" );
     SQLRETURN r = SQL_SUCCESS;
     ss_sqlsrv_stmt* stmt = NULL;
-    SQLINTEGER rows = -1;
+    SQLLEN rows = -1;
 
     PROCESS_PARAMS( stmt, "r", _FN_, 0 );
 
@@ -644,7 +644,7 @@ PHP_FUNCTION( sqlsrv_num_rows )
     LOG_FUNCTION( "sqlsrv_num_rows" );
 
     ss_sqlsrv_stmt* stmt = NULL;
-    SQLINTEGER rows = -1;
+    SQLLEN rows = -1;
 
     PROCESS_PARAMS( stmt, "r", _FN_, 0 );
 
@@ -1061,10 +1061,12 @@ PHP_FUNCTION( sqlsrv_get_field )
     // get the statement, the field index and the optional type
     PROCESS_PARAMS( stmt, "rl|l", _FN_, 2, &field_index, &sqlsrv_php_type );
 
+
     try {
 
         // validate that the field index is within range
-        SQLSMALLINT num_cols = core::SQLNumResultCols( stmt TSRMLS_CC ); 
+        int num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
+
         if( field_index < 0 || field_index >= num_cols ) {
             THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
         }
@@ -1200,7 +1202,7 @@ void mark_params_by_reference( ss_sqlsrv_stmt* stmt, zval* params_z TSRMLS_DC )
 			CHECK_CUSTOM_ERROR(zr == FAILURE, stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1) {
 				throw ss::SSException();
 			}
-            ZVAL_MAKE_REF(var);
+			ZVAL_MAKE_REF(var);
 		}
     } 
 
@@ -1234,7 +1236,7 @@ void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC )
             zend_ulong index = -1;
             zval* param_z = NULL;
             zval* value_z = NULL;
-            int direction = SQL_PARAM_INPUT;
+			SQLSMALLINT direction = SQL_PARAM_INPUT;
             SQLSRV_ENCODING encoding = stmt->encoding();
             if( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) {
                 encoding = stmt->conn->encoding();
@@ -1271,13 +1273,9 @@ void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC )
             else {
                 value_z = param_z;
             }
-            if (Z_ISREF_P(value_z))
-            {
-                ZVAL_DEREF(value_z);
-            }
             // bind the parameter
-            core_sqlsrv_bind_param( stmt, index, direction, value_z, php_out_type, encoding, sql_type, column_size, decimal_digits
-                TSRMLS_CC );
+            core_sqlsrv_bind_param( stmt, index, direction, value_z, php_out_type, encoding, sql_type, column_size, 
+                decimal_digits TSRMLS_CC );
 
         }
     }
@@ -1501,13 +1499,13 @@ zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN fiel
         case SQLSRV_PHPTYPE_FLOAT:       
         {
             out_zval = (zval*)sqlsrv_malloc(sizeof(zval));
-            if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
-                ZVAL_LONG( out_zval,  *(reinterpret_cast<zend_long*>( in_val )));
-            }
-            else {
-                ZVAL_DOUBLE( out_zval, *(reinterpret_cast<double*>( in_val )));    
-            }
-            sqlsrv_free( in_val );
+                if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
+                ZVAL_LONG( out_zval,  *(static_cast<int*>( in_val )));
+                }
+                else {
+                ZVAL_DOUBLE( out_zval, *(static_cast<double*>( in_val )));    
+                }
+                sqlsrv_free( in_val );
             break;
         }
 
@@ -1515,17 +1513,17 @@ zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN fiel
         {
             out_zval = (zval*) sqlsrv_malloc( sizeof(zval) );
             ZVAL_STRINGL( out_zval, reinterpret_cast<char*>( in_val ), field_len);
-            sqlsrv_free( in_val );
+                sqlsrv_free( in_val );
             break;
         }
             
         case SQLSRV_PHPTYPE_STREAM:
         case SQLSRV_PHPTYPE_DATETIME :
-		{
+        {
             out_zval = (reinterpret_cast<zval*>( in_val ));
             in_val = NULL;
-            break;
-		}
+           break;
+        }
 		
         case SQLSRV_PHPTYPE_NULL:
             out_zval = (zval*)sqlsrv_malloc(sizeof(zval));
@@ -1540,9 +1538,11 @@ zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN fiel
     return out_zval;
 }
 
+
+
 // put in the column size and scale/decimal digits of the sql server type
 // these values are taken from the MSDN page at http://msdn2.microsoft.com/en-us/library/ms711786(VS.85).aspx
-bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLUINTEGER* column_size, 
+bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, __out SQLULEN* column_size, 
                                          __out SQLSMALLINT* decimal_digits )
 {
     *decimal_digits = 0;
@@ -1881,7 +1881,7 @@ void fetch_fields_common( __inout ss_sqlsrv_stmt* stmt, zend_long fetch_type, __
     zval_ptr_dtor( &fields );
 }
 
-void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, zend_ulong index, __out int& direction,
+void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, zend_ulong index, __out SQLSMALLINT& direction,
                         __out SQLSRV_PHPTYPE& php_out_type, __out SQLSRV_ENCODING& encoding, __out SQLSMALLINT& sql_type, 
                         __out SQLULEN& column_size, __out SQLSMALLINT& decimal_digits TSRMLS_DC )
 
@@ -1915,7 +1915,7 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, zend_ul
 
             throw ss::SSException();
         }
-        direction = Z_LVAL_P( temp );
+        direction = static_cast<SQLSMALLINT>(Z_LVAL_P( temp ));
         CHECK_CUSTOM_ERROR( direction != SQL_PARAM_INPUT && direction != SQL_PARAM_OUTPUT && direction != SQL_PARAM_INPUT_OUTPUT,
                             stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
             throw ss::SSException();
@@ -1995,7 +1995,7 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, zend_ul
             throw ss::SSException();
         }             
         
-        bool size_okay = determine_column_size_or_precision( stmt, sqlsrv_sql_type, &column_size, &decimal_digits );
+		bool size_okay = determine_column_size_or_precision(stmt, sqlsrv_sql_type, &column_size, &decimal_digits);
 
         CHECK_CUSTOM_ERROR( !size_okay, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_PRECISION, index + 1 ) {
 
@@ -2020,7 +2020,9 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, __inout zval* param_array, zend_ul
 
         int encoding;
         sqlsrv_phptype sqlsrv_phptype;
-        sqlsrv_phptype = determine_sqlsrv_php_type( stmt, sql_type, column_size, true );
+
+        sqlsrv_phptype = determine_sqlsrv_php_type( stmt, sql_type, (SQLUINTEGER)column_size, true );
+        
         // we DIE here since everything should have been validated already and to return the user an error
         // for our own logic error would be confusing/misleading.
         SQLSRV_ASSERT( sqlsrv_phptype.typeinfo.type != PHPTYPE_INVALID, "An invalid php type was returned with (supposed) "

@@ -76,7 +76,7 @@ bool get_bit( void* ptr, unsigned int bit )
 
 // read in LOB field during buffered result creation
 SQLPOINTER read_lob_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_buffered_result_set::meta_data& meta,
-                           unsigned long mem_used TSRMLS_DC );
+                           zend_long mem_used TSRMLS_DC );
 
 // dtor for each row in the cache
 void cache_row_dtor(zval* data);
@@ -170,13 +170,13 @@ sqlsrv_error* odbc_get_diag_rec( sqlsrv_stmt* odbc, SQLSMALLINT record_number )
 
     // convert the error into the encoding of the context
     sqlsrv_malloc_auto_ptr<SQLCHAR> sql_state;
-    SQLINTEGER sql_state_len = 0;
+    SQLLEN sql_state_len = 0;
     if (!convert_string_from_utf16( enc, wsql_state, sizeof(wsql_state), (char**)&sql_state, sql_state_len )) {
         return NULL;
     }
     
     sqlsrv_malloc_auto_ptr<SQLCHAR> native_message;
-    SQLINTEGER native_message_len = 0;
+    SQLLEN native_message_len = 0;
     if (!convert_string_from_utf16( enc, wnative_message, wnative_message_len, (char**)&native_message, native_message_len )) {
         return NULL;
     }
@@ -439,7 +439,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
 
     // read the data into the cache
     // (offset from the above loop has the size of the row buffer necessary)
-    unsigned long mem_used = 0;
+    zend_ulong mem_used = 0;
     unsigned long row_count = 0;
 
     while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC ) != SQL_NO_DATA ) {
@@ -476,7 +476,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
                     }
                     else {
 
-                        mem_used += meta[i].length;
+						mem_used += meta[i].length;
                         CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
                                             SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
 
@@ -786,7 +786,7 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_long( SQLSMALLINT field_index, _
                                                       __out SQLLEN* out_buffer_length )
 {
     SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_DOUBLE, "Invalid conversion to long" );
-    SQLSRV_ASSERT( buffer_length >= sizeof(LONG), "Buffer length must be able to find a long in "
+    SQLSRV_ASSERT( buffer_length >= sizeof(SQLLEN), "Buffer length must be able to find a long in "
                    "sqlsrv_buffered_result_set::double_to_long" );
 
     unsigned char* row = get_row();
@@ -972,8 +972,13 @@ SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( SQLSMALLINT field_i
 
         bool tried_again = false;
         do {
-            int ch_space = MultiByteToWideChar( CP_ACP, MB_ERR_INVALID_CHARS, (LPCSTR) field_data, to_copy, 
-                                                (LPWSTR) buffer, to_copy );
+			if (to_copy > INT_MAX ) {
+				LOG(SEV_ERROR, "MultiByteToWideChar: Buffer length exceeded.");
+				throw core::CoreException();
+			}
+
+            int ch_space = MultiByteToWideChar( CP_ACP, MB_ERR_INVALID_CHARS, (LPCSTR) field_data, static_cast<int>(to_copy), 
+                                      static_cast<LPWSTR>(buffer), static_cast<int>(to_copy));
             if( ch_space == 0 ) {
 
                 switch( GetLastError() ) {
@@ -1089,7 +1094,7 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
     unsigned char* row = get_row();
 
     SQLCHAR* field_data = NULL;
-    SQLULEN field_len = NULL;
+    SQLLEN field_len = NULL;
 
     // if this is the first time called for this field, just convert the entire string to system first then
     // use that to read from instead of converting chunk by chunk.  This is because it's impossible to know
@@ -1114,9 +1119,9 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
         char default_char = '?';
 
         // allocate enough to handle WC -> DBCS conversion if it happens
-        temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof( char ), sizeof(char)));
-        temp_length = WideCharToMultiByte( CP_ACP, 0, (LPCWSTR) field_data, field_len / sizeof(WCHAR), 
-                                           (LPSTR) temp_string.get(), field_len, &default_char, &default_char_used );
+        temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof(char), sizeof(char)));
+        temp_length = WideCharToMultiByte( CP_ACP, 0, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),
+                                           (LPSTR) temp_string.get(), static_cast<int>(field_len), &default_char, &default_char_used );
         
         if( temp_length == 0 ) {
 
@@ -1224,10 +1229,10 @@ void cache_row_dtor( zval* data )
 }
 
 SQLPOINTER read_lob_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_buffered_result_set::meta_data& meta, 
-                           unsigned long mem_used TSRMLS_DC )
+                           zend_long mem_used TSRMLS_DC )
 {
     SQLSMALLINT extra = 0;
-    SQLLEN* output_buffer_len = NULL;
+    SQLULEN* output_buffer_len = NULL;
 
     // Set the amount of space necessary for null characters at the end of the data.
     switch( meta.c_type ) {
@@ -1245,8 +1250,8 @@ SQLPOINTER read_lob_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_b
             break;
     }
 
-    SQLLEN already_read = 0;
-    SQLLEN to_read = INITIAL_FIELD_STRING_LEN;
+    SQLULEN already_read = 0;
+    SQLULEN to_read = INITIAL_FIELD_STRING_LEN;
     sqlsrv_malloc_auto_ptr<char> buffer;
     buffer = static_cast<char*>( sqlsrv_malloc( INITIAL_FIELD_STRING_LEN + extra + sizeof( SQLULEN )));
     SQLRETURN r = SQL_SUCCESS;
@@ -1257,7 +1262,7 @@ SQLPOINTER read_lob_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_b
     do {
 
 
-        output_buffer_len = reinterpret_cast<SQLLEN*>( buffer.get() );
+        output_buffer_len = reinterpret_cast<SQLULEN*>( buffer.get() );
         r = core::SQLGetData( stmt, field_index + 1, meta.c_type, buffer.get() + already_read + sizeof( SQLULEN ),
                               to_read - already_read + extra, &last_field_len, false /*handle_warning*/ TSRMLS_CC );
 
@@ -1301,7 +1306,7 @@ SQLPOINTER read_lob_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_b
             already_read += to_read - already_read;
             to_read = last_field_len;
             buffer.resize( to_read + extra + sizeof( SQLULEN ));
-            output_buffer_len = reinterpret_cast<SQLLEN*>( buffer.get() );
+            output_buffer_len = reinterpret_cast<SQLULEN*>( buffer.get() );
             // record the size of the field since we have it available
             *output_buffer_len = last_field_len;
             full_length_returned = true;
@@ -1316,7 +1321,7 @@ SQLPOINTER read_lob_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_b
                 throw core::CoreException();
             }
             buffer.resize( to_read + extra + sizeof( SQLULEN ));
-            output_buffer_len = reinterpret_cast<SQLLEN*>( buffer.get() );
+            output_buffer_len = reinterpret_cast<SQLULEN*>( buffer.get() );
         }
 
     } while( true );

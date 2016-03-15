@@ -61,8 +61,8 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
 void determine_server_version( sqlsrv_conn* conn TSRMLS_DC );
 const char* get_processor_arch( void );
 void get_server_version( sqlsrv_conn* conn, char** server_version, SQLSMALLINT& len TSRMLS_DC );
-connection_option const* get_connection_option( sqlsrv_conn* conn, const char* key, unsigned int key_len TSRMLS_DC );
-void common_conn_str_append_func( const char* odbc_name, const char* val, int val_len, std::string& conn_str TSRMLS_DC );
+connection_option const* get_connection_option( sqlsrv_conn* conn, const char* key, SQLULEN key_len TSRMLS_DC );
+void common_conn_str_append_func( const char* odbc_name, const char* val, size_t val_len, std::string& conn_str TSRMLS_DC );
 
 }
 
@@ -130,8 +130,9 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     
     // We only support UTF-8 encoding for connection string.
     // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
-    wconn_len = (conn_str.length() + 1) * sizeof( wchar_t );
-    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), conn_str.length(), &wconn_len );
+	wconn_len = (unsigned int) (conn_str.length() + 1) * sizeof( wchar_t );
+
+    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), (unsigned int) conn_str.length(), &wconn_len );
     CHECK_CUSTOM_ERROR( wconn_string == NULL, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message() )
     {
         throw core::CoreException();
@@ -318,7 +319,7 @@ void core_sqlsrv_close( sqlsrv_conn* conn TSRMLS_DC )
 // sql - T-SQL command to prepare
 // sql_len - length of the T-SQL string
 
-void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, long sql_len TSRMLS_DC )
+void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, SQLLEN sql_len TSRMLS_DC )
 {
     try {
 
@@ -333,10 +334,17 @@ void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, long sql_len TSRML
             wsql_len = 0;
         }
         else {
+
+			if (sql_len > INT_MAX)
+			{
+				LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
+				throw core::CoreException();
+			}
+
             SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
                                         stmt->encoding() );
             wsql_string = utf16_string_from_mbcs_string( encoding, reinterpret_cast<const char*>( sql ),
-                                                         sql_len, &wsql_len );
+                                                         (int) sql_len, &wsql_len );
             CHECK_CUSTOM_ERROR( wsql_string == NULL, stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, 
                                 get_last_error_message() ) {
                 throw core::CoreException();
@@ -466,7 +474,7 @@ void core_sqlsrv_get_client_info( sqlsrv_conn* conn, __out zval *client_info TSR
 // Properly escaped means that any '}' should be escaped by a prior '}'.  It is assumed that 
 // the value will be surrounded by { and } by the caller after it has been validated
 
-bool core_is_conn_opt_value_escaped( const char* value, int value_len )
+bool core_is_conn_opt_value_escaped( const char* value, size_t value_len )
 {
     // if the value is already quoted, then only analyse the part inside the quotes and return it as 
     // unquoted since we quote it when adding it to the connection string.
@@ -475,7 +483,7 @@ bool core_is_conn_opt_value_escaped( const char* value, int value_len )
         value_len -= 2;
     }
     // check to make sure that all right braces are escaped
-    int i = 0;
+    size_t i = 0;
     while( ( value[i] != '}' || ( value[i] == '}' && value[i+1] == '}' )) && i < value_len ) {
         // skip both braces
         if( value[i] == '}' )
@@ -494,7 +502,7 @@ bool core_is_conn_opt_value_escaped( const char* value, int value_len )
 
 namespace {
 
-connection_option const* get_connection_option( sqlsrv_conn* conn, unsigned long key, 
+connection_option const* get_connection_option( sqlsrv_conn* conn, SQLULEN key, 
                                                      const connection_option conn_opts[] TSRMLS_DC )
 {
     for( int opt_idx = 0; conn_opts[ opt_idx ].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++opt_idx ) {
@@ -584,7 +592,7 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
         
 			int type = HASH_KEY_NON_EXISTENT; 
 			zend_string *key = NULL;
-			zend_ulong index = -1;
+			zend_ulong index = 0;
             zval* data = NULL;
 
             type = zend_hash_get_current_key( options, &key, &index ); 
@@ -692,7 +700,7 @@ void determine_server_version( sqlsrv_conn* conn TSRMLS_DC )
     conn->server_version = version_major;
 }
 
-void common_conn_str_append_func( const char* odbc_name, const char* val, int val_len, std::string& conn_str TSRMLS_DC )
+void common_conn_str_append_func( const char* odbc_name, const char* val, size_t val_len, std::string& conn_str TSRMLS_DC )
 {
     // wrap a connection option in a quote.  It is presumed that any character that need to be escaped will
     // be escaped, such as a closing }.
@@ -715,7 +723,7 @@ void conn_str_append_func::func( connection_option const* option, zval* value, s
                                  TSRMLS_DC )
 {
     const char* val_str = Z_STRVAL_P( value );
-    int val_len = Z_STRLEN_P( value );
+    size_t val_len = Z_STRLEN_P( value );
     common_conn_str_append_func( option->odbc_name, val_str, val_len, conn_str TSRMLS_CC );
 }
 
@@ -736,10 +744,10 @@ int core_str_zval_is_true( zval* value_z )
     SQLSRV_ASSERT( Z_TYPE_P( value_z ) == IS_STRING, "core_str_zval_is_true: This function only accepts zval of type string." );
 
     char* value_in = Z_STRVAL_P( value_z );
-    int val_len = Z_STRLEN_P( value_z );
+    size_t val_len = Z_STRLEN_P( value_z );
     
     // strip any whitespace at the end (whitespace is the same value in ASCII and UTF-8)
-    int last_char = val_len - 1;
+    size_t last_char = val_len - 1;
     while( isspace( value_in[ last_char ] )) {
         value_in[ last_char ] = '\0';
         val_len = last_char;

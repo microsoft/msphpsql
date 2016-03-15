@@ -107,7 +107,7 @@ OACR_WARNING_POP
 #include <limits>
 #include <cassert>
 #include <strsafe.h>
-
+#include <memory>
 // included for SQL Server specific constants
 #include "msodbcsql.h"
 
@@ -196,7 +196,7 @@ union sqlsrv_phptype {
         unsigned encoding:16;
     } typeinfo;
 
-    long value;
+    zend_long value;
 };
 
 // static assert for enforcing compile time conditions
@@ -499,6 +499,16 @@ public:
     {
         return _ptr[ index ];
     }
+
+	
+	#ifdef __WIN64	
+	// there are a number of places where we allocate a block intended to be accessed as
+	// an array of elements, so this operator allows us to treat the memory as such.
+	T& operator[](std::size_t index) const
+	{
+		return _ptr[index];
+	}
+	#endif
 
     // there are a number of places where we allocate a block intended to be accessed as
     // an array of elements, so this operator allows us to treat the memory as such.
@@ -914,7 +924,7 @@ const int SQLSRV_OS_VISTA_OR_LATER = 6;           // major version for Vista
 struct sqlsrv_encoding {
 
     const char* iana;
-    unsigned int iana_len;
+    size_t iana_len;
     unsigned int code_page;
     bool not_for_connection;
 
@@ -1082,9 +1092,8 @@ struct str_conn_attr_func {
     static void func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
     {
         try {
-        
             core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
-                                     Z_STRLEN_P( value ) TSRMLS_CC );
+                                     static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
         }
         catch( core::CoreException& ) {
             throw;
@@ -1113,14 +1122,14 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
                                   HashTable* options_ht, error_callback err, const connection_option driver_conn_opt_list[], 
                                   void* driver, const char* driver_func TSRMLS_DC );
 void core_sqlsrv_close( sqlsrv_conn* conn TSRMLS_DC );
-void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, long sql_len TSRMLS_DC );
+void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, SQLLEN sql_len TSRMLS_DC );
 void core_sqlsrv_begin_transaction( sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_commit( sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_rollback( sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_get_server_info( sqlsrv_conn* conn, __out zval* server_info TSRMLS_DC );
 void core_sqlsrv_get_server_version( sqlsrv_conn* conn, __out zval *server_version TSRMLS_DC );
 void core_sqlsrv_get_client_info( sqlsrv_conn* conn, __out zval *client_info TSRMLS_DC );
-bool core_is_conn_opt_value_escaped( const char* value, int value_len );
+bool core_is_conn_opt_value_escaped( const char* value, size_t value_len );
 int core_str_zval_is_true( zval* str_zval );
 
 //*********************************************************************************************************************************
@@ -1153,7 +1162,7 @@ struct stmt_option {
     const char *         name;        // name of the statement option
     unsigned int         name_len;    // name length
     unsigned int         key;         
-    stmt_option_functor* func;        // callback that actually handles the work of the option
+    std::unique_ptr<stmt_option_functor> func;        // callback that actually handles the work of the option
     
 };
 
@@ -1192,7 +1201,7 @@ struct sqlsrv_output_param {
 
     zval* param_z;
     SQLSRV_ENCODING encoding;
-    int param_num;  // used to index into the ind_or_len of the statement
+    SQLUSMALLINT param_num;  // used to index into the ind_or_len of the statement
     SQLLEN original_buffer_len; // used to make sure the returned length didn't overflow the buffer
     bool is_bool;
 
@@ -1297,7 +1306,7 @@ typedef sqlsrv_stmt* (*driver_stmt_factory)( sqlsrv_conn* conn, SQLHANDLE h, err
 // *** statement functions ***
 sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stmt_factory, HashTable* options_ht, 
                                       const stmt_option valid_stmt_opts[], error_callback const err, void* driver TSRMLS_DC );
-void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, zend_ulong param_num, int direction, zval* param_z, 
+void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLINT direction, zval* param_z,
                              SQLSRV_PHPTYPE php_out_type, SQLSRV_ENCODING encoding, SQLSMALLINT sql_type, SQLULEN column_size,
                              SQLSMALLINT decimal_digits TSRMLS_DC );
 void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql = NULL, int sql_len = 0 );
@@ -1315,7 +1324,7 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
-void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, long limit TSRMLS_DC );
+void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, SQLLEN limit TSRMLS_DC );
 
 
 //*********************************************************************************************************************************
@@ -1495,8 +1504,8 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 #define MEMCHECK_SILENT 1
 
 // utility functions shared by multiple callers across files
-bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLINTEGER& len);
-bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLINTEGER& cchOutLen );
+bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLLEN& len);
+bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen );
 wchar_t* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, 
                                         unsigned int mbcs_len, __out unsigned int* utf16_len );
 
@@ -1594,7 +1603,7 @@ DWORD core_sqlsrv_format_message( char* output_buffer, unsigned output_len, cons
 
 // convenience functions that overload either a reference or a pointer so we can use
 // either in the CHECK_* functions.
-inline bool call_error_handler( sqlsrv_context& ctx, unsigned int sqlsrv_error_code TSRMLS_DC, bool warning, ... )
+inline bool call_error_handler( sqlsrv_context& ctx, unsigned long sqlsrv_error_code TSRMLS_DC, bool warning, ... )
 {
     va_list print_params;
     va_start( print_params, warning );
@@ -1603,7 +1612,7 @@ inline bool call_error_handler( sqlsrv_context& ctx, unsigned int sqlsrv_error_c
     return ignored;
 }
 
-inline bool call_error_handler( sqlsrv_context* ctx, unsigned int sqlsrv_error_code TSRMLS_DC, bool warning, ... )
+inline bool call_error_handler( sqlsrv_context* ctx, unsigned long sqlsrv_error_code TSRMLS_DC, bool warning, ... )
 {
     va_list print_params;
     va_start( print_params, warning );
@@ -2191,7 +2200,7 @@ namespace core {
         }
     }
    
-    inline void sqlsrv_zend_hash_init(sqlsrv_context& ctx, HashTable* ht, std::size_t initial_size,
+    inline void sqlsrv_zend_hash_init(sqlsrv_context& ctx, HashTable* ht, uint32_t initial_size,
         dtor_func_t dtor_fn, zend_bool persistent TSRMLS_DC )
     {
         ::zend_hash_init(ht, initial_size, NULL, dtor_fn, persistent);

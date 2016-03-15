@@ -50,8 +50,7 @@ int sqlsrv_stream_close( php_stream* stream, int /*close_handle*/ TSRMLS_DC )
 
 size_t sqlsrv_stream_read( php_stream* stream, __out_bcount(count) char* buf, size_t count TSRMLS_DC )
 {
-   
-    SQLINTEGER read = 0;
+	SQLLEN read = 0;
     SQLSMALLINT c_type = SQL_C_CHAR;
     char* get_data_buffer = buf;
     sqlsrv_malloc_auto_ptr<char> temp_buf;
@@ -145,21 +144,28 @@ size_t sqlsrv_stream_read( php_stream* stream, __out_bcount(count) char* buf, si
         }
 
         // if the encoding is UTF-8
-        if( c_type == SQL_C_WCHAR ) {
-            
-            count *= 2;    // undo the shift to use the full buffer
+		if (c_type == SQL_C_WCHAR) {
 
-            // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
-            // an error.  This happens only on XP.
-            DWORD flags = 0;
+			count *= 2;    // undo the shift to use the full buffer
 
-            // convert to UTF-8
-            if( g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
-                // Vista (and later) will detect invalid UTF-16 characters and raise an error.
-                flags = WC_ERR_INVALID_CHARS;
-            }
+			// flags set to 0 by default, which means that any invalid characters are dropped rather than causing
+			// an error.  This happens only on XP.
+			DWORD flags = 0;
+
+			// convert to UTF-8
+			if (g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER) {
+				// Vista (and later) will detect invalid UTF-16 characters and raise an error.
+				flags = WC_ERR_INVALID_CHARS;
+			}
+
+			if ( count > INT_MAX || (read >> 1) > INT_MAX )
+			{
+				LOG(SEV_ERROR, "UTF-16 (wide character) string mapping: buffer length exceeded.");
+				throw core::CoreException();
+			}
+
             int enc_len = WideCharToMultiByte( ss->encoding, flags, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
-                                         read >> 1, buf, count, NULL, NULL );
+                                         int(read >> 1), buf, int(count), NULL, NULL );
 
             if( enc_len == 0 ) {
             
