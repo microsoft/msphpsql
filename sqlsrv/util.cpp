@@ -719,7 +719,7 @@ void copy_error_to_zval( zval* error_z, sqlsrv_error_const* error, zval* reporte
     // sqlstate
     zval temp; 
 	ZVAL_UNDEF(&temp);
-    ZVAL_STRINGL( &temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE );
+	core::sqlsrv_zval_stringl( &temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE );
     //TODO: reference?
 	Z_TRY_ADDREF_P( &temp );
     if( add_next_index_zval( error_z, &temp ) == FAILURE ) {

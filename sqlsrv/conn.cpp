@@ -890,9 +890,9 @@ PHP_FUNCTION( sqlsrv_prepare )
         core_sqlsrv_prepare( stmt, sql, sql_len TSRMLS_CC );
         
         //mark_params_by_reference( stmt, params_z TSRMLS_CC );
-		stmt->params_z = params_z;
 		if (params_z) {
-            Z_TRY_ADDREF_P(params_z);
+			stmt->params_z = (zval *)sqlsrv_malloc(sizeof(zval));
+			ZVAL_COPY(stmt->params_z, params_z);
 		}
 
         stmt->prepared = true;
@@ -1010,9 +1010,9 @@ PHP_FUNCTION( sqlsrv_query )
                                                                       ss_stmt_options_ht, SS_STMT_OPTS, 
                                                                       ss_error_handler, NULL TSRMLS_CC ) );
 
-        stmt->params_z = params_z;
         if( params_z ) {
-            Z_TRY_ADDREF_P(params_z);
+			stmt->params_z = (zval *)sqlsrv_malloc(sizeof(zval));
+			ZVAL_COPY(stmt->params_z, params_z);
         }
 
         stmt->set_func( "sqlsrv_query" );
@@ -1026,7 +1026,7 @@ PHP_FUNCTION( sqlsrv_query )
         ss::zend_register_resource(stmt_z, stmt, ss_sqlsrv_stmt::descriptor, ss_sqlsrv_stmt::resource_name TSRMLS_CC);
         // store the resource id with the connection so the connection 
         // can release this statement when it closes.
-        zend_long next_index = zend_hash_next_free_element( conn->stmts );
+		zend_ulong next_index = zend_hash_next_free_element( conn->stmts );
      
         core::sqlsrv_zend_hash_index_update(*conn, conn->stmts, next_index, &stmt_z TSRMLS_CC);
         stmt->conn_index = next_index;

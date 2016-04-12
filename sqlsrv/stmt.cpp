@@ -140,7 +140,7 @@ ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
     }
     if( params_z ) {
         zval_ptr_dtor( params_z );
-        params_z = NULL;
+		sqlsrv_free(params_z);
     }
 }    
 
@@ -294,7 +294,7 @@ PHP_FUNCTION( sqlsrv_execute )
         bind_params( stmt TSRMLS_CC );
 
         core_sqlsrv_execute( stmt TSRMLS_CC );
-
+		
         RETURN_TRUE;
     }
     catch( core::CoreException& ) {
@@ -405,7 +405,7 @@ PHP_FUNCTION( sqlsrv_fetch_array )
         if( !result ) {
             RETURN_NULL();
         }
-
+		
         fetch_fields_common( stmt, fetch_type, return_value, true /*allow_empty_field_names*/ TSRMLS_CC );
     }
 
@@ -759,10 +759,8 @@ PHP_FUNCTION( sqlsrv_fetch_object )
     LOG_FUNCTION( "sqlsrv_fetch_object" );
 
     ss_sqlsrv_stmt* stmt = NULL;
-    zval class_name_z;
-    ZVAL_UNDEF(&class_name_z);
-    zval ctor_params_z;
-    ZVAL_UNDEF(&ctor_params_z);
+	zval* class_name_z = NULL;
+	zval* ctor_params_z = NULL;
     int fetch_style = SQL_FETCH_NEXT;   // default value for parameter if one isn't supplied
     zend_long fetch_offset = 0;         // default value for parameter if one isn't supplied
 
@@ -784,17 +782,17 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             throw ss::SSException();
         }
 
-        if( !Z_ISUNDEF(class_name_z) ) {
+        if( class_name_z ) {
             
-            CHECK_CUSTOM_ERROR(( Z_TYPE_P( &class_name_z ) != IS_STRING ), stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
+            CHECK_CUSTOM_ERROR(( Z_TYPE_P( class_name_z ) != IS_STRING ), stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
                 throw ss::SSException();
             }
-            class_name = Z_STRVAL( class_name_z );
-            class_name_len = Z_STRLEN( class_name_z );
+            class_name = Z_STRVAL( *class_name_z );
+            class_name_len = Z_STRLEN( *class_name_z );
             zend_str_tolower( class_name, class_name_len );
         }
 
-        if( !Z_ISUNDEF(ctor_params_z) && Z_TYPE_P( &ctor_params_z ) != IS_ARRAY ) {
+        if( ctor_params_z && Z_TYPE_P( ctor_params_z ) != IS_ARRAY ) {
             THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
         }
         
@@ -845,22 +843,22 @@ PHP_FUNCTION( sqlsrv_fetch_object )
         if( class_entry->constructor ) {
 
             // take the parameters given as our last argument and put them into a sequential array
-            sqlsrv_malloc_auto_ptr<zval*> params_m;
+			sqlsrv_malloc_auto_ptr<zval> params_m;
             zval ctor_retval_z;
             ZVAL_UNDEF( &ctor_retval_z );
             int num_params = 0;
 
-            if ( !Z_ISUNDEF( ctor_params_z ) ) {
-                HashTable* ctor_params_ht = Z_ARRVAL( ctor_params_z );
+            if ( ctor_params_z ) {
+                HashTable* ctor_params_ht = Z_ARRVAL( *ctor_params_z );
                 num_params = zend_hash_num_elements( ctor_params_ht );
-                params_m = reinterpret_cast<zval**>( sqlsrv_malloc( num_params * sizeof( zval* ) ));
+                params_m = reinterpret_cast<zval*>( sqlsrv_malloc( num_params * sizeof( zval ) ));
 
                 int i;
                 for( i = 0, zend_hash_internal_pointer_reset( ctor_params_ht );
-                     zend_hash_has_more_elements( ctor_params_ht ) == SUCCESS;
-                     zend_hash_move_forward( ctor_params_ht ), ++i ) {
-
-                    zr = ( NULL != (params_m[i] = zend_hash_get_current_data_ex(ctor_params_ht, NULL))) ? SUCCESS : FAILURE;
+                    zend_hash_has_more_elements( ctor_params_ht ) == SUCCESS;
+                    zend_hash_move_forward( ctor_params_ht ), ++i ) {
+					ZVAL_COPY_VALUE( &params_m[i], zend_hash_get_current_data_ex(ctor_params_ht, &ctor_params_ht->nInternalPointer ) );
+					zr = ( NULL != &params_m[i] ) ? SUCCESS : FAILURE;
                     CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name ) {
                         throw ss::SSException();
                     }                
@@ -877,7 +875,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             ZVAL_UNDEF( &(fci.function_name) );
             fci.retval = &ctor_retval_z;
             fci.param_count = num_params;
-            fci.params = *params_m;  // purposefully not transferred since ownership isn't actually transferred.
+            fci.params = params_m;  // purposefully not transferred since ownership isn't actually transferred.
             
             fci.object = reinterpret_cast<zend_object*>(return_value);
 
@@ -1415,8 +1413,7 @@ PHP_FUNCTION( sqlsrv_free_stmt )
 
 
         // delete the resource from Zend's master list, which will trigger the statement's destructor
-        int zr = zend_list_close(Z_RES_P(stmt_r));
-        if( zr == FAILURE ) {
+        if( zend_list_close( Z_RES_P(stmt_r) ) == FAILURE ) {
             LOG( SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P( stmt_r )->handle);
         }
 
@@ -1443,7 +1440,7 @@ void stmt_option_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* 
     }
     
     const char* scroll_type = Z_STRVAL_P( value_z );
-    unsigned int cursor_type = -1;
+    SQLULEN cursor_type = -1;
     
     // find which cursor type they would like and set the ODBC statement attribute as such
     if( !stricmp( scroll_type, SSCursorTypes::QUERY_OPTION_SCROLLABLE_STATIC )) {   
@@ -1485,11 +1482,10 @@ namespace {
 zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN field_len )
 {
     zval* out_zval = NULL;
-
     if (in_val == NULL) {
 
-        out_zval = (zval*)sqlsrv_malloc(sizeof(zval));
-        ZVAL_NULL(out_zval);
+        out_zval = ( zval* )sqlsrv_malloc(sizeof( zval ));
+        ZVAL_NULL( out_zval );
         return out_zval;
     }
 
@@ -1498,22 +1494,24 @@ zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN fiel
         case SQLSRV_PHPTYPE_INT:
         case SQLSRV_PHPTYPE_FLOAT:       
         {
-            out_zval = (zval*)sqlsrv_malloc(sizeof(zval));
-                if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
-                ZVAL_LONG( out_zval,  *(static_cast<int*>( in_val )));
-                }
-                else {
-                ZVAL_DOUBLE( out_zval, *(static_cast<double*>( in_val )));    
-                }
-                sqlsrv_free( in_val );
+            out_zval = ( zval* )sqlsrv_malloc(sizeof( zval ));
+			ZVAL_UNDEF( out_zval );
+            if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
+            ZVAL_LONG( out_zval,  *( static_cast<int*>( in_val )));
+            }
+            else {
+            ZVAL_DOUBLE( out_zval, *( static_cast<double*>( in_val )));    
+            }
+            sqlsrv_free( in_val );
             break;
         }
 
         case SQLSRV_PHPTYPE_STRING:
         {
-            out_zval = (zval*) sqlsrv_malloc( sizeof(zval) );
-            ZVAL_STRINGL( out_zval, reinterpret_cast<char*>( in_val ), field_len);
-                sqlsrv_free( in_val );
+			out_zval = ( zval* )sqlsrv_malloc( sizeof( zval ));
+			ZVAL_UNDEF( out_zval );
+			core::sqlsrv_zval_stringl( out_zval, reinterpret_cast<char*>( in_val ), field_len );
+			sqlsrv_free( in_val );
             break;
         }
             
@@ -1521,12 +1519,12 @@ zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN fiel
         case SQLSRV_PHPTYPE_DATETIME :
         {
             out_zval = (reinterpret_cast<zval*>( in_val ));
-            in_val = NULL;
+			in_val = NULL;
            break;
         }
 		
         case SQLSRV_PHPTYPE_NULL:
-            out_zval = (zval*)sqlsrv_malloc(sizeof(zval));
+            out_zval = ( zval* )sqlsrv_malloc(sizeof( zval ));
             ZVAL_NULL( out_zval );
             break;
 

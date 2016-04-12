@@ -178,7 +178,7 @@ struct ss_sqlsrv_stmt : public sqlsrv_stmt {
     sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
 
     bool prepared;                               // whether the statement has been prepared yet (used for error messages)
-    zend_long conn_index;                        // index into the connection hash that contains this statement structure
+	zend_ulong conn_index;						 // index into the connection hash that contains this statement structure
     zval* params_z;                              // hold parameters passed to sqlsrv_prepare but not used until sqlsrv_execute
     sqlsrv_fetch_field_name* fetch_field_names;  // field names for current results used by sqlsrv_fetch_array/object as keys
     int fetch_fields_count;
