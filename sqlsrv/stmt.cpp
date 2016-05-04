@@ -1059,7 +1059,6 @@ PHP_FUNCTION( sqlsrv_get_field )
     // get the statement, the field index and the optional type
     PROCESS_PARAMS( stmt, "rl|l", _FN_, 2, &field_index, &sqlsrv_php_type );
 
-
     try {
 
         // validate that the field index is within range
@@ -1259,7 +1258,6 @@ void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC )
                 zval* var = NULL;
                 int zr = (NULL != (var = zend_hash_index_find(Z_ARRVAL_P(param_z), 0))) ? SUCCESS : FAILURE;
                 CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1 ) {
-                    zval_ptr_dtor( params_z );
                     throw ss::SSException();
                 }
 
@@ -1406,19 +1404,24 @@ PHP_FUNCTION( sqlsrv_free_stmt )
         // verify the resource so we know we're deleting a statement
         stmt = static_cast<ss_sqlsrv_stmt*>(zend_fetch_resource_ex(stmt_r TSRMLS_CC, ss_sqlsrv_stmt::resource_name, ss_sqlsrv_stmt::descriptor));
         
+		// if sqlsrv_free_stmt was called on an already closed statment then we just return success.
+		// zend_list_close sets the type of the closed statment to -1.
+		if ( Z_RES_TYPE_P( stmt_r ) == RSRC_INVALID_TYPE ) {
+			RETURN_TRUE;
+		}
+	
         if( stmt == NULL ) {
 
             THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
         }
-
-
+ 
         // delete the resource from Zend's master list, which will trigger the statement's destructor
         if( zend_list_close( Z_RES_P(stmt_r) ) == FAILURE ) {
             LOG( SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P( stmt_r )->handle);
         }
 
         ZVAL_NULL( stmt_r );
-
+		
         RETURN_TRUE;
     
     }
@@ -1440,7 +1443,7 @@ void stmt_option_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* 
     }
     
     const char* scroll_type = Z_STRVAL_P( value_z );
-    SQLULEN cursor_type = -1;
+    unsigned long cursor_type = -1;
     
     // find which cursor type they would like and set the ODBC statement attribute as such
     if( !stricmp( scroll_type, SSCursorTypes::QUERY_OPTION_SCROLLABLE_STATIC )) {   
@@ -1518,7 +1521,10 @@ zval* convert_to_zval( SQLSRV_PHPTYPE sqlsrv_php_type, void* in_val, SQLLEN fiel
         case SQLSRV_PHPTYPE_STREAM:
         case SQLSRV_PHPTYPE_DATETIME :
         {
-            out_zval = (reinterpret_cast<zval*>( in_val ));
+            out_zval = ( static_cast<zval*>( in_val ) );
+
+			//addref here because deleting out_zval later will decrement the refcount
+			Z_TRY_ADDREF_P( out_zval );
 			in_val = NULL;
            break;
         }

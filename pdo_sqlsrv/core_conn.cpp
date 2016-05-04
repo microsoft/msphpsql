@@ -130,9 +130,9 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     
     // We only support UTF-8 encoding for connection string.
     // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
-	wconn_len = (unsigned int) (conn_str.length() + 1) * sizeof( wchar_t );
+	wconn_len = static_cast<unsigned int>( conn_str.length() + 1 ) * sizeof( wchar_t );
 
-    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), (unsigned int) conn_str.length(), &wconn_len );
+    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>( conn_str.length() ), &wconn_len );
     CHECK_CUSTOM_ERROR( wconn_string == NULL, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message() )
     {
         throw core::CoreException();

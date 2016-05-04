@@ -1318,7 +1318,7 @@ void core_sqlsrv_get_field(sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_p
 bool core_sqlsrv_has_any_result( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params = true, bool throw_on_errors = true );
 void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong paramno, zval* param_z TSRMLS_DC );
-void core_sqlsrv_set_scrollable( sqlsrv_stmt* stmt, SQLULEN cursor_type TSRMLS_DC );
+void core_sqlsrv_set_scrollable( sqlsrv_stmt* stmt, unsigned long cursor_type TSRMLS_DC );
 void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, long timeout TSRMLS_DC );
 void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
@@ -2060,6 +2060,9 @@ namespace core {
 
 
     // *** zend wrappers ***
+
+	//zend_resource_dtor sets the type of destroyed resources to -1
+	#define RSRC_INVALID_TYPE -1
 
 	// wrapper for ZVAL_STRINGL macro. ZVAL_STRINGL always allocates memory when initialzing new string from char string
 	// so allocated memory inside of value_z should be released before assigning it to the new string

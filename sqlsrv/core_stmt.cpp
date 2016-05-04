@@ -348,8 +348,8 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLI
     if ( Z_ISREF_P( param_z ) ) {
         ZVAL_DEREF( param_z );
     }
-    bool zval_was_null = (Z_TYPE_P( param_z ) == IS_NULL);
-    bool zval_was_bool = (Z_TYPE_P( param_z ) == IS_TRUE || Z_TYPE_P( param_z ) == IS_FALSE);
+    bool zval_was_null = ( Z_TYPE_P( param_z ) == IS_NULL);
+    bool zval_was_bool = ( Z_TYPE_P( param_z ) == IS_TRUE || Z_TYPE_P( param_z ) == IS_FALSE );
     // if the user asks for for a specific type for input and output, make sure the data type we send matches the data we
     // type we expect back, since we can only send and receive the same type.  Anything can be converted to a string, so
     // we always let that match if they want a string back.
@@ -422,7 +422,7 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLI
 
     // if the size is unknown, then set the default based on the PHP type passed in
     if( column_size == SQLSRV_UNKNOWN_SIZE ) {
-        default_sql_size_and_scale( stmt, (unsigned int)param_num, param_z, encoding, column_size, decimal_digits TSRMLS_CC );
+        default_sql_size_and_scale( stmt, static_cast<unsigned int>( param_num ), param_z, encoding, column_size, decimal_digits TSRMLS_CC );
     }
 
     // determine the ODBC C type
@@ -442,13 +442,15 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLI
         case IS_TRUE:
         case IS_FALSE:
         case IS_LONG:
-            {
+            {	
+				// if it is boolean, set the lval to 0 or 1
+				convert_to_long( param_z );
                 buffer = &param_z->value;
-                buffer_len = sizeof( param_z->value.lval );
+                buffer_len = sizeof( Z_LVAL_P( param_z ));
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ) {
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
-					sqlsrv_output_param output_param( param_ref, int(param_num), zval_was_bool );
+					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), zval_was_bool );
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
                 }
             }
@@ -456,11 +458,11 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLI
         case IS_DOUBLE:
             {
                 buffer = &param_z->value;
-				buffer_len = sizeof(Z_DVAL_P(param_z));
+				buffer_len = sizeof( Z_DVAL_P( param_z ));
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ) {
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
-					sqlsrv_output_param output_param(param_ref, int(param_num), false );
+					sqlsrv_output_param output_param(param_ref, static_cast<int>( param_num ), false );
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
                 }
             }
@@ -472,7 +474,7 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLI
             if( direction == SQL_PARAM_INPUT && encoding == CP_UTF8 ) {
 
                 zval wbuffer_z;
-                ZVAL_NULL(&wbuffer_z);
+                ZVAL_NULL( &wbuffer_z );
 
                 bool converted = convert_input_param_to_utf16( param_z, &wbuffer_z );
                 CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, 
@@ -519,12 +521,12 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLI
                                                    buffer, buffer_len TSRMLS_CC );
 
                 // save the parameter to be adjusted and/or converted after the results are processed
-				sqlsrv_output_param output_param( param_ref, encoding, param_num, (SQLUINTEGER)buffer_len );
+				sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ));
 
                 save_output_param_for_later( stmt, output_param TSRMLS_CC );
 
                 // For output parameters, if we set the column_size to be same as the buffer_len, 
-                // than if there is a truncation due to the data coming from the server being 
+                // then if there is a truncation due to the data coming from the server being 
                 // greater than the column_size, we don't get any truncation error. In order to
                 // avoid this silent truncation, we set the column_size to be "MAX" size for 
                 // string types. This will guarantee that there is no silent truncation for 
@@ -552,7 +554,7 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLI
                 HashTable* streams_ht = Z_ARRVAL( stmt->param_streams );
                 core::sqlsrv_zend_hash_index_update_mem(*stmt, streams_ht, param_num, &stream_encoding, sizeof(stream_encoding) TSRMLS_CC);
                 buffer = reinterpret_cast<SQLPOINTER>( param_num );
-                Z_TRY_ADDREF_P(param_z); // so that it doesn't go away while we're using it
+                Z_TRY_ADDREF_P( param_z ); // so that it doesn't go away while we're using it
                 buffer_len = 0;
                 ind_ptr = SQL_DATA_AT_EXEC;
             }
@@ -702,6 +704,8 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_
 
         finalize_output_parameters( stmt TSRMLS_CC );
     }
+	// stream parameters are sent, clean the Hashtable
+	zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
 
     }
     catch( core::CoreException& e ) {
@@ -935,7 +939,7 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
             core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
 
             // Get the corresponding php type from the sql type.
-            sqlsrv_php_type = stmt->sql_type_to_php_type( (SQLINTEGER)sql_field_type, (SQLUINTEGER)sql_field_len, prefer_string );
+            sqlsrv_php_type = stmt->sql_type_to_php_type( static_cast<SQLINTEGER>( sql_field_type ), static_cast<SQLUINTEGER>( sql_field_len ), prefer_string );
         }
 
         // Verify that we have an acceptable type to convert.
@@ -1060,7 +1064,7 @@ void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong param_num, zval* para
 }
 
 //Calls SQLSetStmtAttr to set a cursor.
-void core_sqlsrv_set_scrollable( sqlsrv_stmt* stmt, SQLULEN cursor_type TSRMLS_DC ) 
+void core_sqlsrv_set_scrollable( sqlsrv_stmt* stmt, unsigned long cursor_type TSRMLS_DC ) 
 {
     try {
 
@@ -1139,7 +1143,7 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
             THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE, Z_STRVAL_P( value_z ) );
         }
 
-        core_sqlsrv_set_query_timeout( stmt, (long)Z_LVAL_P( value_z ) TSRMLS_CC );
+        core_sqlsrv_set_query_timeout( stmt, static_cast<long>( Z_LVAL_P( value_z )) TSRMLS_CC );
     }
     catch( core::CoreException& ) {
         throw;
@@ -1242,7 +1246,7 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
 			throw core::CoreException();
 		}
 
-        stmt->current_stream_read += (unsigned int)read;
+        stmt->current_stream_read += static_cast<unsigned int>( read );
         if( read > 0 ) {
             // if this is a UTF-8 stream, then we will use the UTF-8 encoding to determine if we're in the middle of a character
             // then read in the appropriate number more bytes and then retest the string.  This way we try at most to convert it
@@ -1256,7 +1260,7 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
                 wchar_t wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ];
                 // buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
                 int wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, 
-                                                 buffer, int(read), wbuffer, int(sizeof( wbuffer ) / sizeof( wchar_t )));
+                                                 buffer, static_cast<int>( read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
                 if( wsize == 0 && GetLastError() == ERROR_NO_UNICODE_TRANSLATION ) {
 
                     // this will calculate how many bytes were cut off from the last UTF-8 character and read that many more
@@ -1272,7 +1276,7 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
                     }
                     // try the conversion again with the complete character
                     wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, 
-                                                 buffer, int(read + new_read), wbuffer, int(sizeof( wbuffer ) / sizeof( wchar_t )));
+                                                 buffer, static_cast<int>( read + new_read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
                     // something else must be wrong if it failed
                     CHECK_CUSTOM_ERROR( wsize == 0, stmt, SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE, 
                                         get_last_error_message( ERROR_NO_UNICODE_TRANSLATION )) {
@@ -1596,7 +1600,8 @@ void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
             {
                 
                 zval_auto_ptr return_value_z;
-                return_value_z = (zval *)sqlsrv_malloc(sizeof(zval*));
+                return_value_z = (zval *)sqlsrv_malloc(sizeof(zval));
+				ZVAL_UNDEF(return_value_z);
                 php_stream* stream = NULL;
                 sqlsrv_stream* ss = NULL;
 				SQLLEN sql_type;
@@ -1627,7 +1632,7 @@ void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
 
                 // mark this as our active stream
                 stmt->active_stream = return_value_z;
-                *field_value = reinterpret_cast<void*>( return_value_z.get() );
+				*field_value = reinterpret_cast<void*>( return_value_z.get() );
                 return_value_z.transferred();
                 break;
             }
@@ -2410,9 +2415,9 @@ void resize_output_buffer_if_necessary( sqlsrv_stmt* stmt, zval* param_z, SQLULE
 void save_output_param_for_later( sqlsrv_stmt* stmt, sqlsrv_output_param& param TSRMLS_DC )
 {
     HashTable* param_ht = Z_ARRVAL( stmt->output_params );
-    zend_ulong paramno = static_cast<zend_ulong>(param.param_num);
-    core::sqlsrv_zend_hash_index_update_mem(*stmt, param_ht, paramno, &param, sizeof(sqlsrv_output_param));
-    Z_TRY_ADDREF_P(param.param_z);   // we have a reference to the param
+    zend_ulong paramno = static_cast<zend_ulong>( param.param_num );
+    core::sqlsrv_zend_hash_index_update_mem(*stmt, param_ht, paramno, &param, sizeof( sqlsrv_output_param ));
+    Z_TRY_ADDREF_P( param.param_z );   // we have a reference to the param
 }
 
 
@@ -2427,14 +2432,14 @@ void send_param_streams( sqlsrv_stmt* stmt TSRMLS_DC )
 // called by Zend for each parameter in the sqlsrv_stmt::output_params hash table when it is cleaned/destroyed
 void sqlsrv_output_param_dtor( zval* data )
 {
-    sqlsrv_output_param *output_param = reinterpret_cast<sqlsrv_output_param*>( Z_PTR_P(data) );
+    sqlsrv_output_param *output_param = static_cast<sqlsrv_output_param*>( Z_PTR_P( data ));
     zval_ptr_dtor( output_param->param_z ); // undo the reference to the string we will no longer hold
 }
 
 // called by Zend for each stream in the sqlsrv_stmt::param_streams hash table when it is cleaned/destroyed
-void sqlsrv_stream_dtor(zval* data )
+void sqlsrv_stream_dtor( zval* data )
 {
-    sqlsrv_stream* stream_encoding = reinterpret_cast<sqlsrv_stream*>( Z_PTR_P(data) );
+    sqlsrv_stream* stream_encoding = static_cast<sqlsrv_stream*>( Z_PTR_P( data ));
     zval_ptr_dtor( stream_encoding->stream_z ); // undo the reference to the stream we will no longer hold
 }
 

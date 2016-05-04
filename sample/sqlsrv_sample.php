@@ -1,7 +1,7 @@
 <?php
     echo "\n";
     $serverName = "tcp:yourserver.database.windows.net,1433";
-    $connectionOptions = array("Database"=>"yourpassword", "Uid"=>"yourusername", "PWD"=>"yourpassword");
+    $connectionOptions = array("Database"=>"yourdatabase", "Uid"=>"yourusername", "PWD"=>"yourpassword");
 	
 	 //Establishes the connection
 	 $conn = sqlsrv_connect($serverName, $connectionOptions);
@@ -28,7 +28,7 @@
 	 }
 	 sqlsrv_free_stmt($getProducts);
 	 
-	 $tsql = "INSERT SalesLT.Product (Name, ProductNumber, StandardCost, ListPrice, SellStartDate) OUTPUT INSERTED.ProductID VALUES ('SQL New 1', 'SQL New 2', 0, 0, getdate())";
+	 $tsql = "INSERT INTO SalesLT.Product (Name, ProductNumber, StandardCost, ListPrice, SellStartDate) OUTPUT INSERTED.ProductID VALUES ('SQL New 1', 'SQL New 2', 0, 0, getdate())";
 	 //Insert query
 	 $insertReview = sqlsrv_query($conn, $tsql);
 	 if($insertReview == FALSE)

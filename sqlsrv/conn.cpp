@@ -571,7 +571,7 @@ PHP_FUNCTION( sqlsrv_close )
 		// dummy context to pass to the error handler
         error_ctx = new (sqlsrv_malloc( sizeof( sqlsrv_context ))) sqlsrv_context( 0, ss_error_handler, NULL );
         SET_FUNCTION_NAME( *error_ctx );
-	
+
         if( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r", &conn_r) == FAILURE ) {
         
              // Check if it was a zval
@@ -580,7 +580,7 @@ PHP_FUNCTION( sqlsrv_close )
                 throw ss::SSException();
             }   
 			
-            // if sqlsrv_close was called on a non-existent connection than we just return success.
+            // if sqlsrv_close was called on a non-existent connection then we just return success.
             if( Z_TYPE_P( conn_r ) == IS_NULL ) {
                 RETURN_TRUE;
             }
@@ -588,9 +588,15 @@ PHP_FUNCTION( sqlsrv_close )
               THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );  
             }
         }
-	
+
         conn = static_cast<ss_sqlsrv_conn*>( zend_fetch_resource( Z_RES_P( conn_r ) TSRMLS_CC, ss_sqlsrv_conn::resource_name, ss_sqlsrv_conn::descriptor ));
-        CHECK_CUSTOM_ERROR(( conn == NULL ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
+
+		// if sqlsrv_close was called on an already closed connection then we just return success.
+		if ( Z_RES_TYPE_P( conn_r ) == RSRC_INVALID_TYPE) {
+			RETURN_TRUE;
+		}
+	
+		CHECK_CUSTOM_ERROR(( conn == NULL ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
 		  
             throw ss::SSException();
         }   
@@ -603,8 +609,8 @@ PHP_FUNCTION( sqlsrv_close )
         if( zend_list_close( Z_RES_P( conn_r ) ) == FAILURE ) {
             LOG( SEV_ERROR, "Failed to remove connection resource %1!d!", Z_RES_HANDLE_P( conn_r ));
         }
-	
-        ZVAL_NULL( conn_r );
+		
+		ZVAL_NULL( conn_r );
 
         RETURN_TRUE;
     }

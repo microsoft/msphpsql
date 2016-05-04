@@ -165,7 +165,7 @@ size_t sqlsrv_stream_read( php_stream* stream, __out_bcount(count) char* buf, si
 			}
 
             int enc_len = WideCharToMultiByte( ss->encoding, flags, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
-                                         int(read >> 1), buf, int(count), NULL, NULL );
+							static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 
             if( enc_len == 0 ) {
             

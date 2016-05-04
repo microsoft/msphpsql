@@ -4,11 +4,22 @@
 
 The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
 
-This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
+This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
 
 The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
+
+May 3, 2016 (4.0.4): The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
+- Fixed retrieving stream data and metadata.
+- Fixed issue with bind stream parameters.
+- Fixed issue with retrieval in error case when trying to retrieve a non-streamble data type with SQLSRV_SQLTYPE_STREAM option
+- Fixed issue with querying after another query with empty array of parameters.
+- Fixed issue with retrieving integers as output parameter in SQLSRV 64-bit.
+- Fixed issue scrollable statement option in SQLSRV_PDO 64-bit.
+- Improved handling closed connection and statement resources.
+- Fixed issue with binding bit parameter.
+- Fix for The $driver_options (for specifying encoding) is included in PDOStatement::bindParam is included in PHP 7.0.6 release.
 
 April 12, 2016 (4.0.3): The PDO_SQLSRV driver (32-bit and 64-bit) is now available.  For the SQLSRV driver, we also have a few bug fixes to share:
 - Fixed ability to fetch a user defined object into a class
@@ -47,7 +58,7 @@ You must first be able to build PHP 7 without including these extensions.  For h
 
 5. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll and/or php_pdo_sqlsrv.dll to your PHP extension directory.
 
-This software has been compiled and tested under PHP 7.0.5 using the Visual C++ 2015 compiler.
+This software has been compiled and tested under PHP 7.0.6 using the Visual C++ 2015 compiler.
 
 ## Install
 
@@ -69,18 +80,14 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 
 ## Limitations
 
-This preview contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers. The focus was on basic functionality and does not provide backwards compatibility with PHP 5. The following items have known issues:
+This preview contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5. The following items have known issues:
 
 SQLSRV:
-- Retrieving stream data and metadata
-- Handle UTF8 strings
-- Memory management
+- Memory management.
 
-SQLSRV 64-bit only:
-- Retrieving integers as output parameters
+PDO_SQLSRV 64-bit only:
+- Retrieving integers as output parameters.
 
-PDO_SQLSRV:
-- The $driver_options (for specifying encoding) in PDOStatement::bindParam does not work due to a bug in the PDO extension source code. A fix for this bug now [exists](https://github.com/php/php-src/commit/5b8d0dc6ae01907d35ea51c061addedfe81e4e1f) but it hasn't made it into an official PHP release yet.
 
 ## Future Plans
 

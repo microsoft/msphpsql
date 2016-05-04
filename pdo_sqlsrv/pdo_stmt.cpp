@@ -133,7 +133,7 @@ void set_stmt_cursors( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
     }
 
     zend_long pdo_cursor_type = Z_LVAL_P( value_z );
-    SQLULEN odbc_cursor_type = -1;
+    long odbc_cursor_type = -1;
 
     switch( pdo_cursor_type ) {
 
@@ -164,7 +164,7 @@ void set_stmt_cursor_scroll_type( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
         THROW_PDO_ERROR( stmt, PDO_SQLSRV_ERROR_INVALID_CURSOR_WITH_SCROLL_TYPE );
     }
 
-    SQLULEN odbc_cursor_type = Z_LVAL_P( value_z );
+    long odbc_cursor_type = static_cast<long>( Z_LVAL_P( value_z ) );
 
     core_sqlsrv_set_scrollable( stmt, odbc_cursor_type TSRMLS_CC ); 
 
