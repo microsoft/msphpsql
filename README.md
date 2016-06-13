@@ -10,7 +10,7 @@ The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
 
-June 13, 2016 (4.0.5): The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
+June 13, 2016 (4.0) Release Candidate: The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
 - Added ability to connect to Microsoft ODBC Driver 13.
 - Fixed some memory leaks in data retrieval.
 - Fixed issue with error handling in bound stream parameters when send_stream_at_exec option is set to false.
