@@ -1,6 +1,6 @@
 # Microsoft Drivers for PHP for SQL Server
 
-**Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7 (Early Technical Preview)**
+**Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7 (Release Candidate)**
 
 The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
 
@@ -9,6 +9,14 @@ This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improveme
 The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
+
+June 13, 2016 (4.0.5): The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
+- Added ability to connect to Microsoft ODBC Driver 13.
+- Fixed some memory leaks in data retrieval.
+- Fixed issue with error handling in bound stream parameters when send_stream_at_exec option is set to false.
+- Fixed issue with when connecting twice when Sqlsrv_errors configured to only WARNINGS.
+- Fixed issue with double and string as input-output parameters in PDO_SQLSRV driver.
+- Fixed a heap corruption in PDO_SQLSRV connection.
 
 May 3, 2016 (4.0.4): The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
 - Fixed retrieving stream data and metadata.
@@ -58,14 +66,14 @@ You must first be able to build PHP 7 without including these extensions.  For h
 
 5. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll and/or php_pdo_sqlsrv.dll to your PHP extension directory.
 
-This software has been compiled and tested under PHP 7.0.6 using the Visual C++ 2015 compiler.
+This software has been compiled and tested under PHP 7.0.7 using the Visual C++ 2015 compiler.
 
 ## Install
 
 ####Prerequisites
 
 - A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
-- [Microsoft ODBC Driver 11][odbc]
+- [Microsoft ODBC Driver 11][odbc11] or [Microsoft ODBC Driver 13][odbc13]
 
 ####Enable the drivers
 
@@ -84,9 +92,6 @@ This preview contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and d
 
 SQLSRV:
 - Memory management.
-
-PDO_SQLSRV 64-bit only:
-- Retrieving integers as output parameters.
 
 
 ## Future Plans
@@ -149,6 +154,8 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.
 
 [phpdoc]: http://msdn.microsoft.com/en-us/library/dd903047%28SQL.11%29.aspx
 
-[odbc]: https://www.microsoft.com/en-us/download/details.aspx?id=36434
+[odbc11]: https://www.microsoft.com/en-us/download/details.aspx?id=36434
+
+[odbc13]: https://www.microsoft.com/en-us/download/details.aspx?id=50420
 
 [phpazure]: https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-php-simple-windows/
