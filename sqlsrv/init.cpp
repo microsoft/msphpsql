@@ -493,17 +493,17 @@ PHP_MINIT_FUNCTION(sqlsrv)
         zend_hash_init( g_ss_encodings_ht, 3, NULL /*use standard hash function*/, sqlsrv_encoding_dtor /*resource destructor*/, 1 /*persistent*/ );
 
         sqlsrv_encoding sql_enc_char( "char", SQLSRV_ENCODING_CHAR );
-        if (NULL == zend_hash_next_index_insert_mem(g_ss_encodings_ht, (void*)&sql_enc_char, sizeof( sqlsrv_encoding ))) {
+        if (NULL == zend_hash_next_index_insert_mem( g_ss_encodings_ht, (void*)&sql_enc_char, sizeof( sqlsrv_encoding ))) {
             throw ss::SSException();     
         }
         
         sqlsrv_encoding sql_enc_bin( "binary", SQLSRV_ENCODING_BINARY, true );
-        if (NULL == zend_hash_next_index_insert_mem(g_ss_encodings_ht, (void*)&sql_enc_bin, sizeof( sqlsrv_encoding ))) {
+        if (NULL == zend_hash_next_index_insert_mem( g_ss_encodings_ht, (void*)&sql_enc_bin, sizeof( sqlsrv_encoding ))) {
             throw ss::SSException();     
         }
 
         sqlsrv_encoding sql_enc_utf8( "utf-8", CP_UTF8 );
-        if (NULL == zend_hash_next_index_insert_mem(g_ss_encodings_ht, (void*)&sql_enc_utf8, sizeof( sqlsrv_encoding ))) {
+        if (NULL == zend_hash_next_index_insert_mem( g_ss_encodings_ht, (void*)&sql_enc_utf8, sizeof( sqlsrv_encoding ))) {
             throw ss::SSException();     
         }
     }
@@ -531,7 +531,6 @@ PHP_MINIT_FUNCTION(sqlsrv)
     }
 
     try {
-
         // retrieve the handles for the environments
         core_sqlsrv_minit( &g_henv_cp, &g_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" TSRMLS_CC );
     }
@@ -551,13 +550,13 @@ PHP_MINIT_FUNCTION(sqlsrv)
 
 // called by Zend for each parameter in the g_ss_warnings_to_ignore_ht and g_ss_errors_ht hash table when it is destroyed
 void sqlsrv_error_const_dtor( zval* elem ) {
-	sqlsrv_error_const* error_to_ignore = reinterpret_cast<sqlsrv_error_const*>( Z_PTR_P(elem) );
+	sqlsrv_error_const* error_to_ignore = static_cast<sqlsrv_error_const*>( Z_PTR_P(elem) );
 	pefree(error_to_ignore, 1);
 }
 
 // called by Zend for each parameter in the g_ss_encodings_ht hash table when it is destroyed
 void sqlsrv_encoding_dtor( zval* elem ) {
-	sqlsrv_encoding* sql_enc = reinterpret_cast<sqlsrv_encoding*>( Z_PTR_P(elem) );
+	sqlsrv_encoding* sql_enc = static_cast<sqlsrv_encoding*>( Z_PTR_P(elem) );
 	pefree(sql_enc, 1);
 }
 
@@ -611,10 +610,8 @@ PHP_RINIT_FUNCTION(sqlsrv)
 #endif
    
     SQLSRV_G( warnings_return_as_errors ) = true;
-	SQLSRV_G( errors ) = (zval *)sqlsrv_malloc(sizeof(zval));
-    ZVAL_NULL(SQLSRV_G(errors));
-	SQLSRV_G( warnings ) = (zval *)sqlsrv_malloc(sizeof(zval));
-	ZVAL_NULL(SQLSRV_G(warnings));
+    ZVAL_NULL( &SQLSRV_G( errors ));
+	ZVAL_NULL( &SQLSRV_G( warnings ));
    
     LOG_FUNCTION( "PHP_RINIT for php_sqlsrv" );
 
@@ -646,8 +643,8 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
     reset_errors( TSRMLS_C );
 
 	// TODO - destruction
-    zval_ptr_dtor( SQLSRV_G( errors ));
-    zval_ptr_dtor( SQLSRV_G( warnings ));
+    zval_ptr_dtor( &SQLSRV_G( errors ));
+    zval_ptr_dtor( &SQLSRV_G( warnings ));
 
     return SUCCESS;
 }

@@ -61,7 +61,7 @@ BEGIN
         BEGIN
             VALUE "Comments", "This product includes PHP software that is freely available from http://www.php.net/software/.  Copyright © 2001-2016 The PHP Group.  All rights reserved.\0"
             VALUE "CompanyName", "Microsoft Corp.\0"
-            VALUE "FileDescription", "Microsoft Drivers for PHP for SQL Server (SQLSRV Driver)\0"
+            VALUE "FileDescription", "Microsoft Drivers for PHP for SQL Server (PDO Driver)\0"
             VALUE "FileVersion", STRVER4(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD, SQLVERSION_REVISION)
             VALUE "InternalName", FILE_NAME "\0"
             VALUE "LegalCopyright", "Copyright Microsoft Corporation.\0"

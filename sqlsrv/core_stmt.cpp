@@ -81,7 +81,7 @@ size_t calc_utf8_missing( sqlsrv_stmt* stmt, const char* buffer, size_t buffer_e
 bool check_for_next_stream_parameter( sqlsrv_stmt* stmt TSRMLS_DC );
 bool convert_input_param_to_utf16( zval* input_param_z, zval* convert_param_z );
 void core_get_field_common(__inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype
-                            sqlsrv_php_type, __out void** field_value, __out SQLLEN* field_len TSRMLS_DC );
+						   sqlsrv_php_type, __out void*& field_value, __out SQLLEN* field_len TSRMLS_DC);
 // returns the ODBC C type constant that matches the PHP type and encoding given
 SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* param_z, SQLSRV_ENCODING encoding TSRMLS_DC );
 void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* param_z, SQLSRV_ENCODING encoding, 
@@ -91,8 +91,8 @@ void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV
                        __out SQLSMALLINT& sql_type TSRMLS_DC );
 void field_cache_dtor( zval* data_z );
 void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC );
-void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type, 
-                          __out void** field_value, __out SQLLEN* field_len TSRMLS_DC );
+void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type,
+						  __out void*& field_value, __out SQLLEN* field_len TSRMLS_DC );
 stmt_option const* get_stmt_option( sqlsrv_conn const* conn, zend_ulong key, const stmt_option stmt_opts[] TSRMLS_DC );
 bool is_valid_sqlsrv_phptype( sqlsrv_phptype type );
 // assure there is enough space for the output parameter string
@@ -127,9 +127,9 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
     current_stream( NULL, SQLSRV_ENCODING_DEFAULT ),
     current_stream_read( 0 ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
-    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
-    active_stream( NULL )
+    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID )
 {
+	ZVAL_UNDEF( &active_stream );
     // initialize the input string parameters array (which holds zvals)
     core::sqlsrv_array_init( *conn, &param_input_strings TSRMLS_CC );
     
@@ -152,7 +152,7 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
 // desctructor for sqlsrv statement.
 sqlsrv_stmt::~sqlsrv_stmt( void )
 {
-    if( active_stream ) {
+    if( Z_TYPE( active_stream ) != IS_UNDEF ) {
         TSRMLS_FETCH();
         close_active_stream( this TSRMLS_CC );
     }   
@@ -248,32 +248,26 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 
         // process the options array given to core_sqlsrv_prepare.  
         if( options_ht && zend_hash_num_elements( options_ht ) > 0 ) {
-            for( zend_hash_internal_pointer_reset( options_ht );
-                 zend_hash_has_more_elements( options_ht ) == SUCCESS;
-                 zend_hash_move_forward( options_ht )) {
+			zend_ulong index = -1;
+			zend_string *key = NULL;
+			zval* value_z = NULL;
 
-                zend_string *key = NULL;
-                zend_ulong index = -1;
-                zval* value_z = NULL;
+			ZEND_HASH_FOREACH_KEY_VAL( options_ht, index, key, value_z ) {
 
-				int type = zend_hash_get_current_key( options_ht, &key, &index);
-                
-                // The driver layer should ensure a valid key.
-                DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "allocate_stmt: Invalid statment option key provided." );
-                
-                core::sqlsrv_zend_hash_get_current_data( *(stmt->conn), options_ht, value_z TSRMLS_CC );
-                    
-                const stmt_option* stmt_opt = get_stmt_option( stmt->conn, index, valid_stmt_opts TSRMLS_CC );
-                
-                // if the key didn't match, then return the error to the script.
-                // The driver layer should ensure that the key is valid.
-                DEBUG_SQLSRV_ASSERT( stmt_opt != NULL, "allocate_stmt: unexpected null value for statement option." ); 
-                
-                // perform the actions the statement option needs done. 
-                (*stmt_opt->func)( stmt, stmt_opt, value_z TSRMLS_CC );
-            }
+				int type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
-            zend_hash_internal_pointer_end( options_ht );
+				// The driver layer should ensure a valid key.
+				DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "allocate_stmt: Invalid statment option key provided." );
+
+				const stmt_option* stmt_opt = get_stmt_option( stmt->conn, index, valid_stmt_opts TSRMLS_CC );
+
+				// if the key didn't match, then return the error to the script.
+				// The driver layer should ensure that the key is valid.
+				DEBUG_SQLSRV_ASSERT( stmt_opt != NULL, "allocate_stmt: unexpected null value for statement option." );
+
+				// perform the actions the statement option needs done. 
+				(*stmt_opt->func)( stmt, stmt_opt, value_z TSRMLS_CC );
+			} ZEND_HASH_FOREACH_END();
         }
 
         sqlsrv_stmt* return_stmt = stmt;
@@ -658,12 +652,12 @@ void core_sqlsrv_bind_param(sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLI
 
 void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_len )
 {
+	SQLRETURN r;
+
     try {
 
     // close the stream to release the resource
     close_active_stream( stmt TSRMLS_CC );
-
-    SQLRETURN r;
 
     if( sql ) {
 
@@ -705,8 +699,9 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_
         finalize_output_parameters( stmt TSRMLS_CC );
     }
 	// stream parameters are sent, clean the Hashtable
-	zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
-
+	if ( stmt->send_streams_at_exec ) {
+		zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
+	}
     }
     catch( core::CoreException& e ) {
 
@@ -869,100 +864,100 @@ field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT coln
 // Nothing, excpetion thrown if an error occurs
 
 void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type_in, bool prefer_string,
-                            __out void** field_value, __out SQLLEN* field_len, bool cache_field, 
-                            __out SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC ) 
+								__out void*& field_value, __out SQLLEN* field_len, bool cache_field,
+								__out SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC)
 {
-    try {
-      
-        // close the stream to release the resource
-        close_active_stream( stmt TSRMLS_CC );
-      
-        // if the field has been retrieved before, return the previous result
-        field_cache* cached = NULL;
-        if (NULL != (cached = reinterpret_cast<field_cache*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->field_cache), static_cast<zend_ulong>(field_index))))) {
-            // the field value is NULL
-            if( cached->value == NULL ) {
-                *field_value = NULL;
-                *field_len = 0;
-                if( sqlsrv_php_type_out ) { *sqlsrv_php_type_out = SQLSRV_PHPTYPE_NULL; }
-            }
-            else {
-                
-                *field_value = sqlsrv_malloc( cached->len, sizeof( char ), 1 );
-                memcpy( *field_value, cached->value, cached->len );
-                if( cached->type.typeinfo.type == SQLSRV_PHPTYPE_STRING ) {
-                    // prevent the 'string not null terminated' warning
-                    reinterpret_cast<char*>( *field_value )[ cached->len ] = '\0';
-                }
-                *field_len = cached->len;
-                if( sqlsrv_php_type_out ) { *sqlsrv_php_type_out = static_cast<SQLSRV_PHPTYPE>( cached->type.typeinfo.type ); }
-            }
-            return;
-        }
-        
-        sqlsrv_phptype sqlsrv_php_type = sqlsrv_php_type_in;
+	try {
 
-        SQLLEN sql_field_type = 0;
-        SQLLEN sql_field_len = 0;
+		// close the stream to release the resource
+		close_active_stream(stmt TSRMLS_CC);
 
-        // Make sure that the statement was executed and not just prepared.
-        CHECK_CUSTOM_ERROR( !stmt->executed, stmt, SQLSRV_ERROR_STATEMENT_NOT_EXECUTED ) {
-            throw core::CoreException();
-        }
+		// if the field has been retrieved before, return the previous result
+		field_cache* cached = NULL;
+		if (NULL != ( cached = static_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), static_cast<zend_ulong>( field_index ))))) {
+			// the field value is NULL
+			if( cached->value == NULL ) {
+				field_value = NULL;
+				*field_len = 0;
+				if( sqlsrv_php_type_out ) { *sqlsrv_php_type_out = SQLSRV_PHPTYPE_NULL; }
+			}
+			else {
 
-        // if the field is to be cached, and this field is being retrieved out of order, cache prior fields so they
-        // may also be retrieved.
-        if( cache_field && ( field_index - stmt->last_field_index ) >= 2 ) {
-            sqlsrv_phptype invalid;
-            invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
-            for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
-                SQLSRV_ASSERT((cached = reinterpret_cast<field_cache*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->field_cache), i))) == NULL,
-                               "Field already cached." );
-                core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field, 
-                                       sqlsrv_php_type_out TSRMLS_CC );
-                // delete the value returned since we only want it cached, not the actual value
-                if( *field_value ) {
-                    efree( *field_value );
-                    *field_value = NULL;
-                    *field_len = 0;
-                }
-            }
-        }
+				field_value = sqlsrv_malloc( cached->len, sizeof( char ), 1 );
+				memcpy( field_value, cached->value, cached->len );
+				if( cached->type.typeinfo.type == SQLSRV_PHPTYPE_STRING) {
+					// prevent the 'string not null terminated' warning
+					reinterpret_cast<char*>( field_value )[ cached->len ] = '\0';
+				}
+				*field_len = cached->len;
+				if( sqlsrv_php_type_out) { *sqlsrv_php_type_out = static_cast<SQLSRV_PHPTYPE>(cached->type.typeinfo.type); }
+			}
+			return;
+		}
 
-        // If the php type was not specified set the php type to be the default type.
-        if( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID ) {
-            
-            // Get the SQL type of the field.
-            core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
-            
-            // Get the length of the field.
-            core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
+		sqlsrv_phptype sqlsrv_php_type = sqlsrv_php_type_in;
 
-            // Get the corresponding php type from the sql type.
-            sqlsrv_php_type = stmt->sql_type_to_php_type( static_cast<SQLINTEGER>( sql_field_type ), static_cast<SQLUINTEGER>( sql_field_len ), prefer_string );
-        }
+		SQLLEN sql_field_type = 0;
+		SQLLEN sql_field_len = 0;
 
-        // Verify that we have an acceptable type to convert.
-        CHECK_CUSTOM_ERROR( !is_valid_sqlsrv_phptype( sqlsrv_php_type ), stmt, SQLSRV_ERROR_INVALID_TYPE ) {
-            throw core::CoreException();
-        }
-        
-        if( sqlsrv_php_type_out != NULL )
-            *sqlsrv_php_type_out = static_cast<SQLSRV_PHPTYPE>( sqlsrv_php_type.typeinfo.type );
+		// Make sure that the statement was executed and not just prepared.
+		CHECK_CUSTOM_ERROR( !stmt->executed, stmt, SQLSRV_ERROR_STATEMENT_NOT_EXECUTED ) {
+			throw core::CoreException();
+		}
 
-        // Retrieve the data     
-        core_get_field_common( stmt, field_index, sqlsrv_php_type, field_value, field_len TSRMLS_CC ); 
-        
-        // if the user wants us to cache the field, we'll do it
-        if( cache_field ) {
-            field_cache cache( *field_value, *field_len, sqlsrv_php_type );
-            core::sqlsrv_zend_hash_index_update_mem( *stmt, Z_ARRVAL( stmt->field_cache ), field_index, &cache, sizeof(field_cache) TSRMLS_CC );
-        }
-    }
+		// if the field is to be cached, and this field is being retrieved out of order, cache prior fields so they
+		// may also be retrieved.
+		if( cache_field && (field_index - stmt->last_field_index ) >= 2 ) {
+			sqlsrv_phptype invalid;
+			invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
+			for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
+				SQLSRV_ASSERT((cached = reinterpret_cast<field_cache*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->field_cache), i))) == NULL,
+					"Field already cached." );
+				core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field,
+									sqlsrv_php_type_out TSRMLS_CC );
+				// delete the value returned since we only want it cached, not the actual value
+				if( field_value ) {
+					efree( field_value );
+					field_value = NULL;
+					*field_len = 0;
+				}
+			}
+		}
 
-    catch( core::CoreException& e) {
-        throw e;
-    }
+		// If the php type was not specified set the php type to be the default type.
+		if( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID ) {
+
+			// Get the SQL type of the field.
+			core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+
+			// Get the length of the field.
+			core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
+
+			// Get the corresponding php type from the sql type.
+			sqlsrv_php_type = stmt->sql_type_to_php_type( static_cast<SQLINTEGER>( sql_field_type ), static_cast<SQLUINTEGER>( sql_field_len ), prefer_string );
+		}
+
+		// Verify that we have an acceptable type to convert.
+		CHECK_CUSTOM_ERROR( !is_valid_sqlsrv_phptype( sqlsrv_php_type ), stmt, SQLSRV_ERROR_INVALID_TYPE ) {
+			throw core::CoreException();
+		}
+
+		if( sqlsrv_php_type_out != NULL )
+			*sqlsrv_php_type_out = static_cast<SQLSRV_PHPTYPE>( sqlsrv_php_type.typeinfo.type );
+
+		// Retrieve the data     
+		core_get_field_common( stmt, field_index, sqlsrv_php_type, field_value, field_len TSRMLS_CC );
+
+		// if the user wants us to cache the field, we'll do it
+		if( cache_field ) {
+			field_cache cache( field_value, *field_len, sqlsrv_php_type );
+			core::sqlsrv_zend_hash_index_update_mem( *stmt, Z_ARRVAL( stmt->field_cache ), field_index, &cache, sizeof(field_cache) TSRMLS_CC );
+		}
+	}
+
+	catch( core::CoreException& e ) {
+		throw e;
+	}
 }
 
 // core_sqlsrv_has_any_result
@@ -1304,6 +1299,9 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
     return true;
 }
 
+void core_finalize_output_parameters(sqlsrv_stmt* stmt TSRMLS_DC) {
+	finalize_output_parameters(stmt TSRMLS_CC);
+}
 
 void stmt_option_functor::operator()( sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, zval* /*value_z*/ TSRMLS_DC )
 {
@@ -1334,20 +1332,20 @@ void stmt_option_buffered_query_limit:: operator()( sqlsrv_stmt* stmt, stmt_opti
 void close_active_stream( __inout sqlsrv_stmt* stmt TSRMLS_DC )
 {
     // if there is no active stream, return
-    if( stmt->active_stream == NULL ) {
+    if( Z_TYPE( stmt->active_stream ) == IS_UNDEF ) {
         return;
     }
 
     php_stream* stream = NULL;
 
     // we use no verify since verify would return immediately and we want to assert, not return.
-    php_stream_from_zval_no_verify( stream, stmt->active_stream );
+    php_stream_from_zval_no_verify( stream, &( stmt->active_stream ));
 
     SQLSRV_ASSERT(( stream != NULL ), "close_active_stream: Unknown resource type as our active stream." );
 
     php_stream_close( stream ); // this will NULL out the active stream in the statement.  We don't check for errors here.
 
-    SQLSRV_ASSERT( stmt->active_stream == NULL, "close_active_stream: Active stream not closed." );
+    SQLSRV_ASSERT( Z_TYPE( stmt->active_stream ) == IS_UNDEF, "close_active_stream: Active stream not closed." );
 
 }
 
@@ -1470,191 +1468,191 @@ size_t calc_utf8_missing( sqlsrv_stmt* stmt, const char* buffer, size_t buffer_e
 // The memory allocation has to happen in the core layer because otherwise
 // the driver layer would have to calculate size of the field_value 
 // to decide the amount of memory allocation.
-void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype 
-                            sqlsrv_php_type, __out void** field_value, __out SQLLEN* field_len TSRMLS_DC )
-{	
-    try {
+void core_get_field_common( __inout sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype
+								sqlsrv_php_type, __out void*& field_value, __out SQLLEN* field_len TSRMLS_DC )
+{
+	try {
 
-        close_active_stream( stmt TSRMLS_CC );
+		close_active_stream( stmt TSRMLS_CC );
 
-        // make sure that fetch is called before trying to retrieve.
-        CHECK_CUSTOM_ERROR( !stmt->fetch_called, stmt, SQLSRV_ERROR_FETCH_NOT_CALLED ) {
-            throw core::CoreException();
-        }
+		// make sure that fetch is called before trying to retrieve.
+		CHECK_CUSTOM_ERROR( !stmt->fetch_called, stmt, SQLSRV_ERROR_FETCH_NOT_CALLED ) {
+			throw core::CoreException();
+		}
 
-        // make sure that fields are not retrieved incorrectly.
-        CHECK_CUSTOM_ERROR( stmt->last_field_index > field_index, stmt, SQLSRV_ERROR_FIELD_INDEX_ERROR, field_index, 
-                            stmt->last_field_index ) {
-            throw core::CoreException();
-        }
+		// make sure that fields are not retrieved incorrectly.
+		CHECK_CUSTOM_ERROR( stmt->last_field_index > field_index, stmt, SQLSRV_ERROR_FIELD_INDEX_ERROR, field_index,
+							stmt->last_field_index ) {
+			throw core::CoreException();
+		}
 
-        switch( sqlsrv_php_type.typeinfo.type ) {
-        
-            case SQLSRV_PHPTYPE_INT:
-            {
-                sqlsrv_malloc_auto_ptr<long> field_value_temp;  
-                field_value_temp = static_cast<long*>( sqlsrv_malloc( sizeof( long )));
+		switch( sqlsrv_php_type.typeinfo.type ) {
 
-                SQLRETURN r = stmt->current_results->get_data(field_index + 1, SQL_C_LONG, field_value_temp, sizeof( long ), 
-                                                              field_len, true /*handle_warning*/ TSRMLS_CC );
-                                
-                CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-                    throw core::CoreException();
-                }
+		case SQLSRV_PHPTYPE_INT:
+		{
+			sqlsrv_malloc_auto_ptr<long> field_value_temp;
+			field_value_temp = static_cast<long*>( sqlsrv_malloc( sizeof( long )));
 
-                CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
-                    throw core::CoreException();
-                }
+			SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_LONG, field_value_temp, sizeof( long ),
+														  field_len, true /*handle_warning*/ TSRMLS_CC );
 
-                if( *field_len == SQL_NULL_DATA ) {
-                    *field_value = NULL;
-                    break;
-                }
-                
-                *field_value = field_value_temp;
-                field_value_temp.transferred();              
-                break;
-            }
+			CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+				throw core::CoreException();
+			}
 
-            case SQLSRV_PHPTYPE_FLOAT:
-            {
-                sqlsrv_malloc_auto_ptr<double> field_value_temp;  
-                field_value_temp = static_cast<double*>( sqlsrv_malloc( sizeof( double )));
+			CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
+				throw core::CoreException();
+			}
 
-                SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_DOUBLE, field_value_temp, sizeof( double ), 
-                                                               field_len, true /*handle_warning*/ TSRMLS_CC );
-                
-                CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-                    throw core::CoreException();
-                }
+			if( *field_len == SQL_NULL_DATA ) {
+				field_value = NULL;
+				break;
+			}
 
-                CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
-                    throw core::CoreException ();
-                }
+			field_value = field_value_temp;
+			field_value_temp.transferred();
+			break;
+		}
 
-                if( *field_len == SQL_NULL_DATA ) {
-                    *field_value = NULL;
-                    break;
-                }
-                
-                *field_value = field_value_temp;
-                field_value_temp.transferred();
-                break;
-            }
-            
-            case SQLSRV_PHPTYPE_STRING:
-            {
-                get_field_as_string( stmt, field_index, sqlsrv_php_type, field_value, field_len TSRMLS_CC );
-                break;
-            }
-            
-            // get the date as a string (http://msdn2.microsoft.com/en-us/library/ms712387(VS.85).aspx) and
-            // convert it to a DateTime object and return the created object
-            case SQLSRV_PHPTYPE_DATETIME:
-            {
-                char field_value_temp[ MAX_DATETIME_STRING_LEN ]; 
-                zval params[1];
-                zval field_value_temp_z;
-                zval function_z;
-                zval_auto_ptr return_value_z;
-                
-				ZVAL_UNDEF( &field_value_temp_z );
-				ZVAL_UNDEF( &function_z );
-				ZVAL_UNDEF( params );
-                return_value_z = (zval *)sqlsrv_malloc( sizeof(zval) );
-				ZVAL_UNDEF( return_value_z );
-              
-                SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_CHAR, field_value_temp, 
-                                                               MAX_DATETIME_STRING_LEN, field_len, true TSRMLS_CC ); 
+		case SQLSRV_PHPTYPE_FLOAT:
+		{
+			sqlsrv_malloc_auto_ptr<double> field_value_temp;
+			field_value_temp = static_cast<double*>( sqlsrv_malloc( sizeof( double )));
+			
+			SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_DOUBLE, field_value_temp, sizeof( double ),
+														   field_len, true /*handle_warning*/ TSRMLS_CC );
 
-                CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
-                    throw core::CoreException ();
-                }
+			CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+				throw core::CoreException();
+			}
 
-                if( *field_len == SQL_NULL_DATA ) {
-                    ZVAL_NULL( return_value_z );
-                    *field_value = reinterpret_cast<void*>( return_value_z.get() );
-                    return_value_z.transferred();
-                    break;
-                }
-                
-                // Convert the string date to a DateTime object
-				core::sqlsrv_zval_stringl( &field_value_temp_z, field_value_temp, *field_len );
-				core::sqlsrv_zval_stringl( &function_z, "date_create", sizeof("date_create") -1 );
-                params[0]  = field_value_temp_z;
+			CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
+				throw core::CoreException();
+			}
 
-                if( call_user_function( EG( function_table ), NULL, &function_z, return_value_z, 1, 
-                                        params TSRMLS_CC ) == FAILURE ) {
-                    THROW_CORE_ERROR( stmt, SQLSRV_ERROR_DATETIME_CONVERSION_FAILED );
-                }
-      
-                *field_value = reinterpret_cast<void*>( return_value_z.get() );
-                return_value_z.transferred();
-                break;
-            }
-            
-            // create a stream wrapper around the field and return that object to the PHP script.  calls to fread
-            // on the stream will result in calls to SQLGetData.  This is handled in stream.cpp.  See that file
-            // for how these fields are used.
-            case SQLSRV_PHPTYPE_STREAM:
-            {
-                
-                zval_auto_ptr return_value_z;
-                return_value_z = (zval *)sqlsrv_malloc(sizeof(zval));
-				ZVAL_UNDEF(return_value_z);
-                php_stream* stream = NULL;
-                sqlsrv_stream* ss = NULL;
-				SQLLEN sql_type;
+			if( *field_len == SQL_NULL_DATA ) {
+				field_value = NULL;
+				break;
+			}
 
-                SQLRETURN r = SQLColAttribute( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
-                CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-                    throw core::CoreException();
-                }
-                
-                CHECK_CUSTOM_ERROR( !is_streamable_type( sql_type ), stmt, SQLSRV_ERROR_STREAMABLE_TYPES_ONLY ) {
-                    throw core::CoreException();
-                }
-                
-                stream = php_stream_open_wrapper( "sqlsrv://sqlncli10", "r", 0, NULL );
+			field_value = field_value_temp;
+			field_value_temp.transferred();
+			break;
+		}
 
-                CHECK_CUSTOM_ERROR( !stream, stmt, SQLSRV_ERROR_STREAM_CREATE ) {
-                    throw core::CoreException();
-                }
+		case SQLSRV_PHPTYPE_STRING:
+		{
+			get_field_as_string( stmt, field_index, sqlsrv_php_type, field_value, field_len TSRMLS_CC );
+			break;
+		}
 
-                ss = static_cast<sqlsrv_stream*>( stream->abstract );
-                ss->stmt = stmt;
-                ss->field_index = field_index;                    
-                ss->sql_type = static_cast<SQLUSMALLINT>( sql_type );
-                ss->encoding = static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding );
+		// get the date as a string (http://msdn2.microsoft.com/en-us/library/ms712387(VS.85).aspx) and
+		// convert it to a DateTime object and return the created object
+		case SQLSRV_PHPTYPE_DATETIME:
+		{
+			char field_value_temp[ MAX_DATETIME_STRING_LEN ];
+			zval params[1];
+			zval field_value_temp_z;
+			zval function_z;
+			zval_auto_ptr return_value_z;
 
-                // turn our stream into a zval to be returned
-                php_stream_to_zval( stream, return_value_z );
+			ZVAL_UNDEF( &field_value_temp_z );
+			ZVAL_UNDEF( &function_z );
+			ZVAL_UNDEF( params );
+			return_value_z = (zval *)sqlsrv_malloc( sizeof( zval ));
+			ZVAL_UNDEF( return_value_z );
 
-                // mark this as our active stream
-                stmt->active_stream = return_value_z;
-				*field_value = reinterpret_cast<void*>( return_value_z.get() );
-                return_value_z.transferred();
-                break;
-            }
+			SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_CHAR, field_value_temp,
+														    MAX_DATETIME_STRING_LEN, field_len, true TSRMLS_CC );
 
-            case SQLSRV_PHPTYPE_NULL:
-                *field_value = NULL;
-                *field_len = 0;
-                break;
+			CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
+				throw core::CoreException();
+			}
 
-            default:
-                DIE( "core_get_field_common: Unexpected sqlsrv_phptype provided" );
-                break;
-        }      
+			if( *field_len == SQL_NULL_DATA ) {
+				ZVAL_NULL( return_value_z );
+				field_value = reinterpret_cast<void*>( return_value_z.get());
+				return_value_z.transferred();
+				break;
+			}
 
-        // sucessfully retrieved the field, so update our last retrieved field
-        if( stmt->last_field_index < field_index ) {
-            stmt->last_field_index = field_index;
-        }     
-    }
-    catch( core::CoreException& e ) {
-        throw e;
-    }
+			// Convert the string date to a DateTime object
+			core::sqlsrv_zval_stringl( &field_value_temp_z, field_value_temp, *field_len );
+			core::sqlsrv_zval_stringl( &function_z, "date_create", sizeof("date_create") - 1 );
+			params[0] = field_value_temp_z;
+
+			if( call_user_function( EG( function_table ), NULL, &function_z, return_value_z, 1,
+				params TSRMLS_CC ) == FAILURE) {
+				THROW_CORE_ERROR(stmt, SQLSRV_ERROR_DATETIME_CONVERSION_FAILED);
+			}
+
+			field_value = reinterpret_cast<void*>( return_value_z.get());
+			return_value_z.transferred();
+			zend_string_free( Z_STR( field_value_temp_z ));
+			zend_string_free( Z_STR( function_z ));
+			break;
+		}
+
+		// create a stream wrapper around the field and return that object to the PHP script.  calls to fread
+		// on the stream will result in calls to SQLGetData.  This is handled in stream.cpp.  See that file
+		// for how these fields are used.
+		case SQLSRV_PHPTYPE_STREAM:
+		{
+
+			zval_auto_ptr return_value_z;
+			return_value_z = (zval *)sqlsrv_malloc(sizeof(zval));
+			ZVAL_UNDEF(return_value_z);
+			php_stream* stream = NULL;
+			sqlsrv_stream* ss = NULL;
+			SQLLEN sql_type;
+
+			SQLRETURN r = SQLColAttribute( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
+			CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+				throw core::CoreException();
+			}
+
+			CHECK_CUSTOM_ERROR( !is_streamable_type( sql_type ), stmt, SQLSRV_ERROR_STREAMABLE_TYPES_ONLY ) {
+				throw core::CoreException();
+			}
+
+			stream = php_stream_open_wrapper( "sqlsrv://sqlncli10", "r", 0, NULL );
+
+			CHECK_CUSTOM_ERROR( !stream, stmt, SQLSRV_ERROR_STREAM_CREATE ) {
+				throw core::CoreException();
+			}
+
+			ss = static_cast<sqlsrv_stream*>( stream->abstract );
+			ss->stmt = stmt;
+			ss->field_index = field_index;
+			ss->sql_type = static_cast<SQLUSMALLINT>( sql_type );
+			ss->encoding = static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding );
+
+			// turn our stream into a zval to be returned
+			php_stream_to_zval( stream, return_value_z );
+
+			field_value = reinterpret_cast<void*>( return_value_z.get());
+			return_value_z.transferred();
+			break;
+		}
+
+		case SQLSRV_PHPTYPE_NULL:
+			field_value = NULL;
+			*field_len = 0;
+			break;
+
+		default:
+			DIE( "core_get_field_common: Unexpected sqlsrv_phptype provided" );
+			break;
+		}
+
+		// sucessfully retrieved the field, so update our last retrieved field
+		if( stmt->last_field_index < field_index ) {
+			stmt->last_field_index = field_index;
+		}
+	}
+	catch( core::CoreException& e ) {
+		throw e;
+	}
 }
 
 
@@ -1956,11 +1954,12 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
 
     bool converted = true;
     HashTable* params_ht = Z_ARRVAL( stmt->output_params );
-    for( zend_hash_internal_pointer_reset( params_ht );
-         zend_hash_has_more_elements( params_ht ) == SUCCESS;
-         zend_hash_move_forward( params_ht ) ) {
-        sqlsrv_output_param* output_param = NULL;
-        core::sqlsrv_zend_hash_get_current_data_ptr(*stmt, params_ht, (void*&) output_param TSRMLS_CC);
+	zend_ulong index = -1;
+	zend_string* key = NULL;
+	void* output_param_temp = NULL;
+
+	ZEND_HASH_FOREACH_KEY_PTR( params_ht, index, key, output_param_temp ) {
+		sqlsrv_output_param* output_param = static_cast<sqlsrv_output_param*>( output_param_temp );
 		zval* value_z = Z_REFVAL_P( output_param->param_z );
         switch( Z_TYPE_P( value_z )) {
         case IS_STRING:
@@ -2037,241 +2036,241 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             break;
         }
 		value_z = NULL;
-    }
+    }  ZEND_HASH_FOREACH_END();
 
     // empty the hash table since it's been processed
     zend_hash_clean( Z_ARRVAL( stmt->output_params ));
     return;
 }
 
-void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type, 
-                          __out void** field_value, __out SQLLEN* field_len TSRMLS_DC )
+void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type,
+						__out void*& field_value, __out SQLLEN* field_len TSRMLS_DC )
 {
-    SQLRETURN r; 
-    SQLSMALLINT c_type;
-    SQLLEN sql_field_type = 0;
-    SQLSMALLINT extra = 0;
-    SQLLEN field_len_temp;
-    SQLLEN sql_display_size = 0;
-    char* field_value_temp = NULL;
+	SQLRETURN r;
+	SQLSMALLINT c_type;
+	SQLLEN sql_field_type = 0;
+	SQLSMALLINT extra = 0;
+	SQLLEN field_len_temp;
+	SQLLEN sql_display_size = 0;
+	char* field_value_temp = NULL;
 
-    try {
+	try {
 
-        DEBUG_SQLSRV_ASSERT( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_STRING, 
-                             "Type should be SQLSRV_PHPTYPE_STRING in get_field_as_string" );
-        
-        if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
-            sqlsrv_php_type.typeinfo.encoding = stmt->conn->encoding();
-        }        
+		DEBUG_SQLSRV_ASSERT( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_STRING,
+							 "Type should be SQLSRV_PHPTYPE_STRING in get_field_as_string" );
 
-        // Set the C type and account for null characters at the end of the data.
-        switch( sqlsrv_php_type.typeinfo.encoding ) {
-            case CP_UTF8:
-                c_type = SQL_C_WCHAR;
-                extra = sizeof( SQLWCHAR );
-                break;
-            case SQLSRV_ENCODING_BINARY:
-                c_type = SQL_C_BINARY;
-                extra = 0;
-                break;
-            default:
-                c_type = SQL_C_CHAR;
-                extra = sizeof( SQLCHAR );
-                break;
-        }
+		if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
+			sqlsrv_php_type.typeinfo.encoding = stmt->conn->encoding();
+		}
 
-        // Get the SQL type of the field.
-        core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+		// Set the C type and account for null characters at the end of the data.
+		switch( sqlsrv_php_type.typeinfo.encoding ) {
+		case CP_UTF8:
+			c_type = SQL_C_WCHAR;
+			extra = sizeof( SQLWCHAR );
+			break;
+		case SQLSRV_ENCODING_BINARY:
+			c_type = SQL_C_BINARY;
+			extra = 0;
+			break;
+		default:
+			c_type = SQL_C_CHAR;
+			extra = sizeof( SQLCHAR );
+			break;
+		}
 
-        // Calculate the field size.
-        calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
+		// Get the SQL type of the field.
+		core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
 
-        // if this is a large type, then read the first few bytes to get the actual length from SQLGetData
-        if( sql_display_size == 0 || sql_display_size == LONG_MAX || 
-            sql_display_size == LONG_MAX >> 1 || sql_display_size == ULONG_MAX - 1 ) {
+		// Calculate the field size.
+		calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
 
-            field_len_temp = INITIAL_FIELD_STRING_LEN;
-            
-            field_value_temp = static_cast<char*>( sqlsrv_malloc( field_len_temp + extra + 1 ));
-            
-            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, ( field_len_temp + extra ), 
-                                                 &field_len_temp, false /*handle_warning*/ TSRMLS_CC );
-            
-            CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
-                throw core::CoreException ();
-            } 
+		// if this is a large type, then read the first few bytes to get the actual length from SQLGetData
+		if( sql_display_size == 0 || sql_display_size == LONG_MAX ||
+			sql_display_size == LONG_MAX >> 1 || sql_display_size == ULONG_MAX - 1 ) {
 
-            if( field_len_temp == SQL_NULL_DATA ) {
-                *field_value = NULL;
-                sqlsrv_free( field_value_temp );
-                return;
-            }
+			field_len_temp = INITIAL_FIELD_STRING_LEN;
 
-            if( r == SQL_SUCCESS_WITH_INFO ) {
+			field_value_temp = static_cast<char*>( sqlsrv_malloc( field_len_temp + extra + 1 ));
 
-                SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
-                SQLSMALLINT len;
-                
-                stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
-                    
-                if( is_truncated_warning( state ) ) {
-                        
+			r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, ( field_len_temp + extra ),
+												 &field_len_temp, false /*handle_warning*/ TSRMLS_CC );
+
+			CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
+				throw core::CoreException();
+			}
+
+			if( field_len_temp == SQL_NULL_DATA ) {
+				field_value = NULL;
+				sqlsrv_free( field_value_temp );
+				return;
+			}
+
+			if( r == SQL_SUCCESS_WITH_INFO ) {
+
+				SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
+				SQLSMALLINT len;
+
+				stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
+
+				if( is_truncated_warning( state )) {
+
 					SQLLEN dummy_field_len;
 
-                    // for XML (and possibly other conditions) the field length returned is not the real field length, so
-                    // in every pass, we double the allocation size to retrieve all the contents.
-                    if( field_len_temp == SQL_NO_TOTAL ) {
-                    
-                        // reset the field_len_temp
-                        field_len_temp = INITIAL_FIELD_STRING_LEN;
+					// for XML (and possibly other conditions) the field length returned is not the real field length, so
+					// in every pass, we double the allocation size to retrieve all the contents.
+					if( field_len_temp == SQL_NO_TOTAL ) {
 
-                        do {
-                            SQLLEN initial_field_len = field_len_temp;
-                            // Double the size. 
-                            field_len_temp *= 2;
-                            
-                            field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
-                            
-                            field_len_temp -= initial_field_len;
+						// reset the field_len_temp
+						field_len_temp = INITIAL_FIELD_STRING_LEN;
 
-                            // Get the rest of the data.
-                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + initial_field_len,
-                                                                 field_len_temp + extra, &dummy_field_len, 
-                                                                 false /*handle_warning*/ TSRMLS_CC );
+						do {
+							SQLLEN initial_field_len = field_len_temp;
+							// Double the size. 
+							field_len_temp *= 2;
 
-                            // the last packet will contain the actual amount retrieved, not SQL_NO_TOTAL
-                            // so we calculate the actual length of the string with that.
-                            if( dummy_field_len != SQL_NO_TOTAL )
-                                field_len_temp += dummy_field_len;
-                            else
-                                field_len_temp += initial_field_len;
+							field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
-                            if( r == SQL_SUCCESS_WITH_INFO ) {
-                                core::SQLGetDiagField( stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len 
-                                                       TSRMLS_CC );
-                            }
+							field_len_temp -= initial_field_len;
 
-                        } while( r == SQL_SUCCESS_WITH_INFO && is_truncated_warning( state ));
-                    }
-                    else {
+							// Get the rest of the data.
+							r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + initial_field_len,
+								field_len_temp + extra, &dummy_field_len,
+								false /*handle_warning*/ TSRMLS_CC );
 
-                        // We got the field_len_temp from SQLGetData call.
-                        field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
-                        
-                        // We have already recieved INITIAL_FIELD_STRING_LEN size data.
-                        field_len_temp -= INITIAL_FIELD_STRING_LEN;
-                        
-                        // Get the rest of the data.
-                        r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + INITIAL_FIELD_STRING_LEN,
-                                                             field_len_temp + extra, &dummy_field_len, 
-                                                             true /*handle_warning*/ TSRMLS_CC );
+							// the last packet will contain the actual amount retrieved, not SQL_NO_TOTAL
+							// so we calculate the actual length of the string with that.
+							if( dummy_field_len != SQL_NO_TOTAL )
+								field_len_temp += dummy_field_len;
+							else
+								field_len_temp += initial_field_len;
 
-                        if( dummy_field_len == SQL_NULL_DATA ) {
-                            *field_value = NULL;
-                            sqlsrv_free( field_value_temp );
-                            return;
-                        }
-                       
-                        CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
-                            throw core::CoreException ();
-                        } 
-                        
-                        field_len_temp += INITIAL_FIELD_STRING_LEN;
-                    }
+							if( r == SQL_SUCCESS_WITH_INFO ) {
+								core::SQLGetDiagField( stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len
+													   TSRMLS_CC );
+							}
 
-                } // if( is_truncation_warning ( state ) )
-                else {
-                    CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-                        throw core::CoreException();
-                    }
-                }
-            }  // if( r == SQL_SUCCESS_WITH_INFO )
+						} while( r == SQL_SUCCESS_WITH_INFO && is_truncated_warning( state ));
+					}
+					else {
 
-            if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_UTF8 ) {
+						// We got the field_len_temp from SQLGetData call.
+						field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
-                bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
-                                                            &field_value_temp, field_len_temp );
-                
-                CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
-                    throw core::CoreException ();
-                } 
-            }
-        } // if ( sql_display_size == 0 || sql_display_size == LONG_MAX .. ) 
-        
-        else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_MAX_FIELD_SIZE ) {
+						// We have already recieved INITIAL_FIELD_STRING_LEN size data.
+						field_len_temp -= INITIAL_FIELD_STRING_LEN;
 
-            // only allow binary retrievals for char and binary types.  All others get a string converted
-            // to the encoding type they asked for.
-          
-            // null terminator
-            if( c_type == SQL_C_CHAR ) {
-                sql_display_size += sizeof( SQLCHAR );
-            }
+						// Get the rest of the data.
+						r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + INITIAL_FIELD_STRING_LEN,
+							field_len_temp + extra, &dummy_field_len,
+							true /*handle_warning*/ TSRMLS_CC );
 
-            // For WCHAR multiply by sizeof(WCHAR) and include the null terminator
-            else if( c_type == SQL_C_WCHAR ) {
-                sql_display_size = (sql_display_size * sizeof(WCHAR)) + sizeof(WCHAR);  
-            }
+						if( dummy_field_len == SQL_NULL_DATA ) {
+							field_value = NULL;
+							sqlsrv_free( field_value_temp );
+							return;
+						}
 
-            field_value_temp = static_cast<char*>( sqlsrv_malloc( sql_display_size + extra + 1 ));
-            
-            // get the data
-            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, sql_display_size, 
-                                                 &field_len_temp, true /*handle_warning*/ TSRMLS_CC );
-            CHECK_SQL_ERROR( r, stmt ) {
-                throw core::CoreException();
-            }
-            CHECK_CUSTOM_ERROR( (r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
-                throw core::CoreException ();
-            } 
+						CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
+							throw core::CoreException();
+						}
 
-            if( field_len_temp == SQL_NULL_DATA ) {
-                *field_value = NULL;
-                sqlsrv_free( field_value_temp );
-                return;
-            }
-            
-            if( sqlsrv_php_type.typeinfo.encoding == CP_UTF8 ) {
+						field_len_temp += INITIAL_FIELD_STRING_LEN;
+					}
 
-                bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
-                                                            &field_value_temp, field_len_temp );
-                    
-                CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
-                    throw core::CoreException ();
-                }
-           }
-        } // else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_MAX_FIELD_SIZE ) 
+				} // if( is_truncation_warning ( state ) )
+				else {
+					CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+						throw core::CoreException();
+					}
+				}
+			}  // if( r == SQL_SUCCESS_WITH_INFO )
 
-        else {
-        
-            DIE( "Invalid sql_display_size" );
-            return; // to eliminate a warning
-        }
-        
-        *field_value = field_value_temp;
-        *field_len = field_len_temp;
-        
-        // prevent a warning in debug mode about strings not being NULL terminated.  Even though nulls are not necessary, the PHP
-        // runtime checks to see if a string is null terminated and issues a warning about it if running in debug mode.
-        // SQL_C_BINARY fields don't return a NULL terminator, so we allocate an extra byte on each field and use the ternary
-        // operator to set add 1 to fill the null terminator
-        field_value_temp[field_len_temp] = '\0';
-    }
+			if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_UTF8 ) {
 
-    catch( core::CoreException& ) {
+				bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
+																	&field_value_temp, field_len_temp );
 
-        *field_value = NULL;
-        *field_len = 0;
-        sqlsrv_free( field_value_temp );
-        throw;
-    }
-    catch ( ... ) {
+				CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message()) {
+					throw core::CoreException();
+				}
+			}
+		} // if ( sql_display_size == 0 || sql_display_size == LONG_MAX .. ) 
 
-        *field_value = NULL;
-        *field_len = 0;
-        sqlsrv_free( field_value_temp );
-        throw;
-    }
+		else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_MAX_FIELD_SIZE ) {
+
+			// only allow binary retrievals for char and binary types.  All others get a string converted
+			// to the encoding type they asked for.
+
+			// null terminator
+			if( c_type == SQL_C_CHAR ) {
+				sql_display_size += sizeof( SQLCHAR );
+			}
+
+			// For WCHAR multiply by sizeof(WCHAR) and include the null terminator
+			else if( c_type == SQL_C_WCHAR ) {
+				sql_display_size = (sql_display_size * sizeof(WCHAR)) + sizeof(WCHAR);
+			}
+
+			field_value_temp = static_cast<char*>( sqlsrv_malloc( sql_display_size + extra + 1 ));
+
+			// get the data
+			r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, sql_display_size,
+												 &field_len_temp, true /*handle_warning*/ TSRMLS_CC );
+			CHECK_SQL_ERROR( r, stmt ) {
+				throw core::CoreException();
+			}
+			CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
+				throw core::CoreException();
+			}
+
+			if( field_len_temp == SQL_NULL_DATA ) {
+				field_value = NULL;
+				sqlsrv_free( field_value_temp );
+				return;
+			}
+
+			if( sqlsrv_php_type.typeinfo.encoding == CP_UTF8 ) {
+
+				bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
+																&field_value_temp, field_len_temp );
+
+				CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message()) {
+					throw core::CoreException();
+				}
+			}
+		} // else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_MAX_FIELD_SIZE ) 
+
+		else {
+
+			DIE( "Invalid sql_display_size" );
+			return; // to eliminate a warning
+		}
+
+		field_value = field_value_temp;
+		*field_len = field_len_temp;
+
+		// prevent a warning in debug mode about strings not being NULL terminated.  Even though nulls are not necessary, the PHP
+		// runtime checks to see if a string is null terminated and issues a warning about it if running in debug mode.
+		// SQL_C_BINARY fields don't return a NULL terminator, so we allocate an extra byte on each field and use the ternary
+		// operator to set add 1 to fill the null terminator
+		field_value_temp[field_len_temp] = '\0';
+	}
+
+	catch( core::CoreException& ) {
+
+		field_value = NULL;
+		*field_len = 0;
+		sqlsrv_free( field_value_temp );
+		throw;
+	}
+	catch ( ... ) {
+
+		field_value = NULL;
+		*field_len = 0;
+		sqlsrv_free( field_value_temp );
+		throw;
+	}
 
 }
 

@@ -743,9 +743,15 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
         }
         
         SQLSRV_PHPTYPE sqlsrv_phptype_out = SQLSRV_PHPTYPE_INVALID;
-        core_sqlsrv_get_field( driver_stmt, colno, sqlsrv_php_type, false, reinterpret_cast<void**>( ptr ), 
+        core_sqlsrv_get_field( driver_stmt, colno, sqlsrv_php_type, false, *(reinterpret_cast<void**>(ptr)),
                                reinterpret_cast<SQLLEN*>( len ), true, &sqlsrv_phptype_out TSRMLS_CC );
-        zval* zval_ptr = reinterpret_cast<zval*>( sqlsrv_malloc( sizeof( zval )));
+		
+		// if the current column is the last fetch column, finalize output params
+		if ( stmt->column_count == colno + 1 ) {
+			core_finalize_output_parameters( driver_stmt TSRMLS_CC );
+		}
+
+		zval* zval_ptr = ( zval* )( sqlsrv_malloc( sizeof( zval )));
         *zval_ptr = convert_to_zval( sqlsrv_phptype_out, reinterpret_cast<void**>( ptr ), *len );
         *ptr = reinterpret_cast<char*>( zval_ptr );
 

@@ -970,6 +970,14 @@ enum SERVER_VERSION {
     SERVER_VERSION_2008, // use this for anything 2008 or later
 };
 
+// supported driver versions.
+enum DRIVER_VERSION : size_t {
+	MIN = 0,
+	ODBC_DRIVER_13 = MIN,
+	ODBC_DRIVER_11 = 1,
+	MAX = ODBC_DRIVER_11,
+};
+
 // forward decl
 struct sqlsrv_stmt;
 struct stmt_option;
@@ -980,6 +988,8 @@ struct sqlsrv_conn : public sqlsrv_context {
 
     // instance variables
     SERVER_VERSION server_version;  // version of the server that we're connected to
+
+	DRIVER_VERSION	driver_version;
 
     // initialize with default values
     sqlsrv_conn( SQLHANDLE h, error_callback e, void* drv, SQLSRV_ENCODING encoding  TSRMLS_DC ) :
@@ -1258,7 +1268,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     unsigned int current_stream_read;     // # of bytes read so far. (if we read an empty PHP stream, we send an empty string 
                                           // to the server)
     zval field_cache;                    // cache for a single row of fields, to allow multiple and out of order retrievals
-    zval* active_stream;                  // the currently active stream reading data from the database
+    zval active_stream;                  // the currently active stream reading data from the database
 
     sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC );
     virtual ~sqlsrv_stmt( void );
@@ -1313,8 +1323,8 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql = NULL, i
 field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT colno TSRMLS_DC );
 bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULEN fetch_offset TSRMLS_DC );
 void core_sqlsrv_get_field(sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_phptype, bool prefer_string,
-                            __out void** field_value, __out SQLLEN* field_length,  bool cache_field, 
-                            __out SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC );
+							__out void*& field_value, __out SQLLEN* field_length, bool cache_field,
+							__out SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC);
 bool core_sqlsrv_has_any_result( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params = true, bool throw_on_errors = true );
 void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong paramno, zval* param_z TSRMLS_DC );
@@ -1325,6 +1335,7 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, SQLLEN limit TSRMLS_DC );
+void core_finalize_output_parameters(sqlsrv_stmt* stmt TSRMLS_DC);
 
 
 //*********************************************************************************************************************************
@@ -1564,8 +1575,8 @@ enum SQLSRV_ERROR_CODES {
 };
 
 // the message returned by ODBC Driver 11 for SQL Server
-const char CONNECTION_BUSY_ODBC_ERROR[] = "[Microsoft][ODBC Driver 11 for SQL Server]Connection is busy with results for "
-    "another command";
+static const char* CONNECTION_BUSY_ODBC_ERROR[] = { "[Microsoft][ODBC Driver 13 for SQL Server]Connection is busy with results for another command",
+										   "[Microsoft][ODBC Driver 11 for SQL Server]Connection is busy with results for another command" };
 
 // SQLSTATE for all internal errors
 extern SQLCHAR IMSSP[];
@@ -1742,9 +1753,9 @@ namespace core {
          
                 throw CoreException();
             }
-
-            if(( len == sizeof( CONNECTION_BUSY_ODBC_ERROR ) - 1 ) && 
-               !strcmp( reinterpret_cast<const char*>( err_msg ), CONNECTION_BUSY_ODBC_ERROR )) {
+			std::size_t driver_version = stmt->conn->driver_version;
+            if(( len == sizeof( CONNECTION_BUSY_ODBC_ERROR[driver_version] ) - 1 ) && 
+               !strcmp( reinterpret_cast<const char*>( err_msg ), CONNECTION_BUSY_ODBC_ERROR[driver_version] )) {
              
                 THROW_CORE_ERROR( stmt, SQLSRV_ERROR_MARS_OFF );
             }

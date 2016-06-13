@@ -265,8 +265,8 @@ extern "C" {
 ZEND_BEGIN_MODULE_GLOBALS(sqlsrv)
 
 // global objects for errors and warnings.  These are returned by sqlsrv_errors.
-zval* errors;
-zval* warnings;
+zval errors;
+zval warnings;
 
 // flags for error handling and logging (set via sqlsrv_configure or php.ini)
 zend_long log_severity;
@@ -386,24 +386,24 @@ void __cdecl sqlsrv_error_dtor( zend_resource *rsrc TSRMLS_DC );
 // release current error lists and set to NULL
 inline void reset_errors( TSRMLS_D )
 {
-    if( Z_TYPE_P( SQLSRV_G( errors )) != IS_ARRAY && Z_TYPE_P( SQLSRV_G( errors )) != IS_NULL ) {
+    if( Z_TYPE( SQLSRV_G( errors )) != IS_ARRAY && Z_TYPE( SQLSRV_G( errors )) != IS_NULL ) {
         DIE( "sqlsrv_errors contains an invalid type" );
     }
-    if( Z_TYPE_P( SQLSRV_G( warnings )) != IS_ARRAY && Z_TYPE_P( SQLSRV_G( warnings )) != IS_NULL ) {
+    if( Z_TYPE( SQLSRV_G( warnings )) != IS_ARRAY && Z_TYPE( SQLSRV_G( warnings )) != IS_NULL ) {
         DIE( "sqlsrv_warnings contains an invalid type" );
     }
 
-    if( Z_TYPE_P( SQLSRV_G( errors )) == IS_ARRAY ) {
-        zend_hash_destroy( Z_ARRVAL_P( SQLSRV_G( errors )));
-        FREE_HASHTABLE( Z_ARRVAL_P( SQLSRV_G( errors )));
+    if( Z_TYPE( SQLSRV_G( errors )) == IS_ARRAY ) {
+        zend_hash_destroy( Z_ARRVAL( SQLSRV_G( errors )));
+        FREE_HASHTABLE( Z_ARRVAL( SQLSRV_G( errors )));
     }
-    if( Z_TYPE_P( SQLSRV_G( warnings )) == IS_ARRAY ) {
-        zend_hash_destroy( Z_ARRVAL_P( SQLSRV_G( warnings )));
-        FREE_HASHTABLE( Z_ARRVAL_P( SQLSRV_G( warnings )));
+    if( Z_TYPE( SQLSRV_G( warnings )) == IS_ARRAY ) {
+        zend_hash_destroy( Z_ARRVAL( SQLSRV_G( warnings )));
+        FREE_HASHTABLE( Z_ARRVAL( SQLSRV_G( warnings )));
     }
 
-    ZVAL_NULL( SQLSRV_G( errors ));
-    ZVAL_NULL( SQLSRV_G( warnings ));
+    ZVAL_NULL( &SQLSRV_G( errors ));
+    ZVAL_NULL( &SQLSRV_G( warnings ));
 }
 
 #define THROW_SS_ERROR( ctx, error_code, ... ) \

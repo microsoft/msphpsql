@@ -463,6 +463,8 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
 
         dbh->error_mode = prev_err_mode;    // reset the error mode
 
+		g_henv_cp->invalidate();
+
         return 0;
     }
     catch( ... ) {
@@ -1310,25 +1312,20 @@ void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, __inout Has
         if( stmt_options ) {
            
             HashTable* options_ht = Z_ARRVAL_P( stmt_options );
-    
-            for( zend_hash_internal_pointer_reset( options_ht ); zend_hash_has_more_elements( options_ht ) == SUCCESS;
-                 zend_hash_move_forward( options_ht )) {
+			size_t int_key = -1;
+			zend_string *key = NULL;
+			zval* data = NULL;
 
-                int type = HASH_KEY_NON_EXISTENT;
-                zend_string *key = NULL;
-                size_t int_key = -1;
-                zval* data;
-                int result = 0;
+			ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
+				int type = HASH_KEY_NON_EXISTENT;
+				int result = 0;
+				type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
+				CHECK_CUSTOM_ERROR(( type != HASH_KEY_IS_LONG ), ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
+					throw core::CoreException();
+				}
 
-                type = zend_hash_get_current_key( options_ht, &key, &int_key);
-                CHECK_CUSTOM_ERROR(( type != HASH_KEY_IS_LONG ), ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
-                    throw core::CoreException();
-                }  
-                
-                core::sqlsrv_zend_hash_get_current_data( ctx, options_ht, data TSRMLS_CC );    
-                
-                add_stmt_option_key( ctx, int_key, pdo_stmt_options_ht, data TSRMLS_CC );
-            } 
+				add_stmt_option_key( ctx, int_key, pdo_stmt_options_ht, data TSRMLS_CC );
+			} ZEND_HASH_FOREACH_END();
         }
     }
     catch( core::CoreException& ) {

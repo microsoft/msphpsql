@@ -42,7 +42,7 @@ const int INFO_BUFFER_LEN = 256;
 const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
 // ODBC driver name.
-const char CONNECTION_STRING_DRIVER_NAME[] = "Driver={ODBC Driver 11 for SQL Server};";
+const char* CONNECTION_STRING_DRIVER_NAME[] = {"Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};"};
 
 // default options if only the server is specified
 const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes}";
@@ -124,39 +124,49 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     conn = conn_factory( temp_conn_h, err, driver TSRMLS_CC );
     conn->set_func( driver_func );
 
+	for ( std::size_t i = DRIVER_VERSION::MIN; i <= DRIVER_VERSION::MAX; ++i ) {
+		conn_str = CONNECTION_STRING_DRIVER_NAME[i];
+		build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver,
+			conn_str TSRMLS_CC );
 
-    build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver, 
-                                               conn_str TSRMLS_CC );
-    
-    // We only support UTF-8 encoding for connection string.
-    // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
-	wconn_len = static_cast<unsigned int>( conn_str.length() + 1 ) * sizeof( wchar_t );
+		// We only support UTF-8 encoding for connection string.
+		// Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
+		wconn_len = static_cast<unsigned int>( conn_str.length() + 1 ) * sizeof( wchar_t );
 
-    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>( conn_str.length() ), &wconn_len );
-    CHECK_CUSTOM_ERROR( wconn_string == NULL, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message() )
-    {
-        throw core::CoreException();
-    }
-    
-    SQLSMALLINT output_conn_size;
-    r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
-                           static_cast<SQLSMALLINT>( wconn_len ), NULL, 
-                          0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-    // clear the connection string from memory to remove sensitive data (such as a password).
-    memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
-    memset( wconn_string, 0, wconn_len * sizeof( wchar_t )); // wconn_len is the number of characters, not bytes
-    conn_str.clear();
+		wconn_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>(conn_str.length()), &wconn_len);
+		CHECK_CUSTOM_ERROR( wconn_string == NULL, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message())
+		{
+			throw core::CoreException();
+		}
 
-    if( !SQL_SUCCEEDED( r )) {
-        SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
-        SQLSMALLINT len;
-        SQLRETURN r = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
-        // if it's a IM002, meaning that the correct ODBC driver is not installed
-        CHECK_CUSTOM_ERROR( SQL_SUCCEEDED( r ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' &&
-                            state[4] == '2', conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch() ) {
-            throw core::CoreException();
-        }
-    }
+		SQLSMALLINT output_conn_size;
+		r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get()),
+							    static_cast<SQLSMALLINT>( wconn_len ), NULL,
+								0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+		// clear the connection string from memory to remove sensitive data (such as a password).
+		memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+		memset( wconn_string, 0, wconn_len * sizeof( wchar_t )); // wconn_len is the number of characters, not bytes
+		conn_str.clear();
+
+		if( !SQL_SUCCEEDED( r )) {
+			SQLCHAR state[SQL_SQLSTATE_BUFSIZE];
+			SQLSMALLINT len;
+			SQLRETURN r = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
+			bool missing_driver_error = ( SQL_SUCCEEDED( r ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' &&
+				state[4] == '2' );
+			// if it's a IM002, meaning that the correct ODBC driver is not installed
+			CHECK_CUSTOM_ERROR( missing_driver_error && ( i == DRIVER_VERSION::MAX ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+				throw core::CoreException();
+			}
+			if ( !missing_driver_error ) {
+				break;
+			}
+		} else {
+			conn->driver_version = static_cast<DRIVER_VERSION>( i );
+			break;
+		}
+		
+	}
     CHECK_SQL_ERROR( r, conn ) {
         throw core::CoreException();
     }
@@ -168,7 +178,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     // determine the version of the server we're connected to.  The server version is left in the 
     // connection upon return.
     determine_server_version( conn TSRMLS_CC );
-
+	
     }
     catch( std::bad_alloc& ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
@@ -532,9 +542,7 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
     int zr = SUCCESS;
 
     try {
-
-        connection_string = CONNECTION_STRING_DRIVER_NAME;
-        
+  
         // Add the server name
         common_conn_str_append_func( ODBCConnOptions::SERVER, server, strlen( server ), connection_string TSRMLS_CC );
 
@@ -586,30 +594,25 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
             }
         }
 
-        for( zend_hash_internal_pointer_reset( options );
-             zend_hash_has_more_elements( options ) == SUCCESS;
-             zend_hash_move_forward( options )) {
-        
-			int type = HASH_KEY_NON_EXISTENT; 
-			zend_string *key = NULL;
-			zend_ulong index = 0;
-            zval* data = NULL;
+		zend_string *key = NULL;
+		zend_ulong index = -1;
+		zval* data = NULL;
 
-            type = zend_hash_get_current_key( options, &key, &index ); 
-            
-            // The driver layer should ensure a valid key.
-            DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
-           
-            core::sqlsrv_zend_hash_get_current_data( *conn, options, data TSRMLS_CC );
+		ZEND_HASH_FOREACH_KEY_VAL( options, index, key, data ) {
+			int type = HASH_KEY_NON_EXISTENT;
+			type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
-            conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
-    
-            if( index == SQLSRV_CONN_OPTION_MARS ) {
-                mars_mentioned = true;
-            }
-            
-            conn_opt->func( conn_opt, data, conn, connection_string TSRMLS_CC );
-        }
+			// The driver layer should ensure a valid key.
+			DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
+
+			conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
+
+			if( index == SQLSRV_CONN_OPTION_MARS ) {
+				mars_mentioned = true;
+			}
+
+			conn_opt->func( conn_opt, data, conn, connection_string TSRMLS_CC );
+		} ZEND_HASH_FOREACH_END();
 
         // MARS on if not explicitly turned off
         if( !mars_mentioned ) {
@@ -755,7 +758,7 @@ size_t core_str_zval_is_true( zval* value_z )
     }
 
     // save adjustments to the value made by stripping whitespace at the end
-	core::sqlsrv_zval_stringl( value_z, value_in, val_len);
+	Z_STRLEN_P( value_z ) = val_len;
 
     const char VALID_TRUE_VALUE_1[] = "true";
     const char VALID_TRUE_VALUE_2[] = "1";

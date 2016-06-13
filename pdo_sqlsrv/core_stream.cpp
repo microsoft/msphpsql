@@ -32,11 +32,8 @@ int sqlsrv_stream_close( php_stream* stream, int /*close_handle*/ TSRMLS_DC )
     // free the stream resources in the Zend engine
     php_stream_free( stream, PHP_STREAM_FREE_RELEASE_STREAM );
 
-    // NULL out the stream zval and delete our reference count to it.
-    ZVAL_NULL( ss->stmt->active_stream );
-
-    // there is no active stream
-    ss->stmt->active_stream = NULL;
+    // UNDEF the stream zval and delete our reference count to it.
+    ZVAL_UNDEF( &( ss->stmt->active_stream ) );
 
     sqlsrv_free( ss );
     stream->abstract = NULL;

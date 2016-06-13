@@ -415,7 +415,7 @@ bool ss_error_handler(sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool 
         severity = SEV_WARNING;
     }
 
-    return handle_errors_and_warnings( ctx, SQLSRV_G( errors ), SQLSRV_G( warnings ), severity, sqlsrv_error_code, warning, 
+    return handle_errors_and_warnings( ctx, &SQLSRV_G( errors ), &SQLSRV_G( warnings ), severity, sqlsrv_error_code, warning, 
                                        print_args TSRMLS_CC );
 }
 
@@ -464,49 +464,35 @@ PHP_FUNCTION( sqlsrv_errors )
 
     LOG_FUNCTION( "sqlsrv_errors" );
 
-    if( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "|l", &flags ) == FAILURE ) {
+	if(( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "|l", &flags ) == FAILURE ) ||
+		( flags != SQLSRV_ERR_ALL && flags != SQLSRV_ERR_ERRORS && flags != SQLSRV_ERR_WARNINGS )) {
+		LOG( SEV_ERROR, "An invalid parameter was passed to %1!s!.", _FN_ );
+		RETURN_FALSE;
+	}
+	int result;
+	zval err_z;
+	ZVAL_UNDEF( &err_z );
+	result = array_init( &err_z );
+	if( result == FAILURE ) {
+		RETURN_FALSE;
+	}
+	if( flags == SQLSRV_ERR_ALL || flags == SQLSRV_ERR_ERRORS ) {
+		if( Z_TYPE( SQLSRV_G( errors )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &err_z, &SQLSRV_G( errors ) TSRMLS_CC )) {
 
-        LOG(SEV_ERROR, "An invalid parameter was passed to %1!s!.", _FN_ );
-        RETURN_FALSE;
-    }
+			RETURN_FALSE;
+		}
+	}
+	if( flags == SQLSRV_ERR_ALL || flags == SQLSRV_ERR_WARNINGS ) {
+		if( Z_TYPE( SQLSRV_G( warnings )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &err_z, &SQLSRV_G( warnings ) TSRMLS_CC )) {
 
-    if( flags == SQLSRV_ERR_ALL ) {
-        
-        int result;
-        zval both_z;
-        ZVAL_UNDEF( &both_z );
-        result = array_init( &both_z );
-        if( result == FAILURE ) {
+			RETURN_FALSE;
+		}
+	}
+	if( zend_hash_num_elements( Z_ARRVAL_P( &err_z )) == 0 ) {
 
-            RETURN_FALSE;
-        }
-
-        if( Z_TYPE_P( SQLSRV_G( errors )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &both_z, SQLSRV_G( errors ) TSRMLS_CC )) {
-
-            RETURN_FALSE;
-        }
-            
-        if( Z_TYPE_P( SQLSRV_G( warnings )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &both_z, SQLSRV_G( warnings ) TSRMLS_CC )) {
-
-            RETURN_FALSE;
-        }
-
-        if( zend_hash_num_elements( Z_ARRVAL_P( &both_z )) == 0 ) {
-
-            RETURN_NULL(); 
-        }
-
-		RETURN_ZVAL( &both_z , 1, 1 );
-    }
-
-    else if( flags == SQLSRV_ERR_WARNINGS ) {
-
-		RETURN_ZVAL( SQLSRV_G( warnings ), 1, 0 );  
-    }
-    else {
-
-		RETURN_ZVAL( SQLSRV_G( errors ), 1, 0 ); 
-    }
+		RETURN_NULL();
+	}
+	RETURN_ZVAL( &err_z, 1, 1 );
 }
 
 // sqlsrv_configure( string $setting, mixed $value )
@@ -875,20 +861,21 @@ bool handle_errors_and_warnings( sqlsrv_context& ctx, zval* reported_chain, zval
 // see RINIT in init.cpp for information about which errors are ignored.
 bool ignore_warning( char* sql_state, int native_code TSRMLS_DC )
 {
-    for( zend_hash_internal_pointer_reset( g_ss_warnings_to_ignore_ht );
-         zend_hash_has_more_elements( g_ss_warnings_to_ignore_ht ) == SUCCESS;
-         zend_hash_move_forward( g_ss_warnings_to_ignore_ht ) ) {
+	zend_ulong index = -1;
+	zend_string* key = NULL;
+	void* error_temp = NULL;
 
-		sqlsrv_error* error = static_cast<sqlsrv_error*>(zend_hash_get_current_data_ptr( g_ss_warnings_to_ignore_ht ));
+	ZEND_HASH_FOREACH_KEY_PTR( g_ss_warnings_to_ignore_ht, index, key, error_temp ) {
+		sqlsrv_error* error = static_cast<sqlsrv_error*>( error_temp );
 		if (NULL == error) {
 			return false;
 		}
 
-        if( !strncmp( reinterpret_cast<char*>( error->sqlstate ), sql_state, SQL_SQLSTATE_SIZE ) && 
-            ( error->native_code == native_code || error->native_code == -1 )) {
-                return true;
-        }
-    }
+		if( !strncmp( reinterpret_cast<char*>( error->sqlstate ), sql_state, SQL_SQLSTATE_SIZE ) &&
+			( error->native_code == native_code || error->native_code == -1 )) {
+			return true;
+		}
+	} ZEND_HASH_FOREACH_END();
         
     return false;
 }
@@ -911,27 +898,24 @@ bool sqlsrv_merge_zend_hash( __inout zval* dest_z, zval const* src_z TSRMLS_DC )
     }
 
     HashTable* src_ht = Z_ARRVAL_P( src_z );
-    int result = SUCCESS;
+	zend_ulong index = -1;
+	zend_string* key = NULL;
+	zval* value_z = NULL;
 
-    for( zend_hash_internal_pointer_reset( src_ht );
-         zend_hash_has_more_elements( src_ht ) == SUCCESS;
-         zend_hash_move_forward( src_ht ) ) {
-         
-        zval* value_z = NULL;
-		result = (value_z = zend_hash_get_current_data( src_ht )) != NULL ? SUCCESS : FAILURE; 
-        if( result == FAILURE ) {
-            zend_hash_apply( Z_ARRVAL_P( dest_z ), sqlsrv_merge_zend_hash_dtor TSRMLS_CC );
-            return false;
-        }
-        
-        result = add_next_index_zval( dest_z, value_z );
+	ZEND_HASH_FOREACH_KEY_VAL( src_ht, index, key, value_z ) {
+		if ( !value_z ) {
+			zend_hash_apply( Z_ARRVAL_P(dest_z), sqlsrv_merge_zend_hash_dtor TSRMLS_CC );
+			return false;
+		}
 
-        if( result == FAILURE ) {
-            zend_hash_apply( Z_ARRVAL_P( dest_z ), sqlsrv_merge_zend_hash_dtor TSRMLS_CC );
-            return false;
-        }
-        Z_TRY_ADDREF_P(value_z);
-    }
+		int result = add_next_index_zval( dest_z, value_z );
+
+		if( result == FAILURE ) {
+			zend_hash_apply( Z_ARRVAL_P( dest_z ), sqlsrv_merge_zend_hash_dtor TSRMLS_CC );
+			return false;
+		}
+		Z_TRY_ADDREF_P( value_z );
+	} ZEND_HASH_FOREACH_END();
 
     return true;
 } 
