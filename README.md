@@ -14,22 +14,30 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
 
 ####Prerequisites
 
-- A Web server such as Apache is required. Your Web server must be configured to run PHP
-- Microsoft ODBC Driver 13 for Linux.[odbcLinux]
-- The unixODBC 2.3.1 driver manager.
+- A Web server such as Apache is required. Your Web server must be configured to run PHP.
+- [Microsoft ODBC Driver 13 for Linux][odbcLinux]
+- 64-bit [UnixODBC 2.3.1 driver manager][LinuxDM], built for 64-bit SQLLEN/SQLULEN.
+- If building PHP from source, you need libraries required to [build PHP][PHPMan]
 
 ## Install
 
-The drivers are distributed as shared binary extensions for PHP. You must download the PHP 7 source and then unzip to a local directory. Then follow the steps below:
+- Method 1: Using package  manager:
+	Note: make sure the packaged  PHP version is PHP 7.
+	1. Use package manager to install php and php-odbc.
+	2. Copy precompiled binaries into the extensions directory(Likely in /usr/lib/php).
+	3. Edit the php.ini file as indicated  in "Enable the drivers" section.
 
-1. Switch to the PHP directory and run ./buildconf --force.
+- Method 2: Using PHP source:
+	The drivers are distributed as shared binary extensions for PHP. You must download the PHP 7 source and then unzip to a local directory. Then follow the steps below:
 
-2. Compile PHP with at least the LIBS=-lodbc, and for the PDO_SQLSRV driver with --enable-pdo=shared options given to ./configure. In addition, you may need to indicate the path to the include files for unixODBC using --with-unixODBC=/usr. Thus, your ./configure command should look like ./configure --enable-pdo=shared --with-unixODBC=/usr LIBS=-lodbc.
-	Note: Since PDO must be compiled as a shared extension, any other PDO extensions must be compiled as shared extensions by adding --with-pdo-<name_of_extension>=shared to the ./configure command.
+	1. Switch to the PHP directory and run ./buildconf --force.
 
-3. Run 'make' and then put the precompiled binaries into the <php_source_directory>/modules/ directory.
+	2. Compile PHP with at least the LIBS=-lodbc, and for the PDO_SQLSRV driver with --enable-pdo=shared options given to ./configure. In addition, you may need to indicate the path to the include files for unixODBC using --with-unixODBC=< path to the installed unixODBC >. For example your ./configure command may look like ./configure --enable-pdo=shared --with-unixODBC=/usr LIBS=-lodbc.
+	Note: Since PDO must be compiled as a shared extension, any other PDO extensions must be compiled as shared extensions by adding --with-pdo-< name_of_extension >=shared to the ./configure command.
 
-4. Run 'make install' to install the binaries into the default php extensions directory.
+	3. Run 'make' and then put the precompiled binaries into the < php_source_directory >/modules/ directory.
+
+	4. Run 'make install' to install the binaries into the default php extensions directory.
 
 ####Enable the drivers
 
@@ -54,10 +62,12 @@ This preview contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and d
 - Integrated authentication is not supported.
 
 SQLSRV:
+
 - sqlsrv_rows_affected returns an empty string when the number of rows is 0.
 
 PDO_SQLSRV:
-- Buffered cursors are not supported.
+
+-  Buffered cursors are not supported.
 - lastInsertId().
 - ODBC 3.52 is supported but not 3.8.
 
@@ -113,12 +123,16 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.
 
 [phpbuild]: https://wiki.php.net/internals/windows/stepbystepbuild
 
-[phpdoc]: http://msdn.microsoft.com/en-us/library/dd903047%28SQL.11%29.aspx
+[phpdoc]: http://msdn.microsoft.com/library/dd903047%28SQL.11%29.aspx
 
-[odbc11]: https://www.microsoft.com/en-us/download/details.aspx?id=36434
+[odbc11]: https://www.microsoft.com/download/details.aspx?id=36434
 
-[odbc13]: https://www.microsoft.com/en-us/download/details.aspx?id=50420
+[odbc13]: https://www.microsoft.com/download/details.aspx?id=50420
 
-[odbcLinux]: https://msdn.microsoft.com/en-us/library/hh568454(v=sql.110).aspx
+[odbcLinux]: https://msdn.microsoft.com/library/hh568454(v=sql.110).aspx
 
-[phpazure]: https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-php-simple-windows/
+[phpazure]: https://azure.microsoft.com/documentation/articles/sql-database-develop-php-simple-windows/
+
+[PHPMan]: http://php.net/manual/install.unix.php
+
+[LinuxDM]: https://msdn.microsoft.com/library/hh568449(v=sql.110).aspx
