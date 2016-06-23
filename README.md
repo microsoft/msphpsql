@@ -6,7 +6,7 @@ The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for t
 
 This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 (64-bit) with limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more.
 
-The Microsoft Drivers for PHP for SQL Server Team
+SQL Server Team
 
 ##Announcements
 
@@ -24,26 +24,43 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
 - Method 1: Using package  manager:
 	Note: make sure the packaged  PHP version is PHP 7.
 	1. Use package manager to install php and php-odbc.
-	2. Copy precompiled binaries into the extensions directory(Likely in /usr/lib/php).
+	2. Copy precompiled binaries into the extensions directory (likely in /usr/lib/php).
 	3. Edit the php.ini file as indicated  in "Enable the drivers" section.
 
 - Method 2: Using PHP source:
-	The drivers are distributed as shared binary extensions for PHP. You must download the PHP 7 source and then unzip to a local directory. Then follow the steps below:
+	The drivers are distributed as shared binary extensions for PHP. You must download the PHP 7 source and unzip it to a local directory. Then follow the steps below:
 
-	1. Switch to the PHP directory and run ./buildconf --force.
+    1. Switch to the PHP directory and run `./buildconf --force`. You may need to install autoconf with your package-manager prior to this step.
 
-	2. Compile PHP with at least the LIBS=-lodbc, and for the PDO_SQLSRV driver with --enable-pdo=shared options given to ./configure. In addition, you may need to indicate the path to the include files for unixODBC using --with-unixODBC=< path to the installed unixODBC >. For example your ./configure command may look like ./configure --enable-pdo=shared --with-unixODBC=/usr LIBS=-lodbc.
-	Note: Since PDO must be compiled as a shared extension, any other PDO extensions must be compiled as shared extensions by adding --with-pdo-< name_of_extension >=shared to the ./configure command.
+    2. Run `./configure` with the following options on the command line:
 
-	3. Run 'make' and then put the precompiled binaries into the < php_source_directory >/modules/ directory.
+      For the SQLSRV driver, you will need:
+      
+      (i) `LIBS=-lodbc` 
+(ii) the path for the unixODBC header files using `--with-unixODBC=<path-to-ODBC-headers>`. To find the path for the header files, use the command `sudo find / -name sql.h`. Then add this path, without the /include/sql.h, to the command line. For example, if the find command yields /usr/local/include/sql.h, add `--with-unixODBC=/usr/local` to the `./configure` command line. 
+(iii) the path to apxs or apxs2 to configure PHP for Apache using `--with-apxs2=<path-to-apxs>`. To find the path to apxs (or apxs2), run `which apxs` (or `which apxs2`) and add the resulting path to the option.
+(iv) a thread-safe build of PHP. Add `--enable-maintainer-zts` to `./configure`. 
 
-	4. Run 'make install' to install the binaries into the default php extensions directory.
+      Thus your `./configure` command should look like `./configure LIBS=-lodbc --with-unixODBC=<path-to-ODBC-headers> --with-apxs2=<path-to-apxs-executable> --enable-maintainer-zts`.
+
+      For the PDO_SQLSRV driver, you will need the same options as for the SQLSRV driver, along with:
+
+      (i) PDO built as a shared extension using `--enable-pdo=shared`. 
+(ii) Since PDO must be compiled as a shared extension, any other PDO extensions that you wish to build must be compiled as shared extensions by adding `--with-pdo-<name_of_extension>=shared` to the `./configure` command. In particular, pdo-sqlite, which is built by default with PHP, must be either compiled as a shared extension using `--with-pdo-sqlite=shared`, or disabled using `--without-pdo-sqlite`. (This restriction will be lifted in a future release.)
+
+      Therefore, your `./configure` command should look like `./configure LIBS=-lodbc --with-unixODBC=<path-to-ODBC-headers> --with-apxs2=<path-to-apxs-executable> --enable-maintainer-zts --enable-pdo=shared --with-pdo-sqlite=shared`.
+
+      If your `./configure` command exits with an error saying it cannot find xml2-config, you may need to install libxml2-dev using your package manager before continuing.
+
+	3. Run `make` and then put the precompiled binaries into the < php_source_directory >/modules/ directory.
+
+	4. Run `make install` to install the binaries into the default php extensions directory.
 
 ####Enable the drivers
 
 1. Make sure that the driver is in your PHP extensions directory.
 
-2. Enable it within your PHP installation's php.ini: Add `extension=php_sqlsrv_7_ts.so`, and if using the PDO_SQLSRV driver add `extension=pdo.so & extension=php_pdo_sqlsrv_7_ts.so`. If necessary, specify the extension directory using extension_dir, for example: `extension_dir = "/usr/local/bin".
+2. Enable it within your PHP installation's php.ini: In your local PHP directory, copy `php.ini-development` to `php.ini`. To `php.ini`, add `extension=php_sqlsrv_7_ts.so` if using the SQLSRV driver, and add `extension=pdo.so & extension=php_pdo_sqlsrv_7_ts.so` if using the PDO_SQLSRV driver. If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = /usr/local/bin`.
 
 3. Restart the Web server.
 
