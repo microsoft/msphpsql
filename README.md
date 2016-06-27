@@ -14,21 +14,35 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
 
 ####Prerequisites
 
-- A Web server such as Apache is required. Your Web server must be configured to run PHP.
+- A Web server such as Apache is required. Your Web server must be configured to run PHP. See below for information on installing Apache to work with the drivers.
 - [Microsoft ODBC Driver 13 for Linux][odbcLinux]
 - 64-bit [UnixODBC 2.3.1 driver manager][LinuxDM], built for 64-bit SQLLEN/SQLULEN.
-- If building PHP from source, you need libraries required to [build PHP][PHPMan]
+- If building PHP from source, you need libraries required to [build PHP][PHPMan].
 
 ## Install
 
-- Method 1: Using package  manager:
+The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The thread safety configuration of your web server will determine which version you need. If you wish to install Apache from source, follow these instructions:
+
+1. Download the source from [Apache.org][httpd_source]. Unzip the source to a local directory. 
+
+2. Download the [Apache Portable Runtime (APR) and Utility][apr_source]. Unzip the APR source into srclib/apr and the APR-Util source into srclib/apr-util in your Apache directory from Step 1.
+
+3. If you have the thread safe binaries, run `./configure --enable-so --with-mpm=worker`. If you have the non-thread safe binaries, run `./configure --enable-so --with-mpm=prefork`.
+
+4. Run `make` and `sudo make install`.
+
+Now you are ready to install PHP.
+
+- Method 1: Using your package  manager:
+
 	Note: make sure the packaged  PHP version is PHP 7.
-	1. Use package manager to install php and php-odbc.
-	2. Copy precompiled binaries into the extensions directory (likely in /usr/lib/php).
+	1. Use your package manager to install php and php-odbc.
+	2. Copy the precompiled binaries into the extensions directory (likely in /usr/lib/php).
 	3. Edit the php.ini file as indicated  in "Enable the drivers" section.
 
-- Method 2: Using PHP source:
-	The drivers are distributed as shared binary extensions for PHP. You must download the PHP 7 source and unzip it to a local directory. Then follow the steps below:
+- Method 2: Using the PHP source:
+
+	Download the PHP 7 source and unzip it to a local directory. Then follow the steps below:
 
     1. Switch to the PHP directory and run `./buildconf --force`. You may need to install autoconf with your package-manager prior to this step.
 
@@ -38,8 +52,8 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
       
       (i) `LIBS=-lodbc` 
 (ii) the path for the unixODBC header files using `--with-unixODBC=<path-to-ODBC-headers>`. To find the path for the header files, use the command `sudo find / -name sql.h`. Then add this path, without the /include/sql.h, to the command line. For example, if the find command yields /usr/local/include/sql.h, add `--with-unixODBC=/usr/local` to the `./configure` command line. 
-(iii) the path to apxs or apxs2 to configure PHP for Apache using `--with-apxs2=<path-to-apxs>`. To find the path to apxs (or apxs2), run `which apxs` (or `which apxs2`) and add the resulting path to the option.
-(iv) a thread-safe build of PHP. Add `--enable-maintainer-zts` to `./configure`. 
+(iii) the path to apxs or apxs2 to configure PHP for Apache using `--with-apxs2=<path-to-apxs>`. To find the path to apxs (or apxs2), run `sudo find / -name apxs` (or `sudo find / -name apxs2`) and add the resulting path to the option.
+(iv) if your web server has thread safety enabled, a thread-safe build of PHP. Add `--enable-maintainer-zts` to `./configure`. 
 
       Thus your `./configure` command should look like `./configure LIBS=-lodbc --with-unixODBC=<path-to-ODBC-headers> --with-apxs2=<path-to-apxs-executable> --enable-maintainer-zts`.
 
@@ -60,9 +74,11 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
 
 1. Make sure that the driver is in your PHP extensions directory.
 
-2. Enable it within your PHP installation's php.ini: In your local PHP directory, copy `php.ini-development` to `php.ini`. To `php.ini`, add `extension=php_sqlsrv_7_ts.so` if using the SQLSRV driver, and add `extension=pdo.so & extension=php_pdo_sqlsrv_7_ts.so` if using the PDO_SQLSRV driver. If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = /usr/local/bin`.
+2. Enable it within your PHP installation's php.ini: In your local PHP directory, copy `php.ini-development` to `php.ini`. If using the SQLSRV driver, add `extension=php_sqlsrv_7_ts.so` or `extension=php_sqlsrv_7_nts.so` to `php.ini`. If using the PDO_SQLSRV driver, add `extension=pdo.so & extension=php_pdo_sqlsrv_7_ts.so` or `extension=pdo.so & extension=php_pdo_sqlsrv_7_nts.so`. If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = /usr/local/bin`.
 
-3. Restart the Web server.
+3. If using Apache web server, follow the [instructions here][httpdconf] for editing your Apache configuration file.
+
+4. Restart the web server.
 
 ## Sample Code
 For samples, please see the sample folder.  For setup instructions, see [here] [phpazure]
@@ -153,3 +169,9 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.
 [PHPMan]: http://php.net/manual/install.unix.php
 
 [LinuxDM]: https://msdn.microsoft.com/library/hh568449(v=sql.110).aspx
+
+[httpd_source]: http://httpd.apache.org/
+
+[apr_source]: http://apr.apache.org/
+
+[httpdconf]: http://php.net/manual/en/install.unix.apache2.php
