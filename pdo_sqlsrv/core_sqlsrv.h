@@ -889,6 +889,8 @@ class sqlsrv_context {
     {
         if( handle_ != SQL_NULL_HANDLE ) {
             ::SQLFreeHandle( handle_type_, handle_ );
+
+			last_error_.reset();
         }
         handle_ = SQL_NULL_HANDLE;
     }
@@ -1136,9 +1138,9 @@ void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, SQLLEN sql_len TSR
 void core_sqlsrv_begin_transaction( sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_commit( sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_rollback( sqlsrv_conn* conn TSRMLS_DC );
-void core_sqlsrv_get_server_info( sqlsrv_conn* conn, __out zval* server_info TSRMLS_DC );
-void core_sqlsrv_get_server_version( sqlsrv_conn* conn, __out zval *server_version TSRMLS_DC );
-void core_sqlsrv_get_client_info( sqlsrv_conn* conn, __out zval *client_info TSRMLS_DC );
+void core_sqlsrv_get_server_info( sqlsrv_conn* conn, _Out_ zval* server_info TSRMLS_DC );
+void core_sqlsrv_get_server_version( sqlsrv_conn* conn, _Out_ zval *server_version TSRMLS_DC );
+void core_sqlsrv_get_client_info( sqlsrv_conn* conn, _Out_ zval *client_info TSRMLS_DC );
 bool core_is_conn_opt_value_escaped( const char* value, size_t value_len );
 size_t core_str_zval_is_true( zval* str_zval );
 
@@ -1197,7 +1199,7 @@ struct sqlsrv_stream {
 };
 
 // close any active stream
-void close_active_stream( __inout sqlsrv_stmt* stmt TSRMLS_DC );
+void close_active_stream( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 
 extern php_stream_wrapper g_sqlsrv_stream_wrapper;
 
@@ -1323,8 +1325,8 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql = NULL, i
 field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT colno TSRMLS_DC );
 bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULEN fetch_offset TSRMLS_DC );
 void core_sqlsrv_get_field(sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_phptype, bool prefer_string,
-							__out void*& field_value, __out SQLLEN* field_length, bool cache_field,
-							__out SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC);
+							_Out_ void*& field_value, _Out_ SQLLEN* field_length, bool cache_field,
+							_Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC);
 bool core_sqlsrv_has_any_result( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params = true, bool throw_on_errors = true );
 void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong paramno, zval* param_z TSRMLS_DC );
@@ -1359,11 +1361,11 @@ struct sqlsrv_result_set {
     virtual bool cached( int field_index ) = 0;
     virtual SQLRETURN fetch( SQLSMALLINT fetch_orientation, SQLLEN fetch_offset TSRMLS_DC ) = 0;
     virtual SQLRETURN get_data( SQLUSMALLINT field_index, SQLSMALLINT target_type,
-                                __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length,
+                                _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length,
                                 bool handle_warning TSRMLS_DC )= 0;
     virtual SQLRETURN get_diag_field( SQLSMALLINT record_number, SQLSMALLINT diag_identifier, 
-                                      __out SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
-                                      __out SQLSMALLINT* out_buffer_length TSRMLS_DC ) = 0;
+                                      _Out_ SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
+                                      _Out_ SQLSMALLINT* out_buffer_length TSRMLS_DC ) = 0;
     virtual sqlsrv_error* get_diag_rec( SQLSMALLINT record_number ) = 0;
     virtual SQLLEN row_count( TSRMLS_D ) = 0;
 };
@@ -1376,11 +1378,11 @@ struct sqlsrv_odbc_result_set : public sqlsrv_result_set {
     virtual bool cached( int field_index ) { return false; }
     virtual SQLRETURN fetch( SQLSMALLINT fetch_orientation, SQLLEN fetch_offset TSRMLS_DC );
     virtual SQLRETURN get_data( SQLUSMALLINT field_index, SQLSMALLINT target_type,
-                                __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length,
+                                _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length,
                                 bool handle_warning TSRMLS_DC );
     virtual SQLRETURN get_diag_field( SQLSMALLINT record_number, SQLSMALLINT diag_identifier, 
-                                      __out SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
-                                      __out SQLSMALLINT* out_buffer_length TSRMLS_DC );
+                                      _Out_ SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
+                                      _Out_ SQLSMALLINT* out_buffer_length TSRMLS_DC );
     virtual sqlsrv_error* get_diag_rec( SQLSMALLINT record_number );
     virtual SQLLEN row_count( TSRMLS_D );
 
@@ -1414,11 +1416,11 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
     virtual bool cached( int field_index ) { return true; }
     virtual SQLRETURN fetch( SQLSMALLINT fetch_orientation, SQLLEN fetch_offset TSRMLS_DC );
     virtual SQLRETURN get_data( SQLUSMALLINT field_index, SQLSMALLINT target_type,
-                                __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length,
+                                _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length,
                                 bool handle_warning TSRMLS_DC );
     virtual SQLRETURN get_diag_field( SQLSMALLINT record_number, SQLSMALLINT diag_identifier, 
-                                      __out SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
-                                      __out SQLSMALLINT* out_buffer_length TSRMLS_DC );
+                                      _Out_ SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
+                                      _Out_ SQLSMALLINT* out_buffer_length TSRMLS_DC );
     virtual sqlsrv_error* get_diag_rec( SQLSMALLINT record_number );
     virtual SQLLEN row_count( TSRMLS_D );
 
@@ -1449,55 +1451,55 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
     sqlsrv_malloc_auto_ptr<SQLCHAR> temp_string;   // temp buffer to hold a converted field while in use
     SQLLEN temp_length;                 // number of bytes in the temp conversion buffer
 
-    typedef SQLRETURN (sqlsrv_buffered_result_set::*conv_fn)( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                                              __out SQLLEN* out_buffer_length );
+    typedef SQLRETURN (sqlsrv_buffered_result_set::*conv_fn)( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                                              _Out_ SQLLEN* out_buffer_length );
     typedef std::map< SQLINTEGER, std::map< SQLINTEGER, conv_fn > > conv_matrix_t;
 
     // two dimentional sparse matrix that holds the [from][to] functions that do conversions
     static conv_matrix_t conv_matrix;
 
     // string conversion functions
-    SQLRETURN binary_to_wide_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                     __out SQLLEN* out_buffer_length );
-    SQLRETURN binary_to_system_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                       __out SQLLEN* out_buffer_length );
-    SQLRETURN system_to_wide_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                     __out SQLLEN* out_buffer_length );
-    SQLRETURN to_binary_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                __out SQLLEN* out_buffer_length );
-    SQLRETURN to_same_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                               __out SQLLEN* out_buffer_length );
-    SQLRETURN wide_to_system_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                     __out SQLLEN* out_buffer_length );
+    SQLRETURN binary_to_wide_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                     _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN binary_to_system_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                       _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN system_to_wide_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                     _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN to_binary_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN to_same_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                               _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN wide_to_system_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                     _Out_ SQLLEN* out_buffer_length );
 
     // long conversion functions
-    SQLRETURN to_long( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length );
-    SQLRETURN long_to_system_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                     __out SQLLEN* out_buffer_length );
-    SQLRETURN long_to_wide_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                     __out SQLLEN* out_buffer_length );
-    SQLRETURN long_to_double( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                              __out SQLLEN* out_buffer_length );
+    SQLRETURN to_long( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN long_to_system_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                     _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN long_to_wide_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                     _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN long_to_double( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                              _Out_ SQLLEN* out_buffer_length );
 
     // double conversion functions
-    SQLRETURN to_double( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length );
-    SQLRETURN double_to_system_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                       __out SQLLEN* out_buffer_length );
-    SQLRETURN double_to_wide_string( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                     __out SQLLEN* out_buffer_length );
-    SQLRETURN double_to_long( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                              __out SQLLEN* out_buffer_length );
+    SQLRETURN to_double( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN double_to_system_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                       _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN double_to_wide_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                     _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN double_to_long( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                              _Out_ SQLLEN* out_buffer_length );
 
     // string to number conversion functions
     // Future: See if these can be converted directly to template member functions
-    SQLRETURN string_to_double( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                 __out SQLLEN* out_buffer_length );
-    SQLRETURN string_to_long( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                              __out SQLLEN* out_buffer_length );
-    SQLRETURN wstring_to_double( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                                 __out SQLLEN* out_buffer_length );
-    SQLRETURN wstring_to_long( SQLSMALLINT field_index, __out void* buffer, SQLLEN buffer_length, 
-                               __out SQLLEN* out_buffer_length );
+    SQLRETURN string_to_double( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                 _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN string_to_long( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                              _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN wstring_to_double( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                                 _Out_ SQLLEN* out_buffer_length );
+    SQLRETURN wstring_to_long( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
+                               _Out_ SQLLEN* out_buffer_length );
 
     // utility functions for conversions
     unsigned char* get_row( void );
@@ -1520,7 +1522,7 @@ bool convert_zval_string_from_utf16(SQLSRV_ENCODING encoding, zval* value_z, SQL
 bool validate_string(char* string, SQLLEN& len);
 bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen );
 wchar_t* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, 
-                                        unsigned int mbcs_len, __out unsigned int* utf16_len );
+                                        unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
 
 //*********************************************************************************************************************************
 // Error handling routines and Predefined Errors
@@ -1598,7 +1600,7 @@ enum error_handling_flags {
 // 2/code) driver specific error code
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
-bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, __out sqlsrv_error_auto_ptr& error, 
+bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, _Out_ sqlsrv_error_auto_ptr& error, 
                                  logging_severity severity TSRMLS_DC );
 
 // format and return a driver specfic error
@@ -1754,8 +1756,7 @@ namespace core {
                 throw CoreException();
             }
 			std::size_t driver_version = stmt->conn->driver_version;
-            if(( len == sizeof( CONNECTION_BUSY_ODBC_ERROR[driver_version] ) - 1 ) && 
-               !strcmp( reinterpret_cast<const char*>( err_msg ), CONNECTION_BUSY_ODBC_ERROR[driver_version] )) {
+            if( !strcmp( reinterpret_cast<const char*>( err_msg ), CONNECTION_BUSY_ODBC_ERROR[driver_version] )) {
              
                 THROW_CORE_ERROR( stmt, SQLSRV_ERROR_MARS_OFF );
             }
@@ -1771,8 +1772,8 @@ namespace core {
     // the context to hold the error, they are not passed as const.
 
     inline SQLRETURN SQLGetDiagField( sqlsrv_context* ctx, SQLSMALLINT record_number, SQLSMALLINT diag_identifier, 
-                                      __out SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
-                                      __out SQLSMALLINT* out_buffer_length TSRMLS_DC )
+                                      _Out_ SQLPOINTER diag_info_buffer, SQLSMALLINT buffer_length,
+                                      _Out_ SQLSMALLINT* out_buffer_length TSRMLS_DC )
     {
         SQLRETURN r = ::SQLGetDiagField( ctx->handle_type(), ctx->handle(), record_number, diag_identifier, 
                                        diag_info_buffer, buffer_length, out_buffer_length );
@@ -1785,7 +1786,7 @@ namespace core {
     }
 
     inline void SQLAllocHandle( SQLSMALLINT HandleType, sqlsrv_context& InputHandle, 
-                                __out_ecount(1) SQLHANDLE* OutputHandlePtr TSRMLS_DC )
+								_Out_writes_(1) SQLHANDLE* OutputHandlePtr TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLAllocHandle( HandleType, InputHandle.handle(), OutputHandlePtr );
@@ -1801,9 +1802,9 @@ namespace core {
                                   SQLSMALLINT           ParameterType,
                                   SQLULEN               ColumnSize,
                                   SQLSMALLINT           DecimalDigits,
-                                  __inout SQLPOINTER    ParameterValuePtr,
+                                  _Inout_ SQLPOINTER    ParameterValuePtr,
                                   SQLLEN                BufferLength,
-                                  __inout SQLLEN *      StrLen_Or_IndPtr
+                                  _Inout_ SQLLEN *      StrLen_Or_IndPtr
                                   TSRMLS_DC )
     {
         SQLRETURN r;
@@ -1817,8 +1818,8 @@ namespace core {
 
 
     inline void SQLColAttribute( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLUSMALLINT field_identifier, 
-                                      __out SQLPOINTER field_type_char, SQLSMALLINT buffer_length, 
-                                      __out SQLSMALLINT* out_buffer_length, __out SQLLEN* field_type_num TSRMLS_DC )
+                                      _Out_ SQLPOINTER field_type_char, SQLSMALLINT buffer_length, 
+                                      _Out_ SQLSMALLINT* out_buffer_length, _Out_ SQLLEN* field_type_num TSRMLS_DC )
     {
         SQLRETURN r = ::SQLColAttribute( stmt->handle(), field_index, field_identifier, field_type_char,
                                          buffer_length, out_buffer_length, field_type_num );
@@ -1829,9 +1830,9 @@ namespace core {
     }
 
 
-    inline void SQLDescribeCol( sqlsrv_stmt* stmt, SQLSMALLINT colno, __out_z SQLCHAR* col_name, SQLSMALLINT col_name_length, 
-                                __out SQLSMALLINT* col_name_length_out, SQLSMALLINT* data_type, __out SQLULEN* col_size, 
-                                __out SQLSMALLINT* decimal_digits, __out SQLSMALLINT* nullable TSRMLS_DC )
+    inline void SQLDescribeCol( sqlsrv_stmt* stmt, SQLSMALLINT colno, _Out_ SQLCHAR* col_name, SQLSMALLINT col_name_length,
+                                _Out_ SQLSMALLINT* col_name_length_out, SQLSMALLINT* data_type, _Out_ SQLULEN* col_size, 
+                                _Out_ SQLSMALLINT* decimal_digits, _Out_ SQLSMALLINT* nullable TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLDescribeCol( stmt->handle(), colno, col_name, col_name_length, col_name_length_out, 
@@ -1914,7 +1915,7 @@ namespace core {
     }
 
     inline SQLRETURN SQLGetData( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLSMALLINT target_type,
-                                 __out void* buffer, SQLLEN buffer_length, __out SQLLEN* out_buffer_length,
+                                 _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length,
                                  bool handle_warning TSRMLS_DC )
     {
         SQLRETURN r = ::SQLGetData( stmt->handle(), field_index, target_type, buffer, buffer_length, out_buffer_length );
@@ -1936,8 +1937,8 @@ namespace core {
     }
 
    
-    inline void SQLGetInfo( sqlsrv_conn* conn, SQLUSMALLINT info_type, __out SQLPOINTER info_value, SQLSMALLINT buffer_len,
-                     __out SQLSMALLINT* str_len TSRMLS_DC )
+    inline void SQLGetInfo( sqlsrv_conn* conn, SQLUSMALLINT info_type, _Out_ SQLPOINTER info_value, SQLSMALLINT buffer_len,
+                     _Out_ SQLSMALLINT* str_len TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLGetInfo( conn->handle(), info_type, info_value, buffer_len, str_len );
@@ -1986,7 +1987,7 @@ namespace core {
 
     // SQLParamData returns the status code since it returns either SQL_NEED_DATA or SQL_NO_DATA when there are more
     // parameters or when the parameters are all processed.
-    inline SQLRETURN SQLParamData( sqlsrv_stmt* stmt, __out SQLPOINTER* value_ptr_ptr TSRMLS_DC )
+    inline SQLRETURN SQLParamData( sqlsrv_stmt* stmt, _Out_ SQLPOINTER* value_ptr_ptr TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLParamData( stmt->handle(), value_ptr_ptr );
@@ -2141,7 +2142,7 @@ namespace core {
         }
     }
 
-    inline void sqlsrv_array_init( sqlsrv_context& ctx, __out zval* new_array TSRMLS_DC) 
+    inline void sqlsrv_array_init( sqlsrv_context& ctx, _Out_ zval* new_array TSRMLS_DC) 
     {
         int zr = ::array_init(new_array);
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
@@ -2158,7 +2159,7 @@ namespace core {
         }
     }
 
-	inline void sqlsrv_zend_hash_get_current_data(sqlsrv_context& ctx, HashTable* ht, __out zval*& output_data TSRMLS_DC)
+	inline void sqlsrv_zend_hash_get_current_data(sqlsrv_context& ctx, HashTable* ht, _Out_ zval*& output_data TSRMLS_DC)
 	{
 		int zr = (output_data = ::zend_hash_get_current_data(ht)) != NULL ? SUCCESS : FAILURE;
 		CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
@@ -2166,7 +2167,7 @@ namespace core {
 		}
 	}
 
-    inline void sqlsrv_zend_hash_get_current_data_ptr(sqlsrv_context& ctx, HashTable* ht, __out void*& output_data TSRMLS_DC)
+    inline void sqlsrv_zend_hash_get_current_data_ptr(sqlsrv_context& ctx, HashTable* ht, _Out_ void*& output_data TSRMLS_DC)
     {
         int zr = (output_data = ::zend_hash_get_current_data_ptr(ht)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {

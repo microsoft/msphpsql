@@ -599,11 +599,16 @@ void pdo_sqlsrv_throw_exception( sqlsrv_error_const* error TSRMLS_DC )
     add_next_index_string( &ex_error_info, reinterpret_cast<char*>( error->sqlstate ));
     add_next_index_long( &ex_error_info, error->native_code );
     add_next_index_string( &ex_error_info, reinterpret_cast<char*>( error->native_message ));
+	//zend_update_property makes an entry in the properties_table in ex_obj point to the Z_ARRVAL( ex_error_info )
+	//and the refcount of the zend_array is incremented by 1
     zend_update_property( ex_class, &ex_obj, EXCEPTION_PROPERTY_ERRORINFO, sizeof( EXCEPTION_PROPERTY_ERRORINFO ) - 1, 
                           &ex_error_info TSRMLS_CC );
 
+	//DELREF ex_error_info here to decrement the refcount of the zend_array is 1
+	//the global hashtable EG(exception) then points to the zend_object in ex_obj in zend_throw_exception_object;
+	//this ensure when EG(exception) cleans itself at php shutdown, the zend_array allocated is properly destroyed
+	Z_DELREF( ex_error_info );
     zend_throw_exception_object( &ex_obj TSRMLS_CC );
-    ex_msg.transferred();
 }
 
 }

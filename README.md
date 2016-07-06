@@ -1,16 +1,27 @@
 # Microsoft Drivers for PHP for SQL Server
 
-**Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7 (Release Candidate)**
+**Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7**
 
 The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
 
-This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
+This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
 
 The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
 
-June 13, 2016 (4.0) Release Candidate: The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
+June 30, 2016 (4.0.6): The quality of SQLSRV and PDO_SQLSRV is improved and includes some memory leak fixes:
+- Fixed a heap corruption when binding parameters in a prepare statement with error
+- Fixed leaks in SQLSRV streams and output parameters handling
+- Fixed leaks in SQLSRV fetch object
+- Fixed leaks in SQLSRV binding object parameters
+- Fixed leaks in SQLSRV buffered result set
+- Fixed leaks in SQLSRV getting datetime and stream fields
+- Fixed leaks in PDO_SQLSRV field cache
+- Fixed leaks in PDO_SQLSRV construct when connecting with error
+- Fixed leaks in PDO_SQLSRV exception handling
+
+June 13, 2016 (4.0.5): The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
 - Added ability to connect to Microsoft ODBC Driver 13.
 - Fixed some memory leaks in data retrieval.
 - Fixed issue with error handling in bound stream parameters when send_stream_at_exec option is set to false.
@@ -66,7 +77,7 @@ You must first be able to build PHP 7 without including these extensions.  For h
 
 5. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll and/or php_pdo_sqlsrv.dll to your PHP extension directory.
 
-This software has been compiled and tested under PHP 7.0.7 using the Visual C++ 2015 compiler.
+This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 2015 compiler.
 
 ## Install
 
@@ -122,7 +133,7 @@ Thank you!
 
 **Q:** What's next?
 
-**A:** On Jan 29, 2016 we released an early technical preview for our PHP Driver and several since. We will continue releasing frequent technical previews until we reach production quality.
+**A:** On Jan 29, 2016 we released an early technical preview for our PHP Driver and several since. We will continue to release frequently to improve the quality of our driver.
 
 **Q:** Is Microsoft taking pull requests for this project?
 
@@ -159,3 +170,5 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.
 [odbc13]: https://www.microsoft.com/en-us/download/details.aspx?id=50420
 
 [phpazure]: https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-php-simple-windows/
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.

@@ -202,6 +202,9 @@ void set_stmt_encoding( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 // internal helper function to free meta data structures allocated
 void meta_data_free( field_meta_data* meta )
 {
+	if( meta->field_name ) {
+		meta->field_name.reset();
+	}
     sqlsrv_free( meta );
 }
 
@@ -431,7 +434,7 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
    
     // Set the name
     column_data->name = zend_string_init( (const char*)core_meta_data->field_name.get(), core_meta_data->field_name_len, 0 );
-    core_meta_data->field_name.transferred();
+    core_meta_data->field_name.reset();		
 
     // Set the maxlen
     column_data->maxlen = ( core_meta_data->field_precision > 0 ) ? core_meta_data->field_precision : core_meta_data->field_size;

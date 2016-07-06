@@ -22,7 +22,7 @@
 #include "pdo_sqlsrv.h"
 
 // Constructor
-conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, __inout HashTable* conn_options_ht )
+conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, _Inout_ HashTable* conn_options_ht )
 {
     this->conn_str = dsn;
     this->len = len;
@@ -142,7 +142,7 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
     // encountered an invalid key, throw error.
     sqlsrv_malloc_auto_ptr<char> key_name;
     key_name = static_cast<char*>( sqlsrv_malloc( new_len + 1 ));
-    memcpy( key_name, key, new_len );
+    memcpy_s( key_name, new_len + 1 ,key, new_len );
     key_name[ new_len ] = '\0';  
 
     THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, key_name ); 

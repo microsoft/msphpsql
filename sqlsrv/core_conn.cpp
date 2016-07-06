@@ -57,7 +57,7 @@ const char CONNECTION_OPTION_MARS_ON[] = "MARS_Connection={Yes};";
 
 void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* server, const char* uid, const char* pwd, 
                                                      HashTable* options_ht, const connection_option valid_conn_opts[], 
-                                                     void* driver,__inout std::string& connection_string TSRMLS_DC );
+                                                     void* driver,_Inout_ std::string& connection_string TSRMLS_DC );
 void determine_server_version( sqlsrv_conn* conn TSRMLS_DC );
 const char* get_processor_arch( void );
 void get_server_version( sqlsrv_conn* conn, char** server_version, SQLSMALLINT& len TSRMLS_DC );
@@ -377,7 +377,7 @@ void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, SQLLEN sql_len TSR
 // conn             - The connection resource by which the client and server are connected.
 // *server_version  - zval for returning results.
 
-void core_sqlsrv_get_server_version( sqlsrv_conn* conn, __out zval *server_version TSRMLS_DC )
+void core_sqlsrv_get_server_version( sqlsrv_conn* conn, _Out_ zval *server_version TSRMLS_DC )
 {
     try {
         
@@ -404,7 +404,7 @@ void core_sqlsrv_get_server_version( sqlsrv_conn* conn, __out zval *server_versi
 // conn         - The connection resource by which the client and server are connected.
 // *server_info - zval for returning results.
 
-void core_sqlsrv_get_server_info( sqlsrv_conn* conn, __out zval *server_info TSRMLS_DC )
+void core_sqlsrv_get_server_info( sqlsrv_conn* conn, _Out_ zval *server_info TSRMLS_DC )
 {
     try {
 
@@ -443,7 +443,7 @@ void core_sqlsrv_get_server_info( sqlsrv_conn* conn, __out zval *server_info TSR
 // conn         - The connection resource by which the client and server are connected.
 // *client_info - zval for returning the results.
 
-void core_sqlsrv_get_client_info( sqlsrv_conn* conn, __out zval *client_info TSRMLS_DC )
+void core_sqlsrv_get_client_info( sqlsrv_conn* conn, _Out_ zval *client_info TSRMLS_DC )
 {
     try {
 
@@ -534,7 +534,7 @@ connection_option const* get_connection_option( sqlsrv_conn* conn, SQLULEN key,
 
 void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* server, const char* uid, const char* pwd, 
                                                      HashTable* options, const connection_option valid_conn_opts[], 
-                                                     void* driver,__inout std::string& connection_string TSRMLS_DC )
+                                                     void* driver,_Inout_ std::string& connection_string TSRMLS_DC )
 {
     bool credentials_mentioned = false;
     bool mars_mentioned = false;
@@ -689,7 +689,7 @@ void determine_server_version( sqlsrv_conn* conn TSRMLS_DC )
     errno = 0;
     char version_major_str[ 3 ];
     SERVER_VERSION version_major;
-    memcpy( version_major_str, p, 2 );
+	memcpy_s( version_major_str, sizeof( version_major_str ), p, 2 );
     version_major_str[ 2 ] = '\0';
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
 

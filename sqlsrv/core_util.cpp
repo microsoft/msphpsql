@@ -33,9 +33,9 @@ SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage fa
 char last_err_msg[ 2048 ];  // 2k to hold the error messages
 
 // routine used by utf16_string_from_mbcs_string
-unsigned int convert_string_from_default_encoding( unsigned int php_encoding, __in_bcount(mbcs_len) char const* mbcs_in_string,
+unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
                                                    unsigned int mbcs_len, 
-                                                   __out_ecount(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
+                                                   _Out_writes_(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
                                                    unsigned int utf16_len );
 }
 
@@ -370,8 +370,8 @@ namespace {
 // returned in utf16_out_string.  An empty string passed in will result as
 // a failure since MBTWC returns 0 for both an empty string and failure
 // to convert.
-unsigned int convert_string_from_default_encoding( unsigned int php_encoding, __in_bcount(mbcs_len) char const* mbcs_in_string,
-                                                   unsigned int mbcs_len, __out_ecount(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
+unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
+                                                   unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
                                                    unsigned int utf16_len )
 {
     unsigned int win_encoding = CP_ACP;

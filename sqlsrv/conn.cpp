@@ -133,9 +133,9 @@ struct bool_conn_attr_func {
 //// *** internal functions ***
 
 void sqlsrv_conn_close_stmts( ss_sqlsrv_conn* conn TSRMLS_DC );
-void validate_conn_options( sqlsrv_context& ctx, zval* user_options_z, __out char** uid, __out char** pwd, 
-                            __inout HashTable* ss_conn_options_ht TSRMLS_DC );
-void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, __inout HashTable* ss_stmt_options_ht TSRMLS_DC );
+void validate_conn_options( sqlsrv_context& ctx, zval* user_options_z, _Out_ char** uid, _Out_ char** pwd, 
+                            _Inout_ HashTable* ss_conn_options_ht TSRMLS_DC );
+void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC );
 void add_conn_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len, 
                          HashTable* options_ht, zval* data TSRMLS_DC );
 void add_stmt_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len, HashTable* options_ht, zval* data TSRMLS_DC );
@@ -1218,7 +1218,7 @@ void add_conn_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len,
 // against the list of supported statement options by this driver. After validation
 // creates a Hashtable of statement options to be sent to the core layer for processing.
 
-void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, __inout HashTable* ss_stmt_options_ht TSRMLS_DC )
+void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC )
 {
     try {
         
@@ -1258,7 +1258,7 @@ void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, __inout Has
 // against the predefined list of supported connection options by this driver. After validation
 // creates a Hashtable of connection options to be sent to the core layer for processing.
 
-void validate_conn_options( sqlsrv_context& ctx, zval* user_options_z, __out char** uid, __out char** pwd, __inout HashTable* ss_conn_options_ht TSRMLS_DC )
+void validate_conn_options( sqlsrv_context& ctx, zval* user_options_z, _Out_ char** uid, _Out_ char** pwd, _Inout_ HashTable* ss_conn_options_ht TSRMLS_DC )
 {
     try {
 

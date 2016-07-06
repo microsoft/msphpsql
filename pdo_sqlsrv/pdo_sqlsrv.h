@@ -158,7 +158,7 @@ class conn_string_parser
         void add_key_value_pair( const char* value, int len TSRMLS_DC );
 
     public:
-        conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, __inout HashTable* conn_options_ht );
+        conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, _Inout_ HashTable* conn_options_ht );
         void parse_conn_string( TSRMLS_D );
 };
 

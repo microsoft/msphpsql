@@ -137,7 +137,7 @@ struct pdo_bool_conn_attr_func {
 // statement options related functions
 void add_stmt_option_key( sqlsrv_context& ctx, size_t key, HashTable* options_ht, 
                          zval** data TSRMLS_DC );
-void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, __inout HashTable* pdo_stmt_options_ht TSRMLS_DC );
+void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ HashTable* pdo_stmt_options_ht TSRMLS_DC );
 
 }       // namespace
 
@@ -404,6 +404,7 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     zval* temp_server_z = NULL;
     sqlsrv_malloc_auto_ptr<conn_string_parser> dsn_parser;
     zval server_z;
+	ZVAL_UNDEF( &server_z );
 
     try {
  
@@ -443,12 +444,12 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     zval_add_ref( &server_z );
     zend_hash_index_del( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
 
-    sqlsrv_conn* conn = core_sqlsrv_connect( *g_henv_cp, *g_henv_ncp, core::allocate_conn<pdo_sqlsrv_dbh>, Z_STRVAL(server_z ), 
+    sqlsrv_conn* conn = core_sqlsrv_connect( *g_henv_cp, *g_henv_ncp, core::allocate_conn<pdo_sqlsrv_dbh>, Z_STRVAL( server_z ), 
                                              dbh->username, dbh->password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error, 
                                              PDO_CONN_OPTS, dbh, "pdo_sqlsrv_db_handle_factory" TSRMLS_CC );
 
 	// Free the string in server_z after being used
-	zend_string_release(Z_STR(server_z));
+	zend_string_release( Z_STR( server_z ));
                                 
     SQLSRV_ASSERT( conn != NULL, "Invalid connection returned.  Exception should have been thrown." );
 
@@ -460,18 +461,18 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
 
     }
     catch( core::CoreException& ) {
-
+		if ( Z_TYPE( server_z ) == IS_STRING ) {
+			zend_string_release( Z_STR( server_z ));
+		}
         dbh->error_mode = prev_err_mode;    // reset the error mode
-
 		g_henv_cp->invalidate();
-
         return 0;
     }
     catch( ... ) {
 
         DIE( "pdo_sqlsrv_db_handle_factory: Unknown exception caught" );
     }
-        
+
     return 1;
 }
 
@@ -1095,7 +1096,7 @@ int pdo_sqlsrv_dbh_return_error( pdo_dbh_t *dbh, pdo_stmt_t *stmt,
 // len  - Length of the name.
 // Return:
 // Returns the last insert id as a string.
-char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, __out size_t* len TSRMLS_DC )
+char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, _Out_ size_t* len TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1305,7 +1306,7 @@ void add_stmt_option_key( sqlsrv_context& ctx, size_t key, HashTable* options_ht
 // ctx - The current context.
 // stmt_options - The user provided list of statement options.
 // pdo_stmt_options_ht - Output hashtable of statement options. 
-void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, __inout HashTable* pdo_stmt_options_ht TSRMLS_DC )
+void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ HashTable* pdo_stmt_options_ht TSRMLS_DC )
 {
     try {
         

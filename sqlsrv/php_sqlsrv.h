@@ -368,13 +368,13 @@ PHP_FUNCTION(sqlsrv_errors);
 // bytes.  The return is the number of UTF-16 characters in the string
 // returned in utf16_out_string.
 unsigned int convert_string_from_default_encoding( unsigned int php_encoding, char const* mbcs_in_string,
-                                                   unsigned int mbcs_len, __out wchar_t* utf16_out_string,
+                                                   unsigned int mbcs_len, _Out_ wchar_t* utf16_out_string,
                                                    unsigned int utf16_len );
 // create a wide char string from the passed in mbcs string.  NULL is returned if the string
 // could not be created.  No error is posted by this function.  utf16_len is the number of
 // wchar_t characters, not the number of bytes.
 wchar_t* utf16_string_from_mbcs_string( unsigned int php_encoding, const char* mbcs_string, 
-                                        unsigned int mbcs_len, __out unsigned int* utf16_len );
+                                        unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
 
 // *** internal error macros and functions ***
 bool handle_error( sqlsrv_context const* ctx, int log_subsystem, const char* function, 
@@ -604,7 +604,7 @@ namespace ss {
         }
     };
 
-    inline void zend_register_resource(__out zval& rsrc_result, void* rsrc_pointer, int rsrc_type, char* rsrc_name TSRMLS_DC)
+    inline void zend_register_resource(_Out_ zval& rsrc_result, void* rsrc_pointer, int rsrc_type, char* rsrc_name TSRMLS_DC)
     {
         int zr = (NULL != (Z_RES(rsrc_result) = ::zend_register_resource(rsrc_pointer, rsrc_type)) ? SUCCESS : FAILURE);
         CHECK_CUSTOM_ERROR(( zr == FAILURE ), reinterpret_cast<sqlsrv_context*>( rsrc_pointer ), SS_SQLSRV_ERROR_REGISTER_RESOURCE,

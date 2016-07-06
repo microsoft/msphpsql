@@ -145,14 +145,14 @@ void core_sqlsrv_mshutdown( sqlsrv_context& henv_cp, sqlsrv_context& henv_ncp )
     if( henv_ncp != SQL_NULL_HANDLE ) {
 
         henv_ncp.invalidate();
-		delete &henv_ncp;
     }
+	delete &henv_ncp;
 
     if( henv_cp != SQL_NULL_HANDLE ) {
 
         henv_cp.invalidate();
-		delete &henv_cp;
     }
+	delete &henv_cp;
 
     return;
 }

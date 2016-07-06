@@ -43,7 +43,7 @@ bool handle_errors_and_warnings( sqlsrv_context& ctx, zval* reported_chain, zval
                                  unsigned int sqlsrv_error_code, bool warning, va_list* print_args TSRMLS_DC );
 
 int  sqlsrv_merge_zend_hash_dtor( zval* dest TSRMLS_DC );
-bool sqlsrv_merge_zend_hash( __inout zval* dest_z, zval const* src_z TSRMLS_DC );
+bool sqlsrv_merge_zend_hash( _Inout_ zval* dest_z, zval const* src_z TSRMLS_DC );
 
 }
 
@@ -300,8 +300,8 @@ ss_error SS_ERRORS[] = {
 
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 11 for SQL Server. "
-        "Access the following URL to download the ODBC Driver 11 for SQL Server for %1!s!: "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 11 or 13 for SQL Server. "
+        "Access the following URL to download the ODBC Driver 11 or 13 for SQL Server for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
     },     
 
@@ -478,18 +478,18 @@ PHP_FUNCTION( sqlsrv_errors )
 	}
 	if( flags == SQLSRV_ERR_ALL || flags == SQLSRV_ERR_ERRORS ) {
 		if( Z_TYPE( SQLSRV_G( errors )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &err_z, &SQLSRV_G( errors ) TSRMLS_CC )) {
-
+			zval_ptr_dtor(&err_z);
 			RETURN_FALSE;
 		}
 	}
 	if( flags == SQLSRV_ERR_ALL || flags == SQLSRV_ERR_WARNINGS ) {
 		if( Z_TYPE( SQLSRV_G( warnings )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &err_z, &SQLSRV_G( warnings ) TSRMLS_CC )) {
-
+			zval_ptr_dtor(&err_z);
 			RETURN_FALSE;
 		}
 	}
 	if( zend_hash_num_elements( Z_ARRVAL_P( &err_z )) == 0 ) {
-
+		zval_ptr_dtor(&err_z);
 		RETURN_NULL();
 	}
 	RETURN_ZVAL( &err_z, 1, 1 );
@@ -888,7 +888,7 @@ int  sqlsrv_merge_zend_hash_dtor( zval* dest TSRMLS_DC )
 
 // sqlsrv_merge_zend_hash
 // merge a source hash into a dest hash table and return any errors.
-bool sqlsrv_merge_zend_hash( __inout zval* dest_z, zval const* src_z TSRMLS_DC )
+bool sqlsrv_merge_zend_hash( _Inout_ zval* dest_z, zval const* src_z TSRMLS_DC )
 {
     if( Z_TYPE_P( dest_z ) != IS_ARRAY && Z_TYPE_P( dest_z ) != IS_NULL ) DIE( "dest_z must be an array or null" );
     if( Z_TYPE_P( src_z ) != IS_ARRAY && Z_TYPE_P( src_z ) != IS_NULL ) DIE( "src_z must be an array or null" );

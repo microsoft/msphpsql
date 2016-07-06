@@ -888,7 +888,7 @@ RETCODE SQL_API bcp_moretext (HDBC, DBINT, LPCBYTE);
 RETCODE SQL_API bcp_readfmtA (HDBC, LPCSTR);
 RETCODE SQL_API bcp_readfmtW (HDBC, LPCWSTR);
 RETCODE SQL_API bcp_sendrow (HDBC);
-RETCODE SQL_API bcp_setbulkmode (HDBC, INT, __in_bcount(cbField) void*, INT cbField, __in_bcount(cbRow) void *, INT cbRow);
+RETCODE SQL_API bcp_setbulkmode (HDBC, INT, _In_reads_bytes_(cbField) void*, INT cbField, _In_reads_bytes_(cbRow) void *, INT cbRow);
 RETCODE SQL_API bcp_setcolfmt (HDBC, INT, INT, void *, INT);
 RETCODE SQL_API bcp_writefmtA (HDBC, LPCSTR);
 RETCODE SQL_API bcp_writefmtW (HDBC, LPCWSTR);
@@ -958,7 +958,7 @@ HANDLE __stdcall OpenSqlFilestream (
            LPCWSTR                        FilestreamPath,
            SQL_FILESTREAM_DESIRED_ACCESS  DesiredAccess,
            ULONG                          OpenOptions,
-           __in_bcount(FilestreamTransactionContextLength)
+           _In_reads_bytes_(FilestreamTransactionContextLength)
            LPBYTE                         FilestreamTransactionContext,
            SSIZE_T                        FilestreamTransactionContextLength,
            PLARGE_INTEGER                 AllocationSize);
@@ -995,11 +995,11 @@ extern "C" {
 // type definition for LocalDBCreateInstance function
 typedef HRESULT __cdecl FnLocalDBCreateInstance (
 		// I			the LocalDB version (e.g. 11.0 or 11.0.1094.2)
-		__in_z			PCWSTR	wszVersion,
+		_In_z_			PCWSTR	wszVersion,
 		// I			the instance name
-		__in_z			PCWSTR	pInstanceName,
+		_In_z_			PCWSTR	pInstanceName,
 		// I			reserved for the future use. Currently should be set to 0.
-		__in			DWORD	dwFlags
+		_In_			DWORD	dwFlags
 );
 
 // type definition for pointer to LocalDBCreateInstance function
@@ -1008,14 +1008,14 @@ typedef FnLocalDBCreateInstance* PFnLocalDBCreateInstance;
 // type definition for LocalDBStartInstance function
 typedef HRESULT __cdecl FnLocalDBStartInstance (
 		// I			the LocalDB instance name
-		__in_z									PCWSTR	pInstanceName,
+		_In_z_									PCWSTR	pInstanceName,
 		// I			reserved for the future use. Currently should be set to 0.
-		__in									DWORD	dwFlags,
+		_In_									DWORD	dwFlags,
 		// O			the buffer to store the connection string to the LocalDB instance
-		__out_ecount_z_opt(*lpcchSqlConnection)	LPWSTR	wszSqlConnection,
+		_Out_writes_opt_z_(*lpcchSqlConnection)	LPWSTR	wszSqlConnection,
 		// I/O			on input has the size of the wszSqlConnection buffer in characters. On output, if the given buffer size is 
 		//				too small, has the buffer size required, in characters, including trailing null.
-		__inout_opt								LPDWORD	lpcchSqlConnection
+		_Inout_opt_								LPDWORD	lpcchSqlConnection
 );
 
 // type definition for pointer to LocalDBStartInstance function
@@ -1027,19 +1027,19 @@ typedef FnLocalDBStartInstance* PFnLocalDBStartInstance;
 // type definition for LocalDBFormatMessage function
 typedef HRESULT __cdecl FnLocalDBFormatMessage(
 			// I		the LocalDB error code
-			__in							HRESULT	hrLocalDB,
+			_In_							HRESULT	hrLocalDB,
 			// I		Available flags:
 			//			LOCALDB_TRUNCATE_ERR_MESSAGE - if the input buffer is too short,
 			//			the error message will be truncated to fit into the buffer 
-			__in							DWORD	dwFlags,
+			_In_							DWORD	dwFlags,
 			// I		Language desired (LCID) or 0 (in which case Win32 FormatMessage order is used)
-			__in							DWORD	dwLanguageId,
+			_In_							DWORD	dwLanguageId,
 			// O		the buffer to store the LocalDB error message
-			__out_ecount_z(*lpcchMessage)	LPWSTR	wszMessage,
+			_Out_writes_z_(*lpcchMessage)	LPWSTR	wszMessage,
 			// I/O		on input has the size of the wszMessage buffer in characters. On output, if the given buffer size is 
 			//			too small, has the buffer size required, in characters, including trailing null. If the function succeeds
 			//			contains the number of characters in the message, excluding the trailing null
-			__inout							LPDWORD	lpcchMessage
+			_Inout_							LPDWORD	lpcchMessage
 );
 
 // type definition for function pointer to LocalDBFormatMessage function
@@ -1112,14 +1112,14 @@ FnLocalDBStartInstance LocalDBStartInstance;
 // type definition for LocalDBStopInstance function
 typedef HRESULT __cdecl FnLocalDBStopInstance (
 		// I			the LocalDB instance name
-		__in_z			PCWSTR	pInstanceName,
+		_In_z_			PCWSTR	pInstanceName,
 		// I			Available flags:
 		//				LOCALDB_SHUTDOWN_KILL_PROCESS	- force the instance to stop immediately
 		//				LOCALDB_SHUTDOWN_WITH_NOWAIT	- shutdown the instance with NOWAIT option
-		__in			DWORD	dwFlags,
+		_In_			DWORD	dwFlags,
 		// I			the time in seconds to wait this operation to complete. If this value is 0, this function will return immediately
 		//				without waiting for LocalDB instance to stop
-		__in			ULONG	ulTimeout
+		_In_			ULONG	ulTimeout
 );
 
 // type definition for pointer to LocalDBStopInstance function
@@ -1149,9 +1149,9 @@ FnLocalDBStopInstance LocalDBStopInstance;
 // type definition for LocalDBDeleteInstance function
 typedef HRESULT __cdecl FnLocalDBDeleteInstance (
 		// I			the LocalDB instance name
-		__in_z			PCWSTR	pInstanceName,
+		_In_z_			PCWSTR	pInstanceName,
 		// I			reserved for the future use. Currently should be set to 0.
-		__in			DWORD	dwFlags
+		_In_			DWORD	dwFlags
 );
 
 // type definition for pointer to LocalDBDeleteInstance function
@@ -1202,10 +1202,10 @@ typedef TLocalDBInstanceName* PTLocalDBInstanceName;
 // type definition for LocalDBGetInstances function
 typedef HRESULT __cdecl FnLocalDBGetInstances(
 		// O					buffer for a LocalDB instance names
-		__out					PTLocalDBInstanceName	pInstanceNames,
+		_Out_					PTLocalDBInstanceName	pInstanceNames,
 		// I/O					on input has the number slots for instance names in the pInstanceNames buffer. On output, 
 		//						has the number of existing LocalDB instances
-		__inout					LPDWORD					lpdwNumberOfInstances
+		_Inout_					LPDWORD					lpdwNumberOfInstances
 );
 
 // type definition for pointer to LocalDBGetInstances function
@@ -1267,11 +1267,11 @@ typedef LocalDBInstanceInfo* PLocalDBInstanceInfo;
 // type definition for LocalDBGetInstanceInfo function
 typedef HRESULT __cdecl FnLocalDBGetInstanceInfo(
 		// I		the LocalDB instance name
-		__in_z		PCWSTR					wszInstanceName, 
+		_In_z_		PCWSTR					wszInstanceName, 
 		// O		instance information
-		__out		PLocalDBInstanceInfo	pInfo,
+		_Out_		PLocalDBInstanceInfo	pInfo,
 		// I		Size of LocalDBInstanceInfo structure in bytes
-		__in		DWORD					cbInfo);
+		_In_		DWORD					cbInfo);
 
 // type definition for pointer to LocalDBGetInstances function
 typedef FnLocalDBGetInstanceInfo* PFnLocalDBGetInstanceInfo;
@@ -1298,10 +1298,10 @@ typedef TLocalDBVersion* PTLocalDBVersion;
 // type definition for LocalDBGetVersions function
 typedef HRESULT __cdecl FnLocalDBGetVersions(
 		// O					buffer for installed LocalDB versions
-		__out					PTLocalDBVersion	pVersions,
+		_Out_					PTLocalDBVersion	pVersions,
 		// I/O					on input has the number slots for versions in the pVersions buffer. On output, 
 		//						has the number of existing LocalDB versions
-		__inout					LPDWORD				lpdwNumberOfVersions
+		_Inout_					LPDWORD				lpdwNumberOfVersions
 );
 
 // type definition for pointer to LocalDBGetVersions function
@@ -1352,11 +1352,11 @@ typedef LocalDBVersionInfo* PLocalDBVersionInfo;
 // type definition for LocalDBGetVersionInfo function
 typedef HRESULT __cdecl FnLocalDBGetVersionInfo(
 		// I			LocalDB version string
-		__in_z			PCWSTR					wszVersion,
+		_In_z_			PCWSTR					wszVersion,
 		// O			version information
-		__out			PLocalDBVersionInfo		pVersionInfo,
+		_Out_			PLocalDBVersionInfo		pVersionInfo,
 		// I			Size of LocalDBVersionInfo structure in bytes
-		__in			DWORD					cbVersionInfo
+		_In_			DWORD					cbVersionInfo
 );
 
 // type definition for pointer to LocalDBGetVersionInfo function
@@ -1402,13 +1402,13 @@ FnLocalDBStopTracing LocalDBStopTracing;
 // type definition for LocalDBShareInstance function
 typedef HRESULT __cdecl FnLocalDBShareInstance(
 		// I		the SID of the LocalDB instance owner
-		__in_opt	PSID 					pOwnerSID, 
+		_In_opt_	PSID 					pOwnerSID, 
 		// I		the private name of LocalDB instance which should be shared
-		__in_z		PCWSTR					wszPrivateLocalDBInstanceName,
+		_In_z_		PCWSTR					wszPrivateLocalDBInstanceName,
 		// I		the public shared name
-		__in_z		PCWSTR					wszSharedName,
+		_In_z_		PCWSTR					wszSharedName,
 		// I		reserved for the future use. Currently should be set to 0.
-		__in		DWORD	dwFlags);
+		_In_		DWORD	dwFlags);
 
 // type definition for pointer to LocalDBShareInstance function
 typedef FnLocalDBShareInstance* PFnLocalDBShareInstance;
@@ -1426,9 +1426,9 @@ FnLocalDBShareInstance LocalDBShareInstance;
 // type definition for LocalDBUnshareInstance function
 typedef HRESULT __cdecl FnLocalDBUnshareInstance(
 		// I		the LocalDB instance name
-		__in_z		PCWSTR					pInstanceName,
+		_In_z_		PCWSTR					pInstanceName,
 		// I		reserved for the future use. Currently should be set to 0.
-		__in		DWORD	dwFlags);
+		_In_		DWORD	dwFlags);
 
 // type definition for pointer to LocalDBUnshareInstance function
 typedef FnLocalDBUnshareInstance* PFnLocalDBUnshareInstance;
@@ -1653,11 +1653,11 @@ Cleanup:
 HRESULT __cdecl
 LocalDBCreateInstance (
 		// I			the LocalDB version (e.g. 11.0 or 11.0.1094.2)
-		__in_z			PCWSTR	wszVersion,
+		_In_z_			PCWSTR	wszVersion,
 		// I			the instance name
-		__in_z			PCWSTR	pInstanceName,
+		_In_z_			PCWSTR	pInstanceName,
 		// I			reserved for the future use. Currently should be set to 0.
-		__in			DWORD	dwFlags
+		_In_			DWORD	dwFlags
 )
 {
 	LOCALDB_PROXY(LocalDBCreateInstance)(wszVersion, pInstanceName, dwFlags);
@@ -1666,14 +1666,14 @@ LocalDBCreateInstance (
 HRESULT __cdecl
 LocalDBStartInstance(
 		// I			the instance name
-		__in_z										PCWSTR	pInstanceName,
+		_In_z_										PCWSTR	pInstanceName,
 		// I			reserved for the future use. Currently should be set to 0.
-		__in										DWORD	dwFlags,
+		_In_										DWORD	dwFlags,
 		// O			the buffer to store the connection string to the LocalDB instance
-		__out_ecount_z_opt(*lpcchSqlConnection)		LPWSTR	wszSqlConnection,
+		_Out_writes_z__opt(*lpcchSqlConnection)		LPWSTR	wszSqlConnection,
 		// I/O			on input has the size of the wszSqlConnection buffer in characters. On output, if the given buffer size is 
 		//				too small, has the buffer size required, in characters, including trailing null.
-		__inout_opt									LPDWORD	lpcchSqlConnection
+		_Inout_opt_									LPDWORD	lpcchSqlConnection
 )
 {
 	LOCALDB_PROXY(LocalDBStartInstance)(pInstanceName, dwFlags, wszSqlConnection, lpcchSqlConnection);
@@ -1682,14 +1682,14 @@ LocalDBStartInstance(
 HRESULT __cdecl
 LocalDBStopInstance (
 		// I			the instance name
-		__in_z			PCWSTR	pInstanceName,
+		_In_z_			PCWSTR	pInstanceName,
 		// I			Available flags:
 		//				LOCALDB_SHUTDOWN_KILL_PROCESS		- force the instance to stop immediately
 		//				LOCALDB_SHUTDOWN_WITH_NOWAIT	- shutdown the instance with NOWAIT option
-		__in			DWORD	dwFlags,
+		_In_			DWORD	dwFlags,
 		// I			the time in seconds to wait this operation to complete. If this value is 0, this function will return immediately
 		//				without waiting for LocalDB instance to stop
-		__in			ULONG	ulTimeout
+		_In_			ULONG	ulTimeout
 )
 {
 	LOCALDB_PROXY(LocalDBStopInstance)(pInstanceName, dwFlags, ulTimeout);
@@ -1698,9 +1698,9 @@ LocalDBStopInstance (
 HRESULT __cdecl
 LocalDBDeleteInstance (
 		// I			the instance name
-		__in_z			PCWSTR	pInstanceName,
+		_In_z_			PCWSTR	pInstanceName,
 		//				reserved for the future use. Currently should be set to 0.
-		__in			DWORD	dwFlags
+		_In_			DWORD	dwFlags
 )
 {
 	LOCALDB_PROXY(LocalDBDeleteInstance)(pInstanceName, dwFlags);
@@ -1709,19 +1709,19 @@ LocalDBDeleteInstance (
 HRESULT __cdecl
 LocalDBFormatMessage(
 			// I		the LocalDB error code
-			__in								HRESULT	hrLocalDB,
+			_In_								HRESULT	hrLocalDB,
 			// I		Available flags:
 			//			LOCALDB_TRUNCATE_ERR_MESSAGE - if the input buffer is too short,
 			//			the error message will be truncated to fit into the buffer 
-			__in								DWORD	dwFlags,
+			_In_								DWORD	dwFlags,
 			// I		Language desired (LCID) or 0 (in which case Win32 FormatMessage order is used)
-			__in								DWORD	dwLanguageId,
+			_In_								DWORD	dwLanguageId,
 			// O		the buffer to store the LocalDB error message
-			__out_ecount_z(*lpcchMessage)		LPWSTR	wszMessage,
+			_Out_writes_z_(*lpcchMessage)		LPWSTR	wszMessage,
 			// I/O		on input has the size of the wszMessage buffer in characters. On output, if the given buffer size is 
 			//			too small, has the buffer size required, in characters, including trailing null. If the function succeeds
 			//			contains the number of characters in the message, excluding the trailing null
-			__inout								LPDWORD	lpcchMessage
+			_Inout_								LPDWORD	lpcchMessage
 )
 {
 	LOCALDB_PROXY(LocalDBFormatMessage)(hrLocalDB, dwFlags, dwLanguageId, wszMessage, lpcchMessage);
@@ -1730,10 +1730,10 @@ LocalDBFormatMessage(
 HRESULT __cdecl
 LocalDBGetInstances(
 		// O					buffer with instance names
-		__out					PTLocalDBInstanceName	pInstanceNames,
+		_Out_					PTLocalDBInstanceName	pInstanceNames,
 		// I/O					on input has the number slots for instance names in the pInstanceNames buffer. On output, 
 		//						has the number of existing LocalDB instances
-		__inout					LPDWORD					lpdwNumberOfInstances
+		_Inout_					LPDWORD					lpdwNumberOfInstances
 )
 {
 	LOCALDB_PROXY(LocalDBGetInstances)(pInstanceNames, lpdwNumberOfInstances);
@@ -1742,11 +1742,11 @@ LocalDBGetInstances(
 HRESULT __cdecl
 LocalDBGetInstanceInfo(
 		// I		the instance name
-		__in_z		PCWSTR					wszInstanceName, 
+		_In_z_		PCWSTR					wszInstanceName, 
 		// O		instance information
-		__out		PLocalDBInstanceInfo	pInfo,
+		_Out_		PLocalDBInstanceInfo	pInfo,
 		// I		Size of LocalDBInstanceInfo structure in bytes
-		__in		DWORD					cbInfo
+		_In_		DWORD					cbInfo
 )
 {
 	LOCALDB_PROXY(LocalDBGetInstanceInfo)(wszInstanceName, pInfo, cbInfo);
@@ -1767,13 +1767,13 @@ LocalDBStopTracing()
 HRESULT __cdecl 
 LocalDBShareInstance(
 		// I		the SID of the LocalDB instance owner
-		__in_opt	PSID 					pOwnerSID, 
+		_In_opt_	PSID 					pOwnerSID, 
 		// I		the private name of LocalDB instance which should be shared
-		__in_z		PCWSTR					wszLocalDBInstancePrivateName,
+		_In_z_		PCWSTR					wszLocalDBInstancePrivateName,
 		// I		the public shared name
-		__in_z		PCWSTR					wszSharedName,
+		_In_z_		PCWSTR					wszSharedName,
 		// I		reserved for the future use. Currently should be set to 0.
-		__in		DWORD	dwFlags)
+		_In_		DWORD	dwFlags)
 {
 	LOCALDB_PROXY(LocalDBShareInstance)(pOwnerSID, wszLocalDBInstancePrivateName, wszSharedName, dwFlags);
 }
@@ -1781,10 +1781,10 @@ LocalDBShareInstance(
 HRESULT __cdecl
 LocalDBGetVersions(
 		// O					buffer for installed LocalDB versions
-		__out					PTLocalDBVersion	pVersions,
+		_Out_					PTLocalDBVersion	pVersions,
 		// I/O					on input has the number slots for versions in the pVersions buffer. On output, 
 		//						has the number of existing LocalDB versions
-		__inout					LPDWORD				lpdwNumberOfVersions
+		_Inout_					LPDWORD				lpdwNumberOfVersions
 )
 {
 	LOCALDB_PROXY(LocalDBGetVersions)(pVersions, lpdwNumberOfVersions);
@@ -1793,9 +1793,9 @@ LocalDBGetVersions(
 HRESULT __cdecl
 LocalDBUnshareInstance(
 		// I		the LocalDB instance name
-		__in_z		PCWSTR					pInstanceName,
+		_In_z_		PCWSTR					pInstanceName,
 		// I		reserved for the future use. Currently should be set to 0.
-		__in		DWORD	dwFlags)
+		_In_		DWORD	dwFlags)
 {
 	LOCALDB_PROXY(LocalDBUnshareInstance)(pInstanceName, dwFlags);
 }
@@ -1803,11 +1803,11 @@ LocalDBUnshareInstance(
 HRESULT __cdecl 
 LocalDBGetVersionInfo(
 		// I			LocalDB version string
-		__in_z			PCWSTR						wszVersion,
+		_In_z_			PCWSTR						wszVersion,
 		// O			version information
-		__out			PLocalDBVersionInfo			pVersionInfo,
+		_Out_			PLocalDBVersionInfo			pVersionInfo,
 		// I			Size of LocalDBVersionInfo structure in bytes
-		__in			DWORD						cbVersionInfo)
+		_In_			DWORD						cbVersionInfo)
 {
 	LOCALDB_PROXY(LocalDBGetVersionInfo)(wszVersion, pVersionInfo, cbVersionInfo);
 }
