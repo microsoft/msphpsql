@@ -11,6 +11,7 @@ We hope you enjoy using the Microsoft Drivers for PHP for SQL Server.
 The Microsoft Drivers for PHP for SQL Server Team
 
 Announcements
+- **July 06, 2016:** PHP Driver 4.0 for SQL Server with PHP 7 support is now GA. You can get the binaries [HERE](https://github.com/Azure/msphpsql/releases) or download the exe from the [Microsoft Download Center](https://www.microsoft.com/en-us/download/details.aspx?id=20098)
 - **Jan 29, 2016:** A PHP7 branch is now active for the Early Technical Preview supporting PHP 7 
 - Please visit the [blog][blog] for more announcements.
 
