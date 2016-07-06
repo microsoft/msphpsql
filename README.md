@@ -46,7 +46,7 @@ Feb 23, 2016 (4.0.1): Thanks to the community’s input, we have mostly been foc
 
 ## Build
 
-Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/tree/PHP-7.0/binaries)
+Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases)
 
 ####Prerequisites
 
