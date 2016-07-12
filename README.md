@@ -10,10 +10,17 @@ SQL Server Team
 
 ##Announcements
 
+<<<<<<< HEAD
 July 11, 2016 (4.0.1): Thread safe and non-thread safe variations for SQLSRV and PDO_SQLSRV for Linux drivers with basic functionalities are now available. The drivers have been built and tested on Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. Also, there are some improvements on the drivers that we would like to share:
 
  - Improved handling varchar(MAX).
  - Improved handling basic stream operations.
+=======
+July 11, 2016 (4.0.1): Thread safe and non-thread safe variations for SQLSRV and PDO_SQLSRV for Linux drivers with basic functionalities are now available. The drivers have been built and tested on Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.. Also, there are some improvements on the drivers that we would like to share:
+
+- Improved handling varchar(MAX).
+- Improved handling basic stream operations.
+>>>>>>> origin/PHP-7.0-Linux
 
 June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLSRV drivers for Linux with basic functionalities is now available. The SQLSRV driver has been built and tested on Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2, and PDO_SQLSRV driver has been built and tested on Ubuntu 15.04, Ubuntu 16.04.
 
@@ -142,6 +149,11 @@ Thank you!
 ## License
 
 The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.  See the LICENSE file for more details.
+
+## Code of conduct
+
+This project has adopted the Microsoft Open Source Code of Conduct. For more information see the Code of Conduct FAQ or contact opencode@microsoft.com with any additional questions or comments.
+
 
 ## Resources
 
