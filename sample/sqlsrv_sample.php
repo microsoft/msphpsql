@@ -1,8 +1,7 @@
 <?php
     echo "\n";
-if (!extension_loaded('sqlsrv.so')) {dl('sqlsrv.so');}
-    $serverName = "sql-2k16-rc3-a.galaxy.ad";
-    $connectionOptions = array("Database"=>"AdventureWorks2016CTP3", "Uid"=>"sa", "PWD"=>"Moonshine4me");
+    $serverName = "tcp:yourserver.database.windows.net,1433";
+    $connectionOptions = array("Database"=>"yourAdevntureWorksdatabase", "Uid"=>"yourusername", "PWD"=>"yourpassword");
 	
 	 //Establishes the connection
 	 $conn = sqlsrv_connect($serverName, $connectionOptions);

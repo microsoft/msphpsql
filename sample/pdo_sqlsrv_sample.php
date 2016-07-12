@@ -1,11 +1,10 @@
 <?php
+
     echo "\n";
-//if (!extension_loaded('pdo.so')) {dl('pdo.so')};
-//if (!extension_loaded('pdo_sqlsrv.so')) {dl('pdo_sqlsrv.so');}
-    $serverName = "sql-2k16-rc3-a.galaxy.ad";
-	$database = "AdventureWorks2016CTP3";
-	$uid = "sa";
-	$pwd = "Moonshine4me";
+    $serverName = "tcp:yourserver.database.windows.net,1433";
+	$database = "yourAdventureWorksdatabase";
+	$uid = "yourusername";
+	$pwd = "yourpassword";
 	
 	 //Establishes the connection
 	 $conn = new PDO( "sqlsrv:server=$serverName ; Database = $database", $uid, $pwd);
