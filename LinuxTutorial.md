@@ -114,7 +114,8 @@ Now you are ready to install PHP. You can install by source or, if the packaged 
 
 6.  Edit your Apache config file so that Apache can load PHP files. If you installed Apache from source, locate your httpd.conf file (using, for example, sudo find / -name httpd.conf) and add the following lines to it:
 
-`LoadModule php7_module modules/libphp7.so FilesMatch \.php$> SetHandler application/x-httpd-php </FilesMatch> `
+`LoadModule php7_module modules/libphp7.so`
+<br>`<FilesMatch \.php$> SetHandler application/x-httpd-php </FilesMatch> `
 
 You can alter these lines to allow different file types to be parsed as PHP files. See [http://php.net/manual/en/install.unix.apache2.php](http://php.net/manual/en/install.unix.apache2.php) for more information. 
 
