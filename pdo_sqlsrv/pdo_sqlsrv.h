@@ -48,6 +48,7 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_DIRECT_QUERY,
     SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
     SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
+	SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -176,6 +177,8 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool direct_query;
     long query_timeout;
     zend_long client_buffer_max_size;
+	SQLSRV_ENCODING bind_param_encoding;
+	bool fetch_numeric;
 
     pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC );
 };
@@ -210,6 +213,10 @@ struct stmt_option_emulate_prepares : public stmt_option_functor {
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_fetch_numeric : public stmt_option_functor {
+	virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
+};
+
 extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
 
 // a core layer pdo stmt object. This object inherits and overrides the callbacks necessary
@@ -220,17 +227,19 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         direct_query( false ),
         direct_query_subst_string( NULL ),
         direct_query_subst_string_len( 0 ),
-        bound_column_param_types( NULL )
+        bound_column_param_types( NULL ),
+		fetch_numeric( false )
     {
         pdo_sqlsrv_dbh* db = static_cast<pdo_sqlsrv_dbh*>( c );
         direct_query = db->direct_query;
+		fetch_numeric = db->fetch_numeric;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     // for PDO, everything is a string, so we return SQLSRV_PHPTYPE_STRING for all SQL types
-    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
+    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string );
 
     bool direct_query;                        // flag set if the query should be executed directly or prepared
     const char* direct_query_subst_string;    // if the query is direct, hold the substitution string if using named parameters
@@ -239,6 +248,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
     pdo_param_type* bound_column_param_types;
+	bool fetch_numeric;
 };
 
 

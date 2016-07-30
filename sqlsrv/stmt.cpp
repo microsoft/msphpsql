@@ -164,7 +164,7 @@ void ss_sqlsrv_stmt::new_result_set( TSRMLS_D )
 }
 
 // Returns a php type for a given sql type. Also sets the encoding wherever applicable. 
-sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream )
+sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string )
 {
     sqlsrv_phptype ss_phptype;
     ss_phptype.typeinfo.type = SQLSRV_PHPTYPE_INVALID;

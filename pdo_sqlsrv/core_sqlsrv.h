@@ -1276,7 +1276,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     virtual ~sqlsrv_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
-    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream ) = 0;
+    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string = false ) = 0;
 
 };
 
@@ -1337,7 +1337,6 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, SQLLEN limit TSRMLS_DC );
-void core_finalize_output_parameters(sqlsrv_stmt* stmt TSRMLS_DC);
 
 
 //*********************************************************************************************************************************

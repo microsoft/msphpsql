@@ -1305,10 +1305,6 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
     return true;
 }
 
-void core_finalize_output_parameters(sqlsrv_stmt* stmt TSRMLS_DC) {
-	finalize_output_parameters(stmt TSRMLS_CC);
-}
-
 void stmt_option_functor::operator()( sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, zval* /*value_z*/ TSRMLS_DC )
 {
     TSRMLS_C;
@@ -1908,12 +1904,13 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
             break;
         case IS_STRING:
         {
-            SQLULEN byte_len = Z_STRLEN_P( param_z ) * ((encoding == SQLSRV_ENCODING_UTF8) ? sizeof( wchar_t ) : sizeof( char ));
+			size_t char_size = ( encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( wchar_t ) : sizeof( char );
+            SQLULEN byte_len = Z_STRLEN_P( param_z ) * char_size;
             if( byte_len > SQL_SERVER_MAX_FIELD_SIZE ) {
                 column_size = SQL_SERVER_MAX_TYPE_SIZE;
             }
             else {
-                column_size = Z_STRLEN_P( param_z );
+                column_size = SQL_SERVER_MAX_FIELD_SIZE / char_size;
             }
             break;
         }
