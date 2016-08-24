@@ -479,8 +479,8 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
 			zend_string_release( Z_STR( server_z ));
 		}
         dbh->error_mode = prev_err_mode;    // reset the error mode
-		g_henv_cp->invalidate();
-        return 0;
+		g_henv_cp->last_error().reset();	// reset the last error; callee will check if last_error exist before freeing it and setting it to NULL
+		return 0;
     }
     catch( ... ) {
 

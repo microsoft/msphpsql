@@ -1352,7 +1352,6 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, SQLLEN limit TSRMLS_DC );
-void core_finalize_output_parameters(sqlsrv_stmt* stmt TSRMLS_DC);
 
 
 //*********************************************************************************************************************************
