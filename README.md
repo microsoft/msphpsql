@@ -1,4 +1,4 @@
-﻿# Microsoft Drivers for PHP for SQL Server
+# Microsoft Drivers for PHP for SQL Server
 
 **Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7 Linux (Early Technical Preview)**
 
@@ -10,7 +10,7 @@ SQL Server Team
 
 ##Announcements
 
-July 29, 2016 (4.0.2): Updated Linux drivers are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. This update provides the following improvements and bug fixes:
+July 29, 2016 (4.0.2): Updated Linux drivers are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. The source code for the drivers has also been made available. This update provides the following improvements and bug fixes:
 
 - The PDO_SQLSRV driver no longer requires PDO to be built as a shared extension.
 - Fixed an issue with format specifiers in error messages.
