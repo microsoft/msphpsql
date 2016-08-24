@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 4.0 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1276,7 +1276,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     virtual ~sqlsrv_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
-    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream ) = 0;
+    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string = false ) = 0;
 
 };
 
@@ -1337,7 +1337,6 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, SQLLEN limit TSRMLS_DC );
-void core_finalize_output_parameters(sqlsrv_stmt* stmt TSRMLS_DC);
 
 
 //*********************************************************************************************************************************
@@ -1613,7 +1612,7 @@ void core_sqlsrv_format_driver_error( sqlsrv_context& ctx, sqlsrv_error_const co
 const char* get_last_error_message( DWORD last_error = 0 );
 
 // a wrapper around FormatMessage that can take variadic args rather than a a va_arg pointer
-DWORD core_sqlsrv_format_message( char* output_buffer, unsigned output_len, const char* format, ... );
+DWORD core_sqlsrv_format_message( char*& output_buffer, unsigned output_len, const char* format, ... );
 
 // convenience functions that overload either a reference or a pointer so we can use
 // either in the CHECK_* functions.

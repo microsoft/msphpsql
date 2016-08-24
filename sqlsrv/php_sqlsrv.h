@@ -8,7 +8,7 @@
 //
 // Comments: Also contains "internal" declarations shared across source files. 
 //
-// Microsoft Drivers 4.0 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -175,7 +175,7 @@ struct ss_sqlsrv_stmt : public sqlsrv_stmt {
     void new_result_set( TSRMLS_D ); 
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
-    sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
+    sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string );
 
     bool prepared;                               // whether the statement has been prepared yet (used for error messages)
 	zend_ulong conn_index;						 // index into the connection hash that contains this statement structure

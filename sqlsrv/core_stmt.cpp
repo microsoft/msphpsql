@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use statement handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 4.0 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1305,10 +1305,6 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
     return true;
 }
 
-void core_finalize_output_parameters(sqlsrv_stmt* stmt TSRMLS_DC) {
-	finalize_output_parameters(stmt TSRMLS_CC);
-}
-
 void stmt_option_functor::operator()( sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, zval* /*value_z*/ TSRMLS_DC )
 {
     TSRMLS_C;
@@ -1778,7 +1774,15 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* para
         case IS_TRUE:
         case IS_FALSE:
         case IS_LONG:
-            sql_c_type = SQL_C_LONG;
+			//ODBC 64-bit long and integer type are 4 byte values. 
+			if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) )
+			{
+				sql_c_type = SQL_C_SBIGINT;
+			}
+			else
+			{
+				sql_c_type = SQL_C_SLONG;
+			}
             break;
         case IS_DOUBLE:
             sql_c_type = SQL_C_DOUBLE;
@@ -1841,7 +1845,16 @@ void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV
         case IS_TRUE:
         case IS_FALSE:
         case IS_LONG:
-            sql_type = SQL_INTEGER;
+			//ODBC 64-bit long and integer type are 4 byte values. 
+			if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) )
+			{
+				sql_type = SQL_BIGINT;
+			}
+			else
+			{
+				sql_type = SQL_INTEGER;
+			}
+
             break;
         case IS_DOUBLE:
             sql_type = SQL_FLOAT;
@@ -1908,12 +1921,13 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
             break;
         case IS_STRING:
         {
-            SQLULEN byte_len = Z_STRLEN_P( param_z ) * ((encoding == SQLSRV_ENCODING_UTF8) ? sizeof( wchar_t ) : sizeof( char ));
+			size_t char_size = ( encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( wchar_t ) : sizeof( char );
+            SQLULEN byte_len = Z_STRLEN_P( param_z ) * char_size;
             if( byte_len > SQL_SERVER_MAX_FIELD_SIZE ) {
                 column_size = SQL_SERVER_MAX_TYPE_SIZE;
             }
             else {
-                column_size = Z_STRLEN_P( param_z );
+                column_size = SQL_SERVER_MAX_FIELD_SIZE / char_size;
             }
             break;
         }
@@ -2096,8 +2110,8 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 		calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
 
 		// if this is a large type, then read the first few bytes to get the actual length from SQLGetData
-		if( sql_display_size == 0 || sql_display_size == LONG_MAX ||
-			sql_display_size == LONG_MAX >> 1 || sql_display_size == ULONG_MAX - 1 ) {
+		if( sql_display_size == 0 || sql_display_size == INT_MAX ||
+			sql_display_size == INT_MAX >> 1 || sql_display_size == UINT_MAX - 1 ) {
 
 			field_len_temp = INITIAL_FIELD_STRING_LEN;
 

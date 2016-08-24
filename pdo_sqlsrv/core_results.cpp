@@ -3,7 +3,7 @@
 //
 // Contents: Result sets
 //
-// Microsoft Drivers 4.0 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -88,7 +88,25 @@ template <typename Char, typename Number>
 SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length,
                             sqlsrv_error_auto_ptr& last_error )
 {
+	// get to display size by removing the null terminator from buffer length
+	size_t display_size = ( buffer_length - sizeof( Char )) / sizeof( Char );
+
     std::basic_ostringstream<Char> os;
+	// use the display size to determine the sql type. And if it is a double, set the precision accordingly
+	// the display sizes are set by the ODBC driver based on the precision of the sql type
+	// otherwise we can just use the default precision as long will not be truncated
+	size_t real_display_size = 14;
+	size_t float_display_size = 24;
+	size_t real_precision = 7;
+	size_t float_precision = 15;
+	// this is the case of sql type float(24) or real
+	if ( display_size == real_display_size ) {
+		os.precision( real_precision );
+	}
+	// this is the case of sql type float(53)
+	else if ( display_size == float_display_size ) {
+		os.precision( float_precision );
+	}
     std::locale loc;
     os.imbue( loc );
     std::use_facet< std::num_put< Char > >( loc ).put( std::basic_ostream<Char>::_Iter( os.rdbuf() ), os, ' ', *number_data );
@@ -100,13 +118,13 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
         return SQL_ERROR;
     }
 
-    if( str_num.size() * sizeof(Char) + sizeof(Char) > (size_t) buffer_length ) {
+    if( str_num.size() * sizeof(Char) > (size_t) buffer_length ) {
         last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( 
             (SQLCHAR*) "HY090", (SQLCHAR*) "Buffer length too small to hold number as string", -1 );
         return SQL_ERROR;
     }
 
-    *out_buffer_length = str_num.size() * sizeof(Char) + sizeof(Char); // include NULL terminator
+    *out_buffer_length = str_num.size() * sizeof( Char ); // str_num.size() already include the NULL terminator
     memcpy_s( buffer, buffer_length, str_num.c_str(), *out_buffer_length );
 
     return SQL_SUCCESS;

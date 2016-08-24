@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Microsoft Drivers 4.0 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -460,8 +460,7 @@ bool pdo_sqlsrv_handle_dbh_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
             if( !warning ) {
                 size_t msg_len = strlen( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE 
                     + MAX_DIGITS + 1;
-                sqlsrv_malloc_auto_ptr<char> msg;
-                msg = static_cast<char*>( sqlsrv_malloc( msg_len ));
+                char* msg = static_cast<char*>( sqlsrv_malloc( msg_len ));
                 core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code, 
                                             error->native_message );
                 php_error( E_WARNING, msg );
@@ -513,8 +512,7 @@ bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_erro
             if( !warning ) {
                 size_t msg_len = strlen( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE 
                     + MAX_DIGITS + 1;
-                sqlsrv_malloc_auto_ptr<char> msg;
-                msg = static_cast<char*>( sqlsrv_malloc( msg_len ));
+                char* msg = static_cast<char*>( sqlsrv_malloc(SQL_MAX_MESSAGE_LENGTH+1));
                 core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code, 
                                             error->native_message );
                 php_error( E_WARNING, msg );
@@ -548,11 +546,6 @@ void pdo_sqlsrv_retrieve_context_error( sqlsrv_error const* last_error, zval* pd
         add_next_index_long( pdo_zval, last_error->native_code );
         add_next_index_string( pdo_zval, reinterpret_cast<char*>( last_error->native_message ));
     }
-    else {
-        add_next_index_null( pdo_zval ); /* native code */
-        add_next_index_null( pdo_zval ); /* native message */
-    }
-
 }
 
 // Formats the error message and writes to the php error log.

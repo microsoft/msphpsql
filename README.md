@@ -10,50 +10,24 @@ The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
 
-June 30, 2016 (4.0.6): The quality of SQLSRV and PDO_SQLSRV is improved and includes some memory leak fixes:
-- Fixed a heap corruption when binding parameters in a prepare statement with error
-- Fixed leaks in SQLSRV streams and output parameters handling
-- Fixed leaks in SQLSRV fetch object
-- Fixed leaks in SQLSRV binding object parameters
-- Fixed leaks in SQLSRV buffered result set
-- Fixed leaks in SQLSRV getting datetime and stream fields
-- Fixed leaks in PDO_SQLSRV field cache
-- Fixed leaks in PDO_SQLSRV construct when connecting with error
-- Fixed leaks in PDO_SQLSRV exception handling
+August 22, 2016 (4.1.1): Updated Windows drivers built and compiled with PHP 7.0.9 are available and include a couple of bug fixes:
 
-June 13, 2016 (4.0.5): The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
-- Added ability to connect to Microsoft ODBC Driver 13.
-- Fixed some memory leaks in data retrieval.
-- Fixed issue with error handling in bound stream parameters when send_stream_at_exec option is set to false.
-- Fixed issue with when connecting twice when Sqlsrv_errors configured to only WARNINGS.
-- Fixed issue with double and string as input-output parameters in PDO_SQLSRV driver.
-- Fixed a heap corruption in PDO_SQLSRV connection.
+- Fixed issue with storing integers in varchar field.
+- Fixed issue with invalid connection handler if one connection fails.
+- Fixed crash when emulate prepare is on.
 
-May 3, 2016 (4.0.4): The quality of SQLSRV and PDO_SQLSRV is improved and includes some bug fixes:
-- Fixed retrieving stream data and metadata.
-- Fixed issue with bind stream parameters.
-- Fixed issue with retrieval in error case when trying to retrieve a non-streamble data type with SQLSRV_SQLTYPE_STREAM option
-- Fixed issue with querying after another query with empty array of parameters.
-- Fixed issue with retrieving integers as output parameter in SQLSRV 64-bit.
-- Fixed issue scrollable statement option in SQLSRV_PDO 64-bit.
-- Improved handling closed connection and statement resources.
-- Fixed issue with binding bit parameter.
-- Fix for The $driver_options (for specifying encoding) is included in PDOStatement::bindParam is included in PHP 7.0.6 release.
+July 28, 2016 (4.1.0): Thanks to the community's input, this release expands drivers functionalities and also includes some bug fixes:
 
-April 12, 2016 (4.0.3): The PDO_SQLSRV driver (32-bit and 64-bit) is now available.  For the SQLSRV driver, we also have a few bug fixes to share:
-- Fixed ability to fetch a user defined object into a class
-- Fixed issue with re-preparing the same statement with referenced datetime parameters
-- Fixed issue with binding output parameters with php type string with binary and char encodings and sql types SQLSRV_SQLTYPE_NCHAR and SQLSRV_SQLTYPE_NVARCHAR
-
-March 15, 2016 (4.0.2): 64-bit support is now available for the SQLSRV driver.  We also have some additional minor improvements to share:
-- Fixed the ability to retrieve strings as an output parameter
-- Fixed a number of memory leaks in initialization
-
-Feb 23, 2016 (4.0.1): Thanks to the community’s input, we have mostly been focusing on making updates to support native 64-bit and the PDO driver.  We will be sharing these updates in the coming weeks once we have something functional.  In the meantime, we have a couple of minor updates to the SQLSRV driver to share:
-- Fixed the ability to bind parameters with datetime types
-- Fixed output and bidirectional (input/output) parameters.  Note to users: we determined that output and bidirectional parameters now need to be passed in by reference (i.e. &$var) so that they can be updated with the output data and added an error check for these cases.
-- Updated refcounting to avoid unnecessary reference counting for scalar values
-
+ - `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  connection attribute flag is added to PDO_SQLSRV driver to handle numeric fetches from columns with numeric Sql types (only bit, integer, smallint, tinyint, float and real). This flag can be turned on by setting its value in  `PDO::setAttribute` to `true`, For example,
+               `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);` 
+		  If `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  is set to `true` the results from an integer column will be represented as an `int`, likewise, Sql types float and real will be represented as `float`. 
+		  Note for exceptions:
+	 - When connection option flag `ATTR_STRINGIFY_FETCHES` is on, even when `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is on, the return value will still be string.
+	 - 	When the returned PDO type in bind column is `PDO_PARAM_INT`, the return value from a integer column will be int even if `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is off.
+ - Fixed float truncation when using buffered query. 
+ - Fixed handling of Unicode strings and binary when emulate prepare is on in `PDOStatement::bindParam`.  To bind a unicode string, `PDO::SQLSRV_ENCODING_UTF8` should be set using `$driverOption`, and to bind a string to column of Sql type binary, `PDO::SQLSRV_ENCODING_BINARY` should be set.
+ - Fixed string truncation in bind output parameters when the size is not set and the length of initialized variable is less than the output.
+ - Fixed bind string parameters as bidirectional parameters (`PDO::PARAM_INPUT_OUTPUT `) in PDO_SQLSRV driver. Note for output or bidirectional parameters, `PDOStatement::closeCursor` should be called to get the output value.
 
 ## Build
 
@@ -99,15 +73,13 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 
 ## Limitations
 
-This preview contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5. The following items have known issues:
+- This release contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5.
+- Binding output parameter using emulate prepare is not supported.
 
-SQLSRV:
-- Memory management.
-
+## Known Issues
+-  User defined data types and SQL_VARIANT.
 
 ## Future Plans
-
-- Linux Version
 - Expand SQL 16 Feature Support (example: Always Encrypted)
 - Build Verification/Fundamental Tests
 - Bug Fixes

@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Microsoft Drivers 4.0 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1192,7 +1192,7 @@ void add_stmt_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len,
 {
     int option_key = ::get_stmt_option_key( key, key_len TSRMLS_CC );   
     
-    CHECK_CUSTOM_ERROR((option_key == SQLSRV_STMT_OPTION_INVALID ), ctx, SQLSRV_ERROR_INVALID_OPTION_KEY, key ) {
+    CHECK_CUSTOM_ERROR((option_key == SQLSRV_STMT_OPTION_INVALID ), ctx, SQLSRV_ERROR_INVALID_OPTION_KEY, ZSTR_VAL( key ) ) {
 
         throw ss::SSException();
     }        
@@ -1221,7 +1221,6 @@ void add_conn_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len,
 void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC )
 {
     try {
-        
         if( stmt_options ) {
            
             HashTable* options_ht = Z_ARRVAL_P( stmt_options );
@@ -1234,16 +1233,14 @@ void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ Has
 				zval* conn_opt = NULL;
 				int result = 0;
 
-				key_len = ZSTR_LEN( key ) + 1;
 				type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
-				if( type != HASH_KEY_IS_STRING ) {
-					std::ostringstream itoa;
-					itoa << int_key;
-					CHECK_CUSTOM_ERROR( true, ctx, SQLSRV_ERROR_INVALID_OPTION_KEY, itoa.str() ) {
+				if (type != HASH_KEY_IS_STRING) {
+					CHECK_CUSTOM_ERROR(true, ctx, SQLSRV_ERROR_INVALID_OPTION_KEY, std::to_string( int_key ).c_str() ) {
 						throw core::CoreException();
 					}
 				}
+				key_len = ZSTR_LEN(key) + 1;
 				add_stmt_option_key( ctx, key, key_len, ss_stmt_options_ht, data TSRMLS_CC );
 			} ZEND_HASH_FOREACH_END();
         }

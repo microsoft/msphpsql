@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDO object for PDO_SQLSRV
 //
-// Microsoft Drivers 4.0 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -73,6 +73,7 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_CURSOR_SCROLL_TYPE,
     PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE,
     PDO_STMT_OPTION_EMULATE_PREPARES,
+	PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
 };
 
 // List of all the statement options supported by this driver.
@@ -85,6 +86,7 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_CURSOR_SCROLL_TYPE, std::unique_ptr<stmt_option_cursor_scroll_type>( new stmt_option_cursor_scroll_type ) },
     { NULL, 0, PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE, std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit ) },
     { NULL, 0, PDO_STMT_OPTION_EMULATE_PREPARES, std::unique_ptr<stmt_option_emulate_prepares>( new stmt_option_emulate_prepares ) },
+	{ NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
 
 	{ NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -362,11 +364,13 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
 
 // constructor for the internal object for connections
 pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC ) :
-    sqlsrv_conn( h, e, driver, SQLSRV_ENCODING_UTF8 TSRMLS_CC ),
-    stmts( NULL ),
-    direct_query( false ),
-    query_timeout( QUERY_TIMEOUT_INVALID ),
-    client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size ) )
+	sqlsrv_conn( h, e, driver, SQLSRV_ENCODING_UTF8 TSRMLS_CC ),
+	stmts( NULL ),
+	direct_query( false ),
+	query_timeout( QUERY_TIMEOUT_INVALID ),
+	client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size )),
+	bind_param_encoding( SQLSRV_ENCODING_CHAR ),
+	fetch_numeric( false )
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -465,7 +469,7 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
 			zend_string_release( Z_STR( server_z ));
 		}
         dbh->error_mode = prev_err_mode;    // reset the error mode
-		g_henv_cp->invalidate();
+		g_henv_cp->last_error().reset();	// reset the last error; callee will check if last_error exist before freeing it and setting it to NULL
         return 0;
     }
     catch( ... ) {
@@ -906,6 +910,10 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, zend_long attr, zval *val TSRMLS_DC
                 driver_dbh->client_buffer_max_size = Z_LVAL_P( val );
                 break;
 
+			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+				driver_dbh->fetch_numeric = (zend_is_true(val)) ? true : false;
+				break;
+
             // Not supported
             case PDO_ATTR_FETCH_TABLE_NAMES: 
             case PDO_ATTR_FETCH_CATALOG_NAMES: 
@@ -1047,6 +1055,12 @@ int pdo_sqlsrv_dbh_get_attr( pdo_dbh_t *dbh, zend_long attr, zval *return_value 
                 break;
             }
 
+			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+			{
+				ZVAL_BOOL( return_value, driver_dbh->fetch_numeric );
+				break;
+			}
+
             default: 
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_INVALID_DBH_ATTR );
@@ -1081,8 +1095,8 @@ int pdo_sqlsrv_dbh_return_error( pdo_dbh_t *dbh, pdo_stmt_t *stmt,
     else {
         ctx_error = static_cast<sqlsrv_conn*>( dbh->driver_data )->last_error();
     }
-    
-    pdo_sqlsrv_retrieve_context_error( ctx_error, info );
+
+	pdo_sqlsrv_retrieve_context_error( ctx_error, info );
 
     return 1;
 }
@@ -1190,41 +1204,81 @@ char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, _Out_ size_t* l
 int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_len, char **quoted, size_t* quoted_len,
                           enum pdo_param_type /*paramtype*/ TSRMLS_DC )
 {
-    PDO_RESET_DBH_ERROR;
-    PDO_VALIDATE_CONN;
+	PDO_RESET_DBH_ERROR;
+	PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
 
-    // count the number of quotes needed
-    unsigned int quotes_needed = 2;  // the initial start and end quotes of course
-    for(size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
-        if( unquoted[ index ] == '\'' ) {
-            ++quotes_needed;
-        }
-    }
+	pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
+	SQLSRV_ENCODING encoding = driver_dbh->bind_param_encoding;
 
-    *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
-    *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
-    unsigned int out_current = 0;
+	if ( encoding == SQLSRV_ENCODING_BINARY ) {
+		// convert from char* to hex digits using os
+		std::basic_ostringstream<char> os;
+		for ( size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index ) {
+			os << std::hex << ( int )unquoted[index];
+		}
+		std::basic_string<char> str_hex = os.str();
+		// each character is represented by 2 digits of hex
+		size_t unquoted_str_len = unquoted_len * 2; // length returned should not account for null terminator
+		char* unquoted_str = reinterpret_cast<char*>( sqlsrv_malloc( unquoted_str_len, sizeof( char ), 1 )); // include space for null terminator
+		strcpy_s( unquoted_str, unquoted_str_len + 1 /* include null terminator*/, str_hex.c_str());
+		// include length of '0x' in the binary string
+		*quoted_len = unquoted_str_len + 2;
+		*quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
+		unsigned int out_current = 0;
+		// insert '0x'
+		( *quoted )[out_current++] = '0';
+		( *quoted )[out_current++] = 'x';
+		for ( size_t index = 0; index < unquoted_str_len && unquoted_str[index] != '\0'; ++index ) {
+			( *quoted )[out_current++] = unquoted_str[index];
+		}
+		// null terminator
+		( *quoted )[out_current] = '\0';
+		sqlsrv_free( unquoted_str );
+		return 1;
+	}
+	else {
+		// count the number of quotes needed
+		unsigned int quotes_needed = 2;  // the initial start and end quotes of course
+		// include the N proceeding the initial quote if encoding is UTF8
+		if ( encoding == SQLSRV_ENCODING_UTF8 ) {
+			quotes_needed = 3;
+		}
 
-    // insert initial quote
-    (*quoted)[ out_current++ ] ='\'';
+		for ( size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index ) {
+			if ( unquoted[index] == '\'' ) {
+				++quotes_needed;
+			}
+		}
 
-    for(size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+		*quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
+		*quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
+		unsigned int out_current = 0;
 
-        if( unquoted[ index ] == '\'' ) {
-            (*quoted)[ out_current++ ] = '\'';
-            (*quoted)[ out_current++ ] = '\'';
-        }
-        else {
-            (*quoted)[ out_current++ ] = unquoted[ index ];
-        }
-    }
+		// insert N if the encoding is UTF8
+		if ( encoding == SQLSRV_ENCODING_UTF8 ) {
+			( *quoted )[out_current++] = 'N';
+		}
+		// insert initial quote
+		( *quoted )[out_current++] = '\'';
 
-    // trailing quote and null terminator
-    (*quoted)[ out_current++ ] ='\'';
-    (*quoted)[ out_current ] = '\0';
+		for ( size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index ) {
 
-    return 1;
+			if ( unquoted[index] == '\'' ) {
+				( *quoted )[out_current++] = '\'';
+				( *quoted )[out_current++] = '\'';
+			}
+			else {
+				( *quoted )[out_current++] = unquoted[index];
+			}
+		}
+
+		// trailing quote and null terminator
+		( *quoted )[out_current++] = '\'';
+		( *quoted )[out_current] = '\0';
+
+		return 1;
+	}
 }
 
 // This method is not implemented by this driver.
@@ -1282,6 +1336,9 @@ void add_stmt_option_key( sqlsrv_context& ctx, size_t key, HashTable* options_ht
          case PDO_ATTR_EMULATE_PREPARES:
              option_key = PDO_STMT_OPTION_EMULATE_PREPARES;
              break;
+
+		 case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+			 option_key = PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE;
 
          default:
              CHECK_CUSTOM_ERROR( true, ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
