@@ -2,18 +2,11 @@
 
 **Welcome to the Microsoft Drivers for PHP for SQL Server project!**
 
-**Note:** For the PHP 7 project, see the PHP7 branch
-
 The Microsoft Drivers for PHP for SQL Server are PHP 5 extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The release contains two drivers, the SQLSRV driver and the PDO_SQLSRV driver. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including SQL Azure). These drivers rely on the Microsoft ODBC Driver 11 for SQL Server to handle the low-level communication with SQL Server.
 
 We hope you enjoy using the Microsoft Drivers for PHP for SQL Server.
 
 The Microsoft Drivers for PHP for SQL Server Team
-
-Announcements
-- **July 06, 2016:** PHP Driver 4.0 for SQL Server with PHP 7 support is now GA. You can get the binaries [HERE](https://github.com/Azure/msphpsql/releases) or download the exe from the [Microsoft Download Center](https://www.microsoft.com/en-us/download/details.aspx?id=20098)
-- **Jan 29, 2016:** A PHP7 branch is now active for the Early Technical Preview supporting PHP 7 
-- Please visit the [blog][blog] for more announcements.
 
 ## Prerequisites
 
@@ -21,7 +14,6 @@ You must first be able to build PHP without including these
 extensions.  For help with doing this, see the [official PHP website][phpweb].
 
 ## Build
-
 To compile the SQLSRV and PDO_SQLSRV:
 
 1. Copy the source code directories from this repository into the ext
@@ -49,6 +41,9 @@ Also enable them within your PHP installation's php.ini file.
 This software has been compiled and tested under PHP 5.4.32 and later
 using the Visual C++ 2008 and 2012, Express and Standard compilers.
 
+## Download the driver
+The driver can be downloaded from the [Microsoft Download Center][link]
+
 ## Documentation
 
 This driver is documented on [Microsoft's Documentation web site][phpdoc].
@@ -62,8 +57,6 @@ file that is part of the download package.
 
 Please visit the [project on Github][project] to view outstanding [issues][issues].
 
-## Download the driver
-The driver can be downloaded from the [Microsoft Download Center][link]
 
 ## Notes
 
