@@ -3,7 +3,7 @@
 //
 // Contents: Implementation of PHP streams for reading SQL Server data
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -32,11 +32,8 @@ int sqlsrv_stream_close( php_stream* stream, int /*close_handle*/ TSRMLS_DC )
     // free the stream resources in the Zend engine
     php_stream_free( stream, PHP_STREAM_FREE_RELEASE_STREAM );
 
-    // NULL out the stream zval and delete our reference count to it.
-    ZVAL_NULL( ss->stmt->active_stream );
-
-    // there is no active stream
-    ss->stmt->active_stream = NULL;
+    // UNDEF the stream zval and delete our reference count to it.
+    ZVAL_UNDEF( &( ss->stmt->active_stream ) );
 
     sqlsrv_free( ss );
     stream->abstract = NULL;
@@ -48,10 +45,9 @@ int sqlsrv_stream_close( php_stream* stream, int /*close_handle*/ TSRMLS_DC )
 // read from a sqlsrv stream into the buffer provided by Zend.  The parameters for binary vs. char are
 // set when sqlsrv_get_field is called by the user specifying which field type they want.
 
-size_t sqlsrv_stream_read( php_stream* stream, __out_bcount(count) char* buf, size_t count TSRMLS_DC )
+size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* buf, size_t count TSRMLS_DC )
 {
-   
-    SQLINTEGER read = 0;
+	SQLLEN read = 0;
     SQLSMALLINT c_type = SQL_C_CHAR;
     char* get_data_buffer = buf;
     sqlsrv_malloc_auto_ptr<char> temp_buf;
@@ -145,21 +141,28 @@ size_t sqlsrv_stream_read( php_stream* stream, __out_bcount(count) char* buf, si
         }
 
         // if the encoding is UTF-8
-        if( c_type == SQL_C_WCHAR ) {
-            
-            count *= 2;    // undo the shift to use the full buffer
+		if (c_type == SQL_C_WCHAR) {
 
-            // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
-            // an error.  This happens only on XP.
-            DWORD flags = 0;
+			count *= 2;    // undo the shift to use the full buffer
 
-            // convert to UTF-8
-            if( g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
-                // Vista (and later) will detect invalid UTF-16 characters and raise an error.
-                flags = WC_ERR_INVALID_CHARS;
-            }
+			// flags set to 0 by default, which means that any invalid characters are dropped rather than causing
+			// an error.  This happens only on XP.
+			DWORD flags = 0;
+
+			// convert to UTF-8
+			if (g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER) {
+				// Vista (and later) will detect invalid UTF-16 characters and raise an error.
+				flags = WC_ERR_INVALID_CHARS;
+			}
+
+			if ( count > INT_MAX || (read >> 1) > INT_MAX )
+			{
+				LOG(SEV_ERROR, "UTF-16 (wide character) string mapping: buffer length exceeded.");
+				throw core::CoreException();
+			}
+
             int enc_len = WideCharToMultiByte( ss->encoding, flags, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
-                                         read >> 1, buf, count, NULL, NULL );
+							static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 
             if( enc_len == 0 ) {
             
@@ -200,13 +203,8 @@ php_stream_ops sqlsrv_stream_ops = {
 // open a stream and return the sqlsrv_stream_ops function table as part of the
 // return value.  There is only one valid way to open a stream, using sqlsrv_get_field on
 // certain field types.  A sqlsrv stream may only be opened in read mode.
-#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 6
-static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, __in const char*, __in const char* mode, 
-                                         int options, __in char **, php_stream_context* STREAMS_DC TSRMLS_DC )
-#else
-static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, __in char*, __in char* mode, 
-                                         int options, __in char **, php_stream_context* STREAMS_DC TSRMLS_DC )
-#endif
+static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, _In_ const char*, _In_ const char* mode, 
+                                         int options, _In_ zend_string **, php_stream_context* STREAMS_DC TSRMLS_DC )
 {
 
 #if ZEND_DEBUG

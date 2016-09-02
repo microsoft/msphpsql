@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -33,9 +33,9 @@ SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage fa
 char last_err_msg[ 2048 ];  // 2k to hold the error messages
 
 // routine used by utf16_string_from_mbcs_string
-unsigned int convert_string_from_default_encoding( unsigned int php_encoding, __in_bcount(mbcs_len) char const* mbcs_in_string,
+unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
                                                    unsigned int mbcs_len, 
-                                                   __out_ecount(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
+                                                   _Out_writes_(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
                                                    unsigned int utf16_len );
 }
 
@@ -70,18 +70,19 @@ void core_sqlsrv_register_logger( log_callback driver_logger )
 // utf-16 string is released by this function if no errors occurred.  Otherwise the parameters are not changed
 // and false is returned.
 
-bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLINTEGER& len)
+bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLLEN& len)
 {
-    SQLSRV_ASSERT( string != NULL && *string != NULL, "String must be specified" );
+    SQLSRV_ASSERT( string != NULL, "String must be specified" );
 
-    // for the empty string, we simply returned we converted it
-    if( len == 0 && *string[0] == '\0' ) {
-        return true;
-    }
+	if (validate_string(*string, len)) {
+		return true;
+	}
 
     char* outString = NULL;
-    SQLINTEGER outLen = 0;
-    bool result = convert_string_from_utf16( encoding, reinterpret_cast<const wchar_t*>(*string), len / sizeof(wchar_t), &outString, outLen);
+    SQLLEN outLen = 0;
+
+    bool result = convert_string_from_utf16( encoding, 
+		reinterpret_cast<const wchar_t*>(*string), int(len / sizeof(wchar_t)), &outString, outLen);
 
     if (result)
     {
@@ -93,7 +94,49 @@ bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string,
     return result;
 }
 
-bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLINTEGER& cchOutLen )
+bool convert_zval_string_from_utf16(SQLSRV_ENCODING encoding, zval* value_z, SQLLEN& len)
+{
+	char* string = Z_STRVAL_P(value_z);
+
+	if (validate_string(string, len)) {
+		return true;
+	}
+
+	char* outString = NULL;
+	SQLLEN outLen = 0;
+
+	bool result = convert_string_from_utf16(encoding,
+		reinterpret_cast<const wchar_t*>(string), int(len / sizeof(wchar_t)), &outString, outLen);
+
+	if (result)
+	{
+		core::sqlsrv_zval_stringl(value_z, outString, outLen);
+		sqlsrv_free(outString);
+		len = outLen;
+	}
+
+	return result;
+}
+
+bool validate_string(char* string, SQLLEN& len)
+{
+	SQLSRV_ASSERT(string != NULL, "String must be specified");
+
+	//for the empty string, we simply returned we converted it
+	if (len == 0 && string[0] == '\0') {
+		return true;
+	}
+
+	if ((len / sizeof(wchar_t)) > INT_MAX)
+	{
+		LOG(SEV_ERROR, "UTP-16 (wide character) string mapping: buffer length exceeded.");
+		throw core::CoreException();
+	}
+
+	return false;
+}
+
+bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen )
 {
     SQLSRV_ASSERT( inString != NULL, "Input string must be specified" );
     SQLSRV_ASSERT( outString != NULL, "Output buffer pointer must be specified" );
@@ -126,7 +169,7 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inStrin
     char* newString = reinterpret_cast<char*>( sqlsrv_malloc( cchOutLen + 1 /* NULL char*/ ));
     int rc = WideCharToMultiByte( encoding, flags,
                                   inString, cchInLen, 
-                                  newString, cchOutLen, NULL, NULL );
+                                  newString, static_cast<int>(cchOutLen), NULL, NULL );
     if( rc == 0 ) {
         cchOutLen = 0;
         sqlsrv_free( newString );
@@ -138,7 +181,6 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inStrin
 
     return true;
 }
-
 
 // thin wrapper around convert_string_from_default_encoding that handles
 // allocation of the destination string.  An empty string passed in returns
@@ -219,10 +261,10 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
                 return false;
             }
 
-            SQLINTEGER sqlstate_len = 0;
+            SQLLEN sqlstate_len = 0;
             convert_string_from_utf16(enc, wsqlstate, sizeof(wsqlstate), (char**)&error->sqlstate, sqlstate_len);
 
-            SQLINTEGER message_len = 0;
+            SQLLEN message_len = 0;
             convert_string_from_utf16(enc, wnative_message, wmessage_len, (char**)&error->native_message, message_len);
             break;
     }
@@ -264,12 +306,12 @@ void core_sqlsrv_format_driver_error( sqlsrv_context& ctx, sqlsrv_error_const co
     LOG( severity, "%1!s!: message = %2!s!", ctx.func(), formatted_error->native_message );
 }
 
-DWORD core_sqlsrv_format_message( char* output_buffer, unsigned output_len, const char* format, ... )
+DWORD core_sqlsrv_format_message( char*& output_buffer, unsigned output_len, const char* format, ... )
 {
     va_list format_args;
     va_start( format_args, format );
 
-    DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, format, 0, 0, output_buffer, output_len, &format_args );
+	DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, format, 0, 0, static_cast<LPSTR>(output_buffer), SQL_MAX_MESSAGE_LENGTH, &format_args );
 
     va_end( format_args );
 
@@ -328,8 +370,8 @@ namespace {
 // returned in utf16_out_string.  An empty string passed in will result as
 // a failure since MBTWC returns 0 for both an empty string and failure
 // to convert.
-unsigned int convert_string_from_default_encoding( unsigned int php_encoding, __in_bcount(mbcs_len) char const* mbcs_in_string,
-                                                   unsigned int mbcs_len, __out_ecount(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
+unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
+                                                   unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
                                                    unsigned int utf16_len )
 {
     unsigned int win_encoding = CP_ACP;

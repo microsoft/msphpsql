@@ -3,7 +3,7 @@
 //
 // Contents: initialization routines for PDO_SQLSRV
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -20,6 +20,9 @@
 #include "pdo_sqlsrv.h"
 #include <psapi.h>
 
+#ifdef ZTS
+ZEND_TSRMLS_CACHE_DEFINE();
+#endif
 ZEND_GET_MODULE(g_pdo_sqlsrv)
 
 extern "C" {
@@ -48,19 +51,19 @@ const char PDO_DLL_NAME[] = "php_pdo.dll";
 // PHP_DEBUG is always defined as either 0 or 1
 #if PHP_DEBUG == 1 && !defined(ZTS)
 
-const char PHP_DLL_NAME[] = "php5_debug.dll";
+const char PHP_DLL_NAME[] = "php7_debug.dll";
 
 #elif PHP_DEBUG == 1 && defined(ZTS)
 
-const char PHP_DLL_NAME[] = "php5ts_debug.dll";
+const char PHP_DLL_NAME[] = "php7ts_debug.dll";
 
 #elif PHP_DEBUG == 0 && !defined(ZTS)
 
-const char PHP_DLL_NAME[] = "php5.dll";
+const char PHP_DLL_NAME[] = "php7.dll";
 
 #elif PHP_DEBUG == 0 && defined(ZTS)
 
-const char PHP_DLL_NAME[] = "php5ts.dll";
+const char PHP_DLL_NAME[] = "php7ts.dll";
 
 #else
 
@@ -133,8 +136,14 @@ zend_module_entry g_pdo_sqlsrv_module_entry =
 
 // functions dynamically linked from the PDO (or PHP) dll and called by other parts of the driver
 zend_class_entry* (*pdo_get_exception_class)( void );
-int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, int inquery_len, 
-                              char **outquery, int *outquery_len TSRMLS_DC);
+int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
+                              char **outquery, size_t *outquery_len TSRMLS_DC);
+
+// called by Zend for each parameter in the g_pdo_errors_ht hash table when it is destroyed
+void pdo_error_dtor(zval* elem) {
+	pdo_error* error_to_ignore = reinterpret_cast<pdo_error*>(Z_PTR_P(elem));
+	pefree(error_to_ignore, 1);
+}
 
 // Module initialization
 // This function is called once per execution of the Zend engine
@@ -150,6 +159,7 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
                     (ts_allocate_ctor) NULL,
                     (ts_allocate_dtor) NULL ) == 0 )
         return FAILURE;
+    ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
     core_sqlsrv_register_logger( pdo_sqlsrv_log );
@@ -206,8 +216,8 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     }
 
     pdo_subst_named_params = 
-        reinterpret_cast<int (*)(pdo_stmt_t *stmt, char *inquery, int inquery_len, 
-                                 char **outquery, int *outquery_len TSRMLS_DC)>( 
+        reinterpret_cast<int (*)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
+                                 char **outquery, size_t *outquery_len TSRMLS_DC)>( 
                                      GetProcAddress( pdo_hmodule, "pdo_parse_params" ));
     if( pdo_subst_named_params == NULL ) {
         LOG( SEV_ERROR, "Failed to register driver." );
@@ -216,17 +226,13 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
 
     // initialize list of pdo errors
     g_pdo_errors_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
-    int zr = ::zend_hash_init( g_pdo_errors_ht, 50, NULL, NULL, 1 );
-    if( zr == FAILURE ) {
-        LOG( SEV_ERROR, "Failed to initialize the PDO errors hashtable." );
-        return FAILURE;
-    }
+    ::zend_hash_init( g_pdo_errors_ht, 50, NULL, pdo_error_dtor /*pDestructor*/, 1 );
 
     for( int i = 0; PDO_ERRORS[ i ].error_code != -1; ++i ) {
         
-        zr = ::zend_hash_index_update( g_pdo_errors_ht, PDO_ERRORS[ i ].error_code, 
-                                       &( PDO_ERRORS[ i ].sqlsrv_error ), sizeof( PDO_ERRORS[ i ].sqlsrv_error ), NULL );
-        if( zr == FAILURE ) {
+        void* zr = ::zend_hash_index_update_mem( g_pdo_errors_ht, PDO_ERRORS[ i ].error_code, 
+                                       &( PDO_ERRORS[ i ].sqlsrv_error ), sizeof( PDO_ERRORS[ i ].sqlsrv_error ) );
+        if( zr == NULL ) {
                 
             LOG( SEV_ERROR, "Failed to insert data into PDO errors hashtable." );
             return FAILURE;
@@ -261,7 +267,6 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
 
     return SUCCESS;
 }
-
 
 // Module shutdown function
 
@@ -303,10 +308,12 @@ PHP_RINIT_FUNCTION(pdo_sqlsrv)
     SQLSRV_UNUSED( module_number );
     SQLSRV_UNUSED( type );
 
+#if defined(ZTS) 
+    ZEND_TSRMLS_CACHE_UPDATE();
+#endif
+
     LOG( SEV_NOTICE, "pdo_sqlsrv: entering rinit" );
  
-    // verify memory at the end of the request (in debug mode only)
-    full_mem_check(MEMCHECK_SILENT);
     return SUCCESS;
 }
 
@@ -321,9 +328,6 @@ PHP_RSHUTDOWN_FUNCTION(pdo_sqlsrv)
 
     LOG( SEV_NOTICE, "pdo_sqlsrv: entering rshutdown" );
 
-    // verify memory at the end of the request (in debug mode only)
-    full_mem_check(MEMCHECK_SILENT);
-
     return SUCCESS;
 }
 
@@ -332,12 +336,9 @@ PHP_RSHUTDOWN_FUNCTION(pdo_sqlsrv)
 
 PHP_MINFO_FUNCTION(pdo_sqlsrv)
 {
-#if defined(ZTS)
-    SQLSRV_UNUSED( tsrm_ls );
-#endif
-
     php_info_print_table_start();
     php_info_print_table_header(2, "pdo_sqlsrv support", "enabled");
+    php_info_print_table_row(2, "ExtensionVer", VER_FILEVERSION_STR);
     php_info_print_table_end();
     DISPLAY_INI_ENTRIES();
 }
@@ -371,14 +372,15 @@ namespace {
     }
 
     // array of pdo constants.
-    sqlsrv_attr_pdo_constant pdo_attr_constants[] = {
+	sqlsrv_attr_pdo_constant pdo_attr_constants[] = {
 
-        // driver specific attributes
-        { "SQLSRV_ATTR_ENCODING"            , SQLSRV_ATTR_ENCODING },
-        { "SQLSRV_ATTR_QUERY_TIMEOUT"       , SQLSRV_ATTR_QUERY_TIMEOUT },
-        { "SQLSRV_ATTR_DIRECT_QUERY"        , SQLSRV_ATTR_DIRECT_QUERY },
-        { "SQLSRV_ATTR_CURSOR_SCROLL_TYPE"  , SQLSRV_ATTR_CURSOR_SCROLL_TYPE },
-        { "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
+		// driver specific attributes
+		{ "SQLSRV_ATTR_ENCODING"            , SQLSRV_ATTR_ENCODING },
+		{ "SQLSRV_ATTR_QUERY_TIMEOUT"       , SQLSRV_ATTR_QUERY_TIMEOUT },
+		{ "SQLSRV_ATTR_DIRECT_QUERY"        , SQLSRV_ATTR_DIRECT_QUERY },
+		{ "SQLSRV_ATTR_CURSOR_SCROLL_TYPE"  , SQLSRV_ATTR_CURSOR_SCROLL_TYPE },
+		{ "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
+		{ "SQLSRV_ATTR_FETCHES_NUMERIC_TYPE", SQLSRV_ATTR_FETCHES_NUMERIC_TYPE },
 
         // used for the size for output parameters: PDO::PARAM_INT and PDO::PARAM_BOOL use the default size of int,
         // PDO::PARAM_STR uses the size of the string in the variable
@@ -394,7 +396,7 @@ namespace {
         { "SQLSRV_CURSOR_STATIC"            , SQL_CURSOR_STATIC },
         { "SQLSRV_CURSOR_DYNAMIC"           , SQL_CURSOR_DYNAMIC },
         { "SQLSRV_CURSOR_KEYSET"            , SQL_CURSOR_KEYSET_DRIVEN },
-        { "SQLSRV_CURSOR_BUFFERED"          , SQLSRV_CURSOR_BUFFERED },
+        { "SQLSRV_CURSOR_BUFFERED"          , static_cast<int>(SQLSRV_CURSOR_BUFFERED) },
 
         { NULL , 0 } // terminate the table
     };

@@ -8,7 +8,7 @@
 //
 // Comments: Also contains "internal" declarations shared across source files. 
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -73,7 +73,7 @@ typedef int socklen_t;
 
 #pragma warning(pop)
 
-#if PHP_MAJOR_VERSION > 5 || PHP_MAJOR_VERSION < 5 || ( PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3 )
+#if PHP_MAJOR_VERSION < 7
 #error Trying to compile "Microsoft Drivers for PHP for SQL Server (SQLSRV Driver)" with an unsupported version of PHP
 #endif
 
@@ -148,7 +148,7 @@ struct ss_sqlsrv_conn : sqlsrv_conn
 };
 
 // resource destructor
-void __cdecl sqlsrv_conn_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC );
+void __cdecl sqlsrv_conn_dtor( zend_resource *rsrc TSRMLS_DC );
 
 //*********************************************************************************************************************************
 // Statement
@@ -175,10 +175,10 @@ struct ss_sqlsrv_stmt : public sqlsrv_stmt {
     void new_result_set( TSRMLS_D ); 
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
-    sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
+    sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string );
 
     bool prepared;                               // whether the statement has been prepared yet (used for error messages)
-    int conn_index;                              // index into the connection hash that contains this statement structure
+	zend_ulong conn_index;						 // index into the connection hash that contains this statement structure
     zval* params_z;                              // hold parameters passed to sqlsrv_prepare but not used until sqlsrv_execute
     sqlsrv_fetch_field_name* fetch_field_names;  // field names for current results used by sqlsrv_fetch_array/object as keys
     int fetch_fields_count;
@@ -223,7 +223,7 @@ PHP_FUNCTION(sqlsrv_rows_affected);
 PHP_FUNCTION(sqlsrv_send_stream_data);
 
 // resource destructor
-void __cdecl sqlsrv_stmt_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC );
+void __cdecl sqlsrv_stmt_dtor( zend_resource *rsrc TSRMLS_DC );
 
 // "internal" statement functions shared by functions in conn.cpp and stmt.cpp
 void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC );
@@ -265,15 +265,15 @@ extern "C" {
 ZEND_BEGIN_MODULE_GLOBALS(sqlsrv)
 
 // global objects for errors and warnings.  These are returned by sqlsrv_errors.
-zval* errors;
-zval* warnings;
+zval errors;
+zval warnings;
 
 // flags for error handling and logging (set via sqlsrv_configure or php.ini)
-long log_severity;
-long log_subsystems;
-long current_subsystem;
+zend_long log_severity;
+zend_long log_subsystems;
+zend_long current_subsystem;
 zend_bool warnings_return_as_errors;
-long buffered_query_limit;
+zend_long buffered_query_limit;
 
 ZEND_END_MODULE_GLOBALS(sqlsrv)
 
@@ -281,11 +281,11 @@ ZEND_EXTERN_MODULE_GLOBALS(sqlsrv);
 
 }
 
-// macros used to access the global variables.  Use these to make global variable access agnostic to threads
-#ifdef ZTS
-#define SQLSRV_G(v) TSRMG(sqlsrv_globals_id, zend_sqlsrv_globals *, v)
-#else
-#define SQLSRV_G(v) sqlsrv_globals.v
+// macro used to access the global variables.  Use it to make global variable access agnostic to threads
+#define SQLSRV_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(sqlsrv, v)
+
+#if defined(ZTS)
+ZEND_TSRMLS_CACHE_EXTERN();
 #endif
 
 // INI settings and constants
@@ -353,6 +353,7 @@ enum SS_ERROR_CODES {
     SS_SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING,
     SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED,
     SS_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE,
+    SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF
 };
 
 extern ss_error SS_ERRORS[];
@@ -367,42 +368,42 @@ PHP_FUNCTION(sqlsrv_errors);
 // bytes.  The return is the number of UTF-16 characters in the string
 // returned in utf16_out_string.
 unsigned int convert_string_from_default_encoding( unsigned int php_encoding, char const* mbcs_in_string,
-                                                   unsigned int mbcs_len, __out wchar_t* utf16_out_string,
+                                                   unsigned int mbcs_len, _Out_ wchar_t* utf16_out_string,
                                                    unsigned int utf16_len );
 // create a wide char string from the passed in mbcs string.  NULL is returned if the string
 // could not be created.  No error is posted by this function.  utf16_len is the number of
 // wchar_t characters, not the number of bytes.
 wchar_t* utf16_string_from_mbcs_string( unsigned int php_encoding, const char* mbcs_string, 
-                                        unsigned int mbcs_len, __out unsigned int* utf16_len );
+                                        unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
 
 // *** internal error macros and functions ***
 bool handle_error( sqlsrv_context const* ctx, int log_subsystem, const char* function, 
                    sqlsrv_error const* ssphp TSRMLS_DC, ... );
 void handle_warning( sqlsrv_context const* ctx, int log_subsystem, const char* function, 
                      sqlsrv_error const* ssphp TSRMLS_DC, ... );
-void __cdecl sqlsrv_error_dtor( zend_rsrc_list_entry *rsrc TSRMLS_DC );
+void __cdecl sqlsrv_error_dtor( zend_resource *rsrc TSRMLS_DC );
 
 // release current error lists and set to NULL
 inline void reset_errors( TSRMLS_D )
 {
-    if( Z_TYPE_P( SQLSRV_G( errors )) != IS_ARRAY && Z_TYPE_P( SQLSRV_G( errors )) != IS_NULL ) {
+    if( Z_TYPE( SQLSRV_G( errors )) != IS_ARRAY && Z_TYPE( SQLSRV_G( errors )) != IS_NULL ) {
         DIE( "sqlsrv_errors contains an invalid type" );
     }
-    if( Z_TYPE_P( SQLSRV_G( warnings )) != IS_ARRAY && Z_TYPE_P( SQLSRV_G( warnings )) != IS_NULL ) {
+    if( Z_TYPE( SQLSRV_G( warnings )) != IS_ARRAY && Z_TYPE( SQLSRV_G( warnings )) != IS_NULL ) {
         DIE( "sqlsrv_warnings contains an invalid type" );
     }
 
-    if( Z_TYPE_P( SQLSRV_G( errors )) == IS_ARRAY ) {
-        zend_hash_destroy( Z_ARRVAL_P( SQLSRV_G( errors )));
-        FREE_HASHTABLE( Z_ARRVAL_P( SQLSRV_G( errors )));
+    if( Z_TYPE( SQLSRV_G( errors )) == IS_ARRAY ) {
+        zend_hash_destroy( Z_ARRVAL( SQLSRV_G( errors )));
+        FREE_HASHTABLE( Z_ARRVAL( SQLSRV_G( errors )));
     }
-    if( Z_TYPE_P( SQLSRV_G( warnings )) == IS_ARRAY ) {
-        zend_hash_destroy( Z_ARRVAL_P( SQLSRV_G( warnings )));
-        FREE_HASHTABLE( Z_ARRVAL_P( SQLSRV_G( warnings )));
+    if( Z_TYPE( SQLSRV_G( warnings )) == IS_ARRAY ) {
+        zend_hash_destroy( Z_ARRVAL( SQLSRV_G( warnings )));
+        FREE_HASHTABLE( Z_ARRVAL( SQLSRV_G( warnings )));
     }
 
-    ZVAL_NULL( SQLSRV_G( errors ));
-    ZVAL_NULL( SQLSRV_G( warnings ));
+    ZVAL_NULL( &SQLSRV_G( errors ));
+    ZVAL_NULL( &SQLSRV_G( warnings ));
 }
 
 #define THROW_SS_ERROR( ctx, error_code, ... ) \
@@ -455,8 +456,7 @@ public:
 #define LOG_FUNCTION( function_name ) \
    const char* _FN_ = function_name; \
    SQLSRV_G( current_subsystem ) = current_log_subsystem; \
-   LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); \
-   CheckMemory _check_memory_;
+   LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); 
 
 #define SET_FUNCTION_NAME( context ) \
 { \
@@ -475,21 +475,6 @@ enum logging_subsystems {
     LOG_ALL  = -1,
 };
 
-struct CheckMemory {
-
-    CheckMemory( void )
-    {
-        // test the integrity of the Zend heap.
-        full_mem_check(MEMCHECK_SILENT);
-    }
-
-    ~CheckMemory( void )
-    {
-        // test the integrity of the Zend heap.
-        full_mem_check(MEMCHECK_SILENT);
-    }
-};
-
 
 //*********************************************************************************************************************************
 // Utility Functions
@@ -498,11 +483,8 @@ struct CheckMemory {
 // generic function used to validate parameters to a PHP function.
 // Register an invalid parameter error and returns NULL when parameters don't match the spec given.
 template <typename H>
-inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, const char* calling_func, int param_count, ... )
+inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, const char* calling_func, size_t param_count, ... )
 {
-    SQLSRV_UNUSED( return_value_used );
-    SQLSRV_UNUSED( this_ptr );
-    SQLSRV_UNUSED( return_value_ptr );
     SQLSRV_UNUSED( return_value );
 
     zval* rsrc;
@@ -527,7 +509,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         va_list vaList;
         va_start(vaList, param_count);  //set the pointer to first argument
 
-        for(int i=0; i< param_count; ++i) {
+        for(size_t i = 0; i < param_count; ++i) {
             
             arr[i] =  va_arg(vaList, void*);
         }
@@ -588,7 +570,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         }
 
         // get the resource registered 
-        h = static_cast<H*>( zend_fetch_resource( &rsrc TSRMLS_CC, -1, H::resource_name, NULL, 1, H::descriptor ));
+        h = static_cast<H*>( zend_fetch_resource(Z_RES_P(rsrc) TSRMLS_CC, H::resource_name, H::descriptor ));
         
         CHECK_CUSTOM_ERROR(( h == NULL ), &error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, calling_func ) {
 
@@ -622,13 +604,14 @@ namespace ss {
         }
     };
 
-    inline void zend_register_resource( __out zval* rsrc_result, void* rsrc_pointer, int rsrc_type, char* rsrc_name TSRMLS_DC ) 
+    inline void zend_register_resource(_Out_ zval& rsrc_result, void* rsrc_pointer, int rsrc_type, char* rsrc_name TSRMLS_DC)
     {
-        int zr = ZEND_REGISTER_RESOURCE( rsrc_result, rsrc_pointer, rsrc_type );
+        int zr = (NULL != (Z_RES(rsrc_result) = ::zend_register_resource(rsrc_pointer, rsrc_type)) ? SUCCESS : FAILURE);
         CHECK_CUSTOM_ERROR(( zr == FAILURE ), reinterpret_cast<sqlsrv_context*>( rsrc_pointer ), SS_SQLSRV_ERROR_REGISTER_RESOURCE,
-                           rsrc_name ) {
+            rsrc_name ) {
             throw ss::SSException();
         }
+        Z_TYPE_INFO(rsrc_result) = IS_RESOURCE_EX;
     }
 } // namespace ss
 

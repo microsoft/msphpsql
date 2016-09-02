@@ -3,7 +3,7 @@
 //
 // Contents: common initialization routines shared by PDO and sqlsrv
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -37,8 +37,8 @@ OSVERSIONINFO g_osversion;
 // err      - Driver specific error handler which handles any errors during initialization.
 void core_sqlsrv_minit( sqlsrv_context** henv_cp, sqlsrv_context** henv_ncp, error_callback err, const char* driver_func TSRMLS_DC )
 {
-    SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_sqltype ) == sizeof( long ));
-    SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_phptype ) == sizeof( long ));
+    SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_sqltype ) == sizeof( zend_long ) );
+    SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_phptype ) == sizeof( zend_long ));
 
     *henv_cp = *henv_ncp = SQL_NULL_HANDLE; // initialize return values to NULL
 
@@ -146,11 +146,13 @@ void core_sqlsrv_mshutdown( sqlsrv_context& henv_cp, sqlsrv_context& henv_ncp )
 
         henv_ncp.invalidate();
     }
+	delete &henv_ncp;
 
     if( henv_cp != SQL_NULL_HANDLE ) {
 
         henv_cp.invalidate();
     }
+	delete &henv_cp;
 
     return;
 }

@@ -6,7 +6,7 @@
 //
 // Contents: Declarations for the extension
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -48,6 +48,7 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_DIRECT_QUERY,
     SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
     SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
+	SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -70,7 +71,7 @@ extern "C" {
 ZEND_BEGIN_MODULE_GLOBALS(pdo_sqlsrv)
 
 unsigned int log_severity;
-long client_buffer_max_size;
+zend_long client_buffer_max_size;
 
 ZEND_END_MODULE_GLOBALS(pdo_sqlsrv)
 
@@ -158,7 +159,7 @@ class conn_string_parser
         void add_key_value_pair( const char* value, int len TSRMLS_DC );
 
     public:
-        conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, __inout HashTable* conn_options_ht );
+        conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, _Inout_ HashTable* conn_options_ht );
         void parse_conn_string( TSRMLS_D );
 };
 
@@ -175,7 +176,9 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     zval* stmts;
     bool direct_query;
     long query_timeout;
-    long client_buffer_max_size;
+    zend_long client_buffer_max_size;
+	SQLSRV_ENCODING bind_param_encoding;
+	bool fetch_numeric;
 
     pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC );
 };
@@ -210,6 +213,10 @@ struct stmt_option_emulate_prepares : public stmt_option_functor {
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_fetch_numeric : public stmt_option_functor {
+	virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
+};
+
 extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
 
 // a core layer pdo stmt object. This object inherits and overrides the callbacks necessary
@@ -220,25 +227,28 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         direct_query( false ),
         direct_query_subst_string( NULL ),
         direct_query_subst_string_len( 0 ),
-        bound_column_param_types( NULL )
+        bound_column_param_types( NULL ),
+		fetch_numeric( false )
     {
         pdo_sqlsrv_dbh* db = static_cast<pdo_sqlsrv_dbh*>( c );
         direct_query = db->direct_query;
+		fetch_numeric = db->fetch_numeric;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     // for PDO, everything is a string, so we return SQLSRV_PHPTYPE_STRING for all SQL types
-    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
+    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string );
 
     bool direct_query;                        // flag set if the query should be executed directly or prepared
     const char* direct_query_subst_string;    // if the query is direct, hold the substitution string if using named parameters
-    int direct_query_subst_string_len;        // length of query string used for direct queries
+    size_t direct_query_subst_string_len;        // length of query string used for direct queries
 
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
     pdo_param_type* bound_column_param_types;
+	bool fetch_numeric;
 };
 
 
@@ -277,7 +287,7 @@ inline void pdo_reset_dbh_error( pdo_dbh_t* dbh TSRMLS_DC )
     // release the last statement from the dbh so that error handling won't have a statement passed to it
     if( dbh->query_stmt ) {
         dbh->query_stmt = NULL;
-        zend_objects_store_del_ref( &dbh->query_stmt_zval TSRMLS_CC );
+        zend_objects_store_del( Z_OBJ_P(&dbh->query_stmt_zval TSRMLS_CC) );
     }
 
     // if the driver isn't valid, just return (PDO calls close sometimes more than once?)
@@ -383,8 +393,8 @@ namespace pdo {
 // called pdo_parse_params in php_pdo_driver.h
 // we renamed it for 2 reasons: 1) we can't have the same name since it would conflict with our dynamic linking, and 
 // 2) this is a more precise name
-extern int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, int inquery_len, 
-                                     char **outquery, int *outquery_len TSRMLS_DC);
+extern int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
+                                     char **outquery, size_t *outquery_len TSRMLS_DC);
 
 // logger for pdo_sqlsrv called by the core layer when it wants to log something with the LOG macro
 void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );

@@ -2,7 +2,7 @@
 // File: version.h
 // Contents: Version number constants
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -16,11 +16,11 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#define VER_FILEVERSION_STR "3.2.1.0"
-#define _FILEVERSION 3,2,1,0
-#define SQLVERSION_MAJOR 3
-#define SQLVERSION_MINOR 2
-#define SQLVERSION_MMDD 1
+#define VER_FILEVERSION_STR "4.1.0.0"
+#define _FILEVERSION 4,1,0,0
+#define SQLVERSION_MAJOR 4
+#define SQLVERSION_MINOR 1
+#define SQLVERSION_MMDD 0
 #define SQLVERSION_REVISION 0
 
 

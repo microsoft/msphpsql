@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use connection handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -42,7 +42,7 @@ const int INFO_BUFFER_LEN = 256;
 const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
 // ODBC driver name.
-const char CONNECTION_STRING_DRIVER_NAME[] = "Driver={ODBC Driver 11 for SQL Server};";
+const char* CONNECTION_STRING_DRIVER_NAME[] = {"Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};"};
 
 // default options if only the server is specified
 const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes}";
@@ -57,12 +57,12 @@ const char CONNECTION_OPTION_MARS_ON[] = "MARS_Connection={Yes};";
 
 void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* server, const char* uid, const char* pwd, 
                                                      HashTable* options_ht, const connection_option valid_conn_opts[], 
-                                                     void* driver,__inout std::string& connection_string TSRMLS_DC );
+                                                     void* driver,_Inout_ std::string& connection_string TSRMLS_DC );
 void determine_server_version( sqlsrv_conn* conn TSRMLS_DC );
 const char* get_processor_arch( void );
 void get_server_version( sqlsrv_conn* conn, char** server_version, SQLSMALLINT& len TSRMLS_DC );
-connection_option const* get_connection_option( sqlsrv_conn* conn, const char* key, unsigned int key_len TSRMLS_DC );
-void common_conn_str_append_func( const char* odbc_name, const char* val, int val_len, std::string& conn_str TSRMLS_DC );
+connection_option const* get_connection_option( sqlsrv_conn* conn, const char* key, SQLULEN key_len TSRMLS_DC );
+void common_conn_str_append_func( const char* odbc_name, const char* val, size_t val_len, std::string& conn_str TSRMLS_DC );
 
 }
 
@@ -104,14 +104,14 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     
     if( options_ht && zend_hash_num_elements( options_ht ) > 0 ) {
 
-        zval** option_zz = NULL;
+        zval* option_z = NULL; 
         int zr = SUCCESS;
 
-        zr = zend_hash_index_find( options_ht, SQLSRV_CONN_OPTION_CONN_POOLING, reinterpret_cast<void**>( &option_zz ));
-        if( zr != FAILURE ) {
+		option_z = zend_hash_index_find(options_ht, SQLSRV_CONN_OPTION_CONN_POOLING);
+		if (option_z) {
 
             // if the option was found and it's not true, then use the non pooled environment handle
-            if(( Z_TYPE_PP( option_zz ) == IS_STRING && !core_str_zval_is_true( *option_zz )) || !zend_is_true( *option_zz ) ) {
+            if(( Z_TYPE_P( option_z ) == IS_STRING && !core_str_zval_is_true( option_z )) || !zend_is_true( option_z ) ) {
                 
                 henv = &henv_ncp;   
             }
@@ -124,38 +124,49 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     conn = conn_factory( temp_conn_h, err, driver TSRMLS_CC );
     conn->set_func( driver_func );
 
+	for ( std::size_t i = DRIVER_VERSION::MIN; i <= DRIVER_VERSION::MAX; ++i ) {
+		conn_str = CONNECTION_STRING_DRIVER_NAME[i];
+		build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver,
+			conn_str TSRMLS_CC );
 
-    build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver, 
-                                               conn_str TSRMLS_CC );
-    
-    // We only support UTF-8 encoding for connection string.
-    // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
-    wconn_len = (conn_str.length() + 1) * sizeof( wchar_t );
-    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), conn_str.length(), &wconn_len );
-    CHECK_CUSTOM_ERROR( wconn_string == NULL, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message() )
-    {
-        throw core::CoreException();
-    }
-    
-    SQLSMALLINT output_conn_size;
-    r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
-                           static_cast<SQLSMALLINT>( wconn_len ), NULL, 
-                          0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-    // clear the connection string from memory to remove sensitive data (such as a password).
-    memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
-    memset( wconn_string, 0, wconn_len * sizeof( wchar_t )); // wconn_len is the number of characters, not bytes
-    conn_str.clear();
+		// We only support UTF-8 encoding for connection string.
+		// Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
+		wconn_len = static_cast<unsigned int>( conn_str.length() + 1 ) * sizeof( wchar_t );
 
-    if( !SQL_SUCCEEDED( r )) {
-        SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
-        SQLSMALLINT len;
-        SQLRETURN r = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
-        // if it's a IM002, meaning that the correct ODBC driver is not installed
-        CHECK_CUSTOM_ERROR( SQL_SUCCEEDED( r ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' &&
-                            state[4] == '2', conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch() ) {
-            throw core::CoreException();
-        }
-    }
+		wconn_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>(conn_str.length()), &wconn_len);
+		CHECK_CUSTOM_ERROR( wconn_string == NULL, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message())
+		{
+			throw core::CoreException();
+		}
+
+		SQLSMALLINT output_conn_size;
+		r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get()),
+							    static_cast<SQLSMALLINT>( wconn_len ), NULL,
+								0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+		// clear the connection string from memory to remove sensitive data (such as a password).
+		memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+		memset( wconn_string, 0, wconn_len * sizeof( wchar_t )); // wconn_len is the number of characters, not bytes
+		conn_str.clear();
+
+		if( !SQL_SUCCEEDED( r )) {
+			SQLCHAR state[SQL_SQLSTATE_BUFSIZE];
+			SQLSMALLINT len;
+			SQLRETURN r = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
+			bool missing_driver_error = ( SQL_SUCCEEDED( r ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' &&
+				state[4] == '2' );
+			// if it's a IM002, meaning that the correct ODBC driver is not installed
+			CHECK_CUSTOM_ERROR( missing_driver_error && ( i == DRIVER_VERSION::MAX ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+				throw core::CoreException();
+			}
+			if ( !missing_driver_error ) {
+				break;
+			}
+		} else {
+			conn->driver_version = static_cast<DRIVER_VERSION>( i );
+			break;
+		}
+		
+	}
     CHECK_SQL_ERROR( r, conn ) {
         throw core::CoreException();
     }
@@ -167,7 +178,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     // determine the version of the server we're connected to.  The server version is left in the 
     // connection upon return.
     determine_server_version( conn TSRMLS_CC );
-
+	
     }
     catch( std::bad_alloc& ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
@@ -318,7 +329,7 @@ void core_sqlsrv_close( sqlsrv_conn* conn TSRMLS_DC )
 // sql - T-SQL command to prepare
 // sql_len - length of the T-SQL string
 
-void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, long sql_len TSRMLS_DC )
+void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, SQLLEN sql_len TSRMLS_DC )
 {
     try {
 
@@ -333,10 +344,17 @@ void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, long sql_len TSRML
             wsql_len = 0;
         }
         else {
+
+			if (sql_len > INT_MAX)
+			{
+				LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
+				throw core::CoreException();
+			}
+
             SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
                                         stmt->encoding() );
             wsql_string = utf16_string_from_mbcs_string( encoding, reinterpret_cast<const char*>( sql ),
-                                                         sql_len, &wsql_len );
+                                                         static_cast<int>( sql_len ), &wsql_len );
             CHECK_CUSTOM_ERROR( wsql_string == NULL, stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, 
                                 get_last_error_message() ) {
                 throw core::CoreException();
@@ -359,7 +377,7 @@ void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, long sql_len TSRML
 // conn             - The connection resource by which the client and server are connected.
 // *server_version  - zval for returning results.
 
-void core_sqlsrv_get_server_version( sqlsrv_conn* conn, __out zval *server_version TSRMLS_DC )
+void core_sqlsrv_get_server_version( sqlsrv_conn* conn, _Out_ zval *server_version TSRMLS_DC )
 {
     try {
         
@@ -367,7 +385,10 @@ void core_sqlsrv_get_server_version( sqlsrv_conn* conn, __out zval *server_versi
         SQLSMALLINT buffer_len = 0;
 
         get_server_version( conn, &buffer, buffer_len TSRMLS_CC );
-        ZVAL_STRINGL( server_version, buffer, buffer_len, 0 );
+		core::sqlsrv_zval_stringl( server_version, buffer, buffer_len );
+		if (NULL != buffer) {
+			sqlsrv_free( buffer );
+		}
         buffer.transferred();
     }
     
@@ -383,7 +404,7 @@ void core_sqlsrv_get_server_version( sqlsrv_conn* conn, __out zval *server_versi
 // conn         - The connection resource by which the client and server are connected.
 // *server_info - zval for returning results.
 
-void core_sqlsrv_get_server_info( sqlsrv_conn* conn, __out zval *server_info TSRMLS_DC )
+void core_sqlsrv_get_server_info( sqlsrv_conn* conn, _Out_ zval *server_info TSRMLS_DC )
 {
     try {
 
@@ -422,7 +443,7 @@ void core_sqlsrv_get_server_info( sqlsrv_conn* conn, __out zval *server_info TSR
 // conn         - The connection resource by which the client and server are connected.
 // *client_info - zval for returning the results.
 
-void core_sqlsrv_get_client_info( sqlsrv_conn* conn, __out zval *client_info TSRMLS_DC )
+void core_sqlsrv_get_client_info( sqlsrv_conn* conn, _Out_ zval *client_info TSRMLS_DC )
 {
     try {
 
@@ -463,7 +484,7 @@ void core_sqlsrv_get_client_info( sqlsrv_conn* conn, __out zval *client_info TSR
 // Properly escaped means that any '}' should be escaped by a prior '}'.  It is assumed that 
 // the value will be surrounded by { and } by the caller after it has been validated
 
-bool core_is_conn_opt_value_escaped( const char* value, int value_len )
+bool core_is_conn_opt_value_escaped( const char* value, size_t value_len )
 {
     // if the value is already quoted, then only analyse the part inside the quotes and return it as 
     // unquoted since we quote it when adding it to the connection string.
@@ -472,7 +493,7 @@ bool core_is_conn_opt_value_escaped( const char* value, int value_len )
         value_len -= 2;
     }
     // check to make sure that all right braces are escaped
-    int i = 0;
+    size_t i = 0;
     while( ( value[i] != '}' || ( value[i] == '}' && value[i+1] == '}' )) && i < value_len ) {
         // skip both braces
         if( value[i] == '}' )
@@ -491,7 +512,7 @@ bool core_is_conn_opt_value_escaped( const char* value, int value_len )
 
 namespace {
 
-connection_option const* get_connection_option( sqlsrv_conn* conn, unsigned long key, 
+connection_option const* get_connection_option( sqlsrv_conn* conn, SQLULEN key, 
                                                      const connection_option conn_opts[] TSRMLS_DC )
 {
     for( int opt_idx = 0; conn_opts[ opt_idx ].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++opt_idx ) {
@@ -513,7 +534,7 @@ connection_option const* get_connection_option( sqlsrv_conn* conn, unsigned long
 
 void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* server, const char* uid, const char* pwd, 
                                                      HashTable* options, const connection_option valid_conn_opts[], 
-                                                     void* driver,__inout std::string& connection_string TSRMLS_DC )
+                                                     void* driver,_Inout_ std::string& connection_string TSRMLS_DC )
 {
     bool credentials_mentioned = false;
     bool mars_mentioned = false;
@@ -521,9 +542,7 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
     int zr = SUCCESS;
 
     try {
-
-        connection_string = CONNECTION_STRING_DRIVER_NAME;
-        
+  
         // Add the server name
         common_conn_str_append_func( ODBCConnOptions::SERVER, server, strlen( server ), connection_string TSRMLS_CC );
 
@@ -566,40 +585,34 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
         // flag is set to false.
         if( zend_hash_index_exists( options, SQLSRV_CONN_OPTION_TRACE_FILE )) {
             
-            zval** trace_value = NULL;
-            int zr = zend_hash_index_find( options, SQLSRV_CONN_OPTION_TRACE_ON, (void**)&trace_value );
+            zval* trace_value = NULL; 
+			trace_value = zend_hash_index_find(options, SQLSRV_CONN_OPTION_TRACE_ON);
             
-            if( zr == FAILURE || !zend_is_true( *trace_value )) {
+			if (trace_value == NULL || !zend_is_true(trace_value)) {
            
                 zend_hash_index_del( options, SQLSRV_CONN_OPTION_TRACE_FILE );
             }
         }
 
-        for( zend_hash_internal_pointer_reset( options );
-             zend_hash_has_more_elements( options ) == SUCCESS;
-             zend_hash_move_forward( options )) {
-        
-            int type = HASH_KEY_NON_EXISTANT;
-            char *key = NULL;
-            unsigned int key_len = -1;
-            unsigned long index = -1;
-            zval** data = NULL;
+		zend_string *key = NULL;
+		zend_ulong index = -1;
+		zval* data = NULL;
 
-            type = zend_hash_get_current_key_ex( options, &key, &key_len, &index, 0, NULL );
-            
-            // The driver layer should ensure a valid key.
-            DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
-           
-            core::sqlsrv_zend_hash_get_current_data( *conn, options, (void**) &data TSRMLS_CC );
+		ZEND_HASH_FOREACH_KEY_VAL( options, index, key, data ) {
+			int type = HASH_KEY_NON_EXISTENT;
+			type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
-            conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
-    
-            if( index == SQLSRV_CONN_OPTION_MARS ) {
-                mars_mentioned = true;
-            }
-            
-            conn_opt->func( conn_opt, *data, conn, connection_string TSRMLS_CC );
-        }
+			// The driver layer should ensure a valid key.
+			DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
+
+			conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
+
+			if( index == SQLSRV_CONN_OPTION_MARS ) {
+				mars_mentioned = true;
+			}
+
+			conn_opt->func( conn_opt, data, conn, connection_string TSRMLS_CC );
+		} ZEND_HASH_FOREACH_END();
 
         // MARS on if not explicitly turned off
         if( !mars_mentioned ) {
@@ -676,7 +689,7 @@ void determine_server_version( sqlsrv_conn* conn TSRMLS_DC )
     errno = 0;
     char version_major_str[ 3 ];
     SERVER_VERSION version_major;
-    memcpy( version_major_str, p, 2 );
+	memcpy_s( version_major_str, sizeof( version_major_str ), p, 2 );
     version_major_str[ 2 ] = '\0';
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
 
@@ -690,7 +703,7 @@ void determine_server_version( sqlsrv_conn* conn TSRMLS_DC )
     conn->server_version = version_major;
 }
 
-void common_conn_str_append_func( const char* odbc_name, const char* val, int val_len, std::string& conn_str TSRMLS_DC )
+void common_conn_str_append_func( const char* odbc_name, const char* val, size_t val_len, std::string& conn_str TSRMLS_DC )
 {
     // wrap a connection option in a quote.  It is presumed that any character that need to be escaped will
     // be escaped, such as a closing }.
@@ -713,7 +726,7 @@ void conn_str_append_func::func( connection_option const* option, zval* value, s
                                  TSRMLS_DC )
 {
     const char* val_str = Z_STRVAL_P( value );
-    int val_len = Z_STRLEN_P( value );
+    size_t val_len = Z_STRLEN_P( value );
     common_conn_str_append_func( option->odbc_name, val_str, val_len, conn_str TSRMLS_CC );
 }
 
@@ -729,15 +742,15 @@ void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/,
 // Values = ("true" or "1") are treated as true values. Everything else is treated as false.
 // Returns 1 for true and 0 for false.
 
-int core_str_zval_is_true( zval* value_z ) 
+size_t core_str_zval_is_true( zval* value_z ) 
 {    
     SQLSRV_ASSERT( Z_TYPE_P( value_z ) == IS_STRING, "core_str_zval_is_true: This function only accepts zval of type string." );
 
     char* value_in = Z_STRVAL_P( value_z );
-    int val_len = Z_STRLEN_P( value_z );
+    size_t val_len = Z_STRLEN_P( value_z );
     
     // strip any whitespace at the end (whitespace is the same value in ASCII and UTF-8)
-    int last_char = val_len - 1;
+    size_t last_char = val_len - 1;
     while( isspace( value_in[ last_char ] )) {
         value_in[ last_char ] = '\0';
         val_len = last_char;
@@ -745,7 +758,7 @@ int core_str_zval_is_true( zval* value_z )
     }
 
     // save adjustments to the value made by stripping whitespace at the end
-    ZVAL_STRINGL( value_z, value_in, val_len, 0 );
+	Z_STRLEN_P( value_z ) = val_len;
 
     const char VALID_TRUE_VALUE_1[] = "true";
     const char VALID_TRUE_VALUE_2[] = "1";

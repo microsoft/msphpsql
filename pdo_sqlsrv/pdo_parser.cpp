@@ -5,7 +5,7 @@
 // 
 // Copyright Microsoft Corporation
 //
-// Microsoft Drivers 3.2 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -22,7 +22,7 @@
 #include "pdo_sqlsrv.h"
 
 // Constructor
-conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, __inout HashTable* conn_options_ht )
+conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, _Inout_ HashTable* conn_options_ht )
 {
     this->conn_str = dsn;
     this->len = len;
@@ -34,7 +34,7 @@ conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, i
 // Move to the next character
 inline bool conn_string_parser::next( void )
 {
-    // if already at the end than return false
+    // if already at the end then return false
     if( this->is_eos() ) {
 
         return false;
@@ -108,22 +108,19 @@ bool conn_string_parser::discard_white_spaces()
 // Add a key-value pair to the hashtable of connection options.
 void conn_string_parser::add_key_value_pair( const char* value, int len TSRMLS_DC )
 {
-    zval_auto_ptr value_z;
-    ALLOC_INIT_ZVAL( value_z );
+    zval value_z;
+    ZVAL_UNDEF( &value_z );
 
     if( len == 0 ) {
     
-        ZVAL_STRINGL( value_z, "", 0, 1 /*dup*/ );
+        ZVAL_STRINGL( &value_z, "", 0);
     }
     else {
 
-        ZVAL_STRINGL( value_z, const_cast<char*>( value ), len, 1 /*dup*/ );
+        ZVAL_STRINGL( &value_z, const_cast<char*>( value ), len );
     }                
 
-    core::sqlsrv_zend_hash_index_update( *ctx, this->conn_options_ht, this->current_key, (void**)&value_z, 
-                                         sizeof(zval*) TSRMLS_CC );
-
-    zval_add_ref( &value_z );   
+    core::sqlsrv_zend_hash_index_update( *ctx, this->conn_options_ht, this->current_key, &value_z TSRMLS_CC ); 
 }
 
 // Validate a given DSN keyword.
@@ -145,7 +142,7 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
     // encountered an invalid key, throw error.
     sqlsrv_malloc_auto_ptr<char> key_name;
     key_name = static_cast<char*>( sqlsrv_malloc( new_len + 1 ));
-    memcpy( key_name, key, new_len );
+    memcpy_s( key_name, new_len + 1 ,key, new_len );
     key_name[ new_len ] = '\0';  
 
     THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, key_name ); 
