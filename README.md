@@ -2,6 +2,8 @@
 
 **Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7**
 
+**Note:** For the PHP 5 project, see the PHP 5 branch.
+
 The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
 
 This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
@@ -10,13 +12,13 @@ The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
 
-August 22, 2016 (4.1.1): Updated Windows drivers built and compiled with PHP 7.0.9 are available and include a couple of bug fixes:
+**August 22, 2016** (4.1.1): Updated Windows drivers built and compiled with PHP 7.0.9 are available and include a couple of bug fixes:
 
 - Fixed issue with storing integers in varchar field.
 - Fixed issue with invalid connection handler if one connection fails.
 - Fixed crash when emulate prepare is on.
 
-July 28, 2016 (4.1.0): Thanks to the community's input, this release expands drivers functionalities and also includes some bug fixes:
+**July 28, 2016** (4.1.0): Thanks to the community's input, this release expands drivers functionalities and also includes some bug fixes:
 
  - `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  connection attribute flag is added to PDO_SQLSRV driver to handle numeric fetches from columns with numeric Sql types (only bit, integer, smallint, tinyint, float and real). This flag can be turned on by setting its value in  `PDO::setAttribute` to `true`, For example,
                `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);` 
@@ -28,6 +30,11 @@ July 28, 2016 (4.1.0): Thanks to the community's input, this release expands dri
  - Fixed handling of Unicode strings and binary when emulate prepare is on in `PDOStatement::bindParam`.  To bind a unicode string, `PDO::SQLSRV_ENCODING_UTF8` should be set using `$driverOption`, and to bind a string to column of Sql type binary, `PDO::SQLSRV_ENCODING_BINARY` should be set.
  - Fixed string truncation in bind output parameters when the size is not set and the length of initialized variable is less than the output.
  - Fixed bind string parameters as bidirectional parameters (`PDO::PARAM_INPUT_OUTPUT `) in PDO_SQLSRV driver. Note for output or bidirectional parameters, `PDOStatement::closeCursor` should be called to get the output value.
+
+**July 06, 2016**: PHP Driver 4.0 for SQL Server with PHP 7 support is now GA. You can get the binaries [HERE](https://github.com/Azure/msphpsql/releases) or download the exe from the [Microsoft Download Center](https://www.microsoft.com/en-us/download/details.aspx?id=20098).
+ 
+ Please visit the [blog][blog] for more announcements.
+
 
 ## Build
 
@@ -119,7 +126,7 @@ The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.
 
 ## Resources
 
-**Documentation**: [MSDN Online Documentation][phpdoc].  Please note that this documentation is not yet updated for PHP 7.
+**Documentation**: [MSDN Online Documentation][phpdoc]. 
 
 **Team Blog**: Browse our blog for comments and announcements from the team in the [team blog][blog].
 
