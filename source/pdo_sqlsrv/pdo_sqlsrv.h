@@ -25,9 +25,8 @@
 
 extern "C" {
 
-#include "../pdo/php_pdo.h"
-#include "../pdo/php_pdo_driver.h"
-#include "../pdo/php_pdo_int.h"
+#include "pdo/php_pdo.h"
+#include "pdo/php_pdo_driver.h"
 
 }
 
