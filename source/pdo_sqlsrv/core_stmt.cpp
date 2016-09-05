@@ -1960,7 +1960,7 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
                 column_size = SQL_SERVER_MAX_TYPE_SIZE;
             }
             else {
-				column_size = SQL_SERVER_MAX_FIELD_SIZE / char_size;
+				column_size = (char_size == 0) ? 1 : (SQL_SERVER_MAX_FIELD_SIZE / char_size);
             }
             break;
         }
