@@ -104,8 +104,18 @@ Now you are ready to install PHP.
    
    3. Run `make`. The compiled drivers will be located in the `modules/` directory, and are named `sqlsrv.so` and `pdo_sqlsrv.so`.       
 
-    4. Run `sudo make install` to install the binaries into the default php extensions directory. 
-    
+   4. Run `sudo make install` to install the binaries into the default php extensions directory.
+
+- Method 4: Compile the drivers from source with phpize:
+
+	Make sure that [phpize](http://php.net/manual/en/install.pecl.phpize.php) is properly installed.
+
+    1. Switch to the source directory of the extension you want to install, e.g. `source/sqlsrv` or `source/pdo_sqlsrv`.
+
+    2. Run `phpize && ./configure CXXFLAGS=-std=c++11 && make` to compile the extension.
+
+    3. Run `sudo make install` to install the binaries into the default php extensions directory.
+
 ####Enable the drivers
 
 1. Make sure that the driver is in your PHP extensions directory.
