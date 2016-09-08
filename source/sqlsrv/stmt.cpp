@@ -796,7 +796,6 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             }
             class_name = Z_STRVAL( *class_name_z );
             class_name_len = Z_STRLEN( *class_name_z );
-            zend_str_tolower( class_name, class_name_len );
         }
 
         if( ctor_params_z && Z_TYPE_P( ctor_params_z ) != IS_ARRAY ) {
