@@ -41,7 +41,7 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
     PHP_ADD_INCLUDE($PDO_SQLSRV_DIR/include)
   
   PHP_REQUIRE_CXX()
-  PHP_ADD_LIBRARY(stdc++, 1, PDO_SQLSRV_SHARED_LIBRARY)
+  PHP_ADD_LIBRARY(stdc++, 1, PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, PDO_SQLSRV_SHARED_LIBADD)
   AC_DEFINE(HAVE_PDO_SQLSRV, 1, [ ])
   PHP_NEW_EXTENSION(pdo_sqlsrv, $sources, $ext_shared,,-I$pdo_cv_inc_path -std=c++11)
