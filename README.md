@@ -10,13 +10,32 @@ The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
 
-August 22, 2016 (4.1.1): Updated Windows drivers built and compiled with PHP 7.0.9 are available and include a couple of bug fixes:
+**September, 2016** : Updated Windows drivers (4.1.2) compiled with PHP 7.0.10 are available. Here is the list of updates:
+
+- Fixed [issue #119](https://github.com/Microsoft/msphpsql/issues/119) (modifying class name in sqlsrv_fetch_object).
+- Added following integer SQL Types constants for cases which function-like SQL types constants cannot be used e.g. type comparison:
+
+    SQLSRV constant | Typical SQL Server data type | SQL type identifier
+    ------------ | ----------------------- | ----------------------
+   SQLSRV_SQLTYPE_DECIMAL | decimal       | SQL_DECIMAL
+   SQLSRV_SQLTYPE_NUMERIC | numeric       | SQL_NUMERIC
+   SQLSRV_SQLTYPE_CHAR    | char          | SQL_CHAR
+   SQLSRV_SQLTYPE_NCHAR   | nchar         | SQL_WCHAR
+   SQLSRV_SQLTYPE_VARCHAR | varchar       | SQL_VARCHAR
+   SQLSRV_SQLTYPE_NVARCHAR | nvarchar     | SQL_WVARCHAR
+   SQLSRV_SQLTYPE_BINARY   | binary       | SQL_BINARY
+   SQLSRV_SQLTYPE_VARBINARY  | varbinary   | SQL_VARBINARY
+
+    Note: These constants should be used in type comparison operations (refer to issue [#87](https://github.com/Microsoft/msphpsql/issues/87) and [#99](https://github.com/Microsoft/msphpsql/issues/99) ), and don't replace the function like constants with the similar syntax, for binding parameters you should use the function-like constants, otherwise you'll get an error.
+
+
+**August 22, 2016** : Updated Windows drivers(4.1.1) compiled with PHP 7.0.9 are available and include a couple of bug fixes:
 
 - Fixed issue with storing integers in varchar field.
 - Fixed issue with invalid connection handler if one connection fails.
 - Fixed crash when emulate prepare is on.
 
-July 28, 2016 (4.1.0): Thanks to the community's input, this release expands drivers functionalities and also includes some bug fixes:
+**July 28, 2016** (4.1.0): Thanks to the community's input, this release expands drivers functionalities and also includes some bug fixes:
 
  - `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  connection attribute flag is added to PDO_SQLSRV driver to handle numeric fetches from columns with numeric Sql types (only bit, integer, smallint, tinyint, float and real). This flag can be turned on by setting its value in  `PDO::setAttribute` to `true`, For example,
                `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);` 
@@ -78,11 +97,13 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 
 ## Known Issues
 -  User defined data types and SQL_VARIANT.
+- Passing custom class constructor to sqlsrv_fetch_object reproduce an error([issue#139](https://github.com/Microsoft/msphpsql/issues/139)).
+- Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
 
 ## Future Plans
-- Expand SQL 16 Feature Support (example: Always Encrypted)
-- Build Verification/Fundamental Tests
-- Bug Fixes
+- Expand SQL 16 Feature Support (example: Always Encrypted).
+- Build Verification/Fundamental Tests.
+- Bug Fixes.
 
 ## Guidelines for Reporting Issues
 We appreciate you taking the time to test the driver, provide feedback and report any issues.  It would be extremely helpful if you:
