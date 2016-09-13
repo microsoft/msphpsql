@@ -380,7 +380,8 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRM
     stmts( NULL ),
     direct_query( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
-    client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size ) )
+    client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size ) ),
+	bind_param_encoding(SQLSRV_ENCODING_CHAR)
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -1215,37 +1216,77 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
 
-    // count the number of quotes needed
-    unsigned int quotes_needed = 2;  // the initial start and end quotes of course
-    for(size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
-        if( unquoted[ index ] == '\'' ) {
-            ++quotes_needed;
-        }
-    }
+	pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
+	SQLSRV_ENCODING encoding = driver_dbh->bind_param_encoding;
 
-    *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
-    *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
-    unsigned int out_current = 0;
+	if ( encoding == SQLSRV_ENCODING_BINARY ) {
+		// convert from char* to hex digits using os
+		std::basic_ostringstream<char> os;
+		for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+			os << std::hex << ( int )unquoted[ index ];
+		}
+		std::basic_string<char> str_hex = os.str();
+		// each character is represented by 2 digits of hex
+		size_t unquoted_str_len = unquoted_len * 2; // length returned should not account for null terminator
+		char* unquoted_str = reinterpret_cast<char*>( sqlsrv_malloc( unquoted_str_len, sizeof( char ), 1 )); // include space for null terminator
+		strcpy_s( unquoted_str, unquoted_str_len + 1 /* include null terminator*/, str_hex.c_str() );
+		// include length of '0x' in the binary string
+		*quoted_len = unquoted_str_len + 2;
+		*quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
+		unsigned int out_current = 0;
+		// insert '0x'
+		( *quoted )[ out_current++ ] = '0';
+		( *quoted )[ out_current++ ] = 'x';
+		for ( size_t index = 0; index < unquoted_str_len && unquoted_str[ index ] != '\0'; ++index ) {
+			( *quoted )[ out_current++ ] = unquoted_str[ index ];
+		}
+		// null terminator
+		( *quoted )[ out_current ] = '\0';
+		sqlsrv_free( unquoted_str );
+		return 1;
+	}
+	else {
+		// count the number of quotes needed
+		unsigned int quotes_needed = 2;  // the initial start and end quotes of course
+		// include the N proceeding the initial quote if encoding is UTF8
+		if ( encoding == SQLSRV_ENCODING_UTF8 ) {
+			quotes_needed = 3;
+		}
+		for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+			if ( unquoted[ index ] == '\'' ) {
+				++quotes_needed;
+			}
+		}
 
-    // insert initial quote
-    (*quoted)[ out_current++ ] ='\'';
+		*quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
+		*quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
+		unsigned int out_current = 0;
 
-    for(size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+		// insert N if the encoding is UTF8
+		if ( encoding == SQLSRV_ENCODING_UTF8 ) {
+			( *quoted )[ out_current++ ] = 'N';
+		}
 
-        if( unquoted[ index ] == '\'' ) {
-            (*quoted)[ out_current++ ] = '\'';
-            (*quoted)[ out_current++ ] = '\'';
-        }
-        else {
-            (*quoted)[ out_current++ ] = unquoted[ index ];
-        }
-    }
+		// insert initial quote
+		( *quoted )[ out_current++ ] = '\'';
 
-    // trailing quote and null terminator
-    (*quoted)[ out_current++ ] ='\'';
-    (*quoted)[ out_current ] = '\0';
+		for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
 
-    return 1;
+			if ( unquoted[ index ] == '\'' ) {
+				( *quoted )[ out_current++ ] = '\'';
+				( *quoted )[ out_current++ ] = '\'';
+			}
+			else {
+				( *quoted )[ out_current++ ] = unquoted[ index ];
+			}
+		}
+
+		// trailing quote and null terminator
+		( *quoted )[ out_current++ ] = '\'';
+		( *quoted )[ out_current ] = '\0';
+
+		return 1;
+	}
 }
 
 // This method is not implemented by this driver.

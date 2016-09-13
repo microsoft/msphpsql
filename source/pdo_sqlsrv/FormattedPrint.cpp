@@ -10,7 +10,7 @@
 // Comments:
 //
 // owners:
-//    See source code ownership database in SqlDevDash 
+//    See source code ownership database in SqlDevDash
 //-----------------------------------------------------------------------------
 
 #include <FormattedPrint.h>
@@ -38,9 +38,9 @@
 
 #ifdef __linux__
 #define PTR_IS_INT64 1
-#else 
+#else
 #define PTR_IS_INT64 0
-#endif 
+#endif
 
 #ifndef _MSC_VER
 // SQL Server does not have a long double type
@@ -259,7 +259,7 @@ errno_t mplat_wctomb_s(
    int *pRetValue,
    char *mbchar,
    size_t sizeInBytes,
-   WCHAR wchar 
+   WCHAR wchar
 )
 {
     DWORD rc;
@@ -393,7 +393,7 @@ static enum STATE ProcessSizeA( char sizeCh, char fmt_ch, char next_fmt_ch, int 
     case 'w':
         *flags |= FL_WIDECHAR;
     }
-    
+
     return ST_SIZE;
 }
 
@@ -465,7 +465,7 @@ static enum STATE ProcessSizeW( WCHAR sizeCh, WCHAR fmt_ch, WCHAR next_fmt_ch, i
     case L'w':
         *flags |= FL_WIDECHAR;
     }
-    
+
     return ST_SIZE;
 }
 
@@ -2590,7 +2590,7 @@ DWORD FormatMessageA(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD d
 DWORD FormatMessageW(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId, LPWSTR lpBuffer, DWORD nSize, va_list *Arguments)
 {
     DWORD chars_printed = 0;
-    
+
     // XPLAT_ODBC_TODO VSTS 718708 Localization by handling FORMAT_MESSAGE_FROM_HMODULE and dwLanguageId param
     if ( dwFlags & FORMAT_MESSAGE_FROM_STRING )
     {
@@ -2679,8 +2679,6 @@ DWORD FormatMessageW(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD d
 }
 
 //--------Other definitions from xplat stub sources--------------
-// void SSetLastError(DWORD err) { errno = err; }
-// unsigned int GGetLastError() { return errno; }
 
 BOOL IsDBCSLeadByte(__inn BYTE  TestChar)
 {
@@ -2776,9 +2774,23 @@ char * mplat_cscpy( char * dst, const char * src )
 
 size_t mplat_wcslenn( const WCHAR * str )
 {
-	const WCHAR * eos = str;
-	while( *eos++ )
+    const WCHAR * eos = str;
+    while( *eos++ )
     {
     }
-	return( (size_t)(eos - str- 1) );
+    return( (size_t)(eos - str- 1) );
+}
+
+HLOCAL LocalAlloc(UINT uFlags, SIZE_T uBytes)
+{
+    assert(uFlags == 0); // For now
+    return malloc(uBytes);
+}
+
+HLOCAL LocalFree(HLOCAL hMem)
+{
+    assert(hMem != NULL);
+
+    free(hMem);
+    return NULL;
 }

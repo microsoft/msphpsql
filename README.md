@@ -10,7 +10,31 @@ SQL Server Team
 
 ##Announcements
 
-August 23, 2016 (4.0.3): Linux drivers built with PHP 7.0.9 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. The source code of the drivers has also been made available, we recommend building drivers from source using the tutorial [here](https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md). This release includes following bug fixes:
+**September 9, 2016**: Linux drivers (4.0.4) compiled with PHP 7.0.10 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. This release includes the following fixes:
+
+- Fixed  undefined symbols at SQL* error when loading the drivers.
+- Fixed undefined symbol issues at LocalAlloc and LocalFree on RedHat7.2.
+- Fixed [issue #144](https://github.com/Microsoft/msphpsql/issues/144) (floating point exception).
+- Fixed [issue #119](https://github.com/Microsoft/msphpsql/issues/119) (modifying class name in sqlsrv_fetch_object).
+- Added Support for EMULATE_PREPARE feature.
+- Added following integer SQL Types constants for cases which function-like SQL types constants cannot be used e.g. type comparison:
+
+    SQLSRV constant | Typical SQL Server data type | SQL type identifier
+    ------------ | ----------------------- | ----------------------
+   SQLSRV_SQLTYPE_DECIMAL | decimal       | SQL_DECIMAL
+   SQLSRV_SQLTYPE_NUMERIC | numeric       | SQL_NUMERIC
+   SQLSRV_SQLTYPE_CHAR    | char          | SQL_CHAR
+   SQLSRV_SQLTYPE_NCHAR   | nchar         | SQL_WCHAR
+   SQLSRV_SQLTYPE_VARCHAR | varchar       | SQL_VARCHAR
+   SQLSRV_SQLTYPE_NVARCHAR | nvarchar     | SQL_WVARCHAR
+   SQLSRV_SQLTYPE_BINARY   | binary       | SQL_BINARY
+   SQLSRV_SQLTYPE_VARBINARY  | varbinary   | SQL_VARBINARY
+
+    Note: These constants should be used in type comparison operations (refer to issue [#87](https://github.com/Microsoft/msphpsql/issues/87) and [#99](https://github.com/Microsoft/msphpsql/issues/99) ), and don't replace the function like constants with similar syntax. For binding parameters you should use the function-like constants, otherwise you'll get an error.
+
+
+
+**August 23, 2016** : Linux drivers (4.0.3) compiled with PHP 7.0.9 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. The source code of the drivers has also been made available, we recommend building drivers from source using the tutorial [here](https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md). This release includes following bug fixes:
 
 - Fixed data corruption in binding integer parameters.
 - Fixed invalid sql_display_size error.
@@ -18,7 +42,7 @@ August 23, 2016 (4.0.3): Linux drivers built with PHP 7.0.9 are available for Ub
 - Fixed binding bit parameters.
 
 
-July 29, 2016 (4.0.2): Updated Linux drivers are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. This update provides the following improvements and bug fixes:
+**July 29, 2016**: Updated Linux drivers  (4.0.2) are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. This update provides the following improvements and bug fixes:
 
 - The PDO_SQLSRV driver no longer requires PDO to be built as a shared extension.
 - Fixed an issue with format specifiers in error messages.
@@ -26,7 +50,7 @@ July 29, 2016 (4.0.2): Updated Linux drivers are available for Ubuntu 15.04, Ubu
 - Fixed an issue whereby calling sqlsrv_rows_affected on an empty result set would return a null result instead of 0.
 - Fixed an issue with error messages when there is an error in sizes in SQLSRV_SQLTYPE_*.
 
-July 11, 2016 (4.0.1): Thread safe and non-thread safe variations for SQLSRV and PDO_SQLSRV for Linux drivers with basic functionalities are now available. The drivers have been built and tested on Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.. Also, there are some improvements on the drivers that we would like to share:
+**July 11, 2016**: Thread safe and non-thread safe variations for SQLSRV and PDO_SQLSRV for Linux drivers (4.0.1) with basic functionalities are now available. The drivers have been built and tested on Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.. Also, there are some improvements on the drivers that we would like to share:
 
 - Improved handling varchar(MAX).
 - Improved handling basic stream operations.
@@ -43,10 +67,12 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
 ## Install
 
 For detailed instructions please review the tutorial [here](https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md). 
+
 The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. If you wish to install Apache from source, follow these instructions:
 
 
 1. Download the source from [Apache.org][httpd_source]. Unzip the source to a local directory. 
+
 2. Download the [Apache Portable Runtime (APR) and Utility][apr_source]. Unzip the APR source into srclib/apr and the APR-Util source into srclib/apr-util in your Apache directory from Step 1.
 
 3. If you have the thread safe binaries, run `./configure --enable-so --with-mpm=worker`. If you have the non-thread safe binaries, run `./configure --enable-so --with-mpm=prefork`.
@@ -59,26 +85,24 @@ Now you are ready to install PHP.
 
 - Method 1: Using your package  manager:
 
-	Make sure the packaged  PHP version is PHP 7. *Note*: We do not recommend this method, as php-odbc may introduce conflicts with the unixODBC driver manager that you have already installed. 
+	Make sure the packaged  PHP version is PHP 7. You may need to add repositories to obtain PHP 7 as described in the [tutorial]((https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md)).
     
-	1. Use your package manager to install php and php-odbc.
+	1. Use your package manager to install the php package.
 	2. Copy the precompiled binaries into the extensions directory (likely in /usr/lib/php).
-	3. Edit the php.ini file as indicated  in "Enable the drivers" section.
+	3. Edit the php.ini file as indicated  in the "Enable the drivers" section.
 
 - Method 2: Using the PHP source:
 
 	Download the PHP 7 source and unzip it to a local directory. Then follow the steps below:
 
-    1. Switch to the PHP directory and run `./buildconf --force`. You may need to install autoconf with your package-manager prior to this step.
+    1. Switch to the PHP directory and run `./buildconf --force`. You may need to install autoconf with your package manager prior to this step.
 
     2. Run `./configure` with the following options on the command line:
       
-      (i) `LIBS=-lodbc` 
-(ii) the path for the unixODBC header files using `--with-unixODBC=<path-to-ODBC-headers>`. To find the path for the header files, use the command `sudo find / -name sql.h`. Then add this path, without the /include/sql.h, to the command line. For example, if the find command yields /usr/include/sql.h, add `--with-unixODBC=/usr` to the `./configure` command line. 
-(iii) the path to apxs or apxs2 to configure PHP for Apache using `--with-apxs2=<path-to-apxs>`. To find the path to apxs (or apxs2), run `sudo find / -name apxs` (or `sudo find / -name apxs2`) and add the resulting path to the option.
-(iv) if your web server has thread safety enabled, a thread-safe build of PHP. Add `--enable-maintainer-zts` to `./configure`. 
+       (i) the path to apxs or apxs2 to configure PHP for Apache using `--with-apxs2=<path-to-apxs>`. To find the path to apxs (or apxs2), run `sudo find / -name apxs` (or `sudo find / -name apxs2`) and add the resulting path to the option. For example, if the find command yields `/usr/bin/apxs2`, add `--with-apxs2=/usr/bin/apxs2` to the `./configure` command line. 
+       (ii) if your web server has thread safety enabled, specify a thread-safe build of PHP. Add `--enable-maintainer-zts` to `./configure`. 
 
-      Thus your `./configure` command should look like `./configure LIBS=-lodbc --with-unixODBC=<path-to-ODBC-headers> --with-apxs2=<path-to-apxs-executable> --enable-maintainer-zts`.
+      Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> --enable-maintainer-zts`.
 
       If your `./configure` command exits with an error saying it cannot find xml2-config, you may need to install libxml2-dev using your package manager before continuing.
 
@@ -95,13 +119,12 @@ Now you are ready to install PHP.
     2. Run `./configure` with the same options listed above, in addition to the following:
     
       (i) `CXXFLAGS=-std=c++11` to ensure your compiler uses the C++11 standard. 
-(ii) `--enable-sqlsrv=shared `
-(iii)`--with-pdo_sqlsrv=shared` 
-(iv)`--with-odbcver=0x0380`. This option has no practical effect as the drivers use ODBC version 3.52, but it suppresses compilation warnings arising from the fact that PHP's default setting of version 3.00 is different from unixODBC's setting of 3.80. 
+      (ii) `--enable-sqlsrv=shared `
+      (iii)`--with-pdo_sqlsrv=shared` 
+      (iv)`--with-odbcver=0x0380`. This option has no practical effect as the drivers use ODBC version 3.52, but it suppresses compilation warnings arising from the fact that PHP's default setting of version 3.00 is different from unixODBC's setting of 3.80. 
 
-      Thus your `./configure` command should look like `./configure LIBS=-lodbc --with-unixODBC=<path-to-ODBC-headers> --with-apxs2=<path-to-apxs-executable> CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380`. 
+      Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380`. 
 
-   
    3. Run `make`. The compiled drivers will be located in the `modules/` directory, and are named `sqlsrv.so` and `pdo_sqlsrv.so`.       
 
    4. Run `sudo make install` to install the binaries into the default php extensions directory.
@@ -132,12 +155,12 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 ## Limitations
 
 - This preview contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5. 
+- Binding output parameter using emulate prepare is not supported.
 - ODBC 3.52 is supported but not 3.8.
 
 ##Known issues
 
 The following items have known issues:
-- There are issues with loading the drivers, we recommend building drivers from source for all variations until we fix the issue.
 - Retrieving, inserting, and binding Char, Varchar datatypes.
 - Logging.
 - Local encodings other than UTF-8 are not supported for output.
@@ -146,7 +169,8 @@ The following items have known issues:
 - Fetch object and fetch array have issues.
 - lastInsertId().
 - Query from large column name.
-- ODBC 3.52 is supported but not 3.8.
+- Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
+
 
 
 ## Guidelines for Reporting Issues

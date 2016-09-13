@@ -1,6 +1,6 @@
 #PHP Linux Drivers for SQL Server - Installation Tutorial
 
-In this tutorial, we will show you how to install the PHP Linux drivers for Microsoft SQL Server, along with the additional required software to get them to work. The drivers are available from GitHub, where you will find several variants. They are available as a SQLSRV variant or a PDO_SQLSRV variant, the latter implements PDO PHP extension for accessing data. In addition, the drivers are built for both thread safe and non-thread safe environments. The PHP Linux drivers built for thread safe servers are named php_sqlsrv_7_ts.so and php_pdo_sqlsrv_7_ts.so. The drivers built for servers without thread safety enabled are php_sqlsrv_7_nts.so and php_pdo_sqlsrv_7_nts.so. 
+In this tutorial, we will show you how to install the PHP Linux drivers for Microsoft SQL Server, along with the additional required software to get them to work. The drivers are available from Github, where you will find several variants. They are available as a SQLSRV variant or a PDO_SQLSRV variant; the latter implements the PDO PHP extension for accessing data. In addition, the drivers are built for both thread safe and non-thread safe environments. The PHP Linux drivers built for thread safe servers are named php_sqlsrv_7_ts.so and php_pdo_sqlsrv_7_ts.so. The drivers built for servers without thread safety enabled are php_sqlsrv_7_nts.so and php_pdo_sqlsrv_7_nts.so. 
 
 Prior to installing the PHP Linux drivers, you must install the unixODBC driver manager, the Microsoft ODBC driver for Linux, PHP 7, and a web server. In the following, we will assume the web server is Apache. 
 
@@ -86,12 +86,10 @@ Now you are ready to install PHP. You can install by source or, if the packaged 
 	`./buildconf --force`
 
 3.  Run `./configure` with the following options on the command line: 
-	a.  `LIBS=-lodbc` 
-	b.  the path for the unixODBC header files using `--with-unixODBC=<path-to-ODBC-headers>`. To find the path for the header files, use the command `sudo find / -name sql.h`. Then add this path, without the /include/sql.h, to the command line. For example, if the find command yields `/usr/include/sql.h`, add `--with-unixODBC=/usr` to the `./configure` command line.
-    c.  the path to apxs or apxs2 to configure PHP for Apache using --with-apxs2=<path-to-apxs>. To find the path to apxs (or apxs2), run `sudo find / -name apxs` or `sudo find / -name apxs2` and add the resulting path to the option.
-	d.  if your web server has thread safety enabled, add `--enable-maintainer-zts` to `./configure`. Otherwise you may omit this option.
+    a.  the path to apxs or apxs2 to configure PHP for Apache using `--with-apxs2=<path-to-apxs>`. To find the path to apxs (or apxs2), run `sudo find / -name apxs` or `sudo find / -name apxs2` and add the resulting path to the option. For example, if the find command yields `/usr/bin/apxs2`, add `--with-apxs2=/usr/bin/apxs2` to the `./configure` command line.
+	b.  if your web server has thread safety enabled, add `--enable-maintainer-zts` to `./configure`. Otherwise you may omit this option.
 	
-	Thus your ./configure command should look like `./configure LIBS=-lodbc --with-unixODBC=<path-to-ODBC-headers> --with-apxs2=<path-to-apxs-executable> --enable-maintainer-zts`. 
+	Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> --enable-maintainer-zts`. 
 
 	[![pic5](https://msdnshared.blob.core.windows.net/media/2016/07/image510.png)](https://msdnshared.blob.core.windows.net/media/2016/07/image510.png) 
 	
@@ -114,26 +112,31 @@ Now you are ready to install PHP. You can install by source or, if the packaged 
 
 ###Install PHP from the package manager
 
-To install PHP and the PHP apache module using your package manager, 
-you must ensure that your distribution provides PHP 7, as earlier versions will not work. 
-
-NOTE: Installing PHP from package requires installing php-odbc for symbol definitions. However, php-odbc uses a different version of unixODBC from the one obtained when following the instructions above. As mentioned, we do not recommend using your package manager's version of unixODBC, and we cannot guarantee that the functionality obtained installing PHP this way will be the same as when installing PHP from source.
+To install PHP and the PHP apache module using your package manager, you must ensure that your distribution provides PHP 7, as earlier versions will not work. 
 
 Follow these steps to install from the package manager on Ubuntu:
 
-1.  Run `apt-cache show php | grep Version`. The output will look like Version: 1:7.0+35ubuntu6\. The actual version of PHP immediately follows the 1: .
-2.  Run `sudo apt-get install php php-odbc libapache2-mod-php` to install PHP, the php-odbc module, and the Apache module.
+1.  Run `apt-cache show php | grep Version`. The output will look like Version: 1:7.0+35ubuntu6\. The actual version of PHP immediately follows the 1: . 
+2.  If the packaged PHP version is not PHP 7.0, you can add the [Ondrej PPA repository](https://launchpad.net/~ondrej/+archive/ubuntu/php) to install it. Run `sudo add-apt-repository ppa:ondrej/php` and then `sudo apt-get update`. 
+3.  Run `sudo apt-get install php libapache2-mod-php` to install PHP and the Apache module.
 
 Follow these steps to install from the package manager on Red Hat/CentOS:
 
-1.  Run `yum info php | grep Version` and verify that the version is at least 7.0.
-2.  Run `sudo yum install php php-odbc` to install PHP, the php-odbc module, and the Apache module.
+1.  Run `yum info php | grep Version` and verify that the version is 7.0.
+2.  If the packaged PHP version is not PHP 7.0, you can add a new repository to install it. We recommend using the [Remi RPM repository](http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora). To configure this repository, run 
+
+    `wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm`
+    `wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm`
+    `rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm`
+    `yum-config-manager --enable remi-php70`
+
+3.  Run `sudo yum install php` to install both PHP and the Apache module.
 
 ###Compiling and installing Microsoft PHP drivers for SQLServer from source: 
 
 Instead of using the precompiled binaries, you can compile your own when compiling PHP. To compile the binaries yourself, follow these steps: 
 
-1.  Download the source from github. Download the latest stable PHP 7 source from http://php.net/. 
+1.  Download the source from Github. Download the latest stable PHP 7 source from http://php.net/. 
 
 2.  Unpack the PHP source and the SQL Server extension source, and copy the extension source to the PHP extension directory: 
 
@@ -150,7 +153,7 @@ Instead of using the precompiled binaries, you can compile your own when compili
     c.  `--with-pdo_sqlsrv=shared` 
     d.  `--with-odbcver=0x0380`. This option has no practical effect as the drivers use ODBC version 3.52, but it suppresses compilation warnings arising from the fact that PHP's default setting of version 3.00 is different from unixODBC's setting of 3.80. 
 
-    Thus your `./configure` command should look like `./configure LIBS=-lodbc --with-unixODBC=<path-to-ODBC-headers> --with-apxs2=<path-to-apxs-executable> --disable-maintainer-zts CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380`. 
+    Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> --disable-maintainer-zts CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380`. 
 
     Note: if you get a message saying `WARNING: unrecognized options: --enable-sqlsrv, --with-pdo_sqlsrv`, run `touch ext/*/config.m4` and then `./buildconf --force` before trying `./configure` again. 
 
@@ -169,7 +172,7 @@ Now edit your `php.ini` file to load the PHP drivers when PHP starts.
 	
   If you installed PHP from package, the output will be slightly different and will probably list more .ini files, but you will likely need to edit only the `php.ini` file listed under `Loaded Configuration File`.
 
-2.  If `Loaded Configuration File` shows that a `php.ini` is loaded, edit that file. Otherwise go to the PHP directory in your home directory, run `cp php.ini-development php.ini` and copy the newly created `php.ini` file to the `Configuration File (php.ini) Path` indicated when running `php --ini`. If using the SQLSRV driver, add the following lines to your php.ini: `extension=php_sqlsrv_7_ts.so` or `extension=php_sqlsrv_7_nts.so` If using the PDO_SQLSRV driver, add `extension=php_pdo_sqlsrv_7_ts.so` or `extension=php_pdo_sqlsrv_7_nts.so`. If necessary, specify the extension directory using extension_dir, for example: `extension_dir = “/usr/local/lib/php/extensions/”`. To find the default extension directory, run `php -i | grep extension_dir`.
+2.  If `Loaded Configuration File` shows that a `php.ini` is loaded, edit that file. Otherwise go to the PHP directory in your home directory, run `cp php.ini-development php.ini` and copy the newly created `php.ini` file to the `Configuration File (php.ini) Path` indicated when running `php --ini`. If using the SQLSRV driver, add the following lines to your php.ini: `extension=php_sqlsrv_7_ts.so` or `extension=php_sqlsrv_7_nts.so` If using the PDO_SQLSRV driver, add `extension=php_pdo_sqlsrv_7_ts.so` or `extension=php_pdo_sqlsrv_7_nts.so`. Change the names of the drivers accordingly if you have compiled them from source and they have different names. If necessary, specify the extension directory using extension_dir, for example: `extension_dir = “/usr/local/lib/php/extensions/”`. To find the default extension directory, run `php -i | grep extension_dir`.
 
 3.  Stop and restart the Apache web server.
 
@@ -186,10 +189,12 @@ Now edit your `php.ini` file to load the PHP drivers when PHP starts.
  If you do not see sections on sqlsrv and pdo_sqlsrv extensions, these extensions are not loaded. Near the top of the PHP info page, check which `php.ini` is loaded. This may be different from the `php.ini` file loaded when running php from the command line, especially if Apache and PHP were installed from your package manager. In this case, edit the `php.ini` displayed on the PHP info page to load the extensions in the same way described above. Restart the Apache web server and verify that phpinfo() loads the sqlsrv extensions.   
 
 ####Links: 
-Microsoft PHP GitHub repository https://github.com/Azure/msphpsql 
-UnixODBC 2.3.1 for Ubuntu. [http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz](http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz) 
-Microsoft® ODBC Driver 13 (Preview) for SQL Server® - Ubuntu Linux [https://www.microsoft.com/en-us/download/details.aspx?id=50419](https://www.microsoft.com/en-us/download/details.aspx?id=50419) 
-Microsoft® ODBC Driver 13 (Preview) and 11 for SQL Server® - Red Hat Linux [https://www.microsoft.com/en-us/download/details.aspx?id=36437](https://www.microsoft.com/en-us/download/details.aspx?id=36437) 
+Microsoft PHP GitHub repository: https://github.com/Azure/msphpsql 
+UnixODBC 2.3.1 for Ubuntu: [http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz](http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz) 
+Microsoft® ODBC Driver 13 (Preview) for SQL Server® - Ubuntu Linux: [https://www.microsoft.com/en-us/download/details.aspx?id=50419](https://www.microsoft.com/en-us/download/details.aspx?id=50419) 
+Microsoft® ODBC Driver 13 (Preview) and 11 for SQL Server® - Red Hat Linux: [https://www.microsoft.com/en-us/download/details.aspx?id=36437](https://www.microsoft.com/en-us/download/details.aspx?id=36437) 
 Apache source:  [http://httpd.apache.org/download.cgi#apache24](http://httpd.apache.org/download.cgi) 
 Apache Portable Runtime (APR): [http://apr.apache.org/download.cgi](http://apr.apache.org/download.cgi) 
 PHP source download page: [http://php.net/downloads.php](http://php.net/downloads.php)
+Ondrej PPA repository: [https://launchpad.net/~ondrej/+archive/ubuntu/php](https://launchpad.net/~ondrej/+archive/ubuntu/php)
+Remi RPM repository: [http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora](http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora)

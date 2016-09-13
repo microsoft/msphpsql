@@ -1954,7 +1954,7 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
             break;
         case IS_STRING:
         {
-			size_t char_size = Z_STRLEN_P( param_z ) * ((encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( SQLWCHAR ) : sizeof( char ));
+			size_t char_size = (encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( SQLWCHAR ) : sizeof( char );
 			SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
             if( byte_len > SQL_SERVER_MAX_FIELD_SIZE ) {
                 column_size = SQL_SERVER_MAX_TYPE_SIZE;
