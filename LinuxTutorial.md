@@ -131,6 +131,7 @@ Follow these steps to install from the package manager on Red Hat/CentOS:
     `yum-config-manager --enable remi-php70`
 
 3.  Run `sudo yum install php php-pdo` to install both PHP and the Apache module.
+4.  Run `sudo yum update`.
 
 ###Compiling and installing Microsoft PHP drivers for SQLServer from source: 
 
