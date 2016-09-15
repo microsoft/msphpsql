@@ -87,7 +87,7 @@ Now you are ready to install PHP.
 
 	Make sure the packaged  PHP version is PHP 7. You may need to add repositories to obtain PHP 7 as described in the [tutorial]((https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md)).
     
-	1. Use your package manager to install the php package.
+	1. Use your package manager to install the php package and if you are installing SQLSRV_PDO drivers install the php-pdo package.
 	2. Copy the precompiled binaries into the extensions directory (likely in /usr/lib/php).
 	3. Edit the php.ini file as indicated  in the "Enable the drivers" section.
 
