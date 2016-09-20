@@ -381,8 +381,10 @@ typedef struct AEKeystoreProvider
  This is accepted by MSVC, GCC, and C99 standard but former emits
  unnecessary warning, hence it has to be disabled.
 */
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable:4200)
+#endif
 
 typedef struct AEKeystoreData
 {
@@ -391,7 +393,9 @@ typedef struct AEKeystoreData
     char Data[];
 } AEKEYSTOREPROVIDERDATA;
 
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 
 /* The following constants are for the Azure Key Vault configuration interface */
 #define AKV_CONFIG_FLAGS       0

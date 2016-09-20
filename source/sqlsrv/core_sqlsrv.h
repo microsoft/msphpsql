@@ -93,8 +93,10 @@ OACR_WARNING_DISABLE( ALLOC_SIZE_OVERFLOW_WITH_ACCESS, "Third party code." )
 
 extern "C" {
 
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning( disable: 4005 4100 4127 4142 4244 4505 4530 )
+#endif
 
 #ifdef ZTS
 #include "TSRM.h"
@@ -110,7 +112,10 @@ typedef int socklen_t;
 #define HAVE_SOCKLEN_T
 #endif
 
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
+
 
 #if ZEND_DEBUG
 // debug build causes warning C4505 to pop up from the Zend header files

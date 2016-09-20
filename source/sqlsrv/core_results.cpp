@@ -34,7 +34,9 @@ namespace {
 
 // *** internal types ***
 
+#if defined(_MSC_VER)
 #pragma warning(disable:4200)
+#endif
 
 // *** internal constants ***
 
