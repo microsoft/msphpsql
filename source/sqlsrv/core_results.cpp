@@ -517,7 +517,6 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
             }
 
             if( *out_buffer_length == SQL_NULL_DATA ) {
-                unsigned char* null_bits = reinterpret_cast<unsigned char*>( row );
                 set_bit( row, i );
             }
         }
@@ -1139,9 +1138,6 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
             field_data = &row[ meta[ field_index ].offset ] + sizeof( SQLULEN ) + read_so_far;
         }
 
-        BOOL default_char_used = FALSE;
-        char default_char = '?';
-
         // allocate enough to handle WC -> DBCS conversion if it happens
         temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof(char), sizeof(char)));
 			
@@ -1149,6 +1145,9 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
         temp_length = SystemLocale::FromUtf16( CP_ACP, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),
                                  (LPSTR) temp_string.get(), static_cast<int>(field_len) );
 #else								 			
+        BOOL default_char_used = FALSE;
+        char default_char = '?';
+
         temp_length = WideCharToMultiByte( CP_ACP, 0, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),
                                            (LPSTR) temp_string.get(), static_cast<int>(field_len), &default_char, &default_char_used );
 #endif		

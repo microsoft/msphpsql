@@ -25,7 +25,7 @@
 namespace {
     
 // current subsytem.  defined for the CHECK_SQL_{ERROR|WARNING} macros
-unsigned int current_log_subsystem = LOG_UTIL;
+//(unused for now) unsigned int current_log_subsystem = LOG_UTIL;
 
 // buffer used to hold a formatted log message prior to actually logging it.
 const int LOG_MSG_SIZE = 2048;

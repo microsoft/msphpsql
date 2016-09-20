@@ -33,7 +33,7 @@
 namespace {
 
 // current subsytem.  defined for the CHECK_SQL_{ERROR|WARNING} macros
-unsigned int current_log_subsystem = LOG_CONN;
+//(unused for now) unsigned int current_log_subsystem = LOG_CONN;
 
 struct date_as_string_func {
 
@@ -1120,7 +1120,7 @@ void sqlsrv_conn_close_stmts( ss_sqlsrv_conn* conn TSRMLS_DC )
 
 		try {
 			// this would call the destructor on the statement.
-			int zr = zend_list_close(Z_RES_P(rsrc_ptr));
+			zend_list_close(Z_RES_P(rsrc_ptr));
 		}
 		catch( core::CoreException& ) {
 			LOG(SEV_ERROR, "Failed to remove statement resource %1!d! when closing the connection", Z_RES_HANDLE_P(rsrc_ptr));
@@ -1237,8 +1237,6 @@ void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ Has
 			ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
 				int type = HASH_KEY_NON_EXISTENT;
 				size_t key_len = 0;
-				zval* conn_opt = NULL;
-				int result = 0;
 
 				type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 

@@ -1218,8 +1218,6 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    SQLRETURN r = SQL_SUCCESS;
-
     // if there no current parameter to process, get the next one 
     // (probably because this is the first call to sqlsrv_send_stream_data)
     if( stmt->current_stream.stream_z == NULL ) {
@@ -2008,7 +2006,6 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
     if( Z_ISUNDEF(stmt->output_params) ) 
         return;
 
-    bool converted = true;
     HashTable* params_ht = Z_ARRVAL( stmt->output_params );
 	zend_ulong index = -1;
 	zend_string* key = NULL;

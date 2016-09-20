@@ -228,9 +228,6 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
         return false;
     }
 
-    zval* ssphp_z = NULL;
-    int zr = SUCCESS;
-    zval* temp = NULL;
     SQLRETURN r = SQL_SUCCESS;
     SQLSMALLINT wmessage_len = 0;
     SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ];
