@@ -339,7 +339,7 @@ void stmt_option_emulate_prepares:: operator()( sqlsrv_stmt* stmt, stmt_option c
 { \
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
     driver_stmt->set_func( __FUNCTION__ ); \
-    int length = strlen(__FUNCTION__); \
+    int length = strlen(__FUNCTION__)+strlen(": entering"); \
     char func[length+1]; \
     LOG( SEV_NOTICE, strcat(strcpy(func, __FUNCTION__), ": entering")); \
 }
@@ -422,15 +422,7 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 {
     PDO_RESET_STMT_ERROR;
     PDO_VALIDATE_STMT;
-#ifndef __linux__
     PDO_LOG_STMT_ENTRY;
-#else
-    pdo_sqlsrv_stmt* driver_stmtt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
-    driver_stmtt->set_func( __FUNCTION__ );
-    int length = strlen(__FUNCTION__);
-    char func[length+1];
-    LOG( SEV_NOTICE, strcat(strcpy(func, __FUNCTION__), ": entering"));
-#endif
 
     SQLSRV_ASSERT(( colno >= 0 ), "pdo_sqlsrv_stmt_describe_col: Column number should be >= 0." );
 

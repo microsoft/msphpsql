@@ -118,12 +118,11 @@ Now you are ready to install PHP.
 
     2. Run `./configure` with the same options listed above, in addition to the following:
     
-      (i) `CXXFLAGS=-std=c++11` to ensure your compiler uses the C++11 standard. 
-      (ii) `--enable-sqlsrv=shared `
-      (iii)`--with-pdo_sqlsrv=shared` 
-      (iv)`--with-odbcver=0x0380`. This option has no practical effect as the drivers use ODBC version 3.52, but it suppresses compilation warnings arising from the fact that PHP's default setting of version 3.00 is different from unixODBC's setting of 3.80. 
+      (i) `--enable-sqlsrv=shared`
+      (ii) `--with-pdo_sqlsrv=shared`
+      (iii) `--with-odbcver=0x0380`. This option has no practical effect as the drivers use ODBC version 3.52, but it suppresses compilation warnings arising from the fact that PHP's default setting of version 3.00 is different from unixODBC's setting of 3.80.
 
-      Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380`. 
+      Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380`.
 
    3. Run `make`. The compiled drivers will be located in the `modules/` directory, and are named `sqlsrv.so` and `pdo_sqlsrv.so`.       
 
@@ -135,7 +134,7 @@ Now you are ready to install PHP.
 
     1. Switch to the source directory of the extension you want to install, e.g. `source/sqlsrv` or `source/pdo_sqlsrv`.
 
-    2. Run `phpize && ./configure CXXFLAGS=-std=c++11 && make` to compile the extension.
+    2. Run `phpize && ./configure && make` to compile the extension.
 
     3. Run `sudo make install` to install the binaries into the default php extensions directory.
 
