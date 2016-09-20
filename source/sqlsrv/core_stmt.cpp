@@ -126,12 +126,12 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
     fetch_called( false ),
     last_field_index( -1 ),
     past_next_result_end( false ),
+    query_timeout( QUERY_TIMEOUT_INVALID ),
+    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     param_ind_ptrs( 10 ),    // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
     current_stream( NULL, SQLSRV_ENCODING_DEFAULT ),
-    current_stream_read( 0 ),
-    query_timeout( QUERY_TIMEOUT_INVALID ),
-    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID )
+    current_stream_read( 0 )
 {
 	ZVAL_UNDEF( &active_stream );
     // initialize the input string parameters array (which holds zvals)
