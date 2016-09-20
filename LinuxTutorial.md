@@ -133,6 +133,12 @@ Follow these steps to install from the package manager on Red Hat/CentOS:
 3.  Run `sudo yum install php php-pdo` to install both PHP and the Apache module.
 4.  Run `sudo yum update`.
 
+Remi RPM repository also provides a package to install Microsoft PHP drivers for SQLServer in Red Hat/CentOS. After following the steps above, all you need to do is 
+
+5. Run `sudo yum install php-sqlsrv.x86_64`
+
+To confirm that the drivers have been installed, run `php -m` and you should find both `sqlsrv` and `pdo_sqlsrv` amongst the list of modules.
+
 ###Compiling and installing Microsoft PHP drivers for SQLServer from source: 
 
 Instead of using the precompiled binaries, you can compile your own when compiling PHP. To compile the binaries yourself, follow these steps: 
