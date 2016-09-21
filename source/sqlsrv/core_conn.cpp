@@ -112,7 +112,6 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     if( options_ht && zend_hash_num_elements( options_ht ) > 0 ) {
 
         zval* option_z = NULL; 
-        int zr = SUCCESS;
 
 		option_z = zend_hash_index_find(options_ht, SQLSRV_CONN_OPTION_CONN_POOLING);
 		if (option_z) {
@@ -557,10 +556,8 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
                                                      HashTable* options, const connection_option valid_conn_opts[], 
                                                      void* driver,_Inout_ std::string& connection_string TSRMLS_DC )
 {
-    bool credentials_mentioned = false;
     bool mars_mentioned = false;
     connection_option const* conn_opt;
-    int zr = SUCCESS;
 
     try {
   

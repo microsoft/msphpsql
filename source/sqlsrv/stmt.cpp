@@ -33,7 +33,7 @@ char* ss_sqlsrv_stmt::resource_name = static_cast<char *>("ss_sqlsrv_stmt");   /
 namespace {
 
 // current subsytem.  defined for the CHECK_SQL_{ERROR|WARNING} macros
-unsigned int current_log_subsystem = LOG_STMT;
+//(unused for now) unsigned int current_log_subsystem = LOG_STMT;
 
 // constants used as invalid types for type errors
 const zend_uchar PHPTYPE_INVALID = SQLSRV_PHPTYPE_INVALID;
@@ -555,7 +555,6 @@ PHP_FUNCTION( sqlsrv_next_result )
 {
     LOG_FUNCTION( "sqlsrv_next_result" );
 
-    SQLRETURN r = SQL_SUCCESS;
     ss_sqlsrv_stmt* stmt = NULL;
 
     PROCESS_PARAMS( stmt, "r", _FN_, 0 );
@@ -599,7 +598,6 @@ PHP_FUNCTION( sqlsrv_next_result )
 PHP_FUNCTION( sqlsrv_rows_affected )
 {
     LOG_FUNCTION( "sqlsrv_rows_affected" );
-    SQLRETURN r = SQL_SUCCESS;
     ss_sqlsrv_stmt* stmt = NULL;
     SQLLEN rows = -1;
 

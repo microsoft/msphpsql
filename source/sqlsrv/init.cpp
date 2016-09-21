@@ -47,7 +47,7 @@ sqlsrv_context* g_henv_ncp;
 namespace {
 
 // current subsytem.  defined for the CHECK_SQL_{ERROR|WARNING} macros
-unsigned int current_log_subsystem = LOG_INIT;
+//(unused for now) unsigned int current_log_subsystem = LOG_INIT;
 }
 
 // argument info structures for functions, arranged alphabetically.

@@ -48,8 +48,10 @@ OACR_WARNING_DISABLE( REALLOCLEAK, "Third party code." )
 
 extern "C" {
 
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning( disable: 4005 4100 4127 4142 4244 4505 4530 )
+#endif
 
 #ifdef ZTS
 #include "TSRM.h"
@@ -73,7 +75,9 @@ typedef int socklen_t;
 #include "ext/standard/info.h"
 */
 
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 
 #if PHP_MAJOR_VERSION < 7
 #error Trying to compile "Microsoft Drivers for PHP for SQL Server (SQLSRV Driver)" with an unsupported version of PHP
@@ -615,8 +619,6 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         }
 
         h->set_func( calling_func );
-
-        return h;
     }
 
     catch( core::CoreException& ) {
@@ -627,6 +629,8 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
     
         DIE( "%1!s!: Unknown exception caught in process_params.", calling_func );
     }
+
+   return h;
 }
 
 

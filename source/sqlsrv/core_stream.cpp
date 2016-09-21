@@ -146,10 +146,11 @@ size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* b
 
 			// flags set to 0 by default, which means that any invalid characters are dropped rather than causing
 			// an error.  This happens only on XP.
-			DWORD flags = 0;
 
 			// convert to UTF-8
 #ifndef __linux__
+			DWORD flags = 0;
+
 			if (g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER) {
 				// Vista (and later) will detect invalid UTF-16 characters and raise an error.
 				flags = WC_ERR_INVALID_CHARS;

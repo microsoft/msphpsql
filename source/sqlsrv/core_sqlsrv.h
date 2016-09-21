@@ -93,8 +93,10 @@ OACR_WARNING_DISABLE( ALLOC_SIZE_OVERFLOW_WITH_ACCESS, "Third party code." )
 
 extern "C" {
 
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning( disable: 4005 4100 4127 4142 4244 4505 4530 )
+#endif
 
 #ifdef ZTS
 #include "TSRM.h"
@@ -110,7 +112,10 @@ typedef int socklen_t;
 #define HAVE_SOCKLEN_T
 #endif
 
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
+
 
 #if ZEND_DEBUG
 // debug build causes warning C4505 to pop up from the Zend header files
@@ -831,8 +836,8 @@ class sqlsrv_context {
     sqlsrv_context( SQLSMALLINT type, error_callback e, void* drv, SQLSRV_ENCODING encoding = SQLSRV_ENCODING_INVALID ) :
         handle_( SQL_NULL_HANDLE ),
         handle_type_( type ),
-        err_( e ),
         name_( NULL ),
+        err_( e ),
         driver_( drv ),
         last_error_(),
         encoding_( encoding )
@@ -842,8 +847,8 @@ class sqlsrv_context {
     sqlsrv_context( SQLHANDLE h, SQLSMALLINT t, error_callback e, void* drv, SQLSRV_ENCODING encoding = SQLSRV_ENCODING_INVALID ) :
         handle_( h ),
         handle_type_( t ),
-        err_( e ),
         name_( NULL ),
+        err_( e ),
         driver_( drv ),
         last_error_(),
         encoding_( encoding )
@@ -853,8 +858,8 @@ class sqlsrv_context {
     sqlsrv_context( sqlsrv_context const& ctx ) :
         handle_( ctx.handle_ ),
         handle_type_( ctx.handle_type_ ),
-        err_( ctx.err_ ),
         name_( ctx.name_ ),
+        err_( ctx.err_ ),
         driver_( ctx.driver_ ),
         last_error_( ctx.last_error_ )
     {
@@ -1237,8 +1242,8 @@ struct sqlsrv_output_param {
     // every other type output parameter constructor
     sqlsrv_output_param( zval* p_z, int num, bool is_bool ) :
         param_z( p_z ),
-        param_num( num ),
         encoding( SQLSRV_ENCODING_INVALID ),
+        param_num( num ),
         original_buffer_len( -1 ),
         is_bool( is_bool )
     {
