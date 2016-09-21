@@ -237,6 +237,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 {
 	sqlsrv_malloc_auto_ptr<sqlsrv_stmt> stmt;
     SQLHANDLE stmt_h = SQL_NULL_HANDLE;
+    sqlsrv_stmt* return_stmt;
 
     try {
 
@@ -274,10 +275,8 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 			} ZEND_HASH_FOREACH_END();
         }
 
-        sqlsrv_stmt* return_stmt = stmt;
+        return_stmt = stmt;
         stmt.transferred();
-
-        return return_stmt;
     }
     catch( core::CoreException& )
     {
@@ -298,6 +297,8 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 
         DIE( "core_sqlsrv_allocate_stmt: Unknown exception caught." );
     }
+
+    return return_stmt;
 }
 
 
