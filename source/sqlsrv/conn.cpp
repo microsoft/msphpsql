@@ -1118,11 +1118,9 @@ void sqlsrv_conn_close_stmts( ss_sqlsrv_conn* conn TSRMLS_DC )
 		// delete the statement by deleting it from Zend's resource list, which will force its destruction
 		stmt->conn = NULL;
 
-		try {
-			// this would call the destructor on the statement.
-			zend_list_close(Z_RES_P(rsrc_ptr));
-		}
-		catch( core::CoreException& ) {
+		// this would call the destructor on the statement.
+		// There's nothing we can do if the removal fails, so we just log it and move on.
+		if( zend_list_close( Z_RES_P(rsrc_ptr) ) == FAILURE ) {
 			LOG(SEV_ERROR, "Failed to remove statement resource %1!d! when closing the connection", Z_RES_HANDLE_P(rsrc_ptr));
 		}
 	} ZEND_HASH_FOREACH_END();
