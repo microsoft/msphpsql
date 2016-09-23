@@ -879,7 +879,9 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 
             memset( &fci, 0, sizeof( fci ));
             fci.size = sizeof( fci );
+#if PHP_VERSION_ID < 70100
             fci.function_table = &( class_entry )->function_table;
+#endif
             ZVAL_UNDEF( &( fci.function_name ) );
             fci.retval = &ctor_retval_z;
             fci.param_count = num_params;
