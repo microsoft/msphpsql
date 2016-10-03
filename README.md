@@ -10,6 +10,12 @@ SQL Server Team
 
 ##Announcements
 
+**October 4, 2016**: We are excited to announce that PECL packages for Linux SQLSRV and PDO_SQLSRV drivers (4.0.5) are available. You can also find pre-compiled binaries (4.0.5) with PHP 7.0.11  for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2 [here](https://github.com/Microsoft/msphpsql/releases). This release includes the following fixes:
+
+- Fixed segmentation fault when calling PDOStatement::getColumnMeta on RedHat 7.2.
+- Fixed segmentation fault when fetch mode is set to ATTR_EMULATE_PREPARES on RedHat 7.2.
+- Fixed [issue #139](https://github.com/Microsoft/msphpsql/issues/139) : sqlsrv_fetch_object calls custom class constructor in static context and outputs an error.
+
 **September 9, 2016**: Linux drivers (4.0.4) compiled with PHP 7.0.10 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. This release includes the following fixes:
 
 - Fixed  undefined symbols at SQL* error when loading the drivers.
@@ -57,16 +63,19 @@ SQL Server Team
 
 June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLSRV drivers for Linux with basic functionalities is now available. The SQLSRV driver has been built and tested on Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2, and PDO_SQLSRV driver has been built and tested on Ubuntu 15.04, Ubuntu 16.04.
 
-####Prerequisites
-
-- A Web server such as Apache is required. Your Web server must be configured to run PHP. See below for information on installing Apache to work with the drivers.
-- [Microsoft ODBC Driver 13 for Linux][odbcLinux]
-- 64-bit [UnixODBC 2.3.1 driver manager][LinuxDM], built for 64-bit SQLLEN/SQLULEN.
-- If building PHP from source, you need libraries required to [build PHP][PHPMan].
 
 ## Install
 
-For detailed instructions please review the tutorial [here](https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md). 
+####Prerequisites
+
+- A Web server such as Apache is required. Your Web server must be configured to run PHP. See below for information on installing Apache to work with the drivers.
+- [Microsoft ODBC Driver 13 for Linux][odbcLinux], you can install ODBC drivers using [ODBC command line installers][ODBCinstallers], or [ODBC install scripts](https://github.com/Microsoft/msphpsql/tree/PHP-7.0-Linux/ODBC%20install%20scripts).
+- 64-bit [UnixODBC 2.3.1 driver manager][LinuxDM], built for 64-bit SQLLEN/SQLULEN.
+- If building PHP from source, you need libraries required to [build PHP][PHPMan].
+
+####Tutorial
+- For detailed instructions please review the tutorial [here](https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md). 
+
 
 The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. If you wish to install Apache from source, follow these instructions:
 
@@ -87,7 +96,7 @@ Now you are ready to install PHP.
 
 	Make sure the packaged  PHP version is PHP 7. You may need to add repositories to obtain PHP 7 as described in the [tutorial]((https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md)).
     
-	1. Use your package manager to install the php package and if you are installing SQLSRV_PDO drivers install the php-pdo package.
+	1. Use your package manager to install the php package and if you are installing PDO_SQLSRV drivers install the php-pdo package.
 	2. Copy the precompiled binaries into the extensions directory (likely in /usr/lib/php).
 	3. Edit the php.ini file as indicated  in the "Enable the drivers" section.
 
@@ -118,11 +127,12 @@ Now you are ready to install PHP.
 
     2. Run `./configure` with the same options listed above, in addition to the following:
     
-      (i) `--enable-sqlsrv=shared`
-      (ii) `--with-pdo_sqlsrv=shared`
-      (iii) `--with-odbcver=0x0380`. This option has no practical effect as the drivers use ODBC version 3.52, but it suppresses compilation warnings arising from the fact that PHP's default setting of version 3.00 is different from unixODBC's setting of 3.80.
+      (i) `CXXFLAGS=-std=c++11` to ensure your compiler uses the C++11 standard. 
+      (ii) `--enable-sqlsrv=shared `
+      (iii)`--with-pdo_sqlsrv=shared` 
 
-      Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380`.
+
+      Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared`. 
 
    3. Run `make`. The compiled drivers will be located in the `modules/` directory, and are named `sqlsrv.so` and `pdo_sqlsrv.so`.       
 
@@ -134,10 +144,20 @@ Now you are ready to install PHP.
 
     1. Switch to the source directory of the extension you want to install, e.g. `source/sqlsrv` or `source/pdo_sqlsrv`.
 
-    2. Run `phpize && ./configure && make` to compile the extension.
+    2. Run `phpize && ./configure CXXFLAGS=-std=c++11 && make` to compile the extension.
 
     3. Run `sudo make install` to install the binaries into the default php extensions directory.
+    
+- Method 5: install the drivers with PECL:
 
+1. Use your package manager to install the php package and if you are installing PDO_SQLSRV drivers install the php-pdo package. Make sure the packaged  PHP version is PHP 7. You may need to add repositories to obtain PHP 7 as described in the [tutorial]((https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md)).
+
+2. Use your package manager and install `php-pear` and  `php-dev`.
+
+3.   Run `pecl search sqlsrv`, you should get the list of sqlsrv and pdo_sqlsrv packages with their associated version. For example, `pdo_sqlsrv 4.0.5 (devel)   4.0.5 Microsoft Drivers for PHP for SQL Server (PDO_SQLSRV)`.
+
+ 4. Run `sudo pecl install pdo_sqlsrv-4.0.5` .
+ 
 ####Enable the drivers
 
 1. Make sure that the driver is in your PHP extensions directory.
@@ -166,9 +186,8 @@ The following items have known issues:
 - Integrated authentication is not supported.
 - Buffered cursors are not supported.
 - Fetch object and fetch array have issues.
-- lastInsertId().
 - Query from large column name.
-- Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
+- Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140))
 
 
 
@@ -248,3 +267,5 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 [apr_source]: http://apr.apache.org/
 
 [httpdconf]: http://php.net/manual/en/install.unix.apache2.php
+
+[ODBCinstallers]: https://blogs.msdn.microsoft.com/sqlnativeclient/2016/09/06/preview-release-of-the-sql-server-cc-odbc-driver-13-0-0-for-linux

@@ -19,7 +19,7 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "pdo_sqlsrv.h"
+#include "php_pdo_sqlsrv.h"
 
 // Constructor
 conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, _Inout_ HashTable* conn_options_ht )

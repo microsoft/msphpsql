@@ -25,6 +25,8 @@
 #include "core_sqlsrv.h"
 #include "version.h"
 
+#define PHP_SQLSRV_VERSION "4.0.5"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

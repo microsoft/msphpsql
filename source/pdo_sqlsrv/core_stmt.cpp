@@ -126,12 +126,12 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
     fetch_called( false ),
     last_field_index( -1 ),
     past_next_result_end( false ),
+    query_timeout( QUERY_TIMEOUT_INVALID ),
+    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     param_ind_ptrs( 10 ),    // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
     current_stream( NULL, SQLSRV_ENCODING_DEFAULT ),
-    current_stream_read( 0 ),
-    query_timeout( QUERY_TIMEOUT_INVALID ),
-    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID )
+    current_stream_read( 0 )
 {
 	ZVAL_UNDEF( &active_stream );
     // initialize the input string parameters array (which holds zvals)
@@ -237,6 +237,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 {
 	sqlsrv_malloc_auto_ptr<sqlsrv_stmt> stmt;
     SQLHANDLE stmt_h = SQL_NULL_HANDLE;
+    sqlsrv_stmt* return_stmt;
 
     try {
 
@@ -274,10 +275,8 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 			} ZEND_HASH_FOREACH_END();
         }
 
-        sqlsrv_stmt* return_stmt = stmt;
+        return_stmt = stmt;
         stmt.transferred();
-
-        return return_stmt;
     }
     catch( core::CoreException& )
     {
@@ -298,6 +297,8 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 
         DIE( "core_sqlsrv_allocate_stmt: Unknown exception caught." );
     }
+
+    return return_stmt;
 }
 
 
@@ -1218,8 +1219,6 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    SQLRETURN r = SQL_SUCCESS;
-
     // if there no current parameter to process, get the next one 
     // (probably because this is the first call to sqlsrv_send_stream_data)
     if( stmt->current_stream.stream_z == NULL ) {
@@ -1954,8 +1953,8 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
             break;
         case IS_STRING:
         {
-			size_t char_size = (encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( SQLWCHAR ) : sizeof( char );
-			SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
+            size_t char_size = (encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( SQLWCHAR ) : sizeof( char );
+		    SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
             if( byte_len > SQL_SERVER_MAX_FIELD_SIZE ) {
                 column_size = SQL_SERVER_MAX_TYPE_SIZE;
             }
@@ -2008,7 +2007,6 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
     if( Z_ISUNDEF(stmt->output_params) ) 
         return;
 
-    bool converted = true;
     HashTable* params_ht = Z_ARRVAL( stmt->output_params );
 	zend_ulong index = -1;
 	zend_string* key = NULL;

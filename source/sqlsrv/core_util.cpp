@@ -157,7 +157,7 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inStri
 
     // calculate the number of characters needed
 #ifdef __linux__
-	cchOutLen = SystemLocale::FromUtf16( encoding, inString, cchInLen, NULL, 0 );
+    cchOutLen = SystemLocale::FromUtf16( encoding, inString, cchInLen, NULL, 0 );
 #else	
     cchOutLen = WideCharToMultiByte( encoding, flags,
                                    inString, cchInLen, 
@@ -172,7 +172,7 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inStri
     char* newString = reinterpret_cast<char*>( sqlsrv_malloc( cchOutLen + 1 /* NULL char*/ ));
     
 #ifdef __linux__
-	int rc = SystemLocale::FromUtf16( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
+    int rc = SystemLocale::FromUtf16( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
 #else
     int rc = WideCharToMultiByte( encoding, flags,
                                   inString, cchInLen, 
@@ -394,7 +394,7 @@ unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _I
             break;
     }
 #ifdef __linux__ 
-	unsigned int required_len = SystemLocale::ToUtf16( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
+    unsigned int required_len = SystemLocale::ToUtf16( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
 #else
     unsigned int required_len = MultiByteToWideChar( win_encoding, MB_ERR_INVALID_CHARS, mbcs_in_string, mbcs_len, 
                                                      utf16_out_string, utf16_len );

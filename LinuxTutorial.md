@@ -25,7 +25,9 @@ You can install both the unixODBC driver manager and the ODBC driver using the s
 
 [![pic1](https://msdnshared.blob.core.windows.net/media/2016/07/image1101.png)](https://msdnshared.blob.core.windows.net/media/2016/07/image1101.png) 
 
-###Install Apache: You are now ready to install Apache. You can install from source, or you can use your package manager. ###
+###Install Apache
+ 
+You are now ready to install Apache. You can install from source, or you can use your package manager.
 To install from source, follow these instructions.
 
 1. From the Apache web site, download the Apache source. Go to [http://httpd.apache.org/download.cgi#apache24](http://httpd.apache.org/download.cgi) and click on the link to the tar.gz file. In what follows, we'll assume it is `httpd-2.4.20.tar.gz`. Take note of the directory to which it is downloaded.
@@ -131,6 +133,7 @@ Follow these steps to install from the package manager on Red Hat/CentOS:
     `yum-config-manager --enable remi-php70`
 
 3.  Run `sudo yum install php php-pdo` to install both PHP and the Apache module.
+
 4.  Run `sudo yum update`.
 
 Remi RPM repository also provides a package to install Microsoft PHP drivers for SQLServer in Red Hat/CentOS. After following the steps above, all you need to do is 
@@ -139,7 +142,7 @@ Remi RPM repository also provides a package to install Microsoft PHP drivers for
 
 To confirm that the drivers have been installed, run `php -m` and you should find both `sqlsrv` and `pdo_sqlsrv` amongst the list of modules.
 
-###Compiling and installing Microsoft PHP drivers for SQLServer from source: 
+###Compiling and installing Microsoft PHP drivers for SQL Server from source: 
 
 Instead of using the precompiled binaries, you can compile your own when compiling PHP. To compile the binaries yourself, follow these steps: 
 
@@ -158,9 +161,8 @@ Instead of using the precompiled binaries, you can compile your own when compili
     a.  `CXXFLAGS=-std=c++11` to ensure your compiler uses the C++11 standard. 
     b.  `--enable-sqlsrv=shared` 
     c.  `--with-pdo_sqlsrv=shared` 
-    d.  `--with-odbcver=0x0380`. This option has no practical effect as the drivers use ODBC version 3.52, but it suppresses compilation warnings arising from the fact that PHP's default setting of version 3.00 is different from unixODBC's setting of 3.80. 
 
-    Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> --disable-maintainer-zts CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380`. 
+    Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> --disable-maintainer-zts CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared`. 
 
     Note: if you get a message saying `WARNING: unrecognized options: --enable-sqlsrv, --with-pdo_sqlsrv`, run `touch ext/*/config.m4` and then `./buildconf --force` before trying `./configure` again. 
 
@@ -170,8 +172,32 @@ Instead of using the precompiled binaries, you can compile your own when compili
 
 6.  Edit your apache configuration file as described in step 6 above. 
 
+###Installing Microsoft PHP drivers for SQL Server using PECL packages:
 
-Now edit your `php.ini` file to load the PHP drivers when PHP starts.
+You can install the SQL Server drivers using PHP's PECL package system. This can be done after having installed PHP from source or from package.
+
+1. If installing PHP from source, download the PHP sources and run `./buildconf` as described above. Run `./configure` (without extra options), `make`, and `sudo make install` to install PHP.
+
+  If installing PHP from package, install php as described above. In addition, on Ubuntu install php-pear and php-dev using `sudo apt-get install php-pear php-dev`.
+
+2. Verify that `pear` and `pecl` are installed by running `pear version` and `pecl version`. If they are not, go to step 4.
+
+3. Run `sudo pecl search sqlsrv` to list the available sqlsrv and pdo_sqlsrv extensions. Take note of the version number and run `sudo pecl install sqlsrv-<version-number>` and `sudo pecl install pdo_sqlsrv-<version-number>` to install the drivers. If you do not include the version number, you will install the latest 'stable' release, which does not work with PHP 7.
+
+4. If `pear` and `pecl` are not installed, you can download the [SQLSRV](http://pecl.php.net/package/sqlsrv) and [PDO_SQLSRV](http://pecl.php.net/package/pdo_sqlsrv) PECL packages from pecl.php.net (click on 'Latest Tarball' to download). You can then install the SQLSRV driver as follows:
+
+ `tar xvzf sqlsrv-<version-number>.tgz`
+`cd sqlsrv-<version-number>/`
+`phpize`
+`./configure`
+`make`
+`sudo make install`
+
+and similarly for the PDO_SQLSRV driver.
+
+###Loading the drivers
+
+Finally, edit your `php.ini` file to load the PHP drivers when PHP starts.
 
 1.  To find the location of your `php.ini` file, run `php --ini` to find the directory PHP searches for `php.ini`. You will see output similar to the following:
 
@@ -179,7 +205,10 @@ Now edit your `php.ini` file to load the PHP drivers when PHP starts.
 	
   If you installed PHP from package, the output will be slightly different and will probably list more .ini files, but you will likely need to edit only the `php.ini` file listed under `Loaded Configuration File`.
 
-2.  If `Loaded Configuration File` shows that a `php.ini` is loaded, edit that file. Otherwise go to the PHP directory in your home directory, run `cp php.ini-development php.ini` and copy the newly created `php.ini` file to the `Configuration File (php.ini) Path` indicated when running `php --ini`. If using the SQLSRV driver, add the following lines to your php.ini: `extension=php_sqlsrv_7_ts.so` or `extension=php_sqlsrv_7_nts.so` If using the PDO_SQLSRV driver, add `extension=php_pdo_sqlsrv_7_ts.so` or `extension=php_pdo_sqlsrv_7_nts.so`. Change the names of the drivers accordingly if you have compiled them from source and they have different names. If necessary, specify the extension directory using extension_dir, for example: `extension_dir = “/usr/local/lib/php/extensions/”`. To find the default extension directory, run `php -i | grep extension_dir`.
+2.  If `Loaded Configuration File` shows that a `php.ini` is loaded, edit that file. Otherwise go to the PHP directory in your home directory, run `cp php.ini-development php.ini` and copy the newly created `php.ini` file to the `Configuration File (php.ini) Path` indicated when running `php --ini`. If using the SQLSRV driver, add the following lines to your php.ini: `extension=php_sqlsrv_7_ts.so` or `extension=php_sqlsrv_7_nts.so`. If using the PDO_SQLSRV driver, add `extension=php_pdo_sqlsrv_7_ts.so` or `extension=php_pdo_sqlsrv_7_nts.so`. Change the names of the drivers accordingly if you have compiled them from source and they have different names. If necessary, specify the extension directory using extension_dir, for example: `extension_dir = “/usr/local/lib/php/extensions/”`. To find the default extension directory, run `php -i | grep extension_dir`.
+
+ Note that you can add lines to php.ini from the command line as follows:
+`echo "extension=sqlsrv.so" | sudo tee --append <path-to-php.ini>`
 
 3.  Stop and restart the Apache web server.
 
@@ -205,3 +234,5 @@ Apache Portable Runtime (APR): [http://apr.apache.org/download.cgi](http://apr.a
 PHP source download page: [http://php.net/downloads.php](http://php.net/downloads.php)
 Ondrej PPA repository: [https://launchpad.net/~ondrej/+archive/ubuntu/php](https://launchpad.net/~ondrej/+archive/ubuntu/php)
 Remi RPM repository: [http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora](http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora)
+PECL SQLSRV package: [http://pecl.php.net/package/sqlsrv](http://pecl.php.net/package/sqlsrv)
+PECL PDO_SQLSRV package: [http://pecl.php.net/package/pdo_sqlsrv](http://pecl.php.net/package/pdo_sqlsrv)

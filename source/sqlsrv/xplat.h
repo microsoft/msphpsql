@@ -266,23 +266,10 @@ typedef void*                   SQLHWND;
 // End definitions for UnixODBC SQL headers
 // ----------------------------------------------------------------------------
 
-
-
-
-
-
-
-
 #define UNREFERENCED_PARAMETER(arg)
-
-
-
 
 // From share.h
 #define _SH_DENYNO      0x40    /* deny none mode */
-
-
-
 
 
 // WinNT.h

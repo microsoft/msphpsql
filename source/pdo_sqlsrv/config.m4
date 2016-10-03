@@ -38,8 +38,7 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
            FormattedPrint.cpp \
            localizationimpl.cpp \
            "
-    PHP_ADD_INCLUDE($PDO_SQLSRV_DIR/include)
-  
+
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, PDO_SQLSRV_SHARED_LIBADD)

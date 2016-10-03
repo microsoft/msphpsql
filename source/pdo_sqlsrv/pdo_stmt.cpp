@@ -17,7 +17,7 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "pdo_sqlsrv.h"
+#include "php_pdo_sqlsrv.h"
 
 // *** internal variables and constants ***
 
@@ -339,9 +339,9 @@ void stmt_option_emulate_prepares:: operator()( sqlsrv_stmt* stmt, stmt_option c
 { \
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
     driver_stmt->set_func( __FUNCTION__ ); \
-    int length = strlen(__FUNCTION__)+strlen(": entering"); \
+    int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
     char func[length+1]; \
-    LOG( SEV_NOTICE, strcat(strcpy(func, __FUNCTION__), ": entering")); \
+    LOG( SEV_NOTICE, strcat( strcpy( func, __FUNCTION__ ), ": entering" )); \
 }
 #else
 #define PDO_LOG_STMT_ENTRY \
@@ -1077,12 +1077,12 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
 
             // since the param isn't reliable, we don't do anything here
             case PDO_PARAM_EVT_ALLOC:
-				// if emulate prepare is on, set the bind_param_encoding so it can be used in PDO::quote when binding parameters on the client side
-				if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
-					pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
-					driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
-				}
-				break;
+                // if emulate prepare is on, set the bind_param_encoding so it can be used in PDO::quote when binding parameters on the client side
+                if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+	                pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
+	                driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
+                }
+                break;
             case PDO_PARAM_EVT_FREE:
                 break;
             // bind the parameter in the core layer

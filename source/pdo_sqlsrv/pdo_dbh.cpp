@@ -17,7 +17,7 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "pdo_sqlsrv.h"
+#include "php_pdo_sqlsrv.h"
 
 #ifndef __linux__
 #include <psapi.h>
@@ -361,9 +361,9 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
 { \
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
     driver_dbh->set_func( __FUNCTION__ ); \
-    int length = strlen(__FUNCTION__)+strlen(": entering"); \
+    int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
     char func[length+1]; \
-    LOG( SEV_NOTICE, strcat(strcpy(func, __FUNCTION__), ": entering")); \
+    LOG( SEV_NOTICE, strcat( strcpy( func, __FUNCTION__ ), ": entering" )); \
 }
 #else
 #define PDO_LOG_DBH_ENTRY \
@@ -1216,77 +1216,72 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
 
-	pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
-	SQLSRV_ENCODING encoding = driver_dbh->bind_param_encoding;
+    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
+    SQLSRV_ENCODING encoding = driver_dbh->bind_param_encoding;
 
-	if ( encoding == SQLSRV_ENCODING_BINARY ) {
-		// convert from char* to hex digits using os
-		std::basic_ostringstream<char> os;
-		for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
-			os << std::hex << ( int )unquoted[ index ];
-		}
-		std::basic_string<char> str_hex = os.str();
-		// each character is represented by 2 digits of hex
-		size_t unquoted_str_len = unquoted_len * 2; // length returned should not account for null terminator
-		char* unquoted_str = reinterpret_cast<char*>( sqlsrv_malloc( unquoted_str_len, sizeof( char ), 1 )); // include space for null terminator
-		strcpy_s( unquoted_str, unquoted_str_len + 1 /* include null terminator*/, str_hex.c_str() );
-		// include length of '0x' in the binary string
-		*quoted_len = unquoted_str_len + 2;
-		*quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-		unsigned int out_current = 0;
-		// insert '0x'
-		( *quoted )[ out_current++ ] = '0';
-		( *quoted )[ out_current++ ] = 'x';
-		for ( size_t index = 0; index < unquoted_str_len && unquoted_str[ index ] != '\0'; ++index ) {
-			( *quoted )[ out_current++ ] = unquoted_str[ index ];
-		}
-		// null terminator
-		( *quoted )[ out_current ] = '\0';
-		sqlsrv_free( unquoted_str );
-		return 1;
-	}
-	else {
-		// count the number of quotes needed
-		unsigned int quotes_needed = 2;  // the initial start and end quotes of course
-		// include the N proceeding the initial quote if encoding is UTF8
-		if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-			quotes_needed = 3;
-		}
-		for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
-			if ( unquoted[ index ] == '\'' ) {
-				++quotes_needed;
-			}
-		}
+    if ( encoding == SQLSRV_ENCODING_BINARY ) {
+        // convert from char* to hex digits using os
+        std::basic_ostringstream<char> os;
+        for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+           os << std::hex << ( int )unquoted[ index ];
+        }
+        std::basic_string<char> str_hex = os.str();
+        // each character is represented by 2 digits of hex
+        size_t unquoted_str_len = unquoted_len * 2; // length returned should not account for null terminator
+        char* unquoted_str = reinterpret_cast<char*>( sqlsrv_malloc( unquoted_str_len, sizeof( char ), 1 )); // include space for null terminator
+        strcpy_s( unquoted_str, unquoted_str_len + 1 /* include null terminator*/, str_hex.c_str() );
+        // include length of '0x' in the binary string
+        *quoted_len = unquoted_str_len + 2;
+        *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
+        unsigned int out_current = 0;
+        // insert '0x'
+        ( *quoted )[ out_current++ ] = '0';
+        ( *quoted )[ out_current++ ] = 'x';
+        for ( size_t index = 0; index < unquoted_str_len && unquoted_str[ index ] != '\0'; ++index ) {
+            ( *quoted )[ out_current++ ] = unquoted_str[ index ];
+        }
+        // null terminator
+        ( *quoted )[ out_current ] = '\0';
+        sqlsrv_free( unquoted_str );
+        return 1;
+    }
+    else {
+        // count the number of quotes needed
+        unsigned int quotes_needed = 2;  // the initial start and end quotes of course
+        // include the N proceeding the initial quote if encoding is UTF8
+        if ( encoding == SQLSRV_ENCODING_UTF8 ) {
+            quotes_needed = 3;
+        }
+        for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+            if ( unquoted[ index ] == '\'' ) {
+                ++quotes_needed;
+            }
+        }
 
-		*quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
-		*quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
-		unsigned int out_current = 0;
+        *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
+        *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
+        unsigned int out_current = 0;
 
-		// insert N if the encoding is UTF8
-		if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-			( *quoted )[ out_current++ ] = 'N';
-		}
-
-		// insert initial quote
-		( *quoted )[ out_current++ ] = '\'';
-
-		for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
-
-			if ( unquoted[ index ] == '\'' ) {
-				( *quoted )[ out_current++ ] = '\'';
-				( *quoted )[ out_current++ ] = '\'';
-			}
-			else {
-				( *quoted )[ out_current++ ] = unquoted[ index ];
-			}
-		}
-
-		// trailing quote and null terminator
-		( *quoted )[ out_current++ ] = '\'';
-		( *quoted )[ out_current ] = '\0';
-
-		return 1;
-	}
+        // insert N if the encoding is UTF8
+        if ( encoding == SQLSRV_ENCODING_UTF8 ) {
+	        ( *quoted )[ out_current++ ] = 'N';
+        }
+        // insert initial quote
+        ( *quoted )[ out_current++ ] = '\'';
+        for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+            if ( unquoted[ index ] == '\'' ) {
+                ( *quoted )[ out_current++ ] = '\'';
+                ( *quoted )[ out_current++ ] = '\'';
+            }
+            else {
+                ( *quoted )[ out_current++ ] = unquoted[ index ];
+	        }
+        }
+        // trailing quote and null terminator
+        ( *quoted )[ out_current++ ] = '\'';
+        ( *quoted )[ out_current ] = '\0';
+        return 1;
+    }
 }
 
 // This method is not implemented by this driver.
