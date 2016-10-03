@@ -794,7 +794,6 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             }
             class_name = Z_STRVAL( *class_name_z );
             class_name_len = Z_STRLEN( *class_name_z );
-            //zend_str_tolower( class_name, class_name_len );
         }
 
         if( ctor_params_z && Z_TYPE_P( ctor_params_z ) != IS_ARRAY ) {
@@ -879,20 +878,22 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 
             memset( &fci, 0, sizeof( fci ));
             fci.size = sizeof( fci );
+#if PHP_VERSION_ID < 70100
             fci.function_table = &( class_entry )->function_table;
+#endif
             ZVAL_UNDEF( &( fci.function_name ) );
             fci.retval = &ctor_retval_z;
             fci.param_count = num_params;
             fci.params = params_m;  // purposefully not transferred since ownership isn't actually transferred.
             
-            fci.object = reinterpret_cast<zend_object*>( &retval_z );
+            fci.object = Z_OBJ_P( &retval_z );
 
             memset( &fcic, 0, sizeof( fcic ));
             fcic.initialized = 1;
             fcic.function_handler = class_entry->constructor;
             fcic.calling_scope = class_entry;
 
-            fci.object = reinterpret_cast<zend_object*>( &retval_z );
+            fcic.object = Z_OBJ_P( &retval_z );
 
             zr = zend_call_function( &fci, &fcic TSRMLS_CC );
             CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name ) {

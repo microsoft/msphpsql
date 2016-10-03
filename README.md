@@ -10,7 +10,11 @@ The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
 
-**September, 2016** : Updated Windows drivers (4.1.2) compiled with PHP 7.0.10 are available. Here is the list of updates:
+**October 4 , 2016** : Updated Windows drivers (4.1.3) compiled with PHP 7.0.11  and 7.1.0RC3 are available. Here is the list of updates:
+
+- Fixed [issue #139](https://github.com/Microsoft/msphpsql/issues/139) : sqlsrv_fetch_object calls custom class constructor in static context and outputs an error.
+
+**September 9, 2016** : Updated Windows drivers (4.1.2) compiled with PHP 7.0.10 are available. Here is the list of updates:
 
 - Fixed [issue #119](https://github.com/Microsoft/msphpsql/issues/119) (modifying class name in sqlsrv_fetch_object).
 - Added following integer SQL Types constants for cases which function-like SQL types constants cannot be used e.g. type comparison:

@@ -17,11 +17,11 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "pdo_sqlsrv.h"
+#include "php_pdo_sqlsrv.h"
+
 #include <psapi.h>
 #include <windows.h>
 #include <winver.h>
-
 #include <string>
 #include <sstream>
 

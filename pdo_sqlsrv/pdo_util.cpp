@@ -17,7 +17,7 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "pdo_sqlsrv.h"
+#include "php_pdo_sqlsrv.h"
 
 #include "zend_exceptions.h"
 
