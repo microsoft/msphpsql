@@ -74,7 +74,7 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
 - If building PHP from source, you need libraries required to [build PHP][PHPMan].
 
 ####Tutorial
-- For detailed instructions please review the tutorial [here](https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md). 
+- Follow the steps on [Microsoft Drivers for PHP for SQL Server Team Blog](https://blogs.msdn.microsoft.com/sqlphp/2016/10/10/getting-started-with-php-7-sql-server-and-azure-sql-database-on-linux-ubuntu-with-apache/) to easily configure your environment and install PHP drivers. For detailed instructions please review the tutorial [here](https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md). 
 
 
 The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. If you wish to install Apache from source, follow these instructions:
