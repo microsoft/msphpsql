@@ -53,14 +53,7 @@ sudo ln -s libodbc.so.2     libodbc.so.1
 
 cd /tmp/msodbcrhel/
 
-if sudo wget https://download.microsoft.com/download/B/C/D/BCDD264C-7517-4B7D-8159-C99FC5535680/msodbcsql-13.0.0.0.tar.gz ; 
-then 
-	echo "Successfuly download the ODBC Driver and tools." 
-else
-        echo "Unable to get Microsfot ODBC Driver from download center."
-	cleanup
-	exit
-fi
+sudo wget "https://meetsstorenew.blob.core.windows.net/contianerhd/RedHat%2013.0%20Tar/msodbcsql-13.0.0.0.tar.gz?st=2016-10-18T17%3A29%3A00Z&se=2022-10-19T17%3A29%3A00Z&sp=rl&sv=2015-04-05&sr=b&sig=xrQ9LQaE9FsLckIo7IuGJX5Nv3cH5Bs7hgrGyEJHMMI%3D" -O msodbcsql-13.0.0.0.tar.gz ; 
 
 
 if sudo tar xvzf msodbcsql-13.0.0.0.tar.gz ;
