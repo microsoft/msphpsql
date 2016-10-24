@@ -2,7 +2,7 @@
 #define PHP_PDO_SQLSRV_H
 
 //---------------------------------------------------------------------------------------------------------------------------------
-// File: pdo_sqlsrv.h
+// File: php_pdo_sqlsrv.h
 //
 // Contents: Declarations for the extension
 //

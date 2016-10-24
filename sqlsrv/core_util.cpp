@@ -306,12 +306,12 @@ void core_sqlsrv_format_driver_error( sqlsrv_context& ctx, sqlsrv_error_const co
     LOG( severity, "%1!s!: message = %2!s!", ctx.func(), formatted_error->native_message );
 }
 
-DWORD core_sqlsrv_format_message( char*& output_buffer, unsigned output_len, const char* format, ... )
+DWORD core_sqlsrv_format_message( char* output_buffer, unsigned output_len, const char* format, ... )
 {
     va_list format_args;
     va_start( format_args, format );
 
-	DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, format, 0, 0, static_cast<LPSTR>(output_buffer), SQL_MAX_MESSAGE_LENGTH, &format_args );
+	DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, format, 0, 0, static_cast<LPSTR>(output_buffer), output_len, &format_args );
 
     va_end( format_args );
 

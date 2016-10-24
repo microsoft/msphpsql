@@ -43,8 +43,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 //Version
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION  SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD, SQLVERSION_REVISION
- PRODUCTVERSION SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_MMDD,0
+ FILEVERSION  SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_RELEASE, SQLVERSION_BUILD
+ PRODUCTVERSION SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_RELEASE,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS VS_FF_DEBUG
@@ -61,13 +61,13 @@ BEGIN
         BEGIN
             VALUE "Comments", "This product includes PHP software that is freely available from http://www.php.net/software/.  Copyright © 2001-2016 The PHP Group.  All rights reserved.\0"
             VALUE "CompanyName", "Microsoft Corp.\0"
-            VALUE "FileDescription", "Microsoft Drivers for PHP for SQL Server (PDO Driver)\0"
-            VALUE "FileVersion", STRVER4(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD, SQLVERSION_REVISION)
+            VALUE "FileDescription", "Microsoft Drivers for PHP for SQL Server\0"
+            VALUE "FileVersion", STRVER4(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_RELEASE, SQLVERSION_BUILD)
             VALUE "InternalName", FILE_NAME "\0"
             VALUE "LegalCopyright", "Copyright Microsoft Corporation.\0"
             VALUE "OriginalFilename", FILE_NAME "\0"
             VALUE "ProductName", "Microsoft Drivers for PHP for SQL Server\0"
-            VALUE "ProductVersion", STRVER3(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_MMDD)
+            VALUE "ProductVersion", STRVER3(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_RELEASE)
             VALUE "URL", "http://www.microsoft.com\0"
        END
     END

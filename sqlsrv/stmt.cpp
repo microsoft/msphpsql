@@ -330,8 +330,8 @@ PHP_FUNCTION( sqlsrv_fetch )
 
     ss_sqlsrv_stmt* stmt = NULL;
     // NOTE: zend_parse_parameter expect zend_long when the type spec is 'l',and core_sqlsrv_fetch expect short int
-    int fetch_style = SQL_FETCH_NEXT;   // default value for parameter if one isn't supplied
-    zend_long fetch_offset = 0;         // default value for parameter if one isn't supplied
+	zend_long fetch_style = SQL_FETCH_NEXT;   // default value for parameter if one isn't supplied
+    zend_long fetch_offset = 0;               // default value for parameter if one isn't supplied
 
     // take only the statement resource
     PROCESS_PARAMS( stmt, "r|ll", _FN_, 2, &fetch_style, &fetch_offset );
@@ -343,7 +343,7 @@ PHP_FUNCTION( sqlsrv_fetch )
             throw ss::SSException();
         }
 
-        bool result = core_sqlsrv_fetch( stmt, fetch_style, fetch_offset TSRMLS_CC );
+        bool result = core_sqlsrv_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset TSRMLS_CC );
         if( !result ) {
             RETURN_NULL();
         }
@@ -383,7 +383,7 @@ PHP_FUNCTION( sqlsrv_fetch_array )
     
     ss_sqlsrv_stmt* stmt = NULL;
     zend_long fetch_type = SQLSRV_FETCH_BOTH; // default value for parameter if one isn't supplied
-    int fetch_style = SQL_FETCH_NEXT;         // default value for parameter if one isn't supplied
+	zend_long fetch_style = SQL_FETCH_NEXT;   // default value for parameter if one isn't supplied
     zend_long fetch_offset = 0;               // default value for parameter if one isn't supplied
 
     // retrieve the statement resource and optional fetch type (see enum SQLSRV_FETCH_TYPE),
@@ -402,7 +402,7 @@ PHP_FUNCTION( sqlsrv_fetch_array )
             throw ss::SSException();
         }
 
-        bool result = core_sqlsrv_fetch( stmt, fetch_style, fetch_offset TSRMLS_CC );
+        bool result = core_sqlsrv_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset TSRMLS_CC );
         if( !result ) {
             RETURN_NULL();
         }
@@ -764,8 +764,8 @@ PHP_FUNCTION( sqlsrv_fetch_object )
     ss_sqlsrv_stmt* stmt = NULL;
 	zval* class_name_z = NULL;
 	zval* ctor_params_z = NULL;
-    int fetch_style = SQL_FETCH_NEXT;   // default value for parameter if one isn't supplied
-    zend_long fetch_offset = 0;         // default value for parameter if one isn't supplied
+    zend_long fetch_style = SQL_FETCH_NEXT;   // default value for parameter if one isn't supplied
+    zend_long fetch_offset = 0;               // default value for parameter if one isn't supplied
 
     // stdClass is the name of the system's default base class in PHP
     char* class_name = const_cast<char*>( STDCLASS_NAME );
@@ -801,7 +801,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
         }
         
         // fetch the data
-        bool result = core_sqlsrv_fetch( stmt, fetch_style, fetch_offset TSRMLS_CC );
+        bool result = core_sqlsrv_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset TSRMLS_CC );
         if( !result ) {
             RETURN_NULL();
         }
@@ -863,11 +863,11 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 				int i = 0;
 				zval* value_z = NULL;
 				ZEND_HASH_FOREACH_VAL( ctor_params_ht, value_z ) {
-					ZVAL_COPY_VALUE( &params_m[i], value_z );
-					zr = ( NULL != &params_m[i] ) ? SUCCESS : FAILURE;
+					zr = ( value_z ) ? SUCCESS : FAILURE;
 					CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name ) {
 						throw ss::SSException();
 					}
+					ZVAL_COPY_VALUE(&params_m[i], value_z);
 					i++;
 				} ZEND_HASH_FOREACH_END();
             } //if( !Z_ISUNDEF( ctor_params_z ))
@@ -1084,8 +1084,8 @@ PHP_FUNCTION( sqlsrv_get_field )
             THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
         }
 
-        core_sqlsrv_get_field( stmt, field_index, sqlsrv_php_type, false, field_value, &field_len, false/*cache_field*/, 
-                              &sqlsrv_php_type_out TSRMLS_CC );
+		core_sqlsrv_get_field( stmt, field_index, sqlsrv_php_type, false, field_value, &field_len, false/*cache_field*/,
+			&sqlsrv_php_type_out TSRMLS_CC );
         convert_to_zval( stmt, sqlsrv_php_type_out, field_value, field_len, retval_z );		
 		sqlsrv_free( field_value );
         RETURN_ZVAL( &retval_z, 1, 1 );

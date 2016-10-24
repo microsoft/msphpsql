@@ -1205,7 +1205,7 @@ void add_conn_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len,
                          HashTable* options_ht, zval* data TSRMLS_DC )
 {
     int option_key = ::get_conn_option_key( ctx, key, key_len, data TSRMLS_CC );    
-    CHECK_CUSTOM_ERROR((option_key == SQLSRV_STMT_OPTION_INVALID ), ctx, SS_SQLSRV_ERROR_INVALID_OPTION, key ) {
+    CHECK_CUSTOM_ERROR((option_key == SQLSRV_STMT_OPTION_INVALID ), ctx, SS_SQLSRV_ERROR_INVALID_OPTION, ZSTR_VAL( key ) ) {
 
         throw ss::SSException();
     }        

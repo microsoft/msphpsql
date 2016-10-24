@@ -1612,7 +1612,7 @@ void core_sqlsrv_format_driver_error( sqlsrv_context& ctx, sqlsrv_error_const co
 const char* get_last_error_message( DWORD last_error = 0 );
 
 // a wrapper around FormatMessage that can take variadic args rather than a a va_arg pointer
-DWORD core_sqlsrv_format_message( char*& output_buffer, unsigned output_len, const char* format, ... );
+DWORD core_sqlsrv_format_message( char* output_buffer, unsigned output_len, const char* format, ... );
 
 // convenience functions that overload either a reference or a pointer so we can use
 // either in the CHECK_* functions.

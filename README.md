@@ -10,6 +10,11 @@ The Microsoft Drivers for PHP for SQL Server Team
 
 ##Announcements
 
+**October 25 , 2016** : Updated Windows drivers (4.1.4) compiled with PHP 7.0.12  and 7.1 are available. Here is the list of updates:
+
+- Drivers versioning has been redesigned as Major#.Minor#.Release#.Build#. Build number is specific to binaries and it doesn't match with the number on the source.
+- Fixed the issue with  duplicate warning messages in PDO_SQLSRV drivers when error mode is set to PDO::ERRMODE_WARNING.
+
 **October 4 , 2016** : Updated Windows drivers (4.1.3) compiled with PHP 7.0.11  and 7.1.0RC3 are available. Here is the list of updates:
 
 - Fixed [issue #139](https://github.com/Microsoft/msphpsql/issues/139) : sqlsrv_fetch_object calls custom class constructor in static context and outputs an error.
