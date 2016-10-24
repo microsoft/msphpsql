@@ -1272,16 +1272,18 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
                 // the size of wbuffer is set for the worst case of UTF-8 to UTF-16 conversion, which is a 
                 // expansion of 2x the UTF-8 size.
                 SQLWCHAR wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ];
-                // buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
+				DWORD last_error_code = ERROR_SUCCESS;
+				// buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
 #ifdef __linux__
-                int wsize = SystemLocale::ToUtf16( stmt->current_stream.encoding, buffer, 
-												static_cast<int>(read), wbuffer, static_cast<int>(sizeof( wbuffer ) / sizeof( SQLWCHAR )));
+				int wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, 
+												static_cast<int>(read), wbuffer, static_cast<int>(sizeof( wbuffer ) / sizeof( SQLWCHAR )), &last_error_code );
 #else
-                int wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, 
-                                                 buffer, static_cast<int>( read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
+				int wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS,
+					buffer, static_cast<int>( read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
+				last_error_code = GetLastError();
 #endif
 
-                if( wsize == 0 && GetLastError() == ERROR_NO_UNICODE_TRANSLATION ) {
+				if( wsize == 0 && last_error_code == ERROR_NO_UNICODE_TRANSLATION ) {
 
                     // this will calculate how many bytes were cut off from the last UTF-8 character and read that many more
                     // in, then reattempt the conversion.  If it fails the second time, then an error is returned.
@@ -1296,7 +1298,7 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
                     }
                     // try the conversion again with the complete character
 #ifdef __linux__					
-					wsize = SystemLocale::ToUtf16( stmt->current_stream.encoding, buffer, 
+					wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, 
 							static_cast<int>(read + new_read), wbuffer, static_cast<int>(sizeof( wbuffer ) / sizeof( SQLWCHAR )));
 #else
                     wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, 
@@ -1746,7 +1748,7 @@ bool convert_input_param_to_utf16( zval* input_param_z, zval* converted_param_z 
 
     // if the parameter is an input parameter, calc the size of the necessary buffer from the length of the string
 #ifdef __linux__
-    wchar_size = SystemLocale::ToUtf16( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
+    wchar_size = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
 #else
     wchar_size = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS,
 			reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
@@ -1760,7 +1762,7 @@ bool convert_input_param_to_utf16( zval* input_param_z, zval* converted_param_z 
     wbuffer = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( (wchar_size + 1) * sizeof( SQLWCHAR ) ));
     // convert the utf-8 string to a wchar string in the new buffer
 #ifdef __linux__
-    int r = SystemLocale::ToUtf16( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
+    int r = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
 #else
     int r = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ),
                                  static_cast<int>( buffer_len ), wbuffer, wchar_size );

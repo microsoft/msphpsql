@@ -2,7 +2,7 @@ PHP_ARG_ENABLE(sqlsrv, whether to enable sqlsrv functions,
 [  --disable-sqlsrv         Disable sqlsrv functions], yes)
 
 if test "$PHP_SQLSRV" != "no"; then
-
+  CXXFLAGS="$CXXFLAGS -std=c++11"
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, SQLSRV_SHARED_LIBADD)

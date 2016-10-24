@@ -10,6 +10,16 @@ SQL Server Team
 
 ##Announcements
 
+**October 25, 2016**: Linux drivers (4.0.6) compiled with PHP 7.0.12 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. Here is the list of updates and fixes:
+
+- Drivers versioning has been redesigned as Major#.Minor#.Release#.Build#. Build number is specific to binaries and it doesn't match with the number on the source.
+- Fixed the issue with  duplicate warning messages in PDO_SQLSRV drivers when error mode is set to PDO::ERRMODE_WARNING.
+- Fixed the issue with invalid UTF-8 strings, those are detected before executing any queries and proper error message is returned. 
+- Fixed segmentation fault in sqlsrv_fetch_object and sqlsrv_fetch_array function.
+- Compiler C++ 11 is enabled in config file.
+
+
+
 **October 4, 2016**: We are excited to announce that PECL packages for Linux SQLSRV and PDO_SQLSRV drivers (4.0.5) are available. You can also find pre-compiled binaries (4.0.5) with PHP 7.0.11  for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2 [here](https://github.com/Microsoft/msphpsql/releases). This release includes the following fixes:
 
 - Fixed segmentation fault when calling PDOStatement::getColumnMeta on RedHat 7.2.

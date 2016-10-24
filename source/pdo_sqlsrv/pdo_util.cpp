@@ -25,12 +25,15 @@
 // *** internal constants ***
 namespace {
 
-const char WARNING_TEMPLATE[] = "SQLSTATE: %1!s!\nError Code: %2!d!\nMError Message: %3!s!\n";
+const char WARNING_TEMPLATE[] = "SQLSTATE: %1!s!\nError Code: %2!d!\nError Message: %3!s!\n";
 const char EXCEPTION_MSG_TEMPLATE[] = "SQLSTATE[%s]: %s";
 char EXCEPTION_PROPERTY_MSG[] = "message";
 char EXCEPTION_PROPERTY_CODE[] = "code";
 char EXCEPTION_PROPERTY_ERRORINFO[] = "errorInfo";
 const int MAX_DIGITS = 11; // +-2 billion = 10 digits + 1 for the sign if negative
+
+// the warning message is not the error message alone; it must take WARNING_TEMPLATE above into consideration without the formats
+const int WARNING_MIN_LENGTH = strlen(WARNING_TEMPLATE) - strlen("%1!s!%2!d!%3!s!");
 
 // buffer used to hold a formatted log message prior to actually logging it.
 const int LOG_MSG_SIZE = 2048;
@@ -459,13 +462,12 @@ bool pdo_sqlsrv_handle_dbh_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
         case PDO_ERRMODE_WARNING:
             if( !warning ) {
                 size_t msg_len = strlen( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE 
-                    + MAX_DIGITS + 1;
-                sqlsrv_malloc_auto_ptr<char> msg;
-                msg = static_cast<char*>( sqlsrv_malloc( msg_len ));
-                core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code, 
+                    + MAX_DIGITS + WARNING_MIN_LENGTH + 1;
+				sqlsrv_malloc_auto_ptr<char> msg;
+				msg = static_cast<char*>( sqlsrv_malloc( msg_len ) );
+				core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code,
                                             error->native_message );
                 php_error( E_WARNING, msg );
-                sqlsrv_free( msg );
             }
             ctx.set_last_error( error );
             break;
@@ -510,16 +512,6 @@ bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_erro
             ctx.set_last_error( error );
             break;
         case PDO_ERRMODE_WARNING:
-            if( !warning ) {
-                size_t msg_len = strlen( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE 
-                    + MAX_DIGITS + 1;
-                sqlsrv_malloc_auto_ptr<char> msg;
-                msg = static_cast<char*>( sqlsrv_malloc( msg_len ));
-                core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code, 
-                                            error->native_message );
-                php_error( E_WARNING, msg );
-                sqlsrv_free( msg );
-            }
             ctx.set_last_error( error );
             break;
         case PDO_ERRMODE_SILENT:

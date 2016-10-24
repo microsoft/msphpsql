@@ -1,29 +1,39 @@
 #ifndef __msodbcsql_h__
 #define __msodbcsql_h__
 
-/*
- *-----------------------------------------------------------------------------
- * File:        msodbcsql.h
- *
- * Copyright:   Copyright (c) Microsoft Corporation
- *
- * Contents:    This SDK is not supported under any Microsoft standard support 
- *              program or service. The information is provided AS IS without 
- *              warranty of any kind. Microsoft disclaims all implied 
- *              warranties including, without limitation, any implied 
- *              warranties of merchantability or of fitness for a particular 
- *              purpose. The entire risk arising out of the use of this SDK 
- *              remains with you. In no event shall Microsoft, its authors, or 
- *              anyone else involved in the creation, production, or delivery 
- *              of this SDK be liable for any damages whatsoever (including, 
- *              without limitation, damages for loss of business profits, 
- *              business interruption, loss of business information, or other 
- *              pecuniary loss) arising out of the use of or inability to use 
- *              this SDK, even if Microsoft has been advised of the possibility 
- *              of such damages.
- *
- *-----------------------------------------------------------------------------
- */
+//---------------------------------------------------------------------------------------------------------------------------------
+// File: msodbcsql.h
+//
+// Contents: Routines that use statement handles
+//
+// Contents: This SDK is not supported under any Microsoft standard support 
+//	         program or service. The information is provided AS IS without 
+//           warranty of any kind. Microsoft disclaims all implied 
+//           warranties including, without limitation, any implied 
+//           warranties of merchantability or of fitness for a particular 
+//  	     purpose. The entire risk arising out of the use of this SDK 
+//           remains with you. In no event shall Microsoft, its authors, or 
+//           anyone else involved in the creation, production, or delivery 
+//           of this SDK be liable for any damages whatsoever (including, 
+//           without limitation, damages for loss of business profits, 
+//           business interruption, loss of business information, or other 
+//           pecuniary loss) arising out of the use of or inability to use 
+//           this SDK, even if Microsoft has been advised of the possibility 
+//           of such damages.
+// Microsoft Drivers 4.0 for PHP for SQL Server
+// Copyright(c) Microsoft Corporation
+// All rights reserved.
+// MIT License
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
+//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+//  and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+//  IN THE SOFTWARE.
+//---------------------------------------------------------------------------------------------------------------------------------
+
 
 #if !defined(SQLODBC_VER)
 #define SQLODBC_VER 1100

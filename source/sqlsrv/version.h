@@ -16,12 +16,20 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#define VER_FILEVERSION_STR "4.0.5.0"
-#define _FILEVERSION 4,0,5,0
+// helper macros to stringify the a macro value
+#define STRINGIFY(a) TOSTRING(a)
+#define TOSTRING(a) #a
+
 #define SQLVERSION_MAJOR 4
 #define SQLVERSION_MINOR 0
-#define SQLVERSION_MMDD 5
-#define SQLVERSION_REVISION 0
+#define SQLVERSION_RELEASE 6
+#define SQLVERSION_BUILD 0
+
+#define VER_FILEVERSION_STR     STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE ) "." STRINGIFY( SQLVERSION_BUILD ) 
+#define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_RELEASE,SQLVERSION_BUILD
+#define PHP_SQLSRV_VERSION      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE )
+#define PHP_PDO_SQLSRV_VERSION  PHP_SQLSRV_VERSION
+
 
 
 

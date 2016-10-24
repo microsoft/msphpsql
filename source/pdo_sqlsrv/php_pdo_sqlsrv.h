@@ -23,8 +23,6 @@
 #include "core_sqlsrv.h"
 #include "version.h"
 
-#define PHP_PDO_SQLSRV_VERSION "4.0.5"
-
 extern "C" {
 
 #include "pdo/php_pdo.h"

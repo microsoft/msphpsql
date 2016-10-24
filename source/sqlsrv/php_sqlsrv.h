@@ -25,8 +25,6 @@
 #include "core_sqlsrv.h"
 #include "version.h"
 
-#define PHP_SQLSRV_VERSION "4.0.5"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -562,7 +560,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         int result = SUCCESS;
         
         // dummy context to pass to the error handler
-        sqlsrv_context error_ctx( 0, ss_error_handler, NULL );;
+        sqlsrv_context error_ctx( 0, ss_error_handler, NULL );
         error_ctx.set_func( calling_func );
 
         switch( param_count ) {

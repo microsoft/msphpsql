@@ -38,7 +38,7 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
            FormattedPrint.cpp \
            localizationimpl.cpp \
            "
-
+  CXXFLAGS="$CXXFLAGS -std=c++11"
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, PDO_SQLSRV_SHARED_LIBADD)
