@@ -69,6 +69,11 @@ version numbers in the supported PHP extension.
 
 The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.  See the LICENSE file for more details.
 
+
+## Code of conduct
+
+This project has adopted the Microsoft Open Source Code of Conduct. For more information see the Code of Conduct FAQ or contact opencode@microsoft.com with any additional questions or comments.
+
 [blog]: http://blogs.msdn.com/b/sqlphp/
 
 [project]: https://github.com/Azure/msphpsql
