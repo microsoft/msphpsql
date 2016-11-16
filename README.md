@@ -14,6 +14,182 @@ SQL Server Team
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-rhel)
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-windows)
 
+## Install
+
+### Step 1: Install  PHP (unless already installed)
+
+**Ubuntu 15.10**
+
+	sudo apt-get install python-software-properties software-properties-common
+	sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/php
+	sudo apt-get install php7.0 php7.0-fpm php-pear php7.0-dev
+	
+**Ubuntu 16.04**
+
+	apt-get update
+	apt-get install php7.0 php-pear php7.0-dev
+
+**RedHat 7**
+
+	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
+	subscription-manager repos --enable=rhel-7-server-optional-rpms
+	yum update
+	yum install php70-php
+
+**RedHat 6**
+
+	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+	wget http://rpms.remirepo.net/enterprise/remi-release-6.rpm
+	rpm -Uvh remi-release-6.rpm epel-release-latest-6.noarch.rpm
+	rhn-channel --add --channel=rhel-$(uname -i)-server-optional-6
+	yum update
+	yum install php70-php
+
+
+
+### Step 2: Install  pre-requisites
+
+
+**Ubuntu 15.10**
+
+    sudo su
+	sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-wily-release/ wily main" > /etc/apt/sources.list.d/mssqlpreview.list'
+    sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+    apt-get update
+    #If you installed the previous preview, you can upgrade using this command, apt-get --only-upgrade install msodbcsql
+	apt-get install msodbcsql unixodbc-dev-utf16 
+
+	
+**Ubuntu 16.04**
+
+    sudo su
+	sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main" > /etc/apt/sources.list.d/mssqlpreview.list'
+	sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+	apt-get update
+	apt-get install msodbcsql unixodbc-dev-utf16 
+
+**RedHat 6**
+
+	sudo su
+	yum-config-manager --add-repo https://apt-mo.trafficmanager.net/yumrepos/mssql-rhel6-release/
+	yum-config-manager --enable mssql-rhel6-release
+	wget "http://aka.ms/msodbcrhelpublickey/dpgswdist.v1.asc"
+	rpm --import dpgswdist.v1.asc
+	yum remove unixODBC #to avoid conflicts during installation
+	yum update
+	yum install msodbcsql unixODBC-utf16-devel
+	yum groupinstall "Development Tools"
+
+**RedHat 7**
+
+	sudo su
+	yum-config-manager --add-repo https://apt-mo.trafficmanager.net/yumrepos/mssql-rhel7-release/
+	yum-config-manager --enable mssql-rhel7-release
+	wget "http://aka.ms/msodbcrhelpublickey/dpgswdist.v1.asc"
+	rpm --import dpgswdist.v1.asc
+	yum remove unixODBC #to avoid conflicts during installation
+	yum update
+	yum install msodbcsql unixODBC-utf16-devel
+	yum groupinstall "Development Tools"
+
+
+*Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+. You can install PHP following the instructions here.
+
+### Step 2: Install Apache
+
+**Ubuntu**
+
+    sudo apt-get install libapache2-mod-php7.0 
+    sudo apt-get install apache2
+    
+**RedHat** 
+
+    sudo yum install httpd
+    
+### Step 3: Install the Microsoft PHP Drivers for SQL Server
+
+    sudo pecl install sqlsrv-4.0.5
+    sudo pecl install pdo_sqlsrv-4.0.5
+    
+    
+### Step 4: Add the Microsoft PHP Drivers for SQL Server to php.ini
+
+**Ubuntu**
+
+    echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
+    echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
+    echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/cli/php.ini
+	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/cli/php.ini
+
+**RedHat** 
+
+    echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php.ini
+    echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php.ini
+    echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/opt/remi/php70/php.ini
+	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/opt/remi/php70/php.ini
+	
+### Step 5: Restart Apache to load the new php.ini file
+
+**Ubuntu**
+
+	sudo service apache2 restart
+
+**RedHat**
+
+	sudo apachectl restart 
+
+### Step 6: Create your sample app
+Navigate to /var/www/html and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
+
+    <?php
+    $serverName = "yourServername";
+    $connectionOptions = array(
+        "Database" => "yourPassword",
+        "Uid" => "yourUsername",
+        "PWD" => "yourPassword"
+    );
+    //Establishes the connection
+    $conn = sqlsrv_connect($serverName, $connectionOptions);
+    //Select Query
+    $tsql= "SELECT @@Version as SQL_VERSION";
+    //Executes the query
+    $getResults= sqlsrv_query($conn, $tsql);
+    //Error handling
+     
+    if ($getResults == FALSE)
+        die(FormatErrors(sqlsrv_errors()));
+    ?> 
+     <h1> Results : </h1>
+     <?php
+    while ($row = sqlsrv_fetch_array($getResults, SQLSRV_FETCH_ASSOC)) {
+        echo ($row['SQL_VERSION']);
+        echo ("<br/>");
+    }
+    sqlsrv_free_stmt($getResults);
+    function FormatErrors( $errors )  
+    {  
+        /* Display errors. */  
+        echo "Error information: <br/>";  
+      
+        foreach ( $errors as $error )  
+        {  
+            echo "SQLSTATE: ".$error['SQLSTATE']."<br/>";  
+            echo "Code: ".$error['code']."<br/>";  
+            echo "Message: ".$error['message']."<br/>";  
+        }  
+    }  
+    ?>
+    
+### Step 7: Run your sample app
+
+Go to your browser and type in http://localhost/testsql.php
+You should be able to connect to your SQL Server/Azure SQL Database and see the following results
+
+
+The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. If you wish to install Apache from source, follow these instructions:
+
 ##Announcements
 
 **October 25, 2016**: Linux drivers (4.0.6) compiled with PHP 7.0.12 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. Here is the list of updates and fixes:
@@ -79,113 +255,6 @@ SQL Server Team
 
 June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLSRV drivers for Linux with basic functionalities is now available. The SQLSRV driver has been built and tested on Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2, and PDO_SQLSRV driver has been built and tested on Ubuntu 15.04, Ubuntu 16.04.
 
-
-## Install
-
-####Prerequisites
-
-- A Web server such as Apache is required. Your Web server must be configured to run PHP. See below for information on installing Apache to work with the drivers.
-- [Microsoft ODBC Driver 13 for Linux][odbcLinux], you can install ODBC drivers using [ODBC command line installers][ODBCinstallers], or [ODBC install scripts](https://github.com/Microsoft/msphpsql/tree/PHP-7.0-Linux/ODBC%20install%20scripts).
-- 64-bit [UnixODBC 2.3.1 driver manager][LinuxDM], built for 64-bit SQLLEN/SQLULEN.
-- If building PHP from source, you need libraries required to [build PHP][PHPMan].
-
-####Tutorial
-- Follow the steps on [Microsoft Drivers for PHP for SQL Server Team Blog](https://blogs.msdn.microsoft.com/sqlphp/2016/10/10/getting-started-with-php-7-sql-server-and-azure-sql-database-on-linux-ubuntu-with-apache/) to easily configure your environment and install PHP drivers. For detailed instructions please review the tutorial [here](https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md). 
-
-
-The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. If you wish to install Apache from source, follow these instructions:
-
-
-1. Download the source from [Apache.org][httpd_source]. Unzip the source to a local directory. 
-
-2. Download the [Apache Portable Runtime (APR) and Utility][apr_source]. Unzip the APR source into srclib/apr and the APR-Util source into srclib/apr-util in your Apache directory from Step 1.
-
-3. If you have the thread safe binaries, run `./configure --enable-so --with-mpm=worker`. If you have the non-thread safe binaries, run `./configure --enable-so --with-mpm=prefork`.
-
-4. Run `make` and `sudo make install`.
-
-Install [Microsoft ODBC Driver 13 on Linux][odbcLinux] and Driver manager using the instructions on MSDN. Run `sqlcmd -S <myserver> -d <mydatabase> -U <myusername> -P <mypassword> -I` to make sure ODBC driver and driver manager have been installed successfully.
-
-Now you are ready to install PHP.
-
-- Method 1: Using your package  manager:
-
-	Make sure the packaged  PHP version is PHP 7. You may need to add repositories to obtain PHP 7 as described in the [tutorial]((https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md)).
-    
-	1. Use your package manager to install the php package and if you are installing PDO_SQLSRV drivers install the php-pdo package.
-	2. Copy the precompiled binaries into the extensions directory (likely in /usr/lib/php).
-	3. Edit the php.ini file as indicated  in the "Enable the drivers" section.
-
-- Method 2: Using the PHP source:
-
-	Download the PHP 7 source and unzip it to a local directory. Then follow the steps below:
-
-    1. Switch to the PHP directory and run `./buildconf --force`. You may need to install autoconf with your package manager prior to this step.
-
-    2. Run `./configure` with the following options on the command line:
-      
-       (i) the path to apxs or apxs2 to configure PHP for Apache using `--with-apxs2=<path-to-apxs>`. To find the path to apxs (or apxs2), run `sudo find / -name apxs` (or `sudo find / -name apxs2`) and add the resulting path to the option. For example, if the find command yields `/usr/bin/apxs2`, add `--with-apxs2=/usr/bin/apxs2` to the `./configure` command line. 
-       (ii) if your web server has thread safety enabled, specify a thread-safe build of PHP. Add `--enable-maintainer-zts` to `./configure`. 
-
-      Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> --enable-maintainer-zts`.
-
-      If your `./configure` command exits with an error saying it cannot find xml2-config, you may need to install libxml2-dev using your package manager before continuing.
-
-	3. Run `make` and then put the precompiled binaries into the < php_source_directory >/modules/ directory.
-
-	4. Run `make install` to install the binaries into the default php extensions directory.
-
-- Method 3: Compile the drivers from source along with PHP:
-
-	Download the PHP 7 source and unzip it to a local directory. Then follow the steps below:
-
-    1. Switch to the PHP directory and unzip the Linux driver sources to the `ext/` directory. There are two directories, `sqlsrv/` and `pdo_sqlsrv/`. Run `./buildconf --force`. You may need to install autoconf with your package-manager prior to this step.
-
-    2. Run `./configure` with the same options listed above, in addition to the following:
-    
-      (i) `CXXFLAGS=-std=c++11` to ensure your compiler uses the C++11 standard. 
-      (ii) `--enable-sqlsrv=shared `
-      (iii)`--with-pdo_sqlsrv=shared` 
-
-
-      Thus your `./configure` command should look like `./configure --with-apxs2=<path-to-apxs-executable> CXXFLAGS=-std=c++11 --enable-sqlsrv=shared --with-pdo_sqlsrv=shared`. 
-
-   3. Run `make`. The compiled drivers will be located in the `modules/` directory, and are named `sqlsrv.so` and `pdo_sqlsrv.so`.       
-
-   4. Run `sudo make install` to install the binaries into the default php extensions directory.
-
-- Method 4: Compile the drivers from source with phpize:
-
-	Make sure that [phpize](http://php.net/manual/en/install.pecl.phpize.php) is properly installed.
-
-    1. Switch to the source directory of the extension you want to install, e.g. `source/sqlsrv` or `source/pdo_sqlsrv`.
-
-    2. Run `phpize && ./configure CXXFLAGS=-std=c++11 && make` to compile the extension.
-
-    3. Run `sudo make install` to install the binaries into the default php extensions directory.
-    
-- Method 5: install the drivers with PECL:
-
-1. Use your package manager to install the php package and if you are installing PDO_SQLSRV drivers install the php-pdo package. Make sure the packaged  PHP version is PHP 7. You may need to add repositories to obtain PHP 7 as described in the [tutorial]((https://github.com/Azure/msphpsql/blob/PHP-7.0-Linux/LinuxTutorial.md)).
-
-2. Use your package manager and install `php-pear` and  `php-dev`.
-
-3.   Run `pecl search sqlsrv`, you should get the list of sqlsrv and pdo_sqlsrv packages with their associated version. For example, `pdo_sqlsrv 4.0.5 (devel)   4.0.5 Microsoft Drivers for PHP for SQL Server (PDO_SQLSRV)`.
-
- 4. Run `sudo pecl install pdo_sqlsrv-4.0.5` .
- 
-####Enable the drivers
-
-1. Make sure that the driver is in your PHP extensions directory.
-
-2. Enable it within your PHP installation's php.ini: In your local PHP directory, copy `php.ini-development` to `php.ini`. If using the SQLSRV driver, add `extension=php_sqlsrv_7_ts.so` or `extension=php_sqlsrv_7_nts.so` to `php.ini`. If using the PDO_SQLSRV driver, add `extension=php_pdo_sqlsrv_7_ts.so` or `extension=php_pdo_sqlsrv_7_nts.so`.  Modify these filenames as appropriate if you compiled the drivers from source. If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = /usr/local/bin`.
-
-3. If using Apache web server, follow the [instructions here][httpdconf] for editing your Apache configuration file.
-
-4. Restart the web server.
-
-## Sample Code
-For samples, please see the sample folder.  For setup instructions, see [here] [phpazure]
 
 ## Limitations
 
