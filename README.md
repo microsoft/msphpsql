@@ -8,6 +8,12 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improveme
 
 The Microsoft Drivers for PHP for SQL Server Team
 
+##Get Started
+
+* [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-ubuntu)
+* [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-rhel)
+* [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-windows)
+
 ##Announcements
 
 **October 25 , 2016** : Updated Windows drivers (4.1.4) compiled with PHP 7.0.12  and 7.1 are available. Here is the list of updates:
