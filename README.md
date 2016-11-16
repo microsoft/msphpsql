@@ -8,6 +8,12 @@ This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 (64-bit) with 
 
 SQL Server Team
 
+##Get Started
+
+* [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-ubuntu)
+* [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-rhel)
+* [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-windows)
+
 ##Announcements
 
 **October 25, 2016**: Linux drivers (4.0.6) compiled with PHP 7.0.12 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. Here is the list of updates and fixes:
