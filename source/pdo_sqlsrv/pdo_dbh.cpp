@@ -76,6 +76,9 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_CURSOR_SCROLL_TYPE,
     PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE,
     PDO_STMT_OPTION_EMULATE_PREPARES,
+    PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
+    PDO_STMT_OPTION_FETCHES_DECIMAL_FLOAT
+
 };
 
 // List of all the statement options supported by this driver.
@@ -88,6 +91,8 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_CURSOR_SCROLL_TYPE, std::unique_ptr<stmt_option_cursor_scroll_type>( new stmt_option_cursor_scroll_type ) },
     { NULL, 0, PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE, std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit ) },
     { NULL, 0, PDO_STMT_OPTION_EMULATE_PREPARES, std::unique_ptr<stmt_option_emulate_prepares>( new stmt_option_emulate_prepares ) },
+    { NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
+    { NULL, 0, PDO_STMT_OPTION_FETCHES_DECIMAL_FLOAT, std::unique_ptr<stmt_option_decimal_float>( new stmt_option_decimal_float ) },
 
 	{ NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -381,7 +386,9 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRM
     direct_query( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
     client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size ) ),
-	bind_param_encoding(SQLSRV_ENCODING_CHAR)
+	bind_param_encoding(SQLSRV_ENCODING_CHAR),
+    fetch_numeric( false ),
+    decimal_float( false )
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -925,6 +932,14 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, zend_long attr, zval *val TSRMLS_DC
                 driver_dbh->client_buffer_max_size = Z_LVAL_P( val );
                 break;
 
+            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+                driver_dbh->fetch_numeric = (zend_is_true(val)) ? true : false;
+                break;
+
+            case SQLSRV_ATTR_FETCHES_DECIMAL_FLOAT:
+                driver_dbh->decimal_float = (zend_is_true(val)) ? true : false;
+                break;
+
             // Not supported
             case PDO_ATTR_FETCH_TABLE_NAMES: 
             case PDO_ATTR_FETCH_CATALOG_NAMES: 
@@ -1066,6 +1081,18 @@ int pdo_sqlsrv_dbh_get_attr( pdo_dbh_t *dbh, zend_long attr, zval *return_value 
             case SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE:
             { 
                 ZVAL_LONG( return_value, driver_dbh->client_buffer_max_size );
+                break;
+            }
+
+            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_dbh->fetch_numeric );
+                break;
+            }
+
+            case SQLSRV_ATTR_FETCHES_DECIMAL_FLOAT:
+            {
+                ZVAL_BOOL( return_value, driver_dbh->decimal_float );
                 break;
             }
 
@@ -1338,6 +1365,14 @@ void add_stmt_option_key( sqlsrv_context& ctx, size_t key, HashTable* options_ht
 
          case PDO_ATTR_EMULATE_PREPARES:
              option_key = PDO_STMT_OPTION_EMULATE_PREPARES;
+             break;
+
+         case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+             option_key = PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE;
+             break;
+
+         case SQLSRV_ATTR_FETCHES_DECIMAL_FLOAT:
+             option_key = PDO_STMT_OPTION_FETCHES_DECIMAL_FLOAT;
              break;
 
          default:
