@@ -110,8 +110,8 @@ SQL Server Team
     
 ### Step 3: Install the Microsoft PHP Drivers for SQL Server
 
-    sudo pecl install sqlsrv-4.0.5
-    sudo pecl install pdo_sqlsrv-4.0.5
+    sudo pecl install sqlsrv-4.0.7
+    sudo pecl install pdo_sqlsrv-4.0.7
     
     
 ### Step 4: Add the Microsoft PHP Drivers for SQL Server to php.ini
