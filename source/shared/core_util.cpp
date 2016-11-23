@@ -157,7 +157,7 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inStri
 
     // calculate the number of characters needed
 #ifdef __linux__
-    cchOutLen = SystemLocale::FromUtf16( encoding, inString, cchInLen, NULL, 0 );
+    cchOutLen = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, NULL, 0 );
 #else	
     cchOutLen = WideCharToMultiByte( encoding, flags,
                                    inString, cchInLen, 
@@ -266,8 +266,15 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
                 return false;
             }
 
+#ifdef __linux__
+			// In linux we need to calculate number of characters
+			SQLLEN wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
+#else
+			// In Windows we need the size in bytes
+			SQLLEN wsqlstate_len = sizeof( wsqlstate );
+#endif
             SQLLEN sqlstate_len = 0;
-            convert_string_from_utf16(enc, wsqlstate, sizeof(wsqlstate), (char**)&error->sqlstate, sqlstate_len);
+            convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
 
             SQLLEN message_len = 0;
             convert_string_from_utf16(enc, wnative_message, wmessage_len, (char**)&error->native_message, message_len);

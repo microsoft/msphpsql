@@ -284,7 +284,6 @@ bool EncodingConverter::Initialize()
 #ifdef MPLAT_UNIX
 // MPLAT_UNIX ----------------------------------------------------------------
 #include <locale>
-#include "sqlversion.h"
 
 using namespace std;
 
@@ -315,7 +314,7 @@ int SystemLocale::GetResourcePath( char * buffer, size_t cchBuffer ) const
 {
     // XPLAT_ODBC_TODO: VSTS 718708 Localization
     // Also need to use AdjustLCID logic when handling more locales
-    return snprintf( buffer, cchBuffer, "/opt/microsoft/msodbcsql/%d.%d.%d.%d/en_US/", VER_SQL_MAJOR, VER_SQL_MINOR, VER_SQL_BUILD, VER_SQL_REVISION );
+    return snprintf( buffer, cchBuffer, "/opt/microsoft/msodbcsql/share/resources/en_US/");
 }
 
 DWORD SystemLocale::CurrentTimeZoneBias( LONG * offsetInMinutes, DWORD * tzinfo ) const
@@ -408,9 +407,24 @@ size_t SystemLocale::FromUtf16( UINT destCodePage, const WCHAR * src, SSIZE_T cc
             *pErrorCode = ERROR_INVALID_PARAMETER;
         return 0;
     }
-    size_t cchSrcActual = (cchSrc < 0 ? (1+mplat_wcslenn(src)) : cchSrc);
+    size_t cchSrcActual = (cchSrc < 0 ? (1+mplat_wcslen(src)) : cchSrc);
     bool hasLoss;
     return cvt.Convert( dest, cchDest, src, cchSrcActual, false, &hasLoss, pErrorCode );
+}
+
+size_t SystemLocale::FromUtf16Strict(UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc, char * dest, size_t cchDest, bool * pHasDataLoss, DWORD * pErrorCode)
+{
+	destCodePage = ExpandSpecialCP(destCodePage);
+	EncodingConverter cvt(destCodePage, CP_UTF16);
+	if (!cvt.Initialize())
+	{
+		if (NULL != pErrorCode)
+			*pErrorCode = ERROR_INVALID_PARAMETER;
+		return 0;
+	}
+	size_t cchSrcActual = (cchSrc < 0 ? (1 + mplat_wcslen(src)) : cchSrc);
+	bool hasLoss;
+	return cvt.Convert(dest, cchDest, src, cchSrcActual, true, &hasLoss, pErrorCode);
 }
 
 size_t SystemLocale::ToLower( const char * src, SSIZE_T cchSrc, char * dest, size_t cchDest, DWORD * pErrorCode ) const

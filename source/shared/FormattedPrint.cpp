@@ -2779,7 +2779,7 @@ char * mplat_cscpy( char * dst, const char * src )
     return( dst );
 }
 
-size_t mplat_wcslenn( const WCHAR * str )
+size_t mplat_wcslen( const WCHAR * str )
 {
     const WCHAR * eos = str;
     while( *eos++ )

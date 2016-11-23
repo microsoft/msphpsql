@@ -1292,7 +1292,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     virtual ~sqlsrv_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
-    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string = false, bool prefer_decimal_as_float = false ) = 0;
+    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string = false ) = 0;
 
 };
 

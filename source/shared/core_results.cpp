@@ -22,6 +22,8 @@
 #include <functional>
 #include <iostream>
 #include <sstream>
+#include <type_traits>
+#include <uchar.h>
 
 using namespace core;
 
@@ -83,37 +85,91 @@ SQLPOINTER read_lob_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_b
 // dtor for each row in the cache
 void cache_row_dtor(zval* data);
 
+// copy the number into a char string using the num_put facet
+template <typename Number>
+SQLRETURN get_string_from_stream( Number number_data, std::basic_string<char> &str_num, sqlsrv_error_auto_ptr& last_error )
+{
+    std::locale loc( std::locale(""), new std::num_put<char> );
+    std::basic_stringstream<char> os;
+    os.imbue( loc );
+    auto itert = std::ostreambuf_iterator<char>( os.rdbuf() );
+    std::use_facet< std::num_put<char>>( loc ).put( itert, os, ' ', number_data );
+    str_num = os.str();
+    
+    if( os.fail() ) {
+        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( 
+            ( SQLCHAR* ) "IMSSP", ( SQLCHAR* ) "Failed to convert number to string", -1 );
+        return SQL_ERROR;
+    }
+    
+    return SQL_SUCCESS;
+}
+
+// copy the Char string into the output buffer - check first that it will fit
+template <typename Char>
+SQLRETURN copy_buffer( _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length, 
+                       std::basic_string<Char> &str, sqlsrv_error_auto_ptr& last_error )
+{
+    *out_buffer_length = str.size() * sizeof( Char ); // NULL terminator is provided subsequently
+
+    if( *out_buffer_length > buffer_length ) {
+        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error(
+            ( SQLCHAR* ) "HY090", ( SQLCHAR* ) "Buffer length too small to hold number as string", -1 );
+        return SQL_ERROR;
+    }
+
+    memcpy( buffer, str.c_str(), *out_buffer_length );
+    
+    return SQL_SUCCESS;
+}
+
 // convert a number to a string using locales
 // There is an extra copy here, but given the size is short (usually <20 bytes) and the complications of
 // subclassing a new streambuf just to avoid the copy, it's easier to do the copy
+// Char can be char or char16_t, while Number can be LONG or double. Because num_put.put() does
+// not take a 32 bit int, we pass a long instead of LONG (otherwise GCC cannot resolve the overload).
+// This problem does not affect doubles.
 template <typename Char, typename Number>
-SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* out_buffer_length,
-                            sqlsrv_error_auto_ptr& last_error )
+SQLRETURN number_to_string( Number *number_data, _Out_ void* buffer, SQLLEN buffer_length,
+                            _Out_ SQLLEN* out_buffer_length, sqlsrv_error_auto_ptr& last_error )
 {
-/*
-    std::basic_ostringstream<Char> os;
-    std::locale loc;
-    os.imbue( loc );
-    std::use_facet< std::num_put< Char > >( loc ).put( std::basic_ostream<Char>::_Iter( os.rdbuf() ), os, ' ', *number_data );
-    std::use_facet< std::num_put< Char > >( loc ).put( std::ostreambuf_iterator<Char>( os.rdbuf() ), os, ' ', *number_data );
-    std::basic_string<Char>& str_num = os.str();
-
-    if( os.fail() ) {
-        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( 
-            (SQLCHAR*) "IMSSP", (SQLCHAR*) "Failed to convert number to string", -1 );
-        return SQL_ERROR;
+    std::basic_string<char> str_num;
+    SQLRETURN r;
+    
+    if ( std::is_integral<Number>::value ) 
+    {
+        long num_data = *number_data;
+        r = get_string_from_stream<long>( num_data, str_num, last_error );
+    }
+    else
+    {
+        r = get_string_from_stream<double>( *number_data, str_num, last_error );
+    }
+    
+    if ( r == SQL_ERROR ) return SQL_ERROR;
+        
+    if ( std::is_same<Char, char16_t>::value )
+    {
+        std::basic_string<char16_t> str;
+        char *str_num_ptr = &str_num[0], *str_num_end = &str_num[0]+str_num.size();
+        
+        for ( const auto &mb: str_num )
+        {
+            char16_t ch16;
+            std::mbstate_t mbs = std::mbstate_t();
+        
+            int len = mbrtoc16( &ch16, &mb, str_num_end - str_num_ptr, &mbs );
+            if ( len > 0 )
+            {
+                str.append( std::u16string( &ch16, len ) );
+                str_num_ptr += len;
+            }
+        }
+        
+        return copy_buffer<char16_t>( buffer, buffer_length, out_buffer_length, str, last_error );
     }
 
-    if( str_num.size() * sizeof(Char) + sizeof(Char) > (size_t) buffer_length ) {
-        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( 
-            (SQLCHAR*) "HY090", (SQLCHAR*) "Buffer length too small to hold number as string", -1 );
-        return SQL_ERROR;
-    }
-
-    *out_buffer_length = str_num.size() * sizeof(Char) + sizeof(Char); // include NULL terminator
-    memcpy( buffer, str_num.c_str(), *out_buffer_length );
-*/
-    return SQL_SUCCESS;
+    return copy_buffer<char>( buffer, buffer_length, out_buffer_length, str_num, last_error );
 }
 
 template <typename Number, typename Char>
@@ -828,7 +884,7 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_system_string( SQLSMALLINT field
     unsigned char* row = get_row();
     double* double_data = reinterpret_cast<double*>( &row[ meta[ field_index ].offset ] );
 
-    return number_to_string<char>( double_data, buffer, buffer_length, out_buffer_length, last_error );
+    return number_to_string<char, double>( double_data, buffer, buffer_length, out_buffer_length, last_error );
 }
 
 SQLRETURN sqlsrv_buffered_result_set::double_to_wide_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
@@ -840,7 +896,7 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_wide_string( SQLSMALLINT field_i
     unsigned char* row = get_row();
     double* double_data = reinterpret_cast<double*>( &row[ meta[ field_index ].offset ] );
 
-    return number_to_string<WCHAR>( double_data, buffer, buffer_length, out_buffer_length, last_error );
+    return number_to_string<char16_t, double>( double_data, buffer, buffer_length, out_buffer_length, last_error );
 }
 
 SQLRETURN sqlsrv_buffered_result_set::long_to_double( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
@@ -867,7 +923,7 @@ SQLRETURN sqlsrv_buffered_result_set::long_to_system_string( SQLSMALLINT field_i
     unsigned char* row = get_row();
     LONG* long_data = reinterpret_cast<LONG*>( &row[ meta[ field_index ].offset ] );
 
-    return number_to_string<char>( long_data, buffer, buffer_length, out_buffer_length, last_error );
+    return number_to_string<char, LONG>( long_data, buffer, buffer_length, out_buffer_length, last_error );
 }
 
 SQLRETURN sqlsrv_buffered_result_set::long_to_wide_string( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 
@@ -879,7 +935,7 @@ SQLRETURN sqlsrv_buffered_result_set::long_to_wide_string( SQLSMALLINT field_ind
     unsigned char* row = get_row();
     LONG* long_data = reinterpret_cast<LONG*>( &row[ meta[ field_index ].offset ] );
 
-    return number_to_string<WCHAR>( long_data, buffer, buffer_length, out_buffer_length, last_error );
+    return number_to_string<char16_t, LONG>( long_data, buffer, buffer_length, out_buffer_length, last_error );
 }
 
 SQLRETURN sqlsrv_buffered_result_set::string_to_double( SQLSMALLINT field_index, _Out_ void* buffer, SQLLEN buffer_length, 

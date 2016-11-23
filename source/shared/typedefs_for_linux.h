@@ -104,6 +104,6 @@ typedef HINSTANCE HMODULE;  /* HMODULEs can be used in place of HINSTANCEs */
 //From sqlext.h
 #define SQL_GUID            (-11)
 
-size_t      mplat_wcslenn( const WCHAR * );
+size_t      mplat_wcslen( const WCHAR * );
 
 #endif // __linux_typedefs__
