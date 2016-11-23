@@ -1,5 +1,6 @@
 //---------------------------------------------------------------------------------------------------------------------------------
-// File: sqlversion.h
+// File: version.h
+// Contents: Version number constants
 //
 // Microsoft Drivers 4.0 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
@@ -15,40 +16,20 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#ifndef _SQLVERSION_H_
-#define _SQLVERSION_H_
+// helper macros to stringify the a macro value
+#define STRINGIFY(a) TOSTRING(a)
+#define TOSTRING(a) #a
 
-#define USE_SQL_VERSION 1
+#define SQLVERSION_MAJOR 4
+#define SQLVERSION_MINOR 0
+#define SQLVERSION_RELEASE 7
+#define SQLVERSION_BUILD 0
 
-#define VER_SQL_MAJOR  13
-#define VER_SQL_MINOR  0
+#define VER_FILEVERSION_STR     STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE ) "." STRINGIFY( SQLVERSION_BUILD ) 
+#define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_RELEASE,SQLVERSION_BUILD
+#define PHP_SQLSRV_VERSION      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE )
+#define PHP_PDO_SQLSRV_VERSION  PHP_SQLSRV_VERSION
 
-#define VER_SQL_BUILD  0
-#define VER_SQL_REVISION  0
 
 
-#define VER_SQL_ASSEMBLY_MAJOR  13
-#define VER_SQL_ASSEMBLY_MINOR  0
-#define VER_SQL_ASSEMBLY_SERVICEABILITY  0
-#define VER_SQL_ASSEMBLY_REVISION  0
 
-//
-// For GDR branch, following line must be turned on
-//
-// #define GDR_BUILD   1
-
-//
-// The associated QFE build# is decided by the released team.
-// environment variable defined in $(BASEDIR)\project.mk
-//
-// For QFE branch it's always 0.
-//
-
-#define VER_ASSOCIATED_HOTFIX_BUILD_STR   "0"
-
-//
-// VER_SP_LEVEL is used to specify Service Pack level
-//
-#define VER_SP_LEVEL  0
-
-#endif

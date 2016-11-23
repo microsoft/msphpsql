@@ -347,7 +347,9 @@ public:
     static size_t FromUtf16( UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc,
         __out_ecount_opt(cchDest) char * dest, size_t cchDest,
         bool * pHasDataLoss = NULL, DWORD * pErrorCode = NULL );
-
+	static size_t FromUtf16Strict(UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc,
+		__out_ecount_opt(cchDest) char * dest, size_t cchDest,
+		bool * pHasDataLoss = NULL, DWORD * pErrorCode = NULL);
     // Allocates destination buffer to match required size
     // Template is used so call can provide allocation policy
     // Used instead of the Windows API pattern of calling with zero dest buffer size to find
@@ -358,7 +360,8 @@ public:
     static size_t ToUtf16Strict( UINT srcCodePage, const char * src, SSIZE_T cchSrc, __deref_out_ecount(1) WCHAR ** dest, DWORD * pErrorCode = NULL );
     template< typename AllocT >
     static size_t FromUtf16( UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc, __deref_out_ecount(1) char ** dest, bool * pHasDataLoss = NULL, DWORD * pErrorCode = NULL );
-
+	template< typename AllocT >
+	static size_t FromUtf16Strict(UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc, __deref_out_ecount(1) char ** dest, bool * pHasDataLoss = NULL, DWORD * pErrorCode = NULL);
 
 
 
@@ -667,7 +670,7 @@ inline size_t SystemLocale::FromUtf16( UINT destCodePage, const WCHAR * src, SSI
             *pErrorCode = ERROR_INVALID_PARAMETER;
         return 0;
     }
-    size_t cchSrcActual = (cchSrc < 0 ? (1+mplat_wcslenn(src)) : cchSrc);
+    size_t cchSrcActual = (cchSrc < 0 ? (1+mplat_wcslen(src)) : cchSrc);
     bool hasLoss;
     return cvt.Convert< char, WCHAR, AllocT >( dest, src, cchSrcActual, false, &hasLoss, pErrorCode );
 }

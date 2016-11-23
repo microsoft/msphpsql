@@ -76,7 +76,7 @@ class EncodingConverter
         void Reset( char * buffer, size_t cchSize )
         {
             m_pBytes = buffer;
-            m_nBytesLeft = cchSize;
+            m_nBytesLeft = cchSize*sizeof(T);
         }
 
         void SkipSingleCh()
@@ -87,10 +87,9 @@ class EncodingConverter
         }
         void SkipDoubleCh()
         {
-            assert( 2*sizeof(T) <= m_nBytesLeft );
             SkipSingleCh();
-            // Only skip second half if it is non-NULL
-            if ( 0 != *(UNALIGNED T *)m_pBytes )
+            // Only skip second half if there's bytes left and it is non-NULL
+            if ( m_nBytesLeft &&  0 != *(UNALIGNED T *)m_pBytes )
                 SkipSingleCh();
         }
         void SkipUtf8Ch()
@@ -460,6 +459,7 @@ public:
                 && ERROR_INSUFFICIENT_BUFFER == rcCvt )
             {
                 cchCumulative += CCH_FIXED_SIZE;
+                cchCumulative -= dest.m_nBytesLeft;
                 dest.Reset( &fixed_buf[0], CCH_FIXED_SIZE );
             }
             if ( 0 < cchOnce )

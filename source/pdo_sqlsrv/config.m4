@@ -23,27 +23,42 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
     AC_MSG_RESULT($pdo_cv_inc_path)
   ])
 
-  sources="\
-           core_conn.cpp \
-           core_results.cpp \
-           core_stream.cpp \
+  pdo_sqlsrv_src_class="\
            pdo_dbh.cpp \
            pdo_parser.cpp \  
            pdo_util.cpp \
-           core_init.cpp \ 
-           core_stmt.cpp \
-           core_util.cpp \
            pdo_init.cpp  \
            pdo_stmt.cpp  \
-           FormattedPrint.cpp \
-           localizationimpl.cpp \
            "
+    
+  shared_src_class="\
+           shared/core_conn.cpp \
+           shared/core_results.cpp \
+           shared/core_stream.cpp \
+           shared/core_init.cpp \ 
+           shared/core_stmt.cpp \
+           shared/core_util.cpp \
+           shared/FormattedPrint.cpp \
+           shared/localizationimpl.cpp \
+           "
+  AC_MSG_CHECKING([for PDO_SQLSRV headers])
+  if test -f $srcdir/ext/pdo_sqlsrv/shared/core_sqlsrv.h; then
+    pdo_sqlsrv_inc_path=$srcdir/ext/pdo_sqlsrv/shared/
+  elif  test -f $srcdir/shared/core_sqlsrv.h; then
+    pdo_sqlsrv_inc_path=$srcdir/shared/
+  else  
+    AC_MSG_ERROR([Cannot find PDO_SQLSRV headers])
+  fi
+    AC_MSG_RESULT($pdo_sqlsrv_inc_path)
+    
+           
   CXXFLAGS="$CXXFLAGS -std=c++11"
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, PDO_SQLSRV_SHARED_LIBADD)
   AC_DEFINE(HAVE_PDO_SQLSRV, 1, [ ])
-  PHP_NEW_EXTENSION(pdo_sqlsrv, $sources, $ext_shared,,-I$pdo_cv_inc_path -std=c++11)
+  PHP_ADD_INCLUDE([$pdo_sqlsrv_inc_path])
+  PHP_NEW_EXTENSION(pdo_sqlsrv, $pdo_sqlsrv_src_class $shared_src_class, $ext_shared,,-I$pdo_cv_inc_path -std=c++11)
   PHP_SUBST(PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_EXTENSION_DEP(pdo_sqlsrv, pdo)
 fi

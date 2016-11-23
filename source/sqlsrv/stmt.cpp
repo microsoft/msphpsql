@@ -166,7 +166,7 @@ void ss_sqlsrv_stmt::new_result_set( TSRMLS_D )
 }
 
 // Returns a php type for a given sql type. Also sets the encoding wherever applicable. 
-sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream )
+sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string )
 {
     sqlsrv_phptype ss_phptype;
     ss_phptype.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
@@ -1545,6 +1545,7 @@ void convert_to_zval(sqlsrv_stmt* stmt, SQLSRV_PHPTYPE sqlsrv_php_type, void* in
 
 // put in the column size and scale/decimal digits of the sql server type
 // these values are taken from the MSDN page at http://msdn2.microsoft.com/en-us/library/ms711786(VS.85).aspx
+// for SQL_VARBINARY, SQL_VARCHAR, and SQL_WLONGVARCHAR types, see https://msdn.microsoft.com/en-CA/library/ms187993.aspx
 bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, _Out_ SQLULEN* column_size, 
                                          _Out_ SQLSMALLINT* decimal_digits )
 {
@@ -1577,10 +1578,10 @@ bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype
             break;
         case SQL_LONGVARBINARY:
         case SQL_LONGVARCHAR:
-            *column_size = LONG_MAX;
+            *column_size = INT_MAX;	
             break;
         case SQL_WLONGVARCHAR:
-            *column_size = LONG_MAX >> 1;
+            *column_size = INT_MAX >> 1;	
             break;
         case SQL_SS_XML:
             *column_size = SQL_SS_LENGTH_UNLIMITED;
@@ -1821,8 +1822,14 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, zend_long fetch_type, _O
 
 		for(int i = 0; i < num_cols; ++i) {
 
-			core::SQLColAttribute(stmt, i + 1, SQL_DESC_NAME, field_name_temp, SS_MAXCOLNAMELEN + 1, &field_name_len, NULL
-								   TSRMLS_CC);
+#ifdef __linux__
+            //This is a workaround! Driver manager in Linux fails to properly convert to SQLColAttributeW.
+			core::SQLColAttribute( stmt, i + 1, SQL_DESC_NAME, field_name_temp, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len, NULL
+								   TSRMLS_CC );
+#else	
+			core::SQLColAttribute( stmt, i + 1, SQL_DESC_NAME, field_name_temp, SS_MAXCOLNAMELEN + 1, &field_name_len, NULL
+								   TSRMLS_CC );
+#endif
 			field_names[i].name = static_cast<char*>( sqlsrv_malloc( field_name_len, sizeof(char), 1 ));
 #ifdef __linux__
 			memcpy( (void*) field_names[ i ].name, field_name_temp, field_name_len );
