@@ -12,6 +12,10 @@ You can install both the unixODBC driver manager and the ODBC driver using the s
 	`sudo su`
 	`wget https://raw.githubusercontent.com/Azure/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh`
 	`sh installodbc_ubuntu.sh`
+* For Debian 8.6 (Jessie), run:
+    `sudo su`
+    `wget https://raw.githubusercontent.com/Azure/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_debian.sh`
+    `sh installodbc_debian.sh`
 * For RedHat 7.2 or CentOS 7.2, run:
 	`sudo su`
 	`wget https://raw.githubusercontent.com/Azure/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_redhat.sh`
@@ -57,7 +61,7 @@ To install from source, follow these instructions.
     
 	`./configure --enable-so --with-mpm=prefork`
 	
-    If you get a message saying that PCRE is not found, it can be installed with your package manager. Run `sudo apt-get install libpcre3-dev on Ubuntu`, or `sudo yum install pcre-devel on CentOS`.
+    If you get a message saying that PCRE is not found, it can be installed with your package manager. Run `sudo apt-get install libpcre3-dev on Ubuntu or Debian`, or `sudo yum install pcre-devel on CentOS`.
 
 5.  Run `make` and `sudo make install` to complete the installation.
 
@@ -67,7 +71,7 @@ To install from source, follow these instructions.
 
 	`sudo yum install httpd httpd-devel`
 	
-    If using Ubuntu, run the following command: 
+    If using Ubuntu or Debian, run the following command: 
 
 	`sudo apt-get install apache2 apache2-dev`
 
@@ -95,7 +99,7 @@ Now you are ready to install PHP. You can install by source or, if the packaged 
 
 	[![pic5](https://msdnshared.blob.core.windows.net/media/2016/07/image510.png)](https://msdnshared.blob.core.windows.net/media/2016/07/image510.png) 
 	
-	If your `./configure` command exits with an error saying it cannot find `xml2-config`, you need to install `libxml2-dev` using your package manager before continuing. Run the following command: `sudo yum install libxml2-devel` on Red Hat or CentOS, or `sudo apt-get install libxml2-dev` on Ubuntu.
+	If your `./configure` command exits with an error saying it cannot find `xml2-config`, you need to install `libxml2-dev` using your package manager before continuing. Run the following command: `sudo yum install libxml2-devel` on Red Hat or CentOS, or `sudo apt-get install libxml2-dev` on Ubuntu or Debian.
 
 4.  Run `make` and then copy the downloaded PHP drivers into the modules/ directory.
 
@@ -110,7 +114,7 @@ Now you are ready to install PHP. You can install by source or, if the packaged 
 
     You can alter these lines to allow different file types to be parsed as PHP files. See [http://php.net/manual/en/install.unix.apache2.php](http://php.net/manual/en/install.unix.apache2.php) for more information. 
 
-    If you installed Apache via the package manager, the Apache config file(s) may have a different structure. In Ubuntu, you can find `apache2.conf` in `/etc/apache2`. Add the above lines to this file.   
+    If you installed Apache via the package manager, the Apache config file(s) may have a different structure. In Ubuntu or Debian, you can find `apache2.conf` in `/etc/apache2`. Add the above lines to this file.   
 
 ###Install PHP from the package manager
 
@@ -120,6 +124,19 @@ Follow these steps to install from the package manager on Ubuntu:
 
 1.  Run `apt-cache show php | grep Version`. The output will look like Version: 1:7.0+35ubuntu6\. The actual version of PHP immediately follows the 1: . 
 2.  If the packaged PHP version is not PHP 7.0, you can add the [Ondrej PPA repository](https://launchpad.net/~ondrej/+archive/ubuntu/php) to install it. Run `sudo add-apt-repository ppa:ondrej/php` and then `sudo apt-get update`. 
+3.  Run `sudo apt-get install php libapache2-mod-php` to install PHP and the Apache module.
+
+Follow these steps to install from the package manager on Debian:
+1.  Run `apt-cache show php | grep Version`. The output will look like Version: 1:7.0+45ubuntu6\. The actual version of PHP immediately follows the 1: . 
+2.  If the packaged PHP version is not PHP 7.0, you can add the [extra repository Dotdeb](https://www.dotdeb.org/) to install it. Run:
+    `cat <<EOT | sudo tee /etc/apt/sources.list.d/dotdeb.list
+    deb http://packages.dotdeb.org jessie all
+    deb-src http://packages.dotdeb.org jessie all
+    EOT`
+        
+    `curl -sS https://www.dotdeb.org/dotdeb.gpg | sudo apt-key add -`
+    `sudo apt-get update -y`
+     
 3.  Run `sudo apt-get install php libapache2-mod-php` to install PHP and the Apache module.
 
 Follow these steps to install from the package manager on Red Hat/CentOS:
@@ -225,14 +242,15 @@ Finally, edit your `php.ini` file to load the PHP drivers when PHP starts.
  If you do not see sections on sqlsrv and pdo_sqlsrv extensions, these extensions are not loaded. Near the top of the PHP info page, check which `php.ini` is loaded. This may be different from the `php.ini` file loaded when running php from the command line, especially if Apache and PHP were installed from your package manager. In this case, edit the `php.ini` displayed on the PHP info page to load the extensions in the same way described above. Restart the Apache web server and verify that phpinfo() loads the sqlsrv extensions.   
 
 ####Links: 
-Microsoft PHP GitHub repository: https://github.com/Azure/msphpsql 
-UnixODBC 2.3.1 for Ubuntu: [http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz](http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz) 
-Microsoft® ODBC Driver 13 (Preview) for SQL Server® - Ubuntu Linux: [https://www.microsoft.com/en-us/download/details.aspx?id=50419](https://www.microsoft.com/en-us/download/details.aspx?id=50419) 
-Microsoft® ODBC Driver 13 (Preview) and 11 for SQL Server® - Red Hat Linux: [https://www.microsoft.com/en-us/download/details.aspx?id=36437](https://www.microsoft.com/en-us/download/details.aspx?id=36437) 
-Apache source:  [http://httpd.apache.org/download.cgi#apache24](http://httpd.apache.org/download.cgi) 
-Apache Portable Runtime (APR): [http://apr.apache.org/download.cgi](http://apr.apache.org/download.cgi) 
-PHP source download page: [http://php.net/downloads.php](http://php.net/downloads.php)
-Ondrej PPA repository: [https://launchpad.net/~ondrej/+archive/ubuntu/php](https://launchpad.net/~ondrej/+archive/ubuntu/php)
-Remi RPM repository: [http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora](http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora)
-PECL SQLSRV package: [http://pecl.php.net/package/sqlsrv](http://pecl.php.net/package/sqlsrv)
-PECL PDO_SQLSRV package: [http://pecl.php.net/package/pdo_sqlsrv](http://pecl.php.net/package/pdo_sqlsrv)
+- Microsoft PHP GitHub repository: https://github.com/Azure/msphpsql
+- UnixODBC 2.3.1 for Ubuntu: [http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz](http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz) 
+- Microsoft® ODBC Driver 13 (Preview) for SQL Server® - Ubuntu Linux: [https://www.microsoft.com/en-us/download/details.aspx?id=50419](https://www.microsoft.com/en-us/download/details.aspx?id=50419) 
+- Microsoft® ODBC Driver 13 (Preview) and 11 for SQL Server® - Red Hat Linux: [https://www.microsoft.com/en-us/download/details.aspx?id=36437](https://www.microsoft.com/en-us/download/details.aspx?id=36437) 
+- Apache source:  [http://httpd.apache.org/download.cgi#apache24](http://httpd.apache.org/download.cgi) 
+- Apache Portable Runtime (APR): [http://apr.apache.org/download.cgi](http://apr.apache.org/download.cgi) 
+- PHP source download page: [http://php.net/downloads.php](http://php.net/downloads.php)
+- Ondrej PPA repository: [https://launchpad.net/~ondrej/+archive/ubuntu/php](https://launchpad.net/~ondrej/+archive/ubuntu/php)
+- DotDeb extra repository: [https://www.dotdeb.org/](https://www.dotdeb.org/)
+- Remi RPM repository: [http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora](http://blog.remirepo.net/post/2016/02/14/Install-PHP-7-on-CentOS-RHEL-Fedora)
+- PECL SQLSRV package: [http://pecl.php.net/package/sqlsrv](http://pecl.php.net/package/sqlsrv)
+- PECL PDO_SQLSRV package: [http://pecl.php.net/package/pdo_sqlsrv](http://pecl.php.net/package/pdo_sqlsrv)
