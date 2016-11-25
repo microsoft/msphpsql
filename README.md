@@ -274,6 +274,7 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
 - This preview contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5. 
 - Binding output parameter using emulate prepare is not supported.
 - ODBC 3.52 is supported but not 3.8.
+- Connection pooling in PDO_SQLSRV is not supported.
 
 ## Known issues
 
