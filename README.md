@@ -274,12 +274,13 @@ June 20, 2016 (4.0.0): The early technical preview (ETP) for SQLSRV and PDO_SQLS
 - This preview contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5. 
 - Binding output parameter using emulate prepare is not supported.
 - ODBC 3.52 is supported but not 3.8.
+- Connection using named instances using '\' is not supported.
 - Connection pooling in PDO_SQLSRV is not supported.
+- Local encodings other than UTF-8 are not supported, and SQLSRV_ENC_CHAR only supports ASCII characters with ASCII code of 0 to 127.
 
 ## Known issues
 
 The following items have known issues:
-- Local encodings other than UTF-8 are not supported, and SQLSRV_ENC_CHAR only supports ASCII characters (0 - 127). 
 - Buffered result set only works with ASCII characters (0 - 127).
 - Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140))
 
