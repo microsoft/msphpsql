@@ -22,12 +22,12 @@ SQL Server Team
 
 	sudo apt-get install python-software-properties software-properties-common
 	sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/php
-	sudo apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring apache2 libapache2-mod-php7.0
+	sudo apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring
 	
 **Ubuntu 16.04**
 
 	apt-get update
-	sudo apt-get -y install php7.0 libapache2-mod-php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev apache2
+	sudo apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev 
 **RedHat 7**
 
 	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
@@ -46,10 +46,7 @@ SQL Server Team
 	yum update
 	yum install php70-php
 
-
-
 ### Step 2: Install  pre-requisites
-
 
 **Ubuntu 15.10**
 
