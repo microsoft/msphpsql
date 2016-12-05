@@ -5,20 +5,50 @@ In this tutorial, we will show you how to install the PHP Linux drivers for Micr
 Prior to installing the PHP Linux drivers, you must install the unixODBC driver manager, the Microsoft ODBC driver for Linux, PHP 7, and a web server. In the following, we will assume the web server is Apache. 
 
 ###Install the unixODBC driver manager and Microsoft ODBC driver for Linux
-You can install both the unixODBC driver manager and the ODBC driver using the shell script found on GitHub. Be sure to use the shell script appropriate for your Linux distribution. We do not recommend installing unixODBC from your package manager.
 
-1. Download the shell script from the PHP Linux [GitHub repository](https://github.com/Azure/msphpsql/tree/PHP-7.0-Linux/ODBC%20install%20scripts) and install them.
-* For Ubuntu 15.04 amd 16.04, run:
-	`sudo su`
-	`wget https://raw.githubusercontent.com/Azure/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh`
-	`sh installodbc_ubuntu.sh`
-* For RedHat 7.2 or CentOS 7.2, run:
-	`sudo su`
-	`wget https://raw.githubusercontent.com/Azure/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_redhat.sh`
-	`sh installodbc_redhat.sh`
-2. Verify that the ODBC driver on Linux is registered successfully by executing the following commands:
+**Ubuntu 15.10**
 
-	`odbcinst –j`
+	sudo su 
+	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+	curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+	exit
+	sudo apt-get update
+	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
+	sudo apt-get install unixodbc-dev-utf16 #this step is optional but recommended*
+	
+**Ubuntu 16.04**
+
+	sudo su 
+	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+	curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+	exit
+	sudo apt-get update
+	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
+	sudo apt-get install unixodbc-dev-utf16
+
+**RedHat 6**
+
+	sudo su
+	curl https://packages.microsoft.com/config/rhel/6/prod.repo > /etc/yum.repos.d/mssql-release.repo
+	exit
+	sudo yum update
+	sudo yum remove unixODBC #to avoid conflicts
+	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
+	sudo yum install unixODBC-utf16-devel 
+
+**RedHat 7**
+
+	sudo su
+	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
+	exit
+	sudo yum update
+	sudo yum remove unixODBC #to avoid conflicts
+	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
+	sudo yum install unixODBC-utf16-devel 
+	
+**Verify that the ODBC driver on Linux is registered successfully by executing the following commands: **
+
+    `odbcinst –j`
     `odbcinst -q -d -n "ODBC Driver 13 for SQL Server"`
 	  
  You should see output similar to the following: 
