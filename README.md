@@ -92,7 +92,7 @@ SQL Server Team
 	sudo yum install unixODBC-utf16-devel 
 
 
-*Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+. You can install PHP following the instructions here.
+*Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
 ### Step 2: Install Apache
 
