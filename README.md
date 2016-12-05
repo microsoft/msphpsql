@@ -54,45 +54,43 @@ SQL Server Team
 
 **Ubuntu 15.10**
 
-    sudo su
-	sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-wily-release/ wily main" > /etc/apt/sources.list.d/mssqlpreview.list'
-    sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
-    apt-get update
-    #If you installed the previous preview, you can upgrade using this command, apt-get --only-upgrade install msodbcsql
-	apt-get install msodbcsql unixodbc-dev-utf16 
-
+	sudo su 
+	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+	curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+	exit
+	sudo apt-get update
+	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
+	sudo apt-get install unixodbc-dev-utf16 #this step is optional but recommended*
 	
 **Ubuntu 16.04**
 
-    sudo su
-	sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main" > /etc/apt/sources.list.d/mssqlpreview.list'
-	sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
-	apt-get update
-	apt-get install msodbcsql unixodbc-dev-utf16 
+	sudo su 
+	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+	curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+	exit
+	sudo apt-get update
+	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
+	sudo apt-get install unixodbc-dev-utf16
 
 **RedHat 6**
 
 	sudo su
-	yum-config-manager --add-repo https://apt-mo.trafficmanager.net/yumrepos/mssql-rhel6-release/
-	yum-config-manager --enable mssql-rhel6-release
-	wget "http://aka.ms/msodbcrhelpublickey/dpgswdist.v1.asc"
-	rpm --import dpgswdist.v1.asc
-	yum remove unixODBC #to avoid conflicts during installation
-	yum update
-	yum install msodbcsql unixODBC-utf16-devel
-	yum groupinstall "Development Tools"
+	curl https://packages.microsoft.com/config/rhel/6/prod.repo > /etc/yum.repos.d/mssql-release.repo
+	exit
+	sudo yum update
+	sudo yum remove unixODBC #to avoid conflicts
+	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
+	sudo yum install unixODBC-utf16-devel 
 
 **RedHat 7**
 
 	sudo su
-	yum-config-manager --add-repo https://apt-mo.trafficmanager.net/yumrepos/mssql-rhel7-release/
-	yum-config-manager --enable mssql-rhel7-release
-	wget "http://aka.ms/msodbcrhelpublickey/dpgswdist.v1.asc"
-	rpm --import dpgswdist.v1.asc
-	yum remove unixODBC #to avoid conflicts during installation
-	yum update
-	yum install msodbcsql unixODBC-utf16-devel
-	yum groupinstall "Development Tools"
+	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
+	exit
+	sudo yum update
+	sudo yum remove unixODBC #to avoid conflicts
+	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
+	sudo yum install unixODBC-utf16-devel 
 
 
 *Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+. You can install PHP following the instructions here.
