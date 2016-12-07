@@ -79,6 +79,7 @@ size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* b
 
                 // use a temporary buffer to retrieve from SQLGetData since we need to translate it to UTF-8 from UTF-16
                 temp_buf = static_cast<char*>( sqlsrv_malloc( PHP_STREAM_BUFFER_SIZE ));
+                memset(temp_buf, 0, PHP_STREAM_BUFFER_SIZE);
                 get_data_buffer = temp_buf;
                 break;
             }

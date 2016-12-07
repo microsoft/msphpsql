@@ -118,7 +118,7 @@ SQLRETURN copy_buffer( _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* o
         return SQL_ERROR;
     }
 
-    memcpy( buffer, str.c_str(), *out_buffer_length );
+    memcpy_s( buffer, *out_buffer_length, str.c_str(), str.size() );
     
     return SQL_SUCCESS;
 }
@@ -232,7 +232,7 @@ sqlsrv_error* odbc_get_diag_rec( sqlsrv_stmt* odbc, SQLSMALLINT record_number )
     // convert the error into the encoding of the context
     sqlsrv_malloc_auto_ptr<SQLCHAR> sql_state;
     SQLLEN sql_state_len = 0;
-    if (!convert_string_from_utf16( enc, wsql_state, sizeof(wsql_state), (char**)&sql_state, sql_state_len )) {
+    if (!convert_string_from_utf16( enc, wsql_state, SQL_SQLSTATE_BUFSIZE, (char**)&sql_state, sql_state_len )) {
         return NULL;
     }
     
@@ -708,11 +708,9 @@ SQLRETURN sqlsrv_buffered_result_set::get_diag_field( SQLSMALLINT record_number,
     SQLSRV_ASSERT( last_error->sqlstate != NULL, 
                    "Must have a SQLSTATE in a valid last_error in sqlsrv_buffered_result_set::get_diag_field" );
 
-#ifndef __linux__
-    memcpy_s( diag_info_buffer, buffer_length, last_error->sqlstate, min( buffer_length, SQL_SQLSTATE_BUFSIZE ));
-#else
-	memcpy( diag_info_buffer, last_error->sqlstate, core_min( buffer_length, SQL_SQLSTATE_BUFSIZE ));
-#endif
+    SQLSMALLINT bufsize = ( buffer_length < SQL_SQLSTATE_BUFSIZE ) ? buffer_length : SQL_SQLSTATE_BUFSIZE;
+
+    memcpy_s( diag_info_buffer, buffer_length, last_error->sqlstate, bufsize);
 
     return SQL_SUCCESS;
 }
@@ -1145,20 +1143,12 @@ SQLRETURN sqlsrv_buffered_result_set::to_same_string( SQLSMALLINT field_index, _
     SQLSRV_ASSERT( to_copy >= 0, "Negative field length calculated in buffered result set" );
 
     if( to_copy > 0 ) {
-#ifndef __linux__	
         memcpy_s( buffer, buffer_length, field_data + read_so_far, to_copy );
-#else
-		memcpy( buffer, field_data + read_so_far, to_copy );
-#endif
         read_so_far += to_copy;
     }
     if( extra ) {
         OACR_WARNING_SUPPRESS( 26001, "Buffer length verified above" );
-#ifndef __linux__		
         memcpy_s( reinterpret_cast<SQLCHAR*>( buffer ) + to_copy, buffer_length, L"\0", extra );
-#else
-        memcpy( reinterpret_cast<SQLCHAR*>( buffer ) + to_copy, L"\0", extra ); 
-#endif
     }
 
     return r;
@@ -1242,11 +1232,7 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
     }
 
     if( to_copy > 0 ) {
-#ifndef __linux__
         memcpy_s( buffer, buffer_length, temp_string.get() + read_so_far, to_copy );
-#else
-		memcpy( buffer, temp_string.get() + read_so_far, to_copy );
-#endif
     }
     SQLSRV_ASSERT( to_copy >= 0, "Invalid field copy length" );
     OACR_WARNING_SUPPRESS( BUFFER_UNDERFLOW, "Buffer length verified above" );
@@ -1271,11 +1257,7 @@ SQLRETURN sqlsrv_buffered_result_set::to_long( SQLSMALLINT field_index, _Out_ vo
 
     unsigned char* row = get_row();
     LONG* long_data = reinterpret_cast<LONG*>( &row[ meta[ field_index ].offset ] );
-#ifndef __linux__
     memcpy_s( buffer, buffer_length, long_data, sizeof( LONG ));
-#else
-	memcpy( buffer, long_data, sizeof( LONG ));
-#endif
     *out_buffer_length = sizeof( LONG );
 
     return SQL_SUCCESS;
@@ -1289,11 +1271,7 @@ SQLRETURN sqlsrv_buffered_result_set::to_double( SQLSMALLINT field_index, _Out_ 
 
     unsigned char* row = get_row();
     double* double_data = reinterpret_cast<double*>( &row[ meta[ field_index ].offset ] );
-#ifndef __linux__
     memcpy_s( buffer, buffer_length, double_data, sizeof( double ));
-#else
-	memcpy( buffer, double_data, sizeof( double ));
-#endif
     *out_buffer_length = sizeof( double );
 
     return SQL_SUCCESS;

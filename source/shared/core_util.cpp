@@ -230,8 +230,8 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
 
     SQLRETURN r = SQL_SUCCESS;
     SQLSMALLINT wmessage_len = 0;
-    SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ];
-    SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ];
+    SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ] = { L'\0' };
+    SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ] = { L'\0' };
     SQLSRV_ENCODING enc = ctx.encoding();
 
     switch( h_type ) {

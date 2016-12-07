@@ -243,7 +243,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     // for PDO, everything is a string, so we return SQLSRV_PHPTYPE_STRING for all SQL types
-    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string );
+    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
 
     bool direct_query;                        // flag set if the query should be executed directly or prepared
     const char* direct_query_subst_string;    // if the query is direct, hold the substitution string if using named parameters

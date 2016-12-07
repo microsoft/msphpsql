@@ -535,16 +535,10 @@ bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_erro
 void pdo_sqlsrv_retrieve_context_error( sqlsrv_error const* last_error, zval* pdo_zval )
 {
     if( last_error ) {
-
         // SQLSTATE is already present in the zval.
         add_next_index_long( pdo_zval, last_error->native_code );
         add_next_index_string( pdo_zval, reinterpret_cast<char*>( last_error->native_message ));
     }
-    else {
-        add_next_index_null( pdo_zval ); /* native code */
-        add_next_index_null( pdo_zval ); /* native message */
-    }
-
 }
 
 // Formats the error message and writes to the php error log.

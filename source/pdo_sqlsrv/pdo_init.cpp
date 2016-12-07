@@ -208,10 +208,12 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
 #else
         pdo_hmodule = dlopen( PHP_DLL_NAME, RTLD_LAZY );
 #endif
+#ifndef __linux__
         if( pdo_hmodule == NULL ) {
             LOG( SEV_ERROR, "Failed to get PHP module handle.");
             return FAILURE;
         }
+#endif
     }
 
 #ifndef __linux__

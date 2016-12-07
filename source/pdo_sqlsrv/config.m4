@@ -40,6 +40,7 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
            shared/core_util.cpp \
            shared/FormattedPrint.cpp \
            shared/localizationimpl.cpp \
+           shared/StringFunctions.cpp \
            "
   AC_MSG_CHECKING([for PDO_SQLSRV headers])
   if test -f $srcdir/ext/pdo_sqlsrv/shared/core_sqlsrv.h; then

@@ -726,11 +726,8 @@ void determine_server_version( sqlsrv_conn* conn TSRMLS_DC )
     errno = 0;
     char version_major_str[ 3 ];
     SERVER_VERSION version_major;
-#ifdef __linux__	
-    memcpy( version_major_str, p, 2 );
-#else
 	memcpy_s( version_major_str, sizeof( version_major_str ), p, 2 );
-#endif
+
     version_major_str[ 2 ] = '\0';
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
 

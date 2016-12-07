@@ -38,6 +38,7 @@
 #include "ext/standard/info.h"
 
 #include "FormattedPrint.h"
+#include "StringFunctions.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -55,10 +56,6 @@
 
 #define stricmp strcasecmp
 #define strnicmp strncasecmp
-#define strcpy_s(dest, size, src) (strncpy((dest), (src), (size)))
-
-#define core_min(a,b)            (((a) < (b)) ? (a) : (b))
-
 
 #ifdef __linux__
 #define GetLastError() errno
@@ -808,7 +805,7 @@ public:
     {
         sqlsrv_error* p = src.get();
         src.transferred();
-        this->_ptr = p;
+        reset( p );
     }
 };
 
@@ -1292,7 +1289,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     virtual ~sqlsrv_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
-    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string = false ) = 0;
+    virtual sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream ) = 0;
 
 };
 
@@ -1764,13 +1761,13 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[ SQL_MAX_MESSAGE_LENGTH + 1 ];
+            SQLCHAR err_msg[ SQL_MAX_MESSAGE_LENGTH + 1 ] = { '\0' };
             SQLSMALLINT len = 0;
             
-            SQLRETURN r = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
+            SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
                                              err_msg, SQL_MAX_MESSAGE_LENGTH, &len );
 
-            CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt ) {
          
                 throw CoreException();
             }
@@ -1848,6 +1845,17 @@ namespace core {
         }
     }
 
+    inline void SQLColAttributeW( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLUSMALLINT field_identifier,
+        _Out_ SQLPOINTER field_type_char, SQLSMALLINT buffer_length,
+        _Out_ SQLSMALLINT* out_buffer_length, _Out_ SQLLEN* field_type_num TSRMLS_DC )
+    {
+        SQLRETURN r = ::SQLColAttributeW( stmt->handle(), field_index, field_identifier, field_type_char,
+            buffer_length, out_buffer_length, field_type_num );
+
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
+    }
 
     inline void SQLDescribeCol( sqlsrv_stmt* stmt, SQLSMALLINT colno, _Out_ SQLCHAR* col_name, SQLSMALLINT col_name_length,
                                 _Out_ SQLSMALLINT* col_name_length_out, SQLSMALLINT* data_type, _Out_ SQLULEN* col_size, 
@@ -1862,6 +1870,18 @@ namespace core {
         }
     }
 
+	inline void SQLDescribeColW( sqlsrv_stmt* stmt, SQLSMALLINT colno, _Out_ SQLWCHAR* col_name, SQLSMALLINT col_name_length,
+		_Out_ SQLSMALLINT* col_name_length_out, SQLSMALLINT* data_type, _Out_ SQLULEN* col_size,
+		_Out_ SQLSMALLINT* decimal_digits, _Out_ SQLSMALLINT* nullable TSRMLS_DC )
+	{
+		SQLRETURN r;
+		r = ::SQLDescribeColW( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
+			data_type, col_size, decimal_digits, nullable );
+
+		CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+			throw CoreException();
+		}
+	}
 
     inline void SQLEndTran( SQLSMALLINT handleType, sqlsrv_conn* conn, SQLSMALLINT completionType TSRMLS_DC )
     {

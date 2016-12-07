@@ -984,7 +984,7 @@ PHP_FUNCTION( sqlsrv_query )
     sqlsrv_malloc_auto_ptr<ss_sqlsrv_stmt> stmt;
     char* sql = NULL;
     hash_auto_ptr ss_stmt_options_ht;
-    int sql_len = 0;
+    size_t sql_len = 0;
     zval* options_z = NULL;
     zval* params_z = NULL;	
     zval stmt_z;
@@ -1032,7 +1032,7 @@ PHP_FUNCTION( sqlsrv_query )
         bind_params( stmt TSRMLS_CC );
 
         // execute the statement
-        core_sqlsrv_execute( stmt TSRMLS_CC, sql, sql_len );
+        core_sqlsrv_execute( stmt TSRMLS_CC, sql, static_cast<int>( sql_len ) );
        
         // register the statement with the PHP runtime 
         ss::zend_register_resource(stmt_z, stmt, ss_sqlsrv_stmt::descriptor, ss_sqlsrv_stmt::resource_name TSRMLS_CC);
