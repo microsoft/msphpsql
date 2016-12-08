@@ -28,7 +28,9 @@ before_install:
   - php --ini
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 1
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 1
   - gcc --version
+  - g++ --version
   - chmod a+x ./source/packagize.sh
   - chmod a+x ./source/buildtest.sh      
   
