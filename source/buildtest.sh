@@ -1,4 +1,5 @@
 #!/bin/bash
+cd source
 BUILDDIR=$PWD
 echo $BUILDDIR
 if [ $# -ne 0 ]; then
