@@ -26,15 +26,15 @@ env:
 
 before_install:
   - php --ini
-  - gcc --version
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 1
+  - gcc --version
 
 install:
   - wget https://raw.githubusercontent.com/Microsoft/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh
-  - sh installodbc_ubuntu.sh
+#  - sh installodbc_ubuntu.sh
   - odbcinst -j
-  - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
+#  - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
 
 before_script:
   - echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
@@ -45,6 +45,7 @@ before_script:
 script: 
   - docker ps -a 
   - ./source/packagize.sh
+  - ./source/buildtest.sh
 
 branches:
   only:
