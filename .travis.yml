@@ -46,7 +46,6 @@ before_script:
 
 script: 
   - docker ps -a 
-  - ./source/packagize.sh
   - ./source/buildtest.sh
 
 branches:
