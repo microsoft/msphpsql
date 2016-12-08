@@ -1,6 +1,6 @@
 sudo: required
 
-language: c++  
+language: php  
 compiler: gcc
 os: linux
 dist: trusty
@@ -20,12 +20,15 @@ addons:
     - g++-5
 
 env:
+  global:
   - mssql_jdbc_test_connection_properties='jdbc:sqlserver://localhost:1433;databaseName=master;username=sa;password=<YourStrong!Passw0rd>;'
   - COMPILER=g++-5
 
 before_install:
   - php --ini
   - gcc --version
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 1
 
 install:
   - wget https://raw.githubusercontent.com/Microsoft/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh
