@@ -29,7 +29,9 @@ before_install:
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 1
   - gcc --version
-
+  - chmod a+x ./source/packagize.sh
+  - chmod a+x ./source/buildtest.sh      
+  
 install:
   - wget https://raw.githubusercontent.com/Microsoft/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh
 #  - sh installodbc_ubuntu.sh
