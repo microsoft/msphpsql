@@ -27,6 +27,8 @@
 #include <iconv.h>
 #endif
 
+#include "StringFunctions.h"
+
 // XPLAT_ODBC_TODO VSTS 819733 - MPlat: Reconcile std c++ usage between platforms
 #ifdef MPLAT_UNIX
 //    #include <sal_undef.h>
@@ -731,7 +733,7 @@ int FormattedPrintA( IFormattedPrintOutput<char> * output, const char *format, v
                     /* textlen now contains length in wide chars */
                 } else {
                     if (text.sz == NULL) /* NULL passed, use special string */
-                        strncpy(text.sz, __nullstring, strlen(__nullstring));
+                        text.sz = (char*) __nullstring;
                     p = text.sz;
                     while (i-- && *p)
                         ++p;
@@ -1309,7 +1311,7 @@ int FormattedPrintW( IFormattedPrintOutput<WCHAR> * output, const WCHAR *format,
                 /* scan for null upto i characters */
                 if (flags & FL_SHORT) {
                     if (text.sz == NULL) /* NULL passed, use special string */
-                        strncpy(text.sz, __nullstring, strlen(__nullstring));
+                        text.sz = (char*) __nullstring;
                     p = text.sz;
                     for (textlen=0; textlen<i && *p; textlen++) {
 #ifdef _SAFECRT_IMPL

@@ -35,11 +35,7 @@ struct field_cache {
         // if the value is NULL, then just record a NULL pointer
         if( field_value != NULL ) {
             value = sqlsrv_malloc( field_len );
-#ifndef __linux__			
             memcpy_s( value, field_len, field_value, field_len );
-#else
-			memcpy( value, field_value, field_len );
-#endif
             len = field_len;
         }
         else {
@@ -814,18 +810,28 @@ field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT coln
     SQLSRV_ASSERT( colno >= 0, "core_sqlsrv_field_metadata: Invalid column number provided." );
 
     sqlsrv_malloc_auto_ptr<field_meta_data> meta_data;
-    SQLSMALLINT field_name_len = 0;
-    
+    sqlsrv_malloc_auto_ptr<SQLWCHAR> field_name_temp;
+    SQLSMALLINT field_len_temp = 0;
+    SQLLEN field_name_len = 0;
+
     meta_data = new ( sqlsrv_malloc( sizeof( field_meta_data ))) field_meta_data();
-    meta_data->field_name = static_cast<SQLCHAR*>( sqlsrv_malloc( SS_MAXCOLNAMELEN + 1 ));
+    field_name_temp = static_cast<SQLWCHAR*>( sqlsrv_malloc( SS_MAXCOLNAMELEN * 2 + 1 ));
+    SQLSRV_ENCODING encoding = ( (stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
+        stmt->encoding());
+	try{
+        core::SQLDescribeColW( stmt, colno + 1, field_name_temp,  SS_MAXCOLNAMELEN * 2 + 1 , &field_len_temp,
+            &( meta_data->field_type ), & ( meta_data->field_size ), & ( meta_data->field_scale ),
+            &( meta_data->field_is_nullable ) TSRMLS_CC );
+	}
+	catch ( core::CoreException& e ) {
+		throw e;
+	}
+
+    bool converted = convert_string_from_utf16( encoding, field_name_temp,
+        field_len_temp, ( char** ) &( meta_data->field_name ), field_name_len );
     
-    try {
-        core::SQLDescribeCol( stmt, colno + 1, meta_data->field_name.get(), SS_MAXCOLNAMELEN, &field_name_len, 
-                        &(meta_data->field_type), &(meta_data->field_size), &(meta_data->field_scale), 
-                        &(meta_data->field_is_nullable) TSRMLS_CC );              
-    }
-    catch( core::CoreException& e ) {
-        throw e;
+    CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
+        throw core::CoreException();
     }
 
     // depending on field type, we add the values into size or precision/scale.
@@ -895,11 +901,8 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 			else {
 
 				field_value = sqlsrv_malloc( cached->len, sizeof( char ), 1 );
-#ifdef __linux__
-				memcpy( field_value, cached->value, cached->len );
-#else
 				memcpy_s( field_value, ( cached->len * sizeof( char )), cached->value, cached->len );
-#endif
+
 				if( cached->type.typeinfo.type == SQLSRV_PHPTYPE_STRING) {
 					// prevent the 'string not null terminated' warning
 					reinterpret_cast<char*>( field_value )[ cached->len ] = '\0';
@@ -1067,8 +1070,6 @@ void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong param_num, zval* para
     // PDO doesn't need the reference count, but sqlsrv does since the stream can be live after sqlsrv_execute by sending it
     // with sqlsrv_send_stream_data.
     if( zend_hash_index_exists( Z_ARRVAL( stmt->param_streams ), param_num )) {
-        sqlsrv_stream* stream_encoding = NULL;
-        stream_encoding = reinterpret_cast<sqlsrv_stream*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->param_streams), param_num));
         core::sqlsrv_zend_hash_index_del( *stmt, Z_ARRVAL( stmt->param_streams ), param_num TSRMLS_CC );
     }
 }
@@ -1520,6 +1521,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
 		{
 			sqlsrv_malloc_auto_ptr<long> field_value_temp;
 			field_value_temp = static_cast<long*>( sqlsrv_malloc( sizeof( long )));
+			*field_value_temp = 0;
 
 			SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_LONG, field_value_temp, sizeof( long ),
 														  field_len, true /*handle_warning*/ TSRMLS_CC );
@@ -1691,7 +1693,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
 // returns false
 bool check_for_next_stream_parameter( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    int stream_index = 0;
+    zend_ulong stream_index = 0;
     SQLRETURN r = SQL_SUCCESS;
     sqlsrv_stream* stream_encoding = NULL;
     zval* param_z = NULL;
@@ -1807,6 +1809,8 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* para
         break;
         case IS_TRUE:
         case IS_FALSE:
+                sql_c_type = SQL_C_SLONG;
+                break;
         case IS_LONG:
 			//ODBC 64-bit long and integer type are 4 byte values. 
 			if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) )
@@ -1878,6 +1882,8 @@ void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV
             break;
         case IS_TRUE:
         case IS_FALSE:
+            sql_type = SQL_INTEGER;
+            break;
         case IS_LONG:
 			//ODBC 64-bit long and integer type are 4 byte values. 
 			if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) )

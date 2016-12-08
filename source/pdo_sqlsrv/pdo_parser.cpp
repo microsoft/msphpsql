@@ -142,11 +142,8 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
     // encountered an invalid key, throw error.
     sqlsrv_malloc_auto_ptr<char> key_name;
     key_name = static_cast<char*>( sqlsrv_malloc( new_len + 1 ));
-#ifdef __linux__
-    memcpy( key_name, key, new_len );
-#else
     memcpy_s( key_name, new_len + 1 ,key, new_len );
-#endif
+
     key_name[ new_len ] = '\0';  
 
 #ifdef __linux__

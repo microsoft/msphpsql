@@ -22,6 +22,7 @@
 #include "localization.hpp"
 
 #include "globalization.h"
+#include "StringFunctions.h"
 
 struct cp_iconv
 {
@@ -448,7 +449,7 @@ size_t SystemLocale::ToLower( const char * src, SSIZE_T cchSrc, char * dest, siz
             *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
         return 0;
     }
-    memcpy( dest, src, cchSrcActual );
+	memcpy_s( dest, cchSrcActual, src, cchSrcActual );
 
     use_facet< ctype< char > >(*m_pLocale).tolower( dest, dest+cchSrcActual );
     if ( NULL != pErrorCode )

@@ -17,6 +17,7 @@ if test "$PHP_SQLSRV" != "no"; then
            shared/core_util.cpp \
            shared/FormattedPrint.cpp \
            shared/localizationimpl.cpp \
+           shared/StringFunctions.cpp \
            "
     AC_MSG_CHECKING([for SQLSRV headers])
     if test -f $srcdir/ext/sqlsrv/shared/core_sqlsrv.h; then
