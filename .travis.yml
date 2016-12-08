@@ -1,0 +1,51 @@
+sudo: required
+
+language: c++  
+compiler: gcc
+os: linux
+dist: trusty
+
+php:
+  - '7.0'
+
+services:
+  - docker
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-5
+    - g++-5
+
+env:
+  - mssql_jdbc_test_connection_properties='jdbc:sqlserver://localhost:1433;databaseName=master;username=sa;password=<YourStrong!Passw0rd>;'
+  - COMPILER=g++-5
+
+before_install:
+  - php --ini
+  - gcc --version
+
+install:
+  - wget https://raw.githubusercontent.com/Microsoft/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh
+  - sh installodbc_ubuntu.sh
+  - odbcinst -j
+  - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
+
+before_script:
+  - echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+  - echo "extension = sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+  - docker pull microsoft/mssql-server-linux
+  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=<YourStrong!Passw0rd>' -p 1433:1433 -d microsoft/mssql-server-linux
+
+script: 
+  - docker ps -a 
+  - ./source/packagize.sh
+
+branches:
+  only:
+  - PHP-7.0-Linux
+
+notifications:
+  email: false
