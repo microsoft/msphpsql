@@ -2,6 +2,7 @@
 cd source
 BUILDDIR=$PWD
 echo $BUILDDIR
+/bin/bash packagize.sh
 if [ $# -ne 0 ]; then
     [[ -d $1 ]] || { echo "No such path!"; exit 1; }
     $BUILDDIR=$1
