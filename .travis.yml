@@ -44,6 +44,8 @@ install:
   - ./"ODBC install scripts"/installodbc_ubuntu.sh
   - odbcinst -j
   - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
+  - ldconfig -p | grep odbc
+  - sqlcmd -?
 
 before_script:
   - echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
