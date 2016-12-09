@@ -23,6 +23,7 @@ env:
   global:
   - mssql_jdbc_test_connection_properties='jdbc:sqlserver://localhost:1433;databaseName=master;username=sa;password=<YourStrong!Passw0rd>;'
   - COMPILER=g++-5
+  - REPORT_EXIT_STATUS=1
   - ACCEPT_EULA=Y
 
 before_install:
@@ -54,7 +55,7 @@ script:
   - docker ps -a 
   - ./source/buildtest.sh
   - php -info
-  - php ./source/sqlsrv/run-tests.php -p `which php` ./test/Autonomous/*.phpt
+  - php ./source/sqlsrv/run-tests.php -v -p `which php` ./test/Autonomous/*.phpt
 
 branches:
   only:
