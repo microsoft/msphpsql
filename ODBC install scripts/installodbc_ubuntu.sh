@@ -24,8 +24,9 @@ ldd /tmp/msodbcubuntu/msodbcsql-13.0.0.0/lib64/libmsodbcsql-13.0.so.0.0
 echo "Installing Dependencies"
 sudo apt-get -y install libssl1.0.0
 sudo apt-get -y install libgss3
-sudo echo "/usr/lib" >> /etc/ld.so.conf
+sudo sh -c "echo '/usr/lib' >> /etc/ld.so.conf"
 sudo ldconfig
+sudo ldconfig -p | grep odbc
 echo "Installing the Microsoft ODBC Driver 13 for SQL Server- Ubuntu"
 sudo bash ./install.sh install --force --accept-license
 echo "Cleaning up"
