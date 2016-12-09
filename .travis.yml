@@ -54,6 +54,7 @@ script:
   - docker ps -a 
   - ./source/buildtest.sh
   - php -info
+  - php ./source/sqlsrv/run-tests.php ./test/Autonomous/*.phpt
 
 branches:
   only:
