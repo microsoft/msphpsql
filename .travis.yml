@@ -23,16 +23,25 @@ env:
   global:
   - mssql_jdbc_test_connection_properties='jdbc:sqlserver://localhost:1433;databaseName=master;username=sa;password=<YourStrong!Passw0rd>;'
   - COMPILER=g++-5
+  - ACCEPT_EULA=Y
 
 before_install:
   - php --ini
-  - gcc --version
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 1
-
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 1
+  - gcc --version
+  - g++ --version
+  - chmod a+x ./source/packagize.sh
+  - chmod a+x ./source/buildtest.sh      
+  - sudo add-apt-repository "deb https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main"
+  - sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+  - sudo apt-get update
+  - sudo apt-get install -y msodbcsql unixodbc-dev-utf16
+ 
 install:
-  - wget https://raw.githubusercontent.com/Microsoft/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh
-  - sh installodbc_ubuntu.sh
+#  - wget https://raw.githubusercontent.com/Microsoft/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh
+#  - sh installodbc_ubuntu.sh
   - odbcinst -j
   - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
 
@@ -44,7 +53,8 @@ before_script:
 
 script: 
   - docker ps -a 
-  - ./source/packagize.sh
+  - ./source/buildtest.sh
+  - php -info
 
 branches:
   only:
