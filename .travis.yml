@@ -36,9 +36,9 @@ before_install:
   
 install:
   - wget https://raw.githubusercontent.com/Microsoft/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh
-#  - sh installodbc_ubuntu.sh
+  - sh installodbc_ubuntu.sh
   - odbcinst -j
-#  - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
+  - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
 
 before_script:
   - echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
@@ -49,6 +49,7 @@ before_script:
 script: 
   - docker ps -a 
   - ./source/buildtest.sh
+  - php -info
 
 branches:
   only:
