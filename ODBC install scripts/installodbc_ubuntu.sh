@@ -17,6 +17,10 @@ sudo make install 1> makeinstall_std.log 2> makeinstall_err.log
 echo "Downloading the Microsoft ODBC Driver 13 for SQL Server- Ubuntu"
 sudo wget -O msodbcsql-13.0.0.0.tar.gz https://meetsstorenew.blob.core.windows.net/contianerhd/Ubuntu%2013.0%20Tar/msodbcsql-13.0.0.0.tar.gz?st=2016-10-18T17%3A29%3A00Z&se=2022-10-19T17%3A29%3A00Z&sp=rl&sv=2015-04-05&sr=b&sig=cDwPfrouVeIQf0vi%2BnKt%2BzX8Z8caIYvRCmicDL5oknY%3D
 cp msodbcsql-13.0.0.0.tar.gz /tmp/msodbcubuntu/
+pwd
+ls -l
+echo "tmp"
+ls -l /tmp
 cd /tmp/msodbcubuntu/
 tar xvfz /tmp/msodbcubuntu/msodbcsql-13.0.0.0.tar.gz
 cd /tmp/msodbcubuntu/msodbcsql-13.0.0.0/
