@@ -34,14 +34,13 @@ before_install:
   - g++ --version
   - chmod a+x ./source/packagize.sh
   - chmod a+x ./source/buildtest.sh      
-  - sudo add-apt-repository "deb https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main"
-  - sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
-  - sudo apt-get update
-  - sudo apt-get install -y msodbcsql unixodbc-dev-utf16
+#  - sudo add-apt-repository "deb https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main"
+#  - sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+#  - sudo apt-get update
+#  - sudo apt-get install -y msodbcsql unixodbc-dev-utf16
  
 install:
-#  - wget https://raw.githubusercontent.com/Microsoft/msphpsql/PHP-7.0-Linux/ODBC%20install%20scripts/installodbc_ubuntu.sh
-#  - sh installodbc_ubuntu.sh
+  - sh ./"ODBC install scripts"/installodbc_ubuntu.sh
   - odbcinst -j
   - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
 
