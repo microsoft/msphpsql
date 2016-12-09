@@ -9,7 +9,7 @@ cd /tmp/msodbcubuntu/unixODBC-2.3.1/
 sudo -i export CPPFLAGS="-DSIZEOF_LONG_INT=8"
 sudo apt-get -y install g++-5
 echo "Configuring the unixODBC 2.3.1 Driver Manager"
-./configure --prefix=/usr --libdir=/usr/lib\ --sysconfdir=/etc --disable-gui --disable-drivers --enable-iconv --with-iconv-char-enc=UTF8 --with-iconv-ucode-enc=UTF16LE 1> odbc_con.log 2> make_err.log
+./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --disable-gui --disable-drivers --enable-iconv --with-iconv-char-enc=UTF8 --with-iconv-ucode-enc=UTF16LE 1> odbc_con.log 2> make_err.log
 echo "Building and Installing the unixODBC 2.3.1 Driver Manager"
 sudo make 1> make_std.log 2> make_err.log
 sudo make install 1> makeinstall_std.log 2> makeinstall_err.log
