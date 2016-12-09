@@ -9,7 +9,7 @@ cd /tmp/msodbcubuntu/unixODBC-2.3.1/
 sudo -i export CPPFLAGS="-DSIZEOF_LONG_INT=8"
 sudo apt-get -y install g++-5
 echo "Configuring the unixODBC 2.3.1 Driver Manager"
-./configure --prefix=/usr --libdir=/usr/lib64 --sysconfdir=/etc --disable-gui --disable-drivers --enable-iconv --with-iconv-char-enc=UTF8 --with-iconv-ucode-enc=UTF16LE 1> odbc_con.log 2> make_err.log
+./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --disable-gui --disable-drivers --enable-iconv --with-iconv-char-enc=UTF8 --with-iconv-ucode-enc=UTF16LE 1> odbc_con.log 2> make_err.log
 echo "Building and Installing the unixODBC 2.3.1 Driver Manager"
 sudo make 1> make_std.log 2> make_err.log
 sudo make install 1> makeinstall_std.log 2> makeinstall_err.log
@@ -24,7 +24,7 @@ ldd /tmp/msodbcubuntu/msodbcsql-13.0.0.0/lib64/libmsodbcsql-13.0.so.0.0
 echo "Installing Dependencies"
 sudo apt-get -y install libssl1.0.0
 sudo apt-get -y install libgss3
-sudo echo "/usr/lib64" >> /etc/ld.so.conf
+sudo echo "/usr/lib" >> /etc/ld.so.conf
 sudo ldconfig
 echo "Installing the Microsoft ODBC Driver 13 for SQL Server- Ubuntu"
 sudo bash ./install.sh install --force --accept-license
