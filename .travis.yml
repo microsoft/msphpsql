@@ -40,7 +40,7 @@ before_install:
 #  - sudo apt-get install -y msodbcsql unixodbc-dev-utf16
  
 install:
-  - sh ./"ODBC install scripts"/installodbc_ubuntu.sh
+  - ./"ODBC install scripts"/installodbc_ubuntu.sh
   - odbcinst -j
   - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
 
