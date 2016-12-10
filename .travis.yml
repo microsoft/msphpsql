@@ -35,6 +35,7 @@ before_install:
   - g++ --version
   - chmod a+x ./source/packagize.sh
   - chmod a+x ./source/buildtest.sh      
+  - apt list --installed | grep odbc
 #  - sudo add-apt-repository "deb https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main"
 #  - sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
 #  - sudo apt-get update
