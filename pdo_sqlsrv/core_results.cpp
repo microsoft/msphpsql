@@ -437,9 +437,9 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
             case SQL_SS_TIMESTAMPOFFSET:
             case SQL_SS_XML:
             case SQL_TYPE_TIMESTAMP:
-
                 meta[i].c_type = SQL_C_CHAR;
                 break;
+                
             case SQL_CHAR:
             case SQL_VARCHAR:
             case SQL_LONGVARCHAR:
@@ -452,6 +452,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
                     meta[i].c_type = SQL_C_CHAR;
                 }
                 break;
+                
             case SQL_SS_UDT:
             case SQL_LONGVARBINARY:
             case SQL_BINARY:
