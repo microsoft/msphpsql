@@ -18,4 +18,4 @@ print "Done";
 ?>
 
 --EXPECT--
-Done
+Done2
