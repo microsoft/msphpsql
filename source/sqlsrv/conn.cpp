@@ -28,8 +28,6 @@
 #include <string>
 #include <sstream>
 
-asdfljasdfklj compile error
-
 // *** internal variables and constants ***
 
 namespace {
