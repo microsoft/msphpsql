@@ -461,7 +461,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
                 else {
                     // If encoding is set to UTF-8, the following types are not necessarily column size.
                     // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 
-                    if ( encoding == SQLSRV_ENCODING( CP_UTF8 )) {
+                    if ( encoding == SQLSRV_ENCODING_UTF8 ) {
                         meta[i].length *= sizeof( WCHAR );
                         meta[i].length += sizeof( SQLULEN ) + sizeof( WCHAR ); // length plus null terminator space
                         offset += meta[i].length;
@@ -560,7 +560,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
             case SQL_LONGVARCHAR:
                 // If encoding is set to UTF-8, the following types are not necessarily column size.
                 // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 
-                if ( encoding == SQLSRV_ENCODING( CP_UTF8 )) {
+                if ( encoding == SQLSRV_ENCODING_UTF8 ) {
                     meta[i].c_type = SQL_C_WCHAR;
                 }
                 else {
