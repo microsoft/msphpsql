@@ -50,13 +50,14 @@ install:
 #  - sqlcmd -?
   - docker build -t msphpsql-dev -f Dockerfile-msphpsql github.com/bob1913/docker
   - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=<YourStrong!Passw0rd>' -p 1433:1433 --name=sql -d microsoft/mssql-server-linux
-  - docker run -d --link sql --name=client msphpsql-dev 
 
 before_script:
 #  - echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
 #  - echo "extension = sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
 
 script: 
+  - docker ps -a 
+  - docker run -w /REPO/msphpsql-PHP-7.0-Linux/ --link sql --name=client msphpsql-dev php ./source/sqlsrv/run-tests.php ./test/Autonomous/*.phpt
   - docker ps -a 
 #  - ./source/buildtest.sh
 #  - php -info
