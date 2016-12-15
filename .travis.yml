@@ -1,0 +1,77 @@
+sudo: required
+
+#language: php  
+#compiler: gcc
+os: linux
+dist: trusty
+
+#php:
+#  - '7.0'
+
+services:
+  - docker
+
+#addons:
+#  apt:
+#    sources:
+#    - ubuntu-toolchain-r-test
+#    packages:
+#    - gcc-5
+#    - g++-5
+
+env:
+  global:
+  - mssql_jdbc_test_connection_properties='jdbc:sqlserver://localhost:1433;databaseName=master;username=sa;password=<YourStrong!Passw0rd>;'
+  - COMPILER=g++-5
+  - REPORT_EXIT_STATUS=1
+  - ACCEPT_EULA=Y
+  - PHPSQLDIR=/REPO/msphpsql-PHP-7.0-Linux
+  - SQLSERVERHOSTNAME=sql
+
+before_install:
+#  - php --ini
+#  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
+#  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 1
+#  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 1
+#  - gcc --version
+#  - g++ --version
+#  - chmod a+x ./source/packagize.sh
+#  - chmod a+x ./source/buildtest.sh      
+#  - apt list --installed | grep odbc
+#  - sudo add-apt-repository "deb https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main"
+#  - sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+#  - sudo apt-get update
+#  - sudo apt-get install -y msodbcsql unixodbc-dev-utf16
+  - docker pull microsoft/mssql-server-linux
+ 
+install:
+#  - ./"ODBC install scripts"/installodbc_ubuntu.sh
+#  - odbcinst -j
+#  - odbcinst -q -d -n "ODBC Driver 13 for SQL Server"
+#  - ldconfig -p | grep odbc
+#  - sqlcmd -?
+  - docker build --build-arg PHPSQLDIR=$PHPSQLDIR -t msphpsql-dev -f Dockerfile-msphpsql .
+  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=<YourStrong!Passw0rd>' -p 1433:1433 --name=$SQLSERVERHOSTNAME -d microsoft/mssql-server-linux
+
+before_script:
+#  - echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+#  - echo "extension = sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+
+script: 
+  - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --link $SQLSERVERHOSTNAME --name=client msphpsql-dev
+  - docker ps -a 
+  - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/pdo_sqlsrv/*.phpt
+  - docker exec client php ./source/sqlsrv/run-tests.php ./test/sqlsrv/*.phpt
+  - docker exec client coveralls -e ./source/shared/ --gcov-options '\-lp'
+  - docker stop client
+  - docker ps -a 
+#  - ./source/buildtest.sh
+#  - php -info
+#  - php ./source/sqlsrv/run-tests.php --show-out -p `which php` ./test/Autonomous/*.phpt
+
+branches:
+  only:
+  - PHP-7.0-Linux
+
+notifications:
+  email: false
