@@ -2029,8 +2029,8 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
             char* str = Z_STRVAL_P( value_z );
             SQLLEN str_len = stmt->param_ind_ptrs[ output_param->param_num ];
-            if( str_len == SQL_NULL_DATA ) {
-				zend_string_release( Z_STR_P( value_z ));
+            if( str_len == SQL_NULL_DATA || str_len == 0 ) {
+                zend_string_release( Z_STR_P( value_z ));
                 ZVAL_NULL( value_z );
                 continue;
             }
