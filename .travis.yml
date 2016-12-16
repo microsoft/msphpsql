@@ -8,8 +8,6 @@ services:
 
 env:
   global:
-  - mssql_jdbc_test_connection_properties='jdbc:sqlserver://localhost:1433;databaseName=master;username=sa;password=<YourStrong!Passw0rd>;'
-  - COMPILER=g++-5
   - REPORT_EXIT_STATUS=1
   - ACCEPT_EULA=Y
   - PHPSQLDIR=/REPO/msphpsql-PHP-7.0-Linux
