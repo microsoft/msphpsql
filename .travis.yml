@@ -1,0 +1,37 @@
+sudo: required
+
+os: linux
+dist: trusty
+
+services:
+  - docker
+
+env:
+  global:
+  - REPORT_EXIT_STATUS=1
+  - ACCEPT_EULA=Y
+  - PHPSQLDIR=/REPO/msphpsql-PHP-7.0-Linux
+  - SQLSERVERHOSTNAME=sql
+
+before_install:
+  - docker pull microsoft/mssql-server-linux
+ 
+install:
+  - docker build --build-arg PHPSQLDIR=$PHPSQLDIR -t msphpsql-dev -f Dockerfile-msphpsql .
+  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=<YourStrong!Passw0rd>' -p 1433:1433 --name=$SQLSERVERHOSTNAME -d microsoft/mssql-server-linux
+
+script: 
+  - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --link $SQLSERVERHOSTNAME --name=client msphpsql-dev
+  - docker ps -a 
+  - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/pdo_sqlsrv/*.phpt
+  - docker exec client php ./source/sqlsrv/run-tests.php ./test/sqlsrv/*.phpt
+  - docker exec client coveralls -e ./source/shared/ --gcov-options '\-lp'
+  - docker stop client
+  - docker ps -a 
+
+branches:
+  only:
+  - PHP-7.0-Linux
+
+notifications:
+  email: false
