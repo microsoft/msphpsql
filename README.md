@@ -7,6 +7,13 @@ The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for t
 This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 (64-bit) with limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more.
 
 SQL Server Team
+###Status of Most Recent Builds
+  Travis CI (Linux) |
+  --------------------------|
+ [![tv-image][]][tv-site] |
+
+[tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=PHP-7.0-Linux
+[tv-site]: https://travis-ci.org/Microsoft/msphpsql/
 
 ##Get Started
 
