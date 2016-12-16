@@ -41,9 +41,6 @@ RUN pip install --upgrade pip && pip install cpp-coveralls
 
 #Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
 #One option is to get source from zip file of repository.
-#replace with your repository/branch as appropriate.
-#RUN curl -sSL -o PHP-7.0-Linux.zip https://github.com/bob1913/msphpsql/archive/PHP-7.0-Linux.zip
-#RUN unzip PHP-7.0-Linux.zip -d /REPO/
 
 #another option is to copy source to build directory on image
 RUN mkdir -p $PHPSQLDIR
