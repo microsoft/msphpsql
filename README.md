@@ -8,12 +8,14 @@ This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 (64-bit) with 
 
 SQL Server Team
 ###Status of Most Recent Builds
-  Travis CI (Linux) |
-  --------------------------|
- [![tv-image][]][tv-site] |
+ Travis CI (Linux) |        Coverage Status 
+ --------------------------| ------------------
+ [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
 
 [tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=PHP-7.0-Linux
 [tv-site]: https://travis-ci.org/Microsoft/msphpsql/
+[Coverage Status]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=PHP-7.0-Linux
+[coveralls-site]: https://coveralls.io/github/Microsoft/msphpsql?branch=PHP-7.0-Linux
 
 ##Get Started
 
