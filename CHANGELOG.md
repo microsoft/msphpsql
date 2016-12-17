@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
 
+## Linux 4.0.8 - 2016-12-18
+Linux drivers compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.
+
+### Added
+- Added SQLSRV_ATTR_FETCHES_NUMERIC_TYPE attribute in PDO_SQLSRV driver.
+- Added Unicode Column name support.
+
+###Fixed
+- Fixed precision issues when double data type returned as strings using buffered queries in PDO_SQLSRV driver.
+- Fixed issue with buffered cursor in PDO_SQLSRV driver when CharacterSet is UTF-8.
+- Fixed segmentation fault in error cases when error message is returned with emulate prepare attribute is set to true in PDO_SQLSRV driver.
+- Fixed issue with empty output parameters on stored procedure.
+- Fixed memeory leaks in buffered queries.
+
 
 ## Linux 4.0.7 - 2016-11-23
 Linux drivers compiled with PHP 7.0.13 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. 
