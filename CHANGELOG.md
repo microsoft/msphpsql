@@ -21,7 +21,7 @@ Linux drivers compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16
 - Fixed issue with buffered cursor in PDO_SQLSRV driver when CharacterSet is UTF-8.
 - Fixed segmentation fault in error cases when error message is returned with emulate prepare attribute is set to true in PDO_SQLSRV driver.
 - Fixed issue with empty output parameters on stored procedure.
-- Fixed memeory leaks in buffered queries.
+- Fixed memory leaks in buffered queries.
 
 
 ## Linux 4.0.7 - 2016-11-23
