@@ -1,10 +1,10 @@
 # Microsoft Drivers for PHP for SQL Server
 
-**Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7 Linux (Early Technical Preview)**
+**Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7 Linux**
 
 The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2005 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
 
-This preview contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 (64-bit) with limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more.
+This project contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 (64-bit) with limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more.
 
 SQL Server Team
 ###Status of Most Recent Builds
@@ -113,8 +113,8 @@ SQL Server Team
     
 ### Step 3: Install the Microsoft PHP Drivers for SQL Server
 
-    sudo pecl install sqlsrv-4.0.7
-    sudo pecl install pdo_sqlsrv-4.0.7
+    sudo pecl install sqlsrv-4.0.8
+    sudo pecl install pdo_sqlsrv-4.0.8
     
     
 ### Step 4: Add the Microsoft PHP Drivers for SQL Server to php.ini
@@ -149,7 +149,7 @@ Navigate to /var/www/html and create a new file called testsql.php. Copy and pas
     <?php
     $serverName = "yourServername";
     $connectionOptions = array(
-        "Database" => "yourPassword",
+        "Database" => "yourDatabase",
         "Uid" => "yourUsername",
         "PWD" => "yourPassword"
     );
@@ -195,8 +195,9 @@ The drivers are distributed as shared binary extensions for PHP. They are availa
 
 ##Announcements
 
-**November 23, 2016**: Linux drivers (4.0.7) compiled with PHP 7.0.13 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. For complete list of changes please visit [CHANGELOG](https://github.com/Microsoft/msphpsql/blob/PHP-7.0-Linux/CHANGELOG.md) file.
+**December 19, 2016**: We are delighted announce that production release for PHP Linux Driver for SQL Server is available. PECL packages (4.0.8) are updated with the latest changes, and Linux binaries (4.0.8) compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. For complete list of changes please visit [CHANGELOG](https://github.com/Microsoft/msphpsql/blob/PHP-7.0-Linux/CHANGELOG.md) file.
 
+ Please visit the [blog][blog] for more announcements.
 
 ## Limitations
 
@@ -204,13 +205,12 @@ The drivers are distributed as shared binary extensions for PHP. They are availa
 - Binding output parameter using emulate prepare is not supported.
 - ODBC 3.52 is supported but not 3.8.
 - Connection using named instances using '\' is not supported.
-- Connection pooling in PDO_SQLSRV is not supported.
 - Local encodings other than UTF-8 are not supported, and SQLSRV_ENC_CHAR only supports ASCII characters with ASCII code of 0 to 127.
 
 ## Known issues
 
 The following items have known issues:
-- Buffered result set only works with ASCII characters (0 - 127).
+- Connection pooling in PDO_SQLSRV is not supported.
 - Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140))
 
 
