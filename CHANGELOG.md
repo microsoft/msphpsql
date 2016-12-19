@@ -4,8 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
 
-## Linux 4.0.8 - 2016-12-18
-Linux drivers compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.
+## Linux 4.0.8 - 2016-12-19
+Production release of Linux drivers is available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. Here is the list of updates:
 
 ### Added
 - Added `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` attribute support in PDO_SQLSRV driver.`SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` connection attribute flag handles numeric fetches from columns with numeric Sql types (only bit, integer, smallint, tinyint, float and real). This flag can be turned on by setting its value in  `PDO::setAttribute` to `true`, For example,
@@ -14,13 +14,14 @@ Linux drivers compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16
 		  Note for exceptions:
 	 - When connection option flag `ATTR_STRINGIFY_FETCHES` is on, even when `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is on, the return value will still be string.
 	 - 	When the returned PDO type in bind column is `PDO_PARAM_INT`, the return value from a integer column will be int even if `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is off.
-- Added Unicode Column name support.
+- Added Unicode Column name support([issue #138](https://github.com/Microsoft/msphpsql/issues/138)).
 
 ###Fixed
+- Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)). 
 - Fixed precision issues when double data type returned as strings using buffered queries in PDO_SQLSRV driver.
-- Fixed issue with buffered cursor in PDO_SQLSRV driver when CharacterSet is UTF-8.
+- Fixed issue with buffered cursor in PDO_SQLSRV driver when CharacterSet is UTF-8 ([issue #192](https://github.com/Microsoft/msphpsql/issues/192)).
 - Fixed segmentation fault in error cases when error message is returned with emulate prepare attribute is set to true in PDO_SQLSRV driver.
-- Fixed issue with empty output parameters on stored procedure.
+- Fixed issue with empty output parameters on stored procedure([issue #182](https://github.com/Microsoft/msphpsql/issues/182)).
 - Fixed memory leaks in buffered queries.
 
 
