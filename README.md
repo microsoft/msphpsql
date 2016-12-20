@@ -27,36 +27,93 @@ SQL Server Team
 
 ### Step 1: Install  PHP (unless already installed)
 
-**Ubuntu 15.10**
+#### PHP 7.0
 
-	sudo apt-get install python-software-properties software-properties-common
-	sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/php
-	sudo apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring
+**Ubuntu 15.04, Ubuntu 15.10**
+
+	sudo su
+	sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
+	apt-get update
+	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
+
 	
 **Ubuntu 16.04**
 
+	sudo su
 	apt-get update
-	sudo apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev 
+	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml
+
+	
 **RedHat 7**
 
+	sudo su
 	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
 	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
 	subscription-manager repos --enable=rhel-7-server-optional-rpms
+	yum-config-manager --enable remi-php70
 	yum update
-	yum install php70-php
+	yum install php php-pdo php-xml php-pear php-devel
+
 
 **RedHat 6**
 
+	sudo su
 	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
 	wget http://rpms.remirepo.net/enterprise/remi-release-6.rpm
 	rpm -Uvh remi-release-6.rpm epel-release-latest-6.noarch.rpm
 	rhn-channel --add --channel=rhel-$(uname -i)-server-optional-6
+	yum-config-manager --enable remi-php70
 	yum update
-	yum install php70-php
+	yum install php php-pdo php-xml php-pear php-devel
+
+
+#### PHP 7.1
+
+
+**Ubuntu 16.04**
+
+	sudo su
+	add-apt-repository ppa:ondrej/php
+	apt-get update
+	apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev 
+
+**RedHat 7**
+	
+	sudo su
+	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
+	subscription-manager repos --enable=rhel-7-server-optional-rpms
+	yum-config-manager --enable remi-php71
+	yum update
+	yum install php php-pdo php-xml php-pear php-devel
+    
+**RedHat 6**
+
+	sudo su
+	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+	wget http://rpms.remirepo.net/enterprise/remi-release-6.rpm
+	rpm -Uvh remi-release-6.rpm epel-release-latest-6.noarch.rpm
+	rhn-channel --add --channel=rhel-$(uname -i)-server-optional-6
+	yum-config-manager --enable remi-php71
+	yum update
+	yum install php php-pdo php-xml php-pear php-devel
+    
+
 
 ### Step 2: Install  pre-requisites
 
+**Ubuntu 15.04**
+
+    sudo su 
+    sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-vivid-release/ vivid main" > /etc/apt/sources.list.d/mssqlpreview.list'
+    sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+    apt-get update
+    apt-get install msodbcsql
+    #for silent install use ACCEPT_EULA=Y apt-get install msodbcsql
+    sudo apt-get install unixodbc-dev-utf16 
+    
 **Ubuntu 15.10**
 
 	sudo su 
@@ -65,7 +122,8 @@ SQL Server Team
 	exit
 	sudo apt-get update
 	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
-	sudo apt-get install unixodbc-dev-utf16 #this step is optional but recommended*
+	sudo apt-get install unixodbc-dev-utf16 
+
 	
 **Ubuntu 16.04**
 
@@ -77,16 +135,6 @@ SQL Server Team
 	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
 	sudo apt-get install unixodbc-dev-utf16
 
-**RedHat 6**
-
-	sudo su
-	curl https://packages.microsoft.com/config/rhel/6/prod.repo > /etc/yum.repos.d/mssql-release.repo
-	exit
-	sudo yum update
-	sudo yum remove unixODBC #to avoid conflicts
-	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
-	sudo yum install unixODBC-utf16-devel 
-
 **RedHat 7**
 
 	sudo su
@@ -97,10 +145,22 @@ SQL Server Team
 	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
 	sudo yum install unixODBC-utf16-devel 
 
+**RedHat 6**
+
+	sudo su
+	curl https://packages.microsoft.com/config/rhel/6/prod.repo > /etc/yum.repos.d/mssql-release.repo
+	exit
+	sudo yum update
+	sudo yum remove unixODBC #to avoid conflicts
+	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
+	sudo yum install unixODBC-utf16-devel 
+
 
 *Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
-### Step 2: Install Apache
+### Step 3: Install Apache
+
+####PHP 7.0
 
 **Ubuntu**
 
@@ -110,30 +170,66 @@ SQL Server Team
 **RedHat** 
 
     sudo yum install httpd
-    
-### Step 3: Install the Microsoft PHP Drivers for SQL Server
 
-    sudo pecl install sqlsrv-4.0.8
-    sudo pecl install pdo_sqlsrv-4.0.8
-    
-    
-### Step 4: Add the Microsoft PHP Drivers for SQL Server to php.ini
+####PHP 7.1 
 
 **Ubuntu**
+	
+	sudo apt-get install libapache2-mod-php7.1 
+	sudo apt-get install apache2
+    
+**RedHat** 
 
-    echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
-    echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
-    echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/cli/php.ini
+    sudo yum install httpd 
+    
+
+### Step 4: Install the Microsoft PHP Drivers for SQL Server
+
+    sudo pecl install sqlsrv
+    sudo pecl install pdo_sqlsrv
+    
+*Note: it installs the stable version, for specific version you should set the version. For example, `sudo pecl install sqlsrv-4.0.8`
+
+       
+### Step 5: Add the Microsoft PHP Drivers for SQL Server to php.ini
+
+
+####PHP 7.0
+
+**Ubuntu**
+	
+	echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
+	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
+	echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/cli/php.ini
 	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/cli/php.ini
+
 
 **RedHat** 
 
-    echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php.ini
-    echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php.ini
-    echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/opt/remi/php70/php.ini
-	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/opt/remi/php70/php.ini
+	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
+	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
+
+
+####PHP 7.1
+
+
+**Ubuntu 16.04**
 	
-### Step 5: Restart Apache to load the new php.ini file
+	echo "extension=/usr/lib/php/20160303/sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
+	echo "extension=/usr/lib/php/20160303/pdo_sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
+	echo "extension=/usr/lib/php/20160303/sqlsrv.so" >> /etc/php/7.1/cli/php.ini
+	echo "extension=/usr/lib/php/20160303/pdo_sqlsrv.so" >> /etc/php/7.1/cli/php.ini
+
+
+
+**RedHat** 
+	
+	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
+	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
+
+
+	
+### Step 6: Restart Apache to load the new php.ini file
 
 **Ubuntu**
 
@@ -143,8 +239,8 @@ SQL Server Team
 
 	sudo apachectl restart 
 
-### Step 6: Create your sample app
-Navigate to /var/www/html and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
+### Step 7: Create your sample app
+Navigate to `/var/www/html` and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
 
     <?php
     $serverName = "yourServername";
@@ -184,14 +280,14 @@ Navigate to /var/www/html and create a new file called testsql.php. Copy and pas
         }  
     }  
     ?>
-    
-### Step 7: Run your sample app
+
+### Step 8: Run your sample app
 
 Go to your browser and type in http://localhost/testsql.php
-You should be able to connect to your SQL Server/Azure SQL Database and see the following results
+You should be able to connect to your SQL Server/Azure SQL Database.
 
 
-The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. If you wish to install Apache from source, follow these instructions:
+The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
 
 ##Announcements
 
