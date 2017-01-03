@@ -19,7 +19,6 @@
 
 #include "php_pdo_sqlsrv.h"
 #ifdef __linux__
-#include <iostream>
 #include <dlfcn.h>
 #else
 #include <psapi.h>
