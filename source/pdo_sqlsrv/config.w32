@@ -3,7 +3,7 @@
 //
 // Contents: JScript build configuration used by buildconf.bat
 //
-// Microsoft Drivers 4.0 for PHP for SQL Server
+// Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -21,13 +21,15 @@ ARG_WITH("pdo-sqlsrv", "enable Microsoft Drivers for PHP for SQL Server (PDO dri
 
 if( PHP_PDO_SQLSRV != "no" ) {
 
-    pdo_sqlsrv_src = "pdo_dbh.cpp pdo_init.cpp pdo_stmt.cpp pdo_util.cpp pdo_parser.cpp core_init.cpp core_conn.cpp core_stmt.cpp core_util.cpp core_stream.cpp core_results.cpp";
+    pdo_sqlsrv_src_class = "pdo_dbh.cpp pdo_init.cpp pdo_stmt.cpp pdo_util.cpp pdo_parser.cpp ";
+    shared_src_class = "shared\core_init.cpp shared\core_conn.cpp shared\core_stmt.cpp shared\core_util.cpp shared\core_stream.cpp shared\core_results.cpp"
 
     if (CHECK_LIB("odbc32.lib", "pdo_sqlsrv") && CHECK_LIB("odbccp32.lib", "pdo_sqlsrv") && 
        CHECK_LIB("version.lib", "pdo_sqlsrv") && CHECK_LIB("psapi.lib", "pdo_sqlsrv")) {
 
-       EXTENSION("pdo_sqlsrv",  pdo_sqlsrv_src,  PHP_PDO_SQLSRV_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1")
-
+       EXTENSION("pdo_sqlsrv",  pdo_sqlsrv_src_clas shared_src_class,  PHP_PDO_SQLSRV_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1")
+       
+       CHECK_HEADER_ADD_INCLUDE( 'core_sqlsrv.h',CFLAGS_PDO_SQLSRV, PHP_PDO_SQLSRV_SHARED, "ext\\pdo_sqlsrv\\shared" )
        CHECK_HEADER_ADD_INCLUDE('sql.h', 'CFLAGS_PDO_SQLSRV_ODBC');
        CHECK_HEADER_ADD_INCLUDE('sqlext.h', 'CFLAGS_PDO_SQLSRV_ODBC');
        ADD_FLAG( 'LDFLAGS_PDO_SQLSRV', '/NXCOMPAT /DYNAMICBASE /debug' );
