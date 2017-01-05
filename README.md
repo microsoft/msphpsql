@@ -57,17 +57,6 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	yum install php php-pdo php-xml php-pear php-devel
 
 
-**RedHat 6**
-
-	sudo su
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
-	wget http://rpms.remirepo.net/enterprise/remi-release-6.rpm
-	rpm -Uvh remi-release-6.rpm epel-release-latest-6.noarch.rpm
-	rhn-channel --add --channel=rhel-$(uname -i)-server-optional-6
-	yum-config-manager --enable remi-php70
-	yum update
-	yum install php php-pdo php-xml php-pear php-devel
-
 
 #### PHP 7.1
 
@@ -90,16 +79,6 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	yum update
 	yum install php php-pdo php-xml php-pear php-devel
     
-**RedHat 6**
-
-	sudo su
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
-	wget http://rpms.remirepo.net/enterprise/remi-release-6.rpm
-	rpm -Uvh remi-release-6.rpm epel-release-latest-6.noarch.rpm
-	rhn-channel --add --channel=rhel-$(uname -i)-server-optional-6
-	yum-config-manager --enable remi-php71
-	yum update
-	yum install php php-pdo php-xml php-pear php-devel
     
 
 
@@ -146,15 +125,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
 	sudo yum install unixODBC-utf16-devel 
 
-**RedHat 6**
 
-	sudo su
-	curl https://packages.microsoft.com/config/rhel/6/prod.repo > /etc/yum.repos.d/mssql-release.repo
-	exit
-	sudo yum update
-	sudo yum remove unixODBC #to avoid conflicts
-	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
-	sudo yum install unixODBC-utf16-devel 
 
 
 *Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
