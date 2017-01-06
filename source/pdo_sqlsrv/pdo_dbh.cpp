@@ -1357,6 +1357,7 @@ void add_stmt_option_key( sqlsrv_context& ctx, size_t key, HashTable* options_ht
 
 		 case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
 			 option_key = PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE;
+             break;
 
          default:
              CHECK_CUSTOM_ERROR( true, ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
