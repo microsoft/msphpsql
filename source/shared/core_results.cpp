@@ -20,7 +20,6 @@
 #include "core_sqlsrv.h"
 
 #include <functional>
-#include <iostream>
 #include <sstream>
 #include <type_traits>
 #include <uchar.h>
