@@ -132,10 +132,10 @@ build_script:
     - mkdir %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv\shared
     - mkdir %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv    
     - mkdir %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv\shared
-    - copy /Y %APPVEYOR_BUILD_FOLDER%\sqlsrv %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv
-    - copy /Y %APPVEYOR_BUILD_FOLDER%\shared %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv\shared
-    - copy /Y %APPVEYOR_BUILD_FOLDER%\shared %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv\shared
-    - copy /Y %APPVEYOR_BUILD_FOLDER%\pdo_sqlsrv %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv    
+    - copy /Y %APPVEYOR_BUILD_FOLDER%\source\sqlsrv %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv
+    - copy /Y %APPVEYOR_BUILD_FOLDER%\source\shared %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv\shared
+    - copy /Y %APPVEYOR_BUILD_FOLDER%\source\shared %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv\shared
+    - copy /Y %APPVEYOR_BUILD_FOLDER%\source\pdo_sqlsrv %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv    
     - cd %PHP_SDK_DIR%\php-%PHP_VERSION%-src
     - cd
     - dir 
