@@ -194,29 +194,16 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     DWORD needed = 0;
 #ifndef __linux__
     HANDLE hprocess = GetCurrentProcess();
-#endif
     HMODULE pdo_hmodule;
-
-#ifndef __linux__
     pdo_hmodule = GetModuleHandle( PDO_DLL_NAME );
-#else
-    pdo_hmodule = dlopen( PDO_DLL_NAME, RTLD_LAZY );
-#endif
-        if( pdo_hmodule == 0 ) {
-#ifndef __linux__
+    if( pdo_hmodule == 0 ) {
         pdo_hmodule = GetModuleHandle( PHP_DLL_NAME );
-#else
-        pdo_hmodule = dlopen( PHP_DLL_NAME, RTLD_LAZY );
-#endif
-#ifndef __linux__
         if( pdo_hmodule == NULL ) {
             LOG( SEV_ERROR, "Failed to get PHP module handle.");
             return FAILURE;
         }
-#endif
     }
 
-#ifndef __linux__
     pdo_register_driver = reinterpret_cast<pdo_register_func>( GetProcAddress( pdo_hmodule, "php_pdo_register_driver" ));
     if( pdo_register_driver == NULL ) {
         LOG( SEV_ERROR, "Failed to register driver." );

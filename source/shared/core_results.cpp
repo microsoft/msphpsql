@@ -195,10 +195,14 @@ SQLRETURN number_to_string( Number *number_data, _Out_ void* buffer, SQLLEN buff
             std::mbstate_t mbs = std::mbstate_t();
         
             int len = mbrtoc16( &ch16, &mb, str_num_end - str_num_ptr, &mbs );
-            if ( len > 0 )
+            if ( len > 0 || len == -3 )
             {
-                str.append( std::u16string( &ch16, len ) );
-                str_num_ptr += len;
+                //str.append( std::u16string( &ch16, len ) );
+                str.push_back( ch16 );
+                if ( len > 0 )
+                {
+                    str_num_ptr += len;
+                }
             }
         }
         
@@ -386,7 +390,8 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
     meta(NULL),
     current(0),
     last_field_index(-1),
-    read_so_far(0)
+    read_so_far(0),
+    temp_length(0)
 {
     // 10 is an arbitrary number for now for the initial size of the cache
     ALLOC_HASHTABLE( cache );
@@ -778,10 +783,12 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( SQLUSMALLINT field_index, SQLSMA
         return SQL_SUCCESS;
     }
 
+    conv_matrix_t::const_iterator conv_iter = conv_matrix.find(meta[field_index].c_type);
+
     // check to make sure the conversion type is valid
-    if( conv_matrix.find( meta[ field_index ].c_type ) == conv_matrix.end() ||
-        conv_matrix.find( meta[ field_index ].c_type )->second.find( target_type ) == 
-            conv_matrix.find( meta[ field_index ].c_type )->second.end() ) {
+    if( conv_iter == conv_matrix.end() ||
+        conv_iter->second.find( target_type ) == 
+            conv_iter->second.end() ) {
 
         last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) 
             sqlsrv_error( (SQLCHAR*) "07006", 

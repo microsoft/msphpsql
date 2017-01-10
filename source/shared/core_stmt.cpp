@@ -929,7 +929,7 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 			sqlsrv_phptype invalid;
 			invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
 			for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
-				SQLSRV_ASSERT((cached = reinterpret_cast<field_cache*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->field_cache), i))) == NULL,
+				SQLSRV_ASSERT(reinterpret_cast<field_cache*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->field_cache), i)) == NULL,
 					"Field already cached." );
 				core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field,
 									sqlsrv_php_type_out TSRMLS_CC );
