@@ -62,5 +62,6 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
   PHP_NEW_EXTENSION(pdo_sqlsrv, $pdo_sqlsrv_src_class $shared_src_class, $ext_shared,,-I$pdo_cv_inc_path -std=c++11)
   PHP_SUBST(PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_EXTENSION_DEP(pdo_sqlsrv, pdo)
+  PHP_ADD_BUILD_DIR([$ext_builddir/shared], 1)
 fi
 
