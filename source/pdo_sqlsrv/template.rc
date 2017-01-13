@@ -23,7 +23,7 @@
 
 #include "winresrc.h"
 #include "main/php_version.h"
-#include "version.h"
+#include "shared/version.h"
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
@@ -61,7 +61,7 @@ BEGIN
         BEGIN
             VALUE "Comments", "This product includes PHP software that is freely available from http://www.php.net/software/.  Copyright © 2001-2016 The PHP Group.  All rights reserved.\0"
             VALUE "CompanyName", "Microsoft Corp.\0"
-            VALUE "FileDescription", "Microsoft Drivers for PHP for SQL Server\0"
+            VALUE "FileDescription", "Microsoft Drivers for PHP for SQL Server (PDO Driver)\0"
             VALUE "FileVersion", STRVER4(SQLVERSION_MAJOR,SQLVERSION_MINOR, SQLVERSION_RELEASE, SQLVERSION_BUILD)
             VALUE "InternalName", FILE_NAME "\0"
             VALUE "LegalCopyright", "Copyright Microsoft Corporation.\0"
