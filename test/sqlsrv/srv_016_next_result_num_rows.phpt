@@ -1,3 +1,4 @@
+
 --TEST--
 Scrollable buffered result set: sqlsrv_next_result(), sqlsrv_num_rows()
 --SKIPIF--
@@ -18,6 +19,7 @@ $query = "
 
 $params = array();
 $options = array("Scrollable"=>"buffered");
+
 $stmt = sqlsrv_query($conn, $query, $params, $options);
 $row_count[] = sqlsrv_num_rows($stmt);
 
