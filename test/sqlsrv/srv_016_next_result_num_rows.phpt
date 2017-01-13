@@ -12,9 +12,9 @@ if( !$conn ) { die(print_r( sqlsrv_errors(), true)); }
 
 // Query system databases
 $query = "
-	select top (8) name, user_access_desc, is_read_only FROM sys.databases;
+	select top (8) name, is_read_only FROM sys.databases;
 	select top (11) state_desc from sys.databases; 
-	select top (201) * from sys.fn_helpcollations();";
+	select top (2) user_access_desc from sys.databases;";
 
 $params = array();
 $options = array("Scrollable"=>"buffered");
@@ -40,7 +40,7 @@ Array
 (
     [0] => 8
     [1] => 11
-    [2] => 201
+    [2] => 2
 )
 Done
 
