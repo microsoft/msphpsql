@@ -23,7 +23,7 @@
 
 #include "winresrc.h"
 #include "main/php_version.h"
-#include "version.h"
+#include "shared/version.h"
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
