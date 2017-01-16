@@ -678,13 +678,12 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
                     break;
             }
 
-			row_count++;
             if( *out_buffer_length == SQL_NULL_DATA ) {
                 set_bit( row, i );
             }
         }
 
-        SQLSRV_ASSERT( row_count < INT_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
+        SQLSRV_ASSERT( row_count < LONG_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
 
         // add it to the cache
         row_dtor_closure cl( this, row );
