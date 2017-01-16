@@ -20,7 +20,6 @@
 #include "core_sqlsrv.h"
 
 #include <functional>
-#include <iostream>
 #include <sstream>
 #include <type_traits>
 #include <uchar.h>
@@ -85,13 +84,46 @@ SQLPOINTER read_lob_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_b
 // dtor for each row in the cache
 void cache_row_dtor(zval* data);
 
+size_t get_float_precision(SQLLEN buffer_length, size_t unitsize)
+{
+    SQLSRV_ASSERT( unitsize != 0, "Invalid unit size!" );
+
+	// get to display size by removing the null terminator from buffer length
+	size_t display_size = ( buffer_length - unitsize) / unitsize;
+
+	// use the display size to determine the sql type. And if it is a double, set the precision accordingly
+	// the display sizes are set by the ODBC driver based on the precision of the sql type
+	// otherwise we can just use the default precision 
+	size_t real_display_size = 14;
+	size_t float_display_size = 24;
+	size_t real_precision = 7;
+	size_t float_precision = 15;
+	
+	// For more information about display sizes for REAL vs FLOAT/DOUBLE: https://msdn.microsoft.com/en-us/library/ms713974(v=vs.85).aspx
+	// For more information about precision: https://msdn.microsoft.com/en-us/library/ms173773.aspx
+
+	// this is the case of sql type float(24) or real
+	if ( display_size == real_display_size ) {
+		return real_precision;
+	}
+	// this is the case of sql type float(53)
+	else if ( display_size == float_display_size ) {
+		return float_precision;
+	}
+	
+	return 0;
+}
+
 // copy the number into a char string using the num_put facet
 template <typename Number>
-SQLRETURN get_string_from_stream( Number number_data, std::basic_string<char> &str_num, sqlsrv_error_auto_ptr& last_error )
+SQLRETURN get_string_from_stream( Number number_data, std::basic_string<char> &str_num, size_t precision, sqlsrv_error_auto_ptr& last_error )
 {
     //std::locale loc( std::locale(""), new std::num_put<char> );	// By default, SQL Server doesn't take user's locale into consideration
 	std::locale loc;
-    std::basic_stringstream<char> os;
+	std::basic_ostringstream<char> os;	
+	
+	os.precision( precision );
+
     os.imbue( loc );
     auto itert = std::ostreambuf_iterator<char>( os.rdbuf() );
     std::use_facet< std::num_put<char>>( loc ).put( itert, os, ' ', number_data );
@@ -137,14 +169,16 @@ SQLRETURN number_to_string( Number *number_data, _Out_ void* buffer, SQLLEN buff
     std::basic_string<char> str_num;
     SQLRETURN r;
     
+	size_t precision = 0; 
     if ( std::is_integral<Number>::value ) 
     {
         long num_data = *number_data;
-        r = get_string_from_stream<long>( num_data, str_num, last_error );
+        r = get_string_from_stream<long>( num_data, str_num, precision, last_error );
     }
     else
     {
-        r = get_string_from_stream<double>( *number_data, str_num, last_error );
+		precision = get_float_precision( buffer_length, sizeof( Char ) );
+        r = get_string_from_stream<double>( *number_data, str_num, precision, last_error );
     }
     
     if ( r == SQL_ERROR ) return SQL_ERROR;
@@ -160,10 +194,14 @@ SQLRETURN number_to_string( Number *number_data, _Out_ void* buffer, SQLLEN buff
             std::mbstate_t mbs = std::mbstate_t();
         
             int len = mbrtoc16( &ch16, &mb, str_num_end - str_num_ptr, &mbs );
-            if ( len > 0 )
+            if ( len > 0 || len == -3 )
             {
-                str.append( std::u16string( &ch16, len ) );
-                str_num_ptr += len;
+                //str.append( std::u16string( &ch16, len ) );
+                str.push_back( ch16 );
+                if ( len > 0 )
+                {
+                    str_num_ptr += len;
+                }
             }
         }
         
@@ -351,7 +389,8 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
     meta(NULL),
     current(0),
     last_field_index(-1),
-    read_so_far(0)
+    read_so_far(0),
+    temp_length(0)
 {
     // 10 is an arbitrary number for now for the initial size of the cache
     ALLOC_HASHTABLE( cache );
@@ -394,6 +433,9 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
         conv_matrix[ SQL_C_DOUBLE ][ SQL_C_WCHAR ] = &sqlsrv_buffered_result_set::double_to_wide_string;
     }
 
+    SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
+        stmt->encoding());
+
     // get the meta data and calculate the size of a row buffer
     SQLULEN offset = null_bytes;
     for( SQLSMALLINT i = 0; i < col_count; ++i ) {
@@ -415,13 +457,30 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
                 meta[i].length += sizeof( char ) + sizeof( SQLULEN ); // null terminator space
                 offset += meta[i].length;
                 break;
+            case SQL_CHAR:
+            case SQL_VARCHAR:
+                if ( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
+                    offset += sizeof( void* );
+                }
+                else {
+                    // If encoding is set to UTF-8, the following types are not necessarily column size.
+                    // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 
+                    if ( encoding == SQLSRV_ENCODING_UTF8 ) {
+                        meta[i].length *= sizeof( WCHAR );
+                        meta[i].length += sizeof( SQLULEN ) + sizeof( WCHAR ); // length plus null terminator space
+                        offset += meta[i].length;
+                    }
+                    else {
+                        meta[i].length += sizeof( SQLULEN ) + sizeof( char ); // length plus null terminator space
+                        offset += meta[i].length;
+                    }
+                }
+                break;
 
             // these types are the column size
             case SQL_BINARY:
-            case SQL_CHAR:
             case SQL_SS_UDT:
             case SQL_VARBINARY:
-            case SQL_VARCHAR:
                 // var* field types are length prefixed
                 if( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
                     offset += sizeof( void* );
@@ -488,19 +547,29 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
         switch( meta[i].type ) {
 
             case SQL_BIGINT:
-            case SQL_CHAR:
             case SQL_DATETIME:
             case SQL_DECIMAL:
             case SQL_GUID:
             case SQL_NUMERIC:
-            case SQL_LONGVARCHAR:
             case SQL_TYPE_DATE:
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
             case SQL_SS_XML:
             case SQL_TYPE_TIMESTAMP:
-            case SQL_VARCHAR:
                 meta[i].c_type = SQL_C_CHAR;
+                break;
+                
+            case SQL_CHAR:
+            case SQL_VARCHAR:
+            case SQL_LONGVARCHAR:
+                // If encoding is set to UTF-8, the following types are not necessarily column size.
+                // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 
+                if ( encoding == SQLSRV_ENCODING_UTF8 ) {
+                    meta[i].c_type = SQL_C_WCHAR;
+                }
+                else {
+                    meta[i].c_type = SQL_C_CHAR;
+                }
                 break;
 
             case SQL_SS_UDT:
@@ -713,10 +782,12 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( SQLUSMALLINT field_index, SQLSMA
         return SQL_SUCCESS;
     }
 
+    conv_matrix_t::const_iterator conv_iter = conv_matrix.find(meta[field_index].c_type);
+
     // check to make sure the conversion type is valid
-    if( conv_matrix.find( meta[ field_index ].c_type ) == conv_matrix.end() ||
-        conv_matrix.find( meta[ field_index ].c_type )->second.find( target_type ) == 
-            conv_matrix.find( meta[ field_index ].c_type )->second.end() ) {
+    if( conv_iter == conv_matrix.end() ||
+        conv_iter->second.find( target_type ) == 
+            conv_iter->second.end() ) {
 
         last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) 
             sqlsrv_error( (SQLCHAR*) "07006", 

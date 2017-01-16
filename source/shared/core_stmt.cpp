@@ -929,7 +929,7 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 			sqlsrv_phptype invalid;
 			invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
 			for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
-				SQLSRV_ASSERT((cached = reinterpret_cast<field_cache*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->field_cache), i))) == NULL,
+				SQLSRV_ASSERT(reinterpret_cast<field_cache*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->field_cache), i)) == NULL,
 					"Field already cached." );
 				core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field,
 									sqlsrv_php_type_out TSRMLS_CC );
@@ -2029,8 +2029,8 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
             char* str = Z_STRVAL_P( value_z );
             SQLLEN str_len = stmt->param_ind_ptrs[ output_param->param_num ];
-            if( str_len == SQL_NULL_DATA ) {
-				zend_string_release( Z_STR_P( value_z ));
+            if( str_len == SQL_NULL_DATA || str_len == 0 ) {
+                zend_string_release( Z_STR_P( value_z ));
                 ZVAL_NULL( value_z );
                 continue;
             }
