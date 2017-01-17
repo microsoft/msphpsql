@@ -488,7 +488,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
     // read the data into the cache
     // (offset from the above loop has the size of the row buffer necessary)
     zend_long mem_used = 0;
-    unsigned long row_count = 0;
+    size_t row_count = 0;
 
     while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC ) != SQL_NO_DATA ) {
         
@@ -559,13 +559,14 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
                     break;
             }
 
+            row_count++;
             if( *out_buffer_length == SQL_NULL_DATA ) {
                 unsigned char* null_bits = reinterpret_cast<unsigned char*>( row );
                 set_bit( row, i );
             }
         }
 
-        SQLSRV_ASSERT( row_count < LONG_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
+        SQLSRV_ASSERT( row_count < INT_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
 
         // add it to the cache
         row_dtor_closure cl( this, row );
