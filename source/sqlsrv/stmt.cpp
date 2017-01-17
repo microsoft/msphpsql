@@ -1815,39 +1815,34 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, zend_long fetch_type, _O
 	// store them off for successive fetches.
 	if(( fetch_type & SQLSRV_FETCH_ASSOC ) && stmt->fetch_field_names == NULL ) {
 
-		SQLLEN field_name_len = 0;
+        SQLLEN field_name_len = 0;
         SQLSMALLINT field_name_len_w = 0;
-		SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2 ] = { L'\0' };
+        SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2 ] = { L'\0' };
         sqlsrv_malloc_auto_ptr<char> field_name;
-		sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
-		field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
-        SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
-            stmt->encoding());
-		for( int i = 0; i < num_cols; ++i ) {
+        sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
+        field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
+        SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
+        for( int i = 0; i < num_cols; ++i ) {
 
-			core::SQLColAttributeW( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL
-								   TSRMLS_CC );
-
-            bool converted = convert_string_from_utf16( encoding, field_name_w,
-                field_name_len_w, ( char** ) &field_name, field_name_len );
-
+            core::SQLColAttributeW( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL TSRMLS_CC );
+            bool converted = convert_string_from_utf16( encoding, field_name_w, field_name_len_w, ( char** ) &field_name, field_name_len );
             CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
                 throw core::CoreException();
             }
 
-			field_names[i].name = static_cast<char*>( sqlsrv_malloc( field_name_len, sizeof( char ), 1 ));
-			memcpy_s(( void* )field_names[i].name, ( field_name_len * sizeof( char )) , ( void* ) field_name, field_name_len );
-			field_names[i].name[field_name_len] = '\0';  // null terminate the field name since SQLColAttribute doesn't.
-			field_names[i].len = field_name_len + 1;
+            field_names[i].name = static_cast<char*>( sqlsrv_malloc( field_name_len, sizeof( char ), 1 ));
+            memcpy_s(( void* )field_names[i].name, ( field_name_len * sizeof( char )) , ( void* ) field_name, field_name_len );
+            field_names[i].name[field_name_len] = '\0';  // null terminate the field name since SQLColAttribute doesn't.
+            field_names[i].len = field_name_len + 1;
             field_name.reset();
-		}
+        }
+		
+        stmt->fetch_field_names = field_names;
+        stmt->fetch_fields_count = num_cols;
+        field_names.transferred();
+    }
 
-		stmt->fetch_field_names = field_names;
-		stmt->fetch_fields_count = num_cols;
-		field_names.transferred();
-	}
-
-	int zr = array_init( &fields );
+    int zr = array_init( &fields );
 	CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
 		throw ss::SSException();
 	}

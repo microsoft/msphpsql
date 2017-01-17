@@ -1817,8 +1817,8 @@ namespace core {
 
 
     inline void SQLColAttribute( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLUSMALLINT field_identifier, 
-                                      _Out_ SQLPOINTER field_type_char, SQLSMALLINT buffer_length, 
-                                      _Out_ SQLSMALLINT* out_buffer_length, _Out_ SQLLEN* field_type_num TSRMLS_DC )
+                                 _Out_ SQLPOINTER field_type_char, SQLSMALLINT buffer_length, 
+                                 _Out_ SQLSMALLINT* out_buffer_length, _Out_ SQLLEN* field_type_num TSRMLS_DC )
     {
         SQLRETURN r = ::SQLColAttribute( stmt->handle(), field_index, field_identifier, field_type_char,
                                          buffer_length, out_buffer_length, field_type_num );
@@ -1829,11 +1829,11 @@ namespace core {
     }
 
     inline void SQLColAttributeW( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLUSMALLINT field_identifier,
-        _Out_ SQLPOINTER field_type_char, SQLSMALLINT buffer_length,
-        _Out_ SQLSMALLINT* out_buffer_length, _Out_ SQLLEN* field_type_num TSRMLS_DC )
+                                  _Out_ SQLPOINTER field_type_char, SQLSMALLINT buffer_length,
+                                  _Out_ SQLSMALLINT* out_buffer_length, _Out_ SQLLEN* field_type_num TSRMLS_DC )
     {
         SQLRETURN r = ::SQLColAttributeW( stmt->handle(), field_index, field_identifier, field_type_char,
-            buffer_length, out_buffer_length, field_type_num );
+                                          buffer_length, out_buffer_length, field_type_num );
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
@@ -1854,12 +1854,12 @@ namespace core {
     }
 
 	inline void SQLDescribeColW( sqlsrv_stmt* stmt, SQLSMALLINT colno, _Out_ SQLWCHAR* col_name, SQLSMALLINT col_name_length,
-		_Out_ SQLSMALLINT* col_name_length_out, SQLSMALLINT* data_type, _Out_ SQLULEN* col_size,
-		_Out_ SQLSMALLINT* decimal_digits, _Out_ SQLSMALLINT* nullable TSRMLS_DC )
+                                 _Out_ SQLSMALLINT* col_name_length_out, SQLSMALLINT* data_type, _Out_ SQLULEN* col_size,
+                                 _Out_ SQLSMALLINT* decimal_digits, _Out_ SQLSMALLINT* nullable TSRMLS_DC )
 	{
 		SQLRETURN r;
 		r = ::SQLDescribeColW( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
-			data_type, col_size, decimal_digits, nullable );
+                               data_type, col_size, decimal_digits, nullable );
 
 		CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
 			throw CoreException();
