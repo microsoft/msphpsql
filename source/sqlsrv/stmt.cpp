@@ -164,7 +164,7 @@ void ss_sqlsrv_stmt::new_result_set( TSRMLS_D )
 }
 
 // Returns a php type for a given sql type. Also sets the encoding wherever applicable. 
-sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream, bool prefer_number_to_string )
+sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream )
 {
     sqlsrv_phptype ss_phptype;
     ss_phptype.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
@@ -1545,6 +1545,7 @@ void convert_to_zval(sqlsrv_stmt* stmt, SQLSRV_PHPTYPE sqlsrv_php_type, void* in
 
 // put in the column size and scale/decimal digits of the sql server type
 // these values are taken from the MSDN page at http://msdn2.microsoft.com/en-us/library/ms711786(VS.85).aspx
+// for SQL_VARBINARY, SQL_VARCHAR, and SQL_WLONGVARCHAR types, see https://msdn.microsoft.com/en-CA/library/ms187993.aspx
 bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype sqlsrv_type, _Out_ SQLULEN* column_size, 
                                          _Out_ SQLSMALLINT* decimal_digits )
 {
@@ -1577,10 +1578,10 @@ bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype
             break;
         case SQL_LONGVARBINARY:
         case SQL_LONGVARCHAR:
-            *column_size = LONG_MAX;
+            *column_size = INT_MAX;
             break;
         case SQL_WLONGVARCHAR:
-            *column_size = LONG_MAX >> 1;
+            *column_size = INT_MAX >> 1;
             break;
         case SQL_SS_XML:
             *column_size = SQL_SS_LENGTH_UNLIMITED;
@@ -1812,21 +1813,33 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, zend_long fetch_type, _O
 
 	// if this is the first fetch in a new result set, then get the field names and
 	// store them off for successive fetches.
-	if(( fetch_type & SQLSRV_FETCH_ASSOC ) && stmt->fetch_field_names == NULL) {
+	if(( fetch_type & SQLSRV_FETCH_ASSOC ) && stmt->fetch_field_names == NULL ) {
 
-		SQLSMALLINT field_name_len;
-		char field_name_temp[SS_MAXCOLNAMELEN + 1];
+		SQLLEN field_name_len = 0;
+        SQLSMALLINT field_name_len_w = 0;
+		SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2 ] = { L'\0' };
+        sqlsrv_malloc_auto_ptr<char> field_name;
 		sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
-		field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof(sqlsrv_fetch_field_name)));
+		field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
+        SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
+            stmt->encoding());
+		for( int i = 0; i < num_cols; ++i ) {
 
-		for(int i = 0; i < num_cols; ++i) {
+			core::SQLColAttributeW( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL
+								   TSRMLS_CC );
 
-			core::SQLColAttribute(stmt, i + 1, SQL_DESC_NAME, field_name_temp, SS_MAXCOLNAMELEN + 1, &field_name_len, NULL
-								   TSRMLS_CC);
-			field_names[i].name = static_cast<char*>( sqlsrv_malloc( field_name_len, sizeof(char), 1 ));
-			memcpy_s(( void* )field_names[i].name, ( field_name_len * sizeof( char )) ,field_name_temp, field_name_len);
+            bool converted = convert_string_from_utf16( encoding, field_name_w,
+                field_name_len_w, ( char** ) &field_name, field_name_len );
+
+            CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
+                throw core::CoreException();
+            }
+
+			field_names[i].name = static_cast<char*>( sqlsrv_malloc( field_name_len, sizeof( char ), 1 ));
+			memcpy_s(( void* )field_names[i].name, ( field_name_len * sizeof( char )) , ( void* ) field_name, field_name_len );
 			field_names[i].name[field_name_len] = '\0';  // null terminate the field name since SQLColAttribute doesn't.
 			field_names[i].len = field_name_len + 1;
+            field_name.reset();
 		}
 
 		stmt->fetch_field_names = field_names;

@@ -809,18 +809,28 @@ field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT coln
     SQLSRV_ASSERT( colno >= 0, "core_sqlsrv_field_metadata: Invalid column number provided." );
 
     sqlsrv_malloc_auto_ptr<field_meta_data> meta_data;
-    SQLSMALLINT field_name_len = 0;
-    
+    sqlsrv_malloc_auto_ptr<SQLWCHAR> field_name_temp;
+    SQLSMALLINT field_len_temp = 0;
+    SQLLEN field_name_len = 0;
+
     meta_data = new ( sqlsrv_malloc( sizeof( field_meta_data ))) field_meta_data();
-    meta_data->field_name = static_cast<SQLCHAR*>( sqlsrv_malloc( SS_MAXCOLNAMELEN + 1 ));
+    field_name_temp = static_cast<SQLWCHAR*>( sqlsrv_malloc( SS_MAXCOLNAMELEN * 2 + 1 ));
+    SQLSRV_ENCODING encoding = ( (stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
+        stmt->encoding());
+	try{
+        core::SQLDescribeColW( stmt, colno + 1, field_name_temp,  SS_MAXCOLNAMELEN * 2 + 1 , &field_len_temp,
+            &( meta_data->field_type ), & ( meta_data->field_size ), & ( meta_data->field_scale ),
+            &( meta_data->field_is_nullable ) TSRMLS_CC );
+	}
+	catch ( core::CoreException& e ) {
+		throw e;
+	}
+
+    bool converted = convert_string_from_utf16( encoding, field_name_temp,
+        field_len_temp, ( char** ) &( meta_data->field_name ), field_name_len );
     
-    try {
-        core::SQLDescribeCol( stmt, colno + 1, meta_data->field_name.get(), SS_MAXCOLNAMELEN, &field_name_len, 
-                        &(meta_data->field_type), &(meta_data->field_size), &(meta_data->field_scale), 
-                        &(meta_data->field_is_nullable) TSRMLS_CC );              
-    }
-    catch( core::CoreException& e ) {
-        throw e;
+    CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
+        throw core::CoreException();
     }
 
     // depending on field type, we add the values into size or precision/scale.

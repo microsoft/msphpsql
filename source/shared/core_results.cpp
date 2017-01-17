@@ -314,9 +314,6 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
         conv_matrix[ SQL_C_DOUBLE ][ SQL_C_WCHAR ] = &sqlsrv_buffered_result_set::double_to_wide_string;
     }
 
-    SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
-        stmt->encoding());
-
     // get the meta data and calculate the size of a row buffer
     SQLULEN offset = null_bytes;
     for( SQLSMALLINT i = 0; i < col_count; ++i ) {
@@ -338,30 +335,13 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
                 meta[i].length += sizeof( char ) + sizeof( SQLULEN ); // null terminator space
                 offset += meta[i].length;
                 break;
-            case SQL_CHAR:
-            case SQL_VARCHAR:
-                if ( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
-                    offset += sizeof( void* );
-                }
-                else {
-                    // If encoding is set to UTF-8, the following types are not necessarily column size.
-                    // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 
-                    if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-                        meta[i].length *= sizeof( WCHAR );
-                        meta[i].length += sizeof( SQLULEN ) + sizeof( WCHAR ); // length plus null terminator space
-                        offset += meta[i].length;
-                    }
-                    else {
-                        meta[i].length += sizeof( SQLULEN ) + sizeof( char ); // length plus null terminator space
-                        offset += meta[i].length;
-                    }
-                }
-                break;
 
             // these types are the column size
             case SQL_BINARY:
+            case SQL_CHAR:
             case SQL_SS_UDT:
             case SQL_VARBINARY:
+            case SQL_VARCHAR:
                 // var* field types are length prefixed
                 if( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
                     offset += sizeof( void* );
@@ -428,31 +408,21 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
         switch( meta[i].type ) {
 
             case SQL_BIGINT:
+            case SQL_CHAR:
             case SQL_DATETIME:
             case SQL_DECIMAL:
             case SQL_GUID:
             case SQL_NUMERIC:
+            case SQL_LONGVARCHAR:
             case SQL_TYPE_DATE:
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
             case SQL_SS_XML:
             case SQL_TYPE_TIMESTAMP:
+            case SQL_VARCHAR:
                 meta[i].c_type = SQL_C_CHAR;
                 break;
-                
-            case SQL_CHAR:
-            case SQL_VARCHAR:
-            case SQL_LONGVARCHAR:
-                // If encoding is set to UTF-8, the following types are not necessarily column size.
-                // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 
-                if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-                    meta[i].c_type = SQL_C_WCHAR;
-                }
-                else {
-                    meta[i].c_type = SQL_C_CHAR;
-                }
-                break;
-                
+
             case SQL_SS_UDT:
             case SQL_LONGVARBINARY:
             case SQL_BINARY:
