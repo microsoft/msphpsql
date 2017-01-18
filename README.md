@@ -33,7 +33,7 @@ SQL Server Team
  Please visit the [blog][blog] for more announcements.
 
 
-## Build (Windows)
+## Build
 
 Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases)
 
@@ -57,7 +57,7 @@ You must first be able to build PHP 7 without including these extensions.  For h
 
 This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 2015 compiler.
 
-## Install (Windows)
+## Install
 
 ####Prerequisites
 
@@ -72,243 +72,6 @@ This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 
 
 3. Restart the Web server.
 
-## Install (Linux)
-Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16 and RedHat 7. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note that Debian is not officially supported and this instruction hasn't been tested in our test lab.
-
-### Step 1: Install  PHP (unless already installed)
-
-#### PHP 7.0
-
-**Ubuntu 15.04, Ubuntu 15.10**
-
-	sudo su
-	sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
-	apt-get update
-	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
-
-	
-**Ubuntu 16.04**
-
-	sudo su
-	apt-get update
-	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml
-
-	
-**RedHat 7**
-
-	sudo su
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
-	subscription-manager repos --enable=rhel-7-server-optional-rpms
-	yum-config-manager --enable remi-php70
-	yum update
-	yum install php php-pdo php-xml php-pear php-devel
-
-
-
-#### PHP 7.1
-
-
-**Ubuntu 16.04**
-
-	sudo su
-	add-apt-repository ppa:ondrej/php
-	apt-get update
-	apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev 
-
-**RedHat 7**
-	
-	sudo su
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
-	subscription-manager repos --enable=rhel-7-server-optional-rpms
-	yum-config-manager --enable remi-php71
-	yum update
-	yum install php php-pdo php-xml php-pear php-devel
-    
-    
-
-
-### Step 2: Install  pre-requisites
-
-**Ubuntu 15.04**
-
-    sudo su 
-    sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-vivid-release/ vivid main" > /etc/apt/sources.list.d/mssqlpreview.list'
-    sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
-    apt-get update
-    apt-get install msodbcsql
-    #for silent install use ACCEPT_EULA=Y apt-get install msodbcsql
-    sudo apt-get install unixodbc-dev-utf16 
-    
-**Ubuntu 15.10**
-
-	sudo su 
-	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-	curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
-	exit
-	sudo apt-get update
-	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
-	sudo apt-get install unixodbc-dev-utf16 
-
-	
-**Ubuntu 16.04**
-
-	sudo su 
-	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-	curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
-	exit
-	sudo apt-get update
-	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
-	sudo apt-get install unixodbc-dev-utf16
-
-**RedHat 7**
-
-	sudo su
-	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
-	exit
-	sudo yum update
-	sudo yum remove unixODBC #to avoid conflicts
-	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
-	sudo yum install unixODBC-utf16-devel 
-
-
-
-
-*Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
-
-### Step 3: Install Apache
-
-####PHP 7.0
-
-**Ubuntu**
-
-    sudo apt-get install libapache2-mod-php7.0 
-    sudo apt-get install apache2
-    
-**RedHat** 
-
-    sudo yum install httpd
-
-####PHP 7.1 
-
-**Ubuntu**
-	
-	sudo apt-get install libapache2-mod-php7.1 
-	sudo apt-get install apache2
-    
-**RedHat** 
-
-    sudo yum install httpd 
-    
-
-### Step 4: Install the Microsoft PHP Drivers for SQL Server
-
-    sudo pecl install sqlsrv
-    sudo pecl install pdo_sqlsrv
-    
-*Note: it installs the stable version, for specific version you should set the version. For example, `sudo pecl install sqlsrv-4.0.8`
-
-       
-### Step 5: Add the Microsoft PHP Drivers for SQL Server to php.ini
-
-
-####PHP 7.0
-
-**Ubuntu**
-	
-	echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
-	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
-	echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/cli/php.ini
-	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/cli/php.ini
-
-
-**RedHat** 
-
-	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
-	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
-
-
-####PHP 7.1
-
-
-**Ubuntu 16.04**
-	
-	echo "extension=/usr/lib/php/20160303/sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
-	echo "extension=/usr/lib/php/20160303/pdo_sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
-	echo "extension=/usr/lib/php/20160303/sqlsrv.so" >> /etc/php/7.1/cli/php.ini
-	echo "extension=/usr/lib/php/20160303/pdo_sqlsrv.so" >> /etc/php/7.1/cli/php.ini
-
-
-
-**RedHat** 
-	
-	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
-	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
-
-
-	
-### Step 6: Restart Apache to load the new php.ini file
-
-**Ubuntu**
-
-	sudo service apache2 restart
-
-**RedHat**
-
-	sudo apachectl restart 
-
-### Step 7: Create your sample app
-Navigate to `/var/www/html` and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
-
-    <?php
-    $serverName = "yourServername";
-    $connectionOptions = array(
-        "Database" => "yourDatabase",
-        "Uid" => "yourUsername",
-        "PWD" => "yourPassword"
-    );
-    //Establishes the connection
-    $conn = sqlsrv_connect($serverName, $connectionOptions);
-    //Select Query
-    $tsql= "SELECT @@Version as SQL_VERSION";
-    //Executes the query
-    $getResults= sqlsrv_query($conn, $tsql);
-    //Error handling
-     
-    if ($getResults == FALSE)
-        die(FormatErrors(sqlsrv_errors()));
-    ?> 
-     <h1> Results : </h1>
-     <?php
-    while ($row = sqlsrv_fetch_array($getResults, SQLSRV_FETCH_ASSOC)) {
-        echo ($row['SQL_VERSION']);
-        echo ("<br/>");
-    }
-    sqlsrv_free_stmt($getResults);
-    function FormatErrors( $errors )  
-    {  
-        /* Display errors. */  
-        echo "Error information: <br/>";  
-      
-        foreach ( $errors as $error )  
-        {  
-            echo "SQLSTATE: ".$error['SQLSTATE']."<br/>";  
-            echo "Code: ".$error['code']."<br/>";  
-            echo "Message: ".$error['message']."<br/>";  
-        }  
-    }  
-    ?>
-
-### Step 8: Run your sample app
-
-Go to your browser and type in http://localhost/testsql.php
-You should be able to connect to your SQL Server/Azure SQL Database.
-
-The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
-
 ## Sample Code
 For samples, please see the sample folder.  For setup instructions, see [here] [phpazure]
 
@@ -316,16 +79,10 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 
 - This release contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5.
 - Binding output parameter using emulate prepare is not supported.
-- Linux
-  - ODBC 3.52 is supported but not 3.8.
-  - Connection using named instances using '\' is not supported.
-  - Local encodings other than UTF-8 are not supported, and SQLSRV_ENC_CHAR only supports ASCII characters with ASCII code of 0 to 127.
 
 ## Known Issues
 -  User defined data types and SQL_VARIANT.
 - Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
-- Linux
-   - Connection pooling is not supported.
 
 ## Future Plans
 - Expand SQL 16 Feature Support (example: Always Encrypted).
