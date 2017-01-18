@@ -8,9 +8,9 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improveme
 
 SQL Server Team
 ###Status of Most Recent Builds
- | AppVeyor (Windows)      |Travis CI (Linux) |        Coverage Status  
- |-------------------------|--------------------------| ------------------
- | [![av-image][]][av-site]| [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
+| AppVeyor (Windows)      |Travis CI (Linux) |        Coverage Status  
+|-------------------------|--------------------------| ------------------
+| [![av-image][]][av-site]| [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
 
 [av-image]:  https://ci.appveyor.com/api/projects/status/github/Microsoft/msphpsql?branch=PHP-7.0&svg=true
 [av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql
