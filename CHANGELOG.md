@@ -11,7 +11,6 @@ Updated Windows drivers (4.1.5) compiled with PHP 7.0.14 and 7.1 are available. 
 
 ###Fixed
 - Fixed issue output parameters bound to empty string ([issue #182](https://github.com/Microsoft/msphpsql/issues/182)).
-- Fixed issue with buffered result sets when using CharacterSet UTF8 ([issue #192](https://github.com/Microsoft/msphpsql/issues/192)).
 - Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)). 
 
 
