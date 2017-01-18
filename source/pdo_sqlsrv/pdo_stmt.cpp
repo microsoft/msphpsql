@@ -708,7 +708,7 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
                        "Invalid column number in pdo_sqlsrv_stmt_get_col_data" );
         sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_type ),
                                                              static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_size ),
-															 true, driver_stmt->fetch_numeric );
+                                                             true );
 
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
         sqlsrv_php_type.typeinfo.encoding = driver_stmt->encoding();
@@ -787,8 +787,7 @@ int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, zend_long attr, zval *val TSRMLS_
     PDO_VALIDATE_STMT;
     PDO_LOG_STMT_ENTRY;
 
-	pdo_sqlsrv_stmt* pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
-    sqlsrv_stmt* driver_stmt = static_cast<sqlsrv_stmt*>( stmt->driver_data );
+	pdo_sqlsrv_stmt* driver_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
     try {
 
@@ -818,9 +817,9 @@ int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, zend_long attr, zval *val TSRMLS_
                 core_sqlsrv_set_buffered_query_limit( driver_stmt, val TSRMLS_CC );
                 break;
 
-			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-				pdo_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
-				break;
+            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+                driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
+                break;
 
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
@@ -1270,7 +1269,7 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
 
 
 // Returns a sqlsrv_phptype for a given SQL Server data type.
-sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_over_stream, bool prefer_number_to_string )
+sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_over_stream )
 {
     sqlsrv_phptype sqlsrv_phptype;
     int local_encoding = this->encoding();
@@ -1286,7 +1285,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
 		case SQL_INTEGER:
 		case SQL_SMALLINT:
 		case SQL_TINYINT:
-			if ( prefer_number_to_string ) {
+			if ( this->fetch_numeric ) {
 				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
 			}
 			else {
@@ -1296,7 +1295,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
 			break;
 		case SQL_FLOAT:
 		case SQL_REAL:
-			if ( prefer_number_to_string ) {
+			if ( this->fetch_numeric ) {
 				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
 			}
 			else {
