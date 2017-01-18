@@ -1,5 +1,5 @@
 --TEST--
-Prepare, execute statement and fetch with pooling enabled
+Prepare, execute statement and fetch with pooling unset (default)
 --SKIPIF--
 --FILE--
 <?php
