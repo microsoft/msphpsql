@@ -6,7 +6,18 @@ The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for t
 
 This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
 
-The Microsoft Drivers for PHP for SQL Server Team
+SQL Server Team
+###Status of Most Recent Builds
+| AppVeyor (Windows)      |Travis CI (Linux) |        Coverage Status  
+|-------------------------|--------------------------| ------------------
+| [![av-image][]][av-site]| [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
+
+[av-image]:  https://ci.appveyor.com/api/projects/status/github/Microsoft/msphpsql?branch=PHP-7.0&svg=true
+[av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql
+[tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=PHP-7.0-Linux
+[tv-site]: https://travis-ci.org/Microsoft/msphpsql/
+[Coverage Status]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=PHP-7.0-Linux
+[coveralls-site]: https://coveralls.io/github/Microsoft/msphpsql?branch=PHP-7.0-Linux
 
 ##Get Started
 
@@ -14,56 +25,15 @@ The Microsoft Drivers for PHP for SQL Server Team
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-rhel)
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-windows)
 
+
 ##Announcements
 
-**October 25 , 2016** : Updated Windows drivers (4.1.4) compiled with PHP 7.0.12  and 7.1 are available. Here is the list of updates:
+**December 19, 2016**: We are delighted announce that production release for PHP Linux Driver for SQL Server is available. PECL packages (4.0.8) are updated with the latest changes, and Linux binaries (4.0.8) compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. For complete list of changes please visit [CHANGELOG](https://github.com/Microsoft/msphpsql/blob/PHP-7.0-Linux/CHANGELOG.md) file.
 
-- Drivers versioning has been redesigned as Major#.Minor#.Release#.Build#. Build number is specific to binaries and it doesn't match with the number on the source.
-- Fixed the issue with  duplicate warning messages in PDO_SQLSRV drivers when error mode is set to PDO::ERRMODE_WARNING.
-
-**October 4 , 2016** : Updated Windows drivers (4.1.3) compiled with PHP 7.0.11  and 7.1.0RC3 are available. Here is the list of updates:
-
-- Fixed [issue #139](https://github.com/Microsoft/msphpsql/issues/139) : sqlsrv_fetch_object calls custom class constructor in static context and outputs an error.
-
-**September 9, 2016** : Updated Windows drivers (4.1.2) compiled with PHP 7.0.10 are available. Here is the list of updates:
-
-- Fixed [issue #119](https://github.com/Microsoft/msphpsql/issues/119) (modifying class name in sqlsrv_fetch_object).
-- Added following integer SQL Types constants for cases which function-like SQL types constants cannot be used e.g. type comparison:
-
-    SQLSRV constant | Typical SQL Server data type | SQL type identifier
-    ------------ | ----------------------- | ----------------------
-   SQLSRV_SQLTYPE_DECIMAL | decimal       | SQL_DECIMAL
-   SQLSRV_SQLTYPE_NUMERIC | numeric       | SQL_NUMERIC
-   SQLSRV_SQLTYPE_CHAR    | char          | SQL_CHAR
-   SQLSRV_SQLTYPE_NCHAR   | nchar         | SQL_WCHAR
-   SQLSRV_SQLTYPE_VARCHAR | varchar       | SQL_VARCHAR
-   SQLSRV_SQLTYPE_NVARCHAR | nvarchar     | SQL_WVARCHAR
-   SQLSRV_SQLTYPE_BINARY   | binary       | SQL_BINARY
-   SQLSRV_SQLTYPE_VARBINARY  | varbinary   | SQL_VARBINARY
-
-    Note: These constants should be used in type comparison operations (refer to issue [#87](https://github.com/Microsoft/msphpsql/issues/87) and [#99](https://github.com/Microsoft/msphpsql/issues/99) ), and don't replace the function like constants with the similar syntax, for binding parameters you should use the function-like constants, otherwise you'll get an error.
+ Please visit the [blog][blog] for more announcements.
 
 
-**August 22, 2016** : Updated Windows drivers(4.1.1) compiled with PHP 7.0.9 are available and include a couple of bug fixes:
-
-- Fixed issue with storing integers in varchar field.
-- Fixed issue with invalid connection handler if one connection fails.
-- Fixed crash when emulate prepare is on.
-
-**July 28, 2016** (4.1.0): Thanks to the community's input, this release expands drivers functionalities and also includes some bug fixes:
-
- - `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  connection attribute flag is added to PDO_SQLSRV driver to handle numeric fetches from columns with numeric Sql types (only bit, integer, smallint, tinyint, float and real). This flag can be turned on by setting its value in  `PDO::setAttribute` to `true`, For example,
-               `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);` 
-		  If `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  is set to `true` the results from an integer column will be represented as an `int`, likewise, Sql types float and real will be represented as `float`. 
-		  Note for exceptions:
-	 - When connection option flag `ATTR_STRINGIFY_FETCHES` is on, even when `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is on, the return value will still be string.
-	 - 	When the returned PDO type in bind column is `PDO_PARAM_INT`, the return value from a integer column will be int even if `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is off.
- - Fixed float truncation when using buffered query. 
- - Fixed handling of Unicode strings and binary when emulate prepare is on in `PDOStatement::bindParam`.  To bind a unicode string, `PDO::SQLSRV_ENCODING_UTF8` should be set using `$driverOption`, and to bind a string to column of Sql type binary, `PDO::SQLSRV_ENCODING_BINARY` should be set.
- - Fixed string truncation in bind output parameters when the size is not set and the length of initialized variable is less than the output.
- - Fixed bind string parameters as bidirectional parameters (`PDO::PARAM_INPUT_OUTPUT `) in PDO_SQLSRV driver. Note for output or bidirectional parameters, `PDOStatement::closeCursor` should be called to get the output value.
-
-## Build
+## Build (Windows)
 
 Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases)
 
@@ -87,7 +57,7 @@ You must first be able to build PHP 7 without including these extensions.  For h
 
 This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 2015 compiler.
 
-## Install
+## Install (Windows)
 
 ####Prerequisites
 
@@ -102,6 +72,243 @@ This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 
 
 3. Restart the Web server.
 
+## Install (Linux)
+Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16 and RedHat 7. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note that Debian is not officially supported and this instruction hasn't been tested in our test lab.
+
+### Step 1: Install  PHP (unless already installed)
+
+#### PHP 7.0
+
+**Ubuntu 15.04, Ubuntu 15.10**
+
+	sudo su
+	sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
+	apt-get update
+	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
+
+	
+**Ubuntu 16.04**
+
+	sudo su
+	apt-get update
+	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml
+
+	
+**RedHat 7**
+
+	sudo su
+	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
+	subscription-manager repos --enable=rhel-7-server-optional-rpms
+	yum-config-manager --enable remi-php70
+	yum update
+	yum install php php-pdo php-xml php-pear php-devel
+
+
+
+#### PHP 7.1
+
+
+**Ubuntu 16.04**
+
+	sudo su
+	add-apt-repository ppa:ondrej/php
+	apt-get update
+	apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev 
+
+**RedHat 7**
+	
+	sudo su
+	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
+	subscription-manager repos --enable=rhel-7-server-optional-rpms
+	yum-config-manager --enable remi-php71
+	yum update
+	yum install php php-pdo php-xml php-pear php-devel
+    
+    
+
+
+### Step 2: Install  pre-requisites
+
+**Ubuntu 15.04**
+
+    sudo su 
+    sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-vivid-release/ vivid main" > /etc/apt/sources.list.d/mssqlpreview.list'
+    sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+    apt-get update
+    apt-get install msodbcsql
+    #for silent install use ACCEPT_EULA=Y apt-get install msodbcsql
+    sudo apt-get install unixodbc-dev-utf16 
+    
+**Ubuntu 15.10**
+
+	sudo su 
+	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+	curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+	exit
+	sudo apt-get update
+	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
+	sudo apt-get install unixodbc-dev-utf16 
+
+	
+**Ubuntu 16.04**
+
+	sudo su 
+	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+	curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+	exit
+	sudo apt-get update
+	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
+	sudo apt-get install unixodbc-dev-utf16
+
+**RedHat 7**
+
+	sudo su
+	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
+	exit
+	sudo yum update
+	sudo yum remove unixODBC #to avoid conflicts
+	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
+	sudo yum install unixODBC-utf16-devel 
+
+
+
+
+*Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
+
+### Step 3: Install Apache
+
+####PHP 7.0
+
+**Ubuntu**
+
+    sudo apt-get install libapache2-mod-php7.0 
+    sudo apt-get install apache2
+    
+**RedHat** 
+
+    sudo yum install httpd
+
+####PHP 7.1 
+
+**Ubuntu**
+	
+	sudo apt-get install libapache2-mod-php7.1 
+	sudo apt-get install apache2
+    
+**RedHat** 
+
+    sudo yum install httpd 
+    
+
+### Step 4: Install the Microsoft PHP Drivers for SQL Server
+
+    sudo pecl install sqlsrv
+    sudo pecl install pdo_sqlsrv
+    
+*Note: it installs the stable version, for specific version you should set the version. For example, `sudo pecl install sqlsrv-4.0.8`
+
+       
+### Step 5: Add the Microsoft PHP Drivers for SQL Server to php.ini
+
+
+####PHP 7.0
+
+**Ubuntu**
+	
+	echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
+	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
+	echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/cli/php.ini
+	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/cli/php.ini
+
+
+**RedHat** 
+
+	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
+	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
+
+
+####PHP 7.1
+
+
+**Ubuntu 16.04**
+	
+	echo "extension=/usr/lib/php/20160303/sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
+	echo "extension=/usr/lib/php/20160303/pdo_sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
+	echo "extension=/usr/lib/php/20160303/sqlsrv.so" >> /etc/php/7.1/cli/php.ini
+	echo "extension=/usr/lib/php/20160303/pdo_sqlsrv.so" >> /etc/php/7.1/cli/php.ini
+
+
+
+**RedHat** 
+	
+	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
+	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
+
+
+	
+### Step 6: Restart Apache to load the new php.ini file
+
+**Ubuntu**
+
+	sudo service apache2 restart
+
+**RedHat**
+
+	sudo apachectl restart 
+
+### Step 7: Create your sample app
+Navigate to `/var/www/html` and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
+
+    <?php
+    $serverName = "yourServername";
+    $connectionOptions = array(
+        "Database" => "yourDatabase",
+        "Uid" => "yourUsername",
+        "PWD" => "yourPassword"
+    );
+    //Establishes the connection
+    $conn = sqlsrv_connect($serverName, $connectionOptions);
+    //Select Query
+    $tsql= "SELECT @@Version as SQL_VERSION";
+    //Executes the query
+    $getResults= sqlsrv_query($conn, $tsql);
+    //Error handling
+     
+    if ($getResults == FALSE)
+        die(FormatErrors(sqlsrv_errors()));
+    ?> 
+     <h1> Results : </h1>
+     <?php
+    while ($row = sqlsrv_fetch_array($getResults, SQLSRV_FETCH_ASSOC)) {
+        echo ($row['SQL_VERSION']);
+        echo ("<br/>");
+    }
+    sqlsrv_free_stmt($getResults);
+    function FormatErrors( $errors )  
+    {  
+        /* Display errors. */  
+        echo "Error information: <br/>";  
+      
+        foreach ( $errors as $error )  
+        {  
+            echo "SQLSTATE: ".$error['SQLSTATE']."<br/>";  
+            echo "Code: ".$error['code']."<br/>";  
+            echo "Message: ".$error['message']."<br/>";  
+        }  
+    }  
+    ?>
+
+### Step 8: Run your sample app
+
+Go to your browser and type in http://localhost/testsql.php
+You should be able to connect to your SQL Server/Azure SQL Database.
+
+The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
+
 ## Sample Code
 For samples, please see the sample folder.  For setup instructions, see [here] [phpazure]
 
@@ -109,11 +316,16 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 
 - This release contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5.
 - Binding output parameter using emulate prepare is not supported.
+- Linux
+  - ODBC 3.52 is supported but not 3.8.
+  - Connection using named instances using '\' is not supported.
+  - Local encodings other than UTF-8 are not supported, and SQLSRV_ENC_CHAR only supports ASCII characters with ASCII code of 0 to 127.
 
 ## Known Issues
 -  User defined data types and SQL_VARIANT.
-- Passing custom class constructor to sqlsrv_fetch_object reproduce an error([issue#139](https://github.com/Microsoft/msphpsql/issues/139)).
 - Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
+- Linux
+   - Connection pooling is not supported.
 
 ## Future Plans
 - Expand SQL 16 Feature Support (example: Always Encrypted).
@@ -126,6 +338,7 @@ We appreciate you taking the time to test the driver, provide feedback and repor
 - Report each issue as a new issue (but check first if it's already been reported)
 - Try to be detailed in your report. Useful information for good bug reports include:
   * What you are seeing and what the expected behaviour is
+  * Can you connect to SQL Server via `sqlcmd`? 
   * Which driver: SQLSRV or PDO_SQLSRV?
   * Environment details: e.g. PHP version, thread safe (TS) or non-thread safe (NTS), 32-bit &/or 64-bit?
   * Table schema (for some issues the data types make a big difference!)
@@ -141,7 +354,7 @@ Thank you!
 
 **Q:** What's next?
 
-**A:** On Jan 29, 2016 we released an early technical preview for our PHP Driver and several since. We will continue to release frequently to improve the quality of our driver.
+**A:** On July 20, 2016 we released the early technical preview for our PHP Driver. We will continue releasing frequent technical previews until we reach production quality.
 
 **Q:** Is Microsoft taking pull requests for this project?
 
@@ -175,11 +388,24 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [phpbuild]: https://wiki.php.net/internals/windows/stepbystepbuild
 
-[phpdoc]: http://msdn.microsoft.com/en-us/library/dd903047%28SQL.11%29.aspx
+[phpdoc]: http://msdn.microsoft.com/library/dd903047%28SQL.11%29.aspx
 
-[odbc11]: https://www.microsoft.com/en-us/download/details.aspx?id=36434
+[odbc11]: https://www.microsoft.com/download/details.aspx?id=36434
 
-[odbc13]: https://www.microsoft.com/en-us/download/details.aspx?id=50420
+[odbc13]: https://www.microsoft.com/download/details.aspx?id=50420
 
-[phpazure]: https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-php-simple-windows/
+[odbcLinux]: https://msdn.microsoft.com/library/hh568454(v=sql.110).aspx
 
+[phpazure]: https://azure.microsoft.com/documentation/articles/sql-database-develop-php-simple-windows/
+
+[PHPMan]: http://php.net/manual/install.unix.php
+
+[LinuxDM]: https://msdn.microsoft.com/library/hh568449(v=sql.110).aspx
+
+[httpd_source]: http://httpd.apache.org/
+
+[apr_source]: http://apr.apache.org/
+
+[httpdconf]: http://php.net/manual/en/install.unix.apache2.php
+
+[ODBCinstallers]: https://blogs.msdn.microsoft.com/sqlnativeclient/2016/09/06/preview-release-of-the-sql-server-cc-odbc-driver-13-0-0-for-linux
