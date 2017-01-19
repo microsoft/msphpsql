@@ -1069,8 +1069,8 @@ PHP_FUNCTION( sqlsrv_get_field )
     void* field_value = NULL;
     zend_long field_index = -1;
     SQLLEN field_len = -1;
-	zval retval_z;
-	ZVAL_UNDEF(&retval_z);
+    zval retval_z;
+    ZVAL_UNDEF(&retval_z);
    
     // get the statement, the field index and the optional type
     PROCESS_PARAMS( stmt, "rl|l", _FN_, 2, &field_index, &sqlsrv_php_type );
@@ -1085,9 +1085,9 @@ PHP_FUNCTION( sqlsrv_get_field )
         }
 
         core_sqlsrv_get_field( stmt, static_cast<SQLUSMALLINT>( field_index ), sqlsrv_php_type, false, field_value, &field_len, false/*cache_field*/,
-            &sqlsrv_php_type_out TSRMLS_CC );
+                               &sqlsrv_php_type_out TSRMLS_CC );
         convert_to_zval( stmt, sqlsrv_php_type_out, field_value, field_len, retval_z );		
-		sqlsrv_free( field_value );
+        sqlsrv_free( field_value );
         RETURN_ZVAL( &retval_z, 1, 1 );
     }
 
@@ -1824,12 +1824,11 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, zend_long fetch_type, _O
         SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
         for( int i = 0; i < num_cols; ++i ) {
 
-            core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL
-                                   TSRMLS_CC );
-    #ifdef __linux__
+            core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL TSRMLS_CC );
+            #ifdef __linux__
             //Conversion function in Linux expects size in characters.
             field_name_len_w = field_name_len_w / sizeof ( SQLWCHAR );
-    #endif
+            #endif
             bool converted = convert_string_from_utf16( encoding, field_name_w,
                 field_name_len_w, ( char** ) &field_name, field_name_len );
 
