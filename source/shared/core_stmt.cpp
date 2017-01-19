@@ -1433,7 +1433,7 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
             {
-                core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &size TSRMLS_CC );
+                core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &size TSRMLS_CC );
                 break;
             }   
 
@@ -1442,7 +1442,7 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             case SQL_WCHAR:
             case SQL_WVARCHAR: 
             {
-                core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_OCTET_LENGTH, NULL, 0, NULL, &size TSRMLS_CC );
+                core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_OCTET_LENGTH, NULL, 0, NULL, &size TSRMLS_CC );
                 break;
             }
 
@@ -2143,7 +2143,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 		}
 
 		// Get the SQL type of the field.
-		core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+		core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
 
 		// Calculate the field size.
 		calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );

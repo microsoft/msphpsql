@@ -149,10 +149,20 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
  
     SQLSMALLINT output_conn_size;
 #ifdef __linux__
-    r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
+	// unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
+	// connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
+	if( henv == &henv_cp )
+	{
+		r = SQLDriverConnect( conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(),
+                           SQL_NTS, NULL, 
+                           0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+	}
+	else
+	{
+		r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
                            static_cast<SQLSMALLINT>( wconn_len ), NULL, 
                            0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-
+  }
 #else
 	r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
                            static_cast<SQLSMALLINT>( wconn_len ), NULL, 
@@ -193,6 +203,12 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 
     // determine the version of the server we're connected to.  The server version is left in the 
     // connection upon return.
+	//
+	// unixODBC 2.3.1 works when r =  SQL_SUCCESS_WITH_INFO (non-pooled connection)
+	// but fails if the connection is using a pool, i.e. r= SQL_SUCCESS
+#ifdef __linux__
+	if(r == SQL_SUCCESS_WITH_INFO)
+#endif
     determine_server_version( conn TSRMLS_CC );
 	
     }
