@@ -1842,8 +1842,6 @@ namespace core {
                                       _Out_ SQLPOINTER field_type_char, SQLSMALLINT buffer_length, 
                                       _Out_ SQLSMALLINT* out_buffer_length, _Out_ SQLLEN* field_type_num TSRMLS_DC )
     {
-				
-		// printf("\n-----------------------------------------INLINE: SQLColAttribute\n");
         SQLRETURN r = ::SQLColAttribute( stmt->handle(), field_index, field_identifier, field_type_char,
                                          buffer_length, out_buffer_length, field_type_num );
 
@@ -1856,8 +1854,6 @@ namespace core {
         _Out_ SQLPOINTER field_type_char, SQLSMALLINT buffer_length,
         _Out_ SQLSMALLINT* out_buffer_length, _Out_ SQLLEN* field_type_num TSRMLS_DC )
     {
-    
-		// printf("\n-----------------------------------------INLINE: SQLColAttributeW\n");
         SQLRETURN r = ::SQLColAttributeW( stmt->handle(), field_index, field_identifier, field_type_char,
             buffer_length, out_buffer_length, field_type_num );
 
@@ -1871,7 +1867,6 @@ namespace core {
                                 _Out_ SQLSMALLINT* decimal_digits, _Out_ SQLSMALLINT* nullable TSRMLS_DC )
     {
         SQLRETURN r;
-        // printf("\n-----------------------------------------INLINE: SQLDescribeCol\n");
         r = ::SQLDescribeCol( stmt->handle(), colno, col_name, col_name_length, col_name_length_out, 
                               data_type, col_size, decimal_digits, nullable);
          
@@ -1885,7 +1880,6 @@ namespace core {
 		_Out_ SQLSMALLINT* decimal_digits, _Out_ SQLSMALLINT* nullable TSRMLS_DC )
 	{
 		SQLRETURN r;
-        // printf("\n-----------------------------------------INLINE: SQLDescribeColW\n");
 		r = ::SQLDescribeColW( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
 			data_type, col_size, decimal_digits, nullable );
 
