@@ -19,14 +19,16 @@
 
 // *** header files ***
 #include "php_sqlsrv.h"
+#ifndef __linux__
 #include <sal.h>
+#endif
 
 //
 // *** internal variables and constants ***
 //
 // our resource descriptor assigned in minit
 int ss_sqlsrv_stmt::descriptor = 0;
-char* ss_sqlsrv_stmt::resource_name = "ss_sqlsrv_stmt";   // not const for a reason.  see sqlsrv_stmt in php_sqlsrv.h
+char* ss_sqlsrv_stmt::resource_name = static_cast<char *>("ss_sqlsrv_stmt");   // not const for a reason.  see sqlsrv_stmt in php_sqlsrv.h
 
 namespace {
 
@@ -72,12 +74,12 @@ enum SQLSRV_PHPTYPE zend_to_sqlsrv_phptype[] = {
 // (char to avoid having to cast them where they are used)
 namespace FieldMetaData {
 
-char* NAME = "Name";
-char* TYPE = "Type";
-char* SIZE = "Size";
-char* PREC = "Precision";
-char* SCALE = "Scale";
-char* NULLABLE = "Nullable";
+const char* NAME = "Name";
+const char* TYPE = "Type";
+const char* SIZE = "Size";
+const char* PREC = "Precision";
+const char* SCALE = "Scale";
+const char* NULLABLE = "Nullable";
 
 }
 
@@ -248,7 +250,7 @@ sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUIN
 // statement specific parameter proccessing.  Uses the generic function specialised to return a statement
 // resource.
 #define PROCESS_PARAMS( rsrc, param_spec, calling_func, param_count, ... )                                                        \
-    rsrc = process_params<ss_sqlsrv_stmt>( INTERNAL_FUNCTION_PARAM_PASSTHRU, param_spec, calling_func, param_count, __VA_ARGS__ );\
+    rsrc = process_params<ss_sqlsrv_stmt>( INTERNAL_FUNCTION_PARAM_PASSTHRU, param_spec, calling_func, param_count, ## __VA_ARGS__ );\
     if( rsrc == NULL ) {                                                                                                          \
         RETURN_FALSE;                                                                                                             \
     }
@@ -553,7 +555,6 @@ PHP_FUNCTION( sqlsrv_next_result )
 {
     LOG_FUNCTION( "sqlsrv_next_result" );
 
-    SQLRETURN r = SQL_SUCCESS;
     ss_sqlsrv_stmt* stmt = NULL;
 
     PROCESS_PARAMS( stmt, "r", _FN_, 0 );
@@ -597,7 +598,6 @@ PHP_FUNCTION( sqlsrv_next_result )
 PHP_FUNCTION( sqlsrv_rows_affected )
 {
     LOG_FUNCTION( "sqlsrv_rows_affected" );
-    SQLRETURN r = SQL_SUCCESS;
     ss_sqlsrv_stmt* stmt = NULL;
     SQLLEN rows = -1;
 
@@ -1067,7 +1067,7 @@ PHP_FUNCTION( sqlsrv_get_field )
     sqlsrv_php_type.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
     SQLSRV_PHPTYPE sqlsrv_php_type_out = SQLSRV_PHPTYPE_INVALID;
     void* field_value = NULL;
-    int field_index = -1;
+    zend_long field_index = -1;
     SQLLEN field_len = -1;
 	zval retval_z;
 	ZVAL_UNDEF(&retval_z);
@@ -1084,8 +1084,8 @@ PHP_FUNCTION( sqlsrv_get_field )
             THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
         }
 
-		core_sqlsrv_get_field( stmt, field_index, sqlsrv_php_type, false, field_value, &field_len, false/*cache_field*/,
-			&sqlsrv_php_type_out TSRMLS_CC );
+        core_sqlsrv_get_field( stmt, static_cast<SQLUSMALLINT>( field_index ), sqlsrv_php_type, false, field_value, &field_len, false/*cache_field*/,
+            &sqlsrv_php_type_out TSRMLS_CC );
         convert_to_zval( stmt, sqlsrv_php_type_out, field_value, field_len, retval_z );		
 		sqlsrv_free( field_value );
         RETURN_ZVAL( &retval_z, 1, 1 );
@@ -1821,11 +1821,19 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, zend_long fetch_type, _O
         sqlsrv_malloc_auto_ptr<char> field_name;
         sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
         field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
-        SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
+        SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
+            stmt->encoding());
         for( int i = 0; i < num_cols; ++i ) {
 
-            core::SQLColAttributeW( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL TSRMLS_CC );
-            bool converted = convert_string_from_utf16( encoding, field_name_w, field_name_len_w, ( char** ) &field_name, field_name_len );
+            core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL
+                                   TSRMLS_CC );
+    #ifdef __linux__
+            //Conversion function in Linux expects size in characters.
+            field_name_len_w = field_name_len_w / sizeof ( SQLWCHAR );
+    #endif
+            bool converted = convert_string_from_utf16( encoding, field_name_w,
+                field_name_len_w, ( char** ) &field_name, field_name_len );
+
             CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
                 throw core::CoreException();
             }
@@ -2152,7 +2160,7 @@ void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, int type )
 {
     char* size_p = NULL;
     size_t size_len = 0;
-    long size = 0;
+    int size = 0;
 
     if( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "s", &size_p, &size_len ) == FAILURE ) {
                
@@ -2163,7 +2171,11 @@ void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, int type )
         size = SQLSRV_SIZE_MAX_TYPE;
     }
     else {
-        _set_errno( 0 );  // reset errno for atol
+#ifdef __linux__
+        errno = 0;
+#else
+        _set_errno(0);  // reset errno for atol
+#endif
         size = atol( size_p );
         if( errno != 0 ) {
             size = SQLSRV_INVALID_SIZE;

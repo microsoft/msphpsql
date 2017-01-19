@@ -21,7 +21,9 @@
 
 #include "php_sqlsrv.h"
 
+#ifndef __linux__
 #include <windows.h>
+#endif
 
 namespace {
     

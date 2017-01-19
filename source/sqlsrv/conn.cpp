@@ -18,9 +18,12 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "php_sqlsrv.h"
+
+#ifndef __linux__
 #include <psapi.h>
 #include <windows.h>
 #include <winver.h>
+#endif
 
 #include <string>
 #include <sstream>
@@ -146,12 +149,12 @@ int get_stmt_option_key( zend_string* key, size_t key_len TSRMLS_DC );
 
 // constants for parameters used by process_params function(s)
 int ss_sqlsrv_conn::descriptor;
-char* ss_sqlsrv_conn::resource_name = "ss_sqlsrv_conn";
+char* ss_sqlsrv_conn::resource_name = static_cast<char *>("ss_sqlsrv_conn");
 
 // connection specific parameter proccessing.  Use the generic function specialised to return a connection
 // resource.
 #define PROCESS_PARAMS( rsrc, param_spec, calling_func, param_count, ... )                                                          \
-    rsrc = process_params<ss_sqlsrv_conn>( INTERNAL_FUNCTION_PARAM_PASSTHRU, param_spec, calling_func, param_count, __VA_ARGS__ );  \
+    rsrc = process_params<ss_sqlsrv_conn>( INTERNAL_FUNCTION_PARAM_PASSTHRU, param_spec, calling_func, param_count, ##__VA_ARGS__ );\
     if( rsrc == NULL ) {                                                                                                            \
         RETURN_FALSE;                                                                                                               \
     }
@@ -765,7 +768,10 @@ PHP_FUNCTION( sqlsrv_client_info )
         core_sqlsrv_get_client_info( conn, return_value TSRMLS_CC );
         
         // Add the sqlsrv driver's file version
-        core::sqlsrv_add_assoc_string( *conn, return_value, "ExtensionVer", VER_FILEVERSION_STR, 1 /*duplicate*/ TSRMLS_CC );
+        //Declarations below eliminate compiler warnings about string constant to char* conversions
+        const char* extver = "ExtensionVer";
+        std::string filever = VER_FILEVERSION_STR;
+        core::sqlsrv_add_assoc_string( *conn, return_value, extver, &filever[0], 1 /*duplicate*/ TSRMLS_CC );
     }
 
     catch( core::CoreException& ) {
@@ -978,7 +984,7 @@ PHP_FUNCTION( sqlsrv_query )
     sqlsrv_malloc_auto_ptr<ss_sqlsrv_stmt> stmt;
     char* sql = NULL;
     hash_auto_ptr ss_stmt_options_ht;
-    int sql_len = 0;
+    size_t sql_len = 0;
     zval* options_z = NULL;
     zval* params_z = NULL;	
     zval stmt_z;
@@ -1026,7 +1032,7 @@ PHP_FUNCTION( sqlsrv_query )
         bind_params( stmt TSRMLS_CC );
 
         // execute the statement
-        core_sqlsrv_execute( stmt TSRMLS_CC, sql, sql_len );
+        core_sqlsrv_execute( stmt TSRMLS_CC, sql, static_cast<int>( sql_len ) );
        
         // register the statement with the PHP runtime 
         ss::zend_register_resource(stmt_z, stmt, ss_sqlsrv_stmt::descriptor, ss_sqlsrv_stmt::resource_name TSRMLS_CC);
@@ -1112,14 +1118,12 @@ void sqlsrv_conn_close_stmts( ss_sqlsrv_conn* conn TSRMLS_DC )
 		// delete the statement by deleting it from Zend's resource list, which will force its destruction
 		stmt->conn = NULL;
 
-		try {
-			// this would call the destructor on the statement.
-			int zr = zend_list_close(Z_RES_P(rsrc_ptr));
-		}
-		catch( core::CoreException& ) {
-			LOG(SEV_ERROR, "Failed to remove statement resource %1!d! when closing the connection", Z_RES_HANDLE_P(rsrc_ptr));
-		}
-	} ZEND_HASH_FOREACH_END();
+        // this would call the destructor on the statement.
+        // There's nothing we can do if the removal fails, so we just log it and move on.
+        if( zend_list_close( Z_RES_P(rsrc_ptr) ) == FAILURE ) {
+            LOG(SEV_ERROR, "Failed to remove statement resource %1!d! when closing the connection", Z_RES_HANDLE_P(rsrc_ptr));
+        }
+    } ZEND_HASH_FOREACH_END();
 
     zend_hash_destroy( conn->stmts );
     FREE_HASHTABLE( conn->stmts );
@@ -1230,8 +1234,6 @@ void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ Has
 			ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
 				int type = HASH_KEY_NON_EXISTENT;
 				size_t key_len = 0;
-				zval* conn_opt = NULL;
-				int result = 0;
 
 				type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
