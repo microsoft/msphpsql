@@ -1433,7 +1433,7 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
             {
-                // unixODBC 2.3.1 requires wide call to support pooling
+                // unixODBC 2.3.1 requires wide calls to support pooling
                 core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &size TSRMLS_CC );
                 break;
             }   
@@ -1443,7 +1443,7 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             case SQL_WCHAR:
             case SQL_WVARCHAR: 
             {
-                // unixODBC 2.3.1 requires wide call to support pooling
+                // unixODBC 2.3.1 requires wide calls to support pooling
                 core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_OCTET_LENGTH, NULL, 0, NULL, &size TSRMLS_CC );
                 break;
             }
@@ -2144,7 +2144,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 			break;
 		}
 
-		// Get the SQL type of the field. unixODBC 2.3.1 requires wide call to support pooling
+		// Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
 		core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
 
 		// Calculate the field size.
