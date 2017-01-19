@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
-## Windows 4.1.5 - 2017-01-18
+## Windows 4.1.5 - 2017-01-19
 Updated Windows drivers (4.1.5) compiled with PHP 7.0.14 and 7.1 are available. Here is the list of updates:
 
 ### Added
