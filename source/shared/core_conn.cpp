@@ -103,7 +103,11 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 
     try {
 
+#ifndef __linux__
     sqlsrv_context* henv = &henv_cp;   // by default use the connection pooling henv
+#else
+    sqlsrv_context* henv = &henv_ncp;  // by default do not use the connection pooling henv
+#endif
 
     // check the connection pooling setting to determine which henv to use to allocate the connection handle
     // we do this earlier because we have to allocate the connection handle prior to setting attributes on
@@ -115,12 +119,18 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 
 		option_z = zend_hash_index_find(options_ht, SQLSRV_CONN_OPTION_CONN_POOLING);
 		if (option_z) {
-
+#ifndef __linux__
             // if the option was found and it's not true, then use the non pooled environment handle
             if(( Z_TYPE_P( option_z ) == IS_STRING && !core_str_zval_is_true( option_z )) || !zend_is_true( option_z ) ) {
                 
                 henv = &henv_ncp;   
             }
+#else
+            // if the option was found and it's true, then use the pooled environment handle
+            if(( Z_TYPE_P( option_z ) == IS_STRING && core_str_zval_is_true( option_z )) && zend_is_true( option_z ) ) {
+                henv = &henv_cp;
+            }
+#endif
         }
     }
 
@@ -151,11 +161,10 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 #ifdef __linux__
 	// unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
 	// connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
-	if( henv == &henv_cp )
+	if ( henv == &henv_cp )
 	{
 		r = SQLDriverConnect( conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(),
-                           SQL_NTS, NULL, 
-                           0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+                           SQL_NTS, NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
 	}
 	else
 	{
@@ -207,7 +216,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 	// unixODBC 2.3.1 works when r =  SQL_SUCCESS_WITH_INFO (non-pooled connection)
 	// but fails if the connection is using a pool, i.e. r= SQL_SUCCESS
 #ifdef __linux__
-	if(r == SQL_SUCCESS_WITH_INFO)
+	if ( r == SQL_SUCCESS_WITH_INFO )
 #endif
     determine_server_version( conn TSRMLS_CC );
 	

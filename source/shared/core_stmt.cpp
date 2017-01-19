@@ -2142,7 +2142,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 			break;
 		}
 
-		// Get the SQL type of the field.
+		// Get the SQL type of the field. unixODBC 2.3.1 requires wide call to support pooling
 		core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
 
 		// Calculate the field size.
