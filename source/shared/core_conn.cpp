@@ -162,7 +162,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 		r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
                            static_cast<SQLSMALLINT>( wconn_len ), NULL, 
                            0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-  }
+    }
 #else
 	r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
                            static_cast<SQLSMALLINT>( wconn_len ), NULL, 
