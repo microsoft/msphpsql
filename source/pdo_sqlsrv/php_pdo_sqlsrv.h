@@ -27,7 +27,6 @@ extern "C" {
 
 #include "pdo/php_pdo.h"
 #include "pdo/php_pdo_driver.h"
-#include "pdo/php_pdo_int.h"
 
 }
 
@@ -111,6 +110,8 @@ extern sqlsrv_context* g_henv_ncp;
 // module global variables (initialized in minit and freed in mshutdown)
 extern HashTable* g_pdo_errors_ht;
 
+#define phpext_pdo_sqlsrv_ptr &g_pdo_sqlsrv_module_entry
+
 // module initialization
 PHP_MINIT_FUNCTION(pdo_sqlsrv);
 // module shutdown function
@@ -155,7 +156,7 @@ class conn_string_parser
         inline bool is_white_space( char c );
         bool discard_white_spaces( void );
         int discard_trailing_white_spaces( const char* str, int len );
-        void conn_string_parser::validate_key( const char *key, int key_len TSRMLS_DC );
+        void validate_key( const char *key, int key_len TSRMLS_DC );
         void add_key_value_pair( const char* value, int len TSRMLS_DC );
 
     public:
@@ -214,7 +215,7 @@ struct stmt_option_emulate_prepares : public stmt_option_functor {
 };
 
 struct stmt_option_fetch_numeric : public stmt_option_functor {
-	virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
+    virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
 
 extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
@@ -274,7 +275,7 @@ bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_erro
                                    va_list* print_args );
 
 // pointer to the function to return the class entry for the PDO exception  Set in MINIT
-extern zend_class_entry* (*pdo_get_exception_class)( void );
+//extern zend_class_entry* (*pdo_get_exception_class)( void );
 
 // common routine to transfer a sqlsrv_context's error to a PDO zval
 void pdo_sqlsrv_retrieve_context_error( sqlsrv_error const* last_error, zval* pdo_zval );
@@ -375,7 +376,7 @@ enum PDO_ERROR_CODES {
 extern pdo_error PDO_ERRORS[];
 
 #define THROW_PDO_ERROR( ctx, custom, ... ) \
-    call_error_handler( ctx, custom TSRMLS_CC, false, __VA_ARGS__ ); \
+    call_error_handler( ctx, custom TSRMLS_CC, false, ## __VA_ARGS__ ); \
     throw pdo::PDOException();
 
 namespace pdo {
@@ -393,8 +394,8 @@ namespace pdo {
 // called pdo_parse_params in php_pdo_driver.h
 // we renamed it for 2 reasons: 1) we can't have the same name since it would conflict with our dynamic linking, and 
 // 2) this is a more precise name
-extern int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
-                                     char **outquery, size_t *outquery_len TSRMLS_DC);
+//extern int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
+//                                     char **outquery, size_t *outquery_len TSRMLS_DC);
 
 // logger for pdo_sqlsrv called by the core layer when it wants to log something with the LOG macro
 void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );

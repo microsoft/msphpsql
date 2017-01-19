@@ -39,9 +39,11 @@ const int SQL_SERVER_IDENT_SIZE_MAX = 128;
 
 inline SQLSMALLINT pdo_fetch_ori_to_odbc_fetch_ori (enum pdo_fetch_orientation ori)
 {
-    SQLSRV_ASSERT( ori >= PDO_FETCH_ORI_NEXT && ori <= PDO_FETCH_ORI_REL, "Fetch orientation out of range." );
+    SQLSRV_ASSERT( ori >= PDO_FETCH_ORI_NEXT && ori <= PDO_FETCH_ORI_REL, "Fetch orientation out of range.");
+#ifndef __linux__
     OACR_WARNING_SUPPRESS( 26001, "Buffer length verified above" );
     OACR_WARNING_SUPPRESS( 26000, "Buffer length verified above" );
+#endif
     return odbc_fetch_orientation[ori];
 }
 
@@ -332,18 +334,31 @@ void stmt_option_emulate_prepares:: operator()( sqlsrv_stmt* stmt, stmt_option c
 
 void stmt_option_fetch_numeric:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
 {
-	pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
-	pdo_stmt->fetch_numeric = ( zend_is_true( value_z )) ? true : false;
+    pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
+    pdo_stmt->fetch_numeric = ( zend_is_true( value_z )) ? true : false;
 }
 
 
 // log a function entry point
+#ifdef __linux__
+#define PDO_LOG_STMT_ENTRY \
+{ \
+    pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
+    driver_stmt->set_func( __FUNCTION__ ); \
+    int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
+    char func[length+1]; \
+    strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
+    strcat_s( func, length+1, ": entering" ); \
+    LOG( SEV_NOTICE, func ); \
+}
+#else
 #define PDO_LOG_STMT_ENTRY \
 { \
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
     driver_stmt->set_func( __FUNCTION__ ); \
     LOG( SEV_NOTICE, __FUNCTION__ ## ": entering" ); \
 }
+#endif
 
 // PDO SQLSRV statement destructor
 pdo_sqlsrv_stmt::~pdo_sqlsrv_stmt( void )
@@ -698,9 +713,6 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
         
         // Let PDO free the memory after use. 
         *caller_frees = 1;
-
-        // set the metadata for the current column
-        pdo_column_data* column_data = &(stmt->columns[colno]);
         
         // translate the pdo type to a type the core layer understands
         sqlsrv_phptype sqlsrv_php_type;
@@ -708,7 +720,7 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
                        "Invalid column number in pdo_sqlsrv_stmt_get_col_data" );
         sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_type ),
                                                              static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_size ),
-                                                             true );
+															 true );
 
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
         sqlsrv_php_type.typeinfo.encoding = driver_stmt->encoding();
@@ -756,7 +768,7 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
         core_sqlsrv_get_field( driver_stmt, colno, sqlsrv_php_type, false, *(reinterpret_cast<void**>(ptr)),
                                reinterpret_cast<SQLLEN*>( len ), true, &sqlsrv_phptype_out TSRMLS_CC );
 
-		zval* zval_ptr = ( zval* )( sqlsrv_malloc( sizeof( zval )));
+        zval* zval_ptr = reinterpret_cast<zval*>( sqlsrv_malloc( sizeof( zval )));
         *zval_ptr = convert_to_zval( sqlsrv_phptype_out, reinterpret_cast<void**>( ptr ), *len );
         *ptr = reinterpret_cast<char*>( zval_ptr );
 
@@ -787,7 +799,7 @@ int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, zend_long attr, zval *val TSRMLS_
     PDO_VALIDATE_STMT;
     PDO_LOG_STMT_ENTRY;
 
-	pdo_sqlsrv_stmt* driver_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
+    pdo_sqlsrv_stmt* driver_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
     try {
 
@@ -817,9 +829,9 @@ int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, zend_long attr, zval *val TSRMLS_
                 core_sqlsrv_set_buffered_query_limit( driver_stmt, val TSRMLS_CC );
                 break;
 
-            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-                driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
-                break;
+			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+				driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
+				break;
 
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
@@ -896,11 +908,11 @@ int pdo_sqlsrv_stmt_get_attr( pdo_stmt_t *stmt, zend_long attr, zval *return_val
                 break;
             }
 
-			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-			{
-				ZVAL_BOOL( return_value, driver_stmt->fetch_numeric );
-				break;
-			}
+            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_stmt->fetch_numeric );
+                break;
+            }
 
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
@@ -966,7 +978,12 @@ int pdo_sqlsrv_stmt_get_col_meta(pdo_stmt_t *stmt, zend_long colno, zval *return
         long pdo_type = sql_type_to_pdo_type( core_meta_data->field_type );
         switch( pdo_type ) {
             case PDO_PARAM_STR:
-                add_assoc_string( return_value, "native_type", "string" );
+            {
+                //Declarations eliminate compiler warnings about string constant to char* conversions
+                std::string key = "native_type";
+                std::string str = "string";
+                add_assoc_string( return_value, &key[0], &str[0] );
+            }
                 break;
             default:
                 DIE( "pdo_sqlsrv_stmt_get_col_data: Unknown PDO type returned" );
@@ -1076,11 +1093,11 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
 
             // since the param isn't reliable, we don't do anything here
             case PDO_PARAM_EVT_ALLOC:
-				// if emulate prepare is on, set the bind_param_encoding so it can be used in PDO::quote when binding parameters on the client side
-				if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
-					pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
-					driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
-				}
+                // if emulate prepare is on, set the bind_param_encoding so it can be used in PDO::quote when binding parameters on the client side
+                if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+	                pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
+	                driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
+                }
                 break;
             case PDO_PARAM_EVT_FREE:
                 break;

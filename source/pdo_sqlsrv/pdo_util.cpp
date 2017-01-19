@@ -53,8 +53,8 @@ pdo_error PDO_ERRORS[] = {
     
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 11 or 13 for SQL Server to "
-        "communicate with SQL Server. Access the following URL to download the ODBC Driver 11 or 13 for SQL Server "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 13 for SQL Server to "
+        "communicate with SQL Server. Access the following URL to download the ODBC Driver 13 for SQL Server "
         "for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -1, true }
     },  
@@ -535,7 +535,6 @@ bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_erro
 void pdo_sqlsrv_retrieve_context_error( sqlsrv_error const* last_error, zval* pdo_zval )
 {
     if( last_error ) {
-
         // SQLSTATE is already present in the zval.
         add_next_index_long( pdo_zval, last_error->native_code );
         add_next_index_string( pdo_zval, reinterpret_cast<char*>( last_error->native_message ));
@@ -550,6 +549,7 @@ void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* 
     }
 
     DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, log_msg, LOG_MSG_SIZE, print_args );
+
     // if an error occurs for FormatMessage, we just output an internal error occurred.
     if( rc == 0 ) {
         SQLSRV_STATIC_ASSERT( sizeof( INTERNAL_FORMAT_ERROR ) < sizeof( log_msg ));
@@ -565,7 +565,8 @@ void pdo_sqlsrv_throw_exception( sqlsrv_error_const* error TSRMLS_DC )
 {
     zval ex_obj;
     ZVAL_UNDEF( &ex_obj );
-    zend_class_entry* ex_class = pdo_get_exception_class();
+
+    zend_class_entry* ex_class = php_pdo_get_exception();
 
     int zr = object_init_ex( &ex_obj, ex_class );
     SQLSRV_ASSERT( zr != FAILURE, "Failed to initialize exception object" );
