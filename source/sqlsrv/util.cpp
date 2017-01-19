@@ -21,10 +21,6 @@
 
 #include "php_sqlsrv.h"
 
-#ifndef __linux__
-#include <windows.h>
-#endif
-
 namespace {
     
 // current subsytem.  defined for the CHECK_SQL_{ERROR|WARNING} macros

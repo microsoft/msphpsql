@@ -19,12 +19,6 @@
 
 #include "php_sqlsrv.h"
 
-#ifndef __linux__
-#include <psapi.h>
-#include <windows.h>
-#include <winver.h>
-#endif
-
 #include <string>
 #include <sstream>
 

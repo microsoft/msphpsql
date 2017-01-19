@@ -19,7 +19,7 @@
 
 // *** header files ***
 #include "php_sqlsrv.h"
-#ifndef __linux__
+#ifdef _WIN32
 #include <sal.h>
 #endif
 
@@ -1821,8 +1821,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, zend_long fetch_type, _O
         sqlsrv_malloc_auto_ptr<char> field_name;
         sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
         field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
-        SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
-            stmt->encoding());
+        SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
         for( int i = 0; i < num_cols; ++i ) {
 
             core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL

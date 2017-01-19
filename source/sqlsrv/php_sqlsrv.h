@@ -67,14 +67,6 @@ typedef int socklen_t;
 #define HAVE_SOCKLEN_T
 #endif
 
-#ifndef __linux__
-#include "php.h"
-#include "php_globals.h"
-#include "php_ini.h"
-#include "ext/standard/php_standard.h"
-#include "ext/standard/info.h"
-#endif
-
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
@@ -461,16 +453,10 @@ public:
 //*********************************************************************************************************************************
 // Logging
 //*********************************************************************************************************************************
-#ifdef __linux__
-#define LOG_FUNCTION( function_name ) \
-	const char* _FN_ = function_name; \
-	LOG( SEV_NOTICE, "%1!s!: entering", _FN_ );
-#else
 #define LOG_FUNCTION( function_name ) \
    const char* _FN_ = function_name; \
    SQLSRV_G( current_subsystem ) = current_log_subsystem; \
    LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); 
-#endif
 
 #define SET_FUNCTION_NAME( context ) \
 { \
