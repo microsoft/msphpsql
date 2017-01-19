@@ -12,12 +12,12 @@ $sample = 2**31-1;
 var_dump ($sample);
 
 /* Connect + create a new pool */
-$conn0 = new PDO("sqlsrv:server=$serverName;ConnectionPooling=$pooling", "sa", "Moonshine4me");
+$conn0 = new PDO("sqlsrv:server=$serverName;ConnectionPooling=$pooling", $username, $password);
 $conn0->query("select 1");
 $conn0 = null;
 
 /* Connect */
-$conn = new PDO("sqlsrv:server=$serverName;ConnectionPooling=$pooling", "sa", "Moonshine4me");
+$conn = new PDO("sqlsrv:server=$serverName;ConnectionPooling=$pooling", $username, $password);
 
 // Create database
 $conn->query("CREATE DATABASE $dbName") ?: die();
