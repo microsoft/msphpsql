@@ -212,14 +212,18 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 
     // determine the version of the server we're connected to.  The server version is left in the 
     // connection upon return.
-	//
-	// unixODBC 2.3.1 works when r =  SQL_SUCCESS_WITH_INFO (non-pooled connection)
-	// but fails if the connection is using a pool, i.e. r= SQL_SUCCESS
+    //
+    // unixODBC 2.3.1:
+    // SQLGetInfo works when r =  SQL_SUCCESS_WITH_INFO (non-pooled connection)
+    // but fails if the connection is using a pool, i.e. r= SQL_SUCCESS.
+    // Thus, in Linux, we don't call determine_server_version() for a connection that uses pool.
 #ifdef __linux__
-	if ( r == SQL_SUCCESS_WITH_INFO )
+	if ( r == SQL_SUCCESS_WITH_INFO ) {
 #endif
     determine_server_version( conn TSRMLS_CC );
-	
+#ifdef __linux__
+	}
+#endif
     }
     catch( std::bad_alloc& ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
