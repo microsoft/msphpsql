@@ -40,7 +40,6 @@ $stmt->execute();
 
 // Fetching. Prepare with client buffered cursor
 $query = "SELECT TOP 1 FORMAT(col1,'#,0.00E') FROM $tableName";
-// $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
 $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, 
 		PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
 $stmt->execute();
