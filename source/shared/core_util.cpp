@@ -35,7 +35,7 @@ char last_err_msg[ 2048 ];  // 2k to hold the error messages
 // routine used by utf16_string_from_mbcs_string
 unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
                                                    unsigned int mbcs_len, 
-                                                   _Out_writes_(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
+                                                   _Out_writes_(utf16_len) __transfer( mbcs_in_string ) SQLWCHAR* utf16_out_string,
                                                    unsigned int utf16_len );
 }
 
@@ -81,8 +81,7 @@ bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string,
     char* outString = NULL;
     SQLLEN outLen = 0;
 
-    bool result = convert_string_from_utf16( encoding, 
-		reinterpret_cast<const wchar_t*>(*string), int(len / sizeof(wchar_t)), &outString, outLen);
+    bool result = convert_string_from_utf16( encoding, reinterpret_cast<const SQLWCHAR*>(*string), int(len / sizeof(SQLWCHAR)), &outString, outLen );
 
     if (result)
     {
@@ -105,8 +104,7 @@ bool convert_zval_string_from_utf16(SQLSRV_ENCODING encoding, zval* value_z, SQL
 	char* outString = NULL;
 	SQLLEN outLen = 0;
 
-	bool result = convert_string_from_utf16(encoding,
-		reinterpret_cast<const wchar_t*>(string), int(len / sizeof(wchar_t)), &outString, outLen);
+    bool result = convert_string_from_utf16( encoding, reinterpret_cast<const SQLWCHAR*>(string), int(len / sizeof(SQLWCHAR)), &outString, outLen );
 
 	if (result)
 	{
@@ -127,16 +125,16 @@ bool validate_string(char* string, SQLLEN& len)
 		return true;
 	}
 
-	if ((len / sizeof(wchar_t)) > INT_MAX)
-	{
-		LOG(SEV_ERROR, "UTP-16 (wide character) string mapping: buffer length exceeded.");
-		throw core::CoreException();
-	}
+    if ((len / sizeof(SQLWCHAR)) > INT_MAX)
+    {
+        LOG(SEV_ERROR, "UTP-16 (wide character) string mapping: buffer length exceeded.");
+        throw core::CoreException();
+    }
 
 	return false;
 }
 
-bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen )
+bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen )
 {
     SQLSRV_ASSERT( inString != NULL, "Input string must be specified" );
     SQLSRV_ASSERT( outString != NULL, "Output buffer pointer must be specified" );
@@ -158,18 +156,28 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inStrin
     }
 
     // calculate the number of characters needed
+#ifdef __linux__
+    cchOutLen = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, NULL, 0 );
+#else	
     cchOutLen = WideCharToMultiByte( encoding, flags,
                                    inString, cchInLen, 
                                    NULL, 0, NULL, NULL );
+#endif    
+	
     if( cchOutLen == 0 ) {
         return false;
     }
 
     // Create a buffer to fit the encoded string
     char* newString = reinterpret_cast<char*>( sqlsrv_malloc( cchOutLen + 1 /* NULL char*/ ));
+    
+#ifdef __linux__
+    int rc = SystemLocale::FromUtf16( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
+#else
     int rc = WideCharToMultiByte( encoding, flags,
                                   inString, cchInLen, 
                                   newString, static_cast<int>(cchOutLen), NULL, NULL );
+#endif
     if( rc == 0 ) {
         cchOutLen = 0;
         sqlsrv_free( newString );
@@ -185,13 +193,13 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inStrin
 // thin wrapper around convert_string_from_default_encoding that handles
 // allocation of the destination string.  An empty string passed in returns
 // failure since it's a failure case for convert_string_from_default_encoding.
-wchar_t* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, unsigned int mbcs_len, 
+SQLWCHAR* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, unsigned int mbcs_len, 
                                         unsigned int* utf16_len )
 {
     *utf16_len = (mbcs_len + 1);
-    wchar_t* utf16_string = reinterpret_cast<wchar_t*>( sqlsrv_malloc( *utf16_len * sizeof( wchar_t )));
-    *utf16_len = convert_string_from_default_encoding( php_encoding, mbcs_string, mbcs_len, 
-                                                      utf16_string, *utf16_len );
+    SQLWCHAR* utf16_string = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( *utf16_len * sizeof( SQLWCHAR )));
+    *utf16_len = convert_string_from_default_encoding( php_encoding, mbcs_string, mbcs_len, utf16_string, *utf16_len );
+
     if( *utf16_len == 0 ) {
         // we preserve the error and reset it because sqlsrv_free resets the last error
         DWORD last_error = GetLastError();
@@ -220,13 +228,10 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
         return false;
     }
 
-    zval* ssphp_z = NULL;
-    int zr = SUCCESS;
-    zval* temp = NULL;
     SQLRETURN r = SQL_SUCCESS;
     SQLSMALLINT wmessage_len = 0;
-    SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ];
-    SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ];
+    SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ] = { L'\0' };
+    SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ] = { L'\0' };
     SQLSRV_ENCODING enc = ctx.encoding();
 
     switch( h_type ) {
@@ -238,7 +243,7 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
 
                     error = stmt->current_results->get_diag_rec( record_number );
                     // don't use the CHECK* macros here since it will trigger reentry into the error handling system
-                    if( error == NULL ) {
+                    if( error == 0 ) {
                         return false;
                     }
                     break;
@@ -261,8 +266,15 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
                 return false;
             }
 
+#ifdef __linux__
+			// In linux we need to calculate number of characters
+			SQLLEN wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
+#else
+			// In Windows we need the size in bytes
+			SQLLEN wsqlstate_len = sizeof( wsqlstate );
+#endif
             SQLLEN sqlstate_len = 0;
-            convert_string_from_utf16(enc, wsqlstate, sizeof(wsqlstate), (char**)&error->sqlstate, sqlstate_len);
+            convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
 
             SQLLEN message_len = 0;
             convert_string_from_utf16(enc, wnative_message, wmessage_len, (char**)&error->native_message, message_len);
@@ -350,8 +362,8 @@ void die( const char* msg, ... )
 {
     va_list format_args;
     va_start( format_args, msg );
-    
-    DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, last_err_msg, sizeof( last_err_msg ), &format_args );
+
+	DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, last_err_msg, sizeof( last_err_msg ), &format_args );
 
     va_end( format_args );
 
@@ -371,7 +383,7 @@ namespace {
 // a failure since MBTWC returns 0 for both an empty string and failure
 // to convert.
 unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
-                                                   unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer( mbcs_in_string ) wchar_t* utf16_out_string,
+                                                   unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer( mbcs_in_string ) SQLWCHAR* utf16_out_string,
                                                    unsigned int utf16_len )
 {
     unsigned int win_encoding = CP_ACP;
@@ -387,8 +399,13 @@ unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _I
             win_encoding = php_encoding;
             break;
     }
+#ifdef __linux__ 
+    unsigned int required_len = SystemLocale::ToUtf16( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
+#else
     unsigned int required_len = MultiByteToWideChar( win_encoding, MB_ERR_INVALID_CHARS, mbcs_in_string, mbcs_len, 
                                                      utf16_out_string, utf16_len );
+#endif
+    
     if( required_len == 0 ) {
         return 0;
     }

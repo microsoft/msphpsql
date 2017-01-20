@@ -226,7 +226,7 @@ void core_sqlsrv_register_logger( log_callback );
 void write_to_log( unsigned int severity TSRMLS_DC, const char* msg, ... );
 
 // a macro to make it convenient to use the function.
-#define LOG( severity, msg, ...)    write_to_log( severity TSRMLS_CC, msg, __VA_ARGS__ )
+#define LOG( severity, msg, ...)    write_to_log( severity TSRMLS_CC, msg, ## __VA_ARGS__ )
 
 // mask for filtering which severities are written to the log
 enum logging_severity {
@@ -238,7 +238,7 @@ enum logging_severity {
 
 // Kill the PHP process and log the message to PHP
 void die( const char* msg, ... );
-#define DIE( msg, ... ) { die( msg, __VA_ARGS__ ); }
+#define DIE( msg, ... ) { die( msg, ## __VA_ARGS__ ); }
 
 
 //*********************************************************************************************************************************
@@ -588,9 +588,9 @@ public:
     // free the original pointer and assign a new pointer. Use NULL to simply free the pointer.
     void reset( T* ptr = NULL )
     {
-        if( _ptr )
-            sqlsrv_free( (void*) _ptr );
-        _ptr = ptr;
+        if( sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr )
+            sqlsrv_free( (void*) sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr );
+        sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr = ptr;
     }
 
     T* operator=( T* ptr )
@@ -608,8 +608,8 @@ public:
     // DO NOT CALL sqlsrv_realloc with a sqlsrv_malloc_auto_ptr.  Use the resize member function.
     // has the same parameter list as sqlsrv_realloc: new_size is the size in bytes of the newly allocated buffer
     void resize( size_t new_size )
-    {
-        _ptr = reinterpret_cast<T*>( sqlsrv_realloc( _ptr, new_size ));
+    {	
+    	sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr = reinterpret_cast<T*>( sqlsrv_realloc( sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr, new_size ));
     }
 };
 
@@ -776,7 +776,7 @@ public:
     {
         sqlsrv_error* p = src.get();
         src.transferred();
-        this->_ptr = p;
+        reset( p );
     }
 };
 
@@ -804,8 +804,8 @@ class sqlsrv_context {
     sqlsrv_context( SQLSMALLINT type, error_callback e, void* drv, SQLSRV_ENCODING encoding = SQLSRV_ENCODING_INVALID ) :
         handle_( SQL_NULL_HANDLE ),
         handle_type_( type ),
-        err_( e ),
         name_( NULL ),
+        err_( e ),
         driver_( drv ),
         last_error_(),
         encoding_( encoding )
@@ -815,8 +815,8 @@ class sqlsrv_context {
     sqlsrv_context( SQLHANDLE h, SQLSMALLINT t, error_callback e, void* drv, SQLSRV_ENCODING encoding = SQLSRV_ENCODING_INVALID ) :
         handle_( h ),
         handle_type_( t ),
-        err_( e ),
         name_( NULL ),
+        err_( e ),
         driver_( drv ),
         last_error_(),
         encoding_( encoding )
@@ -826,11 +826,15 @@ class sqlsrv_context {
     sqlsrv_context( sqlsrv_context const& ctx ) :
         handle_( ctx.handle_ ),
         handle_type_( ctx.handle_type_ ),
-        err_( ctx.err_ ),
         name_( ctx.name_ ),
+        err_( ctx.err_ ),
         driver_( ctx.driver_ ),
         last_error_( ctx.last_error_ )
     {
+    }
+
+    virtual ~sqlsrv_context()
+    {        
     }
 
     void set_func( const char* f )
@@ -997,6 +1001,8 @@ struct sqlsrv_conn : public sqlsrv_context {
     sqlsrv_conn( SQLHANDLE h, error_callback e, void* drv, SQLSRV_ENCODING encoding  TSRMLS_DC ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
+        server_version = SERVER_VERSION_UNKNOWN;
+        driver_version = ODBC_DRIVER_13; 
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be 
@@ -1186,14 +1192,13 @@ struct sqlsrv_stream {
     SQLUSMALLINT field_index;
     SQLSMALLINT sql_type;
     sqlsrv_stmt* stmt;
-    std::size_t stmt_index;
 
     sqlsrv_stream( zval* str_z, SQLSRV_ENCODING enc ) :
-        stream_z( str_z ), encoding( enc )
+        stream_z( str_z ), encoding( enc ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL )
     {
     }
 
-    sqlsrv_stream() : stream_z( NULL ), encoding( SQLSRV_ENCODING_INVALID ), stmt( NULL )
+    sqlsrv_stream() : stream_z( NULL ), encoding( SQLSRV_ENCODING_INVALID ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL )
     {
     }
 };
@@ -1226,8 +1231,8 @@ struct sqlsrv_output_param {
     // every other type output parameter constructor
     sqlsrv_output_param( zval* p_z, int num, bool is_bool ) :
         param_z( p_z ),
-        param_num( num ),
         encoding( SQLSRV_ENCODING_INVALID ),
+        param_num( num ),
         original_buffer_len( -1 ),
         is_bool( is_bool )
     {
@@ -1310,7 +1315,11 @@ const int SQLSRV_DEFAULT_SIZE = -1;     // size given for an output parameter th
 const unsigned int QUERY_TIMEOUT_INVALID = 0xffffffff;
 
 // special buffered query constant
+#ifdef __linux__
+const size_t SQLSRV_CURSOR_BUFFERED = 42; // arbitrary number that doesn't map to any other SQL_CURSOR_* constant
+#else
 const size_t SQLSRV_CURSOR_BUFFERED = 0xfffffffeUL; // arbitrary number that doesn't map to any other SQL_CURSOR_* constant
+#endif
 
 // factory to create a statement
 typedef sqlsrv_stmt* (*driver_stmt_factory)( sqlsrv_conn* conn, SQLHANDLE h, error_callback e, void* drv TSRMLS_DC );
@@ -1519,9 +1528,8 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLLEN& len);
 bool convert_zval_string_from_utf16(SQLSRV_ENCODING encoding, zval* value_z, SQLLEN& len);
 bool validate_string(char* string, SQLLEN& len);
-bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen );
-wchar_t* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, 
-                                        unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
+bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen );
+SQLWCHAR* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
 
 //*********************************************************************************************************************************
 // Error handling routines and Predefined Errors
@@ -1744,13 +1752,13 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[ SQL_MAX_MESSAGE_LENGTH + 1 ];
+            SQLCHAR err_msg[ SQL_MAX_MESSAGE_LENGTH + 1 ] = { '\0' };
             SQLSMALLINT len = 0;
             
-            SQLRETURN r = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
+            SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
                                              err_msg, SQL_MAX_MESSAGE_LENGTH, &len );
 
-            CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt ) {
          
                 throw CoreException();
             }
@@ -1889,7 +1897,7 @@ namespace core {
         return r;
     }
 
-    inline SQLRETURN SQLExecDirectW( sqlsrv_stmt* stmt, wchar_t* wsql TSRMLS_DC )
+    inline SQLRETURN SQLExecDirectW( sqlsrv_stmt* stmt, SQLWCHAR* wsql TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLExecDirectW( stmt->handle(), reinterpret_cast<SQLWCHAR*>( wsql ), SQL_NTS );
@@ -2263,7 +2271,7 @@ namespace core {
     inline void sqlsrv_zend_hash_add( sqlsrv_context& ctx, HashTable* ht, zend_string* key, unsigned int key_len, zval* data, 
                                       unsigned int data_size, zval* pDest TSRMLS_DC )
     {
-        int zr = (pDest = ::zend_hash_add(ht, key, data)) != NULL ? SUCCESS : FAILURE;
+        int zr = ::zend_hash_add(ht, key, data) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
             throw CoreException();
         }
