@@ -61,8 +61,8 @@ extern sqlsrv_attr_pdo_constant pdo_attr_constants[];
 }
 
 static zend_module_dep pdo_sqlsrv_depends[] = {
-	ZEND_MOD_REQUIRED("pdo")
-	{NULL, NULL, NULL}
+    ZEND_MOD_REQUIRED("pdo")
+    {NULL, NULL, NULL}
 };
 
 
@@ -81,7 +81,7 @@ zend_module_entry g_pdo_sqlsrv_module_entry =
 {
     STANDARD_MODULE_HEADER_EX,
     NULL,
-	pdo_sqlsrv_depends,
+    pdo_sqlsrv_depends,
     "pdo_sqlsrv", 
     pdo_sqlsrv_functions,           // exported function table
     // initialization and shutdown functions
@@ -101,8 +101,8 @@ zend_module_entry g_pdo_sqlsrv_module_entry =
 
 // called by Zend for each parameter in the g_pdo_errors_ht hash table when it is destroyed
 void pdo_error_dtor(zval* elem) {
-	pdo_error* error_to_ignore = reinterpret_cast<pdo_error*>(Z_PTR_P(elem));
-	pefree(error_to_ignore, 1);
+    pdo_error* error_to_ignore = reinterpret_cast<pdo_error*>(Z_PTR_P(elem));
+    pefree(error_to_ignore, 1);
 }
 
 // Module initialization
@@ -115,9 +115,9 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     // our global variables are initialized in the RINIT function
 #if defined(ZTS)
     if( ts_allocate_id( &pdo_sqlsrv_globals_id,
-                    sizeof( zend_pdo_sqlsrv_globals ),
-                    (ts_allocate_ctor) NULL,
-                    (ts_allocate_dtor) NULL ) == 0 )
+                        sizeof( zend_pdo_sqlsrv_globals ),
+                        (ts_allocate_ctor) NULL,
+                        (ts_allocate_dtor) NULL ) == 0 )
         return FAILURE;
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
@@ -278,13 +278,13 @@ namespace {
     // array of pdo constants.
     sqlsrv_attr_pdo_constant pdo_attr_constants[] = {
 
-		// driver specific attributes
-		{ "SQLSRV_ATTR_ENCODING"            , SQLSRV_ATTR_ENCODING },
-		{ "SQLSRV_ATTR_QUERY_TIMEOUT"       , SQLSRV_ATTR_QUERY_TIMEOUT },
-		{ "SQLSRV_ATTR_DIRECT_QUERY"        , SQLSRV_ATTR_DIRECT_QUERY },
-		{ "SQLSRV_ATTR_CURSOR_SCROLL_TYPE"  , SQLSRV_ATTR_CURSOR_SCROLL_TYPE },
-		{ "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
-		{ "SQLSRV_ATTR_FETCHES_NUMERIC_TYPE", SQLSRV_ATTR_FETCHES_NUMERIC_TYPE },
+        // driver specific attributes
+        { "SQLSRV_ATTR_ENCODING"            , SQLSRV_ATTR_ENCODING },
+        { "SQLSRV_ATTR_QUERY_TIMEOUT"       , SQLSRV_ATTR_QUERY_TIMEOUT },
+        { "SQLSRV_ATTR_DIRECT_QUERY"        , SQLSRV_ATTR_DIRECT_QUERY },
+        { "SQLSRV_ATTR_CURSOR_SCROLL_TYPE"  , SQLSRV_ATTR_CURSOR_SCROLL_TYPE },
+        { "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
+        { "SQLSRV_ATTR_FETCHES_NUMERIC_TYPE", SQLSRV_ATTR_FETCHES_NUMERIC_TYPE },
 
         // used for the size for output parameters: PDO::PARAM_INT and PDO::PARAM_BOOL use the default size of int,
         // PDO::PARAM_STR uses the size of the string in the variable

@@ -69,7 +69,7 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_CURSOR_SCROLL_TYPE,
     PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE,
     PDO_STMT_OPTION_EMULATE_PREPARES,
-	PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
+    PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
 };
 
 // List of all the statement options supported by this driver.
@@ -82,9 +82,9 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_CURSOR_SCROLL_TYPE, std::unique_ptr<stmt_option_cursor_scroll_type>( new stmt_option_cursor_scroll_type ) },
     { NULL, 0, PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE, std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit ) },
     { NULL, 0, PDO_STMT_OPTION_EMULATE_PREPARES, std::unique_ptr<stmt_option_emulate_prepares>( new stmt_option_emulate_prepares ) },
-	{ NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
+    { NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
 
-	{ NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
+    { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
 
 // boolean connection string
@@ -346,7 +346,7 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
     NULL,                           // check liveness not implemented
     pdo_sqlsrv_get_driver_methods,
     NULL,                            // request shutdown not implemented
-	NULL							// in transaction not implemented
+    NULL                             // in transaction not implemented
 };
 
 
@@ -373,13 +373,13 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
 
 // constructor for the internal object for connections
 pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC ) :
-	sqlsrv_conn( h, e, driver, SQLSRV_ENCODING_UTF8 TSRMLS_CC ),
-	stmts( NULL ),
-	direct_query( false ),
-	query_timeout( QUERY_TIMEOUT_INVALID ),
-	client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size )),
-	bind_param_encoding( SQLSRV_ENCODING_CHAR ),
-	fetch_numeric( false )
+    sqlsrv_conn( h, e, driver, SQLSRV_ENCODING_UTF8 TSRMLS_CC ),
+    stmts( NULL ),
+    direct_query( false ),
+    query_timeout( QUERY_TIMEOUT_INVALID ),
+    client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size )),
+    bind_param_encoding( SQLSRV_ENCODING_CHAR ),
+    fetch_numeric( false )
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -417,7 +417,7 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     zval* temp_server_z = NULL;
     sqlsrv_malloc_auto_ptr<conn_string_parser> dsn_parser;
     zval server_z;
-	ZVAL_UNDEF( &server_z );
+    ZVAL_UNDEF( &server_z );
 
     try {
  
@@ -461,8 +461,8 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
                                              dbh->username, dbh->password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error, 
                                              PDO_CONN_OPTS, dbh, "pdo_sqlsrv_db_handle_factory" TSRMLS_CC );
 
-	// Free the string in server_z after being used
-	zend_string_release( Z_STR( server_z ));
+    // Free the string in server_z after being used
+    zend_string_release( Z_STR( server_z ));
                                 
     SQLSRV_ASSERT( conn != NULL, "Invalid connection returned.  Exception should have been thrown." );
 
@@ -475,11 +475,11 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     }
     catch( core::CoreException& ) {
     
-		if ( Z_TYPE( server_z ) == IS_STRING ) {
-			zend_string_release( Z_STR( server_z ));
-		}
+        if ( Z_TYPE( server_z ) == IS_STRING ) {
+            zend_string_release( Z_STR( server_z ));
+        }
         dbh->error_mode = prev_err_mode;    // reset the error mode
-		g_henv_cp->last_error().reset();	// reset the last error; callee will check if last_error exist before freeing it and setting it to NULL
+        g_henv_cp->last_error().reset();    // reset the last error; callee will check if last_error exist before freeing it and setting it to NULL
         
         return 0;
     }
@@ -931,7 +931,7 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, zend_long attr, zval *val TSRMLS_DC
             case PDO_ATTR_FETCH_CATALOG_NAMES: 
             case PDO_ATTR_PREFETCH:
             case PDO_ATTR_MAX_COLUMN_LEN:
-            case PDO_ATTR_CURSOR_NAME:	
+            case PDO_ATTR_CURSOR_NAME:  
             case PDO_ATTR_AUTOCOMMIT:
             case PDO_ATTR_PERSISTENT:
             case PDO_ATTR_TIMEOUT:
@@ -941,10 +941,10 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, zend_long attr, zval *val TSRMLS_DC
 
             // Read-only
             case PDO_ATTR_SERVER_VERSION:
-            case PDO_ATTR_SERVER_INFO:	
+            case PDO_ATTR_SERVER_INFO:  
             case PDO_ATTR_CLIENT_VERSION:
             case PDO_ATTR_DRIVER_NAME:
-            case PDO_ATTR_CONNECTION_STATUS:	
+            case PDO_ATTR_CONNECTION_STATUS:    
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_READ_ONLY_DBH_ATTR );
             }
@@ -952,7 +952,7 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, zend_long attr, zval *val TSRMLS_DC
             // Statement level only
             case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR:
-            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:	
+            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1009,7 +1009,7 @@ int pdo_sqlsrv_dbh_get_attr( pdo_dbh_t *dbh, zend_long attr, zval *return_value 
              // Statement level only
             case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR:
-            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:	
+            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1070,11 +1070,11 @@ int pdo_sqlsrv_dbh_get_attr( pdo_dbh_t *dbh, zend_long attr, zval *return_value 
                 break;
             }
 
-			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-			{
-				ZVAL_BOOL( return_value, driver_dbh->fetch_numeric );
-				break;
-			}
+            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_dbh->fetch_numeric );
+                break;
+            }
 
             default: 
             {
@@ -1150,7 +1150,7 @@ char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, _Out_ size_t* l
         }
         else {
             char* quoted_table = NULL;
-			size_t quoted_len = 0;
+            size_t quoted_len = 0;
             int quoted = pdo_sqlsrv_dbh_quote( dbh, name, strlen( name ), &quoted_table, &quoted_len, PDO_PARAM_NULL TSRMLS_CC );
             SQLSRV_ASSERT( quoted, "PDO::lastInsertId failed to quote the table name.");
             snprintf( last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, TABLE_LAST_INSERT_ID_QUERY, quoted_table );
@@ -1173,7 +1173,7 @@ char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, _Out_ size_t* l
         SQLRETURN r = core::SQLGetData( driver_stmt, 1, SQL_C_CHAR, id_str, LAST_INSERT_ID_BUFF_LEN, 
                                         reinterpret_cast<SQLLEN*>( len ), false TSRMLS_CC );
 
-		CHECK_CUSTOM_ERROR( (!SQL_SUCCEEDED( r ) || *len == SQL_NULL_DATA || *len == SQL_NO_TOTAL), driver_stmt,
+        CHECK_CUSTOM_ERROR( (!SQL_SUCCEEDED( r ) || *len == SQL_NULL_DATA || *len == SQL_NO_TOTAL), driver_stmt,
                             PDO_SQLSRV_ERROR_LAST_INSERT_ID ) {
             throw core::CoreException();
         }
@@ -1271,7 +1271,7 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
 
         // insert N if the encoding is UTF8
         if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-	        ( *quoted )[ out_current++ ] = 'N';
+            ( *quoted )[ out_current++ ] = 'N';
         }
         // insert initial quote
         ( *quoted )[ out_current++ ] = '\'';
@@ -1283,7 +1283,7 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
             }
             else {
                 ( *quoted )[ out_current++ ] = unquoted[ index ];
-	        }
+            }
         }
 
         // trailing quote and null terminator
@@ -1306,7 +1306,7 @@ pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( pdo_dbh_t *dbh, int ki
         return NULL;
     }
 
-    return NULL;	// to avoid a compiler warning
+    return NULL;    // to avoid a compiler warning
 }
 
 namespace {
@@ -1384,20 +1384,20 @@ void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ Has
         if( stmt_options ) {
            
             HashTable* options_ht = Z_ARRVAL_P( stmt_options );
-			size_t int_key = -1;
-			zend_string *key = NULL;
-			zval* data = NULL;
+            size_t int_key = -1;
+            zend_string *key = NULL;
+            zval* data = NULL;
 
-			ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
-				int type = HASH_KEY_NON_EXISTENT;
-				int result = 0;
-				type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
-				CHECK_CUSTOM_ERROR(( type != HASH_KEY_IS_LONG ), ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
-					throw core::CoreException();
-				}
+            ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
+                int type = HASH_KEY_NON_EXISTENT;
+                int result = 0;
+                type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
+                CHECK_CUSTOM_ERROR(( type != HASH_KEY_IS_LONG ), ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
+                    throw core::CoreException();
+                }
 
-				add_stmt_option_key( ctx, int_key, pdo_stmt_options_ht, data TSRMLS_CC );
-			} ZEND_HASH_FOREACH_END();
+                add_stmt_option_key( ctx, int_key, pdo_stmt_options_ht, data TSRMLS_CC );
+            } ZEND_HASH_FOREACH_END();
         }
     }
     catch( core::CoreException& ) {

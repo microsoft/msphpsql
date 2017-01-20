@@ -47,7 +47,7 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_DIRECT_QUERY,
     SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
     SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
-	SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
+    SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -178,8 +178,8 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool direct_query;
     long query_timeout;
     zend_long client_buffer_max_size;
-	SQLSRV_ENCODING bind_param_encoding;
-	bool fetch_numeric;
+    SQLSRV_ENCODING bind_param_encoding;
+    bool fetch_numeric;
 
     pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC );
 };
@@ -229,11 +229,11 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         direct_query_subst_string( NULL ),
         direct_query_subst_string_len( 0 ),
         bound_column_param_types( NULL ),
-		fetch_numeric( false )
+        fetch_numeric( false )
     {
         pdo_sqlsrv_dbh* db = static_cast<pdo_sqlsrv_dbh*>( c );
         direct_query = db->direct_query;
-		fetch_numeric = db->fetch_numeric;
+        fetch_numeric = db->fetch_numeric;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );
@@ -249,7 +249,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
     pdo_param_type* bound_column_param_types;
-	bool fetch_numeric;
+    bool fetch_numeric;
 };
 
 
@@ -400,5 +400,5 @@ namespace pdo {
 // logger for pdo_sqlsrv called by the core layer when it wants to log something with the LOG macro
 void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );
 
-#endif	/* PHP_PDO_SQLSRV_H */
+#endif  /* PHP_PDO_SQLSRV_H */
 

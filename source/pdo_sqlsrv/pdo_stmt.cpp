@@ -204,9 +204,9 @@ void set_stmt_encoding( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 // internal helper function to free meta data structures allocated
 void meta_data_free( field_meta_data* meta )
 {
-	if( meta->field_name ) {
-		meta->field_name.reset();
-	}
+    if( meta->field_name ) {
+        meta->field_name.reset();
+    }
     sqlsrv_free( meta );
 }
 
@@ -455,7 +455,7 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
    
     // Set the name
     column_data->name = zend_string_init( (const char*)core_meta_data->field_name.get(), core_meta_data->field_name_len, 0 );
-    core_meta_data->field_name.reset();		
+    core_meta_data->field_name.reset();     
 
     // Set the maxlen
     column_data->maxlen = ( core_meta_data->field_precision > 0 ) ? core_meta_data->field_precision : core_meta_data->field_size;
@@ -720,7 +720,7 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
                        "Invalid column number in pdo_sqlsrv_stmt_get_col_data" );
         sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_type ),
                                                              static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_size ),
-															 true );
+                                                             true );
 
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
         sqlsrv_php_type.typeinfo.encoding = driver_stmt->encoding();
@@ -829,9 +829,9 @@ int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, zend_long attr, zval *val TSRMLS_
                 core_sqlsrv_set_buffered_query_limit( driver_stmt, val TSRMLS_CC );
                 break;
 
-			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-				driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
-				break;
+            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+                driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
+                break;
 
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
@@ -1095,8 +1095,8 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
             case PDO_PARAM_EVT_ALLOC:
                 // if emulate prepare is on, set the bind_param_encoding so it can be used in PDO::quote when binding parameters on the client side
                 if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
-	                pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
-	                driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
+                    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
+                    driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
                 }
                 break;
             case PDO_PARAM_EVT_FREE:
@@ -1256,7 +1256,7 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
                     if( !param->is_param ) {
                         break;
                     }
-					
+                    
                     core_sqlsrv_post_param( reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data ), param->paramno, 
                                             &(param->parameter) TSRMLS_CC );
                 }
@@ -1298,28 +1298,28 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
     }                
 
     switch( sql_type ) {
-		case SQL_BIT:
-		case SQL_INTEGER:
-		case SQL_SMALLINT:
-		case SQL_TINYINT:
-			if ( this->fetch_numeric ) {
-				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
-			}
-			else {
-				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-				sqlsrv_phptype.typeinfo.encoding = local_encoding;
-			}
-			break;
-		case SQL_FLOAT:
-		case SQL_REAL:
-			if ( this->fetch_numeric ) {
-				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
-			}
-			else {
-				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-				sqlsrv_phptype.typeinfo.encoding = local_encoding;
-			}
-			break;
+        case SQL_BIT:
+        case SQL_INTEGER:
+        case SQL_SMALLINT:
+        case SQL_TINYINT:
+            if ( this->fetch_numeric ) {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
+            }
+            else {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+                sqlsrv_phptype.typeinfo.encoding = local_encoding;
+            }
+            break;
+        case SQL_FLOAT:
+        case SQL_REAL:
+            if ( this->fetch_numeric ) {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
+            }
+            else {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+                sqlsrv_phptype.typeinfo.encoding = local_encoding;
+            }
+            break;
         case SQL_BIGINT:
         case SQL_CHAR:
         case SQL_DECIMAL:
