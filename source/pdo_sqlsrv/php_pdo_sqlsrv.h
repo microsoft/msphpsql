@@ -391,12 +391,6 @@ namespace pdo {
 
 } // namespace pdo
 
-// called pdo_parse_params in php_pdo_driver.h
-// we renamed it for 2 reasons: 1) we can't have the same name since it would conflict with our dynamic linking, and 
-// 2) this is a more precise name
-//extern int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
-//                                     char **outquery, size_t *outquery_len TSRMLS_DC);
-
 // logger for pdo_sqlsrv called by the core layer when it wants to log something with the LOG macro
 void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );
 
