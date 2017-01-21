@@ -20,6 +20,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
 	php7.0-dev \
 	python-pip \
 	re2c \
+        unixodbc-dev \
 	unzip && apt-get clean
 	
 ARG PHPSQLDIR=/REPO/msphpsql-PHP-7.0-Linux
@@ -34,7 +35,7 @@ RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt
 
 #RUN echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main" > /etc/apt/sources.list.d/mssqlpreview.list
 #RUN apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
-RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools unixodbc-dev-utf16
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools
 
 #install coveralls
 RUN pip install --upgrade pip && pip install cpp-coveralls
