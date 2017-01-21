@@ -102,7 +102,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	exit
 	sudo apt-get update
 	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
-	sudo apt-get install unixodbc-dev-utf16 
+	sudo apt-get install unixodbc-dev 
 
 	
 **Ubuntu 16.04**
@@ -113,7 +113,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	exit
 	sudo apt-get update
 	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
-	sudo apt-get install unixodbc-dev-utf16
+	sudo apt-get install unixodbc-dev
 
 **RedHat 7**
 
@@ -121,9 +121,8 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
 	exit
 	sudo yum update
-	sudo yum remove unixODBC #to avoid conflicts
 	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
-	sudo yum install unixODBC-utf16-devel 
+	sudo yum install unixODBC-devel 
 
 
 
