@@ -40,7 +40,7 @@ const int SQL_SERVER_IDENT_SIZE_MAX = 128;
 inline SQLSMALLINT pdo_fetch_ori_to_odbc_fetch_ori (enum pdo_fetch_orientation ori)
 {
     SQLSRV_ASSERT( ori >= PDO_FETCH_ORI_NEXT && ori <= PDO_FETCH_ORI_REL, "Fetch orientation out of range.");
-#ifdef _win32
+#ifdef _WIN32
     OACR_WARNING_SUPPRESS( 26001, "Buffer length verified above" );
     OACR_WARNING_SUPPRESS( 26000, "Buffer length verified above" );
 #endif
