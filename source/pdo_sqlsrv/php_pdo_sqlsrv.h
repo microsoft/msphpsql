@@ -274,9 +274,6 @@ bool pdo_sqlsrv_handle_dbh_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
 bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool warning TSRMLS_DC, 
                                    va_list* print_args );
 
-// pointer to the function to return the class entry for the PDO exception  Set in MINIT
-//extern zend_class_entry* (*pdo_get_exception_class)( void );
-
 // common routine to transfer a sqlsrv_context's error to a PDO zval
 void pdo_sqlsrv_retrieve_context_error( sqlsrv_error const* last_error, zval* pdo_zval );
 
