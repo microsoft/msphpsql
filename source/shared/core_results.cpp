@@ -439,8 +439,8 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
     // get the meta data and calculate the size of a row buffer
     SQLULEN offset = null_bytes;
     for( SQLSMALLINT i = 0; i < col_count; ++i ) {
-
-        core::SQLDescribeCol( stmt, i + 1, NULL, 0, NULL, &meta[i].type, &meta[i].length, &meta[i].scale, NULL TSRMLS_CC );
+				
+        core::SQLDescribeColW( stmt, i + 1, NULL, 0, NULL, &meta[i].type, &meta[i].length, &meta[i].scale, NULL TSRMLS_CC );
 
         offset = align_to<sizeof(SQLPOINTER)>( offset );
         meta[i].offset = offset;
