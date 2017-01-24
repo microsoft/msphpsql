@@ -32,7 +32,7 @@ $stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
 $stmt->execute();
 
 // Fetching. Prepare with client buffered cursor
-$query = "SELECT TOP 1 FORMAT(col1,'#,0.00E') FROM $tableName";
+$query = "SELECT TOP 1 FORMAT(col1,'#,0.00 EUR') FROM $tableName";
 $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, 
 		PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
 $stmt->execute();
@@ -52,5 +52,5 @@ print "Done";
 --EXPECT--
 int(2147483647)
 string(16) "2,147,483,647.00"
-string(17) "2,147,483,647.00E"
+string(20) "2,147,483,647.00 EUR"
 Done
