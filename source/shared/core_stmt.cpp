@@ -819,7 +819,7 @@ field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT coln
     SQLSRV_ENCODING encoding = ( (stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
         stmt->encoding());
 	try{
-        core::SQLDescribeColW( stmt, colno + 1, field_name_temp,  (SS_MAXCOLNAMELEN +1) * sizeof( SQLWCHAR ), &field_len_temp,
+        core::SQLDescribeColW( stmt, colno + 1, field_name_temp,  (SS_MAXCOLNAMELEN + 1) * sizeof( SQLWCHAR ), &field_len_temp,
             &( meta_data->field_type ), & ( meta_data->field_size ), & ( meta_data->field_scale ),
             &( meta_data->field_is_nullable ) TSRMLS_CC );
 	}
