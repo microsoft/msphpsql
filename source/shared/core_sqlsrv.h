@@ -24,6 +24,18 @@
 // Includes
 //*********************************************************************************************************************************
 
+#ifdef SQL_WCHART_CONVERT
+#undef SQL_WCHART_CONVERT
+#endif
+#ifndef _WCHART_DEFINED
+#define _WCHART_DEFINED 
+#endif
+
+#ifndef _WIN32
+#include "FormattedPrint.h"
+#include "StringFunctions.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -33,6 +45,29 @@
 #else
 #define PHP_SQLSRV_API
 #endif
+
+// #define MultiByteToWideChar SystemLocale::ToUtf16
+
+
+
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
+
+#ifdef __linux__
+#define GetLastError() errno
+#define SetLastError(err) errno=err
+
+typedef struct _OSVERSIONINFOA {
+    DWORD dwOSVersionInfoSize;
+    DWORD dwMajorVersion;
+    DWORD dwMinorVersion;
+    DWORD dwBuildNumber;
+    DWORD dwPlatformId;
+    CHAR   szCSDVersion[ 128 ];     // Maintenance string for PSS usage
+} OSVERSIONINFOA, *POSVERSIONINFOA, *LPOSVERSIONINFOA;
+typedef OSVERSIONINFOA OSVERSIONINFO;
+#endif
+
 
 // OACR is an internal Microsoft static code analysis tool
 #if defined(OACR)
@@ -51,8 +86,10 @@ OACR_WARNING_DISABLE( ALLOC_SIZE_OVERFLOW_WITH_ACCESS, "Third party code." )
 
 extern "C" {
 
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning( disable: 4005 4100 4127 4142 4244 4505 4530 )
+#endif
 
 #ifdef ZTS
 #include "TSRM.h"
@@ -74,7 +111,9 @@ typedef int socklen_t;
 #include "ext/standard/php_standard.h"
 #include "ext/standard/info.h"
 
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 
 #if ZEND_DEBUG
 // debug build causes warning C4505 to pop up from the Zend header files
@@ -1645,13 +1684,13 @@ inline bool call_error_handler( sqlsrv_context* ctx, unsigned long sqlsrv_error_
 // PHP equivalent of ASSERT.  C asserts cause a dialog to show and halt the process which
 // we don't want on a web server
 
-#define SQLSRV_ASSERT( condition, msg, ...)  if( !(condition)) DIE( msg, __VA_ARGS__ );
+#define SQLSRV_ASSERT( condition, msg, ...)  if( !(condition)) DIE( msg, ## __VA_ARGS__ );
  
 #if defined( PHP_DEBUG )                             
 
 #define DEBUG_SQLSRV_ASSERT( condition, msg, ... )    \
     if( !(condition)) {                               \
-        DIE (msg, __VA_ARGS__ );                      \
+        DIE (msg, ## __VA_ARGS__ );                      \
     }                 
 
 #else
@@ -1678,58 +1717,58 @@ inline bool is_truncated_warning( SQLCHAR* state )
     bool flag##unique = (condition);                                 \
     bool ignored##unique = true;                                       \
     if (flag##unique) {                                              \
-        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/false, __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/false, ## __VA_ARGS__ ); \
     }  \
     if( !ignored##unique )
     
 #define CHECK_ERROR_UNIQUE( unique, condition, context, ssphp, ...) \
-    CHECK_ERROR_EX( unique, condition, context, ssphp, __VA_ARGS__ )
+    CHECK_ERROR_EX( unique, condition, context, ssphp, ## __VA_ARGS__ )
 
 #define CHECK_ERROR( condition, context, ... )  \
-    CHECK_ERROR_UNIQUE( __COUNTER__, condition, context, NULL, __VA_ARGS__ )
+    CHECK_ERROR_UNIQUE( __COUNTER__, condition, context, 0, ## __VA_ARGS__ )
 
 #define CHECK_CUSTOM_ERROR( condition, context, ssphp, ... )  \
-    CHECK_ERROR_UNIQUE( __COUNTER__, condition, context, ssphp, __VA_ARGS__ )
+    CHECK_ERROR_UNIQUE( __COUNTER__, condition, context, ssphp, ## __VA_ARGS__ )
 
 #define CHECK_SQL_ERROR( result, context, ... )  \
     SQLSRV_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." ); \
-    CHECK_ERROR( result == SQL_ERROR, context, __VA_ARGS__ )
+    CHECK_ERROR( result == SQL_ERROR, context, ## __VA_ARGS__ )
 
 #define CHECK_WARNING_AS_ERROR_UNIQUE(  unique, condition, context, ssphp, ... )   \
     bool ignored##unique = true;    \
     if( condition ) { \
-        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/true, __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/true, ## __VA_ARGS__ ); \
     }   \
     if( !ignored##unique ) 
 
 #define CHECK_SQL_WARNING_AS_ERROR( result, context, ... ) \
-    CHECK_WARNING_AS_ERROR_UNIQUE( __COUNTER__,( result == SQL_SUCCESS_WITH_INFO ), context, SQLSRV_ERROR_ODBC, __VA_ARGS__ )
+    CHECK_WARNING_AS_ERROR_UNIQUE( __COUNTER__,( result == SQL_SUCCESS_WITH_INFO ), context, SQLSRV_ERROR_ODBC, ## __VA_ARGS__ )
     
 #define CHECK_SQL_WARNING( result, context, ... )        \
     if( result == SQL_SUCCESS_WITH_INFO ) {              \
-        (void)call_error_handler( context, NULL TSRMLS_CC, /*warning*/ true, __VA_ARGS__ ); \
-    }                                                    
+        (void)call_error_handler( context, 0 TSRMLS_CC, /*warning*/ true, ## __VA_ARGS__ ); \
+    }
 
 #define CHECK_CUSTOM_WARNING_AS_ERROR( condition, context, ssphp, ... ) \
-    CHECK_WARNING_AS_ERROR_UNIQUE( __COUNTER__, condition, context, ssphp, __VA_ARGS__ )
+    CHECK_WARNING_AS_ERROR_UNIQUE( __COUNTER__, condition, context, ssphp, ## __VA_ARGS__ )
                  
 #define CHECK_ZEND_ERROR( zr, ctx, error, ... )  \
-    CHECK_ERROR_UNIQUE( __COUNTER__, ( zr == FAILURE ), ctx, error, __VA_ARGS__ )  \
+    CHECK_ERROR_UNIQUE( __COUNTER__, ( zr == FAILURE ), ctx, error, ## __VA_ARGS__ )  \
 
 #define CHECK_SQL_ERROR_OR_WARNING( result, context, ... ) \
     SQLSRV_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." );  \
     bool ignored = true;                                   \
     if( result == SQL_ERROR ) {                            \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, false, __VA_ARGS__ ); \
+        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, false, ##__VA_ARGS__ ); \
     }                                                      \
     else if( result == SQL_SUCCESS_WITH_INFO ) {           \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, true TSRMLS_CC, __VA_ARGS__ ); \
+        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, true TSRMLS_CC, ##__VA_ARGS__ ); \
     }                                                      \
     if( !ignored )
   
 // throw an exception after it has been hooked into the custom error handler
 #define THROW_CORE_ERROR( ctx, custom, ... ) \
-  (void)call_error_handler( ctx, custom TSRMLS_CC, /*warning*/ false, __VA_ARGS__ ); \
+  (void)call_error_handler( ctx, custom TSRMLS_CC, /*warning*/ false, ## __VA_ARGS__ ); \
   throw core::CoreException();
 
 //*********************************************************************************************************************************
@@ -2054,6 +2093,18 @@ namespace core {
 
         r = ::SQLRowCount( stmt->handle(), &rows_affected );
         
+		/* On Linux platform
+		DriverName: libmsodbcsql-13.0.so.0.0
+		DriverODBCVer: 03.52
+		DriverVer: 13.00.0000
+		unixODBC: 2.3.1
+		r = ::SQLRowCount( stmt->handle(), &rows_affected );  
+		returns r=-1 for an empty result set. */
+#ifdef __linux__
+		if( r == -1 && rows_affected == -1 )
+			return 0;
+#endif
+
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
         }
