@@ -35,11 +35,11 @@ $data2 = $stmt->fetchAll(PDO::FETCH_NUM);
 
 // Array: FETCH_ASSOC
 foreach ($data1 as $a)
-echo $a['c1'] . "|".$a['c2']."\n";
+echo $a['c1'] . "|" . $a['c2'] . "\n";
 
 // Array: FETCH_NUM
 foreach ($data2 as $a)
-echo $a[0] . "|".$a[1]."\n";
+echo $a[0] . "|" . $a[1] . "\n";
 
 // DROP database
 $conn->query("DROP DATABASE ". $dbName) ?: die();
