@@ -228,10 +228,11 @@ typedef windowsULongLong_t ULONGLONG;
 /* can be defined in php sources */
 #ifdef  ODBCVER
 #undef  ODBCVER
+#endif
+
 // Build the mplat driver as an ODBC 3.8 driver, so that all of the
 // source code shared with Windows SNAC (which is ODBC 3.8) compiles.
 #define ODBCVER 0x0380
-#endif
 
 
 // Define this to indicate that we provide our own definitions for Windows types

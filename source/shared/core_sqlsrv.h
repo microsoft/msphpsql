@@ -145,10 +145,13 @@ OACR_WARNING_POP
 #include <algorithm>
 #include <limits>
 #include <cassert>
-#include <strsafe.h>
 #include <memory>
 // included for SQL Server specific constants
 #include "msodbcsql.h"
+
+#ifdef _WIN32
+#include <strsafe.h>
+#endif // _WIN32
 
 //*********************************************************************************************************************************
 // Constants and Types
