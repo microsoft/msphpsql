@@ -21,8 +21,6 @@
 
 #include "core_sqlsrv.h"
 
-#include <windows.h>
-
 namespace {
 
 // *** internal constants ***
