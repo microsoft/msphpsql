@@ -815,11 +815,11 @@ field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT coln
     SQLLEN field_name_len = 0;
 
     meta_data = new ( sqlsrv_malloc( sizeof( field_meta_data ))) field_meta_data();
-    field_name_temp = static_cast<SQLWCHAR*>( sqlsrv_malloc( SS_MAXCOLNAMELEN * sizeof( SQLWCHAR ) + 1 ));
+    field_name_temp = static_cast<SQLWCHAR*>( sqlsrv_malloc( ( SS_MAXCOLNAMELEN + 1 )* sizeof( SQLWCHAR ) ));
     SQLSRV_ENCODING encoding = ( (stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
         stmt->encoding());
 	try{
-        core::SQLDescribeColW( stmt, colno + 1, field_name_temp,  (SS_MAXCOLNAMELEN + 1) * sizeof( SQLWCHAR ), &field_len_temp,
+        core::SQLDescribeColW( stmt, colno + 1, field_name_temp, SS_MAXCOLNAMELEN + 1, &field_len_temp,
             &( meta_data->field_type ), & ( meta_data->field_size ), & ( meta_data->field_scale ),
             &( meta_data->field_is_nullable ) TSRMLS_CC );
 	}
