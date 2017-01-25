@@ -2,7 +2,7 @@
 // File: version.h
 // Contents: Version number constants
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.0 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -21,8 +21,8 @@
 #define TOSTRING(a) #a
 
 #define SQLVERSION_MAJOR 4
-#define SQLVERSION_MINOR 1
-#define SQLVERSION_RELEASE 4
+#define SQLVERSION_MINOR 0
+#define SQLVERSION_RELEASE 8
 #define SQLVERSION_BUILD 0
 
 #define VER_FILEVERSION_STR     STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE ) "." STRINGIFY( SQLVERSION_BUILD ) 
