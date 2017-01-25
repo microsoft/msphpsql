@@ -25,23 +25,15 @@
 #endif
 
 #include <iostream>
-#include <deque>
-#include <map>
-#include <algorithm>
-#include <limits>
-#include <cassert>
-#include <memory>
 #include <string>
 #include <errno.h>
 #include <sql.h>
 #include <sqlext.h>
 #include <stdarg.h>
 #include <cstdlib>
-#include <limits.h>
 #include <cstdio>
 #include <assert.h>
 #include <string.h>
-#include "msodbcsql.h"
 
 #if defined(_MSC_VER)
 // Turned on all warnings in WwoWH projects
@@ -236,10 +228,11 @@ typedef windowsULongLong_t ULONGLONG;
 /* can be defined in php sources */
 #ifdef  ODBCVER
 #undef  ODBCVER
-#endif
 // Build the mplat driver as an ODBC 3.8 driver, so that all of the
 // source code shared with Windows SNAC (which is ODBC 3.8) compiles.
 #define ODBCVER 0x0380
+#endif
+
 
 // Define this to indicate that we provide our own definitions for Windows types
 #define ALLREADY_HAVE_WINDOWS_TYPE
