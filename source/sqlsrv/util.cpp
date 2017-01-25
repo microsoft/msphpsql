@@ -592,7 +592,7 @@ PHP_FUNCTION( sqlsrv_configure )
 
             zend_long buffered_query_limit = Z_LVAL_P( value_z );
 
-            CHECK_CUSTOM_ERROR( buffered_query_limit < 0, error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_ ) {
+            CHECK_CUSTOM_ERROR( buffered_query_limit <= 0, error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_ ) {
 
                 throw ss::SSException();
             }
