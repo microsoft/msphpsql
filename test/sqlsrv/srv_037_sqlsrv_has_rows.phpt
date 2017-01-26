@@ -24,8 +24,7 @@ $stmt = sqlsrv_query($conn, $query) ?: die( print_r( sqlsrv_errors(), true) );
 $query = "SELECT ID FROM $tableName";
 $stmt = sqlsrv_query($conn, $query)
 		?: die( print_r(sqlsrv_errors(), true));
-        
-// if we skip the next four calls it's fine
+     
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
