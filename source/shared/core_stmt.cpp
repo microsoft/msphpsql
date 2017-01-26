@@ -672,8 +672,7 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_
             wsql_len = 0;
         }
         else {
-            SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
-                                     stmt->encoding() );
+            SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding() );
             wsql_string = utf16_string_from_mbcs_string( encoding, reinterpret_cast<const char*>( sql ),
                                                          sql_len, &wsql_len );
             CHECK_CUSTOM_ERROR( wsql_string == 0, stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE,
@@ -771,9 +770,7 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULE
 
         // move to the record requested.  For absolute records, we use a 0 based offset, so +1 since 
         // SQLFetchScroll uses a 1 based offset, otherwise for relative, just use the fetch_offset provided.
-        SQLRETURN r = stmt->current_results->fetch( fetch_orientation, 
-                                                    ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 
-                                                    TSRMLS_CC );
+        SQLRETURN r = stmt->current_results->fetch( fetch_orientation, ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 TSRMLS_CC );
         if( r == SQL_NO_DATA ) {
             // if this is a forward only cursor, mark that we've passed the end so future calls result in an error
             if( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
@@ -923,20 +920,18 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 		// if the field is to be cached, and this field is being retrieved out of order, cache prior fields so they
 		// may also be retrieved.
 		if( cache_field && (field_index - stmt->last_field_index ) >= 2 ) {
-			sqlsrv_phptype invalid;
-			invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
-			for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
-				SQLSRV_ASSERT( reinterpret_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), i )) == NULL,
-					"Field already cached." );
-				core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field,
-									sqlsrv_php_type_out TSRMLS_CC );
-				// delete the value returned since we only want it cached, not the actual value
-				if( field_value ) {
-					efree( field_value );
-					field_value = NULL;
-					*field_len = 0;
-				}
-			}
+                   sqlsrv_phptype invalid;
+                   invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
+                   for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
+                       SQLSRV_ASSERT( reinterpret_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), i )) == NULL, "Field already cached." );
+                       core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field, sqlsrv_php_type_out TSRMLS_CC );
+                       // delete the value returned since we only want it cached, not the actual value
+                       if( field_value ) {
+                           efree( field_value );
+                           field_value = NULL;
+                           *field_len = 0;
+		       }
+		   }
 		}
 
 		// If the php type was not specified set the php type to be the default type.
@@ -1799,18 +1794,16 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* para
         break;
         case IS_TRUE:
         case IS_FALSE:
-                sql_c_type = SQL_C_SLONG;
-                break;
+             sql_c_type = SQL_C_SLONG;
+             break;
         case IS_LONG:
-			//ODBC 64-bit long and integer type are 4 byte values. 
-			if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) )
-			{
-				sql_c_type = SQL_C_SBIGINT;
-			}
-			else
-			{
-				sql_c_type = SQL_C_SLONG;
-			}
+             //ODBC 64-bit long and integer type are 4 byte values. 
+             if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
+                 sql_c_type = SQL_C_SBIGINT;
+             } 
+             else {
+                 sql_c_type = SQL_C_SLONG;
+             }
             break;
         case IS_DOUBLE:
             sql_c_type = SQL_C_DOUBLE;
@@ -1848,7 +1841,6 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* para
 
 
 // given a zval and encoding, determine the appropriate sql type
-
 void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV_ENCODING encoding, 
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC )
 {
@@ -1875,16 +1867,12 @@ void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV
             sql_type = SQL_INTEGER;
             break;
         case IS_LONG:
-			//ODBC 64-bit long and integer type are 4 byte values. 
-			if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) )
-			{
-				sql_type = SQL_BIGINT;
-			}
-			else
-			{
-				sql_type = SQL_INTEGER;
-			}
-
+             //ODBC 64-bit long and integer type are 4 byte values. 
+             if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
+                 sql_type = SQL_BIGINT;
+             } else {
+                 sql_type = SQL_INTEGER;
+             }
             break;
         case IS_DOUBLE:
             sql_type = SQL_FLOAT;
@@ -1952,12 +1940,12 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
         case IS_STRING:
         {
             size_t char_size = (encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( SQLWCHAR ) : sizeof( char );
-		    SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
+            SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
             if( byte_len > SQL_SERVER_MAX_FIELD_SIZE ) {
                 column_size = SQL_SERVER_MAX_TYPE_SIZE;
             }
             else {
-				column_size = SQL_SERVER_MAX_FIELD_SIZE / char_size;
+                column_size = SQL_SERVER_MAX_FIELD_SIZE / char_size;
             }
             break;
         }
@@ -2058,10 +2046,10 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
                 // so we do that here if the length of the returned data is less than the original allocation.  The 
                 // original allocation null terminates the buffer already.
                 str[ str_len ] = '\0';
-				core::sqlsrv_zval_stringl(value_z, str, str_len);
+                core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
-			else {
-				core::sqlsrv_zval_stringl(value_z, str, str_len);
+            else {
+                core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
         }
         break;
@@ -2073,10 +2061,9 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             else if( output_param->is_bool ) {
                 convert_to_boolean( value_z );
             }
-			else
-			{
-				ZVAL_LONG( value_z, static_cast<int>( Z_LVAL_P( value_z )));
-			}
+            else {
+                ZVAL_LONG( value_z, static_cast<int>( Z_LVAL_P( value_z )));
+            }
             break;
         case IS_DOUBLE:
             // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
@@ -2097,7 +2084,7 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
 }
 
 void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type,
-						_Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC )
+			  _Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC )
 {
 	SQLRETURN r;
 	SQLSMALLINT c_type;
