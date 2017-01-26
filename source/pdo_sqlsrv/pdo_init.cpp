@@ -100,9 +100,9 @@ zend_module_entry g_pdo_sqlsrv_module_entry =
 };
 
 // called by Zend for each parameter in the g_pdo_errors_ht hash table when it is destroyed
-void pdo_error_dtor(zval* elem) {
-    pdo_error* error_to_ignore = reinterpret_cast<pdo_error*>(Z_PTR_P(elem));
-    pefree(error_to_ignore, 1);
+void pdo_error_dtor( zval* elem ) {
+    pdo_error* error_to_ignore = reinterpret_cast<pdo_error*>( Z_PTR_P( elem ) );
+    pefree( error_to_ignore, 1 );
 }
 
 // Module initialization
