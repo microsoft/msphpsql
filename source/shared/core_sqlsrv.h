@@ -31,10 +31,16 @@
 #define _WCHART_DEFINED 
 #endif
 
+#include "php.h"
+#include "php_globals.h"
+#include "php_ini.h"
+#include "ext/standard/php_standard.h"
+#include "ext/standard/info.h"
+
 #ifndef _WIN32
 #include "FormattedPrint.h"
 #include "StringFunctions.h"
-#endif
+#endif // !_WIN32
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -105,12 +111,6 @@ typedef int socklen_t;
 #define HAVE_SOCKLEN_T
 #endif
 
-#include "php.h"
-#include "php_globals.h"
-#include "php_ini.h"
-#include "ext/standard/php_standard.h"
-#include "ext/standard/info.h"
-
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
@@ -126,8 +126,10 @@ typedef int socklen_t;
 OACR_WARNING_POP
 #endif
 
+#ifdef _WIN32
 #include <sql.h>
 #include <sqlext.h>
+#endif // _WIN32
 
 #if !defined(WC_ERR_INVALID_CHARS)
 // imported from winnls.h as it isn't included by 5.3.0
@@ -1145,22 +1147,6 @@ struct connection_option {
     void                (*func)( connection_option const*, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC );
 };
 
-// connection attribute functions
-template <unsigned int Attr>
-struct str_conn_attr_func {
-
-    static void func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
-    {
-        try {
-            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
-                                     static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
-        }
-        catch( core::CoreException& ) {
-            throw;
-        }
-    }
-};
-
 // simply add the parsed value to the connection string
 struct conn_str_append_func {
 
@@ -2096,13 +2082,13 @@ namespace core {
 
         r = ::SQLRowCount( stmt->handle(), &rows_affected );
         
-		/* On Linux platform
-		DriverName: libmsodbcsql-13.0.so.0.0
-		DriverODBCVer: 03.52
-		DriverVer: 13.00.0000
-		unixODBC: 2.3.1
-		r = ::SQLRowCount( stmt->handle(), &rows_affected );  
-		returns r=-1 for an empty result set. */
+		// On Linux platform
+		// DriverName: libmsodbcsql-13.0.so.0.0
+		// DriverODBCVer: 03.52
+		// DriverVer: 13.00.0000
+		// unixODBC: 2.3.1
+		// r = ::SQLRowCount( stmt->handle(), &rows_affected );  
+		// returns r=-1 for an empty result set. 
 #ifdef __linux__
 		if( r == -1 && rows_affected == -1 )
 			return 0;
@@ -2344,5 +2330,21 @@ sqlsrv_conn* allocate_conn( SQLHANDLE h, error_callback e, void* driver TSRMLS_D
 }
 
 } // namespace core
+
+// connection attribute functions
+template <unsigned int Attr>
+struct str_conn_attr_func {
+
+    static void func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    {
+        try {
+            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
+                                     static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
+        }
+        catch( core::CoreException& ) {
+            throw;
+        }
+    }
+};
 
 #endif  // CORE_SQLSRV_H
