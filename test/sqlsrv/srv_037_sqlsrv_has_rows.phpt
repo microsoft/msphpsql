@@ -24,7 +24,8 @@ $stmt = sqlsrv_query($conn, $query) ?: die( print_r( sqlsrv_errors(), true) );
 $query = "SELECT ID FROM $tableName";
 $stmt = sqlsrv_query($conn, $query)
 		?: die( print_r(sqlsrv_errors(), true));
-     
+
+// repeated calls should return true and fetch should work.        
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
@@ -41,7 +42,6 @@ if (sqlsrv_has_rows($stmt)) {
 $stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"))
 		?: die( print_r(sqlsrv_errors(), true));
 
-// if we skip the next four calls it's fine
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
@@ -58,6 +58,7 @@ $query = "SELECT ID FROM $tableName where ID='nomatch'";
 $stmt = sqlsrv_query($conn, $query)
 		?: die( print_r(sqlsrv_errors(), true));
         
+// repeated calls should return false if there are no rows.       
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 
@@ -65,6 +66,7 @@ echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 $stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"))
 		?: die( print_r(sqlsrv_errors(), true));
 
+// repeated calls should return false if there are no rows.       
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 
