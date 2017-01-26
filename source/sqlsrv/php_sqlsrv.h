@@ -48,8 +48,10 @@ OACR_WARNING_DISABLE( REALLOCLEAK, "Third party code." )
 
 extern "C" {
 
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning( disable: 4005 4100 4127 4142 4244 4505 4530 )
+#endif
 
 #ifdef ZTS
 #include "TSRM.h"
@@ -65,13 +67,9 @@ typedef int socklen_t;
 #define HAVE_SOCKLEN_T
 #endif
 
-#include "php.h"
-#include "php_globals.h"
-#include "php_ini.h"
-#include "ext/standard/php_standard.h"
-#include "ext/standard/info.h"
-
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 
 #if PHP_MAJOR_VERSION < 7
 #error Trying to compile "Microsoft Drivers for PHP for SQL Server (SQLSRV Driver)" with an unsupported version of PHP
@@ -102,6 +100,8 @@ extern sqlsrv_context* g_henv_cp;
 extern sqlsrv_context* g_henv_ncp;
 
 extern OSVERSIONINFO g_osversion;                 // used to determine which OS we're running in
+
+#define phpext_sqlsrv_ptr &g_sqlsrv_module_entry
 
 // module initialization
 PHP_MINIT_FUNCTION(sqlsrv);
@@ -373,7 +373,7 @@ unsigned int convert_string_from_default_encoding( unsigned int php_encoding, ch
 // create a wide char string from the passed in mbcs string.  NULL is returned if the string
 // could not be created.  No error is posted by this function.  utf16_len is the number of
 // wchar_t characters, not the number of bytes.
-wchar_t* utf16_string_from_mbcs_string( unsigned int php_encoding, const char* mbcs_string, 
+SQLWCHAR* utf16_string_from_mbcs_string( unsigned int php_encoding, const char* mbcs_string, 
                                         unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
 
 // *** internal error macros and functions ***
@@ -407,7 +407,7 @@ inline void reset_errors( TSRMLS_D )
 }
 
 #define THROW_SS_ERROR( ctx, error_code, ... ) \
-    (void)call_error_handler( ctx, error_code TSRMLS_CC, false /*warning*/, __VA_ARGS__ ); \
+    (void)call_error_handler( ctx, error_code TSRMLS_CC, false /*warning*/, ## __VA_ARGS__ ); \
     throw ss::SSException();
 
 
@@ -475,6 +475,31 @@ enum logging_subsystems {
     LOG_ALL  = -1,
 };
 
+//*********************************************************************************************************************************
+// Common function wrappers  
+//      have to place this namespace before the utility functions
+//      otherwise can't compile in Linux because 'ss' not defined
+//*********************************************************************************************************************************
+namespace ss {
+
+    // an error which occurred in our SQLSRV driver
+    struct SSException : public core::CoreException {
+
+        SSException()
+        {
+        }
+    };
+
+    inline void zend_register_resource(_Out_ zval& rsrc_result, void* rsrc_pointer, int rsrc_type, char* rsrc_name TSRMLS_DC)
+    {
+        int zr = (NULL != (Z_RES(rsrc_result) = ::zend_register_resource(rsrc_pointer, rsrc_type)) ? SUCCESS : FAILURE);
+        CHECK_CUSTOM_ERROR(( zr == FAILURE ), reinterpret_cast<sqlsrv_context*>( rsrc_pointer ), SS_SQLSRV_ERROR_REGISTER_RESOURCE,
+            rsrc_name ) {
+            throw ss::SSException();
+        }
+        Z_TYPE_INFO(rsrc_result) = IS_RESOURCE_EX;
+    }
+} // namespace ss
 
 //*********************************************************************************************************************************
 // Utility Functions
@@ -519,7 +544,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         int result = SUCCESS;
         
         // dummy context to pass to the error handler
-        sqlsrv_context error_ctx( 0, ss_error_handler, NULL );;
+        sqlsrv_context error_ctx( 0, ss_error_handler, NULL );
         error_ctx.set_func( calling_func );
 
         switch( param_count ) {
@@ -591,28 +616,5 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         DIE( "%1!s!: Unknown exception caught in process_params.", calling_func );
     }
 }
-//*********************************************************************************************************************************
-// Common function wrappers
-//*********************************************************************************************************************************
-namespace ss {
-
-    // an error which occurred in our SQLSRV driver
-    struct SSException : public core::CoreException {
-
-        SSException()
-        {
-        }
-    };
-
-    inline void zend_register_resource(_Out_ zval& rsrc_result, void* rsrc_pointer, int rsrc_type, char* rsrc_name TSRMLS_DC)
-    {
-        int zr = (NULL != (Z_RES(rsrc_result) = ::zend_register_resource(rsrc_pointer, rsrc_type)) ? SUCCESS : FAILURE);
-        CHECK_CUSTOM_ERROR(( zr == FAILURE ), reinterpret_cast<sqlsrv_context*>( rsrc_pointer ), SS_SQLSRV_ERROR_REGISTER_RESOURCE,
-            rsrc_name ) {
-            throw ss::SSException();
-        }
-        Z_TYPE_INFO(rsrc_result) = IS_RESOURCE_EX;
-    }
-} // namespace ss
 
 #endif	/* PHP_SQLSRV_H */
