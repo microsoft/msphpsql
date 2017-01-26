@@ -351,7 +351,7 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
 
 
 // log a function entry point
-#ifdef __linux__
+#ifndef _WIN32
 #define PDO_LOG_DBH_ENTRY \
 { \
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
