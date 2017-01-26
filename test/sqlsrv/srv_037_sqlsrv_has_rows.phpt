@@ -1,5 +1,9 @@
 --TEST--
 sqlsrv_has_rows() using a forward and scrollable cursor
+--DESCRIPTION--
+This test calls sqlsrv_has_rows multiple times. Previously, multiple calls 
+with a forward cursor would advance the cursor. Subsequent fetch calls 
+would then fail.
 --SKIPIF--
 --FILE--
 <?php
