@@ -148,7 +148,7 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
 
     key_name[ new_len ] = '\0';  
 
-    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>(key_name) ); 
+    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
 }
 
 // Primary function which parses the connection string/DSN.
