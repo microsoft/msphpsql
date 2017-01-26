@@ -832,7 +832,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( SQLUSMALLINT field_index, SQLSMA
     conv_matrix_t::const_iterator conv_iter = conv_matrix.find(meta[field_index].c_type);
     if( conv_iter == conv_matrix.end() || conv_iter->second.find( target_type ) == conv_iter->second.end() ) {
         last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) 
-            sqlsrv_error( (SQLCHAR*) "07006", (SQLCHAR*) "Restricted data type attribute violation", 0 );
+        sqlsrv_error( (SQLCHAR*) "07006", (SQLCHAR*) "Restricted data type attribute violation", 0 );
         return SQL_ERROR;
     }
 
@@ -1357,8 +1357,7 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
         temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof(char), sizeof(char)));
 			
 #ifdef __linux__		
-        temp_length = SystemLocale::FromUtf16( CP_ACP, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),
-                                 (LPSTR) temp_string.get(), static_cast<int>(field_len) );
+        temp_length = SystemLocale::FromUtf16( CP_ACP, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),(LPSTR) temp_string.get(), static_cast<int>(field_len) );
 #else								 			
         BOOL default_char_used = FALSE;
         char default_char = '?';
