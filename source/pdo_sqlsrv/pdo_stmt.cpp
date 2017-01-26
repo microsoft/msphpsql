@@ -340,7 +340,7 @@ void stmt_option_fetch_numeric:: operator()( sqlsrv_stmt* stmt, stmt_option cons
 
 
 // log a function entry point
-#ifdef __linux__
+#ifndef _WIN32
 #define PDO_LOG_STMT_ENTRY \
 { \
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
