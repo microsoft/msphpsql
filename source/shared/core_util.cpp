@@ -93,43 +93,36 @@ bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string,
 
 bool convert_zval_string_from_utf16(SQLSRV_ENCODING encoding, zval* value_z, SQLLEN& len)
 {
-	char* string = Z_STRVAL_P(value_z);
+    char* string = Z_STRVAL_P(value_z);
 
-	if (validate_string(string, len)) {
-		return true;
-	}
+    if( validate_string(string, len)) {
+       return true;
+    }
 
-	char* outString = NULL;
-	SQLLEN outLen = 0;
-
+    char* outString = NULL;
+    SQLLEN outLen = 0;
     bool result = convert_string_from_utf16( encoding, reinterpret_cast<const SQLWCHAR*>(string), int(len / sizeof(SQLWCHAR)), &outString, outLen );
-
-	if (result)
-	{
-		core::sqlsrv_zval_stringl(value_z, outString, outLen);
-		sqlsrv_free(outString);
-		len = outLen;
-	}
-
-	return result;
+    if( result ) {
+       core::sqlsrv_zval_stringl( value_z, outString, outLen );
+       sqlsrv_free( outString );
+       len = outLen;
+    }
+    return result;
 }
 
 bool validate_string(char* string, SQLLEN& len)
 {
-	SQLSRV_ASSERT(string != NULL, "String must be specified");
+     SQLSRV_ASSERT(string != NULL, "String must be specified");
 
-	//for the empty string, we simply returned we converted it
-	if (len == 0 && string[0] == '\0') {
-		return true;
-	}
-
-    if ((len / sizeof(SQLWCHAR)) > INT_MAX)
-    {
+     //for the empty string, we simply returned we converted it
+     if( len == 0 && string[0] == '\0') {
+         return true;
+     }
+    if ((len / sizeof(SQLWCHAR)) > INT_MAX) {
         LOG(SEV_ERROR, "UTP-16 (wide character) string mapping: buffer length exceeded.");
         throw core::CoreException();
     }
-
-	return false;
+    return false;
 }
 
 bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen )
@@ -246,16 +239,12 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
                     }
                     break;
                 }
-
                 // convert the error into the encoding of the context
                 if( enc == SQLSRV_ENCODING_DEFAULT ) {
                     enc = stmt->conn->encoding();
                 }
             }
-
-
         default:
-
             error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
             r = SQLGetDiagRecW( h_type, h, record_number, wsqlstate, &error->native_code, wnative_message,
                                 SQL_MAX_MESSAGE_LENGTH + 1, &wmessage_len );
@@ -265,11 +254,11 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
             }
 
 #ifdef __linux__
-			// In linux we need to calculate number of characters
-			SQLLEN wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
+           // In linux we need to calculate number of characters
+           SQLLEN wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
 #else
-			// In Windows we need the size in bytes
-			SQLLEN wsqlstate_len = sizeof( wsqlstate );
+           // In Windows we need the size in bytes
+           SQLLEN wsqlstate_len = sizeof( wsqlstate );
 #endif
             SQLLEN sqlstate_len = 0;
             convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
@@ -320,11 +309,8 @@ DWORD core_sqlsrv_format_message( char* output_buffer, unsigned output_len, cons
 {
     va_list format_args;
     va_start( format_args, format );
-
-	DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, format, 0, 0, static_cast<LPSTR>(output_buffer), output_len, &format_args );
-
+    DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, format, 0, 0, static_cast<LPSTR>(output_buffer), output_len, &format_args );
     va_end( format_args );
-
     return rc;
 }
 
@@ -360,11 +346,8 @@ void die( const char* msg, ... )
 {
     va_list format_args;
     va_start( format_args, msg );
-
-	DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, last_err_msg, sizeof( last_err_msg ), &format_args );
-
+    DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, last_err_msg, sizeof( last_err_msg ), &format_args );
     va_end( format_args );
-
     if( rc == 0 ) {
         php_error( E_ERROR, reinterpret_cast<const char*>( INTERNAL_FORMAT_ERROR ));
     }
@@ -400,8 +383,7 @@ unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _I
 #ifdef __linux__ 
     unsigned int required_len = SystemLocale::ToUtf16( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
 #else
-    unsigned int required_len = MultiByteToWideChar( win_encoding, MB_ERR_INVALID_CHARS, mbcs_in_string, mbcs_len, 
-                                                     utf16_out_string, utf16_len );
+    unsigned int required_len = MultiByteToWideChar( win_encoding, MB_ERR_INVALID_CHARS, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
 #endif
     
     if( required_len == 0 ) {
