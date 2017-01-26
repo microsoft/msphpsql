@@ -2082,16 +2082,16 @@ namespace core {
 
         r = ::SQLRowCount( stmt->handle(), &rows_affected );
         
-		// On Linux platform
-		// DriverName: libmsodbcsql-13.0.so.0.0
-		// DriverODBCVer: 03.52
-		// DriverVer: 13.00.0000
-		// unixODBC: 2.3.1
-		// r = ::SQLRowCount( stmt->handle(), &rows_affected );  
-		// returns r=-1 for an empty result set. 
+        // On Linux platform
+        // DriverName: libmsodbcsql-13.0.so.0.0
+        // DriverODBCVer: 03.52
+        // DriverVer: 13.00.0000
+        // unixODBC: 2.3.1
+        // r = ::SQLRowCount( stmt->handle(), &rows_affected );  
+        // returns r=-1 for an empty result set. 
 #ifdef __linux__
-		if( r == -1 && rows_affected == -1 )
-			return 0;
+        if( r == -1 && rows_affected == -1 )
+           return 0;
 #endif
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
