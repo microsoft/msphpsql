@@ -42,7 +42,7 @@
 #include <vector>
 #include <algorithm>
 #ifdef MPLAT_UNIX
-    #include <sal.h>
+    #include "sal_def.h"
 #endif
 
 #ifdef __linux__
