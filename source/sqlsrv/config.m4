@@ -37,5 +37,5 @@ if test "$PHP_SQLSRV" != "no"; then
   AC_DEFINE(HAVE_SQLSRV, 1, [ ])
   PHP_ADD_INCLUDE([$sqlsrv_inc_path])
   PHP_NEW_EXTENSION(sqlsrv, $sqlsrv_src_class $shared_src_class, $ext_shared,,-std=c++11)
- 
+  PHP_ADD_BUILD_DIR([$ext_builddir/shared], 1)
 fi
