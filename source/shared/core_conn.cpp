@@ -25,14 +25,14 @@
 #include <psapi.h>
 #include <windows.h>
 #include <winver.h>
-#endif
+#endif // _WIN32
 
 #include <string>
 #include <sstream>
 
-#ifdef __linux__
+#ifndef _WIN32
 #include <sys/utsname.h>
-#endif
+#endif // !_WIN32
 
 // *** internal variables and constants ***
 
@@ -341,7 +341,8 @@ void core_sqlsrv_prepare( sqlsrv_stmt* stmt, const char* sql, SQLLEN sql_len TSR
             wsql_string = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( sizeof( SQLWCHAR )));
             wsql_string[0] = L'\0';
             wsql_len = 0;
-        } else {
+        } 
+        else {
              if( sql_len > INT_MAX ) {
                 LOG( SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
                 throw core::CoreException();
@@ -449,11 +450,11 @@ void core_sqlsrv_get_client_info( sqlsrv_conn* conn, _Out_ zval *client_info TSR
         // Get the ODBC driver's dll name
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
         core::SQLGetInfo( conn, SQL_DRIVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
-#if defined (__linux__) || defined(__MACH__)
+#ifndef _WIN32
         core::sqlsrv_add_assoc_string( *conn, client_info, "DriverName", buffer, 0 /*duplicate*/ TSRMLS_CC );
 #else
         core::sqlsrv_add_assoc_string( *conn, client_info, "DriverDllName", buffer, 0 /*duplicate*/ TSRMLS_CC );
-#endif
+#endif // !_WIN32
         buffer.transferred();
 
         // Get the ODBC driver's ODBC version
@@ -647,7 +648,7 @@ void get_server_version( sqlsrv_conn* conn, char** server_version, SQLSMALLINT& 
 // and return the string of the processor name.
 const char* get_processor_arch( void )
 {
-#ifdef __linux__
+#ifndef _WIN32
    struct utsname sys_info;
     if ( uname(&sys_info) == -1 )
     {
@@ -682,7 +683,7 @@ const char* get_processor_arch( void )
             return NULL;
     }
 	return NULL;
-#endif
+#endif // !_WIN32
 }
 
 

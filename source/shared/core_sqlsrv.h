@@ -59,7 +59,7 @@
 #define stricmp strcasecmp
 #define strnicmp strncasecmp
 
-#ifdef __linux__
+#ifndef _WIN32
 #define GetLastError() errno
 #define SetLastError(err) errno=err
 
@@ -72,7 +72,7 @@ typedef struct _OSVERSIONINFOA {
     CHAR   szCSDVersion[ 128 ];     // Maintenance string for PSS usage
 } OSVERSIONINFOA, *POSVERSIONINFOA, *LPOSVERSIONINFOA;
 typedef OSVERSIONINFOA OSVERSIONINFO;
-#endif
+#endif // !_WIN32
 
 
 // OACR is an internal Microsoft static code analysis tool
@@ -1343,11 +1343,11 @@ const int SQLSRV_DEFAULT_SIZE = -1;     // size given for an output parameter th
 const unsigned int QUERY_TIMEOUT_INVALID = 0xffffffff;
 
 // special buffered query constant
-#ifdef __linux__
+#ifndef _WIN32
 const size_t SQLSRV_CURSOR_BUFFERED = 42; // arbitrary number that doesn't map to any other SQL_CURSOR_* constant
 #else
 const size_t SQLSRV_CURSOR_BUFFERED = 0xfffffffeUL; // arbitrary number that doesn't map to any other SQL_CURSOR_* constant
-#endif
+#endif // !_WIN32
 
 // factory to create a statement
 typedef sqlsrv_stmt* (*driver_stmt_factory)( sqlsrv_conn* conn, SQLHANDLE h, error_callback e, void* drv TSRMLS_DC );

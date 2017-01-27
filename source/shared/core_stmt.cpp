@@ -1169,7 +1169,7 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, long timeout TSRMLS_DC )
 
         // set the LOCK_TIMEOUT on the server.
         char lock_timeout_sql[ 32 ];
-#ifdef __linux__		
+#ifndef _WIN32		
         int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", 
                                  lock_timeout );
         SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )), 
@@ -1180,7 +1180,7 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, long timeout TSRMLS_DC )
 
         SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )), 
                         "stmt_option_query_timeout: sprintf_s failed. Shouldn't ever fail." );
-#endif
+#endif // !_WIN32
         
         core::SQLExecDirect( stmt, lock_timeout_sql TSRMLS_CC );
 
@@ -1268,12 +1268,12 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
                 SQLWCHAR wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ];
 				DWORD last_error_code = ERROR_SUCCESS;
 				// buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
-#ifdef __linux__
+#ifndef _WIN32
                 int wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, static_cast<int>(read), wbuffer, static_cast<int>(sizeof( wbuffer ) / sizeof( SQLWCHAR )), &last_error_code );
 #else
                 int wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>( read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
                 last_error_code = GetLastError();
-#endif
+#endif // !_WIN32
 
 				if( wsize == 0 && last_error_code == ERROR_NO_UNICODE_TRANSLATION ) {
 
@@ -1288,14 +1288,13 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
                         throw core::CoreException();
                     }
                     // try the conversion again with the complete character
-#ifdef __linux__					
-                 wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, static_cast<int>(read + new_read), wbuffer, static_cast<int>(sizeof( wbuffer ) / sizeof( SQLWCHAR )));
+#ifndef _WIN32					
+                    wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, static_cast<int>(read + new_read), wbuffer, static_cast<int>(sizeof( wbuffer ) / sizeof( SQLWCHAR )));
 #else
-                 wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>( read + new_read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
-#endif
-					// something else must be wrong if it failed
-                    CHECK_CUSTOM_ERROR( wsize == 0, stmt, SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE, 
-                                        get_last_error_message( ERROR_NO_UNICODE_TRANSLATION )) {
+                    wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>( read + new_read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
+#endif //!_WIN32
+                    // something else must be wrong if it failed
+                    CHECK_CUSTOM_ERROR( wsize == 0, stmt, SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE, get_last_error_message( ERROR_NO_UNICODE_TRANSLATION )) {
                         throw core::CoreException();
                     }
                 }
@@ -1737,11 +1736,11 @@ bool convert_input_param_to_utf16( zval* input_param_z, zval* converted_param_z 
     }
 
     // if the parameter is an input parameter, calc the size of the necessary buffer from the length of the string
-#ifdef __linux__
+#ifndef _WIN32
     wchar_size = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
 #else
     wchar_size = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );    
-#endif
+#endif // !_WIN32
 
     // if there was a problem determining the size of the string, return false
     if( wchar_size == 0 ) {
@@ -1750,11 +1749,11 @@ bool convert_input_param_to_utf16( zval* input_param_z, zval* converted_param_z 
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wbuffer;
     wbuffer = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( (wchar_size + 1) * sizeof( SQLWCHAR ) ));
     // convert the utf-8 string to a wchar string in the new buffer
-#ifdef __linux__
+#ifndef _WIN32
     int r = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
 #else
     int r = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );    	
-#endif
+#endif // !_WIN32
     // if there was a problem converting the string, then free the memory and return false
     if( r == 0 ) {
         return false;
@@ -1870,7 +1869,8 @@ void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV
              //ODBC 64-bit long and integer type are 4 byte values. 
              if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
                  sql_type = SQL_BIGINT;
-             } else {
+             } 
+             else {
                  sql_type = SQL_INTEGER;
              }
             break;
@@ -2084,7 +2084,7 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
 }
 
 void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type,
-			  _Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC )
+                          _Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC )
 {
 	SQLRETURN r;
 	SQLSMALLINT c_type;

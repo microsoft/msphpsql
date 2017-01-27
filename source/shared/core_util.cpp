@@ -147,13 +147,13 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inStri
     }
 
     // calculate the number of characters needed
-#ifdef __linux__
+#ifndef _WIN32
     cchOutLen = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, NULL, 0 );
 #else	
     cchOutLen = WideCharToMultiByte( encoding, flags,
                                    inString, cchInLen, 
                                    NULL, 0, NULL, NULL );
-#endif    
+#endif // !_WIN32   
 	
     if( cchOutLen == 0 ) {
         return false;
@@ -162,13 +162,11 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inStri
     // Create a buffer to fit the encoded string
     char* newString = reinterpret_cast<char*>( sqlsrv_malloc( cchOutLen + 1 /* NULL char*/ ));
     
-#ifdef __linux__
+#ifndef _WIN32
     int rc = SystemLocale::FromUtf16( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
 #else
-    int rc = WideCharToMultiByte( encoding, flags,
-                                  inString, cchInLen, 
-                                  newString, static_cast<int>(cchOutLen), NULL, NULL );
-#endif
+    int rc = WideCharToMultiByte( encoding, flags, inString, cchInLen, newString, static_cast<int>(cchOutLen), NULL, NULL );
+#endif // !_WIN32
     if( rc == 0 ) {
         cchOutLen = 0;
         sqlsrv_free( newString );
@@ -253,13 +251,13 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
                 return false;
             }
 
-#ifdef __linux__
-           // In linux we need to calculate number of characters
-           SQLLEN wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
+#ifndef _WIN32
+            // In linux we need to calculate number of characters
+            SQLLEN wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
 #else
            // In Windows we need the size in bytes
            SQLLEN wsqlstate_len = sizeof( wsqlstate );
-#endif
+#endif // !_WIN32
             SQLLEN sqlstate_len = 0;
             convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
 
@@ -380,11 +378,11 @@ unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _I
             win_encoding = php_encoding;
             break;
     }
-#ifdef __linux__ 
+#ifndef _WIN32 
     unsigned int required_len = SystemLocale::ToUtf16( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
 #else
     unsigned int required_len = MultiByteToWideChar( win_encoding, MB_ERR_INVALID_CHARS, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
-#endif
+#endif // !_Win32
     
     if( required_len == 0 ) {
         return 0;

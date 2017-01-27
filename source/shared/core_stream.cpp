@@ -147,25 +147,25 @@ size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* b
             // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
             // an error.  This happens only on XP.
             // convert to UTF-8
-#ifndef __linux__
+#ifdef _WIN32
             DWORD flags = 0;
             if( g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
                 // Vista (and later) will detect invalid UTF-16 characters and raise an error.
                 flags = WC_ERR_INVALID_CHARS;
             }
-#endif
+#endif // _WIN32
            if( count > INT_MAX || (read >> 1) > INT_MAX ) {
                LOG(SEV_ERROR, "UTF-16 (wide character) string mapping: buffer length exceeded.");
                throw core::CoreException();
            }
 
-#ifdef __linux__
+#ifndef _WIN32
             int enc_len = SystemLocale::FromUtf16( ss->encoding, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
                                                    static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 #else
             int enc_len = WideCharToMultiByte( ss->encoding, flags, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
-							static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
-#endif
+							                   static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
+#endif // !_WIN32
             if( enc_len == 0 ) {
             
                 stream->eof = 1;

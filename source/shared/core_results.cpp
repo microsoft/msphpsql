@@ -1208,14 +1208,14 @@ SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( SQLSMALLINT field_i
 				throw core::CoreException();
 			}
 
-#ifdef __linux__
+#ifndef _WIN32
              int ch_space = SystemLocale::ToUtf16( CP_ACP, (LPCSTR) field_data, static_cast<int>(to_copy), 
                                     static_cast<LPWSTR>(buffer), static_cast<int>(to_copy));
 									
 #else
             int ch_space = MultiByteToWideChar( CP_ACP, MB_ERR_INVALID_CHARS, (LPCSTR) field_data, static_cast<int>(to_copy), 
                                       static_cast<LPWSTR>(buffer), static_cast<int>(to_copy));
-#endif
+#endif // !_WIN32
 			
             if( ch_space == 0 ) {
 
@@ -1356,15 +1356,16 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
         // allocate enough to handle WC -> DBCS conversion if it happens
         temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof(char), sizeof(char)));
 			
-#ifdef __linux__		
-        temp_length = SystemLocale::FromUtf16( CP_ACP, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),(LPSTR) temp_string.get(), static_cast<int>(field_len) );
+#ifndef _WIN32		
+        temp_length = SystemLocale::FromUtf16( CP_ACP, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),
+                                 (LPSTR) temp_string.get(), static_cast<int>(field_len) );
 #else								 			
         BOOL default_char_used = FALSE;
         char default_char = '?';
 
         temp_length = WideCharToMultiByte( CP_ACP, 0, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),
                                            (LPSTR) temp_string.get(), static_cast<int>(field_len), &default_char, &default_char_used );
-#endif		
+#endif	// !_WIN32	
         if( temp_length == 0 ) {
 
             switch( GetLastError() ) {
