@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------------------------------------------------------------
-// File: winnls.h
+// File: xplat_winnls.h
 //
 // Contents: Contains the minimal definitions to build on non-Windows platforms
 //

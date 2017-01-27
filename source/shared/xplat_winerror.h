@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------------------------------------------------------------
-// File: winerror.h
+// File: xplat_winerror.h
 //
 // Contents: Contains the minimal definitions to build on non-Windows platforms
 //

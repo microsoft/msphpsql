@@ -21,7 +21,7 @@
 #ifndef _FORMATTEDPRINT_H_
 #define _FORMATTEDPRINT_H_
 
-#include "winnls.h"
+#include "xplat_winnls.h"
 #include "localization.hpp"
 
 inline bool __ascii_iswalpha(WCHAR c) { return( ('A' <= (c) && (c) <= 'Z') || ( 'a' <= (c) && (c) <= 'z') ); }

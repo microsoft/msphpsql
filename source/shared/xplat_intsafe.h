@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------------------------------------------------------------
-// File: intsafe.h
+// File: xplat_intsafe.h
 //
 // Contents: This module defines helper functions to prevent
 //			 integer overflow bugs.
@@ -34,7 +34,7 @@
 #endif
 #endif
 
-#include "sal.h"
+#include "sal_def.h"
 #include <limits.h>
 
 //

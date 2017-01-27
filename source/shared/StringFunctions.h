@@ -20,7 +20,7 @@
 #if !defined(_STRINGFUNCTIONS_H_)
 #define _STRINGFUNCTIONS_H_
 
-#include "winnls.h"
+#include "xplat_winnls.h"
 
 // ---------------------------------------------------------------------------
 // Declare internal versions of string handling functions

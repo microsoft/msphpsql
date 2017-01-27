@@ -1,3 +1,5 @@
+#ifndef VERSION_H
+#define VERSION_H
 //---------------------------------------------------------------------------------------------------------------------------------
 // File: version.h
 // Contents: Version number constants
@@ -30,6 +32,6 @@
 #define PHP_SQLSRV_VERSION      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE )
 #define PHP_PDO_SQLSRV_VERSION  PHP_SQLSRV_VERSION
 
-
+#endif // VERSION_H
 
 
