@@ -1,5 +1,5 @@
 --TEST--
-Error checking for Multiple active result sets (MARS) disabled
+Error checking for multiple active result sets (MARS) disabled
 --SKIPIF--
 --FILE--
 <?php
