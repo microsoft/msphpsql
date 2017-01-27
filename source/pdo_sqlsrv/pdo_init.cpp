@@ -18,7 +18,6 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "php_pdo_sqlsrv.h"
-#include <psapi.h>
 
 #ifdef ZTS
 ZEND_TSRMLS_CACHE_DEFINE();
@@ -46,44 +45,10 @@ pdo_driver_t pdo_sqlsrv_driver = {
     pdo_sqlsrv_db_handle_factory
 };
 
-const char PDO_DLL_NAME[] = "php_pdo.dll";
-
-// PHP_DEBUG is always defined as either 0 or 1
-#if PHP_DEBUG == 1 && !defined(ZTS)
-
-const char PHP_DLL_NAME[] = "php7_debug.dll";
-
-#elif PHP_DEBUG == 1 && defined(ZTS)
-
-const char PHP_DLL_NAME[] = "php7ts_debug.dll";
-
-#elif PHP_DEBUG == 0 && !defined(ZTS)
-
-const char PHP_DLL_NAME[] = "php7.dll";
-
-#elif PHP_DEBUG == 0 && defined(ZTS)
-
-const char PHP_DLL_NAME[] = "php7ts.dll";
-
-#else
-
-#error Invalid combination of PHP_DEBUG and ZTS macros
-
-#endif
-
-typedef PDO_API int (*pdo_register_func)(pdo_driver_t *);
-
-// function pointers to register and unregister this driver
-pdo_register_func pdo_register_driver;
-pdo_register_func pdo_unregister_driver;
-
 // functions to register SQLSRV constants with the PDO class
 // (It's in all CAPS so it looks like the Zend macros that do similar work)
 void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( char const* name, long value TSRMLS_DC );
 void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( char const* name, char const* value TSRMLS_DC );
-
-// return the Zend class entry for the PDO dbh (connection) class
-zend_class_entry* (*pdo_get_dbh_class)( void );
 
 struct sqlsrv_attr_pdo_constant {
     const char *name;
@@ -96,8 +61,8 @@ extern sqlsrv_attr_pdo_constant pdo_attr_constants[];
 }
 
 static zend_module_dep pdo_sqlsrv_depends[] = {
-	ZEND_MOD_REQUIRED("pdo")
-	{NULL, NULL, NULL}
+    ZEND_MOD_REQUIRED("pdo")
+    {NULL, NULL, NULL}
 };
 
 
@@ -116,7 +81,7 @@ zend_module_entry g_pdo_sqlsrv_module_entry =
 {
     STANDARD_MODULE_HEADER_EX,
     NULL,
-	pdo_sqlsrv_depends,
+    pdo_sqlsrv_depends,
     "pdo_sqlsrv", 
     pdo_sqlsrv_functions,           // exported function table
     // initialization and shutdown functions
@@ -134,15 +99,10 @@ zend_module_entry g_pdo_sqlsrv_module_entry =
     STANDARD_MODULE_PROPERTIES_EX
 };
 
-// functions dynamically linked from the PDO (or PHP) dll and called by other parts of the driver
-zend_class_entry* (*pdo_get_exception_class)( void );
-int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
-                              char **outquery, size_t *outquery_len TSRMLS_DC);
-
 // called by Zend for each parameter in the g_pdo_errors_ht hash table when it is destroyed
-void pdo_error_dtor(zval* elem) {
-	pdo_error* error_to_ignore = reinterpret_cast<pdo_error*>(Z_PTR_P(elem));
-	pefree(error_to_ignore, 1);
+void pdo_error_dtor( zval* elem ) {
+    pdo_error* error_to_ignore = reinterpret_cast<pdo_error*>( Z_PTR_P( elem ) );
+    pefree( error_to_ignore, 1 );
 }
 
 // Module initialization
@@ -155,9 +115,9 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     // our global variables are initialized in the RINIT function
 #if defined(ZTS)
     if( ts_allocate_id( &pdo_sqlsrv_globals_id,
-                    sizeof( zend_pdo_sqlsrv_globals ),
-                    (ts_allocate_ctor) NULL,
-                    (ts_allocate_dtor) NULL ) == 0 )
+                        sizeof( zend_pdo_sqlsrv_globals ),
+                        (ts_allocate_ctor) NULL,
+                        (ts_allocate_dtor) NULL ) == 0 )
         return FAILURE;
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
@@ -167,62 +127,6 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     REGISTER_INI_ENTRIES();
     
     LOG( SEV_NOTICE, "pdo_sqlsrv: entering minit" );
-
-    // PHP extensions may be either external DLLs loaded by PHP or statically compiled into the PHP dll
-    // This becomes an issue when we are dependent on other extensions, e.g. PDO.  Normally this is solved
-    // by the build process by linking our extension to the appropriate import library (either php*.dll or php_pdo.dll)
-    // However, this leaves us with a problem that the extension has a dependency on that build type.
-    // Since we don't distribute our extension with PHP directly (yet), it would mean that we would have to have SKUs
-    // for both types of PDO builds, internal and external.  Rather than this, we just dynamically link the PDO routines we call
-    // against either the PDO dll if it exists and is loaded, otherwise against the PHP dll directly.
-
-    DWORD needed = 0;
-    HANDLE hprocess = GetCurrentProcess();
-    HMODULE pdo_hmodule;
-
-    pdo_hmodule = GetModuleHandle( PDO_DLL_NAME );
-    if( pdo_hmodule == 0 ) {
-
-        pdo_hmodule = GetModuleHandle( PHP_DLL_NAME );
-        if( pdo_hmodule == NULL ) {
-            LOG( SEV_ERROR, "Failed to get PHP module handle." );
-            return FAILURE;
-        }
-    }
-
-    pdo_register_driver = reinterpret_cast<pdo_register_func>( GetProcAddress( pdo_hmodule, "php_pdo_register_driver" ));
-    if( pdo_register_driver == NULL ) {
-        LOG( SEV_ERROR, "Failed to register driver." );
-        return FAILURE;
-    }
-
-    pdo_unregister_driver = reinterpret_cast<pdo_register_func>( GetProcAddress( pdo_hmodule, "php_pdo_unregister_driver" ));
-    if( pdo_unregister_driver == NULL ) {
-        LOG( SEV_ERROR, "Failed to register driver." );
-        return FAILURE;
-    }
-
-    pdo_get_exception_class = reinterpret_cast<zend_class_entry* (*)(void)>( GetProcAddress( pdo_hmodule, 
-                                                                                             "php_pdo_get_exception" ));
-    if( pdo_get_exception_class == NULL ) {
-        LOG( SEV_ERROR, "Failed to register driver." );
-        return FAILURE;
-    }
-
-    pdo_get_dbh_class = reinterpret_cast<zend_class_entry* (*)(void)>( GetProcAddress( pdo_hmodule, "php_pdo_get_dbh_ce" ));
-    if( pdo_get_dbh_class == NULL ) {
-        LOG( SEV_ERROR, "Failed to register driver." );
-        return FAILURE;
-    }
-
-    pdo_subst_named_params = 
-        reinterpret_cast<int (*)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
-                                 char **outquery, size_t *outquery_len TSRMLS_DC)>( 
-                                     GetProcAddress( pdo_hmodule, "pdo_parse_params" ));
-    if( pdo_subst_named_params == NULL ) {
-        LOG( SEV_ERROR, "Failed to register driver." );
-        return FAILURE;
-    }
 
     // initialize list of pdo errors
     g_pdo_errors_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
@@ -263,12 +167,10 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
         return FAILURE;
     }
 
-    pdo_register_driver( &pdo_sqlsrv_driver );
+    php_pdo_register_driver( &pdo_sqlsrv_driver );
 
     return SUCCESS;
 }
-
-// Module shutdown function
 
 // Module shutdown function
 // This function is called once per execution of the Zend engine
@@ -281,7 +183,7 @@ PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)
 
         UNREGISTER_INI_ENTRIES();
 
-        pdo_unregister_driver( &pdo_sqlsrv_driver );
+        php_pdo_unregister_driver( &pdo_sqlsrv_driver );
 
         // clean up the list of pdo errors
         zend_hash_destroy( g_pdo_errors_ht );
@@ -352,8 +254,9 @@ namespace {
 
     void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( char const* name, long value TSRMLS_DC )
     {
-        zend_class_entry* zend_class = pdo_get_dbh_class();
-        SQLSRV_ASSERT( zend_class != NULL, "REGISTER_PDO_SQLSRV_CLASS_CONST_LONG: pdo_get_dbh_class failed" );
+        zend_class_entry* zend_class = php_pdo_get_dbh_ce(); 
+        
+        SQLSRV_ASSERT( zend_class != NULL, "REGISTER_PDO_SQLSRV_CLASS_CONST_LONG: php_pdo_get_dbh_ce failed");
         int zr = zend_declare_class_constant_long( zend_class, const_cast<char*>( name ), strlen( name ), value TSRMLS_CC );
         if( zr == FAILURE ) {
             throw core::CoreException(); 
@@ -362,8 +265,9 @@ namespace {
 
     void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( char const* name, char const* value TSRMLS_DC )
     {
-        zend_class_entry* zend_class = pdo_get_dbh_class();
-        SQLSRV_ASSERT( zend_class != NULL, "REGISTER_PDO_SQLSRV_CLASS_CONST_STRING: pdo_get_dbh_class failed" );
+        zend_class_entry* zend_class = php_pdo_get_dbh_ce(); 
+
+        SQLSRV_ASSERT( zend_class != NULL, "REGISTER_PDO_SQLSRV_CLASS_CONST_STRING: php_pdo_get_dbh_ce failed");
         int zr = zend_declare_class_constant_string( zend_class, const_cast<char*>( name ), strlen( name ), const_cast<char*>( value ) TSRMLS_CC );
         if( zr == FAILURE ) {
 
@@ -372,15 +276,15 @@ namespace {
     }
 
     // array of pdo constants.
-	sqlsrv_attr_pdo_constant pdo_attr_constants[] = {
+    sqlsrv_attr_pdo_constant pdo_attr_constants[] = {
 
-		// driver specific attributes
-		{ "SQLSRV_ATTR_ENCODING"            , SQLSRV_ATTR_ENCODING },
-		{ "SQLSRV_ATTR_QUERY_TIMEOUT"       , SQLSRV_ATTR_QUERY_TIMEOUT },
-		{ "SQLSRV_ATTR_DIRECT_QUERY"        , SQLSRV_ATTR_DIRECT_QUERY },
-		{ "SQLSRV_ATTR_CURSOR_SCROLL_TYPE"  , SQLSRV_ATTR_CURSOR_SCROLL_TYPE },
-		{ "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
-		{ "SQLSRV_ATTR_FETCHES_NUMERIC_TYPE", SQLSRV_ATTR_FETCHES_NUMERIC_TYPE },
+        // driver specific attributes
+        { "SQLSRV_ATTR_ENCODING"            , SQLSRV_ATTR_ENCODING },
+        { "SQLSRV_ATTR_QUERY_TIMEOUT"       , SQLSRV_ATTR_QUERY_TIMEOUT },
+        { "SQLSRV_ATTR_DIRECT_QUERY"        , SQLSRV_ATTR_DIRECT_QUERY },
+        { "SQLSRV_ATTR_CURSOR_SCROLL_TYPE"  , SQLSRV_ATTR_CURSOR_SCROLL_TYPE },
+        { "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
+        { "SQLSRV_ATTR_FETCHES_NUMERIC_TYPE", SQLSRV_ATTR_FETCHES_NUMERIC_TYPE },
 
         // used for the size for output parameters: PDO::PARAM_INT and PDO::PARAM_BOOL use the default size of int,
         // PDO::PARAM_STR uses the size of the string in the variable

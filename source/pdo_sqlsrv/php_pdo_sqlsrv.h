@@ -27,7 +27,6 @@ extern "C" {
 
 #include "pdo/php_pdo.h"
 #include "pdo/php_pdo_driver.h"
-#include "pdo/php_pdo_int.h"
 
 }
 
@@ -48,7 +47,7 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_DIRECT_QUERY,
     SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
     SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
-	SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
+    SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -111,6 +110,8 @@ extern sqlsrv_context* g_henv_ncp;
 // module global variables (initialized in minit and freed in mshutdown)
 extern HashTable* g_pdo_errors_ht;
 
+#define phpext_pdo_sqlsrv_ptr &g_pdo_sqlsrv_module_entry
+
 // module initialization
 PHP_MINIT_FUNCTION(pdo_sqlsrv);
 // module shutdown function
@@ -155,7 +156,7 @@ class conn_string_parser
         inline bool is_white_space( char c );
         bool discard_white_spaces( void );
         int discard_trailing_white_spaces( const char* str, int len );
-        void conn_string_parser::validate_key( const char *key, int key_len TSRMLS_DC );
+        void validate_key( const char *key, int key_len TSRMLS_DC );
         void add_key_value_pair( const char* value, int len TSRMLS_DC );
 
     public:
@@ -177,8 +178,8 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool direct_query;
     long query_timeout;
     zend_long client_buffer_max_size;
-	SQLSRV_ENCODING bind_param_encoding;
-	bool fetch_numeric;
+    SQLSRV_ENCODING bind_param_encoding;
+    bool fetch_numeric;
 
     pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC );
 };
@@ -214,7 +215,7 @@ struct stmt_option_emulate_prepares : public stmt_option_functor {
 };
 
 struct stmt_option_fetch_numeric : public stmt_option_functor {
-	virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
+    virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
 
 extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
@@ -228,11 +229,11 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         direct_query_subst_string( NULL ),
         direct_query_subst_string_len( 0 ),
         bound_column_param_types( NULL ),
-		fetch_numeric( false )
+        fetch_numeric( false )
     {
         pdo_sqlsrv_dbh* db = static_cast<pdo_sqlsrv_dbh*>( c );
         direct_query = db->direct_query;
-		fetch_numeric = db->fetch_numeric;
+        fetch_numeric = db->fetch_numeric;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );
@@ -248,7 +249,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
     pdo_param_type* bound_column_param_types;
-	bool fetch_numeric;
+    bool fetch_numeric;
 };
 
 
@@ -272,9 +273,6 @@ bool pdo_sqlsrv_handle_dbh_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
                                   va_list* print_args );
 bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool warning TSRMLS_DC, 
                                    va_list* print_args );
-
-// pointer to the function to return the class entry for the PDO exception  Set in MINIT
-extern zend_class_entry* (*pdo_get_exception_class)( void );
 
 // common routine to transfer a sqlsrv_context's error to a PDO zval
 void pdo_sqlsrv_retrieve_context_error( sqlsrv_error const* last_error, zval* pdo_zval );
@@ -375,7 +373,7 @@ enum PDO_ERROR_CODES {
 extern pdo_error PDO_ERRORS[];
 
 #define THROW_PDO_ERROR( ctx, custom, ... ) \
-    call_error_handler( ctx, custom TSRMLS_CC, false, __VA_ARGS__ ); \
+    call_error_handler( ctx, custom TSRMLS_CC, false, ## __VA_ARGS__ ); \
     throw pdo::PDOException();
 
 namespace pdo {
@@ -390,14 +388,8 @@ namespace pdo {
 
 } // namespace pdo
 
-// called pdo_parse_params in php_pdo_driver.h
-// we renamed it for 2 reasons: 1) we can't have the same name since it would conflict with our dynamic linking, and 
-// 2) this is a more precise name
-extern int (*pdo_subst_named_params)(pdo_stmt_t *stmt, char *inquery, size_t inquery_len, 
-                                     char **outquery, size_t *outquery_len TSRMLS_DC);
-
 // logger for pdo_sqlsrv called by the core layer when it wants to log something with the LOG macro
 void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );
 
-#endif	/* PHP_PDO_SQLSRV_H */
+#endif  /* PHP_PDO_SQLSRV_H */
 
