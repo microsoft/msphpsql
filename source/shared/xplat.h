@@ -180,7 +180,7 @@ typedef windowsULongLong_t ULONGLONG;
 
 #include <assert.h>
 #include <stdlib.h>
-#include <intsafe.h>
+#include "xplat_intsafe.h"
 
 // Exclude these headers in Windows machines (just for building on Windows w/o Windows headers)
 #define SPECSTRINGS_H       // specstrings.h
