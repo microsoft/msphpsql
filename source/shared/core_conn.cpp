@@ -150,35 +150,36 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
             memset( const_cast<char*>(conn_str.c_str()), 0, conn_str.size());
             memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
             conn_str.clear();
-            if( !SQL_SUCCEEDED( r )) {
-                SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
+            if (!SQL_SUCCEEDED(r)) {
+                SQLCHAR state[SQL_SQLSTATE_BUFSIZE];
                 SQLSMALLINT len;
-                SQLRETURN r = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
-                bool missing_driver_error = ( SQL_SUCCEEDED(r) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && state[4] == '2' );
+                SQLRETURN r = SQLGetDiagField(SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len);
+                bool missing_driver_error = (SQL_SUCCEEDED(r) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && state[4] == '2');
                 // if it's a IM002, meaning that the correct ODBC driver is not installed
-                CHECK_CUSTOM_ERROR( missing_driver_error && ( i == DRIVER_VERSION::MAX ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+                CHECK_CUSTOM_ERROR(missing_driver_error && (i == DRIVER_VERSION::MAX), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
                     throw core::CoreException();
                 }
-                if( !missing_driver_error ) {
+                if (!missing_driver_error) {
                     break;
                 }
-                else {
-                    conn->driver_version = static_cast<DRIVER_VERSION>( i );
-                    break;
-                }
+            } 
+            else {
+                conn->driver_version = static_cast<DRIVER_VERSION>( i );
+                break;
             }
-            CHECK_SQL_ERROR( r, conn ) {
-                throw core::CoreException();
-            }
-
-            CHECK_SQL_WARNING_AS_ERROR( r, conn ) {
-                throw core::CoreException();
-            }
-
-            // determine the version of the server we're connected to.  The server version is left in the 
-            // connection upon return.
-            determine_server_version( conn TSRMLS_CC );
         }
+        CHECK_SQL_ERROR( r, conn ) {
+            throw core::CoreException();
+        }
+
+        CHECK_SQL_WARNING_AS_ERROR( r, conn ) {
+            throw core::CoreException();
+        }
+
+        // determine the version of the server we're connected to.  The server version is left in the 
+        // connection upon return.
+        determine_server_version( conn TSRMLS_CC );
+        
     }
     catch( std::bad_alloc& ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
