@@ -480,18 +480,8 @@ VerSetConditionMask(
 //// These are temporary solution versions of the real files that contain the minimal declarations
 //// needed to compile for non-Windows platforms.  See the special include path for the
 //// location of these files.
-//#include <guiddef.h>
-//#include <objbase.h>
-//#include <winbase.h>
-//#include <winnls.h>
-#include <winerror.h>
-//#include <wtypes.h>
-//#include <wctype.h>
-//#include <winuser.h>
-//#include <stdio.h>
-//#include <tchar.h>
-//#include <winuser.h>
-//#include <wincon.h>
+
+#include "xplat_winerror.h"
 
 //#define LMEM_FIXED 0
 typedef void * HLOCAL;
