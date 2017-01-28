@@ -949,14 +949,16 @@ int pdo_sqlsrv_stmt_get_col_meta(pdo_stmt_t *stmt, zend_long colno, zval *return
     PDO_LOG_STMT_ENTRY;
 
     try {
-
+        SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_get_col_meta: pdo_stmt object was null" );
+        SQLSRV_ASSERT( stmt->columns != NULL, "pdo_sqlsrv_stmt_get_col_meta: columns are not available." );
         SQLSRV_ASSERT( Z_TYPE_P( return_value ) == IS_NULL, "Metadata already has value.  Must be NULL." );
 
         sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
 
         sqlsrv_stmt* driver_stmt = static_cast<sqlsrv_stmt*>( stmt->driver_data );
 
-        SQLSRV_ASSERT( colno >= 0 && colno < SHRT_MAX, "pdo_sqlsrv_stmt_get_col_meta: tried to overflow a short" );
+        SQLSRV_ASSERT( colno >= 0 && colno < stmt->column_count, "pdo_sqlsrv_stmt_get_col_meta: invalid column number." );
+
         core_meta_data = core_sqlsrv_field_metadata( driver_stmt, (SQLSMALLINT) colno TSRMLS_CC );
         // initialize the array to nothing, as PDO requires us to create it
         core::sqlsrv_array_init( *driver_stmt, return_value TSRMLS_CC );
