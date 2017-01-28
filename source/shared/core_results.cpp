@@ -221,7 +221,6 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
             int len = mbrtoc16( &ch16, &mb, str_num_end - str_num_ptr, &mbs );
             if ( len > 0 || len == -3 )
             {
-                //str.append( std::u16string( &ch16, len ) );
                 str.push_back( ch16 );
                 if ( len > 0 )
                 {
