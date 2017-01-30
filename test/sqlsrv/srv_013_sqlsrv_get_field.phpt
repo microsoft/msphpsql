@@ -39,10 +39,10 @@ print "Done"
 ?>
 
 --EXPECT--
-resource(10) of type (stream)
+resource(9) of type (stream)
 1998.1
-resource(11) of type (stream)
+resource(10) of type (stream)
 -2004.2436
-resource(12) of type (stream)
+resource(11) of type (stream)
 4.2 EUR
 Done
