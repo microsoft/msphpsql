@@ -2308,15 +2308,6 @@ namespace core {
         ::zend_hash_init(ht, initial_size, NULL, dtor_fn, persistent);
     }
 
-    inline void sqlsrv_zend_hash_add( sqlsrv_context& ctx, HashTable* ht, zend_string* key, unsigned int key_len, zval* data, 
-                                      unsigned int data_size, zval* pDest TSRMLS_DC )
-    {
-        int zr = ::zend_hash_add(ht, key, data) != NULL ? SUCCESS : FAILURE;
-        CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-    }
-
 template <typename Statement>
 sqlsrv_stmt* allocate_stmt( sqlsrv_conn* conn, SQLHANDLE h, error_callback e, void* driver TSRMLS_DC )
 {
