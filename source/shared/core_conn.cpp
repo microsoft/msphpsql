@@ -655,11 +655,11 @@ const char* get_processor_arch( void )
     {
         DIE( "Error retrieving system info" );
     }
-    if( strcmp(sys_info.machine, "x86") ) {
+    if( strcmp(sys_info.machine, "x86") == 0 ) {
         return PROCESSOR_ARCH[0];
-    } else if ( strcmp(sys_info.machine, "x86_64") ) {
+    } else if ( strcmp(sys_info.machine, "x86_64") == 0) {
         return PROCESSOR_ARCH[1];
-    } else if ( strcmp(sys_info.machine, "ia64") ) {
+    } else if ( strcmp(sys_info.machine, "ia64") == 0 ) {
         return PROCESSOR_ARCH[2];
     } else {
         DIE( "Unknown processor architecture." );
