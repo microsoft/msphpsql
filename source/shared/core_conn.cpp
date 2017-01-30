@@ -32,6 +32,7 @@
 
 #ifdef __linux__
 #include <sys/utsname.h>
+#include <odbcinst.h>
 #endif
 
 // *** internal variables and constants ***
@@ -92,7 +93,6 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
                                   const char* server, const char* uid, const char* pwd, 
                                   HashTable* options_ht, error_callback err, const connection_option valid_conn_opts[], 
 				                  void* driver, const char* driver_func TSRMLS_DC )
-
 {
     SQLRETURN r;
     std::string conn_str;
@@ -101,14 +101,27 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wconn_string;
     unsigned int wconn_len = 0;
 
-    try {
-
 #ifndef __linux__
     sqlsrv_context* henv = &henv_cp;   // by default use the connection pooling henv
 #else
     sqlsrv_context* henv = &henv_ncp;  // by default do not use the connection pooling henv
 #endif
 
+    try {
+    // Due to the limitations on connection pooling in unixODBC 2.3.1 driver manager, we do not concider 
+    // the connection string attributes to set (enable/disable) connection pooling. 
+    // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
+	
+#ifdef __linux__
+    char pooling_string[ 128 ] = {0};
+    SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
+
+		if ( pooling_string[ 0 ] == '1' || toupper( pooling_string[ 0 ] ) == 'Y' ||
+			 ( toupper( pooling_string[ 0 ] ) == 'O' && toupper( pooling_string[ 1 ] ) == 'N' ))
+		{
+				henv = &henv_cp;
+		}
+#else
     // check the connection pooling setting to determine which henv to use to allocate the connection handle
     // we do this earlier because we have to allocate the connection handle prior to setting attributes on
     // it in build_connection_string_and_set_conn_attr.
@@ -119,20 +132,15 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 
 		option_z = zend_hash_index_find(options_ht, SQLSRV_CONN_OPTION_CONN_POOLING);
 		if (option_z) {
-#ifndef __linux__
+
             // if the option was found and it's not true, then use the non pooled environment handle
             if(( Z_TYPE_P( option_z ) == IS_STRING && !core_str_zval_is_true( option_z )) || !zend_is_true( option_z ) ) {
                 
                 henv = &henv_ncp;   
             }
-#else
-            // if the option was found and it's true, then use the pooled environment handle
-            if(( Z_TYPE_P( option_z ) == IS_STRING && core_str_zval_is_true( option_z )) && zend_is_true( option_z ) ) {
-                henv = &henv_cp;
-            }
-#endif
         }
     }
+#endif
 
     SQLHANDLE temp_conn_h;
     core::SQLAllocHandle( SQL_HANDLE_DBC, *henv, &temp_conn_h TSRMLS_CC );
