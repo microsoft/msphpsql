@@ -10,19 +10,16 @@ require_once("autonomous_setup.php");
 $conn = sqlsrv_connect( $serverName, $connectionInfo);
 if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
-
 // Create table
-$query = "CREATE TABLE ".$tableName." (ID NVARCHAR(10))";
+$query = "CREATE TABLE #TA1 (ID NVARCHAR(10))";
 $stmt = sqlsrv_query($conn, $query);
 
 // Insert data
-$query = "INSERT INTO ".$tableName." VALUES ('1998.1'),('-2004.2436'),('4.2 EUR')";
+$query = "INSERT INTO #TA1 VALUES ('1998.1'),('-2004.2436'),('4.2 EUR')";
 $stmt = sqlsrv_query($conn, $query) ?: die( print_r( sqlsrv_errors(), true) );
 
 // Fetch data
-$query = "SELECT * FROM ".$tableName;
+$query = "SELECT * FROM #TA1";
 $stmt = sqlsrv_query( $conn, $query ) ?: die( print_r( sqlsrv_errors(), true) );
 
 while(sqlsrv_fetch($stmt)) {
@@ -34,9 +31,6 @@ while(sqlsrv_fetch($stmt)) {
 		echo fread($field, 100)."\n";
 	}
 }
-
-// DROP database
-$stmt = sqlsrv_query($conn,"DROP DATABASE ". $dbName);
 
 // Close connection
 sqlsrv_free_stmt($stmt);
