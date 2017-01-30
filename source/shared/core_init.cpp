@@ -53,7 +53,7 @@ void core_sqlsrv_minit( sqlsrv_context** henv_cp, sqlsrv_context** henv_ncp, err
         LOG( SEV_ERROR, "Failed to retrieve Windows version information." );
         throw core::CoreException();
     }
-#endif
+#endif //_WIN32
 
     SQLHANDLE henv = SQL_NULL_HANDLE;
     SQLRETURN r;

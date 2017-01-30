@@ -34,12 +34,6 @@
 #define LANG_NEUTRAL              0x00
 #define SUBLANG_DEFAULT           0x01        // user default
 
-// #ifndef _GETLASTERROR
-// #define _GETLASTERROR
-// void SSetLastError(DWORD err);
-// unsigned int GGetLastError();
-// #endif
-
 DWORD FormatMessageA(
     DWORD dwFlags,
     LPCVOID lpSource,

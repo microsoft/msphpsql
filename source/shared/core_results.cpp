@@ -26,7 +26,7 @@
 #ifndef _WIN32
 #include <type_traits>
 #include <uchar.h>
-#endif // _WIN32
+#endif // !_WIN32
 
 
 using namespace core;
@@ -122,7 +122,7 @@ size_t get_float_precision(SQLLEN buffer_length, size_t unitsize)
 #ifndef _WIN32
 // copy the number into a char string using the num_put facet
 template <typename Number>
-SQLRETURN get_string_from_stream(Number number_data, std::basic_string<char> &str_num, size_t precision, sqlsrv_error_auto_ptr& last_error)
+SQLRETURN get_string_from_stream( Number number_data, std::basic_string<char> &str_num, size_t precision, sqlsrv_error_auto_ptr& last_error)
 {
     //std::locale loc( std::locale(""), new std::num_put<char> );	// By default, SQL Server doesn't take user's locale into consideration
     std::locale loc;
@@ -235,7 +235,6 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
     return copy_buffer<char>( buffer, buffer_length, out_buffer_length, str_num, last_error );
 
 #endif // _WIN32
-
 
 }
 
@@ -828,7 +827,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( SQLUSMALLINT field_index, SQLSMA
 
     
     // check to make sure the conversion type is valid
-    conv_matrix_t::const_iterator conv_iter = conv_matrix.find(meta[field_index].c_type);
+    conv_matrix_t::const_iterator conv_iter = conv_matrix.find( meta[field_index].c_type );
     if( conv_iter == conv_matrix.end() || conv_iter->second.find( target_type ) == conv_iter->second.end() ) {
         last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) 
         sqlsrv_error( (SQLCHAR*) "07006", (SQLCHAR*) "Restricted data type attribute violation", 0 );

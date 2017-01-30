@@ -448,9 +448,6 @@ VerSetConditionMask(
         );
 
 
-
-//#include <basetsd.h>
-
 //// ntdef.h
 #define __unaligned
 #ifndef UNALIGNED

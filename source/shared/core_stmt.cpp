@@ -233,7 +233,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 {
 	sqlsrv_malloc_auto_ptr<sqlsrv_stmt> stmt;
     SQLHANDLE stmt_h = SQL_NULL_HANDLE;
-    sqlsrv_stmt* return_stmt;
+    sqlsrv_stmt* return_stmt = NULL;
 
     try {
 
@@ -1169,19 +1169,11 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, long timeout TSRMLS_DC )
 
         // set the LOCK_TIMEOUT on the server.
         char lock_timeout_sql[ 32 ];
-#ifndef _WIN32		
-        int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", 
-                                 lock_timeout );
+	
+        int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", lock_timeout );
         SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )), 
                         "stmt_option_query_timeout: snprintf failed. Shouldn't ever fail." );
-#else
-        int written = sprintf_s( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", 
-                                 lock_timeout );
-
-        SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )), 
-                        "stmt_option_query_timeout: sprintf_s failed. Shouldn't ever fail." );
-#endif // !_WIN32
-        
+   
         core::SQLExecDirect( stmt, lock_timeout_sql TSRMLS_CC );
 
         stmt->query_timeout = timeout;
@@ -1266,12 +1258,13 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
                 // the size of wbuffer is set for the worst case of UTF-8 to UTF-16 conversion, which is a 
                 // expansion of 2x the UTF-8 size.
                 SQLWCHAR wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ];
+                int wbuffer_size = static_cast<int>( sizeof( wbuffer ) / sizeof( SQLWCHAR ));
 				DWORD last_error_code = ERROR_SUCCESS;
 				// buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
 #ifndef _WIN32
-                int wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, static_cast<int>(read), wbuffer, static_cast<int>(sizeof( wbuffer ) / sizeof( SQLWCHAR )), &last_error_code );
+                int wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, static_cast<int>(read), wbuffer, wbuffer_size, &last_error_code );
 #else
-                int wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>( read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
+                int wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>( read ), wbuffer, wbuffer_size );
                 last_error_code = GetLastError();
 #endif // !_WIN32
 

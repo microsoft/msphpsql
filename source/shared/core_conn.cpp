@@ -143,8 +143,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
             }
 
             SQLSMALLINT output_conn_size;
-            r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>(wconn_string.get()),
-            static_cast<SQLSMALLINT>(wconn_len), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT);
+            r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>(wconn_string.get()), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
 
             // clear the connection string from memory to remove sensitive data (such as a password).
             memset( const_cast<char*>(conn_str.c_str()), 0, conn_str.size());
