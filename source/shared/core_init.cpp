@@ -44,6 +44,7 @@ void core_sqlsrv_minit( sqlsrv_context** henv_cp, sqlsrv_context** henv_ncp, err
 
     try {
 
+#ifdef _WIN32
     // get the version of the OS we're running on.  For now this governs certain flags used by
     // WideCharToMultiByte.  It might be relevant to other things in the future.
     g_osversion.dwOSVersionInfoSize = sizeof( g_osversion );
@@ -52,6 +53,7 @@ void core_sqlsrv_minit( sqlsrv_context** henv_cp, sqlsrv_context** henv_ncp, err
         LOG( SEV_ERROR, "Failed to retrieve Windows version information." );
         throw core::CoreException();
     }
+#endif //_WIN32
 
     SQLHANDLE henv = SQL_NULL_HANDLE;
     SQLRETURN r;
@@ -159,7 +161,7 @@ void core_sqlsrv_mshutdown( sqlsrv_context& henv_cp, sqlsrv_context& henv_ncp )
 
 
 // DllMain for the extension.  
-
+#ifdef _WIN32
 BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD fdwReason, LPVOID )
 {
     switch( fdwReason ) {
@@ -173,3 +175,4 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD fdwReason, LPVOID )
 
     return TRUE;
 }
+#endif

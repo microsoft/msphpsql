@@ -1,8 +1,7 @@
-#ifndef VERSION_H
-#define VERSION_H
 //---------------------------------------------------------------------------------------------------------------------------------
-// File: version.h
-// Contents: Version number constants
+// File: StringFunctions.h
+//
+// Contents: Contains functions for handling UTF-16 on non-Windows platforms
 //
 // Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
@@ -18,20 +17,23 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-// helper macros to stringify the a macro value
-#define STRINGIFY(a) TOSTRING(a)
-#define TOSTRING(a) #a
+#if !defined(_STRINGFUNCTIONS_H_)
+#define _STRINGFUNCTIONS_H_
 
-#define SQLVERSION_MAJOR 4
-#define SQLVERSION_MINOR 1
-#define SQLVERSION_RELEASE 5
-#define SQLVERSION_BUILD 0
+#include "xplat_winnls.h"
 
-#define VER_FILEVERSION_STR     STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE ) "." STRINGIFY( SQLVERSION_BUILD ) 
-#define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_RELEASE,SQLVERSION_BUILD
-#define PHP_SQLSRV_VERSION      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE )
-#define PHP_PDO_SQLSRV_VERSION  PHP_SQLSRV_VERSION
+// ---------------------------------------------------------------------------
+// Declare internal versions of string handling functions
+// Only the functions implemented are declared here
 
-#endif // VERSION_H
+// Copy
+int         mplat_memcpy_s(void *_S1, size_t _N1, const void *_S2, size_t _N);
+int         mplat_strcat_s( char *strDestination, size_t numberOfElements, const char *strSource );
+int         mplat_strcpy_s(char * _Dst, size_t _SizeInBytes, const char * _Src);
 
+// Copy
+#define memcpy_s        mplat_memcpy_s
+#define strcat_s        mplat_strcat_s
+#define strcpy_s        mplat_strcpy_s
 
+#endif // _STRINGFUNCTIONS_H_

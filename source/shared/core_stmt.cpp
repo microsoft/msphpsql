@@ -122,12 +122,12 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
     fetch_called( false ),
     last_field_index( -1 ),
     past_next_result_end( false ),
+    query_timeout( QUERY_TIMEOUT_INVALID ),
+    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     param_ind_ptrs( 10 ),    // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
     current_stream( NULL, SQLSRV_ENCODING_DEFAULT ),
-    current_stream_read( 0 ),
-    query_timeout( QUERY_TIMEOUT_INVALID ),
-    buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID )
+    current_stream_read( 0 )
 {
 	ZVAL_UNDEF( &active_stream );
     // initialize the input string parameters array (which holds zvals)
@@ -233,6 +233,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 {
 	sqlsrv_malloc_auto_ptr<sqlsrv_stmt> stmt;
     SQLHANDLE stmt_h = SQL_NULL_HANDLE;
+    sqlsrv_stmt* return_stmt = NULL;
 
     try {
 
@@ -270,10 +271,8 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 			} ZEND_HASH_FOREACH_END();
         }
 
-        sqlsrv_stmt* return_stmt = stmt;
+        return_stmt = stmt;
         stmt.transferred();
-
-        return return_stmt;
     }
     catch( core::CoreException& )
     {
@@ -294,6 +293,8 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 
         DIE( "core_sqlsrv_allocate_stmt: Unknown exception caught." );
     }
+
+    return return_stmt;
 }
 
 
@@ -663,19 +664,18 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_
 
     if( sql ) {
 
-        sqlsrv_malloc_auto_ptr<wchar_t> wsql_string;
+        sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
         unsigned int wsql_len = 0;
         if( sql_len == 0 || ( sql[0] == '\0' && sql_len == 1 )) {
-            wsql_string = reinterpret_cast<wchar_t*>( sqlsrv_malloc( sizeof( wchar_t )));
+            wsql_string = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( sizeof( SQLWCHAR )));
             wsql_string[0] = L'\0';
             wsql_len = 0;
         }
         else {
-            SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
-                                     stmt->encoding() );
+            SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding() );
             wsql_string = utf16_string_from_mbcs_string( encoding, reinterpret_cast<const char*>( sql ),
                                                          sql_len, &wsql_len );
-            CHECK_CUSTOM_ERROR( wsql_string == NULL, stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, 
+            CHECK_CUSTOM_ERROR( wsql_string == 0, stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE,
                                 get_last_error_message() ) {
                 throw core::CoreException();
             }
@@ -770,9 +770,7 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULE
 
         // move to the record requested.  For absolute records, we use a 0 based offset, so +1 since 
         // SQLFetchScroll uses a 1 based offset, otherwise for relative, just use the fetch_offset provided.
-        SQLRETURN r = stmt->current_results->fetch( fetch_orientation, 
-                                                    ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 
-                                                    TSRMLS_CC );
+        SQLRETURN r = stmt->current_results->fetch( fetch_orientation, ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 TSRMLS_CC );
         if( r == SQL_NO_DATA ) {
             // if this is a forward only cursor, mark that we've passed the end so future calls result in an error
             if( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
@@ -922,20 +920,18 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 		// if the field is to be cached, and this field is being retrieved out of order, cache prior fields so they
 		// may also be retrieved.
 		if( cache_field && (field_index - stmt->last_field_index ) >= 2 ) {
-			sqlsrv_phptype invalid;
-			invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
-			for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
-				SQLSRV_ASSERT((cached = reinterpret_cast<field_cache*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->field_cache), i))) == NULL,
-					"Field already cached." );
-				core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field,
-									sqlsrv_php_type_out TSRMLS_CC );
-				// delete the value returned since we only want it cached, not the actual value
-				if( field_value ) {
-					efree( field_value );
-					field_value = NULL;
-					*field_len = 0;
-				}
-			}
+                   sqlsrv_phptype invalid;
+                   invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
+                   for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
+                       SQLSRV_ASSERT( reinterpret_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), i )) == NULL, "Field already cached." );
+                       core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field, sqlsrv_php_type_out TSRMLS_CC );
+                       // delete the value returned since we only want it cached, not the actual value
+                       if( field_value ) {
+                           efree( field_value );
+                           field_value = NULL;
+                           *field_len = 0;
+		       }
+		   }
 		}
 
 		// If the php type was not specified set the php type to be the default type.
@@ -1066,8 +1062,6 @@ void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong param_num, zval* para
     // PDO doesn't need the reference count, but sqlsrv does since the stream can be live after sqlsrv_execute by sending it
     // with sqlsrv_send_stream_data.
     if( zend_hash_index_exists( Z_ARRVAL( stmt->param_streams ), param_num )) {
-        sqlsrv_stream* stream_encoding = NULL;
-        stream_encoding = reinterpret_cast<sqlsrv_stream*>(zend_hash_index_find_ptr(Z_ARRVAL(stmt->param_streams), param_num));
         core::sqlsrv_zend_hash_index_del( *stmt, Z_ARRVAL( stmt->param_streams ), param_num TSRMLS_CC );
     }
 }
@@ -1171,16 +1165,15 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, long timeout TSRMLS_DC )
         
         // a query timeout of 0 indicates "no timeout", which means that lock_timeout should also be set to "no timeout" which 
         // is represented by -1.
-        long lock_timeout = (( timeout == 0 ) ? -1 : timeout * 1000 /*convert to milliseconds*/ );
+        int lock_timeout = (( timeout == 0 ) ? -1 : timeout * 1000 /*convert to milliseconds*/ );
 
         // set the LOCK_TIMEOUT on the server.
         char lock_timeout_sql[ 32 ];
-        int written = sprintf_s( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", 
-                                 lock_timeout );
-
+	
+        int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", lock_timeout );
         SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )), 
-                        "stmt_option_query_timeout: sprintf_s failed. Shouldn't ever fail." );
-        
+                        "stmt_option_query_timeout: snprintf failed. Shouldn't ever fail." );
+   
         core::SQLExecDirect( stmt, lock_timeout_sql TSRMLS_CC );
 
         stmt->query_timeout = timeout;
@@ -1212,8 +1205,6 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    SQLRETURN r = SQL_SUCCESS;
-
     // if there no current parameter to process, get the next one 
     // (probably because this is the first call to sqlsrv_send_stream_data)
     if( stmt->current_stream.stream_z == NULL ) {
@@ -1266,11 +1257,18 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
 
                 // the size of wbuffer is set for the worst case of UTF-8 to UTF-16 conversion, which is a 
                 // expansion of 2x the UTF-8 size.
-                wchar_t wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ];
-                // buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
-                int wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, 
-                                                 buffer, static_cast<int>( read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
-                if( wsize == 0 && GetLastError() == ERROR_NO_UNICODE_TRANSLATION ) {
+                SQLWCHAR wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ];
+                int wbuffer_size = static_cast<int>( sizeof( wbuffer ) / sizeof( SQLWCHAR ));
+				DWORD last_error_code = ERROR_SUCCESS;
+				// buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
+#ifndef _WIN32
+                int wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, static_cast<int>(read), wbuffer, wbuffer_size, &last_error_code );
+#else
+                int wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>( read ), wbuffer, wbuffer_size );
+                last_error_code = GetLastError();
+#endif // !_WIN32
+
+				if( wsize == 0 && last_error_code == ERROR_NO_UNICODE_TRANSLATION ) {
 
                     // this will calculate how many bytes were cut off from the last UTF-8 character and read that many more
                     // in, then reattempt the conversion.  If it fails the second time, then an error is returned.
@@ -1279,20 +1277,21 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
                     size_t new_read = php_stream_read( param_stream, static_cast<char*>( buffer ) + read, 
                                                        need_to_read );
                     // if the bytes couldn't be read, then we return an error
-                    CHECK_CUSTOM_ERROR( new_read != need_to_read, stmt, SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE, 
-                                        get_last_error_message( ERROR_NO_UNICODE_TRANSLATION )) {
+                    CHECK_CUSTOM_ERROR( new_read != need_to_read, stmt, SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE, get_last_error_message( ERROR_NO_UNICODE_TRANSLATION )) {
                         throw core::CoreException();
                     }
                     // try the conversion again with the complete character
-                    wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, 
-                                                 buffer, static_cast<int>( read + new_read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
+#ifndef _WIN32					
+                    wsize = SystemLocale::ToUtf16Strict( stmt->current_stream.encoding, buffer, static_cast<int>(read + new_read), wbuffer, static_cast<int>(sizeof( wbuffer ) / sizeof( SQLWCHAR )));
+#else
+                    wsize = MultiByteToWideChar( stmt->current_stream.encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>( read + new_read ), wbuffer, static_cast<int>( sizeof( wbuffer ) / sizeof( wchar_t )));
+#endif //!_WIN32
                     // something else must be wrong if it failed
-                    CHECK_CUSTOM_ERROR( wsize == 0, stmt, SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE, 
-                                        get_last_error_message( ERROR_NO_UNICODE_TRANSLATION )) {
+                    CHECK_CUSTOM_ERROR( wsize == 0, stmt, SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE, get_last_error_message( ERROR_NO_UNICODE_TRANSLATION )) {
                         throw core::CoreException();
                     }
                 }
-                core::SQLPutData( stmt, wbuffer, wsize * sizeof( wchar_t ) TSRMLS_CC );
+                core::SQLPutData( stmt, wbuffer, wsize * sizeof( SQLWCHAR ) TSRMLS_CC );
             }
             else {
                 core::SQLPutData( stmt, buffer, read TSRMLS_CC );
@@ -1502,6 +1501,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
 		{
 			sqlsrv_malloc_auto_ptr<long> field_value_temp;
 			field_value_temp = static_cast<long*>( sqlsrv_malloc( sizeof( long )));
+			*field_value_temp = 0;
 
 			SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_LONG, field_value_temp, sizeof( long ),
 														  field_len, true /*handle_warning*/ TSRMLS_CC );
@@ -1673,7 +1673,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
 // returns false
 bool check_for_next_stream_parameter( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    int stream_index = 0;
+    zend_ulong stream_index = 0;
     SQLRETURN r = SQL_SUCCESS;
     sqlsrv_stream* stream_encoding = NULL;
     zval* param_z = NULL;
@@ -1729,18 +1729,24 @@ bool convert_input_param_to_utf16( zval* input_param_z, zval* converted_param_z 
     }
 
     // if the parameter is an input parameter, calc the size of the necessary buffer from the length of the string
-    wchar_size = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS,
-			reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
+#ifndef _WIN32
+    wchar_size = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
+#else
+    wchar_size = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );    
+#endif // !_WIN32
 
     // if there was a problem determining the size of the string, return false
     if( wchar_size == 0 ) {
         return false;
     }
-    sqlsrv_malloc_auto_ptr<wchar_t> wbuffer;
-    wbuffer = reinterpret_cast<wchar_t*>( sqlsrv_malloc( (wchar_size + 1) * sizeof( wchar_t ) ));
+    sqlsrv_malloc_auto_ptr<SQLWCHAR> wbuffer;
+    wbuffer = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( (wchar_size + 1) * sizeof( SQLWCHAR ) ));
     // convert the utf-8 string to a wchar string in the new buffer
-    int r = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ),
-                                 static_cast<int>( buffer_len ), wbuffer, wchar_size );
+#ifndef _WIN32
+    int r = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
+#else
+    int r = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );    	
+#endif // !_WIN32
     // if there was a problem converting the string, then free the memory and return false
     if( r == 0 ) {
         return false;
@@ -1748,8 +1754,7 @@ bool convert_input_param_to_utf16( zval* input_param_z, zval* converted_param_z 
 
     // null terminate the string, set the size within the zval, and return success
     wbuffer[ wchar_size ] = L'\0';
-	core::sqlsrv_zval_stringl( converted_param_z, reinterpret_cast<char*>( wbuffer.get() ),
-                  wchar_size * sizeof( wchar_t ) );
+    core::sqlsrv_zval_stringl( converted_param_z, reinterpret_cast<char*>( wbuffer.get() ), wchar_size * sizeof( SQLWCHAR ) );
     sqlsrv_free(wbuffer);
     wbuffer.transferred();
 
@@ -1781,16 +1786,16 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* para
         break;
         case IS_TRUE:
         case IS_FALSE:
+             sql_c_type = SQL_C_SLONG;
+             break;
         case IS_LONG:
-			//ODBC 64-bit long and integer type are 4 byte values. 
-			if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) )
-			{
-				sql_c_type = SQL_C_SBIGINT;
-			}
-			else
-			{
-				sql_c_type = SQL_C_SLONG;
-			}
+             //ODBC 64-bit long and integer type are 4 byte values. 
+             if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
+                 sql_c_type = SQL_C_SBIGINT;
+             } 
+             else {
+                 sql_c_type = SQL_C_SLONG;
+             }
             break;
         case IS_DOUBLE:
             sql_c_type = SQL_C_DOUBLE;
@@ -1828,7 +1833,6 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* para
 
 
 // given a zval and encoding, determine the appropriate sql type
-
 void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV_ENCODING encoding, 
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC )
 {
@@ -1852,17 +1856,16 @@ void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV
             break;
         case IS_TRUE:
         case IS_FALSE:
+            sql_type = SQL_INTEGER;
+            break;
         case IS_LONG:
-			//ODBC 64-bit long and integer type are 4 byte values. 
-			if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) )
-			{
-				sql_type = SQL_BIGINT;
-			}
-			else
-			{
-				sql_type = SQL_INTEGER;
-			}
-
+             //ODBC 64-bit long and integer type are 4 byte values. 
+             if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
+                 sql_type = SQL_BIGINT;
+             } 
+             else {
+                 sql_type = SQL_INTEGER;
+             }
             break;
         case IS_DOUBLE:
             sql_type = SQL_FLOAT;
@@ -1929,8 +1932,8 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
             break;
         case IS_STRING:
         {
-			size_t char_size = ( encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( wchar_t ) : sizeof( char );
-            SQLULEN byte_len = Z_STRLEN_P( param_z ) * char_size;
+            size_t char_size = (encoding == SQLSRV_ENCODING_UTF8 ) ? sizeof( SQLWCHAR ) : sizeof( char );
+            SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
             if( byte_len > SQL_SERVER_MAX_FIELD_SIZE ) {
                 column_size = SQL_SERVER_MAX_TYPE_SIZE;
             }
@@ -1983,7 +1986,6 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
     if( Z_ISUNDEF(stmt->output_params) ) 
         return;
 
-    bool converted = true;
     HashTable* params_ht = Z_ARRVAL( stmt->output_params );
 	zend_ulong index = -1;
 	zend_string* key = NULL;
@@ -2008,7 +2010,7 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             int null_size = 0;
             switch( output_param->encoding ) {
             case SQLSRV_ENCODING_UTF8:
-                null_size = sizeof( wchar_t );  // string isn't yet converted to UTF-8, still UTF-16
+                null_size = sizeof( SQLWCHAR );  // string isn't yet converted to UTF-8, still UTF-16
                 break;
             case SQLSRV_ENCODING_SYSTEM:
                 null_size = 1;
@@ -2037,10 +2039,10 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
                 // so we do that here if the length of the returned data is less than the original allocation.  The 
                 // original allocation null terminates the buffer already.
                 str[ str_len ] = '\0';
-				core::sqlsrv_zval_stringl(value_z, str, str_len);
+                core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
-			else {
-				core::sqlsrv_zval_stringl(value_z, str, str_len);
+            else {
+                core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
         }
         break;
@@ -2052,10 +2054,9 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             else if( output_param->is_bool ) {
                 convert_to_boolean( value_z );
             }
-			else
-			{
-				ZVAL_LONG( value_z, static_cast<int>( Z_LVAL_P( value_z )));
-			}
+            else {
+                ZVAL_LONG( value_z, static_cast<int>( Z_LVAL_P( value_z )));
+            }
             break;
         case IS_DOUBLE:
             // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
@@ -2076,7 +2077,7 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
 }
 
 void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type,
-						_Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC )
+                          _Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC )
 {
 	SQLRETURN r;
 	SQLSMALLINT c_type;

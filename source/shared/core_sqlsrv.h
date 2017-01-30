@@ -24,6 +24,24 @@
 // Includes
 //*********************************************************************************************************************************
 
+#ifdef SQL_WCHART_CONVERT
+#undef SQL_WCHART_CONVERT
+#endif
+#ifndef _WCHART_DEFINED
+#define _WCHART_DEFINED 
+#endif
+
+#include "php.h"
+#include "php_globals.h"
+#include "php_ini.h"
+#include "ext/standard/php_standard.h"
+#include "ext/standard/info.h"
+
+#ifndef _WIN32
+#include "FormattedPrint.h"
+#include "StringFunctions.h"
+#endif // !_WIN32
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -33,6 +51,29 @@
 #else
 #define PHP_SQLSRV_API
 #endif
+
+// #define MultiByteToWideChar SystemLocale::ToUtf16
+
+
+
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
+
+#ifndef _WIN32
+#define GetLastError() errno
+#define SetLastError(err) errno=err
+
+typedef struct _OSVERSIONINFOA {
+    DWORD dwOSVersionInfoSize;
+    DWORD dwMajorVersion;
+    DWORD dwMinorVersion;
+    DWORD dwBuildNumber;
+    DWORD dwPlatformId;
+    CHAR   szCSDVersion[ 128 ];     // Maintenance string for PSS usage
+} OSVERSIONINFOA, *POSVERSIONINFOA, *LPOSVERSIONINFOA;
+typedef OSVERSIONINFOA OSVERSIONINFO;
+#endif // !_WIN32
+
 
 // OACR is an internal Microsoft static code analysis tool
 #if defined(OACR)
@@ -51,8 +92,10 @@ OACR_WARNING_DISABLE( ALLOC_SIZE_OVERFLOW_WITH_ACCESS, "Third party code." )
 
 extern "C" {
 
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning( disable: 4005 4100 4127 4142 4244 4505 4530 )
+#endif
 
 #ifdef ZTS
 #include "TSRM.h"
@@ -68,13 +111,9 @@ typedef int socklen_t;
 #define HAVE_SOCKLEN_T
 #endif
 
-#include "php.h"
-#include "php_globals.h"
-#include "php_ini.h"
-#include "ext/standard/php_standard.h"
-#include "ext/standard/info.h"
-
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 
 #if ZEND_DEBUG
 // debug build causes warning C4505 to pop up from the Zend header files
@@ -87,8 +126,10 @@ typedef int socklen_t;
 OACR_WARNING_POP
 #endif
 
+#ifdef _WIN32
 #include <sql.h>
 #include <sqlext.h>
+#endif // _WIN32
 
 #if !defined(WC_ERR_INVALID_CHARS)
 // imported from winnls.h as it isn't included by 5.3.0
@@ -106,10 +147,13 @@ OACR_WARNING_POP
 #include <algorithm>
 #include <limits>
 #include <cassert>
-#include <strsafe.h>
 #include <memory>
 // included for SQL Server specific constants
 #include "msodbcsql.h"
+
+#ifdef _WIN32
+#include <strsafe.h>
+#endif // _WIN32
 
 //*********************************************************************************************************************************
 // Constants and Types
@@ -226,7 +270,7 @@ void core_sqlsrv_register_logger( log_callback );
 void write_to_log( unsigned int severity TSRMLS_DC, const char* msg, ... );
 
 // a macro to make it convenient to use the function.
-#define LOG( severity, msg, ...)    write_to_log( severity TSRMLS_CC, msg, __VA_ARGS__ )
+#define LOG( severity, msg, ...)    write_to_log( severity TSRMLS_CC, msg, ## __VA_ARGS__ )
 
 // mask for filtering which severities are written to the log
 enum logging_severity {
@@ -238,7 +282,7 @@ enum logging_severity {
 
 // Kill the PHP process and log the message to PHP
 void die( const char* msg, ... );
-#define DIE( msg, ... ) { die( msg, __VA_ARGS__ ); }
+#define DIE( msg, ... ) { die( msg, ## __VA_ARGS__ ); }
 
 
 //*********************************************************************************************************************************
@@ -588,9 +632,9 @@ public:
     // free the original pointer and assign a new pointer. Use NULL to simply free the pointer.
     void reset( T* ptr = NULL )
     {
-        if( _ptr )
-            sqlsrv_free( (void*) _ptr );
-        _ptr = ptr;
+        if( sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr )
+            sqlsrv_free( (void*) sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr );
+        sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr = ptr;
     }
 
     T* operator=( T* ptr )
@@ -608,8 +652,8 @@ public:
     // DO NOT CALL sqlsrv_realloc with a sqlsrv_malloc_auto_ptr.  Use the resize member function.
     // has the same parameter list as sqlsrv_realloc: new_size is the size in bytes of the newly allocated buffer
     void resize( size_t new_size )
-    {
-        _ptr = reinterpret_cast<T*>( sqlsrv_realloc( _ptr, new_size ));
+    {	
+    	sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr = reinterpret_cast<T*>( sqlsrv_realloc( sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr, new_size ));
     }
 };
 
@@ -776,7 +820,7 @@ public:
     {
         sqlsrv_error* p = src.get();
         src.transferred();
-        this->_ptr = p;
+        reset( p );
     }
 };
 
@@ -804,8 +848,8 @@ class sqlsrv_context {
     sqlsrv_context( SQLSMALLINT type, error_callback e, void* drv, SQLSRV_ENCODING encoding = SQLSRV_ENCODING_INVALID ) :
         handle_( SQL_NULL_HANDLE ),
         handle_type_( type ),
-        err_( e ),
         name_( NULL ),
+        err_( e ),
         driver_( drv ),
         last_error_(),
         encoding_( encoding )
@@ -815,8 +859,8 @@ class sqlsrv_context {
     sqlsrv_context( SQLHANDLE h, SQLSMALLINT t, error_callback e, void* drv, SQLSRV_ENCODING encoding = SQLSRV_ENCODING_INVALID ) :
         handle_( h ),
         handle_type_( t ),
-        err_( e ),
         name_( NULL ),
+        err_( e ),
         driver_( drv ),
         last_error_(),
         encoding_( encoding )
@@ -826,11 +870,15 @@ class sqlsrv_context {
     sqlsrv_context( sqlsrv_context const& ctx ) :
         handle_( ctx.handle_ ),
         handle_type_( ctx.handle_type_ ),
-        err_( ctx.err_ ),
         name_( ctx.name_ ),
+        err_( ctx.err_ ),
         driver_( ctx.driver_ ),
         last_error_( ctx.last_error_ )
     {
+    }
+
+    virtual ~sqlsrv_context()
+    {        
     }
 
     void set_func( const char* f )
@@ -997,6 +1045,8 @@ struct sqlsrv_conn : public sqlsrv_context {
     sqlsrv_conn( SQLHANDLE h, error_callback e, void* drv, SQLSRV_ENCODING encoding  TSRMLS_DC ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
+        server_version = SERVER_VERSION_UNKNOWN;
+        driver_version = ODBC_DRIVER_13; 
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be 
@@ -1097,22 +1147,6 @@ struct connection_option {
     void                (*func)( connection_option const*, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC );
 };
 
-// connection attribute functions
-template <unsigned int Attr>
-struct str_conn_attr_func {
-
-    static void func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
-    {
-        try {
-            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
-                                     static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
-        }
-        catch( core::CoreException& ) {
-            throw;
-        }
-    }
-};
-
 // simply add the parsed value to the connection string
 struct conn_str_append_func {
 
@@ -1186,14 +1220,13 @@ struct sqlsrv_stream {
     SQLUSMALLINT field_index;
     SQLSMALLINT sql_type;
     sqlsrv_stmt* stmt;
-    std::size_t stmt_index;
 
     sqlsrv_stream( zval* str_z, SQLSRV_ENCODING enc ) :
-        stream_z( str_z ), encoding( enc )
+        stream_z( str_z ), encoding( enc ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL )
     {
     }
 
-    sqlsrv_stream() : stream_z( NULL ), encoding( SQLSRV_ENCODING_INVALID ), stmt( NULL )
+    sqlsrv_stream() : stream_z( NULL ), encoding( SQLSRV_ENCODING_INVALID ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL )
     {
     }
 };
@@ -1226,8 +1259,8 @@ struct sqlsrv_output_param {
     // every other type output parameter constructor
     sqlsrv_output_param( zval* p_z, int num, bool is_bool ) :
         param_z( p_z ),
-        param_num( num ),
         encoding( SQLSRV_ENCODING_INVALID ),
+        param_num( num ),
         original_buffer_len( -1 ),
         is_bool( is_bool )
     {
@@ -1310,7 +1343,11 @@ const int SQLSRV_DEFAULT_SIZE = -1;     // size given for an output parameter th
 const unsigned int QUERY_TIMEOUT_INVALID = 0xffffffff;
 
 // special buffered query constant
+#ifndef _WIN32
+const size_t SQLSRV_CURSOR_BUFFERED = 42; // arbitrary number that doesn't map to any other SQL_CURSOR_* constant
+#else
 const size_t SQLSRV_CURSOR_BUFFERED = 0xfffffffeUL; // arbitrary number that doesn't map to any other SQL_CURSOR_* constant
+#endif // !_WIN32
 
 // factory to create a statement
 typedef sqlsrv_stmt* (*driver_stmt_factory)( sqlsrv_conn* conn, SQLHANDLE h, error_callback e, void* drv TSRMLS_DC );
@@ -1519,9 +1556,8 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLLEN& len);
 bool convert_zval_string_from_utf16(SQLSRV_ENCODING encoding, zval* value_z, SQLLEN& len);
 bool validate_string(char* string, SQLLEN& len);
-bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const wchar_t* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen );
-wchar_t* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, 
-                                        unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
+bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen );
+SQLWCHAR* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
 
 //*********************************************************************************************************************************
 // Error handling routines and Predefined Errors
@@ -1637,13 +1673,13 @@ inline bool call_error_handler( sqlsrv_context* ctx, unsigned long sqlsrv_error_
 // PHP equivalent of ASSERT.  C asserts cause a dialog to show and halt the process which
 // we don't want on a web server
 
-#define SQLSRV_ASSERT( condition, msg, ...)  if( !(condition)) DIE( msg, __VA_ARGS__ );
+#define SQLSRV_ASSERT( condition, msg, ...)  if( !(condition)) DIE( msg, ## __VA_ARGS__ );
  
 #if defined( PHP_DEBUG )                             
 
 #define DEBUG_SQLSRV_ASSERT( condition, msg, ... )    \
     if( !(condition)) {                               \
-        DIE (msg, __VA_ARGS__ );                      \
+        DIE (msg, ## __VA_ARGS__ );                      \
     }                 
 
 #else
@@ -1670,58 +1706,58 @@ inline bool is_truncated_warning( SQLCHAR* state )
     bool flag##unique = (condition);                                 \
     bool ignored##unique = true;                                       \
     if (flag##unique) {                                              \
-        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/false, __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/false, ## __VA_ARGS__ ); \
     }  \
     if( !ignored##unique )
     
 #define CHECK_ERROR_UNIQUE( unique, condition, context, ssphp, ...) \
-    CHECK_ERROR_EX( unique, condition, context, ssphp, __VA_ARGS__ )
+    CHECK_ERROR_EX( unique, condition, context, ssphp, ## __VA_ARGS__ )
 
 #define CHECK_ERROR( condition, context, ... )  \
-    CHECK_ERROR_UNIQUE( __COUNTER__, condition, context, NULL, __VA_ARGS__ )
+    CHECK_ERROR_UNIQUE( __COUNTER__, condition, context, 0, ## __VA_ARGS__ )
 
 #define CHECK_CUSTOM_ERROR( condition, context, ssphp, ... )  \
-    CHECK_ERROR_UNIQUE( __COUNTER__, condition, context, ssphp, __VA_ARGS__ )
+    CHECK_ERROR_UNIQUE( __COUNTER__, condition, context, ssphp, ## __VA_ARGS__ )
 
 #define CHECK_SQL_ERROR( result, context, ... )  \
     SQLSRV_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." ); \
-    CHECK_ERROR( result == SQL_ERROR, context, __VA_ARGS__ )
+    CHECK_ERROR( result == SQL_ERROR, context, ## __VA_ARGS__ )
 
 #define CHECK_WARNING_AS_ERROR_UNIQUE(  unique, condition, context, ssphp, ... )   \
     bool ignored##unique = true;    \
     if( condition ) { \
-        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/true, __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/true, ## __VA_ARGS__ ); \
     }   \
     if( !ignored##unique ) 
 
 #define CHECK_SQL_WARNING_AS_ERROR( result, context, ... ) \
-    CHECK_WARNING_AS_ERROR_UNIQUE( __COUNTER__,( result == SQL_SUCCESS_WITH_INFO ), context, SQLSRV_ERROR_ODBC, __VA_ARGS__ )
+    CHECK_WARNING_AS_ERROR_UNIQUE( __COUNTER__,( result == SQL_SUCCESS_WITH_INFO ), context, SQLSRV_ERROR_ODBC, ## __VA_ARGS__ )
     
 #define CHECK_SQL_WARNING( result, context, ... )        \
     if( result == SQL_SUCCESS_WITH_INFO ) {              \
-        (void)call_error_handler( context, NULL TSRMLS_CC, /*warning*/ true, __VA_ARGS__ ); \
-    }                                                    
+        (void)call_error_handler( context, 0 TSRMLS_CC, /*warning*/ true, ## __VA_ARGS__ ); \
+    }
 
 #define CHECK_CUSTOM_WARNING_AS_ERROR( condition, context, ssphp, ... ) \
-    CHECK_WARNING_AS_ERROR_UNIQUE( __COUNTER__, condition, context, ssphp, __VA_ARGS__ )
+    CHECK_WARNING_AS_ERROR_UNIQUE( __COUNTER__, condition, context, ssphp, ## __VA_ARGS__ )
                  
 #define CHECK_ZEND_ERROR( zr, ctx, error, ... )  \
-    CHECK_ERROR_UNIQUE( __COUNTER__, ( zr == FAILURE ), ctx, error, __VA_ARGS__ )  \
+    CHECK_ERROR_UNIQUE( __COUNTER__, ( zr == FAILURE ), ctx, error, ## __VA_ARGS__ )  \
 
 #define CHECK_SQL_ERROR_OR_WARNING( result, context, ... ) \
     SQLSRV_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." );  \
     bool ignored = true;                                   \
     if( result == SQL_ERROR ) {                            \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, false, __VA_ARGS__ ); \
+        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, false, ##__VA_ARGS__ ); \
     }                                                      \
     else if( result == SQL_SUCCESS_WITH_INFO ) {           \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, true TSRMLS_CC, __VA_ARGS__ ); \
+        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, true TSRMLS_CC, ##__VA_ARGS__ ); \
     }                                                      \
     if( !ignored )
   
 // throw an exception after it has been hooked into the custom error handler
 #define THROW_CORE_ERROR( ctx, custom, ... ) \
-  (void)call_error_handler( ctx, custom TSRMLS_CC, /*warning*/ false, __VA_ARGS__ ); \
+  (void)call_error_handler( ctx, custom TSRMLS_CC, /*warning*/ false, ## __VA_ARGS__ ); \
   throw core::CoreException();
 
 //*********************************************************************************************************************************
@@ -1744,13 +1780,13 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[ SQL_MAX_MESSAGE_LENGTH + 1 ];
+            SQLCHAR err_msg[ SQL_MAX_MESSAGE_LENGTH + 1 ] = { '\0' };
             SQLSMALLINT len = 0;
             
-            SQLRETURN r = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
+            SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
                                              err_msg, SQL_MAX_MESSAGE_LENGTH, &len );
 
-            CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt ) {
          
                 throw CoreException();
             }
@@ -1889,7 +1925,7 @@ namespace core {
         return r;
     }
 
-    inline SQLRETURN SQLExecDirectW( sqlsrv_stmt* stmt, wchar_t* wsql TSRMLS_DC )
+    inline SQLRETURN SQLExecDirectW( sqlsrv_stmt* stmt, SQLWCHAR* wsql TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLExecDirectW( stmt->handle(), reinterpret_cast<SQLWCHAR*>( wsql ), SQL_NTS );
@@ -2046,6 +2082,18 @@ namespace core {
 
         r = ::SQLRowCount( stmt->handle(), &rows_affected );
         
+        // On Linux platform
+        // DriverName: libmsodbcsql-13.0.so.0.0
+        // DriverODBCVer: 03.52
+        // DriverVer: 13.00.0000
+        // unixODBC: 2.3.1
+        // r = ::SQLRowCount( stmt->handle(), &rows_affected );  
+        // returns r=-1 for an empty result set. 
+#ifdef __linux__
+        if( r == -1 && rows_affected == -1 )
+           return 0;
+#endif
+
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
         }
@@ -2260,15 +2308,6 @@ namespace core {
         ::zend_hash_init(ht, initial_size, NULL, dtor_fn, persistent);
     }
 
-    inline void sqlsrv_zend_hash_add( sqlsrv_context& ctx, HashTable* ht, zend_string* key, unsigned int key_len, zval* data, 
-                                      unsigned int data_size, zval* pDest TSRMLS_DC )
-    {
-        int zr = (pDest = ::zend_hash_add(ht, key, data)) != NULL ? SUCCESS : FAILURE;
-        CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-    }
-
 template <typename Statement>
 sqlsrv_stmt* allocate_stmt( sqlsrv_conn* conn, SQLHANDLE h, error_callback e, void* driver TSRMLS_DC )
 {
@@ -2282,5 +2321,21 @@ sqlsrv_conn* allocate_conn( SQLHANDLE h, error_callback e, void* driver TSRMLS_D
 }
 
 } // namespace core
+
+// connection attribute functions
+template <unsigned int Attr>
+struct str_conn_attr_func {
+
+    static void func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    {
+        try {
+            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
+                                     static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
+        }
+        catch( core::CoreException& ) {
+            throw;
+        }
+    }
+};
 
 #endif  // CORE_SQLSRV_H

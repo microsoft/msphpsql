@@ -1,8 +1,8 @@
-#ifndef VERSION_H
-#define VERSION_H
 //---------------------------------------------------------------------------------------------------------------------------------
-// File: version.h
-// Contents: Version number constants
+// File: InterlockedAtomic.h
+//
+// Contents: Contains a portable abstraction for interlocked, atomic
+// 			 operations on int32_t and pointer types.
 //
 // Microsoft Drivers 4.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
@@ -18,20 +18,45 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-// helper macros to stringify the a macro value
-#define STRINGIFY(a) TOSTRING(a)
-#define TOSTRING(a) #a
+#ifndef __INTERLOCKEDATOMIC_H__
+#define __INTERLOCKEDATOMIC_H__
 
-#define SQLVERSION_MAJOR 4
-#define SQLVERSION_MINOR 1
-#define SQLVERSION_RELEASE 5
-#define SQLVERSION_BUILD 0
+// Forward references and contract specifications
+//
 
-#define VER_FILEVERSION_STR     STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE ) "." STRINGIFY( SQLVERSION_BUILD ) 
-#define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_RELEASE,SQLVERSION_BUILD
-#define PHP_SQLSRV_VERSION      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_RELEASE )
-#define PHP_PDO_SQLSRV_VERSION  PHP_SQLSRV_VERSION
+// Increments and returns new value
+LONG InterlockedIncrement( LONG volatile * atomic );
 
-#endif // VERSION_H
+// Decrements and returns new value
+LONG InterlockedDecrement( LONG volatile * atomic );
+
+// Always returns old value
+// Sets to new value if old value equals compareTo
+LONG InterlockedCompareExchange( LONG volatile * atomic, LONG newValue, LONG compareTo );
+
+// Sets to new value and returns old value
+LONG InterlockedExchange( LONG volatile * atomic, LONG newValue );
+
+// Sets to new value and returns old value
+PVOID InterlockedExchangePointer( PVOID volatile * atomic, PVOID newValue);
+
+// Adds the amount and returns the old value
+LONG InterlockedExchangeAdd( LONG volatile * atomic, LONG add );
+
+// Always returns the old value
+// Sets the new value if old value equals compareTo
+PVOID InterlockedCompareExchangePointer( PVOID volatile * atomic, PVOID newValue, PVOID compareTo );
 
 
+
+// Use conditional compilation to load the implementation
+//
+#if defined(_MSC_VER)
+#include "InterlockedAtomic_WwoWH.h"
+#elif defined(__GNUC__)
+#include "interlockedatomic_gcc.h"
+#else
+#error "Unsupported compiler"
+#endif
+
+#endif // __INTERLOCKEDATOMIC_H__

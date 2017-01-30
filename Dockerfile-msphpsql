@@ -1,0 +1,72 @@
+#Download base image ubuntu 16.04
+
+FROM ubuntu:16.04
+
+# Update Ubuntu Software repository
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
+	apt-get -y install \
+	apt-transport-https	 \
+	apt-utils \
+	autoconf \
+	curl \
+	g++ \
+	gcc	\
+	git \
+	lcov \
+	libxml2-dev \
+	locales \
+	make \
+	php7.0	\	
+	php7.0-dev \
+	python-pip \
+	re2c \
+        unixodbc-dev \
+	unzip && apt-get clean
+	
+ARG PHPSQLDIR=/REPO/msphpsql-PHP-7.0-Linux
+
+# set locale to utf-8
+RUN locale-gen en_US.UTF-8
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+
+#install ODBC driver
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+
+#RUN echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main" > /etc/apt/sources.list.d/mssqlpreview.list
+#RUN apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools
+
+#install coveralls
+RUN pip install --upgrade pip && pip install cpp-coveralls
+
+#Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
+#One option is to get source from zip file of repository.
+
+#another option is to copy source to build directory on image
+RUN mkdir -p $PHPSQLDIR
+COPY . $PHPSQLDIR
+
+WORKDIR $PHPSQLDIR/source/ 
+
+RUN chmod +x ./packagize.sh
+RUN /bin/bash -c "./packagize.sh"
+
+RUN echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+RUN echo "extension = sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+
+WORKDIR $PHPSQLDIR/source/sqlsrv
+RUN phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && make install
+
+WORKDIR $PHPSQLDIR/source/pdo_sqlsrv
+RUN phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && make install
+
+# set name of sql server host to use
+WORKDIR $PHPSQLDIR/test/pdo_sqlsrv
+RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
+
+WORKDIR $PHPSQLDIR/test/sqlsrv
+RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
+
+ENV REPORT_EXIT_STATUS 1
+ENV TEST_PHP_EXECUTABLE /usr/bin/php
