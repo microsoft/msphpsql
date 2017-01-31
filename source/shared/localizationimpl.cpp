@@ -47,10 +47,14 @@ struct cp_iconv
 
 // Array of CodePage-to-IConvEncoding mappings
 // First few elements are most commonly used
+// CodePage 2 corresponds to binary. If the attribute PDO::SQLSRV_ENCODING_BINARY
+// is set, GetIndex() above hits the assert(false) directive unless we include
+// CodePage 2 below and assign an empty string to it.
 const cp_iconv cp_iconv::g_cp_iconv[] = {
     { 65001, "UTF-8" },
     {  1200, "UTF-16LE" },
     {     3, "UTF-8" },
+    {     2, "" },
     {  1252, "CP1252//TRANSLIT" },
     {   850, "CP850//TRANSLIT" },
     {   437, "CP437//TRANSLIT" },
