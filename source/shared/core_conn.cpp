@@ -32,6 +32,7 @@
 
 #ifdef __linux__
 #include <sys/utsname.h>
+#include <odbcinst.h>
 #endif
 
 // *** internal variables and constants ***
@@ -92,7 +93,6 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
                                   const char* server, const char* uid, const char* pwd, 
                                   HashTable* options_ht, error_callback err, const connection_option valid_conn_opts[], 
 				                  void* driver, const char* driver_func TSRMLS_DC )
-
 {
     SQLRETURN r;
     std::string conn_str;
@@ -101,10 +101,27 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wconn_string;
     unsigned int wconn_len = 0;
 
-    try {
-
+#ifndef __linux__
     sqlsrv_context* henv = &henv_cp;   // by default use the connection pooling henv
+#else
+    sqlsrv_context* henv = &henv_ncp;  // by default do not use the connection pooling henv
+#endif
 
+    try {
+    // Due to the limitations on connection pooling in unixODBC 2.3.1 driver manager, we do not concider 
+    // the connection string attributes to set (enable/disable) connection pooling. 
+    // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
+	
+#ifdef __linux__
+    char pooling_string[ 128 ] = {0};
+    SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
+
+		if ( pooling_string[ 0 ] == '1' || toupper( pooling_string[ 0 ] ) == 'Y' ||
+			 ( toupper( pooling_string[ 0 ] ) == 'O' && toupper( pooling_string[ 1 ] ) == 'N' ))
+		{
+				henv = &henv_cp;
+		}
+#else
     // check the connection pooling setting to determine which henv to use to allocate the connection handle
     // we do this earlier because we have to allocate the connection handle prior to setting attributes on
     // it in build_connection_string_and_set_conn_attr.
@@ -123,6 +140,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
             }
         }
     }
+#endif
 
     SQLHANDLE temp_conn_h;
     core::SQLAllocHandle( SQL_HANDLE_DBC, *henv, &temp_conn_h TSRMLS_CC );
@@ -149,10 +167,19 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
  
     SQLSMALLINT output_conn_size;
 #ifdef __linux__
-    r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
+	// unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
+	// connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
+	if ( henv == &henv_cp )
+	{
+		r = SQLDriverConnect( conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(),
+                           SQL_NTS, NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+	}
+	else
+	{
+		r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
                            static_cast<SQLSMALLINT>( wconn_len ), NULL, 
                            0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-
+    }
 #else
 	r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
                            static_cast<SQLSMALLINT>( wconn_len ), NULL, 
@@ -193,8 +220,18 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 
     // determine the version of the server we're connected to.  The server version is left in the 
     // connection upon return.
+    //
+    // unixODBC 2.3.1:
+    // SQLGetInfo works when r =  SQL_SUCCESS_WITH_INFO (non-pooled connection)
+    // but fails if the connection is using a pool, i.e. r= SQL_SUCCESS.
+    // Thus, in Linux, we don't call determine_server_version() for a connection that uses pool.
+#ifdef __linux__
+	if ( r == SQL_SUCCESS_WITH_INFO ) {
+#endif
     determine_server_version( conn TSRMLS_CC );
-	
+#ifdef __linux__
+	}
+#endif
     }
     catch( std::bad_alloc& ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
@@ -427,12 +464,13 @@ void core_sqlsrv_get_server_info( sqlsrv_conn* conn, _Out_ zval *server_info TSR
         sqlsrv_malloc_auto_ptr<char> buffer;
         SQLSMALLINT buffer_len = 0;
 
-        // initialize the array
-        core::sqlsrv_array_init( *conn, server_info TSRMLS_CC );
-      
         // Get the database name
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
         core::SQLGetInfo( conn, SQL_DATABASE_NAME, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
+
+        // initialize the array
+        core::sqlsrv_array_init( *conn, server_info TSRMLS_CC );
+
         core::sqlsrv_add_assoc_string( *conn, server_info, "CurrentDatabase", buffer, 0 /*duplicate*/ TSRMLS_CC );
         buffer.transferred();
       
@@ -465,13 +503,14 @@ void core_sqlsrv_get_client_info( sqlsrv_conn* conn, _Out_ zval *client_info TSR
 
         sqlsrv_malloc_auto_ptr<char> buffer;
         SQLSMALLINT buffer_len = 0;
-        
-        // initialize the array
-        core::sqlsrv_array_init( *conn, client_info TSRMLS_CC );
-  
+          
         // Get the ODBC driver's dll name
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
         core::SQLGetInfo( conn, SQL_DRIVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
+
+        // initialize the array
+        core::sqlsrv_array_init( *conn, client_info TSRMLS_CC );
+
 #ifdef __linux__
         core::sqlsrv_add_assoc_string( *conn, client_info, "DriverName", buffer, 0 /*duplicate*/ TSRMLS_CC );
 #else
