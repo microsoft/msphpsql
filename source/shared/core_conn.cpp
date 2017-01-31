@@ -464,12 +464,13 @@ void core_sqlsrv_get_server_info( sqlsrv_conn* conn, _Out_ zval *server_info TSR
         sqlsrv_malloc_auto_ptr<char> buffer;
         SQLSMALLINT buffer_len = 0;
 
-        // initialize the array
-        core::sqlsrv_array_init( *conn, server_info TSRMLS_CC );
-      
         // Get the database name
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
         core::SQLGetInfo( conn, SQL_DATABASE_NAME, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
+
+        // initialize the array
+        core::sqlsrv_array_init( *conn, server_info TSRMLS_CC );
+
         core::sqlsrv_add_assoc_string( *conn, server_info, "CurrentDatabase", buffer, 0 /*duplicate*/ TSRMLS_CC );
         buffer.transferred();
       
@@ -502,13 +503,14 @@ void core_sqlsrv_get_client_info( sqlsrv_conn* conn, _Out_ zval *client_info TSR
 
         sqlsrv_malloc_auto_ptr<char> buffer;
         SQLSMALLINT buffer_len = 0;
-        
-        // initialize the array
-        core::sqlsrv_array_init( *conn, client_info TSRMLS_CC );
-  
+          
         // Get the ODBC driver's dll name
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
         core::SQLGetInfo( conn, SQL_DRIVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
+
+        // initialize the array
+        core::sqlsrv_array_init( *conn, client_info TSRMLS_CC );
+
 #ifdef __linux__
         core::sqlsrv_add_assoc_string( *conn, client_info, "DriverName", buffer, 0 /*duplicate*/ TSRMLS_CC );
 #else

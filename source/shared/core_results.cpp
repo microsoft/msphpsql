@@ -452,7 +452,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
             case SQL_DECIMAL:
             case SQL_GUID:
             case SQL_NUMERIC:
-                core::SQLColAttribute( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL,
+                core::SQLColAttributeW( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL,
                                        reinterpret_cast<SQLLEN*>( &meta[i].length ) TSRMLS_CC );
                 meta[i].length += sizeof( char ) + sizeof( SQLULEN ); // null terminator space
                 offset += meta[i].length;
@@ -518,7 +518,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
             case SQL_TYPE_TIMESTAMP:
-                core::SQLColAttribute( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, 
+                core::SQLColAttributeW( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, 
                                        reinterpret_cast<SQLLEN*>( &meta[i].length ) TSRMLS_CC );
                 meta[i].length += sizeof(char) + sizeof( SQLULEN );  // null terminator space
                 offset += meta[i].length;

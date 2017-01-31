@@ -946,10 +946,10 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 		if( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID ) {
 
 			// Get the SQL type of the field.
-			core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
 
 			// Get the length of the field.
-			core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
+			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
 
 			// Get the corresponding php type from the sql type.
 			sqlsrv_php_type = stmt->sql_type_to_php_type( static_cast<SQLINTEGER>( sql_field_type ), static_cast<SQLUINTEGER>( sql_field_len ), prefer_string );
@@ -1636,7 +1636,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
 			sqlsrv_stream* ss = NULL;
 			SQLLEN sql_type;
 
-			SQLRETURN r = SQLColAttribute( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
+			SQLRETURN r = SQLColAttributeW( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
 			CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
 				throw core::CoreException();
 			}
@@ -2155,6 +2155,8 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 			sql_display_size == INT_MAX >> 1 || sql_display_size == UINT_MAX - 1 ) {
 
 			field_len_temp = INITIAL_FIELD_STRING_LEN;
+            SQLLEN initiallen = field_len_temp + extra;
+
 
 			field_value_temp = static_cast<char*>( sqlsrv_malloc( field_len_temp + extra + 1 ));
 
@@ -2178,7 +2180,13 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 
 				stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
 
-				if( is_truncated_warning( state )) {
+                // with Linux connection pooling may not get a truncated warning back but the actual field_len_temp 
+                // can be greater than the initallen value.
+#ifdef __linux__
+                if( is_truncated_warning( state ) || initiallen < field_len_temp) {
+#else
+                if( is_truncated_warning( state ) ) {
+#endif 
 
 					SQLLEN dummy_field_len;
 
@@ -2319,7 +2327,17 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 		// runtime checks to see if a string is null terminated and issues a warning about it if running in debug mode.
 		// SQL_C_BINARY fields don't return a NULL terminator, so we allocate an extra byte on each field and use the ternary
 		// operator to set add 1 to fill the null terminator
-		field_value_temp[field_len_temp] = '\0';
+
+        // with unixODBC connection pooling sometimes field_len_temp can be SQL_NO_DATA.
+        // In that cause do not set null terminator and set length to 0.
+        if ( field_len_temp > 0 )
+        {          
+            field_value_temp[field_len_temp] = '\0';
+        }
+        else
+        {
+            *field_len = 0;        
+        }
 	}
 
 	catch( core::CoreException& ) {
