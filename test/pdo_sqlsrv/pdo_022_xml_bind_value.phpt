@@ -9,13 +9,12 @@ require_once("autonomous_setup.php");
 $conn = new PDO("sqlsrv:server=$serverName;", $username, $password);
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// CREATE database
+// Create database
 $conn->query("CREATE DATABASE ". $dbName) ?: die();
 
 // Create table
 $sql = "CREATE TABLE $tableName (ID INT PRIMARY KEY NOT NULL IDENTITY, XMLMessage XML)";
 $stmt = $conn->query($sql);
-
 
 // XML samples
 $xml1 = '<?xml version="1.0" encoding="UTF-16"?>
@@ -37,7 +36,7 @@ try
     $stmt->bindValue(':msg', $xml1);
     $stmt->execute();
 	
-	$stmt = $conn->prepare("INSERT INTO $tableName (XMLMessage) VALUES (?)");
+    $stmt = $conn->prepare("INSERT INTO $tableName (XMLMessage) VALUES (?)");
     $stmt->bindValue(1, $xml2);
     $stmt->execute();
 }
@@ -45,12 +44,12 @@ catch (PDOException $ex) {
     echo "Error: " . $ex->getMessage();
 }
 
-// GET DATA
+// Get data
 $stmt = $conn->query("select * from $tableName");
 $row = $stmt->fetchAll(PDO::FETCH_ASSOC);  
 var_dump($row);  
   
-// DROP database
+// Drop database
 $conn->query("DROP DATABASE ". $dbName) ?: die();
 
 // Close connection
