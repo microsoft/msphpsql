@@ -1,5 +1,5 @@
 --TEST--
-PHPT Create database that already exists
+Create database that already exists
 --SKIPIF--
 --FILE--
 <?php
