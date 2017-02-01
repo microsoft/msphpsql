@@ -957,7 +957,7 @@ PHP_FUNCTION( sqlsrv_has_rows )
             throw ss::SSException();
         }
 
-        if( !stmt->fetch_called ) {
+        if( !stmt->has_rows && !stmt->fetch_called ) {
 
             determine_stmt_has_rows( stmt TSRMLS_CC );
         }

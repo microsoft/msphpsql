@@ -6,7 +6,18 @@ The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for t
 
 This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
 
-The Microsoft Drivers for PHP for SQL Server Team
+SQL Server Team
+###Status of Most Recent Builds
+| AppVeyor (Windows)      |Travis CI (Linux) |        Coverage Status  
+|-------------------------|--------------------------| ------------------
+| [![av-image][]][av-site]| [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
+
+[av-image]:  https://ci.appveyor.com/api/projects/status/github/Microsoft/msphpsql?branch=PHP-7.0&svg=true
+[av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql
+[tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=PHP-7.0-Linux
+[tv-site]: https://travis-ci.org/Microsoft/msphpsql/
+[Coverage Status]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=PHP-7.0-Linux
+[coveralls-site]: https://coveralls.io/github/Microsoft/msphpsql?branch=PHP-7.0-Linux
 
 ##Get Started
 
@@ -14,54 +25,13 @@ The Microsoft Drivers for PHP for SQL Server Team
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-rhel)
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-windows)
 
+
 ##Announcements
 
-**October 25 , 2016** : Updated Windows drivers (4.1.4) compiled with PHP 7.0.12  and 7.1 are available. Here is the list of updates:
+**December 19, 2016**: We are delighted announce that production release for PHP Linux Driver for SQL Server is available. PECL packages (4.0.8) are updated with the latest changes, and Linux binaries (4.0.8) compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. For complete list of changes please visit [CHANGELOG](https://github.com/Microsoft/msphpsql/blob/PHP-7.0-Linux/CHANGELOG.md) file.
 
-- Drivers versioning has been redesigned as Major#.Minor#.Release#.Build#. Build number is specific to binaries and it doesn't match with the number on the source.
-- Fixed the issue with  duplicate warning messages in PDO_SQLSRV drivers when error mode is set to PDO::ERRMODE_WARNING.
+ Please visit the [blog][blog] for more announcements.
 
-**October 4 , 2016** : Updated Windows drivers (4.1.3) compiled with PHP 7.0.11  and 7.1.0RC3 are available. Here is the list of updates:
-
-- Fixed [issue #139](https://github.com/Microsoft/msphpsql/issues/139) : sqlsrv_fetch_object calls custom class constructor in static context and outputs an error.
-
-**September 9, 2016** : Updated Windows drivers (4.1.2) compiled with PHP 7.0.10 are available. Here is the list of updates:
-
-- Fixed [issue #119](https://github.com/Microsoft/msphpsql/issues/119) (modifying class name in sqlsrv_fetch_object).
-- Added following integer SQL Types constants for cases which function-like SQL types constants cannot be used e.g. type comparison:
-
-    SQLSRV constant | Typical SQL Server data type | SQL type identifier
-    ------------ | ----------------------- | ----------------------
-   SQLSRV_SQLTYPE_DECIMAL | decimal       | SQL_DECIMAL
-   SQLSRV_SQLTYPE_NUMERIC | numeric       | SQL_NUMERIC
-   SQLSRV_SQLTYPE_CHAR    | char          | SQL_CHAR
-   SQLSRV_SQLTYPE_NCHAR   | nchar         | SQL_WCHAR
-   SQLSRV_SQLTYPE_VARCHAR | varchar       | SQL_VARCHAR
-   SQLSRV_SQLTYPE_NVARCHAR | nvarchar     | SQL_WVARCHAR
-   SQLSRV_SQLTYPE_BINARY   | binary       | SQL_BINARY
-   SQLSRV_SQLTYPE_VARBINARY  | varbinary   | SQL_VARBINARY
-
-    Note: These constants should be used in type comparison operations (refer to issue [#87](https://github.com/Microsoft/msphpsql/issues/87) and [#99](https://github.com/Microsoft/msphpsql/issues/99) ), and don't replace the function like constants with the similar syntax, for binding parameters you should use the function-like constants, otherwise you'll get an error.
-
-
-**August 22, 2016** : Updated Windows drivers(4.1.1) compiled with PHP 7.0.9 are available and include a couple of bug fixes:
-
-- Fixed issue with storing integers in varchar field.
-- Fixed issue with invalid connection handler if one connection fails.
-- Fixed crash when emulate prepare is on.
-
-**July 28, 2016** (4.1.0): Thanks to the community's input, this release expands drivers functionalities and also includes some bug fixes:
-
- - `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  connection attribute flag is added to PDO_SQLSRV driver to handle numeric fetches from columns with numeric Sql types (only bit, integer, smallint, tinyint, float and real). This flag can be turned on by setting its value in  `PDO::setAttribute` to `true`, For example,
-               `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);` 
-		  If `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  is set to `true` the results from an integer column will be represented as an `int`, likewise, Sql types float and real will be represented as `float`. 
-		  Note for exceptions:
-	 - When connection option flag `ATTR_STRINGIFY_FETCHES` is on, even when `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is on, the return value will still be string.
-	 - 	When the returned PDO type in bind column is `PDO_PARAM_INT`, the return value from a integer column will be int even if `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is off.
- - Fixed float truncation when using buffered query. 
- - Fixed handling of Unicode strings and binary when emulate prepare is on in `PDOStatement::bindParam`.  To bind a unicode string, `PDO::SQLSRV_ENCODING_UTF8` should be set using `$driverOption`, and to bind a string to column of Sql type binary, `PDO::SQLSRV_ENCODING_BINARY` should be set.
- - Fixed string truncation in bind output parameters when the size is not set and the length of initialized variable is less than the output.
- - Fixed bind string parameters as bidirectional parameters (`PDO::PARAM_INPUT_OUTPUT `) in PDO_SQLSRV driver. Note for output or bidirectional parameters, `PDOStatement::closeCursor` should be called to get the output value.
 
 ## Build
 
@@ -112,7 +82,6 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 
 ## Known Issues
 -  User defined data types and SQL_VARIANT.
-- Passing custom class constructor to sqlsrv_fetch_object reproduce an error([issue#139](https://github.com/Microsoft/msphpsql/issues/139)).
 - Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
 
 ## Future Plans
@@ -126,6 +95,7 @@ We appreciate you taking the time to test the driver, provide feedback and repor
 - Report each issue as a new issue (but check first if it's already been reported)
 - Try to be detailed in your report. Useful information for good bug reports include:
   * What you are seeing and what the expected behaviour is
+  * Can you connect to SQL Server via `sqlcmd`? 
   * Which driver: SQLSRV or PDO_SQLSRV?
   * Environment details: e.g. PHP version, thread safe (TS) or non-thread safe (NTS), 32-bit &/or 64-bit?
   * Table schema (for some issues the data types make a big difference!)
@@ -141,7 +111,7 @@ Thank you!
 
 **Q:** What's next?
 
-**A:** On Jan 29, 2016 we released an early technical preview for our PHP Driver and several since. We will continue to release frequently to improve the quality of our driver.
+**A:** On July 20, 2016 we released the early technical preview for our PHP Driver. We will continue releasing frequent technical previews until we reach production quality.
 
 **Q:** Is Microsoft taking pull requests for this project?
 
@@ -175,11 +145,24 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [phpbuild]: https://wiki.php.net/internals/windows/stepbystepbuild
 
-[phpdoc]: http://msdn.microsoft.com/en-us/library/dd903047%28SQL.11%29.aspx
+[phpdoc]: http://msdn.microsoft.com/library/dd903047%28SQL.11%29.aspx
 
-[odbc11]: https://www.microsoft.com/en-us/download/details.aspx?id=36434
+[odbc11]: https://www.microsoft.com/download/details.aspx?id=36434
 
-[odbc13]: https://www.microsoft.com/en-us/download/details.aspx?id=50420
+[odbc13]: https://www.microsoft.com/download/details.aspx?id=50420
 
-[phpazure]: https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-php-simple-windows/
+[odbcLinux]: https://msdn.microsoft.com/library/hh568454(v=sql.110).aspx
 
+[phpazure]: https://azure.microsoft.com/documentation/articles/sql-database-develop-php-simple-windows/
+
+[PHPMan]: http://php.net/manual/install.unix.php
+
+[LinuxDM]: https://msdn.microsoft.com/library/hh568449(v=sql.110).aspx
+
+[httpd_source]: http://httpd.apache.org/
+
+[apr_source]: http://apr.apache.org/
+
+[httpdconf]: http://php.net/manual/en/install.unix.apache2.php
+
+[ODBCinstallers]: https://blogs.msdn.microsoft.com/sqlnativeclient/2016/09/06/preview-release-of-the-sql-server-cc-odbc-driver-13-0-0-for-linux
