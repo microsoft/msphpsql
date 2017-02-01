@@ -6,7 +6,7 @@ Number MAX_INT to string with custom formats
 require_once("autonomous_setup.php");
 
 /* Sample number MAX_INT */
-$sample = 2**31-1;
+$sample = 2*(2**30-1)+1;
 var_dump ($sample);
 
 /* Connect */
