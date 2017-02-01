@@ -11,7 +11,7 @@ function PrintContent($conn)
 	global $tableName;
 	$query = "SELECT * FROM $tableName";
 	$stmt = sqlsrv_query($conn, $query);
-	// Fetch first row 
+	// Fetch the first row 
 	$row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC);
 	print_r($row);
 }
