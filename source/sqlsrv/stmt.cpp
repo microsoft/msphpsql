@@ -21,7 +21,7 @@
 #include "php_sqlsrv.h"
 #ifdef _WIN32
 #include <sal.h>
-#endif
+#endif // _WIN32
 
 //
 // *** internal variables and constants ***
@@ -1825,10 +1825,10 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, zend_long fetch_type, _O
         for( int i = 0; i < num_cols; ++i ) {
 
             core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL TSRMLS_CC );
-#ifdef __linux__
+#ifndef _WIN32
             //Conversion function in Linux expects size in characters.
             field_name_len_w = field_name_len_w / sizeof ( SQLWCHAR );
-#endif
+#endif // !_WIN32
             bool converted = convert_string_from_utf16( encoding, field_name_w,
                 field_name_len_w, ( char** ) &field_name, field_name_len );
 
@@ -2169,11 +2169,11 @@ void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, int type )
         size = SQLSRV_SIZE_MAX_TYPE;
     }
     else {
-#ifdef __linux__
+#ifndef _WIN32
         errno = 0;
 #else
         _set_errno(0);  // reset errno for atol
-#endif
+#endif // !_WIN32
         size = atol( size_p );
         if( errno != 0 ) {
             size = SQLSRV_INVALID_SIZE;

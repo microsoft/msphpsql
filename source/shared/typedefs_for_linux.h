@@ -54,11 +54,11 @@ DWORD FormatMessageW(
     va_list *Arguments
     );
 
-#ifdef __linux__
+#ifndef _WIN32
 #define FormatMessage FormatMessageA
 #else
 #define FormatMessage FormatMessageW
-#endif
+#endif // !_WIN32
 
 #define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
 #define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
