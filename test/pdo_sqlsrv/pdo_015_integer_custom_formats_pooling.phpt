@@ -8,7 +8,7 @@ require_once("autonomous_setup.php");
 $pooling = true;
 
 /* Sample number MAX_INT */
-$sample = 2**31-1;
+$sample = 2*(2**30-1)+1;
 
 /* Connect + create a new pool */
 $conn0 = new PDO("sqlsrv:server=$serverName;ConnectionPooling=$pooling", $username, $password);
@@ -26,7 +26,7 @@ $query = "CREATE TABLE $tableName (col1 INT)";
 $stmt = $conn->query($query);
 
 // Query number with custom format
-$query ="SELECT FORMAT($sample,'#,0.00')";
+$query ="SELECT CAST($sample as varchar) + '.00'";
 $stmt = $conn->query($query);
 $data = $stmt->fetchColumn();
 var_dump ($data);
@@ -38,7 +38,7 @@ $stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
 $stmt->execute();
 
 // Fetching. Prepare with client buffered cursor
-$query = "SELECT TOP 1 FORMAT(col1,'#,0.00 EUR') FROM $tableName";
+$query = "SELECT TOP 1 cast(col1 as varchar) + '.00 EUR' FROM $tableName";
 $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, 
 		PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
 $stmt->execute();
@@ -56,6 +56,6 @@ print "Done";
 ?>
 
 --EXPECT--
-string(16) "2,147,483,647.00"
-string(20) "2,147,483,647.00 EUR"
+string(13) "2147483647.00"
+string(17) "2147483647.00 EUR"
 Done
