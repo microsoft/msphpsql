@@ -1166,8 +1166,19 @@ char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, _Out_ size_t* l
                           NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt TSRMLS_CC );
         driver_stmt->set_func( __FUNCTION__ );
 
-        // execute the last insert id query
-        core::SQLExecDirect( driver_stmt, last_insert_id_query TSRMLS_CC );
+        
+        sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
+        unsigned int wsql_len;
+        wsql_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_CHAR, reinterpret_cast<const char*>( last_insert_id_query ),
+                                                         strlen(last_insert_id_query), &wsql_len );
+
+        CHECK_CUSTOM_ERROR( wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE,
+                                get_last_error_message() ) {
+                throw core::CoreException();
+            }
+
+        // execute the last insert id query        
+        core::SQLExecDirectW( driver_stmt, wsql_string TSRMLS_CC );
 
         core::SQLFetchScroll( driver_stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC );
         SQLRETURN r = core::SQLGetData( driver_stmt, 1, SQL_C_CHAR, id_str, LAST_INSERT_ID_BUFF_LEN, 

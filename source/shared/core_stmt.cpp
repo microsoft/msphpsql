@@ -812,10 +812,10 @@ field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT coln
     SQLLEN field_name_len = 0;
 
     meta_data = new ( sqlsrv_malloc( sizeof( field_meta_data ))) field_meta_data();
-    field_name_temp = static_cast<SQLWCHAR*>( sqlsrv_malloc( SS_MAXCOLNAMELEN * 2 + 1 ));
+    field_name_temp = static_cast<SQLWCHAR*>( sqlsrv_malloc( ( SS_MAXCOLNAMELEN + 1 ) * sizeof( SQLWCHAR ) ));
     SQLSRV_ENCODING encoding = ( (stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
 	try{
-        core::SQLDescribeColW( stmt, colno + 1, field_name_temp,  SS_MAXCOLNAMELEN * 2 + 1 , &field_len_temp,
+        core::SQLDescribeColW( stmt, colno + 1, field_name_temp, SS_MAXCOLNAMELEN, &field_len_temp,
                                &( meta_data->field_type ), & ( meta_data->field_size ), & ( meta_data->field_scale ),
                                &( meta_data->field_is_nullable ) TSRMLS_CC );
 	}
@@ -938,10 +938,10 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 		if( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID ) {
 
 			// Get the SQL type of the field.
-			core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
 
 			// Get the length of the field.
-			core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
+			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
 
 			// Get the corresponding php type from the sql type.
 			sqlsrv_php_type = stmt->sql_type_to_php_type( static_cast<SQLINTEGER>( sql_field_type ), static_cast<SQLUINTEGER>( sql_field_len ), prefer_string );
@@ -1413,7 +1413,8 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
             {
-                core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &size TSRMLS_CC );
+                // unixODBC 2.3.1 requires wide calls to support pooling
+                core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &size TSRMLS_CC );
                 break;
             }   
 
@@ -1422,7 +1423,8 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             case SQL_WCHAR:
             case SQL_WVARCHAR: 
             {
-                core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_OCTET_LENGTH, NULL, 0, NULL, &size TSRMLS_CC );
+                // unixODBC 2.3.1 requires wide calls to support pooling
+                core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_OCTET_LENGTH, NULL, 0, NULL, &size TSRMLS_CC );
                 break;
             }
 
@@ -1614,7 +1616,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, SQLUSMALLINT field_index,
 			sqlsrv_stream* ss = NULL;
 			SQLLEN sql_type;
 
-			SQLRETURN r = SQLColAttribute( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
+			SQLRETURN r = SQLColAttributeW( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
 			CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
 				throw core::CoreException();
 			}
@@ -2112,8 +2114,8 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 			break;
 		}
 
-		// Get the SQL type of the field.
-		core::SQLColAttribute( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+		// Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
+		core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
 
 		// Calculate the field size.
 		calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
@@ -2123,6 +2125,8 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 			sql_display_size == INT_MAX >> 1 || sql_display_size == UINT_MAX - 1 ) {
 
 			field_len_temp = INITIAL_FIELD_STRING_LEN;
+            SQLLEN initiallen = field_len_temp + extra;
+
 
 			field_value_temp = static_cast<char*>( sqlsrv_malloc( field_len_temp + extra + 1 ));
 
@@ -2146,7 +2150,13 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 
 				stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
 
-				if( is_truncated_warning( state )) {
+                // with Linux connection pooling may not get a truncated warning back but the actual field_len_temp 
+                // can be greater than the initallen value.
+#ifdef __linux__
+                if( is_truncated_warning( state ) || initiallen < field_len_temp) {
+#else
+                if( is_truncated_warning( state ) ) {
+#endif 
 
 					SQLLEN dummy_field_len;
 
@@ -2287,7 +2297,17 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 		// runtime checks to see if a string is null terminated and issues a warning about it if running in debug mode.
 		// SQL_C_BINARY fields don't return a NULL terminator, so we allocate an extra byte on each field and use the ternary
 		// operator to set add 1 to fill the null terminator
-		field_value_temp[field_len_temp] = '\0';
+
+        // with unixODBC connection pooling sometimes field_len_temp can be SQL_NO_DATA.
+        // In that cause do not set null terminator and set length to 0.
+        if ( field_len_temp > 0 )
+        {          
+            field_value_temp[field_len_temp] = '\0';
+        }
+        else
+        {
+            *field_len = 0;        
+        }
 	}
 
 	catch( core::CoreException& ) {

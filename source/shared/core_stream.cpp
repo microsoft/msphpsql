@@ -116,7 +116,13 @@ size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* b
                                "did not occur." );
             }
             
+        // with unixODBC connection pooling enabled the truncated state may not be returned so check the actual length read
+        // with buffer length.
+        #ifdef __linux__
+            if( is_truncated_warning( state ) || count < read) {
+        #else
             if( is_truncated_warning( state ) ) {
+        #endif
                 switch( c_type ) {
                     
                     // As per SQLGetData documentation, if the length of character data exceeds the BufferLength, 
