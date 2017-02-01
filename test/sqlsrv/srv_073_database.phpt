@@ -1,5 +1,5 @@
 --TEST--
-PHPT Create/drop database 
+Create/drop database 
 --SKIPIF--
 --FILE--
 <?php
