@@ -45,11 +45,11 @@
     #include "sal_def.h"
 #endif
 
-#ifdef __linux__
+#ifndef _WIN32
 #define PTR_IS_INT64 1
 #else
 #define PTR_IS_INT64 0
-#endif
+#endif // !_WIN32
 
 #ifndef _MSC_VER
 // SQL Server does not have a long double type
