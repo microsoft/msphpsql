@@ -1,5 +1,5 @@
 --TEST--
-PHPT Drop missing database
+Drop missing database unicode
 --SKIPIF--
 --FILE--
 <?php
