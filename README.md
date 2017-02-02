@@ -84,14 +84,14 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	sudo su
 	sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
 	apt-get update
-	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
+	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml re2c gcc g++
 
 	
 **Ubuntu 16.04**
 
 	sudo su
 	apt-get update
-	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml
+	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml re2c gcc g++
 
 	
 **RedHat 7**
@@ -103,7 +103,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	subscription-manager repos --enable=rhel-7-server-optional-rpms
 	yum-config-manager --enable remi-php70
 	yum update
-	yum install php php-pdo php-xml php-pear php-devel
+	yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
 
 
 
