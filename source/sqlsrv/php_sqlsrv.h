@@ -603,8 +603,6 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
         }
 
         h->set_func( calling_func );
-
-        return h;
     }
 
     catch( core::CoreException& ) {
@@ -615,6 +613,8 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, 
     
         DIE( "%1!s!: Unknown exception caught in process_params.", calling_func );
     }
+
+    return h;
 }
 
 #endif	/* PHP_SQLSRV_H */
