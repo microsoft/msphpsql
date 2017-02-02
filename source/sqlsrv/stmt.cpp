@@ -1825,10 +1825,9 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, zend_long fetch_type, _O
         for( int i = 0; i < num_cols; ++i ) {
 
             core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL TSRMLS_CC );
-#ifndef _WIN32
-            //Conversion function in Linux expects size in characters.
+
+            //Conversion function expects size in characters
             field_name_len_w = field_name_len_w / sizeof ( SQLWCHAR );
-#endif // !_WIN32
             bool converted = convert_string_from_utf16( encoding, field_name_w,
                 field_name_len_w, ( char** ) &field_name, field_name_len );
 

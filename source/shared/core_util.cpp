@@ -251,13 +251,8 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
                 return false;
             }
 
-#ifndef _WIN32
             // In linux we need to calculate number of characters
             SQLLEN wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
-#else
-           // In Windows we need the size in bytes
-           SQLLEN wsqlstate_len = sizeof( wsqlstate );
-#endif // !_WIN32
             SQLLEN sqlstate_len = 0;
             convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
 
