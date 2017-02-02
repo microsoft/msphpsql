@@ -114,14 +114,14 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
 	
 #ifdef __linux__
-    char pooling_string[ 128 ] = {0};
-    SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
+        char pooling_string[ 128 ] = {0};
+        SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
 
-		if ( pooling_string[ 0 ] == '1' || toupper( pooling_string[ 0 ] ) == 'Y' ||
-			 ( toupper( pooling_string[ 0 ] ) == 'O' && toupper( pooling_string[ 1 ] ) == 'N' ))
-		{
-				henv = &henv_cp;
-		}
+        if ( pooling_string[ 0 ] == '1' || toupper( pooling_string[ 0 ] ) == 'Y' ||
+            ( toupper( pooling_string[ 0 ] ) == 'O' && toupper( pooling_string[ 1 ] ) == 'N' ))
+        {
+            henv = &henv_cp;
+        }
 #else
     // check the connection pooling setting to determine which henv to use to allocate the connection handle
     // we do this earlier because we have to allocate the connection handle prior to setting attributes on
@@ -167,19 +167,14 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 	// connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
 	if ( henv == &henv_cp )
 	{
-		r = SQLDriverConnect( conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(),
-                           SQL_NTS, NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+		r = SQLDriverConnect( conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(), SQL_NTS, NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
 	}
 	else
 	{
-		r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
-                           static_cast<SQLSMALLINT>( wconn_len ), NULL, 
-                           0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+		r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
     }
 #else
-	r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ),
-                           static_cast<SQLSMALLINT>( wconn_len ), NULL, 
-                          0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+	r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
 #endif
 
             // clear the connection string from memory to remove sensitive data (such as a password).
