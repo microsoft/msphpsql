@@ -2152,11 +2152,11 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 
                 // with Linux connection pooling may not get a truncated warning back but the actual field_len_temp 
                 // can be greater than the initallen value.
-#ifdef __linux__
+#ifndef _WIN32
                 if( is_truncated_warning( state ) || initiallen < field_len_temp) {
 #else
                 if( is_truncated_warning( state ) ) {
-#endif 
+#endif // !_WIN32  
 
 					SQLLEN dummy_field_len;
 

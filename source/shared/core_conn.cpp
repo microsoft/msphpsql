@@ -102,18 +102,18 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wconn_string;
     unsigned int wconn_len = 0;
 
-#ifndef __linux__
+#ifdef _WIN32
     sqlsrv_context* henv = &henv_cp;   // by default use the connection pooling henv
 #else
     sqlsrv_context* henv = &henv_ncp;  // by default do not use the connection pooling henv
-#endif
+#endif // _WIN32 
 
     try {
     // Due to the limitations on connection pooling in unixODBC 2.3.1 driver manager, we do not consider 
     // the connection string attributes to set (enable/disable) connection pooling. 
     // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
 	
-#ifdef __linux__
+#ifndef _WIN32
         char pooling_string[ 128 ] = {0};
         SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
 
@@ -138,7 +138,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
             }
         }
     }
-#endif
+#endif // !_WIN32 
 
     SQLHANDLE temp_conn_h;
     core::SQLAllocHandle( SQL_HANDLE_DBC, *henv, &temp_conn_h TSRMLS_CC );
@@ -162,7 +162,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
             }
 
             SQLSMALLINT output_conn_size;
-#ifdef __linux__
+#ifndef _WIN32
 	// unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
 	// connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
 	if ( henv == &henv_cp )
@@ -175,7 +175,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     }
 #else
 	r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-#endif
+#endif // !_WIN32 
 
             // clear the connection string from memory to remove sensitive data (such as a password).
             memset( const_cast<char*>(conn_str.c_str()), 0, conn_str.size());
@@ -214,13 +214,13 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     // SQLGetInfo works when r =  SQL_SUCCESS_WITH_INFO (non-pooled connection)
     // but fails if the connection is using a pool, i.e. r= SQL_SUCCESS.
     // Thus, in Linux, we don't call determine_server_version() for a connection that uses pool.
-#ifdef __linux__
+#ifndef _WIN32
 	if ( r == SQL_SUCCESS_WITH_INFO ) {
-#endif
+#endif // !_WIN32 
     determine_server_version( conn TSRMLS_CC );
-#ifdef __linux__
+#ifndef _WIN32
 	}
-#endif
+#endif // !_WIN32 
     }
     catch( std::bad_alloc& ) {
         memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
