@@ -2089,10 +2089,10 @@ namespace core {
         // unixODBC: 2.3.1
         // r = ::SQLRowCount( stmt->handle(), &rows_affected );  
         // returns r=-1 for an empty result set. 
-#ifdef __linux__
+#ifndef _WIN32
         if( r == -1 && rows_affected == -1 )
            return 0;
-#endif
+#endif // !_WIN32
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
