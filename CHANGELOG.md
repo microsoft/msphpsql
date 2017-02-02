@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ## Windows/Linux 4.1.6 - 2017-02-03
 Updated PECL release packages. Here is the list of updates:
 ### Added
-- Merge Linux and Windows code.
+- Merged Linux and Windows code.
 - Enabled connection pooling with unixODBC. To enable pooling:
   - in odbcinst.ini, add `Pooling=Yes` to the `[ODBC]` section and a positive `CPTimeout` value to `[ODBC Driver 13 for SQL Server]` section. See http://www.unixodbc.org/doc/conn_pool.html for detailed instructions.
 
