@@ -12,12 +12,12 @@ SQL Server Team
 |-------------------------|--------------------------| ------------------
 | [![av-image][]][av-site]| [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
 
-[av-image]:  https://ci.appveyor.com/api/projects/status/github/Microsoft/msphpsql?branch=merged-codebase&svg=true
+[av-image]:  https://ci.appveyor.com/api/projects/status/github/Microsoft/msphpsql?branch=dev&svg=true
 [av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql
-[tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=merged-codebase
+[tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=dev
 [tv-site]: https://travis-ci.org/Microsoft/msphpsql/
-[Coverage Status]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=merged-codebase
-[coveralls-site]: https://coveralls.io/github/Microsoft/msphpsql?branch=merged-codebase
+[Coverage Status]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=dev
+[coveralls-site]: https://coveralls.io/github/Microsoft/msphpsql?branch=dev
 
 ##Get Started
 
@@ -28,7 +28,7 @@ SQL Server Team
 
 ##Announcements
 
-**December 19, 2016**: We are delighted announce that production release for PHP Linux Driver for SQL Server is available. PECL packages (4.0.8) are updated with the latest changes, and Linux binaries (4.0.8) compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. For complete list of changes please visit [CHANGELOG](https://github.com/Microsoft/msphpsql/blob/PHP-7.0-Linux/CHANGELOG.md) file.
+**December 19, 2016**: We are delighted announce that production release for PHP Linux Driver for SQL Server is available. PECL packages (4.0.8) are updated with the latest changes, and Linux binaries (4.0.8) compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. For complete list of changes please visit [CHANGELOG](https://github.com/Microsoft/msphpsql/blob/dev/CHANGELOG.md) file.
 
  Please visit the [blog][blog] for more announcements.
 
