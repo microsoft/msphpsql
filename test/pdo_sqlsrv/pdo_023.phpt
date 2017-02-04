@@ -3,7 +3,6 @@ Bind values with PDO::PARAM_BOOL, enable/disable fetch numeric type attribute
 --SKIPIF--
 --FILE--
 <?php
-
 require("autonomous_setup.php");
 
 // Sample data
