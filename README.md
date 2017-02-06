@@ -326,6 +326,7 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
 - Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
 - Linux
    - The following features are not supported with connection pooling:
+     - PDO is only supported with unixODBC 2.3.1.
      - Unicode connection strings
      - sqlsrv_server_info and sqlsrv_client_info return false 
      - In certain scenarios a generic error message maybe returned instead of a specific error when pooling is disabled
