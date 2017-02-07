@@ -24,7 +24,7 @@ SQL Server Team
 * [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-ubuntu)
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-rhel)
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-windows)
-
+* [**Docker**](https://hub.docker.com/r/lbosqmsft/php-mssql/)
 
 ##Announcements
 
