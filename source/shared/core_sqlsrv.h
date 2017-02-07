@@ -131,6 +131,9 @@ OACR_WARNING_POP
 #include <sqlext.h>
 #endif // _WIN32
 
+//From sqlext.h, add this constant for PECL
+#define SQL_GUID            (-11)
+
 #if !defined(WC_ERR_INVALID_CHARS)
 // imported from winnls.h as it isn't included by 5.3.0
 #define WC_ERR_INVALID_CHARS      0x00000080  // error for invalid chars
