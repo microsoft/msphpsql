@@ -131,8 +131,10 @@ OACR_WARNING_POP
 #include <sqlext.h>
 #endif // _WIN32
 
-//From sqlext.h, add this constant for PECL
+#if !defined(SQL_GUID)
+// imported from sqlext.h
 #define SQL_GUID            (-11)
+#endif
 
 #if !defined(WC_ERR_INVALID_CHARS)
 // imported from winnls.h as it isn't included by 5.3.0
