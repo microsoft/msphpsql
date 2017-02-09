@@ -776,6 +776,7 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULE
             if( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
                 stmt->past_fetch_end = true;
             }
+            stmt->fetch_called = false; // reset this flag
             return false;
         }
    
