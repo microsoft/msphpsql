@@ -401,14 +401,13 @@ int pdo_sqlsrv_stmt_close_cursor(pdo_stmt_t *stmt TSRMLS_DC)
 
         // to "close the cursor" means we make the statement ready for execution again.  To do this, we 
         // skip all the result sets on the current statement.
-		// If the statement has not been executed there are no next results to iterate over.
-		if ( driver_stmt->executed == true )
-		{
-			while( driver_stmt->past_next_result_end == false ) {
-
-				core_sqlsrv_next_result( driver_stmt TSRMLS_CC );
-			}
-		}
+        // If the statement has not been executed there are no next results to iterate over.
+        if ( driver_stmt->executed == true )
+        {
+            while( driver_stmt->past_next_result_end == false ) {
+                core_sqlsrv_next_result( driver_stmt TSRMLS_CC );
+            }
+        }
     }
     catch( core::CoreException& ) {
 
