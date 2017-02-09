@@ -36,7 +36,7 @@ function test()
     $field = sqlsrv_get_field($stmt, 0);
     if (! $field) { print_errors(); }
 
-    $row = sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, 3);  
+    $row = sqlsrv_fetch($stmt, SQLSRV_SCROLL_LAST);  
     $field = sqlsrv_get_field($stmt, 0);
     if (! $field) { print_errors(); }
 
