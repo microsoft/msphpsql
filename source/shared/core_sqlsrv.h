@@ -131,6 +131,11 @@ OACR_WARNING_POP
 #include <sqlext.h>
 #endif // _WIN32
 
+#if !defined(SQL_GUID)
+// imported from sqlext.h
+#define SQL_GUID            (-11)
+#endif
+
 #if !defined(WC_ERR_INVALID_CHARS)
 // imported from winnls.h as it isn't included by 5.3.0
 #define WC_ERR_INVALID_CHARS      0x00000080  // error for invalid chars
