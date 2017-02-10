@@ -27,18 +27,17 @@ try
     var_dump($ret);
     
     
-    // prepare two stmt, execute, and fetch, then closeCursor.
+    // use two stmt, execute, and fetch, then closeCursor.
     // use one with client side buffering.
-    $stmt1 = $conn->prepare("select 123 as 'IntCol'");
+    $stmt1 = $conn->query("select 123 as 'IntCol'");
     $stmt2 = $conn->prepare("select 'abc' as 'Charcol'", array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
-	$stmt1->execute();
-	$result = $stmt1->fetch(PDO::FETCH_NUM);
+    $result = $stmt1->fetch(PDO::FETCH_NUM);
     print_r($result[0]); 
     echo "\n";
     $ret = $stmt1->closeCursor();    
     var_dump($ret);
-	$stmt2->execute();
-	$result = $stmt2->fetch(PDO::FETCH_NUM);
+    $stmt2->execute();
+    $result = $stmt2->fetch(PDO::FETCH_NUM);
     print_r($result[0]);
     echo "\n";
     $ret = $stmt2->closeCursor();    
