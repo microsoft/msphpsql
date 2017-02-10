@@ -1351,6 +1351,12 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
             field_data = &row[ meta[ field_index ].offset ] + sizeof( SQLULEN ) + read_so_far;
         }
 
+        if (field_len == 0) // empty string, no need for conversion
+        {
+            *out_buffer_length = 0;
+            return SQL_SUCCESS;
+        }
+
         // allocate enough to handle WC -> DBCS conversion if it happens
         temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof(char), sizeof(char)));
 			
