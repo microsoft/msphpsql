@@ -738,6 +738,10 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
 
             pdo_bound_param_data* bind_data = NULL;
             bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_index_find_ptr(stmt->bound_columns, colno));
+            if (bind_data == NULL) {
+                // can't find by index then try searching by name
+                bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_find_ptr(stmt->bound_columns, stmt->columns[colno].name));
+            }
 
             if( bind_data != NULL && !Z_ISUNDEF(bind_data->driver_params) ) {
 
