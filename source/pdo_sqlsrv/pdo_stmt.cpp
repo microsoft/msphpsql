@@ -393,17 +393,20 @@ int pdo_sqlsrv_stmt_close_cursor(pdo_stmt_t *stmt TSRMLS_DC)
 
     try {
 
-        SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: pdo_stmt object was null" );
+        SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_close_cursor: pdo_stmt object was null" );
 
         sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
 
-        SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
+        SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_close_cursor: driver_data object was null" );
 
         // to "close the cursor" means we make the statement ready for execution again.  To do this, we 
         // skip all the result sets on the current statement.
-        while( driver_stmt->past_next_result_end == false ) {
-
-            core_sqlsrv_next_result( driver_stmt TSRMLS_CC );
+        // If the statement has not been executed there are no next results to iterate over.
+        if ( driver_stmt->executed == true )
+        {
+            while( driver_stmt->past_next_result_end == false ) {
+                core_sqlsrv_next_result( driver_stmt TSRMLS_CC );
+            }
         }
     }
     catch( core::CoreException& ) {
@@ -412,7 +415,7 @@ int pdo_sqlsrv_stmt_close_cursor(pdo_stmt_t *stmt TSRMLS_DC)
     }
     catch( ... ) {
 
-        DIE( "pdo_sqlsrv_stmt_next_rowset: Unknown exception occurred while advanding to the next result set." );
+        DIE( "pdo_sqlsrv_stmt_close_cursor: Unknown exception occurred while advancing to the next result set." );
     }
 
     return 1;
