@@ -164,9 +164,9 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
 	exit
 	sudo yum update
-	sudo yum remove unixODBC-devel unixODBC-utf16-devel #to avoid conflicts
+	sudo yum remove unixODBC-utf16-devel #to avoid conflicts
 	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
-	sudo yum install unixODBC-utf16
+	sudo yum install unixODBC-devel
 	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
 	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 	source ~/.bashrc
