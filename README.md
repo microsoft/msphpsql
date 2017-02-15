@@ -133,15 +133,6 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 ### Step 2: Install  pre-requisites
 
-**Ubuntu 15.04**
-
-    sudo su 
-    sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-vivid-release/ vivid main" > /etc/apt/sources.list.d/mssqlpreview.list'
-    sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
-    apt-get update
-    apt-get install msodbcsql
-    #for silent install use ACCEPT_EULA=Y apt-get install msodbcsql
-    sudo apt-get install unixodbc-dev-utf16 
     
 **Ubuntu 15.10**
 
@@ -151,7 +142,10 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	exit
 	sudo apt-get update
 	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
-	sudo apt-get install unixodbc-dev-utf16 
+	sudo apt-get install unixodbc-dev
+	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+	source ~/.bashrc
 
 	
 **Ubuntu 16.04**
@@ -162,7 +156,10 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	exit
 	sudo apt-get update
 	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
-	sudo apt-get install unixodbc-dev-utf16
+	sudo apt-get install unixodbc-dev
+	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+	source ~/.bashrc
 
 **RedHat 7**
 
@@ -170,10 +167,12 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
 	exit
 	sudo yum update
-	sudo yum remove unixODBC #to avoid conflicts
+	sudo yum remove unixODBC-utf16-devel #to avoid conflicts
 	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
-	sudo yum install unixODBC-utf16-devel 
-
+	sudo yum install unixODBC-devel
+	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+	source ~/.bashrc
 
 
 
