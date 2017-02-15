@@ -134,7 +134,7 @@ struct ss_sqlsrv_conn : sqlsrv_conn
     bool           in_transaction;     // flag set when inside a transaction and used for checking validity of tran API calls
     
     // static variables used in process_params
-    static char* resource_name;        // char because const char forces casting all over the place.  Just easier to leave it char here.
+    static const char* resource_name;
     static int descriptor;
 
     // initialize with default values
@@ -184,7 +184,7 @@ struct ss_sqlsrv_stmt : public sqlsrv_stmt {
     int fetch_fields_count;
 
     // static variables used in process_params
-    static char* resource_name;                  // char because const char forces casting all over the place in ODBC functions
+    static const char* resource_name;
     static int descriptor;
 
 };
@@ -490,7 +490,7 @@ namespace ss {
         }
     };
 
-    inline void zend_register_resource(_Out_ zval& rsrc_result, void* rsrc_pointer, int rsrc_type, char* rsrc_name TSRMLS_DC)
+    inline void zend_register_resource(_Out_ zval& rsrc_result, void* rsrc_pointer, int rsrc_type, const char* rsrc_name TSRMLS_DC)
     {
         int zr = (NULL != (Z_RES(rsrc_result) = ::zend_register_resource(rsrc_pointer, rsrc_type)) ? SUCCESS : FAILURE);
         CHECK_CUSTOM_ERROR(( zr == FAILURE ), reinterpret_cast<sqlsrv_context*>( rsrc_pointer ), SS_SQLSRV_ERROR_REGISTER_RESOURCE,
