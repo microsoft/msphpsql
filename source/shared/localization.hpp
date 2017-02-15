@@ -25,12 +25,9 @@
 #include "typedefs_for_linux.h"
 
 #ifdef MPLAT_UNIX
-namespace std
-{
-    // Forward reference
-    class locale;
-}
+#include <locale>
 #endif
+
 
 #define CP_UTF8  65001
 #define CP_UTF16 1200

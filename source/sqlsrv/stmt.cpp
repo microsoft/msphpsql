@@ -28,7 +28,7 @@
 //
 // our resource descriptor assigned in minit
 int ss_sqlsrv_stmt::descriptor = 0;
-char* ss_sqlsrv_stmt::resource_name = static_cast<char *>("ss_sqlsrv_stmt");   // not const for a reason.  see sqlsrv_stmt in php_sqlsrv.h
+const char* ss_sqlsrv_stmt::resource_name = "ss_sqlsrv_stmt";
 
 namespace {
 
