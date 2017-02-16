@@ -1,5 +1,11 @@
 --TEST--
-Verify the Binary and Char encoding output when binding output string with SQLSTYPE option with different size
+Verify the Binary and Char encoding output when binding output string with SQLSTYPE option with different size.
+--DESCRIPTION--
+Tests different sizes of output string which may cause ODBC to return trunc error info.
+With unixODBC 2.3.4, when connection pooling is enabled, error information maybe returned differently
+than older versions (or with pooling disabled).
+The NVARCHAR(1) section would cause an ODBC call to return an errorinfo to the driver causing the statement to fail.
+With unixODBC 2.3.4 + pooling the statement executes without error.
 --FILE--
 
 <?php
@@ -12,8 +18,6 @@ if( $conn === false ) {
 }
 $conn = null;
 
-// with unixODBC 2.3.4 + connection pooling the NVARCHAR(1) section older versions may error as 
-// unixODBC error returns behave differently with connection pooling.
 $conn = sqlsrv_connect($serverName, $connectionInfo);
 if( $conn === false ) {
     die( print_r( sqlsrv_errors(), true ));
@@ -24,27 +28,27 @@ $bindtable = "#BindStringTest";
 $sproc = "#uspPerson";
 
 // Create table
-$stmt = sqlsrv_query( $conn, "CREATE TABLE ".$bindtable." (PersonID int, Name nvarchar(50))" );
+$stmt = sqlsrv_query( $conn, "CREATE TABLE $bindtable (PersonID int, Name nvarchar(50))" );
 if( $stmt === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
 
-$stmt = sqlsrv_query( $conn, "INSERT INTO ".$bindtable." (PersonID, Name) VALUES (10, N'Miller')" );
+$stmt = sqlsrv_query( $conn, "INSERT INTO $bindtable (PersonID, Name) VALUES (10, N'Miller')" );
 if( $stmt === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
 
-$stmt = sqlsrv_query( $conn, "INSERT INTO ".$bindtable." (PersonID, Name) VALUES (11, N'JSmith')" );
+$stmt = sqlsrv_query( $conn, "INSERT INTO $bindtable (PersonID, Name) VALUES (11, N'JSmith')" );
 if( $stmt === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }			
 
-$tsql_createSP = "CREATE PROCEDURE ".$sproc."
+$tsql_createSP = "CREATE PROCEDURE $sproc
     @id int, @return nvarchar(50) OUTPUT
 	AS
 	BEGIN
 	SET NOCOUNT ON;
-	SET @return = (SELECT Name FROM ".$bindtable." WHERE PersonID = @id)
+	SET @return = (SELECT Name FROM $bindtable WHERE PersonID = @id)
 	END";
 	
 $stmt = sqlsrv_query( $conn, $tsql_createSP);
@@ -54,7 +58,7 @@ if( $stmt === false )
      die( print_r( sqlsrv_errors(), true));
 }
 
-$tsql_callSP = "{call ".$sproc."( ? , ?)}";
+$tsql_callSP = "{call $sproc( ? , ?)}";
 
 
 //***********************************************************************************************
