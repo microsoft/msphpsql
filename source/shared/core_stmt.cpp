@@ -2030,6 +2030,15 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
                 throw core::CoreException();
             }
 
+            // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
+            // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains up to
+            // output_param->original_buffer_len data and is NULL terminated.             
+            // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
+            if ( str_len == SQL_NO_TOTAL )
+            {
+                str_len = output_param->original_buffer_len - null_size;
+            }
+
             // if it's not in the 8 bit encodings, then it's in UTF-16
             if( output_param->encoding != SQLSRV_ENCODING_CHAR && output_param->encoding != SQLSRV_ENCODING_BINARY ) {
 				bool converted = convert_zval_string_from_utf16(output_param->encoding, value_z, str_len);
