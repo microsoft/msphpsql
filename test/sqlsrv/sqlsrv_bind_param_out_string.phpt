@@ -12,7 +12,8 @@ if( $conn === false ) {
 }
 $conn = null;
 
-// with unixODBC 2.3.4 + connection pooling the NVARCHAR(1) section below may seg fault 
+// with unixODBC 2.3.4 + connection pooling the NVARCHAR(1) section older versions may error as 
+// unixODBC error returns behave differently with connection pooling.
 $conn = sqlsrv_connect($serverName, $connectionInfo);
 if( $conn === false ) {
     die( print_r( sqlsrv_errors(), true ));
