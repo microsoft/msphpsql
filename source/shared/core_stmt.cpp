@@ -2420,16 +2420,20 @@ void resize_output_buffer_if_necessary( sqlsrv_stmt* stmt, zval* param_z, SQLULE
 
     // calculate the size of each 'element' represented by column_size.  WCHAR is of course 2,
     // as is a n(var)char/ntext field being returned as a binary field.
-    elem_size = (c_type == SQL_C_WCHAR || (c_type == SQL_C_BINARY && (sql_type == SQL_WCHAR || sql_type == SQL_WVARCHAR))) ? 2 : 1;
+    elem_size = (c_type == SQL_C_WCHAR || (c_type == SQL_C_BINARY && (sql_type == SQL_WCHAR || sql_type == SQL_WVARCHAR || sql_type == SQL_WLONGVARCHAR ))) ? 2 : 1;
 
     // account for the NULL terminator returned by ODBC and needed by Zend to avoid a "String not null terminated" debug warning
-    expected_len = column_size * elem_size + elem_size;
+    SQLULEN field_size = column_size;
+    if (column_size == SQL_SS_LENGTH_UNLIMITED) {
+        field_size = SQL_SERVER_MAX_FIELD_SIZE / elem_size;
+    }
+    expected_len = field_size * elem_size + elem_size;
 
     // binary fields aren't null terminated, so we need to account for that in our buffer length calcuations
     buffer_null_extra = (c_type == SQL_C_BINARY) ? elem_size : 0;
 
     // this is the size of the string for Zend and for the StrLen parameter to SQLBindParameter
-    without_null_len = column_size * elem_size;
+    without_null_len = field_size * elem_size;
 
     // increment to include the null terminator since the Zend length doesn't include the null terminator
     buffer_len += elem_size;
