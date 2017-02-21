@@ -25,7 +25,6 @@
 
 #ifndef _WIN32
 #include <type_traits>
-#include <uchar.h>
 #endif // !_WIN32
 
 
@@ -160,6 +159,27 @@ SQLRETURN copy_buffer( _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* o
 }
 #endif // !_WIN32
 
+
+#ifndef _WIN32
+
+size_t charFromUtf16(const WCHAR src, char * dest, size_t cchDest, DWORD * pErrorCode)
+{
+    return SystemLocale::FromUtf16( CP_ACP, &src, 1, dest, cchDest, NULL, pErrorCode );
+}
+
+size_t charFromUtf16(const char src, char * dest, size_t cchDest, DWORD * pErrorCode)
+{
+    if (cchDest > 1)
+    {
+        dest[0] = src;
+        dest[1] = '\0';
+        return 1;
+    }
+    return 0;    
+}
+
+#endif // !_WIN32
+
 // convert a number to a string using locales
 // There is an extra copy here, but given the size is short (usually <20 bytes) and the complications of
 // subclassing a new streambuf just to avoid the copy, it's easier to do the copy
@@ -210,21 +230,20 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
 
     if ( std::is_same<Char, char16_t>::value )
     {
+
         std::basic_string<char16_t> str;
-        char *str_num_ptr = &str_num[0], *str_num_end = &str_num[0] + str_num.size();
-
-        for ( const auto &mb : str_num )
+                
+        for (const auto &mb : str_num )
         {
-            char16_t ch16;
-            std::mbstate_t mbs = std::mbstate_t();
-
-            int len = mbrtoc16( &ch16, &mb, str_num_end - str_num_ptr, &mbs );
-            if ( len > 0 || len == -3 )
+            size_t cch = SystemLocale::NextChar( CP_ACP, &mb ) - &mb;
+            if ( cch > 0 )
             {
-                str.push_back( ch16 );
-                if ( len > 0 )
+                WCHAR ch16;
+                DWORD rc;                
+                size_t cchActual = SystemLocale::ToUtf16( CP_ACP, &mb, cch, &ch16, 1, &rc);
+                if (cchActual > 0)
                 {
-                    str_num_ptr += len;
+                    str.push_back ( ch16 );
                 }
             }
         }
@@ -262,17 +281,21 @@ SQLRETURN string_to_number( Char* string_data, SQLLEN str_len, _Out_ void* buffe
     std::string str;
     if ( std::is_same<Char, SQLWCHAR>::value )
     {
+
         // convert to regular character string first
-        char c_str[3] = "";
+        char c_str[4] = "";
         mbstate_t mbs;
 
         SQLLEN i = 0;
         while ( string_data[i] )
-        {
-            memset( &mbs, 0, sizeof( mbs ));		//set shift state to the initial state
-            memset( c_str, 0, sizeof( c_str ));
-            int len = c16rtomb( c_str, string_data[i++], &mbs );	// treat string_data as a char16_t string
-            str.append(std::string( c_str, len ));
+        {        
+            memset( c_str, 0, sizeof( c_str ));        
+            DWORD rc;            
+            size_t cch = charFromUtf16( string_data[i++], c_str, sizeof( c_str ), &rc );
+            if (cch > 0 && rc == ERROR_SUCCESS)
+            {
+                str.append(std::string( c_str, cch ));
+            }
         }
     }
     else
