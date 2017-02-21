@@ -1,5 +1,7 @@
 --TEST--
-prepare with cursor buffered and fetch a float column
+prepare with cursor buffered and fetch from numeric columns.
+--DESCRIPTION--
+Uses buffered cursor to fetch from float, int, and decimal columns that have positive, negative and zero value.
 --SKIPIF--
 
 --FILE--
