@@ -2042,7 +2042,7 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array, zend_ul
                        "validated sql type and column_size" );
 
         php_out_type = static_cast<SQLSRV_PHPTYPE>( sqlsrv_phptype.typeinfo.type );
-        encoding = ( SQLSRV_ENCODING ) sqlsrv_phptype.typeinfo.encoding;
+        encoding = static_cast<SQLSRV_ENCODING>( sqlsrv_phptype.typeinfo.encoding );
     }
 
     // verify that the parameter is a valid output param type
