@@ -8,7 +8,7 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improveme
 
 SQL Server Team
 
-###Take our survey
+##Take our survey
 
 Let us know how we are doing by taking our monthly sentiment survey:
 
