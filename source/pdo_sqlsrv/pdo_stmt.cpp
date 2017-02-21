@@ -721,12 +721,10 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
         sqlsrv_phptype sqlsrv_php_type;
         SQLSRV_ASSERT( colno >= 0 && colno < static_cast<int>( driver_stmt->current_meta_data.size()),
                        "Invalid column number in pdo_sqlsrv_stmt_get_col_data" );
-        sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_type ),
-                                                             static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_size ),
-                                                             true );
 
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
-        sqlsrv_php_type.typeinfo.encoding = driver_stmt->encoding();
+        sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_type ),
+                                                            static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_size ), true );
 
         // if a column is bound to a type different than the column type, figure out a way to convert it to the 
         // type they want
@@ -1306,6 +1304,8 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
                        "Invalid encoding on the connection.  Must not be invalid or default." );
     }                
 
+    sqlsrv_phptype.typeinfo.encoding = local_encoding;
+
     switch( sql_type ) {
         case SQL_BIT:
         case SQL_INTEGER:
@@ -1316,7 +1316,6 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-                sqlsrv_phptype.typeinfo.encoding = local_encoding;
             }
             break;
         case SQL_FLOAT:
@@ -1326,7 +1325,6 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-                sqlsrv_phptype.typeinfo.encoding = local_encoding;
             }
             break;
         case SQL_BIGINT:
@@ -1345,7 +1343,6 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
         case SQL_WLONGVARCHAR:
         case SQL_SS_XML:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-            sqlsrv_phptype.typeinfo.encoding = local_encoding;
             break;
         case SQL_BINARY:
         case SQL_LONGVARBINARY:
