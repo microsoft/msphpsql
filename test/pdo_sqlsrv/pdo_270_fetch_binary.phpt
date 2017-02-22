@@ -2,29 +2,26 @@
 Test fetch from binary, varbinary, varbinary(max), image columns, without setting binary encoding.
 --DESCRIPTION--
 Verifies GitHub issue 270 is fixed, users could not retrieve the data as inserted in binary columns without setting the binary encoding either on stmt or using bindCoulmn encoding.
-This test versifies that the data inserted in binary columns can be retrieved using fetch, fetchColumn, fetchObject, and fetchALL functions.
+This test verifies that the data inserted in binary columns can be retrieved using fetch, fetchColumn, fetchObject, and fetchAll functions.
 
 --FILE--
 <?php
 
 require_once("autonomous_setup.php");
 
-$tableName = 'test_binary';
+$tableName = 'test_binary'.rand();
 $columns = array( 'col1', 'col2', 'col3', 'col4');
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$serverName", "$username", "$password" );
+$conn = new PDO( "sqlsrv:server=$serverName;Database=tempdb", "$username", "$password" );
 
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
-
-$sql = "CREATE TABLE $tableName ( $columns[0] binary(50), $columns[1] VARBINARY(50) ,$columns[2] VARBINARY(MAX), $columns[3] image)";
+$sql = "CREATE TABLE $tableName ( $columns[0] binary(50), $columns[1] VARBINARY(50), $columns[2] VARBINARY(MAX), $columns[3] image)";
 $conn->exec($sql);
 
 $icon = base64_decode("This is some text to test retrieving from binary type columns");
 
 // Insert data using bind parameters
-$sql = "INSERT INTO $tableName($columns[0], $columns[1], $columns[2], $columns[3]) VALUES ( ?, ?, ?, ?)";
+$sql = "INSERT INTO $tableName($columns[0], $columns[1], $columns[2], $columns[3]) VALUES(?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 $stmt->bindParam(1, $icon, PDO::PARAM_LOB, null, PDO::SQLSRV_ENCODING_BINARY);
 $stmt->bindParam(2, $icon, PDO::PARAM_LOB, null, PDO::SQLSRV_ENCODING_BINARY);
@@ -37,7 +34,7 @@ foreach ($columns as $col){
 	test_fetch($conn, $tableName, $col, $icon);
 }
 // DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
+$conn->query("DROP TABLE ". $tableName) ?: die();
 
 //free connection
 $conn=null;
