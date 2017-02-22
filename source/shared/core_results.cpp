@@ -159,27 +159,6 @@ SQLRETURN copy_buffer( _Out_ void* buffer, SQLLEN buffer_length, _Out_ SQLLEN* o
 }
 #endif // !_WIN32
 
-
-#ifndef _WIN32
-
-size_t charFromUtf16(const WCHAR src, char * dest, size_t cchDest, DWORD * pErrorCode)
-{
-    return SystemLocale::FromUtf16( CP_ACP, &src, 1, dest, cchDest, NULL, pErrorCode );
-}
-
-size_t charFromUtf16(const char src, char * dest, size_t cchDest, DWORD * pErrorCode)
-{
-    if (cchDest > 1)
-    {
-        dest[0] = src;
-        dest[1] = '\0';
-        return 1;
-    }
-    return 0;    
-}
-
-#endif // !_WIN32
-
 // convert a number to a string using locales
 // There is an extra copy here, but given the size is short (usually <20 bytes) and the complications of
 // subclassing a new streambuf just to avoid the copy, it's easier to do the copy
@@ -257,6 +236,39 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
 
 }
 
+#ifndef _WIN32
+
+
+std::string getUTF8StringFromString( const SQLWCHAR* source )
+{
+    // convert to regular character string first
+    char c_str[4] = "";
+    mbstate_t mbs;
+
+    SQLLEN i = 0;
+    std::string str;
+    while ( source[i] )
+    {        
+        memset( c_str, 0, sizeof( c_str ));        
+        DWORD rc;    
+        int cch = 0;
+        errno_t err = mplat_wctomb_s( &cch, c_str, sizeof( c_str ), source[i++] );
+        if (cch > 0 && err == 0)
+        {
+            str.append( std::string( c_str, cch ) );
+        }
+    }
+    return str;
+}
+
+
+std::string getUTF8StringFromString( const char* source )
+{
+    return std::string( source );
+}
+
+#endif // !_WIN32
+
 template <typename Number, typename Char>
 SQLRETURN string_to_number( Char* string_data, SQLLEN str_len, _Out_ void* buffer, SQLLEN buffer_length, 
                             _Out_ SQLLEN* out_buffer_length, sqlsrv_error_auto_ptr& last_error )
@@ -278,30 +290,7 @@ SQLRETURN string_to_number( Char* string_data, SQLLEN str_len, _Out_ void* buffe
 
     *out_buffer_length = sizeof( Number );
 #else
-    std::string str;
-    if ( std::is_same<Char, SQLWCHAR>::value )
-    {
-
-        // convert to regular character string first
-        char c_str[4] = "";
-        mbstate_t mbs;
-
-        SQLLEN i = 0;
-        while ( string_data[i] )
-        {        
-            memset( c_str, 0, sizeof( c_str ));        
-            DWORD rc;            
-            size_t cch = charFromUtf16( string_data[i++], c_str, sizeof( c_str ), &rc );
-            if (cch > 0 && rc == ERROR_SUCCESS)
-            {
-                str.append(std::string( c_str, cch ));
-            }
-        }
-    }
-    else
-    {
-        str.append( std::string(( char * )string_data ));
-    }
+    std::string str = getUTF8StringFromString( string_data );
 
     std::istringstream is( str );
     std::locale loc;    // default locale should match system
