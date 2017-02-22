@@ -23,7 +23,6 @@ $conn->exec($sql);
 
 $icon = base64_decode("This is some text to test retrieving from binary type columns");
 
-
 // Insert data using bind parameters
 $sql = "INSERT INTO $tableName($columns[0], $columns[1], $columns[2], $columns[3]) VALUES ( ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
@@ -48,7 +47,7 @@ print_r("Test finished successfully");
 //calls various fetch methods
 function test_fetch($conn, $tableName, $columnName, $input){
 		
-    $len = strlen($input);
+        $len = strlen($input);
 	$result = "";
 	$sql = "SELECT $columnName from $tableName";
 	
@@ -84,9 +83,9 @@ function test_fetch($conn, $tableName, $columnName, $input){
 
 	$result = "";
 	$stmt = $conn->query($sql);  
-	$result = $stmt->fetchALL( PDO::FETCH_COLUMN );
+	$result = $stmt->fetchAll( PDO::FETCH_COLUMN );
 	if( strncmp($result[0], $input, $len) !== 0){
-		print_r("\nRetrieving using fetchALL failed");
+		print_r("\nRetrieving using fetchAll failed");
 	}
 }
 
