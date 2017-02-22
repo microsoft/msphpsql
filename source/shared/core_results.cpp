@@ -249,11 +249,11 @@ std::string getUTF8StringFromString( const SQLWCHAR* source )
     std::string str;
     while ( source[i] )
     {        
-        memset( c_str, 0, sizeof( c_str ));        
+        memset( c_str, 0, sizeof( c_str ) );        
         DWORD rc;    
         int cch = 0;
         errno_t err = mplat_wctomb_s( &cch, c_str, sizeof( c_str ), source[i++] );
-        if (cch > 0 && err == 0)
+        if ( cch > 0 && err == ERROR_SUCCESS )
         {
             str.append( std::string( c_str, cch ) );
         }
@@ -296,7 +296,7 @@ SQLRETURN string_to_number( Char* string_data, SQLLEN str_len, _Out_ void* buffe
     std::locale loc;    // default locale should match system
     is.imbue( loc );
 
-    auto& facet = std::use_facet<std::num_get<char>>( is.getloc());
+    auto& facet = std::use_facet<std::num_get<char>>( is.getloc() );
     std::istreambuf_iterator<char> beg( is ), end;
     std::ios_base::iostate err = std::ios_base::goodbit;
 
