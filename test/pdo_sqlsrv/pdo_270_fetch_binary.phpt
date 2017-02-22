@@ -1,24 +1,24 @@
 --TEST--
-Test fetch from binary columns, without setting binary encoding.
-
---DESCRIPTION--
+Test fetch from binary, varbinary, varbinary(max), image columns, without setting binary encoding.
+--Description--
 Verifies GitHub issue 270 is fixed, users could not retrieve the data as inserted in binary columns without setting the binary encoding either on stmt or using bindCoulmn encoding.
 This test versifies that the data inserted in binary columns can be retrieved using fetch, fetchColumn, fetchObject, and fetchALL functions.
 
 --FILE--
 <?php
-$server = "HADISF-W541";
-$databaseName = "myTest";
-$uid = 'sa';
-$pwd = 'Moonshine4me';
+
+
+
+require_once("autonomous_setup.php");
+
 $tableName = 'test_binary';
 $columns = array( 'col1', 'col2', 'col3', 'col4');
 
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+// Connect
+$conn = new PDO( "sqlsrv:server=$serverName", "$username", "$password" );
 
-
-$sql = "DROP TABLE $tableName";
-$conn->exec($sql);
+// CREATE database
+$conn->query("CREATE DATABASE ". $dbName) ?: die();
 
 $sql = "CREATE TABLE $tableName ( $columns[0] binary(50), $columns[1] VARBINARY(50) ,$columns[2] VARBINARY(MAX), $columns[3] image)";
 $conn->exec($sql);
@@ -39,6 +39,12 @@ $stmt->execute();
 foreach ($columns as $col){
 	test_fetch($conn, $tableName, $col, $icon);
 }
+// DROP database
+$conn->query("DROP DATABASE ". $dbName) ?: die();
+
+//free connection
+$conn=null;
+
 print_r("Test finished successfully");
 
 //calls various fetch methods
@@ -85,9 +91,6 @@ function test_fetch($conn, $tableName, $columnName, $input){
 		print_r("\nRetrieving using fetchALL failed");
 	}
 }
-
-
-
 
 ?>
 --EXPECT--
