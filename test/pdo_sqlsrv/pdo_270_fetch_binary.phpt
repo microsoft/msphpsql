@@ -33,7 +33,7 @@ $stmt->execute();
 foreach ($columns as $col){
 	test_fetch($conn, $tableName, $col, $icon);
 }
-// DROP database
+// DROP table
 $conn->query("DROP TABLE $tableName") ?: die();
 
 //free statement and connection
