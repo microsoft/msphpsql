@@ -1,13 +1,11 @@
 --TEST--
 Test fetch from binary, varbinary, varbinary(max), image columns, without setting binary encoding.
---Description--
+--DESCRIPTION--
 Verifies GitHub issue 270 is fixed, users could not retrieve the data as inserted in binary columns without setting the binary encoding either on stmt or using bindCoulmn encoding.
 This test versifies that the data inserted in binary columns can be retrieved using fetch, fetchColumn, fetchObject, and fetchALL functions.
 
 --FILE--
 <?php
-
-
 
 require_once("autonomous_setup.php");
 
