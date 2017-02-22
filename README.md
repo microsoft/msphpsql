@@ -1,3 +1,5 @@
+**This branch has been archived at January 2017 and will not be updated.**
+
 # Microsoft Drivers for PHP for SQL Server
 
 **Welcome to the Microsoft Drivers for PHP for SQL Server PHP 7**
