@@ -46,8 +46,8 @@ print_r("Test finished successfully");
 
 //calls various fetch methods
 function test_fetch($conn, $tableName, $columnName, $input){
-		
-        $len = strlen($input);
+	
+	$len = strlen($input);
 	$result = "";
 	$sql = "SELECT $columnName from $tableName";
 	
