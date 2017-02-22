@@ -13,7 +13,7 @@ $tableName = 'test_binary'.rand();
 $columns = array( 'col1', 'col2', 'col3', 'col4');
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$serverName;Database=tempdb", "$username", "$password" );
+$conn = new PDO( "sqlsrv:server=$serverName;Database=tempdb", $username, $password );
 
 $sql = "CREATE TABLE $tableName ( $columns[0] binary(50), $columns[1] VARBINARY(50), $columns[2] VARBINARY(MAX), $columns[3] image)";
 $conn->exec($sql);
@@ -34,10 +34,11 @@ foreach ($columns as $col){
 	test_fetch($conn, $tableName, $col, $icon);
 }
 // DROP database
-$conn->query("DROP TABLE ". $tableName) ?: die();
+$conn->query("DROP TABLE $tableName") ?: die();
 
-//free connection
-$conn=null;
+//free statement and connection
+$stmt = null;
+$conn = null;
 
 print_r("Test finished successfully");
 
