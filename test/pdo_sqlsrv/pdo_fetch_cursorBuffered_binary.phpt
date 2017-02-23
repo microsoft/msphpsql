@@ -81,25 +81,25 @@ $conn = null;
 ?>
 --EXPECT--
 no buffered cursor, stringify off, fetch_numeric off
-string(32) "61736467617364676173646773616467"
+string(16) "asdgasdgasdgsadg"
 
 no buffered cursor, stringify off, fetch_numeric on
-string(32) "61736467617364676173646773616467"
+string(16) "asdgasdgasdgsadg"
 
 no buffered cursor, stringify on, fetch_numeric on
-string(32) "61736467617364676173646773616467"
+string(16) "asdgasdgasdgsadg"
 
 no buffered cursor, stringify on, fetch_numeric off
-string(32) "61736467617364676173646773616467"
+string(16) "asdgasdgasdgsadg"
 
 buffered cursor, stringify off, fetch_numeric off
-string(32) "61736467617364676173646773616467"
+string(16) "asdgasdgasdgsadg"
 
 buffered cursor, stringify off, fetch_numeric on
-string(32) "61736467617364676173646773616467"
+string(16) "asdgasdgasdgsadg"
 
 buffered cursor, stringify on, fetch_numeric on
-string(32) "61736467617364676173646773616467"
+string(16) "asdgasdgasdgsadg"
 
 buffered cursor, stringify on, fetch_numeric off
-string(32) "61736467617364676173646773616467"
+string(16) "asdgasdgasdgsadg"
