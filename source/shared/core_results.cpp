@@ -25,7 +25,6 @@
 
 #ifndef _WIN32
 #include <type_traits>
-#include <uchar.h>
 #endif // !_WIN32
 
 
@@ -210,21 +209,20 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
 
     if ( std::is_same<Char, char16_t>::value )
     {
+
         std::basic_string<char16_t> str;
-        char *str_num_ptr = &str_num[0], *str_num_end = &str_num[0] + str_num.size();
-
-        for ( const auto &mb : str_num )
+                
+        for (const auto &mb : str_num )
         {
-            char16_t ch16;
-            std::mbstate_t mbs = std::mbstate_t();
-
-            int len = mbrtoc16( &ch16, &mb, str_num_end - str_num_ptr, &mbs );
-            if ( len > 0 || len == -3 )
+            size_t cch = SystemLocale::NextChar( CP_ACP, &mb ) - &mb;
+            if ( cch > 0 )
             {
-                str.push_back( ch16 );
-                if ( len > 0 )
+                WCHAR ch16;
+                DWORD rc;                
+                size_t cchActual = SystemLocale::ToUtf16( CP_ACP, &mb, cch, &ch16, 1, &rc);
+                if (cchActual > 0)
                 {
-                    str_num_ptr += len;
+                    str.push_back ( ch16 );
                 }
             }
         }
@@ -237,6 +235,39 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
 #endif // _WIN32
 
 }
+
+#ifndef _WIN32
+
+
+std::string getUTF8StringFromString( const SQLWCHAR* source )
+{
+    // convert to regular character string first
+    char c_str[4] = "";
+    mbstate_t mbs;
+
+    SQLLEN i = 0;
+    std::string str;
+    while ( source[i] )
+    {        
+        memset( c_str, 0, sizeof( c_str ) );        
+        DWORD rc;    
+        int cch = 0;
+        errno_t err = mplat_wctomb_s( &cch, c_str, sizeof( c_str ), source[i++] );
+        if ( cch > 0 && err == ERROR_SUCCESS )
+        {
+            str.append( std::string( c_str, cch ) );
+        }
+    }
+    return str;
+}
+
+
+std::string getUTF8StringFromString( const char* source )
+{
+    return std::string( source );
+}
+
+#endif // !_WIN32
 
 template <typename Number, typename Char>
 SQLRETURN string_to_number( Char* string_data, SQLLEN str_len, _Out_ void* buffer, SQLLEN buffer_length, 
@@ -259,32 +290,13 @@ SQLRETURN string_to_number( Char* string_data, SQLLEN str_len, _Out_ void* buffe
 
     *out_buffer_length = sizeof( Number );
 #else
-    std::string str;
-    if ( std::is_same<Char, SQLWCHAR>::value )
-    {
-        // convert to regular character string first
-        char c_str[3] = "";
-        mbstate_t mbs;
-
-        SQLLEN i = 0;
-        while ( string_data[i] )
-        {
-            memset( &mbs, 0, sizeof( mbs ));		//set shift state to the initial state
-            memset( c_str, 0, sizeof( c_str ));
-            int len = c16rtomb( c_str, string_data[i++], &mbs );	// treat string_data as a char16_t string
-            str.append(std::string( c_str, len ));
-        }
-    }
-    else
-    {
-        str.append( std::string(( char * )string_data ));
-    }
+    std::string str = getUTF8StringFromString( string_data );
 
     std::istringstream is( str );
     std::locale loc;    // default locale should match system
     is.imbue( loc );
 
-    auto& facet = std::use_facet<std::num_get<char>>( is.getloc());
+    auto& facet = std::use_facet<std::num_get<char>>( is.getloc() );
     std::istreambuf_iterator<char> beg( is ), end;
     std::ios_base::iostate err = std::ios_base::goodbit;
 
