@@ -208,7 +208,11 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
 
     // create a new result set
     if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {
-        current_results = new (sqlsrv_malloc( sizeof( sqlsrv_buffered_result_set ))) sqlsrv_buffered_result_set( this TSRMLS_CC );
+         sqlsrv_malloc_auto_ptr<sqlsrv_buffered_result_set> result;         
+        result = reinterpret_cast<sqlsrv_buffered_result_set*> ( sqlsrv_malloc( sizeof( sqlsrv_buffered_result_set ) ) );
+        new ( result.get() ) sqlsrv_buffered_result_set( this TSRMLS_CC );
+        current_results = result.get();        
+        result.transferred();
     }
     else {
         current_results = new (sqlsrv_malloc( sizeof( sqlsrv_odbc_result_set ))) sqlsrv_odbc_result_set( this );

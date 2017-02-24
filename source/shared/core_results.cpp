@@ -440,15 +440,11 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
     sqlsrv_result_set( stmt ),
     cache(NULL),
     col_count(0),
-    meta(NULL),
     current(0),
     last_field_index(-1),
     read_so_far(0),
     temp_length(0)
 {
-    // 10 is an arbitrary number for now for the initial size of the cache
-    ALLOC_HASHTABLE( cache );
-    core::sqlsrv_zend_hash_init( *stmt, cache, 10 /* # of buckets */, cache_row_dtor /*dtor*/, 0 /*persistent*/ TSRMLS_CC );
     col_count = core::SQLNumResultCols( stmt TSRMLS_CC );
     // there is no result set to buffer
     if( col_count == 0 ) {
@@ -662,87 +658,104 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
     // (offset from the above loop has the size of the row buffer necessary)
     zend_long mem_used = 0;
     size_t row_count = 0;
+    // 10 is an arbitrary number for now for the initial size of the cache
+    ALLOC_HASHTABLE( cache );
+    core::sqlsrv_zend_hash_init( *stmt, cache, 10 /* # of buckets */, cache_row_dtor /*dtor*/, 0 /*persistent*/ TSRMLS_CC );
 
-    while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC ) != SQL_NO_DATA ) {
-        
-        // allocate the row buffer
-        unsigned char* row = static_cast<unsigned char*>( sqlsrv_malloc( offset ));
-        memset( row, 0, offset );
+    try {
+        while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC ) != SQL_NO_DATA ) {
+            
+            // allocate the row buffer
+            sqlsrv_malloc_auto_ptr<unsigned char> rowAuto;
+            rowAuto = static_cast<unsigned char*>( sqlsrv_malloc( offset ));
+            unsigned char* row = rowAuto.get();
+            memset( row, 0, offset );
 
-        // read the fields into the row buffer
-        for( SQLSMALLINT i = 0; i < col_count; ++i ) {
+            // read the fields into the row buffer
+            for( SQLSMALLINT i = 0; i < col_count; ++i ) {
 
-            SQLLEN out_buffer_temp = SQL_NULL_DATA;
-            SQLPOINTER buffer;
-            SQLLEN* out_buffer_length = &out_buffer_temp;
+                SQLLEN out_buffer_temp = SQL_NULL_DATA;
+                SQLPOINTER buffer;
+                SQLLEN* out_buffer_length = &out_buffer_temp;
 
-            switch( meta[i].c_type ) {
+                switch( meta[i].c_type ) {
 
-                case SQL_C_CHAR:
-                case SQL_C_WCHAR:
-                case SQL_C_BINARY:
-                    if( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
+                    case SQL_C_CHAR:
+                    case SQL_C_WCHAR:
+                    case SQL_C_BINARY:
+                        if( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
-                        out_buffer_length = &out_buffer_temp;
-                        SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[ meta[i].offset ] );
-                        *lob_addr = read_lob_field( stmt, i, meta[i], mem_used TSRMLS_CC );
-                        // a NULL pointer means NULL field
-                        if( *lob_addr == NULL ) {
-                            *out_buffer_length = SQL_NULL_DATA;
+                            out_buffer_length = &out_buffer_temp;
+                            SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[ meta[i].offset ] );
+                            *lob_addr = read_lob_field( stmt, i, meta[i], mem_used TSRMLS_CC );
+                            // a NULL pointer means NULL field
+                            if( *lob_addr == NULL ) {
+                                *out_buffer_length = SQL_NULL_DATA;
+                            }
+                            else {
+                                *out_buffer_length = **reinterpret_cast<SQLLEN**>( lob_addr );
+                                mem_used += *out_buffer_length;
+                            }
                         }
                         else {
-                            *out_buffer_length = **reinterpret_cast<SQLLEN**>( lob_addr );
-                            mem_used += *out_buffer_length;
+
+    						mem_used += meta[i].length;
+                            CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
+                                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+
+                                throw core::CoreException();
+                            }
+
+                            buffer = row + meta[i].offset + sizeof( SQLULEN );
+                            out_buffer_length = reinterpret_cast<SQLLEN*>( row + meta[i].offset );
+                            core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
+                                              false TSRMLS_CC );
                         }
-                    }
-                    else {
+                        break;
 
-						mem_used += meta[i].length;
-                        CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
-                                            SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+                    case SQL_C_LONG:
+                    case SQL_C_DOUBLE:
+                        {
+                            mem_used += meta[i].length;
+                            CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
+                                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
 
-                            throw core::CoreException();
+                                throw core::CoreException();
+                            }
+                            buffer = row + meta[i].offset;
+                            out_buffer_length = &out_buffer_temp;
+                            core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
+                                              false TSRMLS_CC );
                         }
+                        break;                        
 
-                        buffer = row + meta[i].offset + sizeof( SQLULEN );
-                        out_buffer_length = reinterpret_cast<SQLLEN*>( row + meta[i].offset );
-                        core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
-                                          false TSRMLS_CC );
-                    }
-                    break;
+                    default:
+                        SQLSRV_ASSERT( false, "Unknown C type" );
+                        break;
+                }
 
-                case SQL_C_LONG:
-                case SQL_C_DOUBLE:
-                    {
-                        mem_used += meta[i].length;
-                        CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
-                                            SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
-
-                            throw core::CoreException();
-                        }
-                        buffer = row + meta[i].offset;
-                        out_buffer_length = &out_buffer_temp;
-                        core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
-                                          false TSRMLS_CC );
-                    }
-                    break;                        
-
-                default:
-                    SQLSRV_ASSERT( false, "Unknown C type" );
-                    break;
+                row_count++;
+                if( *out_buffer_length == SQL_NULL_DATA ) {
+                    set_bit( row, i );
+                }
             }
 
-            row_count++;
-            if( *out_buffer_length == SQL_NULL_DATA ) {
-                set_bit( row, i );
-            }
+            SQLSRV_ASSERT( row_count < INT_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
+
+            // add it to the cache
+            row_dtor_closure cl( this, row );
+            sqlsrv_zend_hash_next_index_insert_mem( *stmt, cache, &cl, sizeof(row_dtor_closure) TSRMLS_CC );
+            rowAuto.transferred();
+        }   
+    } 
+    catch( core::CoreException& ) {
+        // free the rows
+        if( cache ) {
+            zend_hash_destroy( cache );
+            FREE_HASHTABLE( cache );
+            cache = NULL;
         }
-
-        SQLSRV_ASSERT( row_count < INT_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
-
-        // add it to the cache
-        row_dtor_closure cl( this, row );
-        sqlsrv_zend_hash_next_index_insert_mem( *stmt, cache, &cl, sizeof(row_dtor_closure) TSRMLS_CC );
+        throw;
     }
 
 }
@@ -754,12 +767,6 @@ sqlsrv_buffered_result_set::~sqlsrv_buffered_result_set( void )
         zend_hash_destroy( cache );
         FREE_HASHTABLE( cache );
         cache = NULL;
-    }
-
-    // free the meta data
-    if( meta ) {
-        efree( meta );
-        meta = NULL;
     }
 }
 
