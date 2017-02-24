@@ -1079,6 +1079,8 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
+const char ConnectRetryCount[] = "ConnectRetryCount";
+const char ConnectRetryInterval[] = "ConnectRetryInterval";
 const char Database[] = "Database";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
@@ -1117,6 +1119,8 @@ enum SQLSRV_CONN_OPTIONS {
    SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
    SQLSRV_CONN_OPTION_APPLICATION_INTENT,
    SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
+   SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
+   SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
 
    // Driver specific connection options
    SQLSRV_CONN_OPTION_DRIVER_SPECIFIC = 1000,
