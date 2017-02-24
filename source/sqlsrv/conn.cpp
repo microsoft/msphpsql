@@ -37,7 +37,12 @@ struct date_as_string_func {
 
         ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>( conn );
 
-        ss_conn->date_as_string = zend_is_true( value );
+        if( zend_is_true( value )) {
+            ss_conn->date_as_string = true;
+        }
+        else {
+            ss_conn->date_as_string = false;
+        }
     }
 };
 
