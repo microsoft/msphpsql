@@ -95,6 +95,22 @@ struct bool_conn_str_func {
     }
 };
 
+struct int_conn_str_func {
+
+    static void func( connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
+    {
+        TSRMLS_C;
+        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_LONG, "An integer is expected for this keyword" ) 
+
+        std::string val_str = std::to_string( Z_LVAL_P( value ));
+        
+        conn_str += option->odbc_name;
+        conn_str += "={";
+        conn_str += val_str;
+        conn_str += "};";
+    }
+};
+
 template <unsigned int Attr>
 struct int_conn_attr_func {
 
@@ -169,6 +185,8 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
+const char ConnectRetryCount[] = "ConnectRetryCount";
+const char ConnectRetryInterval[] = "ConnectRetryInterval";
 const char Database[] = "Database";
 const char DateAsString[] = "ReturnDatesAsStrings";
 const char Encrypt[] = "Encrypt";
@@ -268,6 +286,24 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::ConnectionPooling ),
         CONN_ATTR_BOOL,
         conn_null_func::func
+    },
+    {
+        SSConnOptionNames::ConnectRetryCount,
+        sizeof( SSConnOptionNames::ConnectRetryCount ),
+        SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
+        ODBCConnOptions::ConnectRetryCount,
+        sizeof( ODBCConnOptions::ConnectRetryCount ),
+        CONN_ATTR_INT,
+        int_conn_str_func::func
+    },
+    {
+        SSConnOptionNames::ConnectRetryInterval,
+        sizeof( SSConnOptionNames::ConnectRetryInterval ),
+        SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
+        ODBCConnOptions::ConnectRetryInterval,
+        sizeof( ODBCConnOptions::ConnectRetryInterval ),
+        CONN_ATTR_INT,
+        int_conn_str_func::func
     },
     {
         SSConnOptionNames::Database,
