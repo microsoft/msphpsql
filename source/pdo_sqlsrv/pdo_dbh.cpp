@@ -537,7 +537,7 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
                             size_t sql_len, pdo_stmt_t *stmt, zval *driver_options TSRMLS_DC )
 {
 	if(!dbh)
-    	return 0;
+		return 0;
 
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -666,7 +666,7 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
 zend_long pdo_sqlsrv_dbh_do( pdo_dbh_t *dbh, const char *sql, size_t sql_len TSRMLS_DC )
 {
 	if(!dbh)
-    	return -1;
+		return -1;
 
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -877,7 +877,7 @@ int pdo_sqlsrv_dbh_rollback( pdo_dbh_t *dbh TSRMLS_DC )
 int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, zend_long attr, zval *val TSRMLS_DC )
 {
 	if(!dbh)
-    	return 0;
+		return 0;
 
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -995,7 +995,7 @@ int pdo_sqlsrv_dbh_set_attr( pdo_dbh_t *dbh, zend_long attr, zval *val TSRMLS_DC
 int pdo_sqlsrv_dbh_get_attr( pdo_dbh_t *dbh, zend_long attr, zval *return_value TSRMLS_DC )
 {
 	if(!dbh)
-    	return 0;
+		return 0;
 
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1142,7 +1142,7 @@ int pdo_sqlsrv_dbh_return_error( pdo_dbh_t *dbh, pdo_stmt_t *stmt,
 char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, _Out_ size_t* len TSRMLS_DC )
 {
 	if(!dbh)
-    	return NULL;
+		return NULL;
 
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1245,7 +1245,7 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
                           enum pdo_param_type /*paramtype*/ TSRMLS_DC )
 {
 	if(!dbh)
-    	return 0;
+		return 0;
 
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1326,7 +1326,7 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
 pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( pdo_dbh_t *dbh, int kind TSRMLS_DC )
 {
 	if(!dbh)
-    	return NULL;
+		return NULL;
 
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1442,7 +1442,7 @@ void pdo_bool_conn_str_func::func(connection_option const* option, zval* value, 
 {
 	îf(!option)
 		return;
-		
+
     TSRMLS_C;
     char const* val_str = "no";
    
