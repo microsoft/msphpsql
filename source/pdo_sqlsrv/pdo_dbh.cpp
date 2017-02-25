@@ -103,7 +103,7 @@ struct pdo_txn_isolation_conn_attr_func
 struct pdo_int_conn_str_func {
 
     static void func( connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
-    {//std::cout << "   in int_conn_str_func::func" << std::endl;
+    {
         TSRMLS_C;
         SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Wrong zval type for this keyword" ) 
 
@@ -120,7 +120,7 @@ template <unsigned int Attr>
 struct pdo_int_conn_attr_func {
 
     static void func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
-    {//std::cout << "   in pdo_int_conn_attr_func::func" << std::endl;
+    {
         try {
         
             SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "pdo_int_conn_attr_func: Unexpected zval type." );
@@ -138,7 +138,7 @@ template <unsigned int Attr>
 struct pdo_bool_conn_attr_func {
 
     static void func( connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
-    {//std::cout << "   in pdo_bool_conn_attr_func::func" << std::endl;
+    {
          try {
         
             core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( core_str_zval_is_true( value )), 
