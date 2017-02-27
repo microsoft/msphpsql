@@ -95,6 +95,7 @@ struct bool_conn_str_func {
     }
 };
 
+#ifdef _WIN32
 struct int_conn_str_func {
 
     static void func( connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
@@ -110,6 +111,7 @@ struct int_conn_str_func {
         conn_str += "};";
     }
 };
+#endif // _WIN32
 
 template <unsigned int Attr>
 struct int_conn_attr_func {
@@ -185,8 +187,10 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
+#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
+#endif // _WIN32
 const char Database[] = "Database";
 const char DateAsString[] = "ReturnDatesAsStrings";
 const char Encrypt[] = "Encrypt";
@@ -287,6 +291,7 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_BOOL,
         conn_null_func::func
     },
+#ifdef _WIN32
     {
         SSConnOptionNames::ConnectRetryCount,
         sizeof( SSConnOptionNames::ConnectRetryCount ),
@@ -305,6 +310,7 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_INT,
         int_conn_str_func::func
     },
+#endif // _WIN32
     {
         SSConnOptionNames::Database,
         sizeof( SSConnOptionNames::Database ),

@@ -41,8 +41,10 @@ const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char ConnectionPooling[] = "ConnectionPooling";
+#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
+#endif // _WIN32
 const char Database[] = "Database";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
@@ -100,6 +102,7 @@ struct pdo_txn_isolation_conn_attr_func
     static void func( connection_option const* /*option*/, zval* value_z, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC );
 };
 
+#ifdef _WIN32
 struct pdo_int_conn_str_func {
 
     static void func( connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
@@ -115,6 +118,7 @@ struct pdo_int_conn_str_func {
         conn_str += "};";
     }
 };
+#endif // _WIN32
 
 template <unsigned int Attr>
 struct pdo_int_conn_attr_func {
@@ -205,6 +209,7 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_BOOL,
         conn_null_func::func
     },
+#ifdef _WIN32
     {
         PDOConnOptionNames::ConnectRetryCount,
         sizeof( PDOConnOptionNames::ConnectRetryCount ),
@@ -223,6 +228,7 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_INT,
         pdo_int_conn_str_func::func
     },
+#endif // _WIN32
     {
         PDOConnOptionNames::Database,
         sizeof( PDOConnOptionNames::Database ),
