@@ -41,12 +41,10 @@ function FetchObject_ClassArgs()
     $numRows = 0;
     $query = GetQuery($tableName, ++$numRows);
     $stmt = sqlsrv_query($conn, $query);
-    $numRows1 = sqlsrv_rows_affected($stmt);    
     sqlsrv_free_stmt($stmt);    
     
     $query = GetQuery($tableName, ++$numRows);
     $stmt = sqlsrv_query($conn, $query);
-    $numRows2 = sqlsrv_rows_affected($stmt);    
     sqlsrv_free_stmt($stmt);    
 
     $stmt = sqlsrv_prepare($conn, "SELECT * FROM $tableName ORDER BY c27_timestamp");     
@@ -72,7 +70,7 @@ function FetchObject_ClassArgs()
     
     $i = 0;
     sqlsrv_execute($stmt);
-while ($obj = sqlsrv_fetch_object($stmt, "TestClass2", array(1, 2)))
+    while ($obj = sqlsrv_fetch_object($stmt, "TestClass2", array(1, 2)))
     {
         echo "Comparing data in row " . ++$i . "\n";
         $query = GetQuery($tableName, $i);

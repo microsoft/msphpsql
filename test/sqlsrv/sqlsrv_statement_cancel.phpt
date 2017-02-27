@@ -25,22 +25,19 @@ function Cancel()
     $numRows = 0;
     $query = GetQuery($tableName, ++$numRows);
     $stmt3 = sqlsrv_query($conn, $query);
-    $numRows1 = sqlsrv_rows_affected($stmt3);   
     sqlsrv_free_stmt($stmt3);   
 
     $query = GetQuery($tableName, ++$numRows);
     $stmt4 = sqlsrv_query($conn, $query);
-    $numRows2 = sqlsrv_rows_affected($stmt4);   
     sqlsrv_free_stmt($stmt4);   
 
     $query = GetQuery($tableName, ++$numRows);
     $stmt5 = sqlsrv_query($conn, $query);
-    $numRows3 = sqlsrv_rows_affected($stmt5);   
     sqlsrv_free_stmt($stmt5);   
     $stmt6 = sqlsrv_query($conn, "SELECT * FROM $tableName");  
     $result1 = sqlsrv_fetch($stmt6);    
     sqlsrv_cancel($stmt6);  
-    $result2 = sqlsrv_fetch($stmt6);    
+    sqlsrv_fetch($stmt6);    
     $errors = sqlsrv_errors(SQLSRV_ERR_ALL);    
     $count1 = count($errors);   
     $e = $errors[0];    
