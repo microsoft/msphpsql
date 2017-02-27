@@ -1484,7 +1484,7 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 
     HashTable* cache;                   // rows of data kept in index based hash table
     SQLSMALLINT col_count;            // number of columns in the current result set
-    meta_data* meta;                    // metadata for fields in the cache
+    sqlsrv_malloc_auto_ptr<meta_data> meta;  // metadata for fields in the cache
     SQLLEN current;                     // 1 based, 0 means before first row
     sqlsrv_error_auto_ptr last_error;   // if an error occurred, it is kept here
     SQLUSMALLINT last_field_index;      // the last field data retrieved from
