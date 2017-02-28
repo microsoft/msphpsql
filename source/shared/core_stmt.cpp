@@ -2007,7 +2007,12 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
             char* str = Z_STRVAL_P( value_z );
             SQLLEN str_len = stmt->param_ind_ptrs[ output_param->param_num ];
-            if( str_len == SQL_NULL_DATA || str_len == 0 ) {
+			if (str_len == 0) {
+				str[str_len] = '\0';
+				core::sqlsrv_zval_stringl( value_z, str, str_len );
+				continue;
+			}
+            if( str_len == SQL_NULL_DATA ) {
                 zend_string_release( Z_STR_P( value_z ));
                 ZVAL_NULL( value_z );
                 continue;
