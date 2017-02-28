@@ -2008,8 +2008,7 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             char* str = Z_STRVAL_P( value_z );
             SQLLEN str_len = stmt->param_ind_ptrs[ output_param->param_num ];
             if( str_len == 0 ) {
-                zend_string_release( Z_STR_P( value_z ));
-                ZVAL_STRINGL( value_z, "", 0 );
+                core::sqlsrv_zval_stringl( value_z, "", 0 );
                 continue;
             }
             if( str_len == SQL_NULL_DATA ) {
