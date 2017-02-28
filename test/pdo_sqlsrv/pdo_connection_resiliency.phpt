@@ -16,9 +16,9 @@ try
 }
 catch( PDOException $e )
 {
-    echo "Could not connect on first attempt.\n";
-    print_r( $e->getMessage() );
-    echo "\n";
+    //echo "Could not connect on first attempt.\n";
+    //print_r( $e->getMessage() );
+    //echo "\n";
 }
 
 $connectionInfo = "ConnectRetryCount=0; ConnectRetryInterval=30;";
@@ -31,9 +31,9 @@ try
 }
 catch( PDOException $e )
 {
-    echo "Could not connect on second attempt.\n";
-    print_r( $e->getMessage() );
-    echo "\n";
+    //echo "Could not connect on second attempt.\n";
+    //print_r( $e->getMessage() );
+    //echo "\n";
 }
 
 $connectionInfo = "ConnectRetryCount=256; ConnectRetryInterval=30;";
