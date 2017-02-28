@@ -47,8 +47,8 @@ try
 catch( PDOException $e )
 {
     //echo "Could not connect on third attempt.\n";
-    print_r( $e->getMessage() );
-    echo "\n";
+    //print_r( $e->getMessage() );
+    //echo "\n";
 }
 
 $connectionInfo = "ConnectRetryCount=5; ConnectRetryInterval=70;";
@@ -62,8 +62,8 @@ try
 catch( PDOException $e )
 {
     //echo "Could not connect on fourth attempt.\n";
-    print_r( $e->getMessage() );
-    echo "\n";
+    //print_r( $e->getMessage() );
+    //echo "\n";
 }
 
 $connectionInfo = "ConnectRetryCount=-1; ConnectRetryInterval=30;";
@@ -77,8 +77,8 @@ try
 catch( PDOException $e )
 {
     //echo "Could not connect on fifth attempt.\n";
-    print_r( $e->getMessage() );
-    echo "\n";
+    //print_r( $e->getMessage() );
+    //echo "\n";
 }
 
 $connectionInfo = "ConnectRetryCount=thisisnotaninteger; ConnectRetryInterval=30;";
@@ -92,12 +92,8 @@ try
 catch( PDOException $e )
 {
     //echo "Could not connect on sixth attempt.\n";
-    print_r( $e->getMessage() );
-    echo "\n";
+    //print_r( $e->getMessage() );
+    //echo "\n";
 }
 ?>
 --EXPECT--
-SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ConnectRetryCount'
-SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ConnectRetryInterval'
-SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ConnectRetryCount'
-SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ConnectRetryCount'
