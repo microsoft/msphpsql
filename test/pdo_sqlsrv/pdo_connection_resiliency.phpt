@@ -11,7 +11,7 @@ $connectionInfo = "ConnectRetryCount=10; ConnectRetryInterval=30;";
 try
 {  
     $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName ; $connectionInfo", "$uid", "$pwd");
-    echo "Connected successfully on first attempt.\n";
+    //echo "Connected successfully on first attempt.\n";
     $conn = null;
 }
 catch( PDOException $e )
@@ -26,7 +26,7 @@ $connectionInfo = "ConnectRetryCount=0; ConnectRetryInterval=30;";
 try
 {  
     $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName ; $connectionInfo", "$uid", "$pwd");
-    echo "Connected successfully on second attempt.\n";
+    //echo "Connected successfully on second attempt.\n";
     $conn = null;
 }
 catch( PDOException $e )
@@ -46,7 +46,7 @@ try
 }
 catch( PDOException $e )
 {
-    echo "Could not connect on third attempt.\n";
+    //echo "Could not connect on third attempt.\n";
     print_r( $e->getMessage() );
     echo "\n";
 }
@@ -61,7 +61,7 @@ try
 }
 catch( PDOException $e )
 {
-    echo "Could not connect on fourth attempt.\n";
+    //echo "Could not connect on fourth attempt.\n";
     print_r( $e->getMessage() );
     echo "\n";
 }
@@ -76,7 +76,7 @@ try
 }
 catch( PDOException $e )
 {
-    echo "Could not connect on fifth attempt.\n";
+    //echo "Could not connect on fifth attempt.\n";
     print_r( $e->getMessage() );
     echo "\n";
 }
@@ -91,19 +91,13 @@ try
 }
 catch( PDOException $e )
 {
-    echo "Could not connect on sixth attempt.\n";
+    //echo "Could not connect on sixth attempt.\n";
     print_r( $e->getMessage() );
     echo "\n";
 }
 ?>
 --EXPECT--
-Connected successfully on first attempt.
-Connected successfully on second attempt.
-Could not connect on third attempt.
 SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ConnectRetryCount'
-Could not connect on fourth attempt.
 SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ConnectRetryInterval'
-Could not connect on fifth attempt.
 SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ConnectRetryCount'
-Could not connect on sixth attempt.
 SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ConnectRetryCount'
