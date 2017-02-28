@@ -1440,8 +1440,8 @@ void validate_stmt_options( sqlsrv_context& ctx, zval* stmt_options, _Inout_ Has
 
 void pdo_bool_conn_str_func::func(connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
 {
-	îf(!option)
-		return;
+    if(!option)
+	return;
 
     TSRMLS_C;
     char const* val_str = "no";
