@@ -10,14 +10,14 @@ $connectionInfo = "ConnectRetryCount=10; ConnectRetryInterval=30;";
 try
 {  
     $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName ; $connectionInfo", "$uid", "$pwd");
-    //echo "Connected successfully on first attempt.\n";
+    echo "Connected successfully on first attempt.\n";
     $conn = null;
 }
 catch( PDOException $e )
 {
-    //echo "Could not connect on first attempt.\n";
-    //print_r( $e->getMessage() );
-    //echo "\n";
+    echo "Could not connect on first attempt.\n";
+    print_r( $e->getMessage() );
+    echo "\n";
 }
 
 /*$connectionInfo = "ConnectRetryCount=0; ConnectRetryInterval=30;";
@@ -96,3 +96,4 @@ catch( PDOException $e )
 }*/
 ?>
 --EXPECT--
+Connected successfully on first attempt.
