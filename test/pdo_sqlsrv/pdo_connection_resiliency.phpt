@@ -96,3 +96,4 @@ catch( PDOException $e )
 }*/
 ?>
 --EXPECT--
+Connected successfully on first attempt.
