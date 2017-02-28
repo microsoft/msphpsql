@@ -3,7 +3,7 @@ Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterv
 --SKIPIF--
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+/*require_once("autonomous_setup.php");
 
 $connectionInfo = "ConnectRetryCount=10; ConnectRetryInterval=30;";
 
@@ -93,6 +93,6 @@ catch( PDOException $e )
     //echo "Could not connect on sixth attempt.\n";
     //print_r( $e->getMessage() );
     //echo "\n";
-}
+}*/
 ?>
 --EXPECT--
