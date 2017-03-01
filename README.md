@@ -266,6 +266,8 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 	sudo apachectl restart 
 
+*Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, do this `sudo setsebool -P httpd_can_network_connect_db 1`     
+
 ### Step 7: Create your sample app
 Navigate to `/var/www/html` and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
 
