@@ -165,7 +165,9 @@ test_script:
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\    
-    - python output.py    
+    - python output.py
+    - ps: ls pdo_sqlsrv\
+    - ps: more pdo_sqlsrv\pdo_connection_resiliency.*
     - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
     - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml))
     - ps: >- 
