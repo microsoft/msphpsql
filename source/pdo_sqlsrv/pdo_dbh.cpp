@@ -30,7 +30,7 @@ namespace {
 
 const char LAST_INSERT_ID_QUERY[] = "SELECT @@IDENTITY;";
 const size_t LAST_INSERT_ID_BUFF_LEN = 10;    // size of the buffer to hold the string value of the last insert id integer
-const char TABLE_LAST_INSERT_ID_QUERY[] = "SELECT IDENT_CURRENT(%s)";
+const char TABLE_LAST_INSERT_ID_QUERY[] = "SELECT current_value FROM sys.sequences WHERE [name]=%s";
 const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( TABLE_LAST_INSERT_ID_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
 
 // List of PDO supported connection options.
