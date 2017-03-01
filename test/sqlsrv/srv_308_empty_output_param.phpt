@@ -1,7 +1,7 @@
 --TEST--
 GitHub issue #308 - empty string set to output parameter on stored procedure 
 --DESCRIPTION--
-A variation of the example in GitHub issue 308 is fixed. A NULL value returned as output parameter will remain as NULL.
+A variation of the example in GitHub issue 308. A NULL value returned as output parameter will remain as NULL.
 --SKIPIF--
 --FILE--
 <?php
