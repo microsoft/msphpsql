@@ -35,11 +35,11 @@ try{
     $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence2, 140 )");
 
     // return the last sequence number of 'sequence1'
-    $lastSeq = $conn->lastInsertId($sequence1);  
+    $lastSeq = $conn->lastInsertId($sequence1);
     echo ("Last Sequence: $lastSeq\n");
     
     // return the last sequence number of 'sequenceNeg1'
-    $lastSeq = $conn->lastInsertId($sequence2);  
+    $lastSeq = $conn->lastInsertId($sequence2);
     echo ("Last Sequence: $lastSeq\n");
     
     // providing a table name in lastInsertId should return an empty string

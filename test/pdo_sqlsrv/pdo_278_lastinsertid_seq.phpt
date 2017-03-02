@@ -30,15 +30,15 @@ try{
     $ret = $conn->exec("INSERT INTO $tableName1 VALUES( NEXT VALUE FOR $sequenceName, 20 )");
     $ret = $conn->exec("INSERT INTO $tableName1 VALUES( NEXT VALUE FOR $sequenceName, 40 )");
     $ret = $conn->exec("INSERT INTO $tableName1 VALUES( NEXT VALUE FOR $sequenceName, 60 )");
-    $ret = $conn->exec("INSERT INTO $tableName2 VALUES( '20' )");  
+    $ret = $conn->exec("INSERT INTO $tableName2 VALUES( '20' )");
 
     // return the last sequence number is sequence name is provided
-    $lastSeq = $conn->lastInsertId($sequenceName);  
+    $lastSeq = $conn->lastInsertId($sequenceName);
     echo ("Last Sequence: $lastSeq\n");
 
     // defaults to $tableName2 -- because it returns the last inserted id value
-    $lastRow = $conn->lastInsertId();  
-    echo ("Last Inserted ID: $lastRow\n");    
+    $lastRow = $conn->lastInsertId();
+    echo ("Last Inserted ID: $lastRow\n");
 
     $stmt = $conn->query("DROP TABLE $tableName1");
     $stmt = $conn->query("DROP TABLE $tableName2");
