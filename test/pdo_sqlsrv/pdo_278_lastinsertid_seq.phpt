@@ -12,10 +12,8 @@ try{
 
     $tableName1 = GetTempTableName('tab1');
     $tableName2 = GetTempTableName('tab2');
-    $sequenceName = "sequence1";
+    $sequenceName = 'sequence1';
     
-    //$stmt = $conn->query("IF OBJECT_ID('$tableName1', 'U') IS NOT NULL DROP TABLE $tableName1");
-    //$stmt = $conn->query("IF OBJECT_ID('$tableName2', 'U') IS NOT NULL DROP TABLE $tableName2");
     $stmt = $conn->query("IF OBJECT_ID('$sequenceName', 'SO') IS NOT NULL DROP SEQUENCE $sequenceName");
 
     $sql = "CREATE TABLE $tableName1 (seqnum INTEGER NOT NULL PRIMARY KEY, SomeNumber INT)";

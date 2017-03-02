@@ -11,10 +11,9 @@ try{
     $conn = new PDO("sqlsrv:Server=$serverName;Database=$database", $username, $password);
 
     $tableName = GetTempTableName('tab');
-    $sequence1 = "sequence1";
-    $sequence2 = "sequenceNeg1";
+    $sequence1 = 'sequence1';
+    $sequence2 = 'sequenceNeg1';
 
-    $stmt = $conn->query("IF OBJECT_ID('$tableName', 'U') IS NOT NULL DROP TABLE $tableName");
     $stmt = $conn->query("IF OBJECT_ID('$sequence1', 'SO') IS NOT NULL DROP SEQUENCE $sequence1");
     $stmt = $conn->query("IF OBJECT_ID('$sequence2', 'SO') IS NOT NULL DROP SEQUENCE $sequence2");
 
