@@ -10,7 +10,7 @@ SQL Server Team
 
 ##Take our survey
 
-Let us know how we are doing by taking our monthly sentiment survey:
+Thank you for taking time to take our Febraury survey. Let us know how we are doing and how you use PHP by taking our March pulse survey:
 
 <a href="https://www.surveymonkey.com/r/YDFJ23X"><img style="float: right;"  height="67" width="156" src="https://meetsstorenew.blob.core.windows.net/contianerhd/survey.png?st=2017-02-17T22%3A03%3A00Z&se=2100-02-18T22%3A03%3A00Z&sp=rl&sv=2015-12-11&sr=b&sig=DJSFoihBptSvO%2BjvWzwpHecf8o5yfAbJoD2qW5oB8tc%3D"></a>
 
