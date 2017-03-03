@@ -7,7 +7,7 @@ include 'pdo_tools.inc';
 require_once("autonomous_setup.php");
 
 try{
-    $database = "tempdb";
+    $database = "master";
     $conn = new PDO("sqlsrv:Server=$serverName;Database=$database", $username, $password);
 
     $tableName = GetTempTableName('tab');
