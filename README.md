@@ -79,8 +79,8 @@ This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 
 
 3. Restart the Web server.
 
-## Install (Linux)
-Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16 and RedHat 7. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note that Debian is not officially supported and this instruction hasn't been tested in our test lab.
+## Install (UNIX)
+Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7 and Mac OS X. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note that Debian is not officially supported and this instruction hasn't been tested in our test lab.
 
 ### Step 1: Install  PHP (unless already installed)
 
@@ -112,6 +112,14 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	yum update
 	yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
 
+**Mac OS X**
+
+	brew tap 
+	brew tap homebrew/dupes
+	brew tap homebrew/versions
+	brew tap homebrew/homebrew-php
+	brew install php70
+Note: If php is not updated, do sudo vi /etc/paths and make sure that /usr/local/bin is above /usr/bin.
 
 
 #### PHP 7.1
@@ -135,7 +143,14 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	yum update
 	yum install php php-pdo php-xml php-pear php-devel
     
-    
+**Mac OS X**
+
+	brew tap 
+	brew tap homebrew/dupes
+	brew tap homebrew/versions
+	brew tap homebrew/homebrew-php
+	brew install php71
+Note: If php is not updated, do sudo vi /etc/paths and make sure that /usr/local/bin is above /usr/bin.    
 
 
 ### Step 2: Install  pre-requisites
@@ -180,10 +195,17 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
 	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 	source ~/.bashrc
+	
+**Mac OS X**
 
+	brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-msodbcsql
+	brew update
+	brew install unixodbc
+	brew install msodbcsql
+	brew install llvm --with-clang --with-clang-extra-tools
+	brew install autoconf
 
-
-*Note: On Ubuntu, you need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
+*Note: You need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
 ### Step 3: Install Apache
 
@@ -198,6 +220,11 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
     sudo yum install httpd
 
+**Mac OS X** 
+
+    brew install -v homebrew/apache/httpd22 --with-brewed-openssl --with-mpm-event
+    brew install -v homebrew/apache/mod_fastcgi --with-brewed-httpd22
+
 ####PHP 7.1 
 
 **Ubuntu**
@@ -208,6 +235,11 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 **RedHat** 
 
     sudo yum install httpd 
+
+**Mac OS X** 
+
+    brew install -v homebrew/apache/httpd22 --with-brewed-openssl --with-mpm-event
+    brew install -v homebrew/apache/mod_fastcgi --with-brewed-httpd22
     
 
 ### Step 4: Install the Microsoft PHP Drivers for SQL Server
@@ -235,6 +267,11 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
 	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
+	
+**Mac OS X** 
+
+	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /usr/local/etc/php/7.0/php.ini
+	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /usr/local/etc/php/7.0/php.ini
 
 
 ####PHP 7.1
@@ -254,7 +291,10 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
 	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
+**Mac OS X** 
 
+	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /usr/local/etc/php/7.1/php.ini
+	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /usr/local/etc/php/7.1/php.ini
 	
 ### Step 6: Restart Apache to load the new php.ini file
 
@@ -265,11 +305,15 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 **RedHat**
 
 	sudo apachectl restart 
+	
+**Mac OS X** 
+
+	apachectl restart 
 
 *Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, do this `sudo setsebool -P httpd_can_network_connect_db 1`     
 
 ### Step 7: Create your sample app
-Navigate to `/var/www/html` and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
+Navigate to `/var/www/html` (`/Library/WebServer/Documents` on Mac) and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
 
     <?php
     $serverName = "yourServername";
