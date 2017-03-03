@@ -35,15 +35,18 @@ try{
 
     // return the last sequence number of 'sequence1'
     $lastSeq = $conn->lastInsertId($sequence1);
-    echo ("Last Sequence: $lastSeq\n");
+    echo ("Last Sequence:\n");
+    var_dump($lastSeq);
     
     // return the last sequence number of 'sequenceNeg1'
     $lastSeq = $conn->lastInsertId($sequence2);
-    echo ("Last Sequence: $lastSeq\n");
+    echo ("\nLast Sequence:\n");
+    var_dump($lastSeq);
     
     // providing a table name in lastInsertId should return an empty string
     $lastSeq = $conn->lastInsertId($tableName);
-    echo ("Last Sequence: $lastSeq\n");
+    echo ("\nLast Sequence:\n");
+    var_dump($lastSeq);
 
     $stmt = $conn->query("DROP TABLE $tableName");
     $stmt = $conn->query("DROP SEQUENCE $sequence1");
@@ -58,6 +61,11 @@ try{
    
 ?>
 --EXPECT--
-Last Sequence: 3
-Last Sequence: 198
 Last Sequence:
+string(1) "3"
+
+Last Sequence:
+string(3) "198"
+
+Last Sequence:
+string(0) ""

@@ -24,25 +24,21 @@ try{
     
     $sql = "CREATE SEQUENCE $sequenceName AS INTEGER START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 100 CYCLE";
     $stmt = $conn->query($sql);
-    echo "Test1: ";
-    var_dump($stmt);
     
     $ret = $conn->exec("INSERT INTO $tableName1 VALUES( NEXT VALUE FOR $sequenceName, 20 )");
     $ret = $conn->exec("INSERT INTO $tableName1 VALUES( NEXT VALUE FOR $sequenceName, 40 )");
     $ret = $conn->exec("INSERT INTO $tableName1 VALUES( NEXT VALUE FOR $sequenceName, 60 )");
-    echo "\nTest2: ";
-    var_dump($ret);
     $ret = $conn->exec("INSERT INTO $tableName2 VALUES( '20' )");
 
     // return the last sequence number is sequence name is provided
     $lastSeq = $conn->lastInsertId($sequenceName);
-    echo ("Last Sequence: $lastSeq\n");
-    echo "\nTest3: ";
+    echo ("Last Sequence:\n");
     var_dump($lastSeq);
 
     // defaults to $tableName2 -- because it returns the last inserted id value
     $lastRow = $conn->lastInsertId();
-    echo ("Last Inserted ID: $lastRow\n");
+    echo ("\nLast Inserted ID:\n");
+    var_dump($lastRow);
 
     $stmt = $conn->query("DROP TABLE $tableName1");
     $stmt = $conn->query("DROP TABLE $tableName2");
@@ -57,5 +53,8 @@ catch (Exception $e){
    
 ?>
 --EXPECT--
-Last Sequence: 3
-Last Inserted ID: 1
+Last Sequence:
+string(1) "3"
+
+Last Inserted ID:
+string(1) "1"
