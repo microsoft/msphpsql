@@ -311,7 +311,7 @@ const SystemLocale & SystemLocale::Singleton()
 #if !defined(__GNUC__) || defined(NO_THREADSAFE_STATICS)
     #error "Relying on GCC's threadsafe initialization of local statics."
 #endif
-    static const SystemLocale s_Default( "en_US.utf8" );
+    static const SystemLocale s_Default( "en_US.utf-8" );
     return s_Default;
 }
 
