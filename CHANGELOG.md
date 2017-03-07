@@ -31,7 +31,7 @@ Updated PECL release packages. Here is the list of updates:
 - Segmentation fault may result when an unsupported attribute is used for connection.
 
 #### MAC only
-- If loading both sqlsrv and pdo_sqlsrv, the order matters (even when dynamically). For PDO scripts, load pdo_sqlsrv.so first.
+- If loading both sqlsrv and pdo_sqlsrv, the order matters (even when dynamically). For PDO_SQLSRV scripts, load pdo_sqlsrv.so first. For SQLSRV scripts, load sqlsrv.so first.
 - Connection pooling not working.
 
 ## Windows/Linux 4.1.6 - 2017-02-03
