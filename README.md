@@ -114,12 +114,13 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 **Mac OS X**
 
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	brew tap 
 	brew tap homebrew/dupes
 	brew tap homebrew/versions
 	brew tap homebrew/homebrew-php
-	brew install php70
-Note: If php is not updated, do sudo vi /etc/paths and make sure that /usr/local/bin is above /usr/bin.
+	brew install php70 --with-pear
+Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/local/bin` appears before `/usr/bin` and restart the terminal. 
 
 
 #### PHP 7.1
@@ -145,12 +146,13 @@ Note: If php is not updated, do sudo vi /etc/paths and make sure that /usr/local
     
 **Mac OS X**
 
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	brew tap 
 	brew tap homebrew/dupes
 	brew tap homebrew/versions
 	brew tap homebrew/homebrew-php
-	brew install php71
-Note: If php is not updated, do sudo vi /etc/paths and make sure that /usr/local/bin is above /usr/bin.    
+	brew install php71 --with-pear
+Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/local/bin` appears before `/usr/bin` and restart the terminal. 
 
 
 ### Step 2: Install  pre-requisites
