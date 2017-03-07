@@ -223,7 +223,8 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
     sudo yum install httpd
 
 **Mac OS X** 
-    Installed with PHP.
+
+Installed with PHP.
 
 ####PHP 7.1 
 
@@ -237,7 +238,8 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
     sudo yum install httpd 
 
 **Mac OS X** 
-    Installed with PHP.	
+
+Installed with PHP.	
     
 
 ### Step 4: Install the Microsoft PHP Drivers for SQL Server
@@ -245,7 +247,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
     sudo pecl install sqlsrv
     sudo pecl install pdo_sqlsrv
     
-*Note: it installs the stable version, for specific version you should set the version. For example, `sudo pecl install sqlsrv-4.0.8`
+*Note: it installs the stable version, for specific version you should set the version. For example, `sudo pecl install sqlsrv-4.0.8`.
 Drivers are Mac-compatible starting from 4.1.7preview release. Do `sudo pecl search sqlsrv`.
 
        
