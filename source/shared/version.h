@@ -27,8 +27,9 @@
 #define SQLVERSION_PATCH 7
 #define SQLVERSION_BUILD 0
 
-// Semantic versioning pre-release and buil metadata
-#define SEMVER_PRERELEASE "-preview"
+// Semantic versioning pre-release, for stable releases should be empty
+#define SEMVER_PRERELEASE "preview"
+// Semantic versioning build metadata 
 #define SEMVER_BUILDMETA
 
 #if SQLVERSION_BUILD > 0
@@ -36,13 +37,15 @@
 #define SEMVER_BUILDMETA "+" STRINGIFY( SQLVERSION_BUILD )
 #endif
 
-#define VER_FILEVERSION_STR     STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_PATCH ) SEMVER_PRERELEASE SEMVER_BUILDMETA
+// Main version
+#define VER_APIVERSION_STR      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_PATCH )
+
+// Remove "-" if SEMVER_PRERELEASE is empty (for stable releases)
+#define VER_FILEVERSION_STR     VER_APIVERSION_STR "-" SEMVER_PRERELEASE SEMVER_BUILDMETA
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
-//PECL extension verison macros
-#define PHP_SQLSRV_VERSION      VER_FILEVERSION_STR
-#define PHP_PDO_SQLSRV_VERSION  VER_FILEVERSION_STR
+// PECL package version macros (can't have '-' or '+')
+#define PHP_SQLSRV_VERSION      VER_APIVERSION_STR SEMVER_PRERELEASE 
+#define PHP_PDO_SQLSRV_VERSION  PHP_SQLSRV_VERSION
 
 #endif // VERSION_H
-
-
