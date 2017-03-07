@@ -3,6 +3,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux/MAC 4.1.7-preview - 2017-03-07
+Updated PECL release packages. Here is the list of updates:
+### Added
+- The early technical preview (ETP) for SQLSRV and PDO_SQLSRV drivers for MAC with basic functionalities is now available. Both drivers has been built and tested on MAC OS version El Capitan (OS X 10.11).
+
+### Fixed
+#### SQLSRV and PDO_SQLSRV
+- Fixed null returned when an empty string is set to an output parameter ([issue #308](https://github.com/Microsoft/msphpsql/issues/308)).
+- Fixed memory leaks in buffered result sets.
+- Fixed clang compile errors.
+
+#### SQLSRV only
+- Fixed debug abort error when building the driver in debug mode with PHP 7.1.
+- Fixed string truncation when binding varchar(max), nvarchar(max), varbinary(max), and xml types ([issue #231](https://github.com/Microsoft/msphpsql/issues/231)).
+- Fixed fatal error when fetching empty nvarchar ([issue #69](https://github.com/Microsoft/msphpsql/issues/69)).
+- Fixed fatal error when calling sqlsrv_fetch() with an out of bound offset for SQLSRV_SCROLL_ABSOLUTE ([issue #223](https://github.com/Microsoft/msphpsql/issues/223)).
+
+#### PDO_SQLSRV only
+- Fixed wrong value returned when fetching varbinary value on Linux ([issue #270](https://github.com/Microsoft/msphpsql/issues/270)).
+- Fixed binary data not returned when the column is bound by name ([issue #35](https://github.com/Microsoft/msphpsql/issues/35)).
+- Fixed exception thrown on closeCursor() when the statement has not been executed ([issue #267](https://github.com/Microsoft/msphpsql/issues/267)).
+
+### Known Issues
+- User defined data types and SQL_VARIANT ([issue #127](https://github.com/Microsoft/msphpsql/issues/127)).
+- Binary column binding with emulate prepare ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)).
+- Segmentation fault may result when an unsupported attribute is used for connection.
+
+#### MAC only
+- If loading both sqlsrv and pdo_sqlsrv, the order matters (even when dynamically). For PDO_SQLSRV scripts, load pdo_sqlsrv.so first. For SQLSRV scripts, load sqlsrv.so first.
+- Connection pooling not working.
+
 ## Windows/Linux 4.1.6 - 2017-02-03
 Updated PECL release packages. Here is the list of updates:
 ### Added
@@ -61,7 +92,7 @@ Linux drivers compiled with PHP 7.0.13 are available for Ubuntu 15.04, Ubuntu 16
 
 ### Changed
 - Code structure is updated to facilitate the development; shared codes between both drivers are moved to "shared" folder to avoid code duplication issues in development. To build the driver from source, use "packagize" script as follows:
-	 - if you are using the phpize, clone or download the ìsourceî, run the script within the ìsourceî directory and then run phpize.
+	 - if you are using the phpize, clone or download the ‚Äúsource‚Äù, run the script within the ‚Äúsource‚Äù directory and then run phpize.
 	 - if you are building the driver from source using PHP source, give the path to the PHP source to the script. 
 
 ### Fixed
