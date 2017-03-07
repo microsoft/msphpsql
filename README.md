@@ -37,7 +37,7 @@ Thank you for taking time to take our Febraury survey. Let us know how we are do
 
 ##Announcements
 
-**December 19, 2016**: We are delighted announce that production release for PHP Linux Driver for SQL Server is available. PECL packages (4.0.8) are updated with the latest changes, and Linux binaries (4.0.8) compiled with PHP 7.0.14 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. For complete list of changes please visit [CHANGELOG](https://github.com/Microsoft/msphpsql/blob/dev/CHANGELOG.md) file.
+**March 7, 2017**: We are trilled to announce that the early technical preview for SQLSRV and PDO_SQLSRV drivers is now available, both drivers have been built and tested on El Capitan (OS X 10.11). For complete list of changes please visit [4.1.7-preview release notes](https://github.com/Microsoft/msphpsql/releases/tag/v4.1.7-preview).
 
  Please visit the [blog][blog] for more announcements.
 
