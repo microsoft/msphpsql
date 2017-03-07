@@ -8,6 +8,7 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improveme
 
 SQL Server Team
 
+
 ##Take our survey
 
 Thank you for taking time to take our Febraury survey. Let us know how we are doing and how you use PHP by taking our March pulse survey:
@@ -340,6 +341,23 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
      - sqlsrv_server_info and sqlsrv_client_info return false 
      - In certain scenarios a generic error message maybe returned instead of a specific error when pooling is disabled
      - When retrieving data from columns with a data type of XML, varchar(max), nvarchar(max), or varbinary(max) no data maybe returned or the data maybe truncated depending on the length of the data in the source table.
+
+##Version number
+Version number of PHP drivers follow the [semantic versioning](http://semver.org/):
+
+Given a version number MAJOR.MINOR.PATCH, 
+
+ - MAJOR version is incremented when an incompatible API changes is made, 
+ - MINOR version is incremented when a functionality in a backwards-compatible manner is added, and
+ - PATCH version is incremented when backwards-compatible bug fixes are made.
+ 
+version number MAY have trailing pre-release version to indicate the stability, and/or build meta data.
+
+- Pre-release version is denoted by hyphen followed by `preview` or `rc` keyword and may be followed by a series of dot separated identifiers. Production quality releases do not contain the pre-release version. `preview` has lower precedence than `rc`. Example of precedence: *preview < preview.1 < rc < rc.1*. 
+*Note that PECL package version does not have the hyphen before pre-release version, due to restrictions in PECL. Example of PECL package version: 1.2.3preview*
+- Build metadata MAY be denoted by a plus sign followed by 4 digits, such as  `1.2.3-preview+5678` or `1.2.3+5678`. Build meta data does NOT figure into the precedence order.
+
+	
 
 ## Future Plans
 - Expand SQL 16 Feature Support (example: Always Encrypted).
