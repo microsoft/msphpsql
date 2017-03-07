@@ -3,10 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
-## Windows/Linux/MAC 4.1.7 - 2017-03-07
+## Windows/Linux/MAC 4.1.7-preview - 2017-03-07
 Updated PECL release packages. Here is the list of updates:
 ### Added
-- The early technical preview (ETP) for SQLSRV and PDO_SQLSRV drivers for MAC with basic functionalities is now available. Both drivers has been built and tested on MAC OS versions El Capitan (OS X 10.11) and Sierra (macOS 10.12).
+- The early technical preview (ETP) for SQLSRV and PDO_SQLSRV drivers for MAC with basic functionalities is now available. Both drivers has been built and tested on MAC OS version El Capitan (OS X 10.11).
 
 ### Fixed
 #### SQLSRV and PDO_SQLSRV
