@@ -353,8 +353,8 @@ Given a version number MAJOR.MINOR.PATCH,
  
 version number MAY have trailing pre-release version to indicate the stability, and/or build meta data.
 
-- Pre-release version is be denoted by hyphen followed by `preview` or `rc` keyword and may be followed by a series of dot separated identifiers. Production quality releases do not contain the pre-release version. `preview` has lower precedence than `rc`. Example of precedence: *1.2.3-preview < 1.2.3-preview.1 < 1.2.3-rc < 1.2.3 < 1.3.0*. 
-*Note that PECL package version does not have the hyphen before pre-release version, due to limitation in PECL. Example of package version: 1.2.3preview*
+- Pre-release version is denoted by hyphen followed by `preview` or `rc` keyword and may be followed by a series of dot separated identifiers. Production quality releases do not contain the pre-release version. `preview` has lower precedence than `rc`. Example of precedence: *preview < preview.1 < rc < rc.1*. 
+*Note that PECL package version does not have the hyphen before pre-release version, due to restrictions in PECL. Example of PECL package version: 1.2.3preview*
 - Build metadata MAY be denoted by a plus sign followed by 4 digits, such as  `1.2.3-preview+5678` or `1.2.3+5678`. Build meta data does NOT figure into the precedence order.
 
 	
