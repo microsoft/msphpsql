@@ -254,49 +254,8 @@ Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/lo
        
 ### Step 5: Add the Microsoft PHP Drivers for SQL Server to php.ini
 
-
-####PHP 7.0
-
-**Ubuntu**
-	
-	echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
-	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
-	echo "extension=/usr/lib/php/20151012/sqlsrv.so" >> /etc/php/7.0/cli/php.ini
-	echo "extension=/usr/lib/php/20151012/pdo_sqlsrv.so" >> /etc/php/7.0/cli/php.ini
-
-
-**RedHat** 
-
-	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
-	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
-	
-**Mac OS X** 
-
-	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /usr/local/etc/php/7.0/php.ini
-	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /usr/local/etc/php/7.0/php.ini
-
-
-####PHP 7.1
-
-
-**Ubuntu 16.04**
-	
-	echo "extension=/usr/lib/php/20160303/sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
-	echo "extension=/usr/lib/php/20160303/pdo_sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
-	echo "extension=/usr/lib/php/20160303/sqlsrv.so" >> /etc/php/7.1/cli/php.ini
-	echo "extension=/usr/lib/php/20160303/pdo_sqlsrv.so" >> /etc/php/7.1/cli/php.ini
-
-
-
-**RedHat** 
-	
-	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /etc/php.d/sqlsrv.ini
-	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
-
-**Mac OS X** 
-
-	echo "extension= /usr/lib64/php/modules/sqlsrv.so" > /usr/local/etc/php/7.1/php.ini
-	echo "extension= /usr/lib64/php/modules/pdo_sqlsrv.so" > /usr/local/etc/php/7.1/php.ini
+	echo "extension= sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+	echo "extension= pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
 	
 ### Step 6: Restart Apache to load the new php.ini file
 
