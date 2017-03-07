@@ -119,7 +119,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	brew tap homebrew/dupes
 	brew tap homebrew/versions
 	brew tap homebrew/homebrew-php
-	brew install php70 --with-pear
+	brew install php70 --with-pear --with-httpd24
 Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/local/bin` appears before `/usr/bin` and restart the terminal. 
 
 
@@ -151,7 +151,7 @@ Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/lo
 	brew tap homebrew/dupes
 	brew tap homebrew/versions
 	brew tap homebrew/homebrew-php
-	brew install php71 --with-pear
+	brew install php71 --with-pear --with-httpd24
 Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/local/bin` appears before `/usr/bin` and restart the terminal. 
 
 
@@ -223,25 +223,21 @@ Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/lo
     sudo yum install httpd
 
 **Mac OS X** 
-
-    brew install -v homebrew/apache/httpd22 --with-brewed-openssl --with-mpm-event
-    brew install -v homebrew/apache/mod_fastcgi --with-brewed-httpd22
+    Installed with PHP.
 
 ####PHP 7.1 
 
 **Ubuntu**
 	
-	sudo apt-get install libapache2-mod-php7.1 
-	sudo apt-get install apache2
+    sudo apt-get install libapache2-mod-php7.1 
+    sudo apt-get install apache2
     
 **RedHat** 
 
     sudo yum install httpd 
 
 **Mac OS X** 
-
-    brew install -v homebrew/apache/httpd22 --with-brewed-openssl --with-mpm-event
-    brew install -v homebrew/apache/mod_fastcgi --with-brewed-httpd22
+    Installed with PHP.	
     
 
 ### Step 4: Install the Microsoft PHP Drivers for SQL Server
@@ -269,7 +265,7 @@ Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/lo
 	
 **Mac OS X** 
 
-	apachectl restart 
+	sudo apachectl restart 
 
 *Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, do this `sudo setsebool -P httpd_can_network_connect_db 1`     
 
