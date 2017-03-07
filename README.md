@@ -120,7 +120,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	brew tap homebrew/versions
 	brew tap homebrew/homebrew-php
 	brew install php70 --with-pear --with-httpd24
-Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/local/bin` appears before `/usr/bin` and restart the terminal. 
+*Note: If PHP(`php -v`) is not updated on Mac, do `sudo vi /etc/paths` and make sure that `/usr/local/bin` appears before `/usr/bin` and restart the terminal. 
 
 
 #### PHP 7.1
@@ -152,7 +152,7 @@ Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/lo
 	brew tap homebrew/versions
 	brew tap homebrew/homebrew-php
 	brew install php71 --with-pear --with-httpd24
-Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/local/bin` appears before `/usr/bin` and restart the terminal. 
+*Note: If PHP(`php -v`) is not updated, do `sudo vi /etc/paths` and make sure that `/usr/local/bin` appears before `/usr/bin` and restart the terminal. 
 
 
 ### Step 2: Install  pre-requisites
@@ -246,6 +246,7 @@ Note: If php is not updated, do `sudo vi /etc/paths` and make sure that `/usr/lo
     sudo pecl install pdo_sqlsrv
     
 *Note: it installs the stable version, for specific version you should set the version. For example, `sudo pecl install sqlsrv-4.0.8`
+Drivers are Mac-compatible starting from 4.1.7preview release. Do `sudo pecl search sqlsrv`.
 
        
 ### Step 5: Add the Microsoft PHP Drivers for SQL Server to php.ini
