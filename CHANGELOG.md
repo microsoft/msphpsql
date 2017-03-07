@@ -29,6 +29,7 @@ Updated PECL release packages. Here is the list of updates:
 - User defined data types and SQL_VARIANT ([issue #127](https://github.com/Microsoft/msphpsql/issues/127)).
 - Binary column binding with emulate prepare ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)).
 - Segmentation fault may result when an unsupported attribute is used for connection.
+
 #### MAC only
 - If loading both sqlsrv and pdo_sqlsrv, the order matters (even when dynamically). For PDO scripts, load pdo_sqlsrv.so first.
 - Connection pooling not working.
@@ -91,7 +92,7 @@ Linux drivers compiled with PHP 7.0.13 are available for Ubuntu 15.04, Ubuntu 16
 
 ### Changed
 - Code structure is updated to facilitate the development; shared codes between both drivers are moved to "shared" folder to avoid code duplication issues in development. To build the driver from source, use "packagize" script as follows:
-	 - if you are using the phpize, clone or download the ìsourceî, run the script within the ìsourceî directory and then run phpize.
+	 - if you are using the phpize, clone or download the ‚Äúsource‚Äù, run the script within the ‚Äúsource‚Äù directory and then run phpize.
 	 - if you are building the driver from source using PHP source, give the path to the PHP source to the script. 
 
 ### Fixed
