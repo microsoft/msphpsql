@@ -29,7 +29,6 @@ function Repro()
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
-        sqlsrv_get_config('WarningsReturnAsErrors');    
 
         require_once("autonomous_setup.php");
         $database = "tempdb";

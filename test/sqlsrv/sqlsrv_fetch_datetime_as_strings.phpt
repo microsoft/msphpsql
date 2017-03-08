@@ -51,6 +51,11 @@ function FetchData($stmt1, $stmt2, $numRows)
         if ($value1 !== $value2)
             echo "Data corrupted: $value1 !== $value2\n";
         
+        $value1 = $obj->c4_smalldatetime;
+        $value2 = $row['c4_smalldatetime'];
+        
+        if ($value1 !== $value2)
+            echo "Data corrupted: $value1 !== $value2\n";
     } while (++$rowFetched < $numRows);    
 }
 
@@ -84,7 +89,6 @@ function Repro()
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
-        sqlsrv_get_config('WarningsReturnAsErrors');    
 
         require_once("autonomous_setup.php");
         
