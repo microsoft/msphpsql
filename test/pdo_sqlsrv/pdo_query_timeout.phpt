@@ -1,5 +1,5 @@
 --TEST--
-test query time out on connection level and statement level
+test query time out at the connection level and statement level
 --SKIPIF--
 
 --FILE--
@@ -15,7 +15,6 @@ function QueryTimeout($connLevel)
     $tableName = GetTempTableName();
           
     $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
-    //$conn->SetAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
     
     $stmt = $conn->exec("CREATE TABLE $tableName ([c1_int] int, [c2_varchar] varchar(25))");
     
