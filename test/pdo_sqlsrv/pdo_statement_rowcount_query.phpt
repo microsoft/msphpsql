@@ -1,5 +1,5 @@
 --TEST--
-test rowCount() with different querying method
+test rowCount() with different querying method and test nextRowset() with different fetch
 --SKIPIF--
 
 --FILE--
@@ -18,12 +18,15 @@ function RowCount_Query($exec)
     
     $stmt = $conn->exec("CREATE TABLE $tableName ([c1_int] int, [c2_real] real)");
     
-    for ($i = 1; $i < 5; $i++)
+    $numRows = 5;
+    for ($i = 1; $i <= $numRows; $i++)
     {
         InsertData($conn, $tableName, $i);
     }
      
-    for ($i = 1; $i < 5; $i++)
+    FetchRowsets($conn, $tableName, $numRows);
+    
+    for ($i = 1; $i <= $numRows; $i++)
     {
         UpdateData($conn, $tableName, $i, $exec);
     }
@@ -46,10 +49,12 @@ function UpdateData($conn, $tableName, $value, $exec)
     $query = "UPDATE $tableName SET c1_int = $newValue WHERE (c1_int = $value)";
     $rowCount = 0;
     
-    if ($exec){
+    if ($exec)
+    {
         $rowCount = $conn->exec($query);
     }
-    else {            
+    else 
+    {            
         $stmt = $conn->prepare($query);
         $rowCount = $stmt->rowCount();
         if ($rowCount > 0)
@@ -65,15 +70,80 @@ function UpdateData($conn, $tableName, $value, $exec)
     $stmt = null;
 }
 
+function CompareValues($actual, $expected)
+{
+    if ($actual != $expected)
+    {
+        echo "Unexpected value $value returned! Expected $expected.\n";
+    }
+}
+
+function FetchRowsets($conn, $tableName, $numRows)
+{
+    $query = "SELECT [c1_int] FROM $tableName ORDER BY [c1_int]"; 
+    $queries = $query . ';' . $query . ';' . $query;
+    $stmt = $conn->query($queries);
+
+    $i = 0;
+    while ($row = $stmt->fetch(PDO::FETCH_LAZY))
+    {
+        $value = (int)$row['c1_int'];
+        CompareValues($value, ++$i);
+    }
+    
+    if ($i != $numRows)
+    {
+        echo "Number of rows fetched $i is unexpected!\n";
+    }
+    
+    $result = $stmt->nextRowset();
+    if ($result == false)
+    {
+        echo "Missing result sets!\n";
+    }
+    
+    $rows = $stmt->fetchAll(PDO::FETCH_NUM);
+    $i = 0;
+    foreach ($rows as $row)
+    {
+        foreach ($row as $key => $value)
+        {
+            $value = (int)$value;
+            CompareValues($value, ++$i);
+        }
+    }    
+
+    $result = $stmt->nextRowset();
+    if ($result == false)
+    {
+        echo "Missing result sets!\n";
+    }
+    
+    $stmt->bindColumn('c1_int', $value);
+    $i = 0;
+    while ($row = $stmt->fetch(PDO::FETCH_BOUND))
+    {
+        CompareValues($value, ++$i);
+    }
+    
+    $result = $stmt->nextRowset();
+    if ($result != false)
+    {
+        echo "Number of result sets exceeding expectation!\n";
+    }
+}
+
 function DeleteData($conn, $tableName, $exec)
 {
     $query = "DELETE TOP(3) FROM $tableName";   
     $rowCount = 0;
     
-    if ($exec){
+    if ($exec)
+    {
         $rowCount = $conn->exec($query);
     }
-    else {                
+    else 
+    {                
         $stmt = $conn->query($query);
         $rowCount = $stmt->rowCount();
     }
