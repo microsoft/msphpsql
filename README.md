@@ -135,7 +135,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	sudo su
 	add-apt-repository ppa:ondrej/php
 	apt-get update
-	apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev 
+	apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev php7.1-xml
 
 **RedHat 7**
 	
