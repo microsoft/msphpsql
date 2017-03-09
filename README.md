@@ -230,7 +230,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 **Mac OS X** 
 
-    echo "<FilesMatch .php$> SetHandler application/x-httpd-php </FilesMatch>" >> /usr/local/etc/apache2/2.4/httpd.conf
+    {echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";} >> /usr/local/etc/apache2/2.4/httpd.conf
 
 ####PHP 7.1 
 
@@ -245,7 +245,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 **Mac OS X** 
 
-    echo "<FilesMatch .php$> SetHandler application/x-httpd-php </FilesMatch>" >> /usr/local/etc/apache2/2.4/httpd.conf
+    {echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";} >> /usr/local/etc/apache2/2.4/httpd.conf
     
 
 ### Step 4: Install the Microsoft PHP Drivers for SQL Server
