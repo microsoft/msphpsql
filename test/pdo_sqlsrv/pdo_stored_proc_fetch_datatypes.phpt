@@ -24,9 +24,11 @@ function ProcFetch_BigInt($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);
     $stmt->execute();
     
-    if (strncasecmp($outValue, "23456789", 8)) 
+    $expected = "23456789";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;  
@@ -49,9 +51,11 @@ function ProcFetch_Decimal($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);
     $stmt->execute();
     
-    if (strncasecmp($outValue, "7", 1)) 
+    $expected = "7";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;      
@@ -74,9 +78,11 @@ function ProcFetch_Float($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);
     $stmt->execute();
     
-    if (strncasecmp($outValue, "7.75", 4)) 
+    $expected = "7.75";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;          
@@ -99,9 +105,11 @@ function ProcFetch_Int($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);
     $stmt->execute();
     
-    if (strncasecmp($outValue, "6912", 4)) 
+    $expected = "6912";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;          
@@ -124,9 +132,11 @@ function ProcFetch_Money($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);   
     $stmt->execute();
     
-    if (strncasecmp($outValue, "38.40", 5)) 
+    $expected = "38.40";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;          
@@ -149,9 +159,11 @@ function ProcFetch_Numeric($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);   
     $stmt->execute();
     
-    if (strncasecmp($outValue, "8", 1)) 
+    $expected = "8";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;          
@@ -174,9 +186,11 @@ function ProcFetch_Real($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);   
     $stmt->execute();
     
-    if (strncasecmp($outValue, "10", 2)) 
+    $expected = "10";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;          
@@ -199,9 +213,11 @@ function ProcFetch_SmallInt($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);   
     $stmt->execute();
     
-    if (strncasecmp($outValue, "90", 2)) 
+    $expected = "90";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;          
@@ -224,11 +240,13 @@ function ProcFetch_SmallMoney($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);   
     $stmt->execute();
     
-    if (strncasecmp($outValue, "21.70", 5)) 
+    $expected = "21.70";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
-    
+        
     $stmt = null;              
 }
 
@@ -249,9 +267,11 @@ function ProcFetch_TinyInt($conn)
     $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);   
     $stmt->execute();
     
-    if (strncasecmp($outValue, "23", 2)) 
+    $expected = "23";
+    $outValue = trim($outValue);
+    if (strncasecmp($outValue, $expected, strlen($expected))) 
     {
-        echo "Output value $outValue is unexpected!\n";
+        echo "Output value $outValue is unexpected! Expected $expected\n";
     }    
     
     $stmt = null;              
