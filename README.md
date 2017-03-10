@@ -213,7 +213,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	brew install llvm --with-clang --with-clang-extra-tools
 	brew install autoconf
 
-*Note: You need to make sure you install PHP 7 before you proceed to step 2. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
+*Note: You need to make sure you install PHP 7 before you proceed to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
 ### Step 3: Install Apache
 
@@ -254,8 +254,8 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
     sudo pecl install sqlsrv
     sudo pecl install pdo_sqlsrv
     
-*Note: it installs the stable version, for specific version you should set the version. For example, `sudo pecl install sqlsrv-4.0.8`.
-Drivers are Mac-compatible starting from 4.1.7preview release. Do `sudo pecl search sqlsrv`.
+*Note: it installs the stable version, for specific version you should set the version. For example, do `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version.
+Drivers are Mac-compatible starting from 4.1.7preview release. .
 	
 ### Step 5: Restart Apache to load the new php.ini file
 
@@ -317,7 +317,7 @@ Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a ne
 
 ### Step 7: Run your sample app
 
-Go to your browser and type in http://localhost/testsql.php
+Go to your browser and type in http://localhost/testsql.php (http://localhost:8080/testsql.php on Mac)
 You should be able to connect to your SQL Server/Azure SQL Database.
 
 The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
