@@ -208,7 +208,11 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
 
     // create a new result set
     if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {
-        current_results = new (sqlsrv_malloc( sizeof( sqlsrv_buffered_result_set ))) sqlsrv_buffered_result_set( this TSRMLS_CC );
+         sqlsrv_malloc_auto_ptr<sqlsrv_buffered_result_set> result;         
+        result = reinterpret_cast<sqlsrv_buffered_result_set*> ( sqlsrv_malloc( sizeof( sqlsrv_buffered_result_set ) ) );
+        new ( result.get() ) sqlsrv_buffered_result_set( this TSRMLS_CC );
+        current_results = result.get();        
+        result.transferred();
     }
     else {
         current_results = new (sqlsrv_malloc( sizeof( sqlsrv_odbc_result_set ))) sqlsrv_odbc_result_set( this );
@@ -776,6 +780,7 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULE
             if( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
                 stmt->past_fetch_end = true;
             }
+            stmt->fetch_called = false; // reset this flag
             return false;
         }
    
@@ -2002,7 +2007,11 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
             char* str = Z_STRVAL_P( value_z );
             SQLLEN str_len = stmt->param_ind_ptrs[ output_param->param_num ];
-            if( str_len == SQL_NULL_DATA || str_len == 0 ) {
+            if( str_len == 0 ) {
+                core::sqlsrv_zval_stringl( value_z, "", 0 );
+                continue;
+            }
+            if( str_len == SQL_NULL_DATA ) {
                 zend_string_release( Z_STR_P( value_z ));
                 ZVAL_NULL( value_z );
                 continue;
@@ -2027,6 +2036,15 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
             CHECK_CUSTOM_ERROR( str_len > ( output_param->original_buffer_len - null_size ), stmt,
                 SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, output_param->param_num + 1 ) {
                 throw core::CoreException();
+            }
+
+            // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
+            // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains up to
+            // output_param->original_buffer_len data and is NULL terminated.             
+            // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
+            if ( str_len == SQL_NO_TOTAL )
+            {
+                str_len = output_param->original_buffer_len - null_size;
             }
 
             // if it's not in the 8 bit encodings, then it's in UTF-16
@@ -2410,16 +2428,20 @@ void resize_output_buffer_if_necessary( sqlsrv_stmt* stmt, zval* param_z, SQLULE
 
     // calculate the size of each 'element' represented by column_size.  WCHAR is of course 2,
     // as is a n(var)char/ntext field being returned as a binary field.
-    elem_size = (c_type == SQL_C_WCHAR || (c_type == SQL_C_BINARY && (sql_type == SQL_WCHAR || sql_type == SQL_WVARCHAR))) ? 2 : 1;
+    elem_size = (c_type == SQL_C_WCHAR || (c_type == SQL_C_BINARY && (sql_type == SQL_WCHAR || sql_type == SQL_WVARCHAR || sql_type == SQL_WLONGVARCHAR ))) ? 2 : 1;
 
     // account for the NULL terminator returned by ODBC and needed by Zend to avoid a "String not null terminated" debug warning
-    expected_len = column_size * elem_size + elem_size;
+    SQLULEN field_size = column_size;
+    if (column_size == SQL_SS_LENGTH_UNLIMITED) {
+        field_size = SQL_SERVER_MAX_FIELD_SIZE / elem_size;
+    }
+    expected_len = field_size * elem_size + elem_size;
 
     // binary fields aren't null terminated, so we need to account for that in our buffer length calcuations
     buffer_null_extra = (c_type == SQL_C_BINARY) ? elem_size : 0;
 
     // this is the size of the string for Zend and for the StrLen parameter to SQLBindParameter
-    without_null_len = column_size * elem_size;
+    without_null_len = field_size * elem_size;
 
     // increment to include the null terminator since the Zend length doesn't include the null terminator
     buffer_len += elem_size;

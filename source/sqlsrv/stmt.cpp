@@ -28,7 +28,7 @@
 //
 // our resource descriptor assigned in minit
 int ss_sqlsrv_stmt::descriptor = 0;
-char* ss_sqlsrv_stmt::resource_name = static_cast<char *>("ss_sqlsrv_stmt");   // not const for a reason.  see sqlsrv_stmt in php_sqlsrv.h
+const char* ss_sqlsrv_stmt::resource_name = "ss_sqlsrv_stmt";
 
 namespace {
 
@@ -2028,11 +2028,10 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array, zend_ul
         decimal_digits = 0;
     }
 
-    // if the user for some reason provides an output parameter with a null phptype and a specified
+    // if the user for some reason provides an inout / output parameter with a null phptype and a specified
     // sql server type, infer the php type from the sql server type.
-    if( direction == SQL_PARAM_OUTPUT && php_type_param_was_null && !sql_type_param_was_null ) {
+    if( direction != SQL_PARAM_INPUT && php_type_param_was_null && !sql_type_param_was_null ) {
 
-        int encoding;
         sqlsrv_phptype sqlsrv_phptype;
 
         sqlsrv_phptype = determine_sqlsrv_php_type( stmt, sql_type, (SQLUINTEGER)column_size, true );
@@ -2043,7 +2042,7 @@ void parse_param_array( ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array, zend_ul
                        "validated sql type and column_size" );
 
         php_out_type = static_cast<SQLSRV_PHPTYPE>( sqlsrv_phptype.typeinfo.type );
-        encoding = sqlsrv_phptype.typeinfo.encoding;
+        encoding = static_cast<SQLSRV_ENCODING>( sqlsrv_phptype.typeinfo.encoding );
     }
 
     // verify that the parameter is a valid output param type

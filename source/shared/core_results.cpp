@@ -25,7 +25,6 @@
 
 #ifndef _WIN32
 #include <type_traits>
-#include <uchar.h>
 #endif // !_WIN32
 
 
@@ -210,21 +209,20 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
 
     if ( std::is_same<Char, char16_t>::value )
     {
+
         std::basic_string<char16_t> str;
-        char *str_num_ptr = &str_num[0], *str_num_end = &str_num[0] + str_num.size();
-
-        for ( const auto &mb : str_num )
+                
+        for (const auto &mb : str_num )
         {
-            char16_t ch16;
-            std::mbstate_t mbs = std::mbstate_t();
-
-            int len = mbrtoc16( &ch16, &mb, str_num_end - str_num_ptr, &mbs );
-            if ( len > 0 || len == -3 )
+            size_t cch = SystemLocale::NextChar( CP_ACP, &mb ) - &mb;
+            if ( cch > 0 )
             {
-                str.push_back( ch16 );
-                if ( len > 0 )
+                WCHAR ch16;
+                DWORD rc;                
+                size_t cchActual = SystemLocale::ToUtf16( CP_ACP, &mb, cch, &ch16, 1, &rc);
+                if (cchActual > 0)
                 {
-                    str_num_ptr += len;
+                    str.push_back ( ch16 );
                 }
             }
         }
@@ -237,6 +235,39 @@ SQLRETURN number_to_string( Number* number_data, _Out_ void* buffer, SQLLEN buff
 #endif // _WIN32
 
 }
+
+#ifndef _WIN32
+
+
+std::string getUTF8StringFromString( const SQLWCHAR* source )
+{
+    // convert to regular character string first
+    char c_str[4] = "";
+    mbstate_t mbs;
+
+    SQLLEN i = 0;
+    std::string str;
+    while ( source[i] )
+    {        
+        memset( c_str, 0, sizeof( c_str ) );        
+        DWORD rc;    
+        int cch = 0;
+        errno_t err = mplat_wctomb_s( &cch, c_str, sizeof( c_str ), source[i++] );
+        if ( cch > 0 && err == ERROR_SUCCESS )
+        {
+            str.append( std::string( c_str, cch ) );
+        }
+    }
+    return str;
+}
+
+
+std::string getUTF8StringFromString( const char* source )
+{
+    return std::string( source );
+}
+
+#endif // !_WIN32
 
 template <typename Number, typename Char>
 SQLRETURN string_to_number( Char* string_data, SQLLEN str_len, _Out_ void* buffer, SQLLEN buffer_length, 
@@ -259,32 +290,13 @@ SQLRETURN string_to_number( Char* string_data, SQLLEN str_len, _Out_ void* buffe
 
     *out_buffer_length = sizeof( Number );
 #else
-    std::string str;
-    if ( std::is_same<Char, SQLWCHAR>::value )
-    {
-        // convert to regular character string first
-        char c_str[3] = "";
-        mbstate_t mbs;
-
-        SQLLEN i = 0;
-        while ( string_data[i] )
-        {
-            memset( &mbs, 0, sizeof( mbs ));		//set shift state to the initial state
-            memset( c_str, 0, sizeof( c_str ));
-            int len = c16rtomb( c_str, string_data[i++], &mbs );	// treat string_data as a char16_t string
-            str.append(std::string( c_str, len ));
-        }
-    }
-    else
-    {
-        str.append( std::string(( char * )string_data ));
-    }
+    std::string str = getUTF8StringFromString( string_data );
 
     std::istringstream is( str );
     std::locale loc;    // default locale should match system
     is.imbue( loc );
 
-    auto& facet = std::use_facet<std::num_get<char>>( is.getloc());
+    auto& facet = std::use_facet<std::num_get<char>>( is.getloc() );
     std::istreambuf_iterator<char> beg( is ), end;
     std::ios_base::iostate err = std::ios_base::goodbit;
 
@@ -428,15 +440,11 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
     sqlsrv_result_set( stmt ),
     cache(NULL),
     col_count(0),
-    meta(NULL),
     current(0),
     last_field_index(-1),
     read_so_far(0),
     temp_length(0)
 {
-    // 10 is an arbitrary number for now for the initial size of the cache
-    ALLOC_HASHTABLE( cache );
-    core::sqlsrv_zend_hash_init( *stmt, cache, 10 /* # of buckets */, cache_row_dtor /*dtor*/, 0 /*persistent*/ TSRMLS_CC );
     col_count = core::SQLNumResultCols( stmt TSRMLS_CC );
     // there is no result set to buffer
     if( col_count == 0 ) {
@@ -650,87 +658,104 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( sqlsrv_stmt* stmt TSRMLS
     // (offset from the above loop has the size of the row buffer necessary)
     zend_long mem_used = 0;
     size_t row_count = 0;
+    // 10 is an arbitrary number for now for the initial size of the cache
+    ALLOC_HASHTABLE( cache );
+    core::sqlsrv_zend_hash_init( *stmt, cache, 10 /* # of buckets */, cache_row_dtor /*dtor*/, 0 /*persistent*/ TSRMLS_CC );
 
-    while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC ) != SQL_NO_DATA ) {
-        
-        // allocate the row buffer
-        unsigned char* row = static_cast<unsigned char*>( sqlsrv_malloc( offset ));
-        memset( row, 0, offset );
+    try {
+        while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC ) != SQL_NO_DATA ) {
+            
+            // allocate the row buffer
+            sqlsrv_malloc_auto_ptr<unsigned char> rowAuto;
+            rowAuto = static_cast<unsigned char*>( sqlsrv_malloc( offset ));
+            unsigned char* row = rowAuto.get();
+            memset( row, 0, offset );
 
-        // read the fields into the row buffer
-        for( SQLSMALLINT i = 0; i < col_count; ++i ) {
+            // read the fields into the row buffer
+            for( SQLSMALLINT i = 0; i < col_count; ++i ) {
 
-            SQLLEN out_buffer_temp = SQL_NULL_DATA;
-            SQLPOINTER buffer;
-            SQLLEN* out_buffer_length = &out_buffer_temp;
+                SQLLEN out_buffer_temp = SQL_NULL_DATA;
+                SQLPOINTER buffer;
+                SQLLEN* out_buffer_length = &out_buffer_temp;
 
-            switch( meta[i].c_type ) {
+                switch( meta[i].c_type ) {
 
-                case SQL_C_CHAR:
-                case SQL_C_WCHAR:
-                case SQL_C_BINARY:
-                    if( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
+                    case SQL_C_CHAR:
+                    case SQL_C_WCHAR:
+                    case SQL_C_BINARY:
+                        if( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
-                        out_buffer_length = &out_buffer_temp;
-                        SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[ meta[i].offset ] );
-                        *lob_addr = read_lob_field( stmt, i, meta[i], mem_used TSRMLS_CC );
-                        // a NULL pointer means NULL field
-                        if( *lob_addr == NULL ) {
-                            *out_buffer_length = SQL_NULL_DATA;
+                            out_buffer_length = &out_buffer_temp;
+                            SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[ meta[i].offset ] );
+                            *lob_addr = read_lob_field( stmt, i, meta[i], mem_used TSRMLS_CC );
+                            // a NULL pointer means NULL field
+                            if( *lob_addr == NULL ) {
+                                *out_buffer_length = SQL_NULL_DATA;
+                            }
+                            else {
+                                *out_buffer_length = **reinterpret_cast<SQLLEN**>( lob_addr );
+                                mem_used += *out_buffer_length;
+                            }
                         }
                         else {
-                            *out_buffer_length = **reinterpret_cast<SQLLEN**>( lob_addr );
-                            mem_used += *out_buffer_length;
+
+    						mem_used += meta[i].length;
+                            CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
+                                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+
+                                throw core::CoreException();
+                            }
+
+                            buffer = row + meta[i].offset + sizeof( SQLULEN );
+                            out_buffer_length = reinterpret_cast<SQLLEN*>( row + meta[i].offset );
+                            core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
+                                              false TSRMLS_CC );
                         }
-                    }
-                    else {
+                        break;
 
-						mem_used += meta[i].length;
-                        CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
-                                            SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+                    case SQL_C_LONG:
+                    case SQL_C_DOUBLE:
+                        {
+                            mem_used += meta[i].length;
+                            CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
+                                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
 
-                            throw core::CoreException();
+                                throw core::CoreException();
+                            }
+                            buffer = row + meta[i].offset;
+                            out_buffer_length = &out_buffer_temp;
+                            core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
+                                              false TSRMLS_CC );
                         }
+                        break;                        
 
-                        buffer = row + meta[i].offset + sizeof( SQLULEN );
-                        out_buffer_length = reinterpret_cast<SQLLEN*>( row + meta[i].offset );
-                        core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
-                                          false TSRMLS_CC );
-                    }
-                    break;
+                    default:
+                        SQLSRV_ASSERT( false, "Unknown C type" );
+                        break;
+                }
 
-                case SQL_C_LONG:
-                case SQL_C_DOUBLE:
-                    {
-                        mem_used += meta[i].length;
-                        CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
-                                            SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
-
-                            throw core::CoreException();
-                        }
-                        buffer = row + meta[i].offset;
-                        out_buffer_length = &out_buffer_temp;
-                        core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
-                                          false TSRMLS_CC );
-                    }
-                    break;                        
-
-                default:
-                    SQLSRV_ASSERT( false, "Unknown C type" );
-                    break;
+                row_count++;
+                if( *out_buffer_length == SQL_NULL_DATA ) {
+                    set_bit( row, i );
+                }
             }
 
-            row_count++;
-            if( *out_buffer_length == SQL_NULL_DATA ) {
-                set_bit( row, i );
-            }
+            SQLSRV_ASSERT( row_count < INT_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
+
+            // add it to the cache
+            row_dtor_closure cl( this, row );
+            sqlsrv_zend_hash_next_index_insert_mem( *stmt, cache, &cl, sizeof(row_dtor_closure) TSRMLS_CC );
+            rowAuto.transferred();
+        }   
+    } 
+    catch( core::CoreException& ) {
+        // free the rows
+        if( cache ) {
+            zend_hash_destroy( cache );
+            FREE_HASHTABLE( cache );
+            cache = NULL;
         }
-
-        SQLSRV_ASSERT( row_count < INT_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
-
-        // add it to the cache
-        row_dtor_closure cl( this, row );
-        sqlsrv_zend_hash_next_index_insert_mem( *stmt, cache, &cl, sizeof(row_dtor_closure) TSRMLS_CC );
+        throw;
     }
 
 }
@@ -742,12 +767,6 @@ sqlsrv_buffered_result_set::~sqlsrv_buffered_result_set( void )
         zend_hash_destroy( cache );
         FREE_HASHTABLE( cache );
         cache = NULL;
-    }
-
-    // free the meta data
-    if( meta ) {
-        efree( meta );
-        meta = NULL;
     }
 }
 
@@ -1349,6 +1368,11 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( SQLSMALLINT field_i
 
             field_len = *reinterpret_cast<SQLLEN*>( &row[ meta[ field_index ].offset ] );
             field_data = &row[ meta[ field_index ].offset ] + sizeof( SQLULEN ) + read_so_far;
+        }
+
+        if ( field_len == 0 ) { // empty string, no need for conversion
+            *out_buffer_length = 0;
+            return SQL_SUCCESS;
         }
 
         // allocate enough to handle WC -> DBCS conversion if it happens

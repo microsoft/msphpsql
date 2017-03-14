@@ -143,7 +143,7 @@ int get_stmt_option_key( zend_string* key, size_t key_len TSRMLS_DC );
 
 // constants for parameters used by process_params function(s)
 int ss_sqlsrv_conn::descriptor;
-char* ss_sqlsrv_conn::resource_name = static_cast<char *>("ss_sqlsrv_conn");
+const char* ss_sqlsrv_conn::resource_name = "ss_sqlsrv_conn";
 
 // connection specific parameter proccessing.  Use the generic function specialised to return a connection
 // resource.

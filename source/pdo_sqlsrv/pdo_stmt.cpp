@@ -393,17 +393,20 @@ int pdo_sqlsrv_stmt_close_cursor(pdo_stmt_t *stmt TSRMLS_DC)
 
     try {
 
-        SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: pdo_stmt object was null" );
+        SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_close_cursor: pdo_stmt object was null" );
 
         sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
 
-        SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
+        SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_close_cursor: driver_data object was null" );
 
         // to "close the cursor" means we make the statement ready for execution again.  To do this, we 
         // skip all the result sets on the current statement.
-        while( driver_stmt->past_next_result_end == false ) {
-
-            core_sqlsrv_next_result( driver_stmt TSRMLS_CC );
+        // If the statement has not been executed there are no next results to iterate over.
+        if ( driver_stmt->executed == true )
+        {
+            while( driver_stmt->past_next_result_end == false ) {
+                core_sqlsrv_next_result( driver_stmt TSRMLS_CC );
+            }
         }
     }
     catch( core::CoreException& ) {
@@ -412,7 +415,7 @@ int pdo_sqlsrv_stmt_close_cursor(pdo_stmt_t *stmt TSRMLS_DC)
     }
     catch( ... ) {
 
-        DIE( "pdo_sqlsrv_stmt_next_rowset: Unknown exception occurred while advanding to the next result set." );
+        DIE( "pdo_sqlsrv_stmt_close_cursor: Unknown exception occurred while advancing to the next result set." );
     }
 
     return 1;
@@ -718,12 +721,10 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
         sqlsrv_phptype sqlsrv_php_type;
         SQLSRV_ASSERT( colno >= 0 && colno < static_cast<int>( driver_stmt->current_meta_data.size()),
                        "Invalid column number in pdo_sqlsrv_stmt_get_col_data" );
-        sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_type ),
-                                                             static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[ colno ]->field_size ),
-                                                             true );
 
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
-        sqlsrv_php_type.typeinfo.encoding = driver_stmt->encoding();
+        sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_type ),
+                                                            static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_size ), true );
 
         // if a column is bound to a type different than the column type, figure out a way to convert it to the 
         // type they want
@@ -735,6 +736,10 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
 
             pdo_bound_param_data* bind_data = NULL;
             bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_index_find_ptr(stmt->bound_columns, colno));
+            if (bind_data == NULL) {
+                // can't find by index then try searching by name
+                bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_find_ptr(stmt->bound_columns, stmt->columns[colno].name));
+            }
 
             if( bind_data != NULL && !Z_ISUNDEF(bind_data->driver_params) ) {
 
@@ -1299,6 +1304,8 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
                        "Invalid encoding on the connection.  Must not be invalid or default." );
     }                
 
+    sqlsrv_phptype.typeinfo.encoding = local_encoding;
+
     switch( sql_type ) {
         case SQL_BIT:
         case SQL_INTEGER:
@@ -1309,7 +1316,6 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-                sqlsrv_phptype.typeinfo.encoding = local_encoding;
             }
             break;
         case SQL_FLOAT:
@@ -1319,7 +1325,6 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-                sqlsrv_phptype.typeinfo.encoding = local_encoding;
             }
             break;
         case SQL_BIGINT:
@@ -1338,7 +1343,6 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
         case SQL_WLONGVARCHAR:
         case SQL_SS_XML:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-            sqlsrv_phptype.typeinfo.encoding = local_encoding;
             break;
         case SQL_BINARY:
         case SQL_LONGVARBINARY:
