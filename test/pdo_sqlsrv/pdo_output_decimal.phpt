@@ -44,6 +44,9 @@ try
     $outValue = trim($outValue);
     echo "outValue with no scale specified in decimal type: $outValue\n";
     
+    $stmt = $conn->exec("DROP PROCEDURE $proc_scale");
+    $stmt = $conn->exec("DROP PROCEDURE $proc_no_scale");
+    
     $stmt = null;
     $conn = null;   
 }
