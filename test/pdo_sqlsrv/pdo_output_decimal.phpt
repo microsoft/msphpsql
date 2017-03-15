@@ -21,16 +21,16 @@ try
     
     $inValue1 = '2.1';  
     $inValue2 = '5.3';  
-    $outValue = '0';
+    $outValue1 = '0';
+    $outValue2 = '0';
                             
     $stmt = $conn->prepare("{CALL $proc_scale (?, ?, ?)}");
     $stmt->bindValue(1, $inValue1);
     $stmt->bindValue(2, $inValue2);
-    $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);
+    $stmt->bindParam(3, $outValue1, PDO::PARAM_STR, 300);
     $stmt->execute();
 
-    $outValue = trim($outValue);
-    echo "outValue with scale specified in decimal type: $outValue\n";
+    $outValue1 = trim($outValue1);
     
     $stmt = $conn->exec("CREATE PROC $proc_no_scale (@p1 DECIMAL, @p2 DECIMAL, @p3 CHAR(128) OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(CHAR(128), @p1 + @p2) END");
@@ -38,11 +38,16 @@ try
     $stmt = $conn->prepare("{CALL $proc_no_scale (?, ?, ?)}");
     $stmt->bindValue(1, $inValue1);
     $stmt->bindValue(2, $inValue2);
-    $stmt->bindParam(3, $outValue, PDO::PARAM_STR, 300);
+    $stmt->bindParam(3, $outValue2, PDO::PARAM_STR, 300);
     $stmt->execute();
 
-    $outValue = trim($outValue);
-    echo "outValue with no scale specified in decimal type: $outValue\n";
+    $outValue2 = trim($outValue2);
+    
+    $expected1 = "7.4";
+    $expected2 = "7";
+    if ($outValue1 == $expected1 && $outValue2 == $expected2) {
+        echo "Test Successfully\n";
+    }
     
     $stmt = $conn->exec("DROP PROCEDURE $proc_scale");
     $stmt = $conn->exec("DROP PROCEDURE $proc_no_scale");
@@ -57,5 +62,4 @@ catch (Exception $e)
 
 ?>
 --EXPECT--
-outValue with scale specified in decimal type: 7.4
-outValue with no scale specified in decimal type: 7
+Test Successfully
