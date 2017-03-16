@@ -13,8 +13,8 @@ try
     $database = "tempdb";
     $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);   
 
-    $proc_scale = 'scale_proc';
-    $proc_no_scale = 'noScale_proc';
+    $proc_scale = GetTempProcName( 'scale_proc' );
+    $proc_no_scale = GetTempProcName( 'noScale_proc' );
     
     $stmt = $conn->exec("CREATE PROC $proc_scale (@p1 DECIMAL(18, 1), @p2 DECIMAL(18, 1), @p3 CHAR(128) OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(CHAR(128), @p1 + @p2) END");
