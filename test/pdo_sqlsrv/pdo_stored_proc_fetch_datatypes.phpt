@@ -9,7 +9,7 @@ include 'pdo_tools.inc';
 
 function ProcFetch_BigInt($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('bigint');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 BIGINT, @p2 BIGINT, @p3 NCHAR(128) OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(NCHAR(128), @p1 + @p2) END");
@@ -36,7 +36,7 @@ function ProcFetch_BigInt($conn)
 
 function ProcFetch_Decimal($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('decimal');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 DECIMAL, @p2 DECIMAL, @p3 CHAR(128) OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(CHAR(128), @p1 + @p2) END");
@@ -63,7 +63,7 @@ function ProcFetch_Decimal($conn)
 
 function ProcFetch_Float($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('float');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 FLOAT, @p2 FLOAT, @p3 FLOAT OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(FLOAT, @p1 + @p2) END");
@@ -90,7 +90,7 @@ function ProcFetch_Float($conn)
 
 function ProcFetch_Int($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('int');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 INT, @p2 INT, @p3 INT OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(INT, @p1 + @p2) END");
@@ -117,7 +117,7 @@ function ProcFetch_Int($conn)
 
 function ProcFetch_Money($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('money');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 MONEY, @p2 MONEY, @p3 MONEY OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(MONEY, @p1 + @p2) END");
@@ -144,7 +144,7 @@ function ProcFetch_Money($conn)
 
 function ProcFetch_Numeric($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('numeric');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 NUMERIC, @p2 NUMERIC, @p3 NCHAR(128) OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(NCHAR(128), @p1 + @p2) END");
@@ -171,7 +171,7 @@ function ProcFetch_Numeric($conn)
 
 function ProcFetch_Real($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('real');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 REAL, @p2 REAL, @p3 REAL OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(REAL, @p1 + @p2) END");
@@ -198,7 +198,7 @@ function ProcFetch_Real($conn)
 
 function ProcFetch_SmallInt($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('smallint');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 SMALLINT, @p2 SMALLINT, @p3 NCHAR(32) OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(NCHAR(32), @p1 + @p2) END");
@@ -225,7 +225,7 @@ function ProcFetch_SmallInt($conn)
 
 function ProcFetch_SmallMoney($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('smallmoney');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 SMALLMONEY, @p2 SMALLMONEY, @p3 SMALLMONEY OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(SMALLMONEY, @p1 + @p2) END");
@@ -252,7 +252,7 @@ function ProcFetch_SmallMoney($conn)
 
 function ProcFetch_TinyInt($conn)
 {
-    $procName = GetTempProcName();
+    $procName = GetTempProcName('tinyint');
     
     $stmt = $conn->exec("CREATE PROC $procName (@p1 TINYINT, @p2 TINYINT, @p3 CHAR(32) OUTPUT)
                             AS BEGIN SELECT @p3 = CONVERT(CHAR(32), @p1 + @p2) END");
