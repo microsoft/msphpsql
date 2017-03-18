@@ -252,9 +252,9 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
             // To reproduce:
             // Create a connection and close it (return it to the pool)
             // Create a new connection from the pool. 
-            // Prepare and execute a statement that generates an info message (such as 'use tempdb') 
+            // Prepare and execute a statement that generates an info message (such as 'USE tempdb;') 
 #ifndef _WIN32
-            if( r == SQL_NO_DATA ) {
+            if( r == SQL_NO_DATA && ctx.driver() != NULL /*PDO SQLSRV*/ ) {
                 r = SQL_SUCCESS;
             }
 #endif // !_WIN32   
