@@ -1432,6 +1432,7 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             case SQL_TYPE_DATE:
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
+            case SQL_SS_VARIANT:
             {
                 // unixODBC 2.3.1 requires wide calls to support pooling
                 core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &size TSRMLS_CC );
@@ -1449,7 +1450,7 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
             }
 
             default:
-                DIE ( "Unexpected SQL type encountered in calc_string_size." );
+                DIE ( "Unexpected SQL type encountered in calc_string_size. sql_type = %1!d!", sql_type );
         }
     }
     catch( core::CoreException& e ) {
