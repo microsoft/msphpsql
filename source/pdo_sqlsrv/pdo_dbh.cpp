@@ -431,7 +431,12 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     CHECK_CUSTOM_ERROR( driver_options && Z_TYPE_P( driver_options ) != IS_ARRAY, *g_henv_cp, SQLSRV_ERROR_CONN_OPTS_WRONG_TYPE ) {
         throw core::CoreException();
     }
-
+	// throws PDOException if the ATTR_PERSISTENT is in connection options
+	CHECK_CUSTOM_ERROR( dbh->is_persistent, *g_henv_cp, PDO_SQLSRV_ERROR_UNSUPPORTED_DBH_ATTR ) {
+		dbh->refcount--;
+		throw pdo::PDOException();
+	}
+	
     // Initialize the options array to be passed to the core layer
     ALLOC_HASHTABLE( pdo_conn_options_ht );
 
