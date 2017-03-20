@@ -9,13 +9,13 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improveme
 SQL Server Team
 
 
-##Take our survey
+## Take our survey
 
 Thank you for taking time to take our Febraury survey. Let us know how we are doing and how you use PHP by taking our March pulse survey:
 
 <a href="https://www.surveymonkey.com/r/YDFJ23X"><img style="float: right;"  height="67" width="156" src="https://meetsstorenew.blob.core.windows.net/contianerhd/survey.png?st=2017-02-17T22%3A03%3A00Z&se=2100-02-18T22%3A03%3A00Z&sp=rl&sv=2015-12-11&sr=b&sig=DJSFoihBptSvO%2BjvWzwpHecf8o5yfAbJoD2qW5oB8tc%3D"></a>
 
-###Status of Most Recent Builds
+### Status of Most Recent Builds
 | AppVeyor (Windows)      |Travis CI (Linux) |        Coverage Status  
 |-------------------------|--------------------------| ------------------
 | [![av-image][]][av-site]| [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
@@ -27,7 +27,7 @@ Thank you for taking time to take our Febraury survey. Let us know how we are do
 [Coverage Status]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=dev
 [coveralls-site]: https://coveralls.io/github/Microsoft/msphpsql?branch=dev
 
-##Get Started
+## Get Started
 
 * [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-ubuntu)
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php-rhel)
@@ -35,7 +35,7 @@ Thank you for taking time to take our Febraury survey. Let us know how we are do
 * [**Docker**](https://hub.docker.com/r/lbosqmsft/mssql-php-msphpsql/)
 
 
-##Announcements
+## Announcements
 
 **March 7, 2017**: We are trilled to announce that the early technical preview for SQLSRV and PDO_SQLSRV drivers is now available, both drivers have been built and tested on El Capitan (OS X 10.11). For complete list of changes please visit [4.1.7-preview release notes](https://github.com/Microsoft/msphpsql/releases/tag/v4.1.7-preview).
 
@@ -46,11 +46,11 @@ Thank you for taking time to take our Febraury survey. Let us know how we are do
 
 Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases)
 
-####Prerequisites
+#### Prerequisites
 
 You must first be able to build PHP 7 without including these extensions.  For help with doing this, see the [official PHP website][phpbuild] for building your own PHP on Windows.
 
-####Compile the drivers
+#### Compile the drivers
 
 1. Copy the sqlsrv and/or pdo_sqlsrv source code directory from this repository into the ext subdirectory.
 
@@ -68,12 +68,12 @@ This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 
 
 ## Install (Windows)
 
-####Prerequisites
+#### Prerequisites
 
 - A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
 - [Microsoft ODBC Driver 11][odbc11] or [Microsoft ODBC Driver 13][odbc13]
 
-####Enable the drivers
+#### Enable the drivers
 
 1. Make sure that the driver is in your PHP extension directory (you can simply copy it there if you did not use nmake install).
 
@@ -217,7 +217,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 ### Step 3: Install Apache
 
-####PHP 7.0
+#### PHP 7.0
 
 **Ubuntu**
 
@@ -232,7 +232,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
 
-####PHP 7.1 
+#### PHP 7.1 
 
 **Ubuntu**
 	
@@ -345,7 +345,7 @@ For samples, please see the sample folder.  For setup instructions, see [here] [
      - In certain scenarios a generic error message maybe returned instead of a specific error when pooling is disabled
      - When retrieving data from columns with a data type of XML, varchar(max), nvarchar(max), or varbinary(max) no data maybe returned or the data maybe truncated depending on the length of the data in the source table.
 
-##Version number
+## Version number
 Version number of PHP drivers follow the [semantic versioning](http://semver.org/):
 
 Given a version number MAJOR.MINOR.PATCH, 
