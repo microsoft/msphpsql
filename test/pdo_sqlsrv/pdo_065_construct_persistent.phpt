@@ -13,8 +13,7 @@ try{
     $attr = array(PDO::ATTR_PERSISTENT => true); 
     $conn = new PDO( $dsn, $username, $password, $attr); 
    
-    //free the statement and connection 
-    $stmt=null;
+    //free the connection 
     $conn=null;
 }
 catch( PDOException $e ) {
@@ -33,6 +32,9 @@ try{
     if ($result['c1'] == 1 && $result['c2'] == 'column2') {
         echo "Test successfully";
     }
+    //free the statement and connection 
+    $stmt = null;
+    $conn = null;
 }
 catch( PDOException $e ) {
     var_dump( $e);
