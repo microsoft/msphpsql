@@ -907,7 +907,12 @@ SQLLEN sqlsrv_buffered_result_set::row_count( TSRMLS_D )
 {
     last_error = NULL;
 
-    return zend_hash_num_elements( cache );
+	if ( cache ) {
+		return zend_hash_num_elements( cache );
+	}
+	else {
+		return -1;
+	}
 }
 
 // private functions
