@@ -18,14 +18,14 @@ $current.=$lines_to_add;
 file_put_contents($odbcinst_ini, $current);
 
 //Creating a new php process, because for changes in odbcinst.ini file to affect pooling, drivers must be reloaded.
-print_r(shell_exec("php isPooled.php"));
+print_r(shell_exec("php ./test/pdo_sqlsrv/isPooled.php"));
 
 //disable pooling by modifying the odbcinst.ini file
 $current = file_get_contents($odbcinst_ini);
 $current = str_replace("CPTimeout=5\n[ODBC]\nPooling=Yes\n",'',$current);
 file_put_contents($odbcinst_ini, $current);
 
-print_r(shell_exec("php isPooled.php"));
+print_r(shell_exec("php ./test/pdo_sqlsrv/isPooled.php"));
 ?>
 --EXPECT--
 Pooled
