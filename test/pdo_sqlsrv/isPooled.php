@@ -1,10 +1,10 @@
 <?php
-include_once 'MsSetup.inc';
-$conn1 = new PDO("sqlsrv:Server=$server", $userName, $userPassword);
+include_once 'autonomous_setup.php';
+$conn1 = new PDO("sqlsrv:Server=$serverName", $username, $password);
 $connId1 = ConnectionID($conn1);
 $conn1 = null;
 
-$conn2 = new PDO("sqlsrv:Server=$server", $userName, $userPassword);
+$conn2 = new PDO("sqlsrv:Server=$serverName", $username, $password);
 $connId2 = ConnectionID($conn2);
 
 if ($connId1 === $connId2){
