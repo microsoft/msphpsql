@@ -376,6 +376,23 @@ pdo_error PDO_ERRORS[] = {
     { UINT_MAX, {} }
 };
 
+<<<<<<< HEAD
+=======
+// Returns a sqlsrv_error for a given error code.
+sqlsrv_error_const* get_error_message(unsigned int sqlsrv_error_code) {
+
+    sqlsrv_error_const *error_message = NULL;
+    int zr = (error_message = reinterpret_cast<sqlsrv_error_const*>(zend_hash_index_find_ptr(g_pdo_errors_ht, sqlsrv_error_code))) != NULL ? SUCCESS : FAILURE;
+    if( zr == FAILURE ) {
+        DIE( "get_error_message: zend_hash_index_find returned failure for sqlsrv_error_code = %1!d!", sqlsrv_error_code );   
+    }
+    
+    SQLSRV_ASSERT( error_message != NULL, "get_error_message: error_message was null");
+
+    return error_message;
+}
+
+>>>>>>> Synced with upstream and updated
 // PDO error handler for the environment context.
 bool pdo_sqlsrv_handle_env_error( sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool warning TSRMLS_DC, 
                                   va_list* print_args )
@@ -437,8 +454,8 @@ bool pdo_sqlsrv_handle_dbh_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
         SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
-	SQLSRV_ASSERT(strlen(reinterpret_cast<const char*>(error->sqlstate)) <= sizeof(dbh->error_code), "Error code overflow");
-	strcpy_s(dbh->error_code, sizeof(dbh->error_code), reinterpret_cast<const char*>(error->sqlstate));
+    SQLSRV_ASSERT(strlen(reinterpret_cast<const char*>(error->sqlstate)) <= sizeof(dbh->error_code), "Error code overflow");
+    strcpy_s(dbh->error_code, sizeof(dbh->error_code), reinterpret_cast<const char*>(error->sqlstate));
 
     switch( dbh->error_mode ) {
         case PDO_ERRMODE_EXCEPTION:
@@ -452,9 +469,9 @@ bool pdo_sqlsrv_handle_dbh_error( sqlsrv_context& ctx, unsigned int sqlsrv_error
             if( !warning ) {
                 size_t msg_len = strlen( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE 
                     + MAX_DIGITS + WARNING_MIN_LENGTH + 1;
-				sqlsrv_malloc_auto_ptr<char> msg;
-				msg = static_cast<char*>( sqlsrv_malloc( msg_len ) );
-				core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code,
+                sqlsrv_malloc_auto_ptr<char> msg;
+                msg = static_cast<char*>( sqlsrv_malloc( msg_len ) );
+                core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code,
                                             error->native_message );
                 php_error( E_WARNING, msg );
             }
@@ -524,7 +541,6 @@ bool pdo_sqlsrv_handle_stmt_error( sqlsrv_context& ctx, unsigned int sqlsrv_erro
 void pdo_sqlsrv_retrieve_context_error( sqlsrv_error const* last_error, zval* pdo_zval )
 {
     if( last_error ) {
-
         // SQLSTATE is already present in the zval.
         add_next_index_long( pdo_zval, last_error->native_code );
         add_next_index_string( pdo_zval, reinterpret_cast<char*>( last_error->native_message ));
@@ -539,6 +555,7 @@ void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* 
     }
 
     DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, log_msg, LOG_MSG_SIZE, print_args );
+
     // if an error occurs for FormatMessage, we just output an internal error occurred.
     if( rc == 0 ) {
         SQLSRV_STATIC_ASSERT( sizeof( INTERNAL_FORMAT_ERROR ) < sizeof( log_msg ));
@@ -591,15 +608,15 @@ void pdo_sqlsrv_throw_exception( sqlsrv_error_const* error TSRMLS_DC )
     add_next_index_string( &ex_error_info, reinterpret_cast<char*>( error->sqlstate ));
     add_next_index_long( &ex_error_info, error->native_code );
     add_next_index_string( &ex_error_info, reinterpret_cast<char*>( error->native_message ));
-	//zend_update_property makes an entry in the properties_table in ex_obj point to the Z_ARRVAL( ex_error_info )
-	//and the refcount of the zend_array is incremented by 1
+    //zend_update_property makes an entry in the properties_table in ex_obj point to the Z_ARRVAL( ex_error_info )
+    //and the refcount of the zend_array is incremented by 1
     zend_update_property( ex_class, &ex_obj, EXCEPTION_PROPERTY_ERRORINFO, sizeof( EXCEPTION_PROPERTY_ERRORINFO ) - 1, 
                           &ex_error_info TSRMLS_CC );
 
-	//DELREF ex_error_info here to decrement the refcount of the zend_array is 1
-	//the global hashtable EG(exception) then points to the zend_object in ex_obj in zend_throw_exception_object;
-	//this ensure when EG(exception) cleans itself at php shutdown, the zend_array allocated is properly destroyed
-	Z_DELREF( ex_error_info );
+    //DELREF ex_error_info here to decrement the refcount of the zend_array is 1
+    //the global hashtable EG(exception) then points to the zend_object in ex_obj in zend_throw_exception_object;
+    //this ensure when EG(exception) cleans itself at php shutdown, the zend_array allocated is properly destroyed
+    Z_DELREF( ex_error_info );
     zend_throw_exception_object( &ex_obj TSRMLS_CC );
 }
 
