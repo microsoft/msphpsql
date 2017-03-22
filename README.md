@@ -160,6 +160,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 ### Step 4: Install the Microsoft PHP Drivers for SQL Server
 
+    sudo apt-get install php7.0-dev gcc g++ re2c
     sudo pecl install sqlsrv
     sudo pecl install pdo_sqlsrv
     
