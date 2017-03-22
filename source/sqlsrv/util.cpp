@@ -34,7 +34,7 @@ char log_msg[ LOG_MSG_SIZE ];
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
 
 // *** internal functions ***
-sqlsrv_error_const* get_error_message(unsigned int sqlsrv_error_code);
+sqlsrv_error_const* get_error_message( unsigned int sqlsrv_error_code );
 
 void copy_error_to_zval( zval* error_z, sqlsrv_error_const* error, zval* reported_chain, zval* ignored_chain, 
                                 bool warning TSRMLS_DC );
@@ -680,16 +680,16 @@ PHP_FUNCTION( sqlsrv_get_config )
 
 namespace {
 
-sqlsrv_error_const* get_error_message(unsigned int sqlsrv_error_code) {
+sqlsrv_error_const* get_error_message( unsigned int sqlsrv_error_code ) {
 
 	sqlsrv_error_const *error_message = NULL;
 
-	int zr = (error_message = reinterpret_cast<sqlsrv_error_const*>(zend_hash_index_find_ptr(g_ss_errors_ht, sqlsrv_error_code))) != NULL ? SUCCESS : FAILURE;
-	if (zr == FAILURE) {
-		DIE("get_error_message: zend_hash_index_find returned failure for sqlsrv_error_code = %1!d!", sqlsrv_error_code);
+	int zr = ( error_message = reinterpret_cast< sqlsrv_error_const* >( zend_hash_index_find_ptr( g_ss_errors_ht, sqlsrv_error_code ))) != NULL ? SUCCESS : FAILURE;
+	if ( zr == FAILURE ) {
+		DIE( "get_error_message: zend_hash_index_find returned failure for sqlsrv_error_code = %1!d!", sqlsrv_error_code );
 	}
 
-	SQLSRV_ASSERT(error_message != NULL, "get_error_message: error_message was null");
+	SQLSRV_ASSERT( error_message != NULL, "get_error_message: error_message was null" );
 
 	return error_message;
 }
