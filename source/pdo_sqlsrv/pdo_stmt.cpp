@@ -39,11 +39,9 @@ const int SQL_SERVER_IDENT_SIZE_MAX = 128;
 
 inline SQLSMALLINT pdo_fetch_ori_to_odbc_fetch_ori (enum pdo_fetch_orientation ori)
 {
-    SQLSRV_ASSERT( ori >= PDO_FETCH_ORI_NEXT && ori <= PDO_FETCH_ORI_REL, "Fetch orientation out of range.");
-#ifdef _WIN32
+    SQLSRV_ASSERT( ori >= PDO_FETCH_ORI_NEXT && ori <= PDO_FETCH_ORI_REL, "Fetch orientation out of range." );
     OACR_WARNING_SUPPRESS( 26001, "Buffer length verified above" );
     OACR_WARNING_SUPPRESS( 26000, "Buffer length verified above" );
-#endif
     return odbc_fetch_orientation[ori];
 }
 
@@ -204,9 +202,9 @@ void set_stmt_encoding( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 // internal helper function to free meta data structures allocated
 void meta_data_free( field_meta_data* meta )
 {
-    if( meta->field_name ) {
-        meta->field_name.reset();
-    }
+	if( meta->field_name ) {
+		meta->field_name.reset();
+	}
     sqlsrv_free( meta );
 }
 
@@ -334,31 +332,18 @@ void stmt_option_emulate_prepares:: operator()( sqlsrv_stmt* stmt, stmt_option c
 
 void stmt_option_fetch_numeric:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
 {
-    pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
-    pdo_stmt->fetch_numeric = ( zend_is_true( value_z )) ? true : false;
+	pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
+	pdo_stmt->fetch_numeric = ( zend_is_true( value_z )) ? true : false;
 }
 
 
 // log a function entry point
-#ifndef _WIN32
-#define PDO_LOG_STMT_ENTRY \
-{ \
-    pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
-    driver_stmt->set_func( __FUNCTION__ ); \
-    int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
-    char func[length+1]; \
-    strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
-    strcat_s( func, length+1, ": entering" ); \
-    LOG( SEV_NOTICE, func ); \
-}
-#else
 #define PDO_LOG_STMT_ENTRY \
 { \
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
     driver_stmt->set_func( __FUNCTION__ ); \
     LOG( SEV_NOTICE, __FUNCTION__ ## ": entering" ); \
 }
-#endif
 
 // PDO SQLSRV statement destructor
 pdo_sqlsrv_stmt::~pdo_sqlsrv_stmt( void )
@@ -393,20 +378,17 @@ int pdo_sqlsrv_stmt_close_cursor(pdo_stmt_t *stmt TSRMLS_DC)
 
     try {
 
-        SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_close_cursor: pdo_stmt object was null" );
+        SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: pdo_stmt object was null" );
 
         sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
 
-        SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_close_cursor: driver_data object was null" );
+        SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
         // to "close the cursor" means we make the statement ready for execution again.  To do this, we 
         // skip all the result sets on the current statement.
-        // If the statement has not been executed there are no next results to iterate over.
-        if ( driver_stmt->executed == true )
-        {
-            while( driver_stmt->past_next_result_end == false ) {
-                core_sqlsrv_next_result( driver_stmt TSRMLS_CC );
-            }
+        while( driver_stmt->past_next_result_end == false ) {
+
+            core_sqlsrv_next_result( driver_stmt TSRMLS_CC );
         }
     }
     catch( core::CoreException& ) {
@@ -415,7 +397,7 @@ int pdo_sqlsrv_stmt_close_cursor(pdo_stmt_t *stmt TSRMLS_DC)
     }
     catch( ... ) {
 
-        DIE( "pdo_sqlsrv_stmt_close_cursor: Unknown exception occurred while advancing to the next result set." );
+        DIE( "pdo_sqlsrv_stmt_next_rowset: Unknown exception occurred while advanding to the next result set." );
     }
 
     return 1;
@@ -458,7 +440,7 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
    
     // Set the name
     column_data->name = zend_string_init( (const char*)core_meta_data->field_name.get(), core_meta_data->field_name_len, 0 );
-    core_meta_data->field_name.reset();     
+    core_meta_data->field_name.reset();		
 
     // Set the maxlen
     column_data->maxlen = ( core_meta_data->field_precision > 0 ) ? core_meta_data->field_precision : core_meta_data->field_size;
@@ -716,15 +698,20 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
         
         // Let PDO free the memory after use. 
         *caller_frees = 1;
+
+        // set the metadata for the current column
+        pdo_column_data* column_data = &(stmt->columns[colno]);
         
         // translate the pdo type to a type the core layer understands
         sqlsrv_phptype sqlsrv_php_type;
         SQLSRV_ASSERT( colno >= 0 && colno < static_cast<int>( driver_stmt->current_meta_data.size()),
                        "Invalid column number in pdo_sqlsrv_stmt_get_col_data" );
+		sqlsrv_php_type = driver_stmt->sql_type_to_php_type(static_cast<SQLUINTEGER>(driver_stmt->current_meta_data[colno]->field_type),
+															static_cast<SQLUINTEGER>(driver_stmt->current_meta_data[colno]->field_size),
+															true );
 
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
-        sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_type ),
-                                                            static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_size ), true );
+        sqlsrv_php_type.typeinfo.encoding = driver_stmt->encoding();
 
         // if a column is bound to a type different than the column type, figure out a way to convert it to the 
         // type they want
@@ -736,10 +723,6 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
 
             pdo_bound_param_data* bind_data = NULL;
             bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_index_find_ptr(stmt->bound_columns, colno));
-            if (bind_data == NULL) {
-                // can't find by index then try searching by name
-                bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_find_ptr(stmt->bound_columns, stmt->columns[colno].name));
-            }
 
             if( bind_data != NULL && !Z_ISUNDEF(bind_data->driver_params) ) {
 
@@ -773,7 +756,7 @@ int pdo_sqlsrv_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
         core_sqlsrv_get_field( driver_stmt, colno, sqlsrv_php_type, false, *(reinterpret_cast<void**>(ptr)),
                                reinterpret_cast<SQLLEN*>( len ), true, &sqlsrv_phptype_out TSRMLS_CC );
 
-        zval* zval_ptr = reinterpret_cast<zval*>( sqlsrv_malloc( sizeof( zval )));
+		zval* zval_ptr = ( zval* )( sqlsrv_malloc( sizeof( zval )));
         *zval_ptr = convert_to_zval( sqlsrv_phptype_out, reinterpret_cast<void**>( ptr ), *len );
         *ptr = reinterpret_cast<char*>( zval_ptr );
 
@@ -804,7 +787,7 @@ int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, zend_long attr, zval *val TSRMLS_
     PDO_VALIDATE_STMT;
     PDO_LOG_STMT_ENTRY;
 
-    pdo_sqlsrv_stmt* driver_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
+	pdo_sqlsrv_stmt* driver_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
     try {
 
@@ -834,9 +817,9 @@ int pdo_sqlsrv_stmt_set_attr(pdo_stmt_t *stmt, zend_long attr, zval *val TSRMLS_
                 core_sqlsrv_set_buffered_query_limit( driver_stmt, val TSRMLS_CC );
                 break;
 
-            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
                 driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
-                break;
+				break;
 
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
@@ -913,11 +896,11 @@ int pdo_sqlsrv_stmt_get_attr( pdo_stmt_t *stmt, zend_long attr, zval *return_val
                 break;
             }
 
-            case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-            {
-                ZVAL_BOOL( return_value, driver_stmt->fetch_numeric );
-                break;
-            }
+			case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+			{
+				ZVAL_BOOL( return_value, driver_stmt->fetch_numeric );
+				break;
+			}
 
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
@@ -954,16 +937,14 @@ int pdo_sqlsrv_stmt_get_col_meta(pdo_stmt_t *stmt, zend_long colno, zval *return
     PDO_LOG_STMT_ENTRY;
 
     try {
-        SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_get_col_meta: pdo_stmt object was null" );
-        SQLSRV_ASSERT( stmt->columns != NULL, "pdo_sqlsrv_stmt_get_col_meta: columns are not available." );
+
         SQLSRV_ASSERT( Z_TYPE_P( return_value ) == IS_NULL, "Metadata already has value.  Must be NULL." );
 
         sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
 
         sqlsrv_stmt* driver_stmt = static_cast<sqlsrv_stmt*>( stmt->driver_data );
 
-        SQLSRV_ASSERT( colno >= 0 && colno < stmt->column_count, "pdo_sqlsrv_stmt_get_col_meta: invalid column number." );
-
+        SQLSRV_ASSERT( colno >= 0 && colno < SHRT_MAX, "pdo_sqlsrv_stmt_get_col_meta: tried to overflow a short" );
         core_meta_data = core_sqlsrv_field_metadata( driver_stmt, (SQLSMALLINT) colno TSRMLS_CC );
         // initialize the array to nothing, as PDO requires us to create it
         core::sqlsrv_array_init( *driver_stmt, return_value TSRMLS_CC );
@@ -985,12 +966,7 @@ int pdo_sqlsrv_stmt_get_col_meta(pdo_stmt_t *stmt, zend_long colno, zval *return
         long pdo_type = sql_type_to_pdo_type( core_meta_data->field_type );
         switch( pdo_type ) {
             case PDO_PARAM_STR:
-            {
-                //Declarations eliminate compiler warnings about string constant to char* conversions
-                std::string key = "native_type";
-                std::string str = "string";
-                add_assoc_string( return_value, &key[0], &str[0] );
-            }
+                add_assoc_string( return_value, "native_type", "string" );
                 break;
             default:
                 DIE( "pdo_sqlsrv_stmt_get_col_data: Unknown PDO type returned" );
@@ -1100,11 +1076,11 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
 
             // since the param isn't reliable, we don't do anything here
             case PDO_PARAM_EVT_ALLOC:
-                // if emulate prepare is on, set the bind_param_encoding so it can be used in PDO::quote when binding parameters on the client side
-                if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
-                    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
-                    driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
-                }
+				// if emulate prepare is on, set the bind_param_encoding so it can be used in PDO::quote when binding parameters on the client side
+				if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+					pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
+					driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
+				}
                 break;
             case PDO_PARAM_EVT_FREE:
                 break;
@@ -1263,7 +1239,7 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
                     if( !param->is_param ) {
                         break;
                     }
-                    
+					
                     core_sqlsrv_post_param( reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data ), param->paramno, 
                                             &(param->parameter) TSRMLS_CC );
                 }
@@ -1293,7 +1269,7 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
 
 
 // Returns a sqlsrv_phptype for a given SQL Server data type.
-sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_over_stream )
+sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type(SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_over_stream )
 {
     sqlsrv_phptype sqlsrv_phptype;
     int local_encoding = this->encoding();
@@ -1304,29 +1280,29 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
                        "Invalid encoding on the connection.  Must not be invalid or default." );
     }                
 
-    sqlsrv_phptype.typeinfo.encoding = local_encoding;
-
     switch( sql_type ) {
-        case SQL_BIT:
-        case SQL_INTEGER:
-        case SQL_SMALLINT:
-        case SQL_TINYINT:
-            if ( this->fetch_numeric ) {
-                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
-            }
-            else {
-                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-            }
-            break;
-        case SQL_FLOAT:
-        case SQL_REAL:
-            if ( this->fetch_numeric ) {
-                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
-            }
-            else {
-                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-            }
-            break;
+		case SQL_BIT:
+		case SQL_INTEGER:
+		case SQL_SMALLINT:
+		case SQL_TINYINT:
+			if ( this->fetch_numeric ) {
+				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
+			}
+			else {
+				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+				sqlsrv_phptype.typeinfo.encoding = local_encoding;
+			}
+			break;
+		case SQL_FLOAT:
+		case SQL_REAL:
+			if ( this->fetch_numeric ) {
+				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
+			}
+			else {
+				sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+				sqlsrv_phptype.typeinfo.encoding = local_encoding;
+			}
+			break;
         case SQL_BIGINT:
         case SQL_CHAR:
         case SQL_DECIMAL:
@@ -1343,6 +1319,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
         case SQL_WLONGVARCHAR:
         case SQL_SS_XML:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+            sqlsrv_phptype.typeinfo.encoding = local_encoding;
             break;
         case SQL_BINARY:
         case SQL_LONGVARBINARY:
