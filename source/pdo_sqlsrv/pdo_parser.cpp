@@ -29,8 +29,6 @@ conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, i
     this->conn_options_ht = conn_options_ht;
     this->pos = -1;
     this->ctx = &ctx;
-    this->current_key = 0;
-    this->current_key_name = NULL;    
 }
 
 // Move to the next character
@@ -133,7 +131,7 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
     for( int i=0; PDO_CONN_OPTS[ i ].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
     {
         // discard the null terminator.
-        if( new_len == ( PDO_CONN_OPTS[ i ].sqlsrv_len - 1 ) && !strncasecmp( key, PDO_CONN_OPTS[ i ].sqlsrv_name, new_len )) {
+        if( new_len == ( PDO_CONN_OPTS[ i ].sqlsrv_len - 1 ) && !_strnicmp( key, PDO_CONN_OPTS[ i ].sqlsrv_name, new_len )) {
 
             this->current_key = PDO_CONN_OPTS[ i ].conn_option_key;
             this->current_key_name = PDO_CONN_OPTS[ i ].sqlsrv_name;
@@ -145,10 +143,9 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
     sqlsrv_malloc_auto_ptr<char> key_name;
     key_name = static_cast<char*>( sqlsrv_malloc( new_len + 1 ));
     memcpy_s( key_name, new_len + 1 ,key, new_len );
-
     key_name[ new_len ] = '\0';  
 
-    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
+    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, key_name ); 
 }
 
 // Primary function which parses the connection string/DSN.
