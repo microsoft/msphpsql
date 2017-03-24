@@ -202,8 +202,8 @@ Array
 \(
     \[0\] => Array
         \(
-            \[0\] => 08S02
-            \[SQLSTATE\] => 08S02
+            \[0\] => 08S01
+            \[SQLSTATE\] => 08S01
             \[1\] => 10054
             \[code\] => 10054
             \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: An existing connection was forcibly closed by the remote host.
@@ -214,12 +214,12 @@ Array
 
     \[1\] => Array
         \(
-            \[0\] => 08S02
-            \[SQLSTATE\] => 08S02
+            \[0\] => 08S01
+            \[SQLSTATE\] => 08S01
             \[1\] => 10054
             \[code\] => 10054
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Unable to open a logical session
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Unable to open a logical session
+            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
+            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
         \)
 
 \)
