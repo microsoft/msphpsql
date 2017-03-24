@@ -50,14 +50,14 @@ struct field_cache {
 
 // Used to cache display size and SQL type of a column in get_field_as_string()
 struct col_cache {
-	SQLLEN sql_type;
-	SQLLEN display_size;
+    SQLLEN sql_type;
+    SQLLEN display_size;
 
-	col_cache( SQLLEN col_sql_type, SQLLEN col_display_size )
-	{
-		sql_type = col_sql_type;
+    col_cache( SQLLEN col_sql_type, SQLLEN col_display_size )
+    {
+        sql_type = col_sql_type;
         display_size = col_display_size;
-	}
+    }
 };
 
 const int INITIAL_FIELD_STRING_LEN = 256;    // base allocation size when retrieving a string field
@@ -157,9 +157,9 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
     ZVAL_NEW_ARR( &output_params );
     core::sqlsrv_zend_hash_init(*conn, Z_ARRVAL( output_params ), 5 /* # of buckets */, sqlsrv_output_param_dtor, 0 /*persistent*/ TSRMLS_CC);
     
-	// initialize the col cache
-	ZVAL_NEW_ARR( &col_cache );
-	core::sqlsrv_zend_hash_init( *conn, Z_ARRVAL(col_cache), 5 /* # of buckets */, col_cache_dtor, 0 /*persistent*/ TSRMLS_CC );
+    // initialize the col cache
+    ZVAL_NEW_ARR( &col_cache );
+    core::sqlsrv_zend_hash_init( *conn, Z_ARRVAL(col_cache), 5 /* # of buckets */, col_cache_dtor, 0 /*persistent*/ TSRMLS_CC );
 
     // initialize the field cache
     ZVAL_NEW_ARR( &field_cache );
@@ -186,7 +186,7 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
     zval_ptr_dtor( &output_params );
     zval_ptr_dtor( &param_streams );
     zval_ptr_dtor( &param_datetime_buffers );
-	zval_ptr_dtor( &col_cache );
+    zval_ptr_dtor( &col_cache );
     zval_ptr_dtor( &field_cache );
 }
 
@@ -202,7 +202,7 @@ void sqlsrv_stmt::free_param_data( TSRMLS_D )
     zend_hash_clean( Z_ARRVAL( output_params ));
     zend_hash_clean( Z_ARRVAL( param_streams ));
     zend_hash_clean( Z_ARRVAL( param_datetime_buffers ));
-	zend_hash_clean( Z_ARRVAL( col_cache ));
+    zend_hash_clean( Z_ARRVAL( col_cache ));
     zend_hash_clean( Z_ARRVAL( field_cache ));
 }
 
@@ -775,12 +775,12 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULE
             throw core::CoreException();
         }
 		// First time only
-		if ( !stmt->fetch_called ) {
-			SQLSMALLINT has_fields = core::SQLNumResultCols(stmt TSRMLS_CC);
-			CHECK_CUSTOM_ERROR(has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS) {
-				throw core::CoreException();
-			}
-		}
+        if ( !stmt->fetch_called ) {
+            SQLSMALLINT has_fields = core::SQLNumResultCols(stmt TSRMLS_CC);
+            CHECK_CUSTOM_ERROR(has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS) {
+                throw core::CoreException();
+            }
+        }
 
         // close the stream to release the resource
         close_active_stream( stmt TSRMLS_CC );
@@ -1993,8 +1993,8 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
 
 void col_cache_dtor( zval* data_z )
 {
-	col_cache* cache = static_cast<col_cache*>( Z_PTR_P( data_z ));
-	sqlsrv_free( cache );
+    col_cache* cache = static_cast<col_cache*>( Z_PTR_P( data_z ));
+    sqlsrv_free( cache );
 }
 
 void field_cache_dtor( zval* data_z )
