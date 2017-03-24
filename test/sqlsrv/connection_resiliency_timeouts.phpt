@@ -9,13 +9,13 @@ Test connection resiliency timeouts
 <?php
 require_once( "break.php" );
 
-$conn_break = sqlsrv_connect( $serverName, array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password") );
+$conn_break = sqlsrv_connect( $serverName, array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password") );
 
 ///////////////////////////////////////////////////
 // Part 1 /////////////////////////////////////////
 ///////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>0 );
                          
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -44,7 +44,7 @@ sqlsrv_close( $conn );
 // Part 2 /////////////////////////////////////////
 ///////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryInterval"=>10 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );

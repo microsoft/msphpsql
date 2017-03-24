@@ -8,13 +8,13 @@ Connect and execute a command, kill the connection, execute another command. The
 <?php
 require_once( "break.php" );
 
-$conn_break = sqlsrv_connect( $serverName, array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password") );
+$conn_break = sqlsrv_connect( $serverName, array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password") );
 
 ///////////////////////////////////////////////////
 // Part 1 /////////////////////////////////////////
 ///////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10 );
                          
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -58,7 +58,7 @@ sqlsrv_close( $conn );
 // Part 2 /////////////////////////////////////////
 ///////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>11, "ConnectRetryInterval"=>10 );
                          
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -104,7 +104,7 @@ sqlsrv_close( $conn );
 // Part 3 /////////////////////////////////////////
 ///////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>12, "ConnectRetryInterval"=>10 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -148,7 +148,7 @@ sqlsrv_close( $conn );
 // Part 4 /////////////////////////////////////////
 ///////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10, "MultipleActiveResultSets"=>false );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );

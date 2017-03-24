@@ -6,7 +6,7 @@ Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterv
 <?php
 require_once( "break.php" );
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>10, "ConnectRetryInterval"=>30 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -21,7 +21,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>0, "ConnectRetryInterval"=>30 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -36,7 +36,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>256, "ConnectRetryInterval"=>30 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -51,7 +51,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>5, "ConnectRetryInterval"=>70 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -66,7 +66,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>-1, "ConnectRetryInterval"=>30 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -81,7 +81,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>"thisisnotaninteger", "ConnectRetryInterval"=>30 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -96,7 +96,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount"=>5, "ConnectRetryInterval"=>3.14159 );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -111,7 +111,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryCount" );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -126,7 +126,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
+$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$username", "PWD"=>"$password",
                          "ConnectRetryInterval" );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
