@@ -16,7 +16,6 @@ function GenerateDatabase( $serverName, $username, $password, $databaseName, $ta
     $conn = new PDO( "sqlsrv:server = $serverName ; ", "$username", "$password" );
     if ( $conn === false )
     {
-        echo "Failure in GenerateDatabase $serverName $username $password\n";
         die ( print_r( sqlsrv_errors() ) );
     }
 

@@ -124,6 +124,10 @@ install:
     - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\autonomous_setup.php
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\autonomous_setup.php) | ForEach-Object { $_ -replace "localhost",  ${env:MSSQL_SERVERNAME} -replace "<YourStrong!Passw0rd>",  ${env:MSSQL_PASSWORD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\autonomous_setup.php
     - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\autonomous_setup.php
+    - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\break_pdo.php) | ForEach-Object { $_ -replace "localhost",  ${env:MSSQL_SERVERNAME} -replace "<YourStrong!Passw0rd>",  ${env:MSSQL_PASSWORD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\break_pdo.php
+    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\break_pdo.php
+    - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\break.php) | ForEach-Object { $_ -replace "localhost",  ${env:MSSQL_SERVERNAME} -replace "<YourStrong!Passw0rd>",  ${env:MSSQL_PASSWORD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\break.php
+    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\break.php
         
 build_script:
     - '"C:\\Program Files (x86)\\Microsoft Visual Studio %PHP_VC%.0\\VC\\vcvarsall.bat" %BUILD_PLATFORM%'
