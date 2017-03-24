@@ -64,10 +64,9 @@ function BreakConnection( $conn, $conn_break )
         $spid=sqlsrv_get_field( $stmt1, 0 );
     }
 
+    $stmt2 = sqlsrv_prepare( $conn_break, "KILL ".$spid );
+    sqlsrv_execute( $stmt2 );
     sleep(1);
-
-    $stmt0 = sqlsrv_prepare( $conn_break, "KILL ".$spid );
-    sqlsrv_execute( $stmt0 );
 }
 
 GenerateDatabase( $serverName, $username, $password, $databaseName, $tableName1, $tableName2 );
