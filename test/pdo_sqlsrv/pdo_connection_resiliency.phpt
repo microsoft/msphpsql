@@ -1,7 +1,7 @@
 --TEST--
 Connection recovery test
 --DESCRIPTION--
-1. Connect and execute a command, kill the connection, execute another command. Then do it again without a buffered result set, by freeing the statement and then not freeing it. The latter case is the only one that should fail. Finally, execute two queries in two threads on a recovered non-MARS connection. This should fail too.
+Connect and execute a command, kill the connection, execute another command. Then do it again without a buffered result set, by freeing the statement and then not freeing it. The latter case is the only one that should fail. Finally, execute two queries in two threads on a recovered non-MARS connection. This should fail too.
 --SKIPIF--
 <?php if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip, not running on windows." ); ?>
 --FILE--
