@@ -70,69 +70,8 @@ else
 }
 
 sqlsrv_close( $conn );
-
-///////////////////////////////////////////////////
-// Part 3 /////////////////////////////////////////
-///////////////////////////////////////////////////
-
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
-                         "ConnectRetryCount"=>3, "ConnectRetryInterval"=>5, "LoginTimeout"=>5 );
-
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect.\n";
-    print_r( sqlsrv_errors() );
-}
-
-StopMSSQLServer( $serverName );
-
-$stmt3 = sqlsrv_query( $conn, "SELECT * FROM $tableName1", array(), array( 'QueryTimeout'=>120 ) );
-if( $stmt3 === false )
-{
-     echo "Error in statement 3.\n";
-     print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Statement 3 successful.\n";
-}
-
-sqlsrv_close( $conn );
-
-///////////////////////////////////////////////////
-// Part 4 /////////////////////////////////////////
-///////////////////////////////////////////////////
-
-StartMSSQLServer( $serverName );
-
-$connectionInfo = array( "Database"=>"$databaseName", "uid"=>"$username", "pwd"=>"$password",
-                         "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10, "MultipleActiveResultSets"=>false );
-
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect.\n";
-    print_r( sqlsrv_errors() );
-}
-
-StopMSSQLServer( $serverName );
-
-$stmt4 = sqlsrv_query( $conn, "SELECT * FROM $tableName1", array(), array( 'QueryTimeout'=>30 ) );
-if( $stmt4 === false )
-{
-     echo "Error in statement 4.\n";
-     print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Statement 4 successful.\n";
-}
-
-sqlsrv_close( $conn );
 sqlsrv_close( $conn_break );
 
-StartMSSQLServer( $serverName );
 ?>
 --EXPECTREGEX--
 Error in statement 1.
@@ -162,42 +101,3 @@ Array
 
 \)
 Statement 2 successful.
-Error in statement 3.
-Array
-\(
-    \[0\] => Array
-        \(
-            \[0\] => 08S01
-            \[SQLSTATE\] => 08S01
-            \[1\] => 0
-            \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
-        \)
-
-    \[1\] => Array
-        \(
-            \[0\] => IMC01
-            \[SQLSTATE\] => IMC01
-            \[1\] => 0
-            \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]The connection is broken and recovery is not possible. The client driver attempted to recover the connection one or more times and all attempts failed. Increase the value of ConnectRetryCount to increase the number of recovery attempts.
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]The connection is broken and recovery is not possible. The client driver attempted to recover the connection one or more times and all attempts failed. Increase the value of ConnectRetryCount to increase the number of recovery attempts.
-        \)
-
-\)
-Error in statement 4.
-Array
-\(
-    \[0\] => Array
-        \(
-            \[0\] => HYT00
-            \[SQLSTATE\] => HYT00
-            \[1\] => 0
-            \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Query timeout expired
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Query timeout expired
-        \)
-
-\)
-

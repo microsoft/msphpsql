@@ -157,13 +157,25 @@ catch ( PDOException $e )
     print_r( $e->getMessage() );
 }
 
+// This try catch block prevents an Uncaught PDOException error that occurs
+// when trying to free the connection.
+try
+{
+    $conn = null;
+}
+catch ( PDOException $e )
+{
+    print_r( $e->getMessage() );
+}
+
 $conn_break = null;
 
 ?>
---EXPECT--
+--EXPECTREGEX--
 Statement 1 prepared.
 Statement 1 executed.
 Transaction begun.
 Transaction was committed.
 Transaction begun.
-SQLSTATE[08S01]: [Microsoft][ODBC Driver 11 for SQL Server]TCP Provider: An existing connection was forcibly closed by the remote host.
+SQLSTATE\[08S02\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: An existing connection was forcibly closed by the remote host.
+SQLSTATE\[08S01\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
