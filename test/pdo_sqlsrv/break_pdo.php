@@ -56,12 +56,12 @@ function GenerateDatabase( $serverName, $username, $password, $databaseName, $ta
 // Break connection by getting the session ID and killing it
 function BreakConnection( $conn, $conn_break )
 {
-    $stmt = $conn->query( "SELECT @@SPID" );
-    $obj = $stmt->fetch( PDO::FETCH_NUM );
+    $stmt1 = $conn->query( "SELECT @@SPID" );
+    $obj = $stmt1->fetch( PDO::FETCH_NUM );
     $spid = $obj[0];
 
-    sleep(1);
     $stmt1 = $conn_break->query( "KILL ".$spid );
+    sleep(1);
 }
     
 GenerateDatabase( $serverName, $username, $password, $databaseName, $tableName1, $tableName2 );
