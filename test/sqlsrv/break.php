@@ -13,11 +13,12 @@ $tableName2 = $databaseName.".dbo.php_firefly2";
 
 function GenerateDatabase( $serverName, $username, $password, $databaseName, $tableName1, $tableName2 )
 {
-    $connectionInfo = array( "uid"=>"$username", "pwd"=>"$password" );
+    $connectionInfo = array( "UID"=>"$username", "PWD"=>"$password" );
 
     $conn = sqlsrv_connect( $serverName, $connectionInfo );
     if ( $conn === false )
     {
+        echo "Failure in GenerateDatabase\n";
         die ( print_r( sqlsrv_errors() ) );
     }
 
