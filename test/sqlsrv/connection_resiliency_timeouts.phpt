@@ -3,8 +3,6 @@ Test connection resiliency timeouts
 --DESCRIPTION--
 1. Connect with ConnectRetryCount equal to 0.
 2. Reconnect with the default value of ConnectRetryCount( 1 ).
-3. Test with a QueryTimeout longer than ConnectRetryCount*( ConnectRetryInterval+LoginTimeout ).
-4. Test QueryTimeout when attempting to recover a connection when the query timeout is less than the total time for connection recovery, given by ConnectRetryCount*ConnectRetryInterval
 --SKIPIF--
 <?php if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip, not running on windows." ); ?>
 --FILE--
