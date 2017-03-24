@@ -18,7 +18,6 @@ function GenerateDatabase( $serverName, $username, $password, $databaseName, $ta
     $conn = sqlsrv_connect( $serverName, $connectionInfo );
     if ( $conn === false )
     {
-        echo "Failure in GenerateDatabase $serverName $username $password\n";
         die ( print_r( sqlsrv_errors() ) );
     }
 
