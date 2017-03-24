@@ -170,8 +170,8 @@ after_test:
     - ps: $outfiles = Get-ChildItem sqlsrv\*.out   
     - ps: foreach($file in $difffiles){ls $file; more $file}  
     - ps: foreach($file in $outfiles){ls $file; more $file}  
-    - ps: $files = Get-ChildItem pdo_sqlsrv\*.diff   
-    - ps: $files = Get-ChildItem pdo_sqlsrv\*.out   
+    - ps: $difffiles = Get-ChildItem pdo_sqlsrv\*.diff   
+    - ps: $outfiles = Get-ChildItem pdo_sqlsrv\*.out   
     - ps: foreach($file in $difffiles){ls $file; more $file}  
     - ps: foreach($file in $outfiles){ls $file; more $file}  
     - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
