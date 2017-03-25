@@ -776,8 +776,8 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULE
         }
 		// First time only
         if ( !stmt->fetch_called ) {
-            SQLSMALLINT has_fields = core::SQLNumResultCols(stmt TSRMLS_CC);
-            CHECK_CUSTOM_ERROR(has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS) {
+            SQLSMALLINT has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+            CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
                 throw core::CoreException();
             }
         }
