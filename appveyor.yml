@@ -16,16 +16,6 @@ environment:
     PHP_DEPSVER: 7.0
     PHP_SDK: c:\projects\php
     matrix:      
-      - BUILD_PLATFORM: x64
-        MSSQL_SERVERNAME: (local)\SQL2012SP1
-        SQL_INSTANCE: SQL2012SP1
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.0
-        PHP_MINOR_VER: latest        
-        PHP_SDK_DIR: c:\projects\php\x64
-        PHP_INSTALL_DIR: c:\projects\php\x64\bin
-        PHP_ZTS: --disable-zts
-        platform: x64
       - BUILD_PLATFORM: x86
         MSSQL_SERVERNAME: (local)\SQL2014
         SQL_INSTANCE: SQL2014
@@ -54,6 +44,16 @@ environment:
         PHP_INSTALL_DIR: c:\projects\php\x86\bin
         PHP_ZTS: --disable-zts
         platform: x86
+      - BUILD_PLATFORM: x64
+        MSSQL_SERVERNAME: (local)\SQL2012SP1
+        SQL_INSTANCE: SQL2012SP1
+        PHP_VC: 14
+        PHP_MAJOR_VER: 7.0
+        PHP_MINOR_VER: latest        
+        PHP_SDK_DIR: c:\projects\php\x64
+        PHP_INSTALL_DIR: c:\projects\php\x64\bin
+        PHP_ZTS: --disable-zts
+        platform: x64
 
     
 # PHP_MAJOR_VER is PHP major version to build (7.0, 7.1)
