@@ -63,6 +63,12 @@ function BreakConnection( $conn, $conn_break )
     {
         $spid=sqlsrv_get_field( $stmt1, 0 );
     }
+    $stmt3 = sqlsrv_query( $conn, "SELECT @@VERSION" );
+    if ( sqlsrv_fetch( $stmt3 ) )
+    {
+        $spid0=sqlsrv_get_field( $stmt3, 0 );
+    }
+    echo "SQL Server version: $spid0\n";
 
     $stmt2 = sqlsrv_prepare( $conn_break, "KILL ".$spid );
     sqlsrv_execute( $stmt2 );
