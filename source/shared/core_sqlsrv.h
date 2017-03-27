@@ -1308,7 +1308,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     unsigned int current_stream_read;     // # of bytes read so far. (if we read an empty PHP stream, we send an empty string 
                                           // to the server)
     zval field_cache;                    // cache for a single row of fields, to allow multiple and out of order retrievals
-    zval col_cache;						 // Used by get_field_as_string not to call SQLColAttribute()  after every fetch. 
+    zval col_cache;                      // Used by get_field_as_string not to call SQLColAttribute()  after every fetch. 
     zval active_stream;                  // the currently active stream reading data from the database
 
     sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC );
