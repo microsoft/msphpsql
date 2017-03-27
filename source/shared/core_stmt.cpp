@@ -1034,6 +1034,9 @@ void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_
 
         close_active_stream( stmt TSRMLS_CC );
 
+        //Clear column sql types and sql display sizes.
+        zend_hash_clean( Z_ARRVAL( stmt->col_cache ));	    
+	    
         SQLRETURN r;
         if( throw_on_errors ) {
             r = core::SQLMoreResults( stmt TSRMLS_CC );
