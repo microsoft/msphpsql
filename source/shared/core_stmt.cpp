@@ -2159,7 +2159,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 		}
 
 		col_cache* cached = NULL;
-		if ( NULL != ( cached = static_cast<col_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
+		if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
 			sql_field_type = cached->sql_type;
 			sql_display_size = cached->display_size;
 		}
