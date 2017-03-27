@@ -215,7 +215,16 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 *Note: You need to make sure you install PHP 7 before you proceed to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
-### Step 3: Install Apache
+### Step 3: Install the Microsoft PHP Drivers for SQL Server
+
+    sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
+    sudo pecl install sqlsrv
+    sudo pecl install pdo_sqlsrv
+    
+*Note: it installs the stable version, for specific version you should set the version. For example, do `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version.
+Drivers are Mac-compatible starting from 4.1.7preview release.
+
+### Step 4: Install Apache
 
 #### PHP 7.0
 
@@ -247,15 +256,6 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
     
-
-### Step 4: Install the Microsoft PHP Drivers for SQL Server
-
-    sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
-    sudo pecl install sqlsrv
-    sudo pecl install pdo_sqlsrv
-    
-*Note: it installs the stable version, for specific version you should set the version. For example, do `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version.
-Drivers are Mac-compatible starting from 4.1.7preview release. .
 	
 ### Step 5: Restart Apache to load the new php.ini file
 
