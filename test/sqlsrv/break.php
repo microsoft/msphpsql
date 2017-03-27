@@ -63,13 +63,7 @@ function BreakConnection( $conn, $conn_break )
     {
         $spid=sqlsrv_get_field( $stmt1, 0 );
     }
-    $stmt3 = sqlsrv_query( $conn, "SELECT * FROM sys.dm_exec_connections 
-                            WHERE session_id = $spid");
-    if ( sqlsrv_fetch( $stmt3 ) )
-    {
-        $prot=sqlsrv_get_field( $stmt3, 3 );
-    }
-    echo "Protocol in use: $prot\n";
+
     $stmt2 = sqlsrv_prepare( $conn_break, "KILL ".$spid );
     sqlsrv_execute( $stmt2 );
     sleep(1);
