@@ -2040,6 +2040,17 @@ namespace core {
         SQLRETURN r;
         SQLSMALLINT num_cols;
         r = ::SQLNumResultCols( stmt->handle(), &num_cols );
+
+		// Workaround for a bug in unixODBC: after SQLExecDirect for an empty result set,
+		// r = ::SQLNumResultCols( stmt->handle(), &num_cols );  
+		// returns r=-1 (SQL_ERROR) and error HY010 (Function sequence error)
+		// but it should have succeeded with r=0 (SQL_SUCCESS) and no error
+		// instead of throwing an exception, return 0 if the r=-1, stament has been executed, and has a HY010 error
+		// (HY010 error should not return if stmt->execute is true)
+#ifndef _WIN32
+		if ( r == -1 && stmt->execute && strcmp( reinterpret_cast<const char*>( stmt->last_error()->sqlstate ), "HY010" ) == 0 )
+			return 0;
+#endif // !_WIN32
         
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
