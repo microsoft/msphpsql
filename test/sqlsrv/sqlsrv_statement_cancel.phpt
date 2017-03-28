@@ -97,7 +97,7 @@ Repro();
 --EXPECTREGEX--
 ﻿
 ...Starting 'sqlsrv_statement_cancel' test...
-\[Microsoft\](\[ODBC Driver 13 for SQL Server\]|\[ODBC Driver Manager\])( Function sequence error|Associated statement is not prepared)
+\[Microsoft\](\[ODBC Driver 13 for SQL Server\]|\[ODBC Driver Manager\])(Function sequence error|Associated statement is not prepared)
 0
 (HY010|HY007)
 
