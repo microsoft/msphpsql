@@ -2048,7 +2048,7 @@ namespace core {
 		// instead of throwing an exception, return 0 if the r=-1, stament has been executed, and has a HY010 error
 		// (HY010 error should not return if stmt->execute is true)
 #ifndef _WIN32
-		if ( r == -1 && stmt->execute && strcmp( reinterpret_cast<const char*>( stmt->last_error()->sqlstate ), "HY010" ) == 0 )
+		if ( r == -1 && stmt->executed && strcmp( reinterpret_cast<const char*>( stmt->last_error()->sqlstate ), "HY010" ) == 0 )
 			return 0;
 #endif // !_WIN32
         
