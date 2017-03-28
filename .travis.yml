@@ -25,6 +25,8 @@ script:
   - docker ps -a 
   - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/pdo_sqlsrv/*.phpt
   - docker exec client php ./source/sqlsrv/run-tests.php ./test/sqlsrv/*.phpt
+  - docker exec client for f in ./test/sqlsrv/*.diff; do ls $f; cat $f; done
+  - docker exec client for f in ./test/pdo_sqlsrv/*.diff; do ls $f; cat $f; done 
   - docker exec client coveralls -e ./source/shared/ --gcov-options '\-lp'
   - docker stop client
   - docker ps -a 
