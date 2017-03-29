@@ -5,8 +5,6 @@ Verifies GitHub issue 336 is fixed, PDO::exec on query returning SQL_NO_DATA wil
 --SKIPIF--
 --FILE--
 <?php
-require_once("pdo_tools.inc");
-
 // Connect 
 require_once("autonomous_setup.php");
 
