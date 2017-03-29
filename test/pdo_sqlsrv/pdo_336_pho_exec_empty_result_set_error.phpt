@@ -26,18 +26,18 @@ $Statement = $conn->exec("INSERT INTO foo_table (intField) VALUES(3)");
 //test prepare, not args
 $stmt = $conn->prepare($sql);
 $stmt->execute();
-if ($conn->errorCode() == 00000)
+if ($conn->errorCode() == "00000")
     echo "prepare OK\n";
 
 //test prepare, with args
 $stmt = $conn->prepare($sqlWithParameter);
 $stmt->execute(array(':id' => $sqlParameter));
-if ($conn->errorCode() == 00000)
+if ($conn->errorCode() == "00000")
     echo "prepare with args OK\n";
 
 //test direct exec
 $stmt = $conn->exec($sql);
-if ($conn->errorCode() == 00000)
+if ($conn->errorCode() == "00000")
     echo "direct exec OK\n";
 
 $Statement = $conn->exec("IF OBJECT_ID('foo_table', 'U') IS NOT NULL DROP TABLE foo_table");

@@ -2048,10 +2048,10 @@ namespace core {
         // instead of throwing an exception, return 0 if the r=-1, stament has been executed, and has a HY010 error
         // (HY010 error should not return if stmt->execute is true)
 #ifndef _WIN32
-        sqlsrv_error_auto_ptr error;
-        if ( stmt->current_results != NULL ) {
+        if ( r == -1 && stmt->executed && stmt->current_results != NULL ) {
+            sqlsrv_error_auto_ptr error;
             error = stmt->current_results->get_diag_rec( 1 );
-            if ( r == -1 && stmt->executed && strcmp( reinterpret_cast<const char*>( error->sqlstate ), "HY010" ) == 0 )
+            if ( strcmp( reinterpret_cast<const char*>( error->sqlstate ), "HY010" ) == 0 )
                 return 0;
         }
 #endif // !_WIN32
