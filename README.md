@@ -232,6 +232,9 @@ Drivers are Mac-compatible starting from 4.1.7preview release.
 
     sudo apt-get install libapache2-mod-php7.0 
     sudo apt-get install apache2
+    sudo a2dismod mpm_event
+    sudo a2enmod mpm_prefork
+    sudo a2enmod php7.1
     echo "extension=sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
     echo "extension=pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
     
@@ -249,6 +252,9 @@ Drivers are Mac-compatible starting from 4.1.7preview release.
 	
     sudo apt-get install libapache2-mod-php7.1 
     sudo apt-get install apache2
+    sudo a2dismod mpm_event
+    sudo a2enmod mpm_prefork
+    sudo a2enmod php7.1
     echo "extension=sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
     echo "extension=pdo_sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
     
