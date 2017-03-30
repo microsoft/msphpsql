@@ -1,5 +1,5 @@
 --TEST--
-Test various Katmai types, like geography, geometry, hierarchy, sparse, etc. and fetch them back as strings
+Populate a test table with many fields and fetch them back using wrong data types
 --FILE--
 ﻿﻿<?php
 include 'tools.inc';

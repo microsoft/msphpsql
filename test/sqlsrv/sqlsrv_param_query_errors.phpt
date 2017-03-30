@@ -1,5 +1,5 @@
 --TEST--
-Test various Katmai types, like geography, geometry, hierarchy, sparse, etc. and fetch them back as strings
+Insert with query params but with wrong parameters or types
 --FILE--
 ﻿﻿<?php
 include 'tools.inc';
