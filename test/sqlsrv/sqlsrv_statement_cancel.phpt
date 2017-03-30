@@ -99,7 +99,7 @@ Repro();
 ...Starting 'sqlsrv_statement_cancel' test...
 \[Microsoft\](\[ODBC Driver 13 for SQL Server\]|\[ODBC Driver Manager\])([ ]{0,1}Function sequence error)
 0
-(HY010|HY007)
+(HY010)
 
 Done
 ...Test 'sqlsrv_statement_cancel' completed successfully.
