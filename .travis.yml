@@ -26,7 +26,9 @@ script:
   - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/pdo_sqlsrv/*.phpt
   - docker exec client php ./source/sqlsrv/run-tests.php ./test/sqlsrv/*.phpt
   - docker exec client bash -c 'for f in ./test/sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
+  - docker exec client bash -c 'for f in ./test/sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
   - docker exec client bash -c 'for f in ./test/pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
+  - docker exec client bash -c 'for f in ./test/pdo_sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
   - docker exec client coveralls -e ./source/shared/ --gcov-options '\-lp'
   - docker stop client
   - docker ps -a 
