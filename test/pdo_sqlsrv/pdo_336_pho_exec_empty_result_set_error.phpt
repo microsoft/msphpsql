@@ -7,7 +7,6 @@ Verifies GitHub issue 336 is fixed, PDO::exec on query returning SQL_NO_DATA wil
 <?php
 // Connect 
 require_once("autonomous_setup.php");
-
 $dbName = "tempdb";
 
 $conn = new PDO("sqlsrv:server=$serverName;Database=$dbName", $username, $password);   
