@@ -76,7 +76,7 @@ enum PDO_STMT_OPTIONS {
 const stmt_option PDO_STMT_OPTS[] = {
  
     { NULL, 0, SQLSRV_STMT_OPTION_QUERY_TIMEOUT, std::unique_ptr<stmt_option_query_timeout>( new stmt_option_query_timeout ) },
-    { NULL, 0, SQLSRV_STMT_OPTION_SCROLLABLE, std::unique_ptr<stmt_option_scrollable>( new stmt_option_scrollable ) },
+    { NULL, 0, SQLSRV_STMT_OPTION_SCROLLABLE, std::unique_ptr<stmt_option_pdo_scrollable>( new stmt_option_pdo_scrollable ) },
     { NULL, 0, PDO_STMT_OPTION_ENCODING, std::unique_ptr<stmt_option_encoding>( new stmt_option_encoding ) },
     { NULL, 0, PDO_STMT_OPTION_DIRECT_QUERY, std::unique_ptr<stmt_option_direct_query>( new stmt_option_direct_query ) },
     { NULL, 0, PDO_STMT_OPTION_CURSOR_SCROLL_TYPE, std::unique_ptr<stmt_option_cursor_scroll_type>( new stmt_option_cursor_scroll_type ) },
