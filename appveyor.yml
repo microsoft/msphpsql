@@ -182,3 +182,4 @@ after_test:
             $host.SetShouldExit(1);
             Write-Host "Forcing build failure due to phpt unit test failure(s)";
         }
+        
