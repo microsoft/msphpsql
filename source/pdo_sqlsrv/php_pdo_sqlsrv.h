@@ -53,11 +53,11 @@ enum PDO_SQLSRV_ATTR {
 // valid set of values for TransactionIsolation connection option
 namespace PDOTxnIsolationValues {
     
-    const char READ_UNCOMMITTED[] = "PDO::SQLSRV_TXN_READ_UNCOMMITTED";
-    const char READ_COMMITTED[] = "PDO::SQLSRV_TXN_READ_COMMITTED";
-    const char REPEATABLE_READ[] = "PDO::SQLSRV_TXN_REPEATABLE_READ";
-    const char SERIALIZABLE[] = "PDO::SQLSRV_TXN_SERIALIZABLE";
-    const char SNAPSHOT[] = "PDO::SQLSRV_TXN_SNAPSHOT";
+    const char READ_UNCOMMITTED[] = "READ_UNCOMMITTED";
+    const char READ_COMMITTED[] = "READ_COMMITTED";
+    const char REPEATABLE_READ[] = "REPEATABLE_READ";
+    const char SERIALIZABLE[] = "SERIALIZABLE";
+    const char SNAPSHOT[] = "SNAPSHOT";
 }
 
 //*********************************************************************************************************************************

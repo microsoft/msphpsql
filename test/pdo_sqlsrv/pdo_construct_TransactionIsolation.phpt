@@ -16,11 +16,11 @@ function Connect($value) {
 
 // TEST BEGIN
 try {
-Connect("PDO::SQLSRV_TXN_READ_UNCOMMITTED");
-Connect("PDO::SQLSRV_TXN_READ_COMMITTED");
-Connect("PDO::SQLSRV_TXN_REPEATABLE_READ");
-Connect("PDO::SQLSRV_TXN_SNAPSHOT");
-Connect("PDO::SQLSRV_TXN_SERIALIZABLE");
+Connect("READ_UNCOMMITTED");
+Connect("READ_COMMITTED");
+Connect("REPEATABLE_READ");
+Connect("SNAPSHOT");
+Connect("SERIALIZABLE");
   
   echo "Test Successful";
 }
