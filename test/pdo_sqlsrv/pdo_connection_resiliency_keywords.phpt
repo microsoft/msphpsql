@@ -4,7 +4,7 @@ Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterv
 <?php if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip, not running on windows." ); ?>
 --FILE--
 <?php
-require_once( "break_pdo.php" );
+require_once( "autonomous_setup.php" );
 
 function TryToConnect( $server, $uid, $pwd, $retryCount, $retryInterval, $number )
 {
