@@ -6,13 +6,13 @@ Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterv
 <?php
 require_once( "autonomous_setup.php" );
 
-function TryToConnect( $server, $uid, $pwd, $retryCount, $retryInterval, $number )
+function TryToConnect( $serverName, $username, $password, $retryCount, $retryInterval, $number )
 {
     $connectionInfo = "ConnectRetryCount = $retryCount; ConnectRetryInterval = $retryInterval;";
 
     try
     {
-        $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+        $conn = new PDO( "sqlsrv:server = $serverName ; $connectionInfo", $username, $password );
         echo "Connected successfully on $number attempt.\n";
         $conn = null;
     }
@@ -24,19 +24,19 @@ function TryToConnect( $server, $uid, $pwd, $retryCount, $retryInterval, $number
     }
 }
 
-TryToConnect( $server, $uid, $pwd,  10, 30, 'first');
-TryToConnect( $server, $uid, $pwd,   0, 30, 'second');
-TryToConnect( $server, $uid, $pwd, 256, 30, 'third');
-TryToConnect( $server, $uid, $pwd,   5, 70, 'fourth');
-TryToConnect( $server, $uid, $pwd,  -1, 30, 'fifth');
-TryToConnect( $server, $uid, $pwd, 'thisisnotaninteger', 30, 'sixth');
-TryToConnect( $server, $uid, $pwd,   5, 3.14159, 'seventh');
+TryToConnect( $serverName, $username, $password,  10, 30, 'first');
+TryToConnect( $serverName, $username, $password,   0, 30, 'second');
+TryToConnect( $serverName, $username, $password, 256, 30, 'third');
+TryToConnect( $serverName, $username, $password,   5, 70, 'fourth');
+TryToConnect( $serverName, $username, $password,  -1, 30, 'fifth');
+TryToConnect( $serverName, $username, $password, 'thisisnotaninteger', 30, 'sixth');
+TryToConnect( $serverName, $username, $password,   5, 3.14159, 'seventh');
 
 $connectionInfo = "ConnectRetryCount;";
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:server = $serverName ; $connectionInfo", $username, $password );
     echo "Connected successfully on eighth attempt.\n";
     $conn = null;
 }
@@ -51,7 +51,7 @@ $connectionInfo = "ConnectRetryInterval;";
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:server = $serverName ; $connectionInfo", $username, $password );
     echo "Connected successfully on ninth attempt.\n";
     $conn = null;
 }
