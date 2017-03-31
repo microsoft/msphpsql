@@ -6,12 +6,12 @@ Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterv
 <?php
 require_once( "autonomous_setup.php" );
 
-function TryToConnect( $server, $uid, $pwd, $retryCount, $retryInterval, $number )
+function TryToConnect( $serverName, $username, $password, $retryCount, $retryInterval, $number )
 {
-    $connectionInfo = array( "UID"=>$uid, "PWD"=>$pwd,
+    $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
                              "ConnectRetryCount"=>$retryCount, "ConnectRetryInterval"=>$retryInterval );
 
-    $conn = sqlsrv_connect( $server, $connectionInfo );
+    $conn = sqlsrv_connect( $serverName, $connectionInfo );
     if( $conn === false )
     {
         echo "Could not connect on $number attempt.\n";
@@ -36,17 +36,17 @@ function TryToConnect( $server, $uid, $pwd, $retryCount, $retryInterval, $number
     }
 }
 
-TryToConnect( $server, $uid, $pwd,  10, 30, 'first');
-TryToConnect( $server, $uid, $pwd,   0, 30, 'second');
-TryToConnect( $server, $uid, $pwd, 256, 30, 'third');
-TryToConnect( $server, $uid, $pwd,   5, 70, 'fourth');
-TryToConnect( $server, $uid, $pwd,  -1, 30, 'fifth');
-TryToConnect( $server, $uid, $pwd, 'thisisnotaninteger', 30, 'sixth');
-TryToConnect( $server, $uid, $pwd,   5, 3.14159, 'seventh');
+TryToConnect( $serverName, $username, $password,  10, 30, 'first');
+TryToConnect( $serverName, $username, $password,   0, 30, 'second');
+TryToConnect( $serverName, $username, $password, 256, 30, 'third');
+TryToConnect( $serverName, $username, $password,   5, 70, 'fourth');
+TryToConnect( $serverName, $username, $password,  -1, 30, 'fifth');
+TryToConnect( $serverName, $username, $password, 'thisisnotaninteger', 30, 'sixth');
+TryToConnect( $serverName, $username, $password,   5, 3.14159, 'seventh');
 
-$connectionInfo = array( "UID"=>$uid, "PWD"=>$pwd, "ConnectRetryCount" );
+$connectionInfo = array( "UID"=>$username, "PWD"=>$password, "ConnectRetryCount" );
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = sqlsrv_connect( $serverName, $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect on eighth attempt.\n";
@@ -58,9 +58,9 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "UID"=>$uid, "PWD"=>$pwd, "ConnectRetryInterval" );
+$connectionInfo = array( "UID"=>$username, "PWD"=>$password, "ConnectRetryInterval" );
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = sqlsrv_connect( $serverName, $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect on ninth attempt.\n";
