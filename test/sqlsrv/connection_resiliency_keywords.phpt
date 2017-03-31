@@ -4,117 +4,49 @@ Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterv
 <?php if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip, not running on windows." ); ?>
 --FILE--
 <?php
-require_once( "autonomous_setup.php" );
+require_once( "break.php" );
 
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryCount"=>10, "ConnectRetryInterval"=>30 );
+function TryToConnect( $server, $uid, $pwd, $retryCount, $retryInterval, $number )
+{
+    $connectionInfo = array( "UID"=>$uid, "PWD"=>$pwd,
+                             "ConnectRetryCount"=>$retryCount, "ConnectRetryInterval"=>$retryInterval );
 
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect on first attempt.\n";
-    print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Connected successfully on first attempt.\n";
-    sqlsrv_close( $conn );
-}
-
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryCount"=>0, "ConnectRetryInterval"=>30 );
-
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect on second attempt.\n";
-    print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Connected successfully on second attempt.\n";
-    sqlsrv_close( $conn );
-}
-
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryCount"=>256, "ConnectRetryInterval"=>30 );
-
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect on third attempt.\n";
-    print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Connected successfully on third attempt.\n";
-    sqlsrv_close( $conn );
+    $conn = sqlsrv_connect( $server, $connectionInfo );
+    if( $conn === false )
+    {
+        echo "Could not connect on $number attempt.\n";
+        print_r( sqlsrv_errors() );
+    }
+    else
+    {
+        echo "Connected successfully on $number attempt.\n";
+     $stmt1 = sqlsrv_query( $conn, "SELECT @@SPID" );
+      if ( sqlsrv_fetch( $stmt1 ) )
+      {
+          $spid=sqlsrv_get_field( $stmt1, 0 );
+      }
+       $stmt3 = sqlsrv_query( $conn, "SELECT * FROM sys.dm_exec_connections 
+                                WHERE session_id = $spid");
+        if ( sqlsrv_fetch( $stmt3 ) )
+        {
+            $prot=sqlsrv_get_field( $stmt3, 3 );
+        }
+        echo "prot = ".sqlsrv_fetch_array( $stmt3 )."\n";
+        sqlsrv_close( $conn );
+    }
 }
 
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryCount"=>5, "ConnectRetryInterval"=>70 );
+TryToConnect( $server, $uid, $pwd,  10, 30, 'first');
+TryToConnect( $server, $uid, $pwd,   0, 30, 'second');
+TryToConnect( $server, $uid, $pwd, 256, 30, 'third');
+TryToConnect( $server, $uid, $pwd,   5, 70, 'fourth');
+TryToConnect( $server, $uid, $pwd,  -1, 30, 'fifth');
+TryToConnect( $server, $uid, $pwd, 'thisisnotaninteger', 30, 'sixth');
+TryToConnect( $server, $uid, $pwd,   5, 3.14159, 'seventh');
 
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect on fourth attempt.\n";
-    print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Connected successfully on fourth attempt.\n";
-    sqlsrv_close( $conn );
-}
+$connectionInfo = array( "UID"=>$uid, "PWD"=>$pwd, "ConnectRetryCount" );
 
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryCount"=>-1, "ConnectRetryInterval"=>30 );
-
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect on fifth attempt.\n";
-    print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Connected successfully on fifth attempt.\n";
-    sqlsrv_close( $conn );
-}
-
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryCount"=>"thisisnotaninteger", "ConnectRetryInterval"=>30 );
-
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect on sixth attempt.\n";
-    print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Connected successfully on sixth attempt.\n";
-    sqlsrv_close( $conn );
-}
-
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryCount"=>5, "ConnectRetryInterval"=>3.14159 );
-
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect on seventh attempt.\n";
-    print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Connected successfully on seventh attempt.\n";
-    sqlsrv_close( $conn );
-}
-
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryCount" );
-
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
+$conn = sqlsrv_connect( $server, $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect on eighth attempt.\n";
@@ -126,10 +58,9 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "ConnectRetryInterval" );
+$connectionInfo = array( "UID"=>$uid, "PWD"=>$pwd, "ConnectRetryInterval" );
 
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
+$conn = sqlsrv_connect( $server, $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect on ninth attempt.\n";
