@@ -25,17 +25,27 @@ $stmt = $conn->prepare($sql);
 $stmt->execute();
 if ($conn->errorCode() == "00000")
     echo "prepare OK\n";
+else
+    echo "unexpected error at prepare";
 
 //test prepare, with args
 $stmt = $conn->prepare($sqlWithParameter);
 $stmt->execute(array(':id' => $sqlParameter));
 if ($conn->errorCode() == "00000")
     echo "prepare with args OK\n";
+else
+    echo "unexpected error at prepare with args";
 
 //test direct exec
 $stmt = $conn->exec($sql);
-if ($conn->errorCode() == "00000")
+$err = $conn->errorCode();
+if ($stmt == 0 && $err == "00000")
     echo "direct exec OK\n";
+else
+    if ($stmt != 0)
+        echo "unexpected row returned at direct exec\n";
+    if ($err != "00000")
+        echo "unexpected error at direct exec";
 
 $Statement = $conn->exec("IF OBJECT_ID('foo_table', 'U') IS NOT NULL DROP TABLE foo_table");
 

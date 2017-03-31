@@ -2041,7 +2041,6 @@ namespace core {
         SQLSMALLINT num_cols;
         r = ::SQLNumResultCols( stmt->handle(), &num_cols );
 
-
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
         }
