@@ -657,7 +657,7 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALL
 // Return:
 // true if there is data, false if there is not
 
-void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_len )
+SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_len )
 {
 	SQLRETURN r;
 
@@ -708,6 +708,7 @@ void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_
 	if ( stmt->send_streams_at_exec ) {
 		zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
 	}
+	return r;
     }
     catch( core::CoreException& e ) {
 

@@ -690,11 +690,11 @@ zend_long pdo_sqlsrv_dbh_do( pdo_dbh_t *dbh, const char *sql, size_t sql_len TSR
                           NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt TSRMLS_CC );
         driver_stmt->set_func( __FUNCTION__ );
 
-        core_sqlsrv_execute( driver_stmt TSRMLS_CC, sql, static_cast<int>( sql_len ) );
+        SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, sql, static_cast<int>( sql_len ) );
 
         // since the user can give us a compound statement, we return the row count for the last set, and since the row count
         // isn't guaranteed to be valid until all the results have been fetched, we fetch them all first.
-        if( core_sqlsrv_has_any_result( driver_stmt TSRMLS_CC )) {
+        if( execReturn != SQL_NO_DATA && core_sqlsrv_has_any_result( driver_stmt TSRMLS_CC )) {
 
             SQLRETURN r = SQL_SUCCESS;
 
