@@ -4,61 +4,64 @@ Populate different test tables with binary fields using empty stream data as inp
 ﻿﻿<?php
 include 'tools.inc';
 
-function ComplexTransaction($conn)
+function ComplexTransaction($conn, $conn2)
 {
-    $tableName = 'emptyStreamTest'; // GetTempTableName();
+    $tableName = GetTempTableName('testTransaction');
     
     // create a test table with a binary(512) column
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_real] real)");
     sqlsrv_free_stmt($stmt);
 
-    $count = 10;
-    InsertData($conn, $tableName, $count);
-    
-    $stmt1 = sqlsrv_prepare($conn, "SELECT * FROM $tableName");
-    $stmt2 = sqlsrv_prepare($conn, "DELETE TOP(3) FROM $tableName");
-
-    
-    // FetchData($conn, $tableName);
-
-    // $tableName = GetTempTableName();
-    
-    // // create another test table with a varbinary(512) column
-    // $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varbinary] varbinary(512))");
-    // sqlsrv_free_stmt($stmt);
-
-    // $fname = fopen($fileName, "r");    
-    // $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_varbinary) VALUES (?, ?)", array(-1696120652, array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY(512))));
-    // sqlsrv_free_stmt($stmt);
-    // fclose($fname);
+    $stmtSelect = sqlsrv_prepare($conn, "SELECT * FROM $tableName");
+    $stmtDelete = sqlsrv_prepare($conn, "DELETE TOP(3) FROM $tableName");
    
-    // FetchData($conn, $tableName);
-
-    // // create another test table with a varbinary(max) column
-    // $tableName = GetTempTableName();
-
-    // $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varbinary_max] varbinary(max))");
-    // sqlsrv_free_stmt($stmt);
-
-    // $fname = fopen($fileName, "r");    
-    // $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_varbinary_max) VALUES (?, ?)", array(1184245066, array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY('max'))));
-    // sqlsrv_free_stmt($stmt);
-    // fclose($fname);
+    // insert ten rows
+    $numRows = 10;
+    InsertData($conn, $tableName, $numRows);
+    FetchData($stmtSelect, $tableName, $numRows);
     
-    // FetchData($conn, $tableName);
+    sqlsrv_begin_transaction($conn);
+    sqlsrv_execute($stmtDelete);    
+    $rowsAffected = sqlsrv_rows_affected($stmtDelete);
+    sqlsrv_commit($conn);
+    echo "Committed deleting 3 rows\n";
     
-    // // create another test table with an image column
-    // $tableName = GetTempTableName();
-
-    // $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_image] image)");
-    // sqlsrv_free_stmt($stmt);
-
-    // $fname = fopen($fileName, "r");    
-    // $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_image) VALUES (?, ?)", array(1157651990, array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_IMAGE)));
-    // sqlsrv_free_stmt($stmt);
-    // fclose($fname);
+    $numRows = $numRows - $rowsAffected;
+    FetchData($stmtSelect, $tableName, $numRows);
     
-    // FetchData($conn, $tableName);    
+    sqlsrv_begin_transaction($conn);
+    sqlsrv_execute($stmtDelete); 
+    sqlsrv_rollback($conn);
+    echo "Rolled back\n";
+    
+    FetchData($stmtSelect, $tableName, $numRows);
+
+    sqlsrv_begin_transaction($conn);
+    sqlsrv_execute($stmtDelete); 
+    sqlsrv_commit($conn);
+    echo "Committed deleting 3 rows\n";
+    
+    $numRows = $numRows - $rowsAffected;
+    FetchData($stmtSelect, $tableName, $numRows);
+    
+    sqlsrv_begin_transaction($conn);
+    sqlsrv_execute($stmtDelete); 
+    sqlsrv_rollback($conn);
+    echo "Rolled back\n";
+    
+    FetchData($stmtSelect, $tableName, $numRows);
+
+    sqlsrv_begin_transaction($conn);
+    sqlsrv_execute($stmtDelete);     
+    // disconnect first connection, transaction aborted
+    sqlsrv_close($conn);
+    echo "Deletion aborted\n";
+    
+    // select table using the second connection
+    $stmt = sqlsrv_prepare($conn2, "SELECT * FROM $tableName");
+    FetchData($stmt, $tableName, $numRows);
+    
+    sqlsrv_query($conn2, "DROP TABLE $tableName");
 }
 
 function InsertData($conn, $tableName, $count)
@@ -74,13 +77,20 @@ function InsertData($conn, $tableName, $count)
     }
 }
 
-function FetchData($conn, $tableName)
+function FetchData($stmt, $tableName, $numRows)
 {
-    $stmt = sqlsrv_prepare($conn, "SELECT * FROM $tableName");
+    $numFetched = 0;
     sqlsrv_execute($stmt);
-    sqlsrv_fetch($stmt);
-    $value = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    var_dump($value);            
+    while ($result = sqlsrv_fetch($stmt))
+    {
+        $numFetched++;
+    }
+    
+    echo "Number of rows fetched: $numFetched\n";
+    if ($numFetched != $numRows)
+    {
+        echo "Expected $numRows rows.\n";
+    }
 }
 
 //--------------------------------------------------------------------
@@ -102,10 +112,13 @@ function Repro()
         $connectionInfo = array('Database'=>$database, 'UID'=>$username, 'PWD'=>$password);
         $conn = sqlsrv_connect($serverName, $connectionInfo);
         if( !$conn ) { FatalError("Could not connect.\n"); }
-        
-        ComplexTransaction($conn);
 
-        sqlsrv_close($conn);                   
+        $conn2 = sqlsrv_connect($serverName, $connectionInfo);
+        if( !$conn2 ) { FatalError("Could not connect.\n"); }
+        
+        ComplexTransaction($conn, $conn2);
+
+        sqlsrv_close($conn2);    // $conn should have been closed                
     }
     catch (Exception $e)
     {
@@ -121,6 +134,17 @@ Repro();
 --EXPECT--
 ﻿﻿
 ...Starting 'sqlsrv_fetch_complex_transactions' test...
+Number of rows fetched: 10
+Committed deleting 3 rows
+Number of rows fetched: 7
+Rolled back
+Number of rows fetched: 7
+Committed deleting 3 rows
+Number of rows fetched: 4
+Rolled back
+Number of rows fetched: 4
+Deletion aborted
+Number of rows fetched: 4
 
 Done
 ...Test 'sqlsrv_fetch_complex_transactions' completed successfully.

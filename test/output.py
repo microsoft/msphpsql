@@ -51,8 +51,6 @@ def TestFilename(line):
     currentPos = 0
     while True:
         currentPos = currentPos - 1
-        if currentPos == 0:
-            break
         line[currentPos]
         if line[currentPos] == terminateChar:
             break
