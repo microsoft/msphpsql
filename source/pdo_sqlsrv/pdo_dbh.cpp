@@ -694,18 +694,21 @@ zend_long pdo_sqlsrv_dbh_do( pdo_dbh_t *dbh, const char *sql, size_t sql_len TSR
 
         // since the user can give us a compound statement, we return the row count for the last set, and since the row count
         // isn't guaranteed to be valid until all the results have been fetched, we fetch them all first.
-        if( execReturn != SQL_NO_DATA && core_sqlsrv_has_any_result( driver_stmt TSRMLS_CC )) {
 
-            SQLRETURN r = SQL_SUCCESS;
+		if ( execReturn ) {
+			if ( execReturn != SQL_NO_DATA && core_sqlsrv_has_any_result( driver_stmt TSRMLS_CC )) {
 
-            do {
-                
-                rows = core::SQLRowCount( driver_stmt TSRMLS_CC );
+				SQLRETURN r = SQL_SUCCESS;
 
-                r = core::SQLMoreResults( driver_stmt TSRMLS_CC );
-        
-            } while( r != SQL_NO_DATA );
-        }
+				do {
+
+					rows = core::SQLRowCount( driver_stmt TSRMLS_CC );
+
+					r = core::SQLMoreResults( driver_stmt TSRMLS_CC );
+
+				} while ( r != SQL_NO_DATA );
+			}
+		}
 
         // returning -1 forces PDO to return false, which signals an error occurred.  SQLRowCount returns -1 for a number of cases
         // naturally, so we override that here with no rows returned.

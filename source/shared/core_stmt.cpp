@@ -659,7 +659,7 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALL
 
 SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_len )
 {
-	SQLRETURN r;
+    SQLRETURN r = NULL;
 
     try {
 
@@ -690,7 +690,7 @@ SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int
         r = core::SQLExecute( stmt TSRMLS_CC );
     }
 
-	// if data is needed (streams were bound) and they should be sent at execute time, then do so now
+    // if data is needed (streams were bound) and they should be sent at execute time, then do so now
     if( r == SQL_NEED_DATA && stmt->send_streams_at_exec ) {
 
         send_param_streams( stmt TSRMLS_CC );
@@ -704,21 +704,21 @@ SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int
 
         finalize_output_parameters( stmt TSRMLS_CC );
     }
-	// stream parameters are sent, clean the Hashtable
-	if ( stmt->send_streams_at_exec ) {
-		zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
-	}
-	return r;
+    // stream parameters are sent, clean the Hashtable
+    if ( stmt->send_streams_at_exec ) {
+         zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
+    }
+    return r;
     }
     catch( core::CoreException& e ) {
 
         // if the statement executed but failed in a subsequent operation before returning, 
         // we need to cancel the statement and deref the output and stream parameters
-		if ( stmt->send_streams_at_exec ) {
-			zend_hash_clean( Z_ARRVAL( stmt->output_params ));
-			zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
-		}
-		if( stmt->executed ) {
+        if ( stmt->send_streams_at_exec ) {
+            zend_hash_clean( Z_ARRVAL( stmt->output_params ));
+            zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
+        }
+        if( stmt->executed ) {
             SQLCancel( stmt->handle() );
             // stmt->executed = false; should this be reset if something fails?
         }
