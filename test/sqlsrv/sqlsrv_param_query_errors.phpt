@@ -20,10 +20,12 @@ function ParamQueryError_PhpType_Mismatch($conn)
     {
         echo "Fetch should succeed\n";
     }
-    $value = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    var_dump($value);
-    $value = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    var_dump($value);
+    $value0 = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+    $value1 = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+    if ($value0 != "1" || $value1 != "1.5")
+    {
+        echo "Data $value0 or $value1 unexpected\n";
+    }
 }
 
 function ParamQueryError_Dir_Invalid($conn)
@@ -108,8 +110,6 @@ Repro();
 --EXPECT--
 ﻿﻿
 ...Starting 'sqlsrv_param_query_errors' test...
-string(1) "1"
-string(3) "1.5"
 An invalid direction for parameter 2 was specified. SQLSRV_PARAM_IN, SQLSRV_PARAM_OUT, and SQLSRV_PARAM_INOUT are valid values.
 An invalid direction for parameter 2 was specified. SQLSRV_PARAM_IN, SQLSRV_PARAM_OUT, and SQLSRV_PARAM_INOUT are valid values.
 An invalid PHP type for parameter 2 was specified.

@@ -51,11 +51,11 @@ def TestFilename(line):
     currentPos = 0
     while True:
         currentPos = currentPos - 1
+        if currentPos == 0:
+            break
         line[currentPos]
         if line[currentPos] == terminateChar:
             break
-        elif currentPos == 0:
-            break    
     file = line[currentPos+1:-1]
     return file
 
@@ -87,7 +87,6 @@ def genXML(logfile,number):
                         file.write('\t</testcase>' + os.linesep)
                     else:
                         result = re.search('PASS(.*).', line)
-                        print(result)
                         file.write(TestFilename(str(result.group(1))) + '-' + str(num) + '"/>' + os.linesep)
                     num += 1
             file.close()
