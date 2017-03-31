@@ -27,11 +27,12 @@ function TryToConnect( $serverName, $username, $password, $retryCount, $retryInt
       }
        $stmt3 = sqlsrv_query( $conn, "SELECT * FROM sys.dm_exec_connections 
                                 WHERE session_id = $spid");
-        if ( sqlsrv_fetch( $stmt3 ) )
+/*         if ( sqlsrv_fetch( $stmt3 ) )
         {
             $prot=sqlsrv_get_field( $stmt3, 3 );
         }
-        echo "prot = ".sqlsrv_fetch_array( $stmt3 )."\n";
+ */        echo "prot = ";
+        var_dump(sqlsrv_fetch_array($stmt3));
         sqlsrv_close( $conn );
     }
 }
