@@ -25,9 +25,27 @@ function Katmai_Basic_Types($conn)
         if ($i < 3)
         {        
             $value = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_DATETIME); 
-            if ($value != null)
-                $value = date_format($value, "c");    
-            var_dump($value);
+            if ($value == null)
+            {
+                if ($i != 2)    // only this field is null
+                    echo "$value is unexpected for field " . ($i+1) . "\n";
+            }
+            else
+            {
+                if ($i == 0) 
+                {
+                    $value = date('Y-m-d', date_format($value, "U"));
+                    $today = date('Y-m-d');            
+                    if ($value !== $today)
+                        echo "$value is unexpected for field " . ($i+1) . "\n";
+                }
+                else
+                {
+                    $value = date_format($value, 'Y-m-d');    
+                    if ($value !== '0001-01-01')
+                        echo "$value is unexpected for field " . ($i+1) . "\n";
+                }
+            }
         }
         else
         {
@@ -98,10 +116,10 @@ function Katmai_SparseNumeric($conn)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// RunTest
 //
 //--------------------------------------------------------------------
-function Repro()
+function RunTest()
 {
     StartTest("sqlsrv_katmai_special_types");
     try
@@ -131,7 +149,7 @@ function Repro()
     EndTest("sqlsrv_katmai_special_types");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
@@ -139,9 +157,6 @@ Repro();
 ...Starting 'sqlsrv_katmai_special_types' test...
 
 Showing results of Katmai basic fields
-string(25) "2017-03-30T00:00:00+00:00"
-string(25) "0001-01-01T00:00:00+00:00"
-NULL
 string(44) "E6100000010C3333333333134A406666666666661A40"
 string(192) "00000000010404000000AE47E17A14AE39400AD7A3703D8A4B4048E17A14AE073A401F85EB51B8FE4B40E17A14AE47213A4085EB51B81E454C40AE47E17A14AE39400AD7A3703D8A4B4001000000020000000001000000FFFFFFFF0000000003"
 string(0) ""
