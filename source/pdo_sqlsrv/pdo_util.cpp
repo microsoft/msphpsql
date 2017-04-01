@@ -376,23 +376,6 @@ pdo_error PDO_ERRORS[] = {
     { UINT_MAX, {} }
 };
 
-<<<<<<< HEAD
-=======
-// Returns a sqlsrv_error for a given error code.
-sqlsrv_error_const* get_error_message(unsigned int sqlsrv_error_code) {
-
-    sqlsrv_error_const *error_message = NULL;
-    int zr = (error_message = reinterpret_cast<sqlsrv_error_const*>(zend_hash_index_find_ptr(g_pdo_errors_ht, sqlsrv_error_code))) != NULL ? SUCCESS : FAILURE;
-    if( zr == FAILURE ) {
-        DIE( "get_error_message: zend_hash_index_find returned failure for sqlsrv_error_code = %1!d!", sqlsrv_error_code );   
-    }
-    
-    SQLSRV_ASSERT( error_message != NULL, "get_error_message: error_message was null");
-
-    return error_message;
-}
-
->>>>>>> Synced with upstream and updated
 // PDO error handler for the environment context.
 bool pdo_sqlsrv_handle_env_error( sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool warning TSRMLS_DC, 
                                   va_list* print_args )
