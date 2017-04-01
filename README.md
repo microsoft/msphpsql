@@ -11,7 +11,7 @@ SQL Server Team
 
 ## Take our survey
 
-Thank you for taking time to take our Febraury survey. Let us know how we are doing and how you use PHP by taking our March pulse survey:
+Thank you for taking time to take our February survey. Let us know how we are doing and how you use PHP by taking our March pulse survey:
 
 <a href="https://www.surveymonkey.com/r/YDFJ23X"><img style="float: right;"  height="67" width="156" src="https://meetsstorenew.blob.core.windows.net/contianerhd/survey.png?st=2017-02-17T22%3A03%3A00Z&se=2100-02-18T22%3A03%3A00Z&sp=rl&sv=2015-12-11&sr=b&sig=DJSFoihBptSvO%2BjvWzwpHecf8o5yfAbJoD2qW5oB8tc%3D"></a>
 
@@ -37,7 +37,7 @@ Thank you for taking time to take our Febraury survey. Let us know how we are do
 
 ## Announcements
 
-**March 7, 2017**: We are trilled to announce that the early technical preview for SQLSRV and PDO_SQLSRV drivers is now available, both drivers have been built and tested on El Capitan (OS X 10.11). For complete list of changes please visit [4.1.7-preview release notes](https://github.com/Microsoft/msphpsql/releases/tag/v4.1.7-preview).
+**March 7, 2017**: We are thrilled to announce that the early technical preview for SQLSRV and PDO_SQLSRV drivers is now available, both drivers have been built and tested on El Capitan (OS X 10.11). For complete list of changes please visit [4.1.7-preview release notes](https://github.com/Microsoft/msphpsql/releases/tag/v4.1.7-preview).
 
  Please visit the [blog][blog] for more announcements.
 
@@ -161,7 +161,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 *Note: Restart the terminal if PHP(`php -v`) is not updated.
 
 
-### Step 2: Install  pre-requisites
+### Step 2: Install Prerequisites
 
     
 **Ubuntu 15.10**
@@ -213,16 +213,31 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	brew install llvm --with-clang --with-clang-extra-tools
 	brew install autoconf
 
-*Note: You need to make sure you install PHP 7 before you proceed to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
+*Note: You need to make sure you install PHP 7+ before you proceed to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
-### Step 3: Install Apache
+### Step 3: Install the Microsoft PHP Drivers for SQL Server
+
+    sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
+    sudo pecl install sqlsrv
+    sudo pecl install pdo_sqlsrv
+    
+*Note: it installs the stable version, for specific version you should specify the version. For example, do `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version.
+Drivers are Mac-compatible starting from `4.1.7preview` release.
+
+### Step 4: Install and Configure Apache
 
 #### PHP 7.0
 
 **Ubuntu**
-
-    sudo apt-get install libapache2-mod-php7.0 
-    sudo apt-get install apache2
+    
+    sudo su
+    apt-get install libapache2-mod-php7.0 apache2
+    a2dismod mpm_event
+    a2enmod mpm_prefork
+    a2enmod php7.0
+    echo "extension=sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
+    echo "extension=pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
+    exit
     
 **RedHat** 
 
@@ -235,9 +250,15 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 #### PHP 7.1 
 
 **Ubuntu**
-	
-    sudo apt-get install libapache2-mod-php7.1 
-    sudo apt-get install apache2
+    
+    sudo su
+    apt-get install libapache2-mod-php7.1 apache2
+    a2dismod mpm_event
+    a2enmod mpm_prefork
+    a2enmod php7.1
+    echo "extension=sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
+    echo "extension=pdo_sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
+    exit
     
 **RedHat** 
 
@@ -247,15 +268,6 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
     
-
-### Step 4: Install the Microsoft PHP Drivers for SQL Server
-
-    sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
-    sudo pecl install sqlsrv
-    sudo pecl install pdo_sqlsrv
-    
-*Note: it installs the stable version, for specific version you should set the version. For example, do `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version.
-Drivers are Mac-compatible starting from 4.1.7preview release. .
 	
 ### Step 5: Restart Apache to load the new php.ini file
 
@@ -323,7 +335,7 @@ You should be able to connect to your SQL Server/Azure SQL Database.
 The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
 
 ## Sample Code
-For samples, please see the sample folder.  For setup instructions, see [here] [phpazure]
+For samples, please see the sample folder.  For setup instructions, see [here](https://docs.microsoft.com/en-us/azure/sql-database/sql-database-develop-php-simple).
 
 ## Limitations
 

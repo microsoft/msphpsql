@@ -48,6 +48,18 @@ struct field_cache {
     // rely on the hash table destructor to free the memory
 };
 
+// Used to cache display size and SQL type of a column in get_field_as_string()
+struct col_cache {
+    SQLLEN sql_type;
+    SQLLEN display_size;
+
+    col_cache( SQLLEN col_sql_type, SQLLEN col_display_size )
+    {
+        sql_type = col_sql_type;
+        display_size = col_display_size;
+    }
+};
+
 const int INITIAL_FIELD_STRING_LEN = 256;    // base allocation size when retrieving a string field
 
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
@@ -89,6 +101,7 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
 // given a zval and encoding, determine the appropriate sql type, column size, and decimal scale (if appropriate)
 void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV_ENCODING encoding, 
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC );
+void col_cache_dtor( zval* data_z );
 void field_cache_dtor( zval* data_z );
 void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC );
 void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type,
@@ -144,6 +157,10 @@ sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, vo
     ZVAL_NEW_ARR( &output_params );
     core::sqlsrv_zend_hash_init(*conn, Z_ARRVAL( output_params ), 5 /* # of buckets */, sqlsrv_output_param_dtor, 0 /*persistent*/ TSRMLS_CC);
     
+    // initialize the col cache
+    ZVAL_NEW_ARR( &col_cache );
+    core::sqlsrv_zend_hash_init( *conn, Z_ARRVAL(col_cache), 5 /* # of buckets */, col_cache_dtor, 0 /*persistent*/ TSRMLS_CC );
+
     // initialize the field cache
     ZVAL_NEW_ARR( &field_cache );
     core::sqlsrv_zend_hash_init(*conn, Z_ARRVAL(field_cache), 5 /* # of buckets */, field_cache_dtor, 0 /*persistent*/ TSRMLS_CC);
@@ -169,6 +186,7 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
     zval_ptr_dtor( &output_params );
     zval_ptr_dtor( &param_streams );
     zval_ptr_dtor( &param_datetime_buffers );
+    zval_ptr_dtor( &col_cache );
     zval_ptr_dtor( &field_cache );
 }
 
@@ -184,6 +202,7 @@ void sqlsrv_stmt::free_param_data( TSRMLS_D )
     zend_hash_clean( Z_ARRVAL( output_params ));
     zend_hash_clean( Z_ARRVAL( param_streams ));
     zend_hash_clean( Z_ARRVAL( param_datetime_buffers ));
+    zend_hash_clean( Z_ARRVAL( col_cache ));
     zend_hash_clean( Z_ARRVAL( field_cache ));
 }
 
@@ -755,11 +774,12 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULE
         CHECK_CUSTOM_ERROR( stmt->past_fetch_end, stmt, SQLSRV_ERROR_FETCH_PAST_END ) {
             throw core::CoreException();
         }
-        
-        SQLSMALLINT has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
-        
-        CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
-            throw core::CoreException();
+        // First time only
+        if ( !stmt->fetch_called ) {
+            SQLSMALLINT has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+            CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
+                throw core::CoreException();
+            }
         }
 
         // close the stream to release the resource
@@ -1014,6 +1034,9 @@ void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_
 
         close_active_stream( stmt TSRMLS_CC );
 
+        //Clear column sql types and sql display sizes.
+        zend_hash_clean( Z_ARRVAL( stmt->col_cache ));	    
+	    
         SQLRETURN r;
         if( throw_on_errors ) {
             r = core::SQLMoreResults( stmt TSRMLS_CC );
@@ -1971,6 +1994,12 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
     }
 }
 
+void col_cache_dtor( zval* data_z )
+{
+    col_cache* cache = static_cast<col_cache*>( Z_PTR_P( data_z ));
+    sqlsrv_free( cache );
+}
+
 void field_cache_dtor( zval* data_z )
 {
     field_cache* cache = static_cast<field_cache*>( Z_PTR_P( data_z ));
@@ -2132,11 +2161,22 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 			break;
 		}
 
-		// Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
-		core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+		col_cache* cached = NULL;
+		if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
+			sql_field_type = cached->sql_type;
+			sql_display_size = cached->display_size;
+		}
+		else {
+			// Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
+			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
 
-		// Calculate the field size.
-		calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
+			// Calculate the field size.
+			calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
+
+			col_cache cache( sql_field_type, sql_display_size );
+			core::sqlsrv_zend_hash_index_update_mem( *stmt, Z_ARRVAL( stmt->col_cache ), field_index, &cache, sizeof( col_cache ) TSRMLS_CC );
+		}
+
 
 		// if this is a large type, then read the first few bytes to get the actual length from SQLGetData
 		if( sql_display_size == 0 || sql_display_size == INT_MAX ||

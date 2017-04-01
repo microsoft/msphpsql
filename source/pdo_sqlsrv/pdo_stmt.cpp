@@ -305,7 +305,7 @@ struct pdo_stmt_methods pdo_sqlsrv_stmt_methods = {
 
 };
 
-void stmt_option_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+void stmt_option_pdo_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
 {
     set_stmt_cursors( stmt, value_z TSRMLS_CC ); 
 }

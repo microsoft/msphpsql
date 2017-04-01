@@ -42,6 +42,9 @@ char log_msg[ LOG_MSG_SIZE ];
 // internal error that says that FormatMessage failed
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
 
+// Returns a sqlsrv_error for a given error code.
+sqlsrv_error_const* get_error_message(unsigned int sqlsrv_error_code);
+
 // build the object and throw the PDO exception
 void pdo_sqlsrv_throw_exception( sqlsrv_error_const* error TSRMLS_DC );
 
@@ -373,20 +376,6 @@ pdo_error PDO_ERRORS[] = {
     { UINT_MAX, {} }
 };
 
-// Returns a sqlsrv_error for a given error code.
-sqlsrv_error_const* get_error_message(unsigned int sqlsrv_error_code) {
-
-    sqlsrv_error_const *error_message = NULL;
-    int zr = (error_message = reinterpret_cast<sqlsrv_error_const*>(zend_hash_index_find_ptr(g_pdo_errors_ht, sqlsrv_error_code))) != NULL ? SUCCESS : FAILURE;
-    if( zr == FAILURE ) {
-        DIE( "get_error_message: zend_hash_index_find returned failure for sqlsrv_error_code = %1!d!", sqlsrv_error_code );   
-    }
-    
-    SQLSRV_ASSERT( error_message != NULL, "get_error_message: error_message was null");
-
-    return error_message;
-}
-
 // PDO error handler for the environment context.
 bool pdo_sqlsrv_handle_env_error( sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool warning TSRMLS_DC, 
                                   va_list* print_args )
@@ -560,6 +549,21 @@ void pdo_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* 
 }
 
 namespace {
+
+// Workaround for name collision problem between the SQLSRV and PDO_SQLSRV drivers on Mac
+// Place get_error_message into the anonymous namespace in pdo_util.cpp
+sqlsrv_error_const* get_error_message(unsigned int sqlsrv_error_code) {
+
+	sqlsrv_error_const *error_message = NULL;
+	int zr = (error_message = reinterpret_cast<sqlsrv_error_const*>(zend_hash_index_find_ptr(g_pdo_errors_ht, sqlsrv_error_code))) != NULL ? SUCCESS : FAILURE;
+	if (zr == FAILURE) {
+		DIE("get_error_message: zend_hash_index_find returned failure for sqlsrv_error_code = %1!d!", sqlsrv_error_code);
+	}
+
+	SQLSRV_ASSERT(error_message != NULL, "get_error_message: error_message was null");
+
+	return error_message;
+}
 
 void pdo_sqlsrv_throw_exception( sqlsrv_error_const* error TSRMLS_DC )
 {

@@ -194,7 +194,7 @@ struct stmt_option_encoding : public stmt_option_functor {
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
 
-struct stmt_option_scrollable : public stmt_option_functor {
+struct stmt_option_pdo_scrollable : public stmt_option_functor {
 
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };

@@ -210,7 +210,7 @@ const stmt_option SS_STMT_OPTS[] = {
         SSStmtOptionNames::SCROLLABLE, 
         sizeof( SSStmtOptionNames::SCROLLABLE ),
         SQLSRV_STMT_OPTION_SCROLLABLE, 
-	    std::unique_ptr<stmt_option_scrollable>( new stmt_option_scrollable )
+	    std::unique_ptr<stmt_option_ss_scrollable>( new stmt_option_ss_scrollable )
     },
     { 
         SSStmtOptionNames::CLIENT_BUFFER_MAX_SIZE, 
