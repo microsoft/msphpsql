@@ -73,13 +73,20 @@ function InsertData($conn, $tableName, $count)
     }
 }
 
-function FetchData($stmt, $tableName, $numRows)
+function FetchData($stmt, $tableName, $numRows, $fetchMode = false)
 {
     $numFetched = 0;
     $stmt->execute(); 
-    while ($result = $stmt->fetch(PDO::FETCH_LAZY))
+    if ($fetchMode)
     {
-        $numFetched++;
+        $stmt->setFetchMode(PDO::FETCH_LAZY);  
+        while ($result = $stmt->fetch())
+            $numFetched++;      
+    }
+    else
+    {
+        while ($result = $stmt->fetch(PDO::FETCH_LAZY))
+            $numFetched++;
     }
     
     echo "Number of rows fetched: $numFetched\n";
@@ -117,7 +124,7 @@ function RunTest()
 
         // select table using the second connection
         $stmt = $conn2->prepare("SELECT * FROM $tableName");
-        FetchData($stmt, $tableName, $numRows);
+        FetchData($stmt, $tableName, $numRows, true);
 
         // drop test table
         $conn2->query("DROP TABLE $tableName");
