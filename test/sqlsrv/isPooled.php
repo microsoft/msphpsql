@@ -2,7 +2,7 @@
 include_once 'autonomous_setup.php';
 $conn1 = sqlsrv_connect( $serverName, $connectionInfo);
 $connId1 = ConnectionID($conn1);
-$conn1 = null;
+sqlsrv_close($conn1);
 
 $conn2 = sqlsrv_connect( $serverName, $connectionInfo);
 $connId2 = ConnectionID($conn2);
@@ -19,7 +19,7 @@ function ConnectionID($conn)
 	$stmt = sqlsrv_query($conn, $tsql);
 	sqlsrv_fetch($stmt);
 	$connID = sqlsrv_get_field($stmt, 0);
-	$stmt = null;
+	sqlsrv_free_stmt($stmt);
 	return ($connID);
 }
 ?>
