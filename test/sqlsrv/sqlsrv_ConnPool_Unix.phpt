@@ -23,7 +23,7 @@ print_r(shell_exec("php ./test/sqlsrv/isPooled.php"));
 
 //disable pooling by modifying the odbcinst.ini file
 $current = file_get_contents($odbcinst_ini);
-$current = str_replace("CPTimeout=5\n[ODBC]\nPooling=Yes\n",'',$current);
+$current = str_replace($lines_to_add,'',$current);
 file_put_contents($odbcinst_ini, $current);
 
 print_r(shell_exec("php ./test/sqlsrv/isPooled.php"));
