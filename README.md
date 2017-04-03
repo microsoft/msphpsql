@@ -297,7 +297,7 @@ Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a ne
     );
     //Establishes the connection
     $conn = sqlsrv_connect( $serverName, $connectionOptions );
-	if( $conn === false ) {
+    if( $conn === false ) {
         die( FormatErrors( sqlsrv_errors()));
     }
     //Select Query
