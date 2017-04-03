@@ -20,6 +20,11 @@ function TryToConnect( $serverName, $username, $password, $retryCount, $retryInt
     else
     {
         echo "Connected successfully on $number attempt.\n";
+        $stmt1 = sqlsrv_query( $conn, "SELECT @@SPID" );
+        if ( sqlsrv_fetch( $stmt1 ) )
+        {
+            $spid=sqlsrv_get_field( $stmt1, 0 );
+        }
         $stmt3 = sqlsrv_query( $conn, "SELECT * FROM sys.dm_exec_connections 
                                 WHERE session_id = $spid");
         if ( sqlsrv_fetch( $stmt3 ) )
