@@ -296,23 +296,26 @@ Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a ne
         "PWD" => "yourPassword"
     );
     //Establishes the connection
-    $conn = sqlsrv_connect($serverName, $connectionOptions);
+    $conn = sqlsrv_connect( $serverName, $connectionOptions );
+	if( $conn === false ) {
+        die( FormatErrors( sqlsrv_errors()));
+    }
     //Select Query
     $tsql= "SELECT @@Version as SQL_VERSION";
     //Executes the query
-    $getResults= sqlsrv_query($conn, $tsql);
+    $getResults= sqlsrv_query( $conn, $tsql );
     //Error handling
      
-    if ($getResults == FALSE)
-        die(FormatErrors(sqlsrv_errors()));
+    if ( $getResults == FALSE )
+        die( FormatErrors( sqlsrv_errors()));
     ?> 
      <h1> Results : </h1>
      <?php
-    while ($row = sqlsrv_fetch_array($getResults, SQLSRV_FETCH_ASSOC)) {
-        echo ($row['SQL_VERSION']);
+    while ( $row = sqlsrv_fetch_array( $getResults, SQLSRV_FETCH_ASSOC )) {
+        echo ( $row['SQL_VERSION']);
         echo ("<br/>");
     }
-    sqlsrv_free_stmt($getResults);
+    sqlsrv_free_stmt( $getResults );
     function FormatErrors( $errors )  
     {  
         /* Display errors. */  
