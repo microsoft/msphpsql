@@ -1,5 +1,6 @@
 --TEST--
 PDO Connection Pooling Test on Unix
+--DESCRIPTION--
 This test assumes odbcinst.ini has not been modified. 
 This test also requires root privileges to modify odbcinst.ini file on Linux.
 --SKIPIF--
