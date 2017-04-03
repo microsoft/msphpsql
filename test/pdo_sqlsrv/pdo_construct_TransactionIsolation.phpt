@@ -8,7 +8,7 @@ function Connect($value) {
     require("autonomous_setup.php");
     $database = "tempdb";
     $dsn = "sqlsrv:Server = $serverName;" .
-           "Database = $database" ;//.
+           "Database = $database;" .
            "TransactionIsolation = $value";
     $conn = new PDO( $dsn, $username, $password );
     $conn = NULL;
