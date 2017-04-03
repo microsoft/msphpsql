@@ -1,5 +1,5 @@
 --TEST--
-Test PDO::__Construct by passing connection options
+Test PDO::__Construct with invalid connection option
 --SKIPIF--
 
 --FILE--
@@ -21,7 +21,6 @@ try
 }
 catch( PDOException $e ) {
     var_dump( $e->errorInfo );
-    exit;
 }
 ?> 
 
