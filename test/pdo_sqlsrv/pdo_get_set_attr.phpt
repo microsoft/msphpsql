@@ -214,12 +214,12 @@ array\(2\) {
 
 Test_14:
 Set Result PDO::SQLSRV_ATTR_QUERY_TIMEOUT :
-bool(true)
+bool\(true\)
 Get Result PDO::SQLSRV_ATTR_QUERY_TIMEOUT :
-int(10)
+int\(10\)
 
 Test_15:
 Set Result PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE :
-bool(true)
+bool\(true\)
 Get Result PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE :
-bool(false)
+bool\(false\)
