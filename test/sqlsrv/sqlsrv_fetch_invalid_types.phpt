@@ -37,10 +37,10 @@ function GetQuery($tableName)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// RunTest
 //
 //--------------------------------------------------------------------
-function Repro()
+function RunTest()
 {
     StartTest("sqlsrv_fetch_invalid_types");
     try
@@ -76,7 +76,7 @@ function Repro()
     EndTest("sqlsrv_fetch_invalid_types");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--

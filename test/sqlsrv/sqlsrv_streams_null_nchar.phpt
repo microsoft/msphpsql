@@ -65,10 +65,10 @@ function FetchData($conn, $tableName)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// RunTest
 //
 //--------------------------------------------------------------------
-function Repro()
+function RunTest()
 {
     StartTest("sqlsrv_streams_null_nchar");
     try
@@ -96,7 +96,7 @@ function Repro()
     EndTest("sqlsrv_streams_null_nchar");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--

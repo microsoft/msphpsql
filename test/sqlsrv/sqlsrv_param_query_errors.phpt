@@ -70,10 +70,10 @@ function ParamQueryError_PhpType_Invalid($conn)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// RunTest
 //
 //--------------------------------------------------------------------
-function Repro()
+function RunTest()
 {
     StartTest("sqlsrv_param_query_errors");
     try
@@ -104,7 +104,7 @@ function Repro()
     EndTest("sqlsrv_param_query_errors");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--

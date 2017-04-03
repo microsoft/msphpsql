@@ -94,10 +94,10 @@ function FetchData($stmt, $tableName, $numRows)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// RunTest
 //
 //--------------------------------------------------------------------
-function Repro()
+function RunTest()
 {
     StartTest("sqlsrv_fetch_complex_transactions");
     try
@@ -128,7 +128,7 @@ function Repro()
     EndTest("sqlsrv_fetch_complex_transactions");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--

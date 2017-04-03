@@ -94,10 +94,10 @@ function FetchData($conn, $tableName)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// RunTest
 //
 //--------------------------------------------------------------------
-function Repro()
+function RunTest()
 {
     StartTest("sqlsrv_streams_null_binary");
     try
@@ -126,7 +126,7 @@ function Repro()
     EndTest("sqlsrv_streams_null_binary");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--

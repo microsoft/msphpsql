@@ -47,10 +47,10 @@ function ParamQueryError_MinMaxPrecision($conn)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// RunTest
 //
 //--------------------------------------------------------------------
-function Repro()
+function RunTest()
 {
     StartTest("sqlsrv_param_query_invalid_inputs");
     try
@@ -80,7 +80,7 @@ function Repro()
     EndTest("sqlsrv_param_query_invalid_inputs");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
