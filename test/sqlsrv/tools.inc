@@ -47,9 +47,10 @@ function GetTempTableName($table = '')
 {
     // A temporary table name with the '#' prefix will be automatically 
     // dropped once the connection is closed    
+    $random = mt_rand(1,1000);
     $timestamp = round(microtime(true)*1000);
     if (strlen($table) == 0)
-        return "#php_test_table" . $timestamp;
+        return "#php_test_table" . '_' . $timestamp . '_' . $random;
     else
         return $table . $timestamp;
 }
