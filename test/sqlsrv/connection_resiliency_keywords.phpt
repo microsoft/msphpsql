@@ -11,7 +11,7 @@ function TryToConnect( $serverName, $username, $password, $retryCount, $retryInt
     $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
                              "ConnectRetryCount"=>$retryCount, "ConnectRetryInterval"=>$retryInterval );
 
-    $conn = sqlsrv_connect( "tcp:$serverName,1433", $connectionInfo );
+    $conn = sqlsrv_connect( $serverName, $connectionInfo );
     if( $conn === false )
     {
         echo "Could not connect on $number attempt.\n";
@@ -20,19 +20,6 @@ function TryToConnect( $serverName, $username, $password, $retryCount, $retryInt
     else
     {
         echo "Connected successfully on $number attempt.\n";
-        $stmt1 = sqlsrv_query( $conn, "SELECT @@SPID" );
-        if ( sqlsrv_fetch( $stmt1 ) )
-        {
-            $spid=sqlsrv_get_field( $stmt1, 0 );
-        }
-        $stmt3 = sqlsrv_query( $conn, "SELECT * FROM sys.dm_exec_connections 
-                                WHERE session_id = $spid");
-        if ( sqlsrv_fetch( $stmt3 ) )
-        {
-            $prot=sqlsrv_get_field( $stmt3, 3 );
-        }
-        echo "prot = ".$prot."\n";
-
         sqlsrv_close( $conn );
     }
 }
