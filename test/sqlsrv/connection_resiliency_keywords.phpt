@@ -11,7 +11,7 @@ function TryToConnect( $serverName, $username, $password, $retryCount, $retryInt
     $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
                              "ConnectRetryCount"=>$retryCount, "ConnectRetryInterval"=>$retryInterval );
 
-    $conn = sqlsrv_connect( $serverName, $connectionInfo );
+    $conn = sqlsrv_connect( "tcp:$serverName,1433", $connectionInfo );
     if( $conn === false )
     {
         echo "Could not connect on $number attempt.\n";
