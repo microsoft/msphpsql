@@ -554,17 +554,15 @@ int pdo_sqlsrv_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 
         SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
 
-        if ( execReturn ) {
-            if ( execReturn == SQL_NO_DATA ) {
-                stmt->column_count = 0;
-                stmt->row_count = 0;
-            }
-            else {
-                stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
+        if ( execReturn == SQL_NO_DATA ) {
+            stmt->column_count = 0;
+            stmt->row_count = 0;
+        }
+        else {
+            stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
 
-                // return the row count regardless if there are any rows or not
-                stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
-            }
+            // return the row count regardless if there are any rows or not
+            stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
         }
 
         // workaround for a bug in the PDO driver manager.  It is fairly simple to crash the PDO driver manager with 
