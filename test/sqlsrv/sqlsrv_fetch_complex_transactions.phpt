@@ -1,5 +1,5 @@
 --TEST--
-Populate different test tables with binary fields using empty stream data as inputs
+Test transactions commit, rollback and aborting in between
 --FILE--
 ﻿﻿<?php
 include 'tools.inc';
@@ -38,6 +38,7 @@ function ComplexTransaction($conn, $conn2)
 
     sqlsrv_begin_transaction($conn);
     sqlsrv_execute($stmtDelete); 
+    $rowsAffected = sqlsrv_rows_affected($stmtDelete);
     sqlsrv_commit($conn);
     echo "Committed deleting 3 rows\n";
     
