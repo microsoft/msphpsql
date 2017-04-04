@@ -8,7 +8,6 @@ function ComplexTransaction($conn, $conn2)
 {
     $tableName = GetTempTableName('testTransaction');
     
-    // create a test table with a binary(512) column
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_real] real)");
     sqlsrv_free_stmt($stmt);
 

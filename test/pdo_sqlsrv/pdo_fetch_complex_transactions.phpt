@@ -6,7 +6,6 @@ include 'pdo_tools.inc';
 
 function ComplexTransaction($conn, $tableName)
 {
-    // create a test table with a binary(512) column
     $stmt = $conn->query("CREATE TABLE $tableName ([c1_int] int, [c2_real] real)");
     $stmt = null;
 
