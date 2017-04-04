@@ -42,6 +42,9 @@ function FetchRow_Query($conn)
     GetNextRow($stmt);
     GetRelativeRow($stmt, 5);
     GetAbsoluteRow($stmt, -1);
+    GetNextRow($stmt);
+    GetLastRow($stmt);
+    GetRelativeRow($stmt, 1);
 }
 
 function InsertData($conn, $tableName, $numRows)
@@ -111,13 +114,6 @@ function GetAbsoluteRow($stmt, $offset)
     $obj = sqlsrv_fetch_object($stmt, null, null, SQLSRV_SCROLL_ABSOLUTE, $offset);       
     if ($obj)
         echo $obj->c1_int . ", " . $obj->c2_varchar . "\n";
-}
-
-function DisplayRow($stmt)
-{
-    $field1 = sqlsrv_get_field( $stmt, 0 );  
-    $field2 = sqlsrv_get_field( $stmt, 1 );  
-    echo "$field1, $field2\n";     
 }
 
 function HasRows($stmt)
@@ -202,5 +198,10 @@ next row: 2, Row 2
 row 5 from the current row: 7, Row 7
 
 absolute row with offset -1: 
+next row: 1, Row 1
+
+last row: 10, Row 10
+
+row 1 from the current row: 
 Done
 ...Test 'sqlsrv_fetch_cursor_static_scroll' completed successfully.
