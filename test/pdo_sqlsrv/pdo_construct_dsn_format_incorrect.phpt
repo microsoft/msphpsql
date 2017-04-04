@@ -98,14 +98,14 @@ catch( PDOException $e ) {
 
 ?> 
 
---EXPECT--
+--EXPECTREGEX--
 
-An extra semi-colon was encountered in the DSN string at character (byte-count) position '24' .
-An unescaped right brace (}) was found in the DSN string for keyword  'Database'.  All right braces must be escaped with another right brace (}}).
-An expected right brace (}) was not found in the DSN string for the value of the keyword 'Database'.
-An invalid value was specified for the keyword 'Database' in the DSN string.
-The DSN string ended unexpectedly.
-An invalid DSN string was specified.
+An extra semi-colon was encountered in the DSN string at character \(byte-count\) position '[0-9]+' \.
+An unescaped right brace \(\}\) was found in the DSN string for keyword  'Database'\.  All right braces must be escaped with another right brace \(\}\}\)\.
+An expected right brace \(\}\) was not found in the DSN string for the value of the keyword 'Database'\.
+An invalid value was specified for the keyword 'Database' in the DSN string\.
+The DSN string ended unexpectedly\.
+An invalid DSN string was specified\.
 
 value in curly braces OK
 value in curly braces followed by a semicolon OK
