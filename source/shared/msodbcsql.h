@@ -91,6 +91,10 @@
 #define SQL_COPT_SS_AEKEYSTOREDATA                  (SQL_COPT_SS_BASE_EX+12) /* Communicate with a loaded keystore provider */
 #define SQL_COPT_SS_AETRUSTEDCMKPATHS               (SQL_COPT_SS_BASE_EX+13) /* List of trusted CMK paths */
 #define SQL_COPT_SS_AECEKCACHETTL                   (SQL_COPT_SS_BASE_EX+14)// Symmetric Key Cache TTL
+#ifdef _WIN32
+#define SQL_COPT_SS_CONNECT_RETRY_COUNT             (SQL_COPT_SS_BASE+34) // Post connection attribute used to get ConnectRetryCount
+#define SQL_COPT_SS_CONNECT_RETRY_INTERVAL          (SQL_COPT_SS_BASE+35) // Post connection attribute used to get ConnectRetryInterval
+#endif // _WIN32
 /*
  * SQLColAttributes driver specific defines.
  * SQLSetDescField/SQLGetDescField driver specific defines.
