@@ -101,7 +101,7 @@ function FetchData($stmt, $tableName, $numRows, $fetchMode = false)
 //--------------------------------------------------------------------
 function RunTest()
 {
-    StartTest("pdo_fetch_complex_transactions.phpt");
+    StartTest("pdo_fetch_complex_transactions");
     try
     {
         require_once("autonomous_setup.php");
@@ -134,7 +134,7 @@ function RunTest()
         echo $e->getMessage();
     }
     echo "\nDone\n";
-    EndTest("pdo_fetch_complex_transactions.phpt");
+    EndTest("pdo_fetch_complex_transactions");
 }
 
 RunTest();
@@ -142,7 +142,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'pdo_fetch_complex_transactions.phpt' test...
+...Starting 'pdo_fetch_complex_transactions' test...
 Number of rows fetched: 10
 Committed deleting 3 rows
 Number of rows fetched: 7
@@ -156,4 +156,4 @@ Deletion aborted
 Number of rows fetched: 4
 
 Done
-...Test 'pdo_fetch_complex_transactions.phpt' completed successfully.
+...Test 'pdo_fetch_complex_transactions' completed successfully.

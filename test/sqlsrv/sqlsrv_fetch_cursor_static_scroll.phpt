@@ -143,7 +143,6 @@ function RunTest()
         $conn = sqlsrv_connect($serverName, $connectionInfo);
         if( !$conn ) { FatalError("Could not connect.\n"); }
 
-        //echo "\nUsing SQLSRV_CURSOR_FORWARD: ";      
         FetchRow_Query($conn);
 
         sqlsrv_close($conn);    
