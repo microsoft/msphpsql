@@ -659,7 +659,7 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALL
 
 SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_len )
 {
-    SQLRETURN r = NULL;
+    SQLRETURN r = SQL_ERROR;
 
     try {
 
