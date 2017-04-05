@@ -17,10 +17,10 @@ Updated PECL release packages. Here is the list of updates:
 
 #### SQLSRV only
 - Fixed sqlsrv_num_rows() when the client buffered result is null ([issue #330](https://github.com/Microsoft/msphpsql/issues/330)).
-- Fixed by getting rid of const char conversion warnings ([issue #332](https://github.com/Microsoft/msphpsql/issues/332)).
+- Fixed conversion warnings because of some const chars ([issue #332](https://github.com/Microsoft/msphpsql/issues/332)).
 
 #### PDO_SQLSRV only
-- Improved performance by implementing a cache to store column SQL types and display sizes ([Issue #189](https://github.com/Microsoft/msphpsql/issues/189)).
+- Improved performance by implementing a cache to store column SQL types and display sizes ([issue #189](https://github.com/Microsoft/msphpsql/issues/189)).
 - Fixed issue with the unsupported attribute PDO::ATTR_PERSISTENT in connection ([issue #65](https://github.com/Microsoft/msphpsql/issues/65)).
 - Fixed the issue when deleting something that doesn't exist ([issue #336](https://github.com/Microsoft/msphpsql/issues/336)).
 
@@ -28,8 +28,8 @@ Updated PECL release packages. Here is the list of updates:
 - User defined data types and SQL_VARIANT ([issue #127](https://github.com/Microsoft/msphpsql/issues/127)).
 - Binary column binding with emulate prepare ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)).
 - When pooling is enabled in Linux or MAC
-  - unixODBC 2.3.1 (Linux) and unixODBC 2.3.4 (Mac) might not return proper diagnostics information, such as error messages, warnings and informative messages
-  - SQLSRV and PDO_SQLSRV drivers might not be able to properly fetch long data (such as xml, binary) as strings because of the bug in unixODBC mentioned above. Long data can be fetched as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+  - unixODBC 2.3.1 (Linux) and unixODBC 2.3.4 (MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
 
 ## Windows/Linux/MAC 4.1.7-preview - 2017-03-07
 Updated PECL release packages. Here is the list of updates:
