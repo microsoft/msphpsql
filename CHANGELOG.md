@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux/MAC 4.1.8-preview - 2017-04-10
+Updated documentation for Readme regarding instructions for Linux and MAC 
+Updated PECL release packages. Here is the list of updates:
+### Added
+- [Connection Resiliency](https://github.com/Microsoft/msphpsql/wiki/Connection-Resiliency) now supported in Windows 
+- [Connection pooling](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac) now works in MAC 
+
+### Fixed
+#### SQLSRV and PDO_SQLSRV
+- Added a workaround for a bug in unixODBC 2.3.4 when connection pooling is enabled.
+- Fixed the issue in MAC such that which driver is loaded first no longer matters.
+
+#### SQLSRV only
+- Fixed sqlsrv_num_rows() when the client buffered result is null ([issue #330](https://github.com/Microsoft/msphpsql/issues/330)).
+- Fixed by getting rid of const char conversion warnings ([issue #332](https://github.com/Microsoft/msphpsql/issues/332)).
+
+#### PDO_SQLSRV only
+- Improved performance by implementing a cache to store column SQL types and display sizes ([Issue #189](https://github.com/Microsoft/msphpsql/issues/189)).
+- Fixed issue with the unsupported attribute PDO::ATTR_PERSISTENT in connection ([issue #65](https://github.com/Microsoft/msphpsql/issues/65)).
+- Fixed the issue when deleting something that doesn't exist ([issue #336](https://github.com/Microsoft/msphpsql/issues/336)).
+
+### Known Issues
+- User defined data types and SQL_VARIANT ([issue #127](https://github.com/Microsoft/msphpsql/issues/127)).
+- Binary column binding with emulate prepare ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)).
+- When pooling is enabled in Linux or MAC
+  - unixODBC 2.3.1 (Linux) and unixODBC 2.3.4 (Mac) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - SQLSRV and PDO_SQLSRV drivers might not be able to properly fetch long data (such as xml, binary) as strings because of the bug in unixODBC mentioned above. Long data can be fetched as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
 ## Windows/Linux/MAC 4.1.7-preview - 2017-03-07
 Updated PECL release packages. Here is the list of updates:
 ### Added
