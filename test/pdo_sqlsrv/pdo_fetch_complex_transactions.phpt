@@ -114,7 +114,7 @@ function RunTest()
         $conn2 = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
         $conn2->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
-        $tableName = GetTempTableName('testTransaction');
+        $tableName = GetTempTableName('testTransaction', false);
 
         // ComplexTransaction() returns number of rows left in $tableName
         $numRows = ComplexTransaction($conn, $tableName);

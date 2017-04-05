@@ -6,7 +6,7 @@ include 'tools.inc';
 
 function ParamQueryError_PhpType_Mismatch($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = GetTempTableName('PhpType_Mismatch');
     
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varchar_max] varchar(max))");
     sqlsrv_free_stmt($stmt);
@@ -30,7 +30,7 @@ function ParamQueryError_PhpType_Mismatch($conn)
 
 function ParamQueryError_Dir_Invalid($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = GetTempTableName('Dir_Invalid');
 
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varchar_max] varchar(max))");
     sqlsrv_free_stmt($stmt);
@@ -46,7 +46,7 @@ function ParamQueryError_Dir_Invalid($conn)
 
 function ParamQueryError_PhpType_Encoding($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = GetTempTableName('PhpType_Encoding');
     
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varchar_max] varchar(max))");
     sqlsrv_free_stmt($stmt);
@@ -57,7 +57,7 @@ function ParamQueryError_PhpType_Encoding($conn)
 
 function ParamQueryError_PhpType_Invalid($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = GetTempTableName('PhpType_Invalid');
     
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varchar_max] varchar(max))");
     sqlsrv_free_stmt($stmt);

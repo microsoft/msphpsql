@@ -6,7 +6,7 @@ include 'tools.inc';
 
 function ComplexTransaction($conn, $conn2)
 {
-    $tableName = GetTempTableName('testTransaction');
+    $tableName = GetTempTableName('testTransaction', false);
     
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_real] real)");
     sqlsrv_free_stmt($stmt);

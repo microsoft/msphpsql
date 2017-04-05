@@ -6,7 +6,7 @@ include 'tools.inc';
 
 function ParamQueryError_MinMaxScale($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = GetTempTableName('MinMaxScale');
     
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_decimal] decimal(28,4), [c3_numeric] numeric(32,4))");
     sqlsrv_free_stmt($stmt);
@@ -20,7 +20,7 @@ function ParamQueryError_MinMaxScale($conn)
 
 function ParamQueryError_MinMaxSize($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = GetTempTableName('MinMaxSize');
     
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varchar_max] varchar(max))");
     sqlsrv_free_stmt($stmt);
@@ -34,7 +34,7 @@ function ParamQueryError_MinMaxSize($conn)
 
 function ParamQueryError_MinMaxPrecision($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = GetTempTableName('MinMaxPrecision');
     
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_decimal] decimal(28,4), [c3_numeric] numeric(32,4))");
     sqlsrv_free_stmt($stmt);
