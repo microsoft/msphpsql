@@ -18,7 +18,8 @@ Test warnings on connection and statement levels
     $statement = $conn->prepare("CRATE TABLE table1(id INT NOT NULL PRIMARY KEY, val VARCHAR(10)) ");
     $statement->execute();
 
-    
+    $statement = NULL;
+    $conn = NULL;
 ?>
 --EXPECTREGEX--
 Warning: SQLSTATE: IMSSP
