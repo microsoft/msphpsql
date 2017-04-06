@@ -1,5 +1,5 @@
 --TEST--
-Test setting invalid value or key
+Test setting invalid value or key i connection attributes
 --SKIPIF--
 
 --FILE--
