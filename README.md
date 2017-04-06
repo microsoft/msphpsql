@@ -210,6 +210,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	brew update
 	brew install unixodbc
 	brew install msodbcsql
+	brew install mssql-tools
 	brew install llvm --with-clang --with-clang-extra-tools
 	brew install autoconf
 
