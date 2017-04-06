@@ -41,8 +41,8 @@ void sqlsrv_error_const_dtor( zval* element );
 void sqlsrv_encoding_dtor( zval* element );
 
 // henv context for creating connections
-sqlsrv_context* g_henv_cp;
-sqlsrv_context* g_henv_ncp;
+sqlsrv_context* g_ss_henv_cp;
+sqlsrv_context* g_ss_henv_ncp;
 
 namespace {
 
@@ -552,7 +552,7 @@ PHP_MINIT_FUNCTION(sqlsrv)
 
     try {
         // retrieve the handles for the environments
-        core_sqlsrv_minit( &g_henv_cp, &g_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" TSRMLS_CC );
+        core_sqlsrv_minit( &g_ss_henv_cp, &g_ss_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" TSRMLS_CC );
     }
 
     catch( core::CoreException& ) {
@@ -602,7 +602,7 @@ PHP_MSHUTDOWN_FUNCTION(sqlsrv)
     zend_hash_destroy( g_ss_encodings_ht );
     pefree( g_ss_encodings_ht, 1 );
 
-    core_sqlsrv_mshutdown( *g_henv_cp, *g_henv_ncp );
+    core_sqlsrv_mshutdown( *g_ss_henv_cp, *g_ss_henv_ncp );
 
     if( php_unregister_url_stream_wrapper( SQLSRV_STREAM_WRAPPER TSRMLS_CC ) == FAILURE ) {
         return FAILURE;
