@@ -99,8 +99,8 @@ PHP_INI_BEGIN()
 PHP_INI_END()
 
 // henv context for creating connections
-extern sqlsrv_context* g_henv_cp;
-extern sqlsrv_context* g_henv_ncp;
+extern sqlsrv_context* g_pdo_henv_cp;
+extern sqlsrv_context* g_pdo_henv_ncp;
 
 
 //*********************************************************************************************************************************

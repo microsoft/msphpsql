@@ -455,8 +455,8 @@ PHP_FUNCTION ( sqlsrv_connect )
 {
     
     LOG_FUNCTION( "sqlsrv_connect" );
-    SET_FUNCTION_NAME( *g_henv_cp );
-    SET_FUNCTION_NAME( *g_henv_ncp );
+    SET_FUNCTION_NAME( *g_ss_henv_cp );
+    SET_FUNCTION_NAME( *g_ss_henv_ncp );
 
     reset_errors( TSRMLS_C );
 
@@ -470,7 +470,7 @@ PHP_FUNCTION ( sqlsrv_connect )
     // get the server name and connection options
     int result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "s|a", &server, &server_len, &options_z );
     
-    CHECK_CUSTOM_ERROR(( result == FAILURE ), *g_henv_cp, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, "sqlsrv_connect" ) {
+    CHECK_CUSTOM_ERROR(( result == FAILURE ), *g_ss_henv_cp, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, "sqlsrv_connect" ) {
         RETURN_FALSE;
     }
     
@@ -483,14 +483,14 @@ PHP_FUNCTION ( sqlsrv_connect )
         // Initialize the options array to be passed to the core layer
         ALLOC_HASHTABLE( ss_conn_options_ht );
         
-        core::sqlsrv_zend_hash_init( *g_henv_cp, ss_conn_options_ht, 10 /* # of buckets */, 
+        core::sqlsrv_zend_hash_init( *g_ss_henv_cp, ss_conn_options_ht, 10 /* # of buckets */, 
                                  ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
    
-        // Either of g_henv_cp or g_henv_ncp can be used to propogate the error.
-        ::validate_conn_options( *g_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht TSRMLS_CC );   
+        // Either of g_ss_henv_cp or g_ss_henv_ncp can be used to propogate the error.
+        ::validate_conn_options( *g_ss_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht TSRMLS_CC );   
      
         // call the core connect function  
-        conn = static_cast<ss_sqlsrv_conn*>( core_sqlsrv_connect( *g_henv_cp, *g_henv_ncp, &core::allocate_conn<ss_sqlsrv_conn>,
+        conn = static_cast<ss_sqlsrv_conn*>( core_sqlsrv_connect( *g_ss_henv_cp, *g_ss_henv_ncp, &core::allocate_conn<ss_sqlsrv_conn>,
                                                                   server, uid, pwd, ss_conn_options_ht, ss_error_handler,  
                                                                   SS_CONN_OPTS, NULL, "sqlsrv_connect" TSRMLS_CC )); 
         
@@ -499,7 +499,7 @@ PHP_FUNCTION ( sqlsrv_connect )
         // create a bunch of statements
         ALLOC_HASHTABLE( stmts );
     
-        core::sqlsrv_zend_hash_init( *g_henv_cp, stmts, 5, NULL /* dtor */, 0 /* persistent */ TSRMLS_CC );
+        core::sqlsrv_zend_hash_init( *g_ss_henv_cp, stmts, 5, NULL /* dtor */, 0 /* persistent */ TSRMLS_CC );
 
         // register the connection with the PHP runtime 
         
