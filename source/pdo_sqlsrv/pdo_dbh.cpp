@@ -491,7 +491,7 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     dsn_parser->parse_conn_string( TSRMLS_C );
     
     // Extract the server name
-    temp_server_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER);
+    temp_server_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
 
     CHECK_CUSTOM_ERROR(( temp_server_z == NULL ), g_pdo_henv_cp, PDO_SQLSRV_ERROR_SERVER_NOT_SPECIFIED ) {
         
