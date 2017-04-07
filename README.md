@@ -206,7 +206,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 	
 **Mac OS X**
 
-	brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-msodbcsql
+	brew tap microsoft/mssql-preview https://github.com/Microsoft/homebrew-mssql-preview
 	brew update
 	brew install unixodbc
 	brew install msodbcsql
