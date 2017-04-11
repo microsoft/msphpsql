@@ -46,11 +46,10 @@ function EmptyStream_Char2Stream($conn, $fileName)
     FetchData($conn, $tableName, 4);
 }
 
-function FetchData($conn, $tableName, $value)
+function FetchData($conn, $tableName, $fld)
 {
-    $stmt = sqlsrv_prepare($conn, "SELECT * FROM $tableName WHERE c1_int = $value");
+    $stmt = sqlsrv_prepare($conn, "SELECT * FROM $tableName WHERE c1_int = $fld");
     sqlsrv_execute($stmt);
-    $fld = $value;
     $result = sqlsrv_fetch($stmt);
     $stream = sqlsrv_get_field($stmt, $fld, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
     var_dump($stream);
