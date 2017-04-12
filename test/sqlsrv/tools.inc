@@ -43,26 +43,40 @@ function EndTest($testName)
     echo "...Test '$testName' completed successfully.\n";
 }
 
-function GetTempTableName($table = '')
+function GetTempTableName($table = '', $temporary = true)
 {
     // A temporary table name with the '#' prefix will be automatically 
-    // dropped once the connection is closed    
+    // dropped once the connection is closed. Otherwise, the caller 
+    // should take care of dropping the temp table afterwards.
+    
     $timestamp = round(microtime(true)*1000);
+    
+    $prefix = '';
+    if ($temporary)
+        $prefix = '#';
+        
     if (strlen($table) == 0)
-        return "#php_test_table" . $timestamp;
-    else
-        return $table . $timestamp;
+        $table = 'php_test_table';
+        
+    return $prefix . $table . '_' . $timestamp;
 }
 
-function GetTempProcName($proc = '')
+function GetTempProcName($proc = '', $temporary = true)
 {
     // A temporary stored procedure name with the '#' prefix will be 
-    // automatically dropped once the connection is closed    
+    // automatically dropped once the connection is closed. Otherwise, 
+    // the caller should take care of dropping the temp procedure afterwards.    
+    
     $timestamp = round(microtime(true)*1000);
+
+    $prefix = '';
+    if ($temporary)
+        $prefix = '#';
+        
     if (strlen($proc) == 0)
-        return "#php_test_proc" . $timestamp;
-    else
-        return $proc . $timestamp;
+        $proc = 'php_test_proc'; 
+
+    return $prefix . $proc . '_' . $timestamp;
 }
 
 function FatalError($errorMsg)

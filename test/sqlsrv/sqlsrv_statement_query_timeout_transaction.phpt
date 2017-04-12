@@ -6,7 +6,7 @@ include 'tools.inc';
 
 function QueryTimeout($conn1, $conn2, $commit)
 {
-    $tableName = GetTempTableName('testQueryTimeout');
+    $tableName = GetTempTableName('testQueryTimeout', false);
     
     $stmt = sqlsrv_query($conn1, "CREATE TABLE $tableName ([c1_int] int, [c2_tinyint] tinyint, [c3_smallint] smallint, [c4_bigint] bigint, [c5_bit] bit, [c6_float] float, [c7_real] real, [c8_decimal] decimal(28,4), [c9_numeric] numeric(32,4), [c10_money] money, [c11_smallmoney] smallmoney)");  
     sqlsrv_free_stmt($stmt);
