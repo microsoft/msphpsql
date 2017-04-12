@@ -10,14 +10,13 @@ require_once("autonomous_setup.php");
 try 
 {   
     $database = "tempdb";
-	$dsn = 	"sqlsrv:Server = $serverName;" .
-			"Database = $database;" .
-			"InvalidKey = true;"
-			;
+    $dsn = "sqlsrv:Server = $serverName;" .
+           "Database = $database;" .
+           "InvalidKey = true;"
+           ;
     $conn = new PDO( $dsn, $username, $password); 
 
-  
-  echo "Test Successful";
+    echo "Test Successful";
 }
 catch( PDOException $e ) {
     var_dump( $e->errorInfo );

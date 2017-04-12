@@ -5,102 +5,100 @@ Test PDO::setAttribute() and PDO::getAttribute() methods.
 --FILE--
 <?php
   
-  require_once("autonomous_setup.php");
-  // A custom PDO statement class to test PDO::ATTR_STATEMENT_CLASS
-  class CustomPDOStatement extends PDOStatement 
-  {
+require_once("autonomous_setup.php");
+// A custom PDO statement class to test PDO::ATTR_STATEMENT_CLASS
+class CustomPDOStatement extends PDOStatement 
+{
     protected function __construct() {
     }
-  }
+}
 
-  function get_attr( $conn, $attr )
-  {
-	 try {
+function get_attr( $conn, $attr )
+{
+    try {
 	 
-		echo "Get Result $attr :\n";
-		$result = $conn->getAttribute( constant($attr) );
-		var_dump( $result);
-	}
-	catch ( PDOException $e)
-	{
-		echo  $e->getMessage() . "\n";
-	}
-  } 
+        echo "Get Result $attr :\n";
+        $result = $conn->getAttribute( constant($attr) );
+        var_dump( $result);
+    }
+    catch ( PDOException $e)
+    {
+        echo  $e->getMessage() . "\n";
+    }
+} 
   
-  function set_attr( $conn, $attr, $val )
-  {
-	 try {
+function set_attr( $conn, $attr, $val )
+{
+    try {
 	 
-		echo "Set Result $attr :\n";
-		$result = $conn->setAttribute( constant($attr), $val );
-		var_dump( $result);
-	}
-	catch ( PDOException $e)
-	{
-		echo  $e->getMessage() . "\n";
-	}
-  } 
+        echo "Set Result $attr :\n";
+        $result = $conn->setAttribute( constant($attr), $val );
+        var_dump( $result);
+    }
+    catch ( PDOException $e)
+    {
+        echo  $e->getMessage() . "\n";
+    }
+} 
   
 function set_get_attr($testName, $conn, $attr, $val)
 {
-	try {
+    try {
 	
-		echo "\n". $testName . ":\n";
-		set_attr($conn, $attr, $val );
-		get_attr($conn, $attr );
-	}
-	catch(PDOException $e)
-	{
-		var_dump($e);
-	}
+        echo "\n". $testName . ":\n";
+        set_attr($conn, $attr, $val );
+        get_attr($conn, $attr );
+    }
+    catch(PDOException $e)
+    {
+        var_dump($e);
+    }
 }
   
 try 
 {      
-   $database = "tempdb";
-   $conn = new PDO("sqlsrv:Server=$serverName;Database=$database", $username, $password);
-   $values = array (			
-							"PDO::ATTR_ERRMODE" => 2, 		
-							"PDO::ATTR_SERVER_VERSION" => "whatever",
-							"PDO::ATTR_DRIVER_NAME" => "whatever",		  
-							"PDO::ATTR_STRINGIFY_FETCHES" => true,
-							"PDO::ATTR_CLIENT_VERSION" => "whatever",
-							"PDO::ATTR_SERVER_INFO" => "whatever",	
-							"PDO::ATTR_CASE" => 2,	
-							"PDO::SQLSRV_ATTR_ENCODING" => 3,
-							"PDO::ATTR_DEFAULT_FETCH_MODE" => PDO::FETCH_ASSOC,
-							"PDO::ATTR_ORACLE_NULLS" => PDO::NULL_NATURAL,
-							"PDO::SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE" => 5120,
-							"PDO::SQLSRV_ATTR_DIRECT_QUERY" => true,
-                            "PDO::ATTR_STATEMENT_CLASS" => array('CustomPDOStatement', array()),
-                            "PDO::SQLSRV_ATTR_QUERY_TIMEOUT" => 10,
-                            "PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE" => false
-							);
+    $database = "tempdb";
+    $conn = new PDO("sqlsrv:Server=$serverName;Database=$database", $username, $password);
+    $values = array ( "PDO::ATTR_ERRMODE" => 2, 		
+                      "PDO::ATTR_SERVER_VERSION" => "whatever",
+                      "PDO::ATTR_DRIVER_NAME" => "whatever",		  
+                      "PDO::ATTR_STRINGIFY_FETCHES" => true,
+                      "PDO::ATTR_CLIENT_VERSION" => "whatever",
+                      "PDO::ATTR_SERVER_INFO" => "whatever",	
+                      "PDO::ATTR_CASE" => PDO::CASE_LOWER,	
+                      "PDO::SQLSRV_ATTR_ENCODING" => PDO::SQLSRV_ENCODING_SYSTEM,
+                      "PDO::ATTR_DEFAULT_FETCH_MODE" => PDO::FETCH_ASSOC,
+                      "PDO::ATTR_ORACLE_NULLS" => PDO::NULL_NATURAL,
+                      "PDO::SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE" => 5120,
+                      "PDO::SQLSRV_ATTR_DIRECT_QUERY" => true,
+                      "PDO::ATTR_STATEMENT_CLASS" => array('CustomPDOStatement', array()),
+                      "PDO::SQLSRV_ATTR_QUERY_TIMEOUT" => 10,
+                      "PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE" => false
+                    );
    
-   $attributes = array (
-							"PDO::ATTR_ERRMODE",		
-							"PDO::ATTR_SERVER_VERSION",
-							"PDO::ATTR_DRIVER_NAME",		  
-							"PDO::ATTR_STRINGIFY_FETCHES",
-							"PDO::ATTR_CLIENT_VERSION",
-							"PDO::ATTR_SERVER_INFO",	
-							"PDO::ATTR_CASE",
-							"PDO::SQLSRV_ATTR_ENCODING",
-							"PDO::ATTR_DEFAULT_FETCH_MODE",
-							"PDO::ATTR_ORACLE_NULLS",
-							"PDO::SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE",
-							"PDO::SQLSRV_ATTR_DIRECT_QUERY",
-                            "PDO::ATTR_STATEMENT_CLASS",
-                            "PDO::SQLSRV_ATTR_QUERY_TIMEOUT",
-                            "PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE"
-						);
-   $i = 1;
-   foreach( $attributes as $attr )
-   {
+   $attributes = array ( "PDO::ATTR_ERRMODE",		
+                         "PDO::ATTR_SERVER_VERSION",
+                         "PDO::ATTR_DRIVER_NAME",		  
+                         "PDO::ATTR_STRINGIFY_FETCHES",
+                         "PDO::ATTR_CLIENT_VERSION",
+                         "PDO::ATTR_SERVER_INFO",	
+                         "PDO::ATTR_CASE",
+                         "PDO::SQLSRV_ATTR_ENCODING",
+                         "PDO::ATTR_DEFAULT_FETCH_MODE",
+                         "PDO::ATTR_ORACLE_NULLS",
+                         "PDO::SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE",
+                         "PDO::SQLSRV_ATTR_DIRECT_QUERY",
+                         "PDO::ATTR_STATEMENT_CLASS",
+                         "PDO::SQLSRV_ATTR_QUERY_TIMEOUT",
+                         "PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE"
+                        );
+    $i = 1;
+    foreach( $attributes as $attr )
+    {
         $testName = "Test_". $i;
         $i = $i + 1;
-		set_get_attr($testName, $conn, $attr, $values[$attr]);
-   }
+        set_get_attr($testName, $conn, $attr, $values[$attr]);
+    }
 }
 
 catch( PDOException $e ) {

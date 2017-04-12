@@ -22,14 +22,10 @@ try
 	$conn->exec('INSERT INTO tmp_table2 VALUES(2)');
 	$id = $conn->lastInsertId();
 	var_dump($id);
-	$id = $conn->lastInsertId('tmp_table1');
-	var_dump($id);
 	
 	$conn->exec('INSERT INTO tmp_table2 VALUES(3)');
 	$conn->exec('INSERT INTO tmp_table1 VALUES(4)');
 	$id = $conn->lastInsertId();
-	var_dump($id);
-	$id = $conn->lastInsertId('tmp_table2');
 	var_dump($id);
 	
 	// Should return empty string as the table does not have an IDENTITY column.
@@ -52,7 +48,5 @@ catch( PDOException $e ) {
 ?> 
 --EXPECT--
 string(3) "200"
-string(3) "100"
 string(3) "102"
-string(3) "202"
 string(0) ""
