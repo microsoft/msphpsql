@@ -4,6 +4,7 @@ Test warnings on connection and statement levels
 
 --FILE--
 <?php
+try{
     require_once("autonomous_setup.php");
 
     $conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb ", $username, $password);
@@ -20,6 +21,11 @@ Test warnings on connection and statement levels
 
     $statement = NULL;
     $conn = NULL;
+}
+catch ( PDOException $e ){
+    var_dump( $e->errorInfo );
+    exit;
+}
 ?>
 --EXPECTREGEX--
 Warning: SQLSTATE: IMSSP
