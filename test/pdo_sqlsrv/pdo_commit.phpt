@@ -31,6 +31,7 @@ starts a transaction, delete rows and commit the transaction
    
     //free statement and connection
     $ret=NULL;
+    $stmt = NULL;
     $conn=NULL;
 ?>
 --EXPECT--

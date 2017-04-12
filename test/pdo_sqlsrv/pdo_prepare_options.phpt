@@ -17,7 +17,7 @@ try
     }
 
     $database = "tempdb";
-	$dsn = 	"sqlsrv:Server = $serverName; Database = $database";
+    $dsn = "sqlsrv:Server = $serverName; Database = $database";
     $prep_attr = array(PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8,
                        PDO::ATTR_STATEMENT_CLASS => array('CustomPDOStatement', array()),
                        PDO::SQLSRV_ATTR_DIRECT_QUERY => true,
@@ -28,8 +28,7 @@ try
     
     $stmt = $conn->prepare( "SELECT 1", $prep_attr );
 
-  
-  echo "Test Successful";
+    echo "Test Successful";
 }
 catch( PDOException $e ) {
     var_dump( $e->errorInfo );

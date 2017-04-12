@@ -10,14 +10,14 @@ require_once("autonomous_setup.php");
 try 
 {   
     $database = "tempdb";
-	$dsn = 	"sqlsrv:Server = $serverName; Database = $database";
+    $dsn = "sqlsrv:Server = $serverName; Database = $database";
     $attr = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
     $conn = new PDO( $dsn, $username, $password, $attr); 
     
     $stmt = $conn->prepare( "SELECT 1", array( "PDO::ATTR_CURSOR" => PDO::CURSOR_FWDONLY ));
 
   
-  echo "Test Successful";
+    echo "Test Successful";
 }
 catch( PDOException $e ) {
     var_dump( $e->errorInfo );
