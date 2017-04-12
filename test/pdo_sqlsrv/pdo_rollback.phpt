@@ -1,5 +1,5 @@
 --TEST--
-starts a transaction, insert 2 rows and commit the transaction
+starts a transaction, delete rows and rollback the transaction
 --SKIPIF--
 
 --FILE--
@@ -11,15 +11,17 @@ starts a transaction, insert 2 rows and commit the transaction
     $conn->exec("IF OBJECT_ID('Table1', 'U') IS NOT NULL DROP TABLE Table1");
     $conn->exec("CREATE TABLE Table1(col1 CHARACTER(1), col2 CHARACTER(1)) ");
    
-    $conn->beginTransaction();
     $ret = $conn->exec("insert into Table1(col1, col2) values('a', 'b') ");
     $ret = $conn->exec("insert into Table1(col1, col2) values('a', 'c') ");
    
     //revert the inserts
+    $conn->beginTransaction();
     $ret = $conn->exec("delete from Table1 where col1 = 'a'");
     $conn->rollback();
     $stmt = $conn->query("SELECT * FROM Table1");
-    if ( count( $stmt->fetchAll() ) == 0 )
+    
+    // Table1 should still have 2 rows since delete was rolled back
+    if ( count( $stmt->fetchAll() ) == 2 )
         echo "Transaction rolled back successfully\n";
     else
         echo "Transaction failed to roll back\n";
