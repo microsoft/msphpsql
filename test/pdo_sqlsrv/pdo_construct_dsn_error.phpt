@@ -1,5 +1,5 @@
 --TEST--
-Test PDO::__Construct without specifying the Server
+Test PDO::__Construct with incorrectly formatted DSN or no Server specified in DSN
 --SKIPIF--
 
 --FILE--
@@ -9,7 +9,6 @@ require_once("autonomous_setup.php");
 
 /*----------Connection option cases that raises errors----------*/
 //dsn with 2 consecutive semicolons
-
 try 
 {   
     $conn = new PDO( "sqlsrv:Server = $serverName;;", $username, $password );
@@ -69,6 +68,16 @@ catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
     echo "\n";
 }
+// Try to connect with no server specified
+try 
+{   
+    $database = "tempdb";
+    @$conn = new PDO( "sqlsrv:Database = $database", $username, $password );
+}
+catch( PDOException $e ) {
+    print_r( ($e->errorInfo)[2] );
+    echo "\n";
+}
 
 echo "\n";
 /*----------Connection option cases that is OK----------*/
@@ -106,6 +115,7 @@ An expected right brace \(\}\) was not found in the DSN string for the value of 
 An invalid value was specified for the keyword 'Database' in the DSN string\.
 The DSN string ended unexpectedly\.
 An invalid DSN string was specified\.
+Server keyword was not specified in the DSN string\.
 
 value in curly braces OK
 value in curly braces followed by a semicolon OK
