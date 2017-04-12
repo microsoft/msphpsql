@@ -116,10 +116,6 @@ require_once("autonomous_setup.php");
 	echo "Test6 - Set stmt option: SQLSRV_ATTR_ENCODING \n";
 	set_stmt_option($conn, array(PDO::SQLSRV_ATTR_ENCODING => 3));
 	
-	$attr = "PDO::ATTR_CURSOR";
-	$stmt = set_stmt_attr($conn, $attr, 1);
-	get_stmt_attr($stmt, $attr);
-	
 	$attr = "PDO::SQLSRV_ATTR_QUERY_TIMEOUT";
 	$stmt = set_stmt_attr($conn, $attr, 45);
 	get_stmt_attr($stmt, $attr);
