@@ -30,9 +30,8 @@ starts a transaction, delete rows and commit the transaction
     $conn->exec("DROP TABLE Table1 ");
    
     //free statement and connection
-    $ret=NULL;
     $stmt = NULL;
-    $conn=NULL;
+    $conn = NULL;
 ?>
 --EXPECT--
 2 rows affected
