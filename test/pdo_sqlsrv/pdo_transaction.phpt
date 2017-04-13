@@ -7,7 +7,7 @@ starts a transaction, delete rows and commit
 <?php
     require_once("autonomous_setup.php");
 
-    $conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb ", $username, $password);
+    $conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb", $username, $password);
     
     $conn->exec("IF OBJECT_ID('Table1', 'U') IS NOT NULL DROP TABLE Table1");
     $conn->exec("CREATE TABLE Table1(col1 CHARACTER(1), col2 CHARACTER(1))");
