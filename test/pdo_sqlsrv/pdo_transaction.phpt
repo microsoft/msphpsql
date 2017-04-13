@@ -1,6 +1,5 @@
 --TEST--
-starts a transaction, delete rows and rollback the transaction then
-starts a transaction, delete rows and commit
+starts a transaction, delete rows and rollback the transaction; starts a transaction, delete rows and commit
 --SKIPIF--
 
 --FILE--
