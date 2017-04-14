@@ -5,7 +5,7 @@ Read, Update, Insert from a SQLSRV stream with buffered query
 --FILE--
 <?php
 
-require( 'connect.inc' );
+require_once( "autonomous_setup.php" );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
 if( !$conn ) {
@@ -95,12 +95,12 @@ sqlsrv_free_stmt( $stmt );
 
 $query = "UPDATE [PhpCustomerTable] SET [Field4]=? WHERE [Field7]='This is field 7.'";
 $params = array( array( &$f4, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM( SQLSRV_ENC_CHAR ), SQLSRV_SQLTYPE_NTEXT ));
-$stmt = sqlsrv_prepare( $conn, $query, $params, array( "Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED ));
+$stmt = sqlsrv_prepare( $conn, $query, $params, array( "Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
 
 if( !$stmt )
 {
 	echo "Statement could not be prepared.\n";
-	die( print_r( sqlsrv_errors(),true );
+	die( print_r( sqlsrv_errors(),true ));
 }
 
 sqlsrv_execute( $stmt );
