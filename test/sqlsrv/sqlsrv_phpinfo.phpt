@@ -10,7 +10,7 @@ function pinfo() {
     ob_clean();
     return $data;
 }
-preg_match ('/sqlsrv support.*/', pinfo(), $matches);
+preg_match ( '/sqlsrv support.*/', pinfo(), $matches );
 var_dump( $matches ); 
 ?>
 --EXPECT--
