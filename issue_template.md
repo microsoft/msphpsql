@@ -14,4 +14,7 @@ Steps to Reproduce:
 2.
 
 Repro Script
+  <?php
+  //Repro script here
+  ?> 
 
