@@ -159,7 +159,7 @@ build_script:
 test_script:
     - cd %PHP_INSTALL_DIR%  
     - php --ini
-    - php -i  
+    - php -i
     - Echo setup test database for SQLSRV tests  - %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
     - Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
