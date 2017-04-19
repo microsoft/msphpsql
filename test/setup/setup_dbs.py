@@ -50,7 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('-dbname', '--DBNAME', required=True)
     parser.add_argument('-azure', '--AZURE', required=False, default='no')
     args = parser.parse_args()
-
+    
     try:    
         server = os.environ['TEST_PHP_SQL_SERVER'] 
         uid = os.environ['TEST_PHP_SQL_UID'] 
@@ -61,6 +61,8 @@ if __name__ == '__main__':
         print("TEST_PHP_SQL_PWD environment variable must be set to the password of the use to authenticate with")
         sys.exit(1)
 
+    current_working_dir=os.getcwd()
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
     conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '  
     
     # In Azure, assume an empty test database has been created using Azure portal
@@ -73,4 +75,5 @@ if __name__ == '__main__':
     setupTestDatabase(conn_options, args.DBNAME, args.AZURE)    
     # populate these tables
     populateTables(conn_options, args.DBNAME)
+    os.chdir(current_working_dir)
     

@@ -26,4 +26,4 @@ if __name__ == '__main__':
 
     conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '  
     
-    executeSQLscript('drop_db.sql', conn_options, args.DBNAME)
+    executeSQLscript( os.path.join( os.path.dirname(os.path.realpath(__file__)), 'drop_db.sql'), conn_options, args.DBNAME)
