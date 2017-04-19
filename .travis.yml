@@ -10,8 +10,10 @@ env:
   global:
   - REPORT_EXIT_STATUS=1
   - ACCEPT_EULA=Y
-  - PHPSQLDIR=/REPO/msphpsql-PHP-7.0-Linux
-  - SQLSERVERHOSTNAME=sql
+  - PHPSQLDIR=/REPO/msphpsql-dev
+  - TEST_PHP_SQL_SERVER=sql
+  - TEST_PHP_SQL_UID=sa
+  - TEST_PHP_SQL_PWD=<YourStrong!Passw0rd>
   - SQLSRV_DBNAME=msphpsql_sqlsrv
   - PDOSQLSRV_DBNAME=msphpsql_pdosqlsrv  
 
@@ -20,11 +22,12 @@ before_install:
  
 install:
   - docker build --build-arg PHPSQLDIR=$PHPSQLDIR -t msphpsql-dev -f Dockerfile-msphpsql .
-  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=<YourStrong!Passw0rd>' -p 1433:1433 --name=$SQLSERVERHOSTNAME -d microsoft/mssql-server-linux
+  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$TEST_PHP_SQL_PWD' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d microsoft/mssql-server-linux
 
 script: 
-  - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --link $SQLSERVERHOSTNAME --name=client msphpsql-dev
+  - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --link $TEST_PHP_SQL_SERVER --name=client msphpsql-dev
   - docker ps -a 
+  - docker exec client python -V
   - docker exec client python ./test/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
   - docker exec client python ./test/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
   - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/pdo_sqlsrv/*.phpt

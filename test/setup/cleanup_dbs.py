@@ -22,7 +22,7 @@ if __name__ == '__main__':
         print("TEST_PHP_SQL_SERVER environment variable must be set to the name of the server to use")
         print("TEST_PHP_SQL_UID environment variable must be set to the name of the user to authenticate with")
         print("TEST_PHP_SQL_PWD environment variable must be set to the password of the use to authenticate with")
-        sys.exit(0)
+        sys.exit(1)
 
     conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '  
     
