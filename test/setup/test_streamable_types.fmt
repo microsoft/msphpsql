@@ -1,0 +1,15 @@
+9.0
+13
+1       SQLCHAR       8       0       ""   1     varchar_type                                 SQL_Latin1_General_CP1_CI_AS
+2       SQLNCHAR      8       0       ""   2     nvarchar_type                                SQL_Latin1_General_CP1_CI_AS
+3       SQLBINARY     8       0       ""   3     varbinary_type                               ""
+4       SQLCHAR       4       0       ""   4     text_type                                    SQL_Latin1_General_CP1_CI_AS
+5       SQLNCHAR      4       0       ""   5     ntext_type                                   SQL_Latin1_General_CP1_CI_AS
+6       SQLIMAGE      4       0       ""   6     image_type                                   ""
+7       SQLNCHAR      8       0       ""   7     xml_type                                     ""
+8       SQLCHAR       2       256     ""   8     char_short_type                              SQL_Latin1_General_CP1_CI_AS
+9       SQLCHAR       2       256     ""   9     varchar_short_type                           SQL_Latin1_General_CP1_CI_AS
+10      SQLNCHAR      2       512     ""   10    nchar_short_type                             SQL_Latin1_General_CP1_CI_AS
+11      SQLNCHAR      2       512     ""   11    nvarchar_short_type                          SQL_Latin1_General_CP1_CI_AS
+12      SQLBINARY     2       256     ""   12    binary_short_type                            ""
+13      SQLBINARY     2       256     ""   13    varbinary_short_type                         ""
