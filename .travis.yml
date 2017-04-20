@@ -12,8 +12,6 @@ env:
   - ACCEPT_EULA=Y
   - PHPSQLDIR=/REPO/msphpsql-dev
   - TEST_PHP_SQL_SERVER=sql
-  - TEST_PHP_SQL_UID=sa
-  - TEST_PHP_SQL_PWD='<YourStrong!Passw0rd>'
   - SQLSRV_DBNAME=msphpsql_sqlsrv
   - PDOSQLSRV_DBNAME=msphpsql_pdosqlsrv  
 
@@ -27,10 +25,6 @@ install:
 script: 
   - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --link $TEST_PHP_SQL_SERVER --name=client msphpsql-dev
   - docker ps -a 
-  - docker exec client python -V
-  - docker exec client bash -c 'export TEST_PHP_SQL_SERVER=$TEST_PHP_SQL_SERVER'
-  - docker exec client bash -c 'export TEST_PHP_SQL_UID=$TEST_PHP_SQL_UID'
-  - docker exec client bash -c 'export TEST_PHP_SQL_PWD=$TEST_PHP_SQL_PWD'
   - docker exec client python ./test/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
   - docker exec client python ./test/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
   - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/pdo_sqlsrv/*.phpt
