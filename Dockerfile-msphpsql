@@ -26,7 +26,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
 ARG PHPSQLDIR=/REPO/msphpsql-dev
 ENV TEST_PHP_SQL_SERVER sql
 ENV TEST_PHP_SQL_UID sa
-ENV TEST_PHP_SQL_PWD <YourStrong!Passw0rd>
+ENV TEST_PHP_SQL_PWD '<YourStrong!Passw0rd>'
 
 # set locale to utf-8
 RUN locale-gen en_US.UTF-8
@@ -76,5 +76,3 @@ RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
 ENV REPORT_EXIT_STATUS 1
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
 
-RUN echo $PATH
-RUN echo $USER
