@@ -76,3 +76,6 @@ RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
 
 ENV REPORT_EXIT_STATUS 1
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
+
+RUN echo $PATH
+RUN echo $USER
