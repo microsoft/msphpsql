@@ -1115,6 +1115,10 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
 
             // since the param isn't reliable, we don't do anything here
             case PDO_PARAM_EVT_ALLOC:
+                if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE && (param->param_type & PDO_PARAM_INPUT_OUTPUT )) {
+                    sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+                    THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED );
+                }
                 break;
             case PDO_PARAM_EVT_FREE:
                 break;
