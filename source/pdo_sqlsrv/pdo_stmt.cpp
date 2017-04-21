@@ -486,9 +486,10 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 // *stmt - pointer to current statement
 // Return:
 // 1 for success.
-int pdo_sqlsrv_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)
+int pdo_sqlsrv_stmt_dtor( pdo_stmt_t *stmt TSRMLS_DC )
 {
-    sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+    //sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+    pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
     LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );
 
@@ -498,7 +499,13 @@ int pdo_sqlsrv_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)
         return 1;
     }
 
-    driver_stmt->~sqlsrv_stmt();
+    if ( driver_stmt->placeholders != NULL ) {
+        zend_hash_destroy( driver_stmt->placeholders );
+        FREE_HASHTABLE( driver_stmt->placeholders );
+        driver_stmt->placeholders = NULL;
+    }
+
+    (( sqlsrv_stmt* )driver_stmt )->~sqlsrv_stmt();
 
     sqlsrv_free( driver_stmt );
 
@@ -547,6 +554,8 @@ int pdo_sqlsrv_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
         // if the user is using prepare emulation (PDO::ATTR_EMULATE_PREPARES), set the query to the 
         // subtituted query provided by PDO
         if( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+            // reset the placeholders hashtable internal in case the user reexecutes a statement
+            zend_hash_internal_pointer_reset(driver_stmt->placeholders);
 
             query = stmt->active_query_string;
             query_len = static_cast<unsigned int>( stmt->active_query_stringlen );

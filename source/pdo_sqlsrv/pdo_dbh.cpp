@@ -589,6 +589,8 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
     sqlsrv_malloc_auto_ptr<char> sql_rewrite;
     size_t sql_rewrite_len = 0;
     sqlsrv_malloc_auto_ptr<pdo_sqlsrv_stmt> driver_stmt;
+    hash_auto_ptr placeholders;
+    sqlsrv_malloc_auto_ptr<sql_string_parser> sql_parser;
 
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
     SQLSRV_ASSERT(( driver_dbh != NULL ), "pdo_sqlsrv_dbh_prepare: dbh->driver_data was null");
@@ -660,8 +662,17 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
         }
         // else if stmt->support_placeholders == PDO_PLACEHOLDER_NONE means that stmt->active_query_string will be
         // set to the substituted query
+        if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+			// parse placeholders in the sql query into the placeholders ht
+            ALLOC_HASHTABLE( placeholders );
+            core::sqlsrv_zend_hash_init( *driver_dbh, placeholders, 5, ZVAL_PTR_DTOR /* dtor */, 0 /* persistent */ TSRMLS_CC );
+            sql_parser = new ( sqlsrv_malloc( sizeof( sql_string_parser ))) sql_string_parser( *driver_dbh, stmt->query_string,
+                static_cast<int>(stmt->query_stringlen), placeholders );
+            sql_parser->parse_sql_string( TSRMLS_C );
+            driver_stmt->placeholders = placeholders;
+            placeholders.transferred();
+        }
 
-   
         stmt->driver_data = driver_stmt;
         driver_stmt.transferred();                   
     }
@@ -1279,13 +1290,67 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
 
-    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
-    SQLSRV_ENCODING encoding = driver_dbh->bind_param_encoding;
+    SQLSRV_ENCODING encoding = SQLSRV_ENCODING_CHAR;
+	
+    // get the current object in PHP; this distinguishes pdo_sqlsrv_dbh_quote being called from:
+	// 1. PDO::quote() - object name is PDO
+	// 2. PDO::execute() - object name is PDOStatement
+    zend_execute_data* execute_data = EG( current_execute_data );
+    zval *object = getThis();
+
+    // iterate through parents to find "PDOStatement"
+    bool is_statement = false;
+    zend_class_entry* curr_class = ( Z_OBJ_P( object ))->ce;
+    while ( curr_class != NULL ) {
+        if ( strcmp( reinterpret_cast<const char*>( curr_class->name->val ), "PDOStatement" ) == 0 ) {
+            is_statement = true;
+            break;
+        }
+        curr_class = curr_class->parent;
+    }
+
+    // only change the encoding if quote is called from the statement level (which should only be called when a statement
+    // is prepared with emulate prepared on)
+    if ( is_statement ) {
+        pdo_stmt_t *stmt = Z_PDO_STMT_P( object );
+        // set the encoding to be the encoding of the statement otherwise set to be the encoding of the dbh
+        pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
+        if ( driver_stmt->encoding() != SQLSRV_ENCODING_INVALID ) {
+            encoding = driver_stmt->encoding();
+        }
+        else {
+            pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->driver_data );
+            encoding = driver_dbh->encoding();
+        }
+        // get the placeholder at the current position in driver_stmt->placeholders ht
+        zval* placeholder = NULL;
+        if (( placeholder = zend_hash_get_current_data( driver_stmt->placeholders )) != NULL && zend_hash_move_forward( driver_stmt->placeholders ) == SUCCESS ) {
+            pdo_bound_param_data* param = NULL;
+            if ( Z_TYPE_P( placeholder ) == IS_STRING ) {
+                param = reinterpret_cast<pdo_bound_param_data*>( zend_hash_find_ptr( stmt->bound_params, Z_STR_P( placeholder )));
+            }
+            else if ( Z_TYPE_P( placeholder ) == IS_LONG) {
+                param = reinterpret_cast<pdo_bound_param_data*>( zend_hash_index_find_ptr( stmt->bound_params, Z_LVAL_P( placeholder )));
+            }
+            if ( NULL != param ) {
+                SQLSRV_ENCODING param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
+                if ( param_encoding != SQLSRV_ENCODING_INVALID ) {
+                    encoding = param_encoding;
+                }
+            }
+        }
+    }
 
     if ( encoding == SQLSRV_ENCODING_BINARY ) {
         // convert from char* to hex digits using os
         std::basic_ostringstream<char> os;
         for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+			// when an int is < 16 and is appended to os, its hex representation which starts
+			// with '0' does not get appended properly (the starting '0' does not get appended)
+			// thus append '0' first
+            if (( int )unquoted[index] < 16 ) {
+                os << '0';
+            }
            os << std::hex << ( int )unquoted[ index ];
         }
         std::basic_string<char> str_hex = os.str();
