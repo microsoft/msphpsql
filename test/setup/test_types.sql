@@ -27,19 +27,20 @@ INSERT INTO $(dbname)..[test_types] (bigint_type, int_type, smallint_type, tinyi
 
 GO
 
-CREATE TABLE [test_streamable_types] ( [varchar_type] VARCHAR(MAX) null,
-                                [nvarchar_type] NVARCHAR(MAX) null,
-                                [varbinary_type] VARBINARY(MAX) null,
-                                [text_type] TEXT null,
-                                [ntext_type] NTEXT null,
-                                [image_type] IMAGE null,
-                                       [xml_type] XML null,
-                                       [char_short_type] CHAR(256) null,
-                                       [varchar_short_type] VARCHAR(256) null,
-                                       [nchar_short_type] NCHAR(256) null,
-                                       [nvarchar_short_type] NVARCHAR(256) null,
-                                       [binary_short_type] BINARY(256) null,
-                                       [varbinary_short_type] VARBINARY(256) null );
+CREATE TABLE [test_streamable_types] ( 
+    [varchar_type] VARCHAR(MAX) null,
+    [nvarchar_type] NVARCHAR(MAX) null,
+    [varbinary_type] VARBINARY(MAX) null,
+    [text_type] TEXT null,
+    [ntext_type] NTEXT null,
+    [image_type] IMAGE null,
+    [xml_type] XML null,
+    [char_short_type] CHAR(256) null,
+    [varchar_short_type] VARCHAR(256) null,
+    [nchar_short_type] NCHAR(256) null,
+    [nvarchar_short_type] NVARCHAR(256) null,
+    [binary_short_type] BINARY(256) null,
+    [varbinary_short_type] VARBINARY(256) null );
 GO
 
 CREATE TABLE [155671] ([cat_id] [int] IDENTITY (1,1) NOT NULL, [cat_title] [varchar](50) NOT NULL, [cat_order][int] NOT NULL) ON [PRIMARY];
