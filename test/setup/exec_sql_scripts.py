@@ -12,6 +12,7 @@ def executeCommmand(inst_command):
     print ( inst_command )
     oo,ee = proc.communicate()
     print (ee)
+    print (oo)
 
 def executeSQLscript(sqlfile, conn_options, dbname):
     if platform.system() == 'Windows':
