@@ -138,6 +138,7 @@ class string_parser
         inline bool next(void);
         inline bool is_eos(void);
         inline bool is_white_space(char c);
+        bool discard_white_spaces(void);
         void add_key_value_pair(const char* value, int len TSRMLS_DC);
 };
 
@@ -161,7 +162,6 @@ class conn_string_parser : private string_parser
 
     private:
         const char* current_key_name;
-        bool discard_white_spaces(void);
         int discard_trailing_white_spaces(const char* str, int len);
         void validate_key(const char *key, int key_len TSRMLS_DC);
 

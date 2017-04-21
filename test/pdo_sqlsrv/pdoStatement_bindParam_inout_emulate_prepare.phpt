@@ -1,5 +1,5 @@
 --TEST--
-uses an input/output parameter with emulate prepare
+Tests error returned when binding input/output parameter with emulate prepare
 --SKIPIF--
 --FILE--
 <?php

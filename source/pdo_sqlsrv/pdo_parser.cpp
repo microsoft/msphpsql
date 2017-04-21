@@ -101,7 +101,7 @@ int conn_string_parser::discard_trailing_white_spaces( const char* str, int len 
 }
 
 // Discard white spaces.
-bool conn_string_parser::discard_white_spaces()
+bool string_parser::discard_white_spaces()
 {
     if( this->is_eos() ) {
     
@@ -477,6 +477,12 @@ void sql_string_parser::parse_sql_string( TSRMLS_D ) {
                     next();
                 }
                 add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos TSRMLS_CC );
+                discard_white_spaces();
+                // if an '=' is right after a placeholder, it means the placeholder is for output parameters
+                //  and emulate prepare does not support output parameters
+                if (this->orig_str[pos] == '=') {
+                    THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED);
+                }
                 this->current_key++;
             }
             // if '?', don't need to parse anymore since the position of the bound_param is already stored in the bound_params ht
@@ -484,6 +490,10 @@ void sql_string_parser::parse_sql_string( TSRMLS_D ) {
                 next();
                 // add dummy value to placeholders ht to keep count of the number of placeholders
                 add_key_int_value_pair( this->current_key );
+                discard_white_spaces();
+                if (this->orig_str[pos] == '=') {
+                    THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED);
+                }
                 this->current_key++;
             }
         }
