@@ -420,7 +420,6 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRM
     direct_query( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
     client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size )),
-    bind_param_encoding( SQLSRV_ENCODING_CHAR ),
     fetch_numeric( false )
 {
     if( client_buffer_max_size < 0 ) {

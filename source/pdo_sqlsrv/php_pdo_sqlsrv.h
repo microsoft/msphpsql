@@ -199,7 +199,6 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool direct_query;
     long query_timeout;
     zend_long client_buffer_max_size;
-    SQLSRV_ENCODING bind_param_encoding;
     bool fetch_numeric;
 
     pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC );
