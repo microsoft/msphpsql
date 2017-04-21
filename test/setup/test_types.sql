@@ -65,4 +65,4 @@ begin
 end
 go
 
-exec test_out (55, 56, 3)
+exec test_out 55, 56, 3

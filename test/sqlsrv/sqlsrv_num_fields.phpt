@@ -87,7 +87,7 @@ $v1 = 1;
 $v2 = 2;
 $v3 = -1;  // must initialize output parameters to something similar to what they are projected to receive
 
-$stmt = sqlsrv_prepare( $conn, "{exec test_out( ?, ?, ? )}", array( &$v1, &$v2, array( &$v3, SQLSRV_PARAM_OUT )));
+$stmt = sqlsrv_prepare( $conn, "{call test_out( ?, ?, ? )}", array( &$v1, &$v2, array( &$v3, SQLSRV_PARAM_OUT )));
 if ( !$stmt ){
     var_dump( sqlsrv_errors() );
 }
