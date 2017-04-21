@@ -64,5 +64,3 @@ begin
 	print @p3
 end
 go
-
-exec test_out 55, 56, 3
