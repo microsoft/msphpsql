@@ -99,7 +99,7 @@ $st->BindValues($values, $blobs, ':db_insert', $columnInformation);
 $st->execute();
 
 $st = $cnn->query("SELECT * FROM [watchdog]");
-var_dump($st->fetchAll());
+var_dump($st->fetchAll(PDO::FETCH_ASSOC));
 
 $st = NULL;
 $cnn = NULL;
@@ -108,22 +108,14 @@ $cnn = NULL;
 --EXPECT--
 array(1) {
   [0]=>
-  array(22) {
+  array(11) {
     ["wid"]=>
-    string(1) "1"
-    [0]=>
     string(1) "1"
     ["uid"]=>
     string(1) "0"
-    [1]=>
-    string(1) "0"
     ["type"]=>
     string(3) "php"
-    [2]=>
-    string(3) "php"
     ["message"]=>
-    string(51) "%type: @message in %function (line %line of %file)."
-    [3]=>
     string(51) "%type: @message in %function (line %line of %file)."
     ["variables"]=>
     string(2188) "a:5:{s:5:"%type";s:45:"Drupal\Core\Database\DatabaseExceptionWrapper";s:8:"@message";s:1913:"SQLSTATE[IMSSP]: An error occurred translating the query string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.
@@ -178,82 +170,17 @@ OUTPUT $action;; Array
 
 )
 ";s:9:"%function";s:65:"Drupal\Core\Routing\RouteProvider->getRouteCollectionForRequest()";s:5:"%file";s:52:"D:\d8\core\lib\Drupal\Core\Routing\RouteProvider.php";s:5:"%line";i:167;}"
-    [4]=>
-    string(2188) "a:5:{s:5:"%type";s:45:"Drupal\Core\Database\DatabaseExceptionWrapper";s:8:"@message";s:1913:"SQLSTATE[IMSSP]: An error occurred translating the query string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.
-.: MERGE INTO [cache_data] _target
-USING (SELECT T.* FROM (values(:db_insert_placeholder_0, :db_insert_placeholder_1, :db_insert_placeholder_2, :db_insert_placeholder_3, :db_insert_placeholder_4, :db_insert_placeholder_5, :db_insert_placeholder_6)) as T([cid], [expire], [created], [tags], [checksum], [data], [serialized])) _source
-ON _target.[cid] = _source.[cid]
-WHEN MATCHED THEN UPDATE SET _target.[expire] = _source.[expire], _target.[created] = _source.[created], _target.[tags] = _source.[tags], _target.[checksum] = _source.[checksum], _target.[data] = _source.[data], _target.[serialized] = _source.[serialized]
-WHEN NOT MATCHED THEN INSERT ([cid], [expire], [created], [tags], [checksum], [data], [serialized]) VALUES (_source.[cid], _source.[expire], _source.[created], _source.[tags], _source.[checksum], _source.[data], _source.[serialized])
-OUTPUT $action;; Array
-(
-    [:db_insert_placeholder_0] => Array
-        (
-            [value] => route:/:XDEBUG_SESSION_START=58E1C1C4
-            [datatype] => 2
-        )
-
-    [:db_insert_placeholder_1] => Array
-        (
-            [value] => -1
-            [datatype] => 2
-        )
-
-    [:db_insert_placeholder_2] => Array
-        (
-            [value] => 1470205773.7
-            [datatype] => 2
-        )
-
-    [:db_insert_placeholder_3] => Array
-        (
-            [value] => route_match
-            [datatype] => 2
-        )
-
-    [:db_insert_placeholder_4] => Array
-        (
-            [value] => 4
-            [datatype] => 2
-        )
-
-    [:db_insert_placeholder_5] => Array
-        (
-            [value] => Resource id #4
-            [datatype] => 3
-        )
-
-    [:db_insert_placeholder_6] => Array
-        (
-            [value] => 1
-            [datatype] => 2
-        )
-
-)
-";s:9:"%function";s:65:"Drupal\Core\Routing\RouteProvider->getRouteCollectionForRequest()";s:5:"%file";s:52:"D:\d8\core\lib\Drupal\Core\Routing\RouteProvider.php";s:5:"%line";i:167;}"
     ["severity"]=>
-    string(1) "3"
-    [5]=>
     string(1) "3"
     ["link"]=>
     string(0) ""
-    [6]=>
-    string(0) ""
     ["location"]=>
-    string(64) "http://local.d7test.com/index.php/?XDEBUG_SESSION_START=58E1C1C4"
-    [7]=>
     string(64) "http://local.d7test.com/index.php/?XDEBUG_SESSION_START=58E1C1C4"
     ["referer"]=>
     string(0) ""
-    [8]=>
-    string(0) ""
     ["hostname"]=>
     string(9) "127.0.0.1"
-    [9]=>
-    string(9) "127.0.0.1"
     ["timestamp"]=>
-    string(10) "1470205774"
-    [10]=>
     string(10) "1470205774"
   }
 }
