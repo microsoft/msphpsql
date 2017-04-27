@@ -208,9 +208,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 	brew tap microsoft/mssql-preview https://github.com/Microsoft/homebrew-mssql-preview
 	brew update
-	brew install unixodbc
 	brew install msodbcsql
-	brew install llvm --with-clang --with-clang-extra-tools
 	brew install autoconf
 
 *Note: You need to make sure you install PHP 7 before you proceed to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
