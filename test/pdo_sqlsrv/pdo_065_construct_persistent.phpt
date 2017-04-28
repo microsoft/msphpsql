@@ -22,7 +22,7 @@ catch( PDOException $e ) {
 }
 try{
     echo "\nTesting new connection after exception thrown in previous connection...\n";
-    $tableName1 = GetTempTableName('tab1');
+    $tableName1 = GetTempTableName('tab1', false);
     $conn = new PDO( $dsn, $username, $password ); 
     $sql = "CREATE TABLE $tableName1 (c1 int, c2 varchar(10))";
     $stmt = $conn->query($sql);

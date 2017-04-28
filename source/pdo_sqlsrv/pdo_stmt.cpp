@@ -305,7 +305,7 @@ struct pdo_stmt_methods pdo_sqlsrv_stmt_methods = {
 
 };
 
-void stmt_option_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+void stmt_option_pdo_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
 {
     set_stmt_cursors( stmt, value_z TSRMLS_CC ); 
 }
@@ -552,12 +552,18 @@ int pdo_sqlsrv_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
             query_len = static_cast<unsigned int>( stmt->active_query_stringlen );
         }
 
-        core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
+        SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
 
-        stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
+        if ( execReturn == SQL_NO_DATA ) {
+            stmt->column_count = 0;
+            stmt->row_count = 0;
+        }
+        else {
+            stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
 
-        // return the row count regardless if there are any rows or not
-        stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+            // return the row count regardless if there are any rows or not
+            stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+        }
 
         // workaround for a bug in the PDO driver manager.  It is fairly simple to crash the PDO driver manager with 
         // the following sequence:

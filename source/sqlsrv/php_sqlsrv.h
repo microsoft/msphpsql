@@ -96,8 +96,8 @@ extern zend_module_entry g_sqlsrv_module_entry;   // describes the extension to 
 extern HMODULE g_sqlsrv_hmodule;                  // used for getting the version information
 
 // henv context for creating connections
-extern sqlsrv_context* g_henv_cp;
-extern sqlsrv_context* g_henv_ncp;
+extern sqlsrv_context* g_ss_henv_cp;
+extern sqlsrv_context* g_ss_henv_ncp;
 
 extern OSVERSIONINFO g_osversion;                 // used to determine which OS we're running in
 
@@ -160,7 +160,7 @@ struct sqlsrv_fetch_field_name {
     unsigned int len;
 };
 
-struct stmt_option_scrollable : public stmt_option_functor {
+struct stmt_option_ss_scrollable : public stmt_option_functor {
 
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };

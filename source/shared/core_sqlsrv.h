@@ -1079,6 +1079,10 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
+#ifdef _WIN32
+const char ConnectRetryCount[] = "ConnectRetryCount";
+const char ConnectRetryInterval[] = "ConnectRetryInterval";
+#endif // _WIN32
 const char Database[] = "Database";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
@@ -1099,24 +1103,28 @@ const char SERVER[] = "Server";
 
 enum SQLSRV_CONN_OPTIONS {
    
-   SQLSRV_CONN_OPTION_INVALID,
-   SQLSRV_CONN_OPTION_APP,
-   SQLSRV_CONN_OPTION_CHARACTERSET,
-   SQLSRV_CONN_OPTION_CONN_POOLING,
-   SQLSRV_CONN_OPTION_DATABASE,
-   SQLSRV_CONN_OPTION_ENCRYPT,
-   SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
-   SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
-   SQLSRV_CONN_OPTION_MARS,
-   SQLSRV_CONN_OPTION_QUOTED_ID,
-   SQLSRV_CONN_OPTION_TRACE_FILE,
-   SQLSRV_CONN_OPTION_TRACE_ON,
-   SQLSRV_CONN_OPTION_TRANS_ISOLATION,
-   SQLSRV_CONN_OPTION_TRUST_SERVER_CERT,
-   SQLSRV_CONN_OPTION_WSID,
-   SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
-   SQLSRV_CONN_OPTION_APPLICATION_INTENT,
-   SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
+    SQLSRV_CONN_OPTION_INVALID,
+    SQLSRV_CONN_OPTION_APP,
+    SQLSRV_CONN_OPTION_CHARACTERSET,
+    SQLSRV_CONN_OPTION_CONN_POOLING,
+    SQLSRV_CONN_OPTION_DATABASE,
+    SQLSRV_CONN_OPTION_ENCRYPT,
+    SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
+    SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
+    SQLSRV_CONN_OPTION_MARS,
+    SQLSRV_CONN_OPTION_QUOTED_ID,
+    SQLSRV_CONN_OPTION_TRACE_FILE,
+    SQLSRV_CONN_OPTION_TRACE_ON,
+    SQLSRV_CONN_OPTION_TRANS_ISOLATION,
+    SQLSRV_CONN_OPTION_TRUST_SERVER_CERT,
+    SQLSRV_CONN_OPTION_WSID,
+    SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
+    SQLSRV_CONN_OPTION_APPLICATION_INTENT,
+    SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
+#ifdef _WIN32
+    SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
+    SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
+#endif // _WIN32
 
    // Driver specific connection options
    SQLSRV_CONN_OPTION_DRIVER_SPECIFIC = 1000,
@@ -1308,6 +1316,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     unsigned int current_stream_read;     // # of bytes read so far. (if we read an empty PHP stream, we send an empty string 
                                           // to the server)
     zval field_cache;                    // cache for a single row of fields, to allow multiple and out of order retrievals
+    zval col_cache;                      // Used by get_field_as_string not to call SQLColAttribute()  after every fetch. 
     zval active_stream;                  // the currently active stream reading data from the database
 
     sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC );
@@ -1363,7 +1372,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLINT direction, zval* param_z,
                              SQLSRV_PHPTYPE php_out_type, SQLSRV_ENCODING encoding, SQLSMALLINT sql_type, SQLULEN column_size,
                              SQLSMALLINT decimal_digits TSRMLS_DC );
-void core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql = NULL, int sql_len = 0 );
+SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql = NULL, int sql_len = 0 );
 field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT colno TSRMLS_DC );
 bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULEN fetch_offset TSRMLS_DC );
 void core_sqlsrv_get_field(sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_phptype, bool prefer_string,
@@ -2040,7 +2049,7 @@ namespace core {
         SQLRETURN r;
         SQLSMALLINT num_cols;
         r = ::SQLNumResultCols( stmt->handle(), &num_cols );
-        
+
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
         }

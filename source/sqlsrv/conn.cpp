@@ -95,6 +95,24 @@ struct bool_conn_str_func {
     }
 };
 
+#ifdef _WIN32
+struct int_conn_str_func {
+
+    static void func( connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
+    {
+        TSRMLS_C;
+        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_LONG, "An integer is expected for this keyword" ) 
+
+        std::string val_str = std::to_string( Z_LVAL_P( value ));
+        
+        conn_str += option->odbc_name;
+        conn_str += "={";
+        conn_str += val_str;
+        conn_str += "};";
+    }
+};
+#endif // _WIN32
+
 template <unsigned int Attr>
 struct int_conn_attr_func {
 
@@ -169,6 +187,10 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
+#ifdef _WIN32
+const char ConnectRetryCount[] = "ConnectRetryCount";
+const char ConnectRetryInterval[] = "ConnectRetryInterval";
+#endif // _WIN32
 const char Database[] = "Database";
 const char DateAsString[] = "ReturnDatesAsStrings";
 const char Encrypt[] = "Encrypt";
@@ -210,7 +232,7 @@ const stmt_option SS_STMT_OPTS[] = {
         SSStmtOptionNames::SCROLLABLE, 
         sizeof( SSStmtOptionNames::SCROLLABLE ),
         SQLSRV_STMT_OPTION_SCROLLABLE, 
-	    std::unique_ptr<stmt_option_scrollable>( new stmt_option_scrollable )
+	    std::unique_ptr<stmt_option_ss_scrollable>( new stmt_option_ss_scrollable )
     },
     { 
         SSStmtOptionNames::CLIENT_BUFFER_MAX_SIZE, 
@@ -269,6 +291,26 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_BOOL,
         conn_null_func::func
     },
+#ifdef _WIN32
+    {
+        SSConnOptionNames::ConnectRetryCount,
+        sizeof( SSConnOptionNames::ConnectRetryCount ),
+        SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
+        ODBCConnOptions::ConnectRetryCount,
+        sizeof( ODBCConnOptions::ConnectRetryCount ),
+        CONN_ATTR_INT,
+        int_conn_str_func::func
+    },
+    {
+        SSConnOptionNames::ConnectRetryInterval,
+        sizeof( SSConnOptionNames::ConnectRetryInterval ),
+        SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
+        ODBCConnOptions::ConnectRetryInterval,
+        sizeof( ODBCConnOptions::ConnectRetryInterval ),
+        CONN_ATTR_INT,
+        int_conn_str_func::func
+    },
+#endif // _WIN32
     {
         SSConnOptionNames::Database,
         sizeof( SSConnOptionNames::Database ),
@@ -413,8 +455,8 @@ PHP_FUNCTION ( sqlsrv_connect )
 {
     
     LOG_FUNCTION( "sqlsrv_connect" );
-    SET_FUNCTION_NAME( *g_henv_cp );
-    SET_FUNCTION_NAME( *g_henv_ncp );
+    SET_FUNCTION_NAME( *g_ss_henv_cp );
+    SET_FUNCTION_NAME( *g_ss_henv_ncp );
 
     reset_errors( TSRMLS_C );
 
@@ -428,7 +470,7 @@ PHP_FUNCTION ( sqlsrv_connect )
     // get the server name and connection options
     int result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "s|a", &server, &server_len, &options_z );
     
-    CHECK_CUSTOM_ERROR(( result == FAILURE ), *g_henv_cp, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, "sqlsrv_connect" ) {
+    CHECK_CUSTOM_ERROR(( result == FAILURE ), *g_ss_henv_cp, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, "sqlsrv_connect" ) {
         RETURN_FALSE;
     }
     
@@ -441,14 +483,14 @@ PHP_FUNCTION ( sqlsrv_connect )
         // Initialize the options array to be passed to the core layer
         ALLOC_HASHTABLE( ss_conn_options_ht );
         
-        core::sqlsrv_zend_hash_init( *g_henv_cp, ss_conn_options_ht, 10 /* # of buckets */, 
+        core::sqlsrv_zend_hash_init( *g_ss_henv_cp, ss_conn_options_ht, 10 /* # of buckets */, 
                                  ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
    
-        // Either of g_henv_cp or g_henv_ncp can be used to propogate the error.
-        ::validate_conn_options( *g_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht TSRMLS_CC );   
+        // Either of g_ss_henv_cp or g_ss_henv_ncp can be used to propogate the error.
+        ::validate_conn_options( *g_ss_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht TSRMLS_CC );   
      
         // call the core connect function  
-        conn = static_cast<ss_sqlsrv_conn*>( core_sqlsrv_connect( *g_henv_cp, *g_henv_ncp, &core::allocate_conn<ss_sqlsrv_conn>,
+        conn = static_cast<ss_sqlsrv_conn*>( core_sqlsrv_connect( *g_ss_henv_cp, *g_ss_henv_ncp, &core::allocate_conn<ss_sqlsrv_conn>,
                                                                   server, uid, pwd, ss_conn_options_ht, ss_error_handler,  
                                                                   SS_CONN_OPTS, NULL, "sqlsrv_connect" TSRMLS_CC )); 
         
@@ -457,7 +499,7 @@ PHP_FUNCTION ( sqlsrv_connect )
         // create a bunch of statements
         ALLOC_HASHTABLE( stmts );
     
-        core::sqlsrv_zend_hash_init( *g_henv_cp, stmts, 5, NULL /* dtor */, 0 /* persistent */ TSRMLS_CC );
+        core::sqlsrv_zend_hash_init( *g_ss_henv_cp, stmts, 5, NULL /* dtor */, 0 /* persistent */ TSRMLS_CC );
 
         // register the connection with the PHP runtime 
         

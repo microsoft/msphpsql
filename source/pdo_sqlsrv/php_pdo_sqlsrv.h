@@ -99,8 +99,8 @@ PHP_INI_BEGIN()
 PHP_INI_END()
 
 // henv context for creating connections
-extern sqlsrv_context* g_henv_cp;
-extern sqlsrv_context* g_henv_ncp;
+extern sqlsrv_context* g_pdo_henv_cp;
+extern sqlsrv_context* g_pdo_henv_ncp;
 
 
 //*********************************************************************************************************************************
@@ -194,7 +194,7 @@ struct stmt_option_encoding : public stmt_option_functor {
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
 
-struct stmt_option_scrollable : public stmt_option_functor {
+struct stmt_option_pdo_scrollable : public stmt_option_functor {
 
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };

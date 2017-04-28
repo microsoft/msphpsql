@@ -41,6 +41,10 @@ const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char ConnectionPooling[] = "ConnectionPooling";
+#ifdef _WIN32
+const char ConnectRetryCount[] = "ConnectRetryCount";
+const char ConnectRetryInterval[] = "ConnectRetryInterval";
+#endif // _WIN32
 const char Database[] = "Database";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
@@ -76,7 +80,7 @@ enum PDO_STMT_OPTIONS {
 const stmt_option PDO_STMT_OPTS[] = {
  
     { NULL, 0, SQLSRV_STMT_OPTION_QUERY_TIMEOUT, std::unique_ptr<stmt_option_query_timeout>( new stmt_option_query_timeout ) },
-    { NULL, 0, SQLSRV_STMT_OPTION_SCROLLABLE, std::unique_ptr<stmt_option_scrollable>( new stmt_option_scrollable ) },
+    { NULL, 0, SQLSRV_STMT_OPTION_SCROLLABLE, std::unique_ptr<stmt_option_pdo_scrollable>( new stmt_option_pdo_scrollable ) },
     { NULL, 0, PDO_STMT_OPTION_ENCODING, std::unique_ptr<stmt_option_encoding>( new stmt_option_encoding ) },
     { NULL, 0, PDO_STMT_OPTION_DIRECT_QUERY, std::unique_ptr<stmt_option_direct_query>( new stmt_option_direct_query ) },
     { NULL, 0, PDO_STMT_OPTION_CURSOR_SCROLL_TYPE, std::unique_ptr<stmt_option_cursor_scroll_type>( new stmt_option_cursor_scroll_type ) },
@@ -97,6 +101,24 @@ struct pdo_txn_isolation_conn_attr_func
 {
     static void func( connection_option const* /*option*/, zval* value_z, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC );
 };
+
+#ifdef _WIN32
+struct pdo_int_conn_str_func {
+
+    static void func( connection_option const* option, zval* value, sqlsrv_conn* /*conn*/, std::string& conn_str TSRMLS_DC )
+    {
+        TSRMLS_C;
+        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Wrong zval type for this keyword" ) 
+
+        std::string val_str = Z_STRVAL_P( value );
+        
+        conn_str += option->odbc_name;
+        conn_str += "={";
+        conn_str += val_str;
+        conn_str += "};";
+    }
+};
+#endif // _WIN32
 
 template <unsigned int Attr>
 struct pdo_int_conn_attr_func {
@@ -187,6 +209,26 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_BOOL,
         conn_null_func::func
     },
+#ifdef _WIN32
+    {
+        PDOConnOptionNames::ConnectRetryCount,
+        sizeof( PDOConnOptionNames::ConnectRetryCount ),
+        SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
+        ODBCConnOptions::ConnectRetryCount,
+        sizeof( ODBCConnOptions::ConnectRetryCount ),
+        CONN_ATTR_INT,
+        pdo_int_conn_str_func::func
+    },
+    {
+        PDOConnOptionNames::ConnectRetryInterval,
+        sizeof( PDOConnOptionNames::ConnectRetryInterval ),
+        SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
+        ODBCConnOptions::ConnectRetryInterval,
+        sizeof( ODBCConnOptions::ConnectRetryInterval ),
+        CONN_ATTR_INT,
+        pdo_int_conn_str_func::func
+    },
+#endif // _WIN32
     {
         PDOConnOptionNames::Database,
         sizeof( PDOConnOptionNames::Database ),
@@ -425,14 +467,14 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     // to happen (per the PDO spec)
     dbh->error_mode = PDO_ERRMODE_EXCEPTION;
 
-    g_henv_cp->set_driver( dbh );
-    g_henv_ncp->set_driver( dbh );
+    g_pdo_henv_cp->set_driver( dbh );
+    g_pdo_henv_ncp->set_driver( dbh );
 
-    CHECK_CUSTOM_ERROR( driver_options && Z_TYPE_P( driver_options ) != IS_ARRAY, *g_henv_cp, SQLSRV_ERROR_CONN_OPTS_WRONG_TYPE ) {
+    CHECK_CUSTOM_ERROR( driver_options && Z_TYPE_P( driver_options ) != IS_ARRAY, *g_pdo_henv_cp, SQLSRV_ERROR_CONN_OPTS_WRONG_TYPE ) {
         throw core::CoreException();
     }
 	// throws PDOException if the ATTR_PERSISTENT is in connection options
-	CHECK_CUSTOM_ERROR( dbh->is_persistent, *g_henv_cp, PDO_SQLSRV_ERROR_UNSUPPORTED_DBH_ATTR ) {
+	CHECK_CUSTOM_ERROR( dbh->is_persistent, *g_pdo_henv_cp, PDO_SQLSRV_ERROR_UNSUPPORTED_DBH_ATTR ) {
 		dbh->refcount--;
 		throw pdo::PDOException();
 	}
@@ -440,18 +482,18 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     // Initialize the options array to be passed to the core layer
     ALLOC_HASHTABLE( pdo_conn_options_ht );
 
-    core::sqlsrv_zend_hash_init( *g_henv_cp, pdo_conn_options_ht, 10 /* # of buckets */, 
+    core::sqlsrv_zend_hash_init( *g_pdo_henv_cp, pdo_conn_options_ht, 10 /* # of buckets */, 
                                  ZVAL_INTERNAL_DTOR, 0 /*persistent*/ TSRMLS_CC );
 
-    // Either of g_henv_cp or g_henv_ncp can be used to propogate the error.
-    dsn_parser = new ( sqlsrv_malloc( sizeof( conn_string_parser ))) conn_string_parser( *g_henv_cp, dbh->data_source, 
+    // Either of g_pdo_henv_cp or g_pdo_henv_ncp can be used to propogate the error.
+    dsn_parser = new ( sqlsrv_malloc( sizeof( conn_string_parser ))) conn_string_parser( *g_pdo_henv_cp, dbh->data_source, 
                                                                                           static_cast<int>( dbh->data_source_len ), pdo_conn_options_ht );
     dsn_parser->parse_conn_string( TSRMLS_C );
     
     // Extract the server name
-    temp_server_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER);
+    temp_server_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
 
-    CHECK_CUSTOM_ERROR(( temp_server_z == NULL ), g_henv_cp, PDO_SQLSRV_ERROR_SERVER_NOT_SPECIFIED ) {
+    CHECK_CUSTOM_ERROR(( temp_server_z == NULL ), g_pdo_henv_cp, PDO_SQLSRV_ERROR_SERVER_NOT_SPECIFIED ) {
         
         throw pdo::PDOException();
     }
@@ -462,7 +504,7 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
     zval_add_ref( &server_z );
     zend_hash_index_del( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
 
-    sqlsrv_conn* conn = core_sqlsrv_connect( *g_henv_cp, *g_henv_ncp, core::allocate_conn<pdo_sqlsrv_dbh>, Z_STRVAL( server_z ), 
+    sqlsrv_conn* conn = core_sqlsrv_connect( *g_pdo_henv_cp, *g_pdo_henv_ncp, core::allocate_conn<pdo_sqlsrv_dbh>, Z_STRVAL( server_z ), 
                                              dbh->username, dbh->password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error, 
                                              PDO_CONN_OPTS, dbh, "pdo_sqlsrv_db_handle_factory" TSRMLS_CC );
 
@@ -484,7 +526,7 @@ int pdo_sqlsrv_db_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)
             zend_string_release( Z_STR( server_z ));
         }
         dbh->error_mode = prev_err_mode;    // reset the error mode
-        g_henv_cp->last_error().reset();    // reset the last error; callee will check if last_error exist before freeing it and setting it to NULL
+        g_pdo_henv_cp->last_error().reset();    // reset the last error; callee will check if last_error exist before freeing it and setting it to NULL
         
         return 0;
     }
@@ -563,7 +605,7 @@ int pdo_sqlsrv_dbh_prepare( pdo_dbh_t *dbh, const char *sql,
         core::sqlsrv_zend_hash_init( *driver_dbh , pdo_stmt_options_ht, 3 /* # of buckets */, 
                                      ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
         
-        // Either of g_henv_cp or g_henv_ncp can be used to propogate the error.
+        // Either of g_pdo_henv_cp or g_pdo_henv_ncp can be used to propogate the error.
         validate_stmt_options( *driver_dbh, driver_options, pdo_stmt_options_ht TSRMLS_CC );
 
         driver_stmt = static_cast<pdo_sqlsrv_stmt*>( core_sqlsrv_create_stmt( driver_dbh, core::allocate_stmt<pdo_sqlsrv_stmt>,
@@ -690,21 +732,22 @@ zend_long pdo_sqlsrv_dbh_do( pdo_dbh_t *dbh, const char *sql, size_t sql_len TSR
                           NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt TSRMLS_CC );
         driver_stmt->set_func( __FUNCTION__ );
 
-        core_sqlsrv_execute( driver_stmt TSRMLS_CC, sql, static_cast<int>( sql_len ) );
+        SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, sql, static_cast<int>( sql_len ) );
 
         // since the user can give us a compound statement, we return the row count for the last set, and since the row count
         // isn't guaranteed to be valid until all the results have been fetched, we fetch them all first.
-        if( core_sqlsrv_has_any_result( driver_stmt TSRMLS_CC )) {
+
+        if ( execReturn != SQL_NO_DATA && core_sqlsrv_has_any_result( driver_stmt TSRMLS_CC )) {
 
             SQLRETURN r = SQL_SUCCESS;
 
             do {
-                
+
                 rows = core::SQLRowCount( driver_stmt TSRMLS_CC );
 
                 r = core::SQLMoreResults( driver_stmt TSRMLS_CC );
-        
-            } while( r != SQL_NO_DATA );
+
+            } while ( r != SQL_NO_DATA );
         }
 
         // returning -1 forces PDO to return false, which signals an error occurred.  SQLRowCount returns -1 for a number of cases
