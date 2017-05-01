@@ -84,7 +84,7 @@ This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 
 ## Install (UNIX)
 The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7 and Mac OS X. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note that Debian is not officially supported and this instruction hasn't been tested in our test lab.
 
-### Step 1: Install PHP7 (unless already installed)
+### Step 1: Install PHP7+ 
 
 #### PHP 7.0
 
