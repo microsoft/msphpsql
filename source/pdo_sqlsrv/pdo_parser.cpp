@@ -406,7 +406,7 @@ void sql_string_parser::parse_sql_string( TSRMLS_D ) {
                     next();
                 }
             }
-            // if ':', store placeholder in the placeholders hashtable
+            // if ':', store string placeholder in the placeholders hashtable
             else if ( sym == ':' ) {
                 start_pos = this->pos;
                 next();
@@ -424,7 +424,7 @@ void sql_string_parser::parse_sql_string( TSRMLS_D ) {
                 }
                 this->current_key++;
             }
-            // if '?', don't need to parse anymore since the position of the bound_param is already stored in the bound_params ht
+            // if '?', store long placeholder into the placeholders hashtable
             else if ( sym == '?' ) {
                 next();
                 // add dummy value to placeholders ht to keep count of the number of placeholders

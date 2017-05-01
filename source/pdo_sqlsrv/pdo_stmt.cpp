@@ -488,7 +488,6 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 // 1 for success.
 int pdo_sqlsrv_stmt_dtor( pdo_stmt_t *stmt TSRMLS_DC )
 {
-    //sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
     LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );

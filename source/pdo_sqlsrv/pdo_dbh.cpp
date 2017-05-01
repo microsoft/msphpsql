@@ -1292,8 +1292,8 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
     SQLSRV_ENCODING encoding = SQLSRV_ENCODING_CHAR;
 	
     // get the current object in PHP; this distinguishes pdo_sqlsrv_dbh_quote being called from:
-	// 1. PDO::quote() - object name is PDO
-	// 2. PDO::execute() - object name is PDOStatement
+    // 1. PDO::quote() - object name is PDO
+    // 2. PDOStatement::execute() - object name is PDOStatement
     zend_execute_data* execute_data = EG( current_execute_data );
     zval *object = getThis();
 
@@ -1344,9 +1344,9 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
         // convert from char* to hex digits using os
         std::basic_ostringstream<char> os;
         for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
-			// when an int is < 16 and is appended to os, its hex representation which starts
-			// with '0' does not get appended properly (the starting '0' does not get appended)
-			// thus append '0' first
+            // when an int is < 16 and is appended to os, its hex representation which starts
+            // with '0' does not get appended properly (the starting '0' does not get appended)
+            // thus append '0' first
             if (( int )unquoted[index] < 16 ) {
                 os << '0';
             }
