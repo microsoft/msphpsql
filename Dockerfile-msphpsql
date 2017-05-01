@@ -23,7 +23,10 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
         unixodbc-dev \
 	unzip && apt-get clean
 	
-ARG PHPSQLDIR=/REPO/msphpsql-PHP-7.0-Linux
+ARG PHPSQLDIR=/REPO/msphpsql-dev
+ENV TEST_PHP_SQL_SERVER sql
+ENV TEST_PHP_SQL_UID sa
+ENV TEST_PHP_SQL_PWD Password12@
 
 # set locale to utf-8
 RUN locale-gen en_US.UTF-8
@@ -36,6 +39,8 @@ RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt
 #RUN echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main" > /etc/apt/sources.list.d/mssqlpreview.list
 #RUN apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools
+
+ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
 #install coveralls
 RUN pip install --upgrade pip && pip install cpp-coveralls
@@ -64,9 +69,12 @@ RUN phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && 
 # set name of sql server host to use
 WORKDIR $PHPSQLDIR/test/pdo_sqlsrv
 RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
+RUN sed -i -e 's/<YourStrong!Passw0rd>/'"$TEST_PHP_SQL_PWD"'/g' autonomous_setup.php
 
 WORKDIR $PHPSQLDIR/test/sqlsrv
 RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
+RUN sed -i -e 's/<YourStrong!Passw0rd>/'"$TEST_PHP_SQL_PWD"'/g' autonomous_setup.php
 
 ENV REPORT_EXIT_STATUS 1
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
+
