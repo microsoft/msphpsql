@@ -124,8 +124,7 @@ The following instructions assume a clean environment and show how to install PH
 	brew install php70 --with-pear --with-httpd24 --with-cgi
 	echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
 	echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
-*Note: Restart the terminal if PHP(`php -v`) is not updated.
-
+	source ~/.bash_profile
 
 #### PHP 7.1
 
@@ -158,7 +157,7 @@ The following instructions assume a clean environment and show how to install PH
 	brew install php71 --with-pear --with-httpd24 --with-cgi
 	echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
 	echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
-*Note: Restart the terminal if PHP(`php -v`) is not updated.
+	source ~/.bash_profile
 
 
 ### Step 2: Install Prerequisites
