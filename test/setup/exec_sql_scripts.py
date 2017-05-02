@@ -31,6 +31,10 @@ def executeSQLscriptUnix(sqlfile, conn_options, dbname):
     redirect_string = '(echo :setvar dbname {0})  > {2}; cat {1} >> {2}; '
     sqlcmd = 'sqlcmd ' + conn_options + ' -i ' + tmpFileName
 
+    print ('display contents of tmpFileName')
+    show_cmd = 'cat ' + tmpFileName
+    executeCommmand(show_cmd)
+
     inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) + sqlcmd
     executeCommmand(inst_command)
     os.remove(tmpFileName)

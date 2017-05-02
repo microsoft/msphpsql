@@ -1,15 +1,16 @@
 --TEST--
 Test emulate prepare with mix bound param encodings and positional placeholders (i.e., using '?' as placeholders)
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
  
 $connection_options['pdo'] = array();
 $connection_options['pdo'][PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
 
-$database = "tempdb";
-$cnn = new PDO("sqlsrv:Server=$serverName;Database=$database", $username, $password, $connection_options['pdo']);
+$databaseName = "tempdb";
+$cnn = new PDO("sqlsrv:Server=$server;Database=$databaseName", $uid, $pwd, $connection_options['pdo']);
 
 // Drop
 try {
