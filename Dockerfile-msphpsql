@@ -69,13 +69,13 @@ RUN phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && 
 # set name of sql server host to use
 WORKDIR $PHPSQLDIR/test/pdo_sqlsrv
 RUN sed -i -e 's/TARGET_SERVER/sql/g' MsSetup.inc
-RUN sed -i -e 's/TARGET_SERVER/msphpsql_pdosqlsrv/g' MsSetup.inc
+RUN sed -i -e 's/TARGET_DATABASE/msphpsql_pdosqlsrv/g' MsSetup.inc
 RUN sed -i -e 's/USERNAME/'"$TEST_PHP_SQL_UID"'/g' MsSetup.inc
 RUN sed -i -e 's/PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
 WORKDIR $PHPSQLDIR/test/sqlsrv
 RUN sed -i -e 's/TARGET_SERVER/sql/g' MsSetup.inc
-RUN sed -i -e 's/TARGET_SERVER/msphpsql_sqlsrv/g' MsSetup.inc
+RUN sed -i -e 's/TARGET_DATABASE/msphpsql_sqlsrv/g' MsSetup.inc
 RUN sed -i -e 's/USERNAME/'"$TEST_PHP_SQL_UID"'/g' MsSetup.inc
 RUN sed -i -e 's/PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
