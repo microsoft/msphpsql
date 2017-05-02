@@ -32,7 +32,7 @@ def executeSQLscriptUnix(sqlfile, conn_options, dbname):
     sqlcmd = 'sqlcmd ' + conn_options + ' -i ' + tmpFileName
 
     print ('display contents of tmpFileName')
-    show_cmd = 'sqlcmd ' + conn_options + ' -Q select @@Version '
+    show_cmd = 'sqlcmd ' + conn_options + ' -Q \"select @@Version\" '
     executeCommmand(show_cmd)
 
     inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) + sqlcmd

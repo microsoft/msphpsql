@@ -23,7 +23,8 @@ $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_prepare($conn, $sql);
 
 // Get and display field metadata
-foreach(sqlsrv_field_metadata($stmt) as $meta)
+$metadata = sqlsrv_field_metadata($stmt);
+foreach($metadata as $meta)
 {
     print_r($meta);
 }

@@ -34,7 +34,8 @@ $query = "SELECT FirstName, LastName, Age FROM $tableName";
 $stmt = sqlsrv_prepare($conn, $query);
 
 // Get field metadata
-foreach( sqlsrv_field_metadata( $stmt) as $fieldMetadata)
+$metadata = sqlsrv_field_metadata($stmt);
+foreach($metadata as $fieldMetadata)
     $res[] = $fieldMetadata;
 
 var_dump($res);
