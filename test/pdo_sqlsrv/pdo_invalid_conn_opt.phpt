@@ -9,7 +9,6 @@ require_once("MsSetup.inc");
 
 try 
 {   
-    $databaseName = "tempdb";
     $dsn = "sqlsrv:Server = $server;" .
            "database = $databaseName;" .
            "InvalidKey = true;"

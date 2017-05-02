@@ -8,7 +8,6 @@ require_once("MsSetup.inc");
 
 try 
 {   
-    $databaseName = "tempdb";
     $dsn = "sqlsrv:Server = $server; database = $databaseName";
     $attr = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
     $conn = new PDO( $dsn, $uid, $pwd, $attr); 

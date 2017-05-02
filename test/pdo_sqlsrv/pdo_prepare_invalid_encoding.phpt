@@ -9,7 +9,6 @@ require_once("MsSetup.inc");
 
 try 
 {   
-    $databaseName = "tempdb";
     $conn = new PDO( "sqlsrv:Server = $server; database = $databaseName", $uid, $pwd); 
     
     // PDO::SQLSRV_ENCODING_SYSTEM should not be quoted

@@ -15,7 +15,6 @@ try
         }
     }
 
-    $databaseName = "tempdb";
     $dsn = "sqlsrv:Server = $server; database = $databaseName";
     $prep_attr = array(PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8,
                        PDO::ATTR_STATEMENT_CLASS => array('CustomPDOStatement', array()),

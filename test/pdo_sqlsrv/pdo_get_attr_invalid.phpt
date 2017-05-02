@@ -8,7 +8,6 @@ Test getting invalid attributes
 require_once("MsSetup.inc");
 
 try{
-    $databaseName = "tempdb";
     $dsn = 	"sqlsrv:Server = $server; database = $databaseName";
 
     $conn = new PDO( $dsn, $uid, $pwd, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)); 

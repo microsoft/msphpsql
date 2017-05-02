@@ -9,7 +9,6 @@ require_once("MsSetup.inc");
 
 try 
 {   
-    $databaseName = "tempdb";
     $conn = new PDO( "sqlsrv:Server = $server; database = $databaseName", $uid, $pwd); 
     
     // PDO::CURSOR_FWDONLY should not be quoted
