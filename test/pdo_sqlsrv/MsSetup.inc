@@ -14,10 +14,10 @@ if (isset($_ENV['MSSQL_SERVER']) || isset($_ENV['MSSQL_USER']) || isset($_ENV['M
     $databaseName = $_ENV['MSSQL_DATABASE_NAME'];
     $DriverName = $_ENV['MSSQL_DRIVER_NAME'];
 } else {
-    $server = 'SQL-2K12-SP3-1.galaxy.ad';
-    $uid = 'sa';
-    $pwd = 'Moonshine4me';
-    $databaseName = 'test_win123';
+    $server = 'TARGET_SERVER';
+    $uid = 'USERNAME';
+    $pwd = 'PASSWORD';
+    $databaseName = 'TARGET_DATABASE';
     $DriverName = "ODBC Driver 11 for SQL Server";
 }
 

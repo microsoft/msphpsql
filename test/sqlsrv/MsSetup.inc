@@ -9,10 +9,10 @@
 */
 $PhpDriver = "Microsoft SQL Server Driver for PHP";
 
-$server = 'SQL-2K12-SP3-1.galaxy.ad';
-$database = 'test_win123';
-$userName = 'sa';
-$userPassword = 'Moonshine4me';
+$server = 'TARGET_SERVER';
+$dbName = 'TARGET_DATABASE';
+$userName = 'USERNAME';
+$userPassword = 'PASSWORD';
 
 $tableName = "php_test_table";
 $tableIndex = "php_test_table_index";
