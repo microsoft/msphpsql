@@ -24,10 +24,7 @@ $stmt = sqlsrv_prepare($conn, $sql);
 
 // Get and display field metadata
 $metadata = sqlsrv_field_metadata($stmt);
-foreach($metadata as $meta)
-{
-    print_r($meta);
-}
+var_dump($metadata);
 
 // Free statement and connection resources
 sqlsrv_free_stmt($stmt);
@@ -37,31 +34,51 @@ print "Done"
 ?>
 
 --EXPECT--
-Array
-(
-    [Name] => पासपोर्ट
-    [Type] => 1
-    [Size] => 2
-    [Precision] => 
-    [Scale] => 
-    [Nullable] => 1
-)
-Array
-(
-    [Name] => پاسپورٹ
-    [Type] => 12
-    [Size] => 2
-    [Precision] => 
-    [Scale] => 
-    [Nullable] => 1
-)
-Array
-(
-    [Name] => Διαβατήριο
-    [Type] => 12
-    [Size] => 0
-    [Precision] => 
-    [Scale] => 
-    [Nullable] => 1
-)
+array(3) {
+  [0]=>
+  array(6) {
+    ["Name"]=>
+    string(24) "पासपोर्ट"
+    ["Type"]=>
+    int(1)
+    ["Size"]=>
+    int(2)
+    ["Precision"]=>
+    NULL
+    ["Scale"]=>
+    NULL
+    ["Nullable"]=>
+    int(1)
+  }
+  [1]=>
+  array(6) {
+    ["Name"]=>
+    string(14) "پاسپورٹ"
+    ["Type"]=>
+    int(12)
+    ["Size"]=>
+    int(2)
+    ["Precision"]=>
+    NULL
+    ["Scale"]=>
+    NULL
+    ["Nullable"]=>
+    int(1)
+  }
+  [2]=>
+  array(6) {
+    ["Name"]=>
+    string(20) "Διαβατήριο"
+    ["Type"]=>
+    int(12)
+    ["Size"]=>
+    int(0)
+    ["Precision"]=>
+    NULL
+    ["Scale"]=>
+    NULL
+    ["Nullable"]=>
+    int(1)
+  }
+}
 Done

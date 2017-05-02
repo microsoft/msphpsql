@@ -4,7 +4,7 @@ Test PDO::setAttribute() and PDO::getAttribute() methods.
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php  
-require_once("MsSetup.inc");
+include("MsSetup.inc");
 
 // A custom PDO statement class to test PDO::ATTR_STATEMENT_CLASS
 class CustomPDOStatement extends PDOStatement 

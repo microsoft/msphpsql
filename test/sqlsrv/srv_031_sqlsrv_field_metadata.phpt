@@ -35,10 +35,7 @@ $stmt = sqlsrv_prepare($conn, $query);
 
 // Get field metadata
 $metadata = sqlsrv_field_metadata($stmt);
-foreach($metadata as $fieldMetadata)
-    $res[] = $fieldMetadata;
-
-var_dump($res);
+var_dump($metadata);
 
 sqlsrv_free_stmt( $stmt);
 sqlsrv_close($conn);

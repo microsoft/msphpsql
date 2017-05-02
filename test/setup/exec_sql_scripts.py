@@ -28,12 +28,12 @@ def executeSQLscriptUnix(sqlfile, conn_options, dbname):
     # This is a workaround because sqlcmd in Unix does not support -v option for variables. 
     # It inserts setvar dbname into the beginning of a temp .sql file
     tmpFileName = sqlfile[0:-4] + '_tmp.sql'
-    redirect_string = '(echo :setvar dbname {0})  > {2}; cat {1} >> {2}; cat {2}; '
+    # redirect_string = '(echo :setvar dbname {0})  > {2}; cat {1} >> {2}; cat {2}; '
+    redirect_string = '(echo :setvar dbname {0})  > {2}; cat {1} >> {2}; '
     sqlcmd = 'sqlcmd ' + conn_options + ' -i ' + tmpFileName
 
-    print ('display contents of tmpFileName')
-    show_cmd = 'sqlcmd ' + conn_options + ' -Q \"select @@Version\" '
-    executeCommmand(show_cmd)
+    # show_cmd = 'sqlcmd ' + conn_options + ' -Q \"select @@Version\" '
+    # executeCommmand(show_cmd)
 
     inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) + sqlcmd
     executeCommmand(inst_command)
