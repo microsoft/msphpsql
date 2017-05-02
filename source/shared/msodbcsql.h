@@ -91,6 +91,7 @@
 #define SQL_COPT_SS_AEKEYSTOREDATA                  (SQL_COPT_SS_BASE_EX+12) /* Communicate with a loaded keystore provider */
 #define SQL_COPT_SS_AETRUSTEDCMKPATHS               (SQL_COPT_SS_BASE_EX+13) /* List of trusted CMK paths */
 #define SQL_COPT_SS_AECEKCACHETTL                   (SQL_COPT_SS_BASE_EX+14)// Symmetric Key Cache TTL
+#define SQL_COPT_SS_AUTHENTICATION                  (SQL_COPT_SS_BASE_EX+15)// The authentication method used for the connection
 
 /*
  * SQLColAttributes driver specific defines.

@@ -185,6 +185,7 @@ namespace SSConnOptionNames {
 const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
+const char Authentication[] = "Authentication";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
@@ -272,6 +273,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::AttachDBFileName ),
         CONN_ATTR_STRING,
         conn_str_append_func::func
+    },
+    {
+        SSConnOptionNames::Authentication,
+        sizeof( SSConnOptionNames::Authentication ),
+        SQLSRV_CONN_OPTION_AUTHENTICATION,
+        ODBCConnOptions::Authentication,
+        sizeof( ODBCConnOptions::Authentication ),
+        CONN_ATTR_STRING,
+        str_conn_attr_auth_func::func
     },
     {
         SSConnOptionNames::CharacterSet,
@@ -486,7 +496,7 @@ PHP_FUNCTION ( sqlsrv_connect )
         core::sqlsrv_zend_hash_init( *g_ss_henv_cp, ss_conn_options_ht, 10 /* # of buckets */, 
                                  ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
    
-        // Either of g_ss_henv_cp or g_ss_henv_ncp can be used to propogate the error.
+        // Either of g_ss_henv_cp or g_ss_henv_ncp can be used to propagate the error.
         ::validate_conn_options( *g_ss_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht TSRMLS_CC );   
      
         // call the core connect function  
