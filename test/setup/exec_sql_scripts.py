@@ -32,8 +32,8 @@ def executeSQLscriptUnix(sqlfile, conn_options, dbname):
     redirect_string = '(echo :setvar dbname {0})  > {2}; cat {1} >> {2}; '
     sqlcmd = 'sqlcmd ' + conn_options + ' -i ' + tmpFileName
 
-    # show_cmd = 'sqlcmd ' + conn_options + ' -Q \"select @@Version\" '
-    # executeCommmand(show_cmd)
+    show_cmd = 'sqlcmd ' + conn_options + ' -Q \"select @@Version\" '
+    executeCommmand(show_cmd)
 
     # inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) + sqlcmd
     inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) 

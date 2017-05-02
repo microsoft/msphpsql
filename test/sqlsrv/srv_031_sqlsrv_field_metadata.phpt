@@ -12,10 +12,10 @@ if( !$conn ) {
     FatalError("Connection could not be established.\n");
 }
 
-$tableName = GetTempTableName('test_srv_031');
+$tableName = 'test_srv_031';
 
 // Create table
-$stmt = sqlsrv_query($conn, "create table $tableName (FirstName VARCHAR(10), LastName NVARCHAR(20), Age INT)");
+$stmt = sqlsrv_query($conn, "CREATE TABLE $tableName (FirstName VARCHAR(10), LastName NVARCHAR(20), Age INT)");
 if( $stmt === false ) { die( print_r( sqlsrv_errors(), true )); }
 sqlsrv_free_stmt( $stmt);
 
@@ -39,6 +39,8 @@ if ( ! $metadata )
     PrintErrors(); 
 else
     var_dump($metadata);
+
+sqlsrv_query($conn, "DROP TABLE $tableName");
 
 sqlsrv_free_stmt( $stmt);
 sqlsrv_close($conn);

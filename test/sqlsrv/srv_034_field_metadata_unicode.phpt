@@ -12,7 +12,7 @@ if( !$conn ) {
     FatalError("Connection could not be established.\n");
 }
 
-$tableName = GetTempTableName('test_srv_034');
+$tableName = 'test_srv_034';
 
 // Create table. Column names: passport
 $sql = "CREATE TABLE $tableName (पासपोर्ट CHAR(2), پاسپورٹ VARCHAR(2), Διαβατήριο VARCHAR(MAX))";
@@ -28,6 +28,8 @@ if ( ! $metadata )
     PrintErrors(); 
 else
     var_dump($metadata);
+
+sqlsrv_query($conn, "DROP TABLE $tableName");
 
 // Free statement and connection resources
 sqlsrv_free_stmt($stmt);
