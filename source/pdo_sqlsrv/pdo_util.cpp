@@ -373,6 +373,10 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
         { IMSSP, (SQLCHAR*) "Memory limit of %1!d! KB exceeded for buffered query", -71, true }
     },
+    {
+        PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
+        { IMSSP, (SQLCHAR*) "Statement with emulate prepare on does not support output or input_output parameters.", -72, false }
+    },
     { UINT_MAX, {} }
 };
 
