@@ -21,14 +21,13 @@ $stmt = sqlsrv_query($conn, $sql);
 // Prepare the statement
 $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_prepare($conn, $sql);
-if ( $stmt === false ) { 
+
+// Get and display field metadata
+$metadata = sqlsrv_field_metadata($stmt);
+if ( ! $metadata ) 
     PrintErrors(); 
-}
-else {
-    // Get and display field metadata
-    $metadata = sqlsrv_field_metadata($stmt);
+else
     var_dump($metadata);
-}
 
 // Free statement and connection resources
 sqlsrv_free_stmt($stmt);

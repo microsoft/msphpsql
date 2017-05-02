@@ -32,14 +32,13 @@ sqlsrv_free_stmt($stmt);
 // Prepare the statement
 $query = "SELECT FirstName, LastName, Age FROM $tableName";
 $stmt = sqlsrv_prepare($conn, $query);
-if ( $stmt === false ) { 
+
+// Get field metadata
+$metadata = sqlsrv_field_metadata($stmt);
+if ( ! $metadata ) 
     PrintErrors(); 
-}
-else {
-    // Get field metadata
-    $metadata = sqlsrv_field_metadata($stmt);
+else
     var_dump($metadata);
-}
 
 sqlsrv_free_stmt( $stmt);
 sqlsrv_close($conn);
