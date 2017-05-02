@@ -2,7 +2,7 @@
 Populate different test tables with character fields using empty stream data as inputs
 --FILE--
 ﻿﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function EmptyStream_Char2Stream($conn, $fileName)
 {
@@ -67,17 +67,14 @@ function FetchData($conn, $tableName, $fld)
 function RunTest()
 {
     StartTest("sqlsrv_streams_empty_char");
+    echo "\nTest begins...\n";
     try
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
 
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
         // Connect
-        $connectionInfo = array('Database'=>$database, 'UID'=>$username, 'PWD'=>$password, 'CharacterSet'=>'UTF-8');
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect();
         if( !$conn ) { FatalError("Could not connect.\n"); }
                      
         // create an empty file             
@@ -104,7 +101,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'sqlsrv_streams_empty_char' test...
+Test begins...
 bool(false)
 bool(false)
 bool(false)
@@ -115,4 +112,4 @@ bool(false)
 bool(false)
 
 Done
-...Test 'sqlsrv_streams_empty_char' completed successfully.
+Test "sqlsrv_streams_empty_char" completed successfully.

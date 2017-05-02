@@ -2,7 +2,7 @@
 Populate different binary fields using null stream data as inputs. 
 --FILE--
 ﻿﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function NullStream_Bin2String($conn, $tableName)
 {
@@ -45,17 +45,14 @@ function FetchData($conn, $tableName, $value)
 function RunTest()
 {
     StartTest("sqlsrv_streams_null_binary");
+    echo "\nTest begins...\n";
     try
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
 
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
         // Connect
-        $connectionInfo = array('Database'=>$database, 'UID'=>$username, 'PWD'=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect();
         if( !$conn ) { FatalError("Could not connect.\n"); }
                      
         // create a test table 
@@ -81,7 +78,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'sqlsrv_streams_null_binary' test...
+Test begins...
 NULL
 NULL
 NULL
@@ -90,4 +87,4 @@ NULL
 NULL
 
 Done
-...Test 'sqlsrv_streams_null_binary' completed successfully.
+Test "sqlsrv_streams_null_binary" completed successfully.

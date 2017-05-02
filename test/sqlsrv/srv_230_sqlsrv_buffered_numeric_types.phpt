@@ -6,12 +6,11 @@ Test numeric conversion (number to string, string to number) functionality for b
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
-$connectionInfo = array("UID"=>"$username", "PWD"=>"$password", "CharacterSet" => "UTF-8");
-$conn = sqlsrv_connect($serverName, $connectionInfo);
-if( $conn === false ) {
-    die( print_r( sqlsrv_errors(), true ));
+$conn = Connect(array("CharacterSet"=>"utf-8"));
+if( !$conn ) {
+    PrintErrors("Connection could not be established.\n");
 }
 
 $sample = 1234567890.1234;
@@ -42,15 +41,12 @@ if( $stmt === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
 
-
-
-
 $query = 'SELECT TOP 2 * FROM #TESTTABLE';
 $stmt = sqlsrv_query( $conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
 if(!$stmt)
 {
-	echo "Statement could not be prepared.\n";
-	die( print_r( sqlsrv_errors(),true));
+    echo "Statement could not be prepared.\n";
+    die( print_r( sqlsrv_errors(),true));
 }
 sqlsrv_execute( $stmt );
 
@@ -58,9 +54,6 @@ $array = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC );
 var_dump($array);
 $array = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC );
 var_dump($array);
-
-
-
 
 $numFields = sqlsrv_num_fields( $stmt );
 $meta = sqlsrv_field_metadata( $stmt );

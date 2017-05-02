@@ -2,7 +2,7 @@
 Test sending queries (query or prepare) with a timeout specified. Errors are expected.
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function QueryTimeout($conn, $exec)
 {
@@ -33,17 +33,14 @@ function QueryTimeout($conn, $exec)
 function Repro()
 {
     StartTest("sqlsrv_statement_query_timeout");
+    echo "\nTest begins...\n";
     try
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
-
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
+     
         // Connect
-        $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect();
         if( !$conn ) { FatalError("Could not connect.\n"); }
       
         QueryTimeout($conn, true);
@@ -65,7 +62,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_statement_query_timeout' test...
+Test begins...
 [Microsoft][ODBC Driver 13 for SQL Server]Query timeout expired
 0
 HYT00
@@ -74,4 +71,4 @@ HYT00
 HYT00
 
 Done
-...Test 'sqlsrv_statement_query_timeout' completed successfully.
+Test "sqlsrv_statement_query_timeout" completed successfully.

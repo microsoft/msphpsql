@@ -4,11 +4,13 @@ sqlsrv_get_field() using SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR)
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
-if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+$conn = Connect(array("CharacterSet"=>"UTF-8"));
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
 // Create table
 $query = "CREATE TABLE #TA1 (ID NVARCHAR(10))";
@@ -23,13 +25,13 @@ $query = "SELECT * FROM #TA1";
 $stmt = sqlsrv_query( $conn, $query ) ?: die( print_r( sqlsrv_errors(), true) );
 
 while(sqlsrv_fetch($stmt)) {
-	$field = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
-	var_dump($field);
-	
-	while(!feof($field))
-	{
-		echo fread($field, 100)."\n";
-	}
+    $field = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
+    var_dump(get_resource_type($field));
+    
+    while(!feof($field))
+    {
+        echo fread($field, 100)."\n";
+    }
 }
 
 // Close connection
@@ -39,10 +41,10 @@ print "Done"
 ?>
 
 --EXPECT--
-resource(9) of type (stream)
+string(6) "stream"
 1998.1
-resource(10) of type (stream)
+string(6) "stream"
 -2004.2436
-resource(11) of type (stream)
+string(6) "stream"
 4.2 EUR
 Done

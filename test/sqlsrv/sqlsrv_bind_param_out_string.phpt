@@ -9,20 +9,12 @@ With unixODBC 2.3.4 + pooling the statement executes without error.
 --FILE--
 
 <?php
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
-$connectionInfo = array("UID"=>"$username", "PWD"=>"$password");
-$conn = sqlsrv_connect($serverName, $connectionInfo);
+$conn = Connect();
 if( $conn === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
-$conn = null;
-
-$conn = sqlsrv_connect($serverName, $connectionInfo);
-if( $conn === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-
 
 $bindtable = "#BindStringTest";
 $sproc = "#uspPerson";
@@ -41,21 +33,21 @@ if( $stmt === false ) {
 $stmt = sqlsrv_query( $conn, "INSERT INTO $bindtable (PersonID, Name) VALUES (11, N'JSmith')" );
 if( $stmt === false ) {
     die( print_r( sqlsrv_errors(), true ));
-}			
+}           
 
 $tsql_createSP = "CREATE PROCEDURE $sproc
     @id int, @return nvarchar(50) OUTPUT
-	AS
-	BEGIN
-	SET NOCOUNT ON;
-	SET @return = (SELECT Name FROM $bindtable WHERE PersonID = @id)
-	END";
-	
+    AS
+    BEGIN
+    SET NOCOUNT ON;
+    SET @return = (SELECT Name FROM $bindtable WHERE PersonID = @id)
+    END";
+    
 $stmt = sqlsrv_query( $conn, $tsql_createSP);
 if( $stmt === false )
 {
-     echo "Error in executing statement 2.\n";
-     die( print_r( sqlsrv_errors(), true));
+    echo "Error in executing statement 2.\n";
+    die( print_r( sqlsrv_errors(), true));
 }
 
 $tsql_callSP = "{call $sproc( ? , ?)}";
@@ -68,15 +60,15 @@ echo "---------Encoding char-----------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
                    SQLSRV_SQLTYPE_NVARCHAR(32)
             ));
 
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false)
 {
-		 print_r( sqlsrv_errors(), true);
+    print_r( sqlsrv_errors(), true);
 }
 
 $expectedLength = 6;
@@ -89,15 +81,15 @@ echo "---------Encoding binary---------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),   
                    SQLSRV_SQLTYPE_NVARCHAR(32)
             ));
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false)
-     {
-		 print_r( sqlsrv_errors(), true);
-     }
+{
+    print_r( sqlsrv_errors(), true);
+}
  
 $expectedLength = 12;
 $expectedValue = "M\0i\0l\0l\0e\0r\0";
@@ -112,15 +104,15 @@ echo "---------Encoding char-----------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
                    SQLSRV_SQLTYPE_NVARCHAR(50)
             ));
 
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false)
 {
-		 print_r( sqlsrv_errors(), true);
+    print_r( sqlsrv_errors(), true);
 }
 
 $expectedLength = 6;
@@ -134,15 +126,15 @@ echo "---------Encoding binary---------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),   
                    SQLSRV_SQLTYPE_NVARCHAR(50)
             ));
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false)
-     {
-		 print_r( sqlsrv_errors(), true);
-     }
+{
+    print_r( sqlsrv_errors(), true);
+}
      
 $expectedLength = 12;
 $expectedValue = "M\0i\0l\0l\0e\0r\0";
@@ -159,16 +151,16 @@ $return = "";
 
 
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
                    SQLSRV_SQLTYPE_NVARCHAR(1)
             ));
 
 // with unixODBC 2.3.4 connection pooling the statement may not fail.
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false)
 {
-		 echo "Statement should fail\n";
+    echo "Statement should fail\n";
 }
 
 $expectedLength = 1;
@@ -181,15 +173,15 @@ echo "---------Encoding binary---------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),   
                    SQLSRV_SQLTYPE_NVARCHAR(1)
             ));
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false)
-     {
-		 echo "Statement should fail\n";
-     }
+{
+    echo "Statement should fail\n";
+}
  
 $expectedLength = 2;
 $expectedValue = "M\0";
@@ -204,15 +196,15 @@ echo "---------Encoding char-----------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
                    SQLSRV_SQLTYPE_NCHAR(32)
             ));
 
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false)
 {
-		 print_r( sqlsrv_errors(), true);
+    print_r( sqlsrv_errors(), true);
 }
 
 $expectedLength = 32;
@@ -225,15 +217,15 @@ echo "---------Encoding binary---------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),   
                    SQLSRV_SQLTYPE_NCHAR(32)
             ));
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false)
-     {
-		 print_r( sqlsrv_errors(), true);
-     }
+{
+    print_r( sqlsrv_errors(), true);
+}
      
 $expectedLength = 64;
 $expectedValue = "M\0i\0l\0l\0e\0r\0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0";
@@ -248,15 +240,15 @@ echo "---------Encoding char-----------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
                    SQLSRV_SQLTYPE_NCHAR(0)
             ));
 
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false)
 {
-		 echo "Statement should fail\n";
+    echo "Statement should fail\n";
 }
 
 $expectedLength = 0;
@@ -269,16 +261,16 @@ echo "---------Encoding binary---------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),   
                    SQLSRV_SQLTYPE_NCHAR(0)
             ));
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false)
-     {
-		 echo "Statement should fail\n";
-     }
- 
+{
+    echo "Statement should fail\n";
+}
+
 $expectedLength = 0;
 $expectedValue = "";
 $actualLength = strlen($return);
@@ -292,15 +284,15 @@ echo "---------Encoding char-----------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
                    SQLSRV_SQLTYPE_NCHAR(50)
             ));
 
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false)
 {
-		 print_r( sqlsrv_errors(), true);
+    print_r( sqlsrv_errors(), true);
 }
 
 $expectedLength = 50;
@@ -313,15 +305,15 @@ echo "---------Encoding binary---------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),   
                    SQLSRV_SQLTYPE_NCHAR(50)
             ));
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false)
-     {
-		 print_r( sqlsrv_errors(), true);
-     }
+{
+    print_r( sqlsrv_errors(), true);
+}
  
 $expectedLength = 100;
 $expectedValue = "M\0i\0l\0l\0e\0r\0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0";
@@ -337,15 +329,15 @@ echo "---------Encoding char-----------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
                    SQLSRV_SQLTYPE_NCHAR(1)
             ));
 
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false)
 {
-		 print_r( sqlsrv_errors(), true);
+    print_r( sqlsrv_errors(), true);
 }
 
 $expectedLength = 1;
@@ -358,15 +350,15 @@ echo "---------Encoding binary---------\n";
 $id = 10;
 $return = "";
 $params = array( 
-	array($id, SQLSRV_PARAM_IN),
+    array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
-					SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),	
+                    SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),   
                    SQLSRV_SQLTYPE_NCHAR(1)
             ));
 if( $stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false)
-     {
-		 print_r( sqlsrv_errors(), true);
-     }
+{
+    print_r( sqlsrv_errors(), true);
+}
  
 $expectedLength = 2;
 $expectedValue = "M\0";

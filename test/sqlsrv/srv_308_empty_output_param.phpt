@@ -5,12 +5,10 @@ A variation of the example in GitHub issue 308. A NULL value returned as output 
 --SKIPIF--
 --FILE--
 <?php
-require_once("tools.inc");
-
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$conn = sqlsrv_connect($serverName, $connectionInfo) ?: FatalError("Failed to connect");
+$conn = Connect() ?: FatalError("Failed to connect");
 
 $procName = GetTempProcName();
 

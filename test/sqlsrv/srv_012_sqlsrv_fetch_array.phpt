@@ -4,14 +4,15 @@ sqlsrv_fetch_array() using a scrollable cursor
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
-if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+$conn = Connect();
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = GetTempTableName();
 
 // Create table
 $query = "CREATE TABLE $tableName (ID VARCHAR(10))";
@@ -23,7 +24,7 @@ $stmt = sqlsrv_query($conn, $query) ?: die( print_r( sqlsrv_errors(), true) );
 // Fetch data
 $query = "SELECT ID FROM $tableName";
 $stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"))
-		?: die( print_r(sqlsrv_errors(), true));
+    ?: die( print_r(sqlsrv_errors(), true));
 
 // Fetch first row  
 $row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC,SQLSRV_SCROLL_NEXT);
@@ -36,9 +37,6 @@ echo $row['ID']."\n";
 // Fetch last row
 $row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC,SQLSRV_SCROLL_LAST);
 echo $row['ID']."\n";
-
-// DROP database
-$stmt = sqlsrv_query($conn,"DROP DATABASE ". $dbName);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);

@@ -2,19 +2,15 @@
 Test stored procedure that returns a varchar
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function StoredProc_varchar()
 {
-    include 'autonomous_setup.php';
-       
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
     
     // Connect
-    $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect();
     if( !$conn ) { FatalError("Could not connect.\n"); }
 
     $procName = GetTempProcName();
@@ -50,6 +46,7 @@ function StoredProc_varchar()
 function Repro()
 {
     StartTest("sqlsrv_stored_proc_varchar");
+    echo "\nTest begins...\n";
     try
     {
         StoredProc_varchar();
@@ -67,7 +64,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_stored_proc_varchar' test...
+Test begins...
 Microsoft SQL Server Driver for PHP
 Microsoft SQL Server Driver for PHP
 Microsoft SQL Server Driver for PHP
@@ -75,4 +72,4 @@ Microsoft SQL Server Driver for PHP
 Microsoft SQL Server Driver for PHP
 
 Done
-...Test 'sqlsrv_stored_proc_varchar' completed successfully.
+Test "sqlsrv_stored_proc_varchar" completed successfully.

@@ -1,17 +1,19 @@
 --TEST--
+Test the connection resiliency keywords 
+--DESCRIPTION--
 Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterval and their ranges of acceptable values
 --SKIPIF--
 <?php if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip, not running on windows." ); ?>
 --FILE--
 <?php
-require_once( "autonomous_setup.php" );
+require_once( "MsSetup.inc" );
 
-function TryToConnect( $serverName, $username, $password, $retryCount, $retryInterval, $number )
+function TryToConnect( $server, $userName, $userPassword, $retryCount, $retryInterval, $number )
 {
-    $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
+    $connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword,
                              "ConnectRetryCount"=>$retryCount, "ConnectRetryInterval"=>$retryInterval );
 
-    $conn = sqlsrv_connect( $serverName, $connectionInfo );
+    $conn = sqlsrv_connect( $server, $connectionInfo );
     if( $conn === false )
     {
         echo "Could not connect on $number attempt.\n";
@@ -24,17 +26,17 @@ function TryToConnect( $serverName, $username, $password, $retryCount, $retryInt
     }
 }
 
-TryToConnect( $serverName, $username, $password,  10, 30, 'first');
-TryToConnect( $serverName, $username, $password,   0, 30, 'second');
-TryToConnect( $serverName, $username, $password, 256, 30, 'third');
-TryToConnect( $serverName, $username, $password,   5, 70, 'fourth');
-TryToConnect( $serverName, $username, $password,  -1, 30, 'fifth');
-TryToConnect( $serverName, $username, $password, 'thisisnotaninteger', 30, 'sixth');
-TryToConnect( $serverName, $username, $password,   5, 3.14159, 'seventh');
+TryToConnect( $server, $userName, $userPassword,  10, 30, 'first');
+TryToConnect( $server, $userName, $userPassword,   0, 30, 'second');
+TryToConnect( $server, $userName, $userPassword, 256, 30, 'third');
+TryToConnect( $server, $userName, $userPassword,   5, 70, 'fourth');
+TryToConnect( $server, $userName, $userPassword,  -1, 30, 'fifth');
+TryToConnect( $server, $userName, $userPassword, 'thisisnotaninteger', 30, 'sixth');
+TryToConnect( $server, $userName, $userPassword,   5, 3.14159, 'seventh');
 
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password, "ConnectRetryCount" );
+$connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword, "ConnectRetryCount" );
 
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
+$conn = sqlsrv_connect( $server, $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect on eighth attempt.\n";
@@ -46,9 +48,9 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password, "ConnectRetryInterval" );
+$connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword, "ConnectRetryInterval" );
 
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
+$conn = sqlsrv_connect( $server, $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect on ninth attempt.\n";

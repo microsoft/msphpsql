@@ -4,14 +4,15 @@ Field metadata unicode
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$connectionInfo = array("UID"=>"$username", "PWD"=>"$password", "CharacterSet"=>"UTF-8");
-$conn = sqlsrv_connect($serverName, $connectionInfo) ?: die();
+$conn = Connect(array("CharacterSet"=>"UTF-8"));
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = GetTempTableName();
 
 // Create table. Column names: passport
 $sql = "CREATE TABLE $tableName (पासपोर्ट CHAR(2), پاسپورٹ VARCHAR(2), Διαβατήριο VARCHAR(MAX))";
@@ -24,11 +25,8 @@ $stmt = sqlsrv_prepare($conn, $sql);
 // Get and display field metadata
 foreach(sqlsrv_field_metadata($stmt) as $meta)
 {
-	print_r($meta);
+    print_r($meta);
 }
-
-// DROP database
-sqlsrv_query($conn,"DROP DATABASE ". $dbName);
 
 // Free statement and connection resources
 sqlsrv_free_stmt($stmt);

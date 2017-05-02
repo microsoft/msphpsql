@@ -2,7 +2,7 @@
 Test with static cursor and select different rows in some random order 
 --FILE--
 ﻿﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function FetchRow_Query($conn)
 {
@@ -135,12 +135,10 @@ function RunTest()
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
 
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
+        echo "\nTest begins...\n";
+
         // Connect
-        $connectionInfo = array('Database'=>$database, 'UID'=>$username, 'PWD'=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect(); 
         if( !$conn ) { FatalError("Could not connect.\n"); }
 
         FetchRow_Query($conn);
@@ -160,7 +158,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'sqlsrv_fetch_cursor_static_scroll' test...
+Test begins...
 1, Row 1
 2, Row 2
 3, Row 3
@@ -203,4 +201,4 @@ last row: 10, Row 10
 
 row 1 from the current row: 
 Done
-...Test 'sqlsrv_fetch_cursor_static_scroll' completed successfully.
+Test "sqlsrv_fetch_cursor_static_scroll" completed successfully.

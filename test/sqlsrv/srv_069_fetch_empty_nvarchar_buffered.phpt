@@ -10,10 +10,10 @@ function print_errors()
 
 function test()
 {
-    require_once("autonomous_setup.php");
+    require_once("MsCommon.inc");
 
     // Connect
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect();
     if( !$conn ) { print_errors(); }
         
     $sql = "EXEC dbo.sp_executesql 

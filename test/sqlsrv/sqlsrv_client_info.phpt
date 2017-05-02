@@ -3,10 +3,10 @@ Test sqlsrv_client_info
 --SKIPIF--
 --FILE--
 <?php
-require_once("autonomous_setup.php");
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
+require_once("MsCommon.inc");
+$conn = Connect();
 if( !$conn ) { 
-	die( print_r( sqlsrv_errors(), true)); 
+    die( print_r( sqlsrv_errors(), true)); 
 }
 
 $client_info = sqlsrv_client_info( $conn );
