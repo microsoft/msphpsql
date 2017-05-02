@@ -11,8 +11,8 @@ $PhpDriver = "Microsoft SQL Server Driver for PHP";
 
 $server = 'TARGET_SERVER';
 $dbName = 'TARGET_DATABASE';
-$userName = 'USERNAME';
-$userPassword = 'PASSWORD';
+$userName = 'TARGET_USERNAME';
+$userPassword = 'TARGET_PASSWORD';
 
 $tableName = "php_test_table";
 $tableIndex = "php_test_table_index";
