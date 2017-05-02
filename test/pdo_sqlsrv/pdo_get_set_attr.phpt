@@ -153,11 +153,11 @@ Set Result PDO::ATTR_SERVER_INFO :
 SQLSTATE\[IMSSP\]: A read-only attribute was designated on the PDO object.
 Get Result PDO::ATTR_SERVER_INFO :
 array\(3\) {
-  \["CurrentdatabaseName"\]=>
+  \["CurrentDatabase"\]=>
   string\([0-9]*\) ".*"
   \["SQLServerVersion"\]=>
   string\(10\) "[0-9]{2}.[0-9]{2}.[0-9]{4}"
-  \["SQLserver"\]=>
+  \["SQLServerName"\]=>
   string\([0-9]*\) ".*"
 }
 
