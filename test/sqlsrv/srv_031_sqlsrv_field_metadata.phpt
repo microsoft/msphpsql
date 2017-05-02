@@ -4,7 +4,7 @@ sqlsrv_field_metadata() VARCHAR(n), NVARCHAR(n), INT
 --FILE--
 <?php
 
-require_once("MsCommon.inc");
+include ("MsCommon.inc");
 
 // Connect
 $conn = Connect();
@@ -12,7 +12,7 @@ if( !$conn ) {
     FatalError("Connection could not be established.\n");
 }
 
-$tableName = GetTempTableName();
+$tableName = GetTempTableName('test_srv_031');
 
 // Create table
 $stmt = sqlsrv_query($conn, "create table $tableName (FirstName VARCHAR(10), LastName NVARCHAR(20), Age INT)");
@@ -32,10 +32,14 @@ sqlsrv_free_stmt($stmt);
 // Prepare the statement
 $query = "SELECT FirstName, LastName, Age FROM $tableName";
 $stmt = sqlsrv_prepare($conn, $query);
-
-// Get field metadata
-$metadata = sqlsrv_field_metadata($stmt);
-var_dump($metadata);
+if ( $stmt === false ) { 
+    PrintErrors(); 
+}
+else {
+    // Get field metadata
+    $metadata = sqlsrv_field_metadata($stmt);
+    var_dump($metadata);
+}
 
 sqlsrv_free_stmt( $stmt);
 sqlsrv_close($conn);

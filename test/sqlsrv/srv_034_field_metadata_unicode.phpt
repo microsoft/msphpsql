@@ -4,7 +4,7 @@ Field metadata unicode
 --FILE--
 <?php
 
-require_once("MsCommon.inc");
+include ("MsCommon.inc");
 
 // Connect
 $conn = Connect(array("CharacterSet"=>"UTF-8"));
@@ -12,7 +12,7 @@ if( !$conn ) {
     FatalError("Connection could not be established.\n");
 }
 
-$tableName = GetTempTableName();
+$tableName = GetTempTableName('test_srv_034');
 
 // Create table. Column names: passport
 $sql = "CREATE TABLE $tableName (पासपोर्ट CHAR(2), پاسپورٹ VARCHAR(2), Διαβατήριο VARCHAR(MAX))";
@@ -21,10 +21,14 @@ $stmt = sqlsrv_query($conn, $sql);
 // Prepare the statement
 $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_prepare($conn, $sql);
-
-// Get and display field metadata
-$metadata = sqlsrv_field_metadata($stmt);
-var_dump($metadata);
+if ( $stmt === false ) { 
+    PrintErrors(); 
+}
+else {
+    // Get and display field metadata
+    $metadata = sqlsrv_field_metadata($stmt);
+    var_dump($metadata);
+}
 
 // Free statement and connection resources
 sqlsrv_free_stmt($stmt);
