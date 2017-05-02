@@ -1,56 +1,55 @@
 --TEST--
 Prepare, execute statement and fetch with pooling disabled
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 // Allow PHP types for numeric fields
 $connection_options['pdo'][PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE] = TRUE;
 
 // Create a pool
-$conn0 = new PDO( "sqlsrv:server=$serverName;ConnectionPooling=0;",
-	$username, $password, $connection_options['pdo']);
+$conn0 = new PDO( "sqlsrv:server=$server;database=$databaseName;ConnectionPooling=0;",
+    $uid, $pwd, $connection_options['pdo']);
 $conn0 = null;
 
 // Connection can use an existing pool
-$conn = new PDO( "sqlsrv:server=$serverName;ConnectionPooling=0;",
-	$username, $password, $connection_options['pdo']);
-
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
+$conn = new PDO( "sqlsrv:server=$server;database=$databaseName;ConnectionPooling=0;",
+    $uid, $pwd, $connection_options['pdo']);
 
 // Create table
+$tableName = 'pdo_62test';
 $sql = "CREATE TABLE $tableName (Столица NVARCHAR(32), year INT)";
-$stmt = $conn->query($sql);
+$stmt = $conn->exec($sql);
 
 // Insert data
-$sql = "INSERT INTO ".$tableName." VALUES (?,?)";
+$sql = "INSERT INTO $tableName VALUES (?,?)";
 $stmt = $conn->prepare($sql);
 $stmt->execute(array("Лондон",2012));
 
 // Get data
-$stmt = $conn->query("select * from $tableName");
+$stmt = $conn->query("SELECT * FROM $tableName");
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 var_dump($row);  
 $conn = null;
 
 // Create a new pool
-$conn0 = new PDO( "sqlsrv:server=$serverName;ConnectionPooling=0;",
-	$username, $password);
+$conn0 = new PDO( "sqlsrv:server=$server;database=$databaseName;ConnectionPooling=0;",
+    $uid, $pwd);
 $conn0 = null;
-	
-// Connection can use an existing pool
-$conn = new PDO( "sqlsrv:server=$serverName;ConnectionPooling=0;",
-	$username, $password);
+    
+// Connection can use an existing pool?
+$conn = new PDO( "sqlsrv:server=$server;database=$databaseName;ConnectionPooling=0;",
+    $uid, $pwd);
 
 // Get data
-$stmt = $conn->query("select * from $tableName");
+$stmt = $conn->query("SELECT * FROM $tableName");
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 var_dump($row); 
-	
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
+    
+
+$conn->query("DROP TABLE $tableName");
 
 // Close connection
 $stmt=null;

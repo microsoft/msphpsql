@@ -1,12 +1,12 @@
 --TEST--
 direct execution of an invalid query
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-    require_once("autonomous_setup.php");
+    require_once("MsSetup.inc");
 
-    $conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb ", $username, $password);
+    $conn = new PDO( "sqlsrv:Server=$server; database = $databaseName ", $uid, $pwd);
     
     $conn->exec("IF OBJECT_ID('table1', 'U') IS NOT NULL DROP TABLE table1");
     

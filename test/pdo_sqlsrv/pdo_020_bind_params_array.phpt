@@ -1,19 +1,18 @@
 --TEST--
 Bind parameters using an array
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 // Connect
-$conn = new PDO("sqlsrv:server=$serverName", $username, $password);
-
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
+$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 
 // Create table
+$tableName = '#bindParams';
 $sql = "CREATE TABLE $tableName (ID TINYINT, SID CHAR(5))";
-$stmt = $conn->query($sql);
+$stmt = $conn->exec($sql);
 
 // Insert data using bind parameters
 $sql = "INSERT INTO $tableName VALUES (?,?)";
@@ -40,9 +39,6 @@ $stmt1->execute($params);
 $data = $stmt->fetchAll();
 foreach ($data as $a)
 echo $a['ID'] . "|" . $a['SID'] . "\n";
-
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
 
 // Close connection
 $stmt = null;

@@ -1,20 +1,18 @@
 --TEST--
 Fetch string with new line and tab characters
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$serverName", $username, $password);
-
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 
 // Create table
-$sql = "CREATE TABLE ".$tableName.
-	" (c1 VARCHAR(32), c2 CHAR(32), c3 NVARCHAR(32), c4 NCHAR(32))";
-$stmt = $conn->query($sql);
+$tableName = '#pdo_017';
+$sql = "CREATE TABLE $tableName (c1 VARCHAR(32), c2 CHAR(32), c3 NVARCHAR(32), c4 NCHAR(32))";
+$stmt = $conn->exec($sql);
 
 // Bind parameters and insert data
 $sql = "INSERT INTO $tableName VALUES (:val1, :val2, :val3, :val4)";
@@ -28,13 +26,10 @@ $stmt->execute();
 
 // Get data
 $sql = "SELECT UPPER(c1) AS VARCHAR, UPPER(c2) AS CHAR, 
-	UPPER(c3) AS NVARCHAR, UPPER(c4) AS NCHAR FROM $tableName";
+    UPPER(c3) AS NVARCHAR, UPPER(c4) AS NCHAR FROM $tableName";
 $stmt = $conn->query($sql);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 var_dump($row);
-
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
 
 // Close connection
 $stmt=null;

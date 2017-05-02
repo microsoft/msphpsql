@@ -4,8 +4,8 @@ prepare with cursor buffered and fetch a money column with the column bound and 
 
 --FILE--
 <?php
-require_once("autonomous_setup.php");
-$conn = new PDO( "sqlsrv:server=$serverName", $username, $password);
+require_once("MsSetup.inc");
+$conn = new PDO( "sqlsrv:server=$server", $uid, $pwd);
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
 $sample = 1234567890.1234;

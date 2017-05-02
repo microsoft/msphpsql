@@ -1,23 +1,22 @@
 --TEST--
 Bind integer parameters; allow fetch numeric types.
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 /* Sample numbers MIN_INT, MAX_INT */
 $sample = array(-2**31, 2**31-1);
 
 /* Connect */
 $conn_ops['pdo'][PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE] = TRUE;
-$conn = new PDO("sqlsrv:server=$serverName", $username, $password, $conn_ops['pdo']);
-
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
+$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd, $conn_ops['pdo']);
 
 // Create table
+$tableName = '#testPDO016';
 $sql = "CREATE TABLE $tableName (c1 INT, c2 INT)";
-$stmt = $conn->query($sql);
+$stmt = $conn->exec($sql);
 
 // Insert data using bind parameters
 $sql = "INSERT INTO $tableName VALUES (:num1, :num2)";
@@ -31,9 +30,6 @@ $sql = "SELECT * FROM $tableName";
 $stmt = $conn->query($sql);
 $row = $stmt->fetch(PDO::FETCH_NUM);
 var_dump ($row);
-
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
 
 // Close connection
 $stmt = null;

@@ -1,23 +1,21 @@
 --TEST--
 Insert with quoted parameters
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$serverName", "$username", "$password" );
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", "$uid", "$pwd" );
 
 $param = 'a \' g';
 $param2 = $conn->quote( $param );
 
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
-
-// Create table
-$query = "CREATE TABLE ".$tableName." (col1 VARCHAR(10), col2 VARCHAR(20))";
-$stmt = $conn->query($query);
+// Create a temporary table
+$tableName = '#tmpTable';
+$query = "CREATE TABLE $tableName (col1 VARCHAR(10), col2 VARCHAR(20))";
+$stmt = $conn->exec($query);
 if( $stmt === false ) { die(); }
 
 // Inserd data
@@ -41,9 +39,6 @@ while ( $row = $stmt->fetch( PDO::FETCH_ASSOC ) ){
 $query = "delete from $tableName where col1 = ?";
 $stmt = $conn->prepare( $query );
 $stmt->execute(array($param));
-
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
 
 //free the statement and connection
 $stmt=null;

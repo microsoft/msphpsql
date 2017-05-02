@@ -1,24 +1,23 @@
 --TEST--
 Moves the cursor to the next result set with pooling enabled
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 // Create a pool
-$conn0 = new PDO("sqlsrv:server=$serverName;ConnectionPooling=1", $username, $password);
+$conn0 = new PDO("sqlsrv:server=$server; database=$databaseName;ConnectionPooling=1", $uid, $pwd);
 $conn0->query("SELECT 1");
 $conn0 = null;
 
 // Connect
-$conn = new PDO("sqlsrv:server=$serverName;ConnectionPooling=1", $username, $password);
-
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
+$conn = new PDO("sqlsrv:server=$server; database=$databaseName;ConnectionPooling=1", $uid, $pwd);
 
 // Create table
+$tableName = '#nextResultPooling';
 $sql = "CREATE TABLE $tableName (c1 INT, c2 XML)";
-$stmt = $conn->query($sql);
+$stmt = $conn->exec($sql);
 
 // Insert data using bind parameters
 $sql = "INSERT INTO $tableName VALUES (?,?)";
@@ -45,9 +44,6 @@ echo $a['c1']."|".$a['c2']."\n";
 // Array: FETCH_NUM
 foreach ($data2 as $a)
 echo $a[0] . "|".$a[1]."\n";
-
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
 
 // Close connection
 $stmt = null;

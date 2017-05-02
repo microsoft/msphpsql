@@ -3,16 +3,14 @@ GitHub issue #308 - empty string set to output parameter on stored procedure
 --DESCRIPTION--
 Verifies GitHub issue 308 is fixed, empty string returned as output parameter will remain an empty string.
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("pdo_tools.inc");
+require_once("MsCommon.inc");
 
 // Connect 
-require_once("autonomous_setup.php");
-
-$dbName = "tempdb";
-
-$conn = new PDO("sqlsrv:server=$serverName;Database=$dbName", $username, $password);   
+require_once("MsSetup.inc");
+$conn = new PDO("sqlsrv:server=$server;database=$databaseName", $uid, $pwd);   
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );   
 
 $procName = GetTempProcName();

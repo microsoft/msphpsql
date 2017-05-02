@@ -1,6 +1,7 @@
 --TEST--
 Create database that already exists
 --SKIPIF--
+<?php require('skipif_azure.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon.inc");

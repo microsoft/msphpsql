@@ -4,8 +4,8 @@ prepare with cursor buffered and fetch a datetime column
 
 --FILE--
 <?php
-require_once("autonomous_setup.php");
-$conn = new PDO( "sqlsrv:server=$serverName", $username, $password);
+require_once("MsSetup.inc");
+$conn = new PDO( "sqlsrv:server=$server", $uid, $pwd);
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 $sample = '2012-06-18 10:34:09';
 

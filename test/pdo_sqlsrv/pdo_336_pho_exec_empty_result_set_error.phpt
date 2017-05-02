@@ -3,13 +3,13 @@ GitHub issue #336 - PDO::exec should not return an error with query returning SQ
 --DESCRIPTION--
 Verifies GitHub issue 336 is fixed, PDO::exec on query returning SQL_NO_DATA will not give an error
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 // Connect 
-require_once("autonomous_setup.php");
-$dbName = "tempdb";
+require_once("MsSetup.inc");
 
-$conn = new PDO("sqlsrv:server=$serverName;Database=$dbName", $username, $password);   
+$conn = new PDO("sqlsrv:server=$server;database=$databaseName", $uid, $pwd);   
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );   
 
 $sql = "DELETE FROM foo_table WHERE id = 42";
