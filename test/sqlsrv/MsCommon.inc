@@ -1095,7 +1095,7 @@ function handle_errors()
     {
         for($i = 0; $i < $count; $i++)
         {
-            echo ($errors[$i]['message']."\n");
+            trace ($errors[$i]['message']."\n");
         }
     }
 }
