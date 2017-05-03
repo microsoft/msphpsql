@@ -35,7 +35,9 @@ def executeSQLscriptUnix(sqlfile, conn_options, dbname):
     simple_cmd = 'sqlcmd ' + conn_options + ' -Q \"select @@Version\" '
     executeCommmand(simple_cmd)
 
-    inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) + sqlcmd
+    # inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) + sqlcmd
+    inst_command = redirect_string.format(dbname, sqlfile, tmpFileName)
     executeCommmand(inst_command)
+    executeCommmand(sqlcmd)
     
     os.remove(tmpFileName)
