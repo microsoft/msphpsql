@@ -9,9 +9,9 @@ require_once 'MsCommon.inc';
 
 
 function testException(){
-	$db = connect();
-	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-	$sql = "SELECT * FROM temp_table";
+    $db = connect();
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $sql = "SELECT * FROM temp_table";
     try{
         $q = $db->query($sql);
     } catch ( Exception $e ){
@@ -20,16 +20,16 @@ function testException(){
 }
 
 function testWarning(){
-	$db = connect();
-	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
-	$sql = "SELECT * FROM temp_table";
+    $db = connect();
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+    $sql = "SELECT * FROM temp_table";
     $q = $db->query($sql);
 }
 
 function testSilent(){
-	$db = connect();
-	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
-	$sql = "SELECT * FROM temp_table";
+    $db = connect();
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+    $sql = "SELECT * FROM temp_table";
     $q = $db->query($sql);
 }
 

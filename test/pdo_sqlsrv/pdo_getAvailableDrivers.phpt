@@ -5,8 +5,6 @@ Test the PDO::getAvailableDrivers() method.
 --FILE--
 <?php
   
-require_once 'MsCommon.inc';
- 
 try 
 {      
     // Do not print anything, as the result will be different for each computer
