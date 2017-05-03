@@ -5,8 +5,7 @@ GitHub issue #378 - output parameters appends garbage info when variable is init
 steps to reproduce the issue:
 1- create a store procedure with print and output parameter
 2- initialize output parameters to a different data type other than the type declared in sp.
-3- set the WarningsReturnAsErrors to true
-4 - call sp.
+3 - call sp.
 --FILE--
 <?php
 require_once("pdo_tools.inc");
@@ -16,17 +15,15 @@ $conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb ", $username, $pa
 if (!$conn) {
 	print_r($conn->errorInfo());
 }
-//$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+
 //----------------Main---------------------------
 $procName = GetTempProcName();
 createSP($conn, $procName);
-
-//sqlsrv_configure( 'WarningsReturnAsErrors', true );
 executeSP($conn, $procName);
-
-//sqlsrv_configure( 'WarningsReturnAsErrors', false );
-//executeSP($conn, $procName);
+$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+executeSP($conn, $procName);
 echo "Done";
+
 //-------------------functions-------------------
 function createSP($conn, $procName){
 	
@@ -43,7 +40,6 @@ function createSP($conn, $procName){
 
 function executeSP($conn, $procName){
 	$expected = 3;
-	
 	$stmt = $conn->prepare("{call $procName( ?, ?, ? )}");
 	$stmt->bindParam(1, $v1);
 	$stmt->bindParam(2, $v2);
@@ -51,11 +47,10 @@ function executeSP($conn, $procName){
 	$v1 = 1;
 	$v2 = 2;
 	$v3 = 'str';
-    $stmt->execute();
+	$stmt->execute();
 	if (!$stmt) {
-        print_r($conn->errorInfo());
+        print_r($stmt->errorInfo());
     }
-	
 	if ( $v3 != $expected ) {
 		print("The expected value is $expected, actual value is $v3\n");
 	}
