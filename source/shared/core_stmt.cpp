@@ -734,7 +734,7 @@ SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int
         // if the statement executed but failed in a subsequent operation before returning, 
         // we need to cancel the statement and deref the output and stream parameters
         if ( stmt->send_streams_at_exec ) {
-            zend_hash_clean( Z_ARRVAL( stmt->output_params ));
+            finalize_output_parameters( stmt TSRMLS_CC );
             zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
         }
         if( stmt->executed ) {
