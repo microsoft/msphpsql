@@ -31,13 +31,11 @@ def executeSQLscriptUnix(sqlfile, conn_options, dbname):
     redirect_string = '(echo :setvar dbname {0})  > {2}; cat {1} >> {2}; '
     sqlcmd = 'sqlcmd ' + conn_options + ' -i ' + tmpFileName
 
-    # this step seems necessary in travis CI
-    show_cmd = 'sqlcmd ' + conn_options + ' -Q \"select @@Version\" '
-    executeCommmand(show_cmd)
+    # Execute a simple query via sqlcmd: without this step, the next step fails in travis CI
+    simple_cmd = 'sqlcmd ' + conn_options + ' -Q \"select @@Version\" '
+    executeCommmand(simple_cmd)
 
     inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) + sqlcmd
-    #inst_command = redirect_string.format(dbname, sqlfile, tmpFileName) 
     executeCommmand(inst_command)
-    #executeCommmand(sqlcmd)
     
     os.remove(tmpFileName)
