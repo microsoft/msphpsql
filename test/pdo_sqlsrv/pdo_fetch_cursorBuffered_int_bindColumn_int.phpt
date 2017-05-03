@@ -5,7 +5,7 @@ prepare with cursor buffered and fetch a int column with the column bound and sp
 --FILE--
 <?php
 require_once("MsSetup.inc");
-$conn = new PDO( "sqlsrv:server=$server", $uid, $pwd);
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
 $sample = 1234567890;

@@ -5,7 +5,7 @@ prepare with cursor buffered and fetch a varchar column
 --FILE--
 <?php
 require_once("MsSetup.inc");
-$conn = new PDO( "sqlsrv:server=$server", $uid, $pwd);
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 $sample = "eight";
 

@@ -25,7 +25,7 @@ function QueryTimeout($conn1, $conn2, $commit)
         echo "Number of rows affected unexpected!\n";
     sqlsrv_free_stmt($stmt);   
     
-    $stmt = sqlsrv_query($conn2, "SELECT * FROM $tableName", array(), array('QueryTimeout' => 1)); 
+    $stmt = sqlsrv_query($conn2, "WAITFOR DELAY '00:00:03'; SELECT * FROM $tableName", array(), array('QueryTimeout' => 1)); 
     $errors = sqlsrv_errors(SQLSRV_ERR_ALL); 
     $e = $errors[0];    
     

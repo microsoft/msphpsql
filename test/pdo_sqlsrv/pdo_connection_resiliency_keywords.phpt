@@ -6,13 +6,15 @@ Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterv
 <?php
 require_once( "MsSetup.inc" );
 
-function TryToConnect( $server, $uid, $pwd, $retryCount, $retryInterval, $number )
+function TryToConnect( $retryCount, $retryInterval, $number )
 {
+    global $server, $databaseName, $uid, $pwd;
+    
     $connectionInfo = "ConnectRetryCount = $retryCount; ConnectRetryInterval = $retryInterval;";
 
     try
     {
-        $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+        $conn = new PDO( "sqlsrv:server = $server ; database=$databaseName ; $connectionInfo", $uid, $pwd );
         echo "Connected successfully on $number attempt.\n";
         $conn = null;
     }
@@ -24,19 +26,19 @@ function TryToConnect( $server, $uid, $pwd, $retryCount, $retryInterval, $number
     }
 }
 
-TryToConnect( $server, $uid, $pwd,  10, 30, 'first');
-TryToConnect( $server, $uid, $pwd,   0, 30, 'second');
-TryToConnect( $server, $uid, $pwd, 256, 30, 'third');
-TryToConnect( $server, $uid, $pwd,   5, 70, 'fourth');
-TryToConnect( $server, $uid, $pwd,  -1, 30, 'fifth');
-TryToConnect( $server, $uid, $pwd, 'thisisnotaninteger', 30, 'sixth');
-TryToConnect( $server, $uid, $pwd,   5, 3.14159, 'seventh');
+TryToConnect( 10, 30, 'first');
+TryToConnect( 0, 30, 'second');
+TryToConnect( 256, 30, 'third');
+TryToConnect( 5, 70, 'fourth');
+TryToConnect( -1, 30, 'fifth');
+TryToConnect( 'thisisnotaninteger', 30, 'sixth');
+TryToConnect( 5, 3.14159, 'seventh');
 
 $connectionInfo = "ConnectRetryCount;";
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:server = $server ; database=$databaseName ; $connectionInfo", $uid, $pwd );
     echo "Connected successfully on eighth attempt.\n";
     $conn = null;
 }
@@ -51,7 +53,7 @@ $connectionInfo = "ConnectRetryInterval;";
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:server = $server ; database=$databaseName ; $connectionInfo", $uid, $pwd );
     echo "Connected successfully on ninth attempt.\n";
     $conn = null;
 }

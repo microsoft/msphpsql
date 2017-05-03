@@ -9,7 +9,6 @@ require_once("MsSetup.inc");
 $pdo_options = [];
 $pdo_options[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
 $pdo_options[PDO::SQLSRV_ATTR_ENCODING] = PDO::SQLSRV_ENCODING_UTF8;
-$database = "tempdb";
 
 $connection = new PDO("sqlsrv:server=$server;Database=$databaseName",  $uid, $pwd, $pdo_options);
 

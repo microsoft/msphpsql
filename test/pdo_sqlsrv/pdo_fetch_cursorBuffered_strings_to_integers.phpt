@@ -8,8 +8,8 @@ prepare with cursor buffered and fetch various columns with the column bound and
 function test()
 {
 	require_once("MsSetup.inc");
-        $conn = new PDO( "sqlsrv:server=$server", $uid, $pwd);
-        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+    $conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
 	$decimal = -2345209.3103;
 	$numeric = 987234.9919;

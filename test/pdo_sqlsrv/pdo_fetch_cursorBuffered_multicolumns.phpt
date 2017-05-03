@@ -8,7 +8,7 @@ Uses buffered cursor to fetch from float, int, and decimal columns that have pos
 <?php
 
 require_once("MsSetup.inc");
-$conn = new PDO( "sqlsrv:server=$server", $uid, $pwd);
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 $sample = 1234567890.1234;
 $sample1 = -1234567890.1234;

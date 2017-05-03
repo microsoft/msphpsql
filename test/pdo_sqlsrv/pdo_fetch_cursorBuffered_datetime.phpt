@@ -5,7 +5,7 @@ prepare with cursor buffered and fetch a datetime column
 --FILE--
 <?php
 require_once("MsSetup.inc");
-$conn = new PDO( "sqlsrv:server=$server", $uid, $pwd);
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 $sample = '2012-06-18 10:34:09';
 

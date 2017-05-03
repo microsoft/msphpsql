@@ -9,7 +9,6 @@ require_once("MsSetup.inc");
 $connection_options['pdo'] = array();
 $connection_options['pdo'][PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
 
-$databaseName = "tempdb";
 $cnn = new PDO("sqlsrv:Server=$server;Database=$databaseName", $uid, $pwd, $connection_options['pdo']);
 
 // Drop
