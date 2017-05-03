@@ -1,7 +1,7 @@
 --TEST--
 prepare with emulate prepare and binding binary parameters
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('MsSetup.inc');

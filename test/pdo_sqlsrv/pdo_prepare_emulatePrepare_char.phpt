@@ -1,7 +1,7 @@
 --TEST--
 prepare with emulate prepare and binding varchar
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('MsSetup.inc');
