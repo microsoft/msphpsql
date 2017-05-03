@@ -49,8 +49,8 @@ function executeSP($conn, $procName){
 	$v3 = 'str';
 	$stmt->execute();
 	if (!$stmt) {
-        print_r($stmt->errorInfo());
-    }
+        	print_r($stmt->errorInfo());
+        }
 	if ( $v3 != $expected ) {
 		print("The expected value is $expected, actual value is $v3\n");
 	}
