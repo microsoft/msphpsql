@@ -35,7 +35,7 @@ sqlsrv_close($conn);
 print "Done";
 ?>
 
---EXPECT--
-bool(false)
-int(3701)
+--EXPECTREGEX--
+bool\(false\)
+int\((3701|911)\)
 Done

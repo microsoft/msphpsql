@@ -174,7 +174,7 @@ test_script:
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\    
-    # python output.py 
+    - python output.py 
     - ps: $difffiles = Get-ChildItem sqlsrv\*.diff   
     - ps: $outfiles = Get-ChildItem sqlsrv\*.out   
     - ps: foreach($file in $difffiles){ls $file; more $file}  

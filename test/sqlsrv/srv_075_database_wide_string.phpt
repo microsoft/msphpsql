@@ -37,9 +37,9 @@ sqlsrv_close($conn);
 print "Done";
 ?>
 
---EXPECT--
-bool(false)
-string(5) "42S02"
-int(3701)
-string(159) "[Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Cannot drop the database 'uniqueDB01_银河系', because it does not exist or you do not have permission."
+--EXPECTREGEX--
+bool\(false\)
+string\(5\) "(42S02|08004)"
+int\((3701|911)\)
+string\([0-9]+\) "\[Microsoft\]\[ODBC Driver 13 for SQL Server\]\[SQL Server\](Cannot drop the database 'uniqueDB01_银河系', because it does not exist or you do not have permission\.|Database 'uniqueDB01_银河系' does not exist. Make sure that the name is entered correctly\.)"
 Done
