@@ -16,9 +16,10 @@ sqlsrv_configure('LogSubsystems', 15);  //  True
 
 require( 'MsCommon.inc' );
 
-$conn = Connect();
+$conn = ConnectUTF8();
 
 $field_type = 'NVARCHAR(4000)';
+echo "Testing output type: NVARCHAR(4000)\n";
 
 $stmt = sqlsrv_query($conn, "DROP PROC [TestFullLenStringsOut]");
 $stmt = sqlsrv_query($conn, "CREATE PROC [TestFullLenStringsOut] (@p1 " . $field_type . ", @p2 " . $field_type . " OUTPUT)
@@ -49,6 +50,7 @@ if ($str != 'AA')
 
 $field_type = 'VARCHAR(8000)';
 $inValue1 = str_repeat( "A", 7999 );
+echo "Testing output type: VARCHAR(8000)\n";
 
 $stmt = sqlsrv_query($conn, "DROP PROC [TestFullLenStringsOut]");
 if( $stmt === false ) {
@@ -80,6 +82,7 @@ if ($str != 'AA')
 
 $field_type = 'VARBINARY(8000)';
 $inValue1 = str_repeat( "A", 7999 );
+echo "Testing output type: VARBINARY(8000)\n";
 
 $stmt = sqlsrv_query($conn, "DROP PROC [TestFullLenStringsOut]");
 if( $stmt === false ) {
@@ -116,4 +119,7 @@ sqlsrv_close( $conn );  //  True
 
 ?>
 --EXPECT--
+Testing output type: NVARCHAR(4000)
+Testing output type: VARCHAR(8000)
+Testing output type: VARBINARY(8000)
 Test complete.
