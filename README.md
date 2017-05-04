@@ -223,6 +223,7 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 *Note: it installs the stable version, for specific version you should specify the version. For example, do `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version.
 Drivers are Mac-compatible starting from `4.1.7preview` release.
 
+
 ### Step 4: Install and Configure Apache
 
 #### PHP 7.0
