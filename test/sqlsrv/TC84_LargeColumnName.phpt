@@ -1,6 +1,6 @@
 --TEST--
 PHP - Large Column Name Test
---Description--
+--DESCRIPTION--
 Verifies that long column names are supported (up to 128 chars).
 --ENV--
 PHPT_EXEC=true

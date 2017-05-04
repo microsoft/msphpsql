@@ -5,9 +5,6 @@ UTF-8 connection strings
 --FILE--
 <?php
 
-//require( 'MsSetup.inc' );
-//require ('connect.inc');
-
 function connect($options=array()) {
     require 'MsSetup.inc';
     if (!isset($options['UID']) && !isset($options['uid'])) {
