@@ -40,9 +40,12 @@ if( $stmt === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
 while( sqlsrv_next_result( $stmt )) {}
-print_r( strlen( $outValue1 ));
-echo "\n";
-print_r( substr( $outValue1, -2, 2 ));
+
+if ( strlen( $outValue1 ) != 4000 )
+    echo "Length of returned value unexpected!\n";
+$str = substr( $outValue1, -2, 2 );
+if ($str != 'AA')
+    echo "Returned substring $str invalid!\n";
 
 $field_type = 'VARCHAR(8000)';
 $inValue1 = str_repeat( "A", 7999 );
@@ -68,10 +71,12 @@ if( $stmt === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
 while( sqlsrv_next_result( $stmt )) {}
-echo "\n";
-print_r( strlen( $outValue1 ));
-echo "\n";
-print_r( substr( $outValue1, -2, 2 ));
+
+if ( strlen( $outValue1 ) != 8000 )
+    echo "Length of returned value unexpected!\n";
+$str = substr( $outValue1, -2, 2 );
+if ($str != 'AA')
+    echo "Returned substring $str invalid!\n";
 
 $field_type = 'VARBINARY(8000)';
 $inValue1 = str_repeat( "A", 7999 );
@@ -97,19 +102,18 @@ if( $stmt === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
 while( sqlsrv_next_result( $stmt )) {}
-echo "\n";
-print_r( strlen( $outValue1 ));
-echo "\n";
-print_r( substr( $outValue1, -2, 2 ));
+
+if ( strlen( $outValue1 ) != 8000 )
+    echo "Length of returned value unexpected!\n";
+$str = substr( $outValue1, -2, 2 );
+if ($str != 'AB')
+    echo "Returned substring $str invalid!\n";
+
+echo "Test complete.\n";
 
 sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );  //  True
 
 ?>
 --EXPECT--
-4000
-AA
-8000
-AA
-8000
-AB
+Test complete.

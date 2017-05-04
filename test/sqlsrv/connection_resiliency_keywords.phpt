@@ -3,7 +3,7 @@ Test the connection resiliency keywords
 --DESCRIPTION--
 Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterval and their ranges of acceptable values
 --SKIPIF--
-<?php if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip, test on windows only." ); ?>
+<?php require('skipif_unix.inc'); ?>
 --FILE--
 <?php
 require_once( "MsSetup.inc" );

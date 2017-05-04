@@ -1,7 +1,7 @@
 --TEST--
 warnings as errors
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_unix.inc'); ?>
 --FILE--
 <?php
 

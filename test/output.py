@@ -53,7 +53,7 @@ def TestFilename(line):
     while True:
         currentPos = currentPos - 1
         # if passed the first pos, stop
-        if currentPos < firstpos 
+        if currentPos < firstpos: 
             break
         line[currentPos]
         if line[currentPos] == terminateChar:

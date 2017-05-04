@@ -1,7 +1,7 @@
 <?php
 
 if (!extension_loaded("sqlsrv")) {
-	die("skip extension not loaded");
+    die("skip extension not loaded");
 }
 
 include 'MsCommon.inc';

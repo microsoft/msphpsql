@@ -6,7 +6,7 @@ when an URI-based construct is used.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip, test on windows only." ); ?>
+<?php require('skipif_unix.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';
