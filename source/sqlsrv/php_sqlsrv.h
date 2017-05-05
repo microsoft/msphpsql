@@ -227,7 +227,6 @@ void __cdecl sqlsrv_stmt_dtor( zend_resource *rsrc TSRMLS_DC );
 
 // "internal" statement functions shared by functions in conn.cpp and stmt.cpp
 void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC );
-void mark_params_by_reference( ss_sqlsrv_stmt* stmt, zval* params_z TSRMLS_DC );
 bool sqlsrv_stmt_common_execute( sqlsrv_stmt* s, const SQLCHAR* sql_string, int sql_len, bool direct, const char* function 
                                  TSRMLS_DC );
 void free_odbc_resources( ss_sqlsrv_stmt* stmt TSRMLS_DC );
