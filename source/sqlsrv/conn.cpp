@@ -937,7 +937,6 @@ PHP_FUNCTION( sqlsrv_prepare )
        
         core_sqlsrv_prepare( stmt, sql, sql_len TSRMLS_CC );
         
-        //mark_params_by_reference( stmt, params_z TSRMLS_CC );
 		if (params_z) {
 			stmt->params_z = (zval *)sqlsrv_malloc(sizeof(zval));
 			ZVAL_COPY(stmt->params_z, params_z);
