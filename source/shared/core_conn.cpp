@@ -92,7 +92,7 @@ void common_conn_str_append_func( const char* odbc_name, const char* val, size_t
 sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_ncp, driver_conn_factory conn_factory,
                                   const char* server, const char* uid, const char* pwd, 
                                   HashTable* options_ht, error_callback err, const connection_option valid_conn_opts[], 
-				                  void* driver, const char* driver_func TSRMLS_DC )
+                                  void* driver, const char* driver_func TSRMLS_DC )
 
 {
     SQLRETURN r;
@@ -112,7 +112,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     // Due to the limitations on connection pooling in unixODBC 2.3.1 driver manager, we do not consider 
     // the connection string attributes to set (enable/disable) connection pooling. 
     // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
-	
+    
 #ifndef _WIN32
         char pooling_string[ 128 ] = {0};
         SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
@@ -128,7 +128,7 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     // it in build_connection_string_and_set_conn_attr.
     
          if( options_ht && zend_hash_num_elements( options_ht ) > 0 ) {
-		 
+         
              zval* option_z = NULL; 
              option_z = zend_hash_index_find(options_ht, SQLSRV_CONN_OPTION_CONN_POOLING);
              if ( option_z ) {
@@ -163,18 +163,18 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
 
             SQLSMALLINT output_conn_size;
 #ifndef _WIN32
-	// unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
-	// connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
-	if ( henv == &henv_cp )
-	{
-		r = SQLDriverConnect( conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(), SQL_NTS, NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
-	}
-	else
-	{
-		r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+    // unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
+    // connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
+    if ( henv == &henv_cp )
+    {
+        r = SQLDriverConnect( conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(), SQL_NTS, NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+    }
+    else
+    {
+        r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
     }
 #else
-	r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
+    r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
 #endif // !_WIN32 
 
             // clear the connection string from memory to remove sensitive data (such as a password).
@@ -215,11 +215,11 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
     // but fails if the connection is using a pool, i.e. r= SQL_SUCCESS.
     // Thus, in Linux, we don't call determine_server_version() for a connection that uses pool.
 #ifndef _WIN32
-	if ( r == SQL_SUCCESS_WITH_INFO ) {
+    if ( r == SQL_SUCCESS_WITH_INFO ) {
 #endif // !_WIN32 
     determine_server_version( conn TSRMLS_CC );
 #ifndef _WIN32
-	}
+    }
 #endif // !_WIN32 
     }
     catch( std::bad_alloc& ) {
@@ -554,14 +554,14 @@ bool core_is_conn_opt_value_escaped( const char* value, size_t value_len )
 // if the option for the authentication is valid, returns true. This returns false otherwise.
 bool core_is_authentication_option_valid(const char* value, size_t value_len)
 {
-	if (value_len <= 0)
-		return false;
+    if (value_len <= 0)
+        return false;
 
-	if( ! stricmp( value, AzureADOptions::AZURE_AUTH_SQL_PASSWORD ) || ! stricmp( value, AzureADOptions::AZURE_AUTH_AD_PASSWORD ) ) {
-		return true;
+    if( ! stricmp( value, AzureADOptions::AZURE_AUTH_SQL_PASSWORD ) || ! stricmp( value, AzureADOptions::AZURE_AUTH_AD_PASSWORD ) ) {
+        return true;
     }
 
-	return false;
+    return false;
 }
 
 
@@ -639,33 +639,33 @@ void build_connection_string_and_set_conn_attr( sqlsrv_conn* conn, const char* s
         if( zend_hash_index_exists( options, SQLSRV_CONN_OPTION_TRACE_FILE )) {
             
             zval* trace_value = NULL; 
-			trace_value = zend_hash_index_find(options, SQLSRV_CONN_OPTION_TRACE_ON);
+            trace_value = zend_hash_index_find(options, SQLSRV_CONN_OPTION_TRACE_ON);
             
-			if (trace_value == NULL || !zend_is_true(trace_value)) {
+            if (trace_value == NULL || !zend_is_true(trace_value)) {
            
                 zend_hash_index_del( options, SQLSRV_CONN_OPTION_TRACE_FILE );
             }
         }
 
-		zend_string *key = NULL;
-		zend_ulong index = -1;
-		zval* data = NULL;
+        zend_string *key = NULL;
+        zend_ulong index = -1;
+        zval* data = NULL;
 
-		ZEND_HASH_FOREACH_KEY_VAL( options, index, key, data ) {
-			int type = HASH_KEY_NON_EXISTENT;
-			type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
+        ZEND_HASH_FOREACH_KEY_VAL( options, index, key, data ) {
+            int type = HASH_KEY_NON_EXISTENT;
+            type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
-			// The driver layer should ensure a valid key.
-			DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
+            // The driver layer should ensure a valid key.
+            DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
 
-			conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
+            conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
 
-			if( index == SQLSRV_CONN_OPTION_MARS ) {
-				mars_mentioned = true;
-			}
+            if( index == SQLSRV_CONN_OPTION_MARS ) {
+                mars_mentioned = true;
+            }
 
-			conn_opt->func( conn_opt, data, conn, connection_string TSRMLS_CC );
-		} ZEND_HASH_FOREACH_END();
+            conn_opt->func( conn_opt, data, conn, connection_string TSRMLS_CC );
+        } ZEND_HASH_FOREACH_END();
 
         // MARS on if not explicitly turned off
         if( !mars_mentioned ) {
@@ -721,7 +721,7 @@ const char* get_processor_arch( void )
         return PROCESSOR_ARCH[2];
     } else {
         DIE( "Unknown processor architecture." );
-	}
+    }
         return NULL;
 #else
     SYSTEM_INFO sys_info;
@@ -741,7 +741,7 @@ const char* get_processor_arch( void )
             DIE( "Unknown Windows processor architecture." );
             return NULL;
     }
-	return NULL;
+    return NULL;
 #endif // !_WIN32
 }
 
@@ -761,7 +761,7 @@ void determine_server_version( sqlsrv_conn* conn TSRMLS_DC )
     errno = 0;
     char version_major_str[ 3 ];
     SERVER_VERSION version_major;
-	memcpy_s( version_major_str, sizeof( version_major_str ), p, 2 );
+    memcpy_s( version_major_str, sizeof( version_major_str ), p, 2 );
 
     version_major_str[ 2 ] = '\0';
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
@@ -831,7 +831,7 @@ size_t core_str_zval_is_true( zval* value_z )
     }
 
     // save adjustments to the value made by stripping whitespace at the end
-	Z_STRLEN_P( value_z ) = val_len;
+    Z_STRLEN_P( value_z ) = val_len;
 
     const char VALID_TRUE_VALUE_1[] = "true";
     const char VALID_TRUE_VALUE_2[] = "1";

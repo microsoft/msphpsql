@@ -181,9 +181,8 @@ const int SQL_SERVER_2008_DEFAULT_DATETIME_PRECISION = 34;
 const int SQL_SERVER_2008_DEFAULT_DATETIME_SCALE = 7;   
 
 namespace AzureADOptions {
-
-	const char AZURE_AUTH_SQL_PASSWORD[] = "SqlPassword";
-	const char AZURE_AUTH_AD_PASSWORD[] = "ActiveDirectoryPassword";
+    const char AZURE_AUTH_SQL_PASSWORD[] = "SqlPassword";
+    const char AZURE_AUTH_AD_PASSWORD[] = "ActiveDirectoryPassword";
 }
 
 // types for conversions on output parameters (though they can be used for input parameters, they are ignored)
@@ -1128,7 +1127,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
     SQLSRV_CONN_OPTION_APPLICATION_INTENT,
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
-	SQLSRV_CONN_OPTION_AUTHENTICATION,
+    SQLSRV_CONN_OPTION_AUTHENTICATION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
