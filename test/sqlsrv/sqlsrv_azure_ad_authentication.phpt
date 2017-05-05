@@ -18,7 +18,6 @@ if( $conn === false )
 else
 {
     echo "Connected successfully with Authentication=SqlPassword.\n";
-    sqlsrv_close( $conn );
 }
 
 $stmt = sqlsrv_query( $conn, "SELECT name FROM master.dbo.sysdatabases" );
