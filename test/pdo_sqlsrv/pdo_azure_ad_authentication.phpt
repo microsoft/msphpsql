@@ -6,7 +6,7 @@ Test the Authentication keyword and its accepted values: SqlPassword and ActiveD
 <?php
 require_once("autonomous_setup.php");
 
-$connectionInfo = "Database = $dbName; Authentication = SqlPassword; TrustServerCertificate = true;";
+$connectionInfo = " Authentication = SqlPassword; TrustServerCertificate = true;";
 
 try
 {
