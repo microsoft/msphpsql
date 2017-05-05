@@ -1077,6 +1077,7 @@ namespace ODBCConnOptions {
 const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
+const char Authentication[] = "Authentication";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
@@ -1121,6 +1122,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
     SQLSRV_CONN_OPTION_APPLICATION_INTENT,
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
+    SQLSRV_CONN_OPTION_AUTHENTICATION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
@@ -2345,6 +2347,28 @@ struct str_conn_attr_func {
         try {
             core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
                                      static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
+        }
+        catch( core::CoreException& ) {
+            throw;
+        }
+    }
+};
+
+struct str_conn_attr_auth_func {
+
+    static void func( connection_option const* option, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC )
+    {
+        try {
+            SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "str_conn_attr_auth_func: Unexpected zval type." );
+            
+            std::string aads = Z_STRVAL_P( value );
+            SQLSRV_ASSERT( aads != "ActiveDirectoryIntegrated",
+                           "ActiveDirectoryIntegrated is not supported for the Authentication keyword. Value must be one of SqlPassword or ActiveDirectoryPassword." );
+
+            conn_str += option->odbc_name;
+            conn_str += "={";
+            conn_str += aads;
+            conn_str += "};";
         }
         catch( core::CoreException& ) {
             throw;
