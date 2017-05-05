@@ -169,6 +169,31 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
     THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
 }
 
+void conn_string_parser::add_key_value_pair( const char* value, int len TSRMLS_DC )
+{
+	// first need to check if the option for Authention is supported
+	bool valid = true;
+	if ( stricmp( this->current_key_name, ODBCConnOptions::Authentication ) == 0 ) {
+		if (len <= 0)
+			valid = false;
+		else {
+			// extract option from the value by len
+			sqlsrv_malloc_auto_ptr<char> option;
+			option = static_cast<char*>( sqlsrv_malloc( len + 1 ) );
+			memcpy_s( option, len + 1, value, len );
+			option[len] = '\0';
+
+			valid = core_is_authentication_option_valid( option, len );
+		}
+	}
+	if( !valid ) {
+		THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION, this->current_key_name );
+	}
+	
+	string_parser::add_key_value_pair( value, len );
+}
+
+
 inline bool sql_string_parser::is_placeholder_char( char c )
 {
     // placeholder only accepts numbers, upper and lower case alphabets and underscore

@@ -186,6 +186,7 @@ const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
+const char Authentication[] = "Authentication";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
@@ -282,6 +283,15 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         conn_char_set_func::func
     },
+	{
+		SSConnOptionNames::Authentication,
+		sizeof( SSConnOptionNames::Authentication ),
+		SQLSRV_CONN_OPTION_AUTHENTICATION,
+		ODBCConnOptions::Authentication,
+		sizeof( ODBCConnOptions::Authentication ),
+		CONN_ATTR_STRING,
+		conn_str_append_func::func
+	},
     {
         SSConnOptionNames::ConnectionPooling,
         sizeof( SSConnOptionNames::ConnectionPooling ),
@@ -1205,6 +1215,17 @@ int get_conn_option_key( sqlsrv_context& ctx, zend_string* key, size_t key_len, 
 
                         throw ss::SSException();
                     }
+
+					bool valid = true;
+					if( stricmp( SS_CONN_OPTS[i].sqlsrv_name, ODBCConnOptions::Authentication ) == 0 ) {
+						valid = core_is_authentication_option_valid( value, value_len );
+					}
+
+					CHECK_CUSTOM_ERROR( !valid, ctx, SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION, SS_CONN_OPTS[ i ].sqlsrv_name ) {
+
+						throw ss::SSException();
+					}
+
                     break;
                 }
             }

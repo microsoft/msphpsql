@@ -377,6 +377,10 @@ pdo_error PDO_ERRORS[] = {
         PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
         { IMSSP, (SQLCHAR*) "Statement with emulate prepare on does not support output or input_output parameters.", -72, false }
     },
+	{
+		PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
+		{ IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -73, false }
+	},			
     { UINT_MAX, {} }
 };
 

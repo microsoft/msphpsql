@@ -165,6 +165,9 @@ class conn_string_parser : private string_parser
         int discard_trailing_white_spaces(const char* str, int len);
         void validate_key(const char *key, int key_len TSRMLS_DC);
 
+	protected:
+		void add_key_value_pair(const char* value, int len TSRMLS_DC);
+
     public:
         conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, _Inout_ HashTable* conn_options_ht );
         void parse_conn_string( TSRMLS_D );
@@ -390,6 +393,7 @@ enum PDO_ERROR_CODES {
     PDO_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE,
     PDO_SQLSRV_ERROR_INVALID_CURSOR_WITH_SCROLL_TYPE,
     PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
+	PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION
 };
 
 extern pdo_error PDO_ERRORS[];

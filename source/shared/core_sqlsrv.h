@@ -180,6 +180,12 @@ const int SQL_SERVER_2005_DEFAULT_DATETIME_SCALE = 3;
 const int SQL_SERVER_2008_DEFAULT_DATETIME_PRECISION = 34;
 const int SQL_SERVER_2008_DEFAULT_DATETIME_SCALE = 7;   
 
+namespace AzureADOptions {
+
+	const char AZURE_AUTH_SQL_PASSWORD[] = "SqlPassword";
+	const char AZURE_AUTH_AD_PASSWORD[] = "ActiveDirectoryPassword";
+}
+
 // types for conversions on output parameters (though they can be used for input parameters, they are ignored)
 enum SQLSRV_PHPTYPE {
     MIN_SQLSRV_PHPTYPE = 1, // lowest value for a php type
@@ -1077,6 +1083,7 @@ namespace ODBCConnOptions {
 const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
+const char Authentication[] = "Authentication";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
@@ -1121,6 +1128,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_ATTACHDBFILENAME,
     SQLSRV_CONN_OPTION_APPLICATION_INTENT,
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
+	SQLSRV_CONN_OPTION_AUTHENTICATION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
@@ -1190,6 +1198,7 @@ void core_sqlsrv_get_server_version( sqlsrv_conn* conn, _Out_ zval *server_versi
 void core_sqlsrv_get_client_info( sqlsrv_conn* conn, _Out_ zval *client_info TSRMLS_DC );
 bool core_is_conn_opt_value_escaped( const char* value, size_t value_len );
 size_t core_str_zval_is_true( zval* str_zval );
+bool core_is_authentication_option_valid( const char* value, size_t value_len );
 
 //*********************************************************************************************************************************
 // Statement

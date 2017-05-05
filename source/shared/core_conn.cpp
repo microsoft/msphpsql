@@ -550,6 +550,20 @@ bool core_is_conn_opt_value_escaped( const char* value, size_t value_len )
     return true;
 }
 
+// core_is_authentication_option_valid
+// if the option for the authentication is valid, returns true. This returns false otherwise.
+bool core_is_authentication_option_valid(const char* value, size_t value_len)
+{
+	if (value_len <= 0)
+		return false;
+
+	if( ! stricmp( value, AzureADOptions::AZURE_AUTH_SQL_PASSWORD ) || ! stricmp( value, AzureADOptions::AZURE_AUTH_AD_PASSWORD ) ) {
+		return true;
+    }
+
+	return false;
+}
+
 
 // *** internal connection functions and classes ***
 
