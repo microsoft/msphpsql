@@ -250,9 +250,18 @@ Following instructions shows how to install PHP 7.x, Microsoft ODBC driver, apac
 
 ### Step 4: Install the Microsoft PHP Drivers for SQL Server
 
-    sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
+**Ubuntu/RedHat**
+	
+    sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed "s|.*:\s*||"` system
     sudo pecl install sqlsrv
     sudo pecl install pdo_sqlsrv
+    
+**Mac OS X** 
+
+    sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed 's/.*:[[:space:]]*//g'` system
+    sudo pecl install sqlsrv
+    sudo pecl install pdo_sqlsrv
+    
     
 *Note: it installs the stable version, for specific version you should set the version. For example, do `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version.
 Drivers are Mac-compatible starting from 4.1.7preview release. .
