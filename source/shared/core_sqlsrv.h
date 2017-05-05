@@ -2362,8 +2362,8 @@ struct str_conn_attr_auth_func {
             SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "str_conn_attr_auth_func: Unexpected zval type." );
             
             std::string aads = Z_STRVAL_P( value );
-            SQLSRV_ASSERT( aads == "SqlPassword" || aads == "ActiveDirectoryPassword" || aads == "ActiveDirectoryIntegrated",
-                           "Authentication keyword value must be one of SqlPassword, ActiveDirectoryIntegrated, or ActiveDirectoryPassword." );
+            SQLSRV_ASSERT( aads != "ActiveDirectoryIntegrated",
+                           "ActiveDirectoryIntegrated is not supported for the Authentication keyword. Value must be one of SqlPassword or ActiveDirectoryPassword." );
 
             conn_str += option->odbc_name;
             conn_str += "={";
