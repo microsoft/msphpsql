@@ -1,8 +1,8 @@
 <?php
-$server = 'PT-006-SQL-2K16.galaxy.ad';
+$server = 'server';
 $database = 'tempdb';
-$uid = 'sa';
-$pwd = 'Moonshine4me';
+$uid = 'usr';
+$pwd = 'pwd';
 $pooling=false;
 $mars=false;
 ?>
