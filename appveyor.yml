@@ -115,7 +115,7 @@ install:
     #- echo Downloading PHP deps [%PHP_DEPSVER%]
     #- ps: (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/php-sdk/deps-' + ${env:PHP_DEPSVER} + '-vc' + ${env:PHP_VC} + '-' + ${env:BUILD_PLATFORM} + '.7z', ${env:APPVEYOR_BUILD_FOLDER} + '\..\deps.7z')
     - echo Downloading MSODBCSQL 13
-    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/1/E/7/1E7B1181-3974-4B29-9A47-CC857B271AA2/English/' + ${env:BUILD_PLATFORM} + '/msodbcsql.msi', 'msodbcsql.msi')
+    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/' + ${env:BUILD_PLATFORM} + '/msodbcsql.msi', 'msodbcsql.msi')
     - ps: msiexec /i msodbcsql.msi /quiet /qn /norestart        
     - cd ..
     - cd
