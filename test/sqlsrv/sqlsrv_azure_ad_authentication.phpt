@@ -6,7 +6,7 @@ Test the Authentication keyword with options SqlPassword and ActiveDirectoryInte
 <?php
 require_once("autonomous_setup.php");
 
-if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN')
+//if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN')
 {
     $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
                              "Authentication"=>"SqlPassword", "TrustServerCertificate"=>true );
