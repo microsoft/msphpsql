@@ -114,9 +114,18 @@ install:
     - ps: (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/releases/php-' + ${env:PHP_VERSION} + '-src.zip', ${env:APPVEYOR_BUILD_FOLDER} + '\..\php.zip')
     #- echo Downloading PHP deps [%PHP_DEPSVER%]
     #- ps: (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/php-sdk/deps-' + ${env:PHP_DEPSVER} + '-vc' + ${env:PHP_VC} + '-' + ${env:BUILD_PLATFORM} + '.7z', ${env:APPVEYOR_BUILD_FOLDER} + '\..\deps.7z')
-    - echo Downloading MSODBCSQL 13
+    - echo Downloading MSODBCSQL 13.1
     - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/' + ${env:BUILD_PLATFORM} + '/msodbcsql.msi', 'msodbcsql.msi')
     - ps: msiexec /i msodbcsql.msi /quiet /qn /norestart        
+    - echo Downloading MS Online Services Sign-In Assistant
+    - ps: >-
+        If ($env:BUILD_PLATFORM -Match "x64") {
+            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/7/1/E/71EF1D05-A42C-4A1F-8162-96494B5E615C/' + 'msoidcli_64bit.msi', 'msoidcli_64bit.msi');
+            msiexec /i msoidcli_64bit.msi /quiet /qn /norestart
+        } Else {
+            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/7/1/E/71EF1D05-A42C-4A1F-8162-96494B5E615C/' + 'msoidcli_32bit.msi', 'msoidcli_32bit.msi');
+            msiexec /i msoidcli_32bit.msi /quiet /qn /norestart
+        }
     - cd ..
     - cd
     - 7z x -y php-sdk-binary-tools-20110915.zip -o%PHP_SDK%

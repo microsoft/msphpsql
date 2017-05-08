@@ -171,7 +171,7 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
 
 void conn_string_parser::add_key_value_pair( const char* value, int len TSRMLS_DC )
 {
-    // first need to check if the option for Authention is supported
+    // if the keyword is 'Authentication', check whether the user specified option is supported
     bool valid = true;
     if ( stricmp( this->current_key_name, ODBCConnOptions::Authentication ) == 0 ) {
         if (len <= 0)
