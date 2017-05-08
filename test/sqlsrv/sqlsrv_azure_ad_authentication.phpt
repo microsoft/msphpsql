@@ -6,21 +6,7 @@ Test the Authentication keyword and its accepted values: SqlPassword and ActiveD
 <?php
 require_once("autonomous_setup.php");
 
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password, "Authentication"=>"SqlPassword" );
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Failed to connect without TrustServerCertificate!\n";
-    print_r( sqlsrv_errors() );    
-}
-else
-{
-    echo "Connected successfully with Authentication=SqlPassword but without TrustServerCertificate.\n";
-}
-
-////////////////////////////////////////
-/*
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password,
+$connectionInfo = array( "Database"=>"master", "UID"=>$username, "PWD"=>$password,
                          "Authentication"=>"SqlPassword", "TrustServerCertificate"=>true );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
