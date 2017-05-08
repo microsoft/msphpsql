@@ -19,7 +19,7 @@ else
 {
     echo "Connected successfully with Authentication=SqlPassword.\n";
 }
-*/
+
 $stmt = sqlsrv_query( $conn, "SELECT name FROM master.dbo.sysdatabases" );
 if ( $stmt === false )
 {
