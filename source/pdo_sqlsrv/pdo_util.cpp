@@ -377,6 +377,10 @@ pdo_error PDO_ERRORS[] = {
         PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
         { IMSSP, (SQLCHAR*) "Statement with emulate prepare on does not support output or input_output parameters.", -72, false }
     },
+    {
+        PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
+        { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -73, false }
+    },          
     { UINT_MAX, {} }
 };
 
@@ -558,15 +562,15 @@ namespace {
 // Place get_error_message into the anonymous namespace in pdo_util.cpp
 sqlsrv_error_const* get_error_message(unsigned int sqlsrv_error_code) {
 
-	sqlsrv_error_const *error_message = NULL;
-	int zr = (error_message = reinterpret_cast<sqlsrv_error_const*>(zend_hash_index_find_ptr(g_pdo_errors_ht, sqlsrv_error_code))) != NULL ? SUCCESS : FAILURE;
-	if (zr == FAILURE) {
-		DIE("get_error_message: zend_hash_index_find returned failure for sqlsrv_error_code = %1!d!", sqlsrv_error_code);
-	}
+    sqlsrv_error_const *error_message = NULL;
+    int zr = (error_message = reinterpret_cast<sqlsrv_error_const*>(zend_hash_index_find_ptr(g_pdo_errors_ht, sqlsrv_error_code))) != NULL ? SUCCESS : FAILURE;
+    if (zr == FAILURE) {
+        DIE("get_error_message: zend_hash_index_find returned failure for sqlsrv_error_code = %1!d!", sqlsrv_error_code);
+    }
 
-	SQLSRV_ASSERT(error_message != NULL, "get_error_message: error_message was null");
+    SQLSRV_ASSERT(error_message != NULL, "get_error_message: error_message was null");
 
-	return error_message;
+    return error_message;
 }
 
 void pdo_sqlsrv_throw_exception( sqlsrv_error_const* error TSRMLS_DC )
