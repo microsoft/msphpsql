@@ -5,7 +5,7 @@ Test the Authentication keyword with options SqlPassword and ActiveDirectoryInte
 --FILE--
 <?php
 require_once("autonomous_setup.php");
-
+/*
 $connectionInfo = array( "UID"=>$username, "PWD"=>$password );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -26,10 +26,10 @@ if( $conn === false )
     echo "Could not connect with TrustServerCertificate.\n";
     print_r( sqlsrv_errors() );
 }
-
+*/
 //if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN')
 {
-    $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
+    $connectionInfo = array( "Database"=>"master", "UID"=>$username, "PWD"=>$password,
                              "Authentication"=>"SqlPassword", "TrustServerCertificate"=>true );
 
     $conn = sqlsrv_connect( $serverName, $connectionInfo );
@@ -37,7 +37,7 @@ if( $conn === false )
     if( $conn === false )
     {
         echo "Could not connect with Authentication=SqlPassword.\n";
-        print_r( sqlsrv_errors() );
+        var_dump( sqlsrv_errors() );
     }
     // else
     // {
