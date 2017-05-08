@@ -12,11 +12,14 @@ if( $conn === false )
 {
     echo "Failed to connect without TrustServerCertificate!\n";
     print_r( sqlsrv_errors() );    
-    die();
+}
+else
+{
+    echo "Connected successfully with Authentication=SqlPassword but without TrustServerCertificate.\n";
 }
 
 ////////////////////////////////////////
-
+/*
 $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
                          "Authentication"=>"SqlPassword", "TrustServerCertificate"=>true );
 
@@ -30,7 +33,7 @@ else
 {
     echo "Connected successfully with Authentication=SqlPassword.\n";
 }
-
+*/
 $stmt = sqlsrv_query( $conn, "SELECT name FROM master.dbo.sysdatabases" );
 if ( $stmt === false )
 {
