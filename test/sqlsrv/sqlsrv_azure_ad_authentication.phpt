@@ -1,38 +1,42 @@
 --TEST--
-Test the Authentication keyword and its accepted values: SqlPassword and ActiveDirectoryPassword.
+Test the Authentication keyword with options SqlPassword and ActiveDirectoryIntegrated.
 --SKIPIF--
 
 --FILE--
 <?php
 require_once("autonomous_setup.php");
 
-$connectionInfo = array( "Database"=>"master", "UID"=>$username, "PWD"=>$password,
-                         "Authentication"=>"SqlPassword", "TrustServerCertificate"=>true );
+if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN')
+{
+    $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
+                             "Authentication"=>"SqlPassword", "TrustServerCertificate"=>true );
 
-$conn = sqlsrv_connect( $serverName, $connectionInfo );
-if( $conn === false )
-{
-    echo "Could not connect with Authentication=SqlPassword.\n";
-    print_r( sqlsrv_errors() );
-}
-else
-{
-    echo "Connected successfully with Authentication=SqlPassword.\n";
-}
+    $conn = sqlsrv_connect( $serverName, $connectionInfo );
 
-$stmt = sqlsrv_query( $conn, "SELECT name FROM master.dbo.sysdatabases" );
-if ( $stmt === false )
-{
-    echo "Query failed.\n";
-}
-else
-{
-    $first_db = sqlsrv_fetch_array( $stmt );
-    var_dump( $first_db );
-}
+    if( $conn === false )
+    {
+        echo "Could not connect with Authentication=SqlPassword.\n";
+        print_r( sqlsrv_errors() );
+    }
+    // else
+    // {
+        // echo "Connected successfully with Authentication=SqlPassword.\n";
+    // }
 
-sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
+    $stmt = sqlsrv_query( $conn, "SELECT name FROM master.dbo.sysdatabases" );
+    if ( $stmt === false )
+    {
+        echo "Query failed.\n";
+    }
+    // else
+    // {
+        // $first_db = sqlsrv_fetch_array( $stmt );
+        // var_dump( $first_db );
+    // }
+
+    sqlsrv_free_stmt( $stmt );
+    sqlsrv_close( $conn );
+}
 
 ////////////////////////////////////////
 
@@ -52,13 +56,6 @@ else
 
 ?>
 --EXPECT--
-Connected successfully with Authentication=SqlPassword.
-array(2) {
-  [0]=>
-  string(6) "master"
-  ["name"]=>
-  string(6) "master"
-}
 Could not connect with Authentication=ActiveDirectoryIntegrated.
 Array
 (

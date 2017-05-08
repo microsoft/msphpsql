@@ -1,5 +1,5 @@
 --TEST--
-Test the Authentication keyword and its accepted values: SqlPassword and ActiveDirectoryPassword.
+Test the Authentication keyword with options SqlPassword and ActiveDirectoryIntegrated.
 --SKIPIF--
 
 --FILE--
