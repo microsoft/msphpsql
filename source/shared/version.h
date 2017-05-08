@@ -24,7 +24,7 @@
 
 #define SQLVERSION_MAJOR 4
 #define SQLVERSION_MINOR 1
-#define SQLVERSION_PATCH 8
+#define SQLVERSION_PATCH 9
 #define SQLVERSION_BUILD 0
 
 // Semantic versioning pre-release, for stable releases should be empty
