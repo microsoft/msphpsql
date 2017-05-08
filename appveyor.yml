@@ -160,17 +160,17 @@ test_script:
     - cd %PHP_INSTALL_DIR%  
     - php --ini
     - php -i
-    - python -V    
-    - Echo setup test database for SQLSRV tests  - %SQLSRV_DBNAME%
-    - python %APPVEYOR_BUILD_FOLDER%\test\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
-    - Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
-    - python %APPVEYOR_BUILD_FOLDER%\test\setup\setup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\sqlsrv.log 2>&1    
-    - type %APPVEYOR_BUILD_FOLDER%\test\sqlsrv.log
+    #- python -V    
+    #- Echo setup test database for SQLSRV tests  - %SQLSRV_DBNAME%
+    #- python %APPVEYOR_BUILD_FOLDER%\test\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
+    #- Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
+    #- python %APPVEYOR_BUILD_FOLDER%\test\setup\setup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\pdo_sqlsrv.log 2>&1    
     - type %APPVEYOR_BUILD_FOLDER%\test\pdo_sqlsrv.log
-    - python %APPVEYOR_BUILD_FOLDER%\test\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
-    - python %APPVEYOR_BUILD_FOLDER%\test\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\sqlsrv.log 2>&1    
+    - type %APPVEYOR_BUILD_FOLDER%\test\sqlsrv.log
+    #- python %APPVEYOR_BUILD_FOLDER%\test\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
+    #- python %APPVEYOR_BUILD_FOLDER%\test\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\    
