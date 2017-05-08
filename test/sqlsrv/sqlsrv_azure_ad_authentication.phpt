@@ -6,8 +6,19 @@ Test the Authentication keyword and its accepted values: SqlPassword and ActiveD
 <?php
 require_once("autonomous_setup.php");
 
+$connectionInfo = array( "UID"=>$username, "PWD"=>$password );
+$conn = sqlsrv_connect( $serverName, $connectionInfo );
+if( $conn === false )
+{
+    echo "Failed to connect!\n";
+    print_r( sqlsrv_errors() );    
+    die();
+}
+
+////////////////////////////////////////
+
 $connectionInfo = array( "UID"=>$username, "PWD"=>$password,
-                         "Authentication"=>'SqlPassword', "TrustServerCertificate"=>true );
+                         "Authentication"=>"SqlPassword", "TrustServerCertificate"=>true );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
 if( $conn === false )
@@ -31,11 +42,12 @@ else
     var_dump( $first_db );
 }
 
+sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );
 
 ////////////////////////////////////////
 
-$connectionInfo = array( "Authentication"=>'ActiveDirectoryIntegrated', "TrustServerCertificate"=>true );
+$connectionInfo = array( "Authentication"=>"ActiveDirectoryIntegrated", "TrustServerCertificate"=>true );
 
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
 if( $conn === false )
