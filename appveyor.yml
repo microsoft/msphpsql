@@ -114,10 +114,11 @@ install:
     - ps: (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/releases/php-' + ${env:PHP_VERSION} + '-src.zip', ${env:APPVEYOR_BUILD_FOLDER} + '\..\php.zip')
     #- echo Downloading PHP deps [%PHP_DEPSVER%]
     #- ps: (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/php-sdk/deps-' + ${env:PHP_DEPSVER} + '-vc' + ${env:PHP_VC} + '-' + ${env:BUILD_PLATFORM} + '.7z', ${env:APPVEYOR_BUILD_FOLDER} + '\..\deps.7z')
-    - dir C:\Windows\System32\msodbcsql13.dll
     - echo Downloading MSODBCSQL 13.1
     - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/' + ${env:BUILD_PLATFORM} + '/msodbcsql.msi', 'msodbcsql.msi')
-    - ps: msiexec /quiet /passive /qn msodbcsql.msi IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL /norestart
+    #- ps: msiexec /i msodbcsql.msi /quiet /qn /norestart
+    - ps: msiexec /i msodbcsql.msi /quiet /norestart /l install.log
+    - more install.log
     - echo Checking the version of MSODBCSQL 
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
     - dir C:\Windows\System32\msodbcsql13.dll
