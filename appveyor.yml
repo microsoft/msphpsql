@@ -98,6 +98,7 @@ install:
 
         Set-Service SQLBrowser -StartupType Manual;
         Start-Service SQLBrowser;
+    - cmd: wmic product list brief /format:list
     - echo Set PHP version...
     - appveyor DownloadFile http://windows.php.net/downloads/releases/sha1sum.txt
     # determine latest PHP versions
@@ -118,7 +119,7 @@ install:
     - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/' + ${env:BUILD_PLATFORM} + '/msodbcsql.msi', 'msodbcsql.msi')
     #- ps: msiexec /i msodbcsql.msi /quiet /qn /norestart
     - ps: msiexec /i msodbcsql.msi /quiet /norestart /l install.log
-    - more install.log
+    - cmd: more install.log
     - echo Checking the version of MSODBCSQL 
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
     - dir C:\Windows\System32\msodbcsql13.dll
