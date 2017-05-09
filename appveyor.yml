@@ -19,16 +19,7 @@ environment:
     PHP_SDK: c:\projects\php
     matrix:      
       - BUILD_PLATFORM: x64
-        TEST_PHP_SQL_SERVER: (local)\SQL2016
-        SQL_INSTANCE: SQL2016
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.1
-        PHP_MINOR_VER: latest        
-        PHP_SDK_DIR: c:\projects\php\x64
-        PHP_INSTALL_DIR: c:\projects\php\x64\bin        
-        platform: x64
-      - BUILD_PLATFORM: x64
-        TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
+        MSSQL_SERVERNAME: (local)\SQL2012SP1
         SQL_INSTANCE: SQL2012SP1
         PHP_VC: 14
         PHP_MAJOR_VER: 7.0
@@ -37,8 +28,29 @@ environment:
         PHP_INSTALL_DIR: c:\projects\php\x64\bin
         PHP_ZTS: --disable-zts
         platform: x64
+        MSODBCSQL_PATH: c:\projects\msodbcsql64.msi
       - BUILD_PLATFORM: x86
-        TEST_PHP_SQL_SERVER: (local)\SQL2008R2SP2
+        MSSQL_SERVERNAME: (local)\SQL2014
+        SQL_INSTANCE: SQL2014
+        PHP_VC: 14
+        PHP_MAJOR_VER: 7.0
+        PHP_MINOR_VER: latest
+        PHP_SDK_DIR: c:\projects\php\x86
+        PHP_INSTALL_DIR: c:\projects\php\x86\bin        
+        platform: x86
+        MSODBCSQL_PATH: c:\projects\msodbcsql32.msi
+      - BUILD_PLATFORM: x64
+        MSSQL_SERVERNAME: (local)\SQL2016
+        SQL_INSTANCE: SQL2016
+        PHP_VC: 14
+        PHP_MAJOR_VER: 7.1
+        PHP_MINOR_VER: latest        
+        PHP_SDK_DIR: c:\projects\php\x64
+        PHP_INSTALL_DIR: c:\projects\php\x64\bin        
+        platform: x64
+        MSODBCSQL_PATH: c:\projects\msodbcsql64.msi
+      - BUILD_PLATFORM: x86
+        MSSQL_SERVERNAME: (local)\SQL2008R2SP2
         SQL_INSTANCE: SQL2008R2SP2
         PHP_VC: 14
         PHP_MAJOR_VER: 7.1
@@ -47,15 +59,7 @@ environment:
         PHP_INSTALL_DIR: c:\projects\php\x86\bin
         PHP_ZTS: --disable-zts
         platform: x86
-      - BUILD_PLATFORM: x86
-        TEST_PHP_SQL_SERVER: (local)\SQL2014
-        SQL_INSTANCE: SQL2014
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.0
-        PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x86
-        PHP_INSTALL_DIR: c:\projects\php\x86\bin        
-        platform: x86
+        MSODBCSQL_PATH: c:\projects\msodbcsql32.msi
 
     
 # PHP_MAJOR_VER is PHP major version to build (7.0, 7.1)
@@ -117,11 +121,11 @@ install:
     - echo Downloading MSODBCSQL 13.1
     - ps: >-
         If ($env:BUILD_PLATFORM -Match "x64") {
-            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
+            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', ${env:MSODBCSQL_PATH})
         } Else {
-            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x86/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
+            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x86/msodbcsql.msi', ${env:MSODBCSQL_PATH})
         }    
-    - cmd /c start /wait msiexec /i "c:\projects\msodbcsql.msi" /q
+    - cmd /c start /wait msiexec /i ${env:MSODBCSQL_PATH} /q
     - echo Checking the version of MSODBCSQL 
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
     - dir C:\Windows\System32\msodbcsql13.dll
