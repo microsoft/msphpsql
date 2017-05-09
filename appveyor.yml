@@ -121,11 +121,11 @@ install:
     - echo Downloading MSODBCSQL 13.1
     - ps: >-
         If ($env:BUILD_PLATFORM -Match "x64") {
-            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', ${env:MSODBCSQL_PATH})
+            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', '%MSODBCSQL_PATH%')
         } Else {
-            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x86/msodbcsql.msi', ${env:MSODBCSQL_PATH})
+            (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x86/msodbcsql.msi', '%MSODBCSQL_PATH%')
         }    
-    - cmd /c start /wait msiexec /i ${env:MSODBCSQL_PATH} /q
+    - cmd /c start /wait msiexec /i "%MSODBCSQL_PATH%" /q
     - echo Checking the version of MSODBCSQL 
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
     - dir C:\Windows\System32\msodbcsql13.dll
