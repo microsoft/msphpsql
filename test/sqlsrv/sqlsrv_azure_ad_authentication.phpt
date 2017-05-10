@@ -28,8 +28,8 @@ if ( $stmt === false )
 }
 else
 {
-    $first_db = sqlsrv_fetch_array( $stmt );
-    var_dump( $first_db );
+    $result = sqlsrv_fetch_array( $stmt );
+    var_dump( $result );
 }
 
 sqlsrv_free_stmt( $stmt );

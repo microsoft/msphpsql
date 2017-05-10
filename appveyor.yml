@@ -111,9 +111,8 @@ install:
     - move php-sdk-binary-tools-20110915.zip ..
     - echo Downloading PHP source code [%PHP_VERSION%]
     - ps: (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/releases/php-' + ${env:PHP_VERSION} + '-src.zip', ${env:APPVEYOR_BUILD_FOLDER} + '\..\php.zip')
-    #- echo Downloading PHP deps [%PHP_DEPSVER%]
-    #- ps: (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/php-sdk/deps-' + ${env:PHP_DEPSVER} + '-vc' + ${env:PHP_VC} + '-' + ${env:BUILD_PLATFORM} + '.7z', ${env:APPVEYOR_BUILD_FOLDER} + '\..\deps.7z')
     - echo Downloading MSODBCSQL 13.1
+    # AppVeyor build works are x64 VMs and 32-bit ODBC driver cannot be installed on it
     - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
     - cmd /c start /wait msiexec /i "c:\projects\msodbcsql.msi" /q
     - echo Checking the version of MSODBCSQL 
