@@ -2,7 +2,7 @@
 Test fetching datatime fields as strings
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function FetchDateTime_AsString($conn)
 {
@@ -89,12 +89,10 @@ function Repro()
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
-
-        require_once("autonomous_setup.php");
+        echo "\nTest begins...\n";
         
         // Connect
-        $connectionInfo = array("UID"=>$username, "PWD"=>$password, 'ReturnDatesAsStrings'=>true);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect(array('ReturnDatesAsStrings'=>true));
         if( !$conn ) { FatalError("Could not connect.\n"); }
       
         FetchDateTime_AsString($conn);
@@ -114,7 +112,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_fetch_datetime_as_strings' test...
+Test begins...
 
 Done
-...Test 'sqlsrv_fetch_datetime_as_strings' completed successfully.
+Test "sqlsrv_fetch_datetime_as_strings" completed successfully.

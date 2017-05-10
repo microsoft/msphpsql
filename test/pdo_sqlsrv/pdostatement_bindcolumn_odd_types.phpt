@@ -1,14 +1,15 @@
 --TEST--
 Test the bindColumn method using PDO::PARAM_NULL and PDO::PARAM_STMT
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 try
 {
-    $conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb ", $username, $password);
+    $conn = new PDO( "sqlsrv:Server=$server; database = $databaseName ", $uid, $pwd);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
     $conn->exec("IF OBJECT_ID('table1', 'U') IS NOT NULL DROP TABLE table1");
     $conn->exec("CREATE TABLE table1(IntCol INT, CharCol NVARCHAR(20)) ");

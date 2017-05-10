@@ -4,14 +4,11 @@ Connect with options
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
-$connectionInfo = array("Database"=>"master", "UID"=>"$username", "PWD"=>"$password");
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
-
+$conn = Connect();
 if( !$conn ) {
-     echo "Connection could not be established.\n";
-     die( print_r( sqlsrv_errors(), true));
+    FatalError("Connection could not be established.\n");
 }
 sqlsrv_close($conn);
 print "Done";

@@ -1,10 +1,10 @@
 <?php
-include_once 'autonomous_setup.php';
-$conn1 = new PDO("sqlsrv:Server=$serverName", $username, $password);
+include 'MsSetup.inc';
+$conn1 = new PDO("sqlsrv:Server=$server", $uid, $pwd);
 $connId1 = ConnectionID($conn1);
 $conn1 = null;
 
-$conn2 = new PDO("sqlsrv:Server=$serverName", $username, $password);
+$conn2 = new PDO("sqlsrv:Server=$server", $uid, $pwd);
 $connId2 = ConnectionID($conn2);
 
 if ($connId1 === $connId2){
@@ -15,11 +15,11 @@ if ($connId1 === $connId2){
 
 function ConnectionID($conn)
 {
-	$tsql = "SELECT [connection_id] FROM [sys].[dm_exec_connections] where session_id = @@SPID";
-	$stmt = $conn->query($tsql);
-	$connID = $stmt->fetchColumn(0);
-	$stmt->closeCursor();
-	$stmt = null;
-	return ($connID);
+    $tsql = "SELECT [connection_id] FROM [sys].[dm_exec_connections] where session_id = @@SPID";
+    $stmt = $conn->query($tsql);
+    $connID = $stmt->fetchColumn(0);
+    $stmt->closeCursor();
+    $stmt = null;
+    return ($connID);
 }
 ?>

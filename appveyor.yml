@@ -122,10 +122,10 @@ install:
     - 7z x -y php-sdk-binary-tools-20110915.zip -o%PHP_SDK%
     - 7z x -y php.zip -o%PHP_SDK_DIR%
     - echo update SQL connection string
-    - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\autonomous_setup.php) | ForEach-Object { $_ -replace "localhost",  ${env:TEST_PHP_SQL_SERVER} -replace "<YourStrong!Passw0rd>",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\autonomous_setup.php
-    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\autonomous_setup.php
-    - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\autonomous_setup.php) | ForEach-Object { $_ -replace "localhost",  ${env:TEST_PHP_SQL_SERVER} -replace "<YourStrong!Passw0rd>",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\autonomous_setup.php
-    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\autonomous_setup.php
+    - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:PDOSQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\MsSetup.inc
+    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\pdo_sqlsrv\MsSetup.inc
+    - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:SQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\MsSetup.inc
+    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\sqlsrv\MsSetup.inc
         
 build_script:
     - '"C:\\Program Files (x86)\\Microsoft Visual Studio %PHP_VC%.0\\VC\\vcvarsall.bat" %BUILD_PLATFORM%'

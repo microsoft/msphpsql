@@ -2,19 +2,17 @@
 Test insert various data types and fetch as strings
 --FILE--
 ﻿<?php
+include 'MsCommon.inc';
 include 'tools.inc';
 
 function FetchAsStream_Binary()
 {
-    include 'autonomous_setup.php';
-       
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
     
     // Connect
-    $connectionInfo = array("Database" => "tempdb", "UID"=>$username, "PWD"=>$password, "CharacterSet"=>"UTF-8");
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $connectionInfo = array("CharacterSet"=>"UTF-8");
+    $conn = Connect($connectionInfo);
     if( !$conn ) { FatalError("Could not connect.\n"); }
 
     $tableName = GetTempTableName();
@@ -86,6 +84,7 @@ function GetQuery($tableName, $index)
 function Repro()
 {
     StartTest("sqlsrv_data_types_fetch_binary_stream");
+    echo "\nTest begins...\n";
     try
     {
         FetchAsStream_Binary();
@@ -103,9 +102,9 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_data_types_fetch_binary_stream' test...
+Test begins...
 Comparing data in row 1
 Comparing data in row 2
 
 Done
-...Test 'sqlsrv_data_types_fetch_binary_stream' completed successfully.
+Test "sqlsrv_data_types_fetch_binary_stream" completed successfully.

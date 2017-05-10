@@ -5,12 +5,10 @@ A variation of the example in GitHub issue 330. A -1 value returned as numrow of
 --SKIPIF--
 --FILE--
 <?php
-require_once("tools.inc");
-
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$conn = sqlsrv_connect($serverName, $connectionInfo) ?: FatalError("Failed to connect");
+$conn = Connect() ?: FatalError("Failed to connect");
 
 $stmt = sqlsrv_query($conn, "IF EXISTS (SELECT * FROM [sys].[objects] WHERE (name LIKE 'non_existent_table_name%') AND type in (N'U'))
     BEGIN

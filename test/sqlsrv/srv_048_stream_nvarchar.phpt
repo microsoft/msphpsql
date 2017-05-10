@@ -4,11 +4,13 @@ Streaming nvarchar(max) with sqlsrv_fetch_array()
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$conn = sqlsrv_connect($serverName, $connectionInfo);
-if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+$conn = Connect(array("CharacterSet"=>"utf-8"));
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
 // Create table
 $sql = "CREATE TABLE #Table (c1 NVARCHAR(max))";

@@ -1,17 +1,16 @@
 --TEST--
 Test setting invalid value or key in connection attributes 
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
   
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 try{
-    $database = "tempdb";
-    $dsn = 	"sqlsrv:Server = $serverName; Database = $database";
+    $dsn = 	"sqlsrv:Server = $server; database = $databaseName";
 
-    $conn = new PDO( $dsn, $username, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)); 
+    $conn = new PDO( $dsn, $uid, $pwd, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)); 
 
     // Negative value for query timeout: should raise error
     @$conn->setAttribute( PDO::SQLSRV_ATTR_QUERY_TIMEOUT, -1 );
@@ -23,7 +22,7 @@ try{
     print_r (($conn->errorInfo())[2]);
 }
 catch ( PDOException $e ){
-    exit;
+    echo $e->getMessage();
 }
 
 ?> 

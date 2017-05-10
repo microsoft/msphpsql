@@ -2,7 +2,7 @@
 Test insert various numeric data types and fetch them back as strings
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function ExecData_Value($conn, $numRows, $phpType = SQLSRV_PHPTYPE_NULL)
 {
@@ -93,17 +93,14 @@ function FetchData($stmt, $numRows)
 function Repro()
 {
     StartTest("sqlsrv_param_query_array_inputs");
+    echo "\nTest begins...\n";
     try
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
-
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
+     
         // Connect
-        $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect();
         if( !$conn ) { FatalError("Could not connect.\n"); }
       
         $numRows = 5;
@@ -128,7 +125,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_param_query_array_inputs' test...
+Test begins...
 Insert integers without PHP type
 1, 2
 11, 12
@@ -155,4 +152,4 @@ Insert floats without direction
 41.0, 42.0
 
 Done
-...Test 'sqlsrv_param_query_array_inputs' completed successfully.
+Test "sqlsrv_param_query_array_inputs" completed successfully.

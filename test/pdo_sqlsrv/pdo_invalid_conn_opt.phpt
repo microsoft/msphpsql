@@ -1,20 +1,19 @@
 --TEST--
 Test PDO::__Construct with invalid connection option
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
   
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 try 
 {   
-    $database = "tempdb";
-    $dsn = "sqlsrv:Server = $serverName;" .
-           "Database = $database;" .
+    $dsn = "sqlsrv:Server = $server;" .
+           "database = $databaseName;" .
            "InvalidKey = true;"
            ;
-    $conn = new PDO( $dsn, $username, $password); 
+    $conn = new PDO( $dsn, $uid, $pwd); 
 
     echo "Test Successful";
 }

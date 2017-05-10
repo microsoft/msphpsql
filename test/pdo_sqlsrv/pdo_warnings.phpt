@@ -1,13 +1,13 @@
 --TEST--
 Test warnings on connection and statement levels
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 try{
-    require_once("autonomous_setup.php");
+    require_once("MsSetup.inc");
 
-    $conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb ", $username, $password);
+    $conn = new PDO( "sqlsrv:Server=$server; database = $databaseName ", $uid, $pwd);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
     
     // raise a warning in connection

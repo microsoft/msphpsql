@@ -4,29 +4,29 @@ Transaction operations: rolled-back transactions
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
-function PrintContent($conn)
+function PrintContent($conn, $tableName)
 {
-	global $tableName;
-	$query = "SELECT * FROM $tableName";
-	$stmt = sqlsrv_query($conn, $query);
-	// Fetch the first row 
-	$row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC);
-	print_r($row);
+    $query = "SELECT * FROM $tableName";
+    $stmt = sqlsrv_query($conn, $query);
+    // Fetch the first row 
+    $row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC);
+    print_r($row);
 }
 
 // Connect
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
-if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+$conn = Connect();
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = GetTempTableName();
 
 // Create table
 $sql = "CREATE TABLE $tableName (
-			GroupId VARCHAR(10) primary key, Accepted INT, 
-			Tentative INT NOT NULL CHECK (Tentative >= 0))";
+            GroupId VARCHAR(10) primary key, Accepted INT, 
+            Tentative INT NOT NULL CHECK (Tentative >= 0))";
 $stmt = sqlsrv_query($conn, $sql);
 
 
@@ -54,17 +54,14 @@ $stmt2 = sqlsrv_query($conn, $sql, $params);
 // Commit the transactions
 if ($stmt1 && $stmt2)
 {
-	echo "\nERROR: $stmt2 should be bool(false)\n";
+    echo "\nERROR: $stmt2 should be bool(false)\n";
 }
 else
 {
-	sqlsrv_rollback($conn);
+    sqlsrv_rollback($conn);
 }
 
-PrintContent($conn);
-
-// DROP database
-$stmt = sqlsrv_query($conn,"DROP DATABASE ". $dbName);
+PrintContent($conn, $tableName);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);

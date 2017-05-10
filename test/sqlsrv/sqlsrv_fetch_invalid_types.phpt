@@ -2,7 +2,7 @@
 Populate a test table with many fields and fetch them back using wrong data types
 --FILE--
 ﻿﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function PopulateTestTable($conn, $tableName)
 {
@@ -42,13 +42,11 @@ function RunTest()
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
+    
+        echo "\nTest begins...\n";
 
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
         // Connect
-        $connectionInfo = array("UID"=>$username, "PWD"=>$password, 'CharacterSet'=>'UTF-8');
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect(array('CharacterSet'=>'UTF-8'));
         if( !$conn ) { FatalError("Could not connect.\n"); }
                      
         $tableName = GetTempTableName();
@@ -76,7 +74,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'sqlsrv_fetch_invalid_types' test...
+Test begins...
 Fetch all as integers...
 Failed in field 8
 Failed in field 9
@@ -134,4 +132,4 @@ Failed in field 26
 Failed in field 27
 
 Done
-...Test 'sqlsrv_fetch_invalid_types' completed successfully.
+Test "sqlsrv_fetch_invalid_types" completed successfully.
