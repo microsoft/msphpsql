@@ -3,6 +3,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux/MAC 4.1.9-preview - 2017-05-08
+- Updated documentation for Readme regarding instructions for Linux and MAC 
+- Updated PECL release packages. Here is the list of updates:
+### Added
+- Azure Active Directory Authentication with ActiveDirectoryPassword and SqlPassword
+- [PDO::ATTR_EMULATE_PREPARES](https://github.com/Microsoft/msphpsql/wiki/PDO::ATTR_EMULATE_PREPARES) now supports binding parameters of different encodings 
+
+### Fixed
+- Fixed output parameter returning garbage when the parameter is initialized to a type that is different from the output type ([issue #378](https://github.com/Microsoft/msphpsql/issues/378)).
+
+#### PDO_SQLSRV only
+- Fixed incorrectly binding of unicode parameter when emulate prepare is on and the encoding is set at the statement level ([issue #92](https://github.com/Microsoft/msphpsql/issues/92)).
+- Fixed binary column binding when emulate prepare is on ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)).
+
+### Known Issues
+- User defined data types and SQL_VARIANT ([issue #127](https://github.com/Microsoft/msphpsql/issues/127)).
+- When pooling is enabled in Linux or MAC
+  - unixODBC 2.3.1 (Linux) and unixODBC 2.3.4 (MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
 ## Windows/Linux/MAC 4.1.8-preview - 2017-04-10
 Updated documentation for Readme regarding instructions for Linux and MAC 
 Updated PECL release packages. Here is the list of updates:
