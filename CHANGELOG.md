@@ -8,7 +8,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 - Updated PECL release packages. Here is the list of updates:
 ### Added
 - Azure Active Directory Authentication with ActiveDirectoryPassword and SqlPassword
-- [PDO::ATTR_EMULATE_PREPARES](https://github.com/Microsoft/msphpsql/wiki/PDO::ATTR_EMULATE_PREPARES) now supports binding parameters of different encodings 
 
 ### Fixed
 - Fixed output parameter returning garbage when the parameter is initialized to a type that is different from the output type ([issue #378](https://github.com/Microsoft/msphpsql/issues/378)).
