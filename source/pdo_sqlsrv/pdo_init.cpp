@@ -34,8 +34,8 @@ ZEND_DECLARE_MODULE_GLOBALS(pdo_sqlsrv);
 HashTable* g_pdo_errors_ht = NULL;
 
 // henv context for creating connections
-sqlsrv_context* g_henv_cp;
-sqlsrv_context* g_henv_ncp;
+sqlsrv_context* g_pdo_henv_cp;
+sqlsrv_context* g_pdo_henv_ncp;
 
 namespace {
 
@@ -159,7 +159,7 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_SNAPSHOT", PDOTxnIsolationValues::SNAPSHOT TSRMLS_CC );
 
     // retrieve the handles for the environments
-    core_sqlsrv_minit( &g_henv_cp, &g_henv_ncp, pdo_sqlsrv_handle_env_error, "PHP_MINIT_FUNCTION for pdo_sqlsrv" TSRMLS_CC );
+    core_sqlsrv_minit( &g_pdo_henv_cp, &g_pdo_henv_ncp, pdo_sqlsrv_handle_env_error, "PHP_MINIT_FUNCTION for pdo_sqlsrv" TSRMLS_CC );
 
     }
     catch( ... ) {
@@ -189,7 +189,7 @@ PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)
         zend_hash_destroy( g_pdo_errors_ht );
         pefree( g_pdo_errors_ht, 1 /*persistent*/ );
 
-        core_sqlsrv_mshutdown( *g_henv_cp, *g_henv_ncp );
+        core_sqlsrv_mshutdown( *g_pdo_henv_cp, *g_pdo_henv_ncp );
 
     }
     catch( ... ) {

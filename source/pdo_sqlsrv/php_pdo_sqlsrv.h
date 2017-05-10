@@ -99,8 +99,8 @@ PHP_INI_BEGIN()
 PHP_INI_END()
 
 // henv context for creating connections
-extern sqlsrv_context* g_henv_cp;
-extern sqlsrv_context* g_henv_ncp;
+extern sqlsrv_context* g_pdo_henv_cp;
+extern sqlsrv_context* g_pdo_henv_ncp;
 
 
 //*********************************************************************************************************************************
@@ -125,12 +125,29 @@ PHP_MINFO_FUNCTION(pdo_sqlsrv);
 
 extern zend_module_entry g_pdo_sqlsrv_module_entry;   // describes the extension to PHP
 
+// Basic string parser
+class string_parser
+{
+    protected:
+        const char* orig_str;
+        sqlsrv_context* ctx;
+        int len;
+        int pos;
+        unsigned int current_key;
+        HashTable* element_ht;
+        inline bool next(void);
+        inline bool is_eos(void);
+        inline bool is_white_space(char c);
+        bool discard_white_spaces(void);
+        void add_key_value_pair(const char* value, int len TSRMLS_DC);
+};
+
 //*********************************************************************************************************************************
 // PDO DSN Parser
 //*********************************************************************************************************************************
 
 // Parser class used to parse DSN connection string.
-class conn_string_parser
+class conn_string_parser : private string_parser
 {
     enum States
     {
@@ -144,24 +161,31 @@ class conn_string_parser
     };
 
     private:
-        const char* conn_str;
-        sqlsrv_context* ctx;
-        int len;
-        int pos;
-        unsigned int current_key;
         const char* current_key_name;
-        HashTable* conn_options_ht;
-        inline bool next( void );
-        inline bool is_eos( void );
-        inline bool is_white_space( char c );
-        bool discard_white_spaces( void );
-        int discard_trailing_white_spaces( const char* str, int len );
-        void validate_key( const char *key, int key_len TSRMLS_DC );
-        void add_key_value_pair( const char* value, int len TSRMLS_DC );
+        int discard_trailing_white_spaces(const char* str, int len);
+        void validate_key(const char *key, int key_len TSRMLS_DC);
+
+	protected:
+		void add_key_value_pair(const char* value, int len TSRMLS_DC);
 
     public:
         conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, _Inout_ HashTable* conn_options_ht );
         void parse_conn_string( TSRMLS_D );
+};
+
+//*********************************************************************************************************************************
+// PDO Query Parser
+//*********************************************************************************************************************************
+
+// Parser class used to parse DSN named placeholders.
+class sql_string_parser : private string_parser
+{
+    private:
+        bool is_placeholder_char(char);
+    public:
+        void add_key_int_value_pair(unsigned int value TSRMLS_DC);
+        sql_string_parser(sqlsrv_context& ctx, const char* sql_str, int len, _Inout_ HashTable* placeholder_ht);
+        void parse_sql_string(TSRMLS_D);
 };
 
 //*********************************************************************************************************************************
@@ -178,7 +202,6 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool direct_query;
     long query_timeout;
     zend_long client_buffer_max_size;
-    SQLSRV_ENCODING bind_param_encoding;
     bool fetch_numeric;
 
     pdo_sqlsrv_dbh( SQLHANDLE h, error_callback e, void* driver TSRMLS_DC );
@@ -194,7 +217,7 @@ struct stmt_option_encoding : public stmt_option_functor {
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
 
-struct stmt_option_scrollable : public stmt_option_functor {
+struct stmt_option_pdo_scrollable : public stmt_option_functor {
 
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
@@ -228,6 +251,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         direct_query( false ),
         direct_query_subst_string( NULL ),
         direct_query_subst_string_len( 0 ),
+        placeholders(NULL),
         bound_column_param_types( NULL ),
         fetch_numeric( false )
     {
@@ -245,6 +269,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     bool direct_query;                        // flag set if the query should be executed directly or prepared
     const char* direct_query_subst_string;    // if the query is direct, hold the substitution string if using named parameters
     size_t direct_query_subst_string_len;        // length of query string used for direct queries
+    HashTable* placeholders;                    // hashtable of named placeholders to keep track of params ordering in emulate prepare
 
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
@@ -367,7 +392,8 @@ enum PDO_ERROR_CODES {
     PDO_SQLSRV_ERROR_INVALID_COLUMN_INDEX,
     PDO_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE,
     PDO_SQLSRV_ERROR_INVALID_CURSOR_WITH_SCROLL_TYPE,
-
+    PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
+    PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION
 };
 
 extern pdo_error PDO_ERRORS[];

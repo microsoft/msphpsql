@@ -1168,58 +1168,6 @@ PHP_FUNCTION(SQLSRV_SQLTYPE_VARCHAR)
     type_and_size_calc( INTERNAL_FUNCTION_PARAM_PASSTHRU, SQL_VARCHAR );
 }
 
-// mark parameters passed into sqlsrv_prepare as reference parameters so that they may be updated later in the
-// script and subsequent sqlsrv_execute calls will use the new values.  Marking them as references "pins" them
-// to their memory location so that the buffer we give to ODBC can be relied on to be there.
-
-void mark_params_by_reference( ss_sqlsrv_stmt* stmt, zval* params_z TSRMLS_DC )
-{
-    SQLSRV_ASSERT( stmt->params_z == NULL, "mark_params_by_reference: parameters list shouldn't be present" );
-
-    if( params_z == NULL ) {
-        return;
-    }
-
-    HashTable* params_ht = Z_ARRVAL_P( params_z );
-        
-	zend_ulong index;
-	zend_string* key = NULL;
-	zval* value_z = NULL;
-
-	ZEND_HASH_FOREACH_KEY_VAL( params_ht, index, key, value_z ) {
-
-		// make sure it's an integer index
-		int type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
-
-		CHECK_CUSTOM_ERROR( type != HASH_KEY_IS_LONG, stmt, SS_SQLSRV_ERROR_PARAM_INVALID_INDEX ) {
-			throw ss::SSException();
-		}
-
-        // This code turns parameters into references.  Since the function declaration cannot 
-        // pass array elements as references (without requiring & in front of each variable),
-        // we have to set the reference in each of the zvals ourselves.  In the event of a 
-        // parameter array (or sub array if you will) being passed in, we set the zval of the 
-        // parameter array's first element.
-
-        // if it's a sole variable
-		if ( Z_TYPE_P( value_z ) != IS_ARRAY ) {
-			ZVAL_MAKE_REF( value_z );
-		}
-		else {
-			zval* var = NULL;
-			int zr = ( NULL != ( var = zend_hash_index_find( Z_ARRVAL_P( value_z ), 0 ))) ? SUCCESS : FAILURE;
-			CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1 ) {
-				throw ss::SSException();
-			}
-			ZVAL_MAKE_REF( var );
-		}
-	} ZEND_HASH_FOREACH_END();
-
-    // save our parameters for later.
-    Z_TRY_ADDREF_P( params_z );
-    stmt->params_z = params_z;
-}
-
 void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC )
 {
     // if there's nothing to do, just return
@@ -1444,7 +1392,7 @@ PHP_FUNCTION( sqlsrv_free_stmt )
     }
 }
 
-void stmt_option_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+void stmt_option_ss_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
 {
     CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_STRING ), stmt, SQLSRV_ERROR_INVALID_OPTION_SCROLLABLE ) {
         throw ss::SSException();

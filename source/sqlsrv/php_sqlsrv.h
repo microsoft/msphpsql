@@ -96,8 +96,8 @@ extern zend_module_entry g_sqlsrv_module_entry;   // describes the extension to 
 extern HMODULE g_sqlsrv_hmodule;                  // used for getting the version information
 
 // henv context for creating connections
-extern sqlsrv_context* g_henv_cp;
-extern sqlsrv_context* g_henv_ncp;
+extern sqlsrv_context* g_ss_henv_cp;
+extern sqlsrv_context* g_ss_henv_ncp;
 
 extern OSVERSIONINFO g_osversion;                 // used to determine which OS we're running in
 
@@ -160,7 +160,7 @@ struct sqlsrv_fetch_field_name {
     unsigned int len;
 };
 
-struct stmt_option_scrollable : public stmt_option_functor {
+struct stmt_option_ss_scrollable : public stmt_option_functor {
 
     virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
 };
@@ -227,7 +227,6 @@ void __cdecl sqlsrv_stmt_dtor( zend_resource *rsrc TSRMLS_DC );
 
 // "internal" statement functions shared by functions in conn.cpp and stmt.cpp
 void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC );
-void mark_params_by_reference( ss_sqlsrv_stmt* stmt, zval* params_z TSRMLS_DC );
 bool sqlsrv_stmt_common_execute( sqlsrv_stmt* s, const SQLCHAR* sql_string, int sql_len, bool direct, const char* function 
                                  TSRMLS_DC );
 void free_odbc_resources( ss_sqlsrv_stmt* stmt TSRMLS_DC );
@@ -353,7 +352,8 @@ enum SS_ERROR_CODES {
     SS_SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING,
     SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED,
     SS_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE,
-    SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF
+    SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF,
+    SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION
 };
 
 extern ss_error SS_ERRORS[];

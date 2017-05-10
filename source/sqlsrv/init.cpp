@@ -41,8 +41,8 @@ void sqlsrv_error_const_dtor( zval* element );
 void sqlsrv_encoding_dtor( zval* element );
 
 // henv context for creating connections
-sqlsrv_context* g_henv_cp;
-sqlsrv_context* g_henv_ncp;
+sqlsrv_context* g_ss_henv_cp;
+sqlsrv_context* g_ss_henv_ncp;
 
 namespace {
 
@@ -552,7 +552,7 @@ PHP_MINIT_FUNCTION(sqlsrv)
 
     try {
         // retrieve the handles for the environments
-        core_sqlsrv_minit( &g_henv_cp, &g_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" TSRMLS_CC );
+        core_sqlsrv_minit( &g_ss_henv_cp, &g_ss_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" TSRMLS_CC );
     }
 
     catch( core::CoreException& ) {
@@ -602,7 +602,7 @@ PHP_MSHUTDOWN_FUNCTION(sqlsrv)
     zend_hash_destroy( g_ss_encodings_ht );
     pefree( g_ss_encodings_ht, 1 );
 
-    core_sqlsrv_mshutdown( *g_henv_cp, *g_henv_ncp );
+    core_sqlsrv_mshutdown( *g_ss_henv_cp, *g_ss_henv_ncp );
 
     if( php_unregister_url_stream_wrapper( SQLSRV_STREAM_WRAPPER TSRMLS_CC ) == FAILURE ) {
         return FAILURE;
@@ -636,10 +636,17 @@ PHP_RINIT_FUNCTION(sqlsrv)
     LOG_FUNCTION( "PHP_RINIT for php_sqlsrv" );
 
     // read INI settings
-    SQLSRV_G( warnings_return_as_errors ) = INI_BOOL( INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS );
-    SQLSRV_G( log_severity ) = INI_INT( INI_PREFIX INI_LOG_SEVERITY );
-    SQLSRV_G( log_subsystems ) = INI_INT( INI_PREFIX INI_LOG_SUBSYSTEMS );
-    SQLSRV_G( buffered_query_limit ) = INI_INT( INI_PREFIX INI_BUFFERED_QUERY_LIMIT );
+    // need to convert const char[] to char[] to avoid converting string to char* warnings
+    // cannot simply cast const char[] to char* since INI_INT needs the sizeof(param) and the size of char* is always 4 / 8 bytes
+    char warnings_as_errors[] = INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS;
+    char severity[] = INI_PREFIX INI_LOG_SEVERITY;
+    char subsystems[] = INI_PREFIX INI_LOG_SUBSYSTEMS;
+    char buffered_limit[] = INI_PREFIX INI_BUFFERED_QUERY_LIMIT;
+    
+    SQLSRV_G( warnings_return_as_errors ) = INI_BOOL( warnings_as_errors );
+    SQLSRV_G( log_severity ) = INI_INT( severity );
+    SQLSRV_G( log_subsystems ) = INI_INT( subsystems );
+    SQLSRV_G( buffered_query_limit ) = INI_INT( buffered_limit );
 
     LOG( SEV_NOTICE, INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS " = %1!s!", SQLSRV_G( warnings_return_as_errors ) ? "On" : "Off");
     LOG( SEV_NOTICE, INI_PREFIX INI_LOG_SEVERITY " = %1!d!", SQLSRV_G( log_severity ));

@@ -305,7 +305,7 @@ struct pdo_stmt_methods pdo_sqlsrv_stmt_methods = {
 
 };
 
-void stmt_option_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+void stmt_option_pdo_scrollable:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
 {
     set_stmt_cursors( stmt, value_z TSRMLS_CC ); 
 }
@@ -486,9 +486,9 @@ int pdo_sqlsrv_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 // *stmt - pointer to current statement
 // Return:
 // 1 for success.
-int pdo_sqlsrv_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)
+int pdo_sqlsrv_stmt_dtor( pdo_stmt_t *stmt TSRMLS_DC )
 {
-    sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+    pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
     LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );
 
@@ -498,7 +498,13 @@ int pdo_sqlsrv_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)
         return 1;
     }
 
-    driver_stmt->~sqlsrv_stmt();
+    if ( driver_stmt->placeholders != NULL ) {
+        zend_hash_destroy( driver_stmt->placeholders );
+        FREE_HASHTABLE( driver_stmt->placeholders );
+        driver_stmt->placeholders = NULL;
+    }
+
+    (( sqlsrv_stmt* )driver_stmt )->~sqlsrv_stmt();
 
     sqlsrv_free( driver_stmt );
 
@@ -547,17 +553,25 @@ int pdo_sqlsrv_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
         // if the user is using prepare emulation (PDO::ATTR_EMULATE_PREPARES), set the query to the 
         // subtituted query provided by PDO
         if( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+            // reset the placeholders hashtable internal in case the user reexecutes a statement
+            zend_hash_internal_pointer_reset(driver_stmt->placeholders);
 
             query = stmt->active_query_string;
             query_len = static_cast<unsigned int>( stmt->active_query_stringlen );
         }
 
-        core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
+        SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
 
-        stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
+        if ( execReturn == SQL_NO_DATA ) {
+            stmt->column_count = 0;
+            stmt->row_count = 0;
+        }
+        else {
+            stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
 
-        // return the row count regardless if there are any rows or not
-        stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+            // return the row count regardless if there are any rows or not
+            stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+        }
 
         // workaround for a bug in the PDO driver manager.  It is fairly simple to crash the PDO driver manager with 
         // the following sequence:
@@ -1100,10 +1114,9 @@ int pdo_sqlsrv_stmt_param_hook(pdo_stmt_t *stmt,
 
             // since the param isn't reliable, we don't do anything here
             case PDO_PARAM_EVT_ALLOC:
-                // if emulate prepare is on, set the bind_param_encoding so it can be used in PDO::quote when binding parameters on the client side
-                if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
-                    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
-                    driver_dbh->bind_param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
+                if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE && (param->param_type & PDO_PARAM_INPUT_OUTPUT )) {
+                    sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
+                    THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED );
                 }
                 break;
             case PDO_PARAM_EVT_FREE:
