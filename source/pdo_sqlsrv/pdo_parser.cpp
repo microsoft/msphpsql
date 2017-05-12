@@ -415,8 +415,9 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
 // Primary function which parses out the named placeholders from a sql string.
 void sql_string_parser::parse_sql_string( TSRMLS_D ) {
     try {
+        int start_pos = -1;
         while ( !this->is_eos() ) {
-            int start_pos = -1;
+            // if pos is -1, then reading from a string is an initialized read
             if ( pos == -1 ) {
                 next();
             }
