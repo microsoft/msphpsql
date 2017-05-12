@@ -4,13 +4,15 @@ Error checking for failed conversion: VARCHAR value 'null' to data type INT
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$conn = sqlsrv_connect($serverName, $connectionInfo) ?: die();
+$conn = Connect();
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = GetTempTableName();
 
 // Create table
 $sql = "CREATE TABLE $tableName (ID INT)";
@@ -23,9 +25,6 @@ $stmt = sqlsrv_query($conn, $sql);
 // Error checking
 $err =  sqlsrv_errors();
 print_r($err[0]);
-
-// DROP database
-sqlsrv_query($conn,"DROP DATABASE ". $dbName);
 
 // Free statement and connection resources
 sqlsrv_close($conn);

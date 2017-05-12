@@ -1,11 +1,11 @@
 --TEST--
 Test PDO::__Construct by passing different connection attributes
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
   
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 try 
 {   
@@ -21,10 +21,9 @@ try
                    PDO::SQLSRV_ATTR_DIRECT_QUERY => true		
                  ); 
     
-    $database = "tempdb";
-    $dsn = 	"sqlsrv:Server = $serverName; Database = $database";
+    $dsn = 	"sqlsrv:Server = $server; database = $databaseName";
     
-    $conn = new PDO( $dsn, $username, $password, $attr); 
+    $conn = new PDO( $dsn, $uid, $pwd, $attr); 
     
     $stmt = $conn->prepare("SELECT 1");
     $stmt->execute();

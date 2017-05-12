@@ -1,15 +1,12 @@
 --TEST--
 uses an input/output parameter
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
-$dbh = new PDO( "sqlsrv:server=$serverName", "$username", "$password" );
-
-// CREATE database
-$dbh->query("CREATE DATABASE ". $dbName) ?: die();
+$dbh = new PDO( "sqlsrv:server=$server; database=$databaseName", "$uid", "$pwd" );
 
 $dbh->query("IF OBJECT_ID('dbo.sp_ReverseString', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_ReverseString");
 $dbh->query("CREATE PROCEDURE dbo.sp_ReverseString @String as VARCHAR(2048) OUTPUT as SELECT @String = REVERSE(@String)");
@@ -19,9 +16,6 @@ $stmt->bindParam(1, $string, PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT, 2048);
 $stmt->execute();
 print "Result: ".$string."\n";   // Expect 987654321
 
-// DROP database
-$dbh->query("DROP DATABASE ". $dbName) ?: die();
-  
 //free the statement and connection
 $stmt = null;
 $dbh = null;

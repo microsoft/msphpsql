@@ -29,76 +29,6 @@ define("_SQL_SS_TIMESTAMPOFFSET", -155);
 define("_CHUNK_SIZE", 8192);
 define("_EPSILON", 0.00001);
 
-function StartTest($testName)
-{
-    echo "\n...Starting '$testName' test...\n";
-    if (!extension_loaded("sqlsrv"))
-    {
-        die("sqlsrv driver cannot be loaded.");
-    }
-}
-
-function EndTest($testName)
-{
-    echo "...Test '$testName' completed successfully.\n";
-}
-
-function GetTempTableName($table = '', $temporary = true)
-{
-    // A temporary table name with the '#' prefix will be automatically 
-    // dropped once the connection is closed. Otherwise, the caller 
-    // should take care of dropping the temp table afterwards.
-    
-    $timestamp = round(microtime(true)*1000);
-    
-    $prefix = '';
-    if ($temporary)
-        $prefix = '#';
-        
-    if (strlen($table) == 0)
-        $table = 'php_test_table';
-        
-    return $prefix . $table . '_' . $timestamp;
-}
-
-function GetTempProcName($proc = '', $temporary = true)
-{
-    // A temporary stored procedure name with the '#' prefix will be 
-    // automatically dropped once the connection is closed. Otherwise, 
-    // the caller should take care of dropping the temp procedure afterwards.    
-    
-    $timestamp = round(microtime(true)*1000);
-
-    $prefix = '';
-    if ($temporary)
-        $prefix = '#';
-        
-    if (strlen($proc) == 0)
-        $proc = 'php_test_proc'; 
-
-    return $prefix . $proc . '_' . $timestamp;
-}
-
-function FatalError($errorMsg)
-{
-    handle_errors();
-    die($errorMsg);
-}
-
-function handle_errors()
-{
-    $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
-    if(count($errors) == 0)
-    {
-        $errors = sqlsrv_errors(SQLSRV_ERR_ALL);
-    }
-    $count = count($errors);
-    for($i = 0; $i < $count; $i++)
-    {
-        echo $errors[$i]['message'];
-    }
-}
-
 function Verify($stmt, $metadata, $numFields, $encoding)
 {
     $i = 0;
@@ -125,14 +55,14 @@ function ConvertDataToString($type, $data)
     // Convert raw data to strings for datetime and binary types only
     // Do nothing for other types
     //
-    if (IsDateTime($type)) 
+    if (IsDateTimeType($type)) 
     {
         if ($type != _SQL_SS_TIME2)
             return date_format( $data, 'Y-m-d H:i:s' );  
         else
             return date_format( $data, 'H:i:s' );
     }
-    else if (IsBinary($type))
+    else if (IsBinaryType($type))
     {
         return bin2hex($data); 
     }
@@ -217,7 +147,7 @@ function CheckData($colType, $actual, $expected)
 {
     $success = true;
 
-    if (IsNumeric($colType))
+    if (IsNumericType($colType))
     {
         if (! CompareNumericData($actual, $expected))
         {
@@ -229,7 +159,7 @@ function CheckData($colType, $actual, $expected)
         $actual = trim($actual);
         $len = strlen($expected);
         
-        if (IsDateTime($colType))
+        if (IsDateTimeType($colType))
         {
             if ($colType != _SQL_SS_TIME2)
                 $len = min(strlen("YYYY-MM-DD HH:mm:ss"), $len);
@@ -354,7 +284,7 @@ function CompareBinaryData($actual, $expected)
     return $matched;
 }
 
-function CompareStreamData($actual, $expected, $isUnicode)
+function CompareStreamData($actual, $expected, $IsUnicodeType)
 {
     // this function assumes $actual is a stream of character data  
     $matched = true;
@@ -366,7 +296,7 @@ function CompareStreamData($actual, $expected, $isUnicode)
     // it's unicode, the character of data is also two bytes
 
     $shift = 1;
-    if ($isUnicode)
+    if ($IsUnicodeType)
         $shift = 2;
             
     $len = strlen($str);
@@ -410,14 +340,14 @@ function CompareBinaryStream($metadata, $rowIndex, $colIndex, $actual, $expected
     $colType = $metadata[$colIndex]['Type'];
 
     $matched = false;
-    if (IsBinary($colType))
+    if (IsBinaryType($colType))
     {
         $matched = CompareBinaryData($actual, $expected);
     }
     else 
     {
         // stream of characters
-        $matched = CompareStreamData($actual, $expected, IsUnicode($colType));
+        $matched = CompareStreamData($actual, $expected, IsUnicodeType($colType));
     }
     
     if (! $matched)
@@ -428,14 +358,14 @@ function CompareBinaryStream($metadata, $rowIndex, $colIndex, $actual, $expected
     return $matched;
 }
 
-function CompareStringToFile($rowIndex, $colName, $actual, $file, $isBinary)
+function CompareStringToFile($rowIndex, $colName, $actual, $file, $IsBinaryType)
 {
     $matched = true;    
     $pos = 0;
     while ($matched && ! feof($file))
     {
         $expected = fread($file, _CHUNK_SIZE);  
-        if ($isBinary) 
+        if ($IsBinaryType) 
         {
             $str = unpack("H*", $expected);     
             $expected = $str[1];    
@@ -463,7 +393,7 @@ function CompareStreamToFile($rowIndex, $colName, $stream, $file, $colType)
     // one from stream resource and one from a file
     // Moreover, the data can be binary or character/unicode character
     
-    $isBinary = IsBinary($colType);
+    $IsBinaryType = IsBinaryType($colType);
 
     $matched = true;    
     while ($matched && ! feof($file) && ! feof ($stream))
@@ -471,7 +401,7 @@ function CompareStreamToFile($rowIndex, $colName, $stream, $file, $colType)
         $expected = fread($file, _CHUNK_SIZE);  
         $actual  = fread($stream, _CHUNK_SIZE);
 
-        if ($isBinary) 
+        if ($IsBinaryType) 
         {
             $str = unpack("H*", $expected);     
             $expected = $str[1];        
@@ -492,7 +422,7 @@ function CompareStreamToFile($rowIndex, $colName, $stream, $file, $colType)
             // it's unicode, the character of data is also two bytes
 
             $shift = 1;
-            if (IsUnicode($colType))
+            if (IsUnicodeType($colType))
                 $shift = 2;
                     
             $i = 0; 
@@ -553,9 +483,9 @@ function CompareData($metadata, $rowIndex, $colIndex, $actual, $expected, $isStr
     {
         FatalError("Field $colName of row $rowIndex is missing\n");
     }
-    if (! IsUpdatable($colName))
+    if (! IsColumnUpdatable($colName))
     {
-        return true;    // do nothing for non-IsUpdatable fields
+        return true;    // do nothing for non-IsColumnUpdatable fields
     }
 
     if ($isStream)
@@ -570,8 +500,8 @@ function CompareData($metadata, $rowIndex, $colIndex, $actual, $expected, $isStr
 
 function CompareLOBToFile($rowIndex, $colType, $colName, $actual, $filename, $readStream)
 {
-    $isBinary = IsBinary($colType);
-    $mode = ($isBinary)? "rb" : "r";
+    $IsBinaryType = IsBinaryType($colType);
+    $mode = ($IsBinaryType)? "rb" : "r";
     $file = fopen($filename, $mode);        
 
     echo "...reading LOB data from '$filename'...";
@@ -583,7 +513,7 @@ function CompareLOBToFile($rowIndex, $colType, $colName, $actual, $filename, $re
     } 
     else
     {
-        $matched = CompareStringToFile($rowIndex, $colName, $actual, $file, $isBinary);
+        $matched = CompareStringToFile($rowIndex, $colName, $actual, $file, $IsBinaryType);
     }
     
     fclose($file);
@@ -597,7 +527,7 @@ function VerifyLOBData($metadata, $rowIndex, $colIndex, $lobColumn, $actual, $ex
     $colType = $metadata[$colIndex]['Type'];
 
     $matched = false;
-    if ($readStream && IsStreamable($colType))
+    if ($readStream && IsStreamableType($colType))
     {
         if ($colIndex != $lobColumn)
         {
@@ -636,7 +566,7 @@ function SimplifyDataArray($data, $metadata, $row)
         $colName = $metadata[$j]['Name'];
         $colType = $metadata[$j]['Type'];
 
-        if (!IsUpdatable($colName))
+        if (!IsColumnUpdatable($colName))
         {
             $skipCount++;
             array_push($dataArray, "");
@@ -669,14 +599,14 @@ function InsertDataToArray($query, $metadata, $row)
         $type = $metadata[$j]['Type'];
 
         $col = $j + 1;
-        if (!IsUpdatable($colName))
+        if (!IsColumnUpdatable($colName))
         {
             $skipCount++;
             array_push($dataArray, "");
         }
         else 
         {
-            $data = GetInsertData($query, $type, $row, $col, $skipCount);
+            $data = GetInsertDataByType($query, $type, $row, $col, $skipCount);
             array_push($dataArray, $data);
         }
     }   
@@ -684,7 +614,7 @@ function InsertDataToArray($query, $metadata, $row)
     return $dataArray;
 }
 
-function GetInsertData($query, $colType, $rowIndex, $colIndex, $skip)
+function GetInsertDataByType($query, $colType, $rowIndex, $colIndex, $skip)
 {
     $data = strstr($query, "((");
     $pos = 1;
@@ -719,7 +649,7 @@ function GetInsertData($query, $colType, $rowIndex, $colIndex, $skip)
     {
         $tmp = "";
     }
-    else if (IsXml($colType))
+    else if (IsXmlType($colType))
     {
         $str = ">')";
         $pos = strpos($data, $str);
@@ -732,11 +662,11 @@ function GetInsertData($query, $colType, $rowIndex, $colIndex, $skip)
     {   // N'data'
         $data = substr($data, 2, strlen($data) - 3);
     }
-    else if (IsLiteral($colType))
+    else if (IsLiteralType($colType))
     {   // 'data'
         $data = substr($data, 1, strlen($data) - 2);
     }
-    else if (IsBinary($colType))
+    else if (IsBinaryType($colType))
     {   // 0xdata
         $data = substr($data, 2);
     }
@@ -744,7 +674,7 @@ function GetInsertData($query, $colType, $rowIndex, $colIndex, $skip)
     return (trim($data));
 }
 
-function IsStreamable($type)
+function IsStreamableType($type)
 {
     switch ($type)
     {
@@ -774,7 +704,7 @@ function IsStreamable($type)
     return (false);
 }
 
-function IsNumeric($type)
+function IsNumericType($type)
 {
     switch ($type)
     {
@@ -801,7 +731,7 @@ function IsNumeric($type)
     return (false);
 }
 
-function IsChar($type)
+function IsCharType($type)
 {
     switch ($type)
     {
@@ -823,7 +753,7 @@ function IsChar($type)
     return (false);
 }
 
-function IsBinary($type)
+function IsBinaryType($type)
 {
     switch ($type)
     {
@@ -839,7 +769,7 @@ function IsBinary($type)
     return (false);
 }
 
-function IsDateTime($type)
+function IsDateTimeType($type)
 {
     switch ($type)
     {
@@ -859,7 +789,7 @@ function IsDateTime($type)
 
 function IsDataUnicode($colType, $data)
 {
-    if (IsUnicode($colType))
+    if (IsUnicodeType($colType))
         return true;
         
     // This input string may be an XML string in unicode (i.e. // N'<xmldata>...</xmldata>')
@@ -876,7 +806,7 @@ function IsDataUnicode($colType, $data)
     return false;
 }
 
-function IsUnicode($type)
+function IsUnicodeType($type)
 {
     switch ($type)
     {
@@ -892,12 +822,12 @@ function IsUnicode($type)
     return (false);
 }
 
-function IsXml($type)
+function IsXmlType($type)
 {
     return ($type == _SQL_SS_XML);
 }
 
-function IsUpdatable($colName)
+function IsColumnUpdatable($colName)
 {
     $pos = strpos($colName, "_");
     $type = substr($colName, $pos + 1);
@@ -905,7 +835,7 @@ function IsUpdatable($colName)
     return (strcasecmp($type, "timestamp") != 0);
 }
 
-function IsLiteral($type)
+function IsLiteralType($type)
 {
     switch ($type)
     {

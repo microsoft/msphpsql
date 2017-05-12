@@ -4,14 +4,15 @@ sqlsrv_get_field() using SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY)
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
-if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+$conn = Connect();
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = GetTempTableName();
 
 // Create table
 $query = "CREATE TABLE ".$tableName." (ID VARCHAR(10))";
@@ -25,17 +26,14 @@ $query = "SELECT * FROM ".$tableName;
 $stmt = sqlsrv_query( $conn, $query ) ?: die( print_r( sqlsrv_errors(), true) );
 
 while(sqlsrv_fetch($stmt)) {
-	$field = sqlsrv_get_field($stmt,0,SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-	var_dump($field);
-	
-	while(!feof($field))
-	{
-		echo fread($field, 100)."\n";
-	}
+    $field = sqlsrv_get_field($stmt,0,SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
+    var_dump(get_resource_type($field));
+    
+    while(!feof($field))
+    {
+        echo fread($field, 100)."\n";
+    }
 }
-
-// DROP database
-$stmt = sqlsrv_query($conn,"DROP DATABASE ". $dbName);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
@@ -44,10 +42,10 @@ print "Done"
 ?>
 
 --EXPECT--
-resource(10) of type (stream)
+string(6) "stream"
 1998.1
-resource(11) of type (stream)
+string(6) "stream"
 -2004.2436
-resource(12) of type (stream)
+string(6) "stream"
 4.2EUR
 Done

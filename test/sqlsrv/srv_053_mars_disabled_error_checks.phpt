@@ -4,11 +4,13 @@ Error checking for multiple active result sets (MARS) disabled
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$connectionInfo = array("UID"=>$username, "PWD"=>$password, 'MultipleActiveResultSets' => false);
-$conn = sqlsrv_connect($serverName, $connectionInfo) ?: die();
+$conn = Connect(array('MultipleActiveResultSets' => false));
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
 // Query
 $stmt1 = sqlsrv_query( $conn, "SELECT 'ONE'" ) ?: die(print_r( sqlsrv_errors(), true ));

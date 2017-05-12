@@ -1,14 +1,15 @@
 --TEST--
 Test closeCursor with a stmt before/after execute and fetch.
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 try
 {
-    /* Connect */
-    $conn = new PDO("sqlsrv:server=$serverName", $username, $password);
+    // Connect 
+    $conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
     
     // prepare a stmt but don't execute, then closeCursor.
@@ -51,8 +52,8 @@ try
 }
 
 catch( PDOException $e ) {
-    var_dump($e);	
-	exit;
+    var_dump($e);   
+    exit;
 }
     
 print "Done";

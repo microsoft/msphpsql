@@ -1,11 +1,11 @@
 --TEST--
 call a stored procedure with unicode input to get output back as unicode; also test with xml data
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function StoredProc_Xml($conn)
 {
@@ -64,17 +64,16 @@ function StoredProc_Unicode($conn)
     $stmt = null;  
 }
 
-function Repro()
+function RunTest()
 {
     StartTest("pdo_utf8_stored_proc_unicode_chars");
+    echo "\nStarting test...\n";
     try
     {
-        require_once("autonomous_setup.php");
-        
+        include("MsSetup.inc");       
         set_time_limit(0);
-        $database = "tempdb";
-        
-        $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+       
+        $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
     
         StoredProc_Xml($conn);
         StoredProc_Surrogate($conn);
@@ -90,16 +89,16 @@ function Repro()
     EndTest("pdo_utf8_stored_proc_unicode_chars");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
 
-...Starting 'pdo_utf8_stored_proc_unicode_chars' test...
+Starting test...
 string(47) "<XmlTestData>Je préfère l'été</XmlTestData>"
 bool(true)
 bool(true)
 
 Done
-...Test 'pdo_utf8_stored_proc_unicode_chars' completed successfully.
+Test "pdo_utf8_stored_proc_unicode_chars" completed successfully.
 

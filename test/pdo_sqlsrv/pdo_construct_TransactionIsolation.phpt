@@ -1,16 +1,15 @@
 --TEST--
 Test PDO::__Construct connection option TransactionIsolation
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 function Connect($value) {
-    require("autonomous_setup.php");
-    $database = "tempdb";
-    $dsn = "sqlsrv:Server = $serverName;" .
-           "Database = $database;" .
+    require("MsSetup.inc");
+    $dsn = "sqlsrv:Server = $server;" .
+           "database = $databaseName;" .
            "TransactionIsolation = $value";
-    $conn = new PDO( $dsn, $username, $password );
+    $conn = new PDO( $dsn, $uid, $pwd );
     $conn = NULL;
     echo "Test Successful\n";
 }

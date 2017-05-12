@@ -1,17 +1,16 @@
 --TEST--
 call stored procedures with inputs of ten different datatypes to get outputs of various types 
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 try
 {
-    require_once("autonomous_setup.php");
-    $database = "tempdb";
-    $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);   
+    require_once("MsSetup.inc");
+    $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);   
 
     $proc_scale = GetTempProcName( 'scale_proc' );
     $proc_no_scale = GetTempProcName( 'noScale_proc' );

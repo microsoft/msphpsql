@@ -1,16 +1,15 @@
 --TEST--
 Test PDO::prepare by passing in invalid cursor value
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
   
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 try 
 {   
-    $database = "tempdb";
-    $conn = new PDO( "sqlsrv:Server = $serverName; Database = $database", $username, $password); 
+    $conn = new PDO( "sqlsrv:Server = $server; database = $databaseName", $uid, $pwd); 
     
     // PDO::CURSOR_FWDONLY should not be quoted
     $stmt1 = $conn->prepare( "SELECT 1", array( PDO::ATTR_CURSOR => "PDO::CURSOR_FWDONLY" ));

@@ -4,14 +4,15 @@ Data type precedence: conversion NVARCHAR(n)
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$connectionInfo = array("UID"=>$username, "PWD"=>$password, "CharacterSet"=>"UTF-8");
-$conn = sqlsrv_connect($serverName, $connectionInfo) ?: die();
+$conn = Connect(array("CharacterSet"=>"UTF-8"));
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = GetTempTableName();
 
 // Create table. Column names: passport
 $sql = "CREATE TABLE $tableName (c1 NVARCHAR(8))";
@@ -31,11 +32,8 @@ $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query($conn, $sql);
 
 while($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC)) {
-	var_dump($row[0]);
+    var_dump($row[0]);
 }
-
-// DROP database
-sqlsrv_query($conn,"DROP DATABASE ". $dbName);
 
 // Free statement and connection resources
 sqlsrv_free_stmt($stmt);

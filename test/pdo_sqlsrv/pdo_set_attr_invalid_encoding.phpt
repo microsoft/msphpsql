@@ -1,17 +1,16 @@
 --TEST--
 Test setting invalid encoding attributes
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
   
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 try{
-    $database = "tempdb";
-    $dsn = 	"sqlsrv:Server = $serverName; Database = $database";
+    $dsn = 	"sqlsrv:Server = $server; database = $databaseName";
 
-    $conn = new PDO( $dsn, $username, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)); 
+    $conn = new PDO( $dsn, $uid, $pwd, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT)); 
 
     // valid option: should have no error
     @$conn->setAttribute( PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_DEFAULT );
@@ -29,7 +28,7 @@ try{
     echo "\n";
 }
 catch ( PDOException $e ){
-    exit;
+    echo $e->getMessage();
 }
 
 ?> 

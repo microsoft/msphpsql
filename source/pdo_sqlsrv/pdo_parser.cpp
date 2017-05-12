@@ -417,7 +417,9 @@ void sql_string_parser::parse_sql_string( TSRMLS_D ) {
     try {
         while ( !this->is_eos() ) {
             int start_pos = -1;
-
+            if ( pos == -1 ) {
+                next();
+            }
             // skip until a '"', '\'', ':' or '?'
             char sym;
             while ( this->orig_str[pos] != '"' && this->orig_str[pos] != '\'' && this->orig_str[pos] != ':' && this->orig_str[pos] != '?' && !this->is_eos() ) {

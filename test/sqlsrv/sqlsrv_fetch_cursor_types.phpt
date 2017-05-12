@@ -2,7 +2,7 @@
 Test various cursor types and whether they reflect changes in the database
 --FILE--
 ﻿﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function Fetch_WithCursor($conn, $cursorType)
 {
@@ -113,12 +113,10 @@ function RunTest()
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
 
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
+        echo "\nTest begins...\n";
+
         // Connect
-        $connectionInfo = array('Database'=>$database, 'UID'=>$username, 'PWD'=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect();
         if( !$conn ) { FatalError("Could not connect.\n"); }
 
         echo "\nUsing SQLSRV_CURSOR_FORWARD...\n";      
@@ -145,7 +143,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'sqlsrv_fetch_cursor_types' test...
+Test begins...
 
 Using SQLSRV_CURSOR_FORWARD...
 Error occurred in sqlsrv_num_rows, which is expected
@@ -191,4 +189,4 @@ int(4)
 string(10) "Row 4     "
 
 Done
-...Test 'sqlsrv_fetch_cursor_types' completed successfully.
+Test "sqlsrv_fetch_cursor_types" completed successfully.

@@ -4,13 +4,13 @@ Test the Authentication keyword with options SqlPassword and ActiveDirectoryInte
 
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
-$connectionInfo = " Authentication = SqlPassword; TrustServerCertificate = true;";
+$connectionInfo = "Database = $databaseName; Authentication = SqlPassword;  TrustServerCertificate = true;";
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $serverName ; $connectionInfo", $username, $password );
+    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
     echo "Connected successfully with Authentication=SqlPassword.\n";
 }
 catch( PDOException $e )
@@ -20,15 +20,15 @@ catch( PDOException $e )
     echo "\n";
 }
 
-$stmt = $conn->query( "SELECT name FROM master.dbo.sysdatabases" );
+$stmt = $conn->query( "SELECT count(*) FROM cd_info" );
 if ( $stmt === false )
 {
     echo "Query failed.\n";
 }
 else
 {
-    $first_db = $stmt->fetch();
-    var_dump( $first_db );
+    $result = $stmt->fetch();
+    var_dump( $result );
 }
 
 $conn = null;
@@ -39,7 +39,7 @@ $connectionInfo = "Authentication = ActiveDirectoryIntegrated; TrustServerCertif
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $serverName ; $connectionInfo" );
+    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo" );
     echo "Connected successfully with Authentication=ActiveDirectoryIntegrated.\n";
     $conn = null;
 }
@@ -54,10 +54,10 @@ catch( PDOException $e )
 --EXPECT--
 Connected successfully with Authentication=SqlPassword.
 array(2) {
-  ["name"]=>
-  string(6) "master"
+  [""]=>
+  string(1) "7"
   [0]=>
-  string(6) "master"
+  string(1) "7"
 }
 Could not connect with Authentication=ActiveDirectoryIntegrated.
 SQLSTATE[IMSSP]: Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.

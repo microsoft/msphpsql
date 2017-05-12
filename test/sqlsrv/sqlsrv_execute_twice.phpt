@@ -2,19 +2,15 @@
 Free statement twice 
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function ExecuteTwice()
-{
-    require_once("autonomous_setup.php");
-    
+{  
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
 
     // Connect
-    $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect();
     if( !$conn ) { FatalError("Could not connect.\n"); }
     
     $tableName = GetTempTableName();  
@@ -46,6 +42,7 @@ function ExecuteTwice()
 function Repro()
 {
     StartTest("sqlsrv_statement_execute_twice");
+    echo "\nTest begins...\n";
     try
     {
         ExecuteTwice();
@@ -63,10 +60,10 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_statement_execute_twice' test...
+Test begins...
 A statement must be prepared with sqlsrv_prepare before calling sqlsrv_execute.
 -23
 IMSSP
 
 Done
-...Test 'sqlsrv_statement_execute_twice' completed successfully.
+Test "sqlsrv_statement_execute_twice" completed successfully.

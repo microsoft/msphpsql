@@ -2,19 +2,15 @@
 Fetch missing row
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function MissingRow_Fetch()
 {
-    include 'autonomous_setup.php';
-       
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
     
     // Connect
-    $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect();
     if( !$conn ) { FatalError("Could not connect.\n"); }
 
     $tableName = GetTempTableName();
@@ -42,6 +38,7 @@ function MissingRow_Fetch()
 function Repro()
 {
     StartTest("sqlsrv_fetch_missing_row");
+    echo "\nTest begins...\n";
     try
     {
         MissingRow_Fetch();
@@ -59,10 +56,10 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_fetch_missing_row' test...
+Test begins...
 There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.
 -22
 IMSSP
 
 Done
-...Test 'sqlsrv_fetch_missing_row' completed successfully.
+Test "sqlsrv_fetch_missing_row" completed successfully.

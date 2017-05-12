@@ -6,21 +6,20 @@ GitHub issue #231 - String truncation when binding varchar(max)
 
 sqlsrv_configure( 'WarningsReturnAsErrors', 1 );
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$connectionInfo = array( "UID"=>$username, "PWD"=>$password);
-$conn = sqlsrv_connect($serverName, $connectionInfo);
-if( $conn === false ) {
-    die( print_r( sqlsrv_errors(), true ));
+$conn = Connect();
+if( !$conn ) {
+    PrintErrors("Connection could not be established.\n");
 }
 
-$tableName = "#testDataTypes_GH231";
+$tableName = GetTempTableName('testDataTypes_GH231');
 $columnNames = array( "c1","c2" );
 
 for ($k = 1; $k <= 8; $k++)
 {
-    $sqlType = GetSqlType($k);
+    $sqlType = SqlType($k);
     $dataType = "[$columnNames[0]] int, [$columnNames[1]] $sqlType";
     
     $sql = "CREATE TABLE [$tableName] ($dataType)";
@@ -29,8 +28,8 @@ for ($k = 1; $k <= 8; $k++)
 
     $sql = "INSERT INTO [$tableName] ($columnNames[0], $columnNames[1]) VALUES (?, ?)";     
     $data = GetData($k);
-    $phpType = GetPhpType($k);
-    $driverType = GetDriverType($k, strlen($data));
+    $phpType = PhpType($k);
+    $driverType = DriverType($k, strlen($data));
     
     $params = array($k, array($data, SQLSRV_PARAM_IN, $phpType, $driverType));
     $stmt2 = sqlsrv_prepare($conn, $sql, $params);
@@ -59,19 +58,19 @@ function ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
     
     $direction = SQLSRV_PARAM_OUT;    
     echo "Output parameter: \t";
-    CallProc($conn, $procName, $k, $direction, $data);
+    InvokeProc($conn, $procName, $k, $direction, $data);
     
     $direction = SQLSRV_PARAM_INOUT;
     echo "InOut parameter: \t";
-    CallProc($conn, $procName, $k, $direction, $data);
+    InvokeProc($conn, $procName, $k, $direction, $data);
    
     $stmt2 = sqlsrv_query($conn, "DROP PROC [$procName]");
     sqlsrv_free_stmt($stmt2);
 }
 
-function CallProc($conn, $procName, $k, $direction, $data)
+function InvokeProc($conn, $procName, $k, $direction, $data)
 {
-    $driverType = GetDriverType($k, strlen($data));
+    $driverType = DriverType($k, strlen($data));
     $callArgs = "?, ?";
     
     // Data to initialize $callResult variable. This variable should be shorter than inserted data in the table
@@ -106,7 +105,7 @@ function GetData($k)
     return $data;
 }
 
-function GetPhpType($k)
+function PhpType($k)
 {
     $phpType = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR);
     if ($k == 7) {
@@ -116,7 +115,7 @@ function GetPhpType($k)
     return $phpType;    
 }
 
-function GetSqlType($k)
+function SqlType($k)
 {
     switch ($k)
     {
@@ -133,7 +132,7 @@ function GetSqlType($k)
     return ("udt");
 }
 
-function GetDriverType($k, $dataSize)
+function DriverType($k, $dataSize)
 {
     switch ($k)
     {

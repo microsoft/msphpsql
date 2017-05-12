@@ -1,8 +1,10 @@
 --TEST--
 Test transactions commit, rollback and aborting in between
+--SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 ﻿﻿<?php
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function ComplexTransaction($conn, $tableName)
 {
@@ -102,16 +104,16 @@ function FetchData($stmt, $tableName, $numRows, $fetchMode = false)
 function RunTest()
 {
     StartTest("pdo_fetch_complex_transactions");
+    echo "\nTest begins...\n";
     try
     {
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
+        include("MsSetup.inc");
         
         // Connect
-        $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+        $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
         
-        $conn2 = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+        $conn2 = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
         $conn2->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
         $tableName = GetTempTableName('testTransaction', false);
@@ -142,7 +144,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'pdo_fetch_complex_transactions' test...
+Test begins...
 Number of rows fetched: 10
 Committed deleting 3 rows
 Number of rows fetched: 7
@@ -156,4 +158,4 @@ Deletion aborted
 Number of rows fetched: 4
 
 Done
-...Test 'pdo_fetch_complex_transactions' completed successfully.
+Test "pdo_fetch_complex_transactions" completed successfully.

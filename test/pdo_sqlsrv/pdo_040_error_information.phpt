@@ -1,19 +1,18 @@
 --TEST--
 Retrieve error information; supplied values does not match table definition
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 // Connect
-$conn = new PDO("sqlsrv:server=$serverName", $username, $password);
-
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
+$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 
 // Create table
+$tableName = '#pdo_040test';
 $sql = "CREATE TABLE $tableName (code INT)";
-$stmt = $conn->query($sql);
+$stmt = $conn->exec($sql);
 
 // Insert data using bind parameters
 // Number of supplied values does not match table definition
@@ -24,9 +23,6 @@ $params = array(2010,"London");
 // SQL statement has an error, which is then reported
 $stmt->execute($params);
 print_r($stmt->errorInfo());
-
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
 
 // Close connection
 $stmt = null;

@@ -4,14 +4,15 @@ Error checking for failed explicit data type conversions NCHAR(2)
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 // Connect
-$connectionInfo = array("UID"=>$username, "PWD"=>$password, "CharacterSet"=>"UTF-8");
-$conn = sqlsrv_connect($serverName, $connectionInfo) ?: die();
+$conn = Connect(array("CharacterSet"=>"utf-8"));
+if( !$conn ) {
+    PrintErrors("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = GetTempTableName();
 
 // Create table. Column names: passport
 $sql = "CREATE TABLE $tableName (c1 NCHAR(2))";
@@ -24,9 +25,6 @@ $stmt = sqlsrv_query($conn, $sql);
 // Get extended error
 $err =  sqlsrv_errors();
 print_r($err[0]);
-
-// DROP database
-sqlsrv_query($conn,"DROP DATABASE ". $dbName);
 
 // Free statement and connection resources
 sqlsrv_close($conn);

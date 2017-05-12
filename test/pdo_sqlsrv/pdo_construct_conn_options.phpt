@@ -1,21 +1,20 @@
 --TEST--
 Test PDO::__Construct by passing connection options
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-  
-require_once("autonomous_setup.php");
+ 
+require_once("MsSetup.inc");
 
 try 
 {   
-    $database = "tempdb";
-    $dsn = "sqlsrv:Server = $serverName;" .
+    $dsn = "sqlsrv:Server = $server;" .
            "ConnectionPooling = false;" .
            "APP = whatever;" .
            "LoginTimeout = 1;" .
            "ApplicationIntent = ReadOnly;" .
-           "Database = $database;" .
+           "database = $databaseName;" .
            "Encrypt = false;" .
            "Failover_Partner = whatever;" .
            "MultipleActiveResultSets = true;" .
@@ -26,9 +25,8 @@ try
            "TrustServerCertificate = false;" .
            "WSID = whatever;"
            ;
-    $conn = new PDO( $dsn, $username, $password); 
+    $conn = new PDO( $dsn, $uid, $pwd); 
 
-  
     echo "Test Successful";
 }
 catch( PDOException $e ) {

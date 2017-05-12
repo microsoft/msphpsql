@@ -4,29 +4,30 @@ Transaction operations: commit successful transactions
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
 function PrintContent($conn)
 {
-	global $tableName;
-	$query = "SELECT * FROM $tableName";
-	$stmt = sqlsrv_query($conn, $query);
-	// Fetch first row 
-	$row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC);
-	print_r($row);
+    global $tableName;
+    $query = "SELECT * FROM $tableName";
+    $stmt = sqlsrv_query($conn, $query);
+    // Fetch first row 
+    $row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC);
+    print_r($row);
 }
 
 // Connect
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
-if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+$conn = Connect();
+if( !$conn ) {
+    PrintErrors("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = GetTempTableName();
 
 // Create table
 $sql = "CREATE TABLE $tableName (
-			GroupId VARCHAR(10) primary key, Accepted INT, 
-			Tentative INT NOT NULL CHECK (Tentative >= 0))";
+            GroupId VARCHAR(10) primary key, Accepted INT, 
+            Tentative INT NOT NULL CHECK (Tentative >= 0))";
 $stmt = sqlsrv_query($conn, $sql);
 
 
@@ -53,19 +54,16 @@ $stmt2 = sqlsrv_query($conn, $sql, $params);
 // Commit the transactions
 if ($stmt1 && $stmt2)
 {
-	sqlsrv_commit($conn);
+    sqlsrv_commit($conn);
 }
 else
 {
-	echo "\nERROR: $stmt1 and $stmt2 should be valid\n";
-	sqlsrv_rollback($conn);
-	echo "\nTransactions were rolled back.\n";
+    echo "\nERROR: $stmt1 and $stmt2 should be valid\n";
+    sqlsrv_rollback($conn);
+    echo "\nTransactions were rolled back.\n";
 }
 
 PrintContent($conn);
-
-// DROP database
-$stmt = sqlsrv_query($conn,"DROP DATABASE ". $dbName);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
