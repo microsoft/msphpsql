@@ -387,6 +387,8 @@ PHP_MINIT_FUNCTION(sqlsrv)
     constant_type.typeinfo.size = 27;
     constant_type.typeinfo.scale = 7;
     REGISTER_LONG_CONSTANT( "SQLSRV_SQLTYPE_DATETIME2",        constant_type.value, CONST_PERSISTENT | CONST_CS );
+    REGISTER_LONG_CONSTANT("SQLSRV_SQLTYPE_SQL_VARIANT",       SQL_SS_VARIANT, CONST_PERSISTENT | CONST_CS);
+
 	
 	// These constant are defined to provide type checking (type ==SQLSRV_SQLTYPE_DECIMAL).
 	// There are functions with the same name which accept parameters and is used in binding paramters. 
