@@ -154,14 +154,6 @@ public:
     static char * NextChar( UINT codepage, const char * start, size_t cchBytesLeft );
 #endif
 
-    // Given the start byte, how many total bytes are expected for
-    // this code point.  If start is a UTF8 trail byte, then 1 is returned.
-
-    // Returns the number of bytes that need to be trimmed to avoid splitting
-    // a multi-byte code point sequence at the end of the buffer.
-    // Returns zero if a trailing UTF8 code value is found but no
-    // matching lead byte was found for it (ie. invalid, dangling trail byte).
-
     // For all transcoding functions
     // Returns zero on error.  Do not call GetLastError() since that is not portable (pErrorCode has result of GetLastError()).
     // pHasDataLoss will be true if an unrecognized code point was encountered in the source and a default output instead.
