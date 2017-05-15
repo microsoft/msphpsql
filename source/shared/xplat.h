@@ -265,8 +265,6 @@ typedef void*                   SQLHWND;
 // End definitions for UnixODBC SQL headers
 // ----------------------------------------------------------------------------
 
-#define UNREFERENCED_PARAMETER(arg)
-
 // From share.h
 #define _SH_DENYNO      0x40    /* deny none mode */
 
@@ -283,9 +281,6 @@ typedef void*                   SQLHWND;
 #define VER_MAJORVERSION                0x0000002
 #define VER_SERVICEPACKMINOR            0x0000010
 #define VER_SERVICEPACKMAJOR            0x0000020
-#define VER_SET_CONDITION(_m_,_t_,_c_)  \
-        ((_m_)=VerSetConditionMask((_m_),(_t_),(_c_)))
-
 
 // Predeclared types from windef needed for remaining WinNT types
 // to break circular dependency between WinNT.h and windef.h types.
@@ -408,11 +403,6 @@ typedef INT_PTR (*NEARPROC)();
 typedef INT_PTR (*PROC)();
 
 
-DWORD GetFileSize(
-  __inn      HANDLE hFile,
-  __out_opt  LPDWORD lpFileSizeHigh
-);
-
 typedef union _ULARGE_INTEGER {
     struct {
         DWORD LowPart;
@@ -438,14 +428,6 @@ typedef ULARGE_INTEGER *PULARGE_INTEGER;
 #ifndef OPTIONAL
 #define OPTIONAL
 #endif
-
-
-ULONGLONG
-VerSetConditionMask(
-        IN  ULONGLONG   ConditionMask,
-        IN  DWORD   TypeMask,
-        IN  BYTE    Condition
-        );
 
 
 //// ntdef.h

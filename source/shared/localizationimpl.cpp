@@ -227,16 +227,6 @@ public:
 
 bool IConvCachePool::s_PoolDestroyed = false;
 
-#ifdef DEBUG
-// This is only used by unit tests.
-// Product code should directly use IConvCachePool::Depth from
-// within this translation unit.
-USHORT GetIConvCachePoolDepth( UINT dstCP, UINT srcCP )
-{
-    return IConvCachePool::Depth( dstCP, srcCP );
-}
-#endif // DEBUG
-
 IConvCache::IConvCache( int dstIdx, int srcIdx )
     :   m_iconv( iconv_open(
             cp_iconv::g_cp_iconv[dstIdx].IConvEncoding,
@@ -315,63 +305,6 @@ const SystemLocale & SystemLocale::Singleton()
     return s_Default;
 }
 
-int SystemLocale::GetResourcePath( char * buffer, size_t cchBuffer ) const
-{
-    // XPLAT_ODBC_TODO: VSTS 718708 Localization
-    // Also need to use AdjustLCID logic when handling more locales
-    return snprintf( buffer, cchBuffer, "/opt/microsoft/msodbcsql/share/resources/en_US/");
-}
-
-DWORD SystemLocale::CurrentTimeZoneBias( LONG * offsetInMinutes, DWORD * tzinfo ) const
-{
-    if ( NULL == offsetInMinutes )
-        return ERROR_INVALID_PARAMETER;
-
-	time_t now = time( NULL );
-    if ( (time_t)(-1) == now )
-        return ERROR_NOT_SUPPORTED;
-
-	struct tm utc, local;
-    if ( NULL == gmtime_r(&now, &utc) || NULL == localtime_r(&now, &local) )
-        return ERROR_INVALID_DATA;
-    
-    *offsetInMinutes = BiasInMinutes( utc, local );
-
-    if ( NULL != tzinfo )
-    {
-        *tzinfo = (0 == local.tm_isdst ? TIME_ZONE_ID_STANDARD : (0 < local.tm_isdst ? TIME_ZONE_ID_DAYLIGHT : TIME_ZONE_ID_UNKNOWN));
-    }
-
-    return ERROR_SUCCESS;
-}
-
-DWORD SystemLocale::CurrentLocalTime( LPSYSTEMTIME pTime )
-{
-    if ( NULL == pTime )
-        return ERROR_INVALID_PARAMETER;
-
-    memset( pTime, 0, sizeof(SYSTEMTIME) );
-
-	time_t now = time( NULL );
-    if ( (time_t)(-1) == now )
-        return ERROR_NOT_SUPPORTED;
-
-    struct tm local;
-    if ( NULL == localtime_r(&now, &local) )
-        return ERROR_INVALID_DATA;
-
-    pTime->wYear         = local.tm_year + 1900;
-    pTime->wMonth        = local.tm_mon + 1;
-    pTime->wDay          = local.tm_mday;
-    pTime->wHour         = local.tm_hour;
-    pTime->wMinute       = local.tm_min;
-    pTime->wSecond       = local.tm_sec;
-    pTime->wMilliseconds = 0;
-    pTime->wDayOfWeek    = local.tm_wday;
-
-    return ERROR_SUCCESS;
-}
-
 size_t SystemLocale::ToUtf16( UINT srcCodePage, const char * src, SSIZE_T cchSrc, WCHAR * dest, size_t cchDest, DWORD * pErrorCode )
 {
     srcCodePage = ExpandSpecialCP( srcCodePage );
@@ -430,95 +363,6 @@ size_t SystemLocale::FromUtf16Strict(UINT destCodePage, const WCHAR * src, SSIZE
 	size_t cchSrcActual = (cchSrc < 0 ? (1 + mplat_wcslen(src)) : cchSrc);
 	bool hasLoss;
 	return cvt.Convert(dest, cchDest, src, cchSrcActual, true, &hasLoss, pErrorCode);
-}
-
-size_t SystemLocale::ToLower( const char * src, SSIZE_T cchSrc, char * dest, size_t cchDest, DWORD * pErrorCode ) const
-{
-    size_t cchSrcActual = (cchSrc < 0 ? (1+strlen(src)) : cchSrc);
-    if ( 0 == cchSrcActual )
-    {
-        if ( NULL != pErrorCode )
-            *pErrorCode = ERROR_INVALID_PARAMETER;
-        return 0;
-    }
-    if ( 0 == cchDest )
-    {
-        if ( NULL != pErrorCode )
-            *pErrorCode = ERROR_SUCCESS;
-        return cchSrcActual;
-    }
-    else if ( cchDest < cchSrcActual )
-    {
-        if ( NULL != pErrorCode )
-            *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
-        return 0;
-    }
-	memcpy_s( dest, cchSrcActual, src, cchSrcActual );
-
-    use_facet< ctype< char > >(*m_pLocale).tolower( dest, dest+cchSrcActual );
-    if ( NULL != pErrorCode )
-        *pErrorCode = ERROR_SUCCESS;
-    return cchSrcActual;
-}
-
-int SystemLocale::Compare( const char * left, SSIZE_T cchLeft, const char * right, SSIZE_T cchRight, DWORD * pErrorCode ) const
-{
-    if ( NULL == left || NULL == right || 0 == cchLeft || 0 == cchRight )
-    {
-        if ( NULL != pErrorCode )
-            *pErrorCode = ERROR_INVALID_PARAMETER;
-        return CSTR_ERROR;
-    }
-
-    size_t cchLeftActual = (cchLeft < 0 ? strlen(left) : cchLeft);
-    size_t cchRightActual = (cchRight < 0 ? strlen(right) : cchRight);
-
-    int cmp = strncmp( left, right, min(cchLeftActual, cchRightActual) );
-    if ( 0 == cmp )
-    {
-        if ( cchLeftActual < cchRightActual )
-            cmp = -1;
-        else if ( cchLeftActual > cchRightActual )
-            cmp = 1;
-    }
-    else if ( cmp < 0 )
-        cmp = 1; // CompareString is inverse of strcmp
-    else
-        cmp = -1; // CompareString is inverse of strcmp
-
-    if ( NULL != pErrorCode )
-        *pErrorCode = ERROR_SUCCESS;
-    return cmp+2;
-}
-
-int SystemLocale::CompareIgnoreCase( const char * left, SSIZE_T cchLeft, const char * right, SSIZE_T cchRight, DWORD * pErrorCode ) const
-{
-    if ( NULL == left || NULL == right || 0 == cchLeft || 0 == cchRight )
-    {
-        if ( NULL != pErrorCode )
-            *pErrorCode = ERROR_INVALID_PARAMETER;
-        return CSTR_ERROR;
-    }
-
-    size_t cchLeftActual = (cchLeft < 0 ? strlen(left) : cchLeft);
-    size_t cchRightActual = (cchRight < 0 ? strlen(right) : cchRight);
-
-    int cmp = strncasecmp( left, right, min(cchLeftActual, cchRightActual) );
-    if ( 0 == cmp )
-    {
-        if ( cchLeftActual < cchRightActual )
-            cmp = -1;
-        else if ( cchLeftActual > cchRightActual )
-            cmp = 1;
-    }
-    else if ( cmp < 0 )
-        cmp = 1; // CompareString is inverse of strcmp
-    else
-        cmp = -1; // CompareString is inverse of strcmp
-
-    if ( NULL != pErrorCode )
-        *pErrorCode = ERROR_SUCCESS;
-    return cmp+2;
 }
 
 char * SystemLocale::NextChar( UINT codepage, const char * start, size_t cchBytesLeft )

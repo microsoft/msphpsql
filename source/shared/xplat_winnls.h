@@ -106,39 +106,4 @@ IsDBCSLeadByte(
     __inn BYTE  TestChar);
 
 
-#ifdef MPLAT_UNIX
-// XPLAT_ODBC_TODO: VSTS 718708 Localization
-// Find way to remove this
-LCID GetUserDefaultLCID();
-#endif
-
-
-BOOL IsValidCodePage(UINT  CodePage);
-
-#define HIGH_SURROGATE_START  0xd800
-#define HIGH_SURROGATE_END    0xdbff
-#define LOW_SURROGATE_START   0xdc00
-#define LOW_SURROGATE_END     0xdfff
-#define IS_HIGH_SURROGATE(wch) (((wch) >= HIGH_SURROGATE_START) && ((wch) <= HIGH_SURROGATE_END))
-#define IS_LOW_SURROGATE(wch)  (((wch) >= LOW_SURROGATE_START) && ((wch) <= LOW_SURROGATE_END))
-
-int
-GetLocaleInfoA(
-    __inn LCID     Locale,
-    __inn LCTYPE   LCType,
-    __out_ecount_opt(cchData) LPSTR  lpLCData,
-    __inn int      cchData);
-int
-GetLocaleInfoW(
-    __inn LCID     Locale,
-    __inn LCTYPE   LCType,
-    __out_ecount_opt(cchData) LPWSTR  lpLCData,
-    __inn int      cchData);
-#ifdef UNICODE
-#define GetLocaleInfo  GetLocaleInfoW
-#else
-#define GetLocaleInfo  GetLocaleInfoA
-#endif // !UNICODE
-
-
 #endif // XPLAT_WINNLS_H

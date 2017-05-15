@@ -25,37 +25,7 @@
 #error "Incorrect compiler configuration in InterlockedAtomic.h.  Was expecting GCC."
 #endif
 
-inline LONG InterlockedIncrement( LONG volatile * atomic )
-{
-    return __sync_add_and_fetch( atomic, 1 );
-}
-
-inline LONG InterlockedDecrement( LONG volatile * atomic )
-{
-    return __sync_sub_and_fetch( atomic, 1 );
-}
-
 inline LONG InterlockedCompareExchange( LONG volatile * atomic, LONG newValue, LONG compareTo )
-{
-    return __sync_val_compare_and_swap( atomic, compareTo, newValue );
-}
-
-inline LONG InterlockedExchange( LONG volatile * atomic, LONG newValue )
-{
-    return __sync_lock_test_and_set( atomic, newValue );
-}
-
-inline PVOID InterlockedExchangePointer( PVOID volatile * atomic, PVOID newValue)
-{
-    return __sync_lock_test_and_set( atomic, newValue );
-}
-
-inline LONG InterlockedExchangeAdd( LONG volatile * atomic, LONG add )
-{
-    return __sync_fetch_and_add( atomic, add );
-}
-
-inline PVOID InterlockedCompareExchangePointer( PVOID volatile * atomic, PVOID newValue, PVOID compareTo )
 {
     return __sync_val_compare_and_swap( atomic, compareTo, newValue );
 }

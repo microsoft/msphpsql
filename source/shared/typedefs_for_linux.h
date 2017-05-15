@@ -44,16 +44,6 @@ DWORD FormatMessageA(
     va_list *Arguments
     );
 
-DWORD FormatMessageW(
-    DWORD dwFlags,
-    LPCVOID lpSource,
-    DWORD dwMessageId,
-    DWORD dwLanguageId,
-    LPWSTR lpBuffer,
-    DWORD nSize,
-    va_list *Arguments
-    );
-
 #ifndef _WIN32
 #define FormatMessage FormatMessageA
 #else
@@ -73,12 +63,9 @@ DWORD FormatMessageW(
 #define ERROR_INVALID_DATA 13L
 
 typedef int errno_t;
-int mplat_snwprintf_s(WCHAR *str, size_t sizeOfBuffer, size_t count, const WCHAR *format, ...);
-int mplat_vsnwprintf( WCHAR * buffer, size_t count, const WCHAR * format, va_list args );
 int mplat_snprintf_s(char *str, size_t sizeOfBuffer, size_t count, const char *format, ...);
 int mplat_vsnprintf( char * buffer, size_t count, const char * format, va_list args );
 errno_t mplat_wctomb_s(int *pRetValue, char *mbchar, size_t sizeInBytes, WCHAR wchar);
-WCHAR * mplat_wcscpy(WCHAR * _Dst, const WCHAR * _Src);
 char * mplat_cscpy(char * _Dst, const char * _Src);
 BOOL IsDBCSLeadByteEx(__inn UINT CodePage, __inn BYTE TestChar);
 
