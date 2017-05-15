@@ -136,7 +136,6 @@ int mplat_strcat_s( char * dest, size_t destSize, const char * src )
         errno = ERANGE;
         return ERANGE;
     }
-    *p = 0;
     return 0;
 }
 //
