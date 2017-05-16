@@ -16,6 +16,7 @@ User-defined types
 --FILE--
 <?php
 
+
 include 'pdo_tools.inc';
 
 function CreateTestTable($conn, $tableName)
@@ -254,11 +255,10 @@ function RunTest()
     StartTest("pdo_fetch_variants_diff_styles");
     try
     {
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
+        include("MsSetup.inc");
+
         // Connect
-        $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+        $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
         $tableName = GetTempTableName();   

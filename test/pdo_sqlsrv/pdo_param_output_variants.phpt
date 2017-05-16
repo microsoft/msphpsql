@@ -1,5 +1,7 @@
 --TEST--
-Test parametrized insert and sql_variant as an output parameter. 
+Test parametrized insert and sql_variant as an output parameter.
+--DESCRIPTION--
+parameterized queries is not supported for Sql_Variant columns, this test, verifies a proper error message is returned  
 --FILE--
 ﻿<?php
 include 'pdo_tools.inc';
@@ -101,11 +103,9 @@ function RunTest()
     StartTest("pdo_param_output_variants");
     try
     {
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
+		 include("MsSetup.inc");
         // Connect
-        $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+        $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
         // Test with a simple stored procedure 
@@ -133,7 +133,8 @@ RunTest();
 --EXPECT--
 ﻿
 ...Starting 'pdo_param_output_variants' test...
-[Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: varchar(max) is incompatible with sql_variant
-[Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: varchar(max) is incompatible with sql_variant
+SQLSTATE[22018]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: nvarchar(max) is incompatible with sql_variant
+SQLSTATE[22018]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: nvarchar(max) is incompatible with sql_variant
+
 Done
 ...Test 'pdo_param_output_variants' completed successfully.

@@ -101,11 +101,9 @@ function RunTest()
     StartTest("pdo_simple_update_variants");
     try
     {
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
+        include("MsSetup.inc"); 
         // Connect
-        $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+          $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
         $tableName = GetTempTableName();   
@@ -146,6 +144,7 @@ RunTest();
 
 ?>
 --EXPECT--
+ ﻿
 ...Starting 'pdo_simple_update_variants' test...
 
 Added Milk in Diary Products with ID 1.
