@@ -4,7 +4,7 @@ Test simple insert and update sql_variants using parameters of some different da
 ORDER BY should work with sql_variants
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 class Country
 {
@@ -22,15 +22,11 @@ class Country
     }    
 }
 
-function CreateTable($conn, $tableName)
+function CreateVariantTable($conn, $tableName)
 {
     // create a table for testing    
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([id] sql_variant, [country] sql_variant, [continent] sql_variant)");  
-    
-    if (! $stmt) 
-        FatalError("Failed to create table.\n"); 
-
-    sqlsrv_free_stmt($stmt);  
+    $dataType = "[id] sql_variant, [country] sql_variant, [continent] sql_variant";  
+	CreateTableEx($conn, $tableName, $dataType); 
 }
 
 function AddCountry($conn, $tableName, $id, $country, $continent)
@@ -109,20 +105,14 @@ function RunTest()
     StartTest("sqlsrv_simple_update_variants");
     try
     {
-        set_time_limit(0);  
-        sqlsrv_configure('WarningsReturnAsErrors', 1);  
-
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-
+		setup();  
+		
         // Connect
-        $connectionInfo = array("Database"=>$database, "UID"=>$username, "PWD"=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
-        if( !$conn ) { FatalError("Could not connect.\n"); }
+        $conn = connect();
 
         // Create a temp table that will be automatically dropped once the connection is closed
         $tableName = GetTempTableName();
-        CreateTable($conn, $tableName);
+        CreateVariantTable($conn, $tableName);
 
         // Add three countries
         AddCountry($conn, $tableName, 1, 'Canada', 'North America');
@@ -166,8 +156,6 @@ RunTest();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_simple_update_variants' test...
-
 Added Canada in North America with ID 1.
 Added France in Europe with ID 3.
 Added Australia in Australia with ID 5.
@@ -190,4 +178,4 @@ ID: 4 Mexico, North America
 ID: 5 Australia, Australia
 ID: 6 Brazil, South America
 Done
-...Test 'sqlsrv_simple_update_variants' completed successfully.
+Test "sqlsrv_simple_update_variants" completed successfully.
