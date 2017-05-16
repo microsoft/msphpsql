@@ -4,9 +4,9 @@ Test parametrized insert and sql_variant as an output parameter.
 sql_variant is not supported for output parameters, this test checks the error handling in this case
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
-function CreateTable($conn, $tableName)
+function CreateVariantTable($conn, $tableName)
 {  
     $stmt = sqlsrv_query($conn, "CREATE TABLE [$tableName] ([c1_int] int, [c2_variant] sql_variant)");    
     if (! $stmt) 
@@ -50,11 +50,11 @@ function TestOutputParam($conn, $tableName)
     $stmt = sqlsrv_query($conn, "{ CALL [$procName] ($callArgs)}", $params);
     if (! $stmt ) 
     {
-        if (!strcmp($initData, $callResult))
+        print_errors();
+        if (strcmp($initData, $callResult))
         {
             echo "initialized data and results should be the same";
         }
-        handle_errors(); 
         echo "\n";
     }
 }
@@ -76,12 +76,25 @@ function TestInputAndOutputParam($conn, $tableName)
     $stmt = sqlsrv_query($conn, "{ CALL [$procName] ($callArgs)}", $params);
     if (! $stmt )
     {
-        if (!strcmp($initData, $callResult))
+        print_errors();   
+        if (strcmp($initData, $callResult))
         {
-            echo "initialized data and results should be the same";
+            echo "initialized data and results should be the same\n";
         }
-        handle_errors();
-        echo "\n";
+    }
+}
+
+function print_errors()
+{
+    $errors = sqlsrv_errors();
+    $count = count($errors);
+
+    if($count > 0)
+    {
+        for($i = 0; $i < $count; $i++)
+        {
+            print($errors[$i]['message']."\n");
+        }
     }
 }
 
@@ -90,20 +103,15 @@ function RunTest()
     StartTest("sqlsrv_param_output_variants");
     try
     {
-        set_time_limit(0);  
-        sqlsrv_configure('WarningsReturnAsErrors', 1);  
-
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
+        Setup();
 
         // Connect
-        $connectionInfo = array("Database"=>$database, "UID"=>$username, "PWD"=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
-        if( !$conn ) { FatalError("Could not connect.\n"); }
+        $conn = Connect();
 
         // Create a temp table that will be automatically dropped once the connection is closed
         $tableName = GetTempTableName();
-        CreateTable($conn, $tableName);
+        CreateVariantTable($conn, $tableName);
+        echo "\n";
         
         TestOutputParam($conn, $tableName);
         TestInputAndOutputParam($conn, $tableName);
@@ -122,9 +130,10 @@ RunTest();
 
 ?>
 --EXPECT--
-﻿
-...Starting 'sqlsrv_param_output_variants' test...
+ ﻿
 [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: varchar(max) is incompatible with sql_variant
+
 [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: varchar(max) is incompatible with sql_variant
+
 Done
-...Test 'sqlsrv_param_output_variants' completed successfully.
+Test "sqlsrv_param_output_variants" completed successfully.
