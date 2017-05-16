@@ -126,7 +126,6 @@
 #define ERROR_INVALID_FUNCTION           1L    // dderror
 #define TRUST_E_TIME_STAMP               _HRESULT_TYPEDEF_(0x80096005L)
 #define CRYPT_E_NOT_FOUND                _HRESULT_TYPEDEF_(0x80092004L)
-#define WAIT_TIMEOUT                     258L    // dderror
 
 
 #endif // XPLAT_WINERROR_H

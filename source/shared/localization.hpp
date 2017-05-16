@@ -24,14 +24,10 @@
 #include <assert.h>
 #include "typedefs_for_linux.h"
 
-#ifdef MPLAT_UNIX
 #include <locale>
-#endif
-
 
 #define CP_UTF8  65001
 #define CP_UTF16 1200
-#define CP_UTF32 12000
 #define CP_ACP  0           // default to ANSI code page
 
 // This class provides allocation policies for the SystemLocale and AutoArray classes.
@@ -118,19 +114,10 @@ class SystemLocale
 public:
     // -----------------------------------------------------------------------
     // Public Static Functions
-#ifdef MPLAT_UNIX
     static const SystemLocale & Singleton();
-#else
-    // Windows returns by value since this is an empty class
-    static const SystemLocale Singleton();
-#endif
-
-#ifdef MPLAT_UNIX
 
     static const int MINS_PER_HOUR = 60;
     static const int MINS_PER_DAY = 24 * MINS_PER_HOUR;
-
-#endif
 
     // Multi-byte UTF8 code points start with '11xx xxxx'
     static bool IsUtf8LeadByte( BYTE utf8 )
@@ -148,11 +135,10 @@ public:
     // If start points at a dangling UTF8 trail byte, then (start+1) is
     // returned since we can't know how large this code point is.
     static char * NextChar( UINT codepage, const char * start );
-#ifdef MPLAT_UNIX
+
     // This version is for non-null terminated strings.
     // Last ptr will be one past end of buffer.
     static char * NextChar( UINT codepage, const char * start, size_t cchBytesLeft );
-#endif
 
     // For all transcoding functions
     // Returns zero on error.  Do not call GetLastError() since that is not portable (pErrorCode has result of GetLastError()).
@@ -191,9 +177,6 @@ private:
     SystemLocale( const SystemLocale & );
     SystemLocale & operator=( const SystemLocale & );
 
-#ifdef MPLAT_UNIX
-// MPLAT_UNIX ----------------------------------------------------------------
-
     std::locale * m_pLocale;
 
     explicit SystemLocale( const char * localeName );
@@ -204,49 +187,6 @@ private:
         // Convert CP_ACP, CP_OEM to CP_UTF8
         return (codepage < 2 ? CP_UTF8 : codepage);
     }
-
-// MPLAT_UNIX ----------------------------------------------------------------
-#else
-// !MPLAT_UNIX ---------------------------------------------------------------
-
-    SystemLocale() {}
-
-    static size_t ReturnCchResult( SSIZE_T cch, DWORD * pErrorCode )
-    {
-        if ( cch < 0 )
-        {
-            cch = 0;
-        }
-        if ( NULL != pErrorCode )
-        {
-            *pErrorCode = (0 == cch ? GetLastError() : ERROR_SUCCESS);
-        }
-        return static_cast<size_t>(cch);
-    }
-
-    static size_t FastAsciiMultiByteToWideChar
-        (
-            UINT        CodePage,
-            __in_ecount(cch) const char  *pch,  // IN   | source string
-            SSIZE_T     cch,                    // IN   | count of characters or -1
-            __out_ecount_opt(cwch) PWCHAR pwch, // IN   | Result string
-            size_t      cwch,                   // IN   | count of wchars of result buffer or 0
-            DWORD*      pErrorCode,             // OUT  | optional pointer to return error code
-            bool        bStrict = false         // IN   | Return error if invalid chars in src
-         );
-    static size_t FastAsciiWideCharToMultiByte
-        (
-            UINT        CodePage,
-            const WCHAR *pwch,              // IN   | source string
-            SSIZE_T     cwch,               // IN   | count of characters or -1
-            __out_bcount(cch) char *pch,    // IN   | Result string
-            size_t      cch,                // IN   | Length of result buffer or 0  
-            BOOL        *pfDataLoss,        // OUT  | True if there was data loss during CP conversion
-            DWORD       *pErrorCode         // OUT  | optional pointer to return error code
-        );
-
-// !MPLAT_UNIX ---------------------------------------------------------------
-#endif
 
     // Returns the number of bytes this UTF8 code point expects
     static UINT CchUtf8CodePt( BYTE codept )
@@ -271,10 +211,7 @@ private:
 
 
 // ---------------------------------------------------------------------------
-// Inlines that vary by platform
-
-#if defined(MPLAT_UNIX)
-// MPLAT_UNIX ----------------------------------------------------------------
+// Inlines
 
 #include "globalization.h"
 
@@ -300,60 +237,5 @@ inline UINT SystemLocale::MaxCharCchSize( UINT codepage )
         return 1;
     }
 }
-
-// MPLAT_UNIX ----------------------------------------------------------------
-#else
-// ! MPLAT_UNIX ----------------------------------------------------------------
-
-
-inline const SystemLocale SystemLocale::Singleton()
-{
-    // On Windows, Localization is an empty class so creation of this
-    // should be optimized away.  Empty classes have a sizeof 1 so there's
-    // something to take the address of.
-    C_ASSERT( 1 == sizeof(SystemLocale) );
-    return SystemLocale();
-}
-
-inline UINT SystemLocale::AnsiCP() const
-{
-    return GetACP();
-}
-
-inline UINT SystemLocale::MaxCharCchSize( UINT codepage )
-{
-    CPINFO cpinfo;
-    BOOL rc = GetCPInfo( codepage, &cpinfo );
-    return (rc ? cpinfo.MaxCharSize : 0);
-}
-
-inline char * SystemLocale::NextChar( UINT codepage,  const char * start )
-{
-    return CharNextExA( (WORD)codepage, start, 0 );
-}
-
-inline size_t SystemLocale::ToUtf16( UINT srcCodePage, const char * src, SSIZE_T cchSrc, WCHAR * dest, size_t cchDest, DWORD * pErrorCode )
-{
-    return FastAsciiMultiByteToWideChar( srcCodePage, src, cchSrc, dest, cchDest, pErrorCode );
-}
-
-inline size_t SystemLocale::ToUtf16Strict( UINT srcCodePage, const char * src, SSIZE_T cchSrc, WCHAR * dest, size_t cchDest, DWORD * pErrorCode )
-{
-    return FastAsciiMultiByteToWideChar( srcCodePage, src, cchSrc, dest, cchDest, pErrorCode, true );
-}
-
-inline size_t SystemLocale::FromUtf16( UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc, char * dest, size_t cchDest, bool * pHasDataLoss, DWORD * pErrorCode )
-{
-    BOOL dataloss = FALSE;
-    size_t cchCvt = FastAsciiWideCharToMultiByte( destCodePage, src, cchSrc, dest, cchDest, &dataloss, pErrorCode );
-    if ( NULL != pHasDataLoss )
-    {
-        *pHasDataLoss = (FALSE != dataloss);
-    }
-    return cchCvt;
-}
-
-// ! MPLAT_UNIX ----------------------------------------------------------------
-#endif
 
 #endif // __LOCALIZATION_HPP__

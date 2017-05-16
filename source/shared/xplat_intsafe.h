@@ -41,50 +41,19 @@
 // typedefs
 //
 typedef char                CHAR;
-typedef signed char         INT8;
-typedef unsigned char       UCHAR;
-typedef unsigned char       UINT8;
 typedef unsigned char       BYTE;
-typedef short               SHORT;
-typedef signed short        INT16;
 typedef unsigned short      USHORT;
-typedef unsigned short      UINT16;
 typedef unsigned short      WORD;
 typedef int                 INT;
-typedef signed int          INT32;
 typedef unsigned int        UINT;
-typedef unsigned int        UINT32;
 typedef windowsLong_t       LONG;
 typedef windowsULong_t      DWORD;
 typedef windowsLongLong_t   LONGLONG;
-typedef windowsLongLong_t   LONG64;
-typedef windowsLongLong_t   INT64;
 typedef windowsULongLong_t  ULONGLONG;
-typedef windowsULongLong_t  DWORDLONG;
-typedef windowsULongLong_t  ULONG64;
-typedef windowsULongLong_t  DWORD64;
-typedef windowsULongLong_t  UINT64;
 
-#if (__midl > 501)
-typedef [public]          __int3264 INT_PTR;
-typedef [public] unsigned __int3264 UINT_PTR;
-typedef [public]          __int3264 LONG_PTR;
-typedef [public] unsigned __int3264 ULONG_PTR;
-#else
-#ifdef _WIN64
-typedef __int64 INT_PTR, *PINT_PTR;
-typedef unsigned __int64 UINT_PTR, *PUINT_PTR;
-typedef __int64 LONG_PTR, *PLONG_PTR;
-typedef unsigned __int64 ULONG_PTR, *PULONG_PTR;
-#else
-typedef _W64 int INT_PTR, *PINT_PTR;
-typedef _W64 unsigned int UINT_PTR, *PUINT_PTR;
 typedef _W64 windowsLong_t LONG_PTR, *PLONG_PTR;
 typedef _W64 windowsULong_t ULONG_PTR, *PULONG_PTR;
-#endif // WIN64
-#endif // (__midl > 501)
 
-typedef ULONG_PTR   DWORD_PTR;
 typedef LONG_PTR    SSIZE_T;
 typedef ULONG_PTR   SIZE_T;
 

@@ -23,39 +23,20 @@
 #include <FormattedPrint.h>
 #include <errno.h>
 
-#if !defined(_MSC_VER)
 #include <iconv.h>
-#endif
 
 #include "StringFunctions.h"
 
 // XPLAT_ODBC_TODO VSTS 819733 - MPlat: Reconcile std c++ usage between platforms
-#ifdef MPLAT_UNIX
-//    #include <sal_undef.h>
-#elif defined(MPLAT_WWOWH)
-#   define _ASSERTE assert
-#   include <malloc.h>
-#   undef _M_IX86
-#   undef min
-#   undef max
-#endif
 #include <vector>
 #include <algorithm>
-#ifdef MPLAT_UNIX
-    #include "sal_def.h"
-#endif
+#include "sal_def.h"
 
-#ifndef _WIN32
 #define PTR_IS_INT64 1
-#else
-#define PTR_IS_INT64 0
-#endif // !_WIN32
 
-#ifndef _MSC_VER
 // SQL Server does not have a long double type
 #define LONGDOUBLE_IS_DOUBLE 1
 typedef double _LONGDOUBLE;
-#endif
 
 // XPLAT_ODBC_TODO VSTS VSTS 718708 Localization
 #define _SAFECRT_IMPL
@@ -288,16 +269,8 @@ void _CFLTCVT( double * dbl, char * buf, int bufSize, char fmt, int precision, i
     // platform's snprintf for just floating pt values.  We have to undef to prevent
     // recursing right back to here.
 #   undef snprintf
-#   if defined(MPLAT_WWOWH)
-#   undef _snprintf
-#   define snprintf _snprintf
-#   endif
     chars_printed = snprintf( buf, bufSize, local_fmt, *dbl );
     assert( 0 < chars_printed && chars_printed < bufSize );
-#   if defined(MPLAT_WWOWH)
-#   undef snprintf
-#   define _snprintf mplat_snprintf
-#   endif
 #   define snprintf mplat_snprintf
 }
 
@@ -1411,6 +1384,25 @@ static DWORD FormatMessageToBufferA( const char * format, char * buffer, DWORD b
     return msg_pos;
 }
 
+// FormatMessage implementation details (see MSDN for more info)
+//
+// The Windows FormatMessage API is very rich, complex.  This is not an exact duplication of that function.
+// Instead, the most important aspects of this function have been implemented here along with constraints to
+// match how we use it within SNAC, BCP, and SQLCMD.
+//
+// Only these combinations of dwFlags are supported:
+//  FORMAT_MESSAGE_FROM_STRING
+//      Writes formatted message into supplied buffer
+//  FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING
+//      Allocates a buffer, writes formatted message into that buffer, returns buffer in lpBufffer
+//  FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS
+//      Writes fixed, English message into the supplied buffer (do not have Windows resources to get real message)
+//  FORMAT_MESSAGE_FROM_HMODULE
+//      SQLCMD uses this to read strings from the RLL that have not been translated to the current lang
+//
+// dwLanguageId is ignored for FORMAT_MESSAGE_FROM_STRING as per spec
+//      For FORMAT_MESSAGE_FROM_SYSTEM, we don't have Windows resources so language is irrelevant
+
 DWORD FormatMessageA(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId, LPTSTR lpBuffer, DWORD nSize, va_list *Arguments)
 {
     DWORD chars_printed = 0;
@@ -1502,25 +1494,6 @@ DWORD FormatMessageA(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD d
     return chars_printed;
 }
 
-
-// FormatMessage implementation details (see MSDN for more info)
-//
-// The Windows FormatMessage API is very rich, complex.  This is not an exact duplication of that function.
-// Instead, the most important aspects of this function have been implemented here along with constraints to
-// match how we use it within SNAC, BCP, and SQLCMD.
-//
-// Only these combinations of dwFlags are supported:
-//  FORMAT_MESSAGE_FROM_STRING
-//      Writes formatted message into supplied buffer
-//  FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING
-//      Allocates a buffer, writes formatted message into that buffer, returns buffer in lpBufffer
-//  FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS
-//      Writes fixed, English message into the supplied buffer (do not have Windows resources to get real message)
-//  FORMAT_MESSAGE_FROM_HMODULE
-//      SQLCMD uses this to read strings from the RLL that have not been translated to the current lang
-//
-// dwLanguageId is ignored for FORMAT_MESSAGE_FROM_STRING as per spec
-//      For FORMAT_MESSAGE_FROM_SYSTEM, we don't have Windows resources so language is irrelevant
 
 //--------Other definitions from xplat stub sources--------------
 
