@@ -133,10 +133,7 @@ function RunTest()
     StartTest("sqlsrv_param_input_variants");
     try
     {
-        set_time_limit(0);  
-        sqlsrv_configure('WarningsReturnAsErrors', 1);  
-        $database = "tempdb";
-
+        Setup();
         $conn = connect();
 
         // Create a temp table that will be automatically dropped once the connection is closed
