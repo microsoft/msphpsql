@@ -15,14 +15,13 @@ datetimeoffset
 User-defined types
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include "MsCommon.inc";
+include "tools.inc";
 
-function CreateTable($conn, $tableName)
+function CreateVariantTable($conn, $tableName)
 {
-    $stmt = sqlsrv_query($conn, "CREATE TABLE [$tableName] ([c1_int] sql_variant, [c2_tinyint] sql_variant, [c3_smallint] sql_variant, [c4_bigint] sql_variant, [c5_bit] sql_variant, [c6_float] sql_variant, [c7_real] sql_variant, [c8_decimal] sql_variant, [c9_numeric] sql_variant, [c10_money] sql_variant, [c11_smallmoney] sql_variant, [c12_char] sql_variant, [c13_varchar] sql_variant, [c14_uniqueidentifier] sql_variant, [c15_datetime] sql_variant, [c16_smalldatetime] sql_variant)");  
-    
-    if (! $stmt) 
-        FatalError("Failed to create table.\n"); 
+    $dataType = "[c1_int] sql_variant, [c2_tinyint] sql_variant, [c3_smallint] sql_variant, [c4_bigint] sql_variant, [c5_bit] sql_variant, [c6_float] sql_variant, [c7_real] sql_variant, [c8_decimal] sql_variant, [c9_numeric] sql_variant, [c10_money] sql_variant, [c11_smallmoney] sql_variant, [c12_char] sql_variant, [c13_varchar] sql_variant, [c14_uniqueidentifier] sql_variant, [c15_datetime] sql_variant, [c16_smalldatetime] sql_variant";  
+    CreateTableEx($conn, $tableName, $dataType);
 }
 
 function InsertData($conn, $tableName, $index)
@@ -59,7 +58,7 @@ function ReadData($stmt, $stmt2, $numFields)
         if ($size != $numFields)
             FatalError("Array size $size returned different from expected, $numFields\n");
         
-        echo "Comparing data in row " . ++$fetched . "\n";
+        print( "Comparing data in row " . ++$fetched . "\n");
 
         $obj = sqlsrv_fetch_object($stmt2);
         if (! $obj)
@@ -130,23 +129,19 @@ function GetInputData($index)
 
 function RunTest()
 {
+
     StartTest("sqlsrv_param_input_variants");
     try
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
-
-        require_once("autonomous_setup.php");
         $database = "tempdb";
 
-        // Connect
-        $connectionInfo = array("Database"=>$database, "UID"=>$username, "PWD"=>$password, "CharacterSet"=>"UTF-8");
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
-        if( !$conn ) { FatalError("Could not connect.\n"); }
+        $conn = connect();
 
         // Create a temp table that will be automatically dropped once the connection is closed
         $tableName = GetTempTableName();
-        CreateTable($conn, $tableName);
+        CreateVariantTable($conn, $tableName);
         
         // Insert data
         $numRows = 4;
@@ -169,13 +164,11 @@ RunTest();
 
 ?>
 --EXPECT--
-﻿
-...Starting 'sqlsrv_param_input_variants' test...
-Comparing data in row 1
+﻿Comparing data in row 1
 Comparing data in row 2
 Comparing data in row 3
 Comparing data in row 4
 Number of rows fetched: 4
 
 Done
-...Test 'sqlsrv_param_input_variants' completed successfully.
+Test "sqlsrv_param_input_variants" completed successfully.
