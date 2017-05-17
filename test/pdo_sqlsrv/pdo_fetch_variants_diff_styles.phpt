@@ -17,7 +17,7 @@ User-defined types
 <?php
 
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function CreateTestTable($conn, $tableName)
 {
@@ -285,7 +285,6 @@ RunTest();
 ?>
 --EXPECT--
 
-...Starting 'pdo_fetch_variants_diff_styles' test...
 Comparing data in row 1
 Comparing data in row 2
 Insert all columns from row 1 into one column of type sql_variant
@@ -294,5 +293,4 @@ Insert all columns from row 2 into one column of type sql_variant
 string(11) "sql_variant"
 
 Done
-...Test 'pdo_fetch_variants_diff_styles' completed successfully.
-
+Test "pdo_fetch_variants_diff_styles" completed successfully.
