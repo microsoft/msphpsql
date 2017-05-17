@@ -4,7 +4,7 @@ Test parametrized insert and sql_variant as an output parameter.
 parameterized queries is not supported for Sql_Variant columns, this test, verifies a proper error message is returned  
 --FILE--
 ﻿<?php
-include 'MSCommon.inc';
+include 'MsCommon.inc';
 
 function TestReverse($conn)
 {
