@@ -5,7 +5,7 @@ ORDER BY should work with sql_variants
 --FILE--
 ﻿<?php
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 class Food
 {
@@ -19,7 +19,7 @@ class Food
     }    
 }
 
-function CreateTable($conn, $tableName)
+function CreateVariantTable($conn, $tableName)
 {
     try 
     {
@@ -103,11 +103,11 @@ function RunTest()
     {
         include("MsSetup.inc"); 
         // Connect
-          $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
+        $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
         $tableName = GetTempTableName();   
-        CreateTable($conn, $tableName);
+        CreateVariantTable($conn, $tableName);
         
         // Add three kinds of foods
         InsertData($conn, $tableName, 1, 'Milk', 'Diary Products');
@@ -145,8 +145,6 @@ RunTest();
 ?>
 --EXPECT--
  ﻿
-...Starting 'pdo_simple_update_variants' test...
-
 Added Milk in Diary Products with ID 1.
 Added Chicken in Meat with ID 3.
 Added Blueberry in Fruits with ID 5.
@@ -169,4 +167,4 @@ ID: 4 Cheese, Diary Products
 ID: 5 Blueberry, Fruits
 ID: 6 Salmon, Fish
 Done
-...Test 'pdo_simple_update_variants' completed successfully.
+Test "pdo_simple_update_variants" completed successfully.
