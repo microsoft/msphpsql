@@ -131,37 +131,36 @@ streaming large amounts of data into a database and getting it out as a string e
     sqlsrv_free_stmt($stmt7);   //  True
     fclose($fin);   //  True
 
+    $lens1 = array();   
+    $i = 0;
+    
     // read the data to make sure it's the right length
     $stmt8 = sqlsrv_query($conn2, "SELECT * FROM [179886] WHERE [c1_int] = 1"); //  21
     $metadata1 = sqlsrv_field_metadata($stmt8); //  94279320
     $count = count($metadata1); //  28
     sqlsrv_fetch($stmt8);   //  True
-    $value1 = GetField($stmt8, 13, $notWindows);    
-    PrintNumberCharacters($value1, $notWindows);
+    $value1 = GetField($stmt8, 13, $notWindows);   
+    $lens1[$i++] = strlen( $value1 ) . "\n";
     $fout = fopen( "varchar_max.out", "w" );
     fwrite( $fout, $value1 );
     fclose( $fout );
-    $value2 = GetField($stmt8, 16, $notWindows);    
-    PrintNumberCharacters($value2, $notWindows);
+    $value2 = GetField($stmt8, 16, $notWindows);   
+    $lens1[$i++] = strlen( $value2 ) . "\n";
     $fout = fopen( "nvarchar_max.out", "w" );
     fwrite( $fout, $value2 );
     fclose( $fout );
-    $value3 = GetField($stmt8, 17, $notWindows);    
-
-    PrintNumberCharacters($value3, $notWindows);
-
+    $value3 = GetField($stmt8, 17, $notWindows);   
+    $lens1[$i++] = strlen( $value3 ) . "\n";
     $fout = fopen( "text.out", "w" );
     fwrite( $fout, $value3 );
     fclose( $fout );
-    $value4 = GetField($stmt8, 18, $notWindows);    
-    PrintNumberCharacters($value4, $notWindows);
-
+    $value4 = GetField($stmt8, 18, $notWindows);   
+    $lens1[$i++] = strlen( $value4 ) . "\n";
     $fout = fopen( "ntext.out", "w" );
     fwrite( $fout, $value4 );
     fclose( $fout );
-    $value5 = GetField($stmt8, 27, $notWindows);    
-    PrintNumberCharacters($value5, $notWindows);
-
+    $value5 = GetField($stmt8, 27, $notWindows);   
+    $lens1[$i++] = strlen( $value5 ) . "\n";
     $fout = fopen( "xml.out", "w" );
     fwrite( $fout, $value5 );
     fclose( $fout );
@@ -175,21 +174,28 @@ streaming large amounts of data into a database and getting it out as a string e
     }
     sqlsrv_free_stmt($stmt3);   //  True
 
+    $lens2 = array();   
+    $i = 0;
+    
     $stmt8 = sqlsrv_query($conn2, "SELECT * FROM [179886] WHERE [c1_int] = 2"); //  21
     $metadata1 = sqlsrv_field_metadata($stmt8); //  94279320
     $count = count($metadata1); //  28
     sqlsrv_fetch($stmt8);   //  True
-    $value1 = GetField($stmt8, 13, $notWindows);    
-    PrintNumberCharacters($value1, $notWindows);
-    $value2 = GetField($stmt8, 16, $notWindows);    
-    PrintNumberCharacters($value2, $notWindows);
-    $value3 = GetField($stmt8, 17, $notWindows);    
-    PrintNumberCharacters($value3, $notWindows);
-    $value4 = GetField($stmt8, 18, $notWindows);    
-    PrintNumberCharacters($value4, $notWindows);
-    $value5 = GetField($stmt8, 27, $notWindows);    
-    PrintNumberCharacters($value5, $notWindows);
+    $value1 = GetField($stmt8, 13, $notWindows);   
+    $lens2[$i++] = strlen( $value1 );
+    $value2 = GetField($stmt8, 16, $notWindows);   
+    $lens2[$i++] = strlen( $value2 ) . "\n";
+    $value3 = GetField($stmt8, 17, $notWindows);   
+    $lens2[$i++] = strlen( $value3 ) . "\n";
+    $value4 = GetField($stmt8, 18, $notWindows);   
+    $lens2[$i++] = strlen( $value4 ) . "\n";
+    $value5 = GetField($stmt8, 27, $notWindows);   
+    $lens2[$i++] = strlen( $value5 ) . "\n";
 
+    CompareLengths($lens1, $lens2, $i, $notWindows);
+    
+    echo "Test finished\n";
+    
     sqlsrv_free_stmt( $stmt8 );
     sqlsrv_close( $conn2 );    
 
@@ -205,22 +211,28 @@ streaming large amounts of data into a database and getting it out as a string e
         }
     }
     
-    function PrintNumberCharacters($value, $notWindows)
+    function CompareLengths($lens1, $lens2, $count, $notWindows)
     {
         if ($notWindows)
-            $value = utf8_decode($value);
-        
-        echo strlen($value) . "\n";
-    }   
+        {
+            // in Linux, same field should return same length, and strlen() for Unicode data is different
+            for ($i = 0; $i < $count; $i++)
+            {
+                if ($lens1[$i] != $lens2[$i])
+                    echo "Data length mismatched!\n";
+            }
+        }
+        else 
+        {
+            // in Windows, all lengths are equal
+            $length = 1048576;  // number of characters in the data (in ANSI encoding)
+            for ($i = 0; $i < $count; $i++)
+            {
+                if ($lens1[$i] != $length || $lens2[$i] != $length)
+                    echo "Data length mismatched!\n";
+            }
+        }
+    }
 ?>
 --EXPECT--
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
+Test finished
