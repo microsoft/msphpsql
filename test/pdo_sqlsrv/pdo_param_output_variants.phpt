@@ -103,7 +103,7 @@ function RunTest()
     StartTest("pdo_param_output_variants");
     try
     {
-		 include("MsSetup.inc");
+        include("MsSetup.inc");
         // Connect
         $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
