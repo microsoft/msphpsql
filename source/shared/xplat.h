@@ -108,15 +108,6 @@ typedef windowsULongLong_t ULONGLONG;
 #define UNIXODBC
 #endif
 
-/* can be defined in php sources */
-#ifdef  ODBCVER
-#undef  ODBCVER
-#endif
-
-// Build the mplat driver as an ODBC 3.8 driver, so that all of the
-// source code shared with Windows SNAC (which is ODBC 3.8) compiles.
-#define ODBCVER 0x0380
-
 // End definitions for UnixODBC SQL headers
 // ----------------------------------------------------------------------------
 
@@ -190,10 +181,6 @@ typedef int INT_PTR;
 //typedef ULONG_PTR DWORD_PTR;
 #define FALSE ((BOOL)0)
 #define TRUE  ((BOOL)1)
-
-//// These are temporary solution versions of the real files that contain the minimal declarations
-//// needed to compile for non-Windows platforms.  See the special include path for the
-//// location of these files.
 
 #include "xplat_winerror.h"
 
