@@ -4,7 +4,7 @@ Test parametrized insert and sql_variant as an output parameter.
 parameterized queries is not supported for Sql_Variant columns, this test, verifies a proper error message is returned  
 --FILE--
 ﻿<?php
-include 'pdo_tools.inc';
+include 'MSCommon.inc';
 
 function TestReverse($conn)
 {
@@ -38,7 +38,7 @@ function TestReverse($conn)
     }        
 }
 
-function CreateTable($conn, $tableName)
+function CreateVariantTable($conn, $tableName)
 {
     try 
     {
@@ -107,13 +107,14 @@ function RunTest()
         // Connect
         $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+        echo "\n";
 
         // Test with a simple stored procedure 
         TestReverse($conn);
         
         // Now test with another stored procedure
         $tableName = GetTempTableName();   
-        CreateTable($conn, $tableName);
+        CreateVariantTable($conn, $tableName);
         
         TestOutputParam($conn, $tableName);
         
@@ -132,9 +133,8 @@ RunTest();
 ?>
 --EXPECT--
 ﻿
-...Starting 'pdo_param_output_variants' test...
 SQLSTATE[22018]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: nvarchar(max) is incompatible with sql_variant
 SQLSTATE[22018]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: nvarchar(max) is incompatible with sql_variant
 
 Done
-...Test 'pdo_param_output_variants' completed successfully.
+Test "pdo_param_output_variants" completed successfully.
