@@ -1538,6 +1538,7 @@ bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, sqlsrv_sqltype
         case SQL_CHAR:
         case SQL_VARBINARY:
         case SQL_VARCHAR:
+        case SQL_SS_VARIANT:
             *column_size = sqlsrv_type.typeinfo.size;
             if( *column_size == SQLSRV_SIZE_MAX_TYPE ) {
                 *column_size = SQL_SS_LENGTH_UNLIMITED;
@@ -1616,6 +1617,7 @@ sqlsrv_phptype determine_sqlsrv_php_type( ss_sqlsrv_stmt const* stmt, SQLINTEGER
             break;
         case SQL_VARCHAR:
         case SQL_WVARCHAR:
+        case SQL_SS_VARIANT:
             if( prefer_string || size != SQL_SS_LENGTH_UNLIMITED ) {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
                 sqlsrv_phptype.typeinfo.encoding = stmt->encoding();
