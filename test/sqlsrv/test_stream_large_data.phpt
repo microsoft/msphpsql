@@ -4,7 +4,7 @@ streaming large amounts of data into a database and getting it out as a string e
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-    set_time_limit(0);  //  True
+    set_time_limit(0);  
     sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
     sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
     sqlsrv_configure( 'LogSubsystems', SQLSRV_LOG_SYSTEM_OFF );
@@ -51,11 +51,19 @@ streaming large amounts of data into a database and getting it out as a string e
     }
     
     // stream the data into the table
-    $fin1 = fopen("varchar_max.txt", "r");  //  7
-    $fin2 = fopen("nvarchar_max.txt", "r"); //  10
-    $fin3 = fopen("text.txt", "r"); //  13
-    $fin4 = fopen("ntext.txt", "r");    //  16
-    $fin5 = fopen("xml.txt", "r");  //  19
+    $fin1 = fopen("varchar_max.txt", "r");  
+    $fin2 = fopen("nvarchar_max.txt", "r"); 
+    $fin3 = fopen("text.txt", "r"); 
+    $fin4 = fopen("ntext.txt", "r");    
+    $fin5 = fopen("xml.txt", "r");  
+    
+    $filesizes = array();   
+    $filesizes[0] = filesize("varchar_max.txt");
+    $filesizes[1] = filesize("nvarchar_max.txt");
+    $filesizes[2] = filesize("text.txt");
+    $filesizes[3] = filesize("ntext.txt");
+    $filesizes[4] = filesize("xml.txt");
+    clearstatcache();   // no need to keep the file sizes in cache
     
     $stmt3 = sqlsrv_query( $conn2, "INSERT INTO [179886] ([c1_int], [c14_varchar_max], [c17_nvarchar_max], [c18_text], [c19_ntext], [c28_xml]) VALUES(?, ?, ?, ?, ?, ?)", array(1, $fin1, $fin2, $fin3, $fin4, $fin5));
     if( $stmt3 === false ) {
@@ -68,13 +76,13 @@ streaming large amounts of data into a database and getting it out as a string e
         echo "sqlsrv_send_stream_data(1) failed.\n";
         die( print_r( sqlsrv_errors(), true ));
     }
-    sqlsrv_free_stmt($stmt3);   //  True
-    fclose($fin1);  //  True
-    fclose($fin2);  //  True
-    fclose($fin3);  //  True
-    fclose($fin4);  //  True
-    fclose($fin5);  //  True
-    $fin = fopen("nvarchar_max.txt", "r");  //  10
+    sqlsrv_free_stmt($stmt3);   
+    fclose($fin1);  
+    fclose($fin2);  
+    fclose($fin3);  
+    fclose($fin4);  
+    fclose($fin5);  
+    $fin = fopen("nvarchar_max.txt", "r");  
     $stmt4 = sqlsrv_query( $conn2, "INSERT INTO [179886] ([c17_nvarchar_max]) VALUES(?)", array($fin));
     if( $stmt4 === false ) {
         echo "sqlsrv_query(3) failed.\n";
@@ -86,9 +94,9 @@ streaming large amounts of data into a database and getting it out as a string e
         echo "sqlsrv_send_stream_data(2) failed.\n";
         die( print_r( sqlsrv_errors(), true ));
     }
-    sqlsrv_free_stmt($stmt4);   //  True
-    fclose($fin);   //  True
-    $fin = fopen("text.txt", "r");  //  13
+    sqlsrv_free_stmt($stmt4);   
+    fclose($fin);   
+    $fin = fopen("text.txt", "r");  
     $stmt5 = sqlsrv_query( $conn2, "INSERT INTO [179886] (c18_text) VALUES(?)", array($fin));
     if( $stmt5 === false ) {
         echo "sqlsrv_query(4) failed.\n";
@@ -100,9 +108,9 @@ streaming large amounts of data into a database and getting it out as a string e
         echo "sqlsrv_send_stream_data(3) failed.\n";
         die( print_r( sqlsrv_errors(), true ));
     }
-    sqlsrv_free_stmt($stmt5);   //  True
-    fclose($fin);   //  True
-    $fin = fopen("ntext.txt", "r"); //  16
+    sqlsrv_free_stmt($stmt5);   
+    fclose($fin);   
+    $fin = fopen("ntext.txt", "r"); 
     $stmt6 = sqlsrv_query( $conn2, "INSERT INTO [179886] (c19_ntext) VALUES(?)", array($fin));
     if( $stmt6 === false ) {
         echo "sqlsrv_query(5) failed.\n";
@@ -114,9 +122,9 @@ streaming large amounts of data into a database and getting it out as a string e
         echo "sqlsrv_send_stream_data(4) failed.\n";
         die( print_r( sqlsrv_errors(), true ));
     }
-    sqlsrv_free_stmt($stmt6);   //  True
-    fclose($fin);   //  True
-    $fin = fopen("xml.txt", "r");   //  19
+    sqlsrv_free_stmt($stmt6);   
+    fclose($fin);   
+    $fin = fopen("xml.txt", "r");
     $stmt7 = sqlsrv_query( $conn2, "INSERT INTO [179886] (c28_xml) VALUES(?)", array($fin));
     if( $stmt7 === false ) {
         echo "sqlsrv_query(6) failed.\n";
@@ -128,40 +136,39 @@ streaming large amounts of data into a database and getting it out as a string e
         echo "sqlsrv_send_stream_data(5) failed.\n";
         die( print_r( sqlsrv_errors(), true ));
     }
-    sqlsrv_free_stmt($stmt7);   //  True
-    fclose($fin);   //  True
+    sqlsrv_free_stmt($stmt7);   
+    fclose($fin);   
 
+    $lens1 = array();   
+    $i = 0;
+    
     // read the data to make sure it's the right length
-    $stmt8 = sqlsrv_query($conn2, "SELECT * FROM [179886] WHERE [c1_int] = 1"); //  21
-    $metadata1 = sqlsrv_field_metadata($stmt8); //  94279320
-    $count = count($metadata1); //  28
-    sqlsrv_fetch($stmt8);   //  True
-    $value1 = GetField($stmt8, 13, $notWindows);    
-    PrintNumberCharacters($value1, $notWindows);
+    $stmt8 = sqlsrv_query($conn2, "SELECT * FROM [179886] WHERE [c1_int] = 1"); 
+    $metadata1 = sqlsrv_field_metadata($stmt8); 
+    $count = count($metadata1); 
+    sqlsrv_fetch($stmt8);   
+    $value1 = GetField($stmt8, 13, $notWindows);   
+    $lens1[$i++] = strlen( $value1 ) . "\n";
     $fout = fopen( "varchar_max.out", "w" );
     fwrite( $fout, $value1 );
     fclose( $fout );
-    $value2 = GetField($stmt8, 16, $notWindows);    
-    PrintNumberCharacters($value2, $notWindows);
+    $value2 = GetField($stmt8, 16, $notWindows);   
+    $lens1[$i++] = strlen( $value2 ) . "\n";
     $fout = fopen( "nvarchar_max.out", "w" );
     fwrite( $fout, $value2 );
     fclose( $fout );
-    $value3 = GetField($stmt8, 17, $notWindows);    
-
-    PrintNumberCharacters($value3, $notWindows);
-
+    $value3 = GetField($stmt8, 17, $notWindows);   
+    $lens1[$i++] = strlen( $value3 ) . "\n";
     $fout = fopen( "text.out", "w" );
     fwrite( $fout, $value3 );
     fclose( $fout );
-    $value4 = GetField($stmt8, 18, $notWindows);    
-    PrintNumberCharacters($value4, $notWindows);
-
+    $value4 = GetField($stmt8, 18, $notWindows);   
+    $lens1[$i++] = strlen( $value4 ) . "\n";
     $fout = fopen( "ntext.out", "w" );
     fwrite( $fout, $value4 );
     fclose( $fout );
-    $value5 = GetField($stmt8, 27, $notWindows);    
-    PrintNumberCharacters($value5, $notWindows);
-
+    $value5 = GetField($stmt8, 27, $notWindows);   
+    $lens1[$i++] = strlen( $value5 ) . "\n";
     $fout = fopen( "xml.out", "w" );
     fwrite( $fout, $value5 );
     fclose( $fout );
@@ -173,23 +180,30 @@ streaming large amounts of data into a database and getting it out as a string e
         echo "sqlsrv_query(7) failed.\n";
         die( print_r( sqlsrv_errors(), true ));
     }
-    sqlsrv_free_stmt($stmt3);   //  True
+    sqlsrv_free_stmt($stmt3);   
 
-    $stmt8 = sqlsrv_query($conn2, "SELECT * FROM [179886] WHERE [c1_int] = 2"); //  21
-    $metadata1 = sqlsrv_field_metadata($stmt8); //  94279320
-    $count = count($metadata1); //  28
-    sqlsrv_fetch($stmt8);   //  True
-    $value1 = GetField($stmt8, 13, $notWindows);    
-    PrintNumberCharacters($value1, $notWindows);
-    $value2 = GetField($stmt8, 16, $notWindows);    
-    PrintNumberCharacters($value2, $notWindows);
-    $value3 = GetField($stmt8, 17, $notWindows);    
-    PrintNumberCharacters($value3, $notWindows);
-    $value4 = GetField($stmt8, 18, $notWindows);    
-    PrintNumberCharacters($value4, $notWindows);
-    $value5 = GetField($stmt8, 27, $notWindows);    
-    PrintNumberCharacters($value5, $notWindows);
+    $lens2 = array();   
+    $i = 0;
+    
+    $stmt8 = sqlsrv_query($conn2, "SELECT * FROM [179886] WHERE [c1_int] = 2");
+    $metadata1 = sqlsrv_field_metadata($stmt8);
+    $count = count($metadata1);
+    sqlsrv_fetch($stmt8);   
+    $value1 = GetField($stmt8, 13, $notWindows);   
+    $lens2[$i++] = strlen( $value1 );
+    $value2 = GetField($stmt8, 16, $notWindows);   
+    $lens2[$i++] = strlen( $value2 ) . "\n";
+    $value3 = GetField($stmt8, 17, $notWindows);   
+    $lens2[$i++] = strlen( $value3 ) . "\n";
+    $value4 = GetField($stmt8, 18, $notWindows);   
+    $lens2[$i++] = strlen( $value4 ) . "\n";
+    $value5 = GetField($stmt8, 27, $notWindows);   
+    $lens2[$i++] = strlen( $value5 ) . "\n";
 
+    CompareLengths($filesizes, $lens1, $lens2, $i, $notWindows);
+    
+    echo "Test finished\n";
+    
     sqlsrv_free_stmt( $stmt8 );
     sqlsrv_close( $conn2 );    
 
@@ -205,22 +219,32 @@ streaming large amounts of data into a database and getting it out as a string e
         }
     }
     
-    function PrintNumberCharacters($value, $notWindows)
+    function CompareLengths($filesizes, $lens1, $lens2, $count, $notWindows)
     {
         if ($notWindows)
-            $value = utf8_decode($value);
-        
-        echo strlen($value) . "\n";
-    }   
+        {
+            // in Linux or Mac, same field should return same length, and strlen() for Unicode data is different
+            for ($i = 0; $i < $count; $i++)
+            {
+                $length = $filesizes[$i];               
+                if ($lens1[$i] != $length || $lens2[$i] != $length)
+                    echo "Data length mismatched!\n";
+            }
+        }
+        else 
+        {
+            // in Windows, all lengths are equal
+            $length = 1048576;  // number of characters in the data (in ANSI encoding)
+            for ($i = 0; $i < $count; $i++)
+            {
+                if ($filesizes[$i] != $length)
+                    echo "File $i size unexpected\n";
+                
+                if ($lens1[$i] != $length || $lens2[$i] != $length)
+                    echo "Data length mismatched!\n";
+            }
+        }
+    }
 ?>
 --EXPECT--
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
-1048576
+Test finished
