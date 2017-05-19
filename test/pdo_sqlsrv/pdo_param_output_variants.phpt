@@ -1,28 +1,10 @@
 --TEST--
 Test parametrized insert and sql_variant as an output parameter.
 --DESCRIPTION--
-parameterized queries is not supported for Sql_Variant columns, this test, verifies a proper error message is returned  
+Since output param is not supported for sql_variant columns, this test verifies a proper error message is returned  
 --FILE--
 ﻿<?php
 include 'MsCommon.inc';
-
-function TestSimpleSelect($conn)
-{
-    $value = 0;  
-
-    $stmt = $conn->prepare("SELECT ? = COUNT(* ) FROM cd_info");  
-    $stmt->bindParam( 1, $value, PDO::PARAM_INT, 4 );  
-    $stmt->execute();  
-    echo "Number of items: $value\n";  
-
-    $title = 'xx';
-    
-    $stmt = $conn->prepare("SELECT ? = title FROM cd_info WHERE artist LIKE 'Led%'");  
-    $stmt->bindParam( 1, $title, PDO::PARAM_STR, 25 );  
-    $stmt->execute();  
-    echo "CD Title: $title\n\n";  
-    
-}
 
 function TestReverse($conn)
 {
@@ -127,16 +109,13 @@ function RunTest()
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
         echo "\n";
 
-        // Test a simple select to get output
-        TestSimpleSelect($conn);
-        
         // Test with a simple stored procedure 
         TestReverse($conn);
         
         // Now test with another stored procedure
         $tableName = GetTempTableName();   
         CreateVariantTable($conn, $tableName);
-        
+
         TestOutputParam($conn, $tableName);
         
         $conn = null;
@@ -154,9 +133,6 @@ RunTest();
 ?>
 --EXPECT--
 ﻿
-Number of items: 7
-CD Title: Led Zeppelin 1
-
 SQLSTATE[22018]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: nvarchar(max) is incompatible with sql_variant
 SQLSTATE[22018]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: nvarchar(max) is incompatible with sql_variant
 
