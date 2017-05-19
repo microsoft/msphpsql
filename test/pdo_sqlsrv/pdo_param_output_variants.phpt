@@ -1,7 +1,7 @@
 --TEST--
 Test parametrized insert and sql_variant as an output parameter.
 --DESCRIPTION--
-parameterized queries is not supported for Sql_Variant columns, this test, verifies a proper error message is returned  
+Since output param is not supported for sql_variant columns, this test verifies a proper error message is returned  
 --FILE--
 ﻿<?php
 include 'MsCommon.inc';
