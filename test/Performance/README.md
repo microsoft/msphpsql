@@ -1,6 +1,4 @@
-Navigate into Performance folder. 
-
-## Install Composer - Dependency Manager for PHP  
+## 1. Install Composer - Dependency Manager for PHP  
 https://getcomposer.org/
 
 ### Windows
@@ -13,6 +11,30 @@ Download and run Composer-Setup.exe https://getcomposer.org/Composer-Setup.exe
     php composer-setup.php
     php -r "unlink('composer-setup.php');"
     
-## Install PHPBench
+## 2. Install PHPBench
+
+Navigate into Performance folder. Create the following `composer.json` file within it:
+
+    {
+        "name": "Benchmark - PHP Drivers for SQL Server",
+        "require-dev": {
+            "phpbench/phpbench": "^1.0@dev"
+        },
+        "autoload": {
+            "psr-4": {
+                "SqlsrvPerfTest\\": "lib",
+                "PDOSqlsrvPerfTest\\": "lib"
+            }
+        }
+    }
     
-    composer require phpbench/phpbench @dev --dev
+Create `phpbench.json` in the same folder. 
+
+    {
+        "bootstrap": "vendor/autoload.php"
+    }
+
+## 3. Run benchmarks
+
+    ./vendor/bin/phpbench run benchmark/ --time-unit="milliseconds" --report=aggregate
+    
