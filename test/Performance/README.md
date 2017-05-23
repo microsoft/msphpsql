@@ -13,26 +13,7 @@ Download and run Composer-Setup.exe https://getcomposer.org/Composer-Setup.exe
     
 ## 2. Install PHPBench
 
-Navigate into Performance folder. Create the following `composer.json` file within it:
-
-    {
-        "name": "Benchmark - PHP Drivers for SQL Server",
-        "require-dev": {
-            "phpbench/phpbench": "^1.0@dev"
-        },
-        "autoload": {
-            "psr-4": {
-                "SqlsrvPerfTest\\": "lib",
-                "PDOSqlsrvPerfTest\\": "lib"
-            }
-        }
-    }
-    
-Create `phpbench.json` in the same folder. 
-
-    {
-        "bootstrap": "vendor/autoload.php"
-    }
+    composer install
 
 ## 3. Run benchmarks
 
