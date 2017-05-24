@@ -4,14 +4,15 @@ Field metadata unicode
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+include ("MsCommon.inc");
 
 // Connect
-$connectionInfo = array("UID"=>"$username", "PWD"=>"$password", "CharacterSet"=>"UTF-8");
-$conn = sqlsrv_connect($serverName, $connectionInfo) ?: die();
+$conn = Connect(array("CharacterSet"=>"UTF-8"));
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = 'test_srv_034';
 
 // Create table. Column names: passport
 $sql = "CREATE TABLE $tableName (पासपोर्ट CHAR(2), پاسپورٹ VARCHAR(2), Διαβατήριο VARCHAR(MAX))";
@@ -22,13 +23,13 @@ $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_prepare($conn, $sql);
 
 // Get and display field metadata
-foreach(sqlsrv_field_metadata($stmt) as $meta)
-{
-	print_r($meta);
-}
+$metadata = sqlsrv_field_metadata($stmt);
+if ( ! $metadata ) 
+    PrintErrors(); 
+else
+    var_dump($metadata);
 
-// DROP database
-sqlsrv_query($conn,"DROP DATABASE ". $dbName);
+sqlsrv_query($conn, "DROP TABLE $tableName");
 
 // Free statement and connection resources
 sqlsrv_free_stmt($stmt);
@@ -38,31 +39,51 @@ print "Done"
 ?>
 
 --EXPECT--
-Array
-(
-    [Name] => पासपोर्ट
-    [Type] => 1
-    [Size] => 2
-    [Precision] => 
-    [Scale] => 
-    [Nullable] => 1
-)
-Array
-(
-    [Name] => پاسپورٹ
-    [Type] => 12
-    [Size] => 2
-    [Precision] => 
-    [Scale] => 
-    [Nullable] => 1
-)
-Array
-(
-    [Name] => Διαβατήριο
-    [Type] => 12
-    [Size] => 0
-    [Precision] => 
-    [Scale] => 
-    [Nullable] => 1
-)
+array(3) {
+  [0]=>
+  array(6) {
+    ["Name"]=>
+    string(24) "पासपोर्ट"
+    ["Type"]=>
+    int(1)
+    ["Size"]=>
+    int(2)
+    ["Precision"]=>
+    NULL
+    ["Scale"]=>
+    NULL
+    ["Nullable"]=>
+    int(1)
+  }
+  [1]=>
+  array(6) {
+    ["Name"]=>
+    string(14) "پاسپورٹ"
+    ["Type"]=>
+    int(12)
+    ["Size"]=>
+    int(2)
+    ["Precision"]=>
+    NULL
+    ["Scale"]=>
+    NULL
+    ["Nullable"]=>
+    int(1)
+  }
+  [2]=>
+  array(6) {
+    ["Name"]=>
+    string(20) "Διαβατήριο"
+    ["Type"]=>
+    int(12)
+    ["Size"]=>
+    int(0)
+    ["Precision"]=>
+    NULL
+    ["Scale"]=>
+    NULL
+    ["Nullable"]=>
+    int(1)
+  }
+}
 Done

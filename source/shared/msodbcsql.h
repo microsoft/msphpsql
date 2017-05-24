@@ -411,8 +411,8 @@ typedef struct AEKeystoreData
 
 /* The following constants are for the Azure Key Vault configuration interface */
 #define AKV_CONFIG_FLAGS       0
- #define AKVCFG_USECLIENTID    0x00000001
- #define AKVCFG_AUTORENEW      0x00000002
+#define AKVCFG_USECLIENTID    0x00000001
+#define AKVCFG_AUTORENEW      0x00000002
 
 #define AKV_CONFIG_CLIENTID    1
 #define AKV_CONFIG_CLIENTKEY   2

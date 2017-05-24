@@ -1,9 +1,10 @@
 --TEST--
 Number MAX_INT to string with custom formats, see pdo_014. Pooling enabled.
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 $pooling = true;
 
@@ -11,19 +12,17 @@ $pooling = true;
 $sample = 2*(2**30-1)+1;
 
 /* Connect + create a new pool */
-$conn0 = new PDO("sqlsrv:server=$serverName;ConnectionPooling=$pooling", $username, $password);
+$conn0 = new PDO("sqlsrv:server=$server;database=$databaseName;ConnectionPooling=$pooling", $uid, $pwd);
 $conn0->query("select 1");
 $conn0 = null;
 
 /* Connect */
-$conn = new PDO("sqlsrv:server=$serverName;ConnectionPooling=$pooling", $username, $password);
+$conn = new PDO("sqlsrv:server=$server;database=$databaseName;ConnectionPooling=$pooling", $uid, $pwd);
 
-// Create database
-$conn->query("CREATE DATABASE $dbName") ?: die();
-
-// Create table
+// Create a temporary table
+$tableName = '#testFormats';
 $query = "CREATE TABLE $tableName (col1 INT)";
-$stmt = $conn->query($query);
+$stmt = $conn->exec($query);
 
 // Query number with custom format
 $query ="SELECT CAST($sample as varchar) + '.00'";
@@ -39,15 +38,11 @@ $stmt->execute();
 
 // Fetching. Prepare with client buffered cursor
 $query = "SELECT TOP 1 cast(col1 as varchar) + '.00 EUR' FROM $tableName";
-$stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, 
-		PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
+$stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
 $stmt->execute();
 $value = $stmt->fetchColumn();
 var_dump ($value);
 
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
-  
 //Free the statement and connection
 $stmt = null;
 $conn = null;

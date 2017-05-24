@@ -1,17 +1,17 @@
 --TEST--
 testing the quote method with different inputs and then test with a empty query
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function Quote()
 {
-    require("autonomous_setup.php");
+    require("MsSetup.inc");
     
-    $conn = new PDO( "sqlsrv:server=$serverName", $username, $password);
+    $conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
     
     $output1 = $conn->quote("1'2'3'4'5'6'7'8", PDO::PARAM_INT);
     var_dump($output1);
@@ -48,6 +48,7 @@ function Quote()
 function Repro()
 {
     StartTest("pdo_connection_quote");
+    echo "\nStarting test...\n";
     try
     {
         Quote();
@@ -65,10 +66,10 @@ Repro();
 ?>
 --EXPECT--
 
-...Starting 'pdo_connection_quote' test...
+Starting test...
 string(24) "'1''2''3''4''5''6''7''8'"
 string(16) "'{ABCD}''{EFGH}'"
 string(118) "'<XmlTestData><Letters>The quick brown fox jumps over the lazy dog</Letters><Digits>0123456789</Digits></XmlTestData>'"
 
 Done
-...Test 'pdo_connection_quote' completed successfully.
+Test "pdo_connection_quote" completed successfully.

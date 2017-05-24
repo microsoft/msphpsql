@@ -1,20 +1,19 @@
 --TEST--
 test query time out at the connection level and statement level
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function QueryTimeout($connLevel)
 {
-    require("autonomous_setup.php");
+    require("MsSetup.inc");
     
-    $database = "tempdb";
     $tableName = GetTempTableName();
           
-    $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+    $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
     
     $stmt = $conn->exec("CREATE TABLE $tableName ([c1_int] int, [c2_varchar] varchar(25))");
     
@@ -47,9 +46,10 @@ function QueryTimeout($connLevel)
     $conn = null;   
 }
 
-function Repro()
+function RunTest()
 {
     StartTest("pdo_query_timeout");
+    echo "\nStarting test...\n";
     try
     {
         QueryTimeout(true);
@@ -63,12 +63,12 @@ function Repro()
     EndTest("pdo_query_timeout");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
 
-...Starting 'pdo_query_timeout' test...
+Starting test...
 Setting query timeout as an attribute in connection
 array(3) {
   [0]=>
@@ -89,4 +89,4 @@ array(3) {
 }
 
 Done
-...Test 'pdo_query_timeout' completed successfully.
+Test "pdo_query_timeout" completed successfully.

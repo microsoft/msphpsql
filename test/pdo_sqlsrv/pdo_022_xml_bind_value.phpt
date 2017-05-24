@@ -1,20 +1,19 @@
 --TEST--
 Unicode XML message using bindValue()
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 // Connect
-$conn = new PDO("sqlsrv:server=$serverName;", $username, $password);
+$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// Create database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
-
-// Create table
+// Create a temporary table
+$tableName = '#testXMLBindValue';
 $sql = "CREATE TABLE $tableName (ID INT PRIMARY KEY NOT NULL IDENTITY, XMLMessage XML)";
-$stmt = $conn->query($sql);
+$stmt = $conn->exec($sql);
 
 // XML samples
 $xml1 = '<?xml version="1.0" encoding="UTF-16"?>
@@ -35,7 +34,7 @@ try
     $stmt = $conn->prepare("INSERT INTO $tableName (XMLMessage) VALUES (:msg)");
     $stmt->bindValue(':msg', $xml1);
     $stmt->execute();
-	
+
     $stmt = $conn->prepare("INSERT INTO $tableName (XMLMessage) VALUES (?)");
     $stmt->bindValue(1, $xml2);
     $stmt->execute();
@@ -48,10 +47,7 @@ catch (PDOException $ex) {
 $stmt = $conn->query("select * from $tableName");
 $row = $stmt->fetchAll(PDO::FETCH_ASSOC);  
 var_dump($row);  
-  
-// Drop database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
-
+ 
 // Close connection
 $stmt=null;
 $conn=null;

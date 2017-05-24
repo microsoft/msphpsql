@@ -2,7 +2,7 @@
 Test calling sqlsrv_get_field twice in a row. Intentionally trigger various error messages.
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function FetchFieldTwice($conn)
 {
@@ -38,26 +38,24 @@ function FetchFieldTwice($conn)
     {        
         for ($i = -1; $i <= $numFields; $i++)
         {
-            FetchField($stmt, $i, $metadata, false);
-            FetchField($stmt, $i, $metadata, true);
+            FetchField($stmt, $i, $numFields, false);
+            FetchField($stmt, $i, $numFields, true);
         }
     }
     
     sqlsrv_free_stmt($stmt);       
 }
 
-function FetchField($stmt, $idx, $metadata, $errorExpected)
+function FetchField($stmt, $idx, $numFields, $errorExpected)
 {   
-    if ($idx < 0 || $idx >= count($metadata))
+    if ($idx < 0 || $idx >= $numFields)
     {
         $value1 = sqlsrv_get_field($stmt, $idx);          
-        PrintError(true);   // errors expected because the idx is out of bound
+        PrintError(true);   // errors expected because $idx is out of bound
     }
     else
     {
-        $colType = $metadata[$idx]['Type'];
-
-        if (IsDateTime($colType))
+        if ($idx == 3)    
         {
             $value1 = sqlsrv_get_field($stmt, $idx, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));                
         }
@@ -93,11 +91,10 @@ function Repro()
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
 
-        require_once("autonomous_setup.php");
+        echo "\nTest begins...\n";
         
         // Connect
-        $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect();
         if( !$conn ) { FatalError("Could not connect.\n"); }
       
         FetchFieldTwice($conn);
@@ -117,7 +114,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_fetch_field_twice_data_types' test...
+Test begins...
 string(79) "A statement must be prepared with sqlsrv_prepare before calling sqlsrv_execute."
 string(63) "The statement must be executed before results can be retrieved."
 string(52) "An invalid parameter was passed to sqlsrv_get_field."
@@ -138,4 +135,4 @@ string(52) "An invalid parameter was passed to sqlsrv_get_field."
 string(52) "An invalid parameter was passed to sqlsrv_get_field."
 
 Done
-...Test 'sqlsrv_fetch_field_twice_data_types' completed successfully.
+Test "sqlsrv_fetch_field_twice_data_types" completed successfully.

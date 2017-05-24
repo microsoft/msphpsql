@@ -1,21 +1,20 @@
 --TEST--
 GitHub Issue #35 binary encoding error when binding by name
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 function test()
 {
-    require_once("autonomous_setup.php");
+    require_once("MsSetup.inc");
 
     // Connect
-    $dbName = "tempdb";
-    $conn = new PDO( "sqlsrv:server=$serverName ; database=$dbName", $username, $password);
+    $conn = new PDO( "sqlsrv:server=$server ; database=$databaseName", $uid, $pwd);
 
     // Create a temp table
-    $number = rand(0,1000);
-    $tableName = "testTableIssue35" . "_" . $number;
+    $tableName = "#testTableIssue35";
     $sql = "CREATE TABLE $tableName (Value varbinary(max))";
-    $stmt = $conn->query($sql);
+    $stmt = $conn->exec($sql);
 
     // Insert data using bind parameters
     $sql = "INSERT INTO $tableName VALUES (?)";
@@ -33,8 +32,6 @@ function test()
     $stmt->execute();
     $stmt->fetch(PDO::FETCH_BOUND);  
     var_dump($val1 === $value);
-
-    $stmt = $conn->query("DROP TABLE $tableName"); 
         
     // Close connection
     $stmt = null;

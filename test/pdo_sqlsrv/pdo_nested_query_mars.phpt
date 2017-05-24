@@ -1,20 +1,19 @@
 --TEST--
 fetch multiple result sets with MARS on and then off
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function NestedQuery_Mars($on)
 {
-    require("autonomous_setup.php");
+    require("MsSetup.inc");
     
-    $database = "tempdb";
     $tableName = GetTempTableName();
           
-    $conn = new PDO( "sqlsrv:server=$serverName;Database=$database;MultipleActiveResultSets=$on", $username, $password);
+    $conn = new PDO( "sqlsrv:server=$server;database=$databaseName;MultipleActiveResultSets=$on", $uid, $pwd);
     $conn->SetAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     $stmt = $conn->exec("CREATE TABLE $tableName ([c1_int] int, [c2_varchar] varchar(20))");
@@ -56,9 +55,10 @@ function NestedQuery_Mars($on)
     $conn = null;   
 }
 
-function Repro()
+function RunTest()
 {
     StartTest("pdo_nested_query_mars");
+    echo "\nStarting test...\n";
     try
     {
         NestedQuery_Mars(true);
@@ -72,12 +72,12 @@ function Repro()
     EndTest("pdo_nested_query_mars");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
 
-...Starting 'pdo_nested_query_mars' test...
+Starting test...
 
 Number of columns in First set: 2
 Array
@@ -105,4 +105,4 @@ stdClass Object
 )
 SQLSTATE[IMSSP]: The connection cannot process this operation because there is a statement with pending results.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.
 Done
-...Test 'pdo_nested_query_mars' completed successfully.
+Test "pdo_nested_query_mars" completed successfully.

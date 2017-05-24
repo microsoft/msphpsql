@@ -9,10 +9,9 @@ steps to reproduce the issue:
 4 - call sp.
 --FILE--
 <?php
-require_once("tools.inc");
-require_once("autonomous_setup.php");
+require_once("MsCommon.inc");
 
-$conn = sqlsrv_connect($serverName, $connectionInfo);
+$conn = Connect(); 
 if( $conn === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }

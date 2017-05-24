@@ -2,9 +2,9 @@
 Test client info by calling PDO::getAttribute with PDO::ATTR_CLIENT_VERSION 
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
-$conn = new PDO( "sqlsrv:server=$serverName", "$username", "$password" );
+$conn = new PDO( "sqlsrv:server=$server", "$uid", "$pwd" );
 
 // An example using PDO::ATTR_CLIENT_VERSION
 print_r($conn->getAttribute( PDO::ATTR_CLIENT_VERSION ));

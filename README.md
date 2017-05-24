@@ -205,7 +205,7 @@ The following instructions assume a clean environment and show how to install PH
 	
 **Mac OS X**
 
-	brew tap microsoft/mssql-preview https://github.com/Microsoft/homebrew-mssql-preview
+	brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
 	brew update
 	brew install msodbcsql
 	brew install mssql-tools

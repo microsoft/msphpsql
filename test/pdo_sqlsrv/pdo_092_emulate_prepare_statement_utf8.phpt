@@ -1,17 +1,16 @@
 --TEST--
 Test emulate prepare utf8 encoding set at the statement level
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
-
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 $pdo_options = [];
 $pdo_options[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
 $pdo_options[PDO::SQLSRV_ATTR_ENCODING] = PDO::SQLSRV_ENCODING_UTF8;
-$database = "tempdb";
 
-$connection = new \PDO("sqlsrv:server=$serverName;Database=$database",  $username, $password, $pdo_options);
+$connection = new PDO("sqlsrv:server=$server;Database=$databaseName",  $uid, $pwd, $pdo_options);
 
 $pdo_options = array();
 $pdo_options[PDO::ATTR_EMULATE_PREPARES] = TRUE;

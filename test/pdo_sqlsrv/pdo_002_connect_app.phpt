@@ -1,14 +1,15 @@
 --TEST--
 Connection option APP name unicode
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 $appName = "APP_PoP_银河";
 
 // Connect
-$conn = new PDO("sqlsrv:server=$serverName;APP=$appName","$username","$password");
+$conn = new PDO("sqlsrv:server=$server;APP=$appName","$uid","$pwd");
 
 // Query and Fetch
 $query = "SELECT APP_NAME()";

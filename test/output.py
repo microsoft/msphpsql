@@ -49,11 +49,15 @@ def readAndPrint(inputStr, file, path):
 def TestFilename(line):
     terminateChar = os.sep
     currentPos = 0
+    firstpos = len(line) * -1
     while True:
         currentPos = currentPos - 1
+        # if passed the first pos, stop
+        if currentPos < firstpos: 
+            break
         line[currentPos]
         if line[currentPos] == terminateChar:
-            break
+            break         
     file = line[currentPos+1:-1]
     return file
 

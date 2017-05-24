@@ -2,19 +2,15 @@
 Test insertion with floats
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function ExecData($withParams)
 {
-    include 'autonomous_setup.php';
-       
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
     
     // Connect
-    $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect();
     if( !$conn ) { FatalError("Could not connect.\n"); }
 
     $tableName = GetTempTableName();
@@ -67,6 +63,9 @@ function ExecData($withParams)
     
     $idx = 0;
     $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName");  
+    
+    $epsilon = 0.00001;
+
     while ($result = sqlsrv_fetch($stmt))
     {
         for ($i = 0; $i < 2; $i++) 
@@ -75,7 +74,7 @@ function ExecData($withParams)
 
             $expected = $values[$idx++];
             $diff = abs(($value - $expected) / $expected);
-            if ($diff > _EPSILON)
+            if ($diff > $epsilon)
             {
                 echo "Value $value is unexpected\n";                
             }
@@ -88,6 +87,8 @@ function ExecData($withParams)
 function Repro()
 {
     StartTest("sqlsrv_statement_exec_param_floats");
+    echo "\nTest begins...\n";
+    
     try
     {
         ExecData(true);
@@ -106,7 +107,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_statement_exec_param_floats' test...
+Test begins...
 
 Done
-...Test 'sqlsrv_statement_exec_param_floats' completed successfully.
+Test "sqlsrv_statement_exec_param_floats" completed successfully.

@@ -1,48 +1,44 @@
 --TEST--
 Number of rows in a result set
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
-$conn = new PDO( "sqlsrv:server=$serverName", "$username", "$password" );
-
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", "$uid", "$pwd" );
 
 // Create table
-$stmt = $conn->query("CREATE TABLE ".$tableName." (c1 VARCHAR(32))");
+$tableName = '#tmpTable1';
+$stmt = $conn->exec("CREATE TABLE $tableName (c1 VARCHAR(32))");
 $stmt=null;
 
 // Insert data
-$query = "INSERT INTO ".$tableName." VALUES ('Salmon'),('Butterfish'),('Cod'),('NULL'),('Crab')";
+$query = "INSERT INTO $tableName VALUES ('Salmon'),('Butterfish'),('Cod'),('NULL'),('Crab')";
 $stmt = $conn->query($query);
 $res[] = $stmt->rowCount();
 
 // Update data
-$query = "UPDATE ".$tableName." SET c1='Salmon' WHERE c1='Cod'";
+$query = "UPDATE $tableName SET c1='Salmon' WHERE c1='Cod'";
 $stmt = $conn->query($query);
 $res[] = $stmt->rowCount();
 
 // Update data
-$query = "UPDATE ".$tableName." SET c1='Salmon' WHERE c1='NULL'";
+$query = "UPDATE $tableName SET c1='Salmon' WHERE c1='NULL'";
 $stmt = $conn->query($query);
 $res[] = $stmt->rowCount();
 
 // Update data
-$query = "UPDATE ".$tableName." SET c1='Salmon' WHERE c1='NO_NAME'";
+$query = "UPDATE $tableName SET c1='Salmon' WHERE c1='NO_NAME'";
 $stmt = $conn->query($query);
 $res[] = $stmt->rowCount();
 
 // Update data
-$query = "UPDATE ".$tableName." SET c1='N/A'";
+$query = "UPDATE $tableName SET c1='N/A'";
 $stmt = $conn->query($query);
 $res[] = $stmt->rowCount();
 
 print_r($res);
-
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
 
 $stmt=null;
 $conn=null;

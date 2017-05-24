@@ -1,19 +1,18 @@
 --TEST--
 Moves the cursor to the next result set
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 /* Connect */
-$conn = new PDO("sqlsrv:server=$serverName", $username, $password);
-
-// CREATE database
-$conn->query("CREATE DATABASE ". $dbName) ?: die();
+$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 
 // Create table
+$tableName = '#testResultSet';
 $sql = "CREATE TABLE $tableName (c1 INT, c2 VARCHAR(40))";
-$stmt = $conn->query($sql);
+$stmt = $conn->exec($sql);
 
 // Insert data using bind parameters
 $sql = "INSERT INTO $tableName VALUES (?,?)";
@@ -40,9 +39,6 @@ echo $a['c1'] . "|" . $a['c2'] . "\n";
 // Array: FETCH_NUM
 foreach ($data2 as $a)
 echo $a[0] . "|" . $a[1] . "\n";
-
-// DROP database
-$conn->query("DROP DATABASE ". $dbName) ?: die();
 
 // Close connection
 $stmt = null;

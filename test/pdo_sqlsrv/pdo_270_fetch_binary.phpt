@@ -3,17 +3,18 @@ Test fetch from binary, varbinary, varbinary(max), image columns, without settin
 --DESCRIPTION--
 Verifies GitHub issue 270 is fixed, users could not retrieve the data as inserted in binary columns without setting the binary encoding either on stmt or using bindCoulmn encoding.
 This test verifies that the data inserted in binary columns can be retrieved using fetch, fetchColumn, fetchObject, and fetchAll functions.
-
+--SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 $tableName = 'test_binary'.rand();
 $columns = array( 'col1', 'col2', 'col3', 'col4');
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$serverName;Database=tempdb", $username, $password );
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd );
 
 $sql = "CREATE TABLE $tableName ( $columns[0] binary(50), $columns[1] VARBINARY(50), $columns[2] VARBINARY(MAX), $columns[3] image)";
 $conn->exec($sql);
@@ -31,7 +32,7 @@ $stmt->execute();
 
 // loop through each column in the table
 foreach ($columns as $col){
-	test_fetch($conn, $tableName, $col, $icon);
+    test_fetch($conn, $tableName, $col, $icon);
 }
 // DROP table
 $conn->query("DROP TABLE $tableName") ?: die();
@@ -44,47 +45,47 @@ print_r("Test finished successfully");
 
 //calls various fetch methods
 function test_fetch($conn, $tableName, $columnName, $input){
-	
-	$len = strlen($input);
-	$result = "";
-	$sql = "SELECT $columnName from $tableName";
-	
-	$stmt = $conn->query($sql);  
-	$stmt->bindColumn(1, $result, PDO::PARAM_LOB);
-	$stmt->fetch(PDO::FETCH_BOUND);
-	//binary is fixed size, to evaluate output, compare it using strncmp
-	if( strncmp($result, $input, $len) !== 0){
-		print_r("\nRetrieving using bindColumn failed");
-	}
+    
+    $len = strlen($input);
+    $result = "";
+    $sql = "SELECT $columnName from $tableName";
+    
+    $stmt = $conn->query($sql);  
+    $stmt->bindColumn(1, $result, PDO::PARAM_LOB);
+    $stmt->fetch(PDO::FETCH_BOUND);
+    //binary is fixed size, to evaluate output, compare it using strncmp
+    if( strncmp($result, $input, $len) !== 0){
+        print_r("\nRetrieving using bindColumn failed");
+    }
 
-	$result = "";
-	$stmt = $conn->query($sql);      
-	$stmt->bindColumn(1, $result, PDO::PARAM_LOB, 0 , PDO::SQLSRV_ENCODING_BINARY);
-	$stmt->fetch(PDO::FETCH_BOUND);
-	if( strncmp($result, $input, $len) !== 0){
-		print_r("\nRetrieving using bindColumn with encoding set failed");
-	}
+    $result = "";
+    $stmt = $conn->query($sql);      
+    $stmt->bindColumn(1, $result, PDO::PARAM_LOB, 0 , PDO::SQLSRV_ENCODING_BINARY);
+    $stmt->fetch(PDO::FETCH_BOUND);
+    if( strncmp($result, $input, $len) !== 0){
+        print_r("\nRetrieving using bindColumn with encoding set failed");
+    }
 
-	$result = "";
-	$stmt = $conn->query($sql);  
-	$result = $stmt->fetchColumn();
-	if( strncmp($result, $input, $len) !== 0){
-		print_r("\nRetrieving using fetchColumn failed");
-	}
+    $result = "";
+    $stmt = $conn->query($sql);  
+    $result = $stmt->fetchColumn();
+    if( strncmp($result, $input, $len) !== 0){
+        print_r("\nRetrieving using fetchColumn failed");
+    }
 
-	$result = "";
-	$stmt = $conn->query($sql);  
-	$result = $stmt->fetchObject();
-	if( strncmp($result->$columnName, $input, $len) !== 0){
-		print_r("\nRetrieving using fetchObject failed");
-	}
+    $result = "";
+    $stmt = $conn->query($sql);  
+    $result = $stmt->fetchObject();
+    if( strncmp($result->$columnName, $input, $len) !== 0){
+        print_r("\nRetrieving using fetchObject failed");
+    }
 
-	$result = "";
-	$stmt = $conn->query($sql);  
-	$result = $stmt->fetchAll( PDO::FETCH_COLUMN );
-	if( strncmp($result[0], $input, $len) !== 0){
-		print_r("\nRetrieving using fetchAll failed");
-	}
+    $result = "";
+    $stmt = $conn->query($sql);  
+    $result = $stmt->fetchAll( PDO::FETCH_COLUMN );
+    if( strncmp($result[0], $input, $len) !== 0){
+        print_r("\nRetrieving using fetchAll failed");
+    }
 }
 
 ?>

@@ -2,19 +2,15 @@
 Test a complex query with IDENTITY_INSERT
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function ComplexQuery()
 {
-    require_once("autonomous_setup.php");
-       
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
     
     // Connect
-    $connectionInfo = array("UID"=>$username, "PWD"=>$password, "CharacterSet"=>"UTF-8");
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect(array("CharacterSet"=>"UTF-8"));
     if( !$conn ) { FatalError("Could not connect.\n"); }
 
     $tableName = GetTempTableName();
@@ -75,6 +71,8 @@ function ComplexQuery()
 function Repro()
 {
     StartTest("sqlsrv_statement_complex_query");
+    echo "\nTest begins...\n";
+
     try
     {
         ComplexQuery();
@@ -90,14 +88,14 @@ function Repro()
 Repro();
 
 ?>
---EXPECTF--
+--EXPECTREGEX--
 ﻿
-...Starting 'sqlsrv_statement_complex_query' test...
-[Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Cannot insert explicit value for identity column in table '%s' when IDENTITY_INSERT is set to OFF.
+Test begins...
+\[Microsoft\]\[ODBC Driver 13 for SQL Server\]\[SQL Server\]Cannot insert explicit value for identity column in table '.+' when IDENTITY_INSERT is set to OFF.
 544
 23000
 Number of rows inserted: 2
 Number of rows fetched: 2
 
 Done
-...Test 'sqlsrv_statement_complex_query' completed successfully.
+Test "sqlsrv_statement_complex_query" completed successfully.

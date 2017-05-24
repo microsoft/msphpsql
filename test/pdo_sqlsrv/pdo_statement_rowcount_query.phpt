@@ -1,20 +1,18 @@
 --TEST--
 test rowCount() with different querying method and test nextRowset() with different fetch
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function RowCount_Query($exec)
 {
-    require("autonomous_setup.php");
+    require("MsSetup.inc");
     
-    $database = "tempdb";
-    $tableName = GetTempTableName();
+    $tableName = GetTempTableName('testRowCount');
           
-    $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+    $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
     
     $stmt = $conn->exec("CREATE TABLE $tableName ([c1_int] int, [c2_real] real)");
     
@@ -154,9 +152,10 @@ function DeleteData($conn, $tableName, $exec)
     $stmt = null;
 }
 
-function Repro()
+function RunTest()
 {
     StartTest("pdo_statement_rowcount_query");
+    echo "\nStarting test...\n";
     try
     {
         RowCount_Query(true);
@@ -170,12 +169,12 @@ function Repro()
     EndTest("pdo_statement_rowcount_query");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
 
-...Starting 'pdo_statement_rowcount_query' test...
+Starting test...
 
 Done
-...Test 'pdo_statement_rowcount_query' completed successfully.
+Test "pdo_statement_rowcount_query" completed successfully.

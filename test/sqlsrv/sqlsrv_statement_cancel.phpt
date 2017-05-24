@@ -2,19 +2,15 @@
 Call sqlsrv_cancel and then sqlsrv_fetch
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function Cancel()
 {
-    require_once("autonomous_setup.php");
-
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
     
     // Connect
-    $connectionInfo = array("UID"=>$username, "PWD"=>$password, "CharacterSet"=>"UTF-8");
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect(array("CharacterSet"=>"UTF-8"));
     if( !$conn ) { FatalError("Could not connect.\n"); }
 
     $tableName = GetTempTableName();
@@ -79,6 +75,7 @@ function GetQuery($tableName, $index)
 function Repro()
 {
     StartTest("sqlsrv_statement_cancel");
+    echo "\nTest begins...\n";
     try
     {
         Cancel();
@@ -96,10 +93,10 @@ Repro();
 ?>
 --EXPECTREGEX--
 ﻿
-...Starting 'sqlsrv_statement_cancel' test...
+Test begins...
 \[Microsoft\](\[ODBC Driver 13 for SQL Server\]|\[ODBC Driver Manager\])([ ]{0,1}Function sequence error)
 0
 (HY010)
 
 Done
-...Test 'sqlsrv_statement_cancel' completed successfully.
+Test "sqlsrv_statement_cancel" completed successfully.

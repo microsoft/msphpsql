@@ -2,7 +2,7 @@
 Test various Katmai types, like geography, geometry, hierarchy, sparse, etc. and fetch them back as strings
 --FILE--
 ﻿﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function Katmai_Basic_Types($conn)
 {
@@ -122,17 +122,14 @@ function Katmai_SparseNumeric($conn)
 function RunTest()
 {
     StartTest("sqlsrv_katmai_special_types");
+    echo "\nTest begins...\n";
     try
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
 
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
         // Connect
-        $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect();
         if( !$conn ) { FatalError("Could not connect.\n"); }
                      
         Katmai_Basic_Types($conn);
@@ -154,7 +151,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'sqlsrv_katmai_special_types' test...
+Test begins...
 
 Showing results of Katmai basic fields
 string(44) "E6100000010C3333333333134A406666666666661A40"
@@ -176,4 +173,4 @@ string(6) "1.0000"
 string(6) "1.0000"
 
 Done
-...Test 'sqlsrv_katmai_special_types' completed successfully.
+Test "sqlsrv_katmai_special_types" completed successfully.

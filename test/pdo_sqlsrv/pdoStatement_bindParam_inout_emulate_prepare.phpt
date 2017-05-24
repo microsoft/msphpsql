@@ -1,13 +1,13 @@
 --TEST--
 Tests error returned when binding input/output parameter with emulate prepare
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
-$database = 'tempdb';
-$dsn = "sqlsrv:Server=$serverName ; Database = $database";
+require_once("MsSetup.inc");
+$dsn = "sqlsrv:Server=$server ; Database = $databaseName";
 try {
-    $dbh = new PDO($dsn, $username, $password);
+    $dbh = new PDO($dsn, $uid, $pwd);
     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $dbh->query("IF OBJECT_ID('sp_ReverseString', 'P') IS NOT NULL DROP PROCEDURE sp_ReverseString");
