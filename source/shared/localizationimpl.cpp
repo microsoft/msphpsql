@@ -5,7 +5,7 @@
 //           Must be included in one c/cpp file per binary
 //           A build error will occur if this inclusion policy is not followed
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
