@@ -51,7 +51,7 @@ elif [ $PLATFORM = "Sierra" ]; then
     yes | /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" >> env_setup.log 2>&1
     echo "OK"
     echo "Installing wget..."
-    #brew install wget >> env_setup.log 2>&1
+    brew install wget >> env_setup.log 2>&1
     echo "OK"
     
     echo "Installing openssl..."
