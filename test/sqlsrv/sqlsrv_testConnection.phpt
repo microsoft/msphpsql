@@ -298,7 +298,6 @@ Array
     \[2\] => .*Changed database context to '.*'.
     \[message\] => .*Changed database context to '.*'.
 \)
-
 Array
 \(
     \[0\] => 01000
@@ -307,8 +306,6 @@ Array
     \[code\] => 5703
     \[2\] => .*Changed language setting to us_english.
     \[message\] => .*Changed language setting to us_english.
-\)
-
 \)
 Test sqlsrv_connect with all options and integrated auth
 Array
@@ -320,7 +317,6 @@ Array
     \[2\] => .*Changed database context to '.*'.
     \[message\] => .*Changed database context to '.*'.
 \)
-
 Array
 \(
     \[0\] => 01000
@@ -331,4 +327,3 @@ Array
     \[message\] => .*Changed language setting to us_english.
 \)
 Test succeeded.
-?>
