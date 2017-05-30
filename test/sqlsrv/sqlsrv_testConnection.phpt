@@ -8,6 +8,7 @@ variety of connection parameters.
     require 'MsSetup.inc';
     
     function connect($options=array()) {
+        require 'MsSetup.inc';
         if (!isset($options['UID']) && !isset($options['uid'])) {
             $options['uid'] = $uid;
         }

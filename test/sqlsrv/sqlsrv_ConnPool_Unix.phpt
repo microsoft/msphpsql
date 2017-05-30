@@ -14,7 +14,7 @@ $lines = explode("\n", shell_exec("odbcinst -j"));
 $odbcinst_ini = explode(" ", $lines[1])[1];
 
 //back up the odbcinst.ini file
-shell_exec("cp $odbcinst_ini $odbcinst_ini.bak")
+shell_exec("cp $odbcinst_ini $odbcinst_ini.bak");
 
 //enable pooling by modifying the odbcinst.ini file
 $current = file_get_contents($odbcinst_ini);
