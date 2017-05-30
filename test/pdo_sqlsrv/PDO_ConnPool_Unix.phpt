@@ -13,6 +13,9 @@ $lines_to_add="CPTimeout=5\n[ODBC]\nPooling=Yes\n";
 $lines = explode("\n", shell_exec("odbcinst -j"));
 $odbcinst_ini = explode(" ", $lines[1])[1];
 
+//back up the odbcinst.ini file
+shell_exec("cp $odbcinst_ini $odbcinst_ini.bak")
+
 //enable pooling by modifying the odbcinst.ini file
 $current = file_get_contents($odbcinst_ini);
 $current.=$lines_to_add;
@@ -28,8 +31,14 @@ file_put_contents($odbcinst_ini, $current);
 
 print_r(shell_exec("php ./test/pdo_sqlsrv/isPooled.php"));
 ?>
+--CLEAN--
+<?php
+$lines = explode("\n", shell_exec("odbcinst -j"));
+$odbcinst_ini = explode(" ", $lines[1])[1];
+shell_exec("cp /etc/odbcinst.ini.bak $odbcinst_ini");
+shell_exec("rm /etc/odbcinst.ini.bak");
+?>
 --EXPECT--
 Pooled
 Not Pooled
-
 

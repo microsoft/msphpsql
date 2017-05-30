@@ -23,7 +23,7 @@ sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
 sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
 
 // test an invalid encoding
-$c = connect(array( 'CharacterSet' => 'jibberish' ));
+$c = connect(array( 'CharacterSet' => 'gibberish' ));
 if( $c !== false ) {
     FatalError( "Should have errored on an invalid encoding." );
 }
@@ -88,7 +88,7 @@ Array
             [SQLSTATE] => IMSSP
             [1] => -48
             [code] => -48
-            [2] => The encoding 'jibberish' is not a supported encoding for the CharacterSet connection option.
+            [2] => The encoding 'gibberish' is not a supported encoding for the CharacterSet connection option.
             [message] => The encoding 'jibberish' is not a supported encoding for the CharacterSet connection option.
         )
 

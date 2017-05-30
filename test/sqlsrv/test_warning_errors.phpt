@@ -1,7 +1,7 @@
 --TEST--
 warnings as errors
 --SKIPIF--
-<?php require('skipif_unix.inc'); ?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
@@ -14,8 +14,15 @@ $conn = Connect();
 if( $conn === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
+
+// Should print connection warnings and not die
+// Outputting the first two elements works around a bug in unixODBC that
+// duplicates error messages and would otherwise cause the test to fail because
+// of the extra output
 echo "Warnings from sqlsrv_connect:\n";
-print_r( sqlsrv_errors(SQLSRV_ERR_WARNINGS) ); // should print connection warnings and not die
+print_r( sqlsrv_errors(SQLSRV_ERR_WARNINGS)[0] );
+print_r( sqlsrv_errors(SQLSRV_ERR_WARNINGS)[1] ); 
+
 echo "Errors from sqlsrv_connect:\n";
 print_r( sqlsrv_errors(SQLSRV_ERR_ERRORS) );
 $v1 = 1;
@@ -34,8 +41,10 @@ if( $stmt === false ) {
     echo "Errors from sqlsrv_query with WarningsReturnAsErrors = true:\n";
     print_r( sqlsrv_errors(SQLSRV_ERR_ERRORS) );     // should be 1 warning of '3'
 }
+
 echo "Warnings from sqlsrv_query with WarningsReturnAsErrors = true:\n";
 print_r( sqlsrv_errors(SQLSRV_ERR_WARNINGS) );   // should be nothing
+
 echo "Output:\n$v3\n";
 
 sqlsrv_configure( 'WarningsReturnAsErrors', false );
@@ -44,8 +53,10 @@ if( $stmt === false ) {
     echo "Errors from sqlsrv_query with WarningsReturnAsErrors = false:\n";
     die( print_r( sqlsrv_errors() ));
 }
+
 echo "Warnings from sqlsrv_query with WarningsReturnAsErrors = false:\n";
 print_r( sqlsrv_errors() );
+
 echo "Output:\n$v3\n";
 
 sqlsrv_close( $conn );
@@ -57,26 +68,21 @@ print "Test successful";
 Warnings from sqlsrv_connect:
 Array
 (
-    [0] => Array
-        (
-            [0] => 01000
-            [SQLSTATE] => 01000
-            [1] => 5701
-            [code] => 5701
-            [2] => %SChanged database context to '%S'.
-            [message] => %SChanged database context to '%S'.
-        )
-
-    [1] => Array
-        (
-            [0] => 01000
-            [SQLSTATE] => 01000
-            [1] => 5703
-            [code] => 5703
-            [2] => %SChanged language setting to us_english.
-            [message] => %SChanged language setting to us_english.
-        )
-
+    [0] => 01000
+    [SQLSTATE] => 01000
+    [1] => 5701
+    [code] => 5701
+    [2] => %SChanged database context to '%S'.
+    [message] => %SChanged database context to '%S'.
+)
+Array
+(
+    [0] => 01000
+    [SQLSTATE] => 01000
+    [1] => 5703
+    [code] => 5703
+    [2] => %SChanged language setting to us_english.
+    [message] => %SChanged language setting to us_english.
 )
 Errors from sqlsrv_connect:
 Errors from raiserror

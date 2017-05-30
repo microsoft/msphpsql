@@ -1,7 +1,7 @@
 --TEST--
 warnings as errors
 --SKIPIF--
-<?php require('skipif_unix.inc'); ?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
@@ -50,7 +50,10 @@ $result = sqlsrv_rows_affected( $stmt );
 if( $result !== false ) {
     die( "sqlsrv_rows_affected should have failed because it wasn't yet executed." );
 }
-print_r( sqlsrv_errors() );
+// Outputting the zero element of the error array works around a bug in the
+// ODBC driver for Linux that produces an error message saying 'Cancel treated
+// as FreeStmt/Close' on a statement that has not been executed.
+print_r( sqlsrv_errors()[0] );
 
 sqlsrv_execute( $stmt );
 
@@ -146,15 +149,11 @@ Array
 )
 Array
 (
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -11
-            [code] => -11
-            [2] => The statement must be executed before results can be retrieved.
-            [message] => The statement must be executed before results can be retrieved.
-        )
-
+    [0] => IMSSP
+    [SQLSTATE] => IMSSP
+    [1] => -11
+    [code] => -11
+    [2] => The statement must be executed before results can be retrieved.
+    [message] => The statement must be executed before results can be retrieved.
 )
 Test successful
