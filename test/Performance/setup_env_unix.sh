@@ -53,7 +53,9 @@ elif [ $PLATFORM = "Sierra" ]; then
     echo "Installing wget..."
     brew install wget >> env_setup.log 2>&1
     echo "OK"
-    
+    echo "Installing svn..."
+    brew install svn >> env_setup.log 2>&1
+    echo "OK"
     echo "Installing openssl..."
     brew install pkg-config >> env_setup.log 2>&1
     brew install openssl >> env_setup.log 2>&1
