@@ -5,8 +5,9 @@ variety of connection parameters.
 --FILE--
 <?php
 
+    require 'MsSetup.inc';
+    
     function connect($options=array()) {
-        require 'MsSetup.inc';
         if (!isset($options['UID']) && !isset($options['uid'])) {
             $options['uid'] = $uid;
         }

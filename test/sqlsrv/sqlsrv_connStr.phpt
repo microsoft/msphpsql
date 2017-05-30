@@ -89,7 +89,7 @@ Array
             [1] => -48
             [code] => -48
             [2] => The encoding 'gibberish' is not a supported encoding for the CharacterSet connection option.
-            [message] => The encoding 'jibberish' is not a supported encoding for the CharacterSet connection option.
+            [message] => The encoding 'gibberish' is not a supported encoding for the CharacterSet connection option.
         )
 
 )
