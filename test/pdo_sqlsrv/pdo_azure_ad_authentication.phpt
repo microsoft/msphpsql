@@ -33,7 +33,8 @@ else
 
 $conn = null;
 
-////////////////////////////////////////
+// Test Azure AD with integrated authentication. This should fail because
+// we don't support it.
 
 $connectionInfo = "Authentication = ActiveDirectoryIntegrated; TrustServerCertificate = true;";
 
@@ -50,6 +51,34 @@ catch( PDOException $e )
     echo "\n";
 }
 
+// Test Azure AD on an Azure database instance. Replace $azureServer, etc with
+// your credentials to test, or this part is skipped.
+
+$azureServer = 'myServer';
+$azureDatabase = 'myDatabase';
+$azureUsername = 'myUsername';
+$azurePassword = 'myPassword';
+
+if ($azureServer != 'myServer')
+{
+    $connectionInfo = "Authentication = ActiveDirectoryPassword; TrustServerCertificate = false";
+
+    try
+    {
+        $conn = new PDO( "sqlsrv:server = $azureServer ; $connectionInfo", $azureUsername, $azurePassword );
+        echo "Connected successfully with Authentication=ActiveDirectoryPassword.\n";
+    }
+    catch( PDOException $e )
+    {
+        echo "Could not connect with ActiveDirectoryPassword.\n";
+        print_r( $e->getMessage() );
+        echo "\n";
+    }
+}
+else
+{
+    echo "Not testing with Authentication=ActiveDirectoryPassword.\n";
+}
 ?>
 --EXPECT--
 Connected successfully with Authentication=SqlPassword.
@@ -61,3 +90,4 @@ array(2) {
 }
 Could not connect with Authentication=ActiveDirectoryIntegrated.
 SQLSTATE[IMSSP]: Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.
+%s with Authentication=ActiveDirectoryPassword.

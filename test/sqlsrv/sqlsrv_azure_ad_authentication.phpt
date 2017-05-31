@@ -1,10 +1,12 @@
 --TEST--
-Test the Authentication keyword with options SqlPassword and ActiveDirectoryIntegrated.
+Test the Authentication keyword and three options: SqlPassword, ActiveDirectoryIntegrated, and ActiveDirectoryPassword.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");
+
+// Test Azure AD with Authentication=SqlPassword.
 
 $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
                          "Authentication"=>'SqlPassword', "TrustServerCertificate"=>true);
@@ -35,7 +37,9 @@ else
 sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );
 
-////////////////////////////////////////
+
+// Test Azure AD with integrated authentication. This should fail because
+// we don't support it.
 
 $connectionInfo = array( "Authentication"=>"ActiveDirectoryIntegrated", "TrustServerCertificate"=>true );
 
@@ -52,8 +56,37 @@ else
     sqlsrv_close( $conn );
 }
 
+// Test Azure AD on an Azure database instance. Replace $azureServer, etc with
+// your credentials to test, or this part is skipped.
+
+$azureServer = 'myServer';
+$azureDatabase = 'myDatabase';
+$azureUsername = 'myUsername';
+$azurePassword = 'myPassword';
+
+if ($azureServer != 'myServer')
+{
+    $connectionInfo = array( "UID"=>$azureUsername, "PWD"=>$azurePassword, 
+                         "Authentication"=>'ActiveDirectoryPassword',  "TrustServerCertificate"=>true );
+
+    $conn = sqlsrv_connect( $azureServer, $connectionInfo );
+    if( $conn === false )
+    {
+        echo "Could not connect with ActiveDirectoryPassword.\n";
+        print_r( sqlsrv_errors() );
+    }
+    else
+    {
+        echo "Connected successfully with Authentication=ActiveDirectoryPassword.\n";
+        sqlsrv_close( $conn );
+    }
+}
+else
+{
+    echo "Not testing with Authentication=ActiveDirectoryPassword.\n";
+}
 ?>
---EXPECT--
+--EXPECTF--
 Connected successfully with Authentication=SqlPassword.
 array(2) {
   [0]=>
@@ -71,3 +104,4 @@ Array
     [2] => Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.
     [message] => Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.
 )
+%s with Authentication=ActiveDirectoryPassword.
