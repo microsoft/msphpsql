@@ -80,7 +80,7 @@ else
     echo "Not testing with Authentication=ActiveDirectoryPassword.\n";
 }
 ?>
---EXPECT--
+--EXPECTF--
 Connected successfully with Authentication=SqlPassword.
 array(2) {
   [""]=>
