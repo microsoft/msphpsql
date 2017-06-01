@@ -65,29 +65,29 @@ Failed to connect.
 Array
 \(
     \[0\] => Array
-        (
+        \(
             \[0\] => 08001
             \[SQLSTATE\] => 08001
             \[1\] => 0
             \[code\] => 0
             \[2\] => (\[unixODBC\])?\[Microsoft\]\[ODBC Driver 13 for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
             \[message\] => (\[unixODBC\])?\[Microsoft\]\[ODBC Driver 13 for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
-        )
+        \)
 
-)
+\)
 Failed to connect.
 Array
-(
+\(
     \[0\] => Array
-        (
+        \(
             \[0\] => IMSSP
             \[SQLSTATE\] => IMSSP
             \[1\] => -33
             \[code\] => -33
             \[2\] => Invalid value type for option ColumnEncryption was specified.  String type was expected.
             \[message\] => Invalid value type for option ColumnEncryption was specified.  String type was expected.
-        )
+        \)
 
-)
+\)
 Connected successfully with ColumnEncryption disabled.
 Done
