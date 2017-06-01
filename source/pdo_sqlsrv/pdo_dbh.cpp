@@ -42,6 +42,8 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char Authentication[] = "Authentication";
+const char ColumnEncryption[] = "ColumnEncryption";
+
 #ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
@@ -210,7 +212,16 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         conn_str_append_func::func
     },
-    {
+	{
+		PDOConnOptionNames::ColumnEncryption,
+		sizeof(PDOConnOptionNames::ColumnEncryption),
+		SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
+		ODBCConnOptions::ColumnEncryption,
+		sizeof(ODBCConnOptions::ColumnEncryption),
+		CONN_ATTR_STRING,
+		conn_str_append_func::func
+	},
+	{
         PDOConnOptionNames::ConnectionPooling,
         sizeof( PDOConnOptionNames::ConnectionPooling ),
         SQLSRV_CONN_OPTION_CONN_POOLING,
