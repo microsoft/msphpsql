@@ -68,11 +68,11 @@ Test new connection keyword ColumnEncryption
     echo "Done\n";
 
 ?>
---EXPECT--
+--EXPECTREGEX--
 Connected successfully with ColumnEncryption enabled.
 Failed to connect.
-SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ColumnEncryption'
+SQLSTATE\[08001\]: (\[unixODBC\])?\[Microsoft\]\[ODBC Driver 13 for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
 Failed to connect.
-SQLSTATE[08001]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid value specified for connection string attribute 'ColumnEncryption'
+SQLSTATE\[08001\]: (\[unixODBC\])?\[Microsoft\]\[ODBC Driver 13 for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
 Connected successfully with ColumnEncryption disabled.
 Done
