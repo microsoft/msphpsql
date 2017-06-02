@@ -1,6 +1,22 @@
 --TEST--
 Custom numeric formats for the SQL FORMAT function 
 --SKIPIF--
+<?php 
+if (!extension_loaded("sqlsrv")) die("skip extension not loaded"); 
+require_once("MsCommon.inc");
+
+// Connect
+$conn = Connect();
+if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+
+// check SQL Server version because FORMAT is available starting with SQL Server 2012
+$server_info = sqlsrv_server_info( $conn);  
+if( $server_info )  
+{  
+    $version = substr($server_info['SQLServerVersion'], 0, 2);
+    if ($version < 11) die("skip because this test only makes sense for SQL Server 2012 or above");
+}  
+?>
 --FILE--
 <?php
 
@@ -20,7 +36,8 @@ $query = "INSERT INTO $tableName VALUES ('2', 56.05, 20),('0', 79.99, 0.5),('199
 $stmt = sqlsrv_query($conn, $query) ?: die(print_r( sqlsrv_errors(), true));
 
 // Fetch data
-$query = "SELECT FORMAT(Col,'#,##0.00 CAD;;Free') FROM $tableName";
+
+$query = "SELECT FORMAT(Col,'#,##0.00 CAD;;Free') FROM $tableName";   
 $stmt = sqlsrv_query($conn, $query)
         ?: die( print_r(sqlsrv_errors(), true));
 
@@ -28,7 +45,7 @@ $stmt = sqlsrv_query($conn, $query)
 while($row = sqlsrv_fetch_array($stmt))
     echo $row[0]."\n";
    
-$query = "SELECT FORMAT(Total, 'C'), FORMAT(Percentage, 'N') FROM $tableName";
+$query = "SELECT FORMAT(Total, 'C'), FORMAT(Percentage, 'N') FROM $tableName";   
 $stmt = sqlsrv_query($conn, $query)
         ?: die( print_r(sqlsrv_errors(), true));
 
