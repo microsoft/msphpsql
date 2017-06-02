@@ -5,7 +5,7 @@
 //
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -366,6 +366,10 @@ ss_error SS_ERRORS[] = {
         "Output or bidirectional variable parameters (SQLSRV_PARAM_OUT and SQLSRV_PARAM_INOUT) passed to sqlsrv_prepare or sqlsrv_query should be passed by reference, not by value."
         , -61, true }
     },
+	{
+		SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
+		{ IMSSP, (SQLCHAR*)"Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -62, false }
+	},
 
     // internal warning definitions
     {

@@ -4,7 +4,7 @@
 // Contents: Contains functions for handling Windows format strings
 //			 and UTF-16 on non-Windows platforms
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -23,12 +23,6 @@
 
 #include "xplat_winnls.h"
 #include "localization.hpp"
-
-inline bool __ascii_iswalpha(WCHAR c) { return( ('A' <= (c) && (c) <= 'Z') || ( 'a' <= (c) && (c) <= 'z') ); }
-inline WCHAR __ascii_towupper(WCHAR c) { return( (((c) >= L'a') && ((c) <= L'z')) ? (WCHAR)((c) - L'a' + L'A') : (c) ); }
-inline char __ascii_toupper(char c) { return( (((c) >= 'a') && ((c) <= 'z')) ? ((c) - 'a' + 'A') : (c) ); }
-
-
 
 
 template< typename T >
@@ -73,7 +67,6 @@ protected:
 };
 
 int FormattedPrintA( IFormattedPrintOutput<char> * output, const char *format, va_list argptr );
-int FormattedPrintW( IFormattedPrintOutput<WCHAR> * output, const WCHAR *format, va_list argptr );
 
 template< typename T >
 class BufferOutput : public FormattedOutput<T>

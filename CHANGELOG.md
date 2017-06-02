@@ -3,6 +3,46 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+
+## Windows/Linux/MAC 4.2.0-preview - 2017-05-19
+Here is the list of updates:
+
+### Added
+- Added support for sql_variant data type with limitation ([issue #51](https://github.com/Microsoft/msphpsql/issues/51) and [issue #127](https://github.com/Microsoft/msphpsql/issues/127))
+- Support drivers on Debian Jessie (tested on Debian 8.7)
+
+### Fixed
+- Increased Test Coverage to 75%
+- Bug fixes after running static analysis
+
+### Limitation
+- No support for inout / output params when using sql_variant type
+
+### Known Issues
+- User defined data types
+- When pooling is enabled in Linux or MAC
+  - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
+## Windows/Linux/MAC 4.1.9-preview - 2017-05-08
+- Updated documentation for Readme regarding instructions for Linux and MAC 
+- Updated PECL release packages. Here is the list of updates:
+### Added
+- Azure Active Directory Authentication with ActiveDirectoryPassword and SqlPassword
+
+### Fixed
+- Fixed output parameter returning garbage when the parameter is initialized to a type that is different from the output type ([issue #378](https://github.com/Microsoft/msphpsql/issues/378)).
+
+#### PDO_SQLSRV only
+- Fixed incorrectly binding of unicode parameter when emulate prepare is on and the encoding is set at the statement level ([issue #92](https://github.com/Microsoft/msphpsql/issues/92)).
+- Fixed binary column binding when emulate prepare is on ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)).
+
+### Known Issues
+- User defined data types and SQL_VARIANT ([issue #127](https://github.com/Microsoft/msphpsql/issues/127)).
+- When pooling is enabled in Linux or MAC
+  - unixODBC 2.3.1 (Linux) and unixODBC 2.3.4 (MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
 ## Windows/Linux/MAC 4.1.8-preview - 2017-04-10
 Updated documentation for Readme regarding instructions for Linux and MAC 
 Updated PECL release packages. Here is the list of updates:

@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDOStatement object for the PDO_SQLSRV
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1355,6 +1355,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( SQLINTEGER sql_type, SQLUI
         case SQL_LONGVARCHAR:
         case SQL_WLONGVARCHAR:
         case SQL_SS_XML:
+        case SQL_SS_VARIANT:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
             break;
         case SQL_BINARY:

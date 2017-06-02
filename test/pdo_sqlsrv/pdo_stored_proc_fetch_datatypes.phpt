@@ -1,11 +1,11 @@
 --TEST--
 call stored procedures with inputs of ten different datatypes to get outputs of various types 
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function ProcFetch_BigInt($conn)
 {
@@ -277,15 +277,15 @@ function ProcFetch_TinyInt($conn)
     $stmt = null;              
 }
 
-function Repro()
+function RunTest()
 {
     set_time_limit(0);
     StartTest("pdo_stored_proc_fetch_datatypes");
+    echo "\nStarting test...\n";
     try
     {
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);   
+        include("MsSetup.inc");
+        $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);   
 
         ProcFetch_BigInt($conn);
         ProcFetch_Decimal($conn);
@@ -308,13 +308,13 @@ function Repro()
     EndTest("pdo_stored_proc_fetch_datatypes");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
 
-...Starting 'pdo_stored_proc_fetch_datatypes' test...
+Starting test...
 
 Done
-...Test 'pdo_stored_proc_fetch_datatypes' completed successfully.
+Test "pdo_stored_proc_fetch_datatypes" completed successfully.
 

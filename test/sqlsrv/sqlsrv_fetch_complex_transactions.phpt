@@ -2,7 +2,7 @@
 Test transactions commit, rollback and aborting in between
 --FILE--
 ﻿﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function ComplexTransaction($conn, $conn2)
 {
@@ -105,15 +105,13 @@ function RunTest()
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
 
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
-        
+        echo "\nTest begins...\n";
+
         // Connect
-        $connectionInfo = array('Database'=>$database, 'UID'=>$username, 'PWD'=>$password);
-        $conn = sqlsrv_connect($serverName, $connectionInfo);
+        $conn = Connect();
         if( !$conn ) { FatalError("Could not connect.\n"); }
 
-        $conn2 = sqlsrv_connect($serverName, $connectionInfo);
+        $conn2 = Connect(); 
         if( !$conn2 ) { FatalError("Could not connect.\n"); }
         
         ComplexTransaction($conn, $conn2);
@@ -133,7 +131,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'sqlsrv_fetch_complex_transactions' test...
+Test begins...
 Number of rows fetched: 10
 Committed deleting 3 rows
 Number of rows fetched: 7
@@ -147,4 +145,4 @@ Deletion aborted
 Number of rows fetched: 4
 
 Done
-...Test 'sqlsrv_fetch_complex_transactions' completed successfully.
+Test "sqlsrv_fetch_complex_transactions" completed successfully.

@@ -4,42 +4,43 @@ sqlsrv_field_metadata() VARCHAR(n), NVARCHAR(n), INT
 --FILE--
 <?php
 
-require_once("autonomous_setup.php");
+include ("MsCommon.inc");
 
 // Connect
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
-if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+$conn = Connect();
+if( !$conn ) {
+    FatalError("Connection could not be established.\n");
+}
 
-// Create database
-sqlsrv_query($conn,"CREATE DATABASE ". $dbName) ?: die();
+$tableName = 'test_srv_031';
 
 // Create table
-$stmt = sqlsrv_query($conn, "create table ".$tableName." (FirstName VARCHAR(10), LastName NVARCHAR(20), Age INT)");
+$stmt = sqlsrv_query($conn, "CREATE TABLE $tableName (FirstName VARCHAR(10), LastName NVARCHAR(20), Age INT)");
 if( $stmt === false ) { die( print_r( sqlsrv_errors(), true )); }
 sqlsrv_free_stmt( $stmt);
 
 // Insert data
-$sql = "INSERT INTO ".$tableName." VALUES ('John', 'Doe', 30)";
+$sql = "INSERT INTO $tableName VALUES ('John', 'Doe', 30)";
 $stmt = sqlsrv_query( $conn, $sql);
 sqlsrv_free_stmt( $stmt);
 
 // Insert data
-$sql = "INSERT INTO ".$tableName." VALUES ('Nhoj', N'Eoduard', -3),('Vi Lo', N'N/A', 1987)";
+$sql = "INSERT INTO $tableName VALUES ('Nhoj', N'Eoduard', -3),('Vi Lo', N'N/A', 1987)";
 $stmt = sqlsrv_query($conn, $sql);
 sqlsrv_free_stmt($stmt);
 
 // Prepare the statement
-$query = "SELECT FirstName, LastName, Age FROM ".$tableName;
+$query = "SELECT FirstName, LastName, Age FROM $tableName";
 $stmt = sqlsrv_prepare($conn, $query);
 
 // Get field metadata
-foreach( sqlsrv_field_metadata( $stmt) as $fieldMetadata)
-	$res[] = $fieldMetadata;
+$metadata = sqlsrv_field_metadata($stmt);
+if ( ! $metadata ) 
+    PrintErrors(); 
+else
+    var_dump($metadata);
 
-var_dump($res);
-
-// DROP database
-$stmt = sqlsrv_query($conn,"DROP DATABASE ". $dbName);
+sqlsrv_query($conn, "DROP TABLE $tableName");
 
 sqlsrv_free_stmt( $stmt);
 sqlsrv_close($conn);

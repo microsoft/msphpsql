@@ -1,20 +1,18 @@
 --TEST--
 Test setting and getting various statement attributes.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
   
-require_once("autonomous_setup.php");
-
 function set_stmt_option($conn, $arr)
 {
     try {
-	
+    
         $stmt = $conn->prepare( "Select * from temptb", $arr );
         return $stmt;
     }
-	
+    
     catch( PDOException $e)
     {
         echo $e->getMessage() . "\n\n";
@@ -41,7 +39,7 @@ function set_stmt_attr($conn, $attr, $val)
         var_dump($res);
         echo "\n\n";
     }
-	 
+     
     catch( PDOException $e)
     {
         echo $e->getMessage() . "\n\n";
@@ -58,7 +56,7 @@ function get_stmt_attr($stmt, $attr)
         var_dump($res);
         echo "\n";
     }
-	
+    
     catch( PDOException $e)
     {
         echo $e->getMessage() . "\n\n";
@@ -115,17 +113,19 @@ function Test6($conn)
 {
     echo "Test6 - Set stmt option: SQLSRV_ATTR_ENCODING \n";
     set_stmt_option($conn, array(PDO::SQLSRV_ATTR_ENCODING => 3));
-	
+    
     $attr = "PDO::SQLSRV_ATTR_QUERY_TIMEOUT";
     $stmt = set_stmt_attr($conn, $attr, 45);
     get_stmt_attr($stmt, $attr);
-	
+    
 }
  
  
 try 
-{      
-    $conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb ", $username, $password);
+{   
+    include("MsSetup.inc");
+   
+    $conn = new PDO( "sqlsrv:Server=$server; Database = $databaseName ", $uid, $pwd);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
     $conn->exec("IF OBJECT_ID('temptb', 'U') IS NOT NULL DROP TABLE temptb");
     $conn->exec("CREATE TABLE temptb(id INT NOT NULL PRIMARY KEY, val VARCHAR(10)) ");

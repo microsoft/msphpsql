@@ -2,7 +2,7 @@
 Test insert various data types and fetch as strings
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 class TestClass2
 {
@@ -21,16 +21,14 @@ class TestClass3
 }
 
 function FetchObject_ClassArgs()
-{
-    include 'autonomous_setup.php';
-       
+{    
+    include 'tools.inc';
+    
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
     
     // Connect
-    $connectionInfo = array("Database" => "tempdb", "UID"=>$username, "PWD"=>$password, "CharacterSet"=>"UTF-8");
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect(array("CharacterSet"=>"UTF-8"));
     if( !$conn ) { FatalError("Could not connect.\n"); }
 
     $tableName = GetTempTableName();
@@ -106,9 +104,10 @@ function GetQuery($tableName, $index)
     return $query;
 }
 
-function Repro()
+function RunTest()
 {
     StartTest("sqlsrv_fetch_object_class");
+    echo "\nTest begins...\n";
     try
     {
         FetchObject_ClassArgs();
@@ -121,12 +120,12 @@ function Repro()
     EndTest("sqlsrv_fetch_object_class");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_fetch_object_class' test...
+Test begins...
 Constructor called with 3 arguments
 Comparing data in row 1
 Constructor called with 3 arguments
@@ -137,4 +136,4 @@ Constructor called with 2 arguments
 Comparing data in row 2
 
 Done
-...Test 'sqlsrv_fetch_object_class' completed successfully.
+Test "sqlsrv_fetch_object_class" completed successfully.

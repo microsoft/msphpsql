@@ -4,7 +4,7 @@
 // File: version.h
 // Contents: Version number constants
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -23,8 +23,8 @@
 #define TOSTRING(a) #a
 
 #define SQLVERSION_MAJOR 4
-#define SQLVERSION_MINOR 1
-#define SQLVERSION_PATCH 8
+#define SQLVERSION_MINOR 2
+#define SQLVERSION_PATCH 0
 #define SQLVERSION_BUILD 0
 
 // Semantic versioning pre-release, for stable releases should be empty
@@ -45,7 +45,7 @@
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
 // PECL package version macros (can't have '-' or '+')
-#define PHP_SQLSRV_VERSION      VER_APIVERSION_STR SEMVER_PRERELEASE 
+#define PHP_SQLSRV_VERSION      VER_APIVERSION_STR SEMVER_PRERELEASE
 #define PHP_PDO_SQLSRV_VERSION  PHP_SQLSRV_VERSION
 
 #endif // VERSION_H

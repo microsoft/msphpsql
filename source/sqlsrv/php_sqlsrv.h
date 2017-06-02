@@ -8,7 +8,7 @@
 //
 // Comments: Also contains "internal" declarations shared across source files. 
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -352,7 +352,8 @@ enum SS_ERROR_CODES {
     SS_SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING,
     SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED,
     SS_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE,
-    SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF
+    SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF,
+    SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION
 };
 
 extern ss_error SS_ERRORS[];

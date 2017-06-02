@@ -5,7 +5,7 @@
 // 
 // Copyright Microsoft Corporation
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -139,7 +139,7 @@ void string_parser::add_key_value_pair( const char* value, int len TSRMLS_DC )
 void sql_string_parser::add_key_int_value_pair( unsigned int value TSRMLS_DC ) {
     zval value_z;
     ZVAL_LONG( &value_z, value );
-	
+    
     core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z TSRMLS_CC );
 }
 
@@ -168,6 +168,31 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
 
     THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
 }
+
+void conn_string_parser::add_key_value_pair( const char* value, int len TSRMLS_DC )
+{
+    // if the keyword is 'Authentication', check whether the user specified option is supported
+    bool valid = true;
+    if ( stricmp( this->current_key_name, ODBCConnOptions::Authentication ) == 0 ) {
+        if (len <= 0)
+            valid = false;
+        else {
+            // extract option from the value by len
+            sqlsrv_malloc_auto_ptr<char> option;
+            option = static_cast<char*>( sqlsrv_malloc( len + 1 ) );
+            memcpy_s( option, len + 1, value, len );
+            option[len] = '\0';
+
+            valid = core_is_authentication_option_valid( option, len );
+        }
+    }
+    if( !valid ) {
+        THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION, this->current_key_name );
+    }
+    
+    string_parser::add_key_value_pair( value, len );
+}
+
 
 inline bool sql_string_parser::is_placeholder_char( char c )
 {
@@ -390,9 +415,12 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
 // Primary function which parses out the named placeholders from a sql string.
 void sql_string_parser::parse_sql_string( TSRMLS_D ) {
     try {
+        int start_pos = -1;
         while ( !this->is_eos() ) {
-            int start_pos = -1;
-
+            // if pos is -1, then reading from a string is an initialized read
+            if ( pos == -1 ) {
+                next();
+            }
             // skip until a '"', '\'', ':' or '?'
             char sym;
             while ( this->orig_str[pos] != '"' && this->orig_str[pos] != '\'' && this->orig_str[pos] != ':' && this->orig_str[pos] != '?' && !this->is_eos() ) {
@@ -411,7 +439,7 @@ void sql_string_parser::parse_sql_string( TSRMLS_D ) {
                 start_pos = this->pos;
                 next();
                 // keep going until the next space or line break
-               	// while (!is_white_space(this->orig_str[pos]) && !this->is_eos()) {
+                // while (!is_white_space(this->orig_str[pos]) && !this->is_eos()) {
                 while ( is_placeholder_char( this->orig_str[pos] )) {
                     next();
                 }

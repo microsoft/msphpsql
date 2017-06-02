@@ -1,12 +1,13 @@
 --TEST--
 GitHub issue #69 - fetching an empty nvarchar using client buffer
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 // Connect 
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
-$conn = new PDO("sqlsrv:server=$serverName", $username, $password);   
+$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);   
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );   
     
 $sql = "EXEC dbo.sp_executesql 

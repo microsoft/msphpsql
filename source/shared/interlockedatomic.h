@@ -4,7 +4,7 @@
 // Contents: Contains a portable abstraction for interlocked, atomic
 // 			 operations on int32_t and pointer types.
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -24,29 +24,9 @@
 // Forward references and contract specifications
 //
 
-// Increments and returns new value
-LONG InterlockedIncrement( LONG volatile * atomic );
-
-// Decrements and returns new value
-LONG InterlockedDecrement( LONG volatile * atomic );
-
 // Always returns old value
 // Sets to new value if old value equals compareTo
 LONG InterlockedCompareExchange( LONG volatile * atomic, LONG newValue, LONG compareTo );
-
-// Sets to new value and returns old value
-LONG InterlockedExchange( LONG volatile * atomic, LONG newValue );
-
-// Sets to new value and returns old value
-PVOID InterlockedExchangePointer( PVOID volatile * atomic, PVOID newValue);
-
-// Adds the amount and returns the old value
-LONG InterlockedExchangeAdd( LONG volatile * atomic, LONG add );
-
-// Always returns the old value
-// Sets the new value if old value equals compareTo
-PVOID InterlockedCompareExchangePointer( PVOID volatile * atomic, PVOID newValue, PVOID compareTo );
-
 
 
 // Use conditional compilation to load the implementation

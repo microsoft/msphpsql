@@ -8,8 +8,8 @@ function FlatsAreEqual($a, $b, $epsilon = 3.9265E-6)
 {
   return (abs($a - $b) < $epsilon);
 }
-require_once("autonomous_setup.php");
-$conn = new PDO( "sqlsrv:server=$serverName", $username, $password);
+require_once("MsSetup.inc");
+$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 $sample = 1234567890.1234;
 

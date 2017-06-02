@@ -2,7 +2,7 @@
 Test sending queries (query or prepare) with a timeout specified using transactions. Errors are expected.
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function QueryTimeout($conn1, $conn2, $commit)
 {
@@ -25,7 +25,7 @@ function QueryTimeout($conn1, $conn2, $commit)
         echo "Number of rows affected unexpected!\n";
     sqlsrv_free_stmt($stmt);   
     
-    $stmt = sqlsrv_query($conn2, "SELECT * FROM $tableName", array(), array('QueryTimeout' => 1)); 
+    $stmt = sqlsrv_query($conn2, "WAITFOR DELAY '00:00:03'; SELECT * FROM $tableName", array(), array('QueryTimeout' => 1)); 
     $errors = sqlsrv_errors(SQLSRV_ERR_ALL); 
     $e = $errors[0];    
     
@@ -44,19 +44,17 @@ function QueryTimeout($conn1, $conn2, $commit)
 function Repro()
 {
     StartTest("sqlsrv_statement_query_timeout_transaction");
+    echo "\nTest begins...\n";
     try
     {
         set_time_limit(0);  
         sqlsrv_configure('WarningsReturnAsErrors', 1);  
-
-        require_once("autonomous_setup.php");
         
         // Connect
-        $connectionInfo = array("UID"=>$username, "PWD"=>$password, 'ConnectionPooling'=>0);
-        $conn1 = sqlsrv_connect($serverName, $connectionInfo);
+        $conn1 = Connect(array('ConnectionPooling'=>0));
         if( !$conn1 ) { FatalError("Could not connect.\n"); }
       
-        $conn2 = sqlsrv_connect($serverName, $connectionInfo);
+        $conn2 = Connect(array('ConnectionPooling'=>0));
         if( !$conn2 ) { FatalError("Could not connect.\n"); }
 
         QueryTimeout($conn1, $conn2, true);
@@ -78,7 +76,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_statement_query_timeout_transaction' test...
+Test begins...
 [Microsoft][ODBC Driver 13 for SQL Server]Query timeout expired
 0
 HYT00
@@ -87,4 +85,4 @@ HYT00
 HYT00
 
 Done
-...Test 'sqlsrv_statement_query_timeout_transaction' completed successfully.
+Test "sqlsrv_statement_query_timeout_transaction" completed successfully.

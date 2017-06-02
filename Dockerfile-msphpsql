@@ -68,12 +68,16 @@ RUN phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && 
 
 # set name of sql server host to use
 WORKDIR $PHPSQLDIR/test/pdo_sqlsrv
-RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
-RUN sed -i -e 's/<YourStrong!Passw0rd>/'"$TEST_PHP_SQL_PWD"'/g' autonomous_setup.php
+RUN sed -i -e 's/TARGET_SERVER/sql/g' MsSetup.inc
+RUN sed -i -e 's/TARGET_DATABASE/msphpsql_pdosqlsrv/g' MsSetup.inc
+RUN sed -i -e 's/TARGET_USERNAME/'"$TEST_PHP_SQL_UID"'/g' MsSetup.inc
+RUN sed -i -e 's/TARGET_PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
 WORKDIR $PHPSQLDIR/test/sqlsrv
-RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
-RUN sed -i -e 's/<YourStrong!Passw0rd>/'"$TEST_PHP_SQL_PWD"'/g' autonomous_setup.php
+RUN sed -i -e 's/TARGET_SERVER/sql/g' MsSetup.inc
+RUN sed -i -e 's/TARGET_DATABASE/msphpsql_sqlsrv/g' MsSetup.inc
+RUN sed -i -e 's/TARGET_USERNAME/'"$TEST_PHP_SQL_UID"'/g' MsSetup.inc
+RUN sed -i -e 's/TARGET_PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
 ENV REPORT_EXIT_STATUS 1
 ENV TEST_PHP_EXECUTABLE /usr/bin/php

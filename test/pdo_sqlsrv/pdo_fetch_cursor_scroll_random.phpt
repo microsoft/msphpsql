@@ -1,8 +1,10 @@
 --TEST--
 Test with cursor scroll and select different rows in some random order 
+--SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 ﻿﻿<?php
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function Cursor_ForwardOnly($conn, $tableName)
 {
@@ -143,14 +145,14 @@ function GetAbsoluteRow($stmt, $offset)
 //--------------------------------------------------------------------
 function RunTest()
 {
-    StartTest("pdo_fetch_cursor_scroll_random");
+    StartTest("pdo_fetch_cursor_scroll_random");   
+    echo "\nTest begins...\n";
     try
     {
-        require_once("autonomous_setup.php");
-        $database = "tempdb";
+        include("MsSetup.inc");
         
         // Connect
-        $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+        $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
         $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
         $tableName = GetTempTableName();
@@ -173,7 +175,7 @@ RunTest();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'pdo_fetch_cursor_scroll_random' test...
+Test begins...
 1
 2
 3
@@ -216,4 +218,4 @@ last row: 10
 
 row 1 from the current row: 
 Done
-...Test 'pdo_fetch_cursor_scroll_random' completed successfully.
+Test "pdo_fetch_cursor_scroll_random" completed successfully.

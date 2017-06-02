@@ -4,7 +4,7 @@
 // Contents: Contains functions for handling Windows format strings
 //			 and UTF-16 on non-Windows platforms
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -25,7 +25,6 @@
 #include "typedefs_for_linux.h"
 #include <errno.h>
 
-#if defined(MPLAT_UNIX)
 #include <iconv.h>
 
 const iconv_t INVALID_ICONV = (iconv_t)(-1);
@@ -48,14 +47,12 @@ public:
     }
 };
 
-#endif
 
 
 class EncodingConverter
 {
     UINT m_dstCodePage;
     UINT m_srcCodePage;
-#if defined(MPLAT_UNIX)
     const IConvCache * m_pCvtCache;
 
     bool IsValidIConv() const
@@ -269,21 +266,6 @@ class EncodingConverter
         return cchDest - (dest.m_nBytesLeft / sizeof(DestType));
     }
 
-#elif defined(MPLAT_WWOWH)
-
-    size_t ReturnCchResult( int cch, DWORD * pErrorCode ) const
-    {
-        if ( cch < 0 )
-            cch = 0;
-
-        if ( NULL != pErrorCode )
-            *pErrorCode = (0 == cch ? GetLastError() : ERROR_SUCCESS);
-
-        return cch;
-    }
-
-#endif // defined(MPLAT_WWOWH)
-
 
 public:
     EncodingConverter( UINT dstCodePage, UINT srcCodePage );
@@ -300,7 +282,6 @@ public:
         const SrcType * srcBuffer,  size_t cchSource,
         bool failIfLossy = false, bool * pHasLoss = NULL, DWORD * pErrorCode = NULL ) const
     {
-#if defined(MPLAT_UNIX)
 
         if ( !IsValidIConv() )
             return 0;
@@ -353,68 +334,6 @@ public:
             }
         }
 
-#elif defined(MPLAT_WWOWH)
-        // WWOWH unit testing code
-        // Can only convert between ansi and utf16
-        if ( 1 == sizeof(DestType) && 2 == sizeof(SrcType) )
-        {
-            // utf16 to ansi
-            const wchar_t * srcPtr = reinterpret_cast< const wchar_t * >( srcBuffer );
-            BOOL loss = FALSE;
-            int converted = WideCharToMultiByte(
-                m_dstCodePage, 0,
-                srcPtr, (int)cchSource,
-                NULL, 0,
-                NULL, &loss );
-
-            if ( 0 < converted )
-            {
-                AutoArray< char, AllocT > newDestBuffer( converted );
-                char * dstPtr = newDestBuffer.m_ptr;
-                converted = WideCharToMultiByte(
-                    m_dstCodePage, 0,
-                    srcPtr, (int)cchSource,
-                    newDestBuffer.m_ptr, converted,
-                    NULL, &loss );
-                if ( 0 < converted )
-                    *destBuffer = newDestBuffer.Detach();
-                if ( NULL != pHasLoss )
-                    *pHasLoss = (FALSE != loss);
-            }
-            return ReturnCchResult( converted, pErrorCode );
-        }
-        else if ( 2 == sizeof(DestType) && 1 == sizeof(SrcType) )
-        {
-            // ansi to utf16
-            const char * srcPtr = reinterpret_cast< const char * >( srcBuffer );
-            int converted = MultiByteToWideChar(
-                m_srcCodePage, (failIfLossy ? MB_ERR_INVALID_CHARS : 0),
-                srcPtr, (int)cchSource,
-                NULL, 0 );
-
-            if ( 0 < converted )
-            {
-                AutoArray< WCHAR, AllocT > newDestBuffer( converted );
-                converted = MultiByteToWideChar(
-                    m_srcCodePage, (failIfLossy ? MB_ERR_INVALID_CHARS : 0),
-                    srcPtr, (int)cchSource,
-                    newDestBuffer.m_ptr, converted );
-                if ( 0 < converted )
-                    *destBuffer = newDestBuffer.Detach();
-                if ( NULL != pHasLoss )
-                    *pHasLoss = false;
-            }
-            return ReturnCchResult( converted, pErrorCode );
-        }
-        else
-        {
-            assert( false );
-            if ( NULL != pErrorCode )
-                *pErrorCode = ERROR_NOT_SUPPORTED;
-            return 0;
-        }
-
-#endif // defined(MPLAT_WWOWH)
     }
     // Performs an encoding conversion.
     // Returns the number of dest chars written.
@@ -425,7 +344,6 @@ public:
         const SrcType * srcBuffer,  size_t cchSource,
         bool failIfLossy = false, bool * pHasLoss = NULL, DWORD * pErrorCode = NULL ) const
     {
-#if defined(MPLAT_UNIX)
 
         if ( !IsValidIConv() )
             return 0;
@@ -471,46 +389,6 @@ public:
             return cchCumulative;
         }
 
-#elif defined(MPLAT_WWOWH)
-        // WWOWH unit testing code
-        // Can only convert between ansi and utf16
-        if ( 1 == sizeof(DestType) && 2 == sizeof(SrcType) )
-        {
-            // utf16 to ansi
-            char * dstPtr = reinterpret_cast< char * >( destBuffer );
-            const wchar_t * srcPtr = reinterpret_cast< const wchar_t * >( srcBuffer );
-            BOOL loss = FALSE;
-            int converted = WideCharToMultiByte(
-                m_dstCodePage, 0,
-                srcPtr, (int)cchSource,
-                dstPtr, (int)cchDest,
-                NULL, &loss );
-            if ( NULL != pHasLoss )
-                *pHasLoss = (FALSE != loss);
-            return ReturnCchResult( converted, pErrorCode );
-        }
-        else if ( 2 == sizeof(DestType) && 1 == sizeof(SrcType) )
-        {
-            // ansi to utf16
-            wchar_t * dstPtr = reinterpret_cast< wchar_t * >( destBuffer );
-            const char * srcPtr = reinterpret_cast< const char * >( srcBuffer );
-            int converted = MultiByteToWideChar(
-                m_srcCodePage, (failIfLossy ? MB_ERR_INVALID_CHARS : 0),
-                srcPtr, (int)cchSource,
-                dstPtr, (int)cchDest );
-            if ( NULL != pHasLoss )
-                *pHasLoss = false;
-            return ReturnCchResult( converted, pErrorCode );
-        }
-        else
-        {
-            assert( false );
-            if ( NULL != pErrorCode )
-                *pErrorCode = ERROR_NOT_SUPPORTED;
-            return 0;
-        }
-
-#endif // defined(MPLAT_WWOWH)
     }
 };
 

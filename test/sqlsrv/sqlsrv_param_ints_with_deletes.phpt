@@ -2,19 +2,15 @@
 Test insertion with floats
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function ExecData($withParams)
-{
-    include 'autonomous_setup.php';
-       
+{     
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
     
     // Connect
-    $connectionInfo = array("UID"=>$username, "PWD"=>$password);
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect();
     if( !$conn ) { FatalError("Could not connect.\n"); }
 
     $tableName = GetTempTableName();
@@ -130,6 +126,7 @@ function DeleteRows($conn, $numRows, $tableName)
 function Repro()
 {
     StartTest("sqlsrv_statement_exec_param_ints");
+    echo "\nTest begins...\n";
     try
     {
         ExecData(true);
@@ -148,7 +145,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿
-...Starting 'sqlsrv_statement_exec_param_ints' test...
+Test begins...
 Number of Actual Rows: 5
 Number of Affected Rows: 3
 Number of Actual Rows: 2
@@ -159,4 +156,4 @@ Number of Actual Rows: 2
 Number of Affected Rows: 2
 
 Done
-...Test 'sqlsrv_statement_exec_param_ints' completed successfully.
+Test "sqlsrv_statement_exec_param_ints" completed successfully.

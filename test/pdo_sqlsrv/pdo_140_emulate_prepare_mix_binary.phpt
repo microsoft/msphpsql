@@ -1,11 +1,12 @@
 --TEST--
 Test emulate prepare with mix bound param encodings including binary data
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
  
-class MyStatement extends \PDOStatement {
+class MyStatement extends PDOStatement {
   public function BindValues(array &$values, array &$blobs, $placeholder_prefix, $columnInformation, &$max_placeholder = NULL, $blob_suffix = NULL) {
     if (empty($max_placeholder)) {
       $max_placeholder = 0;
@@ -36,7 +37,7 @@ $connection_options['pdo'] = array();
 $connection_options['pdo'][PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
 
 $database = "tempdb";
-$cnn = new PDO("sqlsrv:Server=$serverName;Database=$database", $username, $password, $connection_options['pdo']);
+$cnn = new PDO("sqlsrv:Server=$server;Database=$databaseName", $uid, $pwd, $connection_options['pdo']);
 $cnn->setAttribute(PDO::ATTR_STATEMENT_CLASS, [MyStatement::class]);
 
 // Drop

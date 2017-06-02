@@ -3,7 +3,7 @@
 //
 // Contents: Contains functions for handling UTF-16 on non-Windows platforms
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -136,7 +136,6 @@ int mplat_strcat_s( char * dest, size_t destSize, const char * src )
         errno = ERANGE;
         return ERANGE;
     }
-    *p = 0;
     return 0;
 }
 //

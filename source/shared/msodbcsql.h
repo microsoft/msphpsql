@@ -20,7 +20,7 @@
 //           pecuniary loss) arising out of the use of or inability to use 
 //           this SDK, even if Microsoft has been advised of the possibility 
 //           of such damages.
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -90,7 +90,8 @@
 #define SQL_COPT_SS_AEKEYSTOREPROVIDER              (SQL_COPT_SS_BASE_EX+11) /* Load a keystore provider or read the list of loaded keystore providers */
 #define SQL_COPT_SS_AEKEYSTOREDATA                  (SQL_COPT_SS_BASE_EX+12) /* Communicate with a loaded keystore provider */
 #define SQL_COPT_SS_AETRUSTEDCMKPATHS               (SQL_COPT_SS_BASE_EX+13) /* List of trusted CMK paths */
-#define SQL_COPT_SS_AECEKCACHETTL                   (SQL_COPT_SS_BASE_EX+14)// Symmetric Key Cache TTL
+#define SQL_COPT_SS_AECEKCACHETTL                   (SQL_COPT_SS_BASE_EX+14) /* Symmetric Key Cache TTL */
+#define SQL_COPT_SS_AUTHENTICATION                  (SQL_COPT_SS_BASE_EX+15) /* The authentication method used for the connection */
 
 /*
  * SQLColAttributes driver specific defines.
@@ -410,8 +411,8 @@ typedef struct AEKeystoreData
 
 /* The following constants are for the Azure Key Vault configuration interface */
 #define AKV_CONFIG_FLAGS       0
- #define AKVCFG_USECLIENTID    0x00000001
- #define AKVCFG_AUTORENEW      0x00000002
+#define AKVCFG_USECLIENTID    0x00000001
+#define AKVCFG_AUTORENEW      0x00000002
 
 #define AKV_CONFIG_CLIENTID    1
 #define AKV_CONFIG_CLIENTKEY   2

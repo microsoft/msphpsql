@@ -8,10 +8,10 @@ steps to reproduce the issue:
 3 - call sp.
 --FILE--
 <?php
-require_once("pdo_tools.inc");
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
-$conn = new PDO( "sqlsrv:Server=$serverName; Database = tempdb ", $username, $password);
+$conn = new PDO( "sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
 if (!$conn) {
 	print_r($conn->errorInfo());
 }

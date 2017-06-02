@@ -3,7 +3,7 @@
 //
 // Contents: Contains the minimal definitions to build on non-Windows platforms
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -126,7 +126,6 @@
 #define ERROR_INVALID_FUNCTION           1L    // dderror
 #define TRUST_E_TIME_STAMP               _HRESULT_TYPEDEF_(0x80096005L)
 #define CRYPT_E_NOT_FOUND                _HRESULT_TYPEDEF_(0x80092004L)
-#define WAIT_TIMEOUT                     258L    // dderror
 
 
 #endif // XPLAT_WINERROR_H

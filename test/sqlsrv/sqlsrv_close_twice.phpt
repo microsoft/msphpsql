@@ -2,19 +2,15 @@
 Free statement twice 
 --FILE--
 ﻿<?php
-include 'tools.inc';
+include 'MsCommon.inc';
 
 function CloseTwice()
-{
-    require_once("autonomous_setup.php");
-    
+{  
     set_time_limit(0);  
     sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    sqlsrv_get_config('WarningsReturnAsErrors');    
 
     // Connect
-    $connectionInfo = array("UID"=>"$username", "PWD"=>"$password");
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
+    $conn = Connect();
     if( !$conn ) { FatalError("Could not connect.\n"); }
     
     $tableName = GetTempTableName();  
@@ -53,9 +49,7 @@ Repro();
 ?>
 --EXPECTREGEX--
 ﻿
-...Starting 'sqlsrv_close_twice' test...
-
 Warning: sqlsrv_free_stmt\(\): supplied resource is not a valid ss_sqlsrv_stmt resource in .+sqlsrv_close_twice.php on line [0-9]+
 
 Done
-...Test 'sqlsrv_close_twice' completed successfully.
+Test "sqlsrv_close_twice" completed successfully.

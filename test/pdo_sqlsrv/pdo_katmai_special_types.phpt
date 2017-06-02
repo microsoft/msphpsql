@@ -1,8 +1,10 @@
 --TEST--
 Test various Katmai types, like geography, geometry, hierarchy, sparse, etc. and fetch them back as strings
+--SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 ﻿﻿<?php
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function Katmai_Basic_Types($conn)
 {
@@ -102,14 +104,13 @@ function Katmai_SparseNumeric($conn)
 function Repro()
 {
     StartTest("pdo_katmai_special_types");
+    echo "\nStarting test...\n";
     try
     {
-        require_once("autonomous_setup.php");
-        
+        include("MsSetup.inc");       
         set_time_limit(0);
-        $database = "tempdb";
         
-        $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+        $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
     
         Katmai_Basic_Types($conn);
         Katmai_SparseChar($conn);
@@ -131,7 +132,7 @@ Repro();
 ?>
 --EXPECT--
 ﻿﻿
-...Starting 'pdo_katmai_special_types' test...
+Starting test...
 
 Showing results of Katmai basic fields
 string(16) "03:32:25.5643401"
@@ -157,4 +158,4 @@ string(6) "1.0000"
 string(6) "1.0000"
 
 Done
-...Test 'pdo_katmai_special_types' completed successfully.
+Test "pdo_katmai_special_types" completed successfully.

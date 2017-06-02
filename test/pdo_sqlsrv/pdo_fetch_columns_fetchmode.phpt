@@ -1,21 +1,20 @@
 --TEST--
 fetch columns using fetch mode
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
-include 'pdo_tools.inc';
+include 'MsCommon.inc';
 
 function FetchMode_GetAllColumnsEx()
 {
-    require_once("autonomous_setup.php");
+    include("MsSetup.inc");
     
     set_time_limit(0);
-    $database = "tempdb";
     $tableName = GetTempTableName();
     
-    $conn = new PDO( "sqlsrv:server=$serverName;Database=$database", $username, $password);
+    $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
     
     $stmt = $conn->exec("CREATE TABLE $tableName ([c1_int] int, [c2_tinyint] tinyint, [c3_smallint] smallint, [c4_bigint] bigint, [c5_bit] bit, [c6_float] float, [c7_real] real, [c8_decimal] decimal(28,4), [c9_numeric] numeric(32,4), [c10_money] money, [c11_smallmoney] smallmoney, [c12_char] char(512), [c13_varchar] varchar(512), [c14_varchar_max] varchar(max), [c15_nchar] nchar(512), [c16_nvarchar] nvarchar(512), [c17_nvarchar_max] nvarchar(max), [c18_text] text, [c19_ntext] ntext, [c20_binary] binary(512), [c21_varbinary] varbinary(512), [c22_varbinary_max] varbinary(max), [c23_image] image, [c24_uniqueidentifier] uniqueidentifier, [c25_datetime] datetime, [c26_smalldatetime] smalldatetime, [c27_timestamp] timestamp, [c28_xml] xml, [c29_time] time, [c30_date] date, [c31_datetime2] datetime2, [c32_datetimeoffset] datetimeoffset)");
     
@@ -32,6 +31,7 @@ function FetchMode_GetAllColumnsEx()
     $meta = $stmt->getColumnMeta(0);
     $colName = $meta['name'];
 
+    include("pdo_tools.inc");
     //  Fetching with fetch mode PDO::FETCH_ASSOC
     echo "\nComparing data in column 0 and rows \n";
     for ($i = 1; $i <= $numRows; $i++)
@@ -556,9 +556,10 @@ function GetQuery($tableName, $index)
     return $query;
 }
 
-function Repro()
+function RunTest()
 {
     StartTest("pdo_fetch_columns_fetchmode");
+    echo "\nStarting test...\n";
     try
     {
         FetchMode_GetAllColumnsEx();
@@ -571,12 +572,12 @@ function Repro()
     EndTest("pdo_fetch_columns_fetchmode");
 }
 
-Repro();
+RunTest();
 
 ?>
 --EXPECT--
 
-...Starting 'pdo_fetch_columns_fetchmode' test...
+Starting test...
 
 Comparing data in column 0 and rows 
 1	2	
@@ -643,4 +644,4 @@ Comparing data in column 30 and rows
 Comparing data in column 31 and rows 
 1	2	
 Done
-...Test 'pdo_fetch_columns_fetchmode' completed successfully.
+Test "pdo_fetch_columns_fetchmode" completed successfully.

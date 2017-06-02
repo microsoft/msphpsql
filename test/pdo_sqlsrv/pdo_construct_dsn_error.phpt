@@ -1,17 +1,17 @@
 --TEST--
 Test PDO::__Construct with incorrectly formatted DSN or no Server specified in DSN
 --SKIPIF--
-
+<?php require('skipif_azure.inc'); ?>
 --FILE--
 <?php
   
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
 
 /*----------Connection option cases that raises errors----------*/
 //dsn with 2 consecutive semicolons
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server = $serverName;;", $username, $password );
+    $conn = new PDO( "sqlsrv:Server = $server;;", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -21,7 +21,7 @@ catch( PDOException $e ) {
 //dsn with double right curly braces
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server =$serverName; Database = {tempdb}}", $username, $password );
+    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}}", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -31,7 +31,7 @@ catch( PDOException $e ) {
 //dsn with double right curly braces and semicolon
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server =$serverName; Database = {tempdb}};", $username, $password );
+    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}};", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -41,7 +41,7 @@ catch( PDOException $e ) {
 //dsn with right curly braces and other symbol
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server =$serverName; Database = {tempdb}?", $username, $password );
+    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}?", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -51,7 +51,7 @@ catch( PDOException $e ) {
 //dsn with no equal sign in one option
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server =$serverName; Database", $username, $password );
+    $conn = new PDO( "sqlsrv:Server =$server; database", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -62,7 +62,7 @@ catch( PDOException $e ) {
 try 
 {   
     // Try to connect with no server specific
-    @$conn = new PDO( "sqlsrv:", $username, $password );
+    @$conn = new PDO( "sqlsrv:", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -71,8 +71,8 @@ catch( PDOException $e ) {
 // Try to connect with no server specified
 try 
 {   
-    $database = "tempdb";
-    @$conn = new PDO( "sqlsrv:Database = $database", $username, $password );
+    $databaseName = "tempdb";
+    @$conn = new PDO( "sqlsrv:database = $databaseName", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -85,19 +85,19 @@ echo "\n";
 try 
 {   
     //dsn with curly braces
-    $conn = new PDO( "sqlsrv:Server =$serverName; Database = {tempdb}", $username, $password );
+    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}", $uid, $pwd );
     echo "value in curly braces OK\n";
     
     //dsn with curly braces and semicolon
-    @$conn = new PDO( "sqlsrv:Server =$serverName; Database = {tempdb};", $username, $password );
+    @$conn = new PDO( "sqlsrv:Server =$server; database = {tempdb};", $uid, $pwd );
     echo "value in curly braces followed by a semicolon OK\n";
     
     //dsn with curly braces and trailing spaces
-    @$conn = new PDO( "sqlsrv:Server =$serverName; Database = {tempdb}    ", $username, $password );
+    @$conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}    ", $uid, $pwd );
     echo "value in curly braces followed by trailing spaces OK\n";
     
     //dsn with no value specified and ends with semicolon
-    $conn = new PDO( "sqlsrv:Server =$serverName; Database = ;", $username, $password );
+    $conn = new PDO( "sqlsrv:Server =$server; database = ;", $uid, $pwd );
     echo "dsn with no value specified and ends with semicolon OK\n";
 }
 catch( PDOException $e ) {
