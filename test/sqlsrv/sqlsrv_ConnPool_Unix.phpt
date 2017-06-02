@@ -4,7 +4,7 @@ SQLSRV Connection Pooling Test on Unix
 This test assumes odbcinst.ini has not been modified. 
 This test also requires root privileges to modify odbcinst.ini file on Linux.
 --SKIPIF--
-<?php if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') die("Skipped: Test for Linux and Mac");
+<?php if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') die("Skipped: Test for Linux and Mac"); ?>
 --FILE--
 <?php
 $lines_to_add="CPTimeout=5\n[ODBC]\nPooling=Yes\n";
@@ -35,8 +35,8 @@ print_r(shell_exec("php ./test/sqlsrv/isPooled.php"));
 <?php
 $lines = explode("\n", shell_exec("odbcinst -j"));
 $odbcinst_ini = explode(" ", $lines[1])[1];
-shell_exec("cp /etc/odbcinst.ini.bak $odbcinst_ini");
-shell_exec("rm /etc/odbcinst.ini.bak");
+shell_exec("cp $odbcinst_ini.bak $odbcinst_ini");
+shell_exec("rm $odbcinst_ini.bak");
 ?>
 --EXPECT--
 Pooled

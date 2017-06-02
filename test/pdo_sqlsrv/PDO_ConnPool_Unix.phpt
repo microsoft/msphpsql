@@ -35,8 +35,8 @@ print_r(shell_exec("php ./test/pdo_sqlsrv/isPooled.php"));
 <?php
 $lines = explode("\n", shell_exec("odbcinst -j"));
 $odbcinst_ini = explode(" ", $lines[1])[1];
-shell_exec("cp /etc/odbcinst.ini.bak $odbcinst_ini");
-shell_exec("rm /etc/odbcinst.ini.bak");
+shell_exec("cp $odbcinst_ini.bak $odbcinst_ini");
+shell_exec("rm $odbcinst_ini.bak");
 ?>
 --EXPECT--
 Pooled

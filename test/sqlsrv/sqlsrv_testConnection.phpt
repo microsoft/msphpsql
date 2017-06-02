@@ -95,46 +95,45 @@ variety of connection parameters.
 
     // Test a bunch of options. The Failover_Partner keyword does not work
     // on Unix, so we replace it with MultiSubnetFailover instead.
-    if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) 
+    $conn_options_all = array( "APP" => "PHP Unit Test",
+                               "ConnectionPooling" => true,
+                               "Database" => $databaseName,
+                               "Encrypt" => 0,
+                               "LoginTimeout" => 120,
+                               "MultipleActiveResultSets" => false,
+                               "QuotedId" => false,
+                               "TraceOn" => true,
+                               "TraceFile" => "trace.odbc",
+                               "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
+                               "TrustServerCertificate" => 1,
+                               "WSID" => "JAYKINT1" );
+    $conn_options_int = array( "APP" => "PHP Unit Test",
+                               "ConnectionPooling" => false,
+                               "Database" => $databaseName,
+                               "Encrypt" => 0,
+                               "LoginTimeout" => 120,
+                               "MultipleActiveResultSets" => false,
+                               "QuotedId" => true,
+                               "TraceOn" => true,
+                               "TraceFile" => "trace.odbc",
+                               "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
+                               "TrustServerCertificate" => 1,
+                               "WSID" => "JAYKINT1" );
+                               
+    if (  strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) 
     {
         echo "Test sqlsrv_connect with all options\n";
-        $conn = connect(array(
-                        "APP" => "PHP Unit Test",
-                        "ConnectionPooling" => true,
-                        "Database" => $databaseName,
-                        "Encrypt" => 0,
-                        "Failover_Partner" => "(local)",
-                        "LoginTimeout" => 120,
-                        "MultipleActiveResultSets" => false,
-                        "QuotedId" => false,
-                        "TraceOn" => true,
-                        "TraceFile" => "trace.odbc",
-                        "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
-                        "TrustServerCertificate" => 1,
-                        "WSID" => "JAYKINT1" 
-                        ));
+        $conn_options_all['Failover_Partner'] = "(local)";
+        $conn = connect($conn_options_all);
         print_r( sqlsrv_errors()[0] );
         print_r( sqlsrv_errors()[1] );
         if( $conn === false ) {
             die( print_r( sqlsrv_errors(), true ));
         }
+        
         echo "Test sqlsrv_connect with all options and integrated auth\n";
-        $conn = connect(array( 
-                        "APP" => "PHP Unit Test",
-                        "ConnectionPooling" => false,
-                        "Database" => $databaseName,
-                        "Encrypt" => 0,
-                        "Failover_Partner" => "(local)",
-                        "LoginTimeout" => 120,
-                        "MultipleActiveResultSets" => false,
-                        "MultiSubnetFailover" => true,
-                        "QuotedId" => true,
-                        "TraceOn" => true,
-                        "TraceFile" => "trace.odbc",
-                        "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
-                        "TrustServerCertificate" => 1,
-                        "WSID" => "JAYKINT1" 
-                        ));
+        $conn_options_int['Failover_Partner'] = "(local)";
+        $conn = connect($conn_options_int);
         print_r( sqlsrv_errors()[0] );
         print_r( sqlsrv_errors()[1] );
         if( $conn === false ) {
@@ -144,42 +143,17 @@ variety of connection parameters.
     else
     {
         echo "Test sqlsrv_connect with all options\n";
-        $conn = connect(array(
-                        "APP" => "PHP Unit Test",
-                        "ConnectionPooling" => true,
-                        "Database" => $databaseName,
-                        "Encrypt" => 0,
-                        "LoginTimeout" => 120,
-                        "MultipleActiveResultSets" => false,
-                        "MultiSubnetFailover" => true,
-                        "QuotedId" => false,
-                        "TraceOn" => true,
-                        "TraceFile" => "trace.odbc",
-                        "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
-                        "TrustServerCertificate" => 1,
-                        "WSID" => "JAYKINT1" 
-                        ));
+        $conn_options_all['MultiSubnetFailover'] = true;
+        $conn = connect($conn_options_all);
         print_r( sqlsrv_errors()[0] );
         print_r( sqlsrv_errors()[1] );
         if( $conn === false ) {
             die( print_r( sqlsrv_errors(), true ));
         }
+        
         echo "Test sqlsrv_connect with all options and integrated auth\n";
-        $conn = connect(array( 
-                        "APP" => "PHP Unit Test",
-                        "ConnectionPooling" => false,
-                        "Database" => $databaseName,
-                        "Encrypt" => 0,
-                        "LoginTimeout" => 120,
-                        "MultipleActiveResultSets" => false,
-                        "MultiSubnetFailover" => true,
-                        "QuotedId" => true,
-                        "TraceOn" => true,
-                        "TraceFile" => "trace.odbc",
-                        "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
-                        "TrustServerCertificate" => 1,
-                        "WSID" => "JAYKINT1" 
-                        ));
+        $conn_options_int['MultiSubnetFailover'] = true;
+        $conn = connect($conn_options_int);
         print_r( sqlsrv_errors()[0] );
         print_r( sqlsrv_errors()[1] );
         if( $conn === false ) {
