@@ -1,21 +1,20 @@
-## 1. Install Composer - Dependency Manager for PHP  
-https://getcomposer.org/
+## 1. Setup Environment on a clean machine
 
-    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-    php -r "if (hash_file('SHA384', 'composer-setup.php') === '669656bab3166a7aff8a7506b8cb2d1c292f042046c5a994c43155c0be6190fa0355160742ab2e1c88d40d5be660b410') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-    php composer-setup.php
-    php -r "unlink('composer-setup.php');"
-    
-## 2. Install PHPBench - A Benchmark Runner for PHP
-http://phpbench.readthedocs.io/en/latest/
+### Windows
+Install Visual Studio 2015 before running the following commands. Make sure C++ tools are enabled.
+Run `cmd` as administrator.
 
-Make sure git is installed and in your PATH env. Navigate into Performance folder and run:
+    powershell
+    .\setup_env_windows.ps1 <LATEST PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder> <ARCH - x86 or x64>    
+### Ubuntu 16
+    sudo env “PATH=$PATH” bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
+### RedHat 7
+    sudo env “PATH=$PATH” bash setup_env_unix.sh RedHat7 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
+### Sierra
+`brew` cannot be run with `sudo` on Sierra. Either enable passwordless `sudo` on the machine or enter the password when prompted. 
 
-    composer install
-
-## 3. Run benchmarks
-
-PHPBench will use the default PHP in PATH env. To specify a different PHP binary, use `--php-binary path_to_php`. Make sure `sqlsrv` and `pdo_sqlsrv` are loaded. Edit `lib/connect.php` with connection credentials. Run benchmarks. 
+    bash setup_env_unix.sh Sierra <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
+## 3. Run benchmarks - Subject to change once the process is automated
 
 Run sqlsrv benchmarks:
 
