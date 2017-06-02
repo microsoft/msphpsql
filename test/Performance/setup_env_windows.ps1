@@ -12,13 +12,13 @@ Param(
 $PHP_VERSION_MINOR=$PHP_VERSION.split(".")[1]
 $startingDir=$pwd.Path
 $tempFolder=Join-Path $startingDir "temp"
-echo $tempFolder
+
 
 Remove-Item temp -Recurse -Force -ErrorAction Ignore
 New-Item -ItemType directory -Path temp
 
 Write-Host "Downloading Git..."
-(New-Object System.Net.WebClient).DownloadFile('https://github.com/git-for-windows/git/releases/download/v2.13.0.windows.1/Git-2.13.0-64-bit.exe', "$tempFolder\git.exe") 
+(New-Object System.Net.WebClient).DownloadFile('https://github.com/git-for-windows/git/releases/download/v2.13.0.windows.1/Git-2.13.0-64-bit.exe', "$tempFolder\git.exe")
 Write-Host "Installing Git..."
 .\temp\git.exe /SILENT | Out-Null
 Write-Host "Downloading MSODBCSQL..."
@@ -50,13 +50,34 @@ set-alias sz "$env:ProgramFiles\7-Zip\7z.exe"
 sz x $tempFolder\deps-7.$PHP_VERSION_MINOR-vc14-$ARCH.7z -oC:\php-sdk\phpdev\vc14\$ARCH\
 
 bin\phpsdk_setvars.bat
+
 cd C:\php-sdk\phpdev\vc14\$ARCH\php-$PHP_VERSION-src
-.\buildconf --force
-$CONFIG_OPTIONS="--enable-cli --enable-cgi --enable-pdo --enable-sqlsrv=shared --with-pdo_sqlsrv=shared --with-odbcver=0x0380 --with-zlib --enable-mbstring"
+
+New-Item -ItemType directory -Path .\ext\sqlsrv
+New-Item -ItemType directory -Path .\ext\pdo_sqlsrv
+Copy-Item $DRIVER_SOURCE_PATH\sqlsrv\* .\ext\sqlsrv\ -recurse
+Copy-Item $DRIVER_SOURCE_PATH\shared\ .\ext\sqlsrv\ -recurse
+Copy-Item $DRIVER_SOURCE_PATH\pdo_sqlsrv\* .\ext\pdo_sqlsrv\ -recurse
+Copy-Item $DRIVER_SOURCE_PATH\shared\ .\ext\pdo_sqlsrv\ -recurse
+
+
+$CONFIG_OPTIONS="--enable-cli --enable-cgi --enable-sqlsrv=shared --enable-pdo=shared   --with-pdo-sqlsrv=shared --with-odbcver=0x0380 --enable-mbstring --with-openssl"
 if ($PHP_THREAD -ceq "nts") {
-    $CONFIG_OPTIONS=$CONFIG_OPTIONS + "--disable-zts"
+    $CONFIG_OPTIONS=$CONFIG_OPTIONS + " --disable-zts"
 }
-.\configure $CONFIG_OPTIONS
-nmake
+& $startingDir\compile_php.bat $ARCH $CONFIG_OPTIONS
 
 
+Copy-Item php.ini-production php.ini
+Add-Content php.ini "extension=C:\php\ext\php_sqlsrv.dll"
+Add-Content php.ini "extension=C:\php\ext\php_pdo_sqlsrv.dll"
+Add-Content php.ini "extension=C:\php\ext\php_openssl.dll"
+Move-Item php.ini C:\Windows -force
+Copy-Item C:\php-sdk\phpdev\vc14\$ARCH\deps\bin\ssleay32.dll C:\Windows -force
+Copy-Item C:\php-sdk\phpdev\vc14\$ARCH\deps\bin\libeay32.dll C:\Windows -force
+
+cd $startingDir
+set-alias php "C:\php\php.exe"
+wget https://getcomposer.org/installer -O composer-setup.php
+php composer-setup.php
+php composer.phar install
