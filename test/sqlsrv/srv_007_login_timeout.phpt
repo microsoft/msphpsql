@@ -1,5 +1,7 @@
 --TEST--
 False connection with LoginTimeout option
+--DESCRIPTION--
+Intentionally provide an invalid server name and set LoginTimeout. Verify the time elapsed.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--

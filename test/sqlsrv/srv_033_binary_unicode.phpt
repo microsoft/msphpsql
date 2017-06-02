@@ -1,5 +1,7 @@
 --TEST--
-Insert binary HEX data into nvarchar field then read it back using sqlsrv_get_field()
+Insert binary HEX data then fetch it back as string
+--DESCRIPTION--
+Insert binary HEX data into an nvarchar field then read it back as UTF-8 string using sqlsrv_get_field()
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--

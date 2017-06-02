@@ -1,5 +1,5 @@
 --TEST--
-Fetch array using a scrollable buffered cursor with connection CharacterSet utf-8
+Fetch array of extended ASCII data using a scrollable buffered cursor 
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
@@ -16,12 +16,11 @@ $query = "CREATE TABLE $tableName (ID CHAR(10))";
 $stmt = sqlsrv_query($conn, $query);
 
 // Insert data
-$query = "INSERT INTO $tableName VALUES ('Aå_Ð×Æ×Ø_B')"; // Ð×Æ×Ø
+$query = "INSERT INTO $tableName VALUES ('Aå_Ð×Æ×Ø_B')"; 
 $stmt = sqlsrv_query($conn, $query) ?: die(print_r( sqlsrv_errors(), true));
 
 // Fetch data
 $query = "SELECT * FROM $tableName";
-// $stmt = sqlsrv_query($conn, $query)
 $stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"));
 if( $stmt === false)  
     die( print_r(sqlsrv_errors(), true));

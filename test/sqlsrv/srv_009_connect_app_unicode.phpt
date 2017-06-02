@@ -1,5 +1,7 @@
 --TEST--
 Connection option APP unicode
+--DESCRIPTION--
+Connect using a Unicode App name. Once connected, fetch APP_NAME.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--

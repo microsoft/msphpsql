@@ -1,5 +1,8 @@
 --TEST--
 Query with extended ASCII column names, sqlsrv_num_fields()
+--DESCRIPTION--
+Create a temporary table with column names that contain extended ASCII characters. Get number of fields 
+using sqlsrv_num_fields.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--

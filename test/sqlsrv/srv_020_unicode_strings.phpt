@@ -1,5 +1,7 @@
 --TEST--
 Query non-ascii strings: sqlsrv_fetch_array
+--DESCRIPTION--
+Test sqlsrv_fetch_array() with non-ASCII values
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--

@@ -1,5 +1,8 @@
 --TEST--
 Extended ASCII column names: sqlsrv_fetch_array()
+--DESCRIPTION--
+Create a temporary table with column names that contain extended ASCII characters. Fetch data afterwards
+using sqlsrv_fetch_array.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
