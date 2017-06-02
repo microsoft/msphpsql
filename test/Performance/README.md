@@ -1,4 +1,4 @@
-## 1. Setup Environment on a clean machine
+## Setup Environment on a clean machine
 
 ### Windows
 Install Visual Studio 2015 before running the following commands. Make sure C++ tools are enabled.
@@ -14,7 +14,7 @@ Run `cmd` as administrator.
 `brew` cannot be run with `sudo` on Sierra. Either enable passwordless `sudo` on the machine or enter the password when prompted. 
 
     bash setup_env_unix.sh Sierra <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
-## 3. Run benchmarks - Subject to change once the process is automated
+## Run benchmarks - Subject to change once the process is automated
 
 Run sqlsrv benchmarks:
 
