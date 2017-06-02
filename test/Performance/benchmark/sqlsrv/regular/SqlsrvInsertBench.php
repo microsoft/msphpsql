@@ -14,6 +14,7 @@ class SqlsrvInsertBench{
     public function setTableName(){
         $this->tableName = "datatypes_".rand();
     }
+    
     public function connect(){
         $this->conn = SqlsrvUtil::connect();
     }
