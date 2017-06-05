@@ -34,6 +34,8 @@ $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query( $conn, $sql );
 if( $stmt === false) { die( print_r( sqlsrv_errors(), true) ); }
 
+echo sqlsrv_num_fields($stmt)."\n";
+
 // Fetch array
 while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC) ) {
     printf("%s %d\n",$row[0], $row[1]);
@@ -45,6 +47,7 @@ sqlsrv_close($conn);
 ?>
 
 --EXPECT--
+2
 Paris 1911
 London 2012
 Berlin 1990
