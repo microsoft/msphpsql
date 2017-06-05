@@ -17,13 +17,15 @@ $stmt = sqlsrv_query($conn, $query);
 
 // Insert data
 $query = "INSERT INTO $tableName VALUES ('Aå_Ð×Æ×Ø_B')"; 
-$stmt = sqlsrv_query($conn, $query) ?: die(print_r( sqlsrv_errors(), true));
+$stmt = sqlsrv_query($conn, $query);
+if (! $stmt) 
+    die(print_r( sqlsrv_errors(), true));
 
 // Fetch data
 $query = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"));
-if( $stmt === false)  
-    die( print_r(sqlsrv_errors(), true));
+if (! $stmt) 
+    die(print_r( sqlsrv_errors(), true));
 
 // Fetch
 $row = sqlsrv_fetch_array($stmt);
