@@ -36,9 +36,6 @@ Thank you for taking time to take our February survey. Let us know how we are do
 
 
 ## Announcements
-
-**March 7, 2017**: We are thrilled to announce that the early technical preview for SQLSRV and PDO_SQLSRV drivers is now available, both drivers have been built and tested on El Capitan (OS X 10.11). For complete list of changes please visit [4.1.7-preview release notes](https://github.com/Microsoft/msphpsql/releases/tag/v4.1.7-preview).
-
  Please visit the [blog][blog] for more announcements.
 
 
