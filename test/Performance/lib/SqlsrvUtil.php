@@ -24,8 +24,7 @@ class SqlsrvUtil{
     public static function selectVersion( $conn ){
         $sql = "SELECT @@Version";
         $stmt = self::query( $conn, $sql );
-        self::fetch( $stmt );
-        return self::getField( $stmt, 0 );
+        return self::fetchArray( $stmt );
     }
     
     public static function createDbTableProc( $conn, $databaseName, $tableName, $procName ){
@@ -105,11 +104,7 @@ class SqlsrvUtil{
         $sql = "SELECT * FROM $tableName";
         $stmt = self::prepare( $conn, $sql, array());
         self::execute( $stmt );
-        while ( self::fetch( $stmt )){
-            for ( $i=0; $i<10; $i++ ){
-                self::getField( $stmt, $i );
-            }
-        }
+        while( $row = self::fetchArray( $stmt ) ) {}
     }
     
     public static function createCRUDTable( $conn, $tableName ){
@@ -146,6 +141,14 @@ class SqlsrvUtil{
             die( print_r( sqlsrv_errors(), true));
         }
         return $ret;
+    }
+
+    public static function fetchArray( $stmt ){
+        $row = sqlsrv_fetch_array( $stmt );
+        if ( $row === false ){
+            die( print_r( sqlsrv_errors(), true));
+        }
+        return $row;
     }
 
     public static function getField( $stmt, $index ){

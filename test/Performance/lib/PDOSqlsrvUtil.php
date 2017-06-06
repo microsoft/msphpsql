@@ -99,7 +99,7 @@ class PDOSqlsrvUtil{
         $sql = "SELECT * FROM $tableName";
         $stmt = self::prepare( $conn, $sql );
         self::execute( $stmt );
-	    while ( $row = self::fetch( $stmt )){}   
+        while ( $row = self::fetch( $stmt )){}   
     }
 
     public static function deleteWithPrepare( $conn, $tableName ){
@@ -151,37 +151,37 @@ class PDOSqlsrvUtil{
 
     private function createDatabase( $conn, $dbName ){
         $sql = "CREATE DATABASE $dbName";
-        self::query( $conn, $sql );
+        $conn->exec( $sql );
     }
 
     public static function dropDatabase( $conn, $dbName ){
         $sql = "USE MASTER;DROP DATABASE $dbName";
-        self::query( $conn, $sql );
+        $conn->exec( $sql );
     }
 
     public static function createTable( $conn, $tableName, $params ){
         $sql = "CREATE TABLE $tableName ($params)";
-        self::query( $conn, $sql );
+        $conn->exec( $sql );
     }
 
     public static function dropTable( $conn, $tableName ){
         $sql = "DROP TABLE $tableName";
-        self::query( $conn, $sql );
+        $conn->exec( $sql );
     }
 
     private function useDatabase( $conn, $dbName ){
         $sql = "USE $dbName";
-        self::query( $conn, $sql );
+        $conn->exec( $sql );
     }
 
     private function createStoredProc( $conn, $procName, $params, $text ){
         $sql = "CREATE PROCEDURE $procName $params AS $text";
-        self::query( $conn, $sql );
+        $conn->exec( $sql );
     }
 
     private function dropStoredProc( $conn, $procName ){
         $sql = "DROP PROCEDURE $procName";
-        self::query( $conn, $sql );
+        $conn->exec( $sql );
     }
 
     private function query( $conn, $sql ){
