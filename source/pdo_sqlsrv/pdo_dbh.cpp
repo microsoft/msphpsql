@@ -57,6 +57,7 @@ const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
 const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
+const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char WSID[] = "WSID";
 
 }
@@ -337,6 +338,15 @@ const connection_option PDO_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::TrustServerCertificate ),
         CONN_ATTR_BOOL,
         pdo_bool_conn_str_func::func
+    },
+    {
+        PDOConnOptionNames::TransparentNetworkIPResolution,
+        sizeof(PDOConnOptionNames::TransparentNetworkIPResolution),
+        SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
+        ODBCConnOptions::TransparentNetworkIPResolution,
+        sizeof(ODBCConnOptions::TransparentNetworkIPResolution),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
     },
     {
         PDOConnOptionNames::WSID,
