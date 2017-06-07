@@ -48,13 +48,13 @@ test_tnir("Disabled", true);    // case tdme
 
 --EXPECTREGEX--
 Connection successful with TNIR Enabled and MultiSubnetFailover false\.
-Time to connect is [0-9]+\.[0-9]+ sec\.
+Time to connect is [0-9]+.?[0-9]* sec\.
 
 Connection successful with TNIR Enabled and MultiSubnetFailover true\.
-Time to connect is [0-9]+\.[0-9]+ sec\.
+Time to connect is [0-9]+.?[0-9]* sec\.
 
 Connection successful with TNIR Disabled and MultiSubnetFailover false\.
-Time to connect is [0-9]+\.[0-9]+ sec\.
+Time to connect is [0-9]+.?[0-9]* sec\.
 
 Connection successful with TNIR Disabled and MultiSubnetFailover true\.
-Time to connect is [0-9]+\.[0-9]+ sec\.
+Time to connect is [0-9]+.?[0-9]* sec\.
