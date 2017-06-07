@@ -300,7 +300,7 @@ const connection_option SS_CONN_OPTS[] = {
 		ODBCConnOptions::ColumnEncryption,
 		sizeof(ODBCConnOptions::ColumnEncryption),
 		CONN_ATTR_STRING,
-		conn_str_append_func::func
+		column_encryption_set_func::func
 	},
 	{
         SSConnOptionNames::ConnectionPooling,
