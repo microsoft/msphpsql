@@ -1051,12 +1051,15 @@ struct sqlsrv_conn : public sqlsrv_context {
 
 	DRIVER_VERSION	driver_version;
 
+	bool           column_encryption_enabled;	// column encryption enabled, false by default
+
     // initialize with default values
     sqlsrv_conn( SQLHANDLE h, error_callback e, void* drv, SQLSRV_ENCODING encoding  TSRMLS_DC ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
         driver_version = ODBC_DRIVER_13; 
+		column_encryption_enabled = false;
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be 
@@ -2360,6 +2363,22 @@ struct str_conn_attr_func {
             throw;
         }
     }
+};
+
+struct column_encryption_set_func {
+
+	static void func(connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC)
+	{
+		convert_to_string(value);
+		const char* option = Z_STRVAL_P(value);
+
+		if ( ! stricmp( option, "enabled" ) ) {
+			conn->column_encryption_enabled = true;
+		}
+		else {
+			conn->column_encryption_enabled = false;
+		}
+	}
 };
 
 #endif  // CORE_SQLSRV_H
