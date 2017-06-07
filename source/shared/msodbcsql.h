@@ -36,7 +36,7 @@
 
 
 #if !defined(SQLODBC_VER)
-#define SQLODBC_VER 1100
+#define SQLODBC_VER 1300
 #endif
 
 #if SQLODBC_VER >= 1300
@@ -55,6 +55,13 @@
 
 #define SQLODBC_DRIVER_NAME                     SQLODBC_PRODUCT_NAME_SHORT_VER
 
+
+#ifdef ODBCVER
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* max SQL Server identifier length */
 #define SQL_MAX_SQLSERVERNAME                       128
 
@@ -64,12 +71,15 @@
  * Connection attributes
  */
 #define SQL_COPT_SS_BASE                                1200
-#define SQL_COPT_SS_INTEGRATED_SECURITY                 (SQL_COPT_SS_BASE+3) /* Force integrated security on login */
+#define SQL_COPT_SS_INTEGRATED_SECURITY                 (SQL_COPT_SS_BASE+3)  /* Force integrated security on login */
+#define SQL_COPT_SS_PRESERVE_CURSORS                    (SQL_COPT_SS_BASE+4)  /* Preserve server cursors after SQLTransact */
+#define SQL_COPT_SS_BCP                                 (SQL_COPT_SS_BASE+19) /* Allow BCP usage on connection */
 #define SQL_COPT_SS_TRANSLATE                           (SQL_COPT_SS_BASE+20) /* Perform code page translation */
 #define SQL_COPT_SS_ENCRYPT                             (SQL_COPT_SS_BASE+23) /* Allow strong encryption for data */
 #define SQL_COPT_SS_MARS_ENABLED                        (SQL_COPT_SS_BASE+24) /* Multiple active result set per connection */
 #define SQL_COPT_SS_TXN_ISOLATION                       (SQL_COPT_SS_BASE+27) /* Used to set/get any driver-specific or ODBC-defined TXN iso level */
 #define SQL_COPT_SS_TRUST_SERVER_CERTIFICATE            (SQL_COPT_SS_BASE+28) /* Trust server certificate */
+
 /*
  * SQLSetStmtAttr Microsoft ODBC Driver for SQL Server specific defines.
  * Statement attributes
@@ -77,8 +87,10 @@
 #define SQL_SOPT_SS_BASE                            1225
 #define SQL_SOPT_SS_TEXTPTR_LOGGING                 (SQL_SOPT_SS_BASE+0) /* Text pointer logging */
 #define SQL_SOPT_SS_NOBROWSETABLE                   (SQL_SOPT_SS_BASE+3) /* Set NOBROWSETABLE option */
+#define SQL_SOPT_SS_PARAM_FOCUS                     (SQL_SOPT_SS_BASE+11)/* Direct subsequent calls to parameter related methods to set properties on constituent columns/parameters of container types */
 #define SQL_SOPT_SS_COLUMN_ENCRYPTION               (SQL_SOPT_SS_BASE+13)/* Sets the column encryption mode */
-/* Define old names */
+
+ /* Define old names */
 #define SQL_TEXTPTR_LOGGING                         SQL_SOPT_SS_TEXTPTR_LOGGING
 #define SQL_COPT_SS_BASE_EX                         1240
 #define SQL_COPT_SS_WARN_ON_CP_ERROR                (SQL_COPT_SS_BASE_EX+3) /* Issues warning when data from the server had a loss during code page conversion. */
@@ -86,14 +98,13 @@
 #define SQL_COPT_SS_APPLICATION_INTENT              (SQL_COPT_SS_BASE_EX+7) /* Application Intent */
 #define SQL_COPT_SS_MULTISUBNET_FAILOVER            (SQL_COPT_SS_BASE_EX+8) /* Multi-subnet Failover */
 #define SQL_COPT_SS_TNIR                            (SQL_COPT_SS_BASE_EX+9) /* Transparent Network IP Resolution */
-#define SQL_COPT_SS_COLUMN_ENCRYPTION               (SQL_COPT_SS_BASE_EX+10) /* Always Encrypted Enabled or Disabled */
-#define SQL_COPT_SS_AEKEYSTOREPROVIDER              (SQL_COPT_SS_BASE_EX+11) /* Load a keystore provider or read the list of loaded keystore providers */
-#define SQL_COPT_SS_AEKEYSTOREDATA                  (SQL_COPT_SS_BASE_EX+12) /* Communicate with a loaded keystore provider */
-#define SQL_COPT_SS_AETRUSTEDCMKPATHS               (SQL_COPT_SS_BASE_EX+13) /* List of trusted CMK paths */
-#define SQL_COPT_SS_AECEKCACHETTL                   (SQL_COPT_SS_BASE_EX+14) /* Symmetric Key Cache TTL */
-#define SQL_COPT_SS_AUTHENTICATION                  (SQL_COPT_SS_BASE_EX+15) /* The authentication method used for the connection */
+#define SQL_COPT_SS_COLUMN_ENCRYPTION               (SQL_COPT_SS_BASE_EX+10) /* Column Encryption Enabled or Disabled */
+#define SQL_COPT_SS_CEKEYSTOREPROVIDER              (SQL_COPT_SS_BASE_EX+11) /* Load a keystore provider or read the list of loaded keystore providers */
+#define SQL_COPT_SS_CEKEYSTOREDATA                  (SQL_COPT_SS_BASE_EX+12) /* Communicate with loaded keystore providers */
+#define SQL_COPT_SS_TRUSTEDCMKPATHS                 (SQL_COPT_SS_BASE_EX+13) /* List of trusted CMK paths */
+#define SQL_COPT_SS_CEKCACHETTL                     (SQL_COPT_SS_BASE_EX+14) /* Symmetric Key Cache TTL */
 
-/*
+ /*
  * SQLColAttributes driver specific defines.
  * SQLSetDescField/SQLGetDescField driver specific defines.
  * Microsoft has 1200 thru 1249 reserved for Microsoft ODBC Driver for SQL Server usage.
@@ -143,15 +154,22 @@
 
 /* force column encryption */
 #define SQL_CA_SS_FORCE_ENCRYPT                     (SQL_CA_SS_BASE+36) /*  indicate mandatory encryption for this parameter */
-
+/* Defines for use with SQL_COPT_SS_PRESERVE_CURSORS */
+#define SQL_PC_OFF                          0L           /*  Cursors are closed on SQLTransact */
+#define SQL_PC_ON                           1L           /*  Cursors remain open on SQLTransact */
+#define SQL_PC_DEFAULT                      SQL_PC_OFF
 /* Defines for use with SQL_COPT_SS_INTEGRATED_SECURITY - Pre-Connect Option only */
-#define SQL_IS_OFF                          0L           /*  Integrated security isn't used */
-#define SQL_IS_ON                           1L           /*  Integrated security is used */
+#define SQL_IS_OFF                          0L
+#define SQL_IS_ON                           1L
 #define SQL_IS_DEFAULT                      SQL_IS_OFF
 /* Defines for use with SQL_COPT_SS_TRANSLATE */
 #define SQL_XL_OFF                          0L           /*  Code page translation is not performed */
 #define SQL_XL_ON                           1L           /*  Code page translation is performed */
 #define SQL_XL_DEFAULT                      SQL_XL_ON
+/* Defines for use with SQL_COPT_SS_BCP - Pre-Connect Option only */
+#define SQL_BCP_OFF                         0L           /*  BCP is not allowed on connection */
+#define SQL_BCP_ON                          1L           /*  BCP is allowed on connection */
+#define SQL_BCP_DEFAULT                     SQL_BCP_OFF
 /* Defines for use with SQL_SOPT_SS_TEXTPTR_LOGGING */
 #define SQL_TL_OFF                          0L           /*  No logging on text pointer ops */
 #define SQL_TL_ON                           1L           /*  Logging occurs on text pointer ops */
@@ -164,7 +182,6 @@
 #define SQL_CE_DISABLED                     0L           /*  Disabled */
 #define SQL_CE_RESULTSETONLY                1L           /*  Decryption Only (resultsets and return values) */
 #define SQL_CE_ENABLED                      3L           /*  Enabled (both encryption and decryption) */
-
 /* SQL_COPT_SS_ENCRYPT */
 #define SQL_EN_OFF                          0L
 #define SQL_EN_ON                           1L
@@ -180,11 +197,11 @@
 /* SQL_TXN_ISOLATION_OPTION bitmasks */
 #define SQL_TXN_SS_SNAPSHOT                 0x00000020L
 /* SQL_COPT_SS_COLUMN_ENCRYPTION */
-#define SQL_COLUMN_ENCRYPTION_DISABLE		0L
-#define SQL_COLUMN_ENCRYPTION_ENABLE		1L
-#define SQL_COLUMN_ENCRYPTION_DEFAULT		SQL_COLUMN_ENCRYPTION_DISABLE
-// Defines for use with SQL_COPT_SS_AECEKCACHETTL
-#define SQL_AECEKCACHETTL_DEFAULT           7200L        //  TTL value in seconds (2 hours)
+#define SQL_COLUMN_ENCRYPTION_DISABLE       0L
+#define SQL_COLUMN_ENCRYPTION_ENABLE        1L
+#define SQL_COLUMN_ENCRYPTION_DEFAULT       SQL_COLUMN_ENCRYPTION_DISABLE
+/* SQL_COPT_SS_CEKCACHETTL */
+#define SQL_CEKCACHETTL_DEFAULT             7200L        /*  TTL value in seconds (2 hours) */
 
 /* The following are defines for SQL_CA_SS_COLUMN_SORT_ORDER */
 #define SQL_SS_ORDER_UNSPECIFIED            0L
@@ -365,64 +382,219 @@
 #define EX_HARDWARE     24
 #define EX_CONTROL      25
 
-/* Keystore Provider interface definition */
+#pragma pack(8)
 
-typedef void errFunc(void *ctx, const wchar_t *msg, ...);
+
+/* New Structure for TIME2 */
+typedef struct tagSS_TIME2_STRUCT
+{
+    SQLUSMALLINT   hour;
+    SQLUSMALLINT   minute;
+    SQLUSMALLINT   second;
+    SQLUINTEGER    fraction;
+} SQL_SS_TIME2_STRUCT;
+
+/* New Structure for TIMESTAMPOFFSET */
+typedef struct tagSS_TIMESTAMPOFFSET_STRUCT
+{
+    SQLSMALLINT    year;
+    SQLUSMALLINT   month;
+    SQLUSMALLINT   day;
+    SQLUSMALLINT   hour;
+    SQLUSMALLINT   minute;
+    SQLUSMALLINT   second;
+    SQLUINTEGER    fraction;
+    SQLSMALLINT    timezone_hour;
+    SQLSMALLINT    timezone_minute;
+} SQL_SS_TIMESTAMPOFFSET_STRUCT;
+
+#pragma pack()
+
+/* 
+ * Keystore Provider interface definitions 
+ */
+typedef struct CEKeystoreContext
+{
+    void *envCtx;
+    void *dbcCtx;
+    void *stmtCtx;
+} CEKEYSTORECONTEXT;
+
+typedef void errFunc(CEKEYSTORECONTEXT *ctx, const wchar_t *msg, ...);
 
 #define IDS_MSG(x) ((const wchar_t*)(x))
 
-typedef struct AEKeystoreProvider
+typedef struct CEKeystoreProvider
 {
     wchar_t *Name;
-    int (*Init)(void *ctx, errFunc *onError);
-    int (*Read)(void *ctx, errFunc *onError, void *data, unsigned int *len);
-    int (*Write)(void *ctx, errFunc *onError, void *data, unsigned int len);
+    int (*Init)(CEKEYSTORECONTEXT *ctx, errFunc *onError);
+    int (*Read)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int *len);
+    int (*Write)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int len);
     int (*DecryptCEK)(
-        void *ctx,
+        CEKEYSTORECONTEXT *ctx,
         errFunc *onError,
         const wchar_t *keyPath,
         const wchar_t *alg,
         unsigned char *ecek,
-        unsigned short ecek_len,
-        unsigned char **cek_out,
-        unsigned short *cek_len);
+        unsigned short ecekLen,
+        unsigned char **cekOut,
+        unsigned short *cekLen);
+    int (*EncryptCEK)(
+        CEKEYSTORECONTEXT *ctx,
+        errFunc *onError,
+        const wchar_t *keyPath,
+        const wchar_t *alg,
+        unsigned char *cek,
+        unsigned short cekLen,
+        unsigned char **ecekOut,
+        unsigned short *ecekLen);
     void (*Free)();
-} AEKEYSTOREPROVIDER;
+} CEKEYSTOREPROVIDER;
 
-/* Data is defined to be past the end of the structure header.
- This is accepted by MSVC, GCC, and C99 standard but former emits
- unnecessary warning, hence it has to be disabled.
-*/
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable:4200)
-#endif
-
-typedef struct AEKeystoreData
+typedef struct CEKeystoreData
 {
-    wchar_t *Name;
+    wchar_t *name;
     unsigned int dataSize;
-    char Data[];
-} AEKEYSTOREPROVIDERDATA;
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
+    char data[];
+} CEKEYSTOREDATA;
 
 /* The following constants are for the Azure Key Vault configuration interface */
-#define AKV_CONFIG_FLAGS       0
-#define AKVCFG_USECLIENTID    0x00000001
-#define AKVCFG_AUTORENEW      0x00000002
+#define AKV_CONFIG_FLAGS        0
+#define AKVCFG_AUTHMODE       0x0000000F
+#define AKVCFG_AUTHMODE_ACCESSTOKEN   0
+#define AKVCFG_AUTHMODE_CLIENTKEY     1
+#define AKVCFG_AUTHMODE_PASSWORD      2
+#define AKVCFG_AUTHMODE_INTEGRATED    3
+#define AKVCFG_AUTHMODE_CERTIFICATE   4
+#define AKVCFG_NOAUTORENEW    0x00000010
 
-#define AKV_CONFIG_CLIENTID    1
-#define AKV_CONFIG_CLIENTKEY   2
-
-#define AKV_CONFIG_ACCESSTOKEN 3
-#define AKV_CONFIG_TOKENEXPIRY 4
-
+#define AKV_CONFIG_PRINCIPALID  1
+#define AKV_CONFIG_AUTHSECRET   2
+#define AKV_CONFIG_ACCESSTOKEN  3
+#define AKV_CONFIG_TOKENEXPIRY  4
 #define AKV_CONFIG_MAXRETRIES   5
 #define AKV_CONFIG_RETRYTIMEOUT 6
 #define AKV_CONFIG_RETRYWAIT    7
+
+#define AKV_CONFIG_RESET        255
+
+/*
+* BCP Definitions
+*/
+
+/* Error codes */
+#define SUCCEED                 1
+#define FAIL                    0
+#define SUCCEED_ABORT           2
+#define SUCCEED_ASYNC           3
+
+/* Transfer directions */
+#define DB_IN                   1   /* Transfer from client to server */
+#define DB_OUT                  2   /* Transfer from server to client */
+
+/* bcp_control option */
+#define BCPMAXERRS              1   /* Sets max errors allowed */
+#define BCPFIRST                2   /* Sets first row to be copied out */
+#define BCPLAST                 3   /* Sets number of rows to be copied out */
+#define BCPBATCH                4   /* Sets input batch size */
+#define BCPKEEPNULLS            5   /* Sets to insert NULLs for empty input values */
+#define BCPABORT                6   /* Sets to have bcpexec return SUCCEED_ABORT */
+#define BCPODBC                 7   /* Sets ODBC canonical character output */
+#define BCPKEEPIDENTITY         8   /* Sets IDENTITY_INSERT on */
+#define BCPHINTSA               10  /* Sets server BCP hints (ANSI string) */
+#define BCPHINTSW               11  /* Sets server BCP hints (UNICODE string) */
+#define BCPFILECP               12  /* Sets clients code page for the file */
+#define BCPUNICODEFILE          13  /* Sets that the file contains unicode header */
+#define BCPTEXTFILE             14  /* Sets BCP mode to expect a text file and to detect Unicode or ANSI automatically */
+#define BCPFILEFMT              15  /* Sets file format version */
+#define BCPFMTXML               16  /* Sets the format file type to xml */
+#define BCPFIRSTEX              17  /* Starting Row for BCP operation (64 bit) */
+#define BCPLASTEX               18  /* Ending Row for BCP operation (64 bit) */
+#define BCPROWCOUNT             19  /* Total Number of Rows Copied (64 bit) */
+#define BCPDELAYREADFMT         20  /* Delay reading format file until bcp_exec */
+/* BCPFILECP values
+* Any valid code page that is installed on the client can be passed plus:
+*/
+#define BCPFILECP_RAW           (-1) /* Data in file is in Server code page (no conversion) */
+/* bcp_collen definition */
+#define SQL_VARLEN_DATA (-10)   /* Use default length for column */
+/* BCP column format properties */
+#define BCP_FMT_TYPE            0x01
+#define BCP_FMT_INDICATOR_LEN   0x02
+#define BCP_FMT_DATA_LEN        0x03
+#define BCP_FMT_TERMINATOR      0x04
+#define BCP_FMT_SERVER_COL      0x05
+#define BCP_FMT_COLLATION       0x06
+#define BCP_FMT_COLLATION_ID    0x07
+/* bcp_setbulkmode properties */
+#define BCP_OUT_CHARACTER_MODE      0x01
+#define BCP_OUT_WIDE_CHARACTER_MODE 0x02
+#define BCP_OUT_NATIVE_TEXT_MODE    0x03
+#define BCP_OUT_NATIVE_MODE         0x04
+
+#ifndef INT
+typedef int     INT;
+typedef INT     DBINT;
+typedef DBINT * LPDBINT;
+typedef unsigned char DBBOOL;
+
+#ifndef _LPCBYTE_DEFINED
+#define _LPCBYTE_DEFINED
+typedef BYTE const* LPCBYTE;
+#endif /* _LPCBYTE_DEFINED */
+#endif /* INT */
+
+/*
+* BCP functions
+*/
+DBINT SQL_API bcp_batch(HDBC);
+RETCODE SQL_API bcp_bind(HDBC, LPCBYTE, INT, DBINT, LPCBYTE, INT, INT, INT);
+RETCODE SQL_API bcp_colfmt(HDBC, INT, BYTE, INT, DBINT, LPCBYTE, INT, INT);
+RETCODE SQL_API bcp_collen(HDBC, DBINT, INT);
+RETCODE SQL_API bcp_colptr(HDBC, LPCBYTE, INT);
+RETCODE SQL_API bcp_columns(HDBC, INT);
+RETCODE SQL_API bcp_control(HDBC, INT, void *);
+DBINT SQL_API bcp_done(HDBC);
+RETCODE SQL_API bcp_exec(HDBC, LPDBINT);
+RETCODE SQL_API bcp_getcolfmt(HDBC, INT, INT, void *, INT, INT *);
+RETCODE SQL_API bcp_moretext(HDBC, DBINT, LPCBYTE);
+RETCODE SQL_API bcp_sendrow(HDBC);
+RETCODE SQL_API bcp_setbulkmode(HDBC, INT, void*, INT cbField, void *, INT cbRow);
+RETCODE SQL_API bcp_setcolfmt(HDBC, INT, INT, void *, INT);
+
+#ifdef UNICODE
+#define bcp_init        bcp_initW
+#define bcp_readfmt     bcp_readfmtW
+#define bcp_writefmt    bcp_writefmtW
+#define bcp_gettypename bcp_gettypenameW
+#define dbprtype        dbprtypeW
+#define BCPHINTS        BCPHINTSW
+#else
+#define bcp_init        bcp_initA
+#define bcp_readfmt     bcp_readfmtA
+#define bcp_writefmt    bcp_writefmtA
+#define bcp_gettypename bcp_gettypenameA
+#define dbprtype        dbprtypeA
+#define BCPHINTS        BCPHINTSA
+#endif /* UNICODE */
+
+/* Narrow and wide character names functions */
+CHAR* SQL_API bcp_gettypenameA(INT, DBBOOL);
+WCHAR* SQL_API bcp_gettypenameW(INT, DBBOOL);
+RETCODE SQL_API bcp_initA(HDBC, LPCSTR, LPCSTR, LPCSTR, INT);
+RETCODE SQL_API bcp_initW(HDBC, LPCWSTR, LPCWSTR, LPCWSTR, INT);
+RETCODE SQL_API bcp_readfmtA(HDBC, LPCSTR);
+RETCODE SQL_API bcp_readfmtW(HDBC, LPCWSTR);
+RETCODE SQL_API bcp_writefmtA(HDBC, LPCSTR);
+RETCODE SQL_API bcp_writefmtW(HDBC, LPCWSTR);
+CHAR* SQL_API dbprtypeA(INT);
+WCHAR* SQL_API dbprtypeW(INT);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif /* ODBCVER */
 
 #endif /* __msodbcsql_h__ */
 
