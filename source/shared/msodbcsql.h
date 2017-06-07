@@ -538,10 +538,10 @@ typedef INT     DBINT;
 typedef DBINT * LPDBINT;
 typedef unsigned char DBBOOL;
 
-#ifndef _LPCBYTE_DEFINED
-#define _LPCBYTE_DEFINED
+#ifndef _LPCBYTE_DEFINED_
+#define _LPCBYTE_DEFINED_
 typedef BYTE const* LPCBYTE;
-#endif /* _LPCBYTE_DEFINED */
+#endif /* _LPCBYTE_DEFINED_ */
 #endif /* INT */
 
 /*
