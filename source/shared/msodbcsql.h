@@ -361,45 +361,6 @@
 #define EX_HARDWARE     24
 #define EX_CONTROL      25
 
-// Keystore Provider interface definition 
-typedef struct CEKeystoreContext
-{
-    void *envCtx;
-    void *dbcCtx;
-    void *stmtCtx;
-} CEKEYSTORECONTEXT;
-
-typedef void errFunc(CEKEYSTORECONTEXT *ctx, const wchar_t *msg, ...);
-
-#define IDS_MSG(x) ((const wchar_t*)(x))
-
-typedef struct CEKeystoreProvider
-{
-    wchar_t *Name;
-    int (*Init)(CEKEYSTORECONTEXT *ctx, errFunc *onError);
-    int (*Read)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int *len);
-    int (*Write)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int len);
-    int (*DecryptCEK)(
-        CEKEYSTORECONTEXT *ctx,
-        errFunc *onError,
-        const wchar_t *keyPath,
-        const wchar_t *alg,
-        unsigned char *ecek,
-        unsigned short ecekLen,
-        unsigned char **cekOut,
-        unsigned short *cekLen);
-    int (*EncryptCEK)(
-        CEKEYSTORECONTEXT *ctx,
-        errFunc *onError,
-        const wchar_t *keyPath,
-        const wchar_t *alg,
-        unsigned char *cek,
-        unsigned short cekLen,
-        unsigned char **ecekOut,
-        unsigned short *ecekLen);
-    void (*Free)();
-} CEKEYSTOREPROVIDER;
-
 // Data is defined to be past the end of the structure header.
 // This is accepted by MSVC, GCC, and C99 standard but former emits
 // unnecessary warning, hence it has to be disabled.
@@ -421,21 +382,19 @@ typedef struct CEKeystoreData
 #endif
 
 // The following constants are for the Azure Key Vault configuration interface
-#define AKV_CONFIG_FLAGS        0
- #define AKVCFG_AUTHMODE       0x0000000F
-  #define AKVCFG_AUTHMODE_ACCESSTOKEN   0
-  #define AKVCFG_AUTHMODE_CLIENTKEY     1
-  #define AKVCFG_AUTHMODE_PASSWORD      2
-  #define AKVCFG_AUTHMODE_INTEGRATED    3
-  #define AKVCFG_AUTHMODE_CERTIFICATE   4
- #define AKVCFG_NOAUTORENEW    0x00000010
+#define AKV_CONFIG_FLAGS                0
+#define AKVCFG_AUTHMODE                 0x0000000F
+#define AKVCFG_AUTHMODE_ACCESSTOKEN     0
+#define AKVCFG_AUTHMODE_CLIENTKEY       1
+#define AKVCFG_AUTHMODE_PASSWORD        2
+#define AKVCFG_AUTHMODE_INTEGRATED      3
+#define AKVCFG_AUTHMODE_CERTIFICATE     4
+#define AKVCFG_NOAUTORENEW              0x00000010
 
 #define AKV_CONFIG_PRINCIPALID  1
 #define AKV_CONFIG_AUTHSECRET   2
-
-#define AKV_CONFIG_ACCESSTOKEN 3
-#define AKV_CONFIG_TOKENEXPIRY 4
-
+#define AKV_CONFIG_ACCESSTOKEN  3
+#define AKV_CONFIG_TOKENEXPIRY  4
 #define AKV_CONFIG_MAXRETRIES   5
 #define AKV_CONFIG_RETRYTIMEOUT 6
 #define AKV_CONFIG_RETRYWAIT    7
