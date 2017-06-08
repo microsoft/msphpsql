@@ -3,7 +3,7 @@ Import-Module "SqlServer"
 
 # Connect to your database.
 $serverName = "yourServer"
-$databaseName = "AEDemo"
+$databaseName = "tempdb"
 $userName = "yourUsername";
 $password = "yourPassword";
 
@@ -18,11 +18,11 @@ $password = "yourPassword";
 
 #For SQL Server Authentication
 Add-Type -AssemblyName "Microsoft.SqlServer.Smo"
-$MySQL = new-object('Microsoft.SqlServer.Management.Smo.Server') $serverName 
-$MySQL.ConnectionContext.LoginSecure = $false
-$MySQL.ConnectionContext.set_Login($userName)
-$MySQL.ConnectionContext.set_Password($password)
-$database = $MySQL.Databases[$databaseName]
+$SQL_server = new-object('Microsoft.SqlServer.Management.Smo.Server') $serverName 
+$SQL_server.ConnectionContext.LoginSecure = $false
+$SQL_server.ConnectionContext.set_Login($userName)
+$SQL_server.ConnectionContext.set_Password($password)
+$database = $SQL_server.Databases[$databaseName]
 
 # Encrypt the selected columns (or re-encrypt, if they are already encrypted using keys/encrypt types, different than the specified keys/types.
 $ces = @()

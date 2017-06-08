@@ -4,7 +4,7 @@ include "AEData.inc";
 sqlsrv_configure( 'WarningsReturnAsErrors', 1 );
 sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );  
 
-$databaseName = 'AEDemo';
+$databaseName = 'tempdb';
 $uid = 'yourUsername';
 $pwd = 'yourPassword';
 $server = 'yourServer';
@@ -21,7 +21,7 @@ if( $conn === false )
 // create table for exact numerics
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('dbo.test_AE_exnum', 'U') IS NOT NULL DROP TABLE [dbo].[test_AE_exnum]");
 if ($stmt === false) {
-    echo "Failed to drop table.\n";
+    echo "Failed to drop test_AE_exnum table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -37,7 +37,7 @@ $sql_create = "CREATE TABLE dbo.test_AE_exnum([normBigint] [bigint], [encDetBigi
 
 $stmt = sqlsrv_query($conn, $sql_create);
 if ($stmt === false) {
-    echo "Failed to create table.\n";
+    echo "Failed to create test_AE_exnum table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -66,7 +66,7 @@ $params2 = array_merge(array_slice($bigint_params, 3, 3),
 $stmt1 = sqlsrv_query($conn, $sql_insert, $params1);
 $stmt2 = sqlsrv_query($conn, $sql_insert, $params2);
 if ($stmt1 === false || $stmt2 === false) {
-    echo "Failed to insert rows.\n";
+    echo "Failed to insert rows into test_AE_exnum table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -74,7 +74,7 @@ if ($stmt1 === false || $stmt2 === false) {
 // create table for approximate numerics
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('dbo.test_AE_appnum', 'U') IS NOT NULL DROP TABLE [dbo].[test_AE_appnum]");
 if ($stmt === false) {
-    echo "Failed to drop table.\n";
+    echo "Failed to drop test_AE_appnum table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -83,7 +83,7 @@ $sql_create = "CREATE TABLE dbo.test_AE_appnum([normFloat] [float], [encDetFloat
 
 $stmt = sqlsrv_query($conn, $sql_create);
 if ($stmt === false) {
-    echo "Failed to create table.\n";
+    echo "Failed to create test_AE_appnum table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -98,14 +98,14 @@ $params2 = array_merge(array_slice($float_params, 3, 3),
 $stmt1 = sqlsrv_query($conn, $sql_insert, $params1);
 $stmt2 = sqlsrv_query($conn, $sql_insert, $params2);
 if ($stmt1 === false || $stmt2 === false) {
-    echo "Failed to insert rows.\n";
+    echo "Failed to insert rows into test_AE_appnum table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
 // create table for date and time
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('dbo.test_AE_datetime', 'U') IS NOT NULL DROP TABLE [dbo].[test_AE_datetime]");
 if ($stmt === false) {
-    echo "Failed to drop table.\n";
+    echo "Failed to drop test_AE_datetime table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -117,7 +117,7 @@ $sql_create = "CREATE TABLE dbo.test_AE_datetime([normDate] [date], [encDetDate]
 
 $stmt = sqlsrv_query($conn, $sql_create);
 if ($stmt === false) {
-    echo "Failed to create table.\n";
+    echo "Failed to create test_AE_datetime table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -138,14 +138,14 @@ $params2 = array_merge(array_slice($date_params, 3, 3),
 $stmt1 = sqlsrv_query($conn, $sql_insert, $params1);
 $stmt2 = sqlsrv_query($conn, $sql_insert, $params2);
 if ($stmt1 === false || $stmt2 === false) {
-    echo "Failed to insert rows.\n";
+    echo "Failed to insert rows into test_AE_datetime table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
 // create table for character strings
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('dbo.test_AE_char', 'U') IS NOT NULL DROP TABLE [dbo].[test_AE_char]");
 if ($stmt === false) {
-    echo "Failed to drop table.\n";
+    echo "Failed to drop test_AE_char table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -155,7 +155,7 @@ $sql_create = "CREATE TABLE dbo.test_AE_char([normChar] [char](10), [encDetChar]
 
 $stmt = sqlsrv_query($conn, $sql_create);
 if ($stmt === false) {
-    echo "Failed to create table.\n";
+    echo "Failed to create test_AE_char table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -172,14 +172,14 @@ $params2 = array_merge(array_slice($char_params, 3, 3),
 $stmt1 = sqlsrv_query($conn, $sql_insert, $params1);
 $stmt2 = sqlsrv_query($conn, $sql_insert, $params2);
 if ($stmt1 === false || $stmt2 === false) {
-    echo "Failed to insert rows.\n";
+    echo "Failed to insert rows into test_AE_char table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
 // create table for unicode character strings
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('dbo.test_AE_unichar', 'U') IS NOT NULL DROP TABLE [dbo].[test_AE_unichar]");
 if ($stmt === false) {
-    echo "Failed to drop table.\n";
+    echo "Failed to drop test_AE_unichar table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -189,7 +189,7 @@ $sql_create = "CREATE TABLE dbo.test_AE_unichar([normNchar] [nchar](10), [encDet
 
 $stmt = sqlsrv_query($conn, $sql_create);
 if ($stmt === false) {
-    echo "Failed to create table.\n";
+    echo "Failed to create test_AE_unichar table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -206,7 +206,7 @@ $params2 = array_merge(array_slice($nchar_params, 3, 3),
 $stmt1 = sqlsrv_query($conn, $sql_insert, $params1);
 $stmt2 = sqlsrv_query($conn, $sql_insert, $params2);
 if ($stmt1 === false || $stmt2 === false) {
-    echo "Failed to insert rows.\n";
+    echo "Failed to insert rows into test_AE_unichar table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -214,7 +214,7 @@ if ($stmt1 === false || $stmt2 === false) {
 // create table for binary strings
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('dbo.test_AE_bin', 'U') IS NOT NULL DROP TABLE [dbo].[test_AE_bin]");
 if ($stmt === false) {
-    echo "Failed to drop table.\n";
+    echo "Failed to drop test_AE_bin table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -224,7 +224,7 @@ $sql_create = "CREATE TABLE dbo.test_AE_bin([normBinary] [binary](10), [encDetBi
 
 $stmt = sqlsrv_query($conn, $sql_create);
 if ($stmt === false) {
-    echo "Failed to create table.\n";
+    echo "Failed to create test_AE_bin table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 
@@ -241,7 +241,7 @@ $params2 = array_merge(array_slice($binary_params, 3, 3),
 $stmt1 = sqlsrv_query($conn, $sql_insert, $params1);
 $stmt2 = sqlsrv_query($conn, $sql_insert, $params2);
 if ($stmt1 === false || $stmt2 === false) {
-    echo "Failed to insert rows.\n";
+    echo "Failed to insert rows into test_AE_bin table.\n";
     die(print_r(sqlsrv_errors(), true));
 }
 */

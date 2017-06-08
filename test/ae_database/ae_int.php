@@ -47,14 +47,14 @@ $params2 = array( array(-2147583649, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT, SQLSRV
                  array(162, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT, SQLSRV_SQLTYPE_TINYINT));
                  
 $stmt1 = sqlsrv_query($conn, $sql_insert, $params1);
-sqlsrv_assert($stmt1 === false, "Error in populating table.\n");
+cond_assert($stmt1 === false, "Error in populating table.\n");
 $stmt2 = sqlsrv_query($conn, $sql_insert, $params2);
-sqlsrv_assert($stmt2 === false, "Error in populating table.\n");
+cond_assert($stmt2 === false, "Error in populating table.\n");
 
 //Fetch encrypted values with ColumnEncryption Enabled
 $sql = "SELECT * FROM [dbo].[test_AE]";
 $stmt = sqlsrv_query($conn, $sql);
-sqlsrv_assert($stmt === false, "Error in selecting from table.\n");
+cond_assert($stmt === false, "Error in selecting from table.\n");
 
 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)){
     print_r($row);
@@ -66,7 +66,7 @@ sqlsrv_close($conn);
 //Fetch encrypted values with ColumnEncryption Disabled
 $conn = AEConnect(false);
 $stmt = sqlsrv_query($conn, $sql);
-sqlsrv_assert($stmt === false, "Error in selecting from table.\n");
+cond_assert($stmt === false, "Error in selecting from table.\n");
 
 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)){
     print_r($row);
