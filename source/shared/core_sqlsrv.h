@@ -2367,17 +2367,21 @@ struct str_conn_attr_func {
 
 struct column_encryption_set_func {
 
-	static void func(connection_option const* /*option*/, zval* value, sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC)
+	static void func(connection_option const* option, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC)
 	{
 		convert_to_string(value);
-		const char* option = Z_STRVAL_P(value);
+		const char* value_str = Z_STRVAL_P(value);
 
-		if ( ! stricmp( option, "enabled" ) ) {
+		// Column Encryption is disabled by default unless it is explicitly 'Enabled'
+		conn->column_encryption_enabled = false;
+		if (!stricmp(value_str, "enabled")) {
 			conn->column_encryption_enabled = true;
 		}
-		else {
-			conn->column_encryption_enabled = false;
-		}
+
+		conn_str += option->odbc_name;
+		conn_str += "=";
+		conn_str += value_str;
+		conn_str += ";";
 	}
 };
 
