@@ -370,6 +370,7 @@
 #pragma warning(disable:4200)
 #endif
 
+// Communication between the driver and application via the CEKeystoreData structure
 typedef struct CEKeystoreData
 {
     wchar_t *name;
