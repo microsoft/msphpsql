@@ -4,7 +4,7 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 // File: msodbcsql.h
 //
-// Contents: Routines that use statement handles
+// Contents: Routines that use statement handles. This is a subset of the header file msodbcsql.h in the ODBC Driver.
 //
 // Contents: This SDK is not supported under any Microsoft standard support 
 //	         program or service. The information is provided AS IS without 
