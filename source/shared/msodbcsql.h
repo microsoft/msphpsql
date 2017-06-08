@@ -376,10 +376,10 @@ typedef void errFunc(CEKEYSTORECONTEXT *ctx, const wchar_t *msg, ...);
 typedef struct CEKeystoreProvider
 {
     wchar_t *Name;
-    int (__stdcall *Init)(CEKEYSTORECONTEXT *ctx, errFunc *onError);
-    int (__stdcall *Read)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int *len);
-    int (__stdcall *Write)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int len);
-    int (__stdcall *DecryptCEK)(
+    int (*Init)(CEKEYSTORECONTEXT *ctx, errFunc *onError);
+    int (*Read)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int *len);
+    int (*Write)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int len);
+    int (*DecryptCEK)(
         CEKEYSTORECONTEXT *ctx,
         errFunc *onError,
         const wchar_t *keyPath,
@@ -388,7 +388,16 @@ typedef struct CEKeystoreProvider
         unsigned short ecekLen,
         unsigned char **cekOut,
         unsigned short *cekLen);
-    void (__stdcall *Free)();
+    int (*EncryptCEK)(
+        CEKEYSTORECONTEXT *ctx,
+        errFunc *onError,
+        const wchar_t *keyPath,
+        const wchar_t *alg,
+        unsigned char *cek,
+        unsigned short cekLen,
+        unsigned char **ecekOut,
+        unsigned short *ecekLen);
+    void (*Free)();
 } CEKEYSTOREPROVIDER;
 
 // Data is defined to be past the end of the structure header.
