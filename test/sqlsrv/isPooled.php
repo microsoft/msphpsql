@@ -6,6 +6,7 @@ sqlsrv_close($conn1);
 
 $conn2 = Connect();
 $connId2 = ConnectionID($conn2);
+sqlsrv_close($conn2);
 
 if ($connId1 === $connId2){
     echo "Pooled\n";

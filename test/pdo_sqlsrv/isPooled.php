@@ -6,6 +6,7 @@ $conn1 = null;
 
 $conn2 = new PDO("sqlsrv:Server=$server", $uid, $pwd);
 $connId2 = ConnectionID($conn2);
+$conn2 = null;
 
 if ($connId1 === $connId2){
     echo "Pooled\n";
