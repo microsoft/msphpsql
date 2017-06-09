@@ -43,6 +43,9 @@ const char AttachDBFileName[] = "AttachDbFileName";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char Authentication[] = "Authentication";
 const char ColumnEncryption[] = "ColumnEncryption";
+const char CEKeystoreProvider[] = "CEKeystoreProvider";
+const char CEKeystoreName[] = "CEKeystoreName";
+const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
 
 #ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
@@ -213,6 +216,15 @@ const connection_option PDO_CONN_OPTS[] = {
         conn_str_append_func::func
     },
 	{
+        PDOConnOptionNames::ConnectionPooling,
+        sizeof( PDOConnOptionNames::ConnectionPooling ),
+        SQLSRV_CONN_OPTION_CONN_POOLING,
+        ODBCConnOptions::ConnectionPooling,
+        sizeof( ODBCConnOptions::ConnectionPooling ),
+        CONN_ATTR_BOOL,
+        conn_null_func::func
+    },
+	{
 		PDOConnOptionNames::ColumnEncryption,
 		sizeof(PDOConnOptionNames::ColumnEncryption),
 		SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
@@ -222,14 +234,32 @@ const connection_option PDO_CONN_OPTS[] = {
 		column_encryption_set_func::func
 	},
 	{
-        PDOConnOptionNames::ConnectionPooling,
-        sizeof( PDOConnOptionNames::ConnectionPooling ),
-        SQLSRV_CONN_OPTION_CONN_POOLING,
-        ODBCConnOptions::ConnectionPooling,
-        sizeof( ODBCConnOptions::ConnectionPooling ),
-        CONN_ATTR_BOOL,
-        conn_null_func::func
-    },
+		PDOConnOptionNames::CEKeystoreProvider,
+		sizeof(PDOConnOptionNames::CEKeystoreProvider),
+		SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
+		ODBCConnOptions::CEKeystoreProvider,
+		sizeof(ODBCConnOptions::CEKeystoreProvider),
+		CONN_ATTR_STRING,
+		ce_ksp_provider_set_func::func
+	},
+	{
+		PDOConnOptionNames::CEKeystoreName,
+		sizeof(PDOConnOptionNames::CEKeystoreName),
+		SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
+		ODBCConnOptions::CEKeystoreName,
+		sizeof(ODBCConnOptions::CEKeystoreName),
+		CONN_ATTR_STRING,
+		ce_ksp_provider_set_func::func
+	},
+	{
+		PDOConnOptionNames::CEKeystoreEncryptKey,
+		sizeof(PDOConnOptionNames::CEKeystoreEncryptKey),
+		SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
+		ODBCConnOptions::CEKeystoreEncryptKey,
+		sizeof(ODBCConnOptions::CEKeystoreEncryptKey),
+		CONN_ATTR_STRING,
+		ce_ksp_provider_set_func::func
+	},
 #ifdef _WIN32
     {
         PDOConnOptionNames::ConnectRetryCount,

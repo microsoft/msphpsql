@@ -71,7 +71,7 @@ const char* get_processor_arch( void );
 void get_server_version( sqlsrv_conn* conn, char** server_version, SQLSMALLINT& len TSRMLS_DC );
 connection_option const* get_connection_option( sqlsrv_conn* conn, const char* key, SQLULEN key_len TSRMLS_DC );
 void common_conn_str_append_func( const char* odbc_name, const char* val, size_t val_len, std::string& conn_str TSRMLS_DC );
-
+void load_configure_ksp( sqlsrv_conn* conn TSRMLS_DC );
 }
 
 // core_sqlsrv_connect
@@ -206,6 +206,8 @@ sqlsrv_conn* core_sqlsrv_connect( sqlsrv_context& henv_cp, sqlsrv_context& henv_
         CHECK_SQL_WARNING_AS_ERROR( r, conn ) {
             throw core::CoreException();
         }
+
+		load_configure_ksp( conn );
 
         // determine the version of the server we're connected to.  The server version is left in the 
         // connection upon return.
@@ -774,6 +776,37 @@ void determine_server_version( sqlsrv_conn* conn TSRMLS_DC )
     // SNAC won't connect to versions older than SQL Server 2000, so we know that the version is at least
     // that high
     conn->server_version = version_major;
+}
+
+// Column Encryption feature: if a custom keystore provider is specified, 
+// load and configure it when column encryption is enabled, but this step have
+// to be executed after the connection has been established
+void load_configure_ksp( sqlsrv_conn* conn TSRMLS_DC )
+{
+	if ( conn->ce_option.enabled )
+	{
+		// do something like the following sample
+		// use the KSP related fields in conn->ce_option
+		// CEKEYSTOREDATA is defined in msodbcsql.h
+		// https://docs.microsoft.com/en-us/sql/connect/odbc/custom-keystore-providers
+
+		sqlsrv_malloc_auto_ptr<unsigned char> ksp_data;
+		ksp_data = reinterpret_cast<unsigned char*>( sqlsrv_malloc( sizeof( CEKEYSTOREDATA ) + conn->ce_option.key_size ) );
+
+		CEKEYSTOREDATA *pKsd = (CEKEYSTOREDATA*) ksp_data.get();
+
+		pKsd->dataSize = conn->ce_option.key_size;
+		// TODO: convert pseudocode to real working code
+		// need a WCHAR version of conn->ce_option.ksp_name and put that in pKsd->name
+		// extract the character string from conn->ce_option.ksp_encrypt_key into encrypt_key
+		// extract the character string from conn->ce_option.ksp_path into dllpath
+
+		//memcpy( pKsd->data, encrypt_key, conn->ce_option.key_size );
+		//rc = SQLSetConnectAttr(dbc, SQL_COPT_SS_CEKEYSTOREPROVIDER, dllpath, SQL_NTS);
+		// check rc value
+		//rc = SQLSetConnectAttr(dbc, SQL_COPT_SS_CEKEYSTOREDATA, (SQLPOINTER)pKsd, SQL_IS_POINTER);
+		// check rc value
+	}
 }
 
 void common_conn_str_append_func( const char* odbc_name, const char* val, size_t val_len, std::string& conn_str TSRMLS_DC )
