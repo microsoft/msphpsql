@@ -554,15 +554,15 @@ public:
         return _ptr[ index ];
     }
 
-    
-    #ifdef __WIN64  
-    // there are a number of places where we allocate a block intended to be accessed as
-    // an array of elements, so this operator allows us to treat the memory as such.
-    T& operator[](std::size_t index) const
-    {
-        return _ptr[index];
-    }
-    #endif
+	
+	#ifdef __WIN64	
+	// there are a number of places where we allocate a block intended to be accessed as
+	// an array of elements, so this operator allows us to treat the memory as such.
+	T& operator[](std::size_t index) const
+	{
+		return _ptr[index];
+	}
+	#endif
 
     // there are a number of places where we allocate a block intended to be accessed as
     // an array of elements, so this operator allows us to treat the memory as such.
@@ -662,8 +662,8 @@ public:
     // DO NOT CALL sqlsrv_realloc with a sqlsrv_malloc_auto_ptr.  Use the resize member function.
     // has the same parameter list as sqlsrv_realloc: new_size is the size in bytes of the newly allocated buffer
     void resize( size_t new_size )
-    {   
-        sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr = reinterpret_cast<T*>( sqlsrv_realloc( sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr, new_size ));
+    {	
+    	sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr = reinterpret_cast<T*>( sqlsrv_realloc( sqlsrv_auto_ptr<T,sqlsrv_malloc_auto_ptr<T> >::_ptr, new_size ));
     }
 };
 
@@ -948,7 +948,7 @@ class sqlsrv_context {
         if( handle_ != SQL_NULL_HANDLE ) {
             ::SQLFreeHandle( handle_type_, handle_ );
 
-            last_error_.reset();
+			last_error_.reset();
         }
         handle_ = SQL_NULL_HANDLE;
     }
@@ -1032,10 +1032,10 @@ enum SERVER_VERSION {
 
 // supported driver versions.
 enum DRIVER_VERSION : size_t {
-    MIN = 0,
-    ODBC_DRIVER_13 = MIN,
-    ODBC_DRIVER_11 = 1,
-    MAX = ODBC_DRIVER_11,
+	MIN = 0,
+	ODBC_DRIVER_13 = MIN,
+	ODBC_DRIVER_11 = 1,
+	MAX = ODBC_DRIVER_11,
 };
 
 // forward decl
@@ -1044,15 +1044,15 @@ struct stmt_option;
 
 // This holds the various details of column encryption. 
 struct col_encryption_option {
-    bool            enabled;            // column encryption enabled, false by default
-    zval_auto_ptr   ksp_name;           // keystore provider name 
-    zval_auto_ptr   ksp_path;           // keystore provider path to the dynamically linked libary (either a *.dll or *.so)
-    zval_auto_ptr   ksp_encrypt_key;    // the encryption key used to configure the keystore provider 
-    size_t          key_size;           // the length of ksp_encrypt_key without the NULL terminator
+	bool			enabled;			// column encryption enabled, false by default
+	zval_auto_ptr	ksp_name;			// keystore provider name 
+	zval_auto_ptr	ksp_path;			// keystore provider path to the dynamically linked libary (either a *.dll or *.so)
+	zval_auto_ptr	ksp_encrypt_key;	// the encryption key used to configure the keystore provider 
+	size_t			key_size;			// the length of ksp_encrypt_key without the NULL terminator
 
-    col_encryption_option() : enabled( false ), key_size ( 0 )
-    {
-    }
+	col_encryption_option() : enabled( false ), key_size ( 0 )
+	{
+	}
 };
 
 // *** connection resource structure ***
@@ -1062,7 +1062,7 @@ struct sqlsrv_conn : public sqlsrv_context {
     // instance variables
     SERVER_VERSION server_version;  // version of the server that we're connected to
 
-    DRIVER_VERSION  driver_version;
+    DRIVER_VERSION	driver_version;
 
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
 
@@ -1147,10 +1147,10 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_APPLICATION_INTENT,
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
     SQLSRV_CONN_OPTION_AUTHENTICATION,
-    SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
-    SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
-    SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
-    SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
+	SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
+	SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
+	SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
+	SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
@@ -1407,8 +1407,8 @@ SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql = NU
 field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT colno TSRMLS_DC );
 bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULEN fetch_offset TSRMLS_DC );
 void core_sqlsrv_get_field(sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_phptype, bool prefer_string,
-                            _Out_ void*& field_value, _Out_ SQLLEN* field_length, bool cache_field,
-                            _Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC);
+							_Out_ void*& field_value, _Out_ SQLLEN* field_length, bool cache_field,
+							_Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC);
 bool core_sqlsrv_has_any_result( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params = true, bool throw_on_errors = true );
 void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong paramno, zval* param_z TSRMLS_DC );
@@ -1419,7 +1419,6 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, SQLLEN limit TSRMLS_DC );
-
 
 //*********************************************************************************************************************************
 // Result Set
@@ -1454,7 +1453,7 @@ struct sqlsrv_result_set {
 struct sqlsrv_odbc_result_set : public sqlsrv_result_set {
 
     explicit sqlsrv_odbc_result_set( sqlsrv_stmt* );
-    virtual ~sqlsrv_odbc_result_set( void );
+	virtual ~sqlsrv_odbc_result_set( void );
 
     virtual bool cached( int field_index ) { return false; }
     virtual SQLRETURN fetch( SQLSMALLINT fetch_orientation, SQLLEN fetch_offset TSRMLS_DC );
@@ -1658,7 +1657,7 @@ enum SQLSRV_ERROR_CODES {
 
 // the message returned by ODBC Driver 11 for SQL Server
 static const char* CONNECTION_BUSY_ODBC_ERROR[] = { "[Microsoft][ODBC Driver 13 for SQL Server]Connection is busy with results for another command",
-                                           "[Microsoft][ODBC Driver 11 for SQL Server]Connection is busy with results for another command" };
+										   "[Microsoft][ODBC Driver 11 for SQL Server]Connection is busy with results for another command" };
 
 // SQLSTATE for all internal errors
 extern SQLCHAR IMSSP[];
@@ -1835,7 +1834,7 @@ namespace core {
          
                 throw CoreException();
             }
-            std::size_t driver_version = stmt->conn->driver_version;
+			std::size_t driver_version = stmt->conn->driver_version;
             if( !strcmp( reinterpret_cast<const char*>( err_msg ), CONNECTION_BUSY_ODBC_ERROR[driver_version] )) {
              
                 THROW_CORE_ERROR( stmt, SQLSRV_ERROR_MARS_OFF );
@@ -1866,7 +1865,7 @@ namespace core {
     }
 
     inline void SQLAllocHandle( SQLSMALLINT HandleType, sqlsrv_context& InputHandle, 
-                                _Out_writes_(1) SQLHANDLE* OutputHandlePtr TSRMLS_DC )
+								_Out_writes_(1) SQLHANDLE* OutputHandlePtr TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLAllocHandle( HandleType, InputHandle.handle(), OutputHandlePtr );
@@ -1934,18 +1933,18 @@ namespace core {
         }
     }
 
-    inline void SQLDescribeColW( sqlsrv_stmt* stmt, SQLSMALLINT colno, _Out_ SQLWCHAR* col_name, SQLSMALLINT col_name_length,
+	inline void SQLDescribeColW( sqlsrv_stmt* stmt, SQLSMALLINT colno, _Out_ SQLWCHAR* col_name, SQLSMALLINT col_name_length,
                                  _Out_ SQLSMALLINT* col_name_length_out, SQLSMALLINT* data_type, _Out_ SQLULEN* col_size,
                                  _Out_ SQLSMALLINT* decimal_digits, _Out_ SQLSMALLINT* nullable TSRMLS_DC )
-    {
-        SQLRETURN r;
-        r = ::SQLDescribeColW( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
+	{
+		SQLRETURN r;
+		r = ::SQLDescribeColW( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
                                data_type, col_size, decimal_digits, nullable );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-            throw CoreException();
-        }
-    }
+		CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+			throw CoreException();
+		}
+	}
 
     inline void SQLEndTran( SQLSMALLINT handleType, sqlsrv_conn* conn, SQLSMALLINT completionType TSRMLS_DC )
     {
@@ -2188,22 +2187,22 @@ namespace core {
 
     // *** zend wrappers ***
 
-    //zend_resource_dtor sets the type of destroyed resources to -1
-    #define RSRC_INVALID_TYPE -1
+	//zend_resource_dtor sets the type of destroyed resources to -1
+	#define RSRC_INVALID_TYPE -1
 
-    // wrapper for ZVAL_STRINGL macro. ZVAL_STRINGL always allocates memory when initialzing new string from char string
-    // so allocated memory inside of value_z should be released before assigning it to the new string
-    inline void sqlsrv_zval_stringl(zval* value_z, const char* str, const std::size_t str_len)
-    {
-        if (Z_TYPE_P(value_z) == IS_STRING && Z_STR_P(value_z) != NULL) {
-            zend_string* temp_zstr = zend_string_init(str, str_len, 0);
-            zend_string_release(Z_STR_P(value_z));
-            ZVAL_NEW_STR(value_z, temp_zstr);
-        }
-        else {
-            ZVAL_STRINGL(value_z, str, str_len);
-        }
-    }
+	// wrapper for ZVAL_STRINGL macro. ZVAL_STRINGL always allocates memory when initialzing new string from char string
+	// so allocated memory inside of value_z should be released before assigning it to the new string
+	inline void sqlsrv_zval_stringl(zval* value_z, const char* str, const std::size_t str_len)
+	{
+		if (Z_TYPE_P(value_z) == IS_STRING && Z_STR_P(value_z) != NULL) {
+			zend_string* temp_zstr = zend_string_init(str, str_len, 0);
+			zend_string_release(Z_STR_P(value_z));
+			ZVAL_NEW_STR(value_z, temp_zstr);
+		}
+		else {
+			ZVAL_STRINGL(value_z, str, str_len);
+		}
+	}
 
 
     // exception thrown when a zend function wrapped here fails.
@@ -2274,13 +2273,13 @@ namespace core {
         }
     }
 
-    inline void sqlsrv_zend_hash_get_current_data(sqlsrv_context& ctx, HashTable* ht, _Out_ zval*& output_data TSRMLS_DC)
-    {
-        int zr = (output_data = ::zend_hash_get_current_data(ht)) != NULL ? SUCCESS : FAILURE;
-        CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-    }
+	inline void sqlsrv_zend_hash_get_current_data(sqlsrv_context& ctx, HashTable* ht, _Out_ zval*& output_data TSRMLS_DC)
+	{
+		int zr = (output_data = ::zend_hash_get_current_data(ht)) != NULL ? SUCCESS : FAILURE;
+		CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
+			throw CoreException();
+		}
+	}
 
     inline void sqlsrv_zend_hash_get_current_data_ptr(sqlsrv_context& ctx, HashTable* ht, _Out_ void*& output_data TSRMLS_DC)
     {
@@ -2315,13 +2314,13 @@ namespace core {
     }
 
 
-    inline void sqlsrv_zend_hash_index_update_mem(sqlsrv_context& ctx, HashTable* ht, zend_ulong index, void* pData, std::size_t size TSRMLS_DC)
-    {
-        int zr = (pData = ::zend_hash_index_update_mem(ht, index, pData, size)) != NULL ? SUCCESS : FAILURE;
-        CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
-            throw CoreException();
-        }
-    }
+	inline void sqlsrv_zend_hash_index_update_mem(sqlsrv_context& ctx, HashTable* ht, zend_ulong index, void* pData, std::size_t size TSRMLS_DC)
+	{
+		int zr = (pData = ::zend_hash_index_update_mem(ht, index, pData, size)) != NULL ? SUCCESS : FAILURE;
+		CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
+			throw CoreException();
+		}
+	}
     
     inline void sqlsrv_zend_hash_next_index_insert( sqlsrv_context& ctx, HashTable* ht, zval* data TSRMLS_DC )
     {
@@ -2331,13 +2330,13 @@ namespace core {
         }
     }
 
-    inline void sqlsrv_zend_hash_next_index_insert_mem(sqlsrv_context& ctx, HashTable* ht, void* data, uint data_size TSRMLS_DC)
-    {
-        int zr = (data = ::zend_hash_next_index_insert_mem(ht, data, data_size)) != NULL ? SUCCESS : FAILURE;
-        CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
-            throw CoreException();
-        }
-    }
+	inline void sqlsrv_zend_hash_next_index_insert_mem(sqlsrv_context& ctx, HashTable* ht, void* data, uint data_size TSRMLS_DC)
+	{
+		int zr = (data = ::zend_hash_next_index_insert_mem(ht, data, data_size)) != NULL ? SUCCESS : FAILURE;
+		CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
+			throw CoreException();
+		}
+	}
 
     inline void sqlsrv_zend_hash_next_index_insert_ptr(sqlsrv_context& ctx, HashTable* ht, void* data TSRMLS_DC)
     {
@@ -2387,12 +2386,12 @@ struct column_encryption_set_func {
 
     static void func(connection_option const* option, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC)
     {
-        convert_to_string(value);
-        const char* value_str = Z_STRVAL_P(value);
+        convert_to_string( value );
+        const char* value_str = Z_STRVAL_P( value );
 
         // Column Encryption is disabled by default unless it is explicitly 'Enabled'
         conn->ce_option.enabled = false;
-        if (!stricmp(value_str, "enabled")) {
+        if (!stricmp( value_str, "enabled" ) ) {
             conn->ce_option.enabled = true;
         }
 
