@@ -25,6 +25,11 @@ $marsMode = true;
 
 $traceEnabled = false; 
 
+$adServer = 'TARGET_AD_SERVER';
+$adDatabase = 'TARGET_AD_DATABASE';
+$adUser = 'TARGET_AD_USERNAME';
+$adPassword = 'TARGET_AD_PASSWORD';
+
 if (isset($_ENV['MSSQL_SERVER']) || isset($_ENV['MSSQL_USER']) || isset($_ENV['MSSQL_PASSWORD'])) {
     $server = $_ENV['MSSQL_SERVER'];
     $uid = $_ENV['MSSQL_USER'];
