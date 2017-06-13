@@ -1,13 +1,16 @@
 --TEST--
-returns an array of PDO drivers
+check if sqlsrv is in the array of available PDO drivers
 --SKIPIF--
 
 --FILE--
 <?php
-print_r(PDO::getAvailableDrivers());
+$drivers = PDO::getAvailableDrivers();
+if (in_array('sqlsrv', $drivers))
+    echo "sqlsrv found\n";
+else
+    echo "sqlsrv not found\n";
+echo "Done\n";
 ?>
 --EXPECT--
-Array
-(
-    [0] => sqlsrv
-)
+sqlsrv found
+Done

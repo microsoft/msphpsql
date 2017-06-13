@@ -31,5 +31,5 @@ else
 /* Free connection resources. */
 sqlsrv_close( $conn);
 ?>
---EXPECT--
-CurrentDatabase: AdventureWorks2014<br>SQLServerVersion: 12.00.4100<br>SQLServerName: SQL-2K14-SP1-1<br>
+--EXPECTREGEX--
+CurrentDatabase: AdventureWorks.*<br>SQLServerVersion: 1[2-9].00.[0-9]{4}<br>SQLServerName: SQL.+<br>

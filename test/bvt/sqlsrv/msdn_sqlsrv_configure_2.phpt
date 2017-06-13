@@ -2,7 +2,6 @@
 disables the default error-handling behaviour using configure and returns warnings
 --SKIPIF--
 
-?>
 --FILE--
 <?php
 /* Turn off the default behavior of treating errors as warnings.
@@ -147,23 +146,26 @@ sqlsrv_close( $conn );
 /* ------------- Error Handling Functions --------------*/
 function DisplayErrors()
 {
-     $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
-     foreach( $errors as $error )
-     {
-          echo "Error: ".$error['message']."\n";
-     }
+    $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
+    foreach( $errors as $error )
+    {
+        echo "Error: ".$error['message']."\n";
+    }
 }
 
 function DisplayWarnings()
 {
-     $warnings = sqlsrv_errors(SQLSRV_ERR_WARNINGS);
-     if(!is_null($warnings))
-     {
-          foreach( $warnings as $warning )
-          {
-               echo "Warning: ".$warning['message']."\n";
-          }
-     }
+    $warnings = sqlsrv_errors(SQLSRV_ERR_WARNINGS);
+    if(!is_null($warnings))
+    {
+        foreach( $warnings as $warning )
+        {
+            $message = $warning['message'];
+            // Skips the message with 'unixODBC' (an unnecessary duplicate message in some platform)
+            if (! stripos($message, 'unixODBC') )
+                echo "Warning: $message\n";
+        }
+    }
 }
 ?>
 --EXPECTREGEX--
