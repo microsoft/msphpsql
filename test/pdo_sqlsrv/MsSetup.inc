@@ -21,6 +21,11 @@ if (isset($_ENV['MSSQL_SERVER']) || isset($_ENV['MSSQL_USER']) || isset($_ENV['M
     $DriverName = "ODBC Driver 11 for SQL Server";
 }
 
+$adServer = 'TARGET_AD_SERVER';
+$adDatabase = 'TARGET_AD_DATABASE';
+$adUser = 'TARGET_AD_USERNAME';
+$adPassword = 'TARGET_AD_PASSWORD';
+
 $driverType = true;
 $PhpDriver = "ODBC Driver 11 for SQL Server";
 
