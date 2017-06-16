@@ -216,7 +216,7 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $mode)
 function GetConnection()
 {
     include 'MsSetup.inc';
-    $conn = PDOConnect('PDO', $server, $userName, $userPassword, true);
+    $conn = PDOConnect('PDO', $server, $uid, $pwd, true);
         return ($conn);
 }
 
