@@ -66,3 +66,7 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
   PHP_ADD_BUILD_DIR([$ext_builddir/shared], 1)
 fi
 
+#if (defined __APPLE__ && defined __MACH__) \
+  MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` \
+#endif
+
