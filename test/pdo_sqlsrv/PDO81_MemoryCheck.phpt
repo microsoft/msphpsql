@@ -23,6 +23,7 @@ function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep, $leakThre
 
     Trace("Execution setup: $noPasses passes over a table with $noRows1 => ".($noRows1 + $noRows2)." rows.\n");
     $conn1 = Connect();
+    SetUTF8Data(true);
 
     CreateTable($conn1, $tableName);
     $noRowsInserted = InsertRows($conn1, $tableName, $noRows1);
