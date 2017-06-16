@@ -1376,6 +1376,7 @@ PHP_FUNCTION( sqlsrv_free_stmt )
             LOG( SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P( stmt_r )->handle);
         }
 
+        Z_TRY_DELREF_P(stmt_r);
         ZVAL_NULL( stmt_r );
 		
         RETURN_TRUE;

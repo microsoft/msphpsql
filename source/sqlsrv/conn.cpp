@@ -658,7 +658,8 @@ PHP_FUNCTION( sqlsrv_close )
         if( zend_list_close( Z_RES_P( conn_r ) ) == FAILURE ) {
             LOG( SEV_ERROR, "Failed to remove connection resource %1!d!", Z_RES_HANDLE_P( conn_r ));
         }
-        
+
+        Z_TRY_DELREF_P(conn_r);
         ZVAL_NULL( conn_r );
 
         RETURN_TRUE;
