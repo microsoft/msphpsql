@@ -46,4 +46,4 @@ echo "$count sales accounted for the first $$salesTotal in revenue.\n";
 sqlsrv_cancel( $stmt);
 ?>
 --EXPECT--
-58 sales accounted for the first $104205.9607 in revenue.
+57 sales accounted for the first $104171.7607 in revenue.
