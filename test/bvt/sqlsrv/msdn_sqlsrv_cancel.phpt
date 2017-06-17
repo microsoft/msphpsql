@@ -14,7 +14,7 @@ if( $conn === false )
 }
 
 /* Prepare and execute the query. */
-$tsql = "SELECT OrderQty, UnitPrice FROM Sales.SalesOrderDetail";
+$tsql = "SELECT OrderQty, UnitPrice FROM Sales.SalesOrderDetail ORDER BY SalesOrderID";
 $stmt = sqlsrv_prepare( $conn, $tsql);
 if( $stmt === false )
 {
