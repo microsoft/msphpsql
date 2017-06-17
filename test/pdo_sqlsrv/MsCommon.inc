@@ -1221,7 +1221,15 @@ function NumRows($conn, $tableName)
 
 function InsertQuery($tableName)
 {
-    return (InsertQueryEx($tableName, rand(1, 20)));
+    if (UseUTF8data())
+    {
+        include_once 'MsData_UTF8.inc';
+        return (InsertQueryExUTF8($tableName, rand(1, 20)));
+    }
+    else 
+    {
+        return (InsertQueryEx($tableName, rand(1, 20)));
+    }
 }
 
 function InsertRows($conn, $tableName, $rowCount)
