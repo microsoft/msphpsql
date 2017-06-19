@@ -151,6 +151,7 @@ function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
     $conn2 = Connect();
     DropTable($conn2, $tableName);    
     sqlsrv_close($conn2);
+    SetUTF8Data(false);
 
     if ($totalLeak > 0)
     {
