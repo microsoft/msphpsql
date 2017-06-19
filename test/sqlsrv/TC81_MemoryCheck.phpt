@@ -270,19 +270,15 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
             case 1:    // no release
                 $conn2 = GetConnection();
                 sqlsrv_close($conn2);
-                // need unset to trigger the destruction a zval of refcount 0
-                unset($conn2);
                 break;
 
             case 2:    // query with no release
                 $stmt = ExecQuery($conn, $tableName, $prepared);
-                unset($stmt);
                 break;
 
             case 3:    // query with release
                 $stmt = ExecQuery($conn, $tableName, $prepared);
                 sqlsrv_free_stmt($stmt);
-                unset($stmt);
                 break;
 
             case 4:    // fetch
@@ -299,7 +295,6 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 {
                     die("$rowCount rows retrieved instead of $noRows\n");
                 }
-                unset($stmt);
                 break;
 
             case 5:    // fetch fields
@@ -316,7 +311,6 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                             die("Field $i of row $rowCount is missing");
                         }
                         unset($fld);
-                        $fld = null;
                     }
                 }
                 if ($release)
@@ -327,7 +321,6 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 {
                     die("$rowCount rows retrieved instead of $noRows\n");
                 }
-                unset($stmt);
                 break;
 
             case 6:    // fetch array
@@ -344,7 +337,6 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 {
                     die("$rowCount rows retrieved instead of $noRows\n");
                 }
-                unset($stmt);
                 break;
 
             case 7:    // fetch object
@@ -361,14 +353,15 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 {
                     die("$rowCount rows retrieved instead of $noRows\n");
                 }
-                unset($stmt);
                 break;
 
             default:
                 break;
 
         }
-
+        // need unset to trigger the destruction of a zval with refcount of 0
+        unset($conn2);
+        unset($stmt);
     }
     $memEnd =  memory_get_usage();
     Trace( intval($memEnd) . " - " . intval($memStart) . "\n" );
