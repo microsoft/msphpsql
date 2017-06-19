@@ -21,6 +21,12 @@ Write-Host "Downloading Git..."
 (New-Object System.Net.WebClient).DownloadFile('https://github.com/git-for-windows/git/releases/download/v2.13.0.windows.1/Git-2.13.0-64-bit.exe', "$tempFolder\git.exe")
 Write-Host "Installing Git..."
 .\temp\git.exe /SILENT | Out-Null
+Write-Host "Downloading Python3..."
+(New-Object System.Net.WebClient).DownloadFile('https://www.python.org/ftp/python/3.6.0/python-3.6.0-amd64.exe', "$tempFolder\python.exe")
+Write-Host "Installing Python3..."
+.\temp\python.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 | Out-Null
+Write-Host "Installing pyodbc..."
+pip3 install pyodbc | Out-Null
 Write-Host "Downloading MSODBCSQL..."
 (New-object System.Net.WebClient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', "$tempFolder\msodbcsql.msi")
 Write-Host "Installing MSODBCSQL..."
