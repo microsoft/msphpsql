@@ -668,7 +668,11 @@ PHP_FUNCTION( sqlsrv_close )
         if( zend_list_close( Z_RES_P( conn_r ) ) == FAILURE ) {
             LOG( SEV_ERROR, "Failed to remove connection resource %1!d!", Z_RES_HANDLE_P( conn_r ));
         }
-        
+
+        // when conn_r is first parsed in zend_parse_parameters, conn_r becomes a zval that points to a zend_resource with a refcount of 2
+        // need to DELREF here so the refcount becomes 1 and conn_r can be appropriate destroyed by the garbage collector when it goes out of scope
+        // zend_list_close only destroy the resource pointed to by Z_RES_P( conn_r ), not the zend_resource itself
+        Z_TRY_DELREF_P(conn_r);
         ZVAL_NULL( conn_r );
 
         RETURN_TRUE;

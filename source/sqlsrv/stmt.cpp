@@ -1376,6 +1376,10 @@ PHP_FUNCTION( sqlsrv_free_stmt )
             LOG( SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P( stmt_r )->handle);
         }
 
+        // when stmt_r is first parsed in zend_parse_parameters, stmt_r becomes a zval that points to a zend_resource with a refcount of 2
+        // need to DELREF here so the refcount becomes 1 and stmt_r can be appropriate destroyed by the garbage collector when it goes out of scope
+        // zend_list_close only destroy the resource pointed to by Z_RES_P( stmt_r ), not the zend_resource itself
+        Z_TRY_DELREF_P(stmt_r);
         ZVAL_NULL( stmt_r );
 		
         RETURN_TRUE;
