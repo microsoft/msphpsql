@@ -1100,6 +1100,7 @@ const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
 const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
+const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char WSID[] = "WSID";
 const char UID[] = "UID";
 const char PWD[] = "PWD";
@@ -1128,6 +1129,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_APPLICATION_INTENT,
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
     SQLSRV_CONN_OPTION_AUTHENTICATION,
+    SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,

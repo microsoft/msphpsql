@@ -205,6 +205,7 @@ const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
 const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
+const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char UID[] = "UID";
 const char WSID[] = "WSID";
 
@@ -419,6 +420,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::TrustServerCertificate ),
         CONN_ATTR_BOOL,
         bool_conn_str_func::func
+    },
+    {
+        SSConnOptionNames::TransparentNetworkIPResolution,
+        sizeof(SSConnOptionNames::TransparentNetworkIPResolution),
+        SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
+        ODBCConnOptions::TransparentNetworkIPResolution,
+        sizeof(ODBCConnOptions::TransparentNetworkIPResolution),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
     },
     {
         SSConnOptionNames::WSID,
