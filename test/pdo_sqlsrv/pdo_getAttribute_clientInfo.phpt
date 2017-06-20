@@ -18,5 +18,5 @@ Array
     \[(DriverDllName|DriverName)\] => (msodbcsql1[1-9].dll|libmsodbcsql-[1-9]{2}.[0-9].so.[0-9].[0-9])
     \[DriverODBCVer\] => [0-9]{1,2}\.[0-9]{1,2}
     \[DriverVer\] => [0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}
-    \[ExtensionVer\] => [0-9]\.[0-9]\.[0-9](\-((rc[1-9]?)|(preview[1-9]?))(\.[0-9]+)?)?(\+[0-9]+)?
+    \[ExtensionVer\] => [0-9]\.[0-9]\.[0-9](\-((RC[1-9]?)|(preview[1-9]?))(\.[0-9]+)?)?(\+[0-9]+)?
 \)
