@@ -4,7 +4,7 @@
 // File: version.h
 // Contents: Version number constants
 //
-// Microsoft Drivers 4.2 for PHP for SQL Server
+// Microsoft Drivers 4.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -22,14 +22,21 @@
 #define STRINGIFY(a) TOSTRING(a)
 #define TOSTRING(a) #a
 
+
+// Increase Major number with backward incompatible breaking changes.
+// Increase Minor with backward compatible new functionalities and API changes.
+// Increase Patch for backward compatible fixes.
 #define SQLVERSION_MAJOR 4
-#define SQLVERSION_MINOR 2
+#define SQLVERSION_MINOR 3
 #define SQLVERSION_PATCH 0
 #define SQLVERSION_BUILD 0
 
-// Semantic versioning pre-release, for stable releases should be empty
-#define SEMVER_PRERELEASE "preview"
-// Semantic versioning build metadata 
+// Semantic versioning pre-release 
+// for stable releases should be empty
+// "rc" for release candidates
+// "preview" for ETP 
+#define SEMVER_PRERELEASE "RC1"
+// Semantic versioning build metadata, build meta data is not counted in precedence order.
 #define SEMVER_BUILDMETA
 
 #if SQLVERSION_BUILD > 0
@@ -37,7 +44,7 @@
 #define SEMVER_BUILDMETA "+" STRINGIFY( SQLVERSION_BUILD )
 #endif
 
-// Main version
+// Main version, dot separated 3 digits, Major.Minor.Patch
 #define VER_APIVERSION_STR      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_PATCH )
 
 // Remove "-" if SEMVER_PRERELEASE is empty (for stable releases)

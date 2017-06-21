@@ -40,3 +40,8 @@ if test "$PHP_SQLSRV" != "no"; then
   PHP_NEW_EXTENSION(sqlsrv, $sqlsrv_src_class $shared_src_class, $ext_shared,,-std=c++11)
   PHP_ADD_BUILD_DIR([$ext_builddir/shared], 1)
 fi
+
+#if (defined __APPLE__ && defined __MACH__) \
+  MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` \
+#endif
+
