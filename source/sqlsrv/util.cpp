@@ -5,7 +5,7 @@
 //
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 4.2 for PHP for SQL Server
+// Microsoft Drivers 4.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -684,8 +684,6 @@ PHP_FUNCTION( sqlsrv_get_config )
 
 namespace {
 
-// Workaround for name collision problem between the SQLSRV and PDO_SQLSRV drivers on Mac
-// Place get_error_message into the anonymous namespace in util.cpp
 sqlsrv_error_const* get_error_message( unsigned int sqlsrv_error_code ) {
 
 	sqlsrv_error_const *error_message = NULL;

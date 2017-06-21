@@ -4,7 +4,7 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 // File: msodbcsql.h
 //
-// Contents: Routines that use statement handles
+// Contents: Routines that use statement handles. This is a subset of the header file msodbcsql.h in the ODBC Driver.
 //
 // Contents: This SDK is not supported under any Microsoft standard support 
 //	         program or service. The information is provided AS IS without 
@@ -20,7 +20,7 @@
 //           pecuniary loss) arising out of the use of or inability to use 
 //           this SDK, even if Microsoft has been advised of the possibility 
 //           of such damages.
-// Microsoft Drivers 4.2 for PHP for SQL Server
+// Microsoft Drivers 4.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -36,7 +36,7 @@
 
 
 #if !defined(SQLODBC_VER)
-#define SQLODBC_VER 1100
+#define SQLODBC_VER 1300
 #endif
 
 #if SQLODBC_VER >= 1300
@@ -46,7 +46,7 @@
 #define SQLODBC_PRODUCT_NAME_SHORT_VER_ANSI     "ODBC Driver 13 for SQL Server"
 #define SQLODBC_PRODUCT_NAME_SHORT_ANSI         "ODBC Driver for SQL Server"
 
-#endif /* SQLODBC_VER >= 1300 */
+#endif // SQLODBC_VER >= 1300 
 
 #define SQLODBC_PRODUCT_NAME_FULL_VER           SQLODBC_PRODUCT_NAME_FULL_VER_ANSI
 #define SQLODBC_PRODUCT_NAME_FULL               SQLODBC_PRODUCT_NAME_FULL_ANSI
@@ -55,147 +55,145 @@
 
 #define SQLODBC_DRIVER_NAME                     SQLODBC_PRODUCT_NAME_SHORT_VER
 
-/* max SQL Server identifier length */
+// max SQL Server identifier length 
 #define SQL_MAX_SQLSERVERNAME                       128
 
-/*
- * SQLSetConnectAttr driver specific defines.
- * Microsoft has 1200 thru 1249 reserved for Microsoft ODBC Driver for SQL Server usage.
- * Connection attributes
- */
+
+// SQLSetConnectAttr driver specific defines.
+// Microsoft has 1200 thru 1249 reserved for Microsoft ODBC Driver for SQL Server usage.
+// Connection attributes
+
 #define SQL_COPT_SS_BASE                                1200
-#define SQL_COPT_SS_INTEGRATED_SECURITY                 (SQL_COPT_SS_BASE+3) /* Force integrated security on login */
-#define SQL_COPT_SS_TRANSLATE                           (SQL_COPT_SS_BASE+20) /* Perform code page translation */
-#define SQL_COPT_SS_ENCRYPT                             (SQL_COPT_SS_BASE+23) /* Allow strong encryption for data */
-#define SQL_COPT_SS_MARS_ENABLED                        (SQL_COPT_SS_BASE+24) /* Multiple active result set per connection */
-#define SQL_COPT_SS_TXN_ISOLATION                       (SQL_COPT_SS_BASE+27) /* Used to set/get any driver-specific or ODBC-defined TXN iso level */
-#define SQL_COPT_SS_TRUST_SERVER_CERTIFICATE            (SQL_COPT_SS_BASE+28) /* Trust server certificate */
-/*
- * SQLSetStmtAttr Microsoft ODBC Driver for SQL Server specific defines.
- * Statement attributes
- */
+#define SQL_COPT_SS_INTEGRATED_SECURITY                 (SQL_COPT_SS_BASE+3) // Force integrated security on login 
+#define SQL_COPT_SS_TRANSLATE                           (SQL_COPT_SS_BASE+20) // Perform code page translation 
+#define SQL_COPT_SS_ENCRYPT                             (SQL_COPT_SS_BASE+23) // Allow strong encryption for data 
+#define SQL_COPT_SS_MARS_ENABLED                        (SQL_COPT_SS_BASE+24) // Multiple active result set per connection 
+#define SQL_COPT_SS_TXN_ISOLATION                       (SQL_COPT_SS_BASE+27) // Used to set/get any driver-specific or ODBC-defined TXN iso level 
+#define SQL_COPT_SS_TRUST_SERVER_CERTIFICATE            (SQL_COPT_SS_BASE+28) // Trust server certificate 
+
+// SQLSetStmtAttr Microsoft ODBC Driver for SQL Server specific defines.
+// Statement attributes
+
 #define SQL_SOPT_SS_BASE                            1225
-#define SQL_SOPT_SS_TEXTPTR_LOGGING                 (SQL_SOPT_SS_BASE+0) /* Text pointer logging */
-#define SQL_SOPT_SS_NOBROWSETABLE                   (SQL_SOPT_SS_BASE+3) /* Set NOBROWSETABLE option */
-#define SQL_SOPT_SS_COLUMN_ENCRYPTION               (SQL_SOPT_SS_BASE+13)/* Sets the column encryption mode */
-/* Define old names */
+#define SQL_SOPT_SS_TEXTPTR_LOGGING                 (SQL_SOPT_SS_BASE+0) // Text pointer logging 
+#define SQL_SOPT_SS_NOBROWSETABLE                   (SQL_SOPT_SS_BASE+3) // Set NOBROWSETABLE option 
+#define SQL_SOPT_SS_COLUMN_ENCRYPTION               (SQL_SOPT_SS_BASE+13)// Sets the column encryption mode 
+// Define old names 
 #define SQL_TEXTPTR_LOGGING                         SQL_SOPT_SS_TEXTPTR_LOGGING
 #define SQL_COPT_SS_BASE_EX                         1240
-#define SQL_COPT_SS_WARN_ON_CP_ERROR                (SQL_COPT_SS_BASE_EX+3) /* Issues warning when data from the server had a loss during code page conversion. */
-#define SQL_COPT_SS_CONNECTION_DEAD                 (SQL_COPT_SS_BASE_EX+4) /* dbdead SQLGetConnectOption only. It will try to ping the server. Expensive connection check */
-#define SQL_COPT_SS_APPLICATION_INTENT              (SQL_COPT_SS_BASE_EX+7) /* Application Intent */
-#define SQL_COPT_SS_MULTISUBNET_FAILOVER            (SQL_COPT_SS_BASE_EX+8) /* Multi-subnet Failover */
-#define SQL_COPT_SS_TNIR                            (SQL_COPT_SS_BASE_EX+9) /* Transparent Network IP Resolution */
-#define SQL_COPT_SS_COLUMN_ENCRYPTION               (SQL_COPT_SS_BASE_EX+10) /* Always Encrypted Enabled or Disabled */
-#define SQL_COPT_SS_AEKEYSTOREPROVIDER              (SQL_COPT_SS_BASE_EX+11) /* Load a keystore provider or read the list of loaded keystore providers */
-#define SQL_COPT_SS_AEKEYSTOREDATA                  (SQL_COPT_SS_BASE_EX+12) /* Communicate with a loaded keystore provider */
-#define SQL_COPT_SS_AETRUSTEDCMKPATHS               (SQL_COPT_SS_BASE_EX+13) /* List of trusted CMK paths */
-#define SQL_COPT_SS_AECEKCACHETTL                   (SQL_COPT_SS_BASE_EX+14) /* Symmetric Key Cache TTL */
-#define SQL_COPT_SS_AUTHENTICATION                  (SQL_COPT_SS_BASE_EX+15) /* The authentication method used for the connection */
+#define SQL_COPT_SS_WARN_ON_CP_ERROR                (SQL_COPT_SS_BASE_EX+3) // Issues warning when data from the server had a loss during code page conversion. 
+#define SQL_COPT_SS_CONNECTION_DEAD                 (SQL_COPT_SS_BASE_EX+4) // dbdead SQLGetConnectOption only. It will try to ping the server. Expensive connection check 
+#define SQL_COPT_SS_APPLICATION_INTENT              (SQL_COPT_SS_BASE_EX+7) // Application Intent 
+#define SQL_COPT_SS_MULTISUBNET_FAILOVER            (SQL_COPT_SS_BASE_EX+8) // Multi-subnet Failover 
+#define SQL_COPT_SS_TNIR                            (SQL_COPT_SS_BASE_EX+9) // Transparent Network IP Resolution 
+#define SQL_COPT_SS_COLUMN_ENCRYPTION               (SQL_COPT_SS_BASE_EX+10)// Column Encryption Enabled or Disabled
+#define SQL_COPT_SS_CEKEYSTOREPROVIDER              (SQL_COPT_SS_BASE_EX+11)// Load a keystore provider or read the list of loaded keystore providers
+#define SQL_COPT_SS_CEKEYSTOREDATA                  (SQL_COPT_SS_BASE_EX+12)// Communicate with loaded keystore providers
+#define SQL_COPT_SS_TRUSTEDCMKPATHS                 (SQL_COPT_SS_BASE_EX+13)// List of trusted CMK paths
+#define SQL_COPT_SS_CEKCACHETTL                     (SQL_COPT_SS_BASE_EX+14)// Symmetric Key Cache TTL
+#define SQL_COPT_SS_AUTHENTICATION                  (SQL_COPT_SS_BASE_EX+15)// The authentication method used for the connection
 
-/*
- * SQLColAttributes driver specific defines.
- * SQLSetDescField/SQLGetDescField driver specific defines.
- * Microsoft has 1200 thru 1249 reserved for Microsoft ODBC Driver for SQL Server usage.
- */
+// SQLColAttributes driver specific defines.
+// SQLSetDescField/SQLGetDescField driver specific defines.
+// Microsoft has 1200 thru 1249 reserved for Microsoft ODBC Driver for SQL Server usage.
+ 
 #define SQL_CA_SS_BASE                              1200
-#define SQL_CA_SS_COLUMN_SSTYPE                     (SQL_CA_SS_BASE+0)   /*  dbcoltype/dbalttype */
-#define SQL_CA_SS_COLUMN_UTYPE                      (SQL_CA_SS_BASE+1)   /*  dbcolutype/dbaltutype */
-#define SQL_CA_SS_NUM_ORDERS                        (SQL_CA_SS_BASE+2)   /*  dbnumorders */
-#define SQL_CA_SS_COLUMN_ORDER                      (SQL_CA_SS_BASE+3)   /*  dbordercol */
-#define SQL_CA_SS_COLUMN_VARYLEN                    (SQL_CA_SS_BASE+4)   /*  dbvarylen */
-#define SQL_CA_SS_NUM_COMPUTES                      (SQL_CA_SS_BASE+5)   /*  dbnumcompute */
-#define SQL_CA_SS_COMPUTE_ID                        (SQL_CA_SS_BASE+6)   /*  dbnextrow status return */
-#define SQL_CA_SS_COMPUTE_BYLIST                    (SQL_CA_SS_BASE+7)   /*  dbbylist */
-#define SQL_CA_SS_COLUMN_ID                         (SQL_CA_SS_BASE+8)   /*  dbaltcolid */
-#define SQL_CA_SS_COLUMN_OP                         (SQL_CA_SS_BASE+9)   /*  dbaltop */
-#define SQL_CA_SS_COLUMN_SIZE                       (SQL_CA_SS_BASE+10)  /*  dbcollen */
-#define SQL_CA_SS_COLUMN_HIDDEN                     (SQL_CA_SS_BASE+11)  /*  Column is hidden (FOR BROWSE) */
-#define SQL_CA_SS_COLUMN_KEY                        (SQL_CA_SS_BASE+12)  /*  Column is key column (FOR BROWSE) */
-#define SQL_CA_SS_COLUMN_COLLATION                  (SQL_CA_SS_BASE+14)  /*  Column collation (only for chars) */
+#define SQL_CA_SS_COLUMN_SSTYPE                     (SQL_CA_SS_BASE+0)   //  dbcoltype/dbalttype 
+#define SQL_CA_SS_COLUMN_UTYPE                      (SQL_CA_SS_BASE+1)   //  dbcolutype/dbaltutype 
+#define SQL_CA_SS_NUM_ORDERS                        (SQL_CA_SS_BASE+2)   //  dbnumorders 
+#define SQL_CA_SS_COLUMN_ORDER                      (SQL_CA_SS_BASE+3)   //  dbordercol 
+#define SQL_CA_SS_COLUMN_VARYLEN                    (SQL_CA_SS_BASE+4)   //  dbvarylen 
+#define SQL_CA_SS_NUM_COMPUTES                      (SQL_CA_SS_BASE+5)   //  dbnumcompute 
+#define SQL_CA_SS_COMPUTE_ID                        (SQL_CA_SS_BASE+6)   //  dbnextrow status return 
+#define SQL_CA_SS_COMPUTE_BYLIST                    (SQL_CA_SS_BASE+7)   //  dbbylist 
+#define SQL_CA_SS_COLUMN_ID                         (SQL_CA_SS_BASE+8)   //  dbaltcolid 
+#define SQL_CA_SS_COLUMN_OP                         (SQL_CA_SS_BASE+9)   //  dbaltop 
+#define SQL_CA_SS_COLUMN_SIZE                       (SQL_CA_SS_BASE+10)  //  dbcollen 
+#define SQL_CA_SS_COLUMN_HIDDEN                     (SQL_CA_SS_BASE+11)  //  Column is hidden (FOR BROWSE) 
+#define SQL_CA_SS_COLUMN_KEY                        (SQL_CA_SS_BASE+12)  //  Column is key column (FOR BROWSE) 
+#define SQL_CA_SS_COLUMN_COLLATION                  (SQL_CA_SS_BASE+14)  //  Column collation (only for chars) 
 #define SQL_CA_SS_VARIANT_TYPE                      (SQL_CA_SS_BASE+15)
 #define SQL_CA_SS_VARIANT_SQL_TYPE                  (SQL_CA_SS_BASE+16)
 #define SQL_CA_SS_VARIANT_SERVER_TYPE               (SQL_CA_SS_BASE+17)
 
-/* XML, CLR UDT, and table valued parameter related metadata */
-#define SQL_CA_SS_UDT_CATALOG_NAME                  (SQL_CA_SS_BASE+18) /*  UDT catalog name */
-#define SQL_CA_SS_UDT_SCHEMA_NAME                   (SQL_CA_SS_BASE+19) /*  UDT schema name */
-#define SQL_CA_SS_UDT_TYPE_NAME                     (SQL_CA_SS_BASE+20) /*  UDT type name */
-#define SQL_CA_SS_XML_SCHEMACOLLECTION_CATALOG_NAME (SQL_CA_SS_BASE+22) /*  Name of the catalog that contains XML Schema collection */
-#define SQL_CA_SS_XML_SCHEMACOLLECTION_SCHEMA_NAME  (SQL_CA_SS_BASE+23) /*  Name of the schema that contains XML Schema collection */
-#define SQL_CA_SS_XML_SCHEMACOLLECTION_NAME         (SQL_CA_SS_BASE+24) /*  Name of the XML Schema collection */
-#define SQL_CA_SS_CATALOG_NAME                      (SQL_CA_SS_BASE+25) /*  Catalog name */
-#define SQL_CA_SS_SCHEMA_NAME                       (SQL_CA_SS_BASE+26) /*  Schema name */
-#define SQL_CA_SS_TYPE_NAME                         (SQL_CA_SS_BASE+27) /*  Type name */
+// XML, CLR UDT, and table valued parameter related metadata 
+#define SQL_CA_SS_UDT_CATALOG_NAME                  (SQL_CA_SS_BASE+18) //  UDT catalog name 
+#define SQL_CA_SS_UDT_SCHEMA_NAME                   (SQL_CA_SS_BASE+19) //  UDT schema name 
+#define SQL_CA_SS_UDT_TYPE_NAME                     (SQL_CA_SS_BASE+20) //  UDT type name 
+#define SQL_CA_SS_XML_SCHEMACOLLECTION_CATALOG_NAME (SQL_CA_SS_BASE+22) //  Name of the catalog that contains XML Schema collection 
+#define SQL_CA_SS_XML_SCHEMACOLLECTION_SCHEMA_NAME  (SQL_CA_SS_BASE+23) //  Name of the schema that contains XML Schema collection 
+#define SQL_CA_SS_XML_SCHEMACOLLECTION_NAME         (SQL_CA_SS_BASE+24) //  Name of the XML Schema collection 
+#define SQL_CA_SS_CATALOG_NAME                      (SQL_CA_SS_BASE+25) //  Catalog name 
+#define SQL_CA_SS_SCHEMA_NAME                       (SQL_CA_SS_BASE+26) //  Schema name 
+#define SQL_CA_SS_TYPE_NAME                         (SQL_CA_SS_BASE+27) //  Type name 
 
-/* table valued parameter related metadata */
-#define SQL_CA_SS_COLUMN_COMPUTED                   (SQL_CA_SS_BASE+29) /*  column is computed */
-#define SQL_CA_SS_COLUMN_IN_UNIQUE_KEY              (SQL_CA_SS_BASE+30) /*  column is part of a unique key */
-#define SQL_CA_SS_COLUMN_SORT_ORDER                 (SQL_CA_SS_BASE+31) /*  column sort order */
-#define SQL_CA_SS_COLUMN_SORT_ORDINAL               (SQL_CA_SS_BASE+32) /*  column sort ordinal */
-#define SQL_CA_SS_COLUMN_HAS_DEFAULT_VALUE          (SQL_CA_SS_BASE+33) /*  column has default value for all rows of the table valued parameter */
+// table valued parameter related metadata 
+#define SQL_CA_SS_COLUMN_COMPUTED                   (SQL_CA_SS_BASE+29) //  column is computed 
+#define SQL_CA_SS_COLUMN_IN_UNIQUE_KEY              (SQL_CA_SS_BASE+30) //  column is part of a unique key 
+#define SQL_CA_SS_COLUMN_SORT_ORDER                 (SQL_CA_SS_BASE+31) //  column sort order 
+#define SQL_CA_SS_COLUMN_SORT_ORDINAL               (SQL_CA_SS_BASE+32) //  column sort ordinal 
+#define SQL_CA_SS_COLUMN_HAS_DEFAULT_VALUE          (SQL_CA_SS_BASE+33) //  column has default value for all rows of the table valued parameter 
 
-/* sparse column related metadata */
-#define SQL_CA_SS_IS_COLUMN_SET                     (SQL_CA_SS_BASE+34) /*  column is a column-set column for sparse columns */
+// sparse column related metadata 
+#define SQL_CA_SS_IS_COLUMN_SET                     (SQL_CA_SS_BASE+34) //  column is a column-set column for sparse columns 
 
-/* Legacy datetime related metadata */
-#define SQL_CA_SS_SERVER_TYPE                       (SQL_CA_SS_BASE+35) /*  column type to send on the wire for datetime types */
+// Legacy datetime related metadata 
+#define SQL_CA_SS_SERVER_TYPE                       (SQL_CA_SS_BASE+35) //  column type to send on the wire for datetime types 
 
-/* force column encryption */
-#define SQL_CA_SS_FORCE_ENCRYPT                     (SQL_CA_SS_BASE+36) /*  indicate mandatory encryption for this parameter */
+// force column encryption 
+#define SQL_CA_SS_FORCE_ENCRYPT                     (SQL_CA_SS_BASE+36) //  indicate mandatory encryption for this parameter 
 
-/* Defines for use with SQL_COPT_SS_INTEGRATED_SECURITY - Pre-Connect Option only */
-#define SQL_IS_OFF                          0L           /*  Integrated security isn't used */
-#define SQL_IS_ON                           1L           /*  Integrated security is used */
+#define SQL_CA_SS_MAX_USED                          (SQL_CA_SS_BASE+37)
+// Defines for use with SQL_COPT_SS_INTEGRATED_SECURITY - Pre-Connect Option only 
+#define SQL_IS_OFF                          0L           //  Integrated security isn't used 
+#define SQL_IS_ON                           1L           //  Integrated security is used 
 #define SQL_IS_DEFAULT                      SQL_IS_OFF
-/* Defines for use with SQL_COPT_SS_TRANSLATE */
-#define SQL_XL_OFF                          0L           /*  Code page translation is not performed */
-#define SQL_XL_ON                           1L           /*  Code page translation is performed */
+// Defines for use with SQL_COPT_SS_TRANSLATE 
+#define SQL_XL_OFF                          0L           //  Code page translation is not performed 
+#define SQL_XL_ON                           1L           //  Code page translation is performed 
 #define SQL_XL_DEFAULT                      SQL_XL_ON
-/* Defines for use with SQL_SOPT_SS_TEXTPTR_LOGGING */
-#define SQL_TL_OFF                          0L           /*  No logging on text pointer ops */
-#define SQL_TL_ON                           1L           /*  Logging occurs on text pointer ops */
+// Defines for use with SQL_SOPT_SS_TEXTPTR_LOGGING 
+#define SQL_TL_OFF                          0L           //  No logging on text pointer ops 
+#define SQL_TL_ON                           1L           //  Logging occurs on text pointer ops 
 #define SQL_TL_DEFAULT                      SQL_TL_ON
-/* Defines for use with SQL_SOPT_SS_NOBROWSETABLE */
-#define SQL_NB_OFF                          0L           /*  NO_BROWSETABLE is off */
-#define SQL_NB_ON                           1L           /*  NO_BROWSETABLE is on */
+// Defines for use with SQL_SOPT_SS_NOBROWSETABLE 
+#define SQL_NB_OFF                          0L           //  NO_BROWSETABLE is off 
+#define SQL_NB_ON                           1L           //  NO_BROWSETABLE is on 
 #define SQL_NB_DEFAULT                      SQL_NB_OFF
-/* Defines for use with SQL_SOPT_SS_COLUMN_ENCRYPTION */
-#define SQL_CE_DISABLED                     0L           /*  Disabled */
-#define SQL_CE_RESULTSETONLY                1L           /*  Decryption Only (resultsets and return values) */
-#define SQL_CE_ENABLED                      3L           /*  Enabled (both encryption and decryption) */
-
-/* SQL_COPT_SS_ENCRYPT */
+// Defines for use with SQL_SOPT_SS_COLUMN_ENCRYPTION 
+#define SQL_CE_DISABLED                     0L           //  Disabled 
+#define SQL_CE_RESULTSETONLY                1L           //  Decryption Only (resultsets and return values) 
+#define SQL_CE_ENABLED                      3L           //  Enabled (both encryption and decryption) 
+    // Defines for use with SQL_COPT_SS_COLUMN_ENCRYPTION
+#define SQL_COLUMN_ENCRYPTION_DISABLE       0L
+#define SQL_COLUMN_ENCRYPTION_ENABLE        1L
+#define SQL_COLUMN_ENCRYPTION_DEFAULT       SQL_COLUMN_ENCRYPTION_DISABLE
+    // Defines for use with SQL_COPT_SS_CEKCACHETTL
+#define SQL_CEKCACHETTL_DEFAULT             7200L        //  TTL value in seconds (2 hours)
+// SQL_COPT_SS_ENCRYPT 
 #define SQL_EN_OFF                          0L
 #define SQL_EN_ON                           1L
-/* SQL_COPT_SS_TRUST_SERVER_CERTIFICATE */
+// SQL_COPT_SS_TRUST_SERVER_CERTIFICATE 
 #define SQL_TRUST_SERVER_CERTIFICATE_NO     0L
 #define SQL_TRUST_SERVER_CERTIFICATE_YES    1L
-/* SQL_COPT_SS_WARN_ON_CP_ERROR */
+// SQL_COPT_SS_WARN_ON_CP_ERROR 
 #define SQL_WARN_NO                         0L
 #define SQL_WARN_YES                        1L
-/* SQL_COPT_SS_MARS_ENABLED */
+// SQL_COPT_SS_MARS_ENABLED 
 #define SQL_MARS_ENABLED_NO                 0L
 #define SQL_MARS_ENABLED_YES                1L
-/* SQL_TXN_ISOLATION_OPTION bitmasks */
+// SQL_TXN_ISOLATION_OPTION bitmasks 
 #define SQL_TXN_SS_SNAPSHOT                 0x00000020L
-/* SQL_COPT_SS_COLUMN_ENCRYPTION */
-#define SQL_COLUMN_ENCRYPTION_DISABLE		0L
-#define SQL_COLUMN_ENCRYPTION_ENABLE		1L
-#define SQL_COLUMN_ENCRYPTION_DEFAULT		SQL_COLUMN_ENCRYPTION_DISABLE
-// Defines for use with SQL_COPT_SS_AECEKCACHETTL
-#define SQL_AECEKCACHETTL_DEFAULT           7200L        //  TTL value in seconds (2 hours)
 
-/* The following are defines for SQL_CA_SS_COLUMN_SORT_ORDER */
+// The following are defines for SQL_CA_SS_COLUMN_SORT_ORDER 
 #define SQL_SS_ORDER_UNSPECIFIED            0L
 #define SQL_SS_DESCENDING_ORDER             1L
 #define SQL_SS_ASCENDING_ORDER              2L
 #define SQL_SS_ORDER_DEFAULT                SQL_SS_ORDER_UNSPECIFIED
 
-/*
- * Driver specific SQL data type defines.
- * Microsoft has -150 thru -199 reserved for Microsoft ODBC Driver for SQL Server usage.
- */
+// Driver specific SQL data type defines.
+// Microsoft has -150 thru -199 reserved for Microsoft ODBC Driver for SQL Server usage.
+
 #define SQL_SS_VARIANT                      (-150)
 #define SQL_SS_UDT                          (-151)
 #define SQL_SS_XML                          (-152)
@@ -203,24 +201,22 @@
 #define SQL_SS_TIME2                        (-154)
 #define SQL_SS_TIMESTAMPOFFSET              (-155)
 
-/* Local types to be used with SQL_CA_SS_SERVER_TYPE */
+// Local types to be used with SQL_CA_SS_SERVER_TYPE 
 #define SQL_SS_TYPE_DEFAULT                         0L
 #define SQL_SS_TYPE_SMALLDATETIME                   1L
 #define SQL_SS_TYPE_DATETIME                        2L
 
-/* Extended C Types range 4000 and above. Range of -100 thru 200 is reserved by Driver Manager. */
+// Extended C Types range 4000 and above. Range of -100 thru 200 is reserved by Driver Manager. 
 #define SQL_C_TYPES_EXTENDED                0x04000L
 
-/*
- * SQL_SS_LENGTH_UNLIMITED is used to describe the max length of
- * VARCHAR(max), VARBINARY(max), NVARCHAR(max), and XML columns
- */
+// SQL_SS_LENGTH_UNLIMITED is used to describe the max length of
+// VARCHAR(max), VARBINARY(max), NVARCHAR(max), and XML columns
+
 #define SQL_SS_LENGTH_UNLIMITED             0
 
-/*
- * User Data Type definitions.
- * Returned by SQLColAttributes/SQL_CA_SS_COLUMN_UTYPE.
- */
+// User Data Type definitions.
+// Returned by SQLColAttributes/SQL_CA_SS_COLUMN_UTYPE.
+
 #define SQLudtBINARY                        3
 #define SQLudtBIT                           16
 #define SQLudtBITN                          0
@@ -250,35 +246,35 @@
 #define SQLudtVARBINARY                     4
 #define SQLudtVARCHAR                       2
 #define MIN_USER_DATATYPE                   256
-/*
- * Aggregate operator types.
- * Returned by SQLColAttributes/SQL_CA_SS_COLUMN_OP.
- */
-#define SQLAOPSTDEV                         0x30    /* Standard deviation */
-#define SQLAOPSTDEVP                        0x31    /* Standard deviation population */
-#define SQLAOPVAR                           0x32    /* Variance */
-#define SQLAOPVARP                          0x33    /* Variance population */
-#define SQLAOPCNT                           0x4b    /* Count */
-#define SQLAOPSUM                           0x4d    /* Sum */
-#define SQLAOPAVG                           0x4f    /* Average */
-#define SQLAOPMIN                           0x51    /* Min */
-#define SQLAOPMAX                           0x52    /* Max */
-#define SQLAOPANY                           0x53    /* Any */
-#define SQLAOPNOOP                          0x56    /* None */
-/*
- * SQLGetDiagField driver specific defines.
- * Microsoft has -1150 thru -1199 reserved for Microsoft ODBC Driver for SQL Server usage.
- */
+
+// Aggregate operator types.
+// Returned by SQLColAttributes/SQL_CA_SS_COLUMN_OP.
+
+#define SQLAOPSTDEV                         0x30    // Standard deviation 
+#define SQLAOPSTDEVP                        0x31    // Standard deviation population 
+#define SQLAOPVAR                           0x32    // Variance 
+#define SQLAOPVARP                          0x33    // Variance population 
+#define SQLAOPCNT                           0x4b    // Count 
+#define SQLAOPSUM                           0x4d    // Sum 
+#define SQLAOPAVG                           0x4f    // Average 
+#define SQLAOPMIN                           0x51    // Min 
+#define SQLAOPMAX                           0x52    // Max 
+#define SQLAOPANY                           0x53    // Any 
+#define SQLAOPNOOP                          0x56    // None 
+
+// SQLGetDiagField driver specific defines.
+// Microsoft has -1150 thru -1199 reserved for Microsoft ODBC Driver for SQL Server usage.
+ 
 #define SQL_DIAG_SS_BASE                    (-1150)
 #define SQL_DIAG_SS_MSGSTATE                (SQL_DIAG_SS_BASE)
 #define SQL_DIAG_SS_SEVERITY                (SQL_DIAG_SS_BASE-1)
 #define SQL_DIAG_SS_SRVNAME                 (SQL_DIAG_SS_BASE-2)
 #define SQL_DIAG_SS_PROCNAME                (SQL_DIAG_SS_BASE-3)
 #define SQL_DIAG_SS_LINE                    (SQL_DIAG_SS_BASE-4)
-/*
- * SQLGetDiagField/SQL_DIAG_DYNAMIC_FUNCTION_CODE driver specific defines.
- * Microsoft has -200 thru -299 reserved for Microsoft ODBC Driver for SQL Server usage.
- */
+
+// SQLGetDiagField/SQL_DIAG_DYNAMIC_FUNCTION_CODE driver specific defines.
+// Microsoft has -200 thru -299 reserved for Microsoft ODBC Driver for SQL Server usage.
+ 
 #define SQL_DIAG_DFC_SS_BASE                (-200)
 #define SQL_DIAG_DFC_SS_ALTER_DATABASE      (SQL_DIAG_DFC_SS_BASE-0)
 #define SQL_DIAG_DFC_SS_CHECKPOINT          (SQL_DIAG_DFC_SS_BASE-1)
@@ -343,7 +339,7 @@
 #define SQL_DIAG_DFC_SS_SET_XCTLVL          (SQL_DIAG_DFC_SS_BASE-55)
 #define SQL_DIAG_DFC_SS_MERGE               (SQL_DIAG_DFC_SS_BASE-56)
 
-/* Severity codes for SQL_DIAG_SS_SEVERITY */
+// Severity codes for SQL_DIAG_SS_SEVERITY 
 #define EX_ANY          0
 #define EX_INFO         10
 #define EX_MAXISEVERITY EX_INFO
@@ -365,64 +361,45 @@
 #define EX_HARDWARE     24
 #define EX_CONTROL      25
 
-/* Keystore Provider interface definition */
+// Data is defined to be past the end of the structure header.
+// This is accepted by MSVC, GCC, and C99 standard but former emits
+// unnecessary warning, hence it has to be disabled.
 
-typedef void errFunc(void *ctx, const wchar_t *msg, ...);
-
-#define IDS_MSG(x) ((const wchar_t*)(x))
-
-typedef struct AEKeystoreProvider
-{
-    wchar_t *Name;
-    int (*Init)(void *ctx, errFunc *onError);
-    int (*Read)(void *ctx, errFunc *onError, void *data, unsigned int *len);
-    int (*Write)(void *ctx, errFunc *onError, void *data, unsigned int len);
-    int (*DecryptCEK)(
-        void *ctx,
-        errFunc *onError,
-        const wchar_t *keyPath,
-        const wchar_t *alg,
-        unsigned char *ecek,
-        unsigned short ecek_len,
-        unsigned char **cek_out,
-        unsigned short *cek_len);
-    void (*Free)();
-} AEKEYSTOREPROVIDER;
-
-/* Data is defined to be past the end of the structure header.
- This is accepted by MSVC, GCC, and C99 standard but former emits
- unnecessary warning, hence it has to be disabled.
-*/
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable:4200)
 #endif
 
-typedef struct AEKeystoreData
+// Communication between the driver and application via the CEKeystoreData structure
+typedef struct CEKeystoreData
 {
-    wchar_t *Name;
+    wchar_t *name;
     unsigned int dataSize;
-    char Data[];
-} AEKEYSTOREPROVIDERDATA;
+    char data[];
+} CEKEYSTOREDATA;
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 
-/* The following constants are for the Azure Key Vault configuration interface */
-#define AKV_CONFIG_FLAGS       0
-#define AKVCFG_USECLIENTID    0x00000001
-#define AKVCFG_AUTORENEW      0x00000002
+// The following constants are for the Azure Key Vault configuration interface
+#define AKV_CONFIG_FLAGS                0
+#define AKVCFG_AUTHMODE                 0x0000000F
+#define AKVCFG_AUTHMODE_ACCESSTOKEN     0
+#define AKVCFG_AUTHMODE_CLIENTKEY       1
+#define AKVCFG_AUTHMODE_PASSWORD        2
+#define AKVCFG_AUTHMODE_INTEGRATED      3
+#define AKVCFG_AUTHMODE_CERTIFICATE     4
+#define AKVCFG_NOAUTORENEW              0x00000010
 
-#define AKV_CONFIG_CLIENTID    1
-#define AKV_CONFIG_CLIENTKEY   2
-
-#define AKV_CONFIG_ACCESSTOKEN 3
-#define AKV_CONFIG_TOKENEXPIRY 4
-
+#define AKV_CONFIG_PRINCIPALID  1
+#define AKV_CONFIG_AUTHSECRET   2
+#define AKV_CONFIG_ACCESSTOKEN  3
+#define AKV_CONFIG_TOKENEXPIRY  4
 #define AKV_CONFIG_MAXRETRIES   5
 #define AKV_CONFIG_RETRYTIMEOUT 6
 #define AKV_CONFIG_RETRYWAIT    7
 
-#endif /* __msodbcsql_h__ */
+#define AKV_CONFIG_RESET        255
+#endif // __msodbcsql_h__ 
 
