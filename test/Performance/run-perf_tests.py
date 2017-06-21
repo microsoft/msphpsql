@@ -279,7 +279,7 @@ def parse_results( dump_file ):
             xml_result.error_message = errors[0].text
         else:
             xml_result.success = 1
-            xml_result.duration = benchmark[0][0].find( 'stats' ).get( 'sum' )
+            xml_result.duration = int( round( int( benchmark[0][0].find( 'stats' ).get( 'sum' )) / 1000000 ))
             memory_peak = 0
             for iteration in benchmark[0][0].findall( 'iteration' ):
                 iter_memory_peak = int( iteration.get( 'mem-peak' ))
