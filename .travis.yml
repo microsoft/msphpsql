@@ -3,6 +3,8 @@ sudo: required
 os: linux
 dist: trusty
 
+group: edge
+
 services:
   - docker
 
@@ -43,4 +45,3 @@ script:
 notifications:
   email: false
 
-group: deprecated-2017Q2
