@@ -9,52 +9,50 @@ require_once("MsSetup.inc");
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Test Azure AD with Authentication=SqlPassword.
 //
-$connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                         "Authentication"=>'SqlPassword', "TrustServerCertificate"=>true);
+$connectionInfo = "Database = $databaseName; Authentication = SqlPassword;  TrustServerCertificate = true;";
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
-
-if( $conn === false )
+try
 {
-    echo "Could not connect with Authentication=SqlPassword.\n";
-    var_dump( sqlsrv_errors() );
-}
-else
-{
+    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
     echo "Connected successfully with Authentication=SqlPassword.\n";
 }
+catch( PDOException $e )
+{
+    echo "Could not connect with Authentication=SqlPassword.\n";
+    print_r( $e->getMessage() );
+    echo "\n";
+}
 
-$stmt = sqlsrv_query( $conn, "SELECT count(*) FROM cd_info" );
+$stmt = $conn->query( "SELECT count(*) FROM cd_info" );
 if ( $stmt === false )
 {
     echo "Query failed.\n";
 }
 else
 {
-    $result = sqlsrv_fetch_array( $stmt );
+    $result = $stmt->fetch();
     var_dump( $result );
 }
 
-sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
+$conn = null;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Test Azure AD with integrated authentication. This should fail because
 // we don't support it.
 //
-$connectionInfo = array( "Authentication"=>"ActiveDirectoryIntegrated", "TrustServerCertificate"=>true );
+$connectionInfo = "Authentication = ActiveDirectoryIntegrated; TrustServerCertificate = true;";
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
-if( $conn === false )
+try
+{
+    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo" );
+    echo "Connected successfully with Authentication=ActiveDirectoryIntegrated.\n";
+    $conn = null;
+}
+catch( PDOException $e )
 {
     echo "Could not connect with Authentication=ActiveDirectoryIntegrated.\n";
-    $errors = sqlsrv_errors();
-    print_r($errors[0]);
-}
-else
-{
-    echo "Connected successfully with Authentication=ActiveDirectoryIntegrated.\n";
-    sqlsrv_close( $conn );
+    print_r( $e->getMessage() );
+    echo "\n";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -68,19 +66,18 @@ $azurePassword = $adPassword;
 
 if ($azureServer != 'TARGET_AD_SERVER')
 {
-    $connectionInfo = array( "UID"=>$azureUsername, "PWD"=>$azurePassword, 
-                         "Authentication"=>'ActiveDirectoryPassword',  "TrustServerCertificate"=>true );
+    $connectionInfo = "Authentication = ActiveDirectoryPassword; TrustServerCertificate = false";
 
-    $conn = sqlsrv_connect( $azureServer, $connectionInfo );
-    if( $conn === false )
+    try
+    {
+        $conn = new PDO( "sqlsrv:server = $azureServer ; $connectionInfo", $azureUsername, $azurePassword );
+        echo "Connected successfully with Authentication=ActiveDirectoryPassword.\n";
+    }
+    catch( PDOException $e )
     {
         echo "Could not connect with ActiveDirectoryPassword.\n";
-        print_r( sqlsrv_errors() );
-    }
-    else
-    {
-        echo "Connected successfully with Authentication=ActiveDirectoryPassword.\n";
-        sqlsrv_close( $conn );
+        print_r( $e->getMessage() );
+        echo "\n";
     }
 }
 else
@@ -91,19 +88,11 @@ else
 --EXPECTF--
 Connected successfully with Authentication=SqlPassword.
 array(2) {
-  [0]=>
-  int(7)
   [""]=>
-  int(7)
+  string(1) "7"
+  [0]=>
+  string(1) "7"
 }
 Could not connect with Authentication=ActiveDirectoryIntegrated.
-Array
-(
-    [0] => IMSSP
-    [SQLSTATE] => IMSSP
-    [1] => -62
-    [code] => -62
-    [2] => Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.
-    [message] => Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.
-)
+SQLSTATE[IMSSP]: Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.
 %s with Authentication=ActiveDirectoryPassword.
