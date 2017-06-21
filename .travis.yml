@@ -1,4 +1,5 @@
 sudo: required
+group: edge
 
 os: linux
 dist: trusty
