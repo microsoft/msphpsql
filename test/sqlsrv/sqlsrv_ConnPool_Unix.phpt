@@ -24,7 +24,7 @@ file_put_contents("odbcinst.ini", $current);
 shell_exec("sudo cp odbcinst.ini $odbcinst_ini");
 
 //Creating a new php process, because for changes in odbcinst.ini file to affect pooling, drivers must be reloaded.
-print_r(shell_exec(PHP_BINARY." ./test/sqlsrv/isPooled.php"));
+print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/isPooled.php"));
 
 //disable pooling by modifying the odbcinst.ini file
 $current = file_get_contents($odbcinst_ini);
@@ -32,7 +32,7 @@ $current = str_replace($lines_to_add,'',$current);
 file_put_contents("odbcinst.ini", $current);
 shell_exec("sudo cp odbcinst.ini $odbcinst_ini");
 
-print_r(shell_exec(PHP_BINARY." ./test/sqlsrv/isPooled.php"));
+print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/isPooled.php"));
 ?>
 --CLEAN--
 <?php
