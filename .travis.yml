@@ -1,5 +1,3 @@
-sudo: required
-
 os: linux
 dist: trusty
 
