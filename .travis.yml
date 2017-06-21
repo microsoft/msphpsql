@@ -1,5 +1,9 @@
+sudo: required
+
 os: linux
 dist: trusty
+
+group: edge
 
 services:
   - docker
