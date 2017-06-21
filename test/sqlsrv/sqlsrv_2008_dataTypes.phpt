@@ -20,8 +20,6 @@ if( !$conn ) {
     FatalError("Could not connect");
 }
 
-print_r( sqlsrv_client_info( $conn ));
-
 $stmt = sqlsrv_query( $conn, "IF OBJECT_ID('2008_date_types', 'U') IS NOT NULL DROP TABLE [2008_date_types]" );
 
 $stmt = sqlsrv_query( $conn, "CREATE TABLE [2008_date_types] (id int, [c1_date] date, [c2_time] time, [c3_datetimeoffset] datetimeoffset, [c4_datetime2] datetime2)" );
@@ -104,13 +102,6 @@ sqlsrv_close( $conn );
 
 ?>
 --EXPECTREGEX--
-Array
-\(
-    \[(DriverDllName|DriverName)\] => msodbcsql[0-9]{2}\.dll|libmsodbcsql-[0-9]{2}\.[0-9]\.so\.[0-9]\.[0-9]
-    \[DriverODBCVer\] => [0-9]{1,2}\.[0-9]{1,2}
-    \[DriverVer\] => [0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}
-    \[ExtensionVer\] => ^[0-9]\.[0-9]\.[0-9](\-((RC[1-9]?)|(preview[1-9]?))(\.[0-9]+)?)?(\+[0-9]+)?$
-\)
 field 0 = [0-9]{1,5}
 field 1 = [0-9]{4}\-[0-9]{2}\-[0-9]{2}
 field 2 = [0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{7}
