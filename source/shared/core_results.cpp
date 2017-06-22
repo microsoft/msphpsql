@@ -121,7 +121,7 @@ size_t get_float_precision( _In_ SQLLEN buffer_length, _In_ size_t unitsize)
 #ifndef _WIN32
 // copy the number into a char string using the num_put facet
 template <typename Number>
-SQLRETURN get_string_from_stream( _In_ Number number_data, _Out_writes_z_ std::basic_string<char> &str_num, _In_ size_t precision, _Out_ sqlsrv_error_auto_ptr& last_error)
+SQLRETURN get_string_from_stream( _In_ Number number_data, _Out_ std::basic_string<char> &str_num, _In_ size_t precision, _Out_ sqlsrv_error_auto_ptr& last_error)
 {
     //std::locale loc( std::locale(""), new std::num_put<char> );	// By default, SQL Server doesn't take user's locale into consideration
     std::locale loc;
