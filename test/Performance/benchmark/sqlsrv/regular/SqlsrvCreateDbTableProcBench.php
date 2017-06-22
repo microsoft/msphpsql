@@ -14,7 +14,7 @@ class SqlsrvCreateDbTableProcBench{
 
     /*
     * Each iteration creates a database, a table and a stored procedure in that database and drops the database at the end.
-    * Not that, execDirect function are used to execute all the queries. 
+    * Note that, ODBC SQLExecDirect function are used to execute all the queries. 
     */
     public function benchCreateDbTableProc(){
         $randomNum = rand();

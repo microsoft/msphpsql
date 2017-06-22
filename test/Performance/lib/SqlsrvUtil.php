@@ -18,7 +18,10 @@ class SqlsrvUtil{
         if ( $conn === false || $conn === null ){
             die( print_r( "Invalid connection resource\n"));
         }
-        sqlsrv_close( $conn );
+        $ret = sqlsrv_close( $conn );
+        if ( $ret === false ){
+            die( print_r( sqlsrv_errors(), true));
+        }
     }
 
     public static function selectVersion( $conn ){

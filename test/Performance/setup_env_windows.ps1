@@ -9,18 +9,47 @@ Param(
     [string]$ARCH
     )
 
-$PHP_VERSION_MINOR=$PHP_VERSION.split(".")[1]
+function Get-UrlStatusCode([string] $Url)
+{
+    try
+    {
+        (Invoke-WebRequest -Uri $Url -UseBasicParsing -DisableKeepAlive).StatusCode
+    }
+    catch [Net.WebException]
+    {
+        [int]$_.Exception.Response.StatusCode
+    }
+}
+
+IF($ARCH -ne "x64" -And $ARCH -ne "x86"){
+    Write-Host "ARCH must either x64 or x86"
+    Break
+}
+
+IF($PHP_THREAD -ne "nts" -And $PHP_THREAD -ne "ts"){
+    Write-Host "PHP_THREAD must either nts or ts"
+    Break
+}
+
 $startingDir=$pwd.Path
 $tempFolder=Join-Path $startingDir "temp"
-
 
 Remove-Item temp -Recurse -Force -ErrorAction Ignore
 New-Item -ItemType directory -Path temp
 
-Write-Host "Downloading Git..."
-(New-Object System.Net.WebClient).DownloadFile('https://github.com/git-for-windows/git/releases/download/v2.13.0.windows.1/Git-2.13.0-64-bit.exe', "$tempFolder\git.exe")
+(New-Object System.Net.WebClient).DownloadFile('http://windows.php.net/downloads/releases/sha1sum.txt',"$tempFolder\sha1sum.txt")
+$PHP70_LATEST_VERSION=type $tempFolder\sha1sum.txt | where { $_ -match "php-(7.0\.\d+)-src" } | foreach { $matches[1] }
+$PHP71_LATEST_VERSION=type $tempFolder\sha1sum.txt | where { $_ -match "php-(7.1\.\d+)-src" } | foreach { $matches[1] }
+#check if PHP_VERSION source exisits
+$statusCode = Get-UrlStatusCode "http://windows.php.net/downloads/releases/php-$PHP_VERSION-src.zip"
+#If provided php version source does not exists, default the version to latest php 71 source
+IF($statusCode -eq 404){$PHP_VERSION=$PHP71_LATEST_VERSION}
+$PHP_VERSION_MINOR=$PHP_VERSION.split(".")[1]
+
+Write-Host "Installing chocolatey..."
+iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 Write-Host "Installing Git..."
-.\temp\git.exe /SILENT | Out-Null
+choco install git
 Write-Host "Downloading Python3..."
 (New-Object System.Net.WebClient).DownloadFile('https://www.python.org/ftp/python/3.6.0/python-3.6.0-amd64.exe', "$tempFolder\python.exe")
 Write-Host "Installing Python3..."
