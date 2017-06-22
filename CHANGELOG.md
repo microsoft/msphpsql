@@ -3,6 +3,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux/MAC 4.3.0-RC1 - 2017-06-21
+Here is the list of updates:
+
+### Added
+- Transparent Network IP Resolution ([TNIR](https://github.com/Microsoft/msphpsql/wiki/Features#TNIR)) feature.
+
+### Fixed
+- Fixed a memory leak in closing connection resources.
+- Fixed load ordering issue in MacOS ([issue #417](https://github.com/Microsoft/msphpsql/issues/417))
+
+### Limitation
+- No support for inout / output params when using sql_variant type
+
+### Known Issues
+- When pooling is enabled in Linux or MAC
+  - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+  
 
 ## Windows/Linux/MAC 4.2.0-preview - 2017-05-19
 Here is the list of updates:
