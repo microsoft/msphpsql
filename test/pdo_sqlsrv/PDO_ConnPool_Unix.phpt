@@ -11,7 +11,7 @@ This test also requires root privileges to modify odbcinst.ini file on Linux.
 // On travis-ci we can't use sudo
 $sudo = '';
 $user = posix_getpwuid(posix_geteuid());
-if (strtolower($user['name']) == 'bamboo')
+if (strtolower($user['name']) != 'root')
 {
     $sudo = 'sudo ';
 }
