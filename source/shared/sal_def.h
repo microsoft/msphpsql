@@ -647,6 +647,7 @@
 #define _Out_z_cap_post_count_(cap,count)
 #define _Out_z_cap_x_(size)
 #define _Out_z_capcount_(capcount)
+#define _Outptr_result_buffer_(size)
 #define _Outref_result_bytebuffer_maybenull_(size)
 #define _Outref_result_maybenull_
 #define _Post_bytecap_(size)
