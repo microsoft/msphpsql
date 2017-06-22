@@ -138,7 +138,7 @@ struct ss_sqlsrv_conn : sqlsrv_conn
     static int descriptor;
 
     // initialize with default values
-    ss_sqlsrv_conn( SQLHANDLE h, error_callback e, void* drv TSRMLS_DC ) : 
+    ss_sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv TSRMLS_DC ) : 
         sqlsrv_conn( h, e, drv, SQLSRV_ENCODING_SYSTEM TSRMLS_CC ),
         stmts( NULL ),
         date_as_string( false ),
@@ -148,7 +148,7 @@ struct ss_sqlsrv_conn : sqlsrv_conn
 };
 
 // resource destructor
-void __cdecl sqlsrv_conn_dtor( zend_resource *rsrc TSRMLS_DC );
+void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC );
 
 //*********************************************************************************************************************************
 // Statement
@@ -162,20 +162,20 @@ struct sqlsrv_fetch_field_name {
 
 struct stmt_option_ss_scrollable : public stmt_option_functor {
 
-    virtual void operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
 };
 
 // This object inherits and overrides the callbacks necessary
 struct ss_sqlsrv_stmt : public sqlsrv_stmt {
 
-    ss_sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC );
+    ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv TSRMLS_DC );
 
     virtual ~ss_sqlsrv_stmt( void );
 
     void new_result_set( TSRMLS_D ); 
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
-    sqlsrv_phptype sql_type_to_php_type( SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_to_stream );
+    sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream );
 
     bool prepared;                               // whether the statement has been prepared yet (used for error messages)
 	zend_ulong conn_index;						 // index into the connection hash that contains this statement structure
@@ -200,7 +200,7 @@ struct sqlsrv_stream_encoding {
     zval* stream_z;
     unsigned int encoding;
 
-    sqlsrv_stream_encoding( zval* str_z, unsigned int enc ) :
+    sqlsrv_stream_encoding( _In_ zval* str_z, _In_ unsigned int enc ) :
         stream_z( str_z ), encoding( enc )
     {
     }
@@ -223,14 +223,14 @@ PHP_FUNCTION(sqlsrv_rows_affected);
 PHP_FUNCTION(sqlsrv_send_stream_data);
 
 // resource destructor
-void __cdecl sqlsrv_stmt_dtor( zend_resource *rsrc TSRMLS_DC );
+void __cdecl sqlsrv_stmt_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC );
 
 // "internal" statement functions shared by functions in conn.cpp and stmt.cpp
-void bind_params( ss_sqlsrv_stmt* stmt TSRMLS_DC );
+void bind_params( _Inout_ ss_sqlsrv_stmt* stmt TSRMLS_DC );
 bool sqlsrv_stmt_common_execute( sqlsrv_stmt* s, const SQLCHAR* sql_string, int sql_len, bool direct, const char* function 
                                  TSRMLS_DC );
 void free_odbc_resources( ss_sqlsrv_stmt* stmt TSRMLS_DC );
-void free_stmt_resource( zval* stmt_z TSRMLS_DC );
+void free_stmt_resource( _Inout_ zval* stmt_z TSRMLS_DC );
 
 //*********************************************************************************************************************************
 // Type Functions
@@ -358,7 +358,7 @@ enum SS_ERROR_CODES {
 
 extern ss_error SS_ERRORS[];
 
-bool ss_error_handler( sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool warning TSRMLS_DC, va_list* print_args );
+bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool warning TSRMLS_DC, _In_opt_ va_list* print_args );
 
 // *** extension error functions ***
 PHP_FUNCTION(sqlsrv_errors);
@@ -367,14 +367,14 @@ PHP_FUNCTION(sqlsrv_errors);
 // connection option to UTF-16.  mbcs_len and utf16_len are sizes in
 // bytes.  The return is the number of UTF-16 characters in the string
 // returned in utf16_out_string.
-unsigned int convert_string_from_default_encoding( unsigned int php_encoding, char const* mbcs_in_string,
-                                                   unsigned int mbcs_len, _Out_ wchar_t* utf16_out_string,
-                                                   unsigned int utf16_len );
+unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
+                                                   _In_ unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer(mbcs_in_string) wchar_t* utf16_out_string,
+                                                   _In_ unsigned int utf16_len );
 // create a wide char string from the passed in mbcs string.  NULL is returned if the string
 // could not be created.  No error is posted by this function.  utf16_len is the number of
 // wchar_t characters, not the number of bytes.
-SQLWCHAR* utf16_string_from_mbcs_string( unsigned int php_encoding, const char* mbcs_string, 
-                                        unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
+SQLWCHAR* utf16_string_from_mbcs_string( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) const char* mbcs_string,
+                                        _In_ unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
 
 // *** internal error macros and functions ***
 bool handle_error( sqlsrv_context const* ctx, int log_subsystem, const char* function, 
@@ -420,13 +420,13 @@ public:
     {
     }
 
-    sqlsrv_context_auto_ptr( const sqlsrv_context_auto_ptr& src ) :
+    sqlsrv_context_auto_ptr( _Inout_opt_ const sqlsrv_context_auto_ptr& src ) :
         sqlsrv_auto_ptr< sqlsrv_context, sqlsrv_context_auto_ptr >( src )
     {
     }
 
     // free the original pointer and assign a new pointer. Use NULL to simply free the pointer.
-    void reset( sqlsrv_context* ptr = NULL )
+    void reset( _In_opt_ sqlsrv_context* ptr = NULL )
     {
         if( _ptr ) {
             _ptr->~sqlsrv_context();
@@ -435,12 +435,12 @@ public:
         _ptr = ptr;
     }
 
-    sqlsrv_context* operator=( sqlsrv_context* ptr )
+    sqlsrv_context* operator=( _In_opt_ sqlsrv_context* ptr )
     {
         return sqlsrv_auto_ptr< sqlsrv_context, sqlsrv_context_auto_ptr >::operator=( ptr );
     }
 
-    void operator=( sqlsrv_context_auto_ptr& src )
+    void operator=( _Inout_opt_ sqlsrv_context_auto_ptr& src )
     {
         sqlsrv_context* p = src.get();
         src.transferred();
@@ -464,7 +464,7 @@ public:
 }
 
 // logger for ss_sqlsrv called by the core layer when it wants to log something with the LOG macro
-void ss_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args );
+void ss_sqlsrv_log( _In_ unsigned int severity TSRMLS_DC, _In_opt_ const char* msg, _In_opt_ va_list* print_args );
 
 // subsystems that may report log messages.  These may be used to filter which systems write to the log to prevent noise.
 enum logging_subsystems {
@@ -490,7 +490,7 @@ namespace ss {
         }
     };
 
-    inline void zend_register_resource(_Out_ zval& rsrc_result, void* rsrc_pointer, int rsrc_type, const char* rsrc_name TSRMLS_DC)
+    inline void zend_register_resource( _Inout_ zval& rsrc_result, _Inout_ void* rsrc_pointer, _In_ int rsrc_type, _In_opt_ const char* rsrc_name TSRMLS_DC)
     {
         int zr = (NULL != (Z_RES(rsrc_result) = ::zend_register_resource(rsrc_pointer, rsrc_type)) ? SUCCESS : FAILURE);
         CHECK_CUSTOM_ERROR(( zr == FAILURE ), reinterpret_cast<sqlsrv_context*>( rsrc_pointer ), SS_SQLSRV_ERROR_REGISTER_RESOURCE,
@@ -508,7 +508,7 @@ namespace ss {
 // generic function used to validate parameters to a PHP function.
 // Register an invalid parameter error and returns NULL when parameters don't match the spec given.
 template <typename H>
-inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, char const* param_spec, const char* calling_func, size_t param_count, ... )
+inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_spec, _In_ const char* calling_func, _In_ size_t param_count, ... )
 {
     SQLSRV_UNUSED( return_value );
 

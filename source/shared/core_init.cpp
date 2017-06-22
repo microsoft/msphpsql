@@ -35,7 +35,7 @@ OSVERSIONINFO g_osversion;
 // henv_cp  - Environment handle for pooled connection.
 // henv_ncp - Environment handle for non-pooled connection.
 // err      - Driver specific error handler which handles any errors during initialization.
-void core_sqlsrv_minit( sqlsrv_context** henv_cp, sqlsrv_context** henv_ncp, error_callback err, const char* driver_func TSRMLS_DC )
+void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func TSRMLS_DC )
 {
     SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_sqltype ) == sizeof( zend_long ) );
     SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_phptype ) == sizeof( zend_long ));
@@ -142,7 +142,7 @@ void core_sqlsrv_minit( sqlsrv_context** henv_cp, sqlsrv_context** henv_ncp, err
 // Parameters:
 // henv_cp -  Pooled environment handle.
 // henv_ncp - Non-pooled environment handle.
-void core_sqlsrv_mshutdown( sqlsrv_context& henv_cp, sqlsrv_context& henv_ncp )
+void core_sqlsrv_mshutdown( _Inout_ sqlsrv_context& henv_cp, _Inout_ sqlsrv_context& henv_ncp )
 {
     if( henv_ncp != SQL_NULL_HANDLE ) {
 
@@ -162,7 +162,7 @@ void core_sqlsrv_mshutdown( sqlsrv_context& henv_cp, sqlsrv_context& henv_ncp )
 
 // DllMain for the extension.  
 #ifdef _WIN32
-BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD fdwReason, LPVOID )
+BOOL WINAPI DllMain( _In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, LPVOID )
 {
     switch( fdwReason ) {
         case DLL_PROCESS_ATTACH:
