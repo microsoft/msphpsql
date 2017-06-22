@@ -12,7 +12,9 @@ import pyodbc
 import platform
 import re
 import datetime
+import time
 from time import strftime
+import hashlib
  
 sqlsrv_regular_path = "benchmark"+ os.sep + "sqlsrv" + os.sep + "regular"
 sqlsrv_large_path = "benchmark"+ os.sep + "sqlsrv" + os.sep + "large"
@@ -20,6 +22,7 @@ pdo_regular_path = "benchmark"+ os.sep + "pdo_sqlsrv" + os.sep + "regular"
 pdo_large_path = "benchmark"+ os.sep + "pdo_sqlsrv" + os.sep + "large"
 connect_file = "lib" + os.sep + "connect.php"
 connect_file_bak = connect_file + ".bak"
+fmt = "%Y-%m-%d %H:%M:%S.0000000"
 
 def validate_platform( platform_name ):
     platforms = [
@@ -83,10 +86,20 @@ def get_run_command( path_to_tests, iterations, dump_file ):
     command = "vendor/bin/phpbench run {0} --iterations {1} --dump-file={2}"
     return command.format( path_to_tests, iterations, dump_file )
 
-def get_id( conn, id_field, table, name_field, name):
+def get_id( conn, id_field, table, name_field, value ):
     query = "SELECT {0} FROM {1} WHERE {2}='{3}'"
     cursor = conn.cursor()
-    cursor.execute( query.format( id_field, table, name_field, name ))
+    cursor.execute( query.format( id_field, table, name_field, value ))
+    id = cursor.fetchone()
+    cursor.close()
+    if id is not None:
+        return id[0]
+    return id
+
+def get_id_no_quote( conn, id_field, table, name_field, value ):
+    query = "SELECT {0} FROM {1} WHERE {2}={3}"
+    cursor = conn.cursor()
+    cursor.execute( query.format( id_field, table, name_field, value ))
     id = cursor.fetchone()
     cursor.close()
     if id is not None:
@@ -122,6 +135,17 @@ def get_server_version( server):
     version = cursor.fetchone()[0]
     cursor.close()
     return version
+
+def get_sha1_file( filename ):
+    hash_size = 256
+    sha1 = hashlib.sha1()
+    with open( filename, 'rb' ) as f:
+        while True:
+            data = f.read( hash_size )
+            if not data:
+                break
+            sha1.update( data )
+    return "0x" + sha1.hexdigest()
        
 def insert_server_entry( conn, server_name, server_version ):
     query = "INSERT INTO Servers ( HostName, Version ) VALUES ( '{0}', '{1}' )"
@@ -146,6 +170,13 @@ def insert_test_entry( conn, name ):
     query = "INSERT INTO PerformanceTests ( TestName, Arch, HashVer ) VALUES( '{0}', 'Amd64', 0 )"
     cursor = conn.cursor()
     cursor.execute( query.format( name ))
+    cursor.close()
+
+def insert_driver_entry( conn, driver_path, driver_hash ):
+    file_date = time.strftime( fmt, time.gmtime( os.path.getmtime( driver_path )))
+    query = "INSERT INTO Drivers ( Arch, FileDate, SHA1, HashVer ) VALUES ( ?, ?, {0}, 1 )"
+    cursor = conn.cursor()
+    cursor.execute( query.format(driver_hash), ( get_php_arch(), file_date ))
     cursor.close()
 
 def get_server_id( conn, test_db ):
@@ -177,7 +208,16 @@ def get_test_id( conn, test_name ):
         insert_test_entry( conn, test_name )
         test_id = get_id( conn, "TestId", "PerformanceTests", "TestName", test_name )
     return test_id
-   
+
+def get_driver_id( conn, driver_name ):
+    driver_path = get_path_to_driver( driver_name )
+    driver_hash = get_sha1_file( driver_path )
+    driver_id = get_id_no_quote( conn, "DriverId", "Drivers", "SHA1", driver_hash )
+    if driver_id is None:
+        insert_driver_entry( conn, driver_path, driver_hash )
+        driver_id = get_id_no_quote( conn, "DriverId", "Drivers", "SHA1", driver_hash )
+    return driver_id
+       
 def insert_result_entry_and_get_id( conn, test_id, client_id, driver_id, server_id, team_id, success ):
     query = "INSERT INTO PerformanceResults( TestId, ClientId, DriverId, ServerId, TeamId, Success ) OUTPUT INSERTED.ResultId VALUES( {0}, {1}, {2}, {3}, {4}, {5} )"
     cursor = conn.cursor()
@@ -213,6 +253,15 @@ def get_php_thread():
         return "nts"
     else:
         return "ts"    
+
+def get_path_to_driver( driver_name ):
+    p = subprocess.Popen( "php -r \"echo ini_get('extension_dir');\"", stdout=subprocess.PIPE, shell = True )
+    out, err = p.communicate()
+    extension_dir = out.decode('ascii')
+    if os.name == 'nt':
+        return extension_dir + os.sep + "php_" + driver_name + ".dll"
+    else:
+        return extension_dir + os.sep + driver_name + ".so"
 
 def enable_mars():
     print( "Enabling MARS...")
@@ -290,22 +339,22 @@ def parse_results( dump_file ):
     return xml_results
 
 def parse_and_store_results( dump_file, test_db, result_db, platform, driver, start_time, mars, pooling ):
+
     conn = connect( result_db )
 
     server_id = get_server_id( conn, test_db )
     client_id = get_client_id( conn )
-    team_id = get_team_id( conn )
-    # TO - DO Add a function to insert a driver entry
-    driver_id=1
+    team_id   = get_team_id( conn )
+    driver_id = get_driver_id( conn, driver )
    
-    arch = get_php_arch()
-    thread = get_php_thread()
-    cursor = conn.cursor()
+    arch    = get_php_arch()
+    thread  = get_php_thread()
+    cursor  = conn.cursor()
     results = parse_results( dump_file )
 
     for result in results:
         test_name = get_test_name( result.benchmark_name )
-        test_id = get_test_id( conn, test_name )
+        test_id   = get_test_id( conn, test_name )
         result_id = insert_result_entry_and_get_id( conn, test_id, client_id, driver_id, server_id, team_id, result.success )
 
         if result.success:
@@ -340,19 +389,20 @@ if __name__ == '__main__':
     parser.add_argument( '-result-pwd', '--RESULT_PWD', required=True )
     args = parser.parse_args()
 
+    start_time = datetime.datetime.now().strftime( fmt )
+    print( "Start time: " + start_time )
+
     validate_platform( args.PLATFORM )
     result_db = DB( args.RESULT_SERVER, args.RESULT_DB, args.RESULT_UID, args.RESULT_PWD )
     test_db = get_test_database()
-    fmt = "%Y-%m-%d %H:%M:%S.0000000"
 
     print("Running the tests with default settings...")
-    start_time = datetime.datetime.now().strftime( fmt )
+
     run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 0 )
    
     print("Running the tests with MARS ON...")
     enable_mars()
-    start_time = datetime.datetime.now().strftime( fmt )
     run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 1, 0 )
     disable_mars()
@@ -360,9 +410,7 @@ if __name__ == '__main__':
    
     print("Running the tests with Pooling ON...")
     enable_pooling()
-    start_time = datetime.datetime.now().strftime( fmt )
     run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 1 )
     disable_pooling()
-   
    
