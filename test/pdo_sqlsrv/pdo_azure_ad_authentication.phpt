@@ -96,4 +96,3 @@ array(2) {
 Could not connect with Authentication=ActiveDirectoryIntegrated.
 SQLSTATE[IMSSP]: Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.
 %s with Authentication=ActiveDirectoryPassword.
-

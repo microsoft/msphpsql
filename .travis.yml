@@ -1,8 +1,9 @@
 sudo: required
-group: edge
 
 os: linux
 dist: trusty
+
+group: edge
 
 services:
   - docker
@@ -43,3 +44,4 @@ script:
 
 notifications:
   email: false
+
