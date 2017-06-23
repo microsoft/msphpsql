@@ -6,7 +6,7 @@ Drop missing database
 <?php
 require_once("MsCommon.inc");
 
-$conn = Connect(array("Database"=>'master'));
+$conn = ConnectSpecial(array("Database"=>'master'));
 if( !$conn ) {
     FatalError("Connection could not be established.\n");
 }
