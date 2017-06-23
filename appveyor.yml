@@ -176,12 +176,12 @@ test_script:
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\    
     - python output.py 
-    - ps: $difffiles = Get-ChildItem sqlsrv\*.diff   
-    - ps: $outfiles = Get-ChildItem sqlsrv\*.out   
+    - ps: $difffiles = Get-ChildItem functional\sqlsrv\*.diff   
+    - ps: $outfiles = Get-ChildItem functional\sqlsrv\*.out   
     - ps: foreach($file in $difffiles){ls $file; more $file}  
     - ps: foreach($file in $outfiles){ls $file; more $file}  
-    - ps: $difffiles = Get-ChildItem pdo_sqlsrv\*.diff   
-    - ps: $outfiles = Get-ChildItem pdo_sqlsrv\*.out   
+    - ps: $difffiles = Get-ChildItem functional\pdo_sqlsrv\*.diff   
+    - ps: $outfiles = Get-ChildItem functional\pdo_sqlsrv\*.out   
     - ps: foreach($file in $difffiles){ls $file; more $file}  
     - ps: foreach($file in $outfiles){ls $file; more $file}  
     - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
