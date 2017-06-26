@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -205,6 +205,7 @@ const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
 const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
+const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char UID[] = "UID";
 const char WSID[] = "WSID";
 
@@ -419,6 +420,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::TrustServerCertificate ),
         CONN_ATTR_BOOL,
         bool_conn_str_func::func
+    },
+    {
+        SSConnOptionNames::TransparentNetworkIPResolution,
+        sizeof(SSConnOptionNames::TransparentNetworkIPResolution),
+        SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
+        ODBCConnOptions::TransparentNetworkIPResolution,
+        sizeof(ODBCConnOptions::TransparentNetworkIPResolution),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
     },
     {
         SSConnOptionNames::WSID,
@@ -658,7 +668,11 @@ PHP_FUNCTION( sqlsrv_close )
         if( zend_list_close( Z_RES_P( conn_r ) ) == FAILURE ) {
             LOG( SEV_ERROR, "Failed to remove connection resource %1!d!", Z_RES_HANDLE_P( conn_r ));
         }
-        
+
+        // when conn_r is first parsed in zend_parse_parameters, conn_r becomes a zval that points to a zend_resource with a refcount of 2
+        // need to DELREF here so the refcount becomes 1 and conn_r can be appropriate destroyed by the garbage collector when it goes out of scope
+        // zend_list_close only destroy the resource pointed to by Z_RES_P( conn_r ), not the zend_resource itself
+        Z_TRY_DELREF_P(conn_r);
         ZVAL_NULL( conn_r );
 
         RETURN_TRUE;
