@@ -150,7 +150,7 @@ struct bool_conn_attr_func {
 void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn TSRMLS_DC );
 void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options_z, _Inout_ char** uid, _Inout_ char** pwd, 
                             _Inout_ HashTable* ss_conn_options_ht TSRMLS_DC );
-void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _In_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC );
+void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC );
 void add_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, 
                          _Inout_ HashTable* options_ht, _Inout_ zval* data TSRMLS_DC );
 void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ HashTable* options_ht, _Inout_ zval* data TSRMLS_DC );
@@ -1292,7 +1292,7 @@ void add_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _I
 // against the list of supported statement options by this driver. After validation
 // creates a Hashtable of statement options to be sent to the core layer for processing.
 
-void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _In_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC )
+void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC )
 {
     try {
         if( stmt_options ) {

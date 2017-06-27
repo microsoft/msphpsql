@@ -282,13 +282,13 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
 int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                                _Inout_ struct pdo_bound_param_data *param, _In_ enum pdo_param_event event_type TSRMLS_DC );
 int pdo_sqlsrv_stmt_describe_col( _Inout_ pdo_stmt_t *stmt, _In_ int colno TSRMLS_DC );
-int pdo_sqlsrv_stmt_get_col_data( _In_ pdo_stmt_t *stmt, _In_ int colno,
+int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
                                  _Out_writes_bytes_opt_(*len) char **ptr, _Inout_ size_t *len, _Out_opt_ int *caller_frees TSRMLS_DC );
-int pdo_sqlsrv_stmt_set_attr( _In_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC );
-int pdo_sqlsrv_stmt_get_attr( _In_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC );
-int pdo_sqlsrv_stmt_get_col_meta( _In_ pdo_stmt_t *stmt, _In_ zend_long colno, _Inout_ zval *return_value TSRMLS_DC );
+int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC );
+int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC );
+int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno, _Inout_ zval *return_value TSRMLS_DC );
 int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC );
-int pdo_sqlsrv_stmt_close_cursor( _In_ pdo_stmt_t *stmt TSRMLS_DC );
+int pdo_sqlsrv_stmt_close_cursor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC );
 
 struct pdo_stmt_methods pdo_sqlsrv_stmt_methods = {
 
@@ -386,7 +386,7 @@ pdo_sqlsrv_stmt::~pdo_sqlsrv_stmt( void )
 // *stmt - Pointer to current statement
 // Return:
 // Returns 0 for failure, 1 for success.
-int pdo_sqlsrv_stmt_close_cursor( _In_ pdo_stmt_t *stmt TSRMLS_DC )
+int pdo_sqlsrv_stmt_close_cursor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 {
     PDO_RESET_STMT_ERROR;
     PDO_VALIDATE_STMT;
@@ -711,7 +711,7 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
 //                freeing the memory.
 // Return:
 // 0 for failure, 1 for success.
-int pdo_sqlsrv_stmt_get_col_data( _In_ pdo_stmt_t *stmt, _In_ int colno,
+int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
                                  _Out_writes_bytes_opt_(*len) char **ptr, _Inout_ size_t *len, _Out_opt_ int *caller_frees TSRMLS_DC)
 {
     PDO_RESET_STMT_ERROR;
@@ -815,7 +815,7 @@ int pdo_sqlsrv_stmt_get_col_data( _In_ pdo_stmt_t *stmt, _In_ int colno,
 // val - Attribute value.
 // Return:
 // 0 for failure, 1 for success.
-int pdo_sqlsrv_stmt_set_attr( _In_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC)
+int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC)
 {
     PDO_RESET_STMT_ERROR;
     PDO_VALIDATE_STMT;
@@ -881,7 +881,7 @@ int pdo_sqlsrv_stmt_set_attr( _In_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout
 // return_value - Attribute value.
 // Return:
 // 0 for failure, 1 for success.
-int pdo_sqlsrv_stmt_get_attr( _In_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC )
+int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC )
 {
     PDO_RESET_STMT_ERROR;
     PDO_VALIDATE_STMT;
@@ -965,7 +965,7 @@ int pdo_sqlsrv_stmt_get_attr( _In_ pdo_stmt_t *stmt, _In_ zend_long attr, _Inout
 // return_value - zval* consisting of the metadata.
 // Return:
 // 0 for failure, 1 for success.
-int pdo_sqlsrv_stmt_get_col_meta( _In_ pdo_stmt_t *stmt, _In_ zend_long colno, _Inout_ zval *return_value TSRMLS_DC)
+int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno, _Inout_ zval *return_value TSRMLS_DC)
 {
     PDO_RESET_STMT_ERROR;
     PDO_VALIDATE_STMT;

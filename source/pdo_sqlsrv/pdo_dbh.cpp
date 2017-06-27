@@ -159,7 +159,7 @@ struct pdo_bool_conn_attr_func {
 // statement options related functions
 void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ HashTable* options_ht, 
                          _Inout_ zval** data TSRMLS_DC );
-void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _In_ zval* stmt_options, _Inout_ HashTable* pdo_stmt_options_ht TSRMLS_DC );
+void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* pdo_stmt_options_ht TSRMLS_DC );
 
 }       // namespace
 
@@ -370,13 +370,13 @@ int pdo_sqlsrv_dbh_prepare( _Inout_ pdo_dbh_t *dbh, _In_reads_(sql_len) const ch
 zend_long pdo_sqlsrv_dbh_do( _Inout_ pdo_dbh_t *dbh, _In_reads_bytes_(sql_len) const char *sql, _In_ size_t sql_len TSRMLS_DC );
 
 // transaction support functions
-int pdo_sqlsrv_dbh_commit( _In_ pdo_dbh_t *dbh TSRMLS_DC );
-int pdo_sqlsrv_dbh_begin( _In_ pdo_dbh_t *dbh TSRMLS_DC );
-int pdo_sqlsrv_dbh_rollback( _In_ pdo_dbh_t *dbh TSRMLS_DC );
+int pdo_sqlsrv_dbh_commit( _Inout_ pdo_dbh_t *dbh TSRMLS_DC );
+int pdo_sqlsrv_dbh_begin( _Inout_ pdo_dbh_t *dbh TSRMLS_DC );
+int pdo_sqlsrv_dbh_rollback( _Inout_ pdo_dbh_t *dbh TSRMLS_DC );
 
 // attribute functions
-int pdo_sqlsrv_dbh_set_attr( _In_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC );
-int pdo_sqlsrv_dbh_get_attr( _In_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC );
+int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC );
+int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC );
 
 // return more information
 int pdo_sqlsrv_dbh_return_error( _In_ pdo_dbh_t *dbh, _In_opt_ pdo_stmt_t *stmt,
@@ -386,7 +386,7 @@ int pdo_sqlsrv_dbh_return_error( _In_ pdo_dbh_t *dbh, _In_opt_ pdo_stmt_t *stmt,
 char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, _Out_ size_t* len TSRMLS_DC );
 
 // additional methods are supported in this function
-pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _In_ pdo_dbh_t *dbh, int kind TSRMLS_DC );
+pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _Inout_ pdo_dbh_t *dbh, int kind TSRMLS_DC );
 
 // quote a string, meaning put quotes around it and escape any quotes within it
 int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, _In_reads_(unquotedlen) const char* unquoted, _In_ size_t unquotedlen, _Outptr_result_buffer_(*quotedlen) char **quoted, _Out_ size_t* quotedlen,
@@ -824,7 +824,7 @@ zend_long pdo_sqlsrv_dbh_do( _Inout_ pdo_dbh_t *dbh, _In_reads_bytes_(sql_len) c
 // dbh - The PDO managed connection object.
 // Return:
 // 0 for failure and 1 for success.
-int pdo_sqlsrv_dbh_begin( _In_ pdo_dbh_t *dbh TSRMLS_DC )
+int pdo_sqlsrv_dbh_begin( _Inout_ pdo_dbh_t *dbh TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -866,7 +866,7 @@ int pdo_sqlsrv_dbh_begin( _In_ pdo_dbh_t *dbh TSRMLS_DC )
 // dbh - The PDO managed connection object.
 // Return:
 // 0 for failure and 1 for success.
-int pdo_sqlsrv_dbh_commit( _In_ pdo_dbh_t *dbh TSRMLS_DC )
+int pdo_sqlsrv_dbh_commit( _Inout_ pdo_dbh_t *dbh TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -906,7 +906,7 @@ int pdo_sqlsrv_dbh_commit( _In_ pdo_dbh_t *dbh TSRMLS_DC )
 // dbh - The PDO managed connection object.
 // Return:
 // 0 for failure and 1 for success.
-int pdo_sqlsrv_dbh_rollback( _In_ pdo_dbh_t *dbh TSRMLS_DC )
+int pdo_sqlsrv_dbh_rollback( _Inout_ pdo_dbh_t *dbh TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -945,7 +945,7 @@ int pdo_sqlsrv_dbh_rollback( _In_ pdo_dbh_t *dbh TSRMLS_DC )
 // val - The value of the attribute to be set.
 // Return:
 // 0 for failure, 1 for success.
-int pdo_sqlsrv_dbh_set_attr( _In_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC )
+int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1061,7 +1061,7 @@ int pdo_sqlsrv_dbh_set_attr( _In_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ z
 // return_value - zval in which to return the attribute value.
 // Return:
 // 0 for failure, 1 for success.
-int pdo_sqlsrv_dbh_get_attr( _In_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC )
+int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1440,7 +1440,7 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, _In_reads_(unquoted_len) const char* u
 }
 
 // This method is not implemented by this driver.
-pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _In_ pdo_dbh_t *dbh, int kind TSRMLS_DC )
+pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _Inout_ pdo_dbh_t *dbh, int kind TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1523,7 +1523,7 @@ void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ 
 // ctx - The current context.
 // stmt_options - The user provided list of statement options.
 // pdo_stmt_options_ht - Output hashtable of statement options. 
-void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _In_ zval* stmt_options, _Inout_ HashTable* pdo_stmt_options_ht TSRMLS_DC )
+void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* pdo_stmt_options_ht TSRMLS_DC )
 {
     try {
         
