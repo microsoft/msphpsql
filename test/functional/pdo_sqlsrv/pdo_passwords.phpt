@@ -3,8 +3,7 @@ Test password with non alphanumeric characters
 --DESCRIPTION--
 The first three cases should have no problem connecting. Only the last case fails because the 
 right curly brace should be escaped with another right brace.
-In Azure we can't set DEFAULT_DATABASE for a login user. For this test to psss must connect
-to the test database defined in MsSetup.inc 
+In Azure for this test to psss do not specify any particular database when connecting
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
