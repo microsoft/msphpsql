@@ -35,7 +35,7 @@ $procName = 'php_test_proc';
 $fileName = 'php_test_file.dat';
 $dsn = "odbc:Driver={$DriverName};Server=$server";
 $connectionOptions = array();
-$daasMode = false;
+$daasMode = 'DAASMODE';
 $marsMode = true;
 $dsnMode = true;
 $traceEnabled = false;

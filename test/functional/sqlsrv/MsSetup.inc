@@ -20,7 +20,7 @@ $procName = "php_test_proc";
 $fileName = "php_test_file.dat";
 
 $connectionOptions = array("Database"=>$database, "UID"=>$userName, "PWD"=>$userPassword, "TraceOn"=>false);
-$daasMode = false;
+$daasMode = 'DAASMODE';
 $marsMode = true;
 
 $traceEnabled = false; 
