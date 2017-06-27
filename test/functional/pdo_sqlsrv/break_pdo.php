@@ -65,8 +65,10 @@ function BreakConnection( $conn, $conn_break )
 }
 
 // Remove any databases previously created by GenerateDatabase
-function DropTables( $server, $uid, $pwd, $dbName, $tableName1, $tableName2 )
+function DropTables( $server, $uid, $pwd, $tableName1, $tableName2 )
 {
+    global $dbName;
+
     $conn = new PDO( "sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd );
     
     $query="IF OBJECT_ID('$tableName1', 'U') IS NOT NULL DROP TABLE $tableName1";
@@ -76,7 +78,7 @@ function DropTables( $server, $uid, $pwd, $dbName, $tableName1, $tableName2 )
     $stmt=$conn->query( $query );
 }
 
-DropTables( $server, $uid, $pwd, $dbName, $tableName1, $tableName2 );
+DropTables( $server, $uid, $pwd, $tableName1, $tableName2 );
 GenerateTables( $server, $uid, $pwd, $dbName, $tableName1, $tableName2 );
 
 ?>
