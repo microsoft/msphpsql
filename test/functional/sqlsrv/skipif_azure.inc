@@ -6,7 +6,7 @@ if (!extension_loaded("sqlsrv")) {
 
 include 'MsCommon.inc';
 if ( IsDaasMode() ) {
-    die("skip test in Azure");
+    die("test not applicable in Azure");
 }
 
 ?>

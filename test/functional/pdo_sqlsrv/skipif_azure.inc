@@ -4,7 +4,7 @@ if (!extension_loaded("pdo") || !extension_loaded('pdo_sqlsrv'))
     
 include 'MsCommon.inc';
 if ( IsDaasMode() ) {
-    die("skip test in Azure");
+    die("test not applicable in Azure");
 }
     
 ?>

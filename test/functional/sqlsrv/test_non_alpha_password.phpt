@@ -12,9 +12,20 @@ to the test database defined in MsSetup.inc
 sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
 sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
  
-require( 'MsCommon.inc' );
+function toConnect($options = array()) 
+{
+    require 'MsSetup.inc';
+    
+    if (!isset($options['UID']) && !isset($options['uid'])) {
+        $options['UID'] = $uid;
+    }
+    if (!isset($options['pwd']) && !isset($options['PWD'])) {
+        $options['pwd'] = $pwd;
+    }
+    return sqlsrv_connect($server, $options);
+}
 
-$conn = ConnectSpecial(array( "UID" => "test_password", "pwd" => "! ;4triou" ));
+$conn = toConnect(array( "UID" => "test_password", "pwd" => "! ;4triou" ));
 if (!$conn)
 {
     $errors = sqlsrv_errors();
@@ -22,7 +33,7 @@ if (!$conn)
 }
 sqlsrv_close( $conn );
 
-$conn = ConnectSpecial(array( "UID" => "test_password2", "pwd" => "!}} ;4triou" ));
+$conn = toConnect(array( "UID" => "test_password2", "pwd" => "!}} ;4triou" ));
 if (!$conn)
 {
     $errors = sqlsrv_errors();
@@ -30,7 +41,7 @@ if (!$conn)
 }
 sqlsrv_close( $conn );
 
-$conn = ConnectSpecial(array( "UID" => "test_password3", "pwd" => "! ;4triou}}" ));
+$conn = toConnect(array( "UID" => "test_password3", "pwd" => "! ;4triou}}" ));
 if (!$conn)
 {
     $errors = sqlsrv_errors();
@@ -38,7 +49,7 @@ if (!$conn)
 }
 sqlsrv_close( $conn );
 
-$conn = ConnectSpecial(array( "UID" => "test_password3", "pwd" => "! ;4triou}" ));
+$conn = toConnect(array( "UID" => "test_password3", "pwd" => "! ;4triou}" ));
 if ($conn)
 {
     echo( "Shouldn't have connected" );
@@ -51,5 +62,5 @@ print "Test successful";
 ?> 
 --EXPECTREGEX--
 An unescaped right brace \(}\) was found in either the user name or password.  All right braces must be escaped with another right brace \(}}\)\.
-Warning: sqlsrv_close\(\) expects parameter 1 to be resource, boolean given in .+(\/|\\)test_non_alpha_password\.php on line 38
+Warning: sqlsrv_close\(\) expects parameter 1 to be resource, boolean given in .+(\/|\\)test_non_alpha_password\.php on line 49
 Test successful

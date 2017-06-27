@@ -1,7 +1,13 @@
 --TEST--
 variety of connection parameters.
 --SKIPIF--
-<?php require('skipif_unix.inc'); ?>
+<?php 
+if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip, test on windows only." ); 
+if ( ! extension_loaded("sqlsrv")) die( "skip extension not loaded" );
+
+include 'MsCommon.inc';
+if ( IsDaasMode() ) die("skip test not applicable in Azure");
+?>
 --FILE--
 <?php
 
