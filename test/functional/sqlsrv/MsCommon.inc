@@ -159,22 +159,6 @@ function Connect($options = array())
     return ($conn);
 }
 
-function ConnectSpecial($options = array()) 
-{
-    require 'MsSetup.inc';
-    
-    if (!isset($options['UID']) && !isset($options['uid'])) {
-        $options['UID'] = $uid;
-    }
-    if (!isset($options['pwd']) && !isset($options['PWD'])) {
-        $options['pwd'] = $pwd;
-    }
-    if (!isset($options['Database'])) {
-        $options['Database'] = $database;   
-    }
-    return sqlsrv_connect($server, $options);
-}
-
 function GetTempTableName($table = '', $temporary = true)
 {
     // A temporary table name with the '#' prefix will be automatically 
