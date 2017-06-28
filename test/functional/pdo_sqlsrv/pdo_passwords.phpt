@@ -3,7 +3,7 @@ Test password with non alphanumeric characters
 --DESCRIPTION--
 The first three cases should have no problem connecting. Only the last case fails because the 
 right curly brace should be escaped with another right brace.
-In Azure for this test to psss do not specify any particular database when connecting
+In Azure for this test to pass do not specify any particular database when connecting
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
