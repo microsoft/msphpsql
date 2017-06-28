@@ -62,5 +62,5 @@ print "Test successful";
 ?> 
 --EXPECTREGEX--
 An unescaped right brace \(}\) was found in either the user name or password.  All right braces must be escaped with another right brace \(}}\)\.
-Warning: sqlsrv_close\(\) expects parameter 1 to be resource, boolean given in .+(\/|\\)test_non_alpha_password\.php on line 49
+Warning: sqlsrv_close\(\) expects parameter 1 to be resource, boolean given in .+(\/|\\)test_non_alpha_password\.php on line 50
 Test successful
