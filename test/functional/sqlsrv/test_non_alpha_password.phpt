@@ -13,7 +13,7 @@ sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
  
 function toConnect($options = array()) 
 {
-    // this function makes a connection to the server without specifying the database 
+    // this function makes a connection to the server WITHOUT specifying the database 
     require 'MsSetup.inc';
     
     if (!isset($options['UID']) && !isset($options['uid'])) {
