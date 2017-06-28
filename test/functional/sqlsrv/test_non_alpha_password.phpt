@@ -11,17 +11,12 @@ In Azure for this test to pass do not specify any particular database when conne
 sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
 sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
  
+require 'MsSetup.inc';
 function toConnect($options = array()) 
 {
-    // this function makes a connection to the server WITHOUT specifying the database 
-    require 'MsSetup.inc';
+    global $server;
     
-    if (!isset($options['UID']) && !isset($options['uid'])) {
-        $options['UID'] = $uid;
-    }
-    if (!isset($options['pwd']) && !isset($options['PWD'])) {
-        $options['pwd'] = $pwd;
-    }
+    // this function makes a connection to the server WITHOUT specifying the database 
     return sqlsrv_connect($server, $options);
 }
 
@@ -62,5 +57,5 @@ print "Test successful";
 ?> 
 --EXPECTREGEX--
 An unescaped right brace \(}\) was found in either the user name or password.  All right braces must be escaped with another right brace \(}}\)\.
-Warning: sqlsrv_close\(\) expects parameter 1 to be resource, boolean given in .+(\/|\\)test_non_alpha_password\.php on line 50
+Warning: sqlsrv_close\(\) expects parameter 1 to be resource, boolean given in .+(\/|\\)test_non_alpha_password\.php on line 45
 Test successful
