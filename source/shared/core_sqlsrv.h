@@ -37,10 +37,12 @@
 #include "ext/standard/php_standard.h"
 #include "ext/standard/info.h"
 
-#ifndef _WIN32
+#ifndef _WIN32 // !_WIN32
 #include "FormattedPrint.h"
 #include "StringFunctions.h"
-#endif // !_WIN32
+#else
+#include "VersionHelpers.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

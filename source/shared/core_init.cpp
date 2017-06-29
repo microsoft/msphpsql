@@ -18,8 +18,6 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "core_sqlsrv.h"
-#include "VersionHelpers.h"
-
 
 // module global variables (initialized in minit and freed in mshutdown)
 HMODULE g_sqlsrv_hmodule = NULL;
