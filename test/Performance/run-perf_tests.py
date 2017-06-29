@@ -23,7 +23,7 @@ pdo_large_path = "benchmark"+ os.sep + "pdo_sqlsrv" + os.sep + "large"
 connect_file = "lib" + os.sep + "connect.php"
 connect_file_bak = connect_file + ".bak"
 fmt = "%Y-%m-%d %H:%M:%S.0000000"
-
+ 
 def validate_platform( platform_name ):
     platforms = [
           "Windows10"
@@ -36,7 +36,7 @@ def validate_platform( platform_name ):
         print ( "Platform must be one of the following:" )
         print( platforms )
         exit( 1 )
-
+ 
 class DB( object ):
     def __init__ ( self
         , server_name = None
@@ -54,13 +54,15 @@ class XMLResult( object ):
         , success = None
         , duration = None
         , memory = None
+        , iterations = None
         , error_message = None ):
             self.benchmark_name = benchmark_name
             self.success = success
             self.duration = duration
             self.memory = memory
+            self.iterations = iterations
             self.error_message = error_message
-
+ 
 def get_test_name( name ):
     test_name_dict = {
           'SqlsrvConnectionBench': 'connection'
@@ -85,7 +87,7 @@ def get_test_name( name ):
 def get_run_command( path_to_tests, iterations, dump_file ):
     command = "vendor/bin/phpbench run {0} --iterations {1} --dump-file={2}"
     return command.format( path_to_tests, iterations, dump_file )
-
+ 
 def get_id( conn, id_field, table, name_field, value ):
     query = "SELECT {0} FROM {1} WHERE {2}='{3}'"
     cursor = conn.cursor()
@@ -95,7 +97,7 @@ def get_id( conn, id_field, table, name_field, value ):
     if id is not None:
         return id[0]
     return id
-
+ 
 def get_id_no_quote( conn, id_field, table, name_field, value ):
     query = "SELECT {0} FROM {1} WHERE {2}={3}"
     cursor = conn.cursor()
@@ -105,7 +107,7 @@ def get_id_no_quote( conn, id_field, table, name_field, value ):
     if id is not None:
         return id[0]
     return id
-
+ 
 def get_test_database():
     test_db = DB()
     for line in open( connect_file ):
@@ -118,7 +120,7 @@ def get_test_database():
         elif "pwd" in line:
             test_db.password = line.split("=")[1].strip()[1:-2]
     return test_db
-
+ 
 def connect( db ):
     return pyodbc.connect(
           driver="{ODBC Driver 13 for SQL Server}"
@@ -127,7 +129,7 @@ def connect( db ):
         , user=db.username
         , password=db.password
         , autocommit = True)
-
+ 
 def get_server_version( server):
     conn = connect( server )
     cursor = conn.cursor()
@@ -135,7 +137,7 @@ def get_server_version( server):
     version = cursor.fetchone()[0]
     cursor.close()
     return version
-
+ 
 def get_sha1_file( filename ):
     hash_size = 256
     sha1 = hashlib.sha1()
@@ -152,40 +154,40 @@ def insert_server_entry( conn, server_name, server_version ):
     cursor = conn.cursor()
     cursor.execute( query.format( server_name, server_version ))
     cursor.close()
-
+ 
 def insert_client_entry ( conn, name ):
     query = "INSERT INTO Clients ( HostName ) VALUES( '{0}' )"
     cursor = conn.cursor()
     cursor.execute( query.format( name ))
     cursor.close()
-
+ 
 def insert_team_entry ( conn, name ):
     query = "INSERT INTO Teams ( TeamName ) VALUES( '{0}' )"
     cursor = conn.cursor()
     cursor.execute( query.format( name ))
     cursor.close()
-
+ 
 def insert_test_entry( conn, name ):
     #TO-DO Remove unnecessary columns from the table and fix the query string. Amd64 and 0 are used to bypass not null
     query = "INSERT INTO PerformanceTests ( TestName, Arch, HashVer ) VALUES( '{0}', 'Amd64', 0 )"
     cursor = conn.cursor()
     cursor.execute( query.format( name ))
     cursor.close()
-
+ 
 def insert_driver_entry( conn, driver_path, driver_hash ):
     file_date = time.strftime( fmt, time.gmtime( os.path.getmtime( driver_path )))
     query = "INSERT INTO Drivers ( Arch, FileDate, SHA1, HashVer ) VALUES ( ?, ?, {0}, 1 )"
     cursor = conn.cursor()
     cursor.execute( query.format(driver_hash), ( get_php_arch(), file_date ))
     cursor.close()
-
+ 
 def get_server_id( conn, test_db ):
     server_id = get_id( conn, "ServerId", "Servers", "HostName", test_db.server_name )
     if server_id is None:
         insert_server_entry( conn, test_db.server_name, get_server_version( test_db ))
         server_id = get_id( conn, "ServerId", "Servers", "HostName", test_db.server_name )
     return server_id
-
+ 
 def get_client_id( conn ):
     client_name = platform.node()
     client_id = get_id( conn, "ClientId", "Clients", "HostName", client_name )
@@ -193,7 +195,7 @@ def get_client_id( conn ):
         insert_client_entry( conn, client_name )
         client_id = get_id( conn, "ClientId", "Clients", "HostName", client_name )
     return client_id
-
+ 
 def get_team_id( conn ):
     team_name = "PHP"
     team_id = get_id( conn, "TeamId", "Teams", "TeamName", team_name)
@@ -201,14 +203,14 @@ def get_team_id( conn ):
         insert_team_entry( conn, team_name )
         team_id = get_id( conn, "TeamId", "Teams", "TeamName", team_name)
     return team_id
-
+ 
 def get_test_id( conn, test_name ):
     test_id = get_id( conn, "TestId", "PerformanceTests", "TestName", test_name )
     if test_id is None:
         insert_test_entry( conn, test_name )
         test_id = get_id( conn, "TestId", "PerformanceTests", "TestName", test_name )
     return test_id
-
+ 
 def get_driver_id( conn, driver_name ):
     driver_path = get_path_to_driver( driver_name )
     driver_hash = get_sha1_file( driver_path )
@@ -227,13 +229,13 @@ def insert_result_entry_and_get_id( conn, test_id, client_id, driver_id, server_
     if result_id is not None:
         return result_id[0]
     return id
-
+ 
 def insert_key_value( conn, table_name, result_id, key, value ):
     query = "INSERT INTO {0} ( ResultId, name, value ) VALUES( ?, ?, ? )"
     cursor = conn.cursor()
     cursor.execute( query.format( table_name ), ( result_id, key, value ) )
     cursor.close()
-
+ 
 def get_php_arch():
     p = subprocess.Popen( "php -r 'echo PHP_INT_SIZE;'", stdout=subprocess.PIPE, shell = True )
     out, err = p.communicate()
@@ -241,7 +243,12 @@ def get_php_arch():
         return "x64"
     elif out.decode('ascii') == "4":
         return "x86"
-
+ 
+def get_php_version():
+    p = subprocess.Popen( "php -r 'echo phpversion();'", stdout=subprocess.PIPE, shell = True )
+    out, err = p.communicate()    
+    return out.decode('ascii')
+   
 def get_php_thread():
     if os.name == 'nt':
         command = "php -i | findstr 'Thread'"
@@ -253,7 +260,20 @@ def get_php_thread():
         return "nts"
     else:
         return "ts"    
-
+ 
+def get_driver_version( driver_name ):
+    command = "php -r \"echo phpversion('{0}');\""
+    print(command.format( driver_name ))
+    p = subprocess.Popen( command.format( driver_name ), stdout=subprocess.PIPE, shell = True )
+    out, err = p.communicate()
+    return out.decode('ascii')
+ 
+def get_msodbcsql_version( test_db ):
+    command = "php -r \"echo sqlsrv_client_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['DriverName'];\""
+    p = subprocess.Popen( command.format( test_db.server_name, test_db.username, test_db.password ), stdout=subprocess.PIPE, shell = True )
+    out, err = p.communicate()
+    return out.decode('ascii')
+ 
 def get_path_to_driver( driver_name ):
     p = subprocess.Popen( "php -r \"echo ini_get('extension_dir');\"", stdout=subprocess.PIPE, shell = True )
     out, err = p.communicate()
@@ -262,18 +282,18 @@ def get_path_to_driver( driver_name ):
         return extension_dir + os.sep + "php_" + driver_name + ".dll"
     else:
         return extension_dir + os.sep + driver_name + ".so"
-
+ 
 def enable_mars():
     print( "Enabling MARS...")
     with fileinput.FileInput( connect_file, inplace=True, backup='.bak') as file:
         for line in file:
             print( line.replace( "$mars=false;", "$mars=true;" ), end='')      
-
+ 
 def disable_mars():
     print( "Disabling MARS...")
     os.remove( connect_file )
     copyfile( connect_file_bak, connect_file )
-
+ 
 def enable_pooling():
     print( "Enabling Pooling...")
     if os.name == 'nt':
@@ -293,7 +313,7 @@ def enable_pooling():
  
         with open( odbcinst, "a" ) as f:
             f.write( lines_to_append )
-
+ 
 def disable_pooling():
     print("Disabling Pooling...")
     if os.name == 'nt':
@@ -306,20 +326,21 @@ def disable_pooling():
         os.remove( odbcinst )
         copyfile( odbcinst_bak, odbcinst )
         os.remove( odbcinst_bak )
-
+ 
 def run_tests( iterations, iterations_large ):
     print("Running the tests...")
-    call( get_run_command( sqlsrv_regular_path, iterations, "sqlsrv-regular.xml" ), shell=True, stdout=open( os.devnull, 'wb' ))
-    call( get_run_command( sqlsrv_large_path, iterations_large, "sqlsrv-large.xml" ), shell=True, stdout=open( os.devnull, 'wb' ))
+    call( get_run_command( sqlsrv_regular_path, iterations, "sqlsrv-regular.xml" ), shell=True )
+    call( get_run_command( sqlsrv_large_path, iterations_large, "sqlsrv-large.xml" ), shell=True )
  
-    call( get_run_command( pdo_regular_path, iterations, "pdo_sqlsrv-regular.xml" ), shell=True, stdout=open( os.devnull, 'wb' ))
-    call( get_run_command( pdo_large_path, iterations_large, "pdo_sqlsrv-large.xml" ), shell=True, stdout=open( os.devnull, 'wb' ))
-
+    call( get_run_command( pdo_regular_path, iterations, "pdo_sqlsrv-regular.xml" ), shell=True )
+    call( get_run_command( pdo_large_path, iterations_large, "pdo_sqlsrv-large.xml" ), shell=True )
+ 
 def parse_results( dump_file ):
     xml_results = []
     tree = ET.parse( dump_file )
     root = tree.getroot()
-    for benchmark in root[0].findall( 'benchmark' ):
+    benchmarks = root[0].findall( 'benchmark' )
+    for benchmark in benchmarks:
         xml_result = XMLResult()
         xml_result.benchmark_name = benchmark.get( 'class' )[1:]
         errors = benchmark[0][0].find( 'errors' )
@@ -329,55 +350,65 @@ def parse_results( dump_file ):
         else:
             xml_result.success = 1
             xml_result.duration = int( round( int( benchmark[0][0].find( 'stats' ).get( 'sum' )) / 1000000 ))
+            iterations = benchmark[0][0].findall( 'iteration' )
+            xml_result.iterations = len( iterations )
             memory_peak = 0
-            for iteration in benchmark[0][0].findall( 'iteration' ):
+            for iteration in iterations:
                 iter_memory_peak = int( iteration.get( 'mem-peak' ))
                 if iter_memory_peak > memory_peak:
                     memory_peak = iter_memory_peak
             xml_result.memory = memory_peak
         xml_results.append( xml_result )
     return xml_results
-
+ 
 def parse_and_store_results( dump_file, test_db, result_db, platform, driver, start_time, mars, pooling ):
-
+ 
     conn = connect( result_db )
-
+ 
     server_id = get_server_id( conn, test_db )
     client_id = get_client_id( conn )
     team_id   = get_team_id( conn )
     driver_id = get_driver_id( conn, driver )
+ 
    
-    arch    = get_php_arch()
-    thread  = get_php_thread()
+    php_arch    = get_php_arch()
+    php_thread  = get_php_thread()
+    php_version = get_php_version()
+    driver_version = get_driver_version( driver )
+    msodbcsql_version = get_msodbcsql_version( test_db )
+ 
     cursor  = conn.cursor()
     results = parse_results( dump_file )
-
+ 
     for result in results:
         test_name = get_test_name( result.benchmark_name )
         test_id   = get_test_id( conn, test_name )
         result_id = insert_result_entry_and_get_id( conn, test_id, client_id, driver_id, server_id, team_id, result.success )
-
+ 
         if result.success:
-            insert_key_value( conn, "KeyValueTableBigInt", result_id, "duration", result.duration )
-            insert_key_value( conn, "KeyValueTableBigInt", result_id, "memory",   result.memory )
+            insert_key_value( conn, "KeyValueTableBigInt", result_id, "duration",   result.duration )
+            insert_key_value( conn, "KeyValueTableBigInt", result_id, "memory",     result.memory )
+            insert_key_value( conn, "KeyValueTableBigInt", result_id, "iterations", result.iterations)
         else:
             insert_key_value( conn, "KeyValueTableString", result_id, "error", result.error_message )
-
-        insert_key_value( conn, "KeyValueTableDate"  , result_id, "startTime", start_time )
-        insert_key_value( conn, "KeyValueTableBigInt", result_id, "mars"     , mars )
-        insert_key_value( conn, "KeyValueTableBigInt", result_id, "pooling"  , pooling )
-        insert_key_value( conn, "KeyValueTableString", result_id, "driver"   , driver )
-        insert_key_value( conn, "KeyValueTableString", result_id, "arch"     , arch )
-        insert_key_value( conn, "KeyValueTableString", result_id, "os"       , platform )
-        insert_key_value( conn, "KeyValueTableString", result_id, "thread"   , thread )
-
+ 
+        insert_key_value( conn, "KeyValueTableDate"  , result_id, "startTime"  , start_time )
+        insert_key_value( conn, "KeyValueTableBigInt", result_id, "mars"       , mars )
+        insert_key_value( conn, "KeyValueTableBigInt", result_id, "pooling"    , pooling )
+        insert_key_value( conn, "KeyValueTableString", result_id, "driver"     , driver )
+        insert_key_value( conn, "KeyValueTableString", result_id, "php_arch"   , php_arch )
+        insert_key_value( conn, "KeyValueTableString", result_id, "os"         , platform )
+        insert_key_value( conn, "KeyValueTableString", result_id, "php_thread" , php_thread )
+        insert_key_value( conn, "KeyValueTableString", result_id, "php_version", php_version )
+        insert_key_value( conn, "KeyValueTableString", result_id, "msodbcsql"  , msodbcsql_version )
+ 
 def parse_and_store_results_all( test_db, result_db, platform, start_time, mars, pooling ):
     print("Parsing and storing the results...")
     parse_and_store_results( "sqlsrv-regular.xml", test_db, result_db, platform, "sqlsrv", start_time, mars, pooling )
     parse_and_store_results( "sqlsrv-large.xml", test_db, result_db, platform, "sqlsrv", start_time, mars, pooling )
     parse_and_store_results( "pdo_sqlsrv-regular.xml", test_db, result_db, platform, "pdo_sqlsrv", start_time, mars, pooling )
     parse_and_store_results( "pdo_sqlsrv-large.xml", test_db, result_db, platform, "pdo_sqlsrv", start_time, mars, pooling )
-
+ 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument( '-platform', '--PLATFORM', required=True )
@@ -388,16 +419,16 @@ if __name__ == '__main__':
     parser.add_argument( '-result-uid', '--RESULT_UID', required=True )
     parser.add_argument( '-result-pwd', '--RESULT_PWD', required=True )
     args = parser.parse_args()
-
+ 
     start_time = datetime.datetime.now().strftime( fmt )
     print( "Start time: " + start_time )
-
+ 
     validate_platform( args.PLATFORM )
     result_db = DB( args.RESULT_SERVER, args.RESULT_DB, args.RESULT_UID, args.RESULT_PWD )
     test_db = get_test_database()
-
+ 
     print("Running the tests with default settings...")
-
+ 
     run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 0 )
    
@@ -406,11 +437,12 @@ if __name__ == '__main__':
     run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 1, 0 )
     disable_mars()
-
+ 
    
     print("Running the tests with Pooling ON...")
     enable_pooling()
     run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 1 )
     disable_pooling()
+ 
    
