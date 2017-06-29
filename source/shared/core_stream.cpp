@@ -181,7 +181,7 @@ size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* b
             read = enc_len;
         }
 
-        return read;
+        return static_cast<size_t>( read );
     } 
 
     catch( core::CoreException& ) {
