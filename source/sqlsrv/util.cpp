@@ -685,7 +685,7 @@ PHP_FUNCTION( sqlsrv_get_config )
 
 namespace {
 
-sqlsrv_error_const* get_error_message( unsigned int sqlsrv_error_code ) {
+sqlsrv_error_const* get_error_message( _In_ unsigned int sqlsrv_error_code ) {
 
 	sqlsrv_error_const *error_message = NULL;
 
