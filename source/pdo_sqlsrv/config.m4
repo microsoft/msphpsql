@@ -54,6 +54,13 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
     
            
   CXXFLAGS="$CXXFLAGS -std=c++11"
+  CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
+#if (defined __APPLE__ && defined __MACH__) \
+  LDFLAGS="$LDFLAGS -Wl,-bind_at_load" \
+  MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` \
+#else
+  LDFLAGS="$LDFLAGS -Wl,-z,now"\
+#endif
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, PDO_SQLSRV_SHARED_LIBADD)
@@ -65,8 +72,4 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
   PHP_ADD_EXTENSION_DEP(pdo_sqlsrv, pdo)
   PHP_ADD_BUILD_DIR([$ext_builddir/shared], 1)
 fi
-
-#if (defined __APPLE__ && defined __MACH__) \
-  MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` \
-#endif
 
