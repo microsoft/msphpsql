@@ -52,7 +52,7 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
   fi
     AC_MSG_RESULT($pdo_sqlsrv_inc_path)
     
-           
+  HOST_OS_ARCH=`uname`         
   CXXFLAGS="$CXXFLAGS -std=c++11"
   CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
   CXXFLAGS="$CXXFLAGS -fstack-protector"

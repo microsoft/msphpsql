@@ -28,7 +28,7 @@ if test "$PHP_SQLSRV" != "no"; then
         AC_MSG_ERROR([Cannot find SQLSRV headers])
     fi
         AC_MSG_RESULT($sqlsrv_inc_path)        
-
+  HOST_OS_ARCH=`uname`
   CXXFLAGS="$CXXFLAGS -std=c++11"
   CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
   CXXFLAGS="$CXXFLAGS -fstack-protector"
