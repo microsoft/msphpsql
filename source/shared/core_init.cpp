@@ -18,11 +18,12 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "core_sqlsrv.h"
+#include "VersionHelpers.h"
 
 
 // module global variables (initialized in minit and freed in mshutdown)
 HMODULE g_sqlsrv_hmodule = NULL;
-OSVERSIONINFO g_osversion;
+bool isVistaOrGreater;
 
 
 // core_sqlsrv_minit
@@ -47,12 +48,7 @@ void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_contex
 #ifdef _WIN32
     // get the version of the OS we're running on.  For now this governs certain flags used by
     // WideCharToMultiByte.  It might be relevant to other things in the future.
-    g_osversion.dwOSVersionInfoSize = sizeof( g_osversion );
-    BOOL ver_return = GetVersionEx( &g_osversion );
-    if( !ver_return ) {
-        LOG( SEV_ERROR, "Failed to retrieve Windows version information." );
-        throw core::CoreException();
-    }
+    isVistaOrGreater = IsWindowsVistaOrGreater( );
 #endif //_WIN32
 
     SQLHANDLE henv = SQL_NULL_HANDLE;

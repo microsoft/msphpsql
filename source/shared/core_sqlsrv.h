@@ -1000,7 +1000,7 @@ struct sqlsrv_encoding {
 //*********************************************************************************************************************************
 
 // variables set during initialization
-extern OSVERSIONINFO g_osversion;                 // used to determine which OS we're running in
+extern bool isVistaOrGreater;                     // used to determine if OS is Vista or Greater
 extern HashTable* g_encodings;                    // encodings supported by this driver
 
 void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func TSRMLS_DC );

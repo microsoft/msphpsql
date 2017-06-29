@@ -155,7 +155,7 @@ size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count)
             // convert to UTF-8
 #ifdef _WIN32
             DWORD flags = 0;
-            if( g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
+            if( isVistaOrGreater ) {
                 // Vista (and later) will detect invalid UTF-16 characters and raise an error.
                 flags = WC_ERR_INVALID_CHARS;
             }

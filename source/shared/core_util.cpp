@@ -141,7 +141,7 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
     // an error.   This happens only on XP.
     DWORD flags = 0;
-    if( encoding == CP_UTF8 && g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
+    if( encoding == CP_UTF8 && isVistaOrGreater ) {
         // Vista (and later) will detect invalid UTF-16 characters and raise an error.
         flags = WC_ERR_INVALID_CHARS;
     }

@@ -99,7 +99,7 @@ extern HMODULE g_sqlsrv_hmodule;                  // used for getting the versio
 extern sqlsrv_context* g_ss_henv_cp;
 extern sqlsrv_context* g_ss_henv_ncp;
 
-extern OSVERSIONINFO g_osversion;                 // used to determine which OS we're running in
+extern bool isVistaOrGreater;                     // used to determine if OS is Vista or Greater
 
 #define phpext_sqlsrv_ptr &g_sqlsrv_module_entry
 
