@@ -55,6 +55,7 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
            
   CXXFLAGS="$CXXFLAGS -std=c++11"
   CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
+  CXXFLAGS="$CXXFLAGS -fstack-protector"
   if test "${HOST_OS_ARCH}" = "Darwin"; then
       LDFLAGS="$LDFLAGS -Wl,-bind_at_load" 
       MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` 
