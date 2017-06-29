@@ -27,12 +27,8 @@ fi
 rm -rf env_setup.log
 touch env_setup.log
 if [ $PLATFORM = "Ubuntu16" ]; then
-    echo "Installing git, libxml, autoconf, openssl, python3, pip3..."
-    yes | sudo apt-get install git autoconf libxml2-dev libssl-dev pkg-config python3 python3-pip >> env_setup.log 2>&1  
-    echo "OK"
-    echo "Installing pyodbc" 
-    pip3 install --upgrade pip >> env_setup.log 2>&1
-    pip3 install pyodbc >> env_setup.log 2>&1
+    echo "Installing git, curl, libxml, autoconf, openssl, python3, pip3..."
+    yes | sudo apt-get install git curl autoconf libxml2-dev libssl-dev pkg-config python3 python3-pip >> env_setup.log 2>&1  
     echo "OK"
     echo "Installing MSODBCSQL..."
     curl -s https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
@@ -40,6 +36,10 @@ if [ $PLATFORM = "Ubuntu16" ]; then
     yes | sudo apt-get update >> env_setup.log 2>&1
     yes | sudo ACCEPT_EULA=Y apt-get install msodbcsql >> env_setup.log 2>&1
     yes | sudo apt-get install -qq unixodbc-dev >> env_setup.log 2>&1
+    echo "Installing pyodbc"
+    pip3 install --upgrade pip >> env_setup.log 2>&1
+    pip3 install pyodbc >> env_setup.log 2>&1
+    echo "OK"
 elif [ $PLATFORM = "RedHat7" ]; then
     echo "Enabling EPEL repo"
     yes | sudo yum install epel-release >> env_setup.log 2>&1
@@ -53,14 +53,14 @@ elif [ $PLATFORM = "RedHat7" ]; then
     echo "Installing pip3"
     yes | sudo easy_install-3.4 pip >> env_setup.log 2>&1
     echo "OK"
-    echo "Installing pyodbc" 
-    pip3 install --upgrade pip >> env_setup.log 2>&1
-    pip3 install pyodbc >> env_setup.log 2>&1
-    echo "OK"
     echo "Installing MSODBCSQL..."
     curl -s https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
     (yes | sudo ACCEPT_EULA=Y yum install -y msodbcsql >> env_setup.log 2>&1)
     (yes | sudo yum install -y unixODBC-devel autoconf >> env_setup.log 2>&1)
+    echo "OK"
+    echo "Installing pyodbc"
+    pip3 install --upgrade pip >> env_setup.log 2>&1
+    pip3 install pyodbc >> env_setup.log 2>&1
     echo "OK"
 elif [ $PLATFORM = "Sierra" ]; then
     echo "Installing homebrew..."
@@ -79,15 +79,15 @@ elif [ $PLATFORM = "Sierra" ]; then
     echo "Installing python3..."
     brew install python3 >> env_setup.log 2>&1
     echo "OK"
-    echo "Installing pyodbc..."
-    pip3 install pyodbc >> env_setup.log 2>&1
-    echo "OK"
     echo "Installing MSODBCSQL..."
     brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-msodbcsql >> env_setup.log 2>&1
     brew update >> env_setup.log 2>&1
     yes | ACCEPT_EULA=Y brew install msodbcsql >> env_setup.log 2>&1
     echo "OK"
     yes | brew install autoconf >> env_setup.log 2>&1
+    echo "Installing pyodbc..."
+    pip3 install pyodbc >> env_setup.log 2>&1
+    echo "OK"
 fi
 echo "Downloading PHP-$PHP_VERSION source tarball..."
 wget http://ca1.php.net/get/php-$PHP_VERSION.tar.gz/from/this/mirror -O php-$PHP_VERSION.tar.gz >> env_setup.log 2>&1
@@ -122,8 +122,8 @@ echo "extension=$EXTENSION_DIR/pdo_sqlsrv.so" >> php.ini
 sudo cp php.ini /usr/local/lib
 cd ..
 php -v
-php --ri sqlsrv 
-php --ri pdo_sqlsrv 
+php --ri sqlsrv
+php --ri pdo_sqlsrv
 echo "Installing Composer..."
 wget https://getcomposer.org/installer -O composer-setup.php >> env_setup.log 2>&1
 php composer-setup.php >> env_setup.log 2>&1
