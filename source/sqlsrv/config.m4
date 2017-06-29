@@ -31,12 +31,12 @@ if test "$PHP_SQLSRV" != "no"; then
 
   CXXFLAGS="$CXXFLAGS -std=c++11"
   CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
-#if (defined __APPLE__ && defined __MACH__) \
-  LDFLAGS="$LDFLAGS -Wl,-bind_at_load" \
-  MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` \
-#else
-  LDFLAGS="$LDFLAGS -Wl,-z,now"\
-#endif
+  if test "${HOST_OS_ARCH}" = "Darwin"; then
+      LDFLAGS="$LDFLAGS -Wl,-bind_at_load" 
+      MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` 
+  else
+      LDFLAGS="$LDFLAGS -Wl,-z,now" 
+  fi
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, SQLSRV_SHARED_LIBADD)
