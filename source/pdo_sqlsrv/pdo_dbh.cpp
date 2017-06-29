@@ -1343,7 +1343,7 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_
         }
         // get the placeholder at the current position in driver_stmt->placeholders ht
         zval* placeholder = NULL;
-        if (( placeholder = zend_hash_get_current_data( driver_stmt->placeholders )) != NULL && zend_hash_move_forward( driver_stmt->placeholders ) == SUCCESS && stmt->bound_params != NULL ) {
+        if (( stmt->bound_params != NULL && placeholder = zend_hash_get_current_data( driver_stmt->placeholders )) != NULL && zend_hash_move_forward( driver_stmt->placeholders ) == SUCCESS ) {
             pdo_bound_param_data* param = NULL;
             if ( Z_TYPE_P( placeholder ) == IS_STRING ) {
                 param = reinterpret_cast<pdo_bound_param_data*>( zend_hash_find_ptr( stmt->bound_params, Z_STR_P( placeholder )));
