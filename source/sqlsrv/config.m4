@@ -27,7 +27,8 @@ if test "$PHP_SQLSRV" != "no"; then
     else  
         AC_MSG_ERROR([Cannot find SQLSRV headers])
     fi
-        AC_MSG_RESULT($sqlsrv_inc_path)        
+        AC_MSG_RESULT($sqlsrv_inc_path)    
+        
   HOST_OS_ARCH=`uname`
   if test "${HOST_OS_ARCH}" = "Darwin"; then
       MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` 
