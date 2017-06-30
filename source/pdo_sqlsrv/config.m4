@@ -52,8 +52,14 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
   fi
     AC_MSG_RESULT($pdo_sqlsrv_inc_path)
     
-           
+  HOST_OS_ARCH=`uname`         
+  if test "${HOST_OS_ARCH}" = "Darwin"; then
+      MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` 
+  fi
+  
   CXXFLAGS="$CXXFLAGS -std=c++11"
+  CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
+  CXXFLAGS="$CXXFLAGS -fstack-protector"
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, PDO_SQLSRV_SHARED_LIBADD)
@@ -65,8 +71,4 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
   PHP_ADD_EXTENSION_DEP(pdo_sqlsrv, pdo)
   PHP_ADD_BUILD_DIR([$ext_builddir/shared], 1)
 fi
-
-#if (defined __APPLE__ && defined __MACH__) \
-  MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` \
-#endif
 
