@@ -22,7 +22,7 @@
 #include "php_pdo_sqlsrv.h"
 
 // Constructor
-conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, int len, _Inout_ HashTable* conn_options_ht )
+conn_string_parser:: conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len, _In_ HashTable* conn_options_ht )
 {
     this->orig_str = dsn;
     this->len = len;
@@ -33,7 +33,7 @@ conn_string_parser:: conn_string_parser( sqlsrv_context& ctx, const char* dsn, i
     this->current_key_name = NULL;    
 }
 
-sql_string_parser:: sql_string_parser( sqlsrv_context& ctx, const char* sql_str, int len, _Inout_ HashTable* placeholders_ht )
+sql_string_parser:: sql_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* sql_str, _In_ int len, _In_ HashTable* placeholders_ht )
 {
     this->orig_str = sql_str;
     this->len = len;
@@ -78,7 +78,7 @@ inline bool string_parser::is_eos( void )
 }
 
 // Check for white space. 
-inline bool string_parser::is_white_space( char c ) 
+inline bool string_parser::is_white_space( _In_ char c ) 
 {
     if( c == ' ' || c == '\r' || c == '\n' || c == '\t' ) {
         return true;
@@ -87,7 +87,7 @@ inline bool string_parser::is_white_space( char c )
 }
 
 // Discard any trailing white spaces.
-int conn_string_parser::discard_trailing_white_spaces( const char* str, int len )
+int conn_string_parser::discard_trailing_white_spaces( _In_reads_(len) const char* str, _Inout_ int len )
 {
     const char* end = str + ( len - 1 );
     
@@ -118,7 +118,7 @@ bool string_parser::discard_white_spaces()
 }
 
 // Add a key-value pair to the hashtable
-void string_parser::add_key_value_pair( const char* value, int len TSRMLS_DC )
+void string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ int len TSRMLS_DC )
 {
     zval value_z;
     ZVAL_UNDEF( &value_z );
@@ -136,7 +136,7 @@ void string_parser::add_key_value_pair( const char* value, int len TSRMLS_DC )
 }
 
 // Add a key-value pair to the hashtable with int value
-void sql_string_parser::add_key_int_value_pair( unsigned int value TSRMLS_DC ) {
+void sql_string_parser::add_key_int_value_pair( _In_ unsigned int value TSRMLS_DC ) {
     zval value_z;
     ZVAL_LONG( &value_z, value );
     
@@ -144,7 +144,7 @@ void sql_string_parser::add_key_int_value_pair( unsigned int value TSRMLS_DC ) {
 }
 
 // Validate a given DSN keyword.
-void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
+void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Inout_ int key_len TSRMLS_DC )
 {
     int new_len = discard_trailing_white_spaces( key, key_len );
 
@@ -169,7 +169,7 @@ void conn_string_parser::validate_key(const char *key, int key_len TSRMLS_DC )
     THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
 }
 
-void conn_string_parser::add_key_value_pair( const char* value, int len TSRMLS_DC )
+void conn_string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ int len TSRMLS_DC )
 {
     // if the keyword is 'Authentication', check whether the user specified option is supported
     bool valid = true;
