@@ -389,7 +389,7 @@ char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, size_t* len TSR
 pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( pdo_dbh_t *dbh, int kind TSRMLS_DC );
 
 // quote a string, meaning put quotes around it and escape any quotes within it
-int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquotedlen, char **quoted, size_t* quotedlen,
+int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, const char* unquoted, size_t unquotedlen, char **quoted, size_t* quotedlen,
                           enum pdo_param_type paramtype TSRMLS_DC );
 
 struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
@@ -1302,7 +1302,7 @@ char * pdo_sqlsrv_dbh_last_id( pdo_dbh_t *dbh, const char *name, _Out_ size_t* l
 // quoted_len   - Length of the output string.
 // Return:
 // 0 for failure, 1 for success.
-int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_len, char **quoted, size_t* quoted_len,
+int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, const char* unquoted, size_t unquoted_len, char **quoted, size_t* quoted_len,
                           enum pdo_param_type /*paramtype*/ TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
