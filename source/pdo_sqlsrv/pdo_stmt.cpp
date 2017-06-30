@@ -1311,7 +1311,7 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 
 
 // Returns a sqlsrv_phptype for a given SQL Server data type.
-sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string_over_stream )
+sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_over_stream )
 {
     sqlsrv_phptype sqlsrv_phptype;
     int local_encoding = this->encoding();
