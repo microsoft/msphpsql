@@ -154,7 +154,7 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
 void add_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, 
                          _Inout_ HashTable* options_ht, _Inout_ zval* data TSRMLS_DC );
 void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ HashTable* options_ht, _Inout_ zval* data TSRMLS_DC );
-int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _In_ zval const* value_z TSRMLS_DC );   
+int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z TSRMLS_DC );   
 int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len TSRMLS_DC );
 
 }
@@ -1189,7 +1189,7 @@ void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn TSRMLS_DC )
     conn->stmts = NULL;
 }
 
-int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _In_ zval const* value_z TSRMLS_DC )    
+int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z TSRMLS_DC )    
 {
     for( int i=0; SS_CONN_OPTS[ i ].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
     {

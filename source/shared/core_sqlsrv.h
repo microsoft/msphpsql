@@ -1199,7 +1199,7 @@ void core_sqlsrv_rollback( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval* server_info TSRMLS_DC );
 void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval *server_version TSRMLS_DC );
 void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_info TSRMLS_DC );
-bool core_is_conn_opt_value_escaped( _In_ const char* value, _Inout_ size_t value_len );
+bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len );
 size_t core_str_zval_is_true( _Inout_ zval* str_zval );
 bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t value_len );
 
@@ -1902,7 +1902,7 @@ namespace core {
         }
     }
 
-    inline void SQLDescribeCol( sqlsrv_stmt* stmt, SQLSMALLINT colno, _Out_writes_opt_(col_name_length) SQLCHAR* col_name, SQLSMALLINT col_name_length,
+    inline void SQLDescribeCol( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Out_writes_opt_(col_name_length) SQLCHAR* col_name, _In_ SQLSMALLINT col_name_length,
                                 _Out_opt_ SQLSMALLINT* col_name_length_out, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
                                 _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
     {

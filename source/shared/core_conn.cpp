@@ -527,7 +527,7 @@ void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_
 // Properly escaped means that any '}' should be escaped by a prior '}'.  It is assumed that 
 // the value will be surrounded by { and } by the caller after it has been validated
 
-bool core_is_conn_opt_value_escaped( _In_ const char* value, _Inout_ size_t value_len )
+bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len )
 {
     // if the value is already quoted, then only analyse the part inside the quotes and return it as 
     // unquoted since we quote it when adding it to the connection string.
