@@ -23,7 +23,7 @@ namespace {
 
 // close a stream and free the PHP resources used by it
 
-int sqlsrv_stream_close( php_stream* stream, int /*close_handle*/ TSRMLS_DC )
+int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ TSRMLS_DC )
 {
     sqlsrv_stream* ss = static_cast<sqlsrv_stream*>( stream->abstract );
     SQLSRV_ASSERT( ss != NULL, "sqlsrv_stream_close: sqlsrv_stream* ss was null." );
@@ -44,7 +44,7 @@ int sqlsrv_stream_close( php_stream* stream, int /*close_handle*/ TSRMLS_DC )
 // read from a sqlsrv stream into the buffer provided by Zend.  The parameters for binary vs. char are
 // set when sqlsrv_get_field is called by the user specifying which field type they want.
 
-size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* buf, size_t count TSRMLS_DC )
+size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC )
 {
 	SQLLEN read = 0;
     SQLSMALLINT c_type = SQL_C_CHAR;
@@ -106,8 +106,8 @@ size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* b
         // if it's not a binary encoded field
         if( r == SQL_SUCCESS_WITH_INFO ) {
 
-            SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
-            SQLSMALLINT len;
+            SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = { 0 };
+            SQLSMALLINT len = 0;
 
             ss->stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
 
@@ -155,7 +155,7 @@ size_t sqlsrv_stream_read( php_stream* stream, _Out_writes_bytes_(count) char* b
             // convert to UTF-8
 #ifdef _WIN32
             DWORD flags = 0;
-            if( g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
+            if( isVistaOrGreater ) {
                 // Vista (and later) will detect invalid UTF-16 characters and raise an error.
                 flags = WC_ERR_INVALID_CHARS;
             }
@@ -211,8 +211,8 @@ php_stream_ops sqlsrv_stream_ops = {
 // open a stream and return the sqlsrv_stream_ops function table as part of the
 // return value.  There is only one valid way to open a stream, using sqlsrv_get_field on
 // certain field types.  A sqlsrv stream may only be opened in read mode.
-static php_stream* sqlsrv_stream_opener( php_stream_wrapper* wrapper, _In_ const char*, _In_ const char* mode, 
-                                         int options, _In_ zend_string **, php_stream_context* STREAMS_DC TSRMLS_DC )
+static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _In_ const char*, _In_ const char* mode, 
+                                         _In_opt_ int options, _In_ zend_string **, php_stream_context* STREAMS_DC TSRMLS_DC )
 {
 
 #if ZEND_DEBUG

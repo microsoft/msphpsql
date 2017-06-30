@@ -34,15 +34,15 @@ char log_msg[ LOG_MSG_SIZE ];
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
 
 // *** internal functions ***
-sqlsrv_error_const* get_error_message( unsigned int sqlsrv_error_code );
+sqlsrv_error_const* get_error_message( _In_ unsigned int sqlsrv_error_code );
 
-void copy_error_to_zval( zval* error_z, sqlsrv_error_const* error, zval* reported_chain, zval* ignored_chain, 
-                                bool warning TSRMLS_DC );
-bool ignore_warning( char* sql_state, int native_code TSRMLS_DC );
-bool handle_errors_and_warnings( sqlsrv_context& ctx, zval* reported_chain, zval* ignored_chain, logging_severity log_severity, 
-                                 unsigned int sqlsrv_error_code, bool warning, va_list* print_args TSRMLS_DC );
+void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, 
+                                _In_ bool warning TSRMLS_DC );
+bool ignore_warning( _In_ char* sql_state, _In_ int native_code TSRMLS_DC );
+bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, _In_ logging_severity log_severity, 
+                                 _In_ unsigned int sqlsrv_error_code, _In_ bool warning, _In_opt_ va_list* print_args TSRMLS_DC );
 
-int  sqlsrv_merge_zend_hash_dtor( zval* dest TSRMLS_DC );
+int  sqlsrv_merge_zend_hash_dtor( _Inout_ zval* dest TSRMLS_DC );
 bool sqlsrv_merge_zend_hash( _Inout_ zval* dest_z, zval const* src_z TSRMLS_DC );
 
 }
@@ -382,7 +382,7 @@ ss_error SS_ERRORS[] = {
 };
 
 // Formats an error message and finally writes it to the php log.
-void ss_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* print_args )
+void ss_sqlsrv_log( _In_ unsigned int severity TSRMLS_DC, _In_opt_ const char* msg, _In_opt_ va_list* print_args )
 {
     if(( severity & SQLSRV_G( log_severity )) && ( SQLSRV_G( current_subsystem ) & SQLSRV_G( log_subsystems ))) {
 
@@ -398,7 +398,7 @@ void ss_sqlsrv_log( unsigned int severity TSRMLS_DC, const char* msg, va_list* p
     }
 }
 
-bool ss_error_handler(sqlsrv_context& ctx, unsigned int sqlsrv_error_code, bool warning TSRMLS_DC, va_list* print_args )
+bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool warning TSRMLS_DC, _In_opt_ va_list* print_args )
 {
     logging_severity severity = SEV_ERROR;
     if( warning && !SQLSRV_G( warnings_return_as_errors )) {
@@ -528,6 +528,7 @@ PHP_FUNCTION( sqlsrv_configure )
         }
 
         // WarningsReturnAsErrors
+        SQLSRV_ASSERT( option[option_len] == '\0', "sqlsrv_configure: option was not null terminated." );
         if( !stricmp( option, INI_WARNINGS_RETURN_AS_ERRORS )) {
 
             SQLSRV_G( warnings_return_as_errors ) = zend_is_true( value_z ) ? true : false;
@@ -645,7 +646,7 @@ PHP_FUNCTION( sqlsrv_get_config )
 
             throw ss::SSException();        
         }
-        
+        SQLSRV_ASSERT( option != NULL, "sqlsrv_get_config: option was null." );
         if( !stricmp( option, INI_WARNINGS_RETURN_AS_ERRORS )) {
 
             ZVAL_BOOL( return_value, SQLSRV_G( warnings_return_as_errors ));
@@ -684,7 +685,7 @@ PHP_FUNCTION( sqlsrv_get_config )
 
 namespace {
 
-sqlsrv_error_const* get_error_message( unsigned int sqlsrv_error_code ) {
+sqlsrv_error_const* get_error_message( _In_ unsigned int sqlsrv_error_code ) {
 
 	sqlsrv_error_const *error_message = NULL;
 
@@ -698,8 +699,8 @@ sqlsrv_error_const* get_error_message( unsigned int sqlsrv_error_code ) {
 	return error_message;
 }
 
-void copy_error_to_zval( zval* error_z, sqlsrv_error_const* error, zval* reported_chain, zval* ignored_chain, 
-                         bool warning TSRMLS_DC )
+void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, 
+                         _In_ bool warning TSRMLS_DC )
 {
 
     if( array_init( error_z ) == FAILURE ) {
@@ -775,8 +776,8 @@ void copy_error_to_zval( zval* error_z, sqlsrv_error_const* error, zval* reporte
     }
 }
 
-bool handle_errors_and_warnings( sqlsrv_context& ctx, zval* reported_chain, zval* ignored_chain, logging_severity log_severity, 
-                                 unsigned int sqlsrv_error_code, bool warning, va_list* print_args TSRMLS_DC )
+bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, _In_ logging_severity log_severity, 
+                                 _In_ unsigned int sqlsrv_error_code, _In_ bool warning, _In_opt_ va_list* print_args TSRMLS_DC )
 {
     bool result = true;
     bool errors_ignored = false;
@@ -863,7 +864,7 @@ bool handle_errors_and_warnings( sqlsrv_context& ctx, zval* reported_chain, zval
 
 // return whether or not a warning should be ignored or returned as an error if WarningsReturnAsErrors is true
 // see RINIT in init.cpp for information about which errors are ignored.
-bool ignore_warning( char* sql_state, int native_code TSRMLS_DC )
+bool ignore_warning( _In_ char* sql_state, _In_ int native_code TSRMLS_DC )
 {
 	zend_ulong index = -1;
 	zend_string* key = NULL;
@@ -884,7 +885,7 @@ bool ignore_warning( char* sql_state, int native_code TSRMLS_DC )
     return false;
 }
 
-int  sqlsrv_merge_zend_hash_dtor( zval* dest TSRMLS_DC )
+int  sqlsrv_merge_zend_hash_dtor( _Inout_ zval* dest TSRMLS_DC )
 {  
 	zval_ptr_dtor( dest );
     return ZEND_HASH_APPLY_REMOVE;
