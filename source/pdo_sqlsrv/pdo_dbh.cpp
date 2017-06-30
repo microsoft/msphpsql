@@ -389,7 +389,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
 pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _Inout_ pdo_dbh_t *dbh, int kind TSRMLS_DC );
 
 // quote a string, meaning put quotes around it and escape any quotes within it
-int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, _In_reads_(unquotedlen) const char* unquoted, _In_ size_t unquotedlen, _Outptr_result_buffer_(*quotedlen) char **quoted, _Out_ size_t* quotedlen,
+int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquotedlen) const char* unquoted, _In_ size_t unquotedlen, _Outptr_result_buffer_(*quotedlen) char **quoted, _Out_ size_t* quotedlen,
                           enum pdo_param_type paramtype TSRMLS_DC );
 
 struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
@@ -1306,7 +1306,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
 // quoted_len   - Length of the output string.
 // Return:
 // 0 for failure, 1 for success.
-int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, _In_reads_(unquoted_len) const char* unquoted, _In_ size_t unquoted_len, _Outptr_result_buffer_(*quoted_len) char **quoted, _Out_ size_t* quoted_len,
+int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const char* unquoted, _In_ size_t unquoted_len, _Outptr_result_buffer_(*quoted_len) char **quoted, _Out_ size_t* quoted_len,
                           enum pdo_param_type /*paramtype*/ TSRMLS_DC )
 {
     PDO_RESET_DBH_ERROR;
@@ -1348,7 +1348,7 @@ int pdo_sqlsrv_dbh_quote( pdo_dbh_t* dbh, _In_reads_(unquoted_len) const char* u
         }
         // get the placeholder at the current position in driver_stmt->placeholders ht
         zval* placeholder = NULL;
-        if (( placeholder = zend_hash_get_current_data( driver_stmt->placeholders )) != NULL && zend_hash_move_forward( driver_stmt->placeholders ) == SUCCESS ) {
+        if (( placeholder = zend_hash_get_current_data( driver_stmt->placeholders )) != NULL && zend_hash_move_forward( driver_stmt->placeholders ) == SUCCESS && stmt->bound_params != NULL ) {
             pdo_bound_param_data* param = NULL;
             if ( Z_TYPE_P( placeholder ) == IS_STRING ) {
                 param = reinterpret_cast<pdo_bound_param_data*>( zend_hash_find_ptr( stmt->bound_params, Z_STR_P( placeholder )));
