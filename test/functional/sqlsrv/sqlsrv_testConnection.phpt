@@ -1,7 +1,10 @@
 --TEST--
 variety of connection parameters.
 --SKIPIF--
-<?php require('skipif_unix.inc'); ?>
+<?php 
+require('skipif_unix.inc');
+require('skipif_azure.inc');
+?>
 --FILE--
 <?php
 

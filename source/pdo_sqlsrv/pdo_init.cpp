@@ -47,8 +47,8 @@ pdo_driver_t pdo_sqlsrv_driver = {
 
 // functions to register SQLSRV constants with the PDO class
 // (It's in all CAPS so it looks like the Zend macros that do similar work)
-void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( char const* name, long value TSRMLS_DC );
-void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( char const* name, char const* value TSRMLS_DC );
+void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( _In_z_ char const* name, _In_ long value TSRMLS_DC );
+void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( _In_z_ char const* name, _In_z_ char const* value TSRMLS_DC );
 
 struct sqlsrv_attr_pdo_constant {
     const char *name;
@@ -100,7 +100,7 @@ zend_module_entry g_pdo_sqlsrv_module_entry =
 };
 
 // called by Zend for each parameter in the g_pdo_errors_ht hash table when it is destroyed
-void pdo_error_dtor( zval* elem ) {
+void pdo_error_dtor( _Inout_ zval* elem ) {
     pdo_error* error_to_ignore = reinterpret_cast<pdo_error*>( Z_PTR_P( elem ) );
     pefree( error_to_ignore, 1 );
 }
@@ -252,7 +252,7 @@ namespace {
     // mimic the functionality of the REGISTER_PDO_CLASS_CONST_LONG.  We use this instead of the macro because
     // we dynamically link the pdo_get_dbh_class function rather than use the static php_pdo_get_dbh_ce (see MINIT)
 
-    void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( char const* name, long value TSRMLS_DC )
+    void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( _In_z_ char const* name, _In_ long value TSRMLS_DC )
     {
         zend_class_entry* zend_class = php_pdo_get_dbh_ce(); 
         
@@ -263,7 +263,7 @@ namespace {
         }
     }
 
-    void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( char const* name, char const* value TSRMLS_DC )
+    void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( _In_z_  char const* name, _In_z_ char const* value TSRMLS_DC )
     {
         zend_class_entry* zend_class = php_pdo_get_dbh_ce(); 
 
