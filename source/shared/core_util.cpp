@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -31,10 +31,10 @@ SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage fa
 char last_err_msg[ 2048 ];  // 2k to hold the error messages
 
 // routine used by utf16_string_from_mbcs_string
-unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
-                                                   unsigned int mbcs_len, 
+unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
+                                                   _In_ unsigned int mbcs_len, 
                                                    _Out_writes_(utf16_len) __transfer( mbcs_in_string ) SQLWCHAR* utf16_out_string,
-                                                   unsigned int utf16_len );
+                                                   _In_ unsigned int utf16_len );
 }
 
 // SQLSTATE for all internal errors 
@@ -45,7 +45,7 @@ SQLCHAR SSPWARN[] = "01SSP";
 
 // write to the php log if the severity and subsystem match the filters currently set in the INI or 
 // the script (sqlsrv_configure).
-void write_to_log( unsigned int severity TSRMLS_DC, const char* msg, ...)
+void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ...)
 {
     SQLSRV_ASSERT( !(g_driver_log == NULL), "Must register a driver log function." );
 
@@ -57,7 +57,7 @@ void write_to_log( unsigned int severity TSRMLS_DC, const char* msg, ...)
     va_end( args );
 }
 
-void core_sqlsrv_register_logger( log_callback driver_logger )
+void core_sqlsrv_register_logger( _In_ log_callback driver_logger )
 {
     g_driver_log = driver_logger;
 }
@@ -68,7 +68,7 @@ void core_sqlsrv_register_logger( log_callback driver_logger )
 // utf-16 string is released by this function if no errors occurred.  Otherwise the parameters are not changed
 // and false is returned.
 
-bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string, SQLLEN& len)
+bool convert_string_from_utf16_inplace( _In_ SQLSRV_ENCODING encoding, _Inout_updates_z_(len) char** string, _Inout_ SQLLEN& len)
 {
     SQLSRV_ASSERT( string != NULL, "String must be specified" );
 
@@ -91,7 +91,7 @@ bool convert_string_from_utf16_inplace( SQLSRV_ENCODING encoding, char** string,
     return result;
 }
 
-bool convert_zval_string_from_utf16(SQLSRV_ENCODING encoding, zval* value_z, SQLLEN& len)
+bool convert_zval_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _Inout_ zval* value_z, _Inout_ SQLLEN& len)
 {
     char* string = Z_STRVAL_P(value_z);
 
@@ -110,7 +110,7 @@ bool convert_zval_string_from_utf16(SQLSRV_ENCODING encoding, zval* value_z, SQL
     return result;
 }
 
-bool validate_string(char* string, SQLLEN& len)
+bool validate_string( _In_ char* string, _In_ SQLLEN& len )
 {
      SQLSRV_ASSERT(string != NULL, "String must be specified");
 
@@ -125,7 +125,7 @@ bool validate_string(char* string, SQLLEN& len)
     return false;
 }
 
-bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inString, SQLINTEGER cchInLen, char** outString, SQLLEN& cchOutLen )
+bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(cchInLen) const SQLWCHAR* inString, _In_ SQLINTEGER cchInLen, _Inout_updates_bytes_(cchOutLen) char** outString, _Out_ SQLLEN& cchOutLen )
 {
     SQLSRV_ASSERT( inString != NULL, "Input string must be specified" );
     SQLSRV_ASSERT( outString != NULL, "Output buffer pointer must be specified" );
@@ -141,7 +141,7 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inStri
     // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
     // an error.   This happens only on XP.
     DWORD flags = 0;
-    if( encoding == CP_UTF8 && g_osversion.dwMajorVersion >= SQLSRV_OS_VISTA_OR_LATER ) {
+    if( encoding == CP_UTF8 && isVistaOrGreater ) {
         // Vista (and later) will detect invalid UTF-16 characters and raise an error.
         flags = WC_ERR_INVALID_CHARS;
     }
@@ -182,8 +182,8 @@ bool convert_string_from_utf16( SQLSRV_ENCODING encoding, const SQLWCHAR* inStri
 // thin wrapper around convert_string_from_default_encoding that handles
 // allocation of the destination string.  An empty string passed in returns
 // failure since it's a failure case for convert_string_from_default_encoding.
-SQLWCHAR* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const char* mbcs_string, unsigned int mbcs_len, 
-                                        unsigned int* utf16_len )
+SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_reads_bytes_(mbcs_len) const char* mbcs_string, _In_ unsigned int mbcs_len,
+                                        _Out_ unsigned int* utf16_len )
 {
     *utf16_len = (mbcs_len + 1);
     SQLWCHAR* utf16_string = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( *utf16_len * sizeof( SQLWCHAR )));
@@ -207,7 +207,7 @@ SQLWCHAR* utf16_string_from_mbcs_string( SQLSRV_ENCODING php_encoding, const cha
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 
-bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_error_auto_ptr& error, logging_severity severity 
+bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error, _In_ logging_severity severity 
                                  TSRMLS_DC )
 {
     SQLHANDLE h = ctx.handle();
@@ -284,8 +284,8 @@ bool core_sqlsrv_get_odbc_error( sqlsrv_context& ctx, int record_number, sqlsrv_
 }
 
 // format and return a driver specfic error
-void core_sqlsrv_format_driver_error( sqlsrv_context& ctx, sqlsrv_error_const const* custom_error, 
-                                      sqlsrv_error_auto_ptr& formatted_error, logging_severity severity TSRMLS_DC, va_list* args )
+void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_error_const const* custom_error, 
+                                      _Out_ sqlsrv_error_auto_ptr& formatted_error, _In_ logging_severity severity TSRMLS_DC, _In_opt_ va_list* args )
 {
     // allocate space for the formatted message
     formatted_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
@@ -309,7 +309,7 @@ void core_sqlsrv_format_driver_error( sqlsrv_context& ctx, sqlsrv_error_const co
     LOG( severity, "%1!s!: message = %2!s!", ctx.func(), formatted_error->native_message );
 }
 
-DWORD core_sqlsrv_format_message( char* output_buffer, unsigned output_len, const char* format, ... )
+DWORD core_sqlsrv_format_message( _Out_ char* output_buffer, _In_ unsigned output_len, _In_opt_ const char* format, ... )
 {
     va_list format_args;
     va_start( format_args, format );
@@ -321,7 +321,7 @@ DWORD core_sqlsrv_format_message( char* output_buffer, unsigned output_len, cons
 // return an error message for GetLastError using FormatMessage.
 // this function returns the msg pointer so that it may be used within
 // another function call such as handle_error
-const char* get_last_error_message( DWORD last_error )
+const char* get_last_error_message( _Inout_ DWORD last_error )
 {
     if( last_error == 0 ) {
         last_error = GetLastError();
@@ -346,7 +346,7 @@ const char* get_last_error_message( DWORD last_error )
 // places where we were using the FormatMessage syntax inadvertently with DIE which left messages without
 // proper information.  Rather than convert those messages and try and remember the difference between LOG and
 // DIE, it is simpler to make the format syntax common between them.
-void die( const char* msg, ... )
+void die( _In_opt_ const char* msg, ... )
 {
     va_list format_args;
     va_start( format_args, msg );
@@ -367,9 +367,9 @@ namespace {
 // returned in utf16_out_string.  An empty string passed in will result as
 // a failure since MBTWC returns 0 for both an empty string and failure
 // to convert.
-unsigned int convert_string_from_default_encoding( unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
-                                                   unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer( mbcs_in_string ) SQLWCHAR* utf16_out_string,
-                                                   unsigned int utf16_len )
+unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
+                                                   _In_ unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer( mbcs_in_string ) SQLWCHAR* utf16_out_string,
+                                                   _In_ unsigned int utf16_len )
 {
     unsigned int win_encoding = CP_ACP;
     switch( php_encoding ) {

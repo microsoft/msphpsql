@@ -3,6 +3,8 @@ sudo: required
 os: linux
 dist: trusty
 
+group: edge
+
 services:
   - docker
 
@@ -25,16 +27,16 @@ install:
 script: 
   - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --link $TEST_PHP_SQL_SERVER --name=client msphpsql-dev
   - docker ps -a 
-  - docker exec client python ./test/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
-  - docker exec client python ./test/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
-  - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/pdo_sqlsrv/*.phpt
-  - docker exec client php ./source/sqlsrv/run-tests.php ./test/sqlsrv/*.phpt
-  - docker exec client bash -c 'for f in ./test/sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
-  - docker exec client bash -c 'for f in ./test/sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
-  - docker exec client bash -c 'for f in ./test/pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
-  - docker exec client bash -c 'for f in ./test/pdo_sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
-  - docker exec client python ./test/setup/cleanup_dbs.py -dbname $SQLSRV_DBNAME
-  - docker exec client python ./test/setup/cleanup_dbs.py -dbname $PDOSQLSRV_DBNAME
+  - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
+  - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
+  - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/functional/pdo_sqlsrv/*.phpt
+  - docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/sqlsrv/*.phpt
+  - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
+  - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
+  - docker exec client bash -c 'for f in ./test/functional/pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
+  - docker exec client bash -c 'for f in ./test/functional/pdo_sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
+  - docker exec client python ./test/functional/setup/cleanup_dbs.py -dbname $SQLSRV_DBNAME
+  - docker exec client python ./test/functional/setup/cleanup_dbs.py -dbname $PDOSQLSRV_DBNAME
   - docker exec client coveralls -e ./source/shared/ --gcov-options '\-lp'
   - docker stop client
   - docker ps -a 
@@ -42,3 +44,4 @@ script:
 
 notifications:
   email: false
+
