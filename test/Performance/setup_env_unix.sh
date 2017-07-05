@@ -42,13 +42,13 @@ if [ $PLATFORM = "Ubuntu16" ]; then
     echo "OK"
 elif [ $PLATFORM = "RedHat7" ]; then
     echo "Enabling EPEL repo"
-    yes | sudo yum install epel-release >> env_setup.log 2>&1
+    yes | sudo yum install epel-release -y >> env_setup.log 2>&1
     echo "OK"
     echo "Installing python34-setuptools..."
-    yes | sudo yum install python34-setuptools >> env_setup.log 2>&1
+    yes | sudo yum install python34-setuptools -y >> env_setup.log 2>&1
     echo "OK"
     echo "Installing gcc, git, libxml, openssl, EPEL, python3, pip3..."
-    yes | sudo yum install -y gcc-c++ libxml2-devel git openssl-devel python34 >> env_setup.log 2>&1
+    yes | sudo yum install -y gcc-c++ libxml2-devel git openssl-devel python34 python34-devel >> env_setup.log 2>&1
     echo "OK"
     echo "Installing pip3"
     yes | sudo easy_install-3.4 pip >> env_setup.log 2>&1
