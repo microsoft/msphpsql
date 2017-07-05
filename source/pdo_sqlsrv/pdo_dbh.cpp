@@ -1369,6 +1369,14 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         // convert from char* to hex digits using os
         std::basic_ostringstream<char> os;
         for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+            // if unquoted is < 0 or > 255, that means this is a non-ascii character. Translation from non-ascii to binary is not supported.
+            // return an empty terminated string for now
+            if (( int )unquoted[ index ] < 0 || ( int )unquoted[ index ] > 255) {
+                *quoted_len = 0;
+                *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
+                ( *quoted )[ 0 ] = '\0';
+                return 1;
+            }
             // when an int is < 16 and is appended to os, its hex representation which starts
             // with '0' does not get appended properly (the starting '0' does not get appended)
             // thus append '0' first
