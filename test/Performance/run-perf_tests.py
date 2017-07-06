@@ -751,7 +751,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument( '-platform',         '--PLATFORM',         required=True, help='The name of the platform the tests run on' )
     parser.add_argument( '-iterations',       '--ITERATIONS',       required=True, help='Number of iterations for regular tests', type=int )
-    parser.add_argument( '-iterations-large', '--ITERATIONS_LARGE', required=True, help='Number of iterations for regular tests'  type=int )
+    parser.add_argument( '-iterations-large', '--ITERATIONS_LARGE', required=True, help='Number of iterations for regular tests',  type=int )
     parser.add_argument( '-result-server',    '--RESULT_SERVER',    required=True, help='IP address of the Result Server' )
     parser.add_argument( '-result-db',        '--RESULT_DB',        required=True, help='Name of the Result Database' )
     parser.add_argument( '-result-uid',       '--RESULT_UID',       required=True, help='Username to connect to the Result Database' )
