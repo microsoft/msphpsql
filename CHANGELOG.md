@@ -3,6 +3,57 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux/MAC 4.3.0 - 2017-07-06
+Production Ready release for SQLSRV and PDO_SQLSRV drivers on Sierra, El Capitan, Debian 8, Ubuntu 15, Ubuntu 16, CentOS 7, and Windows. Here is the changlog since the last Production Ready release.
+
+### Added
+- Added Unicode Column name support ([issue #138](https://github.com/Microsoft/msphpsql/issues/138)). 
+- Support for Always On Availability groups via Transparent Network IP Resolution ([TNIR](https://github.com/Microsoft/msphpsql/wiki/Features#TNIR))  
+- Added support for sql_variant data type with limitation ([issue #51](https://github.com/Microsoft/msphpsql/issues/51) and [issue #127](https://github.com/Microsoft/msphpsql/issues/127))
+- Support drivers on Debian Jessie (tested on Debian 8.7) 
+- Connection Resiliency support in Windows 
+- Connection pooling support for Linux and macOS  
+- Support for Mac (El Capitan and above) 
+- Azure Active Directory Authentication with ActiveDirectoryPassword and SqlPassword
+
+### Fixed
+- Fixed PECL installation errors when PHP was installed from source ([issue #213](https://github.com/Microsoft/msphpsql/issues/213)). 
+- Fixed the assertion error (Linux) when fetching data from a binary column using the binary encoding ([issue #226](https://github.com/Microsoft/msphpsql/issues/226)). 
+- Fixed issue output parameters bound to empty string ([issue #182](https://github.com/Microsoft/msphpsql/issues/182)). 
+- Fixed a memory leak in closing connection resources. 
+- Fixed load ordering issue in MacOS ([issue #417](https://github.com/Microsoft/msphpsql/issues/417)) 
+- Added a workaround for a bug in unixODBC 2.3.4 when connection pooling is enabled. 
+- Fixed the issue with driver loading order in macOS 
+- Fixed null returned when an empty string is set to an output parameter ([issue #308](https://github.com/Microsoft/msphpsql/issues/308)).
+- #### Fixed in SQLSRV  
+	- Fixed sqlsrv client buffer size to only allow positive integers ([issue #228](https://github.com/Microsoft/msphpsql/issues/228)). 
+	- Fixed sqlsrv_num_rows() when the client buffered result is null ([issue #330](https://github.com/Microsoft/msphpsql/issues/330)). 
+	- Fixed issues with sqlsrv_has_rows() to prevent it from moving statement cursor ([issue #37](https://github.com/Microsoft/msphpsql/issues/37)). 
+	- Fixed conversion warnings because of some const chars ([issue #332](https://github.com/Microsoft/msphpsql/issues/332)). 
+	- Fixed debug abort error when building the driver in debug mode with PHP 7.1. 
+	- Fixed string truncation when binding varchar(max), nvarchar(max), varbinary(max), and xml types ([issue #231](https://github.com/Microsoft/msphpsql/issues/231)). 
+	- Fixed fatal error when fetching empty nvarchar ([issue #69](https://github.com/Microsoft/msphpsql/issues/69)). 
+	- Fixed fatal error when calling sqlsrv_fetch() with an out of bound offset for SQLSRV_SCROLL_ABSOLUTE ([issue #223](https://github.com/Microsoft/msphpsql/issues/223)).
+ - #### Fixed in PDO_SQLSRV
+	- Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)). 
+	- Improved performance by implementing a cache to store column SQL types and display sizes ([issue #189](https://github.com/Microsoft/msphpsql/issues/189)). 
+	- Fixed segmentation fault with PDOStatement::getColumnMeta() when the supplied column index is out of range ([issue #224](https://github.com/Microsoft/msphpsql/issues/224)). 
+	- Fixed issue with the unsupported attribute PDO::ATTR_PERSISTENT in connection ([issue #65](https://github.com/Microsoft/msphpsql/issues/65)). 
+	- Fixed the issue with executing DELETE operation on a non-existent value ([issue #336](https://github.com/Microsoft/msphpsql/issues/336)). 
+	- Fixed incorrectly binding of unicode parameter when emulate prepare is on and the encoding is set at the statement level ([issue #92](https://github.com/Microsoft/msphpsql/issues/92)). 
+	- Fixed binary column binding when emulate prepare is on ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)). 
+	- Fixed wrong value returned when fetching varbinary value on Linux ([issue #270](https://github.com/Microsoft/msphpsql/issues/270)). 
+	- Fixed binary data not returned when the column is bound by name ([issue #35](https://github.com/Microsoft/msphpsql/issues/35)). 
+	- Fixed exception thrown on closeCursor() when the statement has not been executed ([issue #267](https://github.com/Microsoft/msphpsql/issues/267)).
+	
+### Limitation
+- No support for inout / output params when using sql_variant type
+
+### Known Issues
+- When pooling is enabled in Linux or MAC
+  - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
 ## Windows/Linux/MAC 4.3.0-RC1 - 2017-06-21
 Here is the list of updates:
 
