@@ -467,7 +467,7 @@ def get_php_arch():
     Returns
         x86 or x64
     """
-    p = subprocess.Popen( "php -r 'echo PHP_INT_SIZE;'", stdout=subprocess.PIPE, shell = True )
+    p = subprocess.Popen( "php -r \"echo PHP_INT_SIZE;\"", stdout=subprocess.PIPE, shell = True )
     out, err = p.communicate()
     if out.decode('ascii') == "8":
         return "x64"
@@ -482,7 +482,7 @@ def get_php_version():
     Returns:
         php version
     """
-    p = subprocess.Popen( "php -r 'echo phpversion();'", stdout=subprocess.PIPE, shell = True )
+    p = subprocess.Popen( "php -r \"echo phpversion();\"", stdout=subprocess.PIPE, shell = True )
     out, err = p.communicate()    
     return out.decode('ascii')
    
@@ -495,7 +495,7 @@ def get_php_thread():
         nts or ts
     """
     if os.name == 'nt':
-        command = "php -i | findstr 'Thread'"
+        command = "php -i | findstr \"Thread\""
     else:
         command = "php -i | grep 'Thread'"
     p = subprocess.Popen( command, stdout=subprocess.PIPE, shell = True )
@@ -514,7 +514,6 @@ def get_driver_version( driver_name ):
         The version of the given driver
     """
     command = "php -r \"echo phpversion('{0}');\""
-    print(command.format( driver_name ))
     p = subprocess.Popen( command.format( driver_name ), stdout=subprocess.PIPE, shell = True )
     out, err = p.communicate()
     return out.decode('ascii')
@@ -527,7 +526,7 @@ def get_msodbcsql_version( test_db ):
     Returns:
         MSODBCSQL version
     """
-    command = "php -r \"echo sqlsrv_client_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['DriverName'];\""
+ command = "php -r \"echo sqlsrv_client_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['DriverVer'];\""
     p = subprocess.Popen( command.format( test_db.server_name, test_db.username, test_db.password ), stdout=subprocess.PIPE, shell = True )
     out, err = p.communicate()
     return out.decode('ascii')
@@ -790,4 +789,4 @@ if __name__ == '__main__':
     """
     exit()
  
-   
+  
