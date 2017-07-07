@@ -39,7 +39,7 @@ Write-Host "Installing Python3..."
 choco install -y python3
 RefreshEnv
 Write-Host "Installing pyodbc..."
-pip3 install pyodbc | Out-Null
+C:\Python*\Scripts\pip3.exe install pyodbc | Out-Null
 Write-Host "Downloading MSODBCSQL..."
 #This needs to be manually updated when there is a new release
 (New-object System.Net.WebClient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', "$tempFolder\msodbcsql.msi")
