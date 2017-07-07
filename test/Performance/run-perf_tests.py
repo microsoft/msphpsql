@@ -55,7 +55,7 @@ def validate_platform( platform_name ):
     """
     platforms = [
           "Windows10"
-        , "WidnowsServer2016"
+        , "WindowsServer2016"
         , "WindowsServer2012"
         , "Ubuntu16"
         , "RedHat7"
@@ -526,7 +526,7 @@ def get_msodbcsql_version( test_db ):
     Returns:
         MSODBCSQL version
     """
- command = "php -r \"echo sqlsrv_client_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['DriverVer'];\""
+    command = "php -r \"echo sqlsrv_client_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['DriverVer'];\""
     p = subprocess.Popen( command.format( test_db.server_name, test_db.username, test_db.password ), stdout=subprocess.PIPE, shell = True )
     out, err = p.communicate()
     return out.decode('ascii')

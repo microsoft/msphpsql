@@ -35,6 +35,7 @@ Write-Host "Installing chocolatey..."
 iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 Write-Host "Installing Git..."
 choco install -y git
+Set-Alias git 'C:\Program Files\Git\cmd\git.exe'
 Write-Host "Installing Python3..."
 choco install -y python3
 RefreshEnv
@@ -107,3 +108,5 @@ RefreshEnv
 wget https://getcomposer.org/installer -O composer-setup.php
 php composer-setup.php
 php composer.phar install
+Remove-Item temp -Recurse -Force -ErrorAction Ignore
+Write-Host "Setup completed!"

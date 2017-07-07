@@ -6,8 +6,7 @@ Run `cmd` as administrator.
 
     powershell
     Set-ExecutionPolicy Unrestricted
-    .\setup_env_windows.ps1 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder> <ARCH - x86 or x64>   
-If `PHP_VERSION` is wrong, the script will default it to the latest PHP 7.1 version    
+    .\setup_env_windows.ps1 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder> <ARCH - x86 or x64>    
 
 ### Ubuntu 16
     sudo env “PATH=$PATH” bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
@@ -21,9 +20,9 @@ If `PHP_VERSION` is wrong, the script will default it to the latest PHP 7.1 vers
 
 ### 1. Modify lib/connect.php with the test database credetials
 ### 2. Execute run-perf_tests.py. 
-The script must be executed with `sudo` because to enable pooling it needs to modify odbcinst.ini system file. As an improvement, the location of the odbcinst.ini file can be changed so that, sudo is not requiered. 
+The script must be executed with `sudo python3` because to enable pooling it needs to modify odbcinst.ini system file. As an improvement, the location of the odbcinst.ini file can be changed so that, sudo is not requiered. 
     
-    run-perf_tests.py -platform <PLATFORM> -iterations <ITERATIONS> -iterations-large <ITERATIONS_LARGE> -result-server <RESULT_SERVER> -result-db <RESULT_DB> -result-uid <RESULT_UID> -result-pwd <RESULT_PWD>
+    py.exe run-perf_tests.py -platform <PLATFORM> -iterations <ITERATIONS> -iterations-large <ITERATIONS_LARGE> -result-server <RESULT_SERVER> -result-db <RESULT_DB> -result-uid <RESULT_UID> -result-pwd <RESULT_PWD>
 
 `-platform` - The platform that the tests are ran on. Must be one of the following: Windows10, WidnowsServer2016 WindowsServer2012 Ubuntu16 RedHat7 Sierra  
 `-iterations` - The number of iterations for regular tests.  
