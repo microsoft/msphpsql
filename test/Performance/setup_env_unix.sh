@@ -27,8 +27,11 @@ fi
 rm -rf env_setup.log
 touch env_setup.log
 if [ $PLATFORM = "Ubuntu16" ]; then
-    echo "Installing git, curl, libxml, autoconf, openssl, python3, pip3..."
-    yes | sudo apt-get install git curl autoconf libxml2-dev libssl-dev pkg-config python3 python3-pip >> env_setup.log 2>&1  
+    echo "Update..."
+    yes | sudo dpkg --configure -a >> env_setup.log 2>&1
+    yes | sudo apt-get update >> env_setup.log 2>&1
+    echo "Installing git, zip, curl, libxml, autoconf, openssl, python3, pip3..."
+    yes | sudo apt-get install git zip curl autoconf libxml2-dev libssl-dev pkg-config python3 python3-pip >> env_setup.log 2>&1  
     echo "OK"
     echo "Installing MSODBCSQL..."
     curl -s https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
@@ -41,14 +44,16 @@ if [ $PLATFORM = "Ubuntu16" ]; then
     pip3 install pyodbc >> env_setup.log 2>&1
     echo "OK"
 elif [ $PLATFORM = "RedHat7" ]; then
-    echo "Enabling EPEL repo"
+    echo "Update..."
+    yes | sudo yum update >> env_setup.log 2>&1
+    echo "Enabling EPEL repo..."
     yes | sudo yum install epel-release -y >> env_setup.log 2>&1
     echo "OK"
     echo "Installing python34-setuptools..."
     yes | sudo yum install python34-setuptools -y >> env_setup.log 2>&1
     echo "OK"
-    echo "Installing gcc, git, libxml, openssl, EPEL, python3, pip3..."
-    yes | sudo yum install -y gcc-c++ libxml2-devel git openssl-devel python34 python34-devel >> env_setup.log 2>&1
+    echo "Installing gcc, git, zip libxml, openssl, EPEL, python3, pip3..."
+    yes | sudo yum install -y gcc-c++ libxml2-devel git zip openssl-devel python34 python34-devel >> env_setup.log 2>&1
     echo "OK"
     echo "Installing pip3"
     yes | sudo easy_install-3.4 pip >> env_setup.log 2>&1
