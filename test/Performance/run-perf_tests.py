@@ -772,7 +772,7 @@ if __name__ == '__main__':
     run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 0 )
     """
-    The following lines are commented out, because it already take a long time to run the tests with the default settings.
+    The following lines are commented out, because it already takes a long time to run the tests with the default settings.
     Echo block can be uncommented and run separately. 
     
     print("Running the tests with MARS ON...")

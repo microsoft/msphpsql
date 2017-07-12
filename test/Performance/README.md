@@ -17,10 +17,11 @@ Run `cmd` as administrator.
 
     bash setup_env_unix.sh Sierra <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
 ## Run benchmarks
+PHPBench is used to run the benchmarks. Visit http://phpbench.readthedocs.io/en/latest/introduction.html to have an idea how the tool works.
 
 ### 1. Modify lib/connect.php with the test database credetials
 ### 2. Execute run-perf_tests.py. 
-The script must be executed with `sudo python3` because to enable pooling it needs to modify odbcinst.ini system file. As an improvement, the location of the odbcinst.ini file can be changed so that, sudo is not requiered. 
+On Linux and Mac, the script must be executed with `sudo python3` because to enable pooling it needs to modify odbcinst.ini system file. As an improvement, the location of the odbcinst.ini file can be changed so that, sudo is not requiered. 
     
     py.exe run-perf_tests.py -platform <PLATFORM> -iterations <ITERATIONS> -iterations-large <ITERATIONS_LARGE> -result-server <RESULT_SERVER> -result-db <RESULT_DB> -result-uid <RESULT_UID> -result-pwd <RESULT_PWD>
 
