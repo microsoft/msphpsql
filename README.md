@@ -435,11 +435,11 @@ Thank you!
 
 **Q:** What's next?
 
-**A:** On July 6, 2017 we released the production release version 4.3.0 of our PHP Driver. We will continue working on our future plans and releasing frequent updates.
+**A:** On July 6, 2017 we released the production release version 4.3.0 of our PHP Driver. We will continue working on our future plans and releasing previews of upcoming releases frequently.
 
 **Q:** Is Microsoft taking pull requests for this project?
 
-**A:** Yes.
+**A:** Yes. Please submit pull requests to the **dev** branch and not the *master** branch.
 
 
 
