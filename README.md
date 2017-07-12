@@ -439,7 +439,7 @@ Thank you!
 
 **Q:** Is Microsoft taking pull requests for this project?
 
-**A:** Yes. Please submit pull requests to the **dev** branch and not the *master** branch.
+**A:** Yes. Please submit pull requests to the **dev** branch and not the **master** branch.
 
 
 
