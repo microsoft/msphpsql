@@ -103,7 +103,7 @@ Copy-Item C:\php-sdk\phpdev\vc14\$ARCH\deps\bin\ssleay32.dll C:\Windows -force
 Copy-Item C:\php-sdk\phpdev\vc14\$ARCH\deps\bin\libeay32.dll C:\Windows -force
 
 cd $startingDir
-$env:Path += ";C:\php\"
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\php\", [System.EnvironmentVariableTarget]::Machine)
 RefreshEnv
 wget https://getcomposer.org/installer -O composer-setup.php
 php composer-setup.php

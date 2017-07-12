@@ -1,4 +1,4 @@
---The script can be run to read the results
+--The script can be run to read the results. You can filter out the results ran on a certain date by changing the date at the end.
 select t1.ResultId, Test, Client, Server, Driver, Duration, Memory, Success, Team, StartTime from
 (
 select pr.ResultId, pr.Success, pt.TestName as Test, cl.HostName as Client, srv.HostName as Server,
