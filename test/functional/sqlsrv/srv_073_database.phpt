@@ -12,13 +12,7 @@ if( !$conn ) {
 }
 
 // Set database name
-$dbUniqueName = "php_uniqueDB01";
-
-// DROP database if exists
-$stmt = sqlsrv_query($conn,"IF EXISTS(SELECT name FROM sys.databases WHERE name = '"
-    .$dbUniqueName."') DROP DATABASE ".$dbUniqueName);
-if($stmt === false){ die( print_r( sqlsrv_errors(), true )); }
-sqlsrv_free_stmt($stmt);
+$dbUniqueName = "php_uniqueDB_" . rand(0, 1000);
 
 // CREATE database
 $stmt = sqlsrv_query($conn,"CREATE DATABASE ". $dbUniqueName);
