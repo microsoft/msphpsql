@@ -62,7 +62,7 @@ You must first be able to build PHP 7 without including these extensions.  For h
 
 5. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll and/or php_pdo_sqlsrv.dll to your PHP extension directory.
 
-This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 2015 compiler.
+This software has been compiled and tested under PHP 7.0.20 and 7.1.6 using the Visual C++ 2015 compiler.
 
 ## Install (Windows)
 
@@ -80,7 +80,7 @@ This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 
 3. Restart the Web server.
 
 ## Install (UNIX)
-The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7 and Mac OS X. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note that Debian is not officially supported and this instruction hasn't been tested in our test lab.
+The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7 and Mac OS X. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note, however, that Debian is not officially supported and these instructions have not been tested in our test lab.
 
 ### Step 1: Install PHP7+ 
 
@@ -209,13 +209,18 @@ The following instructions assume a clean environment and show how to install PH
 	brew install mssql-tools
 	brew install autoconf
 
-*Note: You need to make sure you install PHP 7+ before you proceed to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
+*Note: Be sure to install PHP 7+ before proceeding to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
 ### Step 3: Install the Microsoft PHP Drivers for SQL Server
 
-*Note: The first step is not required in Mac OS X. PECL installs the stable version when version is not specified. You may run `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version. Drivers are Mac-compatible starting from `4.1.7preview` release.
+*Note: You can run `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version. PECL installs the stable version when version is not specified. Drivers are Mac-compatible starting from `4.1.7preview` release.
+
+On Ubuntu systems only, run:
 
     sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
+
+On all systems, run:
+
     sudo pecl install sqlsrv
     sudo pecl install pdo_sqlsrv
    
@@ -236,7 +241,10 @@ The following instructions assume a clean environment and show how to install PH
     
 **RedHat** 
 
-    sudo yum install httpd
+    sudo su
+    yum install httpd
+    echo "extension=sqlsrv.so" > /etc/php.d/sqlsrv.ini
+    echo "extension=pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
 **Mac OS X** 
 
@@ -257,7 +265,10 @@ The following instructions assume a clean environment and show how to install PH
     
 **RedHat** 
 
-    sudo yum install httpd 
+    sudo su
+    yum install httpd
+    echo "extension=sqlsrv.so" > /etc/php.d/sqlsrv.ini
+    echo "extension=pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
 **Mac OS X** 
 
@@ -278,10 +289,10 @@ The following instructions assume a clean environment and show how to install PH
 
 	sudo apachectl restart 
 
-*Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, do this `sudo setsebool -P httpd_can_network_connect_db 1`     
+*Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, run `sudo setsebool -P httpd_can_network_connect_db 1`     
 
 ### Step 6: Create your sample app
-Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
+Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a new file called testsql.php. Copy and paste the following code into tetsql.php and change the servername, username, password and databasename.
 
     <?php
     $serverName = "yourServername";
@@ -338,7 +349,7 @@ For samples, please see the sample folder.  For setup instructions, see [here](h
 ## Limitations
 
 - This release contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5.
-- Binding output parameter using emulate prepare is not supported.
+- Binding output parameters using emulate prepare is not supported.
 - Linux
   - ODBC 3.52 is supported but not 3.8.
   - Connection using named instances using '\' is not supported.
@@ -374,7 +385,7 @@ version number MAY have trailing pre-release version to indicate the stability, 
 
 ## Future Plans
 - Expand SQL 16 Feature Support (example: Always Encrypted).
-- Build Verification/Fundamental Tests.
+- Add More Verification/Fundamental Tests.
 - Bug Fixes.
 
 ## Guidelines for Reporting Issues
@@ -395,15 +406,15 @@ Thank you!
 ## FAQs
 **Q:** Can we get dates for any of the Future Plans listed above?
 
-**A:** At this time, Microsoft is not able to announce dates. We are working extremely hard to release future versions of the driver. We will share future plans once they solidify over the next few weeks. 
+**A:** At this time, Microsoft is not able to announce dates. We are working extremely hard to release future versions of the driver. We will share future plans as appropriate. 
 
 **Q:** What's next?
 
-**A:** On July 20, 2016 we released the early technical preview for our PHP Driver. We will continue releasing frequent technical previews until we reach production quality.
+**A:** On July 6, 2017 we released the production release version 4.3.0 of our PHP Driver. We will continue working on our future plans and releasing frequent updates.
 
 **Q:** Is Microsoft taking pull requests for this project?
 
-**A:** We will not be seeking to take pull requests until GA, Build Verification, and Fundamental tests are released. At this point Microsoft will also begin actively developing using this GitHub project as the prime repository.
+**A:** Yes.
 
 
 
@@ -417,7 +428,7 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 ## Resources
 
-**Documentation**: [MSDN Online Documentation][phpdoc].  Please note that this documentation is not yet updated for PHP 7.
+**Documentation**: [MSDN Online Documentation][phpdoc].
 
 **Team Blog**: Browse our blog for comments and announcements from the team in the [team blog][blog].
 
