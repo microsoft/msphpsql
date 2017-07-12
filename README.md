@@ -80,7 +80,7 @@ This software has been compiled and tested under PHP 7.0.20 and 7.1.6 using the 
 3. Restart the Web server.
 
 ## Install (UNIX)
-The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7 and Mac OS X. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note, however, that Debian is not officially supported and these instructions have not been tested in our test lab.
+The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, and Mac OS X. 
 
 ### Step 1: Install PHP7+ 
 
@@ -93,14 +93,12 @@ The following instructions assume a clean environment and show how to install PH
 	apt-get update
 	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml re2c gcc g++
 
-	
 **Ubuntu 16.04**
 
 	sudo su
 	apt-get update
 	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml re2c gcc g++
 
-	
 **RedHat 7**
 
 	sudo su
@@ -111,6 +109,16 @@ The following instructions assume a clean environment and show how to install PH
 	yum-config-manager --enable remi-php70
 	yum update
 	yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
+
+**Debian 8**
+
+    sudo su
+    apt-get install curl apt-transport-https
+    curl https://www.dotdeb.org/dotdeb.gpg | apt-key add -
+    echo "deb http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
+    echo "deb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
+    apt-get update
+    apt-get install php7.0 php-pear php7.0-dev php7.0-xml -y --allow-unauthenticated
 
 **Mac OS X**
 
@@ -126,7 +134,6 @@ The following instructions assume a clean environment and show how to install PH
 
 #### PHP 7.1
 
-
 **Ubuntu 16.04**
 
 	sudo su
@@ -135,7 +142,7 @@ The following instructions assume a clean environment and show how to install PH
 	apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev php7.1-xml
 
 **RedHat 7**
-	
+
 	sudo su
 	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
@@ -144,7 +151,16 @@ The following instructions assume a clean environment and show how to install PH
 	yum-config-manager --enable remi-php71
 	yum update
 	yum install php php-pdo php-xml php-pear php-devel
-    
+
+**Debian 8**
+
+    sudo su
+    apt-get install curl apt-transport-https
+    wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+    echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
+    apt-get update
+    apt-get install php7.1 php-pear php7.1-dev php7.1-xml -y --allow-unauthenticated
+
 **Mac OS X**
 
 	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
@@ -160,7 +176,6 @@ The following instructions assume a clean environment and show how to install PH
 
 ### Step 2: Install Prerequisites
 
-    
 **Ubuntu 15.10**
 
 	sudo su 
@@ -174,7 +189,6 @@ The following instructions assume a clean environment and show how to install PH
 	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 	source ~/.bashrc
 
-	
 **Ubuntu 16.04**
 
 	sudo su 
@@ -200,7 +214,20 @@ The following instructions assume a clean environment and show how to install PH
 	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
 	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 	source ~/.bashrc
-	
+
+**Debian 8**
+
+    sudo su 
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/debian/8/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get install -y locales
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+    locale-gen
+    exit
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install msodbcsql
+    sudo apt-get install unixodbc-dev
+
 **Mac OS X**
 
 	brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
@@ -215,7 +242,7 @@ The following instructions assume a clean environment and show how to install PH
 
 *Note: You can run `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version. PECL installs the stable version when version is not specified. Drivers are Mac-compatible starting from `4.1.7preview` release.
 
-On Ubuntu systems only, run:
+On Ubuntu and Debian systems only, run:
 
     sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
 
@@ -228,7 +255,7 @@ On all systems, run:
 
 #### PHP 7.0
 
-**Ubuntu**
+**Ubuntu and Debian**
     
     sudo su
     apt-get install libapache2-mod-php7.0 apache2
@@ -237,8 +264,7 @@ On all systems, run:
     a2enmod php7.0
     echo "extension=sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
     echo "extension=pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
-    exit
-    
+
 **RedHat** 
 
     sudo su
@@ -252,7 +278,7 @@ On all systems, run:
 
 #### PHP 7.1 
 
-**Ubuntu**
+**Ubuntu and Debian**
     
     sudo su
     apt-get install libapache2-mod-php7.1 apache2
@@ -261,8 +287,7 @@ On all systems, run:
     a2enmod php7.1
     echo "extension=sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
     echo "extension=pdo_sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
-    exit
-    
+
 **RedHat** 
 
     sudo su
@@ -277,7 +302,7 @@ On all systems, run:
 	
 ### Step 5: Restart Apache to load the new php.ini file
 
-**Ubuntu**
+**Ubuntu and Debian**
 
 	sudo service apache2 restart
 
@@ -292,7 +317,7 @@ On all systems, run:
 *Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, run `sudo setsebool -P httpd_can_network_connect_db 1`     
 
 ### Step 6: Create your sample app
-Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a new file called testsql.php. Copy and paste the following code into tetsql.php and change the servername, username, password and databasename.
+Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a new file called testsql.php. Copy and paste the following code into testsql.php and change the servername, username, password and databasename.
 
     <?php
     $serverName = "yourServername";
