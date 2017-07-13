@@ -86,29 +86,29 @@ The following instructions assume a clean environment and show how to install PH
 
 #### PHP 7.0
 
-**Ubuntu 15.04, Ubuntu 15.10**
+**Ubuntu 15.10**
 
-	sudo su
-	sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
-	apt-get update
-	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
+    sudo su
+    sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
+    apt-get update
+    apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
 
 **Ubuntu 16.04**
 
-	sudo su
-	apt-get update
-	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml
+    sudo su
+    apt-get update
+    apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml
 
 **RedHat 7**
 
-	sudo su
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
-	subscription-manager repos --enable=rhel-7-server-optional-rpms
-	yum-config-manager --enable remi-php70
-	yum update
-	yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
+    sudo su
+    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+    rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
+    subscription-manager repos --enable=rhel-7-server-optional-rpms
+    yum-config-manager --enable remi-php70
+    yum update
+    yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
 
 **Debian 8**
 
@@ -122,35 +122,37 @@ The following instructions assume a clean environment and show how to install PH
 
 **Mac OS X**
 
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	brew tap 
-	brew tap homebrew/dupes
-	brew tap homebrew/versions
-	brew tap homebrew/homebrew-php
-	brew install php70 --with-pear --with-httpd24 --with-cgi
-	echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
-	echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
-	source ~/.bash_profile
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    brew tap 
+    brew tap homebrew/dupes
+    brew tap homebrew/versions
+    brew tap homebrew/homebrew-php
+    brew install php70 --with-pear --with-httpd24 --with-cgi
+    echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
+    echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
+    source ~/.bash_profile
 
 #### PHP 7.1
 
+Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
+
 **Ubuntu 16.04**
 
-	sudo su
-	add-apt-repository ppa:ondrej/php
-	apt-get update
-	apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev php7.1-xml
+    sudo su
+    add-apt-repository ppa:ondrej/php
+    apt-get update
+    apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev php7.1-xml
 
 **RedHat 7**
 
-	sudo su
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
-	subscription-manager repos --enable=rhel-7-server-optional-rpms
-	yum-config-manager --enable remi-php71
-	yum update
-	yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
+    sudo su
+    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+    rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
+    subscription-manager repos --enable=rhel-7-server-optional-rpms
+    yum-config-manager --enable remi-php71
+    yum update
+    yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
 
 **Debian 8**
 
@@ -163,57 +165,57 @@ The following instructions assume a clean environment and show how to install PH
 
 **Mac OS X**
 
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	brew tap 
-	brew tap homebrew/dupes
-	brew tap homebrew/versions
-	brew tap homebrew/homebrew-php
-	brew install php71 --with-pear --with-httpd24 --with-cgi
-	echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
-	echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
-	source ~/.bash_profile
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    brew tap 
+    brew tap homebrew/dupes
+    brew tap homebrew/versions
+    brew tap homebrew/homebrew-php
+    brew install php71 --with-pear --with-httpd24 --with-cgi
+    echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
+    echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
+    source ~/.bash_profile
 
 
 ### Step 2: Install Prerequisites
 
 **Ubuntu 15.10**
 
-	sudo su 
-	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-	curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
-	exit
-	sudo apt-get update
-	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
-	sudo apt-get install unixodbc-dev
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-	source ~/.bashrc
+    sudo su 
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    exit
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
+    sudo apt-get install unixodbc-dev
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
 
 **Ubuntu 16.04**
 
-	sudo su 
-	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-	curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
-	exit
-	sudo apt-get update
-	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
-	sudo apt-get install unixodbc-dev
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-	source ~/.bashrc
+    sudo su 
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    exit
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
+    sudo apt-get install unixodbc-dev
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
 
 **RedHat 7**
 
-	sudo su
-	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
-	exit
-	sudo yum update
-	sudo yum remove unixODBC-utf16-devel #to avoid conflicts
-	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
-	sudo yum install unixODBC-devel
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-	source ~/.bashrc
+    sudo su
+    curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
+    exit
+    sudo yum update
+    sudo yum remove unixODBC-utf16-devel #to avoid conflicts
+    sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
+    sudo yum install unixODBC-devel
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
 
 **Debian 8**
 
@@ -230,11 +232,11 @@ The following instructions assume a clean environment and show how to install PH
 
 **Mac OS X**
 
-	brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
-	brew update
-	brew install msodbcsql
-	brew install mssql-tools
-	brew install autoconf
+    brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
+    brew update
+    brew install msodbcsql
+    brew install mssql-tools
+    brew install autoconf
 
 *Note: Be sure to install PHP 7+ before proceeding to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
@@ -299,20 +301,20 @@ On all systems, run:
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
     
-	
+    
 ### Step 5: Restart Apache to load the new php.ini file
 
 **Ubuntu and Debian**
 
-	sudo service apache2 restart
+    sudo service apache2 restart
 
 **RedHat**
 
-	sudo apachectl restart 
+    sudo apachectl restart 
 
 **Mac OS X** 
 
-	sudo apachectl restart 
+    sudo apachectl restart 
 
 *Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, run `sudo setsebool -P httpd_can_network_connect_db 1`     
 
@@ -406,7 +408,7 @@ version number MAY have trailing pre-release version to indicate the stability, 
 *Note that PECL package version does not have the hyphen before pre-release version, due to restrictions in PECL. Example of PECL package version: 1.2.3preview*
 - Build metadata MAY be denoted by a plus sign followed by 4 digits, such as  `1.2.3-preview+5678` or `1.2.3+5678`. Build meta data does NOT figure into the precedence order.
 
-	
+    
 
 ## Future Plans
 - Expand SQL 16 Feature Support (example: Always Encrypted).
