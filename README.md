@@ -91,13 +91,13 @@ The following instructions assume a clean environment and show how to install PH
 	sudo su
 	sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
 	apt-get update
-	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml re2c gcc g++
+	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
 
 **Ubuntu 16.04**
 
 	sudo su
 	apt-get update
-	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml re2c gcc g++
+	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml
 
 **RedHat 7**
 
@@ -118,7 +118,7 @@ The following instructions assume a clean environment and show how to install PH
     echo "deb http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
     echo "deb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
     apt-get update
-    apt-get install php7.0 php-pear php7.0-dev php7.0-xml -y --allow-unauthenticated
+    apt-get install -y php7.0 php-pear php7.0-dev php7.0-xml
 
 **Mac OS X**
 
@@ -150,7 +150,7 @@ The following instructions assume a clean environment and show how to install PH
 	subscription-manager repos --enable=rhel-7-server-optional-rpms
 	yum-config-manager --enable remi-php71
 	yum update
-	yum install php php-pdo php-xml php-pear php-devel
+	yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
 
 **Debian 8**
 
@@ -159,7 +159,7 @@ The following instructions assume a clean environment and show how to install PH
     wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
     echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
     apt-get update
-    apt-get install php7.1 php-pear php7.1-dev php7.1-xml -y --allow-unauthenticated
+    apt-get install -y php7.1 php-pear php7.1-dev php7.1-xml
 
 **Mac OS X**
 
@@ -309,7 +309,7 @@ On all systems, run:
 **RedHat**
 
 	sudo apachectl restart 
-	
+
 **Mac OS X** 
 
 	sudo apachectl restart 
