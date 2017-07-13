@@ -1,9 +1,9 @@
 <?php
 require_once("MsSetup.inc");
 
-// Using the tempdb database for two tables specifically constructed
+// Using the test database for two tables specifically constructed
 // for the connection resiliency tests
-$dbName = "tempdb";
+$dbName = $databaseName; 
 
 $tableName1 = "test_connres1";
 $tableName2 = "test_connres2";
@@ -67,12 +67,14 @@ function BreakConnection( $conn, $conn_break )
 // Remove any databases previously created by GenerateDatabase
 function DropTables( $server, $uid, $pwd, $tableName1, $tableName2 )
 {
-    $conn = new PDO( "sqlsrv:server = $server ; ", $uid, $pwd );
+    global $dbName;
+
+    $conn = new PDO( "sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd );
     
-    $query="IF OBJECT_ID('tempdb.dbo.$tableName1', 'U') IS NOT NULL DROP TABLE tempdb.dbo.$tableName1";
+    $query="IF OBJECT_ID('$tableName1', 'U') IS NOT NULL DROP TABLE $tableName1";
     $stmt=$conn->query( $query );
 
-    $query="IF OBJECT_ID('tempdb.dbo.$tableName2', 'U') IS NOT NULL DROP TABLE tempdb.dbo.$tableName2";
+    $query="IF OBJECT_ID('$tableName2', 'U') IS NOT NULL DROP TABLE $tableName2";
     $stmt=$conn->query( $query );
 }
 

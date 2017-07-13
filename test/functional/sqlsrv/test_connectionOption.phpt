@@ -11,7 +11,7 @@ Test MultipleActiveResultSets connection setting off
 
     require( 'MsCommon.inc' );
 
-    $conn = ConnectSpecial(array( 'MultipleActiveResultSets' => false ));
+    $conn = Connect(array( 'MultipleActiveResultSets' => false ));
     if( $conn === false ) {
         die( print_r( sqlsrv_errors(), true ));
     }

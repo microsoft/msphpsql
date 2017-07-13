@@ -4,9 +4,7 @@ if (!extension_loaded("sqlsrv")) {
     die("skip extension not loaded");
 }
 
-include 'MsCommon.inc';
-if ( IsDaasMode() ) {
-    die("skip test in Azure");
-}
+require 'MsSetup.inc';
+if ($daasMode) die("skip test not applicable in Azure\n");
 
 ?>
