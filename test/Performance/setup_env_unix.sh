@@ -6,7 +6,7 @@ else
     echo "First argument must be one of Ubuntu16, RedHat7, Sierra. Exiting..."
     exit 1
 fi
-if [[ "$2" = "" ]]; then
+if [[ "$2" != 7.*.* ]]; then
     echo "Second argument must be PHP version in format of 7.x.x.Exiting..."
     exit
 else
