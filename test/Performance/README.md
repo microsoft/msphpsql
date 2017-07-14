@@ -21,9 +21,12 @@ PHPBench is used to run the benchmarks. Visit http://phpbench.readthedocs.io/en/
 
 ### 1. Modify lib/connect.php with the test database credetials
 ### 2. Execute run-perf_tests.py. 
+### Windows
+    py.exe run-perf_tests.py -platform <PLATFORM> -iterations <ITERATIONS> -iterations-large <ITERATIONS_LARGE> -result-server <RESULT_SERVER> -result-db <RESULT_DB> -result-uid <RESULT_UID> -result-pwd <RESULT_PWD
+### Linux and Mac
 On Linux and Mac, the script must be executed with `sudo python3` because to enable pooling it needs to modify odbcinst.ini system file. As an improvement, the location of the odbcinst.ini file can be changed so that, sudo is not requiered. 
     
-    py.exe run-perf_tests.py -platform <PLATFORM> -iterations <ITERATIONS> -iterations-large <ITERATIONS_LARGE> -result-server <RESULT_SERVER> -result-db <RESULT_DB> -result-uid <RESULT_UID> -result-pwd <RESULT_PWD>
+    python3 run-perf_tests.py -platform <PLATFORM> -iterations <ITERATIONS> -iterations-large <ITERATIONS_LARGE> -result-server <RESULT_SERVER> -result-db <RESULT_DB> -result-uid <RESULT_UID> -result-pwd <RESULT_PWD>
 
 `-platform` - The platform that the tests are ran on. Must be one of the following: Windows10, WidnowsServer2016 WindowsServer2012 Ubuntu16 RedHat7 Sierra  
 `-iterations` - The number of iterations for regular tests.  
