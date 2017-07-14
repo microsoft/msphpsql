@@ -1,6 +1,6 @@
 <?php
 $server = 'server';
-$database = 'tempdb';
+$database = 'testdb';
 $uid = 'usr';
 $pwd = 'pwd';
 $pooling=false;
