@@ -49,7 +49,7 @@ elif [ $PLATFORM = "RedHat7" ]; then
     echo "OK"
     echo "Enabling EPEL repo..."
     wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1
-    yes | sudo yum install epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1
+    yes | sudo yum install epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1 || true
     echo "OK"
     echo "Installing python34-setuptools..."
     yes | sudo yum install python34-setuptools -y >> env_setup.log 2>&1
@@ -120,7 +120,7 @@ make >> ../env_setup.log 2>&1
 echo "OK"
 sudo make install >> ../env_setup.log 2>&1
 cp php.ini-production php.ini
-EXTENSION_DIR=`bash -c 'php-config --extension-dir'`
+EXTENSION_DIR=`php -i | grep -m1 extension_dir | cut -f3 -d " "`
 echo "extension=$EXTENSION_DIR/sqlsrv.so" >> php.ini
 echo "extension=$EXTENSION_DIR/pdo_sqlsrv.so" >> php.ini
 sudo cp php.ini /usr/local/lib
