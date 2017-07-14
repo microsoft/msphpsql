@@ -46,17 +46,16 @@ if [ $PLATFORM = "Ubuntu16" ]; then
 elif [ $PLATFORM = "RedHat7" ]; then
     echo "Update..."
     yes | sudo yum update >> env_setup.log 2>&1
+    echo "OK"
     echo "Enabling EPEL repo..."
-    yes | sudo yum install epel-release -y >> env_setup.log 2>&1
+    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1
+    yes | sudo yum install epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1
     echo "OK"
     echo "Installing python34-setuptools..."
     yes | sudo yum install python34-setuptools -y >> env_setup.log 2>&1
     echo "OK"
     echo "Installing gcc, git, zip libxml, openssl, EPEL, python3, pip3..."
-    yes | sudo yum install -y gcc-c++ libxml2-devel git zip openssl-devel python34 python34-devel >> env_setup.log 2>&1
-    echo "OK"
-    echo "Installing pip3"
-    yes | sudo easy_install-3.4 pip >> env_setup.log 2>&1
+    yes | sudo yum install -y gcc-c++ libxml2-devel git zip openssl-devel python34 python34-devel python3-pip >> env_setup.log 2>&1
     echo "OK"
     echo "Installing MSODBCSQL..."
     curl -s https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
@@ -121,7 +120,7 @@ make >> ../env_setup.log 2>&1
 echo "OK"
 sudo make install >> ../env_setup.log 2>&1
 cp php.ini-production php.ini
-EXTENSION_DIR=`php-config --extension-dir`
+EXTENSION_DIR=`bash -c 'php-config --extension-dir'`
 echo "extension=$EXTENSION_DIR/sqlsrv.so" >> php.ini
 echo "extension=$EXTENSION_DIR/pdo_sqlsrv.so" >> php.ini
 sudo cp php.ini /usr/local/lib

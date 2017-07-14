@@ -19,6 +19,11 @@ IF($PHP_THREAD -ne "nts" -And $PHP_THREAD -ne "ts"){
     Break
 }
 
+IF($PHP_VERSION -NotMatch "7.[0-1].[0-9]"){
+    Write-Host "PHP_VERSION must be in format of 7.x.x"
+    Break
+}
+
 $startingDir=$pwd.Path
 $tempFolder=Join-Path $startingDir "temp"
 
@@ -104,6 +109,7 @@ Copy-Item C:\php-sdk\phpdev\vc14\$ARCH\deps\bin\libeay32.dll C:\Windows -force
 
 cd $startingDir
 [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\php\", [System.EnvironmentVariableTarget]::Machine)
+$env:Path += ";C:\php\"
 RefreshEnv
 wget https://getcomposer.org/installer -O composer-setup.php
 php composer-setup.php
