@@ -9,9 +9,9 @@ Run `cmd` as administrator.
     .\setup_env_windows.ps1 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder> <ARCH - x86 or x64>    
 
 ### Ubuntu 16
-    sudo env “PATH=$PATH” bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
+    sudo env "PATH=$PATH" bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
 ### RedHat 7
-    sudo env “PATH=$PATH” bash setup_env_unix.sh RedHat7 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
+    sudo env "PATH=$PATH" bash setup_env_unix.sh RedHat7 <PHP_VERSION - 7.x.x> <PHP_THREAD - ts or nts> <Absolute path to driver source folder>
 ### Sierra
 `brew` cannot be run with `sudo` on Sierra. Either enable passwordless `sudo` on the machine or enter the password when prompted. 
 
