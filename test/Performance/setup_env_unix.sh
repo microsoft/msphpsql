@@ -55,7 +55,7 @@ elif [ $PLATFORM = "RedHat7" ]; then
     yes | sudo yum install python34-setuptools -y >> env_setup.log 2>&1
     echo "OK"
     echo "Installing gcc, git, zip libxml, openssl, EPEL, python3, pip3..."
-    yes | sudo yum install -y gcc-c++ libxml2-devel git zip openssl-devel python34 python34-devel python3-pip >> env_setup.log 2>&1
+    yes | sudo yum install -y gcc-c++ libxml2-devel git zip openssl-devel python34 python34-devel python34-pip >> env_setup.log 2>&1
     echo "OK"
     echo "Installing MSODBCSQL..."
     curl -s https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
