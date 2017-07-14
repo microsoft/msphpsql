@@ -120,9 +120,8 @@ make >> ../env_setup.log 2>&1
 echo "OK"
 sudo make install >> ../env_setup.log 2>&1
 cp php.ini-production php.ini
-EXTENSION_DIR=`php -i | grep -m1 extension_dir | cut -f3 -d " "`
-echo "extension=$EXTENSION_DIR/sqlsrv.so" >> php.ini
-echo "extension=$EXTENSION_DIR/pdo_sqlsrv.so" >> php.ini
+echo "extension=sqlsrv.so" >> php.ini
+echo "extension=pdo_sqlsrv.so" >> php.ini
 sudo cp php.ini /usr/local/lib
 cd ..
 php -v
