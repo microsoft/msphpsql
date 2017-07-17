@@ -42,7 +42,7 @@ Thank you for taking time to take our February survey. Let us know how we are do
 
 ## Build (Windows)
 
-Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases)
+Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Microsoft/msphpsql/releases)
 
 #### Prerequisites
 
@@ -75,7 +75,7 @@ This software has been compiled and tested under PHP 7.0.20 and 7.1.6 using the 
 
 1. Make sure that the driver is in your PHP extension directory (you can simply copy it there if you did not use nmake install).
 
-2. Enable it within your PHP installation's php.ini: `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll`.  If necessary, specify the extension directory using extension_dir, for example: `extension_dir = "C:\PHP\ext"`
+2. Enable it within your PHP installation's php.ini: `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll`.  If necessary, specify the extension directory using extension_dir, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini.
 
 3. Restart the Web server.
 
