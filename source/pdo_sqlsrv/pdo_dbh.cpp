@@ -30,8 +30,8 @@ namespace {
 
 const char LAST_INSERT_ID_QUERY[] = "SELECT @@IDENTITY;";
 const size_t LAST_INSERT_ID_BUFF_LEN = 10;    // size of the buffer to hold the string value of the last insert id integer
-const char TABLE_LAST_INSERT_ID_QUERY[] = "SELECT IDENT_CURRENT(%s)";
-const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( TABLE_LAST_INSERT_ID_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
+const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT CURRENT_VALUE FROM SYS.SEQUENCES WHERE NAME=%s";
+const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( SEQUENCE_CURRENT_VALUE_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
 
 // List of PDO supported connection options.
 namespace PDOConnOptionNames {
@@ -1235,7 +1235,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
             size_t quoted_len = 0;
             int quoted = pdo_sqlsrv_dbh_quote( dbh, name, strlen( name ), &quoted_table, &quoted_len, PDO_PARAM_NULL TSRMLS_CC );
             SQLSRV_ASSERT( quoted, "PDO::lastInsertId failed to quote the table name.");
-            snprintf( last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, TABLE_LAST_INSERT_ID_QUERY, quoted_table );
+            snprintf( last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, quoted_table );
             sqlsrv_free( quoted_table );
         }
 
