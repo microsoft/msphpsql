@@ -7,7 +7,7 @@ require_once("MsSetup.inc");
 
 try{
     $database = "tempdb";
-    $conn = new PDO("sqlsrv:Server=$serverName;Database=$databaseName", $username, $password);
+    $conn = new PDO("sqlsrv:Server=$serverName;Database=$databaseName", $uid, $pwd);
     
     // sequence is only supported in SQL server 2012 and up (or version 11 and up)
     // Output Done once the server version is found to be < 11
