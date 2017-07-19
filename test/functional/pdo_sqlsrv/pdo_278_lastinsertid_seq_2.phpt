@@ -3,6 +3,7 @@ LastInsertId returns the last sequences operating on the same table
 --SKIPIF--
 --FILE--
 <?php
+require_once("MsCommon.inc");
 require_once("MsSetup.inc");
 
 try{

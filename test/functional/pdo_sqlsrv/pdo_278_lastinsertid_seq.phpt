@@ -3,6 +3,7 @@ Provide name in lastInsertId to retrieve the last sequence number
 --SKIPIF--
 --FILE--
 <?php  
+require_once("MsCommon.inc");
 require_once("MsSetup.inc");
 
 try{
