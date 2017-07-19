@@ -3,11 +3,11 @@ Provide name in lastInsertId to retrieve the last sequence number
 --SKIPIF--
 --FILE--
 <?php  
-include 'pdo_tools.inc';
-require_once("autonomous_setup.php");
+require_once("MsSetup.inc");
+
 try{
     $database = "tempdb";
-    $conn = new PDO("sqlsrv:Server=$serverName;Database=$database", $username, $password);
+    $conn = new PDO("sqlsrv:Server=$serverName;Database=$databaseName", $username, $password);
     
     // sequence is only supported in SQL server 2012 and up (or version 11 and up)
     // Output Done once the server version is found to be < 11

@@ -26,8 +26,8 @@
 // Increase Major number with backward incompatible breaking changes.
 // Increase Minor with backward compatible new functionalities and API changes.
 // Increase Patch for backward compatible fixes.
-#define SQLVERSION_MAJOR 4
-#define SQLVERSION_MINOR 3
+#define SQLVERSION_MAJOR 5
+#define SQLVERSION_MINOR 0
 #define SQLVERSION_PATCH 0
 #define SQLVERSION_BUILD 0
 
