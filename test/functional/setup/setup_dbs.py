@@ -45,6 +45,32 @@ def executeBulkCopy(conn_options, dbname, tblname, datafile):
     inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options 
     executeCommmand(inst_command)
     
+def getmsodbcsql_version( server, uid, pwd ):
+    command = "php -r \"echo sqlsrv_client_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['DriverVer'];\""
+    p = subprocess.Popen( command.format( server, uid, pwd ), stdout=subprocess.PIPE, shell = True )
+    out, err = p.communicate()
+    return out.decode('ascii')
+    
+def getserver_version( server, uid, pwd ):
+    command = "php -r \"echo sqlsrv_server_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['SQLServerVersion'];\""
+    p = subprocess.Popen( command.format( server, uid, pwd ), stdout=subprocess.PIPE, shell = True )
+    out, err = p.communicate()
+    return out.decode('ascii')
+    
+def is_ae_qualified( server, uid, pwd ):
+    msodbcsql_ver = getmsodbcsql_version( server, uid, pwd );
+    server_ver = getserver_version( server, uid, pwd );
+    msodbcsql_maj = msodbcsql_ver.split()[1]
+    msodbcsql_min = msodbcsql_ver.split()[2]
+    if msodbcsql_maj < 13 or ( msodbcsql_maj == 13 and msodbcsql_min == 0 ) or server_ver.split()[1] < 13:
+        return false
+    return true;
+    
+def setupAETestDatabase( server, dbname, uid, pwd):
+    if platform.system() == 'Windows':
+        inst_command  = 'powershell -executionPolicy Unrestricted certificate.ps1 ' + server + ' ' + dbname + ' ' + uid + ' ' + pwd
+        executeCommmand(inst_command)
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-dbname', '--DBNAME', required=True)
@@ -75,5 +101,9 @@ if __name__ == '__main__':
     setupTestDatabase(conn_options, args.DBNAME, args.AZURE)    
     # populate these tables
     populateTables(conn_options, args.DBNAME)
+    
+    if is_ae_qualified( server, uid, pwd ):
+        setupAE(server, args.DBNAME, uid, pwd)
+    
     os.chdir(current_working_dir)
     
