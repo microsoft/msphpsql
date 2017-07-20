@@ -4,7 +4,7 @@
 // File: version.h
 // Contents: Version number constants
 //
-// Microsoft Drivers 4.3 for PHP for SQL Server
+// Microsoft Drivers 5.0 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -35,7 +35,7 @@
 // for stable releases should be empty
 // "-RC" for release candidates
 // "-preview" for ETP 
-#define SEMVER_PRERELEASE
+#define SEMVER_PRERELEASE "-preview"
 // Semantic versioning build metadata, build meta data is not counted in precedence order.
 #define SEMVER_BUILDMETA
 
