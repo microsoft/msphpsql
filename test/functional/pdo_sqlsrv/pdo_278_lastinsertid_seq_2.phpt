@@ -47,6 +47,7 @@ try{
         if ($lastSeq1 == 3 && $lastSeq2 == 198 && $lastSeq3 == "") {
             echo "Done\n";
         }
+
         $stmt = $conn->query("DROP TABLE $tableName");
         $stmt = $conn->query("DROP SEQUENCE $sequence1");
         $stmt = $conn->query("DROP SEQUENCE $sequence2");
