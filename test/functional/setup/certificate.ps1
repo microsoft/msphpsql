@@ -26,11 +26,11 @@ $database = $MySQL.Databases[$databaseName]
 $cmkSettings = New-SqlCertificateStoreColumnMasterKeySettings -CertificateStoreLocation "CurrentUser" -Thumbprint $cert1.Thumbprint
 
 # Create column master key metadata in the database.
-$cmkName = "CMK2"
+$cmkName = "CMK1"
 New-SqlColumnMasterKey -Name $cmkName -InputObject $database -ColumnMasterKeySettings $cmkSettings
 
 # Generate a column encryption key, encrypt it with the column master key and create column encryption key metadata in the database. 
-$cekName = "CEK2"
+$cekName = "CEK1"
 New-SqlColumnEncryptionKey -Name $cekName  -InputObject $database -ColumnMasterKey $cmkName
 
 # Disconnect

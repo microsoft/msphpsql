@@ -15,6 +15,8 @@ Param(
 # Import the SqlServer module.
 Import-Module "SqlServer"
 
+Write-Host $columnNames
+
 #For SQL Server Authentication
 Add-Type -AssemblyName "Microsoft.SqlServer.Smo"
 $MySQL = new-object('Microsoft.SqlServer.Management.Smo.Server') $serverName 

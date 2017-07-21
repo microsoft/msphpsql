@@ -66,9 +66,11 @@ def is_ae_qualified( server, uid, pwd ):
         return false
     return true;
     
-def setupAETestDatabase( server, dbname, uid, pwd):
+def setupAE( server, dbname, uid, pwd):
     if platform.system() == 'Windows':
-        inst_command  = 'powershell -executionPolicy Unrestricted certificate.ps1 ' + server + ' ' + dbname + ' ' + uid + ' ' + pwd
+        dir_name = os.path.realpath(__file__)
+        cert_name = os.path.join(dir_name, "certificate.ps1")
+        inst_command  = 'powershell -executionPolicy Unrestricted -file ' + cert_name + ' ' + server + ' ' + dbname + ' ' + uid + ' ' + pwd
         executeCommmand(inst_command)
     
 if __name__ == '__main__':
@@ -101,7 +103,7 @@ if __name__ == '__main__':
     setupTestDatabase(conn_options, args.DBNAME, args.AZURE)    
     # populate these tables
     populateTables(conn_options, args.DBNAME)
-    
+    # setup AE (certificate, column master key and column encryption key)
     if is_ae_qualified( server, uid, pwd ):
         setupAE(server, args.DBNAME, uid, pwd)
     
