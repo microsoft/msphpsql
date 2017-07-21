@@ -17,8 +17,8 @@ try{
         echo "Done\n";
     }
     else {
-        $tableName1 = GetTempTableName('tab1');
-        $tableName2 = GetTempTableName('tab2');
+        $tableName1 = GetTempTableName('tab1', false);
+        $tableName2 = GetTempTableName('tab2', false);
         $sequenceName = 'sequence1';
     
         $stmt = $conn->query("IF OBJECT_ID('$sequenceName', 'SO') IS NOT NULL DROP SEQUENCE $sequenceName");
