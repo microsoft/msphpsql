@@ -13,17 +13,8 @@ $conn = Connect(array("ColumnEncryption"=>"Enabled"));
 // create table
 $tbname = GetTempTableName("", false);
 $dataTypes = array("bigint", "int", "smallint");
-$encTypes = array("norm", "det", "rand");
-$dataTypes_str = "";
 $col_names = array();
-foreach ($dataTypes as $dataType){
-    foreach ($encTypes as $encType) {
-        $col_name = $encType . $dataType;
-        $dataTypes_str = $dataTypes_str . "[" . $col_name . "] " . $dataType . ", ";
-        array_push($col_names, $col_name);
-    }
-}
-$dataTypes_str = rtrim($dataTypes_str, ", ");
+$dataTypes_str = get_dataTypes_str($dataTypes, $col_names);
 CreateTableEx( $conn, $tbname, $dataTypes_str);
     
 // populate table
@@ -32,11 +23,7 @@ $data_str = implode(", ", $data_arr);
 sqlsrv_query( $conn, "INSERT INTO $tbname VALUES ( $data_str )");
     
 // encrypt columns
-$dir_name = realpath(dirname(__FILE__));
-$enc_name = $dir_name . DIRECTORY_SEPARATOR . "encrypttable.ps1";
-$col_name_str = implode(",", $col_names);
-$runCMD = "powershell -executionPolicy Unrestricted -file " . $enc_name . " " . $server . " " . $database . " " . $userName . " " . $userPassword . " " . $tbname . " " . $col_name_str;
-$retval = shell_exec($runCMD);
+EncryptColumns($server, $database, $userName, $userPassword, $tbname, $col_names);
 
 //Fetch encrypted values with ColumnEncryption Enabled
 $sql = "SELECT * FROM $tbname";

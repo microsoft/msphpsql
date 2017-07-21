@@ -1,5 +1,4 @@
 <?php
-
 // exact numerics
 $bigint_params = array(2147483648, -922337203685477580, 922337203685477580, -2147583649, 461168601735364608, -461168601735364608);
 $int_params = array(32768, -2147483647, 2147483647, -32769, 1073725440, -1073725440);
@@ -52,18 +51,13 @@ $varbinarymax_params = array('max indicates that the maximum storage size is 2^3
                              'This can create an implicit limit to the number of non-null varchar(max) or nvarchar(max) columns that can be created in a table.',
                              'No special error is provided when the table is created (beyond the usual warning that the maximum row size exceeds the allowed maximum of 8060 bytes) or at the time of data insertion.', 'This large row size can cause errors (such as error 512) during some normal operations, such as a clustered index key update, or sorts of the full column set, which users cannot anticipate until performing an operation.');
 
-// this function creates a table that contain columns of $dataTypes and all encryption types
-// for example, if $dataTyptes = array("bigint", "int"), then the table created has 6 columns:
-// normbigint, detbigint, randbigint, normint, detint, randint
-// column names with prefix norm means it'll not be encrypted
-// column names with prefix det mean it'll be encrypted with deterministic encryption
-// column names with prefix rand mean it'll be encrypted with randomized encryption
-// return the column names in order in the table
-function CreateAETable($conn, $tableName, $dataTypes) {
-    include 'MsCommon.inc';
+// creates the column names based on data types
+// for example, if $dataTypes is array(int, smallint), then the column names are: normint, detint, randint, normsmallint, detsmallint, and randsmallint
+// all column names are pushed to the $col_names array
+// return a datatypes string used for creating table
+function get_dataTypes_str($dataTypes, &$col_names) {
     $encTypes = array("norm", "det", "rand");
     $dataTypes_str = "";
-    $col_names = array();
     foreach ($dataTypes as $dataType){
         foreach ($encTypes as $encType) {
             $col_name = $encType . $dataType;
@@ -72,17 +66,19 @@ function CreateAETable($conn, $tableName, $dataTypes) {
         }
     }
     $dataTypes_str = rtrim($dataTypes_str, ", ");
-    CreateTableEx( $conn, $tbname, $dataTypes_str);
-    return $col_names;
+    return $dataTypes_str;
 }
 
-function EncryptColumns($col_names){
-    include 'MsCommon.inc';
+// encrypts an existing column based on the column names:
+// if column name like *norm*, do not encrypts
+// if column name like *det*, encrypt using deterministic encryption
+// if column name like *rand*, encrypt using randomized encryption
+function EncryptColumns($server, $database, $userName, $userPassword, $tbname, $col_names){
     $dir_name = realpath(dirname(__FILE__));
     $enc_name = $dir_name . DIRECTORY_SEPARATOR . "encrypttable.ps1";
     $col_name_str = implode(",", $col_names);
     $runCMD = "powershell -executionPolicy Unrestricted -file " . $enc_name . " " . $server . " " . $database . " " . $userName . " " . $userPassword . " " . $tbname . " " . $col_name_str;
-    $retval = shell_exec($runCMD);
+    shell_exec($runCMD);
 }
                              
 ?>
