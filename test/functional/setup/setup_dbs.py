@@ -70,7 +70,7 @@ def setupAE( server, dbname, uid, pwd):
     if platform.system() == 'Windows':
         # import self signed certificate
         dir_name = os.path.realpath(__file__)
-        cert_name = os.path.join(dir_name, "PHPcert.ps1")
+        cert_name = os.path.join(dir_name, "PHPcert.pfx")
         inst_command = "certutil -user -p '' -importPFX My " + cert_name + " NoRoot"
         executeCommand(inst_command)
         # create Column Master Key and Column Encryption Key
