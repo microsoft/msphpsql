@@ -66,7 +66,7 @@ def is_ae_qualified( server, uid, pwd ):
         return false
     return true;
     
-def setupAE( server, dbname, uid, pwd):
+def setupAE( conn_options, dbname ):
     if platform.system() == 'Windows':
         # import self signed certificate
         dir_name = os.path.realpath(__file__)
