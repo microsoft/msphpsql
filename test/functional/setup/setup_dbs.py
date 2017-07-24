@@ -60,9 +60,9 @@ def getserver_version( server, uid, pwd ):
 def is_ae_qualified( server, uid, pwd ):
     msodbcsql_ver = getmsodbcsql_version( server, uid, pwd );
     server_ver = getserver_version( server, uid, pwd );
-    msodbcsql_maj = msodbcsql_ver.split()[1]
-    msodbcsql_min = msodbcsql_ver.split()[2]
-    if msodbcsql_maj < 13 or ( msodbcsql_maj == 13 and msodbcsql_min == 0 ) or server_ver.split()[1] < 13:
+    msodbcsql_maj = msodbcsql_ver.split('.')[1]
+    msodbcsql_min = msodbcsql_ver.split('.')[2]
+    if msodbcsql_maj < 13 or ( msodbcsql_maj == 13 and msodbcsql_min == 0 ) or server_ver.split('.')[1] < 13:
         return false
     return true;
     
