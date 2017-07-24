@@ -68,10 +68,13 @@ def is_ae_qualified( server, uid, pwd ):
     
 def setupAE( server, dbname, uid, pwd):
     if platform.system() == 'Windows':
+        # import self signed certificate
         dir_name = os.path.realpath(__file__)
-        cert_name = os.path.join(dir_name, "certificate.ps1")
-        inst_command  = 'powershell -executionPolicy Unrestricted -file ' + cert_name + ' ' + server + ' ' + dbname + ' ' + uid + ' ' + pwd
-        executeCommmand(inst_command)
+        cert_name = os.path.join(dir_name, "PHPcert.ps1")
+        inst_command = "certutil -user -p '' -importPFX My " + cert_name + " NoRoot"
+        executeCommand(inst_command)
+        # create Column Master Key and Column Encryption Key
+        executeSQLscript('ae_keys.sql', conn_options, dbname)
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
