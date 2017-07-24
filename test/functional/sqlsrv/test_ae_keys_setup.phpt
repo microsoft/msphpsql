@@ -17,6 +17,9 @@ if (IsAEQualified($conn)){
     {
         $cert_exists = true;
     }
+    else {
+        die("Certificate does not exist.\n";
+    }
    
     $query = "SELECT name FROM sys.column_master_keys";
     $stmt = sqlsrv_query($conn, $query);
@@ -30,6 +33,9 @@ if (IsAEQualified($conn)){
     
     if ($cert_exists && $master_key_name == 'AEMasterKey' && $encryption_key_name == 'AEColumnKey'){
         echo "Test Successfully.\n";
+    }
+    else {
+        die("Column Master Key and Column Encryption Key not created.\n");
     }
     sqlsrv_free_stmt($stmt);
 }
