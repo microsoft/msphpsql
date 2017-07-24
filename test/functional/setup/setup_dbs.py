@@ -72,6 +72,8 @@ def setupAE( conn_options, dbname ):
         dir_name = os.path.realpath(__file__)
         cert_name = os.path.join(dir_name, "PHPcert.pfx")
         inst_command = "certutil -user -p '' -importPFX My " + cert_name + " NoRoot"
+        print("********************************")
+        print(inst_command)
         executeCommand(inst_command)
         # create Column Master Key and Column Encryption Key
         executeSQLscript('ae_keys.sql', conn_options, dbname)
