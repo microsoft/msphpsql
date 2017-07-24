@@ -72,7 +72,7 @@ function FetchField($stmt, $idx, $numFields, $errorExpected)
 function PrintError($errorExpected = true)
 {
     $errors = sqlsrv_errors(SQLSRV_ERR_ALL);
-    if (!empty($errors) && count($errors) > 0)
+    if (!empty($errors))
     {
         $e = $errors[0];
         var_dump($e['message']);            

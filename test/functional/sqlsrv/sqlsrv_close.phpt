@@ -14,7 +14,7 @@ using an already closed connection.
     $conn2 = Connect();
     $stmt1 = sqlsrv_query($conn2, "IF OBJECT_ID('PHPTable', 'U') IS NOT NULL DROP TABLE [PHPTable]");
     $errors = sqlsrv_errors();
-    if (!empty($errors) && count($errors) != 0)
+    if (!empty($errors))
     {
         die("No errors were expected on valid connection attempts.");
     }
