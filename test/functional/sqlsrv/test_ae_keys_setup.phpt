@@ -18,7 +18,7 @@ if (IsAEQualified($conn)){
         $cert_exists = true;
     }
     else {
-        die("Certificate does not exist.\n";
+        die("Certificate does not exist.\n");
     }
    
     $query = "SELECT name FROM sys.column_master_keys";
