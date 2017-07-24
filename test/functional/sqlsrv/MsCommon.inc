@@ -80,6 +80,17 @@ function IsDaasMode()
     return ($daasMode ? true : false);
 }
 
+function IsAEQualified($conn)
+{
+    $msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
+    $server_ver = sqlsrv_server_info($conn)['SQLServerVersion'];
+    $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
+    $msodbcsql_min = explode(".", $msodbcsql_ver)[1];
+    if ($msodbcsql_maj < 13 || ( $msodbcsql_maj == 13 && $msodbcsql_min == 0 ) || explode('.')[0] < 13)
+        return false;
+    return true;
+}
+
 function StartTest($testName)
 {
     include 'MsSetup.inc';
@@ -165,7 +176,7 @@ function GetTempTableName($table = '', $temporary = true)
     // dropped once the connection is closed. Otherwise, the caller 
     // should take care of dropping the temp table afterwards.
     
-    $someNumber = rand(0, 1000);
+    $timestamp = round(microtime(true)*1000);
     
     $prefix = '';
     if ($temporary)
@@ -174,7 +185,7 @@ function GetTempTableName($table = '', $temporary = true)
     if (strlen($table) == 0)
         $table = 'php_test_table';
         
-    return $prefix . $table . '_' . $someNumber;
+    return $prefix . $table . '_' . $timestamp;
 }
 
 function GetTempProcName($proc = '', $temporary = true)
@@ -183,7 +194,7 @@ function GetTempProcName($proc = '', $temporary = true)
     // automatically dropped once the connection is closed. Otherwise, 
     // the caller should take care of dropping the temp procedure afterwards.    
     
-    $someNumber = rand(0, 1000);
+    $timestamp = round(microtime(true)*1000);
 
     $prefix = '';
     if ($temporary)
@@ -192,7 +203,7 @@ function GetTempProcName($proc = '', $temporary = true)
     if (strlen($proc) == 0)
         $proc = 'php_test_proc'; 
 
-    return $prefix . $proc . '_' . $someNumber;
+    return $prefix . $proc . '_' . $timestamp;
 }
 
 function ExecuteQuery($conn, $query)
