@@ -67,12 +67,13 @@ def is_ae_qualified( server, uid, pwd ):
     return true;
     
 def setupAE( conn_options, dbname ):
+    print("**********In setupAE**********")
     if platform.system() == 'Windows':
         # import self signed certificate
         dir_name = os.path.realpath(__file__)
         cert_name = os.path.join(dir_name, "PHPcert.pfx")
         inst_command = "certutil -user -p '' -importPFX My " + cert_name + " NoRoot"
-        print("********************************")
+        print("**********In Windows**********")
         print(inst_command)
         executeCommand(inst_command)
         # create Column Master Key and Column Encryption Key
@@ -109,7 +110,9 @@ if __name__ == '__main__':
     # populate these tables
     populateTables(conn_options, args.DBNAME)
     # setup AE (certificate, column master key and column encryption key)
+    print("**********Before is_ae_qualified**********")
     if is_ae_qualified( server, uid, pwd ):
+        print("**********In is_ae_qualified**********")
         setupAE(server, args.DBNAME, uid, pwd)
     
     os.chdir(current_working_dir)
