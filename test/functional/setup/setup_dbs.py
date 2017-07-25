@@ -54,7 +54,7 @@ def setupAE( conn_options, dbname ):
         inst_command = "certutil -user -p '' -importPFX My " + cert_name + " NoRoot"
         print("**********In Windows**********")
         print(inst_command)
-        executeCommand(inst_command)
+        executeCommmand(inst_command)
         # create Column Master Key and Column Encryption Key
         executeSQLscript('ae_keys.sql', conn_options, dbname)
     
