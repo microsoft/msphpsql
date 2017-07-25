@@ -52,7 +52,7 @@ sqlsrv_close($conn);
  
 ?>
 --EXPECTREGEX--
-Notice\: Use of undefined constant SQLSRV_ENC_UNKNOWN - assumed \'SQLSRV_ENC_UNKNOWN\' in .+(\/|\\)sqlsrv_input_param_unknown_encoding\.php on line 26
+(Warning|Notice)\: Use of undefined constant SQLSRV_ENC_UNKNOWN - assumed \'SQLSRV_ENC_UNKNOWN\' (\(this will throw an Error in a future version of PHP\) )?in .+(\/|\\)sqlsrv_input_param_unknown_encoding\.php on line 26
 Array
 \(
     \[0\] => Array
@@ -67,7 +67,7 @@ Array
 
 \)
 
-Notice\: Use of undefined constant SQLSRV_ENC_UNKNOWN - assumed \'SQLSRV_ENC_UNKNOWN\' in .+(\/|\\)sqlsrv_input_param_unknown_encoding\.php on line 33
+(Warning|Notice)\: Use of undefined constant SQLSRV_ENC_UNKNOWN - assumed \'SQLSRV_ENC_UNKNOWN\' (\(this will throw an Error in a future version of PHP\) )?in .+(\/|\\)sqlsrv_input_param_unknown_encoding\.php on line 33
 Array
 \(
     \[0\] => Array
@@ -81,4 +81,3 @@ Array
         \)
 
 \)
-
