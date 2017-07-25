@@ -14,6 +14,16 @@
 //
 require  'MsData.inc';
 
+function IsAEQualified($conn)
+{
+    $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
+    $server_ver = $conn->getAttribute(PDO::ATTR_SERVER_VERSION);
+    $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
+    if ($msodbcsql_maj < 13 || explode('.', $server_ver)[0] < 13)
+        return false;
+    return true;
+}
+
 function connect($options=array())
 {
   try 
