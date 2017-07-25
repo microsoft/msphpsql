@@ -45,27 +45,6 @@ def executeBulkCopy(conn_options, dbname, tblname, datafile):
     inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options 
     executeCommmand(inst_command)
     
-def getmsodbcsql_version( server, uid, pwd ):
-    command = "php -r \"echo sqlsrv_client_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['DriverVer'];\""
-    p = subprocess.Popen( command.format( server, uid, pwd ), stdout=subprocess.PIPE, shell = True )
-    out, err = p.communicate()
-    return out.decode('ascii')
-    
-def getserver_version( server, uid, pwd ):
-    command = "php -r \"echo sqlsrv_server_info( sqlsrv_connect( '{0}', array( 'UID'=>'{1}', 'PWD'=>'{2}')))['SQLServerVersion'];\""
-    p = subprocess.Popen( command.format( server, uid, pwd ), stdout=subprocess.PIPE, shell = True )
-    out, err = p.communicate()
-    return out.decode('ascii')
-    
-def is_ae_qualified( server, uid, pwd ):
-    msodbcsql_ver = getmsodbcsql_version( server, uid, pwd );
-    server_ver = getserver_version( server, uid, pwd );
-    msodbcsql_maj = msodbcsql_ver.split('.')[1]
-    msodbcsql_min = msodbcsql_ver.split('.')[2]
-    if msodbcsql_maj < 13 or ( msodbcsql_maj == 13 and msodbcsql_min == 0 ) or server_ver.split('.')[1] < 13:
-        return false
-    return true;
-    
 def setupAE( conn_options, dbname ):
     print("**********In setupAE**********")
     if platform.system() == 'Windows':
@@ -110,10 +89,7 @@ if __name__ == '__main__':
     # populate these tables
     populateTables(conn_options, args.DBNAME)
     # setup AE (certificate, column master key and column encryption key)
-    print("**********Before is_ae_qualified**********")
-    if is_ae_qualified( server, uid, pwd ):
-        print("**********In is_ae_qualified**********")
-        setupAE(server, args.DBNAME, uid, pwd)
+    setupAE(server, args.DBNAME, uid, pwd)
     
     os.chdir(current_working_dir)
     
