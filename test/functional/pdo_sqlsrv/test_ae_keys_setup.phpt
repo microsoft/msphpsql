@@ -11,16 +11,6 @@ require( 'MsCommon.inc' );
 $conn = Connect();
     
 if (IsAEQualified($conn)){
-    $verify_cert = shell_exec('certutil -user -verifyStore My 237F94738E7F5214D8588006C2269DBC6B370816');
-    $cert_exists = false;
-    if (strpos($verify_cert, 'successfully') != false)
-    {
-        $cert_exists = true;
-    }
-    else {
-        die("Certificate does not exist.\n");
-    }
-   
     $query = "SELECT name FROM sys.column_master_keys";
     $stmt = $conn->query($query);
     $master_key_row = $stmt->fetch();
@@ -29,7 +19,7 @@ if (IsAEQualified($conn)){
     $stmt = $conn->query($query);
     $encryption_key_row = $stmt->fetch();
     
-    if ($cert_exists && $master_key_row[0] == 'AEMasterKey' && $encryption_key_row[0] == 'AEColumnKey'){
+    if ($master_key_row[0] == 'AEMasterKey' && $encryption_key_row[0] == 'AEColumnKey'){
         echo "Test Successfully.\n";
     }
     else {

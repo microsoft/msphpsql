@@ -11,16 +11,6 @@ require( 'MsCommon.inc' );
 $conn = Connect();
     
 if (IsAEQualified($conn)){
-    $verify_cert = shell_exec('certutil -user -verifyStore My 237F94738E7F5214D8588006C2269DBC6B370816');
-    $cert_exists = false;
-    if (strpos($verify_cert, 'successfully') != false)
-    {
-        $cert_exists = true;
-    }
-    else {
-        die("Certificate does not exist.\n");
-    }
-   
     $query = "SELECT name FROM sys.column_master_keys";
     $stmt = sqlsrv_query($conn, $query);
     sqlsrv_fetch($stmt);
@@ -31,11 +21,11 @@ if (IsAEQualified($conn)){
     sqlsrv_fetch($stmt);
     $encryption_key_name = sqlsrv_get_field($stmt, 0);
     
-    if ($cert_exists && $master_key_name == 'AEMasterKey' && $encryption_key_name == 'AEColumnKey'){
+    if ($master_key_name == 'AEMasterKey' && $encryption_key_name == 'AEColumnKey'){
         echo "Test Successfully.\n";
     }
     else {
-        die("Column Master Key and Column Encryption Key not created.\n");
+        echo "Column Master Key and Column Encryption Key not created.\n";
     }
     sqlsrv_free_stmt($stmt);
 }
