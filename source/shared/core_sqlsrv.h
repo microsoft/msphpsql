@@ -1044,6 +1044,16 @@ enum DRIVER_VERSION : size_t {
 struct sqlsrv_stmt;
 struct stmt_option;
 
+// This holds the various details of column encryption. 
+struct col_encryption_option {
+    bool			enabled;			// column encryption enabled, false by default
+    size_t			key_size;			// the length of ksp_encrypt_key without the NULL terminator
+
+    col_encryption_option() : enabled(false), key_size(0)
+    {
+    }
+};
+
 // *** connection resource structure ***
 // this is the resource structure returned when a connection is made.
 struct sqlsrv_conn : public sqlsrv_context {
@@ -1051,7 +1061,9 @@ struct sqlsrv_conn : public sqlsrv_context {
     // instance variables
     SERVER_VERSION server_version;  // version of the server that we're connected to
 
-	DRIVER_VERSION	driver_version;
+    DRIVER_VERSION	driver_version;
+
+    col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
 
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding TSRMLS_DC ) :
@@ -1085,6 +1097,7 @@ const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
+const char ColumnEncryption[] = "ColumnEncryption";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
@@ -1131,6 +1144,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_APPLICATION_INTENT,
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
     SQLSRV_CONN_OPTION_AUTHENTICATION,
+    SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
     SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
@@ -2361,6 +2375,26 @@ struct str_conn_attr_func {
         catch( core::CoreException& ) {
             throw;
         }
+    }
+};
+
+struct column_encryption_set_func {
+
+    static void func(connection_option const* option, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC)
+    {
+        convert_to_string(value);
+        const char* value_str = Z_STRVAL_P(value);
+
+        // Column Encryption is disabled by default unless it is explicitly 'Enabled'
+        conn->ce_option.enabled = false;
+        if (!stricmp(value_str, "enabled")) {
+            conn->ce_option.enabled = true;
+        }
+
+        conn_str += option->odbc_name;
+        conn_str += "=";
+        conn_str += value_str;
+        conn_str += ";";
     }
 };
 

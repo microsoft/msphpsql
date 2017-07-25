@@ -188,6 +188,7 @@ const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char Authentication[] = "Authentication";
 const char ConnectionPooling[] = "ConnectionPooling";
+const char ColumnEncryption[] = "ColumnEncryption";
 #ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
@@ -301,6 +302,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::ConnectionPooling ),
         CONN_ATTR_BOOL,
         conn_null_func::func
+    },
+    {
+        SSConnOptionNames::ColumnEncryption,
+        sizeof(SSConnOptionNames::ColumnEncryption),
+        SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
+        ODBCConnOptions::ColumnEncryption,
+        sizeof(ODBCConnOptions::ColumnEncryption),
+        CONN_ATTR_STRING,
+        column_encryption_set_func::func
     },
 #ifdef _WIN32
     {
