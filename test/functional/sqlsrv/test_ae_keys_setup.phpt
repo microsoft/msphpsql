@@ -1,7 +1,7 @@
 --TEST--
 retrieval of names of column master key and column encryption key generated in the database setup
 --SKIPIF--
-<?php if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') die("Skipped: Test for Windows"); ?>
+<?php require('skipif_unix.inc'); ?>
 --FILE--
 <?php
 sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
@@ -22,7 +22,7 @@ if (IsAEQualified($conn)){
     $encryption_key_name = sqlsrv_get_field($stmt, 0);
     
     if ($master_key_name == 'AEMasterKey' && $encryption_key_name == 'AEColumnKey'){
-        echo "Test Successfully.\n";
+        echo "Test Successfully done.\n";
     }
     else {
         echo "Column Master Key and Column Encryption Key not created.\n";
@@ -30,9 +30,9 @@ if (IsAEQualified($conn)){
     sqlsrv_free_stmt($stmt);
 }
 else {
-    echo "Test Successfully.\n";
+    echo "Test Successfully done.\n";
 }
 sqlsrv_close( $conn );
 ?>
 --EXPECT--
-Test Successfully.
+Test Successfully done.
