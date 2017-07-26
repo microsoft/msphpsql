@@ -45,8 +45,8 @@ def executeBulkCopy(conn_options, dbname, tblname, datafile):
     inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options 
     executeCommmand(inst_command)
     
-def setupAE( conn_options, dbname ):
-    if platform.system() == 'Windows':
+def setupAE( conn_options, dbname, azure ):
+    if (platform.system() == 'Windows' and azure.lower() == 'no'):
         # import self signed certificate
         inst_command = "certutil -user -p '' -importPFX My PHPcert.pfx NoRoot"
         executeCommmand(inst_command)
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # populate these tables
     populateTables(conn_options, args.DBNAME)
     # setup AE (certificate, column master key and column encryption key)
-    setupAE(conn_options, args.DBNAME)
+    setupAE(conn_options, args.DBNAME, azure)
     
     os.chdir(current_working_dir)
     
