@@ -20,8 +20,8 @@ Thank you for taking time to take our February survey. Let us know how we are do
 |-------------------------|--------------------------| ------------------
 | [![av-image][]][av-site]| [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
 
-[av-image]:  https://ci.appveyor.com/api/projects/status/github/Microsoft/msphpsql?branch=dev&svg=true
-[av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql
+[av-image]:  https://ci.appveyor.com/api/projects/status/xhp4nq9ouljnhxqf/branch/dev?svg=true
+[av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql-frhmr/branch/dev
 [tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=dev
 [tv-site]: https://travis-ci.org/Microsoft/msphpsql/
 [Coverage Status]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=dev
