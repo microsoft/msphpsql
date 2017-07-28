@@ -25,7 +25,9 @@ install:
   - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Password12@' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d microsoft/mssql-server-linux
 
 script: 
+  - docker logs sql
   - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --link $TEST_PHP_SQL_SERVER --name=client msphpsql-dev
+  - docker logs client
   - docker ps -a 
   - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
   - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
