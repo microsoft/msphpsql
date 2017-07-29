@@ -32,15 +32,18 @@ ENV TEST_PHP_SQL_PWD Password123
 RUN locale-gen en_US.UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
+RUN chmod +x ./test/functional/setup/Dockerfile-msphpsql-entrypoint.sh
+CMD /bin/bash ./test/functional/setup/Dockerfile-msphpsql-entrypoint.sh
+
 #install ODBC driver
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
 RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
 
-RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql
-#ENV PATH="/opt/mssql-tools/bin:${PATH}"
-#RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-#RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-#RUN /bin/bash -c "source ~/.bashrc"
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools
+ENV PATH="/opt/mssql-tools/bin:${PATH}"
+RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+RUN /bin/bash -c "source ~/.bashrc"
 
 
 #install coveralls
