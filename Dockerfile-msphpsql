@@ -32,8 +32,12 @@ ENV TEST_PHP_SQL_PWD Password123
 RUN locale-gen en_US.UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
-RUN chmod +x ./test/functional/setup/Dockerfile-msphpsql-entrypoint.sh
-CMD /bin/bash ./test/functional/setup/Dockerfile-msphpsql-entrypoint.sh
+RUN mkdir -p $PHPSQLDIR
+COPY . $PHPSQLDIR
+WORKDIR $PHPSQLDIR/test/functional/setup/
+
+RUN chmod +x ./Dockerfile-msphpsql-entrypoint.sh
+CMD /bin/bash ./Dockerfile-msphpsql-entrypoint.sh
 
 #install ODBC driver
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
@@ -53,8 +57,6 @@ RUN pip install --upgrade pip && pip install cpp-coveralls
 #One option is to get source from zip file of repository.
 
 #another option is to copy source to build directory on image
-RUN mkdir -p $PHPSQLDIR
-COPY . $PHPSQLDIR
 
 WORKDIR $PHPSQLDIR/source/ 
 
