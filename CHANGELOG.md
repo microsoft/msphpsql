@@ -3,6 +3,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux/MAC 5.0.0-preview - 2017-07-31
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Added support for PHP 7.2 Beta 1
+
+### Changed
+- Implementation of PDO::lastInsertId($name) to return the last inserted sequence number if the sequence name is supplied to the function ([lastInsertId](https://github.com/Microsoft/msphpsql/wiki/Features#lastinsertid))
+    
+### Deprecated
+- No longer support Ubuntu 15
+- Supplying tablename into PDO::lastInsertId($name) no longer return the last inserted row
+
+### Limitation
+- No support for inout / output params when using sql_variant type
+
+### Known Issues
+- When pooling is enabled in Linux or MAC
+  - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
 ## Windows/Linux/MAC 4.3.0 - 2017-07-06
 Production Ready release for SQLSRV and PDO_SQLSRV drivers on Sierra, El Capitan, Debian 8, Ubuntu 15, Ubuntu 16, CentOS 7, and Windows. Here is the changlog since the last Production Ready release.
 
