@@ -31,7 +31,7 @@ class SqlsrvInsertBench{
      * Note that, every insertion calls prepare, bindParam and execute APIs.
      */
     public function benchInsertWithPrepare(){
-        for( $i=0; $i<1000; $i++ ){
+        for( $i=0; $i<100; $i++ ){
             SqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
         }
     }

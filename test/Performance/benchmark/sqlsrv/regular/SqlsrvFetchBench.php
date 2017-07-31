@@ -38,7 +38,7 @@ class SqlsrvFetchBench{
      * Note that, every fetch calls prepare, execute and fetch APIs.
      */
     public function benchFetchWithPrepare(){
-        for( $i=0; $i<1000; $i++){
+        for( $i=0; $i<100; $i++){
             SqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
         }
     }

@@ -16,7 +16,9 @@ class PDOSelectVersionBench{
     * Each iteration calls execDirect API to fetch @@Version
     */
     public function benchSelectVersion(){
-        $version = PDOSqlsrvUtil::selectVersion( $this->conn );
+        for( $i=0; $i<10; $i++ ){
+            $version = PDOSqlsrvUtil::selectVersion( $this->conn );
+        }
     }
 
     public function disconnect(){

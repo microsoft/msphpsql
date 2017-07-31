@@ -28,7 +28,7 @@ class PDODeleteBench{
     }
 
     public function insertWithPrepare(){
-        for( $i=0; $i<1000; $i++ ){
+        for( $i=0; $i<100; $i++ ){
             PDOSqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
         }
     }
@@ -37,7 +37,7 @@ class PDODeleteBench{
      * Note that, every delete calls prepare and execute APIs.
      */        
     public function benchDelete(){
-        for( $i=0; $i<1000; $i++ ){
+        for( $i=0; $i<100; $i++ ){
             PDOSqlsrvUtil::deleteWithPrepare( $this->conn, $this->tableName );
         }
     }

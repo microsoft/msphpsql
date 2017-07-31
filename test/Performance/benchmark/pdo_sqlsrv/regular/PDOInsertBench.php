@@ -30,7 +30,7 @@ class PDOInsertBench{
      * Note that, every insertion calls prepare, bindParam and execute APIs.
      */
     public function benchInsertWithPrepare(){
-        for ( $i=0; $i<1000; $i++){
+        for ( $i=0; $i<100; $i++){
             PDOSqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
         }
     }

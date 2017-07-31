@@ -45,7 +45,7 @@ class SqlsrvUpdateBench{
      * Note that, every update calls prepare, bindParam and execute APIs.
      */
     public function benchUpdateWithPrepare(){
-        for( $i=0; $i<1000; $i++ ){
+        for( $i=0; $i<100; $i++ ){
             $stmt = SqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
         }
     }
