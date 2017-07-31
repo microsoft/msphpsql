@@ -14,7 +14,7 @@ Updated PECL release packages. Here is the list of updates:
     
 ### Removed
 - No longer support Ubuntu 15
-- Supplying tablename into PDO::lastInsertId($name) no longer return the last inserted row
+- Supplying tablename into PDO::lastInsertId($name) no longer return the last inserted row ([lastInsertId](https://github.com/Microsoft/msphpsql/wiki/Features#lastinsertid))
 
 ### Limitation
 - No support for inout / output params when using sql_variant type
