@@ -34,10 +34,7 @@ ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
 RUN mkdir -p $PHPSQLDIR
 COPY . $PHPSQLDIR
-WORKDIR $PHPSQLDIR/test/functional/setup/
 
-RUN chmod +x ./Dockerfile-msphpsql-entrypoint.sh
-CMD /bin/bash ./Dockerfile-msphpsql-entrypoint.sh
 
 #install ODBC driver
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
@@ -48,9 +45,6 @@ ENV PATH="/opt/mssql-tools/bin:${PATH}"
 RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
 RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 RUN /bin/bash -c "source ~/.bashrc"
-
-RUN chmod +x ./Dockerfile-msphpsql-entrypoint.sh
-CMD /bin/bash ./Dockerfile-msphpsql-entrypoint.sh
 
 #install coveralls
 RUN pip install --upgrade pip && pip install cpp-coveralls
