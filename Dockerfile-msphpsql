@@ -49,6 +49,8 @@ RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
 RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 RUN /bin/bash -c "source ~/.bashrc"
 
+RUN chmod +x ./Dockerfile-msphpsql-entrypoint.sh
+CMD /bin/bash ./Dockerfile-msphpsql-entrypoint.sh
 
 #install coveralls
 RUN pip install --upgrade pip && pip install cpp-coveralls
