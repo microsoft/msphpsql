@@ -32,7 +32,7 @@ script:
   - docker logs client
   - docker ps -a
   - docker exec client chmod +x ./TestSqlcmd.sh
-  - docker exec client bash -c ./TestSqlcmd.sh  
+  - docker exec client bash -c ./TestSqlcmd.sh 
   - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
   - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
   - docker exec client php ./test/functional/pdo_sqlsrv/*.phpt
