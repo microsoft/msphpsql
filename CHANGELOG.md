@@ -12,7 +12,7 @@ Updated PECL release packages. Here is the list of updates:
 ### Changed
 - Implementation of PDO::lastInsertId($name) to return the last inserted sequence number if the sequence name is supplied to the function ([lastInsertId](https://github.com/Microsoft/msphpsql/wiki/Features#lastinsertid))
     
-### Deprecated
+### Removed
 - No longer support Ubuntu 15
 - Supplying tablename into PDO::lastInsertId($name) no longer return the last inserted row
 
