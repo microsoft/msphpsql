@@ -1,4 +1,3 @@
-#!bin/bash
 set -e
 
 $test = "sqlcmd  -S sql -U sa -P Password123"
