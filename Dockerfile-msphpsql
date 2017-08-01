@@ -83,8 +83,8 @@ RUN chmod +x ./entrypoint.sh
 RUN bin/bash -c ./entrypoint.sh
 
 WORKDIR $PHPSQLDIR /test/functional/setup/
-python ./setup_dbs.py -dbname $SQLSRV_DBNAME
-python ./setup_dbs.py -dbname $PDOSQLSRV_DBNAME
+RUN python ./setup_dbs.py -dbname $SQLSRV_DBNAME
+RUN python ./setup_dbs.py -dbname $PDOSQLSRV_DBNAME
 
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
 
