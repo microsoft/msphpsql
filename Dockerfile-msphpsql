@@ -27,14 +27,12 @@ ARG PHPSQLDIR=/REPO/msphpsql-dev
 ENV TEST_PHP_SQL_SERVER sql
 ENV TEST_PHP_SQL_UID sa
 ENV TEST_PHP_SQL_PWD Password123
+ENV SQLSRV_DBNAME msphpsql_sqlsrv
+ENV PDOSQLSRV_DBNAME msphpsql_pdosqlsrv
 
 # set locale to utf-8
 RUN locale-gen en_US.UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
-
-RUN mkdir -p $PHPSQLDIR
-COPY . $PHPSQLDIR
-
 
 #install ODBC driver
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
@@ -42,9 +40,6 @@ RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt
 
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools
 ENV PATH="/opt/mssql-tools/bin:${PATH}"
-RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-RUN /bin/bash -c "source ~/.bashrc"
 
 #install coveralls
 RUN pip install --upgrade pip && pip install cpp-coveralls
@@ -54,6 +49,8 @@ RUN pip install --upgrade pip && pip install cpp-coveralls
 
 #another option is to copy source to build directory on image
 
+RUN mkdir -p $PHPSQLDIR
+COPY . $PHPSQLDIR
 WORKDIR $PHPSQLDIR/source/ 
 
 RUN chmod +x ./packagize.sh
@@ -81,6 +78,14 @@ RUN sed -i -e 's/TARGET_DATABASE/msphpsql_sqlsrv/g' MsSetup.inc
 RUN sed -i -e 's/TARGET_USERNAME/'"$TEST_PHP_SQL_UID"'/g' MsSetup.inc
 RUN sed -i -e 's/TARGET_PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
-ENV REPORT_EXIT_STATUS 1
+WORKDIR $PHPSQLDIR
+RUN chmod +x ./entrypoint.sh
+RUN bin/bash -c ./entrypoint.sh
+
+WORKDIR $PHPSQLDIR /test/functional/setup/
+python ./setup_dbs.py -dbname $SQLSRV_DBNAME
+python ./setup_dbs.py -dbname $PDOSQLSRV_DBNAME
+
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
 
+ENV REPORT_EXIT_STATUS 1

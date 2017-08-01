@@ -28,8 +28,6 @@ script:
   - docker logs sql
   - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --name=client --link $TEST_PHP_SQL_SERVER msphpsql-dev
   - docker ps -a
-  - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
-  - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
   - docker logs client
   - docker exec client php ./test/functional/pdo_sqlsrv/*.phpt
   - docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/sqlsrv/*.phpt
