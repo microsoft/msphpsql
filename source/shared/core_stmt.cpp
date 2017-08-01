@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use statement handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 4.1 for PHP for SQL Server
+// Microsoft Drivers 4.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -29,7 +29,7 @@ struct field_cache {
     SQLLEN len;
     sqlsrv_phptype type;
 
-    field_cache( void* field_value, SQLLEN field_len, sqlsrv_phptype t )
+    field_cache( _In_reads_bytes_opt_(field_len) void* field_value, _In_ SQLLEN field_len, _In_ sqlsrv_phptype t )
         : type( t )
     {
         // if the value is NULL, then just record a NULL pointer
@@ -53,7 +53,7 @@ struct col_cache {
     SQLLEN sql_type;
     SQLLEN display_size;
 
-    col_cache( SQLLEN col_sql_type, SQLLEN col_display_size )
+    col_cache( _In_ SQLLEN col_sql_type, _In_ SQLLEN col_display_size )
     {
         sql_type = col_sql_type;
         display_size = col_display_size;
@@ -88,43 +88,43 @@ const size_t DATE_FORMAT_LEN = sizeof( DATE_FORMAT );
 
 // *** internal functions ***
 // Only declarations are put here.  Functions contain the documentation they need at their definition sites.
-void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_type, _Out_ SQLLEN& size TSRMLS_DC );
-size_t calc_utf8_missing( sqlsrv_stmt* stmt, const char* buffer, size_t buffer_end TSRMLS_DC );
-bool check_for_next_stream_parameter( sqlsrv_stmt* stmt TSRMLS_DC );
-bool convert_input_param_to_utf16( zval* input_param_z, zval* convert_param_z );
-void core_get_field_common(_Inout_ sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype
-						   sqlsrv_php_type, _Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC);
+void calc_string_size( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLLEN sql_type, _Inout_ SQLLEN& size TSRMLS_DC );
+size_t calc_utf8_missing( _Inout_ sqlsrv_stmt* stmt, _In_reads_(buffer_end) const char* buffer, _In_ size_t buffer_end TSRMLS_DC );
+bool check_for_next_stream_parameter( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
+bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* convert_param_z );
+void core_get_field_common(_Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype
+						   sqlsrv_php_type, _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len TSRMLS_DC);
 // returns the ODBC C type constant that matches the PHP type and encoding given
-SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* param_z, SQLSRV_ENCODING encoding TSRMLS_DC );
-void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* param_z, SQLSRV_ENCODING encoding, 
+SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding TSRMLS_DC );
+void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned int paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding, 
                                  _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC );
 // given a zval and encoding, determine the appropriate sql type, column size, and decimal scale (if appropriate)
-void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV_ENCODING encoding, 
+void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding, 
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC );
-void col_cache_dtor( zval* data_z );
-void field_cache_dtor( zval* data_z );
-void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC );
-void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type,
-						  _Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC );
-stmt_option const* get_stmt_option( sqlsrv_conn const* conn, zend_ulong key, const stmt_option stmt_opts[] TSRMLS_DC );
-bool is_valid_sqlsrv_phptype( sqlsrv_phptype type );
+void col_cache_dtor( _Inout_ zval* data_z );
+void field_cache_dtor( _Inout_ zval* data_z );
+void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
+void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
+						  _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len TSRMLS_DC );
+stmt_option const* get_stmt_option( sqlsrv_conn const* conn, _In_ zend_ulong key, _In_ const stmt_option stmt_opts[] TSRMLS_DC );
+bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 // assure there is enough space for the output parameter string
-void resize_output_buffer_if_necessary( sqlsrv_stmt* stmt, zval* param_z, SQLULEN paramno, SQLSRV_ENCODING encoding,
-                                        SQLSMALLINT c_type, SQLSMALLINT sql_type, SQLULEN column_size, SQLPOINTER& buffer,
-                                        SQLLEN& buffer_len TSRMLS_DC );
-void save_output_param_for_later( sqlsrv_stmt* stmt, sqlsrv_output_param& param TSRMLS_DC );
+void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding,
+                                        _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _Out_writes_(buffer_len) SQLPOINTER& buffer,
+                                        _Out_ SQLLEN& buffer_len TSRMLS_DC );
+void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param TSRMLS_DC );
 // send all the stream data 
-void send_param_streams( sqlsrv_stmt* stmt TSRMLS_DC );
+void send_param_streams( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 // called when a bound output string parameter is to be destroyed
-void sqlsrv_output_param_dtor( zval* data );
+void sqlsrv_output_param_dtor( _Inout_ zval* data );
 // called when a bound stream parameter is to be destroyed.
-void sqlsrv_stream_dtor( zval* data );
-bool is_streamable_type( SQLINTEGER sql_type );
+void sqlsrv_stream_dtor( _Inout_ zval* data );
+bool is_streamable_type( _In_ SQLINTEGER sql_type );
 
 }
 
 // constructor for sqlsrv_stmt.  Here so that we can use functions declared earlier.
-sqlsrv_stmt::sqlsrv_stmt( sqlsrv_conn* c, SQLHANDLE handle, error_callback e, void* drv TSRMLS_DC ) :
+sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC ) :
     sqlsrv_context( handle, SQL_HANDLE_STMT, e, drv, SQLSRV_ENCODING_DEFAULT ),
     conn( c ),
     executed( false ),
@@ -251,8 +251,8 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
 // Return
 // Returns the created statement 
 
-sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stmt_factory, HashTable* options_ht, 
-                                      const stmt_option valid_stmt_opts[], error_callback const err, void* driver TSRMLS_DC )
+sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stmt_factory stmt_factory, _In_opt_ HashTable* options_ht, 
+                                      _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver TSRMLS_DC )
 {
 	sqlsrv_malloc_auto_ptr<sqlsrv_stmt> stmt;
     SQLHANDLE stmt_h = SQL_NULL_HANDLE;
@@ -271,7 +271,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
         stmt_h = SQL_NULL_HANDLE;
 
         // process the options array given to core_sqlsrv_prepare.  
-        if( options_ht && zend_hash_num_elements( options_ht ) > 0 ) {
+        if( options_ht && zend_hash_num_elements( options_ht ) > 0 && valid_stmt_opts ) {
 			zend_ulong index = -1;
 			zend_string *key = NULL;
 			zval* value_z = NULL;
@@ -336,9 +336,9 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( sqlsrv_conn* conn, driver_stmt_factory stm
 // The php type of the parameter is taken from the zval.  
 // The sql type is given as a hint if the driver provides it. 
 
-void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALLINT direction, zval* param_z,
-                             SQLSRV_PHPTYPE php_out_type, SQLSRV_ENCODING encoding, SQLSMALLINT sql_type, SQLULEN column_size,
-                             SQLSMALLINT decimal_digits TSRMLS_DC )
+void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
+                             _In_ SQLSRV_PHPTYPE php_out_type, _In_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
+                             _Inout_ SQLSMALLINT decimal_digits TSRMLS_DC )
 {
     SQLSMALLINT c_type;
     SQLPOINTER buffer = NULL;
@@ -594,7 +594,7 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALL
             zend_class_entry *class_entry = Z_OBJCE_P( param_z TSRMLS_CC );
 
             while( class_entry != NULL ) {
-                
+                SQLSRV_ASSERT( class_entry->name != NULL, "core_sqlsrv_bind_param: class_entry->name is NULL." );
                 if( class_entry->name->len == DateTime::DATETIME_CLASS_NAME_LEN && class_entry->name != NULL && 
                     stricmp( class_entry->name->val, DateTime::DATETIME_CLASS_NAME ) == 0 ) {
                     valid_class_name_found = true;
@@ -676,7 +676,7 @@ void core_sqlsrv_bind_param( sqlsrv_stmt* stmt, SQLUSMALLINT param_num, SQLSMALL
 // Return:
 // true if there is data, false if there is not
 
-SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int sql_len )
+SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_reads_bytes_(sql_len) const char* sql, _In_ int sql_len )
 {
     SQLRETURN r = SQL_ERROR;
 
@@ -757,7 +757,7 @@ SQLRETURN core_sqlsrv_execute( sqlsrv_stmt* stmt TSRMLS_DC, const char* sql, int
 // Nothing, exception thrown if an error.  stmt->past_fetch_end is set to true if the 
 // user scrolls past a non-scrollable result set
 
-bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULEN fetch_offset TSRMLS_DC )
+bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset TSRMLS_DC )
 {
     // pre-condition check
     SQLSRV_ASSERT( fetch_orientation >= SQL_FETCH_NEXT || fetch_orientation <= SQL_FETCH_RELATIVE,
@@ -827,7 +827,7 @@ bool core_sqlsrv_fetch( sqlsrv_stmt* stmt, SQLSMALLINT fetch_orientation, SQLULE
 // Return:
 // A field_meta_data* consisting of the field metadata.
 
-field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT colno TSRMLS_DC )
+field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno TSRMLS_DC )
 {
     // pre-condition check
     SQLSRV_ASSERT( colno >= 0, "core_sqlsrv_field_metadata: Invalid column number provided." );
@@ -882,7 +882,7 @@ field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT coln
     }
 
     // Set the field name lenth
-    meta_data->field_name_len = field_name_len;
+    meta_data->field_name_len = static_cast<SQLSMALLINT>( field_name_len );
     
     field_meta_data* result_field_meta_data = meta_data;
     meta_data.transferred();    
@@ -901,8 +901,8 @@ field_meta_data* core_sqlsrv_field_metadata( sqlsrv_stmt* stmt, SQLSMALLINT coln
 // Returns:
 // Nothing, excpetion thrown if an error occurs
 
-void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type_in, bool prefer_string,
-								_Out_ void*& field_value, _Out_ SQLLEN* field_len, bool cache_field,
+void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_phptype sqlsrv_php_type_in, _In_ bool prefer_string,
+								_Outref_result_bytebuffer_maybenull_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len, _In_ bool cache_field,
 								_Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC)
 {
 	try {
@@ -1004,7 +1004,7 @@ void core_sqlsrv_get_field( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_
 // Return:
 // true if any results are present, false otherwise.
 
-bool core_sqlsrv_has_any_result( sqlsrv_stmt* stmt TSRMLS_DC )
+bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
     // Use SQLNumResultCols to determine if we have rows or not.
     SQLSMALLINT num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
@@ -1020,7 +1020,7 @@ bool core_sqlsrv_has_any_result( sqlsrv_stmt* stmt TSRMLS_DC )
 // Returns
 // Nothing, exception thrown if problem occurs
 
-void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_params, bool throw_on_errors )
+void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool finalize_output_params, _In_ bool throw_on_errors )
 {
     try {
 
@@ -1077,7 +1077,7 @@ void core_sqlsrv_next_result( sqlsrv_stmt* stmt TSRMLS_DC, bool finalize_output_
 // Returns:
 // Nothing, exception thrown if problem occurs
 
-void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong param_num, zval* param_z TSRMLS_DC )
+void core_sqlsrv_post_param( _Inout_ sqlsrv_stmt* stmt, _In_ zend_ulong param_num, zval* param_z TSRMLS_DC )
 {
     SQLSRV_ASSERT( Z_TYPE( stmt->param_input_strings ) == IS_ARRAY, "Statement input parameter UTF-16 buffers array invalid." );
     SQLSRV_ASSERT( Z_TYPE( stmt->param_streams ) == IS_ARRAY, "Statement input parameter streams array invalid." );
@@ -1096,7 +1096,7 @@ void core_sqlsrv_post_param( sqlsrv_stmt* stmt, zend_ulong param_num, zval* para
 }
 
 //Calls SQLSetStmtAttr to set a cursor.
-void core_sqlsrv_set_scrollable( sqlsrv_stmt* stmt, unsigned long cursor_type TSRMLS_DC ) 
+void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type TSRMLS_DC ) 
 {
     try {
 
@@ -1140,7 +1140,7 @@ void core_sqlsrv_set_scrollable( sqlsrv_stmt* stmt, unsigned long cursor_type TS
     }
 }
 
-void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
+void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC )
 {
     if( Z_TYPE_P( value_z ) != IS_LONG ) {
 
@@ -1150,7 +1150,7 @@ void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, zval* value_z TSRM
     core_sqlsrv_set_buffered_query_limit( stmt, Z_LVAL_P( value_z ) TSRMLS_CC );
 }
 
-void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, SQLLEN limit TSRMLS_DC )
+void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLEN limit TSRMLS_DC )
 {
     if( limit <= 0 ) {
 
@@ -1164,7 +1164,7 @@ void core_sqlsrv_set_buffered_query_limit( sqlsrv_stmt* stmt, SQLLEN limit TSRML
 // Overloaded. Extracts the long value and calls the core_sqlsrv_set_query_timeout
 // which accepts timeout parameter as a long. If the zval is not of type long 
 // than throws error.
-void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
+void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z TSRMLS_DC )
 {
     try {
 
@@ -1183,7 +1183,7 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 }
 
 // Overloaded. Accepts the timeout as a long.
-void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, long timeout TSRMLS_DC )
+void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout TSRMLS_DC )
 {
     try {
 
@@ -1212,7 +1212,7 @@ void core_sqlsrv_set_query_timeout( sqlsrv_stmt* stmt, long timeout TSRMLS_DC )
     }
 }
 
-void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
+void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC )
 {
     TSRMLS_C;
 
@@ -1232,7 +1232,7 @@ void core_sqlsrv_set_send_at_exec( sqlsrv_stmt* stmt, zval* value_z TSRMLS_DC )
 // Returns:
 // true if more data remains to be sent, false if all data processed
 
-bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
+bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
     // if there no current parameter to process, get the next one 
     // (probably because this is the first call to sqlsrv_send_stream_data)
@@ -1341,7 +1341,7 @@ bool core_sqlsrv_send_stream_packet( sqlsrv_stmt* stmt TSRMLS_DC )
     return true;
 }
 
-void stmt_option_functor::operator()( sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, zval* /*value_z*/ TSRMLS_DC )
+void stmt_option_functor::operator()( _Inout_ sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, _In_ zval* /*value_z*/ TSRMLS_DC )
 {
     TSRMLS_C;
 
@@ -1349,17 +1349,17 @@ void stmt_option_functor::operator()( sqlsrv_stmt* /*stmt*/, stmt_option const* 
     DIE( "Not implemented." );
 }
 
-void stmt_option_query_timeout:: operator()( sqlsrv_stmt* stmt, stmt_option const* /**/, zval* value_z TSRMLS_DC )
+void stmt_option_query_timeout:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
 {
     core_sqlsrv_set_query_timeout( stmt, value_z TSRMLS_CC );
 }
 
-void stmt_option_send_at_exec:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+void stmt_option_send_at_exec:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC )
 {
     core_sqlsrv_set_send_at_exec( stmt, value_z TSRMLS_CC );    
 }
 
-void stmt_option_buffered_query_limit:: operator()( sqlsrv_stmt* stmt, stmt_option const* /*opt*/, zval* value_z TSRMLS_DC )
+void stmt_option_buffered_query_limit:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC )
 {
     core_sqlsrv_set_buffered_query_limit( stmt, value_z TSRMLS_CC );
 }
@@ -1391,7 +1391,7 @@ void close_active_stream( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 
 namespace {
 
-bool is_streamable_type( SQLLEN sql_type )
+bool is_streamable_type( _In_ SQLLEN sql_type )
 {
     switch( sql_type ) {
         case SQL_CHAR:
@@ -1410,7 +1410,7 @@ bool is_streamable_type( SQLLEN sql_type )
     return false;
 }
 
-void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_type,  _Out_ SQLLEN& size TSRMLS_DC )
+void calc_string_size( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLLEN sql_type,  _Inout_ SQLLEN& size TSRMLS_DC )
 {
     try {
 
@@ -1471,7 +1471,7 @@ void calc_string_size( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, SQLLEN sql_t
 // calculates how many characters were cut off from the end of a buffer when reading
 // in UTF-8 encoded text
 
-size_t calc_utf8_missing( sqlsrv_stmt* stmt, const char* buffer, size_t buffer_end TSRMLS_DC )
+size_t calc_utf8_missing( _Inout_ sqlsrv_stmt* stmt, _In_reads_(buffer_end) const char* buffer, _In_ size_t buffer_end TSRMLS_DC )
 {
     const char* last_char = buffer + buffer_end - 1;
     size_t need_to_read = 0;
@@ -1509,8 +1509,8 @@ size_t calc_utf8_missing( sqlsrv_stmt* stmt, const char* buffer, size_t buffer_e
 // The memory allocation has to happen in the core layer because otherwise
 // the driver layer would have to calculate size of the field_value 
 // to decide the amount of memory allocation.
-void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype
-								sqlsrv_php_type, _Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC )
+void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype
+								sqlsrv_php_type, _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len TSRMLS_DC )
 {
 	try {
 
@@ -1738,7 +1738,7 @@ bool check_for_next_stream_parameter( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 
 // utility routine to convert an input parameter from UTF-8 to UTF-16
 
-bool convert_input_param_to_utf16( zval* input_param_z, zval* converted_param_z )
+bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* converted_param_z )
 {
     SQLSRV_ASSERT( input_param_z == converted_param_z || Z_TYPE_P( converted_param_z ) == IS_NULL,
         "convert_input_param_z called with invalid parameter states" );
@@ -1795,7 +1795,7 @@ bool convert_input_param_to_utf16( zval* input_param_z, zval* converted_param_z 
 
 // returns the ODBC C type constant that matches the PHP type and encoding given
 
-SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* param_z, SQLSRV_ENCODING encoding TSRMLS_DC )
+SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding TSRMLS_DC )
 {
     SQLSMALLINT sql_c_type = SQL_UNKNOWN_TYPE;
     int php_type = Z_TYPE_P( param_z );
@@ -1865,7 +1865,7 @@ SQLSMALLINT default_c_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval const* para
 
 
 // given a zval and encoding, determine the appropriate sql type
-void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV_ENCODING encoding, 
+void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding, 
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC )
 {
     sql_type = SQL_UNKNOWN_TYPE;
@@ -1943,7 +1943,7 @@ void default_sql_type( sqlsrv_stmt* stmt, SQLULEN paramno, zval* param_z, SQLSRV
 
 // given a zval and encoding, determine the appropriate column size, and decimal scale (if appropriate)
 
-void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* param_z, SQLSRV_ENCODING encoding, 
+void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned int paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding, 
                                  _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC )
 {
     int php_type = Z_TYPE_P( param_z );
@@ -1996,13 +1996,13 @@ void default_sql_size_and_scale( sqlsrv_stmt* stmt, unsigned int paramno, zval* 
     }
 }
 
-void col_cache_dtor( zval* data_z )
+void col_cache_dtor( _Inout_ zval* data_z )
 {
     col_cache* cache = static_cast<col_cache*>( Z_PTR_P( data_z ));
     sqlsrv_free( cache );
 }
 
-void field_cache_dtor( zval* data_z )
+void field_cache_dtor( _Inout_ zval* data_z )
 {
     field_cache* cache = static_cast<field_cache*>( Z_PTR_P( data_z ));
     if( cache->value ) 
@@ -2019,7 +2019,7 @@ void field_cache_dtor( zval* data_z )
 // parameters passed to SQLBindParameter.  It also converts output strings from UTF-16 to UTF-8 if necessary.
 // For integer or float parameters, it sets those to NULL if a NULL was returned by SQL Server
 
-void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
+void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
     if( Z_ISUNDEF(stmt->output_params) ) 
         return;
@@ -2127,14 +2127,14 @@ void finalize_output_parameters( sqlsrv_stmt* stmt TSRMLS_DC )
     return;
 }
 
-void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_phptype sqlsrv_php_type,
-                          _Out_ void*& field_value, _Out_ SQLLEN* field_len TSRMLS_DC )
+void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
+                          _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len TSRMLS_DC )
 {
 	SQLRETURN r;
 	SQLSMALLINT c_type;
 	SQLLEN sql_field_type = 0;
 	SQLSMALLINT extra = 0;
-	SQLLEN field_len_temp;
+	SQLLEN field_len_temp = 0;
 	SQLLEN sql_display_size = 0;
 	char* field_value_temp = NULL;
 
@@ -2205,8 +2205,8 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 
 			if( r == SQL_SUCCESS_WITH_INFO ) {
 
-				SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
-				SQLSMALLINT len;
+                SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = { 0 };
+				SQLSMALLINT len = 0;
 
 				stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
 
@@ -2218,7 +2218,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
                 if( is_truncated_warning( state ) ) {
 #endif // !_WIN32  
 
-					SQLLEN dummy_field_len;
+					SQLLEN dummy_field_len = 0;
 
 					// for XML (and possibly other conditions) the field length returned is not the real field length, so
 					// in every pass, we double the allocation size to retrieve all the contents.
@@ -2391,7 +2391,7 @@ void get_field_as_string( sqlsrv_stmt* stmt, SQLUSMALLINT field_index, sqlsrv_ph
 // return the option from the stmt_opts array that matches the key.  If no option found,
 // NULL is returned.
 
-stmt_option const* get_stmt_option( sqlsrv_conn const* conn, zend_ulong key, const stmt_option stmt_opts[] TSRMLS_DC )
+stmt_option const* get_stmt_option( sqlsrv_conn const* conn, _In_ zend_ulong key, _In_ const stmt_option stmt_opts[] TSRMLS_DC )
 {
     for( int i = 0; stmt_opts[ i ].key != SQLSRV_STMT_OPTION_INVALID; ++i ) {
 
@@ -2407,7 +2407,7 @@ stmt_option const* get_stmt_option( sqlsrv_conn const* conn, zend_ulong key, con
 // is_fixed_size_type
 // returns true if the SQL data type is a fixed length, as opposed to a variable length data type such as varchar or varbinary
 
-bool is_fixed_size_type( SQLINTEGER sql_type )
+bool is_fixed_size_type( _In_ SQLINTEGER sql_type )
 {
     switch( sql_type ) {
 
@@ -2428,7 +2428,7 @@ bool is_fixed_size_type( SQLINTEGER sql_type )
     return true;
 }
 
-bool is_valid_sqlsrv_phptype( sqlsrv_phptype type )
+bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
 {
     switch( type.typeinfo.type ) {
 
@@ -2457,9 +2457,9 @@ bool is_valid_sqlsrv_phptype( sqlsrv_phptype type )
 // string is place in the stmt->output_params.  param_z is modified to hold the new buffer, and buffer, buffer_len and
 // stmt->param_ind_ptrs are modified to hold the correct values for SQLBindParameter
 
-void resize_output_buffer_if_necessary( sqlsrv_stmt* stmt, zval* param_z, SQLULEN paramno, SQLSRV_ENCODING encoding, 
-                                        SQLSMALLINT c_type, SQLSMALLINT sql_type, SQLULEN column_size, SQLPOINTER& buffer,
-                                        SQLLEN& buffer_len TSRMLS_DC )
+void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding, 
+                                        _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _Out_writes_(buffer_len) SQLPOINTER& buffer,
+                                        _Out_ SQLLEN& buffer_len TSRMLS_DC )
 {
     SQLSRV_ASSERT( column_size != SQLSRV_UNKNOWN_SIZE, "column size should be set to a known value." );
     buffer_len = Z_STRLEN_P( param_z );
@@ -2528,7 +2528,7 @@ void resize_output_buffer_if_necessary( sqlsrv_stmt* stmt, zval* param_z, SQLULE
 // while the query is executed and processed.  They are saved in the statement so that
 // their reference count may be decremented later (after results are processed)
 
-void save_output_param_for_later( sqlsrv_stmt* stmt, sqlsrv_output_param& param TSRMLS_DC )
+void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param TSRMLS_DC )
 {
     HashTable* param_ht = Z_ARRVAL( stmt->output_params );
     zend_ulong paramno = static_cast<zend_ulong>( param.param_num );
@@ -2539,14 +2539,14 @@ void save_output_param_for_later( sqlsrv_stmt* stmt, sqlsrv_output_param& param 
 
 // send all the stream data
 
-void send_param_streams( sqlsrv_stmt* stmt TSRMLS_DC )
+void send_param_streams( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
     while( core_sqlsrv_send_stream_packet( stmt TSRMLS_CC )) { }
 }
 
 
 // called by Zend for each parameter in the sqlsrv_stmt::output_params hash table when it is cleaned/destroyed
-void sqlsrv_output_param_dtor( zval* data )
+void sqlsrv_output_param_dtor( _Inout_ zval* data )
 {
     sqlsrv_output_param *output_param = static_cast<sqlsrv_output_param*>( Z_PTR_P( data ));
     zval_ptr_dtor( output_param->param_z ); // undo the reference to the string we will no longer hold
@@ -2554,7 +2554,7 @@ void sqlsrv_output_param_dtor( zval* data )
 }
 
 // called by Zend for each stream in the sqlsrv_stmt::param_streams hash table when it is cleaned/destroyed
-void sqlsrv_stream_dtor( zval* data )
+void sqlsrv_stream_dtor( _Inout_ zval* data )
 {
     sqlsrv_stream* stream_encoding = static_cast<sqlsrv_stream*>( Z_PTR_P( data ));
     zval_ptr_dtor( stream_encoding->stream_z ); // undo the reference to the stream we will no longer hold

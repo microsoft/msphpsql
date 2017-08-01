@@ -2,7 +2,7 @@
 // File: init.cpp
 // Contents: initialization routines for the extension
 //
-// Microsoft Drivers 4.2 for PHP for SQL Server
+// Microsoft Drivers 4.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -37,8 +37,8 @@ HashTable* g_ss_warnings_to_ignore_ht = NULL;
 HashTable* g_ss_encodings_ht = NULL;
 
 // Destructors called by Zend for each element in the hashtable
-void sqlsrv_error_const_dtor( zval* element );
-void sqlsrv_encoding_dtor( zval* element );
+void sqlsrv_error_const_dtor( _Inout_ zval* element );
+void sqlsrv_encoding_dtor( _Inout_ zval* element );
 
 // henv context for creating connections
 sqlsrv_context* g_ss_henv_cp;
@@ -569,13 +569,13 @@ PHP_MINIT_FUNCTION(sqlsrv)
 }
 
 // called by Zend for each parameter in the g_ss_warnings_to_ignore_ht and g_ss_errors_ht hash table when it is destroyed
-void sqlsrv_error_const_dtor( zval* elem ) {
+void sqlsrv_error_const_dtor( _Inout_ zval* elem ) {
 	sqlsrv_error_const* error_to_ignore = static_cast<sqlsrv_error_const*>( Z_PTR_P(elem) );
 	pefree(error_to_ignore, 1);
 }
 
 // called by Zend for each parameter in the g_ss_encodings_ht hash table when it is destroyed
-void sqlsrv_encoding_dtor( zval* elem ) {
+void sqlsrv_encoding_dtor( _Inout_ zval* elem ) {
 	sqlsrv_encoding* sql_enc = static_cast<sqlsrv_encoding*>( Z_PTR_P(elem) );
 	pefree(sql_enc, 1);
 }

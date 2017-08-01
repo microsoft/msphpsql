@@ -1,0 +1,13 @@
+9.0
+11
+1       SQLINT        0       4       ""   1     SalesOrderID                                   ""
+2       SQLINT        0       4       ""   2     SalesOrderDetailID                             ""
+3       SQLNCHAR      2       50      ""   3     CarrierTrackingNumber                          Latin1_General_CS_AS
+4       SQLSMALLINT   0       2       ""   4     OrderQty                                       ""
+5       SQLINT        0       4       ""   5     ProductID                                      ""
+6       SQLINT        0       4       ""   6     SpecialOfferID                                 ""
+7       SQLMONEY      0       8       ""   7     UnitPrice                                      ""
+8       SQLMONEY      0       8       ""   8     UnitPriceDiscount                              ""
+9       SQLNUMERIC    1       19      ""   9     LineTotal                                      ""
+10      SQLUNIQUEID   1       16      ""   10    rowguid                                        ""
+11      SQLDATETIME   0       8       ""   11    ModifiedDate                                   ""

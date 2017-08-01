@@ -1,0 +1,12 @@
+9.0
+10
+1       SQLCHAR       2       10      ""   1     asin                   SQL_Latin1_General_CP1_CI_AS
+2       SQLCHAR       2       12      ""   2     upc                    SQL_Latin1_General_CP1_CI_AS
+3       SQLCHAR       2       50      ""   3     title                  SQL_Latin1_General_CP1_CI_AS
+4       SQLCHAR       2       50      ""   4     artist                 SQL_Latin1_General_CP1_CI_AS
+5       SQLCHAR       2       12      ""   5     rel_date               SQL_Latin1_General_CP1_CI_AS
+6       SQLCHAR       2       50      ""   6     label                  SQL_Latin1_General_CP1_CI_AS
+7       SQLCHAR       2       500     ""   7     image                  SQL_Latin1_General_CP1_CI_AS
+8       SQLCHAR       2       500     ""   8     med_image              SQL_Latin1_General_CP1_CI_AS
+9       SQLCHAR       8       0       ""   9     review1                SQL_Latin1_General_CP1_CI_AS
+10      SQLCHAR       8       0       ""   10    review2                SQL_Latin1_General_CP1_CI_AS

@@ -1,0 +1,12 @@
+{
+    "name": "Benchmark - PHP Drivers for SQL Server",
+    "require-dev": {
+        "phpbench/phpbench": "^1.0@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "SqlsrvPerfTest\\": "lib",
+            "PDOSqlsrvPerfTest\\": "lib"
+        }
+    }
+}
