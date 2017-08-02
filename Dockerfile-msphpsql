@@ -76,8 +76,6 @@ RUN sed -i -e 's/TARGET_DATABASE/msphpsql_sqlsrv/g' MsSetup.inc
 RUN sed -i -e 's/TARGET_USERNAME/'"$TEST_PHP_SQL_UID"'/g' MsSetup.inc
 RUN sed -i -e 's/TARGET_PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
-ENV TEST_PHP_EXECUTABLE /usr/bin/php
-
 WORKDIR $PHPSQLDIR
 RUN chmod +x ./entrypoint.sh
 CMD /bin/bash ./entrypoint.sh $TEST_PHP_SQL_SERVER $TEST_PHP_SQL_UID $TEST_PHP_SQL_PWD

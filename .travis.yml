@@ -25,7 +25,6 @@ install:
   - docker build --build-arg PHPSQLDIR=$PHPSQLDIR -t msphpsql-dev -f Dockerfile-msphpsql .
 
 script: 
-  - docker logs sql
   - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --name=client --link $TEST_PHP_SQL_SERVER msphpsql-dev
   - docker ps -a
   - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
