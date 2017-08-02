@@ -27,8 +27,6 @@ ARG PHPSQLDIR=/REPO/msphpsql-dev
 ENV TEST_PHP_SQL_SERVER sql
 ENV TEST_PHP_SQL_UID sa
 ENV TEST_PHP_SQL_PWD Password123
-ENV SQLSRV_DBNAME msphpsql_sqlsrv
-ENV PDOSQLSRV_DBNAME msphpsql_pdosqlsrv
 
 # set locale to utf-8
 RUN locale-gen en_US.UTF-8
@@ -78,10 +76,10 @@ RUN sed -i -e 's/TARGET_DATABASE/msphpsql_sqlsrv/g' MsSetup.inc
 RUN sed -i -e 's/TARGET_USERNAME/'"$TEST_PHP_SQL_UID"'/g' MsSetup.inc
 RUN sed -i -e 's/TARGET_PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
+ENV TEST_PHP_EXECUTABLE /usr/bin/php
+
 WORKDIR $PHPSQLDIR
 RUN chmod +x ./entrypoint.sh
-CMD /bin/bash ./entrypoint.sh
-
-ENV TEST_PHP_EXECUTABLE /usr/bin/php
+CMD /bin/bash ./entrypoint.sh TEST_PHP_SQL_SERVER $TEST_PHP_SQL_UID $TEST_PHP_SQL_PWD
 
 ENV REPORT_EXIT_STATUS 1
