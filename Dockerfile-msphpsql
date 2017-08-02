@@ -79,3 +79,4 @@ RUN chmod +x ./entrypoint.sh
 CMD /bin/bash ./entrypoint.sh $TEST_PHP_SQL_SERVER $TEST_PHP_SQL_UID $TEST_PHP_SQL_PWD
 
 ENV REPORT_EXIT_STATUS 1
+ENV TEST_PHP_EXECUTABLE /usr/bin/php
