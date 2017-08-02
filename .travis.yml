@@ -32,6 +32,7 @@ script:
   - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
   - docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/pdo_sqlsrv/*.phpt
   - docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/sqlsrv/*.phpt
+  - docker logs client
   - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
   - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
   - docker exec client bash -c 'for f in ./test/functional/pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
