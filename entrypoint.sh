@@ -1,6 +1,6 @@
 set -e
 
-testConnection="/opt/mssql-tools/bin/sqlcmd -S sql -U sa -P Pasword123"
+testConnection="/opt/mssql-tools/bin/sqlcmd -S sql -U sa -P Password123"
 
 until $testConnection; do
 >&2 echo "SQL Server is starting up.."
