@@ -80,11 +80,11 @@ RUN sed -i -e 's/TARGET_PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
 WORKDIR $PHPSQLDIR
 RUN chmod +x ./entrypoint.sh
-RUN bin/bash -c "./entrypoint.sh"
+RUN /bin/bash -c ./entrypoint.sh
 
 WORKDIR $PHPSQLDIR /test/functional/setup/
-#RUN python ./setup_dbs.py -dbname $SQLSRV_DBNAME
-#RUN python ./setup_dbs.py -dbname $PDOSQLSRV_DBNAME
+RUN python ./setup_dbs.py -dbname $SQLSRV_DBNAME
+RUN python ./setup_dbs.py -dbname $PDOSQLSRV_DBNAME
 
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
 
