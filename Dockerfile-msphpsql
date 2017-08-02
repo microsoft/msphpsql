@@ -76,7 +76,7 @@ RUN sed -i -e 's/TARGET_PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
 WORKDIR $PHPSQLDIR
 RUN chmod +x ./entrypoint.sh
-CMD /bin/bash ./entrypoint.sh $TEST_PHP_SQL_SERVER $TEST_PHP_SQL_UID $TEST_PHP_SQL_PWD
+CMD /bin/bash ./entrypoint.sh
 
 ENV REPORT_EXIT_STATUS 1
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
