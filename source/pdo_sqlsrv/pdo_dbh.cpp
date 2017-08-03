@@ -468,6 +468,9 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
 {
     LOG( SEV_NOTICE, "pdo_sqlsrv_db_handle_factory: entering" );
 
+    if(!dbh)
+    	return 0;
+
     hash_auto_ptr pdo_conn_options_ht;
     pdo_error_mode prev_err_mode = dbh->error_mode;
 
@@ -571,8 +574,7 @@ int pdo_sqlsrv_dbh_close( _Inout_ pdo_dbh_t *dbh TSRMLS_DC )
     LOG( SEV_NOTICE, "pdo_sqlsrv_dbh_close: entering" );
 
     // if the connection didn't complete properly, driver_data isn't initialized.
-    if( dbh->driver_data == NULL ) {
-
+    if( !dbh || !(dbh->driver_data) ) {
         return 1;
     }
 
@@ -600,6 +602,9 @@ int pdo_sqlsrv_dbh_close( _Inout_ pdo_dbh_t *dbh TSRMLS_DC )
 int pdo_sqlsrv_dbh_prepare( _Inout_ pdo_dbh_t *dbh, _In_reads_(sql_len) const char *sql,
                             _Inout_ size_t sql_len, _Inout_ pdo_stmt_t *stmt, _In_ zval *driver_options TSRMLS_DC )
 {
+	if(!dbh)
+		return 0;
+
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
@@ -737,6 +742,9 @@ int pdo_sqlsrv_dbh_prepare( _Inout_ pdo_dbh_t *dbh, _In_reads_(sql_len) const ch
 // # of rows affected, -1 for an error.
 zend_long pdo_sqlsrv_dbh_do( _Inout_ pdo_dbh_t *dbh, _In_reads_bytes_(sql_len) const char *sql, _In_ size_t sql_len TSRMLS_DC )
 {
+	if(!dbh)
+		return -1;
+
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
@@ -947,6 +955,9 @@ int pdo_sqlsrv_dbh_rollback( _Inout_ pdo_dbh_t *dbh TSRMLS_DC )
 // 0 for failure, 1 for success.
 int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *val TSRMLS_DC )
 {
+	if(!dbh)
+		return 0;
+
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
@@ -1063,6 +1074,9 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
 // 0 for failure, 1 for success.
 int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_ zval *return_value TSRMLS_DC )
 {
+	if(!dbh)
+		return 0;
+
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
@@ -1208,6 +1222,9 @@ int pdo_sqlsrv_dbh_return_error( _In_ pdo_dbh_t *dbh, _In_opt_ pdo_stmt_t *stmt,
 // Returns the last insert id as a string.
 char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, _Out_ size_t* len TSRMLS_DC )
 {
+	if(!dbh)
+		return NULL;
+
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
@@ -1309,6 +1326,9 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
 int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const char* unquoted, _In_ size_t unquoted_len, _Outptr_result_buffer_(*quoted_len) char **quoted, _Out_ size_t* quoted_len,
                           enum pdo_param_type /*paramtype*/ TSRMLS_DC )
 {
+	if(!dbh)
+		return 0;
+
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
@@ -1450,6 +1470,9 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
 // This method is not implemented by this driver.
 pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _Inout_ pdo_dbh_t *dbh, int kind TSRMLS_DC )
 {
+	if(!dbh)
+		return NULL;
+
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
     PDO_LOG_DBH_ENTRY;
@@ -1563,6 +1586,9 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
 
 void pdo_bool_conn_str_func::func( _In_ connection_option const* option, _Inout_ zval* value, sqlsrv_conn* /*conn*/, _Out_ std::string& conn_str TSRMLS_DC )
 {
+    if(!option)
+	return;
+
     TSRMLS_C;
     char const* val_str = "no";
    
