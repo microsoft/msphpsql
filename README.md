@@ -234,7 +234,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
 
     brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
     brew update
-    brew install msodbcsql
+    brew install --no-sandbox msodbcsql
     brew install mssql-tools
     brew install autoconf
 
