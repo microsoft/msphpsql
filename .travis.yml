@@ -31,11 +31,10 @@ script:
   - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --name=client --link $TEST_PHP_SQL_SERVER msphpsql-dev
   - docker ps -a
   - docker logs client
-  - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
-  - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
-  - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/functional/pdo_sqlsrv/*.phpt
-  - docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/sqlsrv/*.phpt
-  - docker logs client
+  - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
+  - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
+  - travis_retry docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/functional/pdo_sqlsrv/*.phpt
+  - travis_retry docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/sqlsrv/*.phpt
   - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
   - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
   - docker exec client bash -c 'for f in ./test/functional/pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
