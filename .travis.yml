@@ -28,7 +28,7 @@ before_script:
   - sleep 30
   
 script: 
-  - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --name=client --link $TEST_PHP_SQL_SERVER msphpsql-dev
+  - travis_retry docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --name=client --link $TEST_PHP_SQL_SERVER msphpsql-dev
   - docker ps -a
   - docker logs client
   - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
