@@ -1321,6 +1321,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool past_fetch_end;                  // Core_sqlsrv_fetch sets this field when the statement goes beyond the last row
     sqlsrv_result_set* current_results;   // Current result set
     SQLULEN cursor_type;                  // Type of cursor for the current result set
+    int fwd_row_index;                // fwd_row_index is the current row index, SQL_CURSOR_FORWARD_ONLY
     bool has_rows;                        // Has_rows is set if there are actual rows in the row set
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field
@@ -1891,6 +1892,14 @@ namespace core {
         }
     }
 
+    inline void SQLCloseCursor( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+    {
+        SQLRETURN r = ::SQLCloseCursor( stmt->handle() );
+
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
+    }
 
     inline void SQLColAttribute( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLUSMALLINT field_identifier, 
                                  _Out_writes_bytes_opt_(buffer_length) SQLPOINTER field_type_char, _In_ SQLSMALLINT buffer_length,
@@ -2010,6 +2019,15 @@ namespace core {
         SQLRETURN r;
         r = ::SQLFreeHandle( ctx.handle_type(), ctx.handle() );
         CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {}
+    }
+
+    inline void SQLGetStmtAttr( _Inout_ sqlsrv_stmt* stmt, _In_ SQLINTEGER attr, _Out_writes_opt_(buf_len) void* value_ptr, _In_ SQLINTEGER buf_len, _Out_opt_ SQLINTEGER* str_len TSRMLS_DC)
+    {
+        SQLRETURN r;
+        r = ::SQLGetStmtAttr( stmt->handle(), attr, value_ptr, buf_len, str_len );
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
     }
 
     inline SQLRETURN SQLGetData( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
