@@ -2,7 +2,7 @@
 
 use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
 /**
- * @Iteratinos(1)
+ * @Iterations(1)
  * @BeforeMethods({"connect", "setTableName" })
  * @AfterMethods({ "disconnect"})
  */
