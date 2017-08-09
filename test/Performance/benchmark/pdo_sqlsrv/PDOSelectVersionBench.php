@@ -2,7 +2,7 @@
 
 use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
 /**
- * @Iterations(1000)
+ * @Iterations(10000)
  * @BeforeMethods({"connect"})
  * @AfterMethods({"disconnect"})
  */
