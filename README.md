@@ -306,17 +306,20 @@ On all systems, run:
 
 **Ubuntu and Debian**
 
-    sudo service apache2 restart
+    sudo systemctl restart apache2
 
 **RedHat**
 
-    sudo apachectl restart 
+    sudo systemctl restart httpd 
+
+Note: On RedHat, SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to a database through SELinux, run the following command: 
+
+    sudo setsebool -P httpd_can_network_connect_db 1     
 
 **Mac OS X** 
 
-    sudo apachectl restart 
+    sudo apachectl restart  
 
-*Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, run `sudo setsebool -P httpd_can_network_connect_db 1`     
 
 ### Step 6: Create your sample app
 Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a new file called testsql.php. Copy and paste the following code into testsql.php and change the servername, username, password and databasename.
