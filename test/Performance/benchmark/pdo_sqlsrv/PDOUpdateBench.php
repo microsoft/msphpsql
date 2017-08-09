@@ -2,6 +2,7 @@
 
 use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
 /**
+ * @Iterations(1000)
  * @BeforeMethods({"connect", "setTableName", "createTable", "generateInsertValues", "insertWithPrepare", "generateUpdateValues", "generateUpdateParams"})
  * @AfterMethods({"dropTable", "disconnect"})
  */

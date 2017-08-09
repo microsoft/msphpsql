@@ -2,6 +2,7 @@
 
 use SqlsrvPerfTest\SqlsrvUtil;
 /**
+ * @Iterations(1000)
  * @BeforeMethods({"connect", "setTableName", "createTable", "generateInsertValues", "insertWithPrepare", "generateUpdateValues", "generateUpdateParams"})
  * @AfterMethods({ "dropTable", "disconnect"})
  */

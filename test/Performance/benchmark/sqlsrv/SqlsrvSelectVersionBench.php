@@ -1,27 +1,26 @@
 <?php
 
-use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
+use SqlsrvPerfTest\SqlsrvUtil;
 /**
+ * @Iterations(10000)
  * @BeforeMethods({"connect"})
  * @AfterMethods({"disconnect"})
  */
-class PDOSelectVersionBench{
+class SqlsrvSelectVersionBench{
  
     private $conn;
-
+   
     public function connect(){
-        $this->conn = PDOSqlsrvUtil::connect();
+        $this->conn = SqlsrvUtil::connect();
     }
     /*
     * Each iteration calls execDirect API to fetch @@Version
     */
     public function benchSelectVersion(){
-        for( $i=0; $i<10; $i++ ){
-            $version = PDOSqlsrvUtil::selectVersion( $this->conn );
-        }
+        $version = SqlsrvUtil::selectVersion( $this->conn );
     }
 
     public function disconnect(){
-        PDOSqlsrvUtil::disconnect( $this->conn );
+        SqlsrvUtil::disconnect( $this->conn );
     }
 }

@@ -1,11 +1,12 @@
 <?php
 
-use SqlsrvPerfTest\SqlsrvUtil;
+use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
 /**
+ * @Iteratinos(1)
  * @BeforeMethods({"connect", "setTableName" })
  * @AfterMethods({ "disconnect"})
  */
-class SqlsrvFetchLargeBench{
+class PDOFetchLargeBench{
 
     private $conn;
     private $tableName;
@@ -16,16 +17,16 @@ class SqlsrvFetchLargeBench{
     }
 
     public function connect(){
-        $this->conn = SqlsrvUtil::connect();
+        $this->conn = PDOSqlsrvUtil::connect();
     }
     /*
     * Each iteration calls prepare, execute and fetch APIs to fetch the already populdated data
     */
     public function benchFetchWithPrepare(){
-        SqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
+        PDOSqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
     }
 
     public function disconnect(){
-        SqlsrvUtil::disconnect( $this->conn );
+        PDOSqlsrvUtil::disconnect( $this->conn );
     }
 }

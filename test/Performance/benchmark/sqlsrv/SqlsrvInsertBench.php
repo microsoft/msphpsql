@@ -1,11 +1,12 @@
 <?php
 
-use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
+use SqlsrvPerfTest\SqlsrvUtil;
 /**
+ * @Iterations(1000)
  * @BeforeMethods({"connect", "setTableName", "createTable", "generateInsertValues"})
- * @AfterMethods({ "dropTable", "disconnect"})
+ * @AfterMethods({"dropTable","disconnect"})
  */
-class PDOInsertBench{
+class SqlsrvInsertBench{
 
     private $conn;
     private $tableName;
@@ -14,32 +15,33 @@ class PDOInsertBench{
     public function setTableName(){
         $this->tableName = "datatypes_".rand();
     }
+    
     public function connect(){
-        $this->conn = PDOSqlsrvUtil::connect();
+        $this->conn = SqlsrvUtil::connect();
     }
 
     public function createTable(){
-        PDOSqlsrvUtil::createCRUDTable( $this->conn, $this->tableName );
+        SqlsrvUtil::createCRUDTable( $this->conn, $this->tableName );
     }
 
     public function generateInsertValues(){
-        $this->insertValues = PDOSqlsrvUtil::generateInsertValues();
+        $this->insertValues = SqlsrvUtil::generateInsertValues();
     }
     /**
      * Each iteration inserts 1000 rows into the table.
      * Note that, every insertion calls prepare, bindParam and execute APIs.
      */
     public function benchInsertWithPrepare(){
-        for ( $i=0; $i<100; $i++){
-            PDOSqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
+        for( $i=0; $i<100; $i++ ){
+            SqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
         }
     }
 
     public function dropTable(){
-        PDOSqlsrvUtil::dropTable( $this->conn, $this->tableName );
+        SqlsrvUtil::dropTable( $this->conn, $this->tableName );
     }
 
     public function disconnect(){
-        PDOSqlsrvUtil::disconnect( $this->conn );
+        SqlsrvUtil::disconnect( $this->conn );
     }
 }

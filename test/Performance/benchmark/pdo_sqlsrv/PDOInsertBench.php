@@ -2,10 +2,11 @@
 
 use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
 /**
- * @BeforeMethods({"connect", "setTableName", "createTable", "generateInsertValues", "insertWithPrepare"})
- * @AfterMethods({"dropTable", "disconnect"})
+ * @Iterations(1000)
+ * @BeforeMethods({"connect", "setTableName", "createTable", "generateInsertValues"})
+ * @AfterMethods({ "dropTable", "disconnect"})
  */
-class PDOFetchBench{
+class PDOInsertBench{
 
     private $conn;
     private $tableName;
@@ -25,18 +26,13 @@ class PDOFetchBench{
     public function generateInsertValues(){
         $this->insertValues = PDOSqlsrvUtil::generateInsertValues();
     }
-
-    public function insertWithPrepare(){
-        PDOSqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
-    }
-
     /**
-     * Each iteration inserts a row into the table, benchFetchWithPrepare() fetches that row 1000 times.
-     * Note that, every fetch calls prepare, execute and fetch APIs.
-     */    
-    public function benchFetchWithPrepare(){
-        for( $i=0; $i<100; $i++){
-            PDOSqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
+     * Each iteration inserts 1000 rows into the table.
+     * Note that, every insertion calls prepare, bindParam and execute APIs.
+     */
+    public function benchInsertWithPrepare(){
+        for ( $i=0; $i<100; $i++){
+            PDOSqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
         }
     }
 

@@ -2,10 +2,13 @@
 
 use SqlsrvPerfTest\SqlsrvUtil;
 /**
- * @BeforeMethods({"connect", "setTableName", "createTable", "generateInsertValues"})
- * @AfterMethods({"dropTable","disconnect"})
+ * @Iterations(1000)
+ * @BeforeMethods({"connect", "setTableName", "createTable", "generateInsertValues", "insertWithPrepare"})
+ * @AfterMethods({ "dropTable", "disconnect"})
  */
-class SqlsrvInsertBench{
+
+
+class SqlsrvFetchBench{
 
     private $conn;
     private $tableName;
@@ -14,7 +17,7 @@ class SqlsrvInsertBench{
     public function setTableName(){
         $this->tableName = "datatypes_".rand();
     }
-    
+
     public function connect(){
         $this->conn = SqlsrvUtil::connect();
     }
@@ -26,13 +29,18 @@ class SqlsrvInsertBench{
     public function generateInsertValues(){
         $this->insertValues = SqlsrvUtil::generateInsertValues();
     }
+
+    public function insertWithPrepare(){
+        SqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
+    }
+
     /**
-     * Each iteration inserts 1000 rows into the table.
-     * Note that, every insertion calls prepare, bindParam and execute APIs.
+     * Each iteration inserts a row into the table, benchFetchWithPrepare() fetches that row 1000 times.
+     * Note that, every fetch calls prepare, execute and fetch APIs.
      */
-    public function benchInsertWithPrepare(){
-        for( $i=0; $i<100; $i++ ){
-            SqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
+    public function benchFetchWithPrepare(){
+        for( $i=0; $i<100; $i++){
+            SqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
         }
     }
 

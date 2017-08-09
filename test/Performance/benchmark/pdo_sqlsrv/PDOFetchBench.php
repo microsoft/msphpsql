@@ -2,10 +2,11 @@
 
 use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
 /**
+ * @Iterations(1000)
  * @BeforeMethods({"connect", "setTableName", "createTable", "generateInsertValues", "insertWithPrepare"})
- * @AfterMethods({ "dropTable","disconnect"})
+ * @AfterMethods({"dropTable", "disconnect"})
  */
-class PDODeleteBench{
+class PDOFetchBench{
 
     private $conn;
     private $tableName;
@@ -14,7 +15,6 @@ class PDODeleteBench{
     public function setTableName(){
         $this->tableName = "datatypes_".rand();
     }
-
     public function connect(){
         $this->conn = PDOSqlsrvUtil::connect();
     }
@@ -28,17 +28,16 @@ class PDODeleteBench{
     }
 
     public function insertWithPrepare(){
-        for( $i=0; $i<100; $i++ ){
-            PDOSqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
-        }
+        PDOSqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
     }
+
     /**
-     * Each iteration inserts 1000 rows into the table, benchDelete deletes top row from the table 1000 times.
-     * Note that, every delete calls prepare and execute APIs.
-     */        
-    public function benchDelete(){
-        for( $i=0; $i<100; $i++ ){
-            PDOSqlsrvUtil::deleteWithPrepare( $this->conn, $this->tableName );
+     * Each iteration inserts a row into the table, benchFetchWithPrepare() fetches that row 1000 times.
+     * Note that, every fetch calls prepare, execute and fetch APIs.
+     */    
+    public function benchFetchWithPrepare(){
+        for( $i=0; $i<100; $i++){
+            PDOSqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
         }
     }
 
@@ -49,5 +48,4 @@ class PDODeleteBench{
     public function disconnect(){
         PDOSqlsrvUtil::disconnect( $this->conn );
     }
-
 }
