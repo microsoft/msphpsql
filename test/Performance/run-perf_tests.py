@@ -656,6 +656,7 @@ def parse_results( dump_file ):
         # If the bechmark was run successfully, parse the results. This is where you would add code to parse more details about the benchmark.
         else:
             xml_result.success = 1
+            # convert microseconds to seconds
             xml_result.duration = int( round( int( benchmark[0][0].find( 'stats' ).get( 'sum' )) / 1000000 ))
             iterations = benchmark[0][0].findall( 'iteration' )
             xml_result.iterations = len( iterations )
