@@ -2,7 +2,7 @@
 select t1.ResultId, Test, Client, Server, Driver, Duration, Memory, Success, Team, StartTime from
 (
 select pr.ResultId, pr.Success, pt.TestName as Test, cl.HostName as Client, srv.HostName as Server,
-tm.TeamName as Team, st.value as Driver, bi.value as Duration, bi2.value as Memory,  dt.value as StartTime from 
+tm.TeamName as Team, st.value as Driver, bi.value as Duration, CAST(bi2.value AS decimal(10,2))/1048576 as Memory,  dt.value as StartTime from 
 KeyValueTableBigInt bi, 
 KeyValueTableBigInt bi2, 
 KeyValueTableString st,
