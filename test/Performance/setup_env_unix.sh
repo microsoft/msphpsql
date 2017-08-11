@@ -86,7 +86,7 @@ elif [ $PLATFORM = "Sierra" ]; then
     echo "Installing MSODBCSQL..."
     brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-msodbcsql >> env_setup.log 2>&1
     brew update >> env_setup.log 2>&1
-    yes | ACCEPT_EULA=Y brew install msodbcsql >> env_setup.log 2>&1
+    yes | ACCEPT_EULA=Y brew install --no-sandbox msodbcsql >> env_setup.log 2>&1
     echo "OK"
     yes | brew install autoconf >> env_setup.log 2>&1
     echo "Installing pyodbc..."
