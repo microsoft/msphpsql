@@ -111,9 +111,8 @@ class BuildUtil(object):
             shutil.rmtree(os.path.join(phpsrc, 'Release_TS'), ignore_errors=True)
 
     def remove_prev_build(self, sdk_dir):
-        """Remove all binaries and source code in the 
-        Release* or Debug* folders according to the current 
-        configuration
+        """Remove all binaries and source code in the Release* or Debug* 
+        folders according to the current configuration
         """
         print('Removing previous build...')
         build_dir = self.build_abs_path(sdk_dir)
@@ -244,9 +243,20 @@ class BuildUtil(object):
     def update_driver_source(self, source_dir, driver): 
         """Update the *driver* source in *source_path* with the 
         latest version, file descriptions, etc.
+        If debug is enabled, will remove the optimization flag  
         """
         driver_dir = os.path.join(source_dir, driver)
         
+        if self.debug_enabled:
+            # Remove the optimization flag in the config file for this driver
+            # because '/O2' option is incompatible with Debug mode
+            print('Removing optimization flag for', driver)
+            config_file = os.path.join(driver_dir, 'config.w32')
+            if driver == 'sqlsrv':
+                self.update_file_content(config_file, 'ADD_FLAG( "CFLAGS_SQLSRV", "/O2" );', '')
+            elif driver == 'pdo_sqlsrv':
+                self.update_file_content(config_file, 'ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/O2" );', '')
+                    
         # Update Template.rc 
         template_file = os.path.join(driver_dir, 'template.rc')
         if driver == 'sqlsrv':
@@ -399,15 +409,15 @@ class BuildUtil(object):
         self.copy_binaries(sdk_dir, copy_to_ext)
 
     def rename_binary(self, path, driver, suffix):
-        """Rename sqlsrv or pdo_sqlsrv binary."""
+        """Rename the *driver* binary (sqlsrv or pdo_sqlsrv) based on the *suffix*."""
         driver_old_name = self.driver_name(driver, suffix)
         driver_new_name = self.driver_new_name(driver, suffix)
 
         os.rename(os.path.join(path, driver_old_name), os.path.join(path, driver_new_name))
 
     def rename_binaries(self, sdk_dir):
-        """Rename the sqlsrv and/or pdo_sqlsrv binaries based on 
-        PHP version and thread, including pdb files.
+        """Rename the sqlsrv and/or pdo_sqlsrv binaries according to the 
+        PHP version and thread, including pdb files (the symbols).
         """
         
         # Derive the path to where the extensions are located
@@ -424,13 +434,14 @@ class BuildUtil(object):
             self.rename_binary(ext_dir, self.driver, '.pdb')
                 
     def copy_binary(self, from_dir, dest_dir, driver, suffix):
-        """Copy sqlsrv or pdo_sqlsrv binary to *dest_dir*."""
+        """Copy sqlsrv or pdo_sqlsrv binary (based on *suffix*) to *dest_dir*."""
         binary = self.driver_new_name(driver, suffix)
         shutil.copy2(os.path.join(from_dir, binary), dest_dir)
     
     def copy_binaries(self, sdk_dir, copy_to_ext):
-        """Copy the sqlsrv and/or pdo_sqlsrv binaries, 
-        including pdb files, to the right place.
+        """Copy the sqlsrv and/or pdo_sqlsrv binaries, including pdb files, 
+        to the right place, depending on *copy_to_ext*. The default is to 
+        copy them to the 'ext' folder.
         """      
         build_dir = self.build_abs_path(sdk_dir)
         print('Copying the binaries from', build_dir)

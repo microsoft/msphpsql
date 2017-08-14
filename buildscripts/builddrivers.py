@@ -35,7 +35,7 @@ class BuildDriver(object):
         repo            # GitHub repository
         branch          # GitHub repository branch
         download_source # download source from GitHub or not
-        package         # package name for the binaries
+        package         # package name for the binaries (will be ignored for local builds)
         remote_path     # remote destination to where the drivers will be placed (None for local builds)
         local           # whether the build is local
         source_path     # path to a local source folder
@@ -54,42 +54,55 @@ class BuildDriver(object):
         self.source_path = None     # None initially but will be set later if not downloading from GitHub
     
     def show_config(self):
+        print()
         print('PHP Version: ', self.util.phpver)
         print('Arch: ', self.util.arch)
         print('Thread: ', self.util.thread)
         print('Driver: ', self.util.driver) 
         print('Debug enabled: ', self.util.debug_enabled) 
+        print()
 
     def clean_or_remove(self, root_dir, work_dir):
-        """Check if php source directory already exists. 
-        If so, prompt user whether to rebuild, clean, or superclean, 
-        meaning to remove the entire php source directory.
+        """Only check this when building locally and not rebuilding. If the php source directory 
+        already exists, this will prompt user whether to rebuild, clean, or superclean, the last option
+        will remove the entire php source directory.
+        
+        :param  root_dir: the C:\ drive
+        :param  work_dir: the directory of this script
+        :outcome: the old binaries, if exist, will be removed
         """
         phpsrc = self.util.phpsrc_root(root_dir)
         if os.path.exists( phpsrc ):
             print(phpsrc + " exists.")
             print("Choose rebuild(r) if using the same configuration. Choose clean(c) otherwise. If unsure, choose superclean(s).") 
-            choice = validate_input("Want to rebuild (r), clean (c) or superclean (s)? ", "r/c/s")
+            build_choice = validate_input("Want to rebuild (r), clean (c) or superclean (s)? ", "r/c/s")
             self.make_clean = False
-            if choice == 'r':
+            if build_choice == 'r':
                 print('Will rebuild the binaries')
+                # only the old binaries based on the current configuration will be removed
                 self.util.remove_prev_build(root_dir)
-            elif choice == 'c':
+            elif build_choice == 'c':
                 print('Will make clean')
                 self.make_clean = True
-                # this step is necessary in case the user has changed the configuration
+                # all old builds are removed, and this step is necessary because 
+                # the user might have changed the configuration
                 self.util.remove_old_builds(root_dir)
             else:
                 print('Will remove ' + phpsrc)
                 os.system('RMDIR /s /q ' + phpsrc)
                 
-            os.chdir(work_dir)
+            os.chdir(work_dir)  # change back to the working directory
 
     def build_extensions(self, dest, logfile):
         """This takes care of getting the drivers' source files, building the drivers. 
         If running locally, *dest* should be the root drive. Otherwise, *dest* should be None. 
         In this case, remote_path must be defined such that the binaries will be copied 
         to the designated destinations.
+        
+        :param  dest: either None (for remote builds) or the C:\ drive (for local builds)
+        :param  logfile: the name of the logfile
+        :outcome: the drivers and symbols will renamed and placed in the appropriate location(s)
+
         """
         work_dir = os.path.dirname(os.path.realpath(__file__))
             
@@ -98,6 +111,7 @@ class BuildDriver(object):
             self.util.download_msphpsql_source(repo, branch)
         else:
             # This case only happens when building locally (interactive mode)
+            # because download_source must be True for remote builds
             while True:
                 if self.source_path is None:
                     source = input('Enter the full path to the Source folder: ')
@@ -153,7 +167,9 @@ class BuildDriver(object):
     
 
     def build(self):
-        """This is the main entry point of building drivers for PHP."""
+        """This is the main entry point of building drivers for PHP. 
+        For local builds, this will loop till the user decides to quit.
+        """
         self.show_config()
     
         work_dir = os.path.dirname(os.path.realpath(__file__))
@@ -221,7 +237,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--BRANCH', default='dev', help="GitHub repository branch")
     parser.add_argument('-g', '--GITHUB', default='yes', help="get source from GitHub or not")
     parser.add_argument('-k', '--PACKAGE', default='Latest', help="the package name for the drivers")
-    parser.add_argument('-p', '--PATH', default=None, help="the remote destination for the drivers")
+    parser.add_argument('-p', '--PATH', default=None, help="the remote destination for the drivers (do not use this when building locally)")
 
     args = parser.parse_args()
 
