@@ -250,8 +250,8 @@ On Ubuntu and Debian systems only, run:
 
 On all systems, run:
 
-    sudo pecl install sqlsrv
-    sudo pecl install pdo_sqlsrv
+    pecl install sqlsrv
+    pecl install pdo_sqlsrv
    
 ### Step 4: Install and Configure Apache
 
