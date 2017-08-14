@@ -111,9 +111,15 @@ class BuildUtil(object):
             shutil.rmtree(os.path.join(phpsrc, 'Release_TS'), ignore_errors=True)
 
     def remove_prev_build(self, sdk_dir):
-        """Remove all binaries and source code in the Release* or Debug* folders"""
+        """Remove all binaries and source code in the 
+        Release* or Debug* folders according to the current 
+        configuration
+        """
         print('Removing previous build...')
         build_dir = self.build_abs_path(sdk_dir)
+        if not os.path.exists(build_dir):
+            return
+            
         os.chdir(build_dir)
         os.system('DEL *sqlsrv*')    
         

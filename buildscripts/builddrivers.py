@@ -105,13 +105,16 @@ class BuildDriver(object):
                     source = input("Hit ENTER to reuse '" + self.source_path + "' or provide another path to the Source folder: ")
                     if len(source) == 0:
                         source = self.source_path
-                        
-                if os.path.exists( source ):
+
+                valid = True
+                if os.path.exists(source) and os.path.exists(os.path.join(source, 'shared')):
+                    # Checking the existence of 'shared' folder only, assuming
+                    # sqlsrv and/or pdo_sqlsrv are also present if it exists
                     self.source_path = source
                     break
-                else:
-                    print('The path provided does not exist. Please re-enter.')            
-            
+                    
+                print("The path provided is invalid. Please re-enter.")            
+                                
             print('Copying source files from', source)
                 
             os.system('ROBOCOPY ' + source + '\shared ' + work_dir + '\Source\shared /xx /xo ')
