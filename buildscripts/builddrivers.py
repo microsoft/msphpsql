@@ -31,11 +31,7 @@ class BuildDriver(object):
     """Build sqlsrv and/or pdo_sqlsrv drivers with PHP source with the following properties:
     
     Attributes:
-        phpver          # PHP version, e.g. 7.1.*, 7.2.* etc.
-        driver          # all, sqlsrv, or pdo_sqlsrv
-        arch            # x64 or x86
-        thread          # nts or ts
-        debug           # whether debug is enabled
+        util            # BuildUtil object whose constructor takes phpver, driver, arch, thread, debug 
         repo            # GitHub repository
         branch          # GitHub repository branch
         download_source # download source from GitHub or not
@@ -65,10 +61,14 @@ class BuildDriver(object):
         print('Debug enabled: ', self.util.debug_enabled) 
 
     def clean_or_remove(self, root_dir, work_dir):
-        """Check if php source directory already exists. If so, prompt user whether to rebuild, clean, or superclean, meaning to remove the entire php source directory."""
+        """Check if php source directory already exists. 
+        If so, prompt user whether to rebuild, clean, or superclean, 
+        meaning to remove the entire php source directory.
+        """
         phpsrc = self.util.phpsrc_root(root_dir)
         if os.path.exists( phpsrc ):
-            print(phpsrc + " exists.") 
+            print(phpsrc + " exists.")
+            print("Choose rebuild(r) if using the same configuration. Choose clean(c) otherwise. If unsure, choose superclean(s).") 
             choice = validate_input("Want to rebuild (r), clean (c) or superclean (s)? ", "r/c/s")
             self.make_clean = False
             if choice == 'r':
@@ -86,7 +86,11 @@ class BuildDriver(object):
             os.chdir(work_dir)
 
     def build_extensions(self, dest, logfile):
-        """This takes care of getting the drivers' source files, building the drivers. If running locally, *dest* should be the root drive. Otherwise, *dest* should be None. In this case, remote_path must be defined such that the binaries will be copied to the designated destinations."""
+        """This takes care of getting the drivers' source files, building the drivers. 
+        If running locally, *dest* should be the root drive. Otherwise, *dest* should be None. 
+        In this case, remote_path must be defined such that the binaries will be copied 
+        to the designated destinations.
+        """
         work_dir = os.path.dirname(os.path.realpath(__file__))
             
         if self.download_source:

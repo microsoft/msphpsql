@@ -189,7 +189,9 @@ class BuildUtil(object):
     
     @staticmethod
     def download_msphpsql_source(repo, branch, dest_folder = 'Source', clean_up = True):
-        """Download to *dest_folder* the msphpsql archive of the specified GitHub *repo* and *branch*."""
+        """Download to *dest_folder* the msphpsql archive of the specified 
+        GitHub *repo* and *branch*. The downloaded files will be removed by default.
+        """
         try:
             work_dir = os.path.dirname(os.path.realpath(__file__))   
 
@@ -207,8 +209,8 @@ class BuildUtil(object):
                 with urllib.request.urlopen(url) as response, open(file, 'wb') as out_file:
                     shutil.copyfileobj(response, out_file)
             except:
-                print ("Resort to skip ssl verifcation...")
-                # need to skip ssl verifcation on some agents
+                print ("Resort to skip ssl verification...")
+                # need to skip ssl verification on some agents
                 # see https://www.python.org/dev/peps/pep-0476/
                 with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as response, open(file, 'wb') as out_file:
                     shutil.copyfileobj(response, out_file)
@@ -234,7 +236,9 @@ class BuildUtil(object):
             raise
 
     def update_driver_source(self, source_dir, driver): 
-        """Update the *driver* source in *source_path* with the latest version, file descriptions, etc."""
+        """Update the *driver* source in *source_path* with the 
+        latest version, file descriptions, etc.
+        """
         driver_dir = os.path.join(source_dir, driver)
         
         # Update Template.rc 
@@ -327,7 +331,10 @@ class BuildUtil(object):
             print('Cannot create ', filename)
 
     def build_drivers(self, make_clean = False, dest = None, log_file = None):
-        """Build sqlsrv/pdo_sqlsrv extensions for PHP, assuming the Source folder exists in the working directory, and this folder will be removed when the build is complete."""
+        """Build sqlsrv/pdo_sqlsrv extensions for PHP, assuming the Source folder 
+        exists in the working directory, and this folder will be removed when the build 
+        is complete.
+        """
         work_dir = os.path.dirname(os.path.realpath(__file__))   
 
         # First, update the driver source file contents
@@ -376,7 +383,7 @@ class BuildUtil(object):
         os.system(starter_script + ' -t ' + batch_file)
         
         # Now we can safely remove the Source folder, because its contents have 
-        # already been modified when building the extensions
+        # already been modified prior to building the extensions
         shutil.rmtree(os.path.join(phpSDK, 'Source'), ignore_errors=True) 
         
         # Next, rename the newly compiled PHP extensions
@@ -393,7 +400,9 @@ class BuildUtil(object):
         os.rename(os.path.join(path, driver_old_name), os.path.join(path, driver_new_name))
 
     def rename_binaries(self, sdk_dir):
-        """Rename the sqlsrv and/or pdo_sqlsrv binaries based on PHP version and thread, including pdb files."""
+        """Rename the sqlsrv and/or pdo_sqlsrv binaries based on 
+        PHP version and thread, including pdb files.
+        """
         
         # Derive the path to where the extensions are located
         ext_dir = self.build_abs_path(sdk_dir)
@@ -414,7 +423,9 @@ class BuildUtil(object):
         shutil.copy2(os.path.join(from_dir, binary), dest_dir)
     
     def copy_binaries(self, sdk_dir, copy_to_ext):
-        """Copy the sqlsrv and/or pdo_sqlsrv binaries, including pdb files, to the right place."""      
+        """Copy the sqlsrv and/or pdo_sqlsrv binaries, 
+        including pdb files, to the right place.
+        """      
         build_dir = self.build_abs_path(sdk_dir)
         print('Copying the binaries from', build_dir)
         if copy_to_ext:
