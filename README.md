@@ -31,6 +31,7 @@ Thank you for taking time to take our February survey. Let us know how we are do
 
 * [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/ubuntu)
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/rhel)
+* [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/sles)
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/windows)
 * [**Docker**](https://hub.docker.com/r/lbosqmsft/mssql-php-msphpsql/)
 
@@ -80,7 +81,7 @@ This software has been compiled and tested under PHP 7.0.20 and 7.1.6 using the 
 3. Restart the Web server.
 
 ## Install (UNIX)
-The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, and Mac OS X. 
+The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, SUSE 12, and Mac OS X. 
 
 ### Step 1: Install PHP7+ 
 
@@ -119,6 +120,12 @@ The following instructions assume a clean environment and show how to install PH
     echo "deb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
     apt-get update
     apt-get install -y php7.0 php-pear php7.0-dev php7.0-xml
+
+**SUSE 12**
+
+    sudo su
+    zypper refresh
+    zypper install -y php7 php7-pear php7-devel
 
 **Mac OS X**
 
@@ -162,6 +169,13 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
     apt-get update
     apt-get install -y php7.1 php-pear php7.1-dev php7.1-xml
+
+**SUSE 12**
+
+    sudo su
+    zypper -n ar -f http://download.opensuse.org/repositories/devel:/languages:/php/openSUSE_Leap_42.3/ devel:languages:php
+    zypper --gpg-auto-import-keys refresh
+    zypper -n install php7 php7-pear php7-devel
 
 **Mac OS X**
 
@@ -230,6 +244,19 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     sudo ACCEPT_EULA=Y apt-get install msodbcsql
     sudo apt-get install unixodbc-dev
 
+**SUSE 12**
+
+    sudo su
+    zypper ar https://packages.microsoft.com/config/sles/12/prod.repo
+    sudo zypper --gpg-auto-import-keys refresh
+    exit
+    sudo ACCEPT_EULA=Y zypper install msodbcsql
+    sudo ACCEPT_EULA=Y zypper install mssql-tools
+    sudo zypper install unixODBC-devel
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
+
 **Mac OS X**
 
     brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
@@ -244,7 +271,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
 
 *Note: You can run `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version. PECL installs the stable version when version is not specified. Drivers are Mac-compatible starting from `4.1.7preview` release.
 
-On Ubuntu and Debian systems only, run:
+On Ubuntu, Debian, and SUSE systems only, run:
 
     sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
 
@@ -274,6 +301,14 @@ On all systems, run:
     echo "extension=sqlsrv.so" > /etc/php.d/sqlsrv.ini
     echo "extension=pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
+**SUSE**
+
+    sudo su
+    zypper install apache2 apache2-mod_php7
+    a2enmod php7
+    echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
+    echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
+
 **Mac OS X** 
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
@@ -297,6 +332,14 @@ On all systems, run:
     echo "extension=sqlsrv.so" > /etc/php.d/sqlsrv.ini
     echo "extension=pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
+**SUSE**
+
+    sudo su
+    zypper install apache2 apache2-mod_php7
+    a2enmod php7
+    echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
+    echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
+
 **Mac OS X** 
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
@@ -304,7 +347,7 @@ On all systems, run:
     
 ### Step 5: Restart Apache to load the new php.ini file
 
-**Ubuntu and Debian**
+**Ubuntu, Debian, and SUSE**
 
     sudo systemctl restart apache2
 
@@ -322,7 +365,7 @@ Note: On RedHat, SELinux is installed by default and runs in Enforcing mode. To 
 
 
 ### Step 6: Create your sample app
-Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a new file called testsql.php. Copy and paste the following code into testsql.php and change the servername, username, password and databasename.
+Navigate to your system's document root -- `/var/www/html` on Ubuntu, Debian, and Redhat, `/srv/www/htdocs` on SUSE, or `/usr/local/var/www/htdocs` on Mac. Create a new file called testsql.php. Copy and paste the following code into testsql.php and change the servername, username, password and databasename.
 
     <?php
     $serverName = "yourServername";
