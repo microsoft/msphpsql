@@ -112,6 +112,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding,
                                         _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _Out_writes_(buffer_len) SQLPOINTER& buffer,
                                         _Out_ SQLLEN& buffer_len TSRMLS_DC );
+bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt );
 void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param TSRMLS_DC );
 // send all the stream data 
 void send_param_streams( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
@@ -798,6 +799,10 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
         // move to the record requested.  For absolute records, we use a 0 based offset, so +1 since 
         // SQLFetchScroll uses a 1 based offset, otherwise for relative, just use the fetch_offset provided.
         SQLRETURN r = stmt->current_results->fetch( fetch_orientation, ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 TSRMLS_CC );
+        
+        // when AE is on, need to store the current row number being fetched so a cursor can be reset back to it's original position when getting stream data
+        // fwd_row_index is used to store the current row index, which is incremented everytime SQLFetchScroll is called with SQLSRV_CURSOR_FORWARD_ONLY
+        // fetching encrypted max type only works for SQLSRV_CURSOR_FORWARD_ONLY, thus no need to save this number when CURSOR is non-FORWARD_ONLY
         if ( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY && stmt->conn->ce_option.enabled == true ) {
             stmt->fwd_row_index++;
         }
@@ -2176,7 +2181,6 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
         else {
             // Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
             core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
-            SQLLEN sql_field_len = 0;
 
             // Calculate the field size.
             calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
@@ -2239,25 +2243,9 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 
                             field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
-                            // only handled differently when AE is on because AE does not support streaming
-                            // SQLSRV_CURSOR_BUFFERED already fetched everything beforehand, so doesn't need to be handled differently here
-                            if ( stmt->conn->ce_option.enabled == true && stmt->current_results->odbc->cursor_type != SQLSRV_CURSOR_BUFFERED ) {
-                                // if the cursor is forward only, we have no choice but to close the cursor and open it again
-                                // but if not forward only, we can simply fetch next then fetch prior to reset the cursor
-                                if ( stmt->current_results->odbc->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
-                                    // reopen the cursor
-                                    core::SQLCloseCursor( stmt->current_results->odbc );
-                                    core::SQLExecute( stmt );
-                                    // FETCH_NEXT until the cursor reaches the row that it was at
-                                    for ( int i = 0; i <= stmt->fwd_row_index; i++ ) {
-                                        core::SQLFetchScroll( stmt->current_results->odbc, SQL_FETCH_NEXT, 0 );
-                                    }
-                                }
-                                else {
-                                    core::SQLFetchScroll( stmt->current_results->odbc, SQL_FETCH_NEXT, 0 );
-                                    core::SQLFetchScroll( stmt->current_results->odbc, SQL_FETCH_PRIOR, 0 );
-                                }
-                                // now that the fetch buffer has reset, fetch the original column again with a bigger buffer length
+                            // reset AE stream fetch buffer
+			                if ( reset_ae_stream_cursor( stmt )){
+                                // fetch the original column again with a bigger buffer length
                                 r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, field_len_temp + extra,
                                     &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
                                 // if field_len_temp was bit enough to hold all data, dummy_field_len contain the actual amount retrieved,
@@ -2294,23 +2282,9 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                         // We got the field_len_temp from SQLGetData call.
                         field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
-                        if ( stmt->conn->ce_option.enabled == true && stmt->current_results->odbc->cursor_type != SQLSRV_CURSOR_BUFFERED ) {
-                            // if the cursor is forward only, we have no choice but to close the cursor and open it again
-                            // but if not forward only, we can simply fetch next then fetch prior to reset the cursor
-                            if ( stmt->current_results->odbc->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
-                                // reopen the cursor
-                                core::SQLCloseCursor( stmt->current_results->odbc );
-                                core::SQLExecute( stmt );
-                                // FETCH_NEXT until the cursor reaches the row that it was at
-                                for ( int i = 0; i <= stmt->fwd_row_index; i++ ) {
-                                    core::SQLFetchScroll( stmt->current_results->odbc, SQL_FETCH_NEXT, 0 );
-                                }
-                            }
-                            else {
-                                core::SQLFetchScroll( stmt->current_results->odbc, SQL_FETCH_NEXT, 0 );
-                                core::SQLFetchScroll( stmt->current_results->odbc, SQL_FETCH_PRIOR, 0 );
-                            }
-                            // now that the fetch buffer has reset, fetch the original column again with a bigger buffer length
+                        // reset AE stream fetch buffer
+                        if ( reset_ae_stream_cursor( stmt ) ) {
+                            // fetch the original column again with a bigger buffer length
                             r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, field_len_temp + extra,
                                 &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
                         }
@@ -2577,6 +2551,22 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     if( stmt->param_ind_ptrs[ paramno ] > buffer_len - (elem_size - buffer_null_extra)) {
         stmt->param_ind_ptrs[ paramno ] = buffer_len - (elem_size - buffer_null_extra);
     }
+}
+
+bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt ) {
+    // only handled differently when AE is on because AE does not support streaming
+    // AE only works with SQL_CURSOR_FORWARD_ONLY for max types
+    if (stmt->conn->ce_option.enabled == true && stmt->current_results->odbc->cursor_type == SQL_CURSOR_FORWARD_ONLY) {
+        // close and reopen the cursor
+        core::SQLCloseCursor(stmt->current_results->odbc);
+        core::SQLExecute(stmt);
+        // FETCH_NEXT until the cursor reaches the row that it was at
+        for (int i = 0; i <= stmt->fwd_row_index; i++) {
+            core::SQLFetchScroll(stmt->current_results->odbc, SQL_FETCH_NEXT, 0);
+        }
+        return true;
+    }
+    return false;
 }
 
 // output parameters have their reference count incremented so that they do not disappear
