@@ -2244,7 +2244,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                             field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
                             // reset AE stream fetch buffer
-			                if ( reset_ae_stream_cursor( stmt )){
+                            if ( reset_ae_stream_cursor( stmt )){
                                 // fetch the original column again with a bigger buffer length
                                 r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, field_len_temp + extra,
                                     &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
@@ -2278,8 +2278,8 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                         } while( r == SQL_SUCCESS_WITH_INFO && is_truncated_warning( state ));
                     }
                     else {
-
-                        // We got the field_len_temp from SQLGetData call.
+                        // the real field length is returned here, thus no need to double the allocation size here, just have to
+                        // allocate field_len_temp (which is the field length retrieved from the first SQLGetData
                         field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
                         // reset AE stream fetch buffer
