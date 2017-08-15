@@ -21,6 +21,7 @@ import stat
 import datetime
 import urllib.request
 import zipfile 
+import fileinput
 
 class BuildUtil(object):
     """Build sqlsrv and/or pdo_sqlsrv drivers with PHP source with the following properties:
@@ -141,12 +142,9 @@ class BuildUtil(object):
     def update_file_content(file, search_str, new_str):
         """Find *search_str* and replace it by *new_str* in a *file*"""
         os.chmod(file, stat.S_IWRITE)
-        f = open(file, 'r')
-        filedata = f.read()
-        updatedata = filedata.replace(search_str, new_str)
-        f = open(file, 'w')
-        f.write(updatedata)
-        f.close()
+        with fileinput.FileInput(file, inplace=True) as f:
+            for line in f:
+                print(line.replace(search_str, new_str), end='')
 
     @staticmethod
     def generateMMDD():
@@ -390,6 +388,12 @@ class BuildUtil(object):
 
         # Copy the generated batch file to phpSDK for the php starter script 
         shutil.copy(os.path.join(work_dir, batch_file), phpSDK)
+        sdk_source = os.path.join(phpSDK, 'Source')
+        # Sometimes, for various reasons, the Source folder from previous build 
+        # might exist in phpSDK. If so, remove it first
+        if os.path.exists(sdk_source):  
+            os.chmod(sdk_source, stat.S_IWRITE)
+            shutil.rmtree(sdk_source, ignore_errors=True) 
         shutil.move(source_dir, phpSDK)
         
         # Invoke phpsdk-<vc>-<arch>.bat
