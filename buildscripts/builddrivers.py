@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #########################################################################################
 #
 # Description:  This script helps to build drivers in a Windows environment for PHP 7+ (32-bit/64-bit)
 #
 # Requirement:
-#               python 3.4
+#               python 3.x
 #               PHP SDK and PHP Source 
 #               Driver source code folder / GitHub repository
 #               Visual Studio 2015 (PHP 7.0* and 7.1*) and Visual Studio 2017 (PHP 7.2*)
@@ -35,18 +35,18 @@ class BuildDriver(object):
         repo            # GitHub repository
         branch          # GitHub repository branch
         download_source # download source from GitHub or not
-        package         # package name for the binaries (will be ignored for local builds)
         remote_path     # remote destination to where the drivers will be placed (None for local builds)
-        local           # whether the build is local
+        local           # a boolean flag - whether the build is local
+        rebuild         # a boolean flag - whether the user is rebuilding
+        make_clean      # a boolean flag - whether make clean is necessary
         source_path     # path to a local source folder
     """
     
-    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, download, package, path):
+    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, download, path):
         self.util = BuildUtil(phpver, driver, arch, thread, debug)
         self.repo = repo
         self.branch = branch
         self.download_source = download
-        self.package = package
         self.remote_path = path
         self.local = path is None   # the default path is None, which means running locally 
         self.rebuild = False
@@ -147,8 +147,7 @@ class BuildDriver(object):
             if self.remote_path is None:
                 print('Errors: Drivers destination should be defined! Do nothing.')
             else:
-                OS_folder = "Windows" # hardcode this since this script is only run in Windows
-                dest_drivers = os.path.join(self.remote_path, 'PHP', 'Drivers', self.package, OS_folder, self.util.major_version(), self.util.arch)
+                dest_drivers = os.path.join(self.remote_path, self.util.major_version(), self.util.arch)
                 dest_symbols = os.path.join(dest_drivers, 'Symbols')
                 
                 # All intermediate directories will be created in order to create the leaf directory
@@ -236,8 +235,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--REPO', default='Microsoft', help="GitHub repository")
     parser.add_argument('-b', '--BRANCH', default='dev', help="GitHub repository branch")
     parser.add_argument('-g', '--GITHUB', default='yes', help="get source from GitHub or not")
-    parser.add_argument('-k', '--PACKAGE', default='Latest', help="the package name for the drivers")
-    parser.add_argument('-p', '--PATH', default=None, help="the remote destination for the drivers (do not use this when building locally)")
+    parser.add_argument('-p', '--DESTPATH', default=None, help="the remote destination for the drivers (do not use this for local builds)")
 
     args = parser.parse_args()
 
@@ -249,19 +247,18 @@ if __name__ == '__main__':
     repo = args.REPO
     branch = args.BRANCH
     download = args.GITHUB.lower() == 'yes'
-    path = args.PATH
-    package = args.PACKAGE
+    path = args.DESTPATH
 
     if phpver is None:
         # assuming it is building drivers locally when required to prompt
         # thus will not prompt for drivers' destination path, which is None by default
         phpver = input("PHP Version (e.g. 7.1.* or 7.2.*): ")
-        arch_version = input("Want to build 64-bit [y/n]: ")
+        arch_version = input("64-bit? [y/n]: ")
         thread = validate_input("Thread safe? ", "nts/ts")
         driver = validate_input("Driver to build? ", "all/sqlsrv/pdo_sqlsrv")
-        debug_mode = input("Want to build debug [y/n]? ")
+        debug_mode = input("Debug enabled? [y/n]: ")
 
-        answer = input("Download source from a GitHub repo [y/n]? ")
+        answer = input("Download source from a GitHub repo? [y/n]: ")
         download = False
         if answer == 'yes' or answer == 'y' or answer == '':
             download = True
@@ -286,6 +283,5 @@ if __name__ == '__main__':
                           repo, 
                           branch, 
                           download, 
-                          package,
                           path)
     builder.build()

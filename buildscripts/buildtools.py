@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #########################################################################################
 #
 # Description:  The class BuildUtil will build Microsoft SQL Server PHP 7+ Drivers 
 #               for 32 bit and 64 bit.
 #
 # Requirement:
-#               python 3.4
+#               python 3.x
 #               PHP SDK and PHP Source 
 #               Driver source code folder
 #               Git for Windows
@@ -48,7 +48,7 @@ class BuildUtil(object):
         """Return the version label based on the PHP version."""
         major_ver = self.major_version()
         
-        if major_ver == '7.0':
+        if major_ver[2] == '0':
             version = major_ver[0]
         else:
             version = major_ver[0] + major_ver[2]
