@@ -37,7 +37,7 @@ Thank you for taking time to take our February survey. Let us know how we are do
 
 ## Announcements
 
- Please visit the [blog][blog] for more announcements.
+Please visit the [blog][blog] for more announcements.
 
 
 ## Build (Windows)
@@ -46,23 +46,29 @@ Note: if you prefer, you can use the pre-compiled binary found [HERE](https://gi
 
 #### Prerequisites
 
-You must first be able to build PHP 7 without including these extensions.  For help with doing this, see the [official PHP website][phpbuild] for building your own PHP on Windows.
+You must first be able to build PHP 7 without including these extensions. For help with doing this, see the [official PHP website][phpbuild] for building your own PHP on Windows.
 
 #### Compile the drivers
 
-1. Copy the sqlsrv and/or pdo_sqlsrv source code directory from this repository into the ext subdirectory.
+1. Download the source code directory from this repository
 
-2. Run `buildconf.bat` to rebuild the configure.js script to include the driver.
+2. Make a copy of *shared* folder as a subfolder in *sqlsrv* and/or *pdo_sqlsrv* folder
 
-3. Run `configure.bat --with-odbcver=0x0380 and the desired driver options (as below) [plus other options such as --disable-zts for the Non Thread Safe build]` to generate the makefile.  You can run `configure.bat --help` to see what other options are available.
-  * For SQLSRV use: `--enable-sqlsrv=shared`
-  * For PDO_SQLSRV use: `--enable-pdo=shared --with-pdo-sqlsrv=shared`
+3. Copy the *sqlsrv* and/or *pdo_sqlsrv* folder into the PHP source ext subdirectory.
 
-4. Run `nmake`.  It is suggested that you run the entire build.  If you wish to do so, run `nmake clean` first.
+4. Run `buildconf --force` to rebuild the configure.js script to include the driver.
 
-5. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll and/or php_pdo_sqlsrv.dll to your PHP extension directory.
+5. Run `configure.bat --with-odbcver=0x0380 and the desired driver options (as below) [plus other options such as --disable-zts for the Non Thread Safe build]` to generate the makefile.  You can run `configure.bat --help` to see what other options are available.
+    * For SQLSRV use: `--enable-sqlsrv=shared`
+    * For PDO_SQLSRV use: `--enable-pdo --with-pdo-sqlsrv=shared`
 
-This software has been compiled and tested under PHP 7.0.20 and 7.1.6 using the Visual C++ 2015 compiler.
+6. Run `nmake`. Optionally, you can run `nmake clean` first.
+
+7. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll and/or php_pdo_sqlsrv.dll to your PHP extension directory.
+
+The extensions have been compiled and tested with the PHP 7.0.* and 7.1.* using the Visual C++ 2015 compiler as well as PHP 7.2.0 beta using the Visual C++ 2017 V15.0. 
+
+For an example of how to automate building the Microsoft Drivers for PHP for SQL Server, please browse the *buildscripts* directory. 
 
 ## Install (Windows)
 

@@ -145,7 +145,7 @@ class BuildDriver(object):
 
             # Make sure drivers path is defined
             if self.remote_path is None:
-                print('Errors: Drivers destination should be defined! Do nothing.')
+                print('Errors: Drivers destination should be defined! Doing nothing.')
             else:
                 dest_drivers = os.path.join(self.remote_path, self.util.major_version(), self.util.arch)
                 dest_symbols = os.path.join(dest_drivers, 'Symbols')
