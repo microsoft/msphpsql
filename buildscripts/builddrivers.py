@@ -148,7 +148,7 @@ class BuildDriver(object):
                 print('Errors: Drivers destination should be defined! Doing nothing.')
             else:
                 dest_drivers = os.path.join(self.remote_path, self.util.major_version(), self.util.arch)
-                dest_symbols = os.path.join(dest_drivers, 'Symbols')
+                dest_symbols = os.path.join(dest_drivers, 'Symbols', self.util.thread)
                 
                 # All intermediate directories will be created in order to create the leaf directory
                 if os.path.exists(dest_symbols) == False:
