@@ -800,9 +800,7 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
         // SQLFetchScroll uses a 1 based offset, otherwise for relative, just use the fetch_offset provided.
         SQLRETURN r = stmt->current_results->fetch( fetch_orientation, ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 TSRMLS_CC );
         
-        // when AE is on, need to store the current row number being fetched so a cursor can be reset back to it's original position when getting stream data
-        // fwd_row_index is used to store the current row index, which is incremented everytime SQLFetchScroll is called with SQLSRV_CURSOR_FORWARD_ONLY
-        // fetching encrypted max type only works for SQLSRV_CURSOR_FORWARD_ONLY, thus no need to save this number when CURSOR is non-FORWARD_ONLY
+        // when AE is enabled, will keep track of the number of rows being fetched so far such that the cursor can be reset back to its original position when getting stream data
         if ( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY && stmt->conn->ce_option.enabled == true ) {
             stmt->fwd_row_index++;
         }
