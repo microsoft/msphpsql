@@ -81,7 +81,7 @@ This software has been compiled and tested under PHP 7.0.20 and 7.1.6 using the 
 3. Restart the Web server.
 
 ## Install (UNIX)
-The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, SUSE 12, and Mac OS X. 
+The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, Apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, SUSE 12, and macOS. 
 
 ### Step 1: Install PHP7+ 
 
@@ -127,7 +127,7 @@ The following instructions assume a clean environment and show how to install PH
     zypper refresh
     zypper install -y php7 php7-pear php7-devel
 
-**Mac OS X**
+**macOS**
 
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     brew tap 
@@ -177,7 +177,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     zypper --gpg-auto-import-keys refresh
     zypper -n install php7 php7-pear php7-devel
 
-**Mac OS X**
+**macOS**
 
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     brew tap 
@@ -257,7 +257,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
     source ~/.bashrc
 
-**Mac OS X**
+**macOS**
 
     brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
     brew update
@@ -309,7 +309,7 @@ On all systems, run:
     echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
     echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
 
-**Mac OS X** 
+**macOS** 
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
 
@@ -340,7 +340,7 @@ On all systems, run:
     echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
     echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
 
-**Mac OS X** 
+**macOS** 
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
     
@@ -359,7 +359,7 @@ Note: On RedHat, SELinux is installed by default and runs in Enforcing mode. To 
 
     sudo setsebool -P httpd_can_network_connect_db 1     
 
-**Mac OS X** 
+**macOS** 
 
     sudo apachectl restart  
 
