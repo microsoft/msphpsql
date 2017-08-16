@@ -386,8 +386,12 @@ class BuildUtil(object):
         os.chdir(phpSDK)
         os.system('git pull ')
 
-        # Copy the generated batch file to phpSDK for the php starter script 
-        shutil.copy(os.path.join(work_dir, batch_file), phpSDK)
+        # Move the generated batch file to phpSDK for the php starter script 
+        sdk_batch_file = os.path.join(phpSDK, batch_file)
+        if os.path.exists(sdk_batch_file):
+            os.remove(sdk_batch_file)
+        shutil.move(os.path.join(work_dir, batch_file), phpSDK)
+        
         sdk_source = os.path.join(phpSDK, 'Source')
         # Sometimes, for various reasons, the Source folder from previous build 
         # might exist in phpSDK. If so, remove it first
@@ -412,16 +416,16 @@ class BuildUtil(object):
         # Final step, copy the binaries to the right place
         self.copy_binaries(sdk_dir, copy_to_ext)
 
-    def rename_binary(self, path, driver, suffix):
-        """Rename the *driver* binary (sqlsrv or pdo_sqlsrv) based on the *suffix*."""
-        driver_old_name = self.driver_name(driver, suffix)
-        driver_new_name = self.driver_new_name(driver, suffix)
+    def rename_binary(self, path, driver):
+        """Rename the *driver* binary (sqlsrv or pdo_sqlsrv) (only the dlls)."""
+        driver_old_name = self.driver_name(driver, '.dll')
+        driver_new_name = self.driver_new_name(driver, '.dll')
 
         os.rename(os.path.join(path, driver_old_name), os.path.join(path, driver_new_name))
 
     def rename_binaries(self, sdk_dir):
-        """Rename the sqlsrv and/or pdo_sqlsrv binaries according to the 
-        PHP version and thread, including pdb files (the symbols).
+        """Rename the sqlsrv and/or pdo_sqlsrv dlls according to the PHP
+        version and thread.
         """
         
         # Derive the path to where the extensions are located
@@ -429,21 +433,21 @@ class BuildUtil(object):
         print("Renaming binaries in ", ext_dir)
         
         if self.driver == 'all':
-            self.rename_binary(ext_dir, 'sqlsrv', '.dll')
-            self.rename_binary(ext_dir, 'sqlsrv', '.pdb')
-            self.rename_binary(ext_dir, 'pdo_sqlsrv', '.dll')
-            self.rename_binary(ext_dir, 'pdo_sqlsrv', '.pdb')
+            self.rename_binary(ext_dir, 'sqlsrv')
+            self.rename_binary(ext_dir, 'pdo_sqlsrv')
         else:
-            self.rename_binary(ext_dir, self.driver, '.dll')
-            self.rename_binary(ext_dir, self.driver, '.pdb')
+            self.rename_binary(ext_dir, self.driver)
                 
     def copy_binary(self, from_dir, dest_dir, driver, suffix):
         """Copy sqlsrv or pdo_sqlsrv binary (based on *suffix*) to *dest_dir*."""
-        binary = self.driver_new_name(driver, suffix)
+        if suffix == '.dll':
+            binary = self.driver_new_name(driver, suffix)
+        else:
+            binary = self.driver_name(driver, suffix)
         shutil.copy2(os.path.join(from_dir, binary), dest_dir)
     
     def copy_binaries(self, sdk_dir, copy_to_ext):
-        """Copy the sqlsrv and/or pdo_sqlsrv binaries, including pdb files, 
+        """Copy the sqlsrv and/or pdo_sqlsrv binaries, including the pdb files, 
         to the right place, depending on *copy_to_ext*. The default is to 
         copy them to the 'ext' folder.
         """      
