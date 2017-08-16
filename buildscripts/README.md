@@ -69,7 +69,7 @@ It's recommended that the PHP SDK is unzipped into the shortest possible path, p
         * `py builddrivers.py -v=7.1.7 -a=x86 -t=ts -d=all -g=no`
         * `py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --GITHUB=yes`
 
-5. If the script detects the presence of a PHP source directory, you will be prompted whether to rebuild, clean or superclean. Choose
+5. Based on the given configuration, if the script detects the presence of the PHP source directory, you can choose whether to rebuild, clean or superclean:
     * `rebuild` if you have always used the same configuration (32 bit, thread safe, etc.)
     * `clean` to remove previous builds (binaries) 
     * `superclean` to remove the entire `php-<version>-src` directory, which is often unnecessary
@@ -84,13 +84,11 @@ When something goes wrong during the build, the log file will be launched (you c
 
 In addition to the log files in `C:\php-sdk`, you can examine the contents of `C:\php-sdk\phpsdk-build-task.bat`, which is overwritten every time you run the build scripts.
 
-#### Building the extensions unattended
+#### Variation
 
-You can invoke `py builddrivers.py` with the desired options plus the destination path `--DESTPATH=<some valid path>`. 
+If you want the PHP drivers to be copied to somewhere else, you can invoke `py builddrivers.py` by providing the option `--DESTPATH=<some valid path>`. 
 
-In such case, the `php-sdk` folder will be created in the same directory of these build scripts. Note that the PHP drivers will also be copied to the designated path. 
-
-The script `builddrivers.py` provides an example for this case. Again, it's your choice whether to remove the `php-sdk` folder afterwards.
+In this case, you will find a copy of the drivers (unless the build fails) and the `php-sdk` folder created in the same directory of these Python scripts. It's your choice whether to remove the `php-sdk` folder and/or the drivers' binaries afterwards.
 
 
 

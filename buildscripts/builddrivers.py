@@ -197,7 +197,7 @@ class BuildDriver(object):
 
             # Only ask when building locally
             if self.local:               
-                choice = input("Rebuild the same configuration(yes) or quit (no) [yes/no]: ")
+                choice = input("Rebuild using the same configuration(yes) or quit (no) [yes/no]: ")
 
                 if choice.lower() == 'yes' or choice.lower() == 'y' or choice.lower() == '':
                     print('Rebuilding drivers...')
@@ -230,12 +230,12 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--PHPVER', help="PHP version, e.g. 7.1.*, 7.2.* etc.")
     parser.add_argument('-a', '--ARCH', choices=['x64', 'x86'])
     parser.add_argument('-t', '--THREAD', choices=['nts', 'ts'])
-    parser.add_argument('-d', '--DRIVER', choices=['all', 'sqlsrv', 'pdo_sqlsrv'])
-    parser.add_argument('-m', '--DEBUG', default='no', choices=['yes', 'no'], help="enable debug mode")
-    parser.add_argument('-r', '--REPO', default='Microsoft', help="GitHub repository")
-    parser.add_argument('-b', '--BRANCH', default='dev', help="GitHub repository branch")
-    parser.add_argument('-g', '--GITHUB', default='yes', help="get source from GitHub or not")
-    parser.add_argument('-p', '--DESTPATH', default=None, help="the remote destination for the drivers (do not use this for local builds)")
+    parser.add_argument('-d', '--DRIVER', default='all', choices=['all', 'sqlsrv', 'pdo_sqlsrv'], help="driver to build (default: all)")
+    parser.add_argument('-m', '--DEBUG', default='no', choices=['yes', 'no'], help="enable debug mode (default: no)")
+    parser.add_argument('-r', '--REPO', default='Microsoft', help="GitHub repository (default: Microsoft)")
+    parser.add_argument('-b', '--BRANCH', default='dev', help="GitHub repository branch (default: dev)")
+    parser.add_argument('-g', '--GITHUB', default='yes', choices=['yes', 'no'], help="get source from GitHub (default: yes)")
+    parser.add_argument('-p', '--DESTPATH', default=None, help="the remote destination for the drivers (default: None)")
 
     args = parser.parse_args()
 
