@@ -44,7 +44,7 @@ Please visit the [blog][blog] for more announcements.
 
 If you prefer, you can use the pre-compiled binaries found [HERE](https://github.com/Microsoft/msphpsql/releases)
 
-The *buildscripts* directory contains step by step instructions on how to build the Microsoft Drivers for PHP for SQL Server. You can either build the extensions manually or use the sample scripts provided, which help automate the process. 
+The *buildscripts* directory contains step by step instructions on how to build the Microsoft Drivers for PHP for SQL Server. You can either build the extensions manually or use the sample scripts provided, which help automate the process.
 
 ## Install (Windows)
 
@@ -62,7 +62,7 @@ The *buildscripts* directory contains step by step instructions on how to build 
 3. Restart the Web server.
 
 ## Install (UNIX)
-The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, and Mac OS X. 
+The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, and Mac OS. 
 
 ### Step 1: Install PHP7+ 
 
@@ -102,7 +102,7 @@ The following instructions assume a clean environment and show how to install PH
     apt-get update
     apt-get install -y php7.0 php-pear php7.0-dev php7.0-xml
 
-**Mac OS X**
+**Mac OS**
 
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     brew tap 
@@ -145,7 +145,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     apt-get update
     apt-get install -y php7.1 php-pear php7.1-dev php7.1-xml
 
-**Mac OS X**
+**Mac OS**
 
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     brew tap 
@@ -212,7 +212,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     sudo ACCEPT_EULA=Y apt-get install msodbcsql
     sudo apt-get install unixodbc-dev
 
-**Mac OS X**
+**Mac OS**
 
     brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
     brew update
@@ -256,7 +256,7 @@ On all systems, run:
     echo "extension=sqlsrv.so" > /etc/php.d/sqlsrv.ini
     echo "extension=pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
-**Mac OS X** 
+**Mac OS** 
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
 
@@ -279,7 +279,7 @@ On all systems, run:
     echo "extension=sqlsrv.so" > /etc/php.d/sqlsrv.ini
     echo "extension=pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
-**Mac OS X** 
+**Mac OS** 
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
     
@@ -298,7 +298,7 @@ Note: On RedHat, SELinux is installed by default and runs in Enforcing mode. To 
 
     sudo setsebool -P httpd_can_network_connect_db 1     
 
-**Mac OS X** 
+**Mac OS** 
 
     sudo apachectl restart  
 
