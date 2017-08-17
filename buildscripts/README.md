@@ -45,7 +45,7 @@ The sample build scripts, `builddrivers.py` and `buildtools.py`, are expected to
 
 When asked to provide the PHP version, you should enter values like `7.1.7`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 7.2 beta 2, the tag name is `php-7.2.0beta2`, so you should enter `7.2.0beta2`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
 
-PHP recommendeds to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will create a `php-sdk` folder in the C:\ drive. This `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
+PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will create a `php-sdk` folder in the C:\ drive. This `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
 
 #### Steps
 
@@ -88,7 +88,7 @@ In addition to the log files in `C:\php-sdk`, you can examine the contents of `C
 
 If your main goal is to build the drivers, and/or there is no need to keep the `php-sdk` directory around, you can invoke `py builddrivers.py` with the necessary command-line arguments plus `--DESTPATH=<some valid path>`, which is **None** by default. Note that this option is not available in the interactive mode. 
 
-By setting an alternative destination automatically turns off the looping mechanism. When the build is finished, you will find a copy of the drivers (unless the build failed) and the `php-sdk` folder in the same directory of these Python scripts. This option is particularly useful in a test environment (or a virtual machine) in which these build scripts are copied to a temporary folder. After the drivers have been successfully compiled and copied to the designated location, the temporary folder can be safely removed afterwards.
+Setting an alternative destination automatically turns off the looping mechanism. When the build is finished, you will find a copy of the drivers (unless the build failed) and the `php-sdk` folder in the same directory of these Python scripts. This option is particularly useful in a test environment (or a virtual machine) in which these build scripts are copied to a temporary folder. After the drivers have been successfully compiled and copied to the designated location, the temporary folder can be safely removed.
 
 
 
