@@ -43,9 +43,9 @@ The sample build scripts, `builddrivers.py` and `buildtools.py`, are expected to
 
 #### Overview
 
-When asked to provide the PHP version, you should enter values like `7.1.7`. If it's alpha, beta, or RC, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 7.2 beta 2, the tag name is `php-7.2.0beta2`, so you should enter `7.2.0beta2`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
+When asked to provide the PHP version, you should enter values like `7.1.7`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 7.2 beta 2, the tag name is `php-7.2.0beta2`, so you should enter `7.2.0beta2`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
 
-It's recommended that the PHP SDK is unzipped into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will create a `php-sdk` folder in the C:\ drive. This `php-sdk` folder will remain unless you remove it yourself. For ongoing development, it's suggested you keep it around. The build scripts will handle updating the PHP SDK if new version is available. 
+PHP recommendeds to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will create a `php-sdk` folder in the C:\ drive. This `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
 
 #### Steps
 
@@ -55,7 +55,7 @@ It's recommended that the PHP SDK is unzipped into the shortest possible path, p
 
 3. Interactive mode: 
     * Run `py builddrivers.py` to use the interactive mode. Use lower cases to answer the following questions:
-        * PHP Version (i.e. the version number like `7.1.7` or `7.2.0beta2`)
+        * PHP Version (e.g. `7.1.7` or `7.2.0beta2`)
         * 64-bit?
         * Thread safe?
         * Driver?
@@ -70,7 +70,7 @@ It's recommended that the PHP SDK is unzipped into the shortest possible path, p
         * `py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --GITHUB=yes`
 
 5. Based on the given configuration, if the script detects the presence of the PHP source directory, you can choose whether to rebuild, clean or superclean:
-    * `rebuild` if you have always used the same configuration (32 bit, thread safe, etc.)
+    * `rebuild` to build again using the same configuration (32 bit, thread safe, etc.)
     * `clean` to remove previous builds (binaries) 
     * `superclean` to remove the entire `php-<version>-src` directory, which is often unnecessary
 
@@ -80,15 +80,16 @@ It's recommended that the PHP SDK is unzipped into the shortest possible path, p
 
 #### Troubleshooting
 
-When something goes wrong during the build, the log file will be launched (you can find the log files in `C:\php-sdk`). Otherwise, the log file will not be shown, and they remain in `C:\php-sdk` until you remove them manually.
+If something went wrong or the build failed, the log file will be launched (you can find the log files in `C:\php-sdk`). Otherwise, the log file will not be shown, and they remain in `C:\php-sdk` until you remove them manually.
 
 In addition to the log files in `C:\php-sdk`, you can examine the contents of `C:\php-sdk\phpsdk-build-task.bat`, which is overwritten every time you run the build scripts.
 
-#### Variation
+#### Setting alternative destination for drivers
 
-If you want the PHP drivers to be copied to somewhere else, you can invoke `py builddrivers.py` by providing the option `--DESTPATH=<some valid path>`. 
+If your main goal is to build the drivers, and/or there is no need to keep the `php-sdk` directory around, you can invoke `py builddrivers.py` with the necessary command-line arguments plus `--DESTPATH=<some valid path>`, which is **None** by default. Note that this option is not available in the interactive mode. 
 
-In this case, you will find a copy of the drivers (unless the build fails) and the `php-sdk` folder created in the same directory of these Python scripts. It's your choice whether to remove the `php-sdk` folder and/or the drivers' binaries afterwards.
+By setting an alternative destination automatically turns off the looping mechanism. When the build is finished, you will find a copy of the drivers (unless the build failed) and the `php-sdk` folder in the same directory of these Python scripts. This option is particularly useful in a test environment (or a virtual machine) in which these build scripts are copied to a temporary folder. After the drivers have been successfully compiled and copied to the designated location, the temporary folder can be safely removed afterwards.
+
 
 
 

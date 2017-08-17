@@ -74,8 +74,7 @@ class BuildDriver(object):
         phpsrc = self.util.phpsrc_root(root_dir)
         if os.path.exists( phpsrc ):
             print(phpsrc + " exists.")
-            print("Choose rebuild(r) if using the same configuration. Choose clean(c) otherwise. If unsure, choose superclean(s).") 
-            build_choice = validate_input("Want to rebuild (r), clean (c) or superclean (s)? ", "r/c/s")
+            build_choice = validate_input("(r)ebuild for the same configuration, (c)lean otherwise, (s)uperclean if unsure ", "r/c/s")
             self.make_clean = False
             if build_choice == 'r':
                 print('Will rebuild the binaries')
@@ -189,7 +188,7 @@ class BuildDriver(object):
                 self.build_extensions(dest, logfile)
                 print('Build Completed')
             except:
-                print('Something went wrong. Build incomplete.')
+                print('Something went wrong, launching log file', logfile)
                 if self.local:          # display log file only when building locally
                     os.startfile(os.path.join(root_dir, 'php-sdk', logfile))
                 os.chdir(work_dir)    
@@ -198,8 +197,8 @@ class BuildDriver(object):
             # Only ask when building locally
             if self.local:               
                 choice = input("Rebuild using the same configuration(yes) or quit (no) [yes/no]: ")
-
-                if choice.lower() == 'yes' or choice.lower() == 'y' or choice.lower() == '':
+                choice = choice.lower()
+                if choice == 'yes' or choice == 'y' or choice == '':
                     print('Rebuilding drivers...')
                     self.make_clean = False
                     self.rebuild = True
@@ -235,7 +234,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--REPO', default='Microsoft', help="GitHub repository (default: Microsoft)")
     parser.add_argument('-b', '--BRANCH', default='dev', help="GitHub repository branch (default: dev)")
     parser.add_argument('-g', '--GITHUB', default='yes', choices=['yes', 'no'], help="get source from GitHub (default: yes)")
-    parser.add_argument('-p', '--DESTPATH', default=None, help="the remote destination for the drivers (default: None)")
+    parser.add_argument('-p', '--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
 
     args = parser.parse_args()
 
