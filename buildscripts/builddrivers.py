@@ -12,12 +12,11 @@
 # Execution: Run with command line with required options.
 # Examples: 
 #           py builddrivers.py (for interactive mode)
-#           py builddrivers.py -v=7.1.7 -a=x86 -t=ts -d=all -g=no
-#           py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=all --GITHUB=yes
+#           py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=all --DEBUG
 #
-# Output: Build the drivers using PHP SDK. When running locally, if build is unsuccessful, 
+# Output: Build the drivers using PHP SDK. When running for local development, if build is unsuccessful, 
 #         the log file will be launched for examination. Otherwise, the drivers will be renamed 
-#         and copied to the designated location(s).
+#         and copied to the designated location (if defined).
 #
 #############################################################################################
 
@@ -35,20 +34,20 @@ class BuildDriver(object):
         repo            # GitHub repository
         branch          # GitHub repository branch
         download_source # download source from GitHub or not
-        remote_path     # remote destination to where the drivers will be placed (None for local builds)
-        local           # a boolean flag - whether the build is local
+        dest_path       # alternative destination for the drivers (None for development builds)
         rebuild         # a boolean flag - whether the user is rebuilding
         make_clean      # a boolean flag - whether make clean is necessary
         source_path     # path to a local source folder
+        testing         # whether the user has turned on testing mode
     """
     
-    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, download, path):
+    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, download, path, testing):
         self.util = BuildUtil(phpver, driver, arch, thread, debug)
         self.repo = repo
         self.branch = branch
         self.download_source = download
-        self.remote_path = path
-        self.local = path is None   # the default path is None, which means running locally 
+        self.dest_path = path
+        self.testing = testing
         self.rebuild = False
         self.make_clean = False
         self.source_path = None     # None initially but will be set later if not downloading from GitHub
@@ -63,7 +62,7 @@ class BuildDriver(object):
         print()
 
     def clean_or_remove(self, root_dir, work_dir):
-        """Only check this when building locally and not rebuilding. If the php source directory 
+        """Only check this for local development and not rebuilding. If the php source directory 
         already exists, this will prompt user whether to rebuild, clean, or superclean, the last option
         will remove the entire php source directory.
         
@@ -92,25 +91,22 @@ class BuildDriver(object):
                 
             os.chdir(work_dir)  # change back to the working directory
 
-    def build_extensions(self, dest, logfile):
+    def build_extensions(self, root_dir, logfile):
         """This takes care of getting the drivers' source files, building the drivers. 
-        If running locally, *dest* should be the root drive. Otherwise, *dest* should be None. 
-        In this case, remote_path must be defined such that the binaries will be copied 
-        to the designated destinations.
+        If dest_path is defined, the binaries will be copied to the designated destinations.
         
-        :param  dest: either None (for remote builds) or the C:\ drive (for local builds)
+        :param  root_dir: the root directory
         :param  logfile: the name of the logfile
         :outcome: the drivers and symbols will renamed and placed in the appropriate location(s)
 
         """
         work_dir = os.path.dirname(os.path.realpath(__file__))
-            
+        
         if self.download_source:
-            # This will download from the specified branch on GitHub repo and copy the source to the working directory
+            # This will download from the specified branch on GitHub repo and copy the source 
             self.util.download_msphpsql_source(repo, branch)
         else:
-            # This case only happens when building locally (interactive mode)
-            # because download_source must be True for remote builds
+            # This case only happens when building for development 
             while True:
                 if self.source_path is None:
                     source = input('Enter the full path to the Source folder: ')
@@ -136,37 +132,35 @@ class BuildDriver(object):
                     
         print('Start building PHP with the extension...')
 
-        self.util.build_drivers(self.make_clean, dest, logfile)
+        # If not testing, dest should be the root drive. Otherwise, dest should be None. 
+        dest = None if self.testing else root_dir
 
-        if dest is None:       
-            # This indicates the script is NOT running locally, and that 
-            # the drivers should be in the working directory
+        # ext_dir is the directory where we can find the built extension(s)
+        ext_dir = self.util.build_drivers(self.make_clean, dest, logfile)
 
-            # Make sure drivers path is defined
-            if self.remote_path is None:
-                print('Errors: Drivers destination should be defined! Doing nothing.')
-            else:
-                dest_drivers = os.path.join(self.remote_path, self.util.major_version(), self.util.arch)
-                dest_symbols = os.path.join(dest_drivers, 'Symbols', self.util.thread)
+        # Copy the binaries if a destination path is defined
+        if self.dest_path is not None:
+            dest_drivers = os.path.join(self.dest_path, self.util.major_version(), self.util.arch)
+            dest_symbols = os.path.join(dest_drivers, 'Symbols', self.util.thread)
+            
+            # All intermediate directories will be created in order to create the leaf directory
+            if os.path.exists(dest_symbols) == False:
+                os.makedirs(dest_symbols)
                 
-                # All intermediate directories will be created in order to create the leaf directory
-                if os.path.exists(dest_symbols) == False:
-                    os.makedirs(dest_symbols)
-                    
-                # Now copy all the binaries
-                if self.util.driver == 'all':
-                    self.util.copy_binary(work_dir, dest_drivers, 'sqlsrv', '.dll')
-                    self.util.copy_binary(work_dir, dest_symbols, 'sqlsrv', '.pdb')
-                    self.util.copy_binary(work_dir, dest_drivers, 'pdo_sqlsrv', '.dll')
-                    self.util.copy_binary(work_dir, dest_symbols, 'pdo_sqlsrv', '.pdb')
-                else:
-                    self.util.copy_binary(work_dir, dest_drivers, self.util.driver, '.dll')
-                    self.util.copy_binary(work_dir, dest_symbols, self.util.driver, '.pdb')
-    
+            # Now copy all the binaries
+            if self.util.driver == 'all':
+                self.util.copy_binary(ext_dir, dest_drivers, 'sqlsrv', '.dll')
+                self.util.copy_binary(ext_dir, dest_symbols, 'sqlsrv', '.pdb')
+                self.util.copy_binary(ext_dir, dest_drivers, 'pdo_sqlsrv', '.dll')
+                self.util.copy_binary(ext_dir, dest_symbols, 'pdo_sqlsrv', '.pdb')
+            else:
+                self.util.copy_binary(ext_dir, dest_drivers, self.util.driver, '.dll')
+                self.util.copy_binary(ext_dir, dest_symbols, self.util.driver, '.pdb')
+                   
 
     def build(self):
         """This is the main entry point of building drivers for PHP. 
-        For local builds, this will loop till the user decides to quit.
+        For development, this will loop till the user decides to quit.
         """
         self.show_config()
     
@@ -175,27 +169,23 @@ class BuildDriver(object):
         
         quit = False
         while not quit:
-            if not self.rebuild and self.local:
+            if not self.rebuild and not self.testing: 
                 self.clean_or_remove(root_dir, work_dir)
                 
             logfile = self.util.get_logfile_name()
 
             try:
-                dest = None
-                if self.local:
-                    dest = root_dir
-                    
-                self.build_extensions(dest, logfile)
+                self.build_extensions(root_dir, logfile)
                 print('Build Completed')
             except:
                 print('Something went wrong, launching log file', logfile)
-                if self.local:          # display log file only when building locally
+                # display log file only when not testing
+                if not self.testing:
                     os.startfile(os.path.join(root_dir, 'php-sdk', logfile))
                 os.chdir(work_dir)    
                 break
 
-            # Only ask when building locally
-            if self.local:               
+            if not self.testing:
                 choice = input("Rebuild using the same configuration(yes) or quit (no) [yes/no]: ")
                 choice = choice.lower()
                 if choice == 'yes' or choice == 'y' or choice == '':
@@ -226,15 +216,16 @@ def validate_input(question, values):
 ################################### Main Function ###################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--PHPVER', help="PHP version, e.g. 7.1.*, 7.2.* etc.")
-    parser.add_argument('-a', '--ARCH', choices=['x64', 'x86'])
-    parser.add_argument('-t', '--THREAD', choices=['nts', 'ts'])
-    parser.add_argument('-d', '--DRIVER', default='all', choices=['all', 'sqlsrv', 'pdo_sqlsrv'], help="driver to build (default: all)")
-    parser.add_argument('-m', '--DEBUG', default='no', choices=['yes', 'no'], help="enable debug mode (default: no)")
-    parser.add_argument('-r', '--REPO', default='Microsoft', help="GitHub repository (default: Microsoft)")
-    parser.add_argument('-b', '--BRANCH', default='dev', help="GitHub repository branch (default: dev)")
-    parser.add_argument('-g', '--GITHUB', default='yes', choices=['yes', 'no'], help="get source from GitHub (default: yes)")
-    parser.add_argument('-p', '--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
+    parser.add_argument('--PHPVER', help="PHP version, e.g. 7.1.*, 7.2.* etc.")
+    parser.add_argument('--ARCH', choices=['x64', 'x86'])
+    parser.add_argument('--THREAD', choices=['nts', 'ts'])
+    parser.add_argument('--DRIVER', default='all', choices=['all', 'sqlsrv', 'pdo_sqlsrv'], help="driver to build (default: all)")
+    parser.add_argument('--DEBUG', action='store_true', help="enable debug mode (default: False)")
+    parser.add_argument('--REPO', default='Microsoft', help="GitHub repository (default: Microsoft)")
+    parser.add_argument('--BRANCH', default='dev', help="GitHub repository branch (default: dev)")
+    parser.add_argument('--SOURCE', action='store_true', help="get source from a local path (default: False)")
+    parser.add_argument('--TESTING', action='store_true', help="turns on testing mode (default: False)")
+    parser.add_argument('--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
 
     args = parser.parse_args()
 
@@ -242,21 +233,31 @@ if __name__ == '__main__':
     arch = args.ARCH
     thread = args.THREAD
     driver = args.DRIVER
-    debug = args.DEBUG == 'yes'
+    debug = args.DEBUG
     repo = args.REPO
     branch = args.BRANCH
-    download = args.GITHUB.lower() == 'yes'
+    download = args.SOURCE is False 
     path = args.DESTPATH
+    testing = args.TESTING
 
     if phpver is None:
-        # assuming it is building drivers locally when required to prompt
-        # thus will not prompt for drivers' destination path, which is None by default
-        phpver = input("PHP Version (e.g. 7.1.* or 7.2.*): ")
+        # starts interactive mode, testing mode is False
+        # will not prompt for drivers' destination path, which is None by default
+        while True:
+            # perform some minimal checks
+            phpver = input("PHP Version (e.g. 7.1.* or 7.2.*): ")
+            if phpver == '':
+                print('Empty PHP version entered! Please try again.')
+            elif phpver[0] < '7':
+                print('Only PHP 7.0 or above is supported. Please try again.')
+            else:
+                break
+                
         arch_version = input("64-bit? [y/n]: ")
         thread = validate_input("Thread safe? ", "nts/ts")
         driver = validate_input("Driver to build? ", "all/sqlsrv/pdo_sqlsrv")
         debug_mode = input("Debug enabled? [y/n]: ")
-
+        
         answer = input("Download source from a GitHub repo? [y/n]: ")
         download = False
         if answer == 'yes' or answer == 'y' or answer == '':
@@ -282,5 +283,6 @@ if __name__ == '__main__':
                           repo, 
                           branch, 
                           download, 
-                          path)
+                          path,
+                          testing)
     builder.build()

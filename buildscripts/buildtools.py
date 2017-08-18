@@ -414,7 +414,8 @@ class BuildUtil(object):
         self.rename_binaries(sdk_dir)
         
         # Final step, copy the binaries to the right place
-        self.copy_binaries(sdk_dir, copy_to_ext)
+        ext_dir = self.copy_binaries(sdk_dir, copy_to_ext)
+        return ext_dir
 
     def rename_binary(self, path, driver):
         """Rename the *driver* binary (sqlsrv or pdo_sqlsrv) (only the dlls)."""
@@ -470,4 +471,6 @@ class BuildUtil(object):
         else:
             self.copy_binary(build_dir, dest_dir, self.driver, '.dll')
             self.copy_binary(build_dir, dest_dir, self.driver, '.pdb')
+            
+        return dest_dir
               

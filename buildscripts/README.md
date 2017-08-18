@@ -45,7 +45,7 @@ The sample build scripts, `builddrivers.py` and `buildtools.py`, are expected to
 
 When asked to provide the PHP version, you should enter values like `7.1.7`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 7.2 beta 2, the tag name is `php-7.2.0beta2`, so you should enter `7.2.0beta2`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
 
-PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will create a `php-sdk` folder in the C:\ drive. This `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
+PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will by default create a `php-sdk` folder in the C:\ drive, and this `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
 
 #### Steps
 
@@ -66,8 +66,8 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
 4. Use Command-line arguments
     * Run `py builddrivers.py -h` to get a list of options and their descriptions
     * For example, 
-        * `py builddrivers.py -v=7.1.7 -a=x86 -t=ts -d=all -g=no`
-        * `py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --GITHUB=yes`
+        * `py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE`
+        * `py builddrivers.py --PHPVER=7.1.8 --ARCH=x86 --THREAD=ts --DEBUG`
 
 5. Based on the given configuration, if the script detects the presence of the PHP source directory, you can choose whether to rebuild, clean or superclean:
     * `rebuild` to build again using the same configuration (32 bit, thread safe, etc.)
@@ -84,13 +84,13 @@ If something went wrong or the build failed, the log file will be launched (you 
 
 In addition to the log files in `C:\php-sdk`, you can examine the contents of `C:\php-sdk\phpsdk-build-task.bat`, which is overwritten every time you run the build scripts.
 
-#### Setting alternative destination for drivers
+#### Testing mode and/or setting alternative destination 
 
-If your main goal is to build the drivers, and/or there is no need to keep the `php-sdk` directory around, you can invoke `py builddrivers.py` with the necessary command-line arguments plus `--DESTPATH=<some valid path>`, which is **None** by default. Note that this option is not available in the interactive mode. 
+If your main goal is to build the drivers for testing, and/or there is no need to keep the `php-sdk` directory around, you can invoke `py builddrivers.py` with the necessary command-line arguments plus `--TESTING`, which turns on the *testing* mode (it is False by default).
 
-Setting an alternative destination automatically turns off the looping mechanism. When the build is finished, you will find a copy of the drivers (unless the build failed) and the `php-sdk` folder in the same directory of these Python scripts. This option is particularly useful in a test environment (or a virtual machine) in which these build scripts are copied to a temporary folder. After the drivers have been successfully compiled and copied to the designated location, the temporary folder can be safely removed.
+Setting the testing mode automatically turns off the looping mechanism. When the build is finished, you will find a copy of the drivers (unless the build failed) and the `php-sdk` folder in the same directory of these Python scripts. 
 
-
+In addition, you can set an alternative destination using `--DESTPATH=<some valid path>`, which is **None** by default. Note that these two options are *not* available in the interactive mode. However, they are particularly useful for testing purposes (such as testing in a virtual machine) in which these build scripts are copied to a temporary folder. After the drivers have been successfully compiled and copied to the designated location, the temporary folder can be safely removed. 
 
 
 
