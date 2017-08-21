@@ -7,7 +7,7 @@ Maximum length outputs from stored procs for string types (nvarchar, varchar, an
 
 set_time_limit(0);
 
-$inValue1 = str_repeat( "A", 3999 );
+$inValue1 = str_repeat( 'A', 3999 );
 
 $outValue1 = "TEST";
 
@@ -101,7 +101,7 @@ print_r( strlen( $outValue1 ));
 echo "\n";
 print_r( substr( $outValue1, -2, 2 ));
 
-sqlsrv_close( $conn );	//	True
+sqlsrv_close( $conn );
 
 ?>
 --EXPECT--
