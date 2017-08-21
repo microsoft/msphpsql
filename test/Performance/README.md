@@ -1,20 +1,24 @@
 ## Setup Environment on a clean machine
 
+The PHP zip file can be downloaded from <http://php.net/downloads.php>.
+
+The SQLSRV and PDO_SQLSRV driver binaries can be downloaded from <https://github.com/Microsoft/msphpsql/releases>.
+
 ### Windows
 Install Visual Studio 2015 redistributable before running the following commands.
 Run `Windows PowerShell` as administrator.
 
     Set-ExecutionPolicy Unrestricted
-    .\setup_env_windows.ps1 <absolute path to the PHP zip file> <absolute path to the sqlsrv driver dll> <absolute path to the pdo_sqlsrv driver dll>
+    .\setup_env_windows.ps1 <absolute path to the PHP zip file> <absolute path to the SQLSRV driver DLL> <absolute path to the PDO_SQLSRV driver DLL>
 
 ### Ubuntu 16
-    sudo env "PATH=$PATH" bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the sqlsrv driver so> <bsolute path to the pdo_sqlsrv driver so>
+    sudo env "PATH=$PATH" bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
 ### RedHat 7
-    sudo env "PATH=$PATH" bash setup_env_unix.sh RedHat7 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the sqlsrv driver so> <bsolute path to the pdo_sqlsrv driver so>
+    sudo env "PATH=$PATH" bash setup_env_unix.sh RedHat7 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
 ### MacOS 10.12 Sierra
 `brew` cannot be run with `sudo` on Sierra. Either enable passwordless `sudo` on the machine or enter the password when prompted. 
 
-    bash setup_env_unix.sh Sierra <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the sqlsrv driver so> <bsolute path to the pdo_sqlsrv driver so>
+    bash setup_env_unix.sh Sierra <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
 ## Run benchmarks
 PHPBench is used to run the benchmarks. Visit http://phpbench.readthedocs.io/en/latest/introduction.html to have an idea how the tool works.
 
