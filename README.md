@@ -47,23 +47,12 @@ Note: if you prefer, you can use the pre-compiled binary found [HERE](https://gi
 
 #### Prerequisites
 
-You must first be able to build PHP 7 without including these extensions.  For help with doing this, see the [official PHP website][phpbuild] for building your own PHP on Windows.
+You must first be able to build PHP 7* without including these extensions.  For help with doing this, see the [official PHP website][phpbuild] for building your own PHP in Windows.
 
 #### Compile the drivers
 
-1. Copy the sqlsrv and/or pdo_sqlsrv source code directory from this repository into the ext subdirectory.
-
-2. Run `buildconf.bat` to rebuild the configure.js script to include the driver.
-
-3. Run `configure.bat --with-odbcver=0x0380 and the desired driver options (as below) [plus other options such as --disable-zts for the Non Thread Safe build]` to generate the makefile.  You can run `configure.bat --help` to see what other options are available.
-  * For SQLSRV use: `--enable-sqlsrv=shared`
-  * For PDO_SQLSRV use: `--enable-pdo=shared --with-pdo-sqlsrv=shared`
-
-4. Run `nmake`.  It is suggested that you run the entire build.  If you wish to do so, run `nmake clean` first.
-
-5. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll and/or php_pdo_sqlsrv.dll to your PHP extension directory.
-
-This software has been compiled and tested under PHP 7.0.20 and 7.1.6 using the Visual C++ 2015 compiler.
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0 beta using Visual C++ 2017 v15.0. 
+For details, please read the documentation and/or take a look at the sample [build scripts](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows).
 
 ## Install (Windows)
 

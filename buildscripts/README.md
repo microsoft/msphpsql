@@ -3,16 +3,18 @@
 ## Prerequisites
 
 To build extensions for 
-    * PHP 7.0* or PHP 7.1*, install Visual Studio 2015 and make sure C++ tools are enabled. 
-    * PHP 7.2*, install Visual Studio 2017, including Visual C++ toolset, the Windows SDK components, and Git for Windows. 
+1. PHP 7.0* or PHP 7.1*
+    * install Visual Studio 2015 and make sure C++ tools are enabled. 
+2. PHP 7.2*
+    * install Visual Studio 2017, including Visual C++ toolset and the Windows SDK components. 
 
-To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x in Windows. 
+To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x and Git for Windows (which comes with Visual Studio 2017). If `git` is unrecognized in a regular command prompt, make sure the environment path is set up correctly.
 
 ## Compile the drivers 
 
-You must first be able to build PHP 7.* without including these extensions. For help with doing this, see the [official PHP website](https://wiki.php.net/internals/windows/stepbystepbuild) for building PHP 7.0* or PHP 7.1* on Windows or [PHP SDK page](https://github.com/OSTC/php-sdk-binary-tools) for the new instructions for building PHP 7.2 and/or above.
+You must first be able to build PHP 7.* without including our PHP extensions. For help with building PHP 7.0* or PHP 7.1* in Windows, see the [official PHP website](https://wiki.php.net/internals/windows/stepbystepbuild). For PHP 7.2 or above, visit [PHP SDK page](https://github.com/OSTC/php-sdk-binary-tools) for new instructions.
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using the Visual C++ 2015 as well as PHP 7.2.0 beta using the Visual C++ 2017 v15.0. 
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0 beta using Visual C++ 2017 v15.0. 
 
 ### Manually building from source 
 
@@ -20,7 +22,7 @@ The Microsoft Drivers for PHP for SQL Server have been compiled and tested with 
 
 2. Make a copy of the *shared* folder as a subfolder in *sqlsrv* and/or *pdo_sqlsrv* folder
 
-3. Copy the *sqlsrv* and/or *pdo_sqlsrv* folder(s) into the PHP source ext subdirectory
+3. Copy the *sqlsrv* and/or *pdo_sqlsrv* folder(s) into the PHP source *ext* subdirectory
 
 4. Run `buildconf --force` to rebuild the configure.js script to include the *sqlsrv* and/or *pdo_sqlsrv* driver(s).
 
@@ -33,19 +35,19 @@ The Microsoft Drivers for PHP for SQL Server have been compiled and tested with 
 7. To install the drivers, there are two ways:
     * Run `nmake install`, or
     * Copy the drivers:
-        * Find the directory where the newly compiled `php.exe` is
-        * Locate the compiled php_sqlsrv.dll and/or php_pdo_sqlsrv.dll 
-        * Copy the dll(s) to the `ext` subfolder  
+        * Find the directory where the newly compiled *php.exe* is
+        * Locate the compiled *php_sqlsrv.dll* and/or *php_pdo_sqlsrv.dll* 
+        * Copy the dll(s) to the *ext* subfolder  
 
 ### Using the sample build scripts
 
-The sample build scripts, `builddrivers.py` and `buildtools.py`, are expected to build our extensions for PHP in Windows.
+The sample build scripts, `builddrivers.py` and `buildtools.py`, can be used to build our extensions for PHP in Windows.
 
 #### Overview
 
-When asked to provide the PHP version, you should enter values like `7.1.7`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 7.2 beta 2, the tag name is `php-7.2.0beta2`, so you should enter `7.2.0beta2`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
+When asked to provide the PHP version, you should enter values like `7.1.7`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 7.2 beta 2, the tag name is `php-7.2.0beta2`, so you will enter `7.2.0beta2`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
 
-PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will by default create a `php-sdk` folder in the C:\ drive, and this `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
+PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will, by default, create a `php-sdk` folder in the C:\ drive, and this `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
 
 #### Steps
 
@@ -54,7 +56,7 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
 2. Change to the directory where the Python scripts `builddrivers.py` and `buildtools.py` are
 
 3. Interactive mode: 
-    * Run `py builddrivers.py` to use the interactive mode. Use lower cases to answer the following questions:
+    * Type `py builddrivers.py` to start the interactive mode. Use lower cases to answer the following questions:
         * PHP Version (e.g. `7.1.7` or `7.2.0beta2`)
         * 64-bit?
         * Thread safe?
@@ -64,7 +66,7 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
     * For `yes/no` questions, you can simply hit `ENTER` key for `yes`. Other questions are self-explanatory.
     
 4. Use Command-line arguments
-    * Run `py builddrivers.py -h` to get a list of options and their descriptions
+    * Type `py builddrivers.py -h` to get a list of options and their descriptions
     * For example, 
         * `py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE`
         * `py builddrivers.py --PHPVER=7.1.8 --ARCH=x86 --THREAD=ts --DEBUG`
