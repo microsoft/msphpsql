@@ -109,7 +109,7 @@ elif [ $PLATFORM = "Sierra" ]; then
     printf "Installing MSODBCSQL..."
     brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-msodbcsql >> env_setup.log
     brew update >> env_setup.log
-    yes | ACCEPT_EULA=Y brew install msodbcsql >> env_setup.log
+    yes | ACCEPT_EULA=Y brew install --no-sandbox msodbcsql >> env_setup.log
     printf "done\n"
 
     yes | brew install autoconf >> env_setup.log
@@ -154,11 +154,17 @@ printf "done\n"
 
 printf "Setting up drivers..."
 phpExtDir=`/usr/local/bin/php-config --extension-dir`
-cp -r $SQLSRV_DRIVER $phpExtDir/sqlsrv.so
-cp -r $PDO_DRIVER $phpExtDir/pdo_sqlsrv.so
 cp php.ini-production php.ini
-echo "extension=sqlsrv.so" >> php.ini
-echo "extension=pdo_sqlsrv.so" >> php.ini
+driverName=$(basename $SQLSRV_DRIVER)
+echo "extension=$driverName" >> php.ini
+sudo cp -r $SQLSRV_DRIVER $phpExtDir/$driverName
+sudo chmod a+r $SQLSRV_DRIVER $phpExtDir/$driverName
+
+driverName=$(basename $PDO_DRIVER)
+echo "extension=$driverName" >> php.ini
+sudo cp -r $PDO_DRIVER $phpExtDir/$driverName
+sudo chmod a+r $SQLSRV_DRIVER $phpExtDir/$driverName
+
 sudo cp php.ini /usr/local/lib
 printf "done\n"
 
