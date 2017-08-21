@@ -30,6 +30,7 @@ before_script:
 script: 
   - travis_retry docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --name=client --link $TEST_PHP_SQL_SERVER msphpsql-dev
   - docker ps -a
+  - docker stats
   - docker logs client
   - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
   - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
