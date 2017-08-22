@@ -755,7 +755,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument( '-platform',         '--PLATFORM',         required=True,  help='The name of the platform the tests run on' )
     parser.add_argument( '-php-driver',       '--PHP_DRIVER',       default='both', help='Name of the PHP driver: sqlsrv, pdo_sqlsrv or both')
-    parser.add_argument( '-test-only',        '--TEST_ONLY',        default='all',  help='File name for only one test or all' )
+    parser.add_argument( '-testname',        '--TESTNAME',        default='all',  help='File name for only one test or all' )
     args = parser.parse_args()
     
     # Start time is recorded only in the beginning of this script execution. So it is not benchmark specific.
@@ -769,7 +769,7 @@ if __name__ == '__main__':
  
     print("Running the tests with default settings...")
  
-    run_tests( args.PHP_DRIVER, args.TEST_ONLY )
+    run_tests( args.PHP_DRIVER, args.TESTNAME )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 0 )
     """
     The following lines are commented out, because it already takes a long time to run the tests with the default settings.
@@ -777,14 +777,14 @@ if __name__ == '__main__':
     
     print("Running the tests with MARS ON...")
     enable_mars()
-    run_tests( args.PHP_DRIVER, args.TEST_ONLY )
+    run_tests( args.PHP_DRIVER, args.TESTNAME )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 1, 0 )
     disable_mars()
  
    
     print("Running the tests with Pooling ON...")
     enable_pooling()
-    run_tests( args.PHP_DRIVER, args.TEST_ONLY )
+    run_tests( args.PHP_DRIVER, args.TESTNAME )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 1 )
     disable_pooling()
     """

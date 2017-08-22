@@ -28,7 +28,7 @@ PHPBench is used to run the benchmarks. Visit http://phpbench.readthedocs.io/en/
 ##### 4. Execute run-perf_tests.py. 
 
 ### Windows
-    py.exe run-perf_tests.py -platform <PLATFORM> > tee run-perf_output.txt
+    py.exe run-perf_tests.py -platform <PLATFORM>
 ### Linux and Mac
 On Linux and Mac, the script must be executed with `sudo python3` because to enable pooling it needs to modify odbcinst.ini system file. As an improvement, the location of the odbcinst.ini file can be changed so that, sudo is not requiered. 
     
@@ -36,4 +36,4 @@ On Linux and Mac, the script must be executed with `sudo python3` because to ena
 
 `-platform` - The platform that the tests are ran on. Must be one of the following: Windows10, WindowsServer2016, WindowsServer2012, Ubuntu16, RedHat7, Sierra.
 `-php-driver` (optional) - The driver that the tests are ran on. Must be one of the following: sqlsrv, pdo_sqlsrv, or both. Default is both.
-`-test-only` (optional) - The test to run. Must be the file name (not including path) of one test or 'all'. Default is 'all'. If one test is specified, must also specify the -php-driver option to sqlsrv or pdo_sqlsrv.
+`-testname` (optional) - The test to run. Must be the file name (not including path) of one test or 'all'. Default is 'all'. If one test is specified, must also specify the -php-driver option to sqlsrv or pdo_sqlsrv.

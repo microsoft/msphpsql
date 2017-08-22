@@ -1,14 +1,15 @@
 <?php
 
 use PDOSqlsrvPerfTest\PDOSqlsrvUtil;
-/**
- * @Iterations(1000)
- */
-class PDOConnectionBench{
+include_once __DIR__ . "/../../lib/CRUDBaseBenchmark.php";
+
+class PDOConnectionBench extends CRUDBaseBenchmark 
+{
     /*
     * Opens a connection and closes it immediately
     */
-    public function benchConnectAndDisconnect(){
+    public function benchConnectAndDisconnect()
+    {
         $conn = PDOSqlsrvUtil::connect();
         PDOSqlsrvUtil::disconnect( $conn );
     }

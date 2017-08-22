@@ -6,21 +6,25 @@ use SqlsrvPerfTest\SqlsrvUtil;
  * @BeforeMethods({"connect"})
  * @AfterMethods({"disconnect"})
  */
-class SqlsrvSelectVersionBench{
+class SqlsrvSelectVersionBench
+{
  
     private $conn;
    
-    public function connect(){
+    public function connect()
+    {
         $this->conn = SqlsrvUtil::connect();
     }
     /*
     * Each iteration calls execDirect API to fetch @@Version
     */
-    public function benchSelectVersion(){
+    public function benchSelectVersion()
+    {
         $version = SqlsrvUtil::selectVersion( $this->conn );
     }
 
-    public function disconnect(){
+    public function disconnect()
+    {
         SqlsrvUtil::disconnect( $this->conn );
     }
 }
