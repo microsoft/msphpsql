@@ -24,7 +24,7 @@ PHPBench is used to run the benchmarks. Visit http://phpbench.readthedocs.io/en/
 
 ##### 1. Modify lib/connect.php with the test database credentials
 ##### 2. Modify lib/result_db.php with the result database credentials
-##### 3. The number of iterations for each test can be modified in the test itself (e.g., in test/Performance/benchmark/sqlsrv). Each test has a @Iteration(n) annotation. If you change the number in this annotation, you will change the number of iterations run for this test. By default, most tests are set to 1000 iterations.
+##### 3. The number of iterations for each test can be modified in the test itself (e.g., in test/Performance/benchmark/sqlsrv/SqlsrvSelectVersionBench.php). Each bench class in a test, or the parent class that it extends from, has a @Iteration(n) annotation. If you change the number in this annotation, you will change the number of iterations run for this test. By default, most tests are set to 1000 iterations.
 ##### 4. Execute run-perf_tests.py. 
 
 ### Windows
