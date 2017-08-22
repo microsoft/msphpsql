@@ -15,22 +15,27 @@ env:
   - PHPSQLDIR=/REPO/msphpsql-dev
   - TEST_PHP_SQL_SERVER=sql
   - SQLSRV_DBNAME=msphpsql_sqlsrv
-  - PDOSQLSRV_DBNAME=msphpsql_pdosqlsrv  
+  - PDOSQLSRV_DBNAME=msphpsql_pdosqlsrv
 
 before_install:
   - docker pull microsoft/mssql-server-linux
  
 install:
+  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Password123' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d microsoft/mssql-server-linux
   - docker build --build-arg PHPSQLDIR=$PHPSQLDIR -t msphpsql-dev -f Dockerfile-msphpsql .
-  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Password12@' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d microsoft/mssql-server-linux
 
+before_script:
+  - sleep 30
+  
 script: 
-  - docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --link $TEST_PHP_SQL_SERVER --name=client msphpsql-dev
-  - docker ps -a 
-  - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
-  - docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
-  - docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/functional/pdo_sqlsrv/*.phpt
-  - docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/sqlsrv/*.phpt
+  - travis_retry docker run -e TRAVIS_JOB_ID -t -d -w $PHPSQLDIR --name=client --link $TEST_PHP_SQL_SERVER msphpsql-dev
+  - docker ps -a
+  - docker stats
+  - docker logs client
+  - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
+  - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
+  - travis_retry docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/functional/pdo_sqlsrv/*.phpt
+  - travis_retry docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/sqlsrv/*.phpt
   - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
   - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
   - docker exec client bash -c 'for f in ./test/functional/pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 

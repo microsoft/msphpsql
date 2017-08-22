@@ -85,33 +85,6 @@ elif [ $PLATFORM = "RedHat7" ]; then
     printf "done\n"
 
 elif [ $PLATFORM = "Sierra" ]; then
-<<<<<<< HEAD
-    echo "Installing homebrew..."
-    yes | /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" >> env_setup.log 2>&1
-    echo "OK"
-    echo "Installing wget..."
-    brew install wget >> env_setup.log 2>&1
-    echo "OK"
-    echo "Installing svn..."
-    brew install svn >> env_setup.log 2>&1
-    echo "OK"
-    echo "Installing openssl..."
-    brew install pkg-config >> env_setup.log 2>&1
-    brew install openssl >> env_setup.log 2>&1
-    echo "OK"
-    echo "Installing python3..."
-    brew install python3 >> env_setup.log 2>&1
-    echo "OK"
-    echo "Installing MSODBCSQL..."
-    brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-msodbcsql >> env_setup.log 2>&1
-    brew update >> env_setup.log 2>&1
-    yes | ACCEPT_EULA=Y brew install --no-sandbox msodbcsql >> env_setup.log 2>&1
-    echo "OK"
-    yes | brew install autoconf >> env_setup.log 2>&1
-    echo "Installing pyodbc..."
-    pip3 install pyodbc >> env_setup.log 2>&1
-    echo "OK"
-=======
     printf "Installing homebrew..."
     yes | /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" >> env_setup.log
     printf "done\n"
@@ -143,7 +116,6 @@ elif [ $PLATFORM = "Sierra" ]; then
     printf "Installing pyodbc..."
     pip3 install pyodbc >> env_setup.log
     printf "done\n"
->>>>>>> upstream/dev
 fi
 
 printf "Downloading PHP-$PHP_VERSION source tarball..."
