@@ -25,7 +25,7 @@ from time import strftime
 import hashlib
 
 """
- Paths to current benchmarks. These constants should be modified if there are any changes in folder structure of the project. "regular" folder contains the benchmarks that can be run for any iterations. "large" folder contains the benchmarks ( currently the benchmark that fetches large amount of data ) that take long time to run and meant to have less number of iterations than the regular ones. 
+ Paths to current benchmarks. These constants should be modified if there are any changes in folder structure of the project.
 """
 
 sqlsrv_path = "benchmark" + os.sep + "sqlsrv"
