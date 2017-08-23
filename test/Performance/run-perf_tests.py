@@ -25,19 +25,18 @@ from time import strftime
 import hashlib
 
 """
- Paths to current benchmarks. These constants should be modified if there are any changes in folder structure of the project. "regular" folder contains the benchmarks that can be run for any iterations. "large" folder contains the benchmarks ( currently the benchmark that fetches large amount of data ) that take long time to run and meant to have less number of iterations than the regular ones. 
+ Paths to current benchmarks. These constants should be modified if there are any changes in folder structure of the project.
 """
 
-sqlsrv_regular_path = "benchmark" + os.sep + "sqlsrv" + os.sep + "regular"
-sqlsrv_large_path = "benchmark" + os.sep + "sqlsrv" + os.sep + "large"
-pdo_regular_path = "benchmark" + os.sep + "pdo_sqlsrv" + os.sep + "regular"
-pdo_large_path = "benchmark" + os.sep + "pdo_sqlsrv" + os.sep + "large"
+sqlsrv_path = "benchmark" + os.sep + "sqlsrv"
+pdo_path = "benchmark" + os.sep + "pdo_sqlsrv"
 
 """
  Path to the connect.php file that contains test database credentials. Note that, the benchmarks are run against this database and it is different from Result database.
 """
 connect_file = "lib" + os.sep + "connect.php"
 connect_file_bak = connect_file + ".bak"
+result_file = "lib" + os.sep + "result_db.php"
 
 """
  Global data format used across the script
@@ -139,18 +138,17 @@ def get_test_name( name ):
     }
     return test_name_dict[ name ]
  
-def get_run_command( path_to_tests, iterations, dump_file ):
+def get_run_command( path_to_tests, dump_file ):
     """
     This module returns the command to run the tests
     Args:
         path_to_tests (str): The folder that contains the tests to be run
-        iterations (str): Number of iterations 
         dump_file (str): The name of the XML file to output the results
     Returns:
         The command to run the tests
     """
-    command = "vendor" + os.sep + "bin" + os.sep + "phpbench run {0} --iterations {1} --dump-file={2}"
-    return command.format( path_to_tests, iterations, dump_file )
+    command = "vendor" + os.sep + "bin" + os.sep + "phpbench run {0} --dump-file={1}"
+    return command.format( path_to_tests, dump_file )
  
 def get_id( conn, id_field, table, name_field, value ):
     """
@@ -196,14 +194,14 @@ def get_id_no_quote( conn, id_field, table, name_field, value ):
         return id[0]
     return id
  
-def get_test_database():
+def get_test_database( database_file ):
     """
     This module reads test database details from connect.php and stores them into an instance of DB class
     Returns:
         A DB object that contains database credentials
     """
     test_db = DB()
-    for line in open( connect_file ):
+    for line in open( database_file ):
         if "server" in line:
             test_db.server_name = line.split("=")[1].strip()[1:-2]
         elif "database" in line:
@@ -611,21 +609,23 @@ def disable_pooling():
         copyfile( odbcinst_bak, odbcinst )
         os.remove( odbcinst_bak )
  
-def run_tests( iterations, iterations_large ):
+def run_tests( php_driver, test_name ):
     """
     This module runs the tests using PHPBench
     Args:
-        iterations (int): Number of iterations the tests in "regular" folder are run for
-        iterations_large (int): Number of iterations the tests in "large" folder are run for
+        php_driver (str): Name of the driver to be tested: sqlsrv, pdo_sqlsrv, or both
+        test_name (str): File name of the test or all
     Returns:
         N/A
     """
     print("Running the tests...")
-    call( get_run_command( sqlsrv_regular_path, iterations, "sqlsrv-regular.xml" ), shell=True )
-    call( get_run_command( sqlsrv_large_path, iterations_large, "sqlsrv-large.xml" ), shell=True )
- 
-    call( get_run_command( pdo_regular_path, iterations, "pdo_sqlsrv-regular.xml" ), shell=True )
-    call( get_run_command( pdo_large_path, iterations_large, "pdo_sqlsrv-large.xml" ), shell=True )
+    add_to_path = ''
+    if test_name != 'all':
+        add_to_path = os.sep + test_name
+    if php_driver == 'sqlsrv' or php_driver == 'both':
+            call( get_run_command( sqlsrv_path + add_to_path, "sqlsrv-results.xml" ), shell=True )
+    if php_driver == 'pdo_sqlsrv' or php_driver == 'both':
+            call( get_run_command( pdo_path + add_to_path, "pdo_sqlsrv-results.xml" ), shell=True )
  
 def parse_results( dump_file ):
     """
@@ -656,6 +656,7 @@ def parse_results( dump_file ):
         # If the bechmark was run successfully, parse the results. This is where you would add code to parse more details about the benchmark.
         else:
             xml_result.success = 1
+            # convert microseconds to seconds
             xml_result.duration = int( round( int( benchmark[0][0].find( 'stats' ).get( 'sum' )) / 1000000 ))
             iterations = benchmark[0][0].findall( 'iteration' )
             xml_result.iterations = len( iterations )
@@ -685,6 +686,11 @@ def parse_and_store_results( dump_file, test_db, result_db, platform, driver, st
     Returns:
         N/A
     """
+    # Check if the xml file actually exist
+    if not os.path.exists(dump_file):
+        print(dump_file + " does not exist")
+        return
+        
     # Connect to the Result Database
     conn = connect( result_db )
  
@@ -742,20 +748,14 @@ def parse_and_store_results_all( test_db, result_db, platform, start_time, mars,
     
     """
     print("Parsing and storing the results...")
-    parse_and_store_results( "sqlsrv-regular.xml", test_db, result_db, platform, "sqlsrv", start_time, mars, pooling )
-    parse_and_store_results( "sqlsrv-large.xml", test_db, result_db, platform, "sqlsrv", start_time, mars, pooling )
-    parse_and_store_results( "pdo_sqlsrv-regular.xml", test_db, result_db, platform, "pdo_sqlsrv", start_time, mars, pooling )
-    parse_and_store_results( "pdo_sqlsrv-large.xml", test_db, result_db, platform, "pdo_sqlsrv", start_time, mars, pooling )
+    parse_and_store_results( "sqlsrv-results.xml", test_db, result_db, platform, "sqlsrv", start_time, mars, pooling )
+    parse_and_store_results( "pdo_sqlsrv-results.xml", test_db, result_db, platform, "pdo_sqlsrv", start_time, mars, pooling )
  
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument( '-platform',         '--PLATFORM',         required=True, help='The name of the platform the tests run on' )
-    parser.add_argument( '-iterations',       '--ITERATIONS',       required=True, help='Number of iterations for regular tests', type=int )
-    parser.add_argument( '-iterations-large', '--ITERATIONS_LARGE', required=True, help='Number of iterations for regular tests',  type=int )
-    parser.add_argument( '-result-server',    '--RESULT_SERVER',    required=True, help='IP address of the Result Server' )
-    parser.add_argument( '-result-db',        '--RESULT_DB',        required=True, help='Name of the Result Database' )
-    parser.add_argument( '-result-uid',       '--RESULT_UID',       required=True, help='Username to connect to the Result Database' )
-    parser.add_argument( '-result-pwd',       '--RESULT_PWD',       required=True, help='Password to connect to the Result Database' )
+    parser.add_argument( '-platform',         '--PLATFORM',         required=True,  help='The name of the platform the tests run on' )
+    parser.add_argument( '-php-driver',       '--PHP_DRIVER',       default='both', help='Name of the PHP driver: sqlsrv, pdo_sqlsrv or both')
+    parser.add_argument( '-testname',        '--TESTNAME',        default='all',  help='File name for only one test or all' )
     args = parser.parse_args()
     
     # Start time is recorded only in the beginning of this script execution. So it is not benchmark specific.
@@ -764,12 +764,12 @@ if __name__ == '__main__':
     print( "Start time: " + start_time )
  
     validate_platform( args.PLATFORM )
-    result_db = DB( args.RESULT_SERVER, args.RESULT_DB, args.RESULT_UID, args.RESULT_PWD )
-    test_db = get_test_database()
+    result_db = get_test_database( result_file )
+    test_db = get_test_database( connect_file )
  
     print("Running the tests with default settings...")
  
-    run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
+    run_tests( args.PHP_DRIVER, args.TESTNAME )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 0 )
     """
     The following lines are commented out, because it already takes a long time to run the tests with the default settings.
@@ -777,14 +777,14 @@ if __name__ == '__main__':
     
     print("Running the tests with MARS ON...")
     enable_mars()
-    run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
+    run_tests( args.PHP_DRIVER, args.TESTNAME )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 1, 0 )
     disable_mars()
  
    
     print("Running the tests with Pooling ON...")
     enable_pooling()
-    run_tests( args.ITERATIONS, args.ITERATIONS_LARGE )
+    run_tests( args.PHP_DRIVER, args.TESTNAME )
     parse_and_store_results_all( test_db, result_db, args.PLATFORM, start_time, 0, 1 )
     disable_pooling()
     """
