@@ -2,10 +2,10 @@
 
 set -e
 
-if [[ ("$1" = "Ubuntu16" || "$1" = "RedHat7" || "$1" = "Sierra") ]]; then
+if [[ ("$1" = "Ubuntu16" || "$1" = "RedHat7" || "$1" = "SUSE12" || "$1" = "Sierra") ]]; then
     PLATFORM=$1
 else
-    echo "1st argument must be one of Ubuntu16, RedHat7, Sierra. Exiting..."
+    echo "1st argument must be one of Ubuntu16, RedHat7, SUSE12, Sierra. Exiting..."
     exit 1
 fi
 
@@ -24,7 +24,7 @@ else
 fi
 
 if [[ (! -f "$4") || (! -f "$5") ]]; then
-    echo "5th and 6th argument must be paths to sqlsrv and pdo drivers. Exiting..."
+    echo "4th and 5th argument must be paths to sqlsrv and pdo drivers. Exiting..."
     exit 1
 else
     SQLSRV_DRIVER=$4
@@ -82,6 +82,28 @@ elif [ $PLATFORM = "RedHat7" ]; then
     printf "Installing pyodbc"
     pip3 install --upgrade pip >> env_setup.log
     pip3 install pyodbc >> env_setup.log
+    printf "done\n"
+    
+elif [ $PLATFORM = "SUSE12" ]; then
+    printf "Update..."
+    sudo zypper refresh >> env_setup.log 2>&1
+    printf "done\n"
+    
+    printf "Installing autoconf, gcc, g++, git, zip, libxml, openssl, python3, pip3..."
+    sudo zypper -n install autoconf gcc gcc-c++ libxml2-devel git zip libopenssl-devel python3-devel python3-pip python3-setuptools >> env_setup.log 2>&1
+    printf "done\n"
+    
+    printf "Installing MSODBCSQL..."
+    zypper -n ar https://packages.microsoft.com/config/sles/12/prod.repo 2>&1
+    zypper --gpg-auto-import-keys refresh 2>&1
+    ACCEPT_EULA=Y zypper -n install msodbcsql >> env_setup.log 2>&1
+    ACCEPT_EULA=Y zypper -n install mssql-tools >> env_setup.log 2>&1
+    zypper -n install unixODBC-devel >> env_setup.log 2>&1
+    printf "done\n"
+    
+    printf "Installing pyodbc"
+    pip3 install --upgrade pip >> env_setup.log 2>&1
+    pip3 install pyodbc >> env_setup.log 2>&1
     printf "done\n"
 
 elif [ $PLATFORM = "Sierra" ]; then
@@ -158,12 +180,12 @@ cp php.ini-production php.ini
 driverName=$(basename $SQLSRV_DRIVER)
 echo "extension=$driverName" >> php.ini
 sudo cp -r $SQLSRV_DRIVER $phpExtDir/$driverName
-sudo chmod a+r $SQLSRV_DRIVER $phpExtDir/$driverName
+sudo chmod a+r $phpExtDir/$driverName
 
 driverName=$(basename $PDO_DRIVER)
 echo "extension=$driverName" >> php.ini
 sudo cp -r $PDO_DRIVER $phpExtDir/$driverName
-sudo chmod a+r $SQLSRV_DRIVER $phpExtDir/$driverName
+sudo chmod a+r $phpExtDir/$driverName
 
 sudo cp php.ini /usr/local/lib
 printf "done\n"
