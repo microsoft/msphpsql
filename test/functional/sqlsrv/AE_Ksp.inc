@@ -9,7 +9,7 @@ function getKSPpath()
     if ( strtoupper( substr( php_uname( 's' ), 0, 3 ) ) == 'WIN' ) {
         $arch = 'x64';
         if ( PHP_INT_SIZE == 4 ) // running 32 bit
-            $arch = 'x86';
+            $arch = '';
         $ksp .= $arch . '.dll';
     }
     else
