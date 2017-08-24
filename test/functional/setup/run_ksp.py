@@ -32,9 +32,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     app_name = 'ksp_app'
-    
+    cwd = os.getcwd()
+
     # first check if the ksp app is present
     work_dir = os.path.dirname(os.path.realpath(__file__))
+    os.chdir(work_dir) 
+
     if platform.system() == 'Windows':
         path = os.path.join(work_dir, app_name + '.exe')
         executable = app_name
@@ -50,3 +53,5 @@ if __name__ == '__main__':
         os.system('{0} 1 {1} {2} {3} {4}'.format(executable, args.SERVER, args.DBNAME, args.UID, args.PWD))
     else:
         os.system('{0} 0 {1} {2} {3} {4}'.format(executable, args.SERVER, args.DBNAME, args.UID, args.PWD))
+
+    os.chdir(cwd)    

@@ -100,8 +100,12 @@ if __name__ == '__main__':
     app_name = args.APPNAME
     header = 'msodbcsql.h'
 
+    cwd = os.getcwd()
+
     # make sure all required source and header files are present
     work_dir = os.path.dirname(os.path.realpath(__file__))   
+    os.chdir(work_dir) 
+        
     if not os.path.exists(os.path.join(work_dir, header)):
         print('Error: {0} not found!'.format(header))
         exit(1)
@@ -114,4 +118,7 @@ if __name__ == '__main__':
     
     compile_KSP(ksp_name)
     configure_KSP(app_name)
+    
+    os.chdir(cwd)    
+
     
