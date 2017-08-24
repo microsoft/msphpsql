@@ -30,13 +30,12 @@ Fetch data from a prepopulated test table given a custom keystore provider
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
     connect( $connectionInfo );
 
-    // will comment these when it's ready to test with a real KSP
-    // echo("\nConnecting... with an invalid input to CEKeystoreProvider\n");
-    // $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
-    // $connectionInfo .= "CEKeystoreName = 1; "; 
-    // $connectionInfo .= "CEKeystoreProvider = $ksp_path; ";
-    // $connectionInfo .= "CEKeystoreEncryptKey = $encrypt_key; ";    
-    // connect( $connectionInfo );
+    echo("\nConnecting... with an invalid input to CEKeystoreProvider\n");
+    $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
+    $connectionInfo .= "CEKeystoreName = 1; "; 
+    $connectionInfo .= "CEKeystoreProvider = $ksp_path; ";
+    $connectionInfo .= "CEKeystoreEncryptKey = $encrypt_key; ";    
+    connect( $connectionInfo );
 
     echo("\nConnecting... with an empty path\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
@@ -75,6 +74,10 @@ Fetch data from a prepopulated test table given a custom keystore provider
 --EXPECT--
 Connecting... with column encryption
 Connected successfully with ColumnEncryption enabled and KSP specified.
+
+Connecting... with an invalid input to CEKeystoreProvider
+Failed to connect.
+SQLSTATE[HY024]: [Microsoft][ODBC Driver 13 for SQL Server]Invalid attribute value
 
 Connecting... with an empty path
 Failed to connect.
