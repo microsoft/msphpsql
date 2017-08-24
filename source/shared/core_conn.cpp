@@ -835,9 +835,8 @@ void load_configure_ksp( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     char* encrypt_key = Z_STRVAL_P( conn->ce_option.ksp_encrypt_key );    
     memcpy_s( pKsd->data, key_size * sizeof( char ) , encrypt_key, key_size );
 
-    // Will uncomment these two lines when it's ready to test with a real custom keystore provider
-    // core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREPROVIDER, ksp_path, SQL_NTS );
-    // core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>( pKsd ), SQL_IS_POINTER );
+    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREPROVIDER, ksp_path, SQL_NTS );
+    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>( pKsd ), SQL_IS_POINTER );
 }
 
 void common_conn_str_append_func( const char* odbc_name, const char* val, size_t val_len, std::string& conn_str TSRMLS_DC )

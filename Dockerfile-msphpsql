@@ -44,9 +44,20 @@ RUN pip install --upgrade pip && pip install cpp-coveralls
 
 #Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
 #One option is to get source from zip file of repository.
+<<<<<<< HEAD
 #another option is to copy source to build directory on image
 RUN mkdir -p $PHPSQLDIR
 COPY . $PHPSQLDIR
+=======
+
+# another option is to copy source to build directory on image
+RUN mkdir -p $PHPSQLDIR
+COPY . $PHPSQLDIR
+
+# copy odbc header file to setup
+COPY $PHPSQLDIR/source/shared/msodbcsql.h $PHPSQLDIR/test/functional/setup
+
+>>>>>>> 328286b... added checks for server version in the tests
 WORKDIR $PHPSQLDIR/source/ 
 
 RUN chmod +x ./packagize.sh
