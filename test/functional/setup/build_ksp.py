@@ -23,14 +23,12 @@ import os
 import platform
 import argparse
 
-# This returns the path to the batch file vcvarsall.bat that comes with Visual Studio 
-def getCompilerPath():
-    root_dir = 'C:' + os.sep
-    return os.path.join(root_dir, "Program Files (x86)", "Microsoft Visual Studio 14.0", "VC", "vcvarsall.bat")
-
-# This creates a batch file to compile myKSP.c into a dll, according to *arch* (either x86 or x64)
+# This creates a batch *filename*, which compiles a C program according to 
+# *command* and *arch* (either x86 or x64)
 def create_batch_file(arch, filename, command):
-    vcvarsall = getCompilerPath()
+    root_dir = 'C:' + os.sep
+    vcvarsall = os.path.join(root_dir, "Program Files (x86)", "Microsoft Visual Studio 14.0", "VC", "vcvarsall.bat")
+
     try:
         file = open(filename, 'w')
         file.write('@ECHO OFF' + os.linesep)
