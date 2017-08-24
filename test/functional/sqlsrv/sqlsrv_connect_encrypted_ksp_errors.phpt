@@ -1,7 +1,7 @@
 --TEST--
 Connect using a custom keystore provider with some required inputs missing
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_server_old.inc'); ?>
 --FILE--
 <?php
 
