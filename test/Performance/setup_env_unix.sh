@@ -61,8 +61,8 @@ elif [ $PLATFORM = "RedHat7" ]; then
 
     printf "Enabling EPEL repo..."
 #   pipe non-error to log file (wget and yum install reports error when there's nothing to do)
-    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1
-    yes | sudo yum install epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1 || true
+    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm >> env_setup.log
+    yes | sudo yum install epel-release-latest-7.noarch.rpm >> env_setup.log || true
     printf "done\n"
 
     printf "Installing python34-setuptools..."
@@ -86,24 +86,24 @@ elif [ $PLATFORM = "RedHat7" ]; then
     
 elif [ $PLATFORM = "SUSE12" ]; then
     printf "Update..."
-    sudo zypper refresh >> env_setup.log 2>&1
+    sudo zypper refresh >> env_setup.log
     printf "done\n"
     
     printf "Installing autoconf, gcc, g++, git, zip, libxml, openssl, python3, pip3..."
-    sudo zypper -n install autoconf gcc gcc-c++ libxml2-devel git zip libopenssl-devel python3-devel python3-pip python3-setuptools >> env_setup.log 2>&1
+    sudo zypper -n install autoconf gcc gcc-c++ libxml2-devel git zip libopenssl-devel python3-devel python3-pip python3-setuptools >> env_setup.log
     printf "done\n"
     
     printf "Installing MSODBCSQL..."
-    zypper -n ar https://packages.microsoft.com/config/sles/12/prod.repo 2>&1
-    zypper --gpg-auto-import-keys refresh 2>&1
-    ACCEPT_EULA=Y zypper -n install msodbcsql >> env_setup.log 2>&1
-    ACCEPT_EULA=Y zypper -n install mssql-tools >> env_setup.log 2>&1
-    zypper -n install unixODBC-devel >> env_setup.log 2>&1
+    zypper -n ar https://packages.microsoft.com/config/sles/12/prod.repo
+    zypper --gpg-auto-import-keys refresh
+    ACCEPT_EULA=Y zypper -n install msodbcsql >> env_setup.log
+    ACCEPT_EULA=Y zypper -n install mssql-tools >> env_setup.log
+    zypper -n install unixODBC-devel >> env_setup.log
     printf "done\n"
     
     printf "Installing pyodbc"
-    pip3 install --upgrade pip >> env_setup.log 2>&1
-    pip3 install pyodbc >> env_setup.log 2>&1
+    pip3 install --upgrade pip >> env_setup.log
+    pip3 install pyodbc >> env_setup.log
     printf "done\n"
 
 elif [ $PLATFORM = "Sierra" ]; then
@@ -142,7 +142,7 @@ fi
 
 printf "Downloading PHP-$PHP_VERSION source tarball..."
 #   pipe non-error to log file
-wget http://ca1.php.net/get/php-$PHP_VERSION.tar.gz/from/this/mirror -O php-$PHP_VERSION.tar.gz >> env_setup.log 2>&1
+wget http://ca1.php.net/get/php-$PHP_VERSION.tar.gz/from/this/mirror -O php-$PHP_VERSION.tar.gz >> env_setup.log
 printf "done\n"
 
 printf "Extracting PHP source tarball..."
@@ -154,7 +154,7 @@ phpDir=php-$PHP_VERSION
 cd $phpDir
 
 printf "Configuring PHP..."
-./buildconf --force >> ../env_setup.log 2>&1
+./buildconf --force >> ../env_setup.log
 CONFIG_OPTIONS="--enable-cli --enable-cgi --with-zlib --enable-mbstring --prefix=/usr/local"
 [ "${PHP_THREAD}" == "ts" ] && CONFIG_OPTIONS=${CONFIG_OPTIONS}" --enable-maintainer-zts"
 if [ $PLATFORM = "Sierra" ]; then
@@ -163,7 +163,7 @@ else
     CONFIG_OPTIONS=$CONFIG_OPTIONS" --with-openssl"
 fi
 #pipe non-error to log file
-(./configure $CONFIG_OPTIONS >> ../env_setup.log 2>&1)
+(./configure $CONFIG_OPTIONS >> ../env_setup.log)
 printf "done\n"
 
 printf "Compiling and installing PHP..."
@@ -197,7 +197,7 @@ printf "done\n"
 printf "Installing Composer..."
 cd ..
 #   pipe non-error to log file
-wget https://getcomposer.org/installer -O composer-setup.php >> env_setup.log 2>&1
+wget https://getcomposer.org/installer -O composer-setup.php >> env_setup.log
 /usr/local/bin/php composer-setup.php >> env_setup.log
 printf "done\n"
 

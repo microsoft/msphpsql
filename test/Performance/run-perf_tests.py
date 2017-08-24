@@ -58,6 +58,7 @@ def validate_platform( platform_name ):
         , "WindowsServer2012"
         , "Ubuntu16"
         , "RedHat7"
+        , "SUSE12"
         , "Sierra"]
     if platform_name not in platforms:
         print ( "Platform must be one of the following:" )
