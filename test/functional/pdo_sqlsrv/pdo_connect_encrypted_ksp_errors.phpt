@@ -1,5 +1,5 @@
 --TEST--
-Fetch data from a prepopulated test table given a custom keystore provider
+Connect using a custom keystore provider with some required inputs missing
 --SKIPIF--
 <?php require('skipif_server_old.inc'); ?>
 --FILE--
