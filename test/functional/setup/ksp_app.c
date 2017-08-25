@@ -1,7 +1,7 @@
 /******************************************************************************
     Example application for demonstration of custom keystore provider usage
 
-    Windows:   compile with cl /MD ksp_app.c /link odbc32.lib
+    Windows:   compile with cl /MD ksp_app.c /link odbc32.lib /out:ksp_app.exe
     Linux/mac: compile with gcc -o ksp_app -fshort-wchar ksp_app.c -lodbc -ldl
 
     usage: kspapp connstr
@@ -181,13 +181,15 @@ FoundProv:
 void populateTestTable(SQLHDBC dbc, SQLHSTMT stmt)
 {
     SQLRETURN rc;
-    int i;    
+    int i, j;    
 
     /* Create a table with encrypted columns */
     {
         static char *tableSql = "CREATE TABLE CustomKSPTestTable ("
             "c1 int,"
-            "c2 varchar(255) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = CustomCEK, ENCRYPTION_TYPE = DETERMINISTIC, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256'))";
+            "c2 varchar(255) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = CustomCEK, ENCRYPTION_TYPE = DETERMINISTIC, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256'),"
+            "c3 char(5) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = CustomCEK, ENCRYPTION_TYPE = DETERMINISTIC, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256'),"
+            "c4 date ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = CustomCEK, ENCRYPTION_TYPE = Randomized, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256'))";
         printf("Create table: %s\n", tableSql);
         SQLExecDirect(stmt, tableSql, SQL_NTS);
     }
@@ -213,14 +215,32 @@ void populateTestTable(SQLHDBC dbc, SQLHSTMT stmt)
     {
         int c1;
         char c2[256];
+        char c3[6];
+        SQL_DATE_STRUCT date; 
+        SQLLEN cbdate;
         rc = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &c1, 0, 0);
         checkRC(rc, "Binding parameters for insert", 9, stmt, SQL_HANDLE_STMT);
         rc = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 255, 0, c2, 255, 0);
         checkRC(rc, "Binding parameters for insert", 9, stmt, SQL_HANDLE_STMT);
+        rc = SQLBindParameter(stmt, 3, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 5, 0, c3, 5, 0);
+            checkRC(rc, "Binding parameters for insert", 9, stmt, SQL_HANDLE_STMT);
+        checkRC(rc, "Binding parameters for insert", 9, stmt, SQL_HANDLE_STMT);
+        cbdate = sizeof(SQL_DATE_STRUCT);
+        rc = SQLBindParameter(stmt, 4, SQL_PARAM_INPUT, SQL_C_TYPE_DATE, SQL_TYPE_DATE, 10, 0, &date, 0, &cbdate);   
+        checkRC(rc, "Binding parameters for insert", 9, stmt, SQL_HANDLE_STMT);
+        
+        date.year = 2017;
+        date.month = 8;
         for (i = 0; i < 10; i++) {
+            date.day = i + 10;
+        
             c1 = i * 10 + i + 1;
             sprintf(c2, "Sample data %d for column 2", i);
-            rc = SQLExecDirect(stmt, "INSERT INTO CustomKSPTestTable (c1, c2) values (?, ?)", SQL_NTS);
+            for (j = 0; j < 3; j++) {
+                c3[j] = 'a' + i + j;
+            }
+            c3[3] = '\0';
+            rc = SQLExecDirect(stmt, "INSERT INTO CustomKSPTestTable (c1, c2, c3, c4) values (?, ?, ?, ?)", SQL_NTS);
             checkRC(rc, "Inserting rows query", 10, stmt, SQL_HANDLE_STMT);
         }
         printf("(Encrypted) data has been inserted into CustomKSPTestTable. You may inspect the data now.\n");
