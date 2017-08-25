@@ -41,18 +41,19 @@ $phpDir="C:\php"
 Remove-Item $phpDir -Recurse -ErrorAction Ignore
 New-Item -ItemType directory -Path $phpDir
 Expand-Archive $PHP_ZIP -DestinationPath $phpDir
-Copy-Item $SQLSRV_DRIVER $phpDir\ext
-Copy-Item $PDO_DRIVER $phpDir\ext
+
+# copy drivers to extensions directory and rename to a standard nomenclature
+# for consistency with run-perf_tests.py
+Copy-Item $SQLSRV_DRIVER $phpDir\ext\php_sqlsrv.dll
+Copy-Item $PDO_DRIVER $phpDir\ext\php_pdo_sqlsrv.dll
 
 # setup driver
 Copy-Item $phpDir\php.ini-production $phpDir\php.ini
 Add-Content $phpDir\php.ini "extension=$phpDir\ext\php_openssl.dll"
 Add-Content $phpDir\php.ini "extension=$phpDir\ext\php_mbstring.dll"
 
-$driverName=Split-Path $SQLSRV_DRIVER -leaf
-Add-Content $phpDir\php.ini "extension=$phpDir\ext\$driverName"
-$driverName=Split-Path $PDO_DRIVER -leaf
-Add-Content $phpDir\php.ini "extension=$phpDir\ext\$driverName"
+Add-Content $phpDir\php.ini "extension=$phpDir\ext\php_sqlsrv.dll"
+Add-Content $phpDir\php.ini "extension=$phpDir\ext\php_pdo_sqlsrv.dll"
 
 Move-Item $phpDir\php.ini C:\Windows -force
 Copy-Item $phpDir\ssleay32.dll C:\Windows -force
