@@ -61,7 +61,7 @@ class PDOSqlsrvCRUDBench extends CRUDBaseBenchmark
         {
             PDOSqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
             PDOSqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
-            $stmt = PDOSqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
+            PDOSqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
             PDOSqlsrvUtil::deleteWithPrepare( $this->conn, $this->tableName );
         }
     }

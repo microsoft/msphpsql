@@ -61,7 +61,7 @@ class SqlsrvCRUDBench extends CRUDBaseBenchmark
         {
             SqlsrvUtil::insertWithPrepare( $this->conn, $this->tableName, $this->insertValues );
             SqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
-            $stmt = SqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
+            SqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
             SqlsrvUtil::delete( $this->conn, $this->tableName );
         }
     }

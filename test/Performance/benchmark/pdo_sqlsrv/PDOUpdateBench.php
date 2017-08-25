@@ -57,7 +57,7 @@ class PDOUpdateBench extends CRUDBaseBenchmark
     {
         for( $i=0; $i<PDOSqlsrvUtil::$loopsPerCRUDIter; $i++ )
         {
-            $stmt = PDOSqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
+            PDOSqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
         }
     }
 

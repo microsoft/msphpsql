@@ -57,7 +57,7 @@ class SqlsrvUpdateBench extends CRUDBaseBenchmark
     {
         for( $i=0; $i<SqlsrvUtil::$loopsPerCRUDIter; $i++ )
         {
-            $stmt = SqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
+            SqlsrvUtil::updateWithPrepare( $this->conn, $this->tableName, $this->updateValues, $this->updateParams );
         }
     }
 
