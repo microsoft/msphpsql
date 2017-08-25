@@ -1046,16 +1046,16 @@ struct stmt_option;
 
 // This holds the various details of column encryption. 
 struct col_encryption_option {
-	bool			enabled;			// column encryption enabled, false by default
-	zval_auto_ptr	ksp_name;			// keystore provider name 
-	zval_auto_ptr	ksp_path;			// keystore provider path to the dynamically linked libary (either a *.dll or *.so)
-	zval_auto_ptr	ksp_encrypt_key;	// the encryption key used to configure the keystore provider 
-	size_t			key_size;			// the length of ksp_encrypt_key without the NULL terminator
+    bool            enabled;            // column encryption enabled, false by default
+    zval_auto_ptr   ksp_name;           // keystore provider name 
+    zval_auto_ptr   ksp_path;           // keystore provider path to the dynamically linked libary (either a *.dll or *.so)
+    zval_auto_ptr   ksp_encrypt_key;    // the encryption key used to configure the keystore provider 
+    size_t          key_size;           // the length of ksp_encrypt_key without the NULL terminator
     bool            ksp_required;       // a keystore provider is required to enable column encryption, false by default 
 
-	col_encryption_option() : enabled( false ), key_size ( 0 ), ksp_required( false )
-	{
-	}
+    col_encryption_option() : enabled( false ), key_size ( 0 ), ksp_required( false )
+    {
+    }
 };
 
 // *** connection resource structure ***
