@@ -1,7 +1,7 @@
 --TEST--
 Fetch data from a prepopulated test table given a custom keystore provider
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_server_old.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure( 'WarningsReturnAsErrors', 1 );
