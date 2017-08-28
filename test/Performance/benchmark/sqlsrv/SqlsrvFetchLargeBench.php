@@ -2,30 +2,36 @@
 
 use SqlsrvPerfTest\SqlsrvUtil;
 /**
+ * @Iterations(1)
  * @BeforeMethods({"connect", "setTableName" })
  * @AfterMethods({ "disconnect"})
  */
-class SqlsrvFetchLargeBench{
+class SqlsrvFetchLargeBench
+{
 
     private $conn;
     private $tableName;
 
-    public function setTableName(){
+    public function setTableName()
+    {
         //Assumes the table is already populated with data
         $this->tableName = "LargeDB.dbo.datatypes";
     }
 
-    public function connect(){
+    public function connect()
+    {
         $this->conn = SqlsrvUtil::connect();
     }
     /*
     * Each iteration calls prepare, execute and fetch APIs to fetch the already populdated data
     */
-    public function benchFetchWithPrepare(){
+    public function benchFetchWithPrepare()
+    {
         SqlsrvUtil::fetchWithPrepare( $this->conn, $this->tableName );
     }
 
-    public function disconnect(){
+    public function disconnect()
+    {
         SqlsrvUtil::disconnect( $this->conn );
     }
 }
