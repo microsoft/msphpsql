@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use connection handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 4.3 for PHP for SQL Server
+// Microsoft Drivers 5.0 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -96,8 +96,8 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 
 {
     SQLRETURN r;
-    std::string conn_str;
-    conn_str.reserve( DEFAULT_CONN_STR_LEN );
+    std::string conn_options;
+    conn_options.reserve( DEFAULT_CONN_STR_LEN );
     sqlsrv_malloc_auto_ptr<sqlsrv_conn> conn;
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wconn_string;
     unsigned int wconn_len = 0;
@@ -142,26 +142,25 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 
     SQLHANDLE temp_conn_h;
     core::SQLAllocHandle( SQL_HANDLE_DBC, *henv, &temp_conn_h TSRMLS_CC );
-
     conn = conn_factory( temp_conn_h, err, driver TSRMLS_CC );
     conn->set_func( driver_func );
+    build_connection_string_and_set_conn_attr(conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_options TSRMLS_CC);   
+    
+	for( std::size_t i = DRIVER_VERSION::MIN; i <= DRIVER_VERSION::MAX; ++i ) {
+        std::string conn_str = conn_options + CONNECTION_STRING_DRIVER_NAME[i];
+            
+        // We only support UTF-8 encoding for connection string.
+        // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
+        wconn_len = static_cast<unsigned int>( conn_str.length() + 1 ) * sizeof( SQLWCHAR );
 
-        for( std::size_t i = DRIVER_VERSION::MIN; i <= DRIVER_VERSION::MAX; ++i ) {
-            conn_str = CONNECTION_STRING_DRIVER_NAME[i];
-            build_connection_string_and_set_conn_attr(conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str TSRMLS_CC);
+        wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>(conn_str.length()), &wconn_len );
 
-            // We only support UTF-8 encoding for connection string.
-            // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
-            wconn_len = static_cast<unsigned int>( conn_str.length() + 1 ) * sizeof( SQLWCHAR );
+        CHECK_CUSTOM_ERROR( wconn_string == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message())
+        {
+            throw core::CoreException();
+        }
 
-            wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>(conn_str.length()), &wconn_len );
-
-            CHECK_CUSTOM_ERROR( wconn_string == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message())
-            {
-                throw core::CoreException();
-            }
-
-            SQLSMALLINT output_conn_size;
+        SQLSMALLINT output_conn_size;
 #ifndef _WIN32
     // unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
     // connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
@@ -177,38 +176,39 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     r = SQLDriverConnectW( conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>( wconn_string.get() ), static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
 #endif // !_WIN32 
 
-            // clear the connection string from memory to remove sensitive data (such as a password).
-            memset( const_cast<char*>(conn_str.c_str()), 0, conn_str.size());
-            memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
-            conn_str.clear();
-            if ( !SQL_SUCCEEDED( r )) {
-                SQLCHAR state[SQL_SQLSTATE_BUFSIZE];
-                SQLSMALLINT len;
-                SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
-                bool missing_driver_error = ( SQL_SUCCEEDED( sr ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && state[4] == '2' );
-                // if it's a IM002, meaning that the correct ODBC driver is not installed
-                CHECK_CUSTOM_ERROR(missing_driver_error && ( i == DRIVER_VERSION::MAX ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
-                    throw core::CoreException();
-                }
-                if ( !missing_driver_error ) {
-                    break;
-                }
-            } 
-            else {
-                conn->driver_version = static_cast<DRIVER_VERSION>( i );
+        // clear the connection string from memory to remove sensitive data (such as a password).
+        memset( const_cast<char*>(conn_str.c_str()), 0, conn_str.size());
+        memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
+        conn_str.clear();
+        if ( !SQL_SUCCEEDED( r )) {
+            SQLCHAR state[SQL_SQLSTATE_BUFSIZE];
+            SQLSMALLINT len;
+            SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
+            bool missing_driver_error = ( SQL_SUCCEEDED( sr ) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && state[4] == '2' );
+            // if it's a IM002, meaning that the correct ODBC driver is not installed
+            CHECK_CUSTOM_ERROR(missing_driver_error && ( i == DRIVER_VERSION::MAX ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+                throw core::CoreException();
+            }
+            if ( !missing_driver_error ) {
                 break;
             }
+        } 
+        else {
+            conn->driver_version = static_cast<DRIVER_VERSION>( i );
+            break;
         }
-        CHECK_SQL_ERROR( r, conn ) {
-            throw core::CoreException();
-        }
+    } // for
+        
+    CHECK_SQL_ERROR( r, conn ) {
+        throw core::CoreException();
+    }
 
-        CHECK_SQL_WARNING_AS_ERROR( r, conn ) {
-            throw core::CoreException();
-        }
+    CHECK_SQL_WARNING_AS_ERROR( r, conn ) {
+        throw core::CoreException();
+    }
 
-        // determine the version of the server we're connected to.  The server version is left in the 
-        // connection upon return.
+    // determine the version of the server we're connected to.  The server version is left in the 
+    // connection upon return.
     //
     // unixODBC 2.3.1:
     // SQLGetInfo works when r =  SQL_SUCCESS_WITH_INFO (non-pooled connection)
@@ -223,32 +223,33 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif // !_WIN32 
     }
     catch( std::bad_alloc& ) {
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+        memset( const_cast<char*>( conn_options.c_str()), 0, conn_options.size() );
         memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
         conn->invalidate();
         DIE( "C++ memory allocation failure building the connection string." );
     }
     catch( std::out_of_range const& ex ) {
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+        memset( const_cast<char*>(conn_options.c_str()), 0, conn_options.size() );
         memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
         LOG( SEV_ERROR, "C++ exception returned: %1!s!", ex.what() );
         conn->invalidate();
         throw;
     }
     catch( std::length_error const& ex ) {
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+        memset( const_cast<char*>(conn_options.c_str()), 0, conn_options.size() );
         memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
         LOG( SEV_ERROR, "C++ exception returned: %1!s!", ex.what() );
         conn->invalidate();
         throw;
     }
     catch( core::CoreException&  ) {
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+        memset( const_cast<char*>(conn_options.c_str()), 0, conn_options.size() );
         memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
         conn->invalidate();
         throw;        
     }
 
+    conn_options.clear();
     sqlsrv_conn* return_conn = conn;
     conn.transferred();
 
