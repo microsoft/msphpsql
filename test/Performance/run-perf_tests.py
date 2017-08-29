@@ -58,6 +58,7 @@ def validate_platform( platform_name ):
         , "WindowsServer2012"
         , "Ubuntu16"
         , "RedHat7"
+        , "SUSE12"
         , "Sierra"]
     if platform_name not in platforms:
         print ( "Platform must be one of the following:" )
@@ -121,6 +122,7 @@ def get_test_name( name ):
     test_name_dict = {
           'SqlsrvConnectionBench': 'connection'
         , 'SqlsrvCreateDbTableProcBench': 'create'
+        , 'SqlsrvCRUDBench': 'crud'
         , 'SqlsrvInsertBench': 'crud-create'    
         , 'SqlsrvFetchBench': 'crud-retrieve'  
         , 'SqlsrvUpdateBench': 'crud-update'    
@@ -129,6 +131,7 @@ def get_test_name( name ):
         , 'SqlsrvSelectVersionBench': 'version'
         , 'PDOConnectionBench': 'connection'
         , 'PDOCreateDbTableProcBench': 'create'
+        , 'PDOCRUDBench': 'crud'
         , 'PDOInsertBench': 'crud-create'    
         , 'PDOFetchBench': 'crud-retrieve'  
         , 'PDOUpdateBench': 'crud-update'    

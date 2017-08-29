@@ -23,7 +23,7 @@ class PDOFetchLargeBench
         $this->conn = PDOSqlsrvUtil::connect();
     }
     /*
-    * Each iteration calls prepare, execute and fetch APIs to fetch the already populdated data
+    * Each iteration calls prepare, execute and fetch APIs to fetch the already populated data
     */
     public function benchFetchWithPrepare()
     {

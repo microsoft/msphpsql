@@ -2,10 +2,10 @@
 
 set -e
 
-if [[ ("$1" = "Ubuntu16" || "$1" = "RedHat7" || "$1" = "Sierra") ]]; then
+if [[ ("$1" = "Ubuntu16" || "$1" = "RedHat7" || "$1" = "SUSE12" || "$1" = "Sierra") ]]; then
     PLATFORM=$1
 else
-    echo "1st argument must be one of Ubuntu16, RedHat7, Sierra. Exiting..."
+    echo "1st argument must be one of Ubuntu16, RedHat7, SUSE12, Sierra. Exiting..."
     exit 1
 fi
 
@@ -24,7 +24,7 @@ else
 fi
 
 if [[ (! -f "$4") || (! -f "$5") ]]; then
-    echo "5th and 6th argument must be paths to sqlsrv and pdo drivers. Exiting..."
+    echo "4th and 5th argument must be paths to sqlsrv and pdo drivers. Exiting..."
     exit 1
 else
     SQLSRV_DRIVER=$4
@@ -61,8 +61,8 @@ elif [ $PLATFORM = "RedHat7" ]; then
 
     printf "Enabling EPEL repo..."
 #   pipe non-error to log file (wget and yum install reports error when there's nothing to do)
-    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1
-    yes | sudo yum install epel-release-latest-7.noarch.rpm >> env_setup.log 2>&1 || true
+    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm >> env_setup.log
+    yes | sudo yum install epel-release-latest-7.noarch.rpm >> env_setup.log || true
     printf "done\n"
 
     printf "Installing python34-setuptools..."
@@ -79,6 +79,28 @@ elif [ $PLATFORM = "RedHat7" ]; then
     (yes | sudo yum install -y unixODBC-devel autoconf >> env_setup.log)
     printf "done\n"
 
+    printf "Installing pyodbc"
+    pip3 install --upgrade pip >> env_setup.log
+    pip3 install pyodbc >> env_setup.log
+    printf "done\n"
+    
+elif [ $PLATFORM = "SUSE12" ]; then
+    printf "Update..."
+    sudo zypper refresh >> env_setup.log
+    printf "done\n"
+    
+    printf "Installing autoconf, gcc, g++, git, zip, libxml, openssl, python3, pip3..."
+    sudo zypper -n install autoconf gcc gcc-c++ libxml2-devel git zip libopenssl-devel python3-devel python3-pip python3-setuptools >> env_setup.log
+    printf "done\n"
+    
+    printf "Installing MSODBCSQL..."
+    zypper -n ar https://packages.microsoft.com/config/sles/12/prod.repo
+    zypper --gpg-auto-import-keys refresh
+    ACCEPT_EULA=Y zypper -n install msodbcsql >> env_setup.log
+    ACCEPT_EULA=Y zypper -n install mssql-tools >> env_setup.log
+    zypper -n install unixODBC-devel >> env_setup.log
+    printf "done\n"
+    
     printf "Installing pyodbc"
     pip3 install --upgrade pip >> env_setup.log
     pip3 install pyodbc >> env_setup.log
@@ -120,7 +142,7 @@ fi
 
 printf "Downloading PHP-$PHP_VERSION source tarball..."
 #   pipe non-error to log file
-wget http://ca1.php.net/get/php-$PHP_VERSION.tar.gz/from/this/mirror -O php-$PHP_VERSION.tar.gz >> env_setup.log 2>&1
+wget http://ca1.php.net/get/php-$PHP_VERSION.tar.gz/from/this/mirror -O php-$PHP_VERSION.tar.gz >> env_setup.log
 printf "done\n"
 
 printf "Extracting PHP source tarball..."
@@ -132,7 +154,7 @@ phpDir=php-$PHP_VERSION
 cd $phpDir
 
 printf "Configuring PHP..."
-./buildconf --force >> ../env_setup.log 2>&1
+./buildconf --force >> ../env_setup.log
 CONFIG_OPTIONS="--enable-cli --enable-cgi --with-zlib --enable-mbstring --prefix=/usr/local"
 [ "${PHP_THREAD}" == "ts" ] && CONFIG_OPTIONS=${CONFIG_OPTIONS}" --enable-maintainer-zts"
 if [ $PLATFORM = "Sierra" ]; then
@@ -141,7 +163,7 @@ else
     CONFIG_OPTIONS=$CONFIG_OPTIONS" --with-openssl"
 fi
 #pipe non-error to log file
-(./configure $CONFIG_OPTIONS >> ../env_setup.log 2>&1)
+(./configure $CONFIG_OPTIONS >> ../env_setup.log)
 printf "done\n"
 
 printf "Compiling and installing PHP..."
@@ -158,12 +180,12 @@ cp php.ini-production php.ini
 driverName=$(basename $SQLSRV_DRIVER)
 echo "extension=$driverName" >> php.ini
 sudo cp -r $SQLSRV_DRIVER $phpExtDir/$driverName
-sudo chmod a+r $SQLSRV_DRIVER $phpExtDir/$driverName
+sudo chmod a+r $phpExtDir/$driverName
 
 driverName=$(basename $PDO_DRIVER)
 echo "extension=$driverName" >> php.ini
 sudo cp -r $PDO_DRIVER $phpExtDir/$driverName
-sudo chmod a+r $SQLSRV_DRIVER $phpExtDir/$driverName
+sudo chmod a+r $phpExtDir/$driverName
 
 sudo cp php.ini /usr/local/lib
 printf "done\n"
@@ -175,7 +197,7 @@ printf "done\n"
 printf "Installing Composer..."
 cd ..
 #   pipe non-error to log file
-wget https://getcomposer.org/installer -O composer-setup.php >> env_setup.log 2>&1
+wget https://getcomposer.org/installer -O composer-setup.php >> env_setup.log
 /usr/local/bin/php composer-setup.php >> env_setup.log
 printf "done\n"
 
