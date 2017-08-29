@@ -779,7 +779,7 @@ void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 }
 
 // Column Encryption feature: if a custom keystore provider is specified, 
-// load and configure it when column encryption is enabled, but this step have
+// load and configure it when column encryption is enabled, but this step has
 // to be executed after the connection has been established
 void load_configure_ksp( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 {
@@ -826,7 +826,7 @@ void load_configure_ksp( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     wksp_name = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, ksp_name, name_len, &wname_len );
 
     CHECK_CUSTOM_ERROR( wksp_name == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE ) {
-	    throw core::CoreException();
+        throw core::CoreException();
     }
 
     pKsd->name = (wchar_t *) wksp_name.get();
@@ -839,7 +839,7 @@ void load_configure_ksp( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>( pKsd ), SQL_IS_POINTER );
 }
 
-void common_conn_str_append_func( const char* odbc_name, const char* val, size_t val_len, std::string& conn_str TSRMLS_DC )
+void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC )
 {
     // wrap a connection option in a quote.  It is presumed that any character that need to be escaped will
     // be escaped, such as a closing }.
