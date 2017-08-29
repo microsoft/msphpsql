@@ -13,7 +13,7 @@
 #               ksp_app.c (or any equivalent)
 #               msodbcsql.h (odbc header file)
 #
-# Execution: Run with command line with required options
+# Execution: Run with command line with optional options
 #            py build_ksp.py --KSP myKSP --APP ksp_app
 #
 #############################################################################################
@@ -46,14 +46,14 @@ def create_batch_file(arch, filename, command):
 # This invokes the newly created batch file to compile the code, 
 # according to *arch* (either x86 or x64). The batch file will be 
 # removed afterwards
-def compile_KSP_windows(arch, ksp_name):
+def compile_KSP_windows(arch, ksp_src):
     output = 'myKSP'
     if arch == 'x64':
         output = output + arch + '.dll'
     else:
         output = output + '.dll'
 
-    command = 'cl {0}.c /LD /MD /link /out:'.format(ksp_name) + output
+    command = 'cl {0} /LD /MD /link /out:'.format(ksp_src) + output
     batchfile = 'build_KSP.bat'
     create_batch_file(arch, batchfile, command)
     os.system(batchfile)
@@ -65,37 +65,37 @@ def compile_KSP_windows(arch, ksp_name):
 # Otherwise, this will compile the code and generate a .so file.
 #
 # Output:   A custom keystore provider created 
-def compile_KSP(ksp_name):
-    print('Compiling ', ksp_name)
+def compile_KSP(ksp_src):
+    print('Compiling ', ksp_src)
     if platform.system() == 'Windows':
-        compile_KSP_windows('x64', ksp_name)
-        compile_KSP_windows('x86', ksp_name)
+        compile_KSP_windows('x64', ksp_src)
+        compile_KSP_windows('x86', ksp_src)
     else:
-        os.system('gcc -fshort-wchar -fPIC -o myKSP.so -shared {0}.c'.format(ksp_name))
+        os.system('gcc -fshort-wchar -fPIC -o myKSP.so -shared {0}'.format(ksp_src))
 
 # This compiles ksp app, which assumes the existence of the .dll or the .so file.
 #
 # In Windows, a batch file is created in order to compile the code. 
-def configure_KSP(app_name):
-    print('Compiling ', app_name)
+def configure_KSP(app_src):
+    print('Compiling ', app_src)
     if platform.system() == 'Windows':
-        command = 'cl /MD {0}.c /link odbc32.lib /out:ksp_app.exe'.format(app_name)
+        command = 'cl /MD {0} /link odbc32.lib /out:ksp_app.exe'.format(app_src)
         batchfile = 'build_app.bat'
         create_batch_file('x86', batchfile, command)
         os.system(batchfile)
         os.remove(batchfile)        
     else:
-        os.system('gcc -o ksp_app -fshort-wchar {0}.c -lodbc -ldl'.format(app_name))
+        os.system('gcc -o ksp_app -fshort-wchar {0} -lodbc -ldl'.format(app_src))
 
 ################################### Main Function ###################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-ksp', '--KSPNAME', default='myKSP', help='The KSP (keystore provider)')
-    parser.add_argument('-app', '--APPNAME', default='ksp_app', help='The app that uses the KSP')
+    parser.add_argument('-ksp', '--KSPSRC', default='myKSP.c', help='The source file of KSP (keystore provider)')
+    parser.add_argument('-app', '--APPSRC', default='ksp_app.c', help='The source file for the app that uses the KSP')
     args = parser.parse_args()
 
-    ksp_name = args.KSPNAME
-    app_name = args.APPNAME
+    ksp_src = args.KSPSRC
+    app_src = args.APPSRC
     header = 'msodbcsql.h'
 
     cwd = os.getcwd()
@@ -107,15 +107,15 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(work_dir, header)):
         print('Error: {0} not found!'.format(header))
         exit(1)
-    if not os.path.exists(os.path.join(work_dir, ksp_name + '.c')):
-        print('Error: {0}.c not found!'.format(ksp_name))
+    if not os.path.exists(os.path.join(work_dir, ksp_src)):
+        print('Error: {0}.c not found!'.format(ksp_src))
         exit(1)
-    if not os.path.exists(os.path.join(work_dir, app_name + '.c')):
-        print('Error: {0}.c not found!'.format(app_name))
+    if not os.path.exists(os.path.join(work_dir, app_src)):
+        print('Error: {0}.c not found!'.format(app_src))
         exit(1)
     
-    compile_KSP(ksp_name)
-    configure_KSP(app_name)
+    compile_KSP(ksp_src)
+    configure_KSP(app_src)
     
     os.chdir(cwd)    
 

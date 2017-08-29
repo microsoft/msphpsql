@@ -72,6 +72,7 @@ int setKSPLibrary(SQLHSTMT stmt) {
     unsigned char CEK[32];
     unsigned char *ECEK;
     unsigned short ECEKlen;
+    unsigned char foundProv = 0;
     int i;
 #ifdef _WIN32
     HMODULE hProvLib;
@@ -100,12 +101,16 @@ int setKSPLibrary(SQLHSTMT stmt) {
         return 3;
     }
     while (pKsp = *ppKsp++) {
-        if (!memcmp(KSPNAME, pKsp->Name, sizeof(KSPNAME)))
-            goto FoundProv;
+        if (!memcmp(KSPNAME, pKsp->Name, sizeof(KSPNAME))) {
+            foundProv = 1;
+            break;
+        }
     }
-    fprintf(stderr, "Could not find provider in the library\n");
-    return 4;
-FoundProv:
+    if (! foundProv) {
+        fprintf(stderr, "Could not find provider in the library\n");
+        return 4;
+    }
+    
     if (pKsp->Init && !pKsp->Init(&ctx, postKspError)) {
         fprintf(stderr, "Could not initialize provider\n");
         return 5;
