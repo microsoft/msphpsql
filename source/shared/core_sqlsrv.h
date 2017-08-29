@@ -2434,10 +2434,8 @@ struct ce_ksp_provider_set_func {
 
     static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC)
     {
-        CHECK_CUSTOM_ERROR( Z_TYPE_P( value ) != IS_STRING, conn, SQLSRV_ERROR_INVALID_OPTION_TYPE_STRING, option->odbc_name ) {
-            throw core::CoreException();
-        }
-            
+        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Wrong zval type for this keyword" ) 
+        
         size_t value_len = Z_STRLEN_P( value );
 
         CHECK_CUSTOM_ERROR( value_len == 0, conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE )  {
