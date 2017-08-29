@@ -78,5 +78,8 @@ WORKDIR $PHPSQLDIR
 RUN chmod +x ./entrypoint.sh
 CMD /bin/bash ./entrypoint.sh
 
+# copy odbc header file to setup
+COPY $PHPSQLDIR/source/shared/msodbcsql.h $PHPSQLDIR/test/functional/setup
+
 ENV REPORT_EXIT_STATUS 1
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
