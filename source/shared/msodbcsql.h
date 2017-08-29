@@ -370,6 +370,45 @@
 #pragma warning(disable:4200)
 #endif
 
+// Keystore Provider interface definition
+typedef struct CEKeystoreContext
+{
+    void *envCtx;
+    void *dbcCtx;
+    void *stmtCtx;
+} CEKEYSTORECONTEXT;
+
+typedef void errFunc(CEKEYSTORECONTEXT *ctx, const wchar_t *msg, ...);
+
+#define IDS_MSG(x) ((const wchar_t*)(x))
+
+typedef struct CEKeystoreProvider
+{
+    wchar_t *Name;
+    int (__stdcall *Init)(CEKEYSTORECONTEXT *ctx, errFunc *onError);
+    int (__stdcall *Read)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int *len);
+    int (__stdcall *Write)(CEKEYSTORECONTEXT *ctx, errFunc *onError, void *data, unsigned int len);
+    int (__stdcall *DecryptCEK)(
+        CEKEYSTORECONTEXT *ctx,
+        errFunc *onError,
+        const wchar_t *keyPath,
+        const wchar_t *alg,
+        unsigned char *ecek,
+        unsigned short ecekLen,
+        unsigned char **cekOut,
+        unsigned short *cekLen);
+    int(__stdcall *EncryptCEK)(
+        CEKEYSTORECONTEXT *ctx,
+        errFunc *onError,
+        const wchar_t *keyPath,
+        const wchar_t *alg,
+        unsigned char *cek,
+        unsigned short cekLen,
+        unsigned char **ecekOut,
+        unsigned short *ecekLen);
+    void (__stdcall *Free)();
+} CEKEYSTOREPROVIDER;
+
 // Communication between the driver and application via the CEKeystoreData structure
 typedef struct CEKeystoreData
 {
