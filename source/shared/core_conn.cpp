@@ -809,14 +809,13 @@ void load_configure_ksp( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     char* ksp_name = Z_STRVAL_P( conn->ce_option.ksp_name );
     char* ksp_path = Z_STRVAL_P( conn->ce_option.ksp_path );
     unsigned int name_len = Z_STRLEN_P( conn->ce_option.ksp_name );
-    unsigned int path_len = Z_STRLEN_P( conn->ce_option.ksp_path );
     unsigned int key_size = conn->ce_option.key_size;    
 
     sqlsrv_malloc_auto_ptr<unsigned char> ksp_data;
 
     ksp_data = reinterpret_cast<unsigned char*>( sqlsrv_malloc( sizeof( CEKEYSTOREDATA ) + key_size ) );
 
-    CEKEYSTOREDATA *pKsd = (CEKEYSTOREDATA*) ksp_data.get();
+    CEKEYSTOREDATA *pKsd = reinterpret_cast<CEKEYSTOREDATA*>( ksp_data.get() );
 
     pKsd->dataSize = key_size;
 
