@@ -19,8 +19,6 @@ env:
   - TEST_PHP_SQL_UID=sa
   - TEST_PHP_SQL_PWD=Password12@
 
->>>>>>> 22838b1... added KSP related code and scripts to enable testing KSP
-
 before_install:
   - docker pull microsoft/mssql-server-linux
  
