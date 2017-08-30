@@ -12,7 +12,12 @@ Connect using a custom keystore provider with some required inputs missing
         {
             echo "Failed to connect.\n";
             $errors = sqlsrv_errors();
-            print_r( $errors[0] );
+            foreach ( $errors[0] as $key => $error ) 
+            {
+                if( is_string( $key ) )
+                    echo "[$key] => $error\n";
+            }
+            echo "\n";
         }
         else
         {
@@ -92,59 +97,34 @@ Connecting... with column encryption
 Connected successfully with ColumnEncryption enabled.
 Connecting... with an invalid input to CEKeystoreProvider
 Failed to connect.
-Array
-(
-    [0] => IMSSP
-    [SQLSTATE] => IMSSP
-    [1] => -33
-    [code] => -33
-    [2] => Invalid value type for option CEKeystoreProvider was specified.  String type was expected.
-    [message] => Invalid value type for option CEKeystoreProvider was specified.  String type was expected.
-)
+[SQLSTATE] => IMSSP
+[code] => -33
+[message] => Invalid value type for option CEKeystoreProvider was specified.  String type was expected.
+
 Connecting... with an empty path
 Failed to connect.
-Array
-(
-    [0] => IMSSP
-    [SQLSTATE] => IMSSP
-    [1] => -104
-    [code] => -104
-    [2] => Invalid value for loading a custom keystore provider.
-    [message] => Invalid value for loading a custom keystore provider.
-)
+[SQLSTATE] => IMSSP
+[code] => -104
+[message] => Invalid value for loading a custom keystore provider.
+
 Connecting... without a name
 Failed to connect.
-Array
-(
-    [0] => IMSSP
-    [SQLSTATE] => IMSSP
-    [1] => -101
-    [code] => -101
-    [2] => The name of the custom keystore provider is missing.
-    [message] => The name of the custom keystore provider is missing.
-)
+[SQLSTATE] => IMSSP
+[code] => -101
+[message] => The name of the custom keystore provider is missing.
+
 Connecting... with an empty name
 Failed to connect.
-Array
-(
-    [0] => IMSSP
-    [SQLSTATE] => IMSSP
-    [1] => -104
-    [code] => -104
-    [2] => Invalid value for loading a custom keystore provider.
-    [message] => Invalid value for loading a custom keystore provider.
-)
+[SQLSTATE] => IMSSP
+[code] => -104
+[message] => Invalid value for loading a custom keystore provider.
+
 Connecting... without a key
 Failed to connect.
-Array
-(
-    [0] => IMSSP
-    [SQLSTATE] => IMSSP
-    [1] => -103
-    [code] => -103
-    [2] => The encryption key for the custom keystore provider is missing.
-    [message] => The encryption key for the custom keystore provider is missing.
-)
+[SQLSTATE] => IMSSP
+[code] => -103
+[message] => The encryption key for the custom keystore provider is missing.
+
 Connecting... with all required inputs
 Connected successfully with ColumnEncryption enabled.
 Done
