@@ -380,7 +380,12 @@ pdo_error PDO_ERRORS[] = {
     {
         PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
         { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -73, false }
-    },          
+    },
+    {
+        SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED,
+        { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 or higher to "
+        "communicate with SQL Server with ColumnEncryption attribute enabled.", -74, false }
+    },
     { UINT_MAX, {} }
 };
 

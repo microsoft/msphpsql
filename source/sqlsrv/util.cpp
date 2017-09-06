@@ -376,6 +376,11 @@ ss_error SS_ERRORS[] = {
         SS_SQLSRV_WARNING_FIELD_NAME_EMPTY,
         { SSPWARN, (SQLCHAR*)"An empty field name was skipped by sqlsrv_fetch_object.", -100, false }
     },
+	{
+		SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED,
+        { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 or higher to "
+        "communicate with SQL Server with ColumnEncryption attribute enabled.", -105, false }
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
