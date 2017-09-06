@@ -71,7 +71,7 @@ const char* get_processor_arch( void );
 void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len TSRMLS_DC );
 connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ const char* key, _In_ SQLULEN key_len TSRMLS_DC );
 void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC );
-
+void load_configure_ksp( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
 }
 
 // core_sqlsrv_connect
@@ -148,7 +148,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     build_connection_string_and_set_conn_attr(conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_options TSRMLS_CC);
     bool missing_driver_error = false;
     if (conn->ce_option.enabled) {
-        r = core_odbc_connect(conn, conn_options, DRIVER_VERSION::ODBC_DRIVER_13, wconn_string, wconn_len, missing_driver_error);
+        r = core_odbc_connect(conn, conn_options, DRIVER_VERSION::ODBC_DRIVER_17, wconn_string, wconn_len, missing_driver_error);
 
         CHECK_CUSTOM_ERROR(missing_driver_error, conn, SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
             throw core::CoreException();
@@ -156,7 +156,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     }
     else {
 
-        for (std::size_t i = DRIVER_VERSION::ODBC_DRIVER_11; i <= DRIVER_VERSION::LAST; ++i) {
+        for (std::size_t i = DRIVER_VERSION::ODBC_DRIVER_13; i <= DRIVER_VERSION::LAST; ++i) {
             r = core_odbc_connect(conn, conn_options, static_cast<DRIVER_VERSION>(i), wconn_string, wconn_len, missing_driver_error);
             // if it's a IM002, meaning that the correct ODBC driver is not installed
             CHECK_CUSTOM_ERROR(missing_driver_error && (i == DRIVER_VERSION::LAST), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
@@ -175,6 +175,8 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     CHECK_SQL_WARNING_AS_ERROR( r, conn ) {
         throw core::CoreException();
     }
+
+    load_configure_ksp( conn );
 
     // determine the version of the server we're connected to.  The server version is left in the 
     // connection upon return.
@@ -792,6 +794,66 @@ void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     // SNAC won't connect to versions older than SQL Server 2000, so we know that the version is at least
     // that high
     conn->server_version = version_major;
+}
+
+// Column Encryption feature: if a custom keystore provider is specified, 
+// load and configure it when column encryption is enabled, but this step has
+// to be executed after the connection has been established
+void load_configure_ksp( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
+{
+    // If column encryption is not enabled simply do nothing. Otherwise, check if a custom keystore provider
+    // is required for encryption or decryption. Note, in order to load and configure a custom keystore provider, 
+    // all KSP fields in conn->ce_option must be defined. 
+    if ( ! conn->ce_option.enabled || ! conn->ce_option.ksp_required )
+        return;
+    
+    // Do something like the following sample
+    // use the KSP related fields in conn->ce_option
+    // CEKEYSTOREDATA is defined in msodbcsql.h
+    // https://docs.microsoft.com/en-us/sql/connect/odbc/custom-keystore-providers
+
+    CHECK_CUSTOM_ERROR( conn->ce_option.ksp_name == NULL, conn, SQLSRV_ERROR_KEYSTORE_NAME_MISSING) {
+        throw core::CoreException();
+    }
+
+    CHECK_CUSTOM_ERROR( conn->ce_option.ksp_path == NULL, conn, SQLSRV_ERROR_KEYSTORE_PATH_MISSING) {
+        throw core::CoreException();
+    }
+
+    CHECK_CUSTOM_ERROR( conn->ce_option.key_size == 0, conn, SQLSRV_ERROR_KEYSTORE_KEY_MISSING) {
+        throw core::CoreException();
+    }
+
+    char* ksp_name = Z_STRVAL_P( conn->ce_option.ksp_name );
+    char* ksp_path = Z_STRVAL_P( conn->ce_option.ksp_path );
+    unsigned int name_len = Z_STRLEN_P( conn->ce_option.ksp_name );
+    unsigned int key_size = conn->ce_option.key_size;    
+
+    sqlsrv_malloc_auto_ptr<unsigned char> ksp_data;
+
+    ksp_data = reinterpret_cast<unsigned char*>( sqlsrv_malloc( sizeof( CEKEYSTOREDATA ) + key_size ) );
+
+    CEKEYSTOREDATA *pKsd = reinterpret_cast<CEKEYSTOREDATA*>( ksp_data.get() );
+
+    pKsd->dataSize = key_size;
+
+    // First, convert conn->ce_option.ksp_name to a WCHAR version 
+    unsigned int wname_len = 0;
+    sqlsrv_malloc_auto_ptr<SQLWCHAR> wksp_name;
+    wksp_name = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, ksp_name, name_len, &wname_len );
+
+    CHECK_CUSTOM_ERROR( wksp_name == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE ) {
+        throw core::CoreException();
+    }
+
+    pKsd->name = (wchar_t *) wksp_name.get();
+    
+    // Next, extract the character string from conn->ce_option.ksp_encrypt_key into encrypt_key
+    char* encrypt_key = Z_STRVAL_P( conn->ce_option.ksp_encrypt_key );    
+    memcpy_s( pKsd->data, key_size * sizeof( char ) , encrypt_key, key_size );
+
+    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREPROVIDER, ksp_path, SQL_NTS );
+    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>( pKsd ), SQL_IS_POINTER );
 }
 
 void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC )

@@ -35,8 +35,8 @@ function ConnectionTest()
     // Valid connection attempt => no errors are expected
     Trace("\nValid connection attempt (to $server) ....\n");
     $conn2 = Connect();
-    $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS); 
-    if(count($errors) != 0)
+    $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
+    if (!empty($errors))
     {
         die("No errors were expected on valid connection attempts.");
     }

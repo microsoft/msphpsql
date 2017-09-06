@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Microsoft Drivers 4.3 for PHP for SQL Server
+// Microsoft Drivers 5.0 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -189,6 +189,10 @@ const char CharacterSet[] = "CharacterSet";
 const char Authentication[] = "Authentication";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char ColumnEncryption[] = "ColumnEncryption";
+const char CEKeystoreProvider[] = "CEKeystoreProvider";
+const char CEKeystoreName[] = "CEKeystoreName";
+const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
+
 #ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
@@ -296,10 +300,10 @@ const connection_option SS_CONN_OPTS[] = {
     },
     {
         SSConnOptionNames::ConnectionPooling,
-        sizeof( SSConnOptionNames::ConnectionPooling ),
+        sizeof(SSConnOptionNames::ConnectionPooling),
         SQLSRV_CONN_OPTION_CONN_POOLING,
         ODBCConnOptions::ConnectionPooling,
-        sizeof( ODBCConnOptions::ConnectionPooling ),
+        sizeof(ODBCConnOptions::ConnectionPooling),
         CONN_ATTR_BOOL,
         conn_null_func::func
     },
@@ -311,6 +315,33 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof(ODBCConnOptions::ColumnEncryption),
         CONN_ATTR_STRING,
         column_encryption_set_func::func
+    },
+    {
+        SSConnOptionNames::CEKeystoreProvider,
+        sizeof(SSConnOptionNames::CEKeystoreProvider),
+        SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
+        ODBCConnOptions::CEKeystoreProvider,
+        sizeof(ODBCConnOptions::CEKeystoreProvider),
+        CONN_ATTR_STRING,
+        ce_ksp_provider_set_func::func
+    },
+    {
+        SSConnOptionNames::CEKeystoreName,
+        sizeof(SSConnOptionNames::CEKeystoreName),
+        SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
+        ODBCConnOptions::CEKeystoreName,
+        sizeof(ODBCConnOptions::CEKeystoreName),
+        CONN_ATTR_STRING,
+        ce_ksp_provider_set_func::func
+    },
+    {
+        SSConnOptionNames::CEKeystoreEncryptKey,
+        sizeof(SSConnOptionNames::CEKeystoreEncryptKey),
+        SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
+        ODBCConnOptions::CEKeystoreEncryptKey,
+        sizeof(ODBCConnOptions::CEKeystoreEncryptKey),
+        CONN_ATTR_STRING,
+        ce_ksp_provider_set_func::func
     },
 #ifdef _WIN32
     {

@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 4.3 for PHP for SQL Server
+// Microsoft Drivers 5.0 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1047,10 +1047,14 @@ struct stmt_option;
 
 // This holds the various details of column encryption. 
 struct col_encryption_option {
-    bool			enabled;			// column encryption enabled, false by default
-    size_t			key_size;			// the length of ksp_encrypt_key without the NULL terminator
+    bool            enabled;            // column encryption enabled, false by default
+    zval_auto_ptr   ksp_name;           // keystore provider name 
+    zval_auto_ptr   ksp_path;           // keystore provider path to the dynamically linked libary (either a *.dll or *.so)
+    zval_auto_ptr   ksp_encrypt_key;    // the encryption key used to configure the keystore provider 
+    size_t          key_size;           // the length of ksp_encrypt_key without the NULL terminator
+    bool            ksp_required;       // a keystore provider is required to enable column encryption, false by default 
 
-    col_encryption_option() : enabled(false), key_size(0)
+    col_encryption_option() : enabled( false ), key_size ( 0 ), ksp_required( false )
     {
     }
 };
@@ -1099,6 +1103,9 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
 const char ColumnEncryption[] = "ColumnEncryption";
+const char CEKeystoreProvider[] = "CEKeystoreProvider";
+const char CEKeystoreName[] = "CEKeystoreName";
+const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
@@ -1146,6 +1153,9 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
     SQLSRV_CONN_OPTION_AUTHENTICATION,
     SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
+    SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
+    SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
+    SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
     SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
@@ -1649,6 +1659,10 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_FIELD_INDEX_ERROR,
     SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
     SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
+    SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
+    SQLSRV_ERROR_KEYSTORE_PATH_MISSING,
+    SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
+    SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
@@ -2401,7 +2415,7 @@ struct str_conn_attr_func {
 
 struct column_encryption_set_func {
 
-    static void func(connection_option const* option, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC)
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC)
     {
         convert_to_string(value);
         const char* value_str = Z_STRVAL_P(value);
@@ -2416,6 +2430,39 @@ struct column_encryption_set_func {
         conn_str += "=";
         conn_str += value_str;
         conn_str += ";";
+    }
+};
+
+struct ce_ksp_provider_set_func {
+
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC)
+    {
+        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Wrong zval type for this keyword" ) 
+        
+        size_t value_len = Z_STRLEN_P( value );
+
+        CHECK_CUSTOM_ERROR( value_len == 0, conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE )  {
+            throw core::CoreException();
+        }
+
+        switch ( option->conn_option_key ) {
+            case SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER: 
+                conn->ce_option.ksp_path = value;
+                conn->ce_option.ksp_required = true;
+                break;
+            case SQLSRV_CONN_OPTION_CEKEYSTORE_NAME:
+                conn->ce_option.ksp_name = value;
+                conn->ce_option.ksp_required = true;
+                break;
+            case SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY:
+                conn->ce_option.ksp_encrypt_key = value;
+                conn->ce_option.key_size = value_len;
+                conn->ce_option.ksp_required = true;
+                break;
+            default:
+                SQLSRV_ASSERT( false, "ce_ksp_provider_set_func: Invalid KSP option!" );
+                break;
+        }
     }
 };
 

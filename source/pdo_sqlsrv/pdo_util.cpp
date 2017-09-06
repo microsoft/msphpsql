@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Microsoft Drivers 4.3 for PHP for SQL Server
+// Microsoft Drivers 5.0 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -382,10 +382,26 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -73, false }
     },
     {
+        SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
+        { IMSSP, (SQLCHAR*) "The name of the custom keystore provider is missing.", -74, false}
+    },
+    {
+        SQLSRV_ERROR_KEYSTORE_PATH_MISSING,
+        { IMSSP, (SQLCHAR*) "The path to the custom keystore provider is missing.", -75, false}
+    },
+    {
+        SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
+        { IMSSP, (SQLCHAR*) "The encryption key for the custom keystore provider is missing.", -76, false}
+    },
+    {
+        SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
+        { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -77, false}
+    },
+	{
         SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED,
         { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 or higher to "
         "communicate with SQL Server with ColumnEncryption attribute enabled.", -74, false }
-    },
+    },        
     { UINT_MAX, {} }
 };
 
