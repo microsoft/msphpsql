@@ -301,7 +301,7 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
         { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 11 or 13 for SQL Server. "
-        "Access the following URL to download the ODBC Driver 11 or 13 for SQL Server for %1!s!: "
+        "Access the following URL to download the ODBC Driver for SQL Server for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
     },     
 

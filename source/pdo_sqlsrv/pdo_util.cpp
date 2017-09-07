@@ -56,8 +56,8 @@ pdo_error PDO_ERRORS[] = {
     
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 13 for SQL Server to "
-        "communicate with SQL Server. Access the following URL to download the ODBC Driver 13 for SQL Server "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 13 or 11 for SQL Server to "
+        "communicate with SQL Server. Access the following URL to download the ODBC Driver for SQL Server "
         "for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -1, true }
     },  

@@ -1216,7 +1216,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd, 
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[], 
                                   _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC );
-SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, const std::string& conn_options, const DRIVER_VERSION odbc_version, SQLWCHAR* wconn_string, unsigned int& wconn_len, bool missing_driver_error);
+SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, const std::string& conn_options, const DRIVER_VERSION odbc_version, SQLWCHAR* wconn_string, unsigned int& wconn_len, bool& missing_driver_error);
 void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC );
 void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC );

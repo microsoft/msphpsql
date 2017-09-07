@@ -227,7 +227,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     return return_conn;
 }
 
-SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, const std::string& conn_options, const DRIVER_VERSION odbc_version, SQLWCHAR* wconn_string, unsigned int& wconn_len,bool missing_driver_error)
+SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, const std::string& conn_options, const DRIVER_VERSION odbc_version, SQLWCHAR* wconn_string, unsigned int& wconn_len, bool& missing_driver_error)
 {
     SQLRETURN r = SQL_SUCCESS;
     std::string conn_str = conn_options + CONNECTION_STRING_DRIVER_NAME[odbc_version];
@@ -262,6 +262,7 @@ SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, const std::string& conn_o
     // clear the connection string from memory to remove sensitive data (such as a password).
     memset(const_cast<char*>(conn_str.c_str()), 0, conn_str.size());
     memset(wconn_string, 0, wconn_len * sizeof(SQLWCHAR)); // wconn_len is the number of characters, not bytes
+    wconn_len = 0;
     conn_str.clear();
 
     if (SQL_SUCCEEDED(r)) {
