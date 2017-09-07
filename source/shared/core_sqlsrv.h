@@ -172,6 +172,7 @@ const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
 const int SQL_SERVER_MAX_PRECISION = 38;
 const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
+// increase the maximum message length to accommodate for the long error returned for operand type clash
 const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 4;
 
 // max size of a date time string when converting from a DateTime object to a string
@@ -2196,14 +2197,14 @@ namespace core {
         }
     }
 
-    inline void SQLSetDescField(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  TSRMLS_DC)
+    inline void SQLSetDescField( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_( str_len ) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  TSRMLS_DC )
     {
         SQLRETURN r;
         SQLHDESC hIpd = NULL;
-        core::SQLGetStmtAttr(stmt, SQL_ATTR_IMP_PARAM_DESC, &hIpd, 0, 0);
-        r = ::SQLSetDescField(hIpd, rec_num, fld_id, value_ptr, str_len);
+        core::SQLGetStmtAttr( stmt, SQL_ATTR_IMP_PARAM_DESC, &hIpd, 0, 0 );
+        r = ::SQLSetDescField( hIpd, rec_num, fld_id, value_ptr, str_len );
 
-        CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
         }
     }

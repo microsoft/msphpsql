@@ -559,6 +559,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 // avoid this silent truncation, we set the column_size to be "MAX" size for 
                 // string types. This will guarantee that there is no silent truncation for 
                 // output parameters.
+                // if column encryption is enabled, do not set the length to unlimited since SQLDescribe paramter already derive the length for us
                 if( direction == SQL_PARAM_OUTPUT && !stmt->conn->ce_option.enabled ) {
                     
                     switch( sql_type ) {
@@ -2530,7 +2531,7 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     SQLULEN field_size = column_size;
     // with AE on, when column_size is retrieved from SQLDescribeParam, column_size does not include the decimal place
     // include the decimal for output params by adding elem_size
-    if ( stmt->conn->ce_option.enabled && decimal_digits != 0 )
+    if ( stmt->conn->ce_option.enabled && decimal_digits > 0 )
     {
         field_size += elem_size;
     }
