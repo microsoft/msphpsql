@@ -40,4 +40,8 @@ $marsMode = true;
 $dsnMode = true;
 $traceEnabled = false;
 
+// column encryption variables
+$keystore = "none";         // key store provider, acceptable values are none, win, ksp, akv
+$dataEncrypted = false;     // whether data is to be encrypted
+
 ?>
