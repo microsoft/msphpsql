@@ -2,8 +2,8 @@
 
 The following table lists benchmarking results for both the SQLSRV and PDO_SQLSRV drivers for various operations and various environments. All tests have been executed using the 64-bit non-thread-safe drivers with PHP 7.1.7, as appropriate for the client platform. The server testing environment is either Windows Server 2016 with SQL Server 2016, or Ubuntu 16.04 with SQL Server Linux 2016.
 
-|||||SQLSRV|||PDO_SQLSRV|||
-|:---|:---|:---|:---|---:|---:|:---|---:|---:|
+| | | | SQLSRV | | | PDO_SQLSRV | | |
+| :--- | :--- | :--- | :--- | ---: | ---: | :---| ---: | ---: |
 |Test|Server|Client|Iterations|Memory(MB)|Time (s)|Iterations|Memory(MB)|Time (s)|
 |Run 1000 CRUD operations for n iterations|SQL Server Windows|Windows Server 2016|1000x100 rows|0.88667|1074|1000x100 rows|0.88562|1195 |
 |||OS X Sierra|||||||
