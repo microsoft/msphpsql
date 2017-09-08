@@ -1,7 +1,12 @@
 --TEST--
 Test simple insert, fetch and update with ColumnEncryption enabled and a custome keystore provider
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+require('skipif_versions_old.inc'); 
+require('MsSetup.inc');
+if ($keystore != 'ksp')
+    die ( 'skip - this test requires a custom keystore provider.' );
+?>
 --FILE--
 <?php
     function CreatePatientsTable()
