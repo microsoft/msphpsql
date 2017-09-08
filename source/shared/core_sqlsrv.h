@@ -1033,7 +1033,8 @@ enum SERVER_VERSION {
 };
 
 // supported driver versions.
-enum DRIVER_VERSION : size_t {
+enum DRIVER_VERSION {
+    ODBC_DRIVER_UNKNOWN = -1,
     FIRST = 0,
     ODBC_DRIVER_17 = FIRST,
     ODBC_DRIVER_13 = 1,
@@ -1075,7 +1076,7 @@ struct sqlsrv_conn : public sqlsrv_context {
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
-        driver_version = ODBC_DRIVER_13; 
+        driver_version = ODBC_DRIVER_UNKNOWN;
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be 
@@ -1216,7 +1217,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd, 
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[], 
                                   _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC );
-SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, const std::string& conn_options, const DRIVER_VERSION odbc_version, SQLWCHAR* wconn_string, unsigned int& wconn_len, bool& missing_driver_error);
+SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _In_ const std::string& conn_options, _In_ const DRIVER_VERSION odbc_version, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error);
 void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC );
 void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC );

@@ -397,10 +397,9 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
         { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -77, false}
     },
-	{
+    {
         SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 or higher to "
-        "communicate with SQL Server with ColumnEncryption attribute enabled.", -74, false }
+        { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 for SQL Server when ColumnEncryption attribute is enabled.", -78, false }
     },        
     { UINT_MAX, {} }
 };

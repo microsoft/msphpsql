@@ -148,7 +148,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     build_connection_string_and_set_conn_attr(conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_options TSRMLS_CC);
     bool missing_driver_error = false;
     if (conn->ce_option.enabled) {
-        r = core_odbc_connect(conn, conn_options, DRIVER_VERSION::ODBC_DRIVER_17, wconn_string, wconn_len, missing_driver_error);
+        r = core_odbc_connect( conn, conn_options, DRIVER_VERSION::ODBC_DRIVER_17, wconn_string, wconn_len, missing_driver_error );
 
         CHECK_CUSTOM_ERROR(missing_driver_error, conn, SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
             throw core::CoreException();
@@ -227,7 +227,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     return return_conn;
 }
 
-SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, const std::string& conn_options, const DRIVER_VERSION odbc_version, SQLWCHAR* wconn_string, unsigned int& wconn_len, bool& missing_driver_error)
+SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _In_ const std::string& conn_options, _In_ const DRIVER_VERSION odbc_version, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error)
 {
     SQLRETURN r = SQL_SUCCESS;
     std::string conn_str = conn_options + CONNECTION_STRING_DRIVER_NAME[odbc_version];

@@ -394,11 +394,8 @@ ss_error SS_ERRORS[] = {
     },
 	{
 		SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 or higher to "
-        "communicate with SQL Server with ColumnEncryption attribute enabled.", -105, false }
+        { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 for SQL Server when ColumnEncryption attribute is enabled.", -105, false }
     },
-
-
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
 };
