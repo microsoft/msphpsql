@@ -1104,6 +1104,7 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
 const char ColumnEncryption[] = "ColumnEncryption";
+const char Driver[] = "Driver";
 const char CEKeystoreProvider[] = "CEKeystoreProvider";
 const char CEKeystoreName[] = "CEKeystoreName";
 const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
@@ -1154,6 +1155,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
     SQLSRV_CONN_OPTION_AUTHENTICATION,
     SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
+    SQLSRV_CONN_OPTION_DRIVER,
     SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
     SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
     SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
@@ -1205,9 +1207,27 @@ struct conn_str_append_func {
 
 struct conn_null_func {
 
-    static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ 
-                      TSRMLS_DC );
+    static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC );
 };
+
+struct column_encryption_set_func {
+
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC);
+
+};
+
+struct driver_set_func {
+    
+    static void func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC);
+
+};
+
+struct ce_ksp_provider_set_func {
+
+    static void func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC);
+
+};
+
 
 // factory to create a connection (since they are subclassed to instantiate statements)
 typedef sqlsrv_conn* (*driver_conn_factory)( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv TSRMLS_DC );
@@ -2410,59 +2430,6 @@ struct str_conn_attr_func {
         }
         catch( core::CoreException& ) {
             throw;
-        }
-    }
-};
-
-struct column_encryption_set_func {
-
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC)
-    {
-        convert_to_string(value);
-        const char* value_str = Z_STRVAL_P(value);
-
-        // Column Encryption is disabled by default unless it is explicitly 'Enabled'
-        conn->ce_option.enabled = false;
-        if (!stricmp(value_str, "enabled")) {
-            conn->ce_option.enabled = true;
-        }
-
-        conn_str += option->odbc_name;
-        conn_str += "=";
-        conn_str += value_str;
-        conn_str += ";";
-    }
-};
-
-struct ce_ksp_provider_set_func {
-
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC)
-    {
-        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Wrong zval type for this keyword" ) 
-        
-        size_t value_len = Z_STRLEN_P( value );
-
-        CHECK_CUSTOM_ERROR( value_len == 0, conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE )  {
-            throw core::CoreException();
-        }
-
-        switch ( option->conn_option_key ) {
-            case SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER: 
-                conn->ce_option.ksp_path = value;
-                conn->ce_option.ksp_required = true;
-                break;
-            case SQLSRV_CONN_OPTION_CEKEYSTORE_NAME:
-                conn->ce_option.ksp_name = value;
-                conn->ce_option.ksp_required = true;
-                break;
-            case SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY:
-                conn->ce_option.ksp_encrypt_key = value;
-                conn->ce_option.key_size = value_len;
-                conn->ce_option.ksp_required = true;
-                break;
-            default:
-                SQLSRV_ASSERT( false, "ce_ksp_provider_set_func: Invalid KSP option!" );
-                break;
         }
     }
 };

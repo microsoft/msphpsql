@@ -29,6 +29,8 @@
 
 #include <string>
 #include <sstream>
+#include <vector>
+#include <algorithm>
 
 #ifndef _WIN32
 #include <sys/utsname.h>
@@ -890,6 +892,71 @@ void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/,
                       TSRMLS_DC )
 {    
     TSRMLS_C;
+}
+
+void driver_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+{
+    convert_to_string( value );
+    const char* value_str = Z_STRVAL_P( value );
+    std::vector<std::string> valid_odbc_drivers{ "Driver={ODBC Driver 17 for SQL Server};","Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};" };
+
+    conn_str += option->odbc_name;
+    conn_str += "=";
+    conn_str += value_str;
+    conn_str += ";";
+    
+    CHECK_CUSTOM_ERROR( std::find( valid_odbc_drivers.begin(), valid_odbc_drivers.end(), conn_str ) == valid_odbc_drivers.end(), conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE ){
+        throw core::CoreException();
+    }
+
+}
+
+void column_encryption_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+{
+    convert_to_string( value );
+    const char* value_str = Z_STRVAL_P( value );
+
+    // Column Encryption is disabled by default unless it is explicitly 'Enabled'
+    conn->ce_option.enabled = false;
+    if ( !stricmp(value_str, "enabled" )) {
+        conn->ce_option.enabled = true;
+    }
+
+    conn_str += option->odbc_name;
+    conn_str += "=";
+    conn_str += value_str;
+    conn_str += ";";
+}
+
+
+void ce_ksp_provider_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+{
+    SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Wrong zval type for this keyword" )
+
+        size_t value_len = Z_STRLEN_P( value );
+
+    CHECK_CUSTOM_ERROR( value_len == 0, conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE ) {
+        throw core::CoreException();
+    }
+
+    switch ( option->conn_option_key ) {
+    case SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER:
+        conn->ce_option.ksp_path = value;
+        conn->ce_option.ksp_required = true;
+        break;
+    case SQLSRV_CONN_OPTION_CEKEYSTORE_NAME:
+        conn->ce_option.ksp_name = value;
+        conn->ce_option.ksp_required = true;
+        break;
+    case SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY:
+        conn->ce_option.ksp_encrypt_key = value;
+        conn->ce_option.key_size = value_len;
+        conn->ce_option.ksp_required = true;
+        break;
+    default:
+        SQLSRV_ASSERT(false, "ce_ksp_provider_set_func: Invalid KSP option!");
+        break;
+    }
 }
 
 // helper function to evaluate whether a string value is true or false.
