@@ -149,7 +149,11 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     
     build_connection_string_and_set_conn_attr(conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str TSRMLS_CC);
     bool missing_driver_error = false;
-    if (conn->ce_option.enabled) {
+
+    if (conn->is_driver_set) {
+        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error );
+    }
+    else if (conn->ce_option.enabled) {
         conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[DRIVER_VERSION::ODBC_DRIVER_17];
         r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error );
 
@@ -231,7 +235,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     return return_conn;
 }
 
-SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string conn_str, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error)
+SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error)
 {
     SQLRETURN r = SQL_SUCCESS;
 
@@ -909,6 +913,8 @@ void driver_set_func::func( _In_ connection_option const* option, _In_ zval* val
     CHECK_CUSTOM_ERROR( std::find( valid_odbc_drivers.begin(), valid_odbc_drivers.end(), conn_str ) == valid_odbc_drivers.end(), conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE ){
         throw core::CoreException();
     }
+    
+    conn->is_driver_set = true;
 
 }
 
