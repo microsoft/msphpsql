@@ -98,8 +98,8 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 
 {
     SQLRETURN r;
-    std::string conn_options;
-    conn_options.reserve( DEFAULT_CONN_STR_LEN );
+    std::string conn_str;
+    conn_str.reserve( DEFAULT_CONN_STR_LEN );
     sqlsrv_malloc_auto_ptr<sqlsrv_conn> conn;
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wconn_string;
     unsigned int wconn_len = 0;
@@ -147,10 +147,11 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     conn = conn_factory( temp_conn_h, err, driver TSRMLS_CC );
     conn->set_func( driver_func );
     
-    build_connection_string_and_set_conn_attr(conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_options TSRMLS_CC);
+    build_connection_string_and_set_conn_attr(conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str TSRMLS_CC);
     bool missing_driver_error = false;
     if (conn->ce_option.enabled) {
-        r = core_odbc_connect( conn, conn_options, DRIVER_VERSION::ODBC_DRIVER_17, wconn_string, wconn_len, missing_driver_error );
+        conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[DRIVER_VERSION::ODBC_DRIVER_17];
+        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error );
 
         CHECK_CUSTOM_ERROR(missing_driver_error, conn, SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
             throw core::CoreException();
@@ -159,7 +160,8 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     else {
 
         for (std::size_t i = DRIVER_VERSION::ODBC_DRIVER_13; i <= DRIVER_VERSION::LAST; ++i) {
-            r = core_odbc_connect(conn, conn_options, static_cast<DRIVER_VERSION>(i), wconn_string, wconn_len, missing_driver_error);
+            conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[DRIVER_VERSION(i)];
+            r = core_odbc_connect(conn, conn_str, wconn_string, wconn_len, missing_driver_error);
             // if it's a IM002, meaning that the correct ODBC driver is not installed
             CHECK_CUSTOM_ERROR(missing_driver_error && (i == DRIVER_VERSION::LAST), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
                 throw core::CoreException();
@@ -196,43 +198,42 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif // !_WIN32 
     }
     catch( std::bad_alloc& ) {
-        memset( const_cast<char*>( conn_options.c_str()), 0, conn_options.size() );
+        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
         memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
         conn->invalidate();
         DIE( "C++ memory allocation failure building the connection string." );
     }
     catch( std::out_of_range const& ex ) {
-        memset( const_cast<char*>(conn_options.c_str()), 0, conn_options.size() );
+        memset( const_cast<char*>(conn_str.c_str()), 0, conn_str.size() );
         memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
         LOG( SEV_ERROR, "C++ exception returned: %1!s!", ex.what() );
         conn->invalidate();
         throw;
     }
     catch( std::length_error const& ex ) {
-        memset( const_cast<char*>(conn_options.c_str()), 0, conn_options.size() );
+        memset( const_cast<char*>(conn_str.c_str()), 0, conn_str.size() );
         memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
         LOG( SEV_ERROR, "C++ exception returned: %1!s!", ex.what() );
         conn->invalidate();
         throw;
     }
     catch( core::CoreException&  ) {
-        memset( const_cast<char*>(conn_options.c_str()), 0, conn_options.size() );
+        memset( const_cast<char*>(conn_str.c_str()), 0, conn_str.size() );
         memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
         conn->invalidate();
         throw;        
     }
 
-    conn_options.clear();
+    conn_str.clear();
     sqlsrv_conn* return_conn = conn;
     conn.transferred();
 
     return return_conn;
 }
 
-SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _In_ const std::string& conn_options, _In_ const DRIVER_VERSION odbc_version, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error)
+SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string conn_str, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error)
 {
     SQLRETURN r = SQL_SUCCESS;
-    std::string conn_str = conn_options + CONNECTION_STRING_DRIVER_NAME[odbc_version];
 
     // We only support UTF-8 encoding for connection string.
     // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
@@ -268,7 +269,7 @@ SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _In_ const std::string& c
     conn_str.clear();
 
     if (SQL_SUCCEEDED(r)) {
-        conn->driver_version = static_cast<DRIVER_VERSION>(odbc_version);
+        //conn->driver_version = static_cast<DRIVER_VERSION>(odbc_version);
     }
     else {
         SQLCHAR state[SQL_SQLSTATE_BUFSIZE];
