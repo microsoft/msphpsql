@@ -438,8 +438,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                   ( encoding == SQLSRV_ENCODING_SYSTEM || encoding == SQLSRV_ENCODING_UTF8 || 
                     encoding == SQLSRV_ENCODING_BINARY ), "core_sqlsrv_bind_param: invalid encoding" );
 
-    if ( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE ) &&
-         Z_TYPE_P( param_z ) != IS_NULL && Z_TYPE_P( param_z ) != IS_FALSE && Z_TYPE_P( param_z) != IS_TRUE ) {
+    if ( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE )) {
         ae_get_sql_type_info( stmt, param_num, direction, param_z, encoding, sql_type, column_size, decimal_digits TSRMLS_CC );
     }
     else {
@@ -2024,13 +2023,6 @@ void ae_get_sql_type_info( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, 
 {
     SQLSMALLINT Nullable;
     core::SQLDescribeParam( stmt, paramno + 1, &sql_type, &column_size, &decimal_digits, &Nullable );
-    // when column is not encrypted, binding an INPUT bigint with sql type SQL_WVARCHAR returns a conversion error between nvarchar and bigint
-    // at thie point after calling SQLDescribeParam, the sql_type is now SQL_BIGINT for a BIGINT column
-    // to simulate the behavior of binding a non-encrypted column, set the sql type back to SQL_WVARCHAR or SQL_VARCHAR using default_sql_type
-    if ( sql_type == SQL_BIGINT && Z_TYPE_P(param_z) == IS_STRING && direction == SQL_PARAM_INPUT ) {
-        default_sql_type( stmt, paramno, param_z, encoding, sql_type TSRMLS_CC );
-        default_sql_size_and_scale( stmt, paramno, param_z, encoding, column_size, decimal_digits );
-    }
 }
 
 void col_cache_dtor( _Inout_ zval* data_z )
