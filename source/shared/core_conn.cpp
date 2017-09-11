@@ -66,8 +66,8 @@ const char CONNECTION_OPTION_MARS_ON[] = "MARS_Connection={Yes};";
 // *** internal function prototypes ***
 
 void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd, 
-                                                     _Inout_opt_ HashTable* options_ht, _In_ const connection_option valid_conn_opts[], 
-                                                     void* driver,_Inout_ std::string& connection_string TSRMLS_DC );
+                                                _Inout_opt_ HashTable* options_ht, _In_ const connection_option valid_conn_opts[], 
+                                                void* driver,_Inout_ std::string& connection_string TSRMLS_DC );
 void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
 const char* get_processor_arch( void );
 void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len TSRMLS_DC );
@@ -103,11 +103,14 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     sqlsrv_malloc_auto_ptr<sqlsrv_conn> conn;
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wconn_string;
     unsigned int wconn_len = 0;
+    bool is_pooled = false;
 
 #ifdef _WIN32
     sqlsrv_context* henv = &henv_cp;   // by default use the connection pooling henv
+    is_pooled = true;
 #else
     sqlsrv_context* henv = &henv_ncp;  // by default do not use the connection pooling henv
+    is_pooled = false;
 #endif // _WIN32 
 
     try {
@@ -123,6 +126,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
             ( toupper( pooling_string[ 0 ] ) == 'O' && toupper( pooling_string[ 1 ] ) == 'N' ))
         {
             henv = &henv_cp;
+            is_pooled = true;
         }
 #else
     // check the connection pooling setting to determine which henv to use to allocate the connection handle
@@ -136,7 +140,8 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
              if ( option_z ) {
                  // if the option was found and it's not true, then use the non pooled environment handle
                  if(( Z_TYPE_P( option_z ) == IS_STRING && !core_str_zval_is_true( option_z )) || !zend_is_true( option_z ) ) {  
-                henv = &henv_ncp;   
+                henv = &henv_ncp;
+                is_pooled = false;
             }
         }
     }
@@ -148,14 +153,15 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     conn->set_func( driver_func );
     
     build_connection_string_and_set_conn_attr(conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str TSRMLS_CC);
+    
     bool missing_driver_error = false;
 
     if (conn->is_driver_set) {
-        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error );
+        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error, is_pooled);
     }
     else if (conn->ce_option.enabled) {
         conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[DRIVER_VERSION::ODBC_DRIVER_17];
-        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error );
+        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error, is_pooled);
 
         CHECK_CUSTOM_ERROR(missing_driver_error, conn, SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
             throw core::CoreException();
@@ -163,9 +169,9 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     }
     else {
 
-        for (std::size_t i = DRIVER_VERSION::ODBC_DRIVER_13; i <= DRIVER_VERSION::LAST; ++i) {
+        for ( std::size_t i = DRIVER_VERSION::ODBC_DRIVER_13; i <= DRIVER_VERSION::LAST; ++i ) {
             conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[DRIVER_VERSION(i)];
-            r = core_odbc_connect(conn, conn_str, wconn_string, wconn_len, missing_driver_error);
+            r = core_odbc_connect(conn, conn_str, wconn_string, wconn_len, missing_driver_error, is_pooled);
             // if it's a IM002, meaning that the correct ODBC driver is not installed
             CHECK_CUSTOM_ERROR(missing_driver_error && (i == DRIVER_VERSION::LAST), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
                 throw core::CoreException();
@@ -235,7 +241,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     return return_conn;
 }
 
-SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error)
+SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error, _In_ bool is_pooled)
 {
     SQLRETURN r = SQL_SUCCESS;
 
@@ -254,16 +260,16 @@ SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn
 #ifndef _WIN32
     // unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
     // connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
-    if (henv == &henv_cp)
+    if (is_pooled)
     {
         r = SQLDriverConnect(conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(), SQL_NTS, NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT);
     }
     else
     {
-        r = SQLDriverConnectW(conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>(wconn_string.get()), static_cast<SQLSMALLINT>(wconn_len), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT);
+        r = SQLDriverConnectW(conn->handle(), NULL, wconn_string, static_cast<SQLSMALLINT>(wconn_len), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT);
     }
 #else
-    r = SQLDriverConnectW(conn->handle(), NULL, reinterpret_cast<SQLWCHAR*>(wconn_string), static_cast<SQLSMALLINT>(wconn_len), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT);
+    r = SQLDriverConnectW(conn->handle(), NULL, wconn_string, static_cast<SQLSMALLINT>(wconn_len), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT);
 #endif // !_WIN32 
 
     // clear the connection string from memory to remove sensitive data (such as a password).
