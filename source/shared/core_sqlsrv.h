@@ -151,6 +151,7 @@ OACR_WARNING_POP
 
 #include <deque>
 #include <map>
+#include <string>
 #include <algorithm>
 #include <limits>
 #include <cassert>
@@ -1067,8 +1068,6 @@ struct sqlsrv_conn : public sqlsrv_context {
     // instance variables
     SERVER_VERSION server_version;  // version of the server that we're connected to
 
-    DRIVER_VERSION	driver_version;
-
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
     bool is_driver_set;
 
@@ -1077,7 +1076,6 @@ struct sqlsrv_conn : public sqlsrv_context {
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
-        driver_version = ODBC_DRIVER_UNKNOWN;
         is_driver_set = false;
     }
 
@@ -1201,6 +1199,8 @@ struct connection_option {
     void                (*func)( connection_option const*, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC );
 };
 
+// connection attribute functions
+
 // simply add the parsed value to the connection string
 struct conn_str_append_func {
 
@@ -1210,6 +1210,21 @@ struct conn_str_append_func {
 struct conn_null_func {
 
     static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC );
+};
+
+template <unsigned int Attr>
+struct str_conn_attr_func {
+
+    static void func(connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC)
+    {
+        try {
+            core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>(Z_STRVAL_P(value)),
+                static_cast<SQLINTEGER>(Z_STRLEN_P(value)) TSRMLS_CC);
+        }
+        catch (core::CoreException&) {
+            throw;
+        }
+    }
 };
 
 struct column_encryption_set_func {
@@ -1239,7 +1254,8 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd, 
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[], 
                                   _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC );
-SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ SQLWCHAR* wconn_string, _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error);
+SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ SQLWCHAR* wconn_string, 
+                             _Inout_ unsigned int& wconn_len, _Inout_ bool& missing_driver_error, _In_ bool is_pooled);
 void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC );
 void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
@@ -1692,10 +1708,6 @@ enum SQLSRV_ERROR_CODES {
 
 };
 
-// the message returned by ODBC Driver 11 for SQL Server
-static const char* CONNECTION_BUSY_ODBC_ERROR[] = { "[Microsoft][ODBC Driver 13 for SQL Server]Connection is busy with results for another command",
-										   "[Microsoft][ODBC Driver 11 for SQL Server]Connection is busy with results for another command" };
-
 // SQLSTATE for all internal errors
 extern SQLCHAR IMSSP[];
 
@@ -1871,8 +1883,12 @@ namespace core {
          
                 throw CoreException();
             }
-			std::size_t driver_version = stmt->conn->driver_version;
-            if( !strcmp( reinterpret_cast<const char*>( err_msg ), CONNECTION_BUSY_ODBC_ERROR[driver_version] )) {
+
+            // the message returned by ODBC Driver for SQL Server
+            const std::string connection_busy_error( "Connection is busy with results for another command" );
+            const std::string returned_error( reinterpret_cast<char*>( err_msg ));
+
+            if(( returned_error.find( connection_busy_error ) == std::string::npos )) {
              
                 THROW_CORE_ERROR( stmt, SQLSRV_ERROR_MARS_OFF );
             }
@@ -2420,20 +2436,5 @@ sqlsrv_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* 
 
 } // namespace core
 
-// connection attribute functions
-template <unsigned int Attr>
-struct str_conn_attr_func {
-
-    static void func( connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
-    {
-        try {
-            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
-                                     static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
-        }
-        catch( core::CoreException& ) {
-            throw;
-        }
-    }
-};
 
 #endif  // CORE_SQLSRV_H
