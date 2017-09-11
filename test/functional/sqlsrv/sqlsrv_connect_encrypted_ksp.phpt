@@ -1,12 +1,7 @@
 --TEST--
 Fetch data from a prepopulated test table given a custom keystore provider
 --SKIPIF--
-<?php 
-require('skipif_versions_old.inc'); 
-require('MsSetup.inc');
-if ($keystore != 'ksp')
-    die ( 'skip - this test requires a custom keystore provider.' );
-?>
+<?php require('skipif_not_ksp.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure( 'WarningsReturnAsErrors', 1 );
