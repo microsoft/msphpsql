@@ -2024,8 +2024,9 @@ void ae_get_sql_type_info( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, 
 {
     SQLSMALLINT Nullable;
     core::SQLDescribeParam( stmt, paramno + 1, &sql_type, &column_size, &decimal_digits, &Nullable );
-    // without AE, binding an INPUT bigint with sql type SQL_WVARCHAR returns a conversion error between nvarchar and bigint
-    // similate without AE by setting the sql type back to SQL_WVARCHAR using default_sql_type
+    // when column is not encrypted, binding an INPUT bigint with sql type SQL_WVARCHAR returns a conversion error between nvarchar and bigint
+    // at thie point after calling SQLDescribeParam, the sql_type is now SQL_BIGINT for a BIGINT column
+    // to simulate the behavior of binding a non-encrypted column, set the sql type back to SQL_WVARCHAR or SQL_VARCHAR using default_sql_type
     if ( sql_type == SQL_BIGINT && Z_TYPE_P(param_z) == IS_STRING && direction == SQL_PARAM_INPUT ) {
         default_sql_type( stmt, paramno, param_z, encoding, sql_type TSRMLS_CC );
         default_sql_size_and_scale( stmt, paramno, param_z, encoding, column_size, decimal_digits );
