@@ -220,7 +220,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
     SQLRETURN r = SQL_SUCCESS;
     SQLSMALLINT wmessage_len = 0;
     SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ] = { L'\0' };
-    SQLWCHAR wnative_message[ ( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ) * 2 ] = { L'\0' };
+    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { L'\0' };
     SQLSRV_ENCODING enc = ctx.encoding();
 
     switch( h_type ) {
@@ -245,7 +245,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
         default:
             error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
             r = SQLGetDiagRecW( h_type, h, record_number, wsqlstate, &error->native_code, wnative_message,
-                                (SQL_MAX_ERROR_MESSAGE_LENGTH + 1)*2, &wmessage_len );
+                                SQL_MAX_ERROR_MESSAGE_LENGTH + 1, &wmessage_len );
             // don't use the CHECK* macros here since it will trigger reentry into the error handling system
             // Workaround for a bug in unixODBC 2.3.4 when connection pooling is enabled (PDO SQLSRV).
             // Instead of returning false, we return an empty error message to prevent the driver from throwing an exception.
