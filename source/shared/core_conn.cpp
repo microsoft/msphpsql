@@ -49,7 +49,7 @@ const int INFO_BUFFER_LEN = 256;
 const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
 // ODBC driver name.
-const char* CONNECTION_STRING_DRIVER_NAME[] = {"Driver={ODBC Driver 17 for SQL Server};","Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};"};
+std::vector<std::string> CONNECTION_STRING_DRIVER_NAME{ "Driver={ODBC Driver 17 for SQL Server};","Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};" };
 
 // default options if only the server is specified
 const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes}";
@@ -160,7 +160,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ DRIVER_VERSION::ODBC_DRIVER_17 ];
         r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error, is_pooled );
 
-        CHECK_CUSTOM_ERROR( missing_driver_error, conn, SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+        CHECK_CUSTOM_ERROR( missing_driver_error, conn, SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED, get_processor_arch()) {
             throw core::CoreException();
         }
     }
@@ -903,18 +903,18 @@ void driver_set_func::func( _In_ connection_option const* option, _In_ zval* val
 {
     convert_to_string( value );
     const char* value_str = Z_STRVAL_P( value );
-    std::vector<std::string> valid_odbc_drivers{ "Driver={ODBC Driver 17 for SQL Server};","Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};" };
 
-    conn_str += option->odbc_name;
-    conn_str += "=";
-    conn_str += value_str;
-    conn_str += ";";
-    
-    CHECK_CUSTOM_ERROR( std::find( valid_odbc_drivers.begin(), valid_odbc_drivers.end(), conn_str ) == valid_odbc_drivers.end(), conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE ){
+    std::string driver_option( option->odbc_name );
+    driver_option += "=";
+    driver_option += value_str;
+    driver_option += ";";
+
+    CHECK_CUSTOM_ERROR( std::find( CONNECTION_STRING_DRIVER_NAME.begin(), CONNECTION_STRING_DRIVER_NAME.end(), driver_option) == CONNECTION_STRING_DRIVER_NAME.end(), conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, value_str){
         throw core::CoreException();
     }
     
     conn->is_driver_set = true;
+    conn_str += driver_option;
 
 }
 

@@ -1643,7 +1643,8 @@ enum SQLSRV_ERROR_CODES {
 
     SQLSRV_ERROR_ODBC,
     SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-    SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED,
+    SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+    SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
     SQLSRV_ERROR_ZEND_HASH,
     SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE,
     SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE,
@@ -1872,7 +1873,7 @@ namespace core {
             const std::string connection_busy_error( "Connection is busy with results for another command" );
             const std::string returned_error( reinterpret_cast<char*>( err_msg ));
 
-            if(( returned_error.find( connection_busy_error ) == std::string::npos )) {
+            if(( returned_error.find( connection_busy_error ) != std::string::npos )) {
              
                 THROW_CORE_ERROR( stmt, SQLSRV_ERROR_MARS_OFF );
             }

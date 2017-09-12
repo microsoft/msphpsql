@@ -134,8 +134,7 @@ struct bool_conn_attr_func {
     static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
     {
          try {
-             core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>((zend_long)zend_is_true(value)),
-                 SQL_IS_UINTEGER TSRMLS_CC);
+             core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>((zend_long)zend_is_true(value)), SQL_IS_UINTEGER TSRMLS_CC);
         
         }
         catch( core::CoreException& ) {
@@ -189,6 +188,7 @@ const char CharacterSet[] = "CharacterSet";
 const char Authentication[] = "Authentication";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char ColumnEncryption[] = "ColumnEncryption";
+const char Driver[] = "Driver";
 const char CEKeystoreProvider[] = "CEKeystoreProvider";
 const char CEKeystoreName[] = "CEKeystoreName";
 const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
@@ -315,6 +315,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof(ODBCConnOptions::ColumnEncryption),
         CONN_ATTR_STRING,
         column_encryption_set_func::func
+    },
+    {
+        SSConnOptionNames::Driver,
+        sizeof(SSConnOptionNames::Driver),
+        SQLSRV_CONN_OPTION_DRIVER,
+        ODBCConnOptions::Driver,
+        sizeof(ODBCConnOptions::Driver),
+        CONN_ATTR_STRING,
+        driver_set_func::func
     },
     {
         SSConnOptionNames::CEKeystoreProvider,

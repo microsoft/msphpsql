@@ -300,7 +300,7 @@ ss_error SS_ERRORS[] = {
 
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 11 or 13 for SQL Server. "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 13 or 11 for SQL Server. "
         "Access the following URL to download the ODBC Driver for SQL Server for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
     },     
@@ -393,8 +393,12 @@ ss_error SS_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -104, false}
     },
 	{
-		SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED,
+		SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
         { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 for SQL Server when ColumnEncryption attribute is enabled.", -105, false }
+    },
+    {
+        SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
+        { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option. For the list of valid connection options visit https://docs.microsoft.com/en-us/sql/connect/php/connection-options", -106, true }
     },
     // terminate the list of errors/warnings
     { UINT_MAX, {} }

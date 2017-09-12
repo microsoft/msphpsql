@@ -43,6 +43,7 @@ const char AttachDBFileName[] = "AttachDbFileName";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char Authentication[] = "Authentication";
 const char ColumnEncryption[] = "ColumnEncryption";
+const char Driver[] = "Driver";
 const char CEKeystoreProvider[] = "CEKeystoreProvider";
 const char CEKeystoreName[] = "CEKeystoreName";
 const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
@@ -233,6 +234,15 @@ const connection_option PDO_CONN_OPTS[] = {
         sizeof(ODBCConnOptions::ColumnEncryption),
         CONN_ATTR_STRING,
         column_encryption_set_func::func
+    },
+    {
+        PDOConnOptionNames::Driver,
+        sizeof(PDOConnOptionNames::Driver),
+        SQLSRV_CONN_OPTION_DRIVER,
+        ODBCConnOptions::Driver,
+        sizeof(ODBCConnOptions::Driver),
+        CONN_ATTR_STRING,
+        driver_set_func::func
     },
     {
         PDOConnOptionNames::CEKeystoreProvider,
