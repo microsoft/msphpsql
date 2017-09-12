@@ -1020,7 +1020,6 @@ struct sqlsrv_henv {
     }
 };
 
-
 //*********************************************************************************************************************************
 // Connection
 //*********************************************************************************************************************************
@@ -1210,21 +1209,6 @@ struct conn_str_append_func {
 struct conn_null_func {
 
     static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC );
-};
-
-template <unsigned int Attr>
-struct str_conn_attr_func {
-
-    static void func(connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC)
-    {
-        try {
-            core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>(Z_STRVAL_P(value)),
-                static_cast<SQLINTEGER>(Z_STRLEN_P(value)) TSRMLS_CC);
-        }
-        catch (core::CoreException&) {
-            throw;
-        }
-    }
 };
 
 struct column_encryption_set_func {
@@ -2436,5 +2420,19 @@ sqlsrv_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* 
 
 } // namespace core
 
+template <unsigned int Attr>
+struct str_conn_attr_func {
+
+    static void func(connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC)
+    {
+        try {
+            core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>(Z_STRVAL_P(value)),
+                static_cast<SQLINTEGER>(Z_STRLEN_P(value)) TSRMLS_CC);
+        }
+        catch (core::CoreException&) {
+            throw;
+        }
+    }
+};
 
 #endif  // CORE_SQLSRV_H

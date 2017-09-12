@@ -154,11 +154,11 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     bool missing_driver_error = false;
 
     if ( conn->is_driver_set ) {
-        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error, is_pooled);
+        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error, is_pooled );
     }
     else if ( conn->ce_option.enabled ) {
         conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ DRIVER_VERSION::ODBC_DRIVER_17 ];
-        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error, is_pooled);
+        r = core_odbc_connect( conn, conn_str, wconn_string, wconn_len, missing_driver_error, is_pooled );
 
         CHECK_CUSTOM_ERROR( missing_driver_error, conn, SQLSRV_AE_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
             throw core::CoreException();
