@@ -1,7 +1,7 @@
 --TEST--
 Fetch encrypted data from a prepopulated test table given a custom keystore provider
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php require('skipif_not_ksp.inc'); ?>
 --FILE--
 <?php
     require( 'MsSetup.inc' );
