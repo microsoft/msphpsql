@@ -52,7 +52,7 @@ const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 std::vector<std::string> CONNECTION_STRING_DRIVER_NAME{ "Driver={ODBC Driver 17 for SQL Server};","Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};" };
 
 // default options if only the server is specified
-const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes}";
+const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes};";
 
 // connection option appended when no user name or password is given
 const char CONNECTION_OPTION_NO_CREDENTIALS[] = "Trusted_Connection={Yes};";
