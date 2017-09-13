@@ -60,10 +60,10 @@ Test new connection keyword ColumnEncryption
     echo "Done\n";
 ?>
 --EXPECTREGEX--
-Connected successfully with ColumnEncryption enabled.
-Failed to connect.
+Connected successfully with ColumnEncryption enabled\.
+Failed to connect\.
 SQLSTATE\[08001\]: .*\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
-Failed to connect.
+Failed to connect\.
 SQLSTATE\[08001\]: .*\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
-Connected successfully with ColumnEncryption disabled.
+Connected successfully with ColumnEncryption disabled\.
 Done

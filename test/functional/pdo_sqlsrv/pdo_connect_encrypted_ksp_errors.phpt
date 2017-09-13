@@ -72,29 +72,29 @@ Connect using a custom keystore provider with some required inputs missing
     echo "Done\n";
 ?>
 --EXPECTREGEX--
-Connecting... with column encryption
-Connected successfully with ColumnEncryption enabled and KSP specified.
+Connecting\.\.\. with column encryption
+Connected successfully with ColumnEncryption enabled and KSP specified\.
 
-Connecting... with an invalid input to CEKeystoreProvider
+Connecting\.\.\. with an invalid input to CEKeystoreProvider
 Failed to connect.
 SQLSTATE\[HY024\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid attribute value
 
-Connecting... with an empty path
+Connecting\.\.\. with an empty path
 Failed to connect.
-SQLSTATE\[IMSSP\]: Invalid value for loading a custom keystore provider.
+SQLSTATE\[IMSSP\]: Invalid value for loading a custom keystore provider\.
 
-Connecting... without a path
+Connecting\.\.\. without a path
 Failed to connect.
-SQLSTATE\[IMSSP\]: The path to the custom keystore provider is missing.
+SQLSTATE\[IMSSP\]: The path to the custom keystore provider is missing\.
 
-Connecting... without a name
+Connecting\.\.\. without a name
 Failed to connect.
-SQLSTATE\[IMSSP\]: The name of the custom keystore provider is missing.
+SQLSTATE\[IMSSP\]: The name of the custom keystore provider is missing\.
 
-Connecting... without a key
+Connecting\.\.\. without a key
 Failed to connect.
-SQLSTATE\[IMSSP\]: The encryption key for the custom keystore provider is missing.
+SQLSTATE\[IMSSP\]: The encryption key for the custom keystore provider is missing\.
 
-Connecting... with all required inputs
-Connected successfully with ColumnEncryption enabled and KSP specified.
+Connecting\.\.\. with all required inputs
+Connected successfully with ColumnEncryption enabled and KSP specified\.
 Done

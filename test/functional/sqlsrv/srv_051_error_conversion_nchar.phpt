@@ -39,7 +39,7 @@ Array
     \[SQLSTATE\] => 22018
     \[1\] => 245
     \[code\] => 245
-    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Conversion failed when converting the nvarchar value '银河' to data type int.
-    \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Conversion failed when converting the nvarchar value '银河' to data type int.
+    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Conversion failed when converting the nvarchar value '银河' to data type int\.
+    \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Conversion failed when converting the nvarchar value '银河' to data type int\.
 \)
 Done

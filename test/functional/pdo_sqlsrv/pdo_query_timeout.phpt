@@ -68,7 +68,7 @@ RunTest();
 ?>
 --EXPECTREGEX--
 
-Starting test...
+Starting test\.\.\.
 Setting query timeout as an attribute in connection
 array\(3\) \{
   \[0\]=>
