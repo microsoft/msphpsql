@@ -205,7 +205,7 @@ The following instructions assume a clean environment and show how to install PH
 
 	brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
 	brew update
-	brew install msodbcsql
+	brew install --no-sandbox msodbcsql
 	brew install mssql-tools
 	brew install autoconf
 
