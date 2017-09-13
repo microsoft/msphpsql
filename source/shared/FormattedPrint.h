@@ -4,7 +4,7 @@
 // Contents: Contains functions for handling Windows format strings
 //			 and UTF-16 on non-Windows platforms
 //
-// Microsoft Drivers 5.0 for PHP for SQL Server
+// Microsoft Drivers 5.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
