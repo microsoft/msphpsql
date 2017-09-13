@@ -29,5 +29,5 @@ Array
 \(
     \[0\] => 42S22
     \[1\] => 207
-    \[2\] => \[Microsoft\]\[ODBC Driver (09|10|11|12|13) for SQL Server\]\[SQL Server\]Invalid column name 'IntColX'\.
+    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Invalid column name 'IntColX'\.
 \)
