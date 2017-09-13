@@ -101,6 +101,8 @@ void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned in
 // given a zval and encoding, determine the appropriate sql type, column size, and decimal scale (if appropriate)
 void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding, 
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC );
+void ae_get_sql_type_info( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ SQLSMALLINT direction, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
+                           _Out_ SQLSMALLINT& sql_type, _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC );
 void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
@@ -110,8 +112,8 @@ stmt_option const* get_stmt_option( sqlsrv_conn const* conn, _In_ zend_ulong key
 bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 // assure there is enough space for the output parameter string
 void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding,
-                                        _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _Out_writes_(buffer_len) SQLPOINTER& buffer,
-                                        _Out_ SQLLEN& buffer_len TSRMLS_DC );
+                                        _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits,
+                                        _Out_writes_(buffer_len) SQLPOINTER& buffer, _Out_ SQLLEN& buffer_len TSRMLS_DC );
 bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt );
 void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param TSRMLS_DC );
 // send all the stream data 
@@ -436,16 +438,20 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                   ( encoding == SQLSRV_ENCODING_SYSTEM || encoding == SQLSRV_ENCODING_UTF8 || 
                     encoding == SQLSRV_ENCODING_BINARY ), "core_sqlsrv_bind_param: invalid encoding" );
 
-    // if the sql type is unknown, then set the default based on the PHP type passed in
-    if( sql_type == SQL_UNKNOWN_TYPE ) {
-		default_sql_type( stmt, param_num, param_z, encoding, sql_type TSRMLS_CC );
+    if ( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE )) {
+        ae_get_sql_type_info( stmt, param_num, direction, param_z, encoding, sql_type, column_size, decimal_digits TSRMLS_CC );
     }
+    else {
+        // if the sql type is unknown, then set the default based on the PHP type passed in
+        if ( sql_type == SQL_UNKNOWN_TYPE ) {
+            default_sql_type( stmt, param_num, param_z, encoding, sql_type TSRMLS_CC );
+        }
 
-    // if the size is unknown, then set the default based on the PHP type passed in
-    if( column_size == SQLSRV_UNKNOWN_SIZE ) {
-        default_sql_size_and_scale( stmt, static_cast<unsigned int>( param_num ), param_z, encoding, column_size, decimal_digits TSRMLS_CC );
+        // if the size is unknown, then set the default based on the PHP type passed in
+        if ( column_size == SQLSRV_UNKNOWN_SIZE ) {
+            default_sql_size_and_scale( stmt, static_cast<unsigned int>(param_num), param_z, encoding, column_size, decimal_digits TSRMLS_CC );
+        }
     }
-
     // determine the ODBC C type
     c_type = default_c_type( stmt, param_num, param_z, encoding TSRMLS_CC );
 
@@ -538,7 +544,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
                 // since this is an output string, assure there is enough space to hold the requested size and
                 // set all the variables necessary (param_z, buffer, buffer_len, and ind_ptr)
-                resize_output_buffer_if_necessary( stmt, param_z, param_num, encoding, c_type, sql_type, column_size,
+                resize_output_buffer_if_necessary( stmt, param_z, param_num, encoding, c_type, sql_type, column_size, decimal_digits, 
                                                    buffer, buffer_len TSRMLS_CC );
 
                 // save the parameter to be adjusted and/or converted after the results are processed
@@ -552,7 +558,8 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 // avoid this silent truncation, we set the column_size to be "MAX" size for 
                 // string types. This will guarantee that there is no silent truncation for 
                 // output parameters.
-                if( direction == SQL_PARAM_OUTPUT ) {
+                // if column encryption is enabled, at this point the correct column size has been set by SQLDescribeParam
+                if( direction == SQL_PARAM_OUTPUT && !stmt->conn->ce_option.enabled ) {
                     
                     switch( sql_type ) {
 
@@ -663,6 +670,13 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
     core::SQLBindParameter( stmt, param_num + 1, direction, 
 		c_type, sql_type, column_size, decimal_digits, buffer, buffer_len, &ind_ptr TSRMLS_CC );
+    if ( stmt->conn->ce_option.enabled && sql_type == SQL_TYPE_TIMESTAMP )
+    {
+        if ( decimal_digits == 3 )
+            core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, 0 );
+        else if (decimal_digits == 0)
+            core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_SMALLDATETIME, 0 );
+    }
     }
     catch( core::CoreException& e ) {
         stmt->free_param_data( TSRMLS_C );
@@ -2004,6 +2018,13 @@ void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned in
     }
 }
 
+void ae_get_sql_type_info( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ SQLSMALLINT direction, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
+                           _Out_ SQLSMALLINT& sql_type, _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC )
+{
+    SQLSMALLINT Nullable;
+    core::SQLDescribeParam( stmt, paramno + 1, &sql_type, &column_size, &decimal_digits, &Nullable );
+}
+
 void col_cache_dtor( _Inout_ zval* data_z )
 {
     col_cache* cache = static_cast<col_cache*>( Z_PTR_P( data_z ));
@@ -2485,8 +2506,8 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
 // stmt->param_ind_ptrs are modified to hold the correct values for SQLBindParameter
 
 void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding, 
-                                        _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _Out_writes_(buffer_len) SQLPOINTER& buffer,
-                                        _Out_ SQLLEN& buffer_len TSRMLS_DC )
+                                        _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits, 
+                                        _Out_writes_(buffer_len) SQLPOINTER& buffer, _Out_ SQLLEN& buffer_len TSRMLS_DC )
 {
     SQLSRV_ASSERT( column_size != SQLSRV_UNKNOWN_SIZE, "column size should be set to a known value." );
     buffer_len = Z_STRLEN_P( param_z );
@@ -2501,6 +2522,12 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
 
     // account for the NULL terminator returned by ODBC and needed by Zend to avoid a "String not null terminated" debug warning
     SQLULEN field_size = column_size;
+    // with AE on, when column_size is retrieved from SQLDescribeParam, column_size does not include the decimal place
+    // include the decimal for output params by adding elem_size
+    if ( stmt->conn->ce_option.enabled && decimal_digits > 0 )
+    {
+        field_size += elem_size;
+    }
     if (column_size == SQL_SS_LENGTH_UNLIMITED) {
         field_size = SQL_SERVER_MAX_FIELD_SIZE / elem_size;
     }

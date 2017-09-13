@@ -342,12 +342,12 @@ struct row_dtor_closure {
 sqlsrv_error* odbc_get_diag_rec( _In_ sqlsrv_stmt* odbc, _In_ SQLSMALLINT record_number )
 {
     SQLWCHAR wsql_state[ SQL_SQLSTATE_BUFSIZE ];
-    SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ];
+    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ];
     SQLINTEGER native_code;
     SQLSMALLINT wnative_message_len = 0;
 
     SQLRETURN r = SQLGetDiagRecW( SQL_HANDLE_STMT, odbc->handle(), record_number, wsql_state, &native_code, wnative_message, 
-                                  SQL_MAX_MESSAGE_LENGTH + 1, &wnative_message_len );
+                                  SQL_MAX_ERROR_MESSAGE_LENGTH + 1, &wnative_message_len );
     if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
         return NULL;
     }
