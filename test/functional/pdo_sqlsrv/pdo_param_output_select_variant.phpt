@@ -77,9 +77,9 @@ function RunTest()
 RunTest();
 
 ?>
---EXPECT--
+--EXPECTREGEX--
 ﻿
 Number of rows: 1
-SQLSTATE[42000]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Implicit conversion from data type sql_variant to nvarchar(max) is not allowed. Use the CONVERT function to run this query.
+SQLSTATE\[42000\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type sql_variant to nvarchar\(max\) is not allowed. Use the CONVERT function to run this query.
 Done
-Test "pdo_param_output_select_variant" completed successfully.
+Test \"pdo_param_output_select_variant\" completed successfully\.

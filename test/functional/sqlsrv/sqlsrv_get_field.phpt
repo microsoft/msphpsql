@@ -254,9 +254,9 @@ array\(1\) \{
     \["code"\]=>
     int\(0\)
     \[2\]=>
-    string\(68\) "\[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]Numeric value out of range"
+    string\(68\) "\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Numeric value out of range"
     \["message"\]=>
-    string\(68\) "\[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]Numeric value out of range"
+    string\(68\) "\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Numeric value out of range"
   \}
 \}
 NULL
@@ -292,9 +292,9 @@ array\(1\) \{
     \["code"\]=>
     int\(0\)
     \[2\]=>
-    string\(68\) "\[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]Numeric value out of range"
+    string\(68\) "\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Numeric value out of range"
     \["message"\]=>
-    string\(68\) "\[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]Numeric value out of range"
+    string\(68\) "\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Numeric value out of range"
   \}
 \}
 NULL

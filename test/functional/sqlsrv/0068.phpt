@@ -50,8 +50,8 @@ Array
             \[SQLSTATE\] => 42000
             \[1\] => 257
             \[code\] => 257
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type varchar\(max\) to varbinary\(max\) is not allowed\. Use the CONVERT function to run this query\.
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type varchar\(max\) to varbinary\(max\) is not allowed\. Use the CONVERT function to run this query\.
+            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type varchar\(max\) to varbinary\(max\) is not allowed\. Use the CONVERT function to run this query\.
+            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type varchar\(max\) to varbinary\(max\) is not allowed\. Use the CONVERT function to run this query\.
         \)
 
     \[1\] => Array
@@ -60,8 +60,8 @@ Array
             \[SQLSTATE\] => 42000
             \[1\] => 8180
             \[code\] => 8180
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]\[SQL Server\]Statement\(s\) could not be prepared\.
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]\[SQL Server\]Statement\(s\) could not be prepared\.
+            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Statement\(s\) could not be prepared\.
+            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Statement\(s\) could not be prepared\.
         \)
 
 \)

@@ -31,11 +31,11 @@ $conn = null;
 print "Done";
 ?>
 
---EXPECT--
+--EXPECTREGEX--
 Array
-(
-    [0] => 21S01
-    [1] => 213
-    [2] => [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Column name or number of supplied values does not match table definition.
-)
+\(
+    \[0\] => 21S01
+    \[1\] => 213
+    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Column name or number of supplied values does not match table definition\.
+\)
 Done

@@ -64,8 +64,8 @@ Array
             \[SQLSTATE\] => 08001
             \[1\] => 0
             \[code\] => 0
-            \[2\] => .*\[Microsoft\]\[ODBC Driver 13 for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
-            \[message\] => .*\[Microsoft\]\[ODBC Driver 13 for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
+            \[2\] => .*\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
+            \[message\] => .*\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
         \)
 
 \)
