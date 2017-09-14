@@ -20,11 +20,12 @@ function IsAEQualified($conn)
     $server_ver = $conn->getAttribute(PDO::ATTR_SERVER_VERSION);
     $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
     $msodbcsql_min = explode(".", $msodbcsql_ver)[1];
-    if ($msodbcsql_maj < 17 || explode('.', $server_ver)[0] < 13)
+    if ($msodbcsql_maj < 13 || explode('.', $server_ver)[0] < 13)
         return false;
     return true;
 }
 
+// TO BE DELETED
 function connect($options=array())
 {
   try 
@@ -51,6 +52,374 @@ function connect($options=array())
      exit;
   }
 }
+
+
+/**
+ * Connect to the database specified in MsSetup.inc; Column Encryption keywords automatically added when $keystore is not none
+ * @param string $keywords : string to append to the dsn string in PDO::_construct
+ * @param array $options : attributes to pass to PDO::_construct
+ * @param bool $disableCE : flag for disabling column encryption even when keystore is NOT none
+ *                          for testing fetching encrypted data when connection column encryption is off
+ * @return PDO connection object
+ */
+function ae_connect( $keywords='', $options=array(), $disableCE = false )
+{
+    try
+    {
+        // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
+        // which does not support switching databases
+        require  'MsSetup.inc';
+        $dsn = "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;";
+        if ( $keystore != "none" && !$disableCE )
+        {
+            $dsn .= "ColumnEncryption=Enabled;";
+        }
+        if ( $keystore == "ksp" && !$disableCE )
+        {   
+            require( 'AE_Ksp.inc' );
+            $ksp_path = getKSPPath();
+            $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
+        }
+        if ( $keywords )
+        {
+            $dsn .= $keywords;
+        }
+        $conn = new PDO( $dsn, $uid, $pwd, $options );
+        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+        return $conn;
+    }
+    catch( PDOException $e ) 
+    {
+        var_dump( $e );
+        exit;
+    }
+    catch(Exception $e) 
+    {
+        var_dump( $e );
+        exit;
+    }
+}
+
+
+/**
+ * @return string CEK name depending on the connection keywords
+ */
+function getCekName()
+{
+    require  'MsSetup.inc';
+    $cekName = '';
+    switch ( $keystore ) {
+        case "none":
+            $cekName = '';
+            break;
+        case "win":
+            $cekName = 'AEColumnKey';
+            break;
+        case "ksp":
+            $cekName = 'CustomCEK';
+            break;
+        case "akv":
+            $cekName = 'AKVColumnKey';
+            break;
+    }
+    return $cekName;
+}
+
+
+/**
+ * class for encapsulating column metadata needed for creating a table
+ */
+class columnMeta {
+    public $colName;
+    public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
+    public $encType;    //randomized or deterministic; default is deterministic
+    public $options;    //a string that is empty by default (e.g. NOT NULL Identity (1,1) )
+        
+    function __construct( $dataType, $colName = null, $options = null, $encType = "deterministic" )
+    {
+        if ( !$colName )
+        {
+            $this->colName = get_default_colname( $dataType );
+        }
+        else
+        {
+            $this->colName = $colName;
+        }
+        $this->dataType = $dataType;
+        $this->encType = $encType;
+        $this->options = $options;
+    }
+    /**
+     * @return string column definition for creating a table
+     */
+    function getColDef()
+    {
+        require  'MsSetup.inc';
+        $append = " ";
+        
+        if ( $keystore != "none" && stripos( $this->options, "identity" ) === false )
+        {
+            $cekName = getCekName();
+            $encDet = "ENCRYPTED WITH (ENCRYPTION_TYPE = DETERMINISTIC, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ";
+            $encRand = "ENCRYPTED WITH (ENCRYPTION_TYPE = RANDOMIZED, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ";
+            if ( stripos( $this->dataType, "char" ) !== false )
+                $append .= "COLLATE Latin1_General_BIN2 ";
+            if ( $this->encType == "deterministic" )
+                $append .= $encDet;
+            else
+                $append .= $encRand;
+        }
+        $append .= $this->options;
+        $colDef = "[" . $this->colName . "] " . $this->dataType . $append;
+        return $colDef;
+    }
+}
+
+
+/**
+ * @return string default column name when a name is not provided in the columnMeta class
+ */
+function get_default_colname( $dataType )
+{
+    $colName = "c_" . str_replace( ",", "_", str_replace( "(", "_", $dataType ));
+    $colName = rtrim( $colName, ")" );
+    return $colName;
+}
+
+
+/**
+ * Create a table
+ * @param object $conn : PDO connection object
+ * @param string $tbname : name of the table to be created
+ * @param array $columnMeta : array of columnMeta objects, which contain metadata for one column
+ */
+function create_table( $conn, $tbname, $columnMeta )
+{
+    try
+    {
+        $dropSql = "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tbname . "') AND type in (N'U')) DROP TABLE $tbname";
+        $conn->exec( $dropSql );
+        $colDef = "";
+        foreach ( $columnMeta as $meta )
+        {
+            $colDef = $colDef . $meta->getColDef() . ", ";
+        }
+        $colDef = rtrim( $colDef, ", " );
+        $createSql = "CREATE TABLE $tbname ( $colDef )";
+        $conn->exec( $createSql );
+    }
+    catch ( Exception $e )
+    {
+        var_dump( $e );
+        exit;
+    }   
+}
+
+
+/**
+ * class for encapsulating optional parameters for PDOStatement::bindParam
+ */
+class bindParamOption {
+    public $index;      //1-based index of the parameter
+    public $pdoType;    //PDO_PARAM_ type specified for PDOStatement::bindParam
+    public $length;     //length specified for PDOStatement::bindParam
+    public $options;    //options specified for PDOStatement::bindParam
+        
+    function __construct( $index, $pdoType = null, $length = null, $options = null )
+    {
+        $this->index = $index;
+        $this->pdoType = $pdoType;
+        $this->length = $length;
+        $this->options = $options;
+    }
+    /**
+     * @param object $stmt : PDO Statement object
+     * @param mix $var : variable to bind to the SQL statement parameter
+     */
+    function bindWithOp( $stmt, $var )
+    {
+        $stmt->bindParam( $this->index, $var, constant( $this->pdoType ), $this->length, $this->options );
+    }
+}
+
+
+/**
+ * Create a row into a table
+ * @param object $conn : PDO connection object
+ * @param string $tbname : name of the table to be created
+ * @param array $inputs : an associative array column name and its value
+ * @param bool $r : if the row was successfully inserted
+ * $param string $api : PDO_SQLSRV API used for executing the insert query
+ *                      accepted values: "exec", "query", "prepare", "prepareBindParam"
+ * @param array $paramOption : an array of bindParamOptions. Should only be provided if $api is "perpareWithParamOp", if provided, has to be in the same order as $inputs
+ * @return object PDOStatement object of the insert statement
+ */
+function insert_row( $conn, $tbname, $inputs, &$r = null, $api = "query", $paramOption = array() )
+{
+    try 
+    {
+        require  'MsSetup.inc';
+        
+        $stmt = null;
+        if ( $keystore == "none" && $api != "prepareBindParam" )
+        {
+            $insertSql = get_insertSql_complete( $tbname, $inputs );
+            switch ( $api ) {
+                case "exec":
+                    $conn->exec( $insertSql );
+                    break;
+                case "query":
+                    $stmt = $conn->query( $insertSql );
+                    break;
+                case "prepare":
+                    $stmt = $conn->prepare( $insertSql );
+                    $r = $stmt->execute();
+                    break;
+            }
+        }
+        else
+        {
+            // if AE is on, must bind param
+            $insertSql = get_insertSql_placeholders( $tbname, $inputs );
+            $stmt = $conn->prepare( $insertSql );
+            if ( empty( $paramOption ))
+            {
+                $i = 1;
+                foreach( $inputs as $key => $value )
+                {
+                    $stmt->bindParam( $i, $inputs[$key] );
+                    $i++;
+                }
+            }
+            else
+            {   
+                $i = 1;
+                foreach( $inputs as $key => $value )
+                {
+                    $noparam = true;
+                    foreach( $paramOption as $op )
+                    {
+                        if ( $op->index == $i )
+                        {
+                            $op->bindWithOp( $stmt, $inputs[$key] );
+                            $noparam = false;
+                            $i++;
+                            break;
+                        }
+                    }
+                    if ( $noparam ) 
+                    {
+                        $stmt->bindParam( $i, $inputs[$key] );
+                        $i++;
+                    }
+                }
+            }
+            $r = $stmt->execute();
+        }
+        return $stmt;
+    }
+    catch ( Exception $e )
+    {
+        var_dump( $e );
+        exit;
+    }
+}
+
+
+/**
+ * @param string $tbname : name of the table for an insert sql
+ * @param array $input : associative array containing a key value pair of column name and data to put into an insert sql string
+ * @return string a complete insert sql string
+ */
+function get_insertSql_complete( $tbname, $inputs )
+{
+    $colStr = "INSERT INTO $tbname (";
+    $valStr = "VALUES (";
+    foreach( $inputs as $key => $value )
+    {
+        $colStr .= $key . ", ";
+        if ( is_string( $value ))
+            $valStr .= "'" . $value . "', ";
+        else
+            $valStr .= $value . ", ";
+    }
+    $colStr = rtrim( $colStr, ", " ) . ") ";
+    $valStr = rtrim( $valStr, ", " ) . ") ";
+    $insertSql = $colStr . $valStr;
+    return $insertSql;
+}
+
+
+/**
+ * @param string $tbname : name of the table for an insert sql
+ * @param array $input : associative array containing a key value pair of column name and data to put into an insert sql string
+ * @return string an insert sql string with "?" placeholders for all values
+ */
+function get_insertSql_placeholders( $tbname, $inputs )
+{
+    $colStr = "INSERT INTO $tbname (";
+    $valStr = "VALUES (";
+    foreach( $inputs as $key => $value )
+    {
+        $colStr .= $key . ", ";
+    }
+    $colStr = rtrim( $colStr, ", " ) . ") ";
+    $valStr .= get_seq_placeholders( count( $inputs )) . ") ";
+    $insertSql = $colStr . $valStr;
+    return $insertSql;
+}
+
+
+/**
+ * @param string $spname : name of the stored procedure
+ * @param int $num : number of parameters needed for the stored procedure
+ * @return string a call stored procedure sql string with "?" placeholders for all parameters
+ */
+function get_callProcSql_placeholders( $spname, $num )
+{
+    $callStr = "{CALL $spname (";
+    $callStr .= get_seq_placeholders( $num ) . ")} ";
+    return $callStr;
+}
+
+
+/**
+ * @param int $num : number of placeholders needed
+ * @return string a string containing $num number of repeated "?" placeholders delimited by ", "
+ */
+function get_seq_placeholders( $num )
+{
+    $placeholderStr = str_repeat( "?, ", $num );
+    $placeholderStr = rtrim( $placeholderStr, ", " );
+    return $placeholderStr;
+}
+
+
+/**
+ * Fetch all rows and all columns given a table name, and print them
+ * @param object $conn : PDO connection object
+ * @param string $tbname : name of the table to fetch from
+ */
+function fetch_all( $conn, $tbname ) {
+    try
+    {
+        $sql = "SELECT * FROM $tbname";
+        $stmt = $conn->query( $sql );
+        while ( $row = $stmt->fetch( PDO::FETCH_ASSOC ))
+        {
+            foreach ( $row as $key => $value ) 
+            {
+                print ( "$key: $value\n" );
+            }
+        }
+    }
+    catch ( Exception $e )
+    {
+        var_dump( $e );
+        exit;
+    }
+}
+
 
 // Create and insert
 function create_and_insert_table1( $conn )
@@ -1547,4 +1916,6 @@ function PhpVersionComponents( &$major, &$minor, &$sub )
     $minor = strtok( "." );
     $sub = strtok( "." );
 }
+
+
 ?>

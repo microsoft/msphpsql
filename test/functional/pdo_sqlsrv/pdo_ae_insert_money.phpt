@@ -1,0 +1,86 @@
+--TEST--
+Test for inserting and retrieving encrypted numeric types data
+Binding parameters in PDOstatement::execute
+--SKIPIF--
+
+--FILE--
+<?php
+include 'MsCommon.inc';
+include 'AEData.inc';
+include 'MsSetup.inc';
+
+$dataTypes = array( "smallmoney", "money" );
+
+try
+{
+    $conn = ae_connect();
+    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
+
+    foreach ( $dataTypes as $dataType ) {
+        echo "\nTesting $dataType:\n";
+        $success = true;
+        
+        // create table
+        $tbname = GetTempTableName( "", false );
+        $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+        create_table( $conn, $tbname, $colMetaArr );
+        
+        // insert a row
+        $inputValues = array_slice( ${explode( "(", $dataType )[0] . "_params"}, 1, 2 );
+        $r;
+        $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r );
+        
+        if ( $keystore == "none" )
+        {
+            if ( $r === false )
+            {
+                echo "Default type should be compatible with $dataType.\n";
+                $success = false;
+            }
+            else
+            {
+                $sql = "SELECT * FROM $tbname";
+                $stmt = $conn->query( $sql );
+                $row = $stmt->fetch( PDO::FETCH_ASSOC );
+                if ( $row["c_det"] != $inputValues[0] || $row["c_rand"] != $inputValues[1] )
+                {
+                    echo "Incorrect output retrieved for datatype $dataType.\n";
+                    $success = false;
+                }
+            }
+        }
+        else
+        {
+            if ( $r === false )
+            {
+                if ( $stmt->errorInfo()[0] != "22018" )
+                {
+                    echo "Incorrect error returned.\n";
+                    $success = false;
+                }
+            }
+            else
+            {
+                echo "$dataType is not compatible with any type.\n";
+                $success = false;
+            }
+        }
+        if ( $success )
+            echo "Test successfully.\n";
+        DropTable( $conn, $tbname );
+    }
+    unset( $stmt );
+    unset( $conn );
+}
+catch( PDOException $e )
+{
+    echo $e->getMessage();
+}
+?>
+--EXPECT--
+
+Testing smallmoney:
+Test successfully.
+
+Testing money:
+Test successfully.
