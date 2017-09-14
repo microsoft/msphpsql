@@ -17,7 +17,6 @@ foreach ( $dataTypes as $dataType ) {
     
     // create table
     $tbname = GetTempTableName( "", false );
-    $tbname = "test_numeric";
     $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
     create_table( $conn, $tbname, $colMetaArr );
     
@@ -30,16 +29,29 @@ foreach ( $dataTypes as $dataType ) {
     }
     else {
         echo "****Encrypted default type is compatible with encrypted $dataType****\n";
-        fetch_all( $conn, $tbname );
+        if ( $dataType != "time" )
+            fetch_all( $conn, $tbname );
+        else
+        {
+            $sql = "SELECT * FROM $tbname";
+            $stmt = sqlsrv_query( $conn, $sql );
+            $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC );
+            foreach ( $row as $key => $value )
+            {
+                //var_dump( $row );
+                $t = $value->format( 'H:i:s' );
+                print "$key: $t\n";
+            }
+        }
     }
-    //DropTable( $conn, $tbname );
+    DropTable( $conn, $tbname );
 }
 sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );
 ?>
 --EXPECT--
 
-Testing date:
+Testing date: 
 ****Encrypted default type is compatible with encrypted date****
 c_det:
   date: 0001-01-01 00:00:00.000000
@@ -50,7 +62,7 @@ c_rand:
   timezone_type: 3
   timezone: UTC
 
-Testing datetime:
+Testing datetime: 
 ****Encrypted default type is compatible with encrypted datetime****
 c_det:
   date: 1753-01-01 00:00:00.000000
@@ -61,7 +73,7 @@ c_rand:
   timezone_type: 3
   timezone: UTC
 
-Testing datetime2:
+Testing datetime2: 
 ****Encrypted default type is compatible with encrypted datetime2****
 c_det:
   date: 0001-01-01 00:00:00.000000
@@ -72,7 +84,7 @@ c_rand:
   timezone_type: 3
   timezone: UTC
 
-Testing smalldatetime:
+Testing smalldatetime: 
 ****Encrypted default type is compatible with encrypted smalldatetime****
 c_det:
   date: 1900-01-01 00:00:00.000000
@@ -83,18 +95,12 @@ c_rand:
   timezone_type: 3
   timezone: UTC
 
-Testing time:
+Testing time: 
 ****Encrypted default type is compatible with encrypted time****
-c_det:
-  date: 2017-09-12 00:00:00.000000
-  timezone_type: 3
-  timezone: UTC
-c_rand:
-  date: 2017-09-12 23:59:59.1000000
-  timezone_type: 3
-  timezone: UTC
+c_det: 00:00:00
+c_rand: 23:59:59
 
-Testing datetimeoffset:
+Testing datetimeoffset: 
 ****Encrypted default type is compatible with encrypted datetimeoffset****
 c_det:
   date: 0001-01-01 00:00:00.000000

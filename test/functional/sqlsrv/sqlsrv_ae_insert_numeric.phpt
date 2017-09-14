@@ -38,47 +38,47 @@ sqlsrv_close( $conn );
 ?>
 --EXPECT--
 
-Testing bit:
+Testing bit: 
 ****Encrypted default type is compatible with encrypted bit****
 c_det: 1
 c_rand: 0
 
-Testing tinyint:
+Testing tinyint: 
 ****Encrypted default type is compatible with encrypted tinyint****
 c_det: 0
 c_rand: 255
 
-Testing smallint:
+Testing smallint: 
 ****Encrypted default type is compatible with encrypted smallint****
 c_det: -32767
 c_rand: 32767
 
-Testing int:
+Testing int: 
 ****Encrypted default type is compatible with encrypted int****
 c_det: -2147483647
 c_rand: 2147483647
 
-Testing bigint:
+Testing bigint: 
 ****Encrypted default type is compatible with encrypted bigint****
 c_det: -922337203685479936
 c_rand: 922337203685479936
 
-Testing decimal(18,5):
+Testing decimal(18,5): 
 ****Encrypted default type is compatible with encrypted decimal(18,5)****
 c_det: -9223372036854.80000
 c_rand: 9223372036854.80000
 
-Testing numeric(10,5):
+Testing numeric(10,5): 
 ****Encrypted default type is compatible with encrypted numeric(10,5)****
 c_det: -21474.83647
 c_rand: 21474.83647
 
-Testing float:
+Testing float: 
 ****Encrypted default type is compatible with encrypted float****
 c_det: -9223372036.8548
 c_rand: 9223372036.8548
 
-Testing real:
+Testing real: 
 ****Encrypted default type is compatible with encrypted real****
 c_det: -2147.4829101562
 c_rand: 2147.4829101562

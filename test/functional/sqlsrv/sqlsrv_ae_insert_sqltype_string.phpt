@@ -84,14 +84,14 @@ sqlsrv_close( $conn );
 ?>
 --EXPECT--
 
-Testing char(5):
+Testing char(5): 
 Test successfully.
 
-Testing varchar(max):
+Testing varchar(max): 
 Test successfully.
 
-Testing nchar(5):
+Testing nchar(5): 
 Test successfully.
 
-Testing nvarchar(max):
+Testing nvarchar(max): 
 Test successfully.

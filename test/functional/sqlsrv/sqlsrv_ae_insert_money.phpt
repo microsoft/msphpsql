@@ -70,8 +70,8 @@ sqlsrv_close( $conn );
 ?>
 --EXPECT--
 
-Testing smallmoney:
+Testing smallmoney: 
 Test successfully.
 
-Testing money:
+Testing money: 
 Test successfully.

@@ -144,22 +144,22 @@ sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );
 
 ?>
---EXPECT--
+--EXPECTREGEX--
 intOut: 2147483647
 smallintOut: 32767
 tinyintOut: 255
 bitOut: 1
-bigintOut: 9.2233720368548E+17
-decimalOut: 9223372036854.8
-numericOut: 21474.83647
-floatOut: 9223372036.8548
-realOut: 2147.4829101562
+bigintOut: 9.2233720368548E\+17
+decimalOut: 9223372036854\.8
+numericOut: 21474\.83647
+floatOut: 9223372036\.8548
+realOut: 2147\.4829101562
 dateOut: 9999-12-31
-datetimeOut: 9999-12-31 23:59:59.997
-datetime2Out: 9999-12-31 23:59:59.9999999
-datetimeoffsetOut: 9999-12-31 23:59:59.9999999 +14:00
-timeOut: 23:59:59.9999999
-charOut: th, n
-varcharOut: This large row size can cause errors (such as error 512) during some normal operations, such as a clustered index key update, or sorts of the full column set, which users cannot anticipate until performing an operation.
+datetimeOut: (9999-12-31 23:59:59\.997|Dec 31 9999 11:59PM)
+datetime2Out: 9999-12-31 23:59:59\.9999999
+datetimeoffsetOut: 9999-12-31 23:59:59\.9999999 \+14:00
+timeOut: 23:59:59\.9999999
+charOut: th\, n
+varcharOut: This large row size can cause errors \(such as error 512\) during some normal operations\, such as a clustered index key update\, or sorts of the full column set\, which users cannot anticipate until performing an operation\.
 ncharOut: th Un
-nvarcharOut: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
+nvarcharOut: When prefixing a string constant with the letter N\, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type \(4,000\)\.

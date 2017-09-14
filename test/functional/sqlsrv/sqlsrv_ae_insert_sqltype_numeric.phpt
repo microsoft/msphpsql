@@ -104,29 +104,29 @@ sqlsrv_close( $conn );
 ?>
 --EXPECT--
 
-Testing bit:
+Testing bit: 
 Test successfully.
 
-Testing tinyint:
+Testing tinyint: 
 Test successfully.
 
-Testing smallint:
+Testing smallint: 
 Test successfully.
 
-Testing int:
+Testing int: 
 Test successfully.
 
-Testing bigint:
+Testing bigint: 
 Test successfully.
 
-Testing decimal(18,5):
+Testing decimal(18,5): 
 Test successfully.
 
-Testing numeric(10,5):
+Testing numeric(10,5): 
 Test successfully.
 
-Testing float:
+Testing float: 
 Test successfully.
 
-Testing real:
+Testing real: 
 Test successfully.
