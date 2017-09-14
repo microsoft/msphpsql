@@ -25,8 +25,6 @@ try
         create_table( $conn, $tbname, $colMetaArr );
         
         // prepare statement for inserting into table
-        $insertSql = get_insert_sql( $tbname, 3 );
-        
         foreach ( $pdoParamTypes as $pdoParamType ) {
             // insert a row
             $inputValues = array_slice( ${explode( "(", $dataType )[0] . "_params"}, 1, 2 );

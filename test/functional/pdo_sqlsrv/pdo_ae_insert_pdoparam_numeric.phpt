@@ -57,8 +57,8 @@ Testing bit:
 c_det: 1
 c_rand: 0
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted bit****
-c_det:
-c_rand:
+c_det: 
+c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted bit****
 c_det: 1
 c_rand: 0
@@ -74,8 +74,8 @@ Testing tinyint:
 c_det: 0
 c_rand: 1
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted tinyint****
-c_det:
-c_rand:
+c_det: 
+c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted tinyint****
 c_det: 0
 c_rand: 255
@@ -91,8 +91,8 @@ Testing smallint:
 c_det: 1
 c_rand: 1
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted smallint****
-c_det:
-c_rand:
+c_det: 
+c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted smallint****
 c_det: -32767
 c_rand: 32767
@@ -108,8 +108,8 @@ Testing int:
 c_det: 1
 c_rand: 1
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted int****
-c_det:
-c_rand:
+c_det: 
+c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted int****
 c_det: -2147483647
 c_rand: 2147483647
@@ -125,8 +125,8 @@ Testing decimal(18,5):
 c_det: -9223372036854.80078
 c_rand: 9223372036854.80078
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted decimal(18,5)****
-c_det:
-c_rand:
+c_det: 
+c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted decimal(18,5)****
 c_det: -9223372036854.80078
 c_rand: 9223372036854.80078
@@ -142,8 +142,8 @@ Testing numeric(10,5):
 c_det: -21474.83647
 c_rand: 21474.83647
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted numeric(10,5)****
-c_det:
-c_rand:
+c_det: 
+c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted numeric(10,5)****
 c_det: -21474.83647
 c_rand: 21474.83647
@@ -159,8 +159,8 @@ Testing float:
 c_det: -9223372036.8547993
 c_rand: 9223372036.8547993
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted float****
-c_det:
-c_rand:
+c_det: 
+c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted float****
 c_det: -9223372036.8547993
 c_rand: 9223372036.8547993
@@ -176,8 +176,8 @@ Testing real:
 c_det: -2147.4829
 c_rand: 2147.4829
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted real****
-c_det:
-c_rand:
+c_det: 
+c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted real****
 c_det: -2147.4829
 c_rand: 2147.4829
