@@ -2,7 +2,7 @@
 Test for inserting and retrieving encrypted string types data
 Bind params using sqlsrv_prepare without any sql_type specified
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';

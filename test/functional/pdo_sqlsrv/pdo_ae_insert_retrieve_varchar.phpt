@@ -1,7 +1,7 @@
 --TEST--
 Test for inserting encrypted varchar data of variable lengths and retrieving encrypted and decrypted data
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsSetup.inc';
@@ -38,7 +38,6 @@ try
         }
     }
     unset( $stmt );
-    unset( $conn );
 }
 catch( PDOException $e )
 {
@@ -50,8 +49,8 @@ if ( $keystore != "none" )
 {
     try
     {
-        $conn = connect( null, null, true );
-        $stmt = $conn->query( $selectSql );
+        $conn1 = connect( null, null, true );
+        $stmt = $conn1->query( $selectSql );
         while ( $decrypted_row = $stmt->fetch( PDO::FETCH_ASSOC )) 
         {
             if ( $decrypted_row[ 'CharCount' ] == strlen( $decrypted_row[ get_default_colname( "varchar(1000)" ) ] )) 
@@ -62,19 +61,21 @@ if ( $keystore != "none" )
             }
         }
 
-        if ( $testPass ) {
-            echo "Test successfully.\n";
-        }
-
-        DropTable( $conn, $tbname );
         unset( $stmt );
-        unset( $conn );
+        unset( $conn1 );
     }
     catch( PDOException $e )
     {
         echo $e->getMessage();
     }
 }
+
+DropTable( $conn, $tbname );
+unset( $conn );
+
+if ( $testPass ) {
+    echo "Test successfully done.\n";
+}
 ?>
 --EXPECT--
-Test successfully.
+Test successfully done.

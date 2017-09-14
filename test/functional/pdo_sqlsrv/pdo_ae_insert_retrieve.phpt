@@ -2,7 +2,7 @@
 Test for inserting encrypted data and retrieving both encrypted and decrypted data
 Retrieving SQL query contains encrypted filter
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsSetup.inc';
@@ -39,7 +39,6 @@ try
         print "$key: $value\n";
     }
     unset( $stmt );
-    unset( $conn );
 }
 catch( PDOException $e )
 {
@@ -47,29 +46,33 @@ catch( PDOException $e )
 }
 
 // for AE only
-echo "\nRetrieving ciphertext data:\n";
+echo "\nChecking ciphertext data:\n";
 if ( $keystore != "none" )
-    {
+{
     try
     {
-        $conn = ae_connect( null, null, true );
+        $conn1 = ae_connect( null, null, true );
         $selectSql = "SELECT SSN, FirstName, LastName, BirthDate FROM $tbname";
-        $stmt = $conn->query( $selectSql );
+        $stmt = $conn1->query( $selectSql );
         $encrypted_row = $stmt->fetch( PDO::FETCH_ASSOC );
         foreach ( $encrypted_row as $key => $value )
         {
-            if ( !ctype_print( $value ))
-                print "Binary array returned for $key\n";
+            if ( ctype_print( $value ))
+                print "Error: expected a binary array for $key\n";
         }
-        //DropTable( $conn, $tbname );
         unset( $stmt );
-        unset( $conn );
+        unset( $conn1 );
     }
     catch( PDOException $e )
     {
         echo $e->getMessage();
     }
 }
+
+DropTable( $conn, $tbname );
+unset( $conn );
+
+echo "Done\n";
 ?>
 --EXPECT--
 Retrieving plaintext data:
@@ -78,8 +81,5 @@ FirstName: Catherine
 LastName: Abel
 BirthDate: 1996-10-19
 
-Retrieving ciphertext data:
-Binary array returned for SSN
-Binary array returned for FirstName
-Binary array returned for LastName
-Binary array returned for BirthDate
+Checking ciphertext data:
+Done

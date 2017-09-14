@@ -1,7 +1,7 @@
 --TEST--
 Test for binding output parameter of encrypted values for all types
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';

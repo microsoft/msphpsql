@@ -1,6 +1,6 @@
 --TEST--
 Test for inserting and retrieving encrypted datetime types data
-Binding parameters in PDOstatement::execute
+No PDO::PARAM_ type specified when binding parameters
 --SKIPIF--
 
 --FILE--

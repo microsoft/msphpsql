@@ -1,7 +1,7 @@
 --TEST--
 Test for inserting encrypted fixed size types data and retrieve both encrypted and decrypted data
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';
@@ -27,7 +27,7 @@ create_table( $conn, $tbname, $colMetaArr );
 $inputs = array( "TinyIntData" => 255, 
                  "SmallIntData" => 32767, 
                  "IntData" => 2147483647, 
-                 "BigIntData" => 9223372036854774784, 
+                 "BigIntData" => 92233720368547, 
                  "DecimalData" => 79228162514264, 
                  "BitData" => true, 
                  "DateTimeData" => '9999-12-31 23:59:59.997', 
@@ -38,36 +38,36 @@ print "Decrypted values:\n";
 fetch_all( $conn, $tbname );
 
 sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
 
 // for AE only
 if ( $keystore != "none" )
 {
-    $conn = connect( null, true );
+    $conn1 = connect( null, true );
    
-    print "\nEncrypted values:\n";
     $selectSql = "SELECT * FROM $tbname";
-    $stmt = sqlsrv_query( $conn, $selectSql );
+    $stmt = sqlsrv_query( $conn1, $selectSql );
     $encrypted_row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC );
     foreach( $encrypted_row as $key => $value )
     {
-        if ( !ctype_print( $value ))
-        {
-            print "Binary array returned for $key\n";
-        }
+        if ( ctype_print( $value ))
+            print "Error: expected a binary array for $key!\n";
     }
-
-    DropTable( $conn, $tbname );
     sqlsrv_free_stmt( $stmt );
-    sqlsrv_close( $conn );
+    sqlsrv_close( $conn1 );
 }
+
+DropTable( $conn, $tbname );
+sqlsrv_close( $conn );
+
+echo "Done\n";
+
 ?>
 --EXPECT--
 Decrypted values:
 TinyIntData: 255
 SmallIntData: 32767
 IntData: 2147483647
-BigIntData: 9223372036854774784
+BigIntData: 92233720368547
 DecimalData: 79228162514264
 BitData: 1
 DateTimeData:
@@ -78,13 +78,4 @@ DateTime2Data:
   date: 9999-12-31 23:59:59.1000000
   timezone_type: 3
   timezone: UTC
-
-Encrypted values:
-Binary array returned for TinyIntData
-Binary array returned for SmallIntData
-Binary array returned for IntData
-Binary array returned for BigIntData
-Binary array returned for DecimalData
-Binary array returned for BitData
-Binary array returned for DateTimeData
-Binary array returned for DateTime2Data
+Done

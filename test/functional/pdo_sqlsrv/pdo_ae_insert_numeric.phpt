@@ -1,8 +1,8 @@
 --TEST--
 Test for inserting and retrieving encrypted numeric types data
-Binding parameters in PDOstatement::execute
+No PDO::PARAM_ tpe specified when binding parameters
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';

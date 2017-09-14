@@ -1,7 +1,7 @@
 --TEST--
 Test for inserting encrypted varchar data of variable lengths and retrieving encrypted and decrypted data
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';
@@ -36,13 +36,12 @@ while ( $decrypted_row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ))
     }
 }
 sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
 
 // for AE only
 if ( $keystore != "none" )
 {
-    $conn = ae_connect( null, true );
-    $stmt = sqlsrv_query( $conn, $selectSql );
+    $conn1 = ae_connect( null, true );
+    $stmt = sqlsrv_query( $conn1, $selectSql );
     while ( $encrypted_row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ))
     {
         if ( $encrypted_row[ 'CharCount' ] == strlen( $encrypted_row[ get_default_colname( "varchar(1000)" ) ] ))
@@ -52,14 +51,17 @@ if ( $keystore != "none" )
             $testPass = false;
         }
     }
-
-    if ( $testPass ) {
-        echo "Test successfully.\n";
-    }
-    DropTable( $conn, $tbname );
     sqlsrv_free_stmt( $stmt );
-    sqlsrv_close( $conn );
+    sqlsrv_close( $conn1 );
 }
+
+DropTable( $conn, $tbname );
+sqlsrv_close( $conn );
+
+if ( $testPass ) {
+    echo "Test successfully done.\n";
+}
+
 ?>
 --EXPECT--
-Test successfully.
+Test successfully done.

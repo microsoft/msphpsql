@@ -2,7 +2,7 @@
 Test for inserting encrypted data and retrieving both encrypted and decrypted data
 Retrieving SQL query contains encrypted filter
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';
@@ -44,25 +44,29 @@ foreach ( $decrypted_row as $key => $value )
     }
 }
 sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
 
 //for AE only
-echo "\nRetrieving ciphertext data:\n";
+echo "\nChecking ciphertext data:\n";
 if ( $keystore != "none" )
 {
-    $conn = ae_connect( null, true );
+    $conn1 = ae_connect( null, true );
     $selectSql = "SELECT SSN, FirstName, LastName, BirthDate FROM $tbname";
-    $stmt = sqlsrv_query( $conn, $selectSql );
+    $stmt = sqlsrv_query( $conn1, $selectSql );
     $encrypted_row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC );
     foreach( $encrypted_row as $key => $value )
     {
-        if ( !ctype_print( $value ))
-            print "Binary array returned for $key\n";
+        if ( ctype_print( $value ))
+            print "Error: expected a binary array for $key!\n";
     }
-    DropTable( $conn, $tbname );
+    
     sqlsrv_free_stmt( $stmt );
-    sqlsrv_close( $conn );
+    sqlsrv_close( $conn1 );
 }
+
+DropTable( $conn, $tbname );
+sqlsrv_close( $conn );
+
+echo "Done";
 
 ?>
 --EXPECT--
@@ -75,8 +79,5 @@ BirthDate:
   timezone_type: 3
   timezone: UTC
 
-Retrieving ciphertext data:
-Binary array returned for SSN
-Binary array returned for FirstName
-Binary array returned for LastName
-Binary array returned for BirthDate
+Checking ciphertext data:
+Done

@@ -2,7 +2,7 @@
 Test for inserting and retrieving encrypted numeric types data
 Use PDOstatement::bindParam with all PDO::PARAM_ types
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';
