@@ -403,7 +403,7 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
-        { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option. For the list of valid connection options visit https://docs.microsoft.com/en-us/sql/connect/php/connection-options", -79, true }
+        { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option.", -79, true }
     },
     { UINT_MAX, {} }
 };

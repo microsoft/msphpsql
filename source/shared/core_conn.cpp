@@ -887,8 +887,7 @@ void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_l
 }   // namespace
 
 // simply add the parsed value to the connection string
-void conn_str_append_func::func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str 
-                                 TSRMLS_DC )
+void conn_str_append_func::func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str TSRMLS_DC )
 {
     const char* val_str = Z_STRVAL_P( value );
     size_t val_len = Z_STRLEN_P( value );
@@ -897,29 +896,23 @@ void conn_str_append_func::func( _In_ connection_option const* option, _In_ zval
 
 // do nothing for connection pooling since we handled it earlier when
 // deciding which environment handle to use.
-void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ 
-                      TSRMLS_DC )
+void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC )
 {    
     TSRMLS_C;
 }
 
 void driver_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
 {
-    convert_to_string( value );
-    const char* value_str = Z_STRVAL_P( value );
-
-    std::string driver_option( option->odbc_name );
-    driver_option += "=";
-    driver_option += value_str;
-    driver_option += ";";
-
-    CHECK_CUSTOM_ERROR( std::find( CONNECTION_STRING_DRIVER_NAME.begin(), CONNECTION_STRING_DRIVER_NAME.end(), driver_option) == CONNECTION_STRING_DRIVER_NAME.end(), conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, value_str){
+    const char* val_str = Z_STRVAL_P( value );
+    size_t val_len = Z_STRLEN_P( value );
+    std::string driver_option( "" );
+    common_conn_str_append_func( option->odbc_name, val_str, val_len, driver_option TSRMLS_CC );
+   
+    CHECK_CUSTOM_ERROR( std::find( CONNECTION_STRING_DRIVER_NAME.begin(), CONNECTION_STRING_DRIVER_NAME.end(), driver_option) == CONNECTION_STRING_DRIVER_NAME.end(), conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, val_str){
         throw core::CoreException();
-    }
-    
+    } 
     conn->is_driver_set = true;
     conn_str += driver_option;
-
 }
 
 void column_encryption_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
@@ -938,7 +931,6 @@ void column_encryption_set_func::func( _In_ connection_option const* option, _In
     conn_str += value_str;
     conn_str += ";";
 }
-
 
 void ce_ksp_provider_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
 {

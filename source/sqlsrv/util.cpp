@@ -392,13 +392,13 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
         { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -104, false}
     },
-	{
-		SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+    {
+        SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
         { IMSSP, (SQLCHAR*) "This extension requires Microsoft ODBC Driver 17 for SQL Server when ColumnEncryption attribute is enabled.", -105, false }
     },
     {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
-        { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option. For the list of valid connection options visit https://docs.microsoft.com/en-us/sql/connect/php/connection-options", -106, true }
+        { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option.", -106, true }
     },
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
