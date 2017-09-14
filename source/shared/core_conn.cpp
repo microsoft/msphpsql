@@ -165,6 +165,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     else {
 
         for ( std::size_t i = DRIVER_VERSION::FIRST; i <= DRIVER_VERSION::LAST; ++i ) {
+            missing_driver_error = false;
             std::string conn_str_driver = conn_str + CONNECTION_STRING_DRIVER_NAME[ DRIVER_VERSION(i) ];
             r = core_odbc_connect( conn, conn_str_driver, missing_driver_error, is_pooled );
             CHECK_CUSTOM_ERROR( missing_driver_error && ( i == DRIVER_VERSION::LAST ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
