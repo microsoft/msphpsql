@@ -91,13 +91,13 @@ conn native code and native message are NULL\.
 
 Warning: PDOStatement::bindParam\(\): SQLSTATE\[HY093\]: Invalid parameter number: parameter was not defined in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
 
-Warning: PDOStatement::execute\(\): SQLSTATE\[07002\]: COUNT field incorrect: 0 \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]COUNT field incorrect or syntax error in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
+Warning: PDOStatement::execute\(\): SQLSTATE\[07002\]: COUNT field incorrect: 0 \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]COUNT field incorrect or syntax error in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
 Statement error info:
 Array
 \(
     \[0\] => 07002
     \[1\] => 0
-    \[2\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]COUNT field incorrect or syntax error
+    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]COUNT field incorrect or syntax error
 \)
 Connection error info:
 Array

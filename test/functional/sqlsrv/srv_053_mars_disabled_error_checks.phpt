@@ -32,27 +32,27 @@ sqlsrv_close($conn);
 print "Done"
 ?>
 
---EXPECT--
+--EXPECTREGEX--
 Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -44
-            [code] => -44
-            [2] => The connection cannot process this operation because there is a statement with pending results.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.
-            [message] => The connection cannot process this operation because there is a statement with pending results.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.
-        )
+\(
+    \[0\] => Array
+        \(
+            \[0\] => IMSSP
+            \[SQLSTATE\] => IMSSP
+            \[1\] => -44
+            \[code\] => -44
+            \[2\] => The connection cannot process this operation because there is a statement with pending results\.  To make the connection available for other queries, either fetch all results or cancel or free the statement\.  For more information, see the product documentation about the MultipleActiveResultSets connection option\.
+            \[message\] => The connection cannot process this operation because there is a statement with pending results\.  To make the connection available for other queries, either fetch all results or cancel or free the statement\.  For more information, see the product documentation about the MultipleActiveResultSets connection option\.
+        \)
 
-    [1] => Array
-        (
-            [0] => HY000
-            [SQLSTATE] => HY000
-            [1] => 0
-            [code] => 0
-            [2] => [Microsoft][ODBC Driver 13 for SQL Server]Connection is busy with results for another command
-            [message] => [Microsoft][ODBC Driver 13 for SQL Server]Connection is busy with results for another command
-        )
+    \[1\] => Array
+        \(
+            \[0\] => HY000
+            \[SQLSTATE\] => HY000
+            \[1\] => 0
+            \[code\] => 0
+            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Connection is busy with results for another command
+            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Connection is busy with results for another command
+        \)
 
-)
+\)

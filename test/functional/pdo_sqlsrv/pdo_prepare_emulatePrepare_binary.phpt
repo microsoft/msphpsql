@@ -79,7 +79,7 @@ Array
 \)
 Prepare with emulate prepare and no bindparam options:
 
-Fatal error: Uncaught PDOException: SQLSTATE\[42000\]: \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type varchar to varbinary\(max\) is not allowed\. Use the CONVERT function to run this query\. in .+(\/|\\)pdo_prepare_emulatePrepare_binary\.php:[0-9]+
+Fatal error: Uncaught PDOException: SQLSTATE\[42000\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type varchar to varbinary\(max\) is not allowed\. Use the CONVERT function to run this query\. in .+(\/|\\)pdo_prepare_emulatePrepare_binary\.php:[0-9]+
 Stack trace:
 #0 .+(\/|\\)pdo_prepare_emulatePrepare_binary\.php\([0-9]+\): PDOStatement->execute\(\)
 #1 {main}

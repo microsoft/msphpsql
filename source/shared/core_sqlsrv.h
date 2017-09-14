@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.0 for PHP for SQL Server
+// Microsoft Drivers 5.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -173,6 +173,8 @@ const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
 const int SQL_SERVER_MAX_PRECISION = 38;
 const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
+// increase the maximum message length to accommodate for the long error returned for operand type clash
+const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 4;
 
 // max size of a date time string when converting from a DateTime object to a string
 const int MAX_DATETIME_STRING_LEN = 256;
@@ -773,9 +775,9 @@ struct sqlsrv_error : public sqlsrv_error_const {
     sqlsrv_error( _In_ SQLCHAR* sql_state, _In_ SQLCHAR* message, _In_ SQLINTEGER code, _In_ bool printf_format = false )
     {
         sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
-        native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_MESSAGE_LENGTH + 1 ));
+        native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
         strcpy_s( reinterpret_cast<char*>( sqlstate ), SQL_SQLSTATE_BUFSIZE, reinterpret_cast<const char*>( sql_state ));
-        strcpy_s( reinterpret_cast<char*>( native_message ), SQL_MAX_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>( message ));
+        strcpy_s( reinterpret_cast<char*>( native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>( message ));
         native_code = code;
         format = printf_format;
     }
@@ -1849,11 +1851,11 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[ SQL_MAX_MESSAGE_LENGTH + 1 ] = { '\0' };
+            SQLCHAR err_msg[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { '\0' };
             SQLSMALLINT len = 0;
             
             SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
-                                             err_msg, SQL_MAX_MESSAGE_LENGTH, &len );
+                                             err_msg, SQL_MAX_ERROR_MESSAGE_LENGTH, &len );
 
             CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt ) {
          
@@ -1982,6 +1984,17 @@ namespace core {
 			throw CoreException();
 		}
 	}
+
+    inline void SQLDescribeParam( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT paramno, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
+        _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
+    {
+        SQLRETURN r;
+        r = ::SQLDescribeParam( stmt->handle(), paramno, data_type, col_size, decimal_digits, nullable );
+
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
+    }
 
     inline void SQLEndTran( _In_ SQLSMALLINT handleType, _Inout_ sqlsrv_conn* conn, _In_ SQLSMALLINT completionType TSRMLS_DC )
     {
@@ -2202,6 +2215,17 @@ namespace core {
         }
     }
 
+    inline void SQLSetDescField( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_( str_len ) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  TSRMLS_DC )
+    {
+        SQLRETURN r;
+        SQLHDESC hIpd = NULL;
+        core::SQLGetStmtAttr( stmt, SQL_ATTR_IMP_PARAM_DESC, &hIpd, 0, 0 );
+        r = ::SQLSetDescField( hIpd, rec_num, fld_id, value_ptr, str_len );
+
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
+    }
 
     inline void SQLSetEnvAttr( _Inout_ sqlsrv_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
     {

@@ -45,5 +45,5 @@ echo "$count sales accounted for the first $$salesTotal in revenue.\n";
 /* Cancel the pending results. The statement can be reused. */
 sqlsrv_cancel( $stmt);
 ?>
---EXPECT--
-57 sales accounted for the first $104171.7607 in revenue.
+--EXPECTREGEX--
+[3-5][0-9] sales accounted for the first \$10[0-9]{4}\.[0-9]{2,4} in revenue.

@@ -236,8 +236,8 @@ Array
             \[SQLSTATE\] => HY109
             \[1\] => 0
             \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]Invalid cursor position
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]Invalid cursor position
+            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid cursor position
+            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid cursor position
         \)
 
 \)
