@@ -442,7 +442,7 @@ function is_col_enc()
 {
     require  'MsSetup.inc';
     if ( $keystore == "none" )
-        return false
+        return false;
     else
         return true;
 }
