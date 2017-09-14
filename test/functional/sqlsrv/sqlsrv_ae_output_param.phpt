@@ -5,8 +5,6 @@ Test for binding output parameter of encrypted values for a sample emplolyee tab
 --FILE--
 <?php
 include 'MsCommon.inc';
-include 'MsSetup.inc';
-include 'AEData.inc';
 
 $conn = ae_connect();
 

@@ -6,8 +6,6 @@ Retrieving SQL query contains encrypted filter
 --FILE--
 <?php
 include 'MsCommon.inc';
-include 'MsSetup.inc';
-include 'AEData.inc';
 
 $conn = ae_connect();
 
@@ -47,7 +45,7 @@ sqlsrv_free_stmt( $stmt );
 
 //for AE only
 echo "\nChecking ciphertext data:\n";
-if ( $keystore != "none" )
+if ( is_col_enc() )
 {
     $conn1 = ae_connect( null, true );
     $selectSql = "SELECT SSN, FirstName, LastName, BirthDate FROM $tbname";

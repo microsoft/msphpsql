@@ -189,7 +189,7 @@ function get_default_colname( $dataType )
  * Create a table
  * @param object $conn : PDO connection object
  * @param string $tbname : name of the table to be created
- * @param array $columnMetaAee : array of columnMeta objects, which contain metadata for one column
+ * @param array $columnMetaArr : array of columnMeta objects, which contain metadata for one column
  */
 function create_table( $conn, $tbname, $columnMetaArr )
 {
@@ -325,13 +325,18 @@ function insert_row( $conn, $tbname, $inputs, &$r = null, $api = "query", $param
 
 /**
  * @param string $tbname : name of the table for an insert sql
- * @param array $input : associative array containing a key value pair of column name and data to put into an insert sql string
+ * @param array $inputs : associative array containing a key value pair of column name and data to put into an insert sql string
  * @return string a complete insert sql string
  */
 function get_insertSql_complete( $tbname, $inputs )
 {
     $colStr = "INSERT INTO $tbname (";
     $valStr = "VALUES (";
+    if ( empty( $inputs ))
+    {
+        echo "get_insertSql_complete: inputs for inserting a row cannot be empty.\n";
+        return;
+    }
     foreach( $inputs as $key => $value )
     {
         $colStr .= $key . ", ";
@@ -358,6 +363,11 @@ function get_insertSql_placeholders( $tbname, $inputs )
 {
     $colStr = "INSERT INTO $tbname (";
     $valStr = "VALUES (";
+    if ( empty( $inputs ))
+    {
+        echo "get_insertSql_placeholders: inputs for inserting a row cannot be empty.\n";
+        return;
+    }
     foreach( $inputs as $key => $value )
     {
         $colStr .= $key . ", ";
@@ -388,6 +398,11 @@ function get_callProcSql_placeholders( $spname, $num )
  */
 function get_seq_placeholders( $num )
 {
+    if ( $num < 0 )
+    {
+        echo "get_seq_placeholders: num provided for creating a sequence of placeholders cannot be less than 0.\n";
+        return;
+    }
     $placeholderStr = str_repeat( "?, ", $num );
     $placeholderStr = rtrim( $placeholderStr, ", " );
     return $placeholderStr;
@@ -417,6 +432,19 @@ function fetch_all( $conn, $tbname ) {
         var_dump( $e );
         exit;
     }
+}
+
+
+/**
+ * @return bool false if $keystore specified in MsSetup.inc is none, otherwise return true
+ */
+function is_col_enc()
+{
+    require  'MsSetup.inc';
+    if ( $keystore == "none" )
+        return false
+    else
+        return true;
 }
 
 
@@ -1461,7 +1489,7 @@ function CreateUniqueIndexEx($conn, $tableName, $tableIndex, $colIndex)
 
 function DropTable($conn, $tableName)
 {
-    $tsql = "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName"
+    $tsql = "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName";
     if (IsPdoMode())
     {
         $mode = $conn->getAttribute(PDO::ATTR_ERRMODE);

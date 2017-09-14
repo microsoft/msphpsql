@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted string types data
+Test for inserting and retrieving encrypted data of string types
 Bind params using sqlsrv_prepare without any sql_type specified
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ Bind params using sqlsrv_prepare without any sql_type specified
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
 $conn = ae_connect();
@@ -17,8 +16,7 @@ foreach ( $dataTypes as $dataType ) {
     
     // create table
     $tbname = GetTempTableName( "", false );
-    $tbname = "test_numeric";
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
     create_table( $conn, $tbname, $colMetaArr );
     
     // insert a row
@@ -32,7 +30,7 @@ foreach ( $dataTypes as $dataType ) {
         echo "****Encrypted default type is compatible with encrypted $dataType****\n";
         fetch_all( $conn, $tbname );
     }
-    //DropTable( $conn, $tbname );
+    DropTable( $conn, $tbname );
 }
 sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );

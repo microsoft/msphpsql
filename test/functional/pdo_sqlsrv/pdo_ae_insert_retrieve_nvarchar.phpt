@@ -4,9 +4,7 @@ Test for inserting encrypted nvarchar data of variable lengths and retrieving en
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-include 'MsSetup.inc';
 include 'MsCommon.inc';
-include 'AEData.inc';
 
 $testPass = true;
 try
@@ -44,7 +42,7 @@ catch( PDOException $e )
 }
 
 // for AE only
-if ( $keystore != "none" )
+if ( is_col_enc() )
 {
     try
     {

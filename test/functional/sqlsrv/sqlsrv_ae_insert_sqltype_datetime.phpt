@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted datetime types data
+Test for inserting and retrieving encrypted data of datetime types
 Bind params using sqlsrv_prepare with all sql_type
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ Bind params using sqlsrv_prepare with all sql_type
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
 $compatList = array( "date" => array( "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_DATETIME2", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_VARCHAR"),
@@ -25,7 +24,7 @@ foreach ( $dataTypes as $dataType ) {
     
     // create table
     $tbname = GetTempTableName( "", false );
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
     create_table( $conn, $tbname, $colMetaArr );
     
     // test each SQLSRV_SQLTYPE_ constants
@@ -38,7 +37,7 @@ foreach ( $dataTypes as $dataType ) {
         $r;
         $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r, "prepareParamsOp", $paramOp );
         
-        if ( $keystore == "none" )
+        if ( !is_col_enc() )
         {
             if ( $r === false  )
             {
@@ -83,7 +82,7 @@ foreach ( $dataTypes as $dataType ) {
         sqlsrv_query( $conn, "TRUNCATE TABLE $tbname" );
     }
     if ( $success )
-        echo "Test successfully.\n";
+        echo "Test successfully done.\n";
     DropTable( $conn, $tbname );
 }
 sqlsrv_free_stmt( $stmt );
@@ -92,19 +91,19 @@ sqlsrv_close( $conn );
 --EXPECT--
 
 Testing date: 
-Test successfully.
+Test successfully done.
 
 Testing datetime: 
-Test successfully.
+Test successfully done.
 
 Testing datetime2: 
-Test successfully.
+Test successfully done.
 
 Testing smalldatetime: 
-Test successfully.
+Test successfully done.
 
 Testing time: 
-Test successfully.
+Test successfully done.
 
 Testing datetimeoffset: 
-Test successfully.
+Test successfully done.

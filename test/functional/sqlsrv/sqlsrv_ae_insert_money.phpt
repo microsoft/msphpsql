@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted money types data
+Test for inserting and retrieving encrypted data of money types
 Bind params using sqlsrv_prepare without any sql_type specified
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ Bind params using sqlsrv_prepare without any sql_type specified
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "smallmoney", "money" );
 $conn = ae_connect();
@@ -18,7 +17,7 @@ foreach ( $dataTypes as $dataType ) {
     
     // create table
     $tbname = GetTempTableName( "", false );
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
     create_table( $conn, $tbname, $colMetaArr );
     
     // insert a row
@@ -26,7 +25,7 @@ foreach ( $dataTypes as $dataType ) {
     $r;
     $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r );
     
-    if ( $keystore == "none" )
+    if ( !is_col_enc() )
     {
         if ( $r === false )
         {
@@ -62,7 +61,7 @@ foreach ( $dataTypes as $dataType ) {
         }
     }
     if ( $success )
-        echo "Test successfully.\n";
+        echo "Test successfully done.\n";
     DropTable( $conn, $tbname );
 }
 sqlsrv_free_stmt( $stmt );
@@ -71,7 +70,7 @@ sqlsrv_close( $conn );
 --EXPECT--
 
 Testing smallmoney: 
-Test successfully.
+Test successfully done.
 
 Testing money: 
-Test successfully.
+Test successfully done.

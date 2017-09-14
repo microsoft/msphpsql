@@ -4,9 +4,7 @@ Test for inserting encrypted fixed size types data and retrieve both encrypted a
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-include 'MsSetup.inc';
 include 'MsCommon.inc';
-include 'AEData.inc';
 
 try
 {
@@ -48,7 +46,7 @@ catch( PDOException $e )
 }
 
 // for AE only
-if ( $keystore != "none" )
+if ( is_col_enc() )
 {
     try
     {

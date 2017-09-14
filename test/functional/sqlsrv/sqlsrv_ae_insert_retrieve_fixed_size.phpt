@@ -5,8 +5,6 @@ Test for inserting encrypted fixed size types data and retrieve both encrypted a
 --FILE--
 <?php
 include 'MsCommon.inc';
-include 'MsSetup.inc';
-include 'AEData.inc';
 
 $conn = ae_connect();
 $testPass = true;
@@ -40,7 +38,7 @@ fetch_all( $conn, $tbname );
 sqlsrv_free_stmt( $stmt );
 
 // for AE only
-if ( $keystore != "none" )
+if ( is_col_enc() )
 {
     $conn1 = connect( null, true );
    

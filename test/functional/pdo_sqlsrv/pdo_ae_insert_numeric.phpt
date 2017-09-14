@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted numeric types data
+Test for inserting and retrieving encrypted data of numeric types
 No PDO::PARAM_ tpe specified when binding parameters
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ No PDO::PARAM_ tpe specified when binding parameters
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5)", "numeric(10,5)", "float", "real" );
 

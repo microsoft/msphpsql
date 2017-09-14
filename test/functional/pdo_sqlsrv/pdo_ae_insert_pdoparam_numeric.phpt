@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted numeric types data
+Test for inserting and retrieving encrypted data of numeric types
 Use PDOstatement::bindParam with all PDO::PARAM_ types
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ Use PDOstatement::bindParam with all PDO::PARAM_ types
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "bit", "tinyint", "smallint", "int", "decimal(18,5)", "numeric(10,5)", "float", "real" );
 

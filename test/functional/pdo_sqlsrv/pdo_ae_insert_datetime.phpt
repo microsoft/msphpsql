@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted datetime types data
+Test for inserting and retrieving encrypted data of datetime types
 No PDO::PARAM_ type specified when binding parameters
 --SKIPIF--
 
@@ -7,7 +7,6 @@ No PDO::PARAM_ type specified when binding parameters
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
 

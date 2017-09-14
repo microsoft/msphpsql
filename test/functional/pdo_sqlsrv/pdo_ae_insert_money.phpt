@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted money types data
+Test for inserting and retrieving encrypted data of money types
 No PDO::PARAM_ tpe specified when binding parameters
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ No PDO::PARAM_ tpe specified when binding parameters
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "smallmoney", "money" );
 
@@ -30,7 +29,7 @@ try
         $r;
         $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r );
         
-        if ( $keystore == "none" )
+        if ( !is_col_enc() )
         {
             if ( $r === false )
             {
@@ -66,7 +65,7 @@ try
             }
         }
         if ( $success )
-            echo "Test successfully.\n";
+            echo "Test successfully done.\n";
         DropTable( $conn, $tbname );
     }
     unset( $stmt );
@@ -80,7 +79,7 @@ catch( PDOException $e )
 --EXPECT--
 
 Testing smallmoney:
-Test successfully.
+Test successfully done.
 
 Testing money:
-Test successfully.
+Test successfully done.

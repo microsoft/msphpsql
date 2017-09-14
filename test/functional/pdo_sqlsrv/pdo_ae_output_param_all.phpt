@@ -5,8 +5,6 @@ Test for binding output params for encrypted data for all types
 --FILE--
 <?php
 include 'MsCommon.inc';
-include 'MsSetup.inc';
-include 'AEData.inc';
 
 $conn = ae_connect();
 

@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted string types data
+Test for inserting and retrieving encrypted data of string types
 No PDO::PARAM_ type specified when binding parameters
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ No PDO::PARAM_ type specified when binding parameters
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
 

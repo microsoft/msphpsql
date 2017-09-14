@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted money types data
+Test for inserting and retrieving encrypted data of money types
 Use PDOstatement::bindParam with all PDO::PARAM_ types
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ Use PDOstatement::bindParam with all PDO::PARAM_ types
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "smallmoney", "money" );
 
@@ -33,7 +32,7 @@ try
             $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r, "prepareBindParam", array( new bindParamOption( 1, $pdoParamType ), new bindParamOption( 2, $pdoParamType )));
             
             
-            if ( $keystore == "none" )
+            if ( !is_col_enc() )
             {
                 if ( $r === false )
                 {
@@ -73,7 +72,7 @@ try
             $conn->query( "TRUNCATE TABLE $tbname" );
         }
         if ( $success )
-            echo "Test successfully.\n";
+            echo "Test successfully done.\n";
         DropTable( $conn, $tbname );
     }
     unset( $stmt );
@@ -87,7 +86,7 @@ catch( PDOException $e )
 --EXPECT--
 
 Testing smallmoney:
-Test successfully.
+Test successfully done.
 
 Testing money:
-Test successfully.
+Test successfully done.

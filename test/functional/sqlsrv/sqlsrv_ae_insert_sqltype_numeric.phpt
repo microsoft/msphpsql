@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted numeric types data
+Test for inserting and retrieving encrypted data of numeric types
 Bind params using sqlsrv_prepare with all sql_type
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ Bind params using sqlsrv_prepare with all sql_type
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5)", "numeric(10,5)", "float", "real" );
 $compatList = array( "bit" => array( "SQLSRV_SQLTYPE_BIGINT", "SQLSRV_SQLTYPE_BIT", "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_FLOAT", "SQLSRV_SQLTYPE_INT", "SQLSRV_SQLTYPE_MONEY", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_REAL", "SQLSRV_SQLTYPE_SMALLINT", "SQLSRV_SQLTYPE_SMALLMONEY", "SQLSRV_SQLTYPE_TINYINT", "SQLSRV_SQLTYPE_VARCHAR"),
@@ -29,7 +28,7 @@ foreach ( $dataTypes as $dataType ) {
     
     // create table
     $tbname = GetTempTableName( "", false );
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
     create_table( $conn, $tbname, $colMetaArr );
     
     // test each SQLSRV_SQLTYPE_ constants
@@ -42,7 +41,7 @@ foreach ( $dataTypes as $dataType ) {
         $r;
         $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r, "prepareParamsOp", $paramOp );
         
-        if ( $keystore == "none" )
+        if ( !is_col_enc() )
         {
             if ( $r === false  )
             {
@@ -96,7 +95,7 @@ foreach ( $dataTypes as $dataType ) {
         sqlsrv_query( $conn, "TRUNCATE TABLE $tbname" );
     }
     if ( $success )
-        echo "Test successfully.\n";
+        echo "Test successfully done.\n";
     DropTable( $conn, $tbname );
 }
 sqlsrv_free_stmt( $stmt );
@@ -105,28 +104,28 @@ sqlsrv_close( $conn );
 --EXPECT--
 
 Testing bit: 
-Test successfully.
+Test successfully done.
 
 Testing tinyint: 
-Test successfully.
+Test successfully done.
 
 Testing smallint: 
-Test successfully.
+Test successfully done.
 
 Testing int: 
-Test successfully.
+Test successfully done.
 
 Testing bigint: 
-Test successfully.
+Test successfully done.
 
 Testing decimal(18,5): 
-Test successfully.
+Test successfully done.
 
 Testing numeric(10,5): 
-Test successfully.
+Test successfully done.
 
 Testing float: 
-Test successfully.
+Test successfully done.
 
 Testing real: 
-Test successfully.
+Test successfully done.

@@ -86,7 +86,7 @@ function IsAEQualified($conn)
     $server_ver = sqlsrv_server_info($conn)['SQLServerVersion'];
     $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
     $msodbcsql_min = explode(".", $msodbcsql_ver)[1];
-    if ($msodbcsql_maj < 13 || explode('.', $server_ver)[0] < 13)
+    if ($msodbcsql_maj < 17 || explode('.', $server_ver)[0] < 13)
         return false;
     return true;
 }
@@ -223,6 +223,8 @@ function getCekName()
         case "akv":
             $cekName = 'AKVColumnKey';
             break;
+        default:
+            echo "getCekName: Invalid keystore name.\n";
     }
     return $cekName;
 }
@@ -235,11 +237,11 @@ class columnMeta {
     public $colName;
     public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $encType;    //randomized or deterministic; default is deterministic
-    public $options;    //a string that is empty by default (e.g. NOT NULL Identity (1,1) )
+    public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
         
     function __construct( $dataType, $colName = null, $options = null, $encType = "deterministic" )
     {
-        if ( !$colName )
+        if ( is_null( $colName ))
         {
             $this->colName = get_default_colname( $dataType );
         }
@@ -259,17 +261,13 @@ class columnMeta {
         require  'MsSetup.inc';
         $append = " ";
         
+        // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
         if ( $keystore != "none" && stripos( $this->options, "identity" ) === false )
         {
             $cekName = getCekName();
-            $encDet = "ENCRYPTED WITH (ENCRYPTION_TYPE = DETERMINISTIC, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ";
-            $encRand = "ENCRYPTED WITH (ENCRYPTION_TYPE = RANDOMIZED, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ";
             if ( stripos( $this->dataType, "char" ) !== false )
                 $append .= "COLLATE Latin1_General_BIN2 ";
-            if ( $this->encType == "deterministic" )
-                $append .= $encDet;
-            else
-                $append .= $encRand;
+            $append .= sprintf( "ENCRYPTED WITH (ENCRYPTION_TYPE = %s, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ", $this->encType );
         }
         $append .= $this->options;
         $colDef = "[" . $this->colName . "] " . $this->dataType . $append;
@@ -293,14 +291,13 @@ function get_default_colname( $dataType )
  * Create a table
  * @param object $conn : PDO connection object
  * @param string $tbname : name of the table to be created
- * @param array $columnMeta : array of columnMeta objects, which contain metadata for one column
+ * @param array $columnMetaArr : array of columnMeta objects, which contain metadata for one column
  */
-function create_table( $conn, $tbname, $columnMeta )
+function create_table( $conn, $tbname, $columnMetaArr )
 {
-    $dropSql = "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tbname . "') AND type in (N'U')) DROP TABLE $tbname";
-    sqlsrv_query( $conn, $dropSql );
+    DropTable( $conn, $tbname );
     $colDef = "";
-    foreach ( $columnMeta as $meta )
+    foreach ( $columnMetaArr as $meta )
     {
         $colDef = $colDef . $meta->getColDef() . ", ";
     }
@@ -374,11 +371,11 @@ class bindParamOption {
 
 
 /**
- * Create a row into a table
+ * Insert a row into a table
  * @param object $conn : PDO connection object
- * @param string $tbname : name of the table to be created
+ * @param string $tbname : name of the table for the row to be inserted
  * @param array $inputs : an associative array column name and its value
- * @param bool $r : if the row was successfully inserted
+ * @param bool $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
  * $param string $api : SQLSRV API used for executing the insert query
  *                      accepted values: "query", "queryParamsOp", "prepare", "prepareParamsOp"
  * @param array $paramOption : an array of bindParamOptions. Should only be provided if $api is "perpareWithParamOp", if provided, has to be in the same order as $inputs
@@ -458,10 +455,17 @@ function get_insertSql_complete( $tbname, $inputs )
 {
     $colStr = "INSERT INTO $tbname (";
     $valStr = "VALUES (";
+    if ( empty( $inputs ))
+    {
+        echo "get_insertSql_complete: inputs for inserting a row cannot be empty.\n";
+        return;
+    }
     foreach( $inputs as $key => $value )
     {
         $colStr .= $key . ", ";
-        if ( is_string( $value ))
+        if ( is_null( $value ))
+            echo "get_insertSql_complete: value provided for input $value is null.\n";
+        elseif ( is_string( $value ))
             $valStr .= "'" . $value . "', ";
         else
             $valStr .= $value . ", ";
@@ -475,13 +479,18 @@ function get_insertSql_complete( $tbname, $inputs )
 
 /**
  * @param string $tbname : name of the table for an insert sql
- * @param array $input : associative array containing a key value pair of column name and data to put into an insert sql string
+ * @param array $inputs : associative array containing a key value pair of column name and data to put into an insert sql string
  * @return string an insert sql string with "?" placeholders for all values
  */
 function get_insertSql_placeholders( $tbname, $inputs )
 {
     $colStr = "INSERT INTO $tbname (";
     $valStr = "VALUES (";
+    if ( empty( $inputs ))
+    {
+        echo "get_insertSql_placeholders: inputs for inserting a row cannot be empty.\n";
+        return;
+    }
     foreach( $inputs as $key => $value )
     {
         $colStr .= $key . ", ";
@@ -512,6 +521,11 @@ function get_callProcSql_placeholders( $spname, $num )
  */
 function get_seq_placeholders( $num )
 {
+    if ( $num < 0 )
+    {
+        echo "get_seq_placeholders: num provided for creating a sequence of placeholders cannot be less than 0.\n";
+        return;
+    }
     $placeholderStr = str_repeat( "?, ", $num );
     $placeholderStr = rtrim( $placeholderStr, ", " );
     return $placeholderStr;
@@ -523,7 +537,8 @@ function get_seq_placeholders( $num )
  * @param resource $conn : connection resource
  * @param string $tbname : name of the table to fetch from
  */
-function fetch_all( $conn, $tbname ) {
+function fetch_all( $conn, $tbname )
+{
     $sql = "SELECT * FROM $tbname";
     $stmt = sqlsrv_query( $conn, $sql );
     while ( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ))
@@ -533,15 +548,28 @@ function fetch_all( $conn, $tbname ) {
             if ( is_object( $value ) )
             {
                 print "$key:\n";
-                foreach ( $value as $k =>$value )
+                foreach ( $value as $k =>$v )
                 {
-                    print ( "  $k: $value\n" );
+                    print ( "  $k: $v\n" );
                 }
             }
             else
                 print ( "$key: $value\n" );
         }
     }
+}
+
+
+/**
+ * @return bool false if $keystore specified in MsSetup.inc is none, otherwise return true
+ */
+function is_col_enc()
+{
+    require  'MsSetup.inc';
+    if ( $keystore == "none" )
+        return false
+    else
+        return true;
 }
 
 
@@ -1113,7 +1141,7 @@ function CreateUniqueIndexEx($conn, $tableName, $tableIndex, $colIndex)
 
 function DropTable($conn, $tableName)
 {
-    $stmt = sqlsrv_query($conn, "DROP TABLE [$tableName]");
+    $stmt = sqlsrv_query($conn, "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName");
     if ($stmt === false)
     {
     }

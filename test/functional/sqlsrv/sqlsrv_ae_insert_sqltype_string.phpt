@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted string types data
+Test for inserting and retrieving encrypted data of string types
 Bind params using sqlsrv_prepare with all sql_type
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ Bind params using sqlsrv_prepare with all sql_type
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
 $compatList = array( "char(5)" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_VARCHAR"),
@@ -23,7 +22,7 @@ foreach ( $dataTypes as $dataType ) {
     
     // create table
     $tbname = GetTempTableName( "", false );
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
     create_table( $conn, $tbname, $colMetaArr );
     
     // test each SQLSRV_SQLTYPE_ constants
@@ -38,7 +37,7 @@ foreach ( $dataTypes as $dataType ) {
         
         if ( $r === false )
         {
-            if ( $keystore == "none" )
+            if ( !is_col_enc() )
             {
                 $isCompat = false;
                 foreach ( $compatList[$dataType] as $compatType )
@@ -76,7 +75,7 @@ foreach ( $dataTypes as $dataType ) {
         sqlsrv_query( $conn, "TRUNCATE TABLE $tbname" );
     }
     if ( $success )
-        echo "Test successfully.\n";
+        echo "Test successfully done.\n";
     DropTable( $conn, $tbname );
 }
 sqlsrv_free_stmt( $stmt );
@@ -85,13 +84,13 @@ sqlsrv_close( $conn );
 --EXPECT--
 
 Testing char(5): 
-Test successfully.
+Test successfully done.
 
 Testing varchar(max): 
-Test successfully.
+Test successfully done.
 
 Testing nchar(5): 
-Test successfully.
+Test successfully done.
 
 Testing nvarchar(max): 
-Test successfully.
+Test successfully done.

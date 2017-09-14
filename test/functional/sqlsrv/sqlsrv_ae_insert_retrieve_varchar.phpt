@@ -5,8 +5,6 @@ Test for inserting encrypted varchar data of variable lengths and retrieving enc
 --FILE--
 <?php
 include 'MsCommon.inc';
-include 'MsSetup.inc';
-include 'AEData.inc';
 
 $conn = ae_connect();
 $testPass = true;
@@ -38,7 +36,7 @@ while ( $decrypted_row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ))
 sqlsrv_free_stmt( $stmt );
 
 // for AE only
-if ( $keystore != "none" )
+if ( is_col_enc() )
 {
     $conn1 = ae_connect( null, true );
     $stmt = sqlsrv_query( $conn1, $selectSql );

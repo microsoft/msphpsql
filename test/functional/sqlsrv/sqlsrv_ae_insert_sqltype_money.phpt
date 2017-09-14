@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted money types data
+Test for inserting and retrieving encrypted data of money types
 Bind params using sqlsrv_prepare with all sql_type
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -7,7 +7,6 @@ Bind params using sqlsrv_prepare with all sql_type
 <?php
 include 'MsCommon.inc';
 include 'AEData.inc';
-include 'MsSetup.inc';
 
 $dataTypes = array( "smallmoney", "money" );
 $compatList = array( "smallmoney" => array( 'SQLSRV_SQLTYPE_CHAR', 'SQLSRV_SQLTYPE_DECIMAL', 'SQLSRV_SQLTYPE_FLOAT', 'SQLSRV_SQLTYPE_MONEY', 'SQLSRV_SQLTYPE_NCHAR', 'SQLSRV_SQLTYPE_NUMERIC', 'SQLSRV_SQLTYPE_NVARCHAR',    'SQLSRV_SQLTYPE_REAL', 'SQLSRV_SQLTYPE_SMALLMONEY', 'SQLSRV_SQLTYPE_VARCHAR' ),
@@ -21,7 +20,7 @@ foreach ( $dataTypes as $dataType ) {
     
     // create table
     $tbname = GetTempTableName( "", false );
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
     create_table( $conn, $tbname, $colMetaArr );
     
     // test each SQLSRV_SQLTYPE_ constants
@@ -34,7 +33,7 @@ foreach ( $dataTypes as $dataType ) {
         $r;
         $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r, "prepareParamsOp", $paramOp );
         
-        if ( $keystore == "none" )
+        if ( !is_col_enc() )
         {
             if ( $r === false )
             {
@@ -62,7 +61,7 @@ foreach ( $dataTypes as $dataType ) {
         sqlsrv_query( $conn, "TRUNCATE TABLE $tbname" );
     }
     if ( $success )
-        echo "Test successfully.\n";
+        echo "Test successfully done.\n";
     DropTable( $conn, $tbname );
 }
 sqlsrv_free_stmt( $stmt );
@@ -71,7 +70,7 @@ sqlsrv_close( $conn );
 --EXPECT--
 
 Testing smallmoney: 
-Test successfully.
+Test successfully done.
 
 Testing money: 
-Test successfully.
+Test successfully done.
