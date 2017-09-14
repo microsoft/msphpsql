@@ -12,7 +12,6 @@ include 'AEData.inc';
 try
 {
     $conn = ae_connect();
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
 
     // Create the table
     $tbname = 'Patients';

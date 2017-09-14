@@ -9,7 +9,6 @@ include 'MsSetup.inc';
 include 'AEData.inc';
 
 $conn = ae_connect();
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
 
 // Create the table
 $tbname = GetTempTableName( "", false );
@@ -157,7 +156,7 @@ numericOut: 21474\.83647
 floatOut: (9223372036\.8547993|9\.22337e\+009)
 realOut: (2147\.4829|2147\.48)
 dateOut: 9999-12-31
-datetimeOut: 9999-12-31 23:59:59\.997
+datetimeOut: (9999-12-31 23:59:59\.997|Dec 31 9999 11:59PM)
 datetime2Out: 9999-12-31 23:59:59\.9999999
 datetimeoffsetOut: 9999-12-31 23:59:59\.9999999 \+14:00
 timeOut: 23:59:59\.9999999

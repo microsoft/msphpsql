@@ -14,15 +14,13 @@ $dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
 try
 {
     $conn = ae_connect();
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
 
     foreach ( $dataTypes as $dataType ) {
         echo "\nTesting $dataType:\n";
         
         // create table
         $tbname = GetTempTableName( "", false );
-        $tbname = "teststring";
-        $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+        $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
         create_table( $conn, $tbname, $colMetaArr );
         
         // insert a row
@@ -36,7 +34,7 @@ try
             echo "****Encrypted default type is compatible with encrypted $dataType****\n";
             fetch_all( $conn, $tbname );
         }
-        //DropTable( $conn, $tbname );
+        DropTable( $conn, $tbname );
     }
     unset( $stmt );
     unset( $conn );

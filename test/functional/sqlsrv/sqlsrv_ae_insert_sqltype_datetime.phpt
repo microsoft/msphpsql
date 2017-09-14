@@ -91,20 +91,20 @@ sqlsrv_close( $conn );
 ?>
 --EXPECT--
 
-Testing date:
+Testing date: 
 Test successfully.
 
-Testing datetime:
+Testing datetime: 
 Test successfully.
 
-Testing datetime2:
+Testing datetime2: 
 Test successfully.
 
-Testing smalldatetime:
+Testing smalldatetime: 
 Test successfully.
 
-Testing time:
+Testing time: 
 Test successfully.
 
-Testing datetimeoffset:
+Testing datetimeoffset: 
 Test successfully.

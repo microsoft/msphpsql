@@ -22,7 +22,7 @@ try
         
         // create table
         $tbname = GetTempTableName( "", false );
-        $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+        $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
         create_table( $conn, $tbname, $colMetaArr );
         
         // test each PDO::PARAM_ type

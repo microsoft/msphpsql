@@ -14,14 +14,13 @@ $dataTypes = array( "bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5
 try
 {
     $conn = ae_connect();
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
 
     foreach ( $dataTypes as $dataType ) {
         echo "\nTesting $dataType:\n";
         
         // create table
         $tbname = GetTempTableName( "", false );
-        $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand" ));
+        $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
         create_table( $conn, $tbname, $colMetaArr );
         
         // insert a row
