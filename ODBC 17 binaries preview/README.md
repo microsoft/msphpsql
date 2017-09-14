@@ -1,0 +1,1 @@
+The ODBC driver 17 preview binaries in this directory are required in order to use Always Encrypted (AE) functionality. Please note that these drivers should be considered to be alpha versions and are not supported by Microsoft. They will be replaced upon the official release of ODBC driver 17.
