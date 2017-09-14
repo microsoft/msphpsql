@@ -129,11 +129,11 @@ function RunTest()
 RunTest();
 
 ?>
---EXPECT--
+--EXPECTREGEX--
  ﻿
-[Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: varchar(max) is incompatible with sql_variant
+\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Operand type clash: varchar\(max\) is incompatible with sql_variant
 
-[Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: varchar(max) is incompatible with sql_variant
+\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Operand type clash: varchar\(max\) is incompatible with sql_variant
 
 Done
-Test "sqlsrv_param_output_variants" completed successfully.
+Test \"sqlsrv_param_output_variants\" completed successfully\.
