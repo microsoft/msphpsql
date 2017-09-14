@@ -164,10 +164,9 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     }
     else {
 
-        for ( std::size_t i = DRIVER_VERSION::ODBC_DRIVER_13; i <= DRIVER_VERSION::LAST; ++i ) {
-            conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ DRIVER_VERSION(i) ];
-            r = core_odbc_connect( conn, conn_str, missing_driver_error, is_pooled );
-            // if it's a IM002, meaning that the correct ODBC driver is not installed
+        for ( std::size_t i = DRIVER_VERSION::FIRST; i <= DRIVER_VERSION::LAST; ++i ) {
+            std::string conn_str_driver = conn_str + CONNECTION_STRING_DRIVER_NAME[ DRIVER_VERSION(i) ];
+            r = core_odbc_connect( conn, conn_str_driver, missing_driver_error, is_pooled );
             CHECK_CUSTOM_ERROR( missing_driver_error && ( i == DRIVER_VERSION::LAST ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
                 throw core::CoreException();
             }
@@ -203,24 +202,24 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif // !_WIN32 
     }
     catch( std::bad_alloc& ) {
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+        conn_str.clear();
         conn->invalidate();
         DIE( "C++ memory allocation failure building the connection string." );
     }
     catch( std::out_of_range const& ex ) {
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+        conn_str.clear();
         LOG( SEV_ERROR, "C++ exception returned: %1!s!", ex.what() );
         conn->invalidate();
         throw;
     }
     catch( std::length_error const& ex ) {
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+        conn_str.clear();
         LOG( SEV_ERROR, "C++ exception returned: %1!s!", ex.what() );
         conn->invalidate();
         throw;
     }
     catch( core::CoreException&  ) {
-        memset( const_cast<char*>( conn_str.c_str()), 0, conn_str.size() );
+        conn_str.clear();
         conn->invalidate();
         throw;        
     }
@@ -231,6 +230,16 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 
     return return_conn;
 }
+
+
+// core_odbc_connect
+// calls odbc connect API to establish the connection to server
+// Parameters:
+// conn                 - The connection structure on which we establish the connection 
+// conn_str             - Connection string 
+// missing_driver_error - indicates whether odbc driver is installed on client machine   
+// is_pooled            - indicate whether it is a pooled connection 
+// Return               - SQLRETURN status retunred by SQLDriverConnect
 
 SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ bool& missing_driver_error, _In_ bool is_pooled)
 {
@@ -264,7 +273,6 @@ SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn
 #endif // !_WIN32 
 
     // clear the connection string from memory to remove sensitive data (such as a password).
-    memset( const_cast<char*>( conn_str.c_str() ), 0, conn_str.size() );
     memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
     conn_str.clear();
 
@@ -272,7 +280,8 @@ SQLRETURN core_odbc_connect(_Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn
         SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
         SQLSMALLINT len;
         SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
-        missing_driver_error = ( SQL_SUCCEEDED(sr) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && state[4] == '2' );
+        // sql state IM002/IM003 in ODBC 17, means that the correct ODBC driver is not installed
+        missing_driver_error = ( SQL_SUCCEEDED(sr) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && (state[4] == '2' || state[4] == '3'));
     } 
     return r;
 }
