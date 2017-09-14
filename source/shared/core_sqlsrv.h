@@ -1202,31 +1202,23 @@ struct connection_option {
 
 // simply add the parsed value to the connection string
 struct conn_str_append_func {
-
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
 struct conn_null_func {
-
     static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC );
 };
 
 struct column_encryption_set_func {
-
     static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC);
-
 };
 
-struct driver_set_func {
-    
+struct driver_set_func {   
     static void func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC);
-
 };
 
 struct ce_ksp_provider_set_func {
-
     static void func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC);
-
 };
 
 
@@ -2423,13 +2415,13 @@ sqlsrv_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* 
 template <unsigned int Attr>
 struct str_conn_attr_func {
 
-    static void func(connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC)
+    static void func( connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
     {
         try {
-            core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>(Z_STRVAL_P(value)),
-                static_cast<SQLINTEGER>(Z_STRLEN_P(value)) TSRMLS_CC);
+            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
+                                     static_cast<SQLINTEGER>( Z_STRLEN_P( value )) TSRMLS_CC );
         }
-        catch (core::CoreException&) {
+        catch ( core::CoreException& ) {
             throw;
         }
     }
