@@ -167,7 +167,8 @@ Test simple insert, fetch and update with ColumnEncryption enabled and a custome
     sqlsrv_free_stmt($stmt);
     
     $callResult = '1900-01-01';   
-    $params = array( array( 1, SQLSRV_PARAM_IN ), array( &$callResult, SQLSRV_PARAM_OUT, null, SQLSRV_SQLTYPE_DATE));
+    //when binding parameter using sqlsrv_query in a column encryption enabled connection, need to provide the sql_type in all parameters
+    $params = array( array( 1, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_INT ), array( &$callResult, SQLSRV_PARAM_OUT, null, SQLSRV_SQLTYPE_DATE));
     $callArgs = "?, ?";
     $stmt = sqlsrv_query($conn, "{ CALL [$procName] ($callArgs)}", $params);
     if (! $stmt )
@@ -187,7 +188,8 @@ Test simple insert, fetch and update with ColumnEncryption enabled and a custome
     sqlsrv_free_stmt($stmt);
     
     $callResult = '000-00-0000';
-    $params = array( array( 1, SQLSRV_PARAM_IN ), array( &$callResult, SQLSRV_PARAM_OUT, null, SQLSRV_SQLTYPE_CHAR(11)));
+    //when binding parameter using sqlsrv_query in a column encryption enabled connection, need to provide the sql_type in all parameters
+    $params = array( array( 1, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_INT ), array( &$callResult, SQLSRV_PARAM_OUT, null, SQLSRV_SQLTYPE_CHAR(11)));
     $callArgs = "?, ?";
     $stmt = sqlsrv_query($conn, "{ CALL [$procName] ($callArgs)}", $params);
     if (! $stmt )

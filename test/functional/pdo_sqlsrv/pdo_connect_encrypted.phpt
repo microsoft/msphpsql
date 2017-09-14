@@ -102,9 +102,7 @@ function test_ColumnEncryption( $server, $uid, $pwd, $msodbcsql_maj )
 		$expected = "Invalid value specified for connection string attribute 'ColumnEncryption'";
 		verify_output( $e, $expected );
 	}	
-}
-      
-
+}     
 ?>
 --EXPECTF--
 Done
