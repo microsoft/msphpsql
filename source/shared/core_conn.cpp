@@ -48,8 +48,9 @@ const int INFO_BUFFER_LEN = 256;
 // processor architectures
 const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
-// ODBC driver name.
-std::vector<std::string> CONNECTION_STRING_DRIVER_NAME{ "Driver={ODBC Driver 17 for SQL Server};","Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};" };
+// ODBC driver names.
+// the order of this list should match the order of DRIVER_VERSION enum
+std::vector<std::string> CONNECTION_STRING_DRIVER_NAME{ "Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};", "Driver={ODBC Driver 17 for SQL Server};" };
 
 // default options if only the server is specified
 const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes};";

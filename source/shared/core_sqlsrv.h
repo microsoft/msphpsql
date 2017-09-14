@@ -1033,13 +1033,13 @@ enum SERVER_VERSION {
 };
 
 // supported driver versions.
-enum DRIVER_VERSION {
-    ODBC_DRIVER_UNKNOWN = -1,
+// the latest RTWed ODBC is the first one
+enum DRIVER_VERSION : std::size_t{
     FIRST = 0,
-    ODBC_DRIVER_17 = FIRST,
-    ODBC_DRIVER_13 = 1,
-    ODBC_DRIVER_11 = 2,
-    LAST = ODBC_DRIVER_11
+    ODBC_DRIVER_13 = FIRST,
+    ODBC_DRIVER_11 = 1,
+    ODBC_DRIVER_17 = 2,
+    LAST = ODBC_DRIVER_17
 };
 
 // forward decl
