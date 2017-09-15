@@ -1,7 +1,7 @@
 --TEST--
 Test using sqlserv_query for binding parameters with ColumnEncryption enabled and a custome keystore provider
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php require('skipif_not_ksp.inc'); ?>
 --FILE--
 <?php
     function CreatePatientsTable()
