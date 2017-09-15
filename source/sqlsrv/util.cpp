@@ -370,6 +370,10 @@ ss_error SS_ERRORS[] = {
 		SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
 		{ IMSSP, (SQLCHAR*)"Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -62, false }
 	},
+    {
+        SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED,
+        { IMSSP, (SQLCHAR*)"Using sqlsrv_query for binding parameters in a Column Encryption enabled connection requires the sqltype to be provided.", -63, false }
+    },
 
     // internal warning definitions
     {
