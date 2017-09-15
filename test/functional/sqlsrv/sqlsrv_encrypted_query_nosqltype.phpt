@@ -121,12 +121,12 @@ Connected successfully with ColumnEncryption enabled.
 Using sqlsrv_query and binding parameters with literal values:
   SQLSTATE: IMSSP
   code: -63
-  message: Using sqlsrv_query for binding parameters in a Column Encryption enabled connection requires the sqltype to be provided.
+  message: Must specify the SQL type for each parameter in a parameterized query when using sqlsrv_query in a column encryption enabled connection.
 
 Using sqlsrv_query and binding parameters with parameter arrays and no sqltypes provided:
   SQLSTATE: IMSSP
   code: -63
-  message: Using sqlsrv_query for binding parameters in a Column Encryption enabled connection requires the sqltype to be provided.
+  message: Must specify the SQL type for each parameter in a parameterized query when using sqlsrv_query in a column encryption enabled connection.
 
 Using sqlsrv_query and binding parameters with parameter arrays and sqltypes provided:
 1

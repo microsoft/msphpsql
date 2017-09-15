@@ -372,7 +372,7 @@ ss_error SS_ERRORS[] = {
 	},
     {
         SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED,
-        { IMSSP, (SQLCHAR*)"Using sqlsrv_query for binding parameters in a Column Encryption enabled connection requires the sqltype to be provided.", -63, false }
+        { IMSSP, (SQLCHAR*)"Must specify the SQL type for each parameter in a parameterized query when using sqlsrv_query in a column encryption enabled connection.", -63, false }
     },
 
     // internal warning definitions
