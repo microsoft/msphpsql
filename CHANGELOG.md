@@ -3,6 +3,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux/macOS 5.1.0-preview - 2017-09-15
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Added support for Always Encrypted with basic CRUD functionalities (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
+  - Support for Windows Certificate Store (use connection keyword ColumnEncryption
+  - Support for custom key store provider (use connection keywords ColumnEncryption, CEKeystoreProvider, CEKeystoreName, CEKeystoreEncryptKey
+  - Support for inserting into an encrypted column
+  - Support for fetching from an encrypted column
+- Added support for MSODBC 17 preview
+- Added Driver option to set the ODBC driver, Added"Driver" option, valid values are ODBC Driver 13 for SQL Server,ODBC Driver 11 for SQL Server, and ODBC Driver 17 for SQL Server
+
+### Limitations
+- Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/AlwaysEncrypted/ODBC%2017%20binaries%20preview)
+- [Always Encrypted limitations](https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation)
+- when using sqlsrv_query with Always Encrypted feature, SQL type has to be specified for each input (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
+- No support for inout / output params when using sql_variant type
+
+### Known Issues
+- When pooling is enabled in Linux or MAC
+  - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
 ## Windows/Linux/MAC 5.0.0-preview - 2017-07-31
 Updated PECL release packages. Here is the list of updates:
 
