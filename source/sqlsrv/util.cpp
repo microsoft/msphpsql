@@ -300,8 +300,8 @@ ss_error SS_ERRORS[] = {
 
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 11 or 13 for SQL Server. "
-        "Access the following URL to download the ODBC Driver 11 or 13 for SQL Server for %1!s!: "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver for SQL Server. "
+        "Access the following URL to download the ODBC Driver for SQL Server for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
     },     
 
@@ -376,8 +376,7 @@ ss_error SS_ERRORS[] = {
         SS_SQLSRV_WARNING_FIELD_NAME_EMPTY,
         { SSPWARN, (SQLCHAR*)"An empty field name was skipped by sqlsrv_fetch_object.", -100, false }
     },
-
-    {
+	{
         SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
         { IMSSP, (SQLCHAR*) "The name of the custom keystore provider is missing.", -101, false}
     },
@@ -393,7 +392,14 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
         { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -104, false}
     },
-
+    {
+        SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+        { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.", -105, false }
+    },
+    {
+        SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
+        { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option.", -106, true }
+    },
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
 };

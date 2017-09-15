@@ -4,66 +4,105 @@ Test new connection keyword ColumnEncryption
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-    require_once("MsSetup.inc");
-    $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled;";
-    try
+require_once("MsSetup.inc");
+$msodbcsql_maj = "";
+
+try
+{
+    $conn = new PDO( "sqlsrv:server = $server", $uid, $pwd );
+    $msodbcsql_ver = $conn->getAttribute( PDO::ATTR_CLIENT_VERSION )['DriverVer'];
+    $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
+}
+catch( PDOException $e )
+{
+    echo "Failed to connect\n";
+    print_r( $e->getMessage() );
+    echo "\n";
+}
+
+test_ColumnEncryption( $server, $uid, $pwd, $msodbcsql_maj );
+echo "Done";
+
+
+function verify_output( $PDOerror, $expected )
+{
+    if( strpos( $PDOerror->getMessage(), $expected ) === false )
     {
-        $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
-        echo "Connected successfully with ColumnEncryption enabled.\n";
-    }
-    catch( PDOException $e )
-    {
-        echo "Failed to connect with ColumnEncryption enabled.\n";
-        print_r( $e->getMessage() );
+        print_r( $PDOerror->getMessage() );
         echo "\n";
     }
-    $conn = null;
+}
+
+function test_ColumnEncryption( $server, $uid, $pwd, $msodbcsql_maj )
+{
+    // Only works for ODBC 17
     ////////////////////////////////////////
-    $connectionInfo = "Database = $databaseName; ColumnEncryption = false;";
+    $connectionInfo = "ColumnEncryption = Enabled;";
     try
     {
         $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
     }
     catch( PDOException $e )
     {
-        echo "Failed to connect.\n";
-        print_r( $e->getMessage() );
-        echo "\n";
+        if($msodbcsql_maj < 17)
+        {
+            $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
+            verify_output( $e, $expected );
+        }
+        else
+        {
+            print_r( $e->getMessage() );
+            echo "\n";
+        }
     }
+
+    // Works for ODBC 17, ODBC 13
     ////////////////////////////////////////
-    $connectionInfo = "Database = $databaseName; ColumnEncryption = 1;";
+    $connectionInfo = "ColumnEncryption = Disabled;";
     try
     {
         $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
     }
     catch( PDOException $e )
     {
-        echo "Failed to connect.\n";
-        print_r( $e->getMessage() );
-        echo "\n";
+        if($msodbcsql_maj < 13)
+        {
+            $expected = "Invalid connection string attribute";
+            verify_output( $e, $expected );
+        }
+        else
+        {
+            print_r( $e->getMessage() );
+            echo "\n";
+        }
     }
-       
+
+    // should fail for all ODBC drivers
     ////////////////////////////////////////
-    $connectionInfo = "Database = $databaseName; ColumnEncryption = Disabled;";
+    $connectionInfo = "ColumnEncryption = false;";
     try
     {
         $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
-        echo "Connected successfully with ColumnEncryption disabled.\n";
     }
     catch( PDOException $e )
     {
-        echo "Failed to connect with ColumnEncryption disabled.\n";
-        print_r( $e->getMessage() );
-        echo "\n";
+        $expected = "Invalid value specified for connection string attribute 'ColumnEncryption'";
+        verify_output( $e, $expected );   
     }
-    $conn = null;
-    echo "Done\n";
+
+    // should fail for all ODBC drivers
+    ////////////////////////////////////////
+    $connectionInfo = "ColumnEncryption = 1;";
+    try
+    {
+        $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+    }
+    catch( PDOException $e )
+    {
+        $expected = "Invalid value specified for connection string attribute 'ColumnEncryption'";
+        verify_output( $e, $expected );
+    }	
+}     
 ?>
---EXPECTREGEX--
-Connected successfully with ColumnEncryption enabled\.
-Failed to connect\.
-SQLSTATE\[08001\]: .*\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
-Failed to connect\.
-SQLSTATE\[08001\]: .*\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ColumnEncryption'
-Connected successfully with ColumnEncryption disabled\.
+--EXPECT--
 Done

@@ -56,8 +56,8 @@ pdo_error PDO_ERRORS[] = {
     
     {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver 13 for SQL Server to "
-        "communicate with SQL Server. Access the following URL to download the ODBC Driver 13 for SQL Server "
+        { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver for SQL Server to "
+        "communicate with SQL Server. Access the following URL to download the ODBC Driver for SQL Server "
         "for %1!s!: "
         "http://go.microsoft.com/fwlink/?LinkId=163712", -1, true }
     },  
@@ -380,7 +380,7 @@ pdo_error PDO_ERRORS[] = {
     {
         PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
         { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -73, false }
-    },          
+    },
     {
         SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
         { IMSSP, (SQLCHAR*) "The name of the custom keystore provider is missing.", -74, false}
@@ -396,6 +396,14 @@ pdo_error PDO_ERRORS[] = {
     {
         SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
         { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -77, false}
+    },
+    {
+        SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+        { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.", -78, false }
+    },
+    {
+        SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
+        { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option.", -79, true }
     },
     { UINT_MAX, {} }
 };

@@ -151,6 +151,7 @@ OACR_WARNING_POP
 
 #include <deque>
 #include <map>
+#include <string>
 #include <algorithm>
 #include <limits>
 #include <cassert>
@@ -188,6 +189,9 @@ namespace AzureADOptions {
     const char AZURE_AUTH_SQL_PASSWORD[] = "SqlPassword";
     const char AZURE_AUTH_AD_PASSWORD[] = "ActiveDirectoryPassword";
 }
+
+// the message returned by ODBC Driver for SQL Server
+const char ODBC_CONNECTION_BUSY_ERROR[] = "Connection is busy with results for another command";
 
 // types for conversions on output parameters (though they can be used for input parameters, they are ignored)
 enum SQLSRV_PHPTYPE {
@@ -1021,7 +1025,6 @@ struct sqlsrv_henv {
     }
 };
 
-
 //*********************************************************************************************************************************
 // Connection
 //*********************************************************************************************************************************
@@ -1035,11 +1038,13 @@ enum SERVER_VERSION {
 };
 
 // supported driver versions.
-enum DRIVER_VERSION : size_t {
-	MIN = 0,
-	ODBC_DRIVER_13 = MIN,
-	ODBC_DRIVER_11 = 1,
-	MAX = ODBC_DRIVER_11,
+// the latest RTWed ODBC is the first one
+enum DRIVER_VERSION : std::size_t{
+    FIRST = 0,
+    ODBC_DRIVER_13 = FIRST,
+    ODBC_DRIVER_11 = 1,
+    ODBC_DRIVER_17 = 2,
+    LAST = ODBC_DRIVER_17
 };
 
 // forward decl
@@ -1067,16 +1072,15 @@ struct sqlsrv_conn : public sqlsrv_context {
     // instance variables
     SERVER_VERSION server_version;  // version of the server that we're connected to
 
-    DRIVER_VERSION	driver_version;
-
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
+    bool is_driver_set;
 
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding TSRMLS_DC ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
-        driver_version = ODBC_DRIVER_13; 
+        is_driver_set = false;
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be 
@@ -1104,6 +1108,7 @@ const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
 const char ColumnEncryption[] = "ColumnEncryption";
+const char Driver[] = "Driver";
 const char CEKeystoreProvider[] = "CEKeystoreProvider";
 const char CEKeystoreName[] = "CEKeystoreName";
 const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
@@ -1154,6 +1159,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
     SQLSRV_CONN_OPTION_AUTHENTICATION,
     SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
+    SQLSRV_CONN_OPTION_DRIVER,
     SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
     SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
     SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
@@ -1197,17 +1203,29 @@ struct connection_option {
     void                (*func)( connection_option const*, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC );
 };
 
+// connection attribute functions
+
 // simply add the parsed value to the connection string
 struct conn_str_append_func {
-
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
 struct conn_null_func {
-
-    static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ 
-                      TSRMLS_DC );
+    static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC );
 };
+
+struct column_encryption_set_func {
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
+struct driver_set_func {   
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
+struct ce_ksp_provider_set_func {
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
 
 // factory to create a connection (since they are subclassed to instantiate statements)
 typedef sqlsrv_conn* (*driver_conn_factory)( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv TSRMLS_DC );
@@ -1217,6 +1235,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd, 
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[], 
                                   _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC );
+SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ bool& is_missing_driver, _In_ bool is_pooled );
 void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC );
 void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
@@ -1620,6 +1639,8 @@ enum SQLSRV_ERROR_CODES {
 
     SQLSRV_ERROR_ODBC,
     SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
+    SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+    SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
     SQLSRV_ERROR_ZEND_HASH,
     SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE,
     SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE,
@@ -1667,10 +1688,6 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
 
 };
-
-// the message returned by ODBC Driver 11 for SQL Server
-static const char* CONNECTION_BUSY_ODBC_ERROR[] = { "[Microsoft][ODBC Driver 13 for SQL Server]Connection is busy with results for another command",
-										   "[Microsoft][ODBC Driver 11 for SQL Server]Connection is busy with results for another command" };
 
 // SQLSTATE for all internal errors
 extern SQLCHAR IMSSP[];
@@ -1847,8 +1864,12 @@ namespace core {
          
                 throw CoreException();
             }
-			std::size_t driver_version = stmt->conn->driver_version;
-            if( !strcmp( reinterpret_cast<const char*>( err_msg ), CONNECTION_BUSY_ODBC_ERROR[driver_version] )) {
+
+            // the message returned by ODBC Driver for SQL Server
+            const std::string connection_busy_error( ODBC_CONNECTION_BUSY_ERROR );
+            const std::string returned_error( reinterpret_cast<char*>( err_msg ));
+
+            if(( returned_error.find( connection_busy_error ) != std::string::npos )) {
              
                 THROW_CORE_ERROR( stmt, SQLSRV_ERROR_MARS_OFF );
             }
@@ -2418,71 +2439,16 @@ sqlsrv_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* 
 
 } // namespace core
 
-// connection attribute functions
 template <unsigned int Attr>
 struct str_conn_attr_func {
 
     static void func( connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
     {
         try {
-            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
-                                     static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
+            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )), static_cast<SQLINTEGER>( Z_STRLEN_P( value )) TSRMLS_CC );
         }
-        catch( core::CoreException& ) {
+        catch ( core::CoreException& ) {
             throw;
-        }
-    }
-};
-
-struct column_encryption_set_func {
-
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC)
-    {
-        convert_to_string(value);
-        const char* value_str = Z_STRVAL_P(value);
-
-        // Column Encryption is disabled by default unless it is explicitly 'Enabled'
-        conn->ce_option.enabled = false;
-        if (!stricmp(value_str, "enabled")) {
-            conn->ce_option.enabled = true;
-        }
-
-        conn_str += option->odbc_name;
-        conn_str += "=";
-        conn_str += value_str;
-        conn_str += ";";
-    }
-};
-
-struct ce_ksp_provider_set_func {
-
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC)
-    {
-        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Wrong zval type for this keyword" ) 
-        
-        size_t value_len = Z_STRLEN_P( value );
-
-        CHECK_CUSTOM_ERROR( value_len == 0, conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE )  {
-            throw core::CoreException();
-        }
-
-        switch ( option->conn_option_key ) {
-            case SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER: 
-                conn->ce_option.ksp_path = value;
-                conn->ce_option.ksp_required = true;
-                break;
-            case SQLSRV_CONN_OPTION_CEKEYSTORE_NAME:
-                conn->ce_option.ksp_name = value;
-                conn->ce_option.ksp_required = true;
-                break;
-            case SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY:
-                conn->ce_option.ksp_encrypt_key = value;
-                conn->ce_option.key_size = value_len;
-                conn->ce_option.ksp_required = true;
-                break;
-            default:
-                SQLSRV_ASSERT( false, "ce_ksp_provider_set_func: Invalid KSP option!" );
-                break;
         }
     }
 };
