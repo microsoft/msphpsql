@@ -190,6 +190,9 @@ namespace AzureADOptions {
     const char AZURE_AUTH_AD_PASSWORD[] = "ActiveDirectoryPassword";
 }
 
+// the message returned by ODBC Driver for SQL Server
+const char ODBC_CONNECTION_BUSY_ERROR[] = "Connection is busy with results for another command";
+
 // types for conversions on output parameters (though they can be used for input parameters, they are ignored)
 enum SQLSRV_PHPTYPE {
     MIN_SQLSRV_PHPTYPE = 1, // lowest value for a php type
@@ -1863,7 +1866,7 @@ namespace core {
             }
 
             // the message returned by ODBC Driver for SQL Server
-            const std::string connection_busy_error( "Connection is busy with results for another command" );
+            const std::string connection_busy_error( ODBC_CONNECTION_BUSY_ERROR );
             const std::string returned_error( reinterpret_cast<char*>( err_msg ));
 
             if(( returned_error.find( connection_busy_error ) != std::string::npos )) {
