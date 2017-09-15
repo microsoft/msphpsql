@@ -1,14 +1,17 @@
 <?php
 
 use SqlsrvPerfTest\SqlsrvUtil;
+include_once __DIR__ . "/../../lib/CRUDBaseBenchmark.php";
 /**
  * @BeforeMethods({"connect"})
  * @AfterMethods({"disconnect"})
  */
-class SqlsrvCreateDbTableProcBench{
+class SqlsrvCreateDbTableProcBench extends CRUDBaseBenchmark 
+{
     private $conn;
 
-    public function connect(){
+    public function connect()
+    {
         $this->conn = SqlsrvUtil::connect();
     }
 
@@ -16,7 +19,8 @@ class SqlsrvCreateDbTableProcBench{
     * Each iteration creates a database, a table and a stored procedure in that database and drops the database at the end.
     * Note that, ODBC SQLExecDirect function are used to execute all the queries. 
     */
-    public function benchCreateDbTableProc(){
+    public function benchCreateDbTableProc()
+    {
         $randomNum = rand();
         $databaseName = "test_db_$randomNum";
         $tableName = "test_table_$randomNum";
@@ -25,7 +29,8 @@ class SqlsrvCreateDbTableProcBench{
         SqlsrvUtil::dropDatabase( $this->conn, $databaseName );
     }
 
-    public function disconnect(){
+    public function disconnect()
+    {
         SqlsrvUtil::disconnect( $this->conn );
     }
 }

@@ -31,6 +31,7 @@ Thank you for taking time to take our February survey. Let us know how we are do
 
 * [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/ubuntu)
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/rhel)
+* [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/sles)
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/windows)
 * [**Docker**](https://hub.docker.com/r/lbosqmsft/mssql-php-msphpsql/)
 
@@ -42,27 +43,16 @@ Thank you for taking time to take our February survey. Let us know how we are do
 
 ## Build (Windows)
 
-Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Azure/msphpsql/releases)
+Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Microsoft/msphpsql/releases)
 
 #### Prerequisites
 
-You must first be able to build PHP 7 without including these extensions.  For help with doing this, see the [official PHP website][phpbuild] for building your own PHP on Windows.
+You must first be able to build PHP 7* without including these extensions.  For help with doing this, see the [official PHP website][phpbuild] for building your own PHP in Windows.
 
 #### Compile the drivers
 
-1. Copy the sqlsrv and/or pdo_sqlsrv source code directory from this repository into the ext subdirectory.
-
-2. Run `buildconf.bat` to rebuild the configure.js script to include the driver.
-
-3. Run `configure.bat --with-odbcver=0x0380 and the desired driver options (as below) [plus other options such as --disable-zts for the Non Thread Safe build]` to generate the makefile.  You can run `configure.bat --help` to see what other options are available.
-  * For SQLSRV use: `--enable-sqlsrv=shared`
-  * For PDO_SQLSRV use: `--enable-pdo=shared --with-pdo-sqlsrv=shared`
-
-4. Run `nmake`.  It is suggested that you run the entire build.  If you wish to do so, run `nmake clean` first.
-
-5. To install the resulting build, run `nmake install` or just copy php_sqlsrv.dll and/or php_pdo_sqlsrv.dll to your PHP extension directory.
-
-This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 2015 compiler.
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0 beta using Visual C++ 2017 v15.0. 
+For details, please read the documentation and/or take a look at the sample [build scripts](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows).
 
 ## Install (Windows)
 
@@ -75,155 +65,215 @@ This software has been compiled and tested under PHP 7.0.8 using the Visual C++ 
 
 1. Make sure that the driver is in your PHP extension directory (you can simply copy it there if you did not use nmake install).
 
-2. Enable it within your PHP installation's php.ini: `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll`.  If necessary, specify the extension directory using extension_dir, for example: `extension_dir = "C:\PHP\ext"`
+2. Enable it within your PHP installation's php.ini: `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll`.  If necessary, specify the extension directory using extension_dir, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini.
 
 3. Restart the Web server.
 
 ## Install (UNIX)
-The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7 and Mac OS X. To see how to get PHP SQLSRV drivers running on Debian, please visit [Wiki](https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-getting-pdo_sqlsrv-for-PHP-7.0-on-Debian-in-3-ways). Note that Debian is not officially supported and this instruction hasn't been tested in our test lab.
+The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, Apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, SUSE 12, and macOS. 
 
 ### Step 1: Install PHP7+ 
 
 #### PHP 7.0
 
-**Ubuntu 15.04, Ubuntu 15.10**
+**Ubuntu 15.10**
 
-	sudo su
-	sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
-	apt-get update
-	apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml re2c gcc g++
+    sudo su
+    sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
+    apt-get update
+    apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
 
-	
 **Ubuntu 16.04**
 
-	sudo su
-	apt-get update
-	apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml re2c gcc g++
+    sudo su
+    apt-get update
+    apt-get -y install php7.0 mcrypt php7.0-mcrypt php-mbstring php-pear php7.0-dev php7.0-xml
 
-	
 **RedHat 7**
 
-	sudo su
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
-	subscription-manager repos --enable=rhel-7-server-optional-rpms
-	yum-config-manager --enable remi-php70
-	yum update
-	yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
+    sudo su
+    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+    rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
+    subscription-manager repos --enable=rhel-7-server-optional-rpms
+    yum-config-manager --enable remi-php70
+    yum update
+    yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
 
-**Mac OS X**
+**Debian 8**
 
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	brew tap 
-	brew tap homebrew/dupes
-	brew tap homebrew/versions
-	brew tap homebrew/homebrew-php
-	brew install php70 --with-pear --with-httpd24 --with-cgi
-	echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
-	echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
-	source ~/.bash_profile
+    sudo su
+    apt-get install curl apt-transport-https
+    curl https://www.dotdeb.org/dotdeb.gpg | apt-key add -
+    echo "deb http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
+    echo "deb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
+    apt-get update
+    apt-get install -y php7.0 php-pear php7.0-dev php7.0-xml
+
+**SUSE 12**
+
+    sudo su
+    zypper refresh
+    zypper install -y php7 php7-pear php7-devel
+
+**macOS**
+
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    brew tap 
+    brew tap homebrew/dupes
+    brew tap homebrew/versions
+    brew tap homebrew/homebrew-php
+    brew install php70 --with-pear --with-httpd24 --with-cgi
+    echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
+    echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
+    source ~/.bash_profile
 
 #### PHP 7.1
 
+Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
 
 **Ubuntu 16.04**
 
-	sudo su
-	add-apt-repository ppa:ondrej/php
-	apt-get update
-	apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev php7.1-xml
+    sudo su
+    add-apt-repository ppa:ondrej/php
+    apt-get update
+    apt-get -y install php7.1 mcrypt php7.1-mcrypt php-mbstring php-pear php7.1-dev php7.1-xml
 
 **RedHat 7**
-	
-	sudo su
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-	rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
-	subscription-manager repos --enable=rhel-7-server-optional-rpms
-	yum-config-manager --enable remi-php71
-	yum update
-	yum install php php-pdo php-xml php-pear php-devel
-    
-**Mac OS X**
 
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	brew tap 
-	brew tap homebrew/dupes
-	brew tap homebrew/versions
-	brew tap homebrew/homebrew-php
-	brew install php71 --with-pear --with-httpd24 --with-cgi
-	echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
-	echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
-	source ~/.bash_profile
+    sudo su
+    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    wget http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+    rpm -Uvh remi-release-7.rpm epel-release-latest-7.noarch.rpm
+    subscription-manager repos --enable=rhel-7-server-optional-rpms
+    yum-config-manager --enable remi-php71
+    yum update
+    yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
+
+**Debian 8**
+
+    sudo su
+    apt-get install curl apt-transport-https
+    wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+    echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
+    apt-get update
+    apt-get install -y php7.1 php-pear php7.1-dev php7.1-xml
+
+**SUSE 12**
+
+    sudo su
+    zypper -n ar -f http://download.opensuse.org/repositories/devel:/languages:/php/openSUSE_Leap_42.3/ devel:languages:php
+    zypper --gpg-auto-import-keys refresh
+    zypper -n install php7 php7-pear php7-devel
+
+**macOS**
+
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    brew tap 
+    brew tap homebrew/dupes
+    brew tap homebrew/versions
+    brew tap homebrew/homebrew-php
+    brew install php71 --with-pear --with-httpd24 --with-cgi
+    echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
+    echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
+    source ~/.bash_profile
 
 
 ### Step 2: Install Prerequisites
 
-    
 **Ubuntu 15.10**
 
-	sudo su 
-	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-	curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
-	exit
-	sudo apt-get update
-	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
-	sudo apt-get install unixodbc-dev
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-	source ~/.bashrc
+    sudo su 
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    exit
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
+    sudo apt-get install unixodbc-dev
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
 
-	
 **Ubuntu 16.04**
 
-	sudo su 
-	curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-	curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
-	exit
-	sudo apt-get update
-	sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
-	sudo apt-get install unixodbc-dev
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-	source ~/.bashrc
+    sudo su 
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    exit
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
+    sudo apt-get install unixodbc-dev
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
 
 **RedHat 7**
 
-	sudo su
-	curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
-	exit
-	sudo yum update
-	sudo yum remove unixODBC-utf16-devel #to avoid conflicts
-	sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
-	sudo yum install unixODBC-devel
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-	echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-	source ~/.bashrc
-	
-**Mac OS X**
+    sudo su
+    curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/mssql-release.repo
+    exit
+    sudo yum update
+    sudo yum remove unixODBC-utf16-devel #to avoid conflicts
+    sudo ACCEPT_EULA=Y yum install msodbcsql mssql-tools 
+    sudo yum install unixODBC-devel
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
 
-	brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
-	brew update
-	brew install msodbcsql
-	brew install mssql-tools
-	brew install autoconf
+**Debian 8**
 
-*Note: You need to make sure you install PHP 7+ before you proceed to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
+    sudo su 
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/debian/8/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get install -y locales
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+    locale-gen
+    exit
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install msodbcsql
+    sudo apt-get install unixodbc-dev
+
+**SUSE 12**
+
+    sudo su
+    zypper ar https://packages.microsoft.com/config/sles/12/prod.repo
+    sudo zypper --gpg-auto-import-keys refresh
+    exit
+    sudo ACCEPT_EULA=Y zypper install msodbcsql
+    sudo ACCEPT_EULA=Y zypper install mssql-tools
+    sudo zypper install unixODBC-devel
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
+
+**macOS**
+
+    brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
+    brew update
+    brew install --no-sandbox msodbcsql
+    brew install mssql-tools
+    brew install autoconf
+
+*Note: Be sure to install PHP 7+ before proceeding to step 3. The Microsoft PHP Drivers for SQL Server will only work for PHP 7+.
 
 ### Step 3: Install the Microsoft PHP Drivers for SQL Server
 
-*Note: The first step is not required in Mac OS X. PECL installs the stable version when version is not specified. You may run `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version. Drivers are Mac-compatible starting from `4.1.7preview` release.
+*Note: You can run `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version. PECL installs the stable version when version is not specified. Drivers are Mac-compatible starting from `4.1.7preview` release.
+
+On Ubuntu, Debian, and SUSE systems only, run:
 
     sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
-    sudo pecl install sqlsrv
-    sudo pecl install pdo_sqlsrv
+
+On all systems, run:
+
+    pecl install sqlsrv
+    pecl install pdo_sqlsrv
    
 ### Step 4: Install and Configure Apache
 
 #### PHP 7.0
 
-**Ubuntu**
+**Ubuntu and Debian**
     
     sudo su
     apt-get install libapache2-mod-php7.0 apache2
@@ -232,19 +282,29 @@ The following instructions assume a clean environment and show how to install PH
     a2enmod php7.0
     echo "extension=sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
     echo "extension=pdo_sqlsrv.so" >> /etc/php/7.0/apache2/php.ini
-    exit
-    
+
 **RedHat** 
 
-    sudo yum install httpd
+    sudo su
+    yum install httpd
+    echo "extension=sqlsrv.so" > /etc/php.d/sqlsrv.ini
+    echo "extension=pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
-**Mac OS X** 
+**SUSE**
+
+    sudo su
+    zypper install apache2 apache2-mod_php7
+    a2enmod php7
+    echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
+    echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
+
+**macOS** 
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
 
 #### PHP 7.1 
 
-**Ubuntu**
+**Ubuntu and Debian**
     
     sudo su
     apt-get install libapache2-mod-php7.1 apache2
@@ -253,35 +313,48 @@ The following instructions assume a clean environment and show how to install PH
     a2enmod php7.1
     echo "extension=sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
     echo "extension=pdo_sqlsrv.so" >> /etc/php/7.1/apache2/php.ini
-    exit
-    
+
 **RedHat** 
 
-    sudo yum install httpd 
+    sudo su
+    yum install httpd
+    echo "extension=sqlsrv.so" > /etc/php.d/sqlsrv.ini
+    echo "extension=pdo_sqlsrv.so" > /etc/php.d/pdo_sqlsrv.ini
 
-**Mac OS X** 
+**SUSE**
+
+    sudo su
+    zypper install apache2 apache2-mod_php7
+    a2enmod php7
+    echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
+    echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
+
+**macOS** 
 
     (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/apache2/2.4/httpd.conf
     
-	
+    
 ### Step 5: Restart Apache to load the new php.ini file
 
-**Ubuntu**
+**Ubuntu, Debian, and SUSE**
 
-	sudo service apache2 restart
+    sudo systemctl restart apache2
 
 **RedHat**
 
-	sudo apachectl restart 
-	
-**Mac OS X** 
+    sudo systemctl restart httpd 
 
-	sudo apachectl restart 
+Note: On RedHat, SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to a database through SELinux, run the following command: 
 
-*Note to RedHat users: SELinux is installed by default and runs in Enforcing mode. To allow Apache to connect to database through SELinux, do this `sudo setsebool -P httpd_can_network_connect_db 1`     
+    sudo setsebool -P httpd_can_network_connect_db 1     
+
+**macOS** 
+
+    sudo apachectl restart  
+
 
 ### Step 6: Create your sample app
-Navigate to `/var/www/html` (`/usr/local/var/www/htdocs` on Mac) and create a new file called testsql.php. Copy and paste the following code in tetsql.php and change the servername, username, password and databasename.
+Navigate to your system's document root -- `/var/www/html` on Ubuntu, Debian, and Redhat, `/srv/www/htdocs` on SUSE, or `/usr/local/var/www/htdocs` on Mac. Create a new file called testsql.php. Copy and paste the following code into testsql.php and change the servername, username, password and databasename.
 
     <?php
     $serverName = "yourServername";
@@ -338,7 +411,7 @@ For samples, please see the sample folder.  For setup instructions, see [here](h
 ## Limitations
 
 - This release contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5.
-- Binding output parameter using emulate prepare is not supported.
+- Binding output parameters using emulate prepare is not supported.
 - Linux
   - ODBC 3.52 is supported but not 3.8.
   - Connection using named instances using '\' is not supported.
@@ -370,11 +443,11 @@ version number MAY have trailing pre-release version to indicate the stability, 
 *Note that PECL package version does not have the hyphen before pre-release version, due to restrictions in PECL. Example of PECL package version: 1.2.3preview*
 - Build metadata MAY be denoted by a plus sign followed by 4 digits, such as  `1.2.3-preview+5678` or `1.2.3+5678`. Build meta data does NOT figure into the precedence order.
 
-	
+    
 
 ## Future Plans
 - Expand SQL 16 Feature Support (example: Always Encrypted).
-- Build Verification/Fundamental Tests.
+- Add More Verification/Fundamental Tests.
 - Bug Fixes.
 
 ## Guidelines for Reporting Issues
@@ -395,15 +468,15 @@ Thank you!
 ## FAQs
 **Q:** Can we get dates for any of the Future Plans listed above?
 
-**A:** At this time, Microsoft is not able to announce dates. We are working extremely hard to release future versions of the driver. We will share future plans once they solidify over the next few weeks. 
+**A:** At this time, Microsoft is not able to announce dates. We are working extremely hard to release future versions of the driver. We will share future plans as appropriate. 
 
 **Q:** What's next?
 
-**A:** On July 20, 2016 we released the early technical preview for our PHP Driver. We will continue releasing frequent technical previews until we reach production quality.
+**A:** On July 6, 2017 we released the production release version 4.3.0 of our PHP Driver. We will continue working on our future plans and releasing previews of upcoming releases frequently.
 
 **Q:** Is Microsoft taking pull requests for this project?
 
-**A:** We will not be seeking to take pull requests until GA, Build Verification, and Fundamental tests are released. At this point Microsoft will also begin actively developing using this GitHub project as the prime repository.
+**A:** Yes. Please submit pull requests to the **dev** branch and not the **master** branch.
 
 
 
@@ -417,7 +490,7 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 ## Resources
 
-**Documentation**: [MSDN Online Documentation][phpdoc].  Please note that this documentation is not yet updated for PHP 7.
+**Documentation**: [MSDN Online Documentation][phpdoc].
 
 **Team Blog**: Browse our blog for comments and announcements from the team in the [team blog][blog].
 

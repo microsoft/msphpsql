@@ -2,32 +2,41 @@
 
 namespace PDOSqlsrvPerfTest;
 use PDO;
-class PDOSqlsrvUtil{
+class PDOSqlsrvUtil
+{
     
-    public static function connect(){
+    public static $loopsPerCRUDIter = 100;
+    
+    public static function connect()
+    {
         require dirname(__FILE__).DIRECTORY_SEPARATOR.'connect.php';
-        try{
+        try
+        {
             $conn = new PDO( "sqlsrv:Server=$server; Database=$database; ConnectionPooling=$pooling; MultipleActiveResultSets=$mars" , $uid, $pwd );       
             $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             return $conn;
         }
-        catch( PDOException $e ){
+        catch( PDOException $e )
+        {
             var_dump( $e );
             exit;
         }
     }
 
-    public static function disconnect( $conn ){
+    public static function disconnect( $conn )
+    {
         $conn = null;
     }
 
-    public static function selectVersion( $conn ){
+    public static function selectVersion( $conn )
+    {
         $sql = "SELECT @@Version";
         $stmt = self::query( $conn, $sql );
         return self::fetch( $stmt );
     }
 
-    public static function createDbTableProc( $conn, $databaseName, $tableName, $procName ){
+    public static function createDbTableProc( $conn, $databaseName, $tableName, $procName )
+    {
         $tableParams = "id INTEGER, name VARCHAR(32), value INTEGER, start_date DATE, time_added TIMESTAMP, set_time TIME(7)";
         $procParams = "@id INTEGER, @name VARCHAR(32)";
         $procTextBase = "SET NOCOUNT ON; SELECT id, name, value FROM $databaseName.$tableName WHERE id = @id AND name = @name";
@@ -37,7 +46,8 @@ class PDOSqlsrvUtil{
         self::createStoredProc( $conn, $procName, $procParams, $procTextBase );
     }
 
-    public static function generateInsertValues(){
+    public static function generateInsertValues()
+    {
         $vcharVal = "test string";
         $nvcharVal = "wstring";
         $intVal = 3;
@@ -52,7 +62,8 @@ class PDOSqlsrvUtil{
         return $values;    
     }
 
-    public static function generateUpdateValues(){
+    public static function generateUpdateValues()
+    {
         $vcharVal = "test string updated";
         $nvcharVal = "wstring updated";
         $intVal = 5;
@@ -67,7 +78,8 @@ class PDOSqlsrvUtil{
         return $updatedValues;
     }
 
-    public static function generateUpdateParams(){
+    public static function generateUpdateParams()
+    {
         $fieldNames = array(
                     "vstring",
                     "nvstring",
@@ -81,41 +93,47 @@ class PDOSqlsrvUtil{
                     "dtoffset");
 
         $params = "";
-        foreach( $fieldNames as $fieldName ){
+        foreach( $fieldNames as $fieldName )
+        {
             $params = $params.$fieldName."=?,";
         }
         $params = rtrim($params,", ");
         return $params;    
     }
 
-    public static function insertWithPrepare( $conn, $tableName, $values ){
+    public static function insertWithPrepare( $conn, $tableName, $values )
+    {
         $sql = "INSERT INTO $tableName VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = self::prepare( $conn, $sql );
         self::bindParams( $stmt, $values );
         self::execute( $stmt );
     }
     
-    public static function fetchWithPrepare( $conn, $tableName ){
+    public static function fetchWithPrepare( $conn, $tableName )
+    {
         $sql = "SELECT * FROM $tableName";
         $stmt = self::prepare( $conn, $sql );
         self::execute( $stmt );
         while ( $row = self::fetch( $stmt )){}   
     }
 
-    public static function deleteWithPrepare( $conn, $tableName ){
+    public static function deleteWithPrepare( $conn, $tableName )
+    {
         $sql = "DELETE TOP (1) FROM $tableName";
         $stmt = self::prepare( $conn, $sql );
         self::execute( $stmt );
     }
 
-    public static function updateWithPrepare( $conn, $tableName, $updateValues, $params ){
+    public static function updateWithPrepare( $conn, $tableName, $updateValues, $params )
+    {
         $sql = "UPDATE $tableName SET ".$params;
         $stmt = self::prepare( $conn, $sql );
         self::bindParams( $stmt, $updateValues );
         self::execute( $stmt );
     }
 
-    private function bindParams( $stmt, $values ){
+    private function bindParams( $stmt, $values )
+    {
         //This functionn assumes the fields are from createCRUDTable()
         self::bindParam( $stmt, 1, $values[0], PDO::PARAM_STR);
         self::bindParam( $stmt, 2, $values[1], PDO::PARAM_STR);
@@ -129,7 +147,8 @@ class PDOSqlsrvUtil{
         self::bindParam( $stmt, 10, $values[9], PDO::PARAM_STR);
     }
 
-    public static function createCRUDTable( $conn, $tableName ){
+    public static function createCRUDTable( $conn, $tableName )
+    {
         $fields = array(
                     "vstring" => "VARCHAR(64)",
                     "nvstring" => "NVARCHAR(64)",
@@ -142,86 +161,106 @@ class PDOSqlsrvUtil{
                     "vbin" => "VARBINARY",
                     "dtoffset" => "DATETIMEOFFSET");
         $params = "";
-        foreach( $fields as $fieldName => $type ){
+        foreach( $fields as $fieldName => $type )
+        {
             $params .= $fieldName." ".$type.",";
         }
         $params = rtrim($params,", ");
         self::createTable( $conn, $tableName, $params );
     }
 
-    private function createDatabase( $conn, $dbName ){
+    private function createDatabase( $conn, $dbName )
+    {
         $sql = "CREATE DATABASE $dbName";
         $conn->exec( $sql );
     }
 
-    public static function dropDatabase( $conn, $dbName ){
+    public static function dropDatabase( $conn, $dbName )
+    {
         $sql = "USE MASTER;DROP DATABASE $dbName";
         $conn->exec( $sql );
     }
 
-    public static function createTable( $conn, $tableName, $params ){
+    public static function createTable( $conn, $tableName, $params )
+    {
         $sql = "CREATE TABLE $tableName ($params)";
         $conn->exec( $sql );
     }
 
-    public static function dropTable( $conn, $tableName ){
+    public static function dropTable( $conn, $tableName )
+    {
         $sql = "DROP TABLE $tableName";
         $conn->exec( $sql );
     }
 
-    private function useDatabase( $conn, $dbName ){
+    private function useDatabase( $conn, $dbName )
+    {
         $sql = "USE $dbName";
         $conn->exec( $sql );
     }
 
-    private function createStoredProc( $conn, $procName, $params, $text ){
+    private function createStoredProc( $conn, $procName, $params, $text )
+    {
         $sql = "CREATE PROCEDURE $procName $params AS $text";
         $conn->exec( $sql );
     }
 
-    private function dropStoredProc( $conn, $procName ){
+    private function dropStoredProc( $conn, $procName )
+    {
         $sql = "DROP PROCEDURE $procName";
         $conn->exec( $sql );
     }
 
-    private function query( $conn, $sql ){
-        try{
+    private function query( $conn, $sql )
+    {
+        try
+        {
             return $conn->query( $sql );
         }
-        catch( PDOException $e ){
+        catch( PDOException $e )
+        {
             var_dump( $e );
             exit;
         }
     }
 
-    private function fetch( $stmt ){
+    private function fetch( $stmt )
+    {
         return $stmt->fetch();
     }
 
-    private function prepare( $conn, $sql ){
-        try{
+    private function prepare( $conn, $sql )
+    {
+        try
+        {
             $stmt = $conn->prepare( $sql );
-            if( $stmt === false ){
+            if( $stmt === false )
+            {
                 die( "Failed to prepare\n");
             }
             return $stmt;
         }
-        catch( PDOException $e ){
+        catch( PDOException $e )
+        {
             var_dump( $e );
             exit;
         }
     }
     
-    private function execute( $stmt ){
+    private function execute( $stmt )
+    {
         $ret = $stmt->execute();
-        if( $ret === false ){
+        if( $ret === false )
+        {
             die( "Failed to execute\n" );
         }
     }
 
-    private function bindParam( $stmt, $index, $value, $type ){
+    private function bindParam( $stmt, $index, $value, $type )
+    {
         $ret = $stmt->bindParam( $index, $value, $type );
-        if ( $ret === false){
+        if ( $ret === false)
+        {
             die( "Faild to bind\n");
         }
     }
