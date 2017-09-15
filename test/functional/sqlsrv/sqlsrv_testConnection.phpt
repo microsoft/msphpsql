@@ -191,9 +191,9 @@ array\(1\) \{
     \["code"\]=>
     int\(-106\)
     \[2\]=>
-    string\([0-9]+\) "Invalid value SQL Server Native Client 11.0 was specified for Driver option. For the list of valid connection options visit .*"
+    string\([0-9]+\) "Invalid value SQL Server Native Client 11.0 was specified for Driver option."
     \["message"\]=>
-    string\([0-9]+\) "Invalid value SQL Server Native Client 11.0 was specified for Driver option. For the list of valid connection options visit .*"
+    string\([0-9]+\) "Invalid value SQL Server Native Client 11.0 was specified for Driver option."
   \}
 \}
 Test sqlsrv_connect with driver injection
