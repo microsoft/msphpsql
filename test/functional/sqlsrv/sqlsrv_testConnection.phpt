@@ -187,13 +187,13 @@ array\(1\) \{
     \["SQLSTATE"\]=>
     string\(5\) "IMSSP"
     \[1\]=>
-    int\(-1\)
+    int\(-106\)
     \["code"\]=>
-    int\(-1\)
+    int\(-106\)
     \[2\]=>
-    string\([0-9]+\) "Invalid option .* was passed to sqlsrv_connect."
+    string\([0-9]+\) "Invalid value SQL Server Native Client 11.0 was specified for Driver option."
     \["message"\]=>
-    string\([0-9]+\) "Invalid option .* was passed to sqlsrv_connect."
+    string\([0-9]+\) "Invalid value SQL Server Native Client 11.0 was specified for Driver option."
   \}
 \}
 Test sqlsrv_connect with driver injection

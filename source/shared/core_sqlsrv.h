@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.0 for PHP for SQL Server
+// Microsoft Drivers 5.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -151,6 +151,7 @@ OACR_WARNING_POP
 
 #include <deque>
 #include <map>
+#include <string>
 #include <algorithm>
 #include <limits>
 #include <cassert>
@@ -172,6 +173,8 @@ const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
 const int SQL_SERVER_MAX_PRECISION = 38;
 const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
+// increase the maximum message length to accommodate for the long error returned for operand type clash
+const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 4;
 
 // max size of a date time string when converting from a DateTime object to a string
 const int MAX_DATETIME_STRING_LEN = 256;
@@ -186,6 +189,9 @@ namespace AzureADOptions {
     const char AZURE_AUTH_SQL_PASSWORD[] = "SqlPassword";
     const char AZURE_AUTH_AD_PASSWORD[] = "ActiveDirectoryPassword";
 }
+
+// the message returned by ODBC Driver for SQL Server
+const char ODBC_CONNECTION_BUSY_ERROR[] = "Connection is busy with results for another command";
 
 // types for conversions on output parameters (though they can be used for input parameters, they are ignored)
 enum SQLSRV_PHPTYPE {
@@ -772,9 +778,9 @@ struct sqlsrv_error : public sqlsrv_error_const {
     sqlsrv_error( _In_ SQLCHAR* sql_state, _In_ SQLCHAR* message, _In_ SQLINTEGER code, _In_ bool printf_format = false )
     {
         sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
-        native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_MESSAGE_LENGTH + 1 ));
+        native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
         strcpy_s( reinterpret_cast<char*>( sqlstate ), SQL_SQLSTATE_BUFSIZE, reinterpret_cast<const char*>( sql_state ));
-        strcpy_s( reinterpret_cast<char*>( native_message ), SQL_MAX_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>( message ));
+        strcpy_s( reinterpret_cast<char*>( native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>( message ));
         native_code = code;
         format = printf_format;
     }
@@ -1019,7 +1025,6 @@ struct sqlsrv_henv {
     }
 };
 
-
 //*********************************************************************************************************************************
 // Connection
 //*********************************************************************************************************************************
@@ -1033,16 +1038,32 @@ enum SERVER_VERSION {
 };
 
 // supported driver versions.
-enum DRIVER_VERSION : size_t {
-	MIN = 0,
-	ODBC_DRIVER_13 = MIN,
-	ODBC_DRIVER_11 = 1,
-	MAX = ODBC_DRIVER_11,
+// the latest RTWed ODBC is the first one
+enum DRIVER_VERSION : std::size_t{
+    FIRST = 0,
+    ODBC_DRIVER_13 = FIRST,
+    ODBC_DRIVER_11 = 1,
+    ODBC_DRIVER_17 = 2,
+    LAST = ODBC_DRIVER_17
 };
 
 // forward decl
 struct sqlsrv_stmt;
 struct stmt_option;
+
+// This holds the various details of column encryption. 
+struct col_encryption_option {
+    bool            enabled;            // column encryption enabled, false by default
+    zval_auto_ptr   ksp_name;           // keystore provider name 
+    zval_auto_ptr   ksp_path;           // keystore provider path to the dynamically linked libary (either a *.dll or *.so)
+    zval_auto_ptr   ksp_encrypt_key;    // the encryption key used to configure the keystore provider 
+    size_t          key_size;           // the length of ksp_encrypt_key without the NULL terminator
+    bool            ksp_required;       // a keystore provider is required to enable column encryption, false by default 
+
+    col_encryption_option() : enabled( false ), key_size ( 0 ), ksp_required( false )
+    {
+    }
+};
 
 // *** connection resource structure ***
 // this is the resource structure returned when a connection is made.
@@ -1051,14 +1072,15 @@ struct sqlsrv_conn : public sqlsrv_context {
     // instance variables
     SERVER_VERSION server_version;  // version of the server that we're connected to
 
-	DRIVER_VERSION	driver_version;
+    col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
+    bool is_driver_set;
 
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding TSRMLS_DC ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
-        driver_version = ODBC_DRIVER_13; 
+        is_driver_set = false;
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be 
@@ -1085,6 +1107,11 @@ const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
+const char ColumnEncryption[] = "ColumnEncryption";
+const char Driver[] = "Driver";
+const char CEKeystoreProvider[] = "CEKeystoreProvider";
+const char CEKeystoreName[] = "CEKeystoreName";
+const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
@@ -1131,6 +1158,11 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_APPLICATION_INTENT,
     SQLSRV_CONN_OPTION_MULTI_SUBNET_FAILOVER,
     SQLSRV_CONN_OPTION_AUTHENTICATION,
+    SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
+    SQLSRV_CONN_OPTION_DRIVER,
+    SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
+    SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
+    SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
     SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
@@ -1171,17 +1203,29 @@ struct connection_option {
     void                (*func)( connection_option const*, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC );
 };
 
+// connection attribute functions
+
 // simply add the parsed value to the connection string
 struct conn_str_append_func {
-
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
 struct conn_null_func {
-
-    static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ 
-                      TSRMLS_DC );
+    static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC );
 };
+
+struct column_encryption_set_func {
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
+struct driver_set_func {   
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
+struct ce_ksp_provider_set_func {
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
 
 // factory to create a connection (since they are subclassed to instantiate statements)
 typedef sqlsrv_conn* (*driver_conn_factory)( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv TSRMLS_DC );
@@ -1191,6 +1235,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd, 
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[], 
                                   _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC );
+SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ bool& is_missing_driver, _In_ bool is_pooled );
 void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC );
 void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
@@ -1307,6 +1352,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool past_fetch_end;                  // Core_sqlsrv_fetch sets this field when the statement goes beyond the last row
     sqlsrv_result_set* current_results;   // Current result set
     SQLULEN cursor_type;                  // Type of cursor for the current result set
+    int fwd_row_index;                // fwd_row_index is the current row index, SQL_CURSOR_FORWARD_ONLY
     bool has_rows;                        // Has_rows is set if there are actual rows in the row set
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field
@@ -1593,6 +1639,8 @@ enum SQLSRV_ERROR_CODES {
 
     SQLSRV_ERROR_ODBC,
     SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
+    SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+    SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
     SQLSRV_ERROR_ZEND_HASH,
     SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE,
     SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE,
@@ -1631,15 +1679,15 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_FIELD_INDEX_ERROR,
     SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
     SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
+    SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
+    SQLSRV_ERROR_KEYSTORE_PATH_MISSING,
+    SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
+    SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
 
 };
-
-// the message returned by ODBC Driver 11 for SQL Server
-static const char* CONNECTION_BUSY_ODBC_ERROR[] = { "[Microsoft][ODBC Driver 13 for SQL Server]Connection is busy with results for another command",
-										   "[Microsoft][ODBC Driver 11 for SQL Server]Connection is busy with results for another command" };
 
 // SQLSTATE for all internal errors
 extern SQLCHAR IMSSP[];
@@ -1806,18 +1854,22 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[ SQL_MAX_MESSAGE_LENGTH + 1 ] = { '\0' };
+            SQLCHAR err_msg[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { '\0' };
             SQLSMALLINT len = 0;
             
             SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
-                                             err_msg, SQL_MAX_MESSAGE_LENGTH, &len );
+                                             err_msg, SQL_MAX_ERROR_MESSAGE_LENGTH, &len );
 
             CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt ) {
          
                 throw CoreException();
             }
-			std::size_t driver_version = stmt->conn->driver_version;
-            if( !strcmp( reinterpret_cast<const char*>( err_msg ), CONNECTION_BUSY_ODBC_ERROR[driver_version] )) {
+
+            // the message returned by ODBC Driver for SQL Server
+            const std::string connection_busy_error( ODBC_CONNECTION_BUSY_ERROR );
+            const std::string returned_error( reinterpret_cast<char*>( err_msg ));
+
+            if(( returned_error.find( connection_busy_error ) != std::string::npos )) {
              
                 THROW_CORE_ERROR( stmt, SQLSRV_ERROR_MARS_OFF );
             }
@@ -1877,6 +1929,14 @@ namespace core {
         }
     }
 
+    inline void SQLCloseCursor( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+    {
+        SQLRETURN r = ::SQLCloseCursor( stmt->handle() );
+
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
+    }
 
     inline void SQLColAttribute( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLUSMALLINT field_identifier, 
                                  _Out_writes_bytes_opt_(buffer_length) SQLPOINTER field_type_char, _In_ SQLSMALLINT buffer_length,
@@ -1927,6 +1987,17 @@ namespace core {
 			throw CoreException();
 		}
 	}
+
+    inline void SQLDescribeParam( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT paramno, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
+        _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
+    {
+        SQLRETURN r;
+        r = ::SQLDescribeParam( stmt->handle(), paramno, data_type, col_size, decimal_digits, nullable );
+
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
+    }
 
     inline void SQLEndTran( _In_ SQLSMALLINT handleType, _Inout_ sqlsrv_conn* conn, _In_ SQLSMALLINT completionType TSRMLS_DC )
     {
@@ -1996,6 +2067,15 @@ namespace core {
         SQLRETURN r;
         r = ::SQLFreeHandle( ctx.handle_type(), ctx.handle() );
         CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {}
+    }
+
+    inline void SQLGetStmtAttr( _Inout_ sqlsrv_stmt* stmt, _In_ SQLINTEGER attr, _Out_writes_opt_(buf_len) void* value_ptr, _In_ SQLINTEGER buf_len, _Out_opt_ SQLINTEGER* str_len TSRMLS_DC)
+    {
+        SQLRETURN r;
+        r = ::SQLGetStmtAttr( stmt->handle(), attr, value_ptr, buf_len, str_len );
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
     }
 
     inline SQLRETURN SQLGetData( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
@@ -2138,6 +2218,17 @@ namespace core {
         }
     }
 
+    inline void SQLSetDescField( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_( str_len ) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  TSRMLS_DC )
+    {
+        SQLRETURN r;
+        SQLHDESC hIpd = NULL;
+        core::SQLGetStmtAttr( stmt, SQL_ATTR_IMP_PARAM_DESC, &hIpd, 0, 0 );
+        r = ::SQLSetDescField( hIpd, rec_num, fld_id, value_ptr, str_len );
+
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
+    }
 
     inline void SQLSetEnvAttr( _Inout_ sqlsrv_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
     {
@@ -2348,17 +2439,15 @@ sqlsrv_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* 
 
 } // namespace core
 
-// connection attribute functions
 template <unsigned int Attr>
 struct str_conn_attr_func {
 
     static void func( connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
     {
         try {
-            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )),
-                                     static_cast<SQLINTEGER>(Z_STRLEN_P( value )) TSRMLS_CC );
+            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )), static_cast<SQLINTEGER>( Z_STRLEN_P( value )) TSRMLS_CC );
         }
-        catch( core::CoreException& ) {
+        catch ( core::CoreException& ) {
             throw;
         }
     }

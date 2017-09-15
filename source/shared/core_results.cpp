@@ -3,7 +3,7 @@
 //
 // Contents: Result sets
 //
-// Microsoft Drivers 5.0 for PHP for SQL Server
+// Microsoft Drivers 5.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -83,7 +83,7 @@ bool get_bit( _In_ void* ptr, _In_ unsigned int bit )
 
 // read in LOB field during buffered result creation
 SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_buffered_result_set::meta_data& meta,
-                           _In_ zend_long mem_used TSRMLS_DC );
+                           _In_ zend_long mem_used, _In_ size_t row_count TSRMLS_DC );
 
 // dtor for each row in the cache
 void cache_row_dtor( _In_ zval* data );
@@ -342,12 +342,12 @@ struct row_dtor_closure {
 sqlsrv_error* odbc_get_diag_rec( _In_ sqlsrv_stmt* odbc, _In_ SQLSMALLINT record_number )
 {
     SQLWCHAR wsql_state[ SQL_SQLSTATE_BUFSIZE ];
-    SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ];
+    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ];
     SQLINTEGER native_code;
     SQLSMALLINT wnative_message_len = 0;
 
     SQLRETURN r = SQLGetDiagRecW( SQL_HANDLE_STMT, odbc->handle(), record_number, wsql_state, &native_code, wnative_message, 
-                                  SQL_MAX_MESSAGE_LENGTH + 1, &wnative_message_len );
+                                  SQL_MAX_ERROR_MESSAGE_LENGTH + 1, &wnative_message_len );
     if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
         return NULL;
     }
@@ -687,7 +687,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
 
                             out_buffer_length = &out_buffer_temp;
                             SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[ meta[i].offset ] );
-                            *lob_addr = read_lob_field( stmt, i, meta[i], mem_used TSRMLS_CC );
+                            *lob_addr = read_lob_field( stmt, i, meta[i], mem_used, row_count TSRMLS_CC );
                             // a NULL pointer means NULL field
                             if( *lob_addr == NULL ) {
                                 *out_buffer_length = SQL_NULL_DATA;
@@ -734,12 +734,12 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                         break;
                 }
 
-                row_count++;
                 if( *out_buffer_length == SQL_NULL_DATA ) {
                     set_bit( row, i );
                 }
             }
 
+            row_count++;
             SQLSRV_ASSERT( row_count < INT_MAX, "Hard maximum of 2 billion rows exceeded in a buffered query" );
 
             // add it to the cache
@@ -1498,7 +1498,7 @@ void cache_row_dtor( _In_ zval* data )
 }
 
 SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_buffered_result_set::meta_data& meta, 
-                           _In_ zend_long mem_used TSRMLS_DC )
+                           _In_ zend_long mem_used, _In_ size_t row_count TSRMLS_DC )
 {
     SQLSMALLINT extra = 0;
     SQLULEN* output_buffer_len = NULL;
@@ -1563,6 +1563,19 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
 
         SQLSRV_ASSERT( SQL_SUCCEEDED( r ), "Unknown SQL error not triggered" );
 
+        if ( stmt->conn->ce_option.enabled == true ) {
+            // cursor type SQLSRV_CURSOR_BUFFERED has to be FORWARD_ONLY
+            // thus has to close and reopen cursor to reset the cursor buffer
+            core::SQLCloseCursor(stmt);
+            core::SQLExecute(stmt);
+            // FETCH_NEXT until the cursor reaches the row that it was at
+            for (int i = 0; i <= row_count; i++) {
+                core::SQLFetchScroll(stmt, SQL_FETCH_NEXT, 0);
+            }
+        }
+        else {
+            already_read += to_read - already_read;
+        }
         // if the type of the field returns the total to be read, we use that and preallocate the buffer
         if( last_field_len != SQL_NO_TOTAL ) {
 
@@ -1571,8 +1584,6 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
 
                 throw core::CoreException();
             }
-
-            already_read += to_read - already_read;
             to_read = last_field_len;
             buffer.resize( to_read + extra + sizeof( SQLULEN ));
             output_buffer_len = reinterpret_cast<SQLULEN*>( buffer.get() );
@@ -1582,7 +1593,6 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
         }
         // otherwise allocate another chunk of memory to read in
         else {
-            already_read += to_read - already_read;
             to_read *=  2;
             CHECK_CUSTOM_ERROR( mem_used + to_read > stmt->buffered_query_limit * 1024, stmt, 
                                 SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {

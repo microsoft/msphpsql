@@ -131,10 +131,10 @@ function RunTest()
 RunTest();
 
 ?>
---EXPECT--
+--EXPECTREGEX--
 ﻿
-SQLSTATE[22018]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: nvarchar(max) is incompatible with sql_variant
-SQLSTATE[22018]: [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Operand type clash: nvarchar(max) is incompatible with sql_variant
+SQLSTATE\[22018\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Operand type clash: nvarchar\(max\) is incompatible with sql_variant
+SQLSTATE\[22018\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Operand type clash: nvarchar\(max\) is incompatible with sql_variant
 
 Done
-Test "pdo_param_output_variants" completed successfully.
+Test \"pdo_param_output_variants\" completed successfully\.

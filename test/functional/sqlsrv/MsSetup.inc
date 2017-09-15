@@ -40,4 +40,9 @@ if (isset($_ENV['MSSQL_SERVER']) || isset($_ENV['MSSQL_USER']) || isset($_ENV['M
     $pwd = $userPassword; 
     $databaseName = $database; 
 }
+
+// column encryption variables
+$keystore = "none";         // key store provider, acceptable values are none, win, ksp, akv
+$dataEncrypted = false;     // whether data is to be encrypted
+
 ?>

@@ -80,6 +80,17 @@ function IsDaasMode()
     return ($daasMode ? true : false);
 }
 
+function IsAEQualified($conn)
+{
+    $msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
+    $server_ver = sqlsrv_server_info($conn)['SQLServerVersion'];
+    $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
+    $msodbcsql_min = explode(".", $msodbcsql_ver)[1];
+    if ($msodbcsql_maj < 17 || explode('.', $server_ver)[0] < 13)
+        return false;
+    return true;
+}
+
 function StartTest($testName)
 {
     include 'MsSetup.inc';
@@ -158,6 +169,409 @@ function Connect($options = array())
     Trace(" successfully connected.\n\n");
     return ($conn);
 }
+
+
+/**
+ * Connect to the database specified in MsSetup.inc; Column Encryption options automatically added when $keystore is not none
+ * @param array $options : connection attributes to pass to sqlsrv_connect
+ * @param bool $disableCE : flag for disabling column encryption even when keystore is NOT none
+ *                          for testing fetching encrypted data when connection column encryption is off
+ * @return connection resource
+ */
+function ae_connect( $options = array(), $disableCE = false )
+{
+    require  'MsSetup.inc';
+    if ( sizeof( $options ) > 0 )
+    {
+        $connectionOptions = array_merge( $connectionOptions, $options );
+    }
+    if ( $keystore != "none" && !$disableCE )
+    {
+        $connectionOptions = array_merge( $connectionOptions, array( "ColumnEncryption" => "Enabled" ));
+    }
+    if ( $keystore == "ksp" && !$disableCE )
+    {   
+        require( 'AE_Ksp.inc' );
+        $ksp_path = getKSPPath();
+        $ksp_options = array( "CEKeystoreProvider"=>$ksp_path, "CEKeystoreName"=>$ksp_name, "CEKeystoreEncryptKey"=>$encrypt_key );
+        $connectionOptions = array_merge( $connectionOptions, $ksp_options );
+    }
+    $conn = sqlsrv_connect( $server, $connectionOptions );
+    if ( $conn === false )
+        FatalError( "Failed to connect to $server." );
+    return $conn;
+}
+
+
+/**
+ * @return string CEK name depending on the connection keywords
+ */
+function getCekName()
+{
+    require  'MsSetup.inc';
+    $cekName = '';
+    switch ( $keystore ) {
+        case "none":
+            $cekName = '';
+            break;
+        case "win":
+            $cekName = 'AEColumnKey';
+            break;
+        case "ksp":
+            $cekName = 'CustomCEK';
+            break;
+        case "akv":
+            $cekName = 'AKVColumnKey';
+            break;
+        default:
+            echo "getCekName: Invalid keystore name.\n";
+    }
+    return $cekName;
+}
+
+
+/**
+ * class for encapsulating column metadata needed for creating a table
+ */
+class columnMeta {
+    public $colName;
+    public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
+    public $encType;    //randomized or deterministic; default is deterministic
+    public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
+        
+    function __construct( $dataType, $colName = null, $options = null, $encType = "deterministic" )
+    {
+        if ( is_null( $colName ))
+        {
+            $this->colName = get_default_colname( $dataType );
+        }
+        else
+        {
+            $this->colName = $colName;
+        }
+        $this->dataType = $dataType;
+        $this->encType = $encType;
+        $this->options = $options;
+    }
+    /**
+     * @return string column definition for creating a table
+     */
+    function getColDef()
+    {
+        require  'MsSetup.inc';
+        $append = " ";
+        
+        // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
+        if ( $keystore != "none" && stripos( $this->options, "identity" ) === false )
+        {
+            $cekName = getCekName();
+            if ( stripos( $this->dataType, "char" ) !== false )
+                $append .= "COLLATE Latin1_General_BIN2 ";
+            $append .= sprintf( "ENCRYPTED WITH (ENCRYPTION_TYPE = %s, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ", $this->encType );
+        }
+        $append .= $this->options;
+        $colDef = "[" . $this->colName . "] " . $this->dataType . $append;
+        return $colDef;
+    }
+}
+
+
+/**
+ * @return string default column name when a name is not provided in the columnMeta class
+ */
+function get_default_colname( $dataType )
+{
+    $colName = "c_" . str_replace( ",", "_", str_replace( "(", "_", $dataType ));
+    $colName = rtrim( $colName, ")" );
+    return $colName;
+}
+
+
+/**
+ * Create a table
+ * @param object $conn : PDO connection object
+ * @param string $tbname : name of the table to be created
+ * @param array $columnMetaArr : array of columnMeta objects, which contain metadata for one column
+ */
+function create_table( $conn, $tbname, $columnMetaArr )
+{
+    DropTable( $conn, $tbname );
+    $colDef = "";
+    foreach ( $columnMetaArr as $meta )
+    {
+        $colDef = $colDef . $meta->getColDef() . ", ";
+    }
+    $colDef = rtrim( $colDef, ", " );
+    $createSql = "CREATE TABLE $tbname ( $colDef )";
+    sqlsrv_query( $conn, $createSql );
+}
+
+
+/**
+ * class for encapsulating optional parameters for binding parameters in sqlsrv_prepare
+ */
+class bindParamOption {
+    public $index;      //1-based index of the parameter
+    public $direction;  //SQLSRV_PARAM_ constant indicating the parameter direction
+    public $phpType;    //SQLSRV_PHPTYPE_ constant specifying the php type of the return values
+    public $sqlType;    //SQLSRV_SQLTYPE_ constant specifying the SQL type of the input
+    
+    function __construct( $index, $direction = null, $phpType = null, $sqlType = null )
+    {
+        $this->index = $index;
+        $this->direction = $direction;
+        $this->phpType = $phpType;
+        $this->sqlType = $sqlType;
+    }
+    /**
+     * @param resource $conn : connection resource
+     * @param mix $var : variable to bind to the SQL statement parameter
+     * @return array needed to bind parameter in sqlsrv_prepare
+     */
+    function bindParamArr( $var )
+    {
+        // get the constant values of direction, phpType, and sqlType
+        $direction = null;
+        $phpType = null;
+        $sqlType = null;
+        if ( $this->direction )
+            $direction = constant( $this->direction );
+        if ( $this->phpType )
+            $phpType = constant( $this->phpType );
+        if ( $this->sqlType )
+        {
+            // parse out the datatype name, size, precision, and/or scale from a SQLSRV_SQLTYPE_ constant
+            $size = null;
+            $prec = null;
+            $scal = null;
+            $type_size = explode( "(", $this->sqlType );
+            $type = $type_size[0];
+            if ( count( $type_size ) > 1 )
+            {
+                $size = $type_size[1];
+                $prec_scal = explode( ",", $size );
+                if ( count( $prec_scal ) > 1 )
+                {
+                    $prec = $prec_scal[0];
+                    $scal = rtrim( $prec_scal[1], ")" );
+                    $size = null;
+                }
+            }
+            // get the sqlType constant
+            if ( $prec && $scal )
+                $sqlType = call_user_func( $type, $prec, $scal );
+            elseif ( $size )
+                $sqlType = call_user_func( $type, $size );
+            else
+                $sqlType = constant( $type );
+        }
+        return array( $var, $direction, $phpType, $sqlType );
+    }
+}
+
+
+/**
+ * Insert a row into a table
+ * @param object $conn : PDO connection object
+ * @param string $tbname : name of the table for the row to be inserted
+ * @param array $inputs : an associative array column name and its value
+ * @param bool $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
+ * $param string $api : SQLSRV API used for executing the insert query
+ *                      accepted values: "query", "queryParamsOp", "prepare", "prepareParamsOp"
+ * @param array $paramOption : an array of bindParamOptions. Should only be provided if $api is "perpareWithParamOp", if provided, has to be in the same order as $inputs
+ * @return object PDOStatement object of the insert statement
+ */
+function insert_row( $conn, $tbname, $inputs, &$r = null, $api = "query", $paramOption = array() )
+{
+    require  'MsSetup.inc';
+     
+    $stmt = null;
+    if ( $keystore == "none" && $api != "queryParamsOp" && $api != "prepareParamsOp" )
+    {
+        $insertSql = get_insertSql_complete( $tbname, $inputs );
+        switch ( $api ) {
+            case "query":
+                $stmt = sqlsrv_query( $conn, $insertSql );
+                break;
+            case "prepare":
+                $stmt = sqlsrv_prepare( $conn, $insertSql );
+                $r = sqlsrv_execute( $stmt );
+                break;
+        }
+    }
+    else
+    {
+        // if AE is on, must bind param
+        $insertSql = get_insertSql_placeholders( $tbname, $inputs );
+        $params = array();
+        if ( empty( $paramOption ))
+        {
+            foreach ( $inputs as $key => $value )
+            {
+                array_push($params, $inputs[$key] );
+            }
+        }
+        else
+        {
+            $i = 1;
+            foreach( $inputs as $key => $value )
+            {
+                $nooption = true;
+                foreach( $paramOption as $op )
+                {
+                    if ( $op->index == $i )
+                    {
+                        array_push( $params, $op->bindParamArr( $inputs[$key] ));
+                        $nooption = false;
+                        $i++;
+                        break;
+                    }
+                }
+                if ( $nooption )
+                {
+                    array_push( $params, $inputs[$key] );
+                    $i++;
+                }
+            }
+        }
+        if ( $keystore != "none" || $api == "prepareParamsOp" )
+        {
+            $stmt = sqlsrv_prepare( $conn, $insertSql, $params );
+            $r = sqlsrv_execute( $stmt );
+        }
+        else
+            $stmt = sqlsrv_query( $conn, $insertSql, $params );
+    }
+    return $stmt;
+}
+            
+
+/**
+ * @param string $tbname : name of the table for an insert sql
+ * @param array $input : associative array containing a key value pair of column name and data to put into an insert sql string
+ * @return string a complete insert sql string
+ */
+function get_insertSql_complete( $tbname, $inputs )
+{
+    $colStr = "INSERT INTO $tbname (";
+    $valStr = "VALUES (";
+    if ( empty( $inputs ))
+    {
+        echo "get_insertSql_complete: inputs for inserting a row cannot be empty.\n";
+        return;
+    }
+    foreach( $inputs as $key => $value )
+    {
+        $colStr .= $key . ", ";
+        if ( is_null( $value ))
+            echo "get_insertSql_complete: value provided for input $value is null.\n";
+        elseif ( is_string( $value ))
+            $valStr .= "'" . $value . "', ";
+        else
+            $valStr .= $value . ", ";
+    }
+    $colStr = rtrim( $colStr, ", " ) . ") ";
+    $valStr = rtrim( $valStr, ", " ) . ") ";
+    $insertSql = $colStr . $valStr;
+    return $insertSql;
+}
+
+
+/**
+ * @param string $tbname : name of the table for an insert sql
+ * @param array $inputs : associative array containing a key value pair of column name and data to put into an insert sql string
+ * @return string an insert sql string with "?" placeholders for all values
+ */
+function get_insertSql_placeholders( $tbname, $inputs )
+{
+    $colStr = "INSERT INTO $tbname (";
+    $valStr = "VALUES (";
+    if ( empty( $inputs ))
+    {
+        echo "get_insertSql_placeholders: inputs for inserting a row cannot be empty.\n";
+        return;
+    }
+    foreach( $inputs as $key => $value )
+    {
+        $colStr .= $key . ", ";
+    }
+    $colStr = rtrim( $colStr, ", " ) . ") ";
+    $valStr .= get_seq_placeholders( count( $inputs )) . ") ";
+    $insertSql = $colStr . $valStr;
+    return $insertSql;
+}
+
+
+/**
+ * @param string $spname : name of the stored procedure
+ * @param int $num : number of parameters needed for the stored procedure
+ * @return string a call stored procedure sql string with "?" placeholders for all parameters
+ */
+function get_callProcSql_placeholders( $spname, $num )
+{
+    $callStr = "{CALL $spname (";
+    $callStr .= get_seq_placeholders( $num ) . ")} ";
+    return $callStr;
+}
+
+
+/**
+ * @param int $num : number of placeholders needed
+ * @return string a string containing $num number of repeated "?" placeholders delimited by ", "
+ */
+function get_seq_placeholders( $num )
+{
+    if ( $num < 0 )
+    {
+        echo "get_seq_placeholders: num provided for creating a sequence of placeholders cannot be less than 0.\n";
+        return;
+    }
+    $placeholderStr = str_repeat( "?, ", $num );
+    $placeholderStr = rtrim( $placeholderStr, ", " );
+    return $placeholderStr;
+}
+
+
+/**
+ * Fetch all rows and all columns given a table name, and print them
+ * @param resource $conn : connection resource
+ * @param string $tbname : name of the table to fetch from
+ */
+function fetch_all( $conn, $tbname )
+{
+    $sql = "SELECT * FROM $tbname";
+    $stmt = sqlsrv_query( $conn, $sql );
+    while ( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ))
+    {
+        foreach ( $row as $key => $value )
+        {
+            if ( is_object( $value ) )
+            {
+                print "$key:\n";
+                foreach ( $value as $k =>$v )
+                {
+                    print ( "  $k: $v\n" );
+                }
+            }
+            else
+                print ( "$key: $value\n" );
+        }
+    }
+}
+
+
+/**
+ * @return bool false if $keystore specified in MsSetup.inc is none, otherwise return true
+ */
+function is_col_enc()
+{
+    require  'MsSetup.inc';
+    if ( $keystore == "none" )
+        return false;
+    else
+        return true;
+}
+
 
 function GetTempTableName($table = '', $temporary = true)
 {
@@ -727,7 +1141,7 @@ function CreateUniqueIndexEx($conn, $tableName, $tableIndex, $colIndex)
 
 function DropTable($conn, $tableName)
 {
-    $stmt = sqlsrv_query($conn, "DROP TABLE [$tableName]");
+    $stmt = sqlsrv_query($conn, "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName");
     if ($stmt === false)
     {
     }
