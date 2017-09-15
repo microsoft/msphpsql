@@ -33,26 +33,26 @@ function test_ColumnEncryption($server ,$connectionOptions){
             }
         }
         else
-		{
+        {
             print_r(sqlsrv_errors());
         }
     }
-	
+    
     // Works for ODBC 17, ODBC 13
     $connectionOptions['ColumnEncryption']='Disabled';
     $conn = sqlsrv_connect( $server, $connectionOptions );
     if( $conn === false )
     {
         if($msodbcsql_maj < 13)
-		{
+        {
             $expected_substr = "Invalid connection string attribute";
             if( strpos(sqlsrv_errors($conn)[0]['message'], $expected_substr ) === false )
-			{
+            {
                 print_r(sqlsrv_errors());
             }
         }
         else
-		{
+        {
             print_r(sqlsrv_errors());
         }
     }
@@ -60,7 +60,7 @@ function test_ColumnEncryption($server ,$connectionOptions){
     {
         sqlsrv_close($conn);
     }
-	
+    
     // should fail for all ODBC drivers
     $connectionOptions['ColumnEncryption']='false';
     $conn = sqlsrv_connect( $server, $connectionOptions );
@@ -68,11 +68,11 @@ function test_ColumnEncryption($server ,$connectionOptions){
     {
         $expected_substr = "Invalid value specified for connection string attribute 'ColumnEncryption'";
         if( strpos(sqlsrv_errors($conn)[0]['message'], $expected_substr ) === false )
-		{
+        {
             print_r(sqlsrv_errors());
         }
     }
-	
+    
     // should fail for all ODBC drivers
     $connectionOptions['ColumnEncryption']=true;
     $conn = sqlsrv_connect( $server, $connectionOptions );
@@ -80,19 +80,19 @@ function test_ColumnEncryption($server ,$connectionOptions){
     {
         $expected_substr = "Invalid value type for option ColumnEncryption was specified.  String type was expected.";
         if( strpos(sqlsrv_errors($conn)[0]['message'], $expected_substr ) === false )
-	    {
+        {
             print_r(sqlsrv_errors());
         }
     }
-	
-	// should fail for all ODBC drivers
+    
+    // should fail for all ODBC drivers
     $connectionOptions['ColumnEncryption']=false;
     $conn = sqlsrv_connect( $server, $connectionOptions );
     if( $conn === false )
     {
        $expected_substr = "Invalid value type for option ColumnEncryption was specified.  String type was expected.";
         if( strpos(sqlsrv_errors($conn)[0]['message'], $expected_substr ) === false )
-		{
+        {
             print_r(sqlsrv_errors());
         }
     }
