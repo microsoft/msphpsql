@@ -41,10 +41,12 @@ sqlsrv_free_stmt( $stmt );
 // for AE only
 if ( is_col_enc() )
 {
-    $conn1 = connect( null, true );
+    $conn1 = ae_connect( null, true );
    
     $selectSql = "SELECT * FROM $tbname";
     $stmt = sqlsrv_query( $conn1, $selectSql );
+    if ( $stmt === false )
+        var_dump( sqlsrv_errors() );
     $encrypted_row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC );
     foreach( $encrypted_row as $key => $value )
     {
