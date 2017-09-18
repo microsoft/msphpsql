@@ -41,7 +41,7 @@ sqlsrv_free_stmt( $stmt );
 // for AE only
 if ( is_col_enc() )
 {
-    $conn1 = connect( null, true );
+    $conn1 = ae_connect( null, true );
    
     $selectSql = "SELECT * FROM $tbname";
     $stmt = sqlsrv_query( $conn1, $selectSql );

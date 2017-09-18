@@ -46,7 +46,7 @@ if ( is_col_enc() )
 {
     try
     {
-        $conn1 = connect( null, null, true );
+        $conn1 = ae_connect( null, null, true );
         $stmt = $conn1->query( $selectSql );
         while ( $decrypted_row = $stmt->fetch( PDO::FETCH_ASSOC )) 
         {
