@@ -8,6 +8,7 @@ Bind params using sqlsrv_prepare without any sql_type specified
 include 'MsCommon.inc';
 include 'AEData.inc';
 
+date_default_timezone_set("Canada/Pacific");
 $dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
 $conn = ae_connect();
 
@@ -55,44 +56,44 @@ Testing date:
 c_det:
   date: 0001-01-01 00:00:00.000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 c_rand:
   date: 9999-12-31 00:00:00.000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 
 Testing datetime: 
 ****Encrypted default type is compatible with encrypted datetime****
 c_det:
   date: 1753-01-01 00:00:00.000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 c_rand:
   date: 9999-12-31 23:59:59.997000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 
 Testing datetime2: 
 ****Encrypted default type is compatible with encrypted datetime2****
 c_det:
   date: 0001-01-01 00:00:00.000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 c_rand:
   date: 9999-12-31 23:59:59.1000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 
 Testing smalldatetime: 
 ****Encrypted default type is compatible with encrypted smalldatetime****
 c_det:
   date: 1900-01-01 00:00:00.000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 c_rand:
   date: 2079-06-05 23:59:00.000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 
 Testing time: 
 ****Encrypted default type is compatible with encrypted time****

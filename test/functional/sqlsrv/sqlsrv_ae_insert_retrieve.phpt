@@ -7,6 +7,7 @@ Retrieving SQL query contains encrypted filter
 <?php
 include 'MsCommon.inc';
 
+date_default_timezone_set("Canada/Pacific");
 $conn = ae_connect();
 
 // Create the table
@@ -75,7 +76,7 @@ LastName: Abel
 BirthDate:
   date: 1996-10-19 00:00:00.000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 
 Checking ciphertext data:
 Done
