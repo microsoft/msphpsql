@@ -8,6 +8,7 @@ Bind params using sqlsrv_prepare with all sql_type
 include 'MsCommon.inc';
 include 'AEData.inc';
 
+date_default_timezone_set("Canada/Pacific");
 $dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
 $compatList = array( "date" => array( "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_DATETIME2", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_VARCHAR"),
                      "datetime" => array( "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_DATETIME2", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_VARCHAR"),

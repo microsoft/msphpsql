@@ -6,6 +6,7 @@ Test for inserting encrypted fixed size types data and retrieve both encrypted a
 <?php
 include 'MsCommon.inc';
 
+date_default_timezone_set("Canada/Pacific");
 $conn = ae_connect();
 $testPass = true;
 
@@ -71,9 +72,9 @@ BitData: 1
 DateTimeData:
   date: 9999-12-31 23:59:59.997000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 DateTime2Data:
   date: 9999-12-31 23:59:59.1000000
   timezone_type: 3
-  timezone: UTC
+  timezone: Canada/Pacific
 Done
