@@ -2,7 +2,7 @@
 Test for inserting and retrieving encrypted data of datetime types
 No PDO::PARAM_ type specified when binding parameters
 --SKIPIF--
-
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';
