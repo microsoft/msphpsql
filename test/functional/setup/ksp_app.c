@@ -270,7 +270,7 @@ int main(int argc, char **argv) {
 
     task = atoi(argv[1]);
     
-    sprintf(connStr, "DRIVER={ODBC Driver 13 for SQL Server};SERVER=%s;ColumnEncryption=Enabled;DATABASE=%s;UID=%s;PWD=%s", argv[2], argv[3], argv[4], argv[5]);
+    sprintf(connStr, "DRIVER={ODBC Driver 17 for SQL Server};SERVER=%s;ColumnEncryption=Enabled;DATABASE=%s;UID=%s;PWD=%s", argv[2], argv[3], argv[4], argv[5]);
    
     /* Connect to Server */
     rc = SQLAllocHandle(SQL_HANDLE_ENV, NULL, &env);
