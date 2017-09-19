@@ -8,12 +8,13 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Added
 - Added support for Always Encrypted with basic CRUD functionalities (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
-  - Support for Windows Certificate Store (use connection keyword ColumnEncryption
-  - Support for custom key store provider (use connection keywords ColumnEncryption, CEKeystoreProvider, CEKeystoreName, CEKeystoreEncryptKey
+  - Support for Windows Certificate Store (use connection keyword ColumnEncryption)
+  - Support for custom key store provider (use connection keywords ColumnEncryption, CEKeystoreProvider, CEKeystoreName, CEKeystoreEncryptKey)
   - Support for inserting into an encrypted column
   - Support for fetching from an encrypted column
 - Added support for MSODBC 17 preview
 - Added Driver option to set the ODBC driver, Added"Driver" option, valid values are ODBC Driver 13 for SQL Server,ODBC Driver 11 for SQL Server, and ODBC Driver 17 for SQL Server
+  - If the user intends to use the new Always Encrypted features, we recommend you to specify explicitly the 'Driver' option to 'ODBC Driver 17 for SQL Server' in the connection string
 
 ### Limitations
 - Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/AlwaysEncrypted/ODBC%2017%20binaries%20preview)
@@ -23,6 +24,9 @@ Updated PECL release packages. Here is the list of updates:
 - No support for inout / output params when using sql_variant type
 
 ### Known Issues
+- Connection pooling on Linux doesn't work properly if the user uses the MSODBC17 preview
+- PDO::quote returns truncated string with garbage characters appended if the string contains a ASCII NUL ('/0') character
+- Binding decimal type when using Always Encrypted in the SQLSRV x64 driver returns an error during insertion when the input does not have any decimal places
 - When pooling is enabled in Linux or MAC
   - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
