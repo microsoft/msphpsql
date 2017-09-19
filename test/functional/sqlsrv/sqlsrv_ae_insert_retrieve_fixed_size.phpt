@@ -28,10 +28,14 @@ $inputs = array( "TinyIntData" => 255,
                  "IntData" => 2147483647, 
                  "BigIntData" => 92233720368547, 
                  "DecimalData" => 79228162514264, 
-                 "BitData" => true, 
+                 "BitData" => 1, 
                  "DateTimeData" => '9999-12-31 23:59:59.997', 
                  "DateTime2Data" => '9999-12-31 23:59:59.9999999');
-$stmt = insert_row( $conn, $tbname, $inputs );
+$r;
+$stmt = insert_row( $conn, $tbname, $inputs, $r );
+if ( $r === false ) {
+    var_dump( sqlsrv_errors() );
+}
 
 print "Decrypted values:\n";
 fetch_all( $conn, $tbname );
