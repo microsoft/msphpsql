@@ -17,7 +17,7 @@ Updated PECL release packages. Here is the list of updates:
   - If the user intends to use the new Always Encrypted features, we recommend you to specify explicitly the 'Driver' option to 'ODBC Driver 17 for SQL Server' in the connection string
 
 ### Limitations
-- Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/AlwaysEncrypted/ODBC%2017%20binaries%20preview)
+- Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview)
   - ODBC binaries for macOS available upon request
 - [Always Encrypted limitations](https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation)
 - when using sqlsrv_query with Always Encrypted feature, SQL type has to be specified for each input (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
