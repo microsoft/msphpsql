@@ -19,6 +19,7 @@ Updated PECL release packages. Here is the list of updates:
 ### Limitations
 - Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview)
   - ODBC binaries for macOS available upon request
+- MSODBC 17 preview only works for Windows10
 - [Always Encrypted limitations](https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation)
 - when using sqlsrv_query with Always Encrypted feature, SQL type has to be specified for each input (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
 - No support for inout / output params when using sql_variant type
