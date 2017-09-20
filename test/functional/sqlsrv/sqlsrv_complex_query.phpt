@@ -90,12 +90,12 @@ Repro();
 ?>
 --EXPECTREGEX--
 ﻿
-Test begins...
-\[Microsoft\]\[ODBC Driver 13 for SQL Server\]\[SQL Server\]Cannot insert explicit value for identity column in table '.+' when IDENTITY_INSERT is set to OFF.
+Test begins\.\.\.
+\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Cannot insert explicit value for identity column in table '.+' when IDENTITY_INSERT is set to OFF\.
 544
 23000
 Number of rows inserted: 2
 Number of rows fetched: 2
 
 Done
-Test "sqlsrv_statement_complex_query" completed successfully.
+Test \"sqlsrv_statement_complex_query\" completed successfully\.

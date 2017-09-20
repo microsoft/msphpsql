@@ -15,7 +15,9 @@ env:
   - PHPSQLDIR=/REPO/msphpsql-dev
   - TEST_PHP_SQL_SERVER=sql
   - SQLSRV_DBNAME=msphpsql_sqlsrv
-  - PDOSQLSRV_DBNAME=msphpsql_pdosqlsrv
+  - PDOSQLSRV_DBNAME=msphpsql_pdosqlsrv  
+  - TEST_PHP_SQL_UID=sa
+  - TEST_PHP_SQL_PWD=Password123
 
 before_install:
   - docker pull microsoft/mssql-server-linux
@@ -33,6 +35,12 @@ script:
   - docker logs client
   - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $SQLSRV_DBNAME
   - travis_retry docker exec client python ./test/functional/setup/setup_dbs.py -dbname $PDOSQLSRV_DBNAME
+  - docker exec client cp ./source/shared/msodbcsql.h ./test/functional/setup/
+  - travis_retry docker exec client python ./test/functional/setup/build_ksp.py 
+  - docker exec client cp ./test/functional/setup/myKSP.so ./test/functional/sqlsrv/
+  - docker exec client cp ./test/functional/setup/myKSP.so ./test/functional/pdo_sqlsrv/
+  - travis_retry docker exec client python ./test/functional/setup/run_ksp.py -server $TEST_PHP_SQL_SERVER -dbname $SQLSRV_DBNAME -uid $TEST_PHP_SQL_UID -pwd $TEST_PHP_SQL_PWD 
+  - travis_retry docker exec client python ./test/functional/setup/run_ksp.py -server $TEST_PHP_SQL_SERVER -dbname $PDOSQLSRV_DBNAME -uid $TEST_PHP_SQL_UID -pwd $TEST_PHP_SQL_PWD 
   - travis_retry docker exec client php ./source/pdo_sqlsrv/run-tests.php ./test/functional/pdo_sqlsrv/*.phpt
   - travis_retry docker exec client php ./source/sqlsrv/run-tests.php ./test/functional/sqlsrv/*.phpt
   - docker exec client bash -c 'for f in ./test/functional/sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true'
