@@ -4,29 +4,29 @@ FROM ubuntu:16.04
 
 # Update Ubuntu Software repository
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
-	apt-get -y install \
-	apt-transport-https	 \
-	apt-utils \
-	autoconf \
-	curl \
-	g++ \
-	gcc	\
-	git \
-	lcov \
-	libxml2-dev \
-	locales \
-	make \
-	php7.0	\	
-	php7.0-dev \
-	python-pip \
-	re2c \
-        unixodbc-dev \
-	unzip && apt-get clean
-	
+    apt-get -y install \
+    apt-transport-https     \
+    apt-utils \
+    autoconf \
+    curl \
+    g++ \
+    gcc    \
+    git \
+    lcov \
+    libxml2-dev \
+    locales \
+    make \
+    php7.0 \
+    php7.0-dev \
+    python-pip \
+    re2c \
+    unixodbc-dev \
+    unzip && apt-get clean
+    
 ARG PHPSQLDIR=/REPO/msphpsql-dev
 ENV TEST_PHP_SQL_SERVER sql
 ENV TEST_PHP_SQL_UID sa
-ENV TEST_PHP_SQL_PWD Password12@
+ENV TEST_PHP_SQL_PWD Password123
 
 # set locale to utf-8
 RUN locale-gen en_US.UTF-8
@@ -36,10 +36,7 @@ ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
 RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
 
-#RUN echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main" > /etc/apt/sources.list.d/mssqlpreview.list
-#RUN apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools
-
 ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
 #install coveralls
@@ -47,11 +44,9 @@ RUN pip install --upgrade pip && pip install cpp-coveralls
 
 #Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
 #One option is to get source from zip file of repository.
-
 #another option is to copy source to build directory on image
 RUN mkdir -p $PHPSQLDIR
 COPY . $PHPSQLDIR
-
 WORKDIR $PHPSQLDIR/source/ 
 
 RUN chmod +x ./packagize.sh
@@ -79,6 +74,9 @@ RUN sed -i -e 's/TARGET_DATABASE/msphpsql_sqlsrv/g' MsSetup.inc
 RUN sed -i -e 's/TARGET_USERNAME/'"$TEST_PHP_SQL_UID"'/g' MsSetup.inc
 RUN sed -i -e 's/TARGET_PASSWORD/'"$TEST_PHP_SQL_PWD"'/g' MsSetup.inc
 
+WORKDIR $PHPSQLDIR
+RUN chmod +x ./entrypoint.sh
+CMD /bin/bash ./entrypoint.sh
+
 ENV REPORT_EXIT_STATUS 1
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
-

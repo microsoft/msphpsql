@@ -27,3 +27,9 @@ if __name__ == '__main__':
     conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '  
     
     executeSQLscript( os.path.join( os.path.dirname(os.path.realpath(__file__)), 'drop_db.sql'), conn_options, args.DBNAME)
+
+    # if Windows, remove self signed certificate using ps command
+    if platform.system() == 'Windows':
+        remove_cert_ps = "Get-ChildItem Cert:CurrentUser\My | Where-Object { $_.Subject -match 'PHPAlwaysEncryptedCert' } | Remove-Item"
+        inst_command  = 'powershell -executionPolicy Unrestricted -command ' + remove_cert_ps
+        executeCommmand(inst_command)

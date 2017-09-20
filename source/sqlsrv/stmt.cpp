@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use statement handles
 //
-// Microsoft Drivers 5.0 for PHP for SQL Server
+// Microsoft Drivers 5.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1222,6 +1222,9 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt TSRMLS_DC )
                 value_z = var;
             }
             else {
+                CHECK_CUSTOM_ERROR( !stmt->prepared && stmt->conn->ce_option.enabled, stmt, SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED ) {
+                    throw ss::SSException();
+                }
                 value_z = param_z;
             }
             // bind the parameter
@@ -1974,9 +1977,11 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
 
         sql_type = sqlsrv_sql_type.typeinfo.type;
     }
-    // else the sql type and size are uknown, so tell the core layer to use its defaults
+    // else the sql type and size are unknown, so tell the core layer to use its defaults
     else {
-
+        CHECK_CUSTOM_ERROR( !stmt->prepared && stmt->conn->ce_option.enabled, stmt, SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED ) {
+            throw ss::SSException();
+        }
         sql_type_param_was_null = true;
 
         sql_type = SQL_UNKNOWN_TYPE;

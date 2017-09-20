@@ -4,7 +4,7 @@
 // Contents: Contains a portable abstraction for interlocked, atomic
 //			 operations on int32_t and pointer types.
 //
-// Microsoft Drivers 5.0 for PHP for SQL Server
+// Microsoft Drivers 5.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License

@@ -20,7 +20,7 @@ UTF-8 connection strings
 ?>
 --EXPECTREGEX--
   
-Fatal error: Uncaught PDOException: SQLSTATE\[(28000|08001|HYT00)\]: .*\[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\](\[SQL Server\])?(Named Pipes Provider: Could not open a connection to SQL Server \[2\]\. |Login timeout expired|Login failed for user 'sa'\.) in .+(\/|\\)pdo_utf8_conn\.php:[0-9]+
+Fatal error: Uncaught PDOException: SQLSTATE\[(28000|08001|HYT00)\]: .*\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\](\[SQL Server\])?(Named Pipes Provider: Could not open a connection to SQL Server \[2\]\. |Login timeout expired|Login failed for user 'sa'\.) in .+(\/|\\)pdo_utf8_conn\.php:[0-9]+
 Stack trace:
 #0 .+(\/|\\)pdo_utf8_conn\.php\([0-9]+\): PDO->__construct\('sqlsrv:Server=l\.\.\.', 'sa', 'Sunshine4u'\)
 #1 {main}

@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.0 for PHP for SQL Server
+// Microsoft Drivers 5.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -220,7 +220,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
     SQLRETURN r = SQL_SUCCESS;
     SQLSMALLINT wmessage_len = 0;
     SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ] = { L'\0' };
-    SQLWCHAR wnative_message[ SQL_MAX_MESSAGE_LENGTH + 1 ] = { L'\0' };
+    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { L'\0' };
     SQLSRV_ENCODING enc = ctx.encoding();
 
     switch( h_type ) {
@@ -245,7 +245,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
         default:
             error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
             r = SQLGetDiagRecW( h_type, h, record_number, wsqlstate, &error->native_code, wnative_message,
-                                SQL_MAX_MESSAGE_LENGTH + 1, &wmessage_len );
+                                SQL_MAX_ERROR_MESSAGE_LENGTH + 1, &wmessage_len );
             // don't use the CHECK* macros here since it will trigger reentry into the error handling system
             // Workaround for a bug in unixODBC 2.3.4 when connection pooling is enabled (PDO SQLSRV).
             // Instead of returning false, we return an empty error message to prevent the driver from throwing an exception.
@@ -290,12 +290,12 @@ void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_erro
     // allocate space for the formatted message
     formatted_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
     formatted_error->sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
-    formatted_error->native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_MESSAGE_LENGTH + 1 ));
+    formatted_error->native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
 
     DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, reinterpret_cast<LPSTR>( custom_error->native_message ), 0, 0, 
-                              reinterpret_cast<LPSTR>( formatted_error->native_message ), SQL_MAX_MESSAGE_LENGTH, args );
+                              reinterpret_cast<LPSTR>( formatted_error->native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH, args );
     if( rc == 0 ) {
-        strcpy_s( reinterpret_cast<char*>( formatted_error->native_message ), SQL_MAX_MESSAGE_LENGTH,
+        strcpy_s( reinterpret_cast<char*>( formatted_error->native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH,
                   reinterpret_cast<char*>( INTERNAL_FORMAT_ERROR ));
     }
     

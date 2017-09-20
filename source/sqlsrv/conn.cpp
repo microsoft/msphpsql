@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Microsoft Drivers 5.0 for PHP for SQL Server
+// Microsoft Drivers 5.1 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -134,8 +134,7 @@ struct bool_conn_attr_func {
     static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
     {
          try {
-             core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>((zend_long)zend_is_true(value)),
-                 SQL_IS_UINTEGER TSRMLS_CC);
+             core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>((zend_long)zend_is_true(value)), SQL_IS_UINTEGER TSRMLS_CC);
         
         }
         catch( core::CoreException& ) {
@@ -188,6 +187,12 @@ const char AttachDBFileName[] = "AttachDbFileName";
 const char CharacterSet[] = "CharacterSet";
 const char Authentication[] = "Authentication";
 const char ConnectionPooling[] = "ConnectionPooling";
+const char ColumnEncryption[] = "ColumnEncryption";
+const char Driver[] = "Driver";
+const char CEKeystoreProvider[] = "CEKeystoreProvider";
+const char CEKeystoreName[] = "CEKeystoreName";
+const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
+
 #ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
@@ -295,12 +300,57 @@ const connection_option SS_CONN_OPTS[] = {
     },
     {
         SSConnOptionNames::ConnectionPooling,
-        sizeof( SSConnOptionNames::ConnectionPooling ),
+        sizeof(SSConnOptionNames::ConnectionPooling),
         SQLSRV_CONN_OPTION_CONN_POOLING,
         ODBCConnOptions::ConnectionPooling,
-        sizeof( ODBCConnOptions::ConnectionPooling ),
+        sizeof(ODBCConnOptions::ConnectionPooling),
         CONN_ATTR_BOOL,
         conn_null_func::func
+    },
+    {
+        SSConnOptionNames::ColumnEncryption,
+        sizeof(SSConnOptionNames::ColumnEncryption),
+        SQLSRV_CONN_OPTION_COLUMNENCRYPTION,
+        ODBCConnOptions::ColumnEncryption,
+        sizeof(ODBCConnOptions::ColumnEncryption),
+        CONN_ATTR_STRING,
+        column_encryption_set_func::func
+    },
+    {
+        SSConnOptionNames::Driver,
+        sizeof(SSConnOptionNames::Driver),
+        SQLSRV_CONN_OPTION_DRIVER,
+        ODBCConnOptions::Driver,
+        sizeof(ODBCConnOptions::Driver),
+        CONN_ATTR_STRING,
+        driver_set_func::func
+    },
+    {
+        SSConnOptionNames::CEKeystoreProvider,
+        sizeof(SSConnOptionNames::CEKeystoreProvider),
+        SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
+        ODBCConnOptions::CEKeystoreProvider,
+        sizeof(ODBCConnOptions::CEKeystoreProvider),
+        CONN_ATTR_STRING,
+        ce_ksp_provider_set_func::func
+    },
+    {
+        SSConnOptionNames::CEKeystoreName,
+        sizeof(SSConnOptionNames::CEKeystoreName),
+        SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
+        ODBCConnOptions::CEKeystoreName,
+        sizeof(ODBCConnOptions::CEKeystoreName),
+        CONN_ATTR_STRING,
+        ce_ksp_provider_set_func::func
+    },
+    {
+        SSConnOptionNames::CEKeystoreEncryptKey,
+        sizeof(SSConnOptionNames::CEKeystoreEncryptKey),
+        SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
+        ODBCConnOptions::CEKeystoreEncryptKey,
+        sizeof(ODBCConnOptions::CEKeystoreEncryptKey),
+        CONN_ATTR_STRING,
+        ce_ksp_provider_set_func::func
     },
 #ifdef _WIN32
     {
