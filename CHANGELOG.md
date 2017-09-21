@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
+- Added support for SUSE 12
 - Added support for Always Encrypted with basic CRUD functionalities (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
   - Support for Windows Certificate Store (use connection keyword ColumnEncryption)
   - Support for custom key store provider (use connection keywords ColumnEncryption, CEKeystoreProvider, CEKeystoreName, CEKeystoreEncryptKey)
