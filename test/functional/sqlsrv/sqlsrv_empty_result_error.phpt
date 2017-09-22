@@ -56,7 +56,7 @@ print_r(sqlsrv_errors());
 
 $stmt = sqlsrv_query($conn, "DROP TABLE TestEmptySetTable");
 $stmt = sqlsrv_query($conn, "DROP PROCEDURE TestEmptySetProc");
-sqlsrv_free($conn);
+sqlsrv_close($conn);
 ?>
 --EXPECT--
 Return a nonempty result set:
