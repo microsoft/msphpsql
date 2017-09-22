@@ -31,8 +31,8 @@
 
 #ifndef _WIN32
 #include <sys/utsname.h>
-#include <odbcinst.h>
 #endif
+#include <odbcinst.h>
 
 // *** internal variables and constants ***
 
