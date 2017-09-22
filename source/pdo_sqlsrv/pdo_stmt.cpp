@@ -1070,8 +1070,8 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
         // Make sure that the result set is not null, i.e. SQLNumResultCols() does not
         // return 0. Normally this error is handled in core_sqlsrv_fetch, but if the 
         // user calls nextRowset() before fetch() the error is never shown so we handle it here.
-        SQLSMALLINT has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
-        CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
+        SQLSMALLINT has_fields = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
+        CHECK_CUSTOM_ERROR( has_fields == 0, driver_stmt, SQLSRV_ERROR_NO_FIELDS ) {
             throw core::CoreException();
         }
 
