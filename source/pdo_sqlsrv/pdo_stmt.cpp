@@ -1067,14 +1067,6 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
-        // If SQLNumResultCols returns 0, the result set is empty. Normally this error is 
-        // handled in core_sqlsrv_fetch, but if the user calls nextRowset() before fetch()
-        // the error message won't show up unless we handle it here.
-        SQLSMALLINT has_fields = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
-        CHECK_CUSTOM_ERROR( has_fields == 0, driver_stmt, SQLSRV_ERROR_NO_FIELDS ) {
-            throw core::CoreException();
-        }
-
         core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ) TSRMLS_CC );
 
         // clear the current meta data since the new result will generate new meta data
