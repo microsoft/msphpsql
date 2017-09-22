@@ -560,8 +560,17 @@ PHP_FUNCTION( sqlsrv_next_result )
     PROCESS_PARAMS( stmt, "r", _FN_, 0 );
 
     try {
-        
-        core_sqlsrv_next_result( stmt TSRMLS_CC, true );
+ 
+        // Make sure that the result set is not null, i.e. SQLNumResultCols() does not
+        // return 0. Normally this error is handled in core_sqlsrv_fetch, but if the 
+        // user calls sqlsrv_next_result() before fetch() the error is never shown so 
+        // we handle it here.
+        SQLSMALLINT has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+        CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
+            throw core::CoreException();
+        }       
+	    
+	core_sqlsrv_next_result( stmt TSRMLS_CC, true );
 
         if( stmt->past_next_result_end ) {
 
@@ -1005,15 +1014,6 @@ PHP_FUNCTION( sqlsrv_send_stream_data )
     PROCESS_PARAMS( stmt, "r", _FN_, 0 );
 
     try {
-
-        // Make sure that the result set is not null, i.e. SQLNumResultCols() does not
-        // return 0. Normally this error is handled in core_sqlsrv_fetch, but if the 
-        // user calls sqlsrv_next_result() before fetch() the error is never shown so 
-        // we handle it here.
-        SQLSMALLINT has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
-        CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
-            throw core::CoreException();
-        }
 
         // if everything was sent at execute time, just return that there is nothing more to send.
         if( stmt->send_streams_at_exec ) {
