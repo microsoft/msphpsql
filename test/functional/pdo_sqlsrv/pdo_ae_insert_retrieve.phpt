@@ -1,5 +1,6 @@
 --TEST--
 Test for inserting encrypted data and retrieving both encrypted and decrypted data
+--DESCRIPTION--
 Retrieving SQL query contains encrypted filter
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
