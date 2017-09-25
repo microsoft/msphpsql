@@ -1,5 +1,6 @@
 --TEST--
 Test for inserting and retrieving encrypted data of numeric types
+--DESCRIPTION--
 Use PDOstatement::bindParam with all PDO::PARAM_ types
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
