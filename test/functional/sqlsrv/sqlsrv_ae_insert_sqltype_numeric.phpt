@@ -47,14 +47,14 @@ foreach ( $dataTypes as $dataType ) {
         {
             if ( $r === false  )
             {
-                $isCompat = false;
+                $isCompatibleible = false;
                 foreach ( $compatList[$dataType] as $compatType )
                 {
                     if ( stripos( $compatType, $sqlType ) !== false )
-                        $isCompat = true;
+                        $isCompatibleible = true;
                 }
                 // 22018 is the SQLSTATE for any incompatible conversion errors
-                if ( $isCompat && sqlsrv_errors()[0]['SQLSTATE'] == 22018 )
+                if ( $isCompatibleible && sqlsrv_errors()[0]['SQLSTATE'] == 22018 )
                 {
                     echo "$sqlType should be compatible with $dataType\n";
                     $success = false;
