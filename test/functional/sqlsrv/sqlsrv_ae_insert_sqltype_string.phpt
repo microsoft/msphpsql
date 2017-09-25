@@ -9,11 +9,13 @@ include 'MsCommon.inc';
 include 'AEData.inc';
 
 $dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
-$compatList = array( "char(5)" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_VARCHAR"),
-                     "varchar(max)" => array( "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_VARCHAR"),
-                     "nchar(5)" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_VARCHAR"),
-                     "nvarchar(max)" => array( "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_VARCHAR" ));
-                     
+
+// this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
+$compatList = array( "char(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
+                     "varchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
+                     "nchar(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
+                     "nvarchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ));
+
 $conn = ae_connect();
 
 foreach ( $dataTypes as $dataType ) {
@@ -39,13 +41,14 @@ foreach ( $dataTypes as $dataType ) {
         {
             if ( !is_col_enc() )
             {
-                $isCompat = false;
+                $isCompatible = false;
                 foreach ( $compatList[$dataType] as $compatType )
                 {
                     if ( stripos( $compatType, $sqlType ) !== false )
-                        $isCompat = true;
+                        $isCompatible = true;
                 }
-                if ( $isCompat )
+                // 22018 is the SQLSTATE for any incompatible conversion errors
+                if ( $isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018 )
                 {
                     echo "$sqlType should be compatible with $dataType\n";
                     $success = false;
@@ -53,6 +56,7 @@ foreach ( $dataTypes as $dataType ) {
             }
             else
             {
+                // always encrypted only allow sqlType that is identical to the encrypted column datatype
                 if ( stripos( "SQLSRV_SQLTYPE_" . $dataType, $sqlType ) !== false )
                 {
                     echo "$sqlType should be compatible with $dataType\n";
