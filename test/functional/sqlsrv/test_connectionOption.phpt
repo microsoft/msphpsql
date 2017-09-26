@@ -49,8 +49,8 @@ Array
             \[SQLSTATE\] => HY000
             \[1\] => 0
             \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]Connection is busy with results for another command
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]Connection is busy with results for another command
+            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Connection is busy with results for another command
+            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Connection is busy with results for another command
         \)
 
 \)

@@ -108,7 +108,7 @@ Repro();
 ?>
 --EXPECTF--
 __construct('%s', '%s', '%s')
-exec('DROP TABLE %s')
+exec('IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(%s) AND type in (N\'U\')) DROP TABLE %s')
 exec('CREATE TABLE %s (id INT)')
 exec('INSERT INTO %s (id) VALUES (1), (2)')
 query('SELECT * FROM %s ORDER BY id ASC')
@@ -127,5 +127,5 @@ array(2) {
 bool(false)
 __call('intercept_call', array (
 ))
-exec('DROP TABLE %s')
+exec('IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(%s) AND type in (N\'U\')) DROP TABLE %s')
 Test "PDO - Extension" completed successfully.

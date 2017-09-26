@@ -60,15 +60,15 @@ function Repro()
 Repro();
 
 ?>
---EXPECT--
+--EXPECTREGEX--
 ﻿
 Test begins...
-[Microsoft][ODBC Driver 13 for SQL Server]Query timeout expired
+\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Query timeout expired
 0
 HYT00
-[Microsoft][ODBC Driver 13 for SQL Server]Query timeout expired
+\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Query timeout expired
 0
 HYT00
 
 Done
-Test "sqlsrv_statement_query_timeout" completed successfully.
+Test \"sqlsrv_statement_query_timeout\" completed successfully\.

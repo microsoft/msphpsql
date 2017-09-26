@@ -166,6 +166,12 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
     - Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    - copy %APPVEYOR_BUILD_FOLDER%\source\shared\msodbcsql.h %APPVEYOR_BUILD_FOLDER%\test\functional\setup\
+    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\build_ksp.py
+    - copy %APPVEYOR_BUILD_FOLDER%\test\functional\setup\*.dll %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\
+    - copy %APPVEYOR_BUILD_FOLDER%\test\functional\setup\*.dll %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\
+    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %SQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
+    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %PDOSQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%    
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1    
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1    

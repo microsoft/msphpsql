@@ -32,14 +32,14 @@ sqlsrv_close($conn);
 print "Done"
 ?>
 
---EXPECT--
+--EXPECTREGEX--
 Array
-(
-    [0] => 22018
-    [SQLSTATE] => 22018
-    [1] => 245
-    [code] => 245
-    [2] => [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Conversion failed when converting the nvarchar value '银河' to data type int.
-    [message] => [Microsoft][ODBC Driver 13 for SQL Server][SQL Server]Conversion failed when converting the nvarchar value '银河' to data type int.
-)
+\(
+    \[0\] => 22018
+    \[SQLSTATE\] => 22018
+    \[1\] => 245
+    \[code\] => 245
+    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Conversion failed when converting the nvarchar value '银河' to data type int\.
+    \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Conversion failed when converting the nvarchar value '银河' to data type int\.
+\)
 Done

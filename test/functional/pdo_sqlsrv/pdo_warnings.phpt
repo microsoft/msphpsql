@@ -35,4 +35,4 @@ Error Message: An unsupported attribute was designated on the PDO object\.
 
 Warning: PDO::getAttribute\(\): SQLSTATE\[IM001\]: Driver does not support this function: driver does not support that attribute in .+(\/|\\)pdo_warnings\.php on line [0-9]+
 
-Warning: PDOStatement::execute\(\): SQLSTATE\[42000\]: Syntax error or access violation: 156 \[Microsoft\]\[ODBC Driver [0-9]+ for SQL Server\]\[SQL Server\]Incorrect syntax near the keyword 'TABLE'\. in .+(\/|\\)pdo_warnings\.php on line [0-9]+
+Warning: PDOStatement::execute\(\): SQLSTATE\[42000\]: Syntax error or access violation: 156 \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Incorrect syntax near the keyword 'TABLE'\. in .+(\/|\\)pdo_warnings\.php on line [0-9]+

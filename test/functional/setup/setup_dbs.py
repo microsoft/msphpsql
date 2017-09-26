@@ -45,6 +45,14 @@ def executeBulkCopy(conn_options, dbname, tblname, datafile):
     inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options 
     executeCommmand(inst_command)
     
+def setupAE( conn_options, dbname, azure ):
+    if (platform.system() == 'Windows' and azure.lower() == 'no'):
+        # import self signed certificate
+        inst_command = "certutil -user -p '' -importPFX My PHPcert.pfx NoRoot"
+        executeCommmand(inst_command)
+        # create Column Master Key and Column Encryption Key
+        executeSQLscript('ae_keys.sql', conn_options, dbname)
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-dbname', '--DBNAME', required=True)
@@ -75,5 +83,8 @@ if __name__ == '__main__':
     setupTestDatabase(conn_options, args.DBNAME, args.AZURE)    
     # populate these tables
     populateTables(conn_options, args.DBNAME)
+    # setup AE (certificate, column master key and column encryption key)
+    setupAE(conn_options, args.DBNAME, args.AZURE)
+    
     os.chdir(current_working_dir)
     
