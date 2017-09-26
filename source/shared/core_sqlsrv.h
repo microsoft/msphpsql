@@ -1039,7 +1039,8 @@ enum SERVER_VERSION {
 
 // supported driver versions.
 // the latest RTWed ODBC is the first one
-enum DRIVER_VERSION : std::size_t{
+enum DRIVER_VERSION {
+    ODBC_DRIVER_UNKNOWN = -1,
     FIRST = 0,
     ODBC_DRIVER_13 = FIRST,
     ODBC_DRIVER_11 = 1,
@@ -1073,14 +1074,14 @@ struct sqlsrv_conn : public sqlsrv_context {
     SERVER_VERSION server_version;  // version of the server that we're connected to
 
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
-    bool is_driver_set;
+    DRIVER_VERSION driver_version;      // version of ODBC driver
 
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding TSRMLS_DC ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
-        is_driver_set = false;
+        driver_version = ODBC_DRIVER_UNKNOWN;
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be 
@@ -1235,7 +1236,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd, 
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[], 
                                   _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC );
-SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ bool& is_missing_driver, _In_ bool is_pooled );
+SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _In_ bool is_pooled );
 void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC );
 void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC );
 void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
@@ -1247,7 +1248,8 @@ void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_
 bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len );
 size_t core_str_zval_is_true( _Inout_ zval* str_zval );
 bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t value_len );
-bool core_search_odbc_driver( _In_ std::size_t driver_version );
+bool core_search_odbc_driver_unix( _In_ DRIVER_VERSION driver_version );
+bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN r, _In_ const char* error_state );
 
 //*********************************************************************************************************************************
 // Statement
@@ -1640,7 +1642,7 @@ enum SQLSRV_ERROR_CODES {
 
     SQLSRV_ERROR_ODBC,
     SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
-    SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+    SQLSRV_ERROR_AE_DRIVER_REQUIRED,
     SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
     SQLSRV_ERROR_ZEND_HASH,
     SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE,
