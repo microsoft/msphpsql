@@ -561,6 +561,18 @@ PHP_FUNCTION( sqlsrv_next_result )
 
     try {
         
+        // Make sure that the result set is not null. Null means SQLNumResultCols returns 0
+        // and SQLRowCount is not > 0. Normally this error is handled in core_sqlsrv_fetch(),
+        // but if the user calls sqlsrv_next_result() before fetch() the error is never shown
+        // so we handle it here.
+        bool has_result = core_sqlsrv_has_any_result( stmt );
+
+        if(!stmt->fetch_called){
+            CHECK_CUSTOM_ERROR( !has_result, stmt, SQLSRV_ERROR_NO_FIELDS ) {
+                throw core::CoreException();
+            }
+        }
+        
         core_sqlsrv_next_result( stmt TSRMLS_CC, true );
 
         if( stmt->past_next_result_end ) {
