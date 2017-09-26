@@ -1,5 +1,5 @@
 --TEST--
-Test the PDO::quote() method.
+Test the PDO::quote() method with a string containing '\0' character
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
@@ -10,7 +10,6 @@ require_once 'MsCommon.inc';
 try 
 {      
     $connection = connect(); 
-    //$connection->setAttribute( PDO::SQLSRV_ATTR_DIRECT_QUERY, PDO::SQLSRV_ENCODING_SYSTEM );
 
     $str = "XX\0XX";
     
