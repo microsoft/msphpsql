@@ -6,7 +6,7 @@ if (! extension_loaded( 'pdo' ) || ! extension_loaded( 'pdo_sqlsrv' ))
 require_once( "MsSetup.inc" );
 require_once( "MsCommon.inc" );
 
-$conn = new PDO( "sqlsrv:server = $server;", $uid, $pwd );
+$conn = ae_connect();
 if( ! $conn )
 {
     echo( "Error: could not connect during SKIPIF!" );
