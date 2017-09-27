@@ -153,11 +153,17 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     if( conn->ce_option.enabled ) {
         // when AE is enabled, must use ODBC driver 17
         if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
-            CHECK_CUSTOM_ERROR( conn->driver_version != ODBC_DRIVER_17, conn, SQLSRV_ERROR_AE_DRIVER_REQUIRED, get_processor_arch()) {
+            CHECK_CUSTOM_ERROR( conn->driver_version != ODBC_DRIVER_17, conn, SQLSRV_ERROR_AE_DRIVER_REQUIRED, get_processor_arch() ) {
                 throw core::CoreException();
             }
 
             r = core_odbc_connect( conn, conn_str, is_pooled );
+            if( ! SQL_SUCCEEDED( r ) && core_compare_error_state( conn, r, "IM002" ) ) {
+                // sql state IM002 means that the specified ODBC driver is not installed
+                CHECK_CUSTOM_ERROR( true, conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND, CONNECTION_STRING_DRIVER_NAME[ conn->driver_version ].c_str() ) {
+                    throw core::CoreException();
+                }
+            }
         }
         else {  
             // driver not specified, so connect using ODBC 17
@@ -180,7 +186,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 
             if(! SQL_SUCCEEDED( r ) ) {
                 // sql state IM002 means that the specified ODBC driver is not installed
-                CHECK_CUSTOM_ERROR( core_compare_error_state( conn, r, "IM002" ) , conn, SQLSRV_ERROR_AE_DRIVER_REQUIRED, get_processor_arch()) {
+                CHECK_CUSTOM_ERROR( core_compare_error_state( conn, r, "IM002" ) , conn, SQLSRV_ERROR_AE_DRIVER_REQUIRED, get_processor_arch() ) {
                     throw core::CoreException();
                 }
             }
@@ -190,6 +196,13 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     else { 
         if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
             r = core_odbc_connect( conn, conn_str, is_pooled );
+
+            if( ! SQL_SUCCEEDED( r ) && core_compare_error_state( conn, r, "IM002" ) ) {
+                // sql state IM002 means that the specified ODBC driver is not installed
+                CHECK_CUSTOM_ERROR( true, conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND, CONNECTION_STRING_DRIVER_NAME[ conn->driver_version ].c_str() ) {
+                    throw core::CoreException();
+                }
+            }
         }
         else {
 #ifndef _WIN32
