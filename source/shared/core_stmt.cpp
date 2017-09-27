@@ -1064,7 +1064,7 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
         // so we handle it here.
         bool has_result = core_sqlsrv_has_any_result( stmt );
 
-        if(!driver_stmt->fetch_called){
+        if(!stmt->fetch_called){
             CHECK_CUSTOM_ERROR( !has_result, stmt, SQLSRV_ERROR_NO_FIELDS ) {
                 throw core::CoreException();
             }
