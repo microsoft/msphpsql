@@ -405,10 +405,6 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
         { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option.", -79, true }
     },
-    {
-        SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND,
-        { IMSSP, (SQLCHAR*) "The specified ODBC Driver is not found.", -80, false }
-    },
     { UINT_MAX, {} }
 };
 

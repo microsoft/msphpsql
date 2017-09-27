@@ -21,6 +21,7 @@ sqlsrv_close($conn);
 test_valid_values( $msodbcsql_maj, $server, $connectionOptions );
 test_invalid_values( $msodbcsql_maj, $server, $connectionOptions );
 test_encrypted_with_odbc( $msodbcsql_maj, $server, $connectionOptions );
+test_wrong_odbc( $msodbcsql_maj, $server, $connectionOptions );
 echo "Done";
 // end test
 
@@ -118,7 +119,10 @@ function test_encrypted_with_odbc( $msodbcsql_maj, $server, $connectionOptions )
     $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
     
     connect_verify_output( $server, $connectionOptions, $expected );
-    
+}
+
+function test_wrong_odbc( $msodbcsql_maj, $server, $connectionOptions )
+{
     $value = "ODBC Driver 11 for SQL Server";
     if ( $msodbcsql_maj == 17 || $msodbcsql_maj < 13 )
     {
@@ -126,10 +130,12 @@ function test_encrypted_with_odbc( $msodbcsql_maj, $server, $connectionOptions )
     }
 
     $connectionOptions['Driver']=$value;    
-    $connectionOptions['ColumnEncryption']='Disabled';
-    $expected = "The specified ODBC Driver is not found";
     
-    connect_verify_output( $server, $connectionOptions, $expected );    
+    $conn = sqlsrv_connect($server, $connectionOptions);
+    if ($conn !== false)
+    {    
+        echo "Expected errors!\n";
+    }
 }
 
 ?>

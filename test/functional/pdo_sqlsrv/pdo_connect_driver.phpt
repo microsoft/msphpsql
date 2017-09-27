@@ -25,6 +25,7 @@ $conn = null;
 test_valid_values();
 test_invalid_values();
 test_encrypted_with_odbc();
+test_wrong_odbc();
 echo "Done";
 // end test
 
@@ -130,6 +131,11 @@ function test_encrypted_with_odbc()
     $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
     
     connect_verify_output( $connectionOptions, $expected );
+}
+
+function test_wrong_odbc()
+{
+    global $msodbcsql_maj, $server, $uid, $pwd;
     
     $value = "ODBC Driver 11 for SQL Server";
     if ( $msodbcsql_maj == 17 || $msodbcsql_maj < 13 )
@@ -137,9 +143,17 @@ function test_encrypted_with_odbc()
         $value = "ODBC Driver 13 for SQL Server";
     }
     $connectionOptions = "Driver = $value;";
-    $expected = "The specified ODBC Driver is not found";
     
-    connect_verify_output( $connectionOptions, $expected );
+    try
+    {
+        $conn = new PDO( "sqlsrv:server = $server ; $connectionOptions", $uid, $pwd );
+
+        echo "Should have caused an exception!\n";
+    }
+    catch( PDOException $e )
+    {
+        // do nothing here because this is expected
+    }
 }
 
 ?>
