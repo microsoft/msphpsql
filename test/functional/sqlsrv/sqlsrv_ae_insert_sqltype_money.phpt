@@ -1,5 +1,6 @@
 --TEST--
 Test for inserting and retrieving encrypted data of money types
+--DESCRIPTION--
 Bind params using sqlsrv_prepare with all sql_type
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -9,8 +10,10 @@ include 'MsCommon.inc';
 include 'AEData.inc';
 
 $dataTypes = array( "smallmoney", "money" );
-$compatList = array( "smallmoney" => array( 'SQLSRV_SQLTYPE_CHAR', 'SQLSRV_SQLTYPE_DECIMAL', 'SQLSRV_SQLTYPE_FLOAT', 'SQLSRV_SQLTYPE_MONEY', 'SQLSRV_SQLTYPE_NCHAR', 'SQLSRV_SQLTYPE_NUMERIC', 'SQLSRV_SQLTYPE_NVARCHAR',    'SQLSRV_SQLTYPE_REAL', 'SQLSRV_SQLTYPE_SMALLMONEY', 'SQLSRV_SQLTYPE_VARCHAR' ),
-                     "money" => array( 'SQLSRV_SQLTYPE_BIGINT', 'SQLSRV_SQLTYPE_CHAR', 'SQLSRV_SQLTYPE_DECIMAL', 'SQLSRV_SQLTYPE_FLOAT', 'SQLSRV_SQLTYPE_MONEY', 'SQLSRV_SQLTYPE_NCHAR', 'SQLSRV_SQLTYPE_NUMERIC', 'SQLSRV_SQLTYPE_NVARCHAR', 'SQLSRV_SQLTYPE_REAL', 'SQLSRV_SQLTYPE_VARCHAR' ));
+
+// this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
+$compatList = array( "smallmoney" => array( "SQLSRV_SQLTYPE_BINARY", "SQLSRV_SQLTYPE_VARBINARY", "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DECIMAL(18,5)", "SQLSRV_SQLTYPE_NUMERIC(10,5)", "SQLSRV_SQLTYPE_FLOAT", "SQLSRV_SQLTYPE_REAL", "SQLSRV_SQLTYPE_BIGINT", "SQLSRV_SQLTYPE_INT", "SQLSRV_SQLTYPE_SMALLINT", "SQLSRV_SQLTYPE_TINYINT", "SQLSRV_SQLTYPE_MONEY", "SQLSRV_SQLTYPE_SMALLMONEY", "SQLSRV_SQLTYPE_BIT", "SQLSRV_SQLTYPE_TIMESTAMP" ),
+                     "money" => array( "SQLSRV_SQLTYPE_BINARY", "SQLSRV_SQLTYPE_VARBINARY", "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DECIMAL(18,5)", "SQLSRV_SQLTYPE_NUMERIC(10,5)", "SQLSRV_SQLTYPE_FLOAT", "SQLSRV_SQLTYPE_REAL", "SQLSRV_SQLTYPE_BIGINT", "SQLSRV_SQLTYPE_INT", "SQLSRV_SQLTYPE_SMALLINT", "SQLSRV_SQLTYPE_TINYINT", "SQLSRV_SQLTYPE_MONEY", "SQLSRV_SQLTYPE_SMALLMONEY", "SQLSRV_SQLTYPE_BIT", "SQLSRV_SQLTYPE_TIMESTAMP" ));
 
 $conn = ae_connect();
 
@@ -37,13 +40,14 @@ foreach ( $dataTypes as $dataType ) {
         {
             if ( $r === false )
             {
-                $isCompat = false;
+                $isCompatible = false;
                 foreach ( $compatList[$dataType] as $compatType )
                 {
                     if ( stripos( $compatType, $sqlType ) !== false )
-                        $isCompat = true;
+                        $isCompatible = true;
                 }
-                if ( $isCompat )
+                // 22018 is the SQLSTATE for any incompatible conversion errors
+                if ( $isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018 )
                 {
                     echo "$sqlType should be compatible with $dataType\n";
                     $success = false;

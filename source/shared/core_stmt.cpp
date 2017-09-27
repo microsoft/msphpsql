@@ -440,6 +440,9 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
     if ( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE )) {
         ae_get_sql_type_info( stmt, param_num, direction, param_z, encoding, sql_type, column_size, decimal_digits TSRMLS_CC );
+        // change long to double if the sql type is decimal
+        if ( sql_type == SQL_DECIMAL && Z_TYPE_P( param_z ) == IS_LONG )
+            convert_to_double( param_z );
     }
     else {
         // if the sql type is unknown, then set the default based on the PHP type passed in
