@@ -18,13 +18,14 @@ $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
 sqlsrv_close($conn);
 
 // start test
-test_valid_values($msodbcsql_maj,$server ,$connectionOptions);
-test_invalid_values($msodbcsql_maj,$server ,$connectionOptions);
+test_valid_values( $msodbcsql_maj, $server, $connectionOptions );
+test_invalid_values( $msodbcsql_maj, $server, $connectionOptions );
+test_encrypted_with_odbc13( $server, $connectionOptions );
 echo "Done";
 // end test
 
 ///////////////////////////
-function connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions ,$expected = '' )
+function connect_verify_output( $server, $connectionOptions, $expected = '' )
 {
     $conn = sqlsrv_connect($server, $connectionOptions);
     if ($conn === false)
@@ -36,7 +37,8 @@ function connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions ,$ex
     }
 }
 
-function test_valid_values( $msodbcsql_maj ,$server ,$connectionOptions){
+function test_valid_values( $msodbcsql_maj, $server, $connectionOptions )
+{
     $value = "";
     // Test with {}
     switch ( $msodbcsql_maj )
@@ -55,7 +57,7 @@ function test_valid_values( $msodbcsql_maj ,$server ,$connectionOptions){
             $value = "invalid value";
     }
     $connectionOptions['Driver']=$value;
-    connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions );
+    connect_verify_output( $server, $connectionOptions );
     
     // Test without {}
     switch ( $msodbcsql_maj )
@@ -75,35 +77,47 @@ function test_valid_values( $msodbcsql_maj ,$server ,$connectionOptions){
     }
     
     $connectionOptions['Driver']=$value;
-    connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions );
+    connect_verify_output( $server, $connectionOptions );
 }
 
-function test_invalid_values($msodbcsql_maj ,$server ,$connectionOptions){
+function test_invalid_values( $msodbcsql_maj, $server, $connectionOptions )
+{
     // test invalid value
     $value = "{SQL Server Native Client 11.0}";
     $connectionOptions['Driver']=$value;
     $expected = "Invalid value $value was specified for Driver option.";
-    connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions ,$expected );
+    connect_verify_output( $server, $connectionOptions, $expected );
     
     $value = "SQL Server Native Client 11.0";
     $connectionOptions['Driver']=$value;
     $expected = "Invalid value $value was specified for Driver option.";
-    connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions ,$expected );
+    connect_verify_output( $server, $connectionOptions, $expected );
     
     $value = "ODBC Driver 00 for SQL Server";
     $connectionOptions['Driver']=$value;
     $expected = "Invalid value $value was specified for Driver option.";
-    connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions ,$expected );
+    connect_verify_output( $server, $connectionOptions, $expected );
     
     $value = 123;
     $connectionOptions['Driver']=$value;
     $expected = "Invalid value type for option Driver was specified.  String type was expected.";
-    connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions ,$expected );
+    connect_verify_output( $server, $connectionOptions, $expected );
     
     $value = false;
     $connectionOptions['Driver']=$value;
     $expected = "Invalid value type for option Driver was specified.  String type was expected.";
-    connect_verify_output( $msodbcsql_maj ,$server ,$connectionOptions ,$expected );
+    connect_verify_output( $server, $connectionOptions, $expected );
+}
+
+function test_encrypted_with_odbc13( $server, $connectionOptions ) 
+{
+    $value = "ODBC Driver 13 for SQL Server";
+    $connectionOptions['Driver']=$value;
+    $connectionOptions['ColumnEncryption']='Enabled';
+    
+    $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
+    
+    connect_verify_output( $server, $connectionOptions, $expected );
 }
 
 ?>
