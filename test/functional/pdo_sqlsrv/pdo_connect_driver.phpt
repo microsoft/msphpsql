@@ -137,7 +137,7 @@ function test_wrong_odbc()
 {
     global $msodbcsql_maj, $server, $uid, $pwd;
     
-    $value = "ODBC Driver 11 for SQL Server";
+    $value = "ODBC Driver 17 for SQL Server";
     if ( $msodbcsql_maj == 17 || $msodbcsql_maj < 13 )
     {
         $value = "ODBC Driver 13 for SQL Server";
