@@ -404,6 +404,10 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
         { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option.", -106, true }
     },
+    {
+        SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND,
+        { IMSSP, (SQLCHAR*) "The specified ODBC Driver is not found.", -107, false }
+    },
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
 };

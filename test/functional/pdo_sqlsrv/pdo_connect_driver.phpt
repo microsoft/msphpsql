@@ -124,36 +124,61 @@ function test_invalid_values()
 
 function test_encrypted_with_odbc() 
 {
-    global $msodbcsql_maj;
-
+    global $msodbcsql_maj, $server, $uid, $pwd;
+       
     $value = "ODBC Driver 13 for SQL Server";
     $connectionOptions = "Driver = $value; ColumnEncryption = Enabled;"; 
     $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
     
     connect_verify_output( $connectionOptions, $expected );
+    
+    // TODO: the following block will change once ODBC 17 is officially released
+    $value = "ODBC Driver 17 for SQL Server";
+    $connectionOptions = "Driver = $value; ColumnEncryption = Enabled;"; 
+    
+    $success = "Successfully connected with column encryption.";
+    $expected = "The specified ODBC Driver is not found.";
+    $message = $success;
+    try
+    {
+        $conn = new PDO( "sqlsrv:server = $server ; $connectionOptions", $uid, $pwd );
+    }
+    catch( PDOException $e )
+    {
+        $message = $e->getMessage();
+    }
+
+    if ( $msodbcsql_maj == 17 )
+    {
+        // this indicates that OCBC 17 is the only available driver
+        if ( strcmp( $message, $success ) )
+            print_r( $message );
+    }
+    else
+    {
+        // OCBC 17 might or might not exist
+        if ( strcmp( $message, $success ) )
+        {
+            if ( strpos( $message, $expected ) === false )
+                print_r( $message );
+        }        
+    }
 }
 
 function test_wrong_odbc()
 {
-    global $msodbcsql_maj, $server, $uid, $pwd;
+    global $msodbcsql_maj;
     
+    // TODO: this will change once ODBC 17 is officially released
     $value = "ODBC Driver 17 for SQL Server";
     if ( $msodbcsql_maj == 17 || $msodbcsql_maj < 13 )
     {
         $value = "ODBC Driver 13 for SQL Server";
     }
     $connectionOptions = "Driver = $value;";
+    $expected = "The specified ODBC Driver is not found.";
     
-    try
-    {
-        $conn = new PDO( "sqlsrv:server = $server ; $connectionOptions", $uid, $pwd );
-
-        echo "Should have caused an exception connecting with $value!\n";
-    }
-    catch( PDOException $e )
-    {
-        // do nothing here because this is expected
-    }
+    connect_verify_output( $connectionOptions, $expected );
 }
 
 ?>
