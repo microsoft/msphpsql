@@ -132,9 +132,9 @@ function test_wrong_odbc( $msodbcsql_maj, $server, $connectionOptions )
     $connectionOptions['Driver']=$value;    
     
     $conn = sqlsrv_connect($server, $connectionOptions);
-    if ($conn !== false)
+    if ($conn != false)
     {    
-        echo "Expected errors!\n";
+        echo "Expected errors connecting with $value!\n";
     }
 }
 

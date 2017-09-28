@@ -148,7 +148,7 @@ function test_wrong_odbc()
     {
         $conn = new PDO( "sqlsrv:server = $server ; $connectionOptions", $uid, $pwd );
 
-        echo "Should have caused an exception!\n";
+        echo "Should have caused an exception connecting with $value!\n";
     }
     catch( PDOException $e )
     {
