@@ -572,10 +572,10 @@ PHP_FUNCTION( sqlsrv_next_result )
             throw core::CoreException();
         }
         
-        bool has_result = core_sqlsrv_has_any_result( driver_stmt );
+        bool has_result = core_sqlsrv_has_any_result( stmt );
 
-        if(!driver_stmt->fetch_called){
-            CHECK_CUSTOM_ERROR( !has_result, driver_stmt, SQLSRV_ERROR_NO_FIELDS ) {
+        if(!stmt->fetch_called){
+            CHECK_CUSTOM_ERROR( !has_result, stmt, SQLSRV_ERROR_NO_FIELDS ) {
                 throw core::CoreException();
             }
         }
