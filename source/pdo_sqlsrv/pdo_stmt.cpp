@@ -1067,11 +1067,6 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
-        // 
-        CHECK_CUSTOM_ERROR( stmt->past_next_result_end, stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
-            throw core::CoreException();
-        }
-        
         // Make sure that we haven't gone past the end of the result set, then make sure that 
         // the result set is not null. Null means SQLNumResultCols returns 0 and SQLRowCount 
         // is not > 0. Normally the latter error is handled in core_sqlsrv_fetch(), but if the
