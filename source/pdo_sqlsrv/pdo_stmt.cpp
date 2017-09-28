@@ -1079,7 +1079,7 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
         // In that case, however, core_sqlsrv_has_any_result would return false if we are at 
         // the end of a non-null result set, so we check for that error first to make sure the 
         // user gets the correct error message.
-        CHECK_CUSTOM_ERROR( stmt->past_next_result_end, driver_stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
+        CHECK_CUSTOM_ERROR( driver_stmt->past_next_result_end, driver_stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
             throw core::CoreException();
         }
         
