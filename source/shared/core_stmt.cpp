@@ -1058,18 +1058,6 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
             throw core::CoreException();
         }
         
-        // Make sure that the result set is not null. Null means SQLNumResultCols returns 0
-        // and SQLRowCount is not > 0. Normally this error is handled in core_sqlsrv_fetch(),
-        // but if the user calls nextRowset() before fetch() the error is never shown
-        // so we handle it here.
-        bool has_result = core_sqlsrv_has_any_result( stmt );
-
-        if(!stmt->fetch_called){
-            CHECK_CUSTOM_ERROR( !has_result, stmt, SQLSRV_ERROR_NO_FIELDS ) {
-                throw core::CoreException();
-            }
-        }
-
         close_active_stream( stmt TSRMLS_CC );
 
         //Clear column sql types and sql display sizes.

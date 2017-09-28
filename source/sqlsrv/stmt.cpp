@@ -561,6 +561,25 @@ PHP_FUNCTION( sqlsrv_next_result )
 
     try {
         
+        // Make sure that we haven't gone past the end of the result set, then make sure that 
+        // the result set is not null. Null means SQLNumResultCols returns 0 and SQLRowCount 
+        // is not > 0. Normally the latter error is handled in core_sqlsrv_fetch(), but if the
+        // user calls sqlsrv_next_result() before fetch() the error is never shown so we handle it here. 
+        // In that case, however, core_sqlsrv_has_any_result would return false if we are at 
+        // the end of a non-null result set, so we check for that error first to make sure the 
+        // user gets the correct error message.
+        CHECK_CUSTOM_ERROR( stmt->past_next_result_end, stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
+            throw core::CoreException();
+        }
+        
+        bool has_result = core_sqlsrv_has_any_result( driver_stmt );
+
+        if(!driver_stmt->fetch_called){
+            CHECK_CUSTOM_ERROR( !has_result, driver_stmt, SQLSRV_ERROR_NO_FIELDS ) {
+                throw core::CoreException();
+            }
+        }
+
         core_sqlsrv_next_result( stmt TSRMLS_CC, true );
 
         if( stmt->past_next_result_end ) {
