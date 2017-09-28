@@ -4,12 +4,13 @@ Bind values with PDO::PARAM_BOOL, enable/disable fetch numeric type attribute
 --FILE--
 <?php
 require("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 // Sample data
 $sample = array([true, false],[-12, 0x2A],[0.00, NULL]);
 
 // Connect
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+$conn = connect();
 
 // Run test
 Test();
@@ -23,8 +24,8 @@ $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, TRUE);
 Test();
 
 // Close connection
-$stmt = null;
-$conn = null;
+unset( $stmt );
+unset( $conn );
 
 print "Done";
 
@@ -34,13 +35,8 @@ function Test()
     global $conn, $tableName, $sample;
 
     // Drop table if exists
-    $sql = "IF OBJECT_ID('$tableName') IS NOT NULL DROP TABLE $tableName";
-    $stmt = $conn->query($sql);
+    create_table( $conn, $tableName, array( new columnMeta( "int", "c1" ), new columnMeta( "bit", "c2" )));
     
-    // Create table
-    $sql = "CREATE TABLE $tableName (c1 INT, c2 BIT)";
-    $stmt = $conn->query($sql) ?: die();
-
     // Insert data using bind values
     $sql = "INSERT INTO $tableName VALUES (:v1, :v2)";
     $stmt = $conn->prepare($sql);
@@ -58,6 +54,10 @@ function Test()
     // Print out
     for($i=0; $i<$stmt->rowCount(); $i++)
     { var_dump($row[$i][0]); var_dump($row[$i][1]); }
+    
+    // clean up
+    DropTable( $conn, $tableName );
+    unset( $stmt );
 }
 ?>
 

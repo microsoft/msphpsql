@@ -4,11 +4,11 @@ uses an input/output parameter
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
-$dbh = new PDO( "sqlsrv:server=$server; database=$databaseName", "$uid", "$pwd" );
+$dbh = connect();
 
-$dbh->query("IF OBJECT_ID('dbo.sp_ReverseString', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_ReverseString");
+DropProc( $dbh, "sp_ReverseString" );
 $dbh->query("CREATE PROCEDURE dbo.sp_ReverseString @String as VARCHAR(2048) OUTPUT as SELECT @String = REVERSE(@String)");
 $stmt = $dbh->prepare("EXEC dbo.sp_ReverseString ?");
 $string = "123456789";

@@ -4,23 +4,23 @@ Test closeCursor with a stmt before/after execute and fetch.
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 try
 {
     // Connect 
-    $conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+    $conn = connect();
     
+    $sql = "select 123 as 'IntCol'";
     // prepare a stmt but don't execute, then closeCursor.
-    $stmt = $conn->prepare("select 123 as 'IntCol'");
+    $stmt = $conn->prepare( $sql );
     $ret = $stmt->closeCursor();    
     var_dump($ret);
     $ret = $stmt->closeCursor();    
     var_dump($ret);
     
     // prepare a stmt and execute, then closeCursor.
-    $stmt = $conn->prepare("select 123 as 'IntCol'");
+    $stmt = $conn->prepare( $sql );
     $stmt->execute();
     $ret = $stmt->closeCursor();    
     var_dump($ret);
@@ -30,7 +30,7 @@ try
     
     // use two stmt, execute, and fetch, then closeCursor.
     // use one with client side buffering.
-    $stmt1 = $conn->query("select 123 as 'IntCol'");
+    $stmt1 = $conn->query( $sql );
     $stmt2 = $conn->prepare("select 'abc' as 'Charcol'", array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $result = $stmt1->fetch(PDO::FETCH_NUM);
     print_r($result[0]); 
@@ -44,13 +44,11 @@ try
     $ret = $stmt2->closeCursor();    
     var_dump($ret);
     
-    $stmt1 = null;
-    $stmt2 = null;
-    $stmt = null;
-    $conn = null;
-    
+    unset( $stmt1 );
+    unset( $stmt2 );
+    unset( $stmt );
+    unset( $conn );
 }
-
 catch( PDOException $e ) {
     var_dump($e);   
     exit;

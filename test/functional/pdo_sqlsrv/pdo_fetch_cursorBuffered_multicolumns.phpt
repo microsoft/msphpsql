@@ -6,10 +6,9 @@ Uses buffered cursor to fetch from float, int, and decimal columns that have pos
 
 --FILE--
 <?php
+require_once( "MsCommon.inc" );
 
-require_once("MsSetup.inc");
-$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+$conn = connect();
 $sample = 1234567890.1234;
 $sample1 = -1234567890.1234;
 $sample2 = 1;
@@ -17,10 +16,32 @@ $sample3 = -1;
 $sample4 = 0.5;
 $sample5 = -0.55;
 
-$query = 'CREATE TABLE #TESTTABLE (a float(53), neg_a float(53), b int, neg_b int, c decimal(16, 6), neg_c decimal(16, 6), zero int, zerof float(53), zerod decimal(16,6))';
-$stmt = $conn->exec($query);
-$query = 'INSERT INTO #TESTTABLE VALUES(:p0, :p1, :p2, :p3, :p4, :p5, 0, 0, 0)';
-$stmt = $conn->prepare($query);
+$tbname = "TESTTABLE";
+create_table( $conn, $tbname, array( new columnMeta( "float(53)", "a" ),
+                                     new columnMeta( "float(53)", "neg_a" ),
+                                     new columnMeta( "int", "b" ),
+                                     new columnMeta( "int", "neg_b" ),
+                                     new columnMeta( "decimal(16,6)", "c" ),
+                                     new columnMeta( "decimal(16,6)", "neg_c" ),
+                                     new columnMeta( "int", "zero" ),
+                                     new columnMeta( "float(53)", "zerof" ),
+                                     new columnMeta( "decimal(16,6)", "zerod" )));
+
+if ( !is_col_encrypted() )
+{
+    $query = "INSERT INTO $tbname VALUES(:p0, :p1, :p2, :p3, :p4, :p5, 0, 0, 0)";
+    $stmt = $conn->prepare($query);
+}
+else
+{
+    // Encrypted columns require all inputs to be bound
+    $query = "INSERT INTO $tbname VALUES(:p0, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8)";
+    $stmt = $conn->prepare( $query );
+    $zero = 0;
+    $stmt->bindValue( ':p6', $zero, PDO::PARAM_INT );
+    $stmt->bindValue( ':p7', $zero, PDO::PARAM_INT );
+    $stmt->bindValue( ':p8', $zero, PDO::PARAM_INT );
+}   
 $stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
 $stmt->bindValue(':p1', $sample1, PDO::PARAM_INT);
 $stmt->bindValue(':p2', $sample2, PDO::PARAM_INT);
@@ -29,7 +50,7 @@ $stmt->bindValue(':p4', $sample4, PDO::PARAM_INT);
 $stmt->bindValue(':p5', $sample5, PDO::PARAM_INT);
 $stmt->execute();
 
-$query = 'SELECT TOP 1 * FROM #TESTTABLE';
+$query = "SELECT TOP 1 * FROM $tbname";
 
 //prepare with no buffered cursor
 print "\nno buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
@@ -88,8 +109,9 @@ $stmt->execute();
 $value = $stmt->fetch(PDO::FETCH_NUM);
 var_dump ($value);
 
-$stmt = null;
-$conn = null;
+DropTable( $conn, $tbname );
+unset( $stmt );
+unset( $conn );
 
 ?>
 --EXPECT--

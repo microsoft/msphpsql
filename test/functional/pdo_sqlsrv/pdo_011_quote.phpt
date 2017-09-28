@@ -4,29 +4,33 @@ Insert with quoted parameters
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", "$uid", "$pwd" );
+$conn = connect();
 
 $param = 'a \' g';
 $param2 = $conn->quote( $param );
 
 // Create a temporary table
-$tableName = '#tmpTable';
-$query = "CREATE TABLE $tableName (col1 VARCHAR(10), col2 VARCHAR(20))";
-$stmt = $conn->exec($query);
+$tableName = GetTempTableName( '', false );
+$stmt = create_table( $conn, $tableName, array( new columnMeta( "varchar(10)", "col1" ), new columnMeta( "varchar(20)", "col2" )));
 if( $stmt === false ) { die(); }
 
-// Inserd data
-$query = "INSERT INTO $tableName VALUES( ?, '1' )";
-$stmt = $conn->prepare( $query );
-$stmt->execute(array($param));
+// Insert data
+if ( !is_col_encrypted() )
+{
+    $query = "INSERT INTO $tableName VALUES( ?, '1' )";
+    $stmt = $conn->prepare( $query );
+    $stmt->execute(array($param));
+}
+else
+{
+    insert_row( $conn, $tableName, array( "col1" => $param, "col2" => "1" ), "prepareExecuteBind" );
+}
 
-// Inserd data
-$query = "INSERT INTO $tableName VALUES( ?, ? )";
-$stmt = $conn->prepare( $query );
-$stmt->execute(array($param, $param2));
+// Insert data
+    insert_row( $conn, $tableName, array( "col1" => $param, "col2" => $param2 ), "prepareExecuteBind" );
 
 // Query
 $query = "SELECT * FROM $tableName";
@@ -41,10 +45,10 @@ $stmt = $conn->prepare( $query );
 $stmt->execute(array($param));
 
 //free the statement and connection
-$stmt=null;
-$conn=null;
+DropTable( $conn, $tableName );
+unset( $stmt );
+unset( $conn );
 ?>
 --EXPECT--
 a ' g was inserted
 a ' g was inserted
-

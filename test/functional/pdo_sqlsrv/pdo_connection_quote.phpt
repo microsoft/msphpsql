@@ -7,11 +7,12 @@ testing the quote method with different inputs and then test with a empty query
 
 include 'MsCommon.inc';
 
-function Quote()
+try
 {
     require("MsSetup.inc");
-    
-    $conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+   
+    $conn = connect();
+    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
     
     $output1 = $conn->quote("1'2'3'4'5'6'7'8", PDO::PARAM_INT);
     var_dump($output1);
@@ -26,7 +27,8 @@ function Quote()
     if ($stmt != false)
     {
         echo("Empty query was expected to fail!\n");
-    }    
+    }
+    unset( $stmt );
     
     $stmt1 = $conn->prepare($output2);
     $result = $stmt1->execute();
@@ -34,42 +36,25 @@ function Quote()
     {
         echo("This query was expected to fail!\n");
     }
-    $stmt1 = null;
+    unset( $stmt1 );
     
     $stmt2 = $conn->query($output3);
     if ($stmt2 != false)
     {
         echo("This query was expected to fail!\n");
-    }    
-    
-    $conn = null;   
-}
+    }
+    unset( $stmt2 );
 
-function Repro()
+    unset( $conn );
+}
+catch (Exception $e)
 {
-    StartTest("pdo_connection_quote");
-    echo "\nStarting test...\n";
-    try
-    {
-        Quote();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    EndTest("pdo_connection_quote");
+    echo $e->getMessage();
 }
 
-Repro();
 
 ?>
 --EXPECT--
-
-Starting test...
 string(24) "'1''2''3''4''5''6''7''8'"
 string(16) "'{ABCD}''{EFGH}'"
 string(118) "'<XmlTestData><Letters>The quick brown fox jumps over the lazy dog</Letters><Digits>0123456789</Digits></XmlTestData>'"
-
-Done
-Test "pdo_connection_quote" completed successfully.

@@ -5,10 +5,9 @@ GitHub issue #69 - fetching an empty nvarchar using client buffer
 --FILE--
 <?php
 // Connect 
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);   
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );   
+$conn = connect();
     
 $sql = "EXEC dbo.sp_executesql 
 N'DECLARE @x nvarchar(max)
@@ -22,8 +21,8 @@ $return = $stmt->fetchAll( PDO::FETCH_ASSOC );
 print_r($return);
 
 // Free the statement and connection resources. 
-$stmt = null;  
-$conn = null;    
+unset( $stmt );
+unset( $conn );  
 
 print "Done";
 ?> 

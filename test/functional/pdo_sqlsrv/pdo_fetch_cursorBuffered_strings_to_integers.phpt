@@ -5,22 +5,23 @@ prepare with cursor buffered and fetch various columns with the column bound and
 --FILE--
 <?php
 
-function test()
+try
 {
-	require_once("MsSetup.inc");
-    $conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-
+    require_once( "MsCommon.inc" );
+    
+    $conn = connect();
 	$decimal = -2345209.3103;
 	$numeric = 987234.9919;
 	$salary = "3456789.15";
 	$debt = "98765.99";
 	
-	$query = 'CREATE TABLE #TESTTABLE ([c_decimal] decimal(28,4), [c_numeric] numeric(32,4), [c_varchar] varchar(20), [c_nvarchar] nvarchar(20))';
+    $tbname = "TESTTABLE";
+    create_table( $conn, $tbname, array( new columnMeta( "decimal(28,4)", "c_decimal" ),
+                                         new columnmeta( "numeric(32,4)", "c_numeric" ),
+                                         new columnMeta( "varchar(20)", "c_varchar" ),
+                                         new columnMeta( "nvarchar(20)", "c_nvarchar" )));
 
-	$stmt = $conn->exec($query);
-
-	$query = 'INSERT INTO #TESTTABLE VALUES(:p0, :p1, :p2, :p3)';
+	$query = "INSERT INTO $tbname VALUES(:p0, :p1, :p2, :p3)";
 	$stmt = $conn->prepare($query);
 	$stmt->bindValue(':p0', $decimal);
 	$stmt->bindValue(':p1', $numeric);
@@ -54,7 +55,7 @@ function test()
 
 	echo ("Input values:\n\torginal:$decimal\t$numeric\t$salary\t$debt\n\tdoubles:$decimal2\t$numeric2\t$salary2\t$debt2\n\ttriples:$decimal3\t$numeric3\t$salary3\t$debt3\n");
 	
-	$query = 'SELECT * FROM #TESTTABLE';
+	$query = "SELECT * FROM $tbname";
 
 	// prepare with no buffered cursor
 	echo "\n\nComparing results (stringify off, fetch_numeric on):\n";
@@ -70,8 +71,8 @@ function test()
 	
 	compareResults($stmt1, $stmt2);
 	
-	$stmt1 = null;
-	$stmt2 = null;
+	unset( $stmt1 );
+	unset( $stmt2 );
 	
 	echo "\n\nComparing results (stringify off, fetch_numeric off):\n";
 	// no buffered cursor, stringify off, fetch_numeric off
@@ -88,10 +89,15 @@ function test()
 	
 	compareResults($stmt1, $stmt2);
 	
-	$stmt1 = null;
-	$stmt2 = null;
+	unset( $stmt1 );
+	unset( $stmt1 );
 
-	$conn = null;
+    DropTable( $conn, $tbname );
+	unset( $conn );
+}
+catch ( Exception $e )
+{
+    echo $e->getMessage();
 }
 
 function compareResults($stmt1, $stmt2)
@@ -131,9 +137,6 @@ function compareData($data1, $data2)
 	echo ("\tExpected: "); var_dump ($data1);
 	echo ("\tActual: "); var_dump ($data2);
 }
-
-test();
-
 ?>
 --EXPECT--
 Input values:

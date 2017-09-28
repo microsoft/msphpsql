@@ -7,41 +7,45 @@ This test verifies that the data inserted in binary columns can be retrieved usi
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 $tableName = 'test_binary'.rand();
-$columns = array( 'col1', 'col2', 'col3', 'col4');
+$columns = array( 'col1', 'col2', 'col3' );
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd );
+$conn = connect();
 
-$sql = "CREATE TABLE $tableName ( $columns[0] binary(50), $columns[1] VARBINARY(50), $columns[2] VARBINARY(MAX), $columns[3] image)";
-$conn->exec($sql);
-
+$colmeta_arr = array( new columnMeta( "binary(50)", $columns[0] ), new columnMeta( "varbinary(50)", $columns[1] ), new columnMeta( "varbinary(max)", $columns[2] ));
 $icon = base64_decode("This is some text to test retrieving from binary type columns");
+$inputs = array( $columns[0] => new bindParamOp( 1, $icon, "PDO::PARAM_LOB", null, "PDO::SQLSRV_ENCODING_BINARY" ),
+                 $columns[1] => new bindParamOp( 2, $icon, "PDO::PARAM_LOB", null, "PDO::SQLSRV_ENCODING_BINARY" ),
+                 $columns[2] => new bindParamOp( 3, $icon, "PDO::PARAM_LOB", null, "PDO::SQLSRV_ENCODING_BINARY" ));
+                 
+if ( !is_col_encrypted() )
+{
+    // image is not supported for encryption
+    array_push( $columns, 'col4' );
+    array_push( $colmeta_arr, new columnMeta( "image", $columns[3] ));
+    array_merge( $inputs, array( $columns[3] => new bindParamOp( 4, $icon, "PDO::PARAM_LOB", null, "PDO::SQLSRV_ENCODING_BINARY" )));
+}
+                 
+create_table( $conn, $tableName, $colmeta_arr);
 
 // Insert data using bind parameters
-$sql = "INSERT INTO $tableName($columns[0], $columns[1], $columns[2], $columns[3]) VALUES(?, ?, ?, ?)";
-$stmt = $conn->prepare($sql);
-$stmt->bindParam(1, $icon, PDO::PARAM_LOB, null, PDO::SQLSRV_ENCODING_BINARY);
-$stmt->bindParam(2, $icon, PDO::PARAM_LOB, null, PDO::SQLSRV_ENCODING_BINARY);
-$stmt->bindParam(3, $icon, PDO::PARAM_LOB, null, PDO::SQLSRV_ENCODING_BINARY);
-$stmt->bindParam(4, $icon, PDO::PARAM_LOB, null, PDO::SQLSRV_ENCODING_BINARY);
-$stmt->execute();
+insert_row( $conn, $tableName, $inputs, "prepareBindParam" );
 
 // loop through each column in the table
 foreach ($columns as $col){
     test_fetch($conn, $tableName, $col, $icon);
 }
 // DROP table
-$conn->query("DROP TABLE $tableName") ?: die();
+DropTable( $conn, $tableName );
 
 //free statement and connection
-$stmt = null;
-$conn = null;
+unset( $stmt );
+unset( $conn );
 
-print_r("Test finished successfully");
+print_r("Test finished successfully\n");
 
 //calls various fetch methods
 function test_fetch($conn, $tableName, $columnName, $input){
@@ -86,6 +90,7 @@ function test_fetch($conn, $tableName, $columnName, $input){
     if( strncmp($result[0], $input, $len) !== 0){
         print_r("\nRetrieving using fetchAll failed");
     }
+    unset( $stmt );
 }
 
 ?>

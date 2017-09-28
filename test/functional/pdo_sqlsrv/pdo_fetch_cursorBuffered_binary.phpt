@@ -4,19 +4,19 @@ prepare with cursor buffered and fetch a varbinary column
 
 --FILE--
 <?php
-require_once("MsSetup.inc");
-$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+require_once( "MsCommon.inc" );
+$conn = connect();
 $sample = 'asdgasdgasdgsadg';
 
-$query = 'CREATE TABLE #TESTTABLE (exist varbinary(max))';
-$stmt = $conn->exec($query);
-$query = 'INSERT INTO #TESTTABLE VALUES(:p0)';
+$tbname = "TESTTABLE";
+create_table( $conn, $tbname, array( new columnMeta( "varbinary(max)", "exist" )));
+
+$query = "INSERT INTO $tbname VALUES(:p0)";
 $stmt = $conn->prepare($query);
 $stmt->bindParam(':p0', $sample, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
 $stmt->execute();
 
-$query = 'SELECT TOP 1 * FROM #TESTTABLE';
+$query = "SELECT TOP 1 * FROM $tbname";
 
 //prepare with no buffered cursor
 print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
@@ -75,8 +75,9 @@ $stmt->execute();
 $value = $stmt->fetchColumn();
 var_dump ($value);
 
-$stmt = null;
-$conn = null;
+DropTable( $conn, $tbname );
+unset( $stmt );
+unset( $conn );
 
 ?>
 --EXPECT--

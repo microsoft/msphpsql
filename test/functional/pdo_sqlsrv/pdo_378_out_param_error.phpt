@@ -8,21 +8,21 @@ steps to reproduce the issue:
 3 - call sp.
 --FILE--
 <?php
-require_once("MsSetup.inc");
 require_once("MsCommon.inc");
 
-$conn = new PDO( "sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
+$conn = connect();
 if (!$conn) {
 	print_r($conn->errorInfo());
 }
 
 //----------------Main---------------------------
-$procName = GetTempProcName();
+$procName = GetTempProcName('', false);
 createSP($conn, $procName);
 executeSP($conn, $procName);
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 executeSP($conn, $procName);
+DropProc( $conn, $procName );
 echo "Done";
+unset( $conn );
 
 //-------------------functions-------------------
 function createSP($conn, $procName){
@@ -54,6 +54,7 @@ function executeSP($conn, $procName){
 	if ( $v3 != $expected ) {
 		print("The expected value is $expected, actual value is $v3\n");
 	}
+    unset( $stmt );
 }
 ?>
 --EXPECT--

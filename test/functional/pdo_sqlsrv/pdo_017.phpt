@@ -4,15 +4,14 @@ Fetch string with new line and tab characters
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+$conn = connect();
 
 // Create table
-$tableName = '#pdo_017';
-$sql = "CREATE TABLE $tableName (c1 VARCHAR(32), c2 CHAR(32), c3 NVARCHAR(32), c4 NCHAR(32))";
-$stmt = $conn->exec($sql);
+$tableName = 'pdo_017';
+create_table( $conn, $tableName, array( new ColumnMeta( "varchar(32)", "c1" ), new ColumnMeta( "char(32)", "c2" ), new ColumnMeta( "nvarchar(32)", "c3" ), new ColumnMeta( "nchar(32)", "c4" )));
 
 // Bind parameters and insert data
 $sql = "INSERT INTO $tableName VALUES (:val1, :val2, :val3, :val4)";
@@ -25,15 +24,26 @@ $stmt->bindParam(':val4', $value);
 $stmt->execute();
 
 // Get data
-$sql = "SELECT UPPER(c1) AS VARCHAR, UPPER(c2) AS CHAR, 
-    UPPER(c3) AS NVARCHAR, UPPER(c4) AS NCHAR FROM $tableName";
-$stmt = $conn->query($sql);
+if ( !is_col_encrypted() )
+{
+    $sql = "SELECT UPPER(c1) AS VARCHAR, UPPER(c2) AS CHAR, 
+            UPPER(c3) AS NVARCHAR, UPPER(c4) AS NCHAR FROM $tableName";
+    $stmt = $conn->query($sql);
+}
+else
+{
+    // upper function is not supported in Always Encrypted
+    $sql = "SELECT c1 AS VARCHAR, c2 AS CHAR, 
+            c3 AS NVARCHAR, c4 AS NCHAR FROM $tableName";
+    $stmt = $conn->query( $sql );
+}
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 var_dump($row);
 
 // Close connection
-$stmt=null;
-$conn=null;
+DropTable( $conn, $tableName );
+unset( $stmt );
+unset( $conn );
 print "Done"
 ?>
 

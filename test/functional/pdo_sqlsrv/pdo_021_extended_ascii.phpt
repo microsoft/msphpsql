@@ -4,15 +4,14 @@ Bind parameters VARCHAR(n) extended ASCII
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 // Connect
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+$conn = connect();
 
 // Create table
-$tableName = '#extendedAscii';
-$sql = "CREATE TABLE $tableName (code CHAR(2), city VARCHAR(32))";
-$stmt = $conn->exec($sql);
+$tableName = 'extendedAscii';
+create_table( $conn, $tableName, array( new columnMeta( "char(2)", "code" ), new columnMeta( "varchar(32)", "city" )));
 
 // Insert data using bind parameters
 $sql = "INSERT INTO $tableName VALUES (?,?)";
@@ -27,15 +26,14 @@ $params = array("DE","München");
 $stmt->execute($params);
 
 // Query, fetch
-$sql = "SELECT * from $tableName";
-$stmt = $conn->query($sql);
-$data = $stmt->fetchAll();
+$data = select_all( $conn, $tableName );
 
 // Print out
 foreach ($data as $a)
 echo $a[0] . "|" . $a[1] . "\n";
 
 // Close connection
+DropTable( $conn, $tableName );
 $stmt = null;
 $conn = null;
 

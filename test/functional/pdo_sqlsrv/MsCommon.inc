@@ -24,7 +24,7 @@ function IsAEQualified($conn)
         return false;
     return true;
 }
-
+/*
 // TO BE DELETED
 function connect($options=array())
 {
@@ -51,6 +51,53 @@ function connect($options=array())
      var_dump( $e );
      exit;
   }
+}
+*/
+
+
+/**
+ * Connect to the database specified in MsSetup.inc; Column Encryption keywords automatically added when $keystore is not none
+ * @param string $keywords : string to append to the dsn string in PDO::_construct
+ * @param array $options : attributes to pass to PDO::_construct
+ * @param bool $disableCE : flag for disabling column encryption even when keystore is NOT none
+ *                          for testing fetching encrypted data when connection column encryption is off
+ * @return PDO connection object
+ */
+function connect( $keywords='', $options=array(), $disableCE = false )
+{
+    try
+    {
+        // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
+        // which does not support switching databases
+        require  'MsSetup.inc';
+        $dsn = "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;";
+        if ( $keystore != "none" && !$disableCE )
+        {
+            $dsn .= "ColumnEncryption=Enabled;";
+        }
+        if ( $keystore == "ksp" && !$disableCE )
+        {   
+            require( 'AE_Ksp.inc' );
+            $ksp_path = getKSPPath();
+            $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
+        }
+        if ( $keywords )
+        {
+            $dsn .= $keywords;
+        }
+        $conn = new PDO( $dsn, $uid, $pwd, $options );
+        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+        return $conn;
+    }
+    catch( PDOException $e ) 
+    {
+        var_dump( $e->errorInfo );
+    }
+    catch(Exception $e) 
+    {
+        var_dump( $e->errorInfo );
+        exit;
+    }
 }
 
 
@@ -156,11 +203,10 @@ class columnMeta {
      */
     function getColDef()
     {
-        require  'MsSetup.inc';
         $append = " ";
         
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if ( $keystore != "none" && stripos( $this->options, "identity" ) === false )
+        if ( is_col_encrypted() && stripos( $this->options, "identity" ) === false )
         {
             $cekName = getCekName();
             if ( stripos( $this->dataType, "char" ) !== false )
@@ -190,8 +236,11 @@ function get_default_colname( $dataType )
  * @param object $conn : PDO connection object
  * @param string $tbname : name of the table to be created
  * @param array $columnMetaArr : array of columnMeta objects, which contain metadata for one column
+ * @param bool $disableCE : flag for disabling column encryption even when keystore is NOT none
+ *                          for creating table with datatypes not support for encryption
+ * @return int reporting the number of rows affected (should always be 0 for creating table)
  */
-function create_table( $conn, $tbname, $columnMetaArr )
+function create_table( $conn, $tbname, $columnMetaArr, $disableCE = false )
 {
     try
     {
@@ -203,7 +252,8 @@ function create_table( $conn, $tbname, $columnMetaArr )
         }
         $colDef = rtrim( $colDef, ", " );
         $createSql = "CREATE TABLE $tbname ( $colDef )";
-        $conn->exec( $createSql );
+        $numRows = $conn->exec( $createSql );
+        return $numRows;
     }
     catch ( Exception $e )
     {
@@ -216,15 +266,17 @@ function create_table( $conn, $tbname, $columnMetaArr )
 /**
  * class for encapsulating optional parameters for PDOStatement::bindParam
  */
-class bindParamOption {
-    public $index;      //1-based index of the parameter
+class bindParamOp {
+    public $parameter;  //parameter identifier. Parameter name or 1-based index of the parameter
+    public $variable;   //name of the PHP variable to bind
     public $pdoType;    //PDO_PARAM_ type specified for PDOStatement::bindParam
     public $length;     //length specified for PDOStatement::bindParam
     public $options;    //options specified for PDOStatement::bindParam
         
-    function __construct( $index, $pdoType = null, $length = null, $options = null )
+    function __construct( $parameter, $variable, $pdoType = null, $length = null, $options = null )
     {
-        $this->index = $index;
+        $this->parameter = $parameter;
+        $this->variable = $variable;
         $this->pdoType = $pdoType;
         $this->length = $length;
         $this->options = $options;
@@ -233,9 +285,16 @@ class bindParamOption {
      * @param object $stmt : PDO Statement object
      * @param mix $var : variable to bind to the SQL statement parameter
      */
-    function bindWithOp( $stmt, $var )
+    function bindWithOp( $stmt )
     {
-        $stmt->bindParam( $this->index, $var, constant( $this->pdoType ), $this->length, $this->options );
+        // get the constant values of pdoType, and option
+        $pdoType = null;
+        $options = null;
+        if ( !is_null( $this->pdoType ))
+            $pdoType = constant( $this->pdoType );
+        if ( !is_null( $this->options ))
+            $options = constant( $this->options );
+        $stmt->bindParam( $this->parameter, $this->variable, $pdoType, $this->length, $options );
     }
 }
 
@@ -244,21 +303,26 @@ class bindParamOption {
  * Insert a row into a table
  * @param object $conn : PDO connection object
  * @param string $tbname : name of the table for the row to be inserted
- * @param array $inputs : an associative array column name and its value
- * @param bool $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
+ * @param array $inputs : an associative array column name and its value; value may be a literal value or a bindParamOp object
  * $param string $api : PDO_SQLSRV API used for executing the insert query
- *                      accepted values: "exec", "query", "prepare", "prepareBindParam"
- * @param array $paramOption : an array of bindParamOptions. Should only be provided if $api is "perpareWithParamOp", if provided, has to be in the same order as $inputs
+ *                      accepted values: "exec", "query", "prepareDirect", "prepareExecuteBind", "prepareBindParam"
+ * @param bool $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
  * @return object PDOStatement object of the insert statement
  */
-function insert_row( $conn, $tbname, $inputs, &$r = null, $api = "query", $paramOption = array() )
+function insert_row( $conn, $tbname, $inputs, $api = null, &$r = null )
 {
-    try 
+    try
     {
-        require  'MsSetup.inc';
-        
+        // set the default API being called depending on if column is encrypted
+        if ( is_null( $api ))
+        {
+            if ( !is_col_encrypted() )
+                $api = "query";
+            else
+                $api = "prepareBindParam";
+        }
         $stmt = null;
-        if ( $keystore == "none" && $api != "prepareBindParam" )
+        if ( !is_col_encrypted() && $api != "prepareExecuteBind" && $api != "prepareBindParam" )
         {
             $insertSql = get_insertSql_complete( $tbname, $inputs );
             switch ( $api ) {
@@ -268,7 +332,7 @@ function insert_row( $conn, $tbname, $inputs, &$r = null, $api = "query", $param
                 case "query":
                     $stmt = $conn->query( $insertSql );
                     break;
-                case "prepare":
+                case "prepareDirect":
                     $stmt = $conn->prepare( $insertSql );
                     $r = $stmt->execute();
                     break;
@@ -279,39 +343,24 @@ function insert_row( $conn, $tbname, $inputs, &$r = null, $api = "query", $param
             // if AE is on, must bind param
             $insertSql = get_insertSql_placeholders( $tbname, $inputs );
             $stmt = $conn->prepare( $insertSql );
-            if ( empty( $paramOption ))
+            if ( $api == "prepareExecuteBind" )
             {
-                $i = 1;
-                foreach( $inputs as $key => $value )
-                {
-                    $stmt->bindParam( $i, $inputs[$key] );
-                    $i++;
-                }
+                $params = array_values( $inputs );
+                $r = $stmt->execute( $params );
             }
             else
-            {   
+            {
                 $i = 1;
-                foreach( $inputs as $key => $value )
+                foreach ( $inputs as $key => $value )
                 {
-                    $noparam = true;
-                    foreach( $paramOption as $op )
-                    {
-                        if ( $op->index == $i )
-                        {
-                            $op->bindWithOp( $stmt, $inputs[$key] );
-                            $noparam = false;
-                            $i++;
-                            break;
-                        }
-                    }
-                    if ( $noparam ) 
-                    {
+                    if ( !is_object( $value ))
                         $stmt->bindParam( $i, $inputs[$key] );
-                        $i++;
-                    }
+                    elseif ( get_class( $value ) == "bindParamOp" )
+                        $value->bindWithOp( $stmt );
+                    $i++;
                 }
+                $r = $stmt->execute();
             }
-            $r = $stmt->execute();
         }
         return $stmt;
     }
@@ -341,7 +390,7 @@ function get_insertSql_complete( $tbname, $inputs )
     {
         $colStr .= $key . ", ";
         if ( is_null( $value ))
-            echo "get_insertSql_complete: value provided for input $value is null.\n";
+            $valStr .= "null, ";
         elseif ( is_string( $value ))
             $valStr .= "'" . $value . "', ";
         else
@@ -436,12 +485,60 @@ function fetch_all( $conn, $tbname ) {
 
 
 /**
+ * Use PDOStatement::fetchAll to fetch all rows given a table name
+ * @param object $conn : PDO connection object
+ * @param string $tbname : name of the table to fetch from
+ * @param string $fetchStyle : fetch_style argument passed to PDOStatement::fetchAll
+ * @return array rows in a result set
+ */
+function select_all( $conn, $tbname, $fetchStyle = null )
+{
+    try{
+        $sql = "SELECT * FROM $tbname";
+        $stmt = $conn->query( $sql );
+        if ( $fetchStyle )
+            $fetchStyle = constant( $fetchStyle );
+        $data = $stmt->fetchAll( $fetchStyle );
+        return $data;
+    }
+    catch ( Exception $e )
+    {
+        var_dump( $e );
+        exit;
+    }
+}
+
+
+/**
+ * Use PDOStatement::fetch to fetch a row given a table name
+ * @param object $conn : PDO connection object
+ * @param string $tbname : name of the table to fetch from
+ * @param string $fetchStyle : fetch_style argument passed to PDOStatement::fetch
+ * @return array a row from the result set
+ */
+function select_row( $conn, $tbname, $fetchStyle = null )
+{
+    try{
+        $sql = "SELECT * FROM $tbname";
+        $stmt = $conn->query( $sql );
+        $row = $stmt->fetch( constant( $fetchStyle ));
+        return $row;
+    }
+    catch ( Exception $e )
+    {
+        var_dump( $e );
+        exit;
+    }
+}
+
+
+/**
  * @return bool false if $keystore specified in MsSetup.inc is none, otherwise return true
  */
-function is_col_enc()
+function is_col_encrypted()
 {
     require  'MsSetup.inc';
-    if ( $keystore == "none" )
+    if ( $keystore == "none" || !$dataEncrypted )
         return false;
     else
         return true;

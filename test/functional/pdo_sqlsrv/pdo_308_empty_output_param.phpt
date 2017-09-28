@@ -9,11 +9,9 @@ Verifies GitHub issue 308 is fixed, empty string returned as output parameter wi
 require_once("MsCommon.inc");
 
 // Connect 
-require_once("MsSetup.inc");
-$conn = new PDO("sqlsrv:server=$server;database=$databaseName", $uid, $pwd);   
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );   
+$conn = connect();
 
-$procName = GetTempProcName();
+$procName = GetTempProcName( '', false );
 
 $sql = "CREATE PROCEDURE $procName @TEST VARCHAR(200)='' OUTPUT
 AS BEGIN
@@ -21,23 +19,24 @@ SET NOCOUNT ON;
 SET @TEST='';
 SELECT HELLO_WORLD_COLUMN='THIS IS A COLUMN IN A SINGLE DATASET';
 END";
-$stmt = $conn->exec($sql);
+$stmt = $conn->exec( $sql );
 
 $sql = "EXEC $procName @Test = :Test";
-$stmt = $conn->prepare($sql);
+$stmt = $conn->prepare( $sql );
 $out = '';
-$stmt->bindParam(':Test', $out, PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT, 200);
+$stmt->bindParam( ':Test', $out, PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT, 200 );
 $stmt->execute();
 
 $result = $stmt->fetchAll();
 $stmt->closeCursor();
 
 echo "OUT value: ";
-var_dump($out);
+var_dump( $out );
 
 // Free the statement and connection resources. 
-$stmt = null;
-$conn = null;
+DropProc( $conn, $procName );
+unset( $stmt );
+unset( $conn );
 
 print "Done";
 ?> 

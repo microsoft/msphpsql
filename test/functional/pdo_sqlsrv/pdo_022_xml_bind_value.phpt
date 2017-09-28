@@ -4,14 +4,15 @@ Unicode XML message using bindValue()
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 // Connect
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+$conn = connect();
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Create a temporary table
 $tableName = '#testXMLBindValue';
+// XML encrypted is not supported, thus do not create table with encrypted columns
 $sql = "CREATE TABLE $tableName (ID INT PRIMARY KEY NOT NULL IDENTITY, XMLMessage XML)";
 $stmt = $conn->exec($sql);
 
@@ -44,13 +45,12 @@ catch (PDOException $ex) {
 }
 
 // Get data
-$stmt = $conn->query("select * from $tableName");
-$row = $stmt->fetchAll(PDO::FETCH_ASSOC);  
+$row = select_all( $conn, $tableName, "PDO::FETCH_ASSOC" );
 var_dump($row);  
  
 // Close connection
-$stmt=null;
-$conn=null;
+unset( $stmt );
+unset( $conn );
 
 print "Done"
 ?>

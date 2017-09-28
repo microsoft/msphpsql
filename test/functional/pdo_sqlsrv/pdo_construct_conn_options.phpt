@@ -4,17 +4,14 @@ Test PDO::__Construct by passing connection options
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
- 
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 try 
 {   
-    $dsn = "sqlsrv:Server = $server;" .
-           "ConnectionPooling = false;" .
+    $dsn = "ConnectionPooling = false;" .
            "APP = whatever;" .
            "LoginTimeout = 1;" .
            "ApplicationIntent = ReadOnly;" .
-           "database = $databaseName;" .
            "Encrypt = false;" .
            "Failover_Partner = whatever;" .
            "MultipleActiveResultSets = true;" .
@@ -23,10 +20,11 @@ try
            "TraceFile = whatever;" .
            "TraceOn = true;" .
            "TrustServerCertificate = false;" .
-           "WSID = whatever;"
-           ;
-    $conn = new PDO( $dsn, $uid, $pwd); 
+           "WSID = whatever;";
+    $conn = connect( $dsn );
 
+    unset( $conn );
+    
     echo "Test Successful";
 }
 catch( PDOException $e ) {
@@ -36,5 +34,4 @@ catch( PDOException $e ) {
 ?> 
 
 --EXPECT--
-
 Test Successful

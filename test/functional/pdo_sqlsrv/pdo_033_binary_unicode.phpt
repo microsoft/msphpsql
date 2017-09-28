@@ -8,29 +8,28 @@ Insert binary HEX data into an nvarchar field then read it back as UTF-8 string
 <?php
 try
 {
-    require_once("MsSetup.inc");
+    require_once( "MsCommon.inc" );
 
     // Connect
-    $conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+    $conn = connect();
 
     // Create table
-    $tableName = '#pdo_033test';
-    $sql = "CREATE TABLE $tableName (c1 NVARCHAR(100))";
-    $stmt = $conn->exec($sql);
+    $tableName = 'pdo_033test';
+    create_table( $conn, $tableName, array( new columnMeta( "nvarchar(100)", "c1" )));
 
     $input = pack( "H*", '49006427500048005000' );  // I'LOVE_SYMBOL'PHP
-
-    $stmt = $conn->prepare("INSERT INTO $tableName (c1) VALUES (?)");
-    $stmt->bindParam(1, $input, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
-    $result = $stmt->execute();
+    $result;
+    $stmt = insert_row( $conn, $tableName, array( "c1" => new bindParamOp( 1, $input, "PDO::PARAM_STR", 0, "PDO::SQLSRV_ENCODING_BINARY" )), "prepareBindParam", $result );
+    
     if (! $result)
         echo "Failed to insert!\n";
 
     $stmt = $conn->query("SELECT * FROM $tableName");
     $utf8 = $stmt->fetchColumn();
 
-    echo "\n". $utf8 ."\n";
+    echo "$utf8\n";
 
+    DropTable( $conn, $tableName );
     $stmt = null;
     $conn = null;
 }

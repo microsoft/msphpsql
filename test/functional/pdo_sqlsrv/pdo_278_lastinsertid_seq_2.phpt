@@ -4,11 +4,17 @@ LastInsertId returns the last sequences operating on the same table
 --FILE--
 <?php
 require_once("MsCommon.inc");
-require_once("MsSetup.inc");
+
+function getNextSeq( $conn, $sequenceName )
+{
+    $sql = "SELECT NEXT VALUE FOR $sequenceName";
+    $stmt = $conn->query( $sql );
+    return $stmt->fetchColumn();
+}
 
 try{
     $database = "tempdb";
-    $conn = new PDO("sqlsrv:Server=$server;Database=$databaseName", $uid, $pwd);
+    $conn = connect();
     
     // sequence is only supported in SQL server 2012 and up (or version 11 and up)
     // Output Done once the server version is found to be < 11
@@ -20,21 +26,41 @@ try{
         $tableName = GetTempTableName('tab', false);
         $sequence1 = 'sequence1';
         $sequence2 = 'sequenceNeg1';
-        $stmt = $conn->query("IF OBJECT_ID('$sequence1', 'SO') IS NOT NULL DROP SEQUENCE $sequence1");
-        $stmt = $conn->query("IF OBJECT_ID('$sequence2', 'SO') IS NOT NULL DROP SEQUENCE $sequence2");
-        $sql = "CREATE TABLE $tableName (ID INT IDENTITY(1,1), SeqNumInc INTEGER NOT NULL PRIMARY KEY, SomeNumber INT)";
-        $stmt = $conn->query($sql);
+        create_table( $conn, $tableName, array( new columnMeta( "int", "ID", "IDENTITY(1,1)" ), new columnMeta( "int", "SeqNumInc", "NOT NULL PRIMARY KEY" ), new columnMeta( "int", "SomeNumber" )));
+        $conn->exec("IF OBJECT_ID('$sequence1', 'SO') IS NOT NULL DROP SEQUENCE $sequence1");
+        $conn->exec("IF OBJECT_ID('$sequence2', 'SO') IS NOT NULL DROP SEQUENCE $sequence2");
         $sql = "CREATE SEQUENCE $sequence1 AS INTEGER START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 100";
-        $stmt = $conn->query($sql);
-    
+        $stmt = $conn->exec($sql);
         $sql = "CREATE SEQUENCE $sequence2 AS INTEGER START WITH 200 INCREMENT BY -1 MINVALUE 101 MAXVALUE 200";
-        $stmt = $conn->query($sql);
-        $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence1, 20 )");
-        $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence2, 180 )");
-        $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence1, 40 )");
-        $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence2, 160 )");
-        $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence1, 60 )");
-        $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence2, 140 )");
+        $stmt = $conn->exec($sql);
+        
+        if ( !is_col_encrypted() )
+        {
+            $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence1, 20 )");
+            $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence2, 180 )");
+            $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence1, 40 )");
+            $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence2, 160 )");
+            $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence1, 60 )");
+            $ret = $conn->exec("INSERT INTO $tableName VALUES( NEXT VALUE FOR $sequence2, 140 )");
+        }
+        else
+        {
+            // if column seqnum is encrypted, need to get "NEXT VALUE FOR $sequenceName" separately first and then bind param
+            $sql = "INSERT INTO $tableName VALUES( ?, ? )";
+            $stmt = $conn->prepare( $sql );
+            $nextSeq1 = getNextSeq( $conn, $sequence1 );
+            $stmt->execute( array( $nextSeq1, 20 ));
+            $nextSeq2 = getNextSeq( $conn, $sequence2 );
+            $stmt->execute( array( $nextSeq2, 180 ));
+            $nextSeq1 = getNextSeq( $conn, $sequence1 );
+            $stmt->execute( array( $nextSeq1, 40 ));
+            $nextSeq2 = getNextSeq( $conn, $sequence2 );
+            $stmt->execute( array( $nextSeq2, 160 ));
+            $nextSeq1 = getNextSeq( $conn, $sequence1 );
+            $stmt->execute( array( $nextSeq1, 60 ));
+            $nextSeq2 = getNextSeq( $conn, $sequence2 );
+            $stmt->execute( array( $nextSeq2, 140 ));
+        }
         // return the last sequence number of 'sequence1'
         $lastSeq1 = $conn->lastInsertId($sequence1);
     
@@ -48,12 +74,12 @@ try{
             echo "Done\n";
         }
 
-        $stmt = $conn->query("DROP TABLE $tableName");
-        $stmt = $conn->query("DROP SEQUENCE $sequence1");
-        $stmt = $conn->query("DROP SEQUENCE $sequence2");
-        $stmt = null;
+        DropTable( $conn, $tableName );
+        $stmt = $conn->exec("DROP SEQUENCE $sequence1");
+        $stmt = $conn->exec("DROP SEQUENCE $sequence2");
+        unset( $stmt );
     }
-    $conn = null;
+    unset( $conn );
 }
     catch (Exception $e){
     echo "Exception $e\n";

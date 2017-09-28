@@ -4,19 +4,17 @@ Bind integer parameters; allow fetch numeric types.
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
 /* Sample numbers MIN_INT, MAX_INT */
 $sample = array(-2**31, 2**31-1);
 
 /* Connect */
-$conn_ops['pdo'][PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE] = TRUE;
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd, $conn_ops['pdo']);
+$conn = connect( '', array( PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE => TRUE ));
 
 // Create table
-$tableName = '#testPDO016';
-$sql = "CREATE TABLE $tableName (c1 INT, c2 INT)";
-$stmt = $conn->exec($sql);
+$tableName = 'testPDO016';
+create_table( $conn, $tableName, array( new ColumnMeta( "int", "c1" ), new ColumnMeta( "int", "c2" )));
 
 // Insert data using bind parameters
 $sql = "INSERT INTO $tableName VALUES (:num1, :num2)";
@@ -32,8 +30,9 @@ $row = $stmt->fetch(PDO::FETCH_NUM);
 var_dump ($row);
 
 // Close connection
-$stmt = null;
-$conn = null;
+DropTable( $conn, $tableName );
+unset( $stmt );
+unset( $conn );
 
 print "Done";
 ?>

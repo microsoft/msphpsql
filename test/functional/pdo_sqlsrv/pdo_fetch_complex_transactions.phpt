@@ -8,15 +8,14 @@ include 'MsCommon.inc';
 
 function ComplexTransaction($conn, $tableName)
 {
-    $stmt = $conn->query("CREATE TABLE $tableName ([c1_int] int, [c2_real] real)");
-    $stmt = null;
+    create_table( $conn, $tableName, array( new columnMeta( "int", "c1_int" ), new columnMeta( "real", "c2_real" )));
 
     $stmtSelect = $conn->prepare("SELECT * FROM $tableName");
     $stmtDelete = $conn->prepare("DELETE TOP(3) FROM $tableName");
    
     // insert ten rows
     $numRows = 10;
-    InsertData($conn, $tableName, $numRows);
+    InsertData( $conn, $tableName, $numRows );
     FetchData($stmtSelect, $tableName, $numRows);
     
     $conn->beginTransaction();
@@ -101,49 +100,37 @@ function FetchData($stmt, $tableName, $numRows, $fetchMode = false)
 // RunTest
 //
 //--------------------------------------------------------------------
-function RunTest()
+
+echo "Test begins...\n";
+try
 {
-    StartTest("pdo_fetch_complex_transactions");
-    echo "\nTest begins...\n";
-    try
-    {
-        include("MsSetup.inc");
-        
-        // Connect
-        $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
-        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-        
-        $conn2 = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
-        $conn2->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+    // Connect
+    $conn = connect();
+    $conn2 = connect();
 
-        $tableName = GetTempTableName('testTransaction', false);
+    $tableName = GetTempTableName( 'testTransaction', false );
 
-        // ComplexTransaction() returns number of rows left in $tableName
-        $numRows = ComplexTransaction($conn, $tableName);
-        // disconnect first connection, transaction aborted
-        $conn = null;
+    // ComplexTransaction() returns number of rows left in $tableName
+    $numRows = ComplexTransaction( $conn, $tableName );
+    // disconnect first connection, transaction aborted
+    unset( $conn );
 
-        // select table using the second connection
-        $stmt = $conn2->prepare("SELECT * FROM $tableName");
-        FetchData($stmt, $tableName, $numRows, true);
+    // select table using the second connection
+    $stmt = $conn2->prepare("SELECT * FROM $tableName");
+    FetchData($stmt, $tableName, $numRows, true);
 
-        // drop test table
-        $conn2->query("DROP TABLE $tableName");
-        $conn2 = null;    
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    EndTest("pdo_fetch_complex_transactions");
+    // drop test table
+    DropTable( $conn2, $tableName );
+    unset( $conn );   
 }
-
-RunTest();
+catch (Exception $e)
+{
+    echo $e->getMessage();
+}
+echo "Done\n";
 
 ?>
 --EXPECT--
-﻿﻿
 Test begins...
 Number of rows fetched: 10
 Committed deleting 3 rows
@@ -156,6 +143,4 @@ Rolled back
 Number of rows fetched: 4
 Deletion aborted
 Number of rows fetched: 4
-
 Done
-Test "pdo_fetch_complex_transactions" completed successfully.

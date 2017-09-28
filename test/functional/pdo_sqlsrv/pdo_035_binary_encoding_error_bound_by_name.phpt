@@ -6,15 +6,14 @@ GitHub Issue #35 binary encoding error when binding by name
 <?php
 function test()
 {
-    require_once("MsSetup.inc");
+    require_once( "MsCommon.inc" );
 
     // Connect
-    $conn = new PDO( "sqlsrv:server=$server ; database=$databaseName", $uid, $pwd);
+    $conn = connect();
 
     // Create a temp table
-    $tableName = "#testTableIssue35";
-    $sql = "CREATE TABLE $tableName (Value varbinary(max))";
-    $stmt = $conn->exec($sql);
+    $tableName = "testTableIssue35";
+    create_table( $conn, $tableName, array( new columnMeta( "varbinary(max)", "Value" )));
 
     // Insert data using bind parameters
     $sql = "INSERT INTO $tableName VALUES (?)";
@@ -34,8 +33,9 @@ function test()
     var_dump($val1 === $value);
         
     // Close connection
-    $stmt = null;
-    $conn = null;
+    DropTable( $conn, $tableName );
+    unset( $stmt );
+    unset( $conn );
 }
 
 test();

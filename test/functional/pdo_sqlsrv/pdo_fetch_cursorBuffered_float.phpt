@@ -8,19 +8,20 @@ function FlatsAreEqual($a, $b, $epsilon = 3.9265E-6)
 {
   return (abs($a - $b) < $epsilon);
 }
-require_once("MsSetup.inc");
-$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+require_once( "MsCommon.inc" );
+
+$conn = connect();
 $sample = 1234567890.1234;
 
-$query = 'CREATE TABLE #TESTTABLE (exist float(53))';
-$stmt = $conn->exec($query);
-$query = 'INSERT INTO #TESTTABLE VALUES(:p0)';
+$tbname = "TESTTABLE";
+create_table( $conn, $tbname, array( new columnMeta( "float(53)", "exist" )));
+
+$query = "INSERT INTO $tbname VALUES(:p0)";
 $stmt = $conn->prepare($query);
 $stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
 $stmt->execute();
 
-$query = 'SELECT TOP 1 * FROM #TESTTABLE';
+$query = "SELECT TOP 1 * FROM $tbname";
 
 //prepare with no buffered cursor
 print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
@@ -95,9 +96,9 @@ var_dump ($value);
 $ok = FlatsAreEqual($sample, $value) ? 'TRUE' : 'FALSE';
 print "\nFetched value = Input? $ok\n\n";
 
-$stmt = null;
-$conn = null;
-
+DropTable( $conn, $tbname );
+unset( $stmt );
+unset( $conn );
 ?>
 --EXPECT--
 no buffered cursor, stringify off, fetch_numeric off

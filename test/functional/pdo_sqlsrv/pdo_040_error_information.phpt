@@ -4,13 +4,15 @@ Retrieve error information; supplied values does not match table definition
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 // Connect
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+//$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+$conn = connect();
+$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
 
 // Create table
-$tableName = '#pdo_040test';
+$tableName = 'pdo_040test';
 $sql = "CREATE TABLE $tableName (code INT)";
 $stmt = $conn->exec($sql);
 
@@ -22,20 +24,32 @@ $params = array(2010,"London");
 
 // SQL statement has an error, which is then reported
 $stmt->execute($params);
-print_r($stmt->errorInfo());
+$error = $stmt->errorInfo();
+
+$success = true;
+if ( !is_col_encrypted() )
+{
+    // 21S01 is the expected ODBC Column name or number of supplied values does not match table definition error
+    if ( $error[0] != "21S01" )
+        $success = false;
+}
+else
+{
+    // 07009 is the expected ODBC Invalid Descriptor Index error
+    if ( $error[0] != "07009" )
+        $success = false;
+}
 
 // Close connection
-$stmt = null;
-$conn = null;
+DropTable( $conn, $tableName );
+unset( $stmt );
+unset( $conn );
 
-print "Done";
+if ( $success )
+    print "Done";
+else
+    var_dump( error );
 ?>
 
---EXPECTREGEX--
-Array
-\(
-    \[0\] => 21S01
-    \[1\] => 213
-    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Column name or number of supplied values does not match table definition\.
-\)
+--EXPECT--
 Done

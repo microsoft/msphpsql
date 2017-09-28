@@ -4,26 +4,17 @@ Test emulate prepare with mix bound param encodings including binary data
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
- 
 class MyStatement extends PDOStatement {
-  public function BindValues(array &$values, array &$blobs, $placeholder_prefix, $columnInformation, &$max_placeholder = NULL, $blob_suffix = NULL) {
-    if (empty($max_placeholder)) {
-      $max_placeholder = 0;
-    }
+  public function BindValues(array &$values, $placeholder_prefix, $columnInformation) {
+    $max_placeholder = 0;
     foreach ($values as $field_name => &$field_value) {
       $placeholder = $placeholder_prefix . $max_placeholder++;
-      $blob_key = $placeholder . $blob_suffix;
       if (isset($columnInformation['blobs'][$field_name])) {
-        $blobs[$blob_key] = fopen('php://memory', 'a');
-        fwrite($blobs[$blob_key], $field_value);
-        rewind($blobs[$blob_key]);
-        $this->bindParam($placeholder, $blobs[$blob_key], PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
+        $this->bindParam($placeholder, $field_value, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
       }
       else {
         // Even though not a blob, make sure we retain a copy of these values.
-        $blobs[$blob_key] = $field_value;
-        $this->bindParam($placeholder, $blobs[$blob_key], PDO::PARAM_STR);
+        $this->bindParam($placeholder, $field_value, PDO::PARAM_STR);
       }
     }
   }
@@ -32,55 +23,78 @@ class MyStatement extends PDOStatement {
 //*******************************************************
 // TEST BEGIN
 //*******************************************************
- 
-$connection_options['pdo'] = array();
-$connection_options['pdo'][PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
+require_once( "MsCommon.inc" );
 
-$database = "tempdb";
-$cnn = new PDO("sqlsrv:Server=$server;Database=$databaseName", $uid, $pwd, $connection_options['pdo']);
+$cnn = connect();
 $cnn->setAttribute(PDO::ATTR_STATEMENT_CLASS, [MyStatement::class]);
 
 // Drop
-try {
-    $pdo_options = array();
+$tbname = "watchdog";
+DropTable( $cnn, $tbname );
+
+$pdo_options = array();
+if ( !is_col_encrypted() )
+{
     $pdo_options[PDO::ATTR_EMULATE_PREPARES] = TRUE;
     $pdo_options[PDO::SQLSRV_ATTR_DIRECT_QUERY] = TRUE;
-    $pdo_options[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;
-    $pdo_options[PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE] = PDO::SQLSRV_CURSOR_BUFFERED;
-    $st = $cnn->prepare('DROP TABLE WATCHDOG', $pdo_options);
     
-    $st->execute();  
+    $cm_arr = array( new columnMeta( "int", "wid", "IDENTITY(1,1) NOT NULL" ), 
+                     new columnMeta( "int", "uid", "NOT NULL CONSTRAINT [watchdog_uid_df]  DEFAULT ((0))" ), 
+                     new columnMeta( "nvarchar(64)", "type", "NOT NULL CONSTRAINT [watchdog_type_df]  DEFAULT ('')" ), 
+                     new columnMeta( "nvarchar(max)", "message", "NOT NULL" ), 
+                     new columnMeta( "varbinary(max)", "variables", "NOT NULL" ), 
+                     new columnMeta( "smallint", "severity", "NOT NULL CONSTRAINT [watchdog_severity_df]  DEFAULT ((0))" ), 
+                     new columnMeta( "nvarchar(255)", "link", "NULL CONSTRAINT [watchdog_link_df]  DEFAULT ('')" ), 
+                     new columnMeta( "nvarchar(max)", "location", "NOT NULL" ), 
+                     new columnMeta( "nvarchar(max)", "referer", "NULL" ), 
+                     new columnMeta( "nvarchar(128)", "hostname", "NOT NULL CONSTRAINT [watchdog_hostname_df]  DEFAULT ('')" ), 
+                     new columnMeta( "int", "timestamp", "NOT NULL CONSTRAINT [watchdog_timestamp_df]  DEFAULT ((0))" ));
 }
-catch(\Exception $e) {}
+else
+{
+    // Emulate prepare and using direct query for binding parameters are not supported in Always encrypted
+    $pdo_options[PDO::ATTR_EMULATE_PREPARES] = FALSE;
+    $pdo_options[PDO::SQLSRV_ATTR_DIRECT_QUERY] = FALSE;
+    
+    // Default constraints are unsupported on encrypted columns
+    $cm_arr = array( new columnMeta( "int", "wid", "IDENTITY(1,1) NOT NULL" ), 
+                     new columnMeta( "int", "uid", "NOT NULL" ), 
+                     new columnMeta( "nvarchar(64)", "type", "NOT NULL" ), 
+                     new columnMeta( "nvarchar(max)", "message", "NOT NULL" ), 
+                     new columnMeta( "varbinary(max)", "variables", "NOT NULL" ), 
+                     new columnMeta( "smallint", "severity", "NOT NULL" ), 
+                     new columnMeta( "nvarchar(255)", "link" ), 
+                     new columnMeta( "nvarchar(max)", "location", "NOT NULL" ), 
+                     new columnMeta( "nvarchar(max)", "referer" ), 
+                     new columnMeta( "nvarchar(128)", "hostname", "NOT NULL" ), 
+                     new columnMeta( "int", "timestamp", "NOT NULL" ));
+}
+
+$pdo_options[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;
+$pdo_options[PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE] = PDO::SQLSRV_CURSOR_BUFFERED;
+
+$cd_arr = array();
+foreach( $cm_arr as $cm )
+{
+    array_push( $cd_arr, $cm->getColDef() );
+}
  
 $tablescript = <<<EOF
- 
-CREATE TABLE [dbo].[watchdog](
-    [wid] [int] IDENTITY(1,1) NOT NULL,
-    [uid] [int] NOT NULL CONSTRAINT [watchdog_uid_df]  DEFAULT ((0)),
-    [type] [nvarchar](64) NOT NULL CONSTRAINT [watchdog_type_df]  DEFAULT (''),
-    [message] [nvarchar](max) NOT NULL,
-    [variables] [varbinary](max) NOT NULL,
-    [severity] [smallint] NOT NULL CONSTRAINT [watchdog_severity_df]  DEFAULT ((0)),
-    [link] [nvarchar](255) NULL CONSTRAINT [watchdog_link_df]  DEFAULT (''),
-    [location] [nvarchar](max) NOT NULL,
-    [referer] [nvarchar](max) NULL,
-    [hostname] [nvarchar](128) NOT NULL CONSTRAINT [watchdog_hostname_df]  DEFAULT (''),
-    [timestamp] [int] NOT NULL CONSTRAINT [watchdog_timestamp_df]  DEFAULT ((0)),
+CREATE TABLE [dbo].[$tbname](
+    $cd_arr[0], $cd_arr[1], $cd_arr[2], $cd_arr[3], $cd_arr[4], $cd_arr[5], $cd_arr[6], $cd_arr[7], $cd_arr[8], $cd_arr[9], $cd_arr[10],
  CONSTRAINT [watchdog_pkey] PRIMARY KEY CLUSTERED
 (
     [wid] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
- 
 EOF;
  
 // Recreate
-$st = $cnn->prepare($tablescript, $pdo_options);
+$st = $cnn->prepare($tablescript);
 $st->execute();  
-
+    
 $query = <<<EOF
-INSERT INTO [watchdog] ([uid], [type], [message], [variables], [severity], [link], [location], [referer], [hostname], [timestamp]) OUTPUT (Inserted.wid) VALUES
+INSERT INTO [$tbname] ([uid], [type], [message], [variables], [severity], [link], [location], [referer], [hostname], [timestamp]) OUTPUT (Inserted.wid) VALUES
 (:db_insert0, :db_insert1, :db_insert2, :db_insert3, :db_insert4, :db_insert5, :db_insert6, :db_insert7, :db_insert8, :db_insert9)
 EOF;
  
@@ -89,21 +103,19 @@ $columninformation_encoded = 'YTo3OntzOjg6ImlkZW50aXR5IjtzOjM6IndpZCI7czoxMDoiaW
  
 $values = unserialize(base64_decode($values_encoded));
 $columnInformation = unserialize(base64_decode($columninformation_encoded));
-$blobs = [];
-//var_dump($values);
-//var_dump($columnInformation);
  
 /** @var MyStatement */
 $st = $cnn->prepare($query, $pdo_options);
 
-$st->BindValues($values, $blobs, ':db_insert', $columnInformation);
+$st->BindValues($values, ':db_insert', $columnInformation);
 $st->execute();
 
-$st = $cnn->query("SELECT * FROM [watchdog]");
+$st = $cnn->query("SELECT * FROM [$tbname]");
 var_dump($st->fetchAll(PDO::FETCH_ASSOC));
 
-$st = NULL;
-$cnn = NULL;
+DropTable( $tbname );
+unset( $st );
+unset( $cnn );
 
 ?>
 --EXPECT--

@@ -4,8 +4,7 @@ Test PDO::__Construct by passing different connection attributes
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-  
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 try 
 {   
@@ -18,22 +17,18 @@ try
                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                    PDO::ATTR_ORACLE_NULLS => PDO::NULL_NATURAL,
                    PDO::SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE => 10240,
-                   PDO::SQLSRV_ATTR_DIRECT_QUERY => true		
-                 ); 
+                   PDO::SQLSRV_ATTR_DIRECT_QUERY => true ); 
+
+    $conn = connect( "", $attr );
     
-    $dsn = 	"sqlsrv:Server = $server; database = $databaseName";
-    
-    $conn = new PDO( $dsn, $uid, $pwd, $attr); 
-    
-    $stmt = $conn->prepare("SELECT 1");
+    $stmt = $conn->prepare( "SELECT 1" );
     $stmt->execute();
     
     // fetch result, which should be stringified since ATTR_STRINGIFY_FETCHES is on
-    var_dump(($stmt->fetch(PDO::FETCH_ASSOC)));
+    var_dump( $stmt->fetch( PDO::FETCH_ASSOC ));
     
-    $stmt = NULL;
-    $conn = NULL;
-
+    unset( $stmt );
+    unset( $conn );
   
     echo "Test Successful";
 }
@@ -44,7 +39,6 @@ catch( PDOException $e ) {
 ?> 
 
 --EXPECT--
-
 array(1) {
   [""]=>
   string(1) "1"

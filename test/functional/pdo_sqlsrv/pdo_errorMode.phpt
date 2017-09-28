@@ -4,13 +4,10 @@ Test different error modes. The queries will try to do a select on a table that 
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-
-require_once 'MsCommon.inc';
-
+require_once( 'MsCommon.inc' );
 
 function testException(){
     $db = connect();
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $sql = "SELECT * FROM temp_table";
     try{
         $q = $db->query($sql);
@@ -32,7 +29,6 @@ function testSilent(){
     $sql = "SELECT * FROM temp_table";
     $q = $db->query($sql);
 }
-
 
 testException();
 testWarning();

@@ -4,20 +4,19 @@ Moves the cursor to the next result set with pooling enabled
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 // Create a pool
-$conn0 = new PDO("sqlsrv:server=$server; database=$databaseName;ConnectionPooling=1", $uid, $pwd);
+$conn0 = connect( "ConnectionPooling=1" );
 $conn0->query("SELECT 1");
 $conn0 = null;
 
 // Connect
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName;ConnectionPooling=1", $uid, $pwd);
+$conn = connect( "ConnectionPooling=1" );
 
 // Create table
-$tableName = '#nextResultPooling';
-$sql = "CREATE TABLE $tableName (c1 INT, c2 XML)";
-$stmt = $conn->exec($sql);
+$tableName = 'nextResultPooling';
+create_table( $conn, $tableName, array( new ColumnMeta( "int", "c1" ), new ColumnMeta( "varchar(40)", "c2" )));
 
 // Insert data using bind parameters
 $sql = "INSERT INTO $tableName VALUES (?,?)";
@@ -30,9 +29,19 @@ for($t=200; $t<220; $t++) {
 }
 
 // Fetch, get data and move the cursor to the next result set
-$sql = "SELECT * from $tableName WHERE c1 = '204' OR c1 = '210'; 
-		SELECT Top 3 * FROM $tableName ORDER BY c1 DESC";
-$stmt = $conn->query($sql);
+if ( !is_col_encrypted() )
+{
+    $sql = "SELECT * from $tableName WHERE c1 = '204' OR c1 = '210'; 
+            SELECT Top 3 * FROM $tableName ORDER BY c1 DESC";
+    $stmt = $conn->query($sql);
+}
+else
+{
+    $sql = "SELECT * FROM $tableName WHERE c1 = ? OR c1 = ?;
+            SELECT Top 3 * FROM $tableName ORDER BY c1 DESC";
+    $stmt = $conn->prepare( $sql );
+    $stmt->execute( array( '204', '210' ));
+}
 $data1 = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $stmt->nextRowset();
 $data2 = $stmt->fetchAll(PDO::FETCH_NUM);
@@ -46,8 +55,9 @@ foreach ($data2 as $a)
 echo $a[0] . "|".$a[1]."\n";
 
 // Close connection
-$stmt = null;
-$conn = null;
+DropTable( $conn, $tableName );
+unset( $stmt );
+unset( $conn );
 
 print "Done";
 ?>

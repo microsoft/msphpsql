@@ -4,56 +4,45 @@ Prepare, execute statement and fetch with pooling unset (default)
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 // Allow PHP types for numeric fields
-$connection_options['pdo'][PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE] = TRUE;
+$connection_options = array( PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE => TRUE );
 
 // Create a pool
-$conn0 = new PDO( "sqlsrv:server=$server;database=$databaseName;",
-    $uid, $pwd, $connection_options['pdo']);
-$conn0 = null;
+$conn0 = connect( '', $connection_options );
+unset( $conn0 );
 
 // Connection can use an existing pool
-$conn = new PDO( "sqlsrv:server=$server;database=$databaseName;",
-    $uid, $pwd, $connection_options['pdo']);
-
+$conn = connect( '', $connection_options );
+    
 // Create table
 $tableName = 'pdo_060_test';
-$sql = "CREATE TABLE $tableName (Столица NVARCHAR(32), year INT)";
-$stmt = $conn->query($sql);
+create_table( $conn, $tableName, array( new columnMeta( "nvarchar(32)", "Столица" ), new columnMeta( "int", "year" )));
 
 // Insert data
-$sql = "INSERT INTO $tableName VALUES (?,?)";
-$stmt = $conn->prepare($sql);
-$stmt->execute(array("Лондон",2012));
+insert_row( $conn, $tableName, array( "Столица" => "Лондон", "year" => 2012 ), "prepareExecuteBind" );
 
 // Get data
-$stmt = $conn->query("SELECT * FROM $tableName");
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$row = select_row( $conn, $tableName, "PDO::FETCH_ASSOC" );
 var_dump($row);  
-$conn = null;
+unset( $conn );
 
 // Create a new pool
-$conn0 = new PDO( "sqlsrv:server=$server;database=$databaseName;",
-    $uid, $pwd);
-$conn0 = null;
+$conn0 = connect();
+unset( $conn0 );
     
 // Connection can use an existing pool
-$conn = new PDO( "sqlsrv:server=$server;database=$databaseName;",
-    $uid, $pwd);
+$conn = connect();
 
 // Get data
-$stmt = $conn->query("SELECT * FROM $tableName");
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$row = select_row( $conn, $tableName, "PDO::FETCH_ASSOC" );
 var_dump($row); 
     
-    
-$conn->query("DROP TABLE $tableName");
-    
 // Close connection
-$stmt=null;
-$conn=null;
+DropTable( $conn, $tableName );
+unset( $stmt );
+unset( $conn );
 print "Done"
 ?>
 --EXPECT--

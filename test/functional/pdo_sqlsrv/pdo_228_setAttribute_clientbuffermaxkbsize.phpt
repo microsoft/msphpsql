@@ -4,24 +4,20 @@ sqlsrv_has_rows() using a forward and scrollable cursor
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
 // Connect
-$conn = new PDO( "sqlsrv:server=$server; database=$databaseName" , $uid, $pwd); 
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+$conn = connect();
 
 // Create temporary table2
-$tableName1 = '#pdo_228_1';
-$tableName2 = '#pdo_228_2';
+$tableName1 = 'pdo_228_1';
+$tableName2 = 'pdo_228_2';
 
-$stmt = $conn->exec("CREATE TABLE $tableName1 ([c1_int] int, [c2_varchar] varchar(1000))"); 
-$query = "INSERT INTO $tableName1 (c1_int, c2_varchar) VALUES ((990021574), ('>vh~Ö.bÐ*äß/ÄAabýZÃ¢Oüzr£ðAß+|~|OU¢a|U<ßrv.uCB.ÐÜh_î+ãå@üðöã,U+ßvuU:/ý_Öãî/ð|bB|_Zbua©r++BA¢z£.üî¢öåäözÜ¢ßb</üöîã,ZbOhß¢Aåb*öî:r>:aöCrÄ~ýZ¢uªÐö.hhßð*zÜÜß*ãüåýãÄ+åýüüaß¢ÃÐBî@~AZöÃOßC@äoÃuCÜ,ÐÄa:îäÄÖý:h*ouªuåvUz_ArßAªãaãvÐåAUüAB:¢Äz|öub<üZvößüå:ãÄ@r/ZAÄðÄÄvzîv~C/£|ýýbüÖ~£|Öå<Üa~/v@åAz©¢£U_ßhbaÃß,zz<ã¢|<ä©>öAuövÖ>abu,zå,+ß/ü/ª_bbB:ÃC~£ü/O©O©ªAª_,|a¢~ýý/b>ßC@/böîöh>~£ð+Bßr©ÄÐÖßã:bA@:>B:UAbããîÜ~uÜ£îCöÖ£©_ÜßzÐ+ÖýZb,A:<<AA*¢ã@Uî:B<öBîÐ>z.ãîÄzC@©*ä|ã._ßZOäb¢Cßovå+uv.£B~~b£ª|ÖÄîßö>©Ãbb|©©ðA£åO~Ã¢ãüîuvÄÜýUzîOÖ/oOßO*>ªßzÃªÖÐböÄåbîðîÐa~©ßîÄßÐ£<î>å<býUrAA©r£@üÄb_:ãZß_/ou@|ªåü~ACãUO<£îßÄîäbßöhßO©ZvßOBü:Zä<ÄªobbO@ÃÐ_~î|a~ð©+,v+Ð/rÃzuöÖZÐOß/CCÖßý¢:<b£B,Ðß¢oZbð~BüOö,Üö~ð:ß,CCî<Oä,Öãî£ÜCZ~/z~ý©vuzoöß/u©å|£ãÐv¢îhý:ÄoÐrz.ßbr_U*<hCîßÖ_+:hbü*að.Aö_Oª_öB>Bã_ý*ah¢rOÄª,ßo¢¢a|BÖäz</bUabÖðOA.Ðîý,Bhö*Cßuß£o,|ü_,ýÐu_b|ZÜh|<U@~übU¢Uð/o/Ð>U£.B£@Ü,ßAÃ>,ðßß+ßÜ©|Ðr©bCðÐ¢üãz>AßðåÃ>bÄåÄ|Z~äÃ/Cb*£bð_/Ða@~AÜãO+ý*CîîÃzÄöÃa©+@vuz>î>©.Cv>hÃý>©Bä,ö~@~@r,AðCu@Ü,@U*ÐvöÃÃªuã.Öa*uZªoZ/ðÖ©ßv_<ÖvåÜÐÜOÐoðßðÃUýZÐB:+ÄÃã£'))";
-$stmt = $conn->query($query);
+create_table( $conn,$tableName1, array( new columnMeta( "int", "c1_int" ), new columnMeta( "varchar(1000)", "c2_varchar" )));
+insert_row( $conn, $tableName1, array( "c1_int" => 990021574, "c2_varchar" => ">vh~Ö.bÐ*äß/ÄAabýZÃ¢Oüzr£ðAß+|~|OU¢a|U<ßrv.uCB.ÐÜh_î+ãå@üðöã,U+ßvuU:/ý_Öãî/ð|bB|_Zbua©r++BA¢z£.üî¢öåäözÜ¢ßb</üöîã,ZbOhß¢Aåb*öî:r>:aöCrÄ~ýZ¢uªÐö.hhßð*zÜÜß*ãüåýãÄ+åýüüaß¢ÃÐBî@~AZöÃOßC@äoÃuCÜ,ÐÄa:îäÄÖý:h*ouªuåvUz_ArßAªãaãvÐåAUüAB:¢Äz|öub<üZvößüå:ãÄ@r/ZAÄðÄÄvzîv~C/£|ýýbüÖ~£|Öå<Üa~/v@åAz©¢£U_ßhbaÃß,zz<ã¢|<ä©>öAuövÖ>abu,zå,+ß/ü/ª_bbB:ÃC~£ü/O©O©ªAª_,|a¢~ýý/b>ßC@/böîöh>~£ð+Bßr©ÄÐÖßã:bA@:>B:UAbããîÜ~uÜ£îCöÖ£©_ÜßzÐ+ÖýZb,A:<<AA*¢ã@Uî:B<öBîÐ>z.ãîÄzC@©*ä|ã._ßZOäb¢Cßovå+uv.£B~~b£ª|ÖÄîßö>©Ãbb|©©ðA£åO~Ã¢ãüîuvÄÜýUzîOÖ/oOßO*>ªßzÃªÖÐböÄåbîðîÐa~©ßîÄßÐ£<î>å<býUrAA©r£@üÄb_:ãZß_/ou@|ªåü~ACãUO<£îßÄîäbßöhßO©ZvßOBü:Zä<ÄªobbO@ÃÐ_~î|a~ð©+,v+Ð/rÃzuöÖZÐOß/CCÖßý¢:<b£B,Ðß¢oZbð~BüOö,Üö~ð:ß,CCî<Oä,Öãî£ÜCZ~/z~ý©vuzoöß/u©å|£ãÐv¢îhý:ÄoÐrz.ßbr_U*<hCîßÖ_+:hbü*að.Aö_Oª_öB>Bã_ý*ah¢rOÄª,ßo¢¢a|BÖäz</bUabÖðOA.Ðîý,Bhö*Cßuß£o,|ü_,ýÐu_b|ZÜh|<U@~übU¢Uð/o/Ð>U£.B£@Ü,ßAÃ>,ðßß+ßÜ©|Ðr©bCðÐ¢üãz>AßðåÃ>bÄåÄ|Z~äÃ/Cb*£bð_/Ða@~AÜãO+ý*CîîÃzÄöÃa©+@vuz>î>©.Cv>hÃý>©Bä,ö~@~@r,AðCu@Ü,@U*ÐvöÃÃªuã.Öa*uZªoZ/ðÖ©ßv_<ÖvåÜÐÜOÐoðßðÃUýZÐB:+ÄÃã£" ));
 
-$stmt = $conn->exec("CREATE TABLE $tableName2 ([c1_int] int, [c2_varchar] varchar(max))");  
-$query = "INSERT INTO $tableName2 (c1_int, c2_varchar) VALUES ((990021574), ('>vh~Ö.bÐ*äß/ÄAabýZÃ¢Oüzr£ðAß+|~|OU¢a|U<ßrv.uCB.ÐÜh_î+ãå@üðöã,U+ßvuU:/ý_Öãî/ð|bB|_Zbua©r++BA¢z£.üî¢öåäözÜ¢ßb</üöîã,ZbOhß¢Aåb*öî:r>:aöCrÄ~ýZ¢uªÐö.hhßð*zÜÜß*ãüåýãÄ+åýüüaß¢ÃÐBî@~AZöÃOßC@äoÃuCÜ,ÐÄa:îäÄÖý:h*ouªuåvUz_ArßAªãaãvÐåAUüAB:¢Äz|öub<üZvößüå:ãÄ@r/ZAÄðÄÄvzîv~C/£|ýýbüÖ~£|Öå<Üa~/v@åAz©¢£U_ßhbaÃß,zz<ã¢|<ä©>öAuövÖ>abu,zå,+ß/ü/ª_bbB:ÃC~£ü/O©O©ªAª_,|a¢~ýý/b>ßC@/böîöh>~£ð+Bßr©ÄÐÖßã:bA@:>B:UAbããîÜ~uÜ£îCöÖ£©_ÜßzÐ+ÖýZb,A:<<AA*¢ã@Uî:B<öBîÐ>z.ãîÄzC@©*ä|ã._ßZOäb¢Cßovå+uv.£B~~b£ª|ÖÄîßö>©Ãbb|©©ðA£åO~Ã¢ãüîuvÄÜýUzîOÖ/oOßO*>ªßzÃªÖÐböÄåbîðîÐa~©ßîÄßÐ£<î>å<býUrAA©r£@üÄb_:ãZß_/ou@|ªåü~ACãUO<£îßÄîäbßöhßO©ZvßOBü:Zä<ÄªobbO@ÃÐ_~î|a~ð©+,v+Ð/rÃzuöÖZÐOß/CCÖßý¢:<b£B,Ðß¢oZbð~BüOö,Üö~ð:ß,CCî<Oä,Öãî£ÜCZ~/z~ý©vuzoöß/u©å|£ãÐv¢îhý:ÄoÐrz.ßbr_U*<hCîßÖ_+:hbü*að.Aö_Oª_öB>Bã_ý*ah¢rOÄª,ßo¢¢a|BÖäz</bUabÖðOA.Ðîý,Bhö*Cßuß£o,|ü_,ýÐu_b|ZÜh|<U@~übU¢Uð/o/Ð>U£.B£@Ü,ßAÃ>,ðßß+ßÜ©|Ðr©bCðÐ¢üãz>AßðåÃ>bÄåÄ|Z~äÃ/Cb*£bð_/Ða@~AÜãO+ý*CîîÃzÄöÃa©+@vuz>î>©.Cv>hÃý>©Bä,ö~@~@r,AðCu@Ü,@U*ÐvöÃÃªuã.Öa*uZªoZ/ðÖ©ßv_<ÖvåÜÐÜOÐoðßðÃUýZÐB:+ÄÃã£'))";
-$stmt = $conn->query($query);
+create_table( $conn,$tableName2, array( new columnMeta( "int", "c1_int" ), new columnMeta( "varchar(max)", "c2_varchar" )));
+insert_row( $conn, $tableName2, array( "c1_int" => 990021574, "c2_varchar" => ">vh~Ö.bÐ*äß/ÄAabýZÃ¢Oüzr£ðAß+|~|OU¢a|U<ßrv.uCB.ÐÜh_î+ãå@üðöã,U+ßvuU:/ý_Öãî/ð|bB|_Zbua©r++BA¢z£.üî¢öåäözÜ¢ßb</üöîã,ZbOhß¢Aåb*öî:r>:aöCrÄ~ýZ¢uªÐö.hhßð*zÜÜß*ãüåýãÄ+åýüüaß¢ÃÐBî@~AZöÃOßC@äoÃuCÜ,ÐÄa:îäÄÖý:h*ouªuåvUz_ArßAªãaãvÐåAUüAB:¢Äz|öub<üZvößüå:ãÄ@r/ZAÄðÄÄvzîv~C/£|ýýbüÖ~£|Öå<Üa~/v@åAz©¢£U_ßhbaÃß,zz<ã¢|<ä©>öAuövÖ>abu,zå,+ß/ü/ª_bbB:ÃC~£ü/O©O©ªAª_,|a¢~ýý/b>ßC@/böîöh>~£ð+Bßr©ÄÐÖßã:bA@:>B:UAbããîÜ~uÜ£îCöÖ£©_ÜßzÐ+ÖýZb,A:<<AA*¢ã@Uî:B<öBîÐ>z.ãîÄzC@©*ä|ã._ßZOäb¢Cßovå+uv.£B~~b£ª|ÖÄîßö>©Ãbb|©©ðA£åO~Ã¢ãüîuvÄÜýUzîOÖ/oOßO*>ªßzÃªÖÐböÄåbîðîÐa~©ßîÄßÐ£<î>å<býUrAA©r£@üÄb_:ãZß_/ou@|ªåü~ACãUO<£îßÄîäbßöhßO©ZvßOBü:Zä<ÄªobbO@ÃÐ_~î|a~ð©+,v+Ð/rÃzuöÖZÐOß/CCÖßý¢:<b£B,Ðß¢oZbð~BüOö,Üö~ð:ß,CCî<Oä,Öãî£ÜCZ~/z~ý©vuzoöß/u©å|£ãÐv¢îhý:ÄoÐrz.ßbr_U*<hCîßÖ_+:hbü*að.Aö_Oª_öB>Bã_ý*ah¢rOÄª,ßo¢¢a|BÖäz</bUabÖðOA.Ðîý,Bhö*Cßuß£o,|ü_,ýÐu_b|ZÜh|<U@~übU¢Uð/o/Ð>U£.B£@Ü,ßAÃ>,ðßß+ßÜ©|Ðr©bCðÐ¢üãz>AßðåÃ>bÄåÄ|Z~äÃ/Cb*£bð_/Ða@~AÜãO+ý*CîîÃzÄöÃa©+@vuz>î>©.Cv>hÃý>©Bä,ö~@~@r,AðCu@Ü,@U*ÐvöÃÃªuã.Öa*uZªoZ/ðÖ©ßv_<ÖvåÜÐÜOÐoðßðÃUýZÐB:+ÄÃã£" ));
 
 $size = 2;
 $stmt = $conn->prepare("SELECT * FROM $tableName1", array(constant('PDO::ATTR_CURSOR') => PDO::CURSOR_SCROLL,PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED,PDO::SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE=> $size));   
@@ -45,8 +41,10 @@ while ($result = $stmt->fetch())
     
 echo ("Number of rows: $numRows\n");
 
-$stmt=null;
-$conn=null;
+DropTable( $conn, $tableName1 );
+DropTable( $conn, $tableName2 );
+unset( $stmt );
+unset( $conn );
 print "Done"
 ?>
 

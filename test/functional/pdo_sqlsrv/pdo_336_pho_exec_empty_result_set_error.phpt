@@ -7,20 +7,16 @@ Verifies GitHub issue 336 is fixed, PDO::exec on query returning SQL_NO_DATA wil
 --FILE--
 <?php
 // Connect 
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
 
-$conn = new PDO("sqlsrv:server=$server;database=$databaseName", $uid, $pwd);   
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );   
+$conn = connect();
 
-$sql = "DELETE FROM foo_table WHERE id = 42";
-$sqlWithParameter = "DELETE FROM foo_table WHERE id = :id";
-$sqlParameter = 42;
-
-$Statement = $conn->exec("IF OBJECT_ID('foo_table', 'U') IS NOT NULL DROP TABLE foo_table");
-$Statement = $conn->exec("CREATE TABLE foo_table (id BIGINT PRIMARY KEY NOT NULL IDENTITY, intField INT NOT NULL)");
-$Statement = $conn->exec("INSERT INTO foo_table (intField) VALUES(3)");
+$tbname = "foo_table";
+create_table( $conn, $tbname, array( new columnMeta( "bigint", "id", "PRIMARY KEY NOT NULL IDENTITY" ), new columnMeta( "int", "intField", "NOT NULL" )));
+insert_row( $conn, $tbname, array( "intField" => 3 ), "exec" );
 
 //test prepare, not args
+$sql = "DELETE FROM foo_table WHERE id = 42";
 $stmt = $conn->prepare($sql);
 $stmt->execute();
 if ($conn->errorCode() == "00000")
@@ -29,6 +25,8 @@ else
     echo "unexpected error at prepare";
 
 //test prepare, with args
+$sqlWithParameter = "DELETE FROM foo_table WHERE id = :id";
+$sqlParameter = 42;
 $stmt = $conn->prepare($sqlWithParameter);
 $stmt->execute(array(':id' => $sqlParameter));
 if ($conn->errorCode() == "00000")
@@ -47,11 +45,9 @@ else
     if ($err != "00000")
         echo "unexpected error at direct exec";
 
-$Statement = $conn->exec("IF OBJECT_ID('foo_table', 'U') IS NOT NULL DROP TABLE foo_table");
-
-$stmt = NULL;
-$Statement = NULL;
-$conn = NULL;
+DropTable( $conn, $tbname );
+unset( $stmt );
+unset( $conn );
 
 ?>
 --EXPECT--

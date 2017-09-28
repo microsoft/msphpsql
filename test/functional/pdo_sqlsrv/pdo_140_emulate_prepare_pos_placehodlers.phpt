@@ -4,44 +4,22 @@ Test emulate prepare with mix bound param encodings and positional placeholders 
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once( "MsCommon.inc" );
  
-$connection_options['pdo'] = array();
-$connection_options['pdo'][PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
+$cnn = connect();
 
-$cnn = new PDO("sqlsrv:Server=$server;Database=$databaseName", $uid, $pwd, $connection_options['pdo']);
-
-// Drop
-try {
-    $pdo_options = array();
+$pdo_options = array();
+if ( !is_col_encrypted() )
+{
+    // Emulate prepare and direct query are not supported with Always Encrypted
     $pdo_options[PDO::ATTR_EMULATE_PREPARES] = TRUE;
     $pdo_options[PDO::SQLSRV_ATTR_DIRECT_QUERY] = TRUE;
-    $pdo_options[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;
-    $pdo_options[PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE] = PDO::SQLSRV_CURSOR_BUFFERED;
-    $st = $cnn->prepare('DROP TABLE WATCHDOG', $pdo_options);
-    
-    $st->execute();  
 }
-catch(\Exception $e) {}
- 
-$tablescript = <<<EOF
-CREATE TABLE [dbo].[watchdog](
-    [system_encoding] [nvarchar](128),
-    [utf8_encoding] [nvarchar](128),
-    [binary_encoding] [varbinary](max))
-EOF;
- 
-// Recreate
-$st = $cnn->prepare($tablescript, $pdo_options);
-$st->execute();  
+$pdo_options[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;
+$pdo_options[PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE] = PDO::SQLSRV_CURSOR_BUFFERED;
 
-$query = <<<EOF
-INSERT INTO [watchdog] ([system_encoding], [utf8_encoding], [binary_encoding]) VALUES
-(?, ?, ?)
-EOF;
- 
-/** @var MyStatement */
-$st = $cnn->prepare($query, $pdo_options);
+$tbname = "watchdog";
+create_table( $cnn, $tbname, array( new columnMeta( "nvarchar(128)", "system_encoding" ), new columnMeta( "nvarchar(128)", "utf8_encoding" ), new columnMeta( "varbinary(max)", "binary_encoding" )));
 
 $system_param = 'system encoded string';
 $utf8_param = '가각ácasa';
@@ -49,17 +27,18 @@ $binary_param = fopen('php://memory', 'a');
 fwrite($binary_param, 'asdgasdgasdgsadg');
 rewind($binary_param);
 
-$st->bindParam(1, $system_param, PDO::PARAM_STR);
-$st->bindParam(2, $utf8_param, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
-$st->bindParam(3, $binary_param, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
+$inputs = array( "system_encoding" => $system_param,
+                 "utf8_encoding" => new bindParamOp( 2, $utf8_param, "PDO::PARAM_STR", 0, "PDO::SQLSRV_ENCODING_UTF8" ),
+                 "binary_encoding" => new bindParamOp( 3, $binary_param, "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY" ));
 
-$st->execute();
+insert_row( $cnn, $tbname, $inputs, "prepareBindParam" );
 
-$st = $cnn->query("SELECT * FROM [watchdog]");
-var_dump($st->fetchAll());
+$data = select_all( $cnn, $tbname );
+var_dump( $data );
 
-$st = NULL;
-$cnn = NULL;
+DropTable( $cnn, $tbname );
+unset( $st );
+unset( $cnn );
 
 ?>
 --EXPECT--

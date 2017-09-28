@@ -4,65 +4,81 @@ Test errorInfo when prepare with and without emulate prepare
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
+require_once( "MsCommon.inc" );
 
-require_once 'MsSetup.inc';
-
-$conn = new PDO("sqlsrv:server=$server;Database=$databaseName", $uid, $pwd, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
+$conn = connect();
+$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
 
 //drop, create and insert
-$conn->query("IF OBJECT_ID('dbo.test_table', 'U') IS NOT NULL DROP TABLE dbo.test_table");
-$conn->query("CREATE TABLE [dbo].[test_table](c1 int, c2 int)");
-$conn->query("INSERT INTO [dbo].[test_table] VALUES (1, 10)");
-$conn->query("INSERT INTO [dbo].[test_table] VALUES (2, 20)");
+$tbname = "test_table";
+create_table( $conn, $tbname, array( new columnMeta( "int", "c1" ), new columnMeta( "int", "c2" )));
+
+insert_row( $conn, $tbname, array( "c1" => 1, "c2" => 10 ));
+insert_row( $conn, $tbname, array( "c1" => 2, "c2" => 20 ));
 
 echo "\n****testing with emulate prepare****\n";
-$stmt = $conn->prepare("SELECT c2 FROM test_table WHERE c1= :int", array(PDO::ATTR_EMULATE_PREPARES => true));
+// Do not support emulate prepare with Always Encrypted
+if ( !is_col_encrypted() )
+    $stmt = $conn->prepare( "SELECT c2 FROM $tbname WHERE c1= :int", array(PDO::ATTR_EMULATE_PREPARES => true ));
+else
+    $stmt = $conn->prepare( "SELECT c2 FROM $tbname WHERE c1= :int" );
 
 $int_col = 1;
 //bind param with the wrong parameter name to test for errorInfo
 $stmt->bindParam(':in', $int_col);
-
 $stmt->execute();
 
-echo "Statement error info:\n";
-print_r($stmt->errorInfo());
-
-if ($stmt->errorInfo()[1] == NULL && $stmt->errorInfo()[2] == NULL) {
-	echo "stmt native code and native message are NULL.\n";
+$stmt_error = $stmt->errorInfo();
+if ( !is_col_encrypted() )
+{
+    if ( $stmt_error[0] != "HY093" )
+    {
+        echo "SQLSTATE should be HY093 when Emulate Prepare is true.\n";
+        print_r( $stmt_error );
+    }
 }
-else {
-	echo "stmt native code and native message should be NULL.\n";
+else
+{
+    if ( $stmt_error[0] != "07002" )
+    {
+        echo "SQLSTATE should be 07002 for syntax error in a parameterized query.\n";
+        print_r( $stmt_error );
+    }
 }
 
-echo "Connection error info:\n";
-print_r($conn->errorInfo());
-
-if ($conn->errorInfo()[1] == NULL && $conn->errorInfo()[2] == NULL) {
-	echo "conn native code and native message are NULL.\n";
-}
-else {
-	echo "conn native code and native message shoud be NULL.\n";
+$conn_error = $conn->errorInfo();
+if ( $conn_error[0] != "00000" )
+{
+    echo "Connection error SQLSTATE should be 00000.\n";
+    print_r( $conn_error );
 }
 
 echo "\n****testing without emulate prepare****\n";
-$stmt2 = $conn->prepare("SELECT c2 FROM test_table WHERE c1= :int", array(PDO::ATTR_EMULATE_PREPARES => false));
+$stmt2 = $conn->prepare("SELECT c2 FROM $tbname WHERE c1= :int", array(PDO::ATTR_EMULATE_PREPARES => false));
 
 $int_col = 2;
 //bind param with the wrong parameter name to test for errorInfo
 $stmt2->bindParam(':it', $int_col);
-
 $stmt2->execute();
 
-echo "Statement error info:\n";
-print_r($stmt2->errorInfo());
+$stmt_error = $stmt2->errorInfo();
+if ( $stmt_error[0] != "07002" )
+{
+    echo "SQLSTATE should be 07002 for syntax error in a parameterized query.\n";
+    print_r( $stmt_error );
+}
 
-echo "Connection error info:\n";
-print_r($conn->errorInfo());
+$conn_error = $conn->errorInfo();
+if ( $conn_error[0] != "00000" )
+{
+    echo "Connection error SQLSTATE should be 00000.\n";
+    print_r( $conn_error );
+}
 
-$conn->query("IF OBJECT_ID('dbo.test_table', 'U') IS NOT NULL DROP TABLE dbo.test_table");
-$stmt = NULL;
-$stmt2 = NULL;
-$conn = NULL;
+DropTable( $conn, $tbname );
+unset( $stmt );
+unset( $stmt2 );
+unset( $conn );
 ?>
 --EXPECTREGEX--
 \*\*\*\*testing with emulate prepare\*\*\*\*
@@ -70,39 +86,9 @@ $conn = NULL;
 Warning: PDOStatement::execute\(\): SQLSTATE\[HY093\]: Invalid parameter number: parameter was not defined in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
 
 Warning: PDOStatement::execute\(\): SQLSTATE\[HY093\]: Invalid parameter number in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
-Statement error info:
-Array
-\(
-    \[0\] => HY093
-    \[1\] => 
-    \[2\] => 
-\)
-stmt native code and native message are NULL\.
-Connection error info:
-Array
-\(
-    \[0\] => 00000
-    \[1\] => 
-    \[2\] => 
-\)
-conn native code and native message are NULL\.
 
 \*\*\*\*testing without emulate prepare\*\*\*\*
 
 Warning: PDOStatement::bindParam\(\): SQLSTATE\[HY093\]: Invalid parameter number: parameter was not defined in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
 
-Warning: PDOStatement::execute\(\): SQLSTATE\[07002\]: COUNT field incorrect: 0 \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]COUNT field incorrect or syntax error in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
-Statement error info:
-Array
-\(
-    \[0\] => 07002
-    \[1\] => 0
-    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]COUNT field incorrect or syntax error
-\)
-Connection error info:
-Array
-\(
-    \[0\] => 00000
-    \[1\] => 
-    \[2\] => 
-\)
+Warning: PDOStatement::execute\(\): SQLSTATE\[07002\]: COUNT field incorrect: 0 \[Microsoft\]\[ODBC Driver 1[0-9] for SQL Server\]COUNT field incorrect or syntax error in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+

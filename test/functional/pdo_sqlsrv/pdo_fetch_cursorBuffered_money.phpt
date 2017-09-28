@@ -4,19 +4,24 @@ prepare with cursor buffered and fetch a money column
 
 --FILE--
 <?php
-require_once("MsSetup.inc");
-$conn = new PDO( "sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
-$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+require_once( "MsCommon.inc" );
+
+$conn = connect();
 $sample = 1234567890.1234;
 
-$query = 'CREATE TABLE #TESTTABLE (exist money)';
-$stmt = $conn->exec($query);
-$query = 'INSERT INTO #TESTTABLE VALUES(:p0)';
+$tbname = "TESTTABLE";
+if ( !is_col_encrypted() )
+    create_table( $conn, $tbname, array( new columnMeta( "money", "exist" )));
+else
+    // inserting money types is not supported for Always Encrypted; use decimal(19,4) instead
+    create_table( $conn, $tbname, array( new columnMeta( "decimal(19,4)", "exist" )));
+
+$query = "INSERT INTO $tbname VALUES(:p0)";
 $stmt = $conn->prepare($query);
 $stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
 $stmt->execute();
 
-$query = 'SELECT TOP 1 * FROM #TESTTABLE';
+$query = "SELECT TOP 1 * FROM $tbname";
 
 //prepare with no buffered cursor
 print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
@@ -75,8 +80,9 @@ $stmt->execute();
 $value = $stmt->fetchColumn();
 var_dump ($value);	
 
-$stmt = null;
-$conn = null;
+DropTable( $conn, $tbname );
+unset( $stmt );
+unset( $conn );
 
 ?>
 --EXPECT--
