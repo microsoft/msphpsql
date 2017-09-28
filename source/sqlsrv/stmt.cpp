@@ -561,13 +561,17 @@ PHP_FUNCTION( sqlsrv_next_result )
 
     try {
         
-        // Make sure that we haven't gone past the end of the result set, then make sure that 
-        // the result set is not null. Null means SQLNumResultCols returns 0 and SQLRowCount 
-        // is not > 0. Normally the latter error is handled in core_sqlsrv_fetch(), but if the
-        // user calls sqlsrv_next_result() before fetch() the error is never shown so we handle it here. 
-        // In that case, however, core_sqlsrv_has_any_result would return false if we are at 
-        // the end of a non-null result set, so we check for that error first to make sure the 
-        // user gets the correct error message.
+        // Return the correct error in case the user calls sqlsrv_next_result() on a null result set. 
+        // Null means that SQLNumResultCols() returns 0 and SQLRowCount is not return > 0. But first 
+        // check that the statement has been executed and that we are not past the end of a non-null 
+        // result set to make sure the user gets the correct error message. These checks are also 
+        // done in core_sqlsrv_next_result(), but we cannot check for null results there because that
+        // function can be called without calling this one, and SQLSRV_ERROR_NO_FIELDS can then
+        // be triggered incorrectly. 
+        CHECK_CUSTOM_ERROR( !stmt->executed, stmt, SQLSRV_ERROR_STATEMENT_NOT_EXECUTED ) {
+            throw core::CoreException();
+        }
+
         CHECK_CUSTOM_ERROR( stmt->past_next_result_end, stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
             throw core::CoreException();
         }

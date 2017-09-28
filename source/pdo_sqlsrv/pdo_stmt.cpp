@@ -1067,17 +1067,22 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
-        // Make sure that we haven't gone past the end of the result set, then make sure that 
-        // the result set is not null. Null means SQLNumResultCols returns 0 and SQLRowCount 
-        // is not > 0. Normally the latter error is handled in core_sqlsrv_fetch(), but if the
-        // user calls nextRowset() before fetch() the error is never shown so we handle it here. 
-        // In that case, however, core_sqlsrv_has_any_result would return false if we are at 
-        // the end of a non-null result set, so we check for that error first to make sure the 
-        // user gets the correct error message.
+        // Return the correct error in case the user calls nextRowset() on a null result set. 
+        // Null means that SQLNumResultCols() returns 0 and SQLRowCount is not return > 0. But first 
+        // check that the statement has been executed and that we are not past the end of a non-null 
+        // result set to make sure the user gets the correct error message. These checks are also 
+        // done in core_sqlsrv_next_result(), but we cannot check for null results there because that
+        // function can be called without calling this one, and SQLSRV_ERROR_NO_FIELDS can then
+        // be triggered incorrectly. 
+        CHECK_CUSTOM_ERROR( !driver_stmt->executed, driver_stmt, SQLSRV_ERROR_STATEMENT_NOT_EXECUTED ) {
+            throw core::CoreException();
+        }
+
         CHECK_CUSTOM_ERROR( driver_stmt->past_next_result_end, driver_stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
             throw core::CoreException();
         }
         
+        // Now make sure the result set is not null. 
         bool has_result = core_sqlsrv_has_any_result( driver_stmt );
 
         if(!driver_stmt->fetch_called){

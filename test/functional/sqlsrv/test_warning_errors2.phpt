@@ -145,6 +145,15 @@ Array
             [2] => The statement must be executed before results can be retrieved.
             [message] => The statement must be executed before results can be retrieved.
         )
+    [1] => Array
+        (
+            [0] => HY010
+            [SQLSTATE] => HY010
+            [1] => 0
+            [code] => 0
+            [2] => [unixODBC][Driver Manager]Function sequence error
+            [message] => [unixODBC][Driver Manager]Function sequence error
+        )
 
 )
 Array

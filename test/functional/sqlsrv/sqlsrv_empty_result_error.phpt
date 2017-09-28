@@ -69,12 +69,21 @@ Array
 (
     [0] => Array
         (
+            [0] => IMSSP
+            [SQLSTATE] => IMSSP
+            [1] => -26
+            [code] => -26
+            [2] => There are no more results returned by the query.
+            [message] => There are no more results returned by the query.
+        )
+    [1] => Array
+        (
             [0] => HY010
             [SQLSTATE] => HY010
             [1] => 0
             [code] => 0
-            [2] => [unixODBC][Driver Manager]Function sequence error
-            [message] => [unixODBC][Driver Manager]Function sequence error
+            [2] => [Microsoft][ODBC Driver Manager] Function sequence error
+            [message] => [Microsoft][ODBC Driver Manager] Function sequence error
         )
 
 )
