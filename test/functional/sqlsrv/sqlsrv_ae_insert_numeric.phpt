@@ -1,5 +1,6 @@
 --TEST--
 Test for inserting and retrieving encrypted data of numeric types
+--DESCRIPTION--
 Bind params using sqlsrv_prepare without any sql_type specified
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
