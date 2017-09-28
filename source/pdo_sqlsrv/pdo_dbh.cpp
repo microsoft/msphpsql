@@ -1463,7 +1463,7 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         if ( encoding == SQLSRV_ENCODING_UTF8 ) {
             quotes_needed = 3;
         }
-        for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+        for ( size_t index = 0; index < unquoted_len; ++index ) {
             if ( unquoted[ index ] == '\'' ) {
                 ++quotes_needed;
             }
@@ -1480,7 +1480,7 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         // insert initial quote
         ( *quoted )[ out_current++ ] = '\'';
 
-        for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+        for ( size_t index = 0; index < unquoted_len; ++index ) {
             if ( unquoted[ index ] == '\'' ) {
                 ( *quoted )[ out_current++ ] = '\'';
                 ( *quoted )[ out_current++ ] = '\'';
