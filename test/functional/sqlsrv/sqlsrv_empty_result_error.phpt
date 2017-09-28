@@ -58,7 +58,7 @@ $stmt = sqlsrv_query($conn, "DROP TABLE TestEmptySetTable");
 $stmt = sqlsrv_query($conn, "DROP PROCEDURE TestEmptySetProc");
 sqlsrv_close($conn);
 ?>
---EXPECT--
+--EXPECTF--
 Return a nonempty result set:
 Array
 (
@@ -83,8 +83,8 @@ Array
             [SQLSTATE] => HY010
             [1] => 0
             [code] => 0
-            [2] => [Microsoft][ODBC Driver Manager] Function sequence error
-            [message] => [Microsoft][ODBC Driver Manager] Function sequence error
+            [2] => [%s][ODBC Driver Manager] Function sequence error
+            [message] => [%s][ODBC Driver Manager] Function sequence error
         )
 
 )
