@@ -1,5 +1,5 @@
 
-The ODBC driver 17 preview binaries in this directory are required in order to use Always Encrypted (AE) functionality. Please note that these drivers should be considered to be preview versions -- they should not be used in production and are not supported by Microsoft. They will be replaced upon the official release of ODBC driver 17.
+The ODBC driver 17 preview binaries in this directory are required in order to use Always Encrypted functionality. Please note that these drivers should be considered to be preview versions -- they should not be used in production and are not supported by Microsoft. They will be replaced upon the official release of ODBC driver 17.
 
 On Windows, the ODBC 17 preview binaries require the Visual C/C++ 2013 runtime libraries installed separately. These are installed with the [Visual Studio C++ 2013 Redistributable](https://www.microsoft.com/en-ca/download/details.aspx?id=40784) or with the [SQL Server command line utilities](https://www.microsoft.com/en-ca/download/details.aspx?id=53591). Once you have these, simply run the msi to install.
 
