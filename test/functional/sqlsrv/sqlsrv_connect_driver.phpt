@@ -4,8 +4,8 @@ Test new connection keyword Driver with valid and invalid values
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-require( 'MsSetup.inc' );
+sqlsrv_configure('WarningsReturnAsErrors', 0);
+require('MsSetup.inc');
 
 $connectionOptions = array("Database"=>$database, "UID"=>$userName, "PWD"=>$userPassword);
 $conn = sqlsrv_connect($server, $connectionOptions);
@@ -13,36 +13,37 @@ if ($conn === false)
 {
     print_r(sqlsrv_errors());
 }
-$msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
-$msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
+$msodbcsqlVer = sqlsrv_client_info($conn)['DriverVer'];
+$msodbcsqlMaj = explode(".", $msodbcsqlVer)[0];
 sqlsrv_close($conn);
 
 // start test
-test_valid_values( $msodbcsql_maj, $server, $connectionOptions );
-test_invalid_values( $msodbcsql_maj, $server, $connectionOptions );
-test_encrypted_with_odbc( $msodbcsql_maj, $server, $connectionOptions );
-test_wrong_odbc( $msodbcsql_maj, $server, $connectionOptions );
+testValidValues($msodbcsqlMaj, $server, $connectionOptions);
+testInvalidValues($msodbcsqlMaj, $server, $connectionOptions);
+testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions);
+testWrongODBC($msodbcsqlMaj, $server, $connectionOptions);
 echo "Done";
 // end test
 
 ///////////////////////////
-function connect_verify_output( $server, $connectionOptions, $expected = '' )
+function connectVerifyOutput($server, $connectionOptions, $expected = '')
 {
     $conn = sqlsrv_connect($server, $connectionOptions);
     if ($conn === false)
     {    
-        if( strpos(sqlsrv_errors($conn)[0]['message'], $expected) === false )
+        if(strpos(sqlsrv_errors($conn)[0]['message'], $expected) === false)
         {
             print_r(sqlsrv_errors());
         }
     }
 }
 
-function test_valid_values( $msodbcsql_maj, $server, $connectionOptions )
+function testValidValues($msodbcsqlMaj, $server, $connectionOptions)
 {
     $value = "";
+    // The major version number of ODBC 11 can be 11 or 12
     // Test with {}
-    switch ( $msodbcsql_maj )
+    switch ($msodbcsqlMaj)
     {
         case 17:
             $value = "{ODBC Driver 17 for SQL Server}";
@@ -58,10 +59,10 @@ function test_valid_values( $msodbcsql_maj, $server, $connectionOptions )
             $value = "invalid value";
     }
     $connectionOptions['Driver']=$value;
-    connect_verify_output( $server, $connectionOptions );
+    connectVerifyOutput($server, $connectionOptions);
     
     // Test without {}
-    switch ( $msodbcsql_maj )
+    switch ($msodbcsqlMaj)
     {
         case 17:
             $value = "ODBC Driver 17 for SQL Server";
@@ -78,39 +79,31 @@ function test_valid_values( $msodbcsql_maj, $server, $connectionOptions )
     }
     
     $connectionOptions['Driver']=$value;
-    connect_verify_output( $server, $connectionOptions );
+    connectVerifyOutput($server, $connectionOptions);
 }
 
-function test_invalid_values( $msodbcsql_maj, $server, $connectionOptions )
+function testInvalidValues($msodbcsqlMaj, $server, $connectionOptions)
 {
-    // test invalid value
-    $value = "{SQL Server Native Client 11.0}";
-    $connectionOptions['Driver']=$value;
-    $expected = "Invalid value $value was specified for Driver option.";
-    connect_verify_output( $server, $connectionOptions, $expected );
+    $values = array("{SQL Server Native Client 11.0}", 
+                    "SQL Server Native Client 11.0", 
+                    "ODBC Driver 00 for SQL Server"); 
     
-    $value = "SQL Server Native Client 11.0";
-    $connectionOptions['Driver']=$value;
-    $expected = "Invalid value $value was specified for Driver option.";
-    connect_verify_output( $server, $connectionOptions, $expected );
-    
-    $value = "ODBC Driver 00 for SQL Server";
-    $connectionOptions['Driver']=$value;
-    $expected = "Invalid value $value was specified for Driver option.";
-    connect_verify_output( $server, $connectionOptions, $expected );
-    
-    $value = 123;
-    $connectionOptions['Driver']=$value;
-    $expected = "Invalid value type for option Driver was specified.  String type was expected.";
-    connect_verify_output( $server, $connectionOptions, $expected );
-    
-    $value = false;
-    $connectionOptions['Driver']=$value;
-    $expected = "Invalid value type for option Driver was specified.  String type was expected.";
-    connect_verify_output( $server, $connectionOptions, $expected );
+    foreach ($values as $value) {
+        $connectionOptions['Driver']=$value;
+        $expected = "Invalid value $value was specified for Driver option.";
+        connectVerifyOutput($server, $connectionOptions, $expected);
+    }
+
+    $values = array(123, false);
+
+    foreach ($values as $value) {
+        $connectionOptions['Driver']=$value;
+        $expected = "Invalid value type for option Driver was specified.  String type was expected.";
+        connectVerifyOutput($server, $connectionOptions, $expected);
+    }    
 }
 
-function test_encrypted_with_odbc( $msodbcsql_maj, $server, $connectionOptions ) 
+function testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions) 
 {
     $value = "ODBC Driver 13 for SQL Server";
     $connectionOptions['Driver']=$value;
@@ -118,7 +111,7 @@ function test_encrypted_with_odbc( $msodbcsql_maj, $server, $connectionOptions )
     
     $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
     
-    connect_verify_output( $server, $connectionOptions, $expected );
+    connectVerifyOutput($server, $connectionOptions, $expected);
     
     // TODO: the following block will change once ODBC 17 is officially released
     $value = "ODBC Driver 17 for SQL Server";
@@ -133,29 +126,29 @@ function test_encrypted_with_odbc( $msodbcsql_maj, $server, $connectionOptions )
     if ($conn === false)
         $message = sqlsrv_errors($conn)[0]['message'];
 
-    if ( $msodbcsql_maj == 17 )
+    if ($msodbcsqlMaj == 17)
     {
         // this indicates that OCBC 17 is the only available driver
-        if ( strcmp( $message, $success ) )
-            print_r( $message );
+        if (strcmp($message, $success))
+            print_r($message);
     }
     else
     {
         // OCBC 17 might or might not exist
-        if ( strcmp( $message, $success ) )
+        if (strcmp($message, $success))
         {
-            if ( strpos( $message, $expected ) === false )
-                print_r( $message );
+            if (strpos($message, $expected) === false)
+                print_r($message);
         }        
     }
     
 }
 
-function test_wrong_odbc( $msodbcsql_maj, $server, $connectionOptions )
+function testWrongODBC($msodbcsqlMaj, $server, $connectionOptions)
 {
     // TODO: this will change once ODBC 17 is officially released
     $value = "ODBC Driver 17 for SQL Server";
-    if ( $msodbcsql_maj == 17 || $msodbcsql_maj < 13 )
+    if ($msodbcsqlMaj == 17 || $msodbcsqlMaj < 13)
     {
         $value = "ODBC Driver 13 for SQL Server";
     }
@@ -163,7 +156,7 @@ function test_wrong_odbc( $msodbcsql_maj, $server, $connectionOptions )
     $connectionOptions['Driver']=$value;
     $expected = "The specified ODBC Driver is not found.";
     
-    connect_verify_output( $server, $connectionOptions, $expected );
+    connectVerifyOutput($server, $connectionOptions, $expected);
 }
 
 ?>

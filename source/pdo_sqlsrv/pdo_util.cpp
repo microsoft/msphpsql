@@ -398,7 +398,7 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -77, false}
     },
     {
-        SQLSRV_ERROR_AE_DRIVER_REQUIRED,
+        SQLSRV_ERROR_CE_DRIVER_REQUIRED,
         { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.", -78, false }
     },
     {
