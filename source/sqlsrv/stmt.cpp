@@ -562,7 +562,7 @@ PHP_FUNCTION( sqlsrv_next_result )
     try {
         
         // Return the correct error in case the user calls sqlsrv_next_result() on a null result set. 
-        // Null means that SQLNumResultCols() returns 0 and SQLRowCount is not return > 0. But first 
+        // Null means that SQLNumResultCols() returns 0 and SQLRowCount does not return > 0. But first 
         // check that the statement has been executed and that we are not past the end of a non-null 
         // result set to make sure the user gets the correct error message. These checks are also 
         // done in core_sqlsrv_next_result(), but we cannot check for null results there because that
