@@ -9,11 +9,12 @@ require_once("MsSetup.inc");
 $conn = new PDO( "sqlsrv:Server = $server; Database = $databaseName; ", $uid, $pwd );
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
-$stmt = $conn->query("IF OBJECT_ID('TestEmptySetTable', 'U') IS NOT NULL DROP TABLE TestEmptySetTable");
+DropTable($conn, 'TestEmptySetTable');
 $stmt = $conn->query("CREATE TABLE TestEmptySetTable ([c1] nvarchar(10),[c2] nvarchar(10))");
-
 $stmt = $conn->query("INSERT INTO TestEmptySetTable (c1, c2) VALUES ('a', 'b')");
-$stmt = $conn->query("IF OBJECT_ID('TestEmptySetProc', 'P') IS NOT NULL DROP PROCEDURE TestEmptySetProc");
+
+// Create a procedure that can return a result set or can return nothing
+DropProc($conn, 'TestEmptySetProc');
 $stmt = $conn->query("CREATE PROCEDURE TestEmptySetProc @a nvarchar(10), @b nvarchar(10)
                       AS SET NOCOUNT ON
                       BEGIN

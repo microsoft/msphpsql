@@ -1085,6 +1085,9 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
         // Now make sure the result set is not null. 
         bool has_result = core_sqlsrv_has_any_result( driver_stmt );
 
+        // Note that if fetch_called is false but has_result is true (i.e. the user is calling 
+        // nextRowset() on a non-null result set before calling fetch()), it is handled 
+        // in core_sqlsrv_next_result() below.
         if(!driver_stmt->fetch_called){
             CHECK_CUSTOM_ERROR( !has_result, driver_stmt, SQLSRV_ERROR_NO_FIELDS ) {
                 throw core::CoreException();

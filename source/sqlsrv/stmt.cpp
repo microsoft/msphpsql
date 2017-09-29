@@ -578,6 +578,9 @@ PHP_FUNCTION( sqlsrv_next_result )
         
         bool has_result = core_sqlsrv_has_any_result( stmt );
 
+        // Note that if fetch_called is false but has_result is true (i.e. the user is calling 
+        // sqlsrv_next_result() on a non-null result set before calling fetch()), it is handled 
+        // in core_sqlsrv_next_result() below.
         if(!stmt->fetch_called){
             CHECK_CUSTOM_ERROR( !has_result, stmt, SQLSRV_ERROR_NO_FIELDS ) {
                 throw core::CoreException();
