@@ -5,6 +5,7 @@ Test that calling sqlsrv_next_result() on a null result set produces the correct
 --FILE--
 <?php
 require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
 $conn = sqlsrv_connect($server, array("Database"=>$databaseName, "uid"=>$uid, "pwd"=>$pwd));
 
