@@ -1,7 +1,8 @@
 --TEST--
 Test the Authentication keyword and three options: SqlPassword, ActiveDirectoryIntegrated, and ActiveDirectoryPassword.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif.inc');
+      require('skipif_version_not_2k16.inc');  ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");
