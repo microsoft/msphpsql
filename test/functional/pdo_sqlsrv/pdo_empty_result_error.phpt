@@ -1,4 +1,6 @@
 --TEST--
+Error messages from null result sets
+--DESCRIPTION--
 Test that calling nextRowset() on an empty result set produces the correct error message. Fix for Github 507.
 --SKIPIF--
 <?php require('skipif.inc'); ?>

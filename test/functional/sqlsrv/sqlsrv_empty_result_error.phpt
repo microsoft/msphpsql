@@ -1,4 +1,6 @@
 --TEST--
+Error messages from null result sets
+--DESCRIPTION--
 Test that calling sqlsrv_next_result() on a null result set produces the correct error message. Fix for Github 507.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
@@ -58,6 +60,7 @@ print_r(sqlsrv_errors());
 
 $stmt = sqlsrv_query($conn, "DROP TABLE TestEmptySetTable");
 $stmt = sqlsrv_query($conn, "DROP PROCEDURE TestEmptySetProc");
+sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
 ?>
 --EXPECTF--
