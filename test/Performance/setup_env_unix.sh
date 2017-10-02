@@ -49,7 +49,7 @@ if [ $PLATFORM = "Ubuntu16" ]; then
     yes | sudo apt-get install -qq unixodbc-dev >> env_setup.log
     printf "done\n"
 
-    printf "Installing pyodbc"
+    printf "Installing pyodbc..."
     pip3 install --upgrade pip >> env_setup.log
     pip3 install pyodbc >> env_setup.log
     printf "done\n"
@@ -79,7 +79,7 @@ elif [ $PLATFORM = "RedHat7" ]; then
     (yes | sudo yum install -y unixODBC-devel autoconf >> env_setup.log)
     printf "done\n"
 
-    printf "Installing pyodbc"
+    printf "Installing pyodbc..."
     pip3 install --upgrade pip >> env_setup.log
     pip3 install pyodbc >> env_setup.log
     printf "done\n"
@@ -89,8 +89,8 @@ elif [ $PLATFORM = "SUSE12" ]; then
     sudo zypper refresh >> env_setup.log
     printf "done\n"
     
-    printf "Installing autoconf, gcc, g++, git, zip, libxml, openssl, python3, pip3..."
-    sudo zypper -n install autoconf gcc gcc-c++ libxml2-devel git zip libopenssl-devel python3-devel python3-pip python3-setuptools >> env_setup.log
+    printf "Installing autoconf, gcc, g++, git, zip, libxml, openssl, python3..."
+    sudo zypper -n install autoconf gcc gcc-c++ libxml2-devel git zip libopenssl-devel python3-devel python3-setuptools >> env_setup.log
     printf "done\n"
     
     printf "Installing MSODBCSQL..."
@@ -101,9 +101,12 @@ elif [ $PLATFORM = "SUSE12" ]; then
     zypper -n install unixODBC-devel >> env_setup.log
     printf "done\n"
     
-    printf "Installing pyodbc"
-    pip3 install --upgrade pip >> env_setup.log
-    pip3 install pyodbc >> env_setup.log
+    printf "Installing pyodbc..."
+    wget https://github.com/mkleehammer/pyodbc/archive/master.zip
+    unzip master.zip
+    cd pyodbc-master/
+    python3 setup.py build >> env_setup.log
+    sudo python3 setup.py install >> env_setup.log
     printf "done\n"
 
 elif [ $PLATFORM = "Sierra" ]; then
