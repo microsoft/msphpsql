@@ -150,44 +150,32 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     
     build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str TSRMLS_CC );
     
-    if( conn->ce_option.enabled ) {
-        // when column encryption is enabled, must use ODBC driver 17
-        if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
-            CHECK_CUSTOM_ERROR( conn->driver_version != ODBC_DRIVER_17, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch() ) {
-                throw core::CoreException();
-            }
-#ifndef _WIN32
-            // check if ODBC 17 actually exists, if not, throw an exception
-            CHECK_CUSTOM_ERROR( ! core_search_odbc_driver_unix( ODBC_DRIVER_17 ), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND ) {
-                throw core::CoreException();
-            }
-
-            r = core_odbc_connect( conn, conn_str, is_pooled );
+    // If column encryption is enabled, must use ODBC driver 17
+    if( conn->ce_option.enabled && conn->driver_version != ODBC_DRIVER_UNKNOWN) {
+        CHECK_CUSTOM_ERROR( conn->driver_version != ODBC_DRIVER_17, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch() ) {
+            throw core::CoreException();
         }
-        else {  
-            // driver not specified, so connect using ODBC 17
-            // In non-Windows environment, unixODBC 2.3.4 and unixODBC 2.3.1 return different error states 
-            // If it fails to connect using ODBC 17, it is unreliable to check for a certain sql state error.  
-            // Thus, we will simply throw an exception.
-            if( core_search_odbc_driver_unix( ODBC_DRIVER_17 ) ) {
-                conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ODBC_DRIVER_17];
-                r = core_odbc_connect( conn, conn_str, is_pooled );
-            }
-            else {
-                CHECK_CUSTOM_ERROR( true, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch()) {
-                    throw core::CoreException();
-                }
-            }
-        } // else driver_version not unknown
     }
-    else { 
-        // column encryption NOT enabled
-        if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
-            // check if the ODBC driver actually exists, if not, throw an exception
-            CHECK_CUSTOM_ERROR( ! core_search_odbc_driver_unix( conn->driver_version ), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND ) {
+
+    // In non-Windows environment, unixODBC 2.3.4 and unixODBC 2.3.1 return different error states when an ODBC driver exists or not
+    // Therefore, it is unreliable to check for a certain sql state error 
+#ifndef _WIN32
+    if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
+        // check if the ODBC driver actually exists, if not, throw an exception
+        CHECK_CUSTOM_ERROR( ! core_search_odbc_driver_unix( conn->driver_version ), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND ) {
+            throw core::CoreException();
+        }
+
+        r = core_odbc_connect( conn, conn_str, is_pooled );
+    }
+    else {
+        if( conn->ce_option.enabled ) {
+            // driver not specified, so check if ODBC 17 exists 
+            CHECK_CUSTOM_ERROR( ! core_search_odbc_driver_unix( ODBC_DRIVER_17 ), conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch()) {
                 throw core::CoreException();
             }
 
+            conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ODBC_DRIVER_17];
             r = core_odbc_connect( conn, conn_str, is_pooled );
         }
         else {
@@ -207,39 +195,26 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
             }
             std::string conn_str_driver = conn_str + CONNECTION_STRING_DRIVER_NAME[odbc_version];
             r = core_odbc_connect( conn, conn_str_driver, is_pooled );
-        }  // else driver_version not unknown
-    } // else ce_option enabled
+        } // else ce_option enabled
+    } // else driver_version not unknown
 #else
-            r = core_odbc_connect( conn, conn_str, is_pooled );
+    if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
+        r = core_odbc_connect( conn, conn_str, is_pooled );
 
-            if( core_compare_error_state( conn, r, "IM002" ) ) {
-                // sql state IM002 means that the specified ODBC driver is not installed
-                CHECK_CUSTOM_ERROR( true, conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND ) {
-                    throw core::CoreException();
-                }
-            }
+        // sql state IM002 means that the specified ODBC driver is not found
+        CHECK_CUSTOM_ERROR( core_compare_error_state( conn, r, "IM002" ), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND ) {
+            throw core::CoreException();
         }
-        else {
+    }
+    else {
+        if( conn->ce_option.enabled ) {
             // driver not specified, so connect using ODBC 17
             conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ODBC_DRIVER_17];
             r = core_odbc_connect( conn, conn_str, is_pooled );
 
-            // sql state IM002 means that the specified ODBC driver is not installed
+            // sql state IM002 means that the specified ODBC driver is not found
             CHECK_CUSTOM_ERROR( core_compare_error_state( conn, r, "IM002" ) , conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch() ) {
                 throw core::CoreException();
-            }
-        } 
-    }
-    else { 
-        // column encryption NOT enabled
-        if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
-            r = core_odbc_connect( conn, conn_str, is_pooled );
-
-            if( core_compare_error_state( conn, r, "IM002" ) ) {
-                // sql state IM002 means that the specified ODBC driver is not installed
-                CHECK_CUSTOM_ERROR( true, conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND, CONNECTION_STRING_DRIVER_NAME[conn->driver_version].c_str() ) {
-                    throw core::CoreException();
-                }
             }
         }
         else {
@@ -248,25 +223,20 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                 std::string conn_str_driver = conn_str + CONNECTION_STRING_DRIVER_NAME[i];
                 r = core_odbc_connect( conn, conn_str_driver, is_pooled );
 
-                if( SQL_SUCCEEDED( r ) ) { 
+                if( SQL_SUCCEEDED( r ) || ! core_compare_error_state( conn, r, "IM002" ) ) { 
+                    // sql state IM002 means that the specified ODBC driver is not found
+                    // something else went wrong, exit the loop now 
                     done = true;
-                }
-                else if( core_compare_error_state( conn, r, "IM002" ) ) {
-                    if(i == DRIVER_VERSION::LAST ) {
-                        // sql state IM002 means that the specified ODBC driver is not installed
-                        // failed to connect even using the last valid ODBC driver 
-                        CHECK_CUSTOM_ERROR( true, conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
-                            throw core::CoreException();
-                        }
-                    }
                 }
                 else {
-                    // something else went wrong other than missing the ODBC driver, exit the loop now
-                    done = true;
+                    // did it fail to find the last valid ODBC driver?
+                    CHECK_CUSTOM_ERROR( ( i == DRIVER_VERSION::LAST ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+                        throw core::CoreException();
+                    }
                 }
             } // for              
-        }
-    } // else ce_option enabled
+        } // else ce_option enabled
+    } // else driver_version not unknown
 #endif // !_WIN32 
 
     CHECK_SQL_ERROR( r, conn ) {
