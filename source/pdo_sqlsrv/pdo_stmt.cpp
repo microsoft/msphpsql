@@ -1068,7 +1068,7 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
         // Return the correct error in case the user calls nextRowset() on a null result set. 
-        // Null means that SQLNumResultCols() returns 0 and SQLRowCount is not return > 0. But first 
+        // Null means that SQLNumResultCols() returns 0 and SQLRowCount does not return > 0. But first 
         // check that the statement has been executed and that we are not past the end of a non-null 
         // result set to make sure the user gets the correct error message. These checks are also 
         // done in core_sqlsrv_next_result(), but we cannot check for null results there because that

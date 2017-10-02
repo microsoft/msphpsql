@@ -7,6 +7,7 @@ Test that calling nextRowset() on an empty result set produces the correct error
 --FILE--
 <?php
 require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
 $conn = new PDO( "sqlsrv:Server = $server; Database = $databaseName; ", $uid, $pwd );
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
