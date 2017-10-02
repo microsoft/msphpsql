@@ -89,8 +89,8 @@ Array
             [SQLSTATE] => HY010
             [1] => 0
             [code] => 0
-            [2] => [%s][ODBC Driver Manager] Function sequence error
-            [message] => [%s][ODBC Driver Manager] Function sequence error
+            [2] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager] Function sequence error
+            [message] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager] Function sequence error
         )
 
 )
