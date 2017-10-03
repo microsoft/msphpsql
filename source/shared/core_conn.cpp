@@ -201,7 +201,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
         r = core_odbc_connect( conn, conn_str, is_pooled );
 
-        // sql state IM002 means that the specified ODBC driver is not found
+        // check if the specified ODBC driver is there
         CHECK_CUSTOM_ERROR( core_compare_error_state( conn, r, "IM002" ), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND ) {
             throw core::CoreException();
         }
@@ -212,7 +212,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
             conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ODBC_DRIVER_17];
             r = core_odbc_connect( conn, conn_str, is_pooled );
 
-            // sql state IM002 means that the specified ODBC driver is not found
+            // check if the specified ODBC driver is there
             CHECK_CUSTOM_ERROR( core_compare_error_state( conn, r, "IM002" ) , conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch() ) {
                 throw core::CoreException();
             }
@@ -224,8 +224,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                 r = core_odbc_connect( conn, conn_str_driver, is_pooled );
 
                 if( SQL_SUCCEEDED( r ) || ! core_compare_error_state( conn, r, "IM002" ) ) { 
-                    // sql state IM002 means that the specified ODBC driver is not found
-                    // something else went wrong, exit the loop now 
+                    // something else went wrong, exit the loop now other than ODBC driver not found
                     done = true;
                 }
                 else {
