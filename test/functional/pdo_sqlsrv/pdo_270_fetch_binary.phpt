@@ -25,10 +25,10 @@ try {
     if (!isColEncrypted()) {
         // image is not supported for encryption
         array_push($columns, 'col4');
-        array_merge($colmeta_arr, array($columns[3] => "image"));
-        array_merge($inputs, array( $columns[3] => new BindParamOp(4, $icon, "PDO::PARAM_LOB", null, "PDO::SQLSRV_ENCODING_BINARY")));
+        $colmeta_arr += array($columns[3] => "image");
+        $inputs += array( $columns[3] => new BindParamOp(4, $icon, "PDO::PARAM_LOB", null, "PDO::SQLSRV_ENCODING_BINARY"));
     }
-
+    
     createTable($conn, $tableName, $colmeta_arr);
 
     // Insert data using bind parameters
@@ -36,7 +36,7 @@ try {
 
     // loop through each column in the table
     foreach ($columns as $col) {
-        test_fetch($conn, $tableName, $col, $icon);
+        testFetch($conn, $tableName, $col, $icon);
     }
     // DROP table
     dropTable($conn, $tableName);
@@ -51,7 +51,7 @@ try {
 }
 
     //calls various fetch methods
-function test_fetch($conn, $tableName, $columnName, $input)
+function testFetch($conn, $tableName, $columnName, $input)
 {
     $len = strlen($input);
     $result = "";
