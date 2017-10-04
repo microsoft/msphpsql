@@ -110,9 +110,9 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif // _WIN32 
 
     try {
-    // Due to the limitations on connection pooling in unixODBC 2.3.1 driver manager, we do not consider 
-    // the connection string attributes to set (enable/disable) connection pooling. 
-    // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
+        // Due to the limitations on connection pooling in unixODBC 2.3.1 driver manager, we do not consider 
+        // the connection string attributes to set (enable/disable) connection pooling. 
+        // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
     
 #ifndef _WIN32
         char pooling_string[ 128 ] = {0};
@@ -125,9 +125,9 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
             is_pooled = true;
         }
 #else
-    // check the connection pooling setting to determine which henv to use to allocate the connection handle
-    // we do this earlier because we have to allocate the connection handle prior to setting attributes on
-    // it in build_connection_string_and_set_conn_attr.
+        // check the connection pooling setting to determine which henv to use to allocate the connection handle
+        // we do this earlier because we have to allocate the connection handle prior to setting attributes on
+        // it in build_connection_string_and_set_conn_attr.
     
          if( options_ht && zend_hash_num_elements( options_ht ) > 0 ) {
          
@@ -150,34 +150,94 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     
     build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str TSRMLS_CC );
     
-    bool is_missing_driver = false;
-
-    if ( conn->is_driver_set ) {
-        r = core_odbc_connect( conn, conn_str, is_missing_driver, is_pooled );
+    // If column encryption is enabled, must use ODBC driver 17
+    if( conn->ce_option.enabled && conn->driver_version != ODBC_DRIVER_UNKNOWN) {
+        CHECK_CUSTOM_ERROR( conn->driver_version != ODBC_DRIVER_17, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch() ) {
+            throw core::CoreException();
+        }
     }
-    else if ( conn->ce_option.enabled ) {
-        conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ DRIVER_VERSION::ODBC_DRIVER_17 ];
-        r = core_odbc_connect( conn, conn_str, is_missing_driver, is_pooled );
 
-        CHECK_CUSTOM_ERROR( is_missing_driver, conn, SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+    // In non-Windows environment, unixODBC 2.3.4 and unixODBC 2.3.1 return different error states when an ODBC driver exists or not
+    // Therefore, it is unreliable to check for a certain sql state error 
+#ifndef _WIN32
+    if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
+        // check if the ODBC driver actually exists, if not, throw an exception
+        CHECK_CUSTOM_ERROR( ! core_search_odbc_driver_unix( conn->driver_version ), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND ) {
+            throw core::CoreException();
+        }
+
+        r = core_odbc_connect( conn, conn_str, is_pooled );
+    }
+    else {
+        if( conn->ce_option.enabled ) {
+            // driver not specified, so check if ODBC 17 exists 
+            CHECK_CUSTOM_ERROR( ! core_search_odbc_driver_unix( ODBC_DRIVER_17 ), conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch()) {
+                throw core::CoreException();
+            }
+
+            conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ODBC_DRIVER_17];
+            r = core_odbc_connect( conn, conn_str, is_pooled );
+        }
+        else {
+            // skip ODBC 11 in a non-Windows environment -- only available in Red Hat / SUSE (preview)
+            // https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server#microsoft-odbc-driver-11-for-sql-server-on-linux
+
+            DRIVER_VERSION odbc_version = ODBC_DRIVER_UNKNOWN;
+            if( core_search_odbc_driver_unix( ODBC_DRIVER_13 ) ) {
+                odbc_version = ODBC_DRIVER_13;
+            } 
+            else if ( core_search_odbc_driver_unix( ODBC_DRIVER_17 ) ) {
+                odbc_version = ODBC_DRIVER_17;
+            }
+
+            CHECK_CUSTOM_ERROR( odbc_version == ODBC_DRIVER_UNKNOWN, conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch() ) {
+                throw core::CoreException();
+            }
+            std::string conn_str_driver = conn_str + CONNECTION_STRING_DRIVER_NAME[odbc_version];
+            r = core_odbc_connect( conn, conn_str_driver, is_pooled );
+        } // else ce_option enabled
+    } // else driver_version not unknown
+#else
+    if( conn->driver_version != ODBC_DRIVER_UNKNOWN ) {
+        r = core_odbc_connect( conn, conn_str, is_pooled );
+
+        // check if the specified ODBC driver is there
+        CHECK_CUSTOM_ERROR( core_compare_error_state( conn, r, "IM002" ), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND ) {
             throw core::CoreException();
         }
     }
     else {
+        if( conn->ce_option.enabled ) {
+            // driver not specified, so connect using ODBC 17
+            conn_str = conn_str + CONNECTION_STRING_DRIVER_NAME[ODBC_DRIVER_17];
+            r = core_odbc_connect( conn, conn_str, is_pooled );
 
-        for ( std::size_t i = DRIVER_VERSION::FIRST; i <= DRIVER_VERSION::LAST; ++i ) {
-            is_missing_driver = false;
-            std::string conn_str_driver = conn_str + CONNECTION_STRING_DRIVER_NAME[ DRIVER_VERSION(i) ];
-            r = core_odbc_connect( conn, conn_str_driver, is_missing_driver, is_pooled );
-            CHECK_CUSTOM_ERROR( is_missing_driver && ( i == DRIVER_VERSION::LAST ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+            // check if the specified ODBC driver is there
+            CHECK_CUSTOM_ERROR( core_compare_error_state( conn, r, "IM002" ) , conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch() ) {
                 throw core::CoreException();
             }
-            if ( !is_missing_driver) {
-                break;
-            }
-        } // for
-    } // else ce_option enabled
-        
+        }
+        else {
+            bool done = false;
+            for( short i = DRIVER_VERSION::FIRST; i <= DRIVER_VERSION::LAST && ! done; ++i ) {
+                std::string conn_str_driver = conn_str + CONNECTION_STRING_DRIVER_NAME[i];
+                r = core_odbc_connect( conn, conn_str_driver, is_pooled );
+
+                if( SQL_SUCCEEDED( r ) || ! core_compare_error_state( conn, r, "IM002" ) ) { 
+                    // something else went wrong, exit the loop now other than ODBC driver not found
+                    done = true;
+                }
+                else {
+                    // did it fail to find the last valid ODBC driver?
+                    CHECK_CUSTOM_ERROR( ( i == DRIVER_VERSION::LAST ), conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+                        throw core::CoreException();
+                    }
+                }
+            } // for              
+        } // else ce_option enabled
+    } // else driver_version not unknown
+#endif // !_WIN32 
+
     CHECK_SQL_ERROR( r, conn ) {
         throw core::CoreException();
     }
@@ -233,17 +293,79 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     return return_conn;
 }
 
+// core_compare_error_state
+// This method compares the error state to the one specified
+// Parameters:
+// conn         - the connection structure on which we establish the connection 
+// rc           - ODBC return code
+// Return       - a boolean flag that indicates if the error states are the same
+
+bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ const char* error_state )
+{
+    if( SQL_SUCCEEDED( rc ) ) 
+        return false;
+
+    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
+    SQLSMALLINT len;
+    SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
+
+    return ( SQL_SUCCEEDED(sr) && ! strcmp(error_state, reinterpret_cast<char*>( state ) ) );
+}
+
+// core_search_odbc_driver_unix
+// This method is meant to be used in a non-Windows environment, 
+// searching for a particular ODBC driver name in the odbcinst.ini file
+// Parameters:
+// driver_version   - a valid value in enum DRIVER_VERSION
+// Return           - a boolean flag that indicates if the specified driver version is found or not
+
+bool core_search_odbc_driver_unix( _In_ DRIVER_VERSION driver_version )
+{
+    char szBuf[DEFAULT_CONN_STR_LEN+1];     // use a large enough buffer size
+    WORD cbBufMax = DEFAULT_CONN_STR_LEN; 
+    WORD cbBufOut;
+    char *pszBuf = szBuf;
+    bool found_driver = false;
+
+#ifndef _WIN32
+    // get all the names of the installed drivers delimited by null characters
+    if(! SQLGetInstalledDrivers( szBuf, cbBufMax, &cbBufOut ) )
+    {
+        return false;
+    }
+
+    // extract the ODBC driver name 
+    std::string driver = CONNECTION_STRING_DRIVER_NAME[driver_version];
+    std::size_t pos1 = driver.find_first_of("{");
+    std::size_t pos2 = driver.find_first_of("}");
+    std::string driver_str = driver.substr( pos1 + 1, pos2 - pos1 - 1);
+
+    // search for the ODBC driver...
+    const char* driver_name = driver_str.c_str();
+    do
+    {
+        if( strstr( pszBuf, driver_name ) != 0  )
+        {
+            return true;
+        }
+        // get the next driver
+        pszBuf = strchr( pszBuf, '\0' ) + 1;
+    }
+    while( pszBuf[1] != '\0' ); // end when there are two consecutive null characters
+#endif // !_WIN32 
+
+    return false;
+}
 
 // core_odbc_connect
 // calls odbc connect API to establish the connection to server
 // Parameters:
 // conn                 - The connection structure on which we establish the connection 
 // conn_str             - Connection string 
-// missing_driver_error - indicates whether odbc driver is installed on client machine   
 // is_pooled            - indicate whether it is a pooled connection 
 // Return               - SQLRETURN status returned by SQLDriverConnect
 
-SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _Inout_ bool& is_missing_driver, _In_ bool is_pooled )
+SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _In_ bool is_pooled )
 {
     SQLRETURN r = SQL_SUCCESS;
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wconn_string;
@@ -262,29 +384,20 @@ SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& con
 #ifndef _WIN32
     // unixODBC 2.3.1 requires a non-wide SQLDriverConnect call while pooling enabled.
     // connection handle has been allocated using henv_cp, means pooling enabled in a PHP script
-    if (is_pooled)
-    {
+    if (is_pooled) {
         r = SQLDriverConnect( conn->handle(), NULL, (SQLCHAR*)conn_str.c_str(), SQL_NTS, NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
     }
-    else
-    {
+    else {
         r = SQLDriverConnectW( conn->handle(), NULL, wconn_string, static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
     }
 #else
     r = SQLDriverConnectW( conn->handle(), NULL, wconn_string, static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
 #endif // !_WIN32 
 
-    // clear the connection string from memory to remove sensitive data (such as a password).
+    // clear the connection string from memory 
     memset( wconn_string, 0, wconn_len * sizeof( SQLWCHAR )); // wconn_len is the number of characters, not bytes
     conn_str.clear();
 
-    if (!SQL_SUCCEEDED(r)) {
-        SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
-        SQLSMALLINT len;
-        SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
-        // sql state IM002/IM003 in ODBC 17, means that the correct ODBC driver is not installed
-        is_missing_driver = ( SQL_SUCCEEDED(sr) && state[0] == 'I' && state[1] == 'M' && state[2] == '0' && state[3] == '0' && (state[4] == '2' || state[4] == '3'));
-    } 
     return r;
 }
 
@@ -908,10 +1021,19 @@ void driver_set_func::func( _In_ connection_option const* option, _In_ zval* val
     std::string driver_option( "" );
     common_conn_str_append_func( option->odbc_name, val_str, val_len, driver_option TSRMLS_CC );
    
-    CHECK_CUSTOM_ERROR( std::find( CONNECTION_STRING_DRIVER_NAME.begin(), CONNECTION_STRING_DRIVER_NAME.end(), driver_option) == CONNECTION_STRING_DRIVER_NAME.end(), conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, val_str){
+    conn->driver_version = ODBC_DRIVER_UNKNOWN;
+    for ( short i = DRIVER_VERSION::FIRST; i <= DRIVER_VERSION::LAST && conn->driver_version == ODBC_DRIVER_UNKNOWN; ++i ) {
+        std::string driver_name = CONNECTION_STRING_DRIVER_NAME[i];
+
+        if (! driver_name.compare( driver_option ) ) { 
+            conn->driver_version = DRIVER_VERSION( i );
+        }
+    }
+
+    CHECK_CUSTOM_ERROR( conn->driver_version == ODBC_DRIVER_UNKNOWN, conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, val_str) {
         throw core::CoreException();
     } 
-    conn->is_driver_set = true;
+
     conn_str += driver_option;
 }
 

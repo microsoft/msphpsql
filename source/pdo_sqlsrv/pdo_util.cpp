@@ -398,12 +398,16 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -77, false}
     },
     {
-        SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+        SQLSRV_ERROR_CE_DRIVER_REQUIRED,
         { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.", -78, false }
     },
     {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
         { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option.", -79, true }
+    },
+    {
+        SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND,
+        { IMSSP, (SQLCHAR*) "The specified ODBC Driver is not found.", -80, false }
     },
     { UINT_MAX, {} }
 };
