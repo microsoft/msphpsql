@@ -32,8 +32,7 @@ try {
     echo "Exception from unsupported attribute (ATTR_PREFETCH) is caught\n";
 }
 ?> 
---XFAIL--
-Bug with column encryption: Exception from unsupported attribute is caught even if the attribute if set before ERRMODE_EXCEPTION
+
 --EXPECT--
 Testing a connection with ATTR_PREFETCH before ERRMODE_EXCEPTION...
 Error from supported attribute (ATTR_PREFETCH) is silented

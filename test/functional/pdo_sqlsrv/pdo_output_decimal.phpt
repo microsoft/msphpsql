@@ -54,7 +54,6 @@ try {
     echo $e->getMessage();
 }
 ?>
---XFAIL--
-Bug with column encryption: returns error "An error occurred translating string for an output param to UTF-8" if output has more decimal places than the column definition
+
 --EXPECT--
 Test Successfully
