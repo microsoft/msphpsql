@@ -1,49 +1,53 @@
 --TEST--
 Prepare, execute statement and fetch with pooling enabled
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once( "MsCommon.inc" );
+require_once("MsCommon_mid-refactor.inc");
 
-// Allow PHP types for numeric fields
-$connection_options = array( PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE => TRUE );
+try {
+    // Allow PHP types for numeric fields
+    $connection_options = array(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE => TRUE);
 
-// Create a pool
-$conn0 = connect( 'ConnectionPooling=1', $connection_options );
-unset( $conn0 );
+    // Create a pool
+    $conn0 = connect('ConnectionPooling=1', $connection_options);
+    unset($conn0);
 
-// Connection can use an existing pool
-$conn = connect( 'ConnectionPooling=1', $connection_options );
+    // Connection can use an existing pool
+    $conn = connect('ConnectionPooling=1', $connection_options);
 
-// Create table
-$tableName = 'pdo_061test';
-create_table( $conn, $tableName, array( new columnMeta( "nvarchar(32)", "Столица" ), new columnMeta( "int", "year" )));
+    // Create table
+    $tableName = 'pdo_061test';
+    createTable($conn, $tableName, array("Столица" => "nvarchar(32)", "year" => "int"));
 
-// Insert data
-insert_row( $conn, $tableName, array( "Столица" => "Лондон", "year" => 2012 ), "prepareExecuteBind" );
+    // Insert data
+    insertRow($conn, $tableName, array("Столица" => "Лондон", "year" => 2012), "prepareExecuteBind");
 
-// Get data
-$row = select_row( $conn, $tableName, "PDO::FETCH_ASSOC" );
-var_dump($row);  
-unset( $conn );
+    // Get data
+    $row = selectRow($conn, $tableName, "PDO::FETCH_ASSOC");
+    var_dump($row);  
+    unset($conn);
 
-// Create a new pool
-$conn0 = connect( 'ConnectionPooling=1' );
-unset( $conn0 );
-    
-// Connection can use an existing pool
-$conn = connect( 'ConnectionPooling=1' );
+    // Create a new pool
+    $conn0 = connect('ConnectionPooling=1');
+    unset($conn0);
+        
+    // Connection can use an existing pool
+    $conn = connect('ConnectionPooling=1');
 
-// Get data
-$row = select_row( $conn, $tableName, "PDO::FETCH_ASSOC" );
-var_dump($row);
+    // Get data
+    $row = selectRow($conn, $tableName, "PDO::FETCH_ASSOC");
+    var_dump($row);
 
-// Close connection
-DropTable( $conn, $tableName );
-unset( $stmt );
-unset( $conn );
-print "Done"
+    // Close connection
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
+    print "Done\n";
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 --EXPECT--
 array(2) {

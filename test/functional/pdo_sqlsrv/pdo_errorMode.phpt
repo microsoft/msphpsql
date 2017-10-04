@@ -1,29 +1,32 @@
 --TEST--
 Test different error modes. The queries will try to do a select on a table that does not exist on database.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once( 'MsCommon.inc' );
+require_once("MsCommon_mid-refactor.inc");
 
-function testException(){
+function testException()
+{
     $db = connect();
     $sql = "SELECT * FROM temp_table";
-    try{
+    try {
         $q = $db->query($sql);
-    } catch ( Exception $e ){
+    } catch (Exception $e) {
         echo 'Caught exception: ', $e->getMessage();
     }
 }
 
-function testWarning(){
+function testWarning()
+{
     $db = connect();
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
     $sql = "SELECT * FROM temp_table";
     $q = $db->query($sql);
 }
 
-function testSilent(){
+function testSilent()
+{
     $db = connect();
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
     $sql = "SELECT * FROM temp_table";

@@ -1,10 +1,10 @@
 --TEST--
 Unicode XML message using bindValue()
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once( "MsCommon.inc" );
+require_once("MsCommon_mid-refactor.inc");
 
 // Connect
 $conn = connect();
@@ -30,8 +30,7 @@ $xml2 = '<?xml version="1.0" encoding="utf-16"?>
 </PTag>';
 
 // Insert data
-try 
-{
+try {
     $stmt = $conn->prepare("INSERT INTO $tableName (XMLMessage) VALUES (:msg)");
     $stmt->bindValue(':msg', $xml1);
     $stmt->execute();
@@ -39,18 +38,17 @@ try
     $stmt = $conn->prepare("INSERT INTO $tableName (XMLMessage) VALUES (?)");
     $stmt->bindValue(1, $xml2);
     $stmt->execute();
-}
-catch (PDOException $ex) {
+} catch (PDOException $ex) {
     echo "Error: " . $ex->getMessage();
 }
 
 // Get data
-$row = select_all( $conn, $tableName, "PDO::FETCH_ASSOC" );
+$row = selectAll($conn, $tableName, "PDO::FETCH_ASSOC");
 var_dump($row);  
  
 // Close connection
-unset( $stmt );
-unset( $conn );
+unset($stmt);
+unset($conn);
 
 print "Done"
 ?>

@@ -1,33 +1,38 @@
 --TEST--
 Bind values with PDO::PARAM_BOOL, enable/disable fetch numeric type attribute
 --SKIPIF--
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require("MsSetup.inc");
-require_once( "MsCommon.inc" );
+require_once( "MsCommon_mid-refactor.inc" );
 
-// Sample data
-$sample = array([true, false],[-12, 0x2A],[0.00, NULL]);
+try {
+    // Sample data
+    $sample = array([true, false],[-12, 0x2A],[0.00, NULL]);
+    $tableName = "pdo_test_table";
 
-// Connect
-$conn = connect();
+    // Connect
+    $conn = connect();
 
-// Run test
-Test();
+    // Run test
+    Test();
 
-// Set PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE = false (default)
-$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, FALSE);
-Test();
+    // Set PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE = false (default)
+    $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, FALSE);
+    Test();
 
-// Set PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE = true
-$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, TRUE);
-Test();
+    // Set PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE = true
+    $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, TRUE);
+    Test();
 
-// Close connection
-unset( $stmt );
-unset( $conn );
+    // Close connection
+    unset($stmt);
+    unset($conn);
 
-print "Done";
+    print "Done";
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 
 // Generic test starts here
 function Test()
@@ -35,7 +40,7 @@ function Test()
     global $conn, $tableName, $sample;
 
     // Drop table if exists
-    create_table( $conn, $tableName, array( new columnMeta( "int", "c1" ), new columnMeta( "bit", "c2" )));
+    createTable($conn, $tableName, array("c1" => "int", "c2" => "bit"));
     
     // Insert data using bind values
     $sql = "INSERT INTO $tableName VALUES (:v1, :v2)";
@@ -52,11 +57,12 @@ function Test()
     $row = $stmt->fetchAll(PDO::FETCH_NUM);
 
     // Print out
-    for($i=0; $i<$stmt->rowCount(); $i++)
-    { var_dump($row[$i][0]); var_dump($row[$i][1]); }
+    for ($i=0; $i<$stmt->rowCount(); $i++) {
+        var_dump($row[$i][0]); var_dump($row[$i][1]);
+    }
     
     // clean up
-    DropTable( $conn, $tableName );
+    dropTable( $conn, $tableName );
     unset( $stmt );
 }
 ?>

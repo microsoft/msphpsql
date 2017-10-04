@@ -1,81 +1,79 @@
 --TEST--
 prepare with emulate prepare and binding integer
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require('MsSetup.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", $uid, $pwd);
+require_once("MsCommon_mid-refactor.inc");
 
-$tableName = "date_types";
+try {
+    $conn = connect();
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
-$query = "IF OBJECT_ID('date_types') IS NOT NULL DROP TABLE [$tableName]";
-$stmt = $conn->query($query);
+    $tableName = "date_types";
+    createTable($conn, $tableName, array("c1_datetime" => "datetime", "c2_nvarchar" => "nvarchar(20)"));
 
-$query = "CREATE TABLE [$tableName] (c1_datetime datetime, c2_nvarchar nvarchar(20))";
-$stmt = $conn->query($query);
+    insertRow($conn, $tableName, array("c1_datetime" => "2012-06-18 10:34:09", "c2_nvarchar" => "2012-06-18 10:34:09"));
+    insertRow($conn, $tableName, array("c1_datetime" => "2008-11-11 13:23:44", "c2_nvarchar" => "2008-11-11 13:23:44"));
+    insertRow($conn, $tableName, array("c1_datetime" => "2012-09-25 19:47:00", "c2_nvarchar" => "2012-09-25 19:47:00"));
 
-$query = "INSERT INTO [$tableName] (c1_datetime, c2_nvarchar) VALUES ('2012-06-18 10:34:09', N'2012-06-18 10:34:09')";
-$stmt = $conn->query($query);
+    $query = "SELECT * FROM [$tableName] WHERE c1_datetime = :c1";
 
-$query = "INSERT INTO [$tableName] (c1_datetime, c2_nvarchar) VALUES ('2008-11-11 13:23:44', N'2008-11-11 13:23:44')";
-$stmt = $conn->query($query);
+    // prepare without emulate prepare
+    print_r("Prepare without emulate prepare:\n");
+    $options = array(PDO::ATTR_EMULATE_PREPARES => false);
+    $stmt = $conn->prepare($query, $options);
+    $c1 = '2012-09-25 19:47:00';
+    $stmt->bindParam(':c1', $c1);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-$query = "INSERT INTO [$tableName] (c1_datetime, c2_nvarchar) VALUES ('2012-09-25 19:47:00', N'2012-09-25 19:47:00')";
-$stmt = $conn->query($query);
+    //with emulate prepare and no bind param options
+    if (!isColEncrypted()) {
+        // emulate prepare is not supported in encrypted columns
+        $options = array(PDO::ATTR_EMULATE_PREPARES => true);
+    }
+    print_r("Prepare with emulate prepare and no bind param options:\n");
+    $stmt = $conn->prepare($query, $options);
+    $stmt->bindParam(':c1', $c1);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-$query = "SELECT * FROM [$tableName] WHERE c1_datetime = :c1";
+    //with emulate prepare and encoding SQLSRV_ENCODING_SYSTEM
+    print_r("Prepare with emulate prepare and SQLSRV_ENCODING_SYSTEM:\n");
+    $stmt = $conn->prepare($query, $options);
+    $stmt->bindParam(':c1', $c1, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-// prepare without emulate prepare
-print_r("Prepare without emulate prepare:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => false));
-$c1 = '2012-09-25 19:47:00';
-$stmt->bindParam(':c1', $c1);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
+    //prepare with emulate prepare and encoding SQLSRV_ENCODING_UTF8
+    print_r("Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:\n");
+    $stmt = $conn->prepare($query, $options);
+    $stmt->bindParam(':c1', $c1, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-//with emulate prepare and no bind param options
-print_r("Prepare with emulate prepare and no bind param options:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$c1 = '2012-09-25 19:47:00';
-$stmt->bindParam(':c1', $c1);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
+    //prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY
+    print_r("Prepare with emulate prepare and SQLSRV_ENCODING_BINARY:\n");
+    $stmt = $conn->prepare($query, $options);
+    $stmt->bindParam(':c1', $c1, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
+    if ($stmt->rowCount() == 0) {
+        print_r("No results for this query\n");
+    }
 
-//with emulate prepare and encoding SQLSRV_ENCODING_SYSTEM
-print_r("Prepare with emulate prepare and SQLSRV_ENCODING_SYSTEM:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$c1 = '2012-09-25 19:47:00';
-$stmt->bindParam(':c1', $c1, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-
-//prepare with emulate prepare and encoding SQLSRV_ENCODING_UTF8
-print_r("Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$c1 = '2012-09-25 19:47:00';
-$stmt->bindParam(':c1', $c1, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-
-//prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY
-print_r("Prepare with emulate prepare and SQLSRV_ENCODING_BINARY:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$c1 = '2012-09-25 19:47:00';
-$stmt->bindParam(':c1', $c1, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-if ($stmt->rowCount() == 0){
-	print_r("No results for this query\n");
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
+} catch (PDOException $e) {
+    var_dump($e->errorInfo[2]);
 }
-
-$stmt = null;
-$conn=null;
 ?>
 
 --EXPECT--

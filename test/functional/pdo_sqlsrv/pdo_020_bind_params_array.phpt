@@ -1,49 +1,53 @@
 --TEST--
 Bind parameters using an array
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once( "MsCommon.inc" );
+require_once("MsCommon_mid-refactor.inc");
 
-// Connect
-$conn = connect();
+try {
+    // Connect
+    $conn = connect();
 
-// Create table
-$tableName = 'bindParams';
-$sql = "CREATE TABLE $tableName (ID TINYINT, SID CHAR(5))";
-$stmt = $conn->exec($sql);
+    // Create table
+    $tableName = 'bindParams';
+    $sql = "CREATE TABLE $tableName (ID TINYINT, SID CHAR(5))";
+    $stmt = $conn->exec($sql);
 
-create_table( $conn, $tableName, array( new ColumnMeta( "tinyint", "ID" ), new ColumnMeta( "char(5)", "SID" )));
+    createTable($conn, $tableName, array("ID" => "tinyint", "SID" => "char(5)"));
 
-// Insert data using bind parameters
-$sql = "INSERT INTO $tableName VALUES (?,?)";
-for($t=100; $t<103; $t++) {
-	$stmt = $conn->prepare($sql);
-	$ts = substr(sha1($t),0,5);
-	$params = array($t,$ts);
-	$stmt->execute($params);
+    // Insert data using bind parameters
+    $sql = "INSERT INTO $tableName VALUES (?,?)";
+    for ($t=100; $t<103; $t++) {
+        $stmt = $conn->prepare($sql);
+        $ts = substr(sha1($t),0,5);
+        $params = array($t,$ts);
+        $stmt->execute($params);
+    }
+
+    // Query, but do not fetch
+    $sql = "SELECT * from $tableName";
+    $stmt = $conn->query($sql);
+
+    // Insert duplicate row, ID = 100
+    $t = 100;
+    insertRow($conn, $tableName, array( "ID" => $t, "SID" => substr( sha1( $t ), 0, 5 )), "prepareExecuteBind");
+
+    // Fetch. The result set should not contain duplicates
+    $data = $stmt->fetchAll();
+    foreach ($data as $a)
+        echo $a['ID'] . "|" . $a['SID'] . "\n";
+
+    // Close connection
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
+
+    print "Done";
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
 }
-
-// Query, but do not fetch
-$sql = "SELECT * from $tableName";
-$stmt = $conn->query($sql);
-
-// Insert duplicate row, ID = 100
-$t = 100;
-insert_row( $conn, $tableName, array( "ID" => $t, "SID" => substr( sha1( $t ), 0, 5 )), "prepareExecuteBind" );
-
-// Fetch. The result set should not contain duplicates
-$data = $stmt->fetchAll();
-foreach ($data as $a)
-    echo $a['ID'] . "|" . $a['SID'] . "\n";
-
-// Close connection
-DropTable( $conn, $tableName );
-unset( $stmt );
-unset( $conn );
-
-print "Done";
 ?>
 
 --EXPECT--

@@ -1,58 +1,48 @@
 --TEST--
 testing the quote method with different inputs and then test with a empty query
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 
-include 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
 
-try
-{
-    require("MsSetup.inc");
-   
+try {
     $conn = connect();
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
-    
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+
     $output1 = $conn->quote("1'2'3'4'5'6'7'8", PDO::PARAM_INT);
     var_dump($output1);
-    
+
     $output2 = $conn->quote("{ABCD}'{EFGH}", PDO::PARAM_STR);
     var_dump($output2);
-    
-    $output3 = $conn->quote("<XmlTestData><Letters>The quick brown fox jumps over the lazy dog</Letters><Digits>0123456789</Digits></XmlTestData>");	
-    var_dump($output3);   
+
+    $output3 = $conn->quote("<XmlTestData><Letters>The quick brown fox jumps over the lazy dog</Letters><Digits>0123456789</Digits></XmlTestData>");
+    var_dump($output3);
 
     $stmt = $conn->query("");
-    if ($stmt != false)
-    {
+    if ($stmt != false) {
         echo("Empty query was expected to fail!\n");
     }
-    unset( $stmt );
-    
+    unset($stmt);
+
     $stmt1 = $conn->prepare($output2);
     $result = $stmt1->execute();
-    if ($result != false)
-    {
+    if ($result != false) {
         echo("This query was expected to fail!\n");
     }
-    unset( $stmt1 );
-    
-    $stmt2 = $conn->query($output3);
-    if ($stmt2 != false)
-    {
-        echo("This query was expected to fail!\n");
-    }
-    unset( $stmt2 );
+    unset($stmt1);
 
-    unset( $conn );
-}
-catch (Exception $e)
-{
+    $stmt2 = $conn->query($output3);
+    if ($stmt2 != false) {
+        echo("This query was expected to fail!\n");
+    }
+    unset($stmt2);
+
+    unset($conn);
+} catch (Exception $e) {
     echo $e->getMessage();
 }
-
-
 ?>
 --EXPECT--
 string(24) "'1''2''3''4''5''6''7''8'"

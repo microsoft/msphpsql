@@ -1,44 +1,45 @@
 --TEST--
 Test the PDO::lastInsertId() method.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-  
-require_once("MsSetup.inc");
-   
-try 
-{         
-    $conn = new PDO("sqlsrv:Server=$server;database=$databaseName", $uid, $pwd);
-    
-    // create temporary tables
-    $conn->exec('CREATE TABLE #tmp_table1(id INT IDENTITY(100,2), val INT)');
-    $conn->exec('CREATE TABLE #tmp_table2(id INT IDENTITY(200,2), val INT)');
-    $conn->exec('CREATE TABLE #tmp_table3(id INT, val INT)');
-    
-    $conn->exec('INSERT INTO #tmp_table1 VALUES(1)');
-    $conn->exec('INSERT INTO #tmp_table2 VALUES(2)');
-    $id = $conn->lastInsertId();
-    var_dump($id);
-    
-    $conn->exec('INSERT INTO #tmp_table2 VALUES(3)');
-    $conn->exec('INSERT INTO #tmp_table1 VALUES(4)');
-    $id = $conn->lastInsertId();
-    var_dump($id);
-    
-    // Should return empty string as the table does not have an IDENTITY column.
-    $conn->exec('INSERT INTO #tmp_table3 VALUES(1,1)');
-    $id = $conn->lastInsertId();
-    var_dump($id);        
-}
+require_once("MsCommon_mid-refactor.inc");
 
-catch( PDOException $e ) {
-    var_dump( $e );
+try {
+    $conn = connect();
+
+    // create temporary tables
+    createTable($conn, "table1", array(new columnMeta("int", "id", "IDENTITY(100,2)"), "val" => "int"));
+    createTable($conn, "table2", array(new columnMeta("int", "id", "IDENTITY(200,2)"), "val" => "int"));
+    createTable($conn, "table3", array("id" => "int", "val" => "int"));
+
+    insertRow($conn, "table1", array("val" => 1), "exec");
+    insertRow($conn, "table2", array("val" => 2), "exec");
+    $id = $conn->lastInsertId();
+    var_dump($id);
+
+    insertRow($conn, "table2", array("val" => 3), "exec");
+    insertRow($conn, "table1", array("val" => 4), "exec");
+    $id = $conn->lastInsertId();
+    var_dump($id);
+
+    // Should return empty string as the table does not have an IDENTITY column.
+    insertRow($conn, "table3", array("id" => 1, "val" => 1), "exec");
+    $id = $conn->lastInsertId();
+    var_dump($id);
+
+    dropTable($conn, "table1");
+    dropTable($conn, "table2");
+    dropTable($conn, "table3");
+    unset($conn);
+} catch (PDOException $e) {
+    var_dump($e);
     exit;
 }
 
 
-?> 
+?>
 --EXPECT--
 string(3) "200"
 string(3) "102"

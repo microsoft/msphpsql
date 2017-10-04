@@ -1,43 +1,47 @@
 --TEST--
 Bind parameters VARCHAR(n) extended ASCII
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once( "MsCommon.inc" );
+require_once("MsCommon_mid-refactor.inc");
 
-// Connect
-$conn = connect();
+try {
+    // Connect
+    $conn = connect();
 
-// Create table
-$tableName = 'extendedAscii';
-create_table( $conn, $tableName, array( new columnMeta( "char(2)", "code" ), new columnMeta( "varchar(32)", "city" )));
+    // Create table
+    $tableName = 'extendedAscii';
+    createTable( $conn, $tableName, array("code" => "char(2)", "city" => "varchar(32)"));
 
-// Insert data using bind parameters
-$sql = "INSERT INTO $tableName VALUES (?,?)";
+    // Insert data using bind parameters
+    $sql = "INSERT INTO $tableName VALUES (?,?)";
 
-// First row 
-$stmt = $conn->prepare($sql);
-$params = array("FI","Järvenpää");
-$stmt->execute($params);
+    // First row 
+    $stmt = $conn->prepare($sql);
+    $params = array("FI","Järvenpää");
+    $stmt->execute($params);
 
-// Second row
-$params = array("DE","München");
-$stmt->execute($params);
+    // Second row
+    $params = array("DE","München");
+    $stmt->execute($params);
 
-// Query, fetch
-$data = select_all( $conn, $tableName );
+    // Query, fetch
+    $data = selectAll($conn, $tableName);
 
-// Print out
-foreach ($data as $a)
-echo $a[0] . "|" . $a[1] . "\n";
+    // Print out
+    foreach ($data as $a)
+    echo $a[0] . "|" . $a[1] . "\n";
 
-// Close connection
-DropTable( $conn, $tableName );
-$stmt = null;
-$conn = null;
+    // Close connection
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
 
-print "Done";
+    print "Done";
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 
 --EXPECT--

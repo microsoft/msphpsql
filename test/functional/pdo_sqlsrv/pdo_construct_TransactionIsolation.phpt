@@ -1,15 +1,17 @@
 --TEST--
 Test PDO::__Construct connection option TransactionIsolation
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once( "MsCommon.inc" );
-function connectTransaction($value) {
-    $conn = connect( "TransactionIsolation = $value" );
-    if ( is_object( $conn ) && get_class( $conn ) == "PDO" )
+require_once("MsCommon_mid-refactor.inc");
+function connectTransaction($value)
+{
+    $conn = connect("TransactionIsolation = $value");
+    if (is_object($conn) && get_class($conn) == "PDO") {
         echo "Test Successful\n";
-    unset( $conn );
+    }
+    unset($conn);
 }
 
 // TEST BEGIN
@@ -20,14 +22,11 @@ try {
     connectTransaction("SNAPSHOT");
     connectTransaction("SERIALIZABLE");
     connectTransaction("INVALID_KEY");
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
 }
-catch( PDOException $e ) {
-    var_dump( $e->errorInfo );
-}
-?> 
-
+?>
 --EXPECT--
-
 Test Successful
 Test Successful
 Test Successful

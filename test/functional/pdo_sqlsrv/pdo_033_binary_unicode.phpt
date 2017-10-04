@@ -3,25 +3,24 @@ Insert binary HEX data then fetch it back as string
 --DESCRIPTION--
 Insert binary HEX data into an nvarchar field then read it back as UTF-8 string 
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-try
-{
-    require_once( "MsCommon.inc" );
+require_once("MsCommon_mid-refactor.inc");
 
+try {
     // Connect
     $conn = connect();
 
     // Create table
     $tableName = 'pdo_033test';
-    create_table( $conn, $tableName, array( new columnMeta( "nvarchar(100)", "c1" )));
+    createTable($conn, $tableName, array("c1" => "nvarchar(100)"));
 
     $input = pack( "H*", '49006427500048005000' );  // I'LOVE_SYMBOL'PHP
     $result;
-    $stmt = insert_row( $conn, $tableName, array( "c1" => new bindParamOp( 1, $input, "PDO::PARAM_STR", 0, "PDO::SQLSRV_ENCODING_BINARY" )), "prepareBindParam", $result );
+    $stmt = insertRow($conn, $tableName, array("c1" => new BindParamOp(1, $input, "PDO::PARAM_STR", 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam", $result);
     
-    if (! $result)
+    if (!$result)
         echo "Failed to insert!\n";
 
     $stmt = $conn->query("SELECT * FROM $tableName");
@@ -29,17 +28,14 @@ try
 
     echo "$utf8\n";
 
-    DropTable( $conn, $tableName );
-    $stmt = null;
-    $conn = null;
-}
-catch (Exception $e)
-{
-    echo $e->getMessage();
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
 }
     
 print "Done";
-
 ?>
 
 --EXPECT--

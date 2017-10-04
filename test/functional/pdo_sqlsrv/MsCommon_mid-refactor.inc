@@ -14,43 +14,82 @@
 //
 require  'MsData.inc';
 
-function IsAEQualified($conn)
+function isAEQualified($conn)
 {
     $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
     $server_ver = $conn->getAttribute(PDO::ATTR_SERVER_VERSION);
     $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
-    $msodbcsql_min = explode(".", $msodbcsql_ver)[1];
-    if ($msodbcsql_maj < 17 || explode('.', $server_ver)[0] < 13)
+    if ($msodbcsql_maj < 17 || explode('.', $server_ver)[0] < 13) {
         return false;
+    }
     return true;
 }
-
+/*
 // TO BE DELETED
 function connect($options=array())
 {
-  try 
+  try
   {
-    // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
+    // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
     // which does not support switching databases
     require  'MsSetup.inc';
-    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;" , $uid, $pwd, $options); 
+    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;" , $uid, $pwd, $options);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
     create_and_insert_table1($conn);
     create_and_insert_table2($conn);
       return $conn;
   }
-  
-  catch( PDOException $e ) 
+
+  catch( PDOException $e )
   {
     var_dump( $e );
     exit;
   }
-    
-  catch(Exception $e) 
+
+  catch(Exception $e)
   {
      var_dump( $e );
      exit;
   }
+}
+*/
+
+
+/**
+ * Connect to the database specified in MsSetup.inc; Column Encryption keywords automatically added when $keystore is not none
+ * @param  string  $keywords : string to append to the dsn string in PDO::_construct
+ * @param  array  $options : attributes to pass to PDO::_construct
+ * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
+ *                          for testing fetching encrypted data when connection column encryption is off
+ * @return PDO connection object
+ */
+function connect($keywords='', $options=array(), $disableCE = false)
+{
+    try {
+        // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
+        // which does not support switching databases
+        require  'MsSetup.inc';
+        $dsn = "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;";
+        if ($keystore != "none" && !$disableCE) {
+            $dsn .= "ColumnEncryption=Enabled;";
+        }
+        if ($keystore == "ksp" && !$disableCE) {
+            require('AE_Ksp.inc');
+            $ksp_path = getKSPPath();
+            $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
+        }
+        if ($keywords) {
+            $dsn .= $keywords;
+        }
+        $conn = new PDO($dsn, $uid, $pwd, $options);
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return $conn;
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
+    } catch (Exception $e) {
+        var_dump($e->errorInfo);
+        exit;
+    }
 }
 
 
@@ -62,40 +101,32 @@ function connect($options=array())
  *                          for testing fetching encrypted data when connection column encryption is off
  * @return PDO connection object
  */
-function ae_connect( $keywords='', $options=array(), $disableCE = false )
+function ae_connect($keywords='', $options=array(), $disableCE = false)
 {
-    try
-    {
+    try {
         // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
         // which does not support switching databases
         require  'MsSetup.inc';
         $dsn = "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;";
-        if ( $keystore != "none" && !$disableCE )
-        {
+        if ($keystore != "none" && !$disableCE) {
             $dsn .= "ColumnEncryption=Enabled;";
         }
-        if ( $keystore == "ksp" && !$disableCE )
-        {   
-            require( 'AE_Ksp.inc' );
+        if ($keystore == "ksp" && !$disableCE) {
+            require('AE_Ksp.inc');
             $ksp_path = getKSPPath();
             $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
         }
-        if ( $keywords )
-        {
+        if ($keywords) {
             $dsn .= $keywords;
         }
-        $conn = new PDO( $dsn, $uid, $pwd, $options );
-        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+        $conn = new PDO($dsn, $uid, $pwd, $options);
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $conn;
-    }
-    catch( PDOException $e ) 
-    {
-        var_dump( $e );
+    } catch (PDOException $e) {
+        var_dump($e);
         exit;
-    }
-    catch(Exception $e) 
-    {
-        var_dump( $e );
+    } catch (Exception $e) {
+        var_dump($e);
         exit;
     }
 }
@@ -108,7 +139,7 @@ function getCekName()
 {
     require  'MsSetup.inc';
     $cekName = '';
-    switch ( $keystore ) {
+    switch ($keystore) {
         case "none":
             $cekName = '';
             break;
@@ -131,20 +162,18 @@ function getCekName()
 /**
  * class for encapsulating column metadata needed for creating a table
  */
-class columnMeta {
-    public $colName;
+class ColumnMeta
+{
+    public $colName;    //column name
     public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $encType;    //randomized or deterministic; default is deterministic
     public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
-        
-    function __construct( $dataType, $colName = null, $options = null, $encType = "deterministic" )
+
+    public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic")
     {
-        if ( is_null( $colName ))
-        {
-            $this->colName = get_default_colname( $dataType );
-        }
-        else
-        {
+        if (is_null($colName)) {
+            $this->colName = get_default_colname($dataType);
+        } else {
             $this->colName = $colName;
         }
         $this->dataType = $dataType;
@@ -154,282 +183,343 @@ class columnMeta {
     /**
      * @return string column definition for creating a table
      */
-    function getColDef()
+    public function getColDefOps()
     {
-        require  'MsSetup.inc';
-        $append = " ";
-        
-        // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if ( $keystore != "none" && stripos( $this->options, "identity" ) === false )
-        {
-            $cekName = getCekName();
-            if ( stripos( $this->dataType, "char" ) !== false )
-                $append .= "COLLATE Latin1_General_BIN2 ";
-            $append .= sprintf( "ENCRYPTED WITH (ENCRYPTION_TYPE = %s, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ", $this->encType );
-        }
-        $append .= $this->options;
-        $colDef = "[" . $this->colName . "] " . $this->dataType . $append;
-        return $colDef;
+        return getColDef($this->colName, $this->dataType, $this->options, $this->encType);
     }
 }
 
 
 /**
- * @return string default column name when a name is not provided in the columnMeta class
+ * @param  string  $colName : column name
+ * @param  string  $dataType : a string that includes the size of the type if necessary (e.g., decimal(10,5))
+ * @param  string  $options : a string that is null by default (e.g. NOT NULL Identity (1,1) )
+ * @param  string  $encType : randomized or deterministic; default is deterministic
+ * @return string column definition for creating a table
  */
-function get_default_colname( $dataType )
+function getColDef($colName, $dataType, $options = null, $encType = "deterministic")
 {
-    $colName = "c_" . str_replace( ",", "_", str_replace( "(", "_", $dataType ));
-    $colName = rtrim( $colName, ")" );
+    $append = " ";
+
+    // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
+    if (isColEncrypted() && stripos($options, "identity") === false) {
+        $cekName = getCekName();
+        if (stripos($dataType, "char") !== false) {
+            $append .= "COLLATE Latin1_General_BIN2 ";
+        }
+        $append .= sprintf("ENCRYPTED WITH (ENCRYPTION_TYPE = %s, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ", $encType);
+    }
+    $append .= $options;
+    $colDef = "[" . $colName . "] " . $dataType . $append;
+    return $colDef;
+}
+
+
+/**
+ * @return string default column name when a name is not provided in the ColumnMeta class
+ */
+function getDefaultColName($dataType)
+{
+    $colName = "c_" . str_replace(",", "_", str_replace("(", "_", $dataType));
+    $colName = rtrim($colName, ")");
     return $colName;
 }
 
 
 /**
  * Create a table
- * @param object $conn : PDO connection object
- * @param string $tbname : name of the table to be created
- * @param array $columnMetaArr : array of columnMeta objects, which contain metadata for one column
+ * @param  object  $conn : PDO connection object
+ * @param  string  $tbname : name of the table to be created
+ * @param  array  $columnMetaArr : array of key value pair with column name as key and datatype as value, or array of columnMeta objects, which contain metadata for one column
+ * @param  array  $inputs : an associative array column name and its value; value may be a literal value or a BindParamOp object
+ * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
+ *                          for creating table with datatypes not support for encryption
+ * @return int reporting the number of rows affected (should always be 0 for creating table)
  */
-function create_table( $conn, $tbname, $columnMetaArr )
+function createTable($conn, $tbname, $columnMetaArr, $disableCE = false)
 {
-    try
-    {
-        DropTable( $conn, $tbname );
+    try {
+        dropTable($conn, $tbname);
         $colDef = "";
-        foreach ( $columnMetaArr as $meta )
-        {
-            $colDef = $colDef . $meta->getColDef() . ", ";
+        /*
+        foreach ($columnMetaArr as $meta) {
+            $colDef = $colDef . $meta->getColDefOps() . ", ";
         }
-        $colDef = rtrim( $colDef, ", " );
-        $createSql = "CREATE TABLE $tbname ( $colDef )";
-        $conn->exec( $createSql );
-    }
-    catch ( Exception $e )
-    {
-        var_dump( $e );
+        */
+        foreach ($columnMetaArr as $key => $value) {
+            if (!is_object($value)) {
+                $colDef = $colDef . getColDef($key, $value) . ", ";
+            } elseif (get_class($value) == "ColumnMeta") {
+                $colDef = $colDef . $value->getColDefOps() . ", ";
+            }
+        }
+        $colDef = rtrim($colDef, ", ");
+        $createSql = "CREATE TABLE $tbname ($colDef)";
+        $numRows = $conn->exec($createSql);
+        return $numRows;
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
+    } catch (Exception $e) {
+        var_dump($e->errorInfo);
         exit;
-    }   
+    }
 }
 
 
 /**
  * class for encapsulating optional parameters for PDOStatement::bindParam
  */
-class bindParamOption {
-    public $index;      //1-based index of the parameter
+class BindParamOp
+{
+    public $parameter;  //parameter identifier. Parameter name or 1-based index of the parameter
+    public $variable;   //name of the PHP variable to bind
     public $pdoType;    //PDO_PARAM_ type specified for PDOStatement::bindParam
     public $length;     //length specified for PDOStatement::bindParam
     public $options;    //options specified for PDOStatement::bindParam
-        
-    function __construct( $index, $pdoType = null, $length = null, $options = null )
+
+    public function __construct($parameter, $variable, $pdoType = null, $length = null, $options = null)
     {
-        $this->index = $index;
+        $this->parameter = $parameter;
+        $this->variable = $variable;
         $this->pdoType = $pdoType;
         $this->length = $length;
         $this->options = $options;
     }
     /**
-     * @param object $stmt : PDO Statement object
-     * @param mix $var : variable to bind to the SQL statement parameter
+     * @param  object  $stmt : PDO Statement object
      */
-    function bindWithOp( $stmt, $var )
+    public function bindWithOp($stmt)
     {
-        $stmt->bindParam( $this->index, $var, constant( $this->pdoType ), $this->length, $this->options );
+        // get the constant values of pdoType, and option
+        $pdoType = null;
+        $options = null;
+        if (!is_null($this->pdoType)) {
+            $pdoType = constant($this->pdoType);
+        }
+        if (!is_null($this->options)) {
+            $options = constant($this->options);
+        }
+        $stmt->bindParam($this->parameter, $this->variable, $pdoType, $this->length, $options);
     }
 }
 
 
 /**
  * Insert a row into a table
- * @param object $conn : PDO connection object
- * @param string $tbname : name of the table for the row to be inserted
- * @param array $inputs : an associative array column name and its value
- * @param bool $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
- * $param string $api : PDO_SQLSRV API used for executing the insert query
- *                      accepted values: "exec", "query", "prepare", "prepareBindParam"
- * @param array $paramOption : an array of bindParamOptions. Should only be provided if $api is "perpareWithParamOp", if provided, has to be in the same order as $inputs
+ * @param  object  $conn : PDO connection object
+ * @param  string  $tbname : name of the table for the row to be inserted
+ * @param  array  $inputs : an associative array column name and its value; value may be a literal value or a BindParamOp object
+ * @param  string  $api : PDO_SQLSRV API used for executing the insert query
+ *                      accepted values: "exec", "query", "prepareDirect", "prepareExecuteBind", "prepareBindParam"
+ * @param  bool  $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
  * @return object PDOStatement object of the insert statement
  */
-function insert_row( $conn, $tbname, $inputs, &$r = null, $api = "query", $paramOption = array() )
+function insertRow($conn, $tbname, $inputs, $api = null, &$r = null)
 {
-    try 
-    {
-        require  'MsSetup.inc';
-        
+    try {
+        // set the default API being called depending on if column is encrypted
+        if (is_null($api)) {
+            if (!isColEncrypted()) {
+                $api = "query";
+            } else {
+                $api = "prepareBindParam";
+            }
+        }
         $stmt = null;
-        if ( $keystore == "none" && $api != "prepareBindParam" )
-        {
-            $insertSql = get_insertSql_complete( $tbname, $inputs );
-            switch ( $api ) {
+        if (!isColEncrypted() && $api != "prepareExecuteBind" && $api != "prepareBindParam") {
+            $insertSql = getInsertSqlComplete($tbname, $inputs);
+            switch ($api) {
                 case "exec":
-                    $conn->exec( $insertSql );
+                    $conn->exec($insertSql);
                     break;
                 case "query":
-                    $stmt = $conn->query( $insertSql );
+                    $stmt = $conn->query($insertSql);
                     break;
-                case "prepare":
-                    $stmt = $conn->prepare( $insertSql );
+                case "prepareDirect":
+                    $stmt = $conn->prepare($insertSql);
                     $r = $stmt->execute();
                     break;
             }
-        }
-        else
-        {
+        } else {
             // if AE is on, must bind param
-            $insertSql = get_insertSql_placeholders( $tbname, $inputs );
-            $stmt = $conn->prepare( $insertSql );
-            if ( empty( $paramOption ))
-            {
+            $insertSql = getInsertSqlPlaceholders($tbname, $inputs);
+            $stmt = $conn->prepare($insertSql);
+            if ($api == "prepareExecuteBind") {
+                $params = array_values($inputs);
+                $r = $stmt->execute($params);
+            } else {
                 $i = 1;
-                foreach( $inputs as $key => $value )
-                {
-                    $stmt->bindParam( $i, $inputs[$key] );
+                foreach ($inputs as $key => $value) {
+                    if (!is_object($value)) {
+                        $stmt->bindParam($i, $inputs[$key]);
+                    } elseif (get_class($value) == "BindParamOp") {
+                        $value->bindWithOp($stmt);
+                    }
                     $i++;
                 }
+                $r = $stmt->execute();
             }
-            else
-            {   
-                $i = 1;
-                foreach( $inputs as $key => $value )
-                {
-                    $noparam = true;
-                    foreach( $paramOption as $op )
-                    {
-                        if ( $op->index == $i )
-                        {
-                            $op->bindWithOp( $stmt, $inputs[$key] );
-                            $noparam = false;
-                            $i++;
-                            break;
-                        }
-                    }
-                    if ( $noparam ) 
-                    {
-                        $stmt->bindParam( $i, $inputs[$key] );
-                        $i++;
-                    }
-                }
-            }
-            $r = $stmt->execute();
         }
         return $stmt;
-    }
-    catch ( Exception $e )
-    {
-        var_dump( $e );
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
+    } catch (Exception $e) {
+        var_dump($e->errorInfo);
         exit;
     }
 }
 
 
 /**
- * @param string $tbname : name of the table for an insert sql
- * @param array $inputs : associative array containing a key value pair of column name and data to put into an insert sql string
+ * @param  string  $tbname : name of the table for an insert sql
+ * @param  array  $inputs : associative array containing a key value pair of column name and data to put into an insert sql string
  * @return string a complete insert sql string
  */
-function get_insertSql_complete( $tbname, $inputs )
+function getInsertSqlComplete($tbname, $inputs)
 {
     $colStr = "INSERT INTO $tbname (";
     $valStr = "VALUES (";
-    if ( empty( $inputs ))
-    {
-        echo "get_insertSql_complete: inputs for inserting a row cannot be empty.\n";
+    if (empty($inputs)) {
+        echo "getInsertSqlComplete: inputs for inserting a row cannot be empty.\n";
         return;
     }
-    foreach( $inputs as $key => $value )
-    {
+    foreach ($inputs as $key => $value) {
         $colStr .= $key . ", ";
-        if ( is_null( $value ))
-            echo "get_insertSql_complete: value provided for input $value is null.\n";
-        elseif ( is_string( $value ))
+        if (is_null($value)) {
+            $valStr .= "null, ";
+        } elseif (is_string($value)) {
             $valStr .= "'" . $value . "', ";
-        else
+        } else {
             $valStr .= $value . ", ";
+        }
     }
-    $colStr = rtrim( $colStr, ", " ) . ") ";
-    $valStr = rtrim( $valStr, ", " ) . ") ";
+    $colStr = rtrim($colStr, ", ") . ") ";
+    $valStr = rtrim($valStr, ", ") . ") ";
     $insertSql = $colStr . $valStr;
     return $insertSql;
 }
 
 
 /**
- * @param string $tbname : name of the table for an insert sql
- * @param array $input : associative array containing a key value pair of column name and data to put into an insert sql string
+ * @param  string  $tbname : name of the table for an insert sql
+ * @param  array  $input : associative array containing a key value pair of column name and data to put into an insert sql string
  * @return string an insert sql string with "?" placeholders for all values
  */
-function get_insertSql_placeholders( $tbname, $inputs )
+function getInsertSqlPlaceholders($tbname, $inputs)
 {
     $colStr = "INSERT INTO $tbname (";
     $valStr = "VALUES (";
-    if ( empty( $inputs ))
-    {
-        echo "get_insertSql_placeholders: inputs for inserting a row cannot be empty.\n";
-        return;
+    if (empty($inputs)) {
+        echo "getInsertSqlPlaceholders: inputs for inserting a row cannot be empty.\n";
+        return "";
     }
-    foreach( $inputs as $key => $value )
-    {
+    foreach ($inputs as $key => $value) {
         $colStr .= $key . ", ";
     }
-    $colStr = rtrim( $colStr, ", " ) . ") ";
-    $valStr .= get_seq_placeholders( count( $inputs )) . ") ";
+    $colStr = rtrim($colStr, ", ") . ") ";
+    $valStr .= getSeqPlaceholders(count($inputs)) . ") ";
     $insertSql = $colStr . $valStr;
     return $insertSql;
 }
 
 
 /**
- * @param string $spname : name of the stored procedure
- * @param int $num : number of parameters needed for the stored procedure
+ * @param  string  $spname : name of the stored procedure
+ * @param  int $num  : number of parameters needed for the stored procedure
  * @return string a call stored procedure sql string with "?" placeholders for all parameters
  */
-function get_callProcSql_placeholders( $spname, $num )
+function getCallProcSqlPlaceholders($spname, $num)
 {
     $callStr = "{CALL $spname (";
-    $callStr .= get_seq_placeholders( $num ) . ")} ";
+    $callStr .= getSeqPlaceholders($num) . ")} ";
     return $callStr;
 }
 
 
 /**
- * @param int $num : number of placeholders needed
+ * @param  int  $num : number of placeholders needed
  * @return string a string containing $num number of repeated "?" placeholders delimited by ", "
  */
-function get_seq_placeholders( $num )
+function getSeqPlaceholders($num)
 {
-    if ( $num < 0 )
-    {
-        echo "get_seq_placeholders: num provided for creating a sequence of placeholders cannot be less than 0.\n";
+    if ($num <= 0) {
+        echo "getSeqPlaceholders: num provided for creating a sequence of placeholders cannot be less than 0.\n";
         return;
     }
-    $placeholderStr = str_repeat( "?, ", $num );
-    $placeholderStr = rtrim( $placeholderStr, ", " );
+    $placeholderStr = str_repeat("?, ", $num);
+    $placeholderStr = rtrim($placeholderStr, ", ");
     return $placeholderStr;
 }
 
 
 /**
  * Fetch all rows and all columns given a table name, and print them
- * @param object $conn : PDO connection object
- * @param string $tbname : name of the table to fetch from
+ * @param  object  $conn : PDO connection object
+ * @param  string  $tbname : name of the table to fetch from
  */
-function fetch_all( $conn, $tbname ) {
-    try
-    {
+function fetchAll($conn, $tbname)
+{
+    try {
         $sql = "SELECT * FROM $tbname";
-        $stmt = $conn->query( $sql );
-        while ( $row = $stmt->fetch( PDO::FETCH_ASSOC ))
-        {
-            foreach ( $row as $key => $value ) 
-            {
-                print ( "$key: $value\n" );
+        $stmt = $conn->query($sql);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            foreach ($row as $key => $value) {
+                print("$key: $value\n");
             }
         }
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
+    } catch (Exception $e) {
+        var_dump($e->errorInfo);
+        exit;
     }
-    catch ( Exception $e )
-    {
-        var_dump( $e );
+}
+
+
+/**
+ * Use PDOStatement::fetchAll to fetch all rows given a table name
+ * @param  object  $conn : PDO connection object
+ * @param  string  $tbname : name of the table to fetch from
+ * @param  string  $fetchStyle : fetch_style argument passed to PDOStatement::fetchAll
+ * @return array rows in a result set
+ */
+function selectAll($conn, $tbname, $fetchStyle = null)
+{
+    try {
+        $sql = "SELECT * FROM $tbname";
+        $stmt = $conn->query($sql);
+        if ($fetchStyle) {
+            $fetchStyle = constant($fetchStyle);
+        }
+        $data = $stmt->fetchAll($fetchStyle);
+        return $data;
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
+    } catch (Exception $e) {
+        var_dump($e->errorInfo);
+        exit;
+    }
+}
+
+
+/**
+ * Use PDOStatement::fetch to fetch a row given a table name
+ * @param  object  $conn : PDO connection object
+ * @param  string  $tbname : name of the table to fetch from
+ * @param  string  $fetchStyle : fetch_style argument passed to PDOStatement::fetch
+ * @return array a row from the result set
+ */
+function selectRow($conn, $tbname, $fetchStyle = null)
+{
+    try {
+        $sql = "SELECT * FROM $tbname";
+        $stmt = $conn->query($sql);
+        $row = $stmt->fetch(constant($fetchStyle));
+        return $row;
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
+    } catch (Exception $e) {
+        var_dump($e->errorInfo);
         exit;
     }
 }
@@ -438,28 +528,28 @@ function fetch_all( $conn, $tbname ) {
 /**
  * @return bool false if $keystore specified in MsSetup.inc is none, otherwise return true
  */
-function is_col_enc()
+function isColEncrypted()
 {
     require  'MsSetup.inc';
-    if ( $keystore == "none" )
+    if ($keystore == "none" || !$dataEncrypted) {
         return false;
-    else
+    } else {
         return true;
+    }
 }
 
 
 // Create and insert
-function create_and_insert_table1( $conn )
+function create_and_insert_table1($conn)
 {
     global $string_col, $date_col, $large_string_col, $xml_col, $binary_col, $int_col, $decimal_col, $guid_col, $null_col, $comma, $closing_brace, $table1;
-   
-    try
-    {
-      $create_query = 
-      
+
+    try {
+        $create_query =
+
         "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $table1 . "') AND type in (N'U'))
-        DROP TABLE " . $table1 . 
-        
+        DROP TABLE " . $table1 .
+
         " CREATE TABLE [dbo].[" . $table1 . "](
           [IntCol] [int] NULL,
           [CharCol] [char](10) NULL,
@@ -471,44 +561,40 @@ function create_and_insert_table1( $conn )
         [XmlCol] [xml] NULL
         ) ON [PRIMARY]
         ";
-        
-        $conn->query( $create_query );
-        
-        for ($i = 0 ; $i <= 1; ++ $i)
-        {
-          $insert_query = 
+
+        $conn->query($create_query);
+
+        for ($i = 0 ; $i <= 1; ++ $i) {
+            $insert_query =
                     "INSERT INTO PDO_Types_1 VALUES (".
-                    $int_col[$i] . $comma . 
+                    $int_col[$i] . $comma .
                     $string_col[$i] . $comma .
-                    $string_col[$i] . $comma . 
+                    $string_col[$i] . $comma .
                     "Convert(datetime, ". $date_col[$i] . ")" . $comma .
-                    $string_col[$i] . $comma . 
-                    $string_col[$i] . $comma . 
+                    $string_col[$i] . $comma .
+                    $string_col[$i] . $comma .
                     $decimal_col[$i] . $comma .
                     $xml_col[$i] .
                     ")";
-        
-          $conn->query ( $insert_query );
+
+            $conn->query($insert_query);
         }
-    }
-    catch(Exception $e)
-    {
-       var_dump( $e);
-       exit;
+    } catch (Exception $e) {
+        var_dump($e);
+        exit;
     }
 }
 
-function create_and_insert_table2( $conn )
+function create_and_insert_table2($conn)
 {
-  try
-  {
-     //Timestamp is not present.
-     //VARIANT is not supported.
-     global $string_col, $date_col, $large_string_col, $xml_col, $binary_col, $int_col, $decimal_col, $guid_col, $null_col, $comma, $closing_brace, $table1, $table2;
-   
-     $create_query = 
-        "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'".$table2."') AND type in (N'U'))  DROP TABLE " . $table2 . 
-        
+    try {
+        //Timestamp is not present.
+        //VARIANT is not supported.
+        global $string_col, $date_col, $large_string_col, $xml_col, $binary_col, $int_col, $decimal_col, $guid_col, $null_col, $comma, $closing_brace, $table1, $table2;
+
+        $create_query =
+        "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'".$table2."') AND type in (N'U'))  DROP TABLE " . $table2 .
+
         " CREATE TABLE " .$table2 . " (
             [BigIntCol] [bigint] NULL,
             [BinaryCol] [binary](5) NULL,
@@ -542,58 +628,54 @@ function create_and_insert_table2( $conn )
             [VarcharMaxCol] [varchar](max) NULL,
             [XmlCol] [xml] NULL
         ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-        
+
         ";
-          
-        $stmt = $conn->query( $create_query );
-        
-        for ($i =0; $i<= 0 ; ++ $i)
-        {
-          $insert_query = 
-                    
+
+        $stmt = $conn->query($create_query);
+
+        for ($i =0; $i<= 0 ; ++ $i) {
+            $insert_query =
+
                   " INSERT INTO " .$table2 . " VALUES (".
-                    $int_col[$i] . $comma . 
-                    $binary_col[$i] . $comma .
-                    "0" . $comma . 
-                    $string_col[$i] . $comma . 
-                    "Convert(date, ". $date_col[$i] . $closing_brace . 
-                    "Convert(datetime, ". $date_col[$i] . $closing_brace .
-                    "Convert(datetime2(7),". $date_col[$i] . $closing_brace . 
-                    "Convert(datetimeoffset(7)," . $date_col[$i] . $closing_brace . 
-                    $decimal_col[$i] . $comma . 
-                    $decimal_col[$i] .$comma . 
-                    $binary_col[$i] . $comma . 
                     $int_col[$i] . $comma .
-                    $decimal_col[$i] . $comma . 
-                    $string_col[$i]. $comma . 
-                    $large_string_col[$i]. $comma. 
-                    $int_col[$i]. $comma . 
-                    $string_col[$i]. $comma . 
+                    $binary_col[$i] . $comma .
+                    "0" . $comma .
+                    $string_col[$i] . $comma .
+                    "Convert(date, ". $date_col[$i] . $closing_brace .
+                    "Convert(datetime, ". $date_col[$i] . $closing_brace .
+                    "Convert(datetime2(7),". $date_col[$i] . $closing_brace .
+                    "Convert(datetimeoffset(7)," . $date_col[$i] . $closing_brace .
+                    $decimal_col[$i] . $comma .
+                    $decimal_col[$i] .$comma .
+                    $binary_col[$i] . $comma .
+                    $int_col[$i] . $comma .
+                    $decimal_col[$i] . $comma .
+                    $string_col[$i]. $comma .
+                    $large_string_col[$i]. $comma.
+                    $int_col[$i]. $comma .
+                    $string_col[$i]. $comma .
                     $large_string_col[$i]. $comma .
-                    $decimal_col[$i]. $comma . 
-                    "Convert(smalldatetime, ". $date_col[$i]. $closing_brace . 
-                    $int_col[$i]. $comma . 
-                    $decimal_col[$i]. $comma . 
-                    $large_string_col[$i]. $comma . 
-                    "Convert(time(7), ". $date_col[$i] . $closing_brace . 
-                    $int_col[$i] . $comma . 
-                    $guid_col[$i] . $comma . 
-                    $binary_col[$i] . $comma . 
-                    $binary_col[$i] . $comma . 
-                    $string_col[$i] . $comma . 
+                    $decimal_col[$i]. $comma .
+                    "Convert(smalldatetime, ". $date_col[$i]. $closing_brace .
+                    $int_col[$i]. $comma .
+                    $decimal_col[$i]. $comma .
+                    $large_string_col[$i]. $comma .
+                    "Convert(time(7), ". $date_col[$i] . $closing_brace .
+                    $int_col[$i] . $comma .
+                    $guid_col[$i] . $comma .
+                    $binary_col[$i] . $comma .
+                    $binary_col[$i] . $comma .
+                    $string_col[$i] . $comma .
                     $large_string_col[$i] . $comma .
-                    $xml_col[$i] . 
+                    $xml_col[$i] .
                     ")";
-         
-          $stmt = $conn->query ($insert_query );   
+
+            $stmt = $conn->query($insert_query);
         }
-        
-  }
-  catch(Exception $e)
-  {
-     var_dump( $e);
-     exit;
-  }
+    } catch (Exception $e) {
+        var_dump($e);
+        exit;
+    }
 }
 
 function teardown()
@@ -602,11 +684,12 @@ function teardown()
 }
 
 
-function my_print_r( $to_print )
+function my_print_r($to_print)
 {
-   global $verbose;
-   if($verbose)
-      print_r($to_print);
+    global $verbose;
+    if ($verbose) {
+        print_r($to_print);
+    }
 }
 
 
@@ -643,8 +726,7 @@ function IsDaasMode()
 
 function FatalError($errorMsg)
 {
-    if (!IsPdoMode())
-    {
+    if (!IsPdoMode()) {
         handle_errors();
     }
     die("$errorMsg\n");
@@ -652,36 +734,29 @@ function FatalError($errorMsg)
 
 function Trace($msg)
 {
-    if (TraceMode())
-    {
+    if (TraceMode()) {
         echo $msg;
     }
 }
 
 function TraceEx($msg, $exitMode)
 {
-    if ($exitMode)
-    {
+    if ($exitMode) {
         FatalError($msg);
-    }
-    else
-    {
+    } else {
         Trace("$msg\n");
     }
 }
 
 function TraceData($sqlType, $data)
 {
-    if (TraceMode())
-    {
+    if (TraceMode()) {
         $msg = strtoupper(" $sqlType:");
         echo "$msg\t";
-        if (strlen($msg) <= 7)
-        {
+        if (strlen($msg) <= 7) {
             echo "\t";
         }
-        if (strlen($msg) <= 15)
-        {
+        if (strlen($msg) <= 15) {
             echo "\t";
         }
         echo "$data\n"
@@ -693,20 +768,17 @@ function StartTest($testName)
 {
     require  'MsSetup.inc';
 
-    if (TraceMode())
-    {
+    if (TraceMode()) {
         echo "$PhpDriver: starting \"$testName\" test...\n\n";
     }
 
-    if (!extension_loaded(IsPdoMode() ? "pdo" : "sqlsrv"))
-    {
+    if (!extension_loaded(IsPdoMode() ? "pdo" : "sqlsrv")) {
         die("$PhpDriver cannot be loaded.");
     }
 
     // Set timezone
     $tz = ini_get('date.timezone');
-    if (strcmp($tz, "") == 0)
-    {
+    if (strcmp($tz, "") == 0) {
         date_default_timezone_set('America/Los_Angeles');
         $tz = date_default_timezone_get();
     }
@@ -717,8 +789,7 @@ function EndTest($testName)
 {
     require  'MsSetup.inc';
 
-    if (TraceMode())
-    {
+    if (TraceMode()) {
         echo "\n$PhpDriver: "
 ;
     }
@@ -731,90 +802,70 @@ function Setup()
 {
     set_time_limit(0);
 
-    if (IsPdoMode())
-    {   // PDO setup
-    }
-    else
-    {   // PHP setup
-        sqlsrv_configure('LogSubsystems', SQLSRV_LOG_SYSTEM_ALL);   
-        sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);   
+    if (IsPdoMode()) {   // PDO setup
+    } else {   // PHP setup
+        sqlsrv_configure('LogSubsystems', SQLSRV_LOG_SYSTEM_ALL);
+        sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
         sqlsrv_configure('WarningsReturnAsErrors', 1);
     }
 }
 
 function Configure($param, $expected)
 {
-    if (!IsPdoMode())
-    {
+    if (!IsPdoMode()) {
         sqlsrv_configure($param, $expected);
         $actual = sqlsrv_get_config($param);
 
-        if ($actual == $expected)
-        {
+        if ($actual == $expected) {
             Trace("Set configuration parameter $param = $actual.\n");
-        }
-        else
-        {
-            die("Failed to set configuration parameter $param = $expected.");   
+        } else {
+            die("Failed to set configuration parameter $param = $expected.");
         }
     }
 }
 
-function GetTempTableName($table = '', $temporary = true)
+function getTableName($table = '')
 {
-    // A temporary table name with the '#' prefix will be automatically 
-    // dropped once the connection is closed. Otherwise, the caller 
-    // should take care of dropping the temp table afterwards.
-    
     $timestamp = round(microtime(true)*1000);
-    
-    $prefix = '';
-    if ($temporary)
-        $prefix = '#';
-        
-    if (strlen($table) == 0)
+
+    if (strlen($table) == 0) {
         $table = 'php_test_table';
-        
-    return $prefix . $table . '_' . $timestamp;
+    }
+
+    return $table . '_' . $timestamp;
 }
 
-function GetTempProcName($proc = '', $temporary = true)
+function getProcName($proc = '')
 {
-    // A temporary stored procedure name with the '#' prefix will be 
-    // automatically dropped once the connection is closed. Otherwise, 
-    // the caller should take care of dropping the temp procedure afterwards.    
-    
+    // A temporary stored procedure name with the '#' prefix will be
+    // automatically dropped once the connection is closed. Otherwise,
+    // the caller should take care of dropping the temp procedure afterwards.
+
     $timestamp = round(microtime(true)*1000);
 
-    $prefix = '';
-    if ($temporary)
-        $prefix = '#';
-        
-    if (strlen($proc) == 0)
-        $proc = 'php_test_proc'; 
+    if (strlen($proc) == 0) {
+        $proc = 'php_test_proc';
+    }
 
-    return $prefix . $proc . '_' . $timestamp;
+    return $proc . '_' . $timestamp;
 }
 
 function PDOConnect($className, $serverName, $user, $pwd, $exitMode)
 {
     require  'MsSetup.inc';
     $conn = null;
-    
-    try
-    {
-        // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
+
+    try {
+        // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
         // which does not support switching databases
         $conn = new $className("sqlsrv:Server=$serverName;Database=$databaseName", $user, $pwd, $connectionOptions);
         $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
-    }
-    catch (PDOException $e)
-    {
+    } catch (PDOException $e) {
         $conn = null;
         TraceEx("\nFailed to connect to $serverName: ".$e->getMessage(), $exitMode);
     }
 
-        return ($conn);
+    return ($conn);
 }
 
 
@@ -822,23 +873,16 @@ function ExecuteQuery($conn, $tsql)
 {
     $stmt = null;
 
-    if (IsPdoMode())
-    {   // PDO
-        try
-        {
+    if (IsPdoMode()) {   // PDO
+        try {
             $stmt = $conn->query($tsql);
-        }
-        catch (PDOException $e)
-        {
+        } catch (PDOException $e) {
             $stmt = null;
             FatalError("Query execution failed for $tsql: ".$e->getMessage());
         }
-    }
-    else
-    {   // PHP
+    } else {   // PHP
         $stmt = sqlsrv_query($conn, $tsql);
-        if ($stmt === false)
-        {
+        if ($stmt === false) {
             FatalError("Query execution failed for $tsql");
         }
     }
@@ -850,23 +894,16 @@ function PrepareQuery($conn, $tsql)
 {
     $stmt = null;
 
-    if (IsPdoMode())
-    {   // PDO
-        try
-        {
+    if (IsPdoMode()) {   // PDO
+        try {
             $stmt = $conn->prepare($tsql);
-        }
-        catch (PDOException $e)
-        {
+        } catch (PDOException $e) {
             $stmt = null;
             FatalError("Query preparation failed for $tsql: ".$e->getMessage());
         }
-    }
-    else
-    {   // PHP
+    } else {   // PHP
         $stmt = sqlsrv_prepare($conn, $tsql);
-        if ($stmt === false)
-        {
+        if ($stmt === false) {
             FatalError("Query preparation failed for $tsql");
         }
     }
@@ -879,33 +916,21 @@ function ExecuteQueryEx($conn, $tsql, $modeDirect)
 {
     $stmt = null;
 
-    if ($modeDirect)
-    {   // direct execution
-        if (IsPdoMode())
-        {   // PDO
-            try
-            {
+    if ($modeDirect) {   // direct execution
+        if (IsPdoMode()) {   // PDO
+            try {
                 $stmt = $conn->query($tsql);
-            }
-            catch (PDOException $e)
-            {
+            } catch (PDOException $e) {
                 $stmt = null;
             }
-        }
-        else
-        {   // PHP
+        } else {   // PHP
             $stmt = sqlsrv_query($conn, $tsql);
         }
-    }
-    else
-    {
+    } else {
         $stmt = PrepareQuery($conn, $tsql);
-        if (IsPdoMode())
-        {
+        if (IsPdoMode()) {
             $stmt->execute();
-        }
-        else
-        {
+        } else {
             sqlsrv_execute($stmt);
         }
     }
@@ -916,8 +941,7 @@ function ExecuteQueryEx($conn, $tsql, $modeDirect)
 
 function GetSqlType($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 1:     return ("int");
         case 2:     return ("tinyint");
         case 3:     return ("smallint");
@@ -953,8 +977,7 @@ function GetSqlType($k)
 
 function GetDriverType($k, $dataSize)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 1:     return (SQLSRV_SQLTYPE_INT);
         case 2:     return (SQLSRV_SQLTYPE_TINYINT);
         case 3:     return (SQLSRV_SQLTYPE_SMALLINT);
@@ -990,14 +1013,13 @@ function GetDriverType($k, $dataSize)
 
 function IsStreamable($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 12:    return (true);  // nchar(512)
-        case 13:    return (true);  // varchar(512) 
-        case 14:    return (true);  // varchar(max) 
-        case 15:    return (true);  // nchar(512) 
-        case 16:    return (true);  // nvarchar(512) 
-        case 17:    return (true);  // nvarchar(max) 
+        case 13:    return (true);  // varchar(512)
+        case 14:    return (true);  // varchar(max)
+        case 15:    return (true);  // nchar(512)
+        case 16:    return (true);  // nvarchar(512)
+        case 17:    return (true);  // nvarchar(max)
         case 18:    return (true);  // text
         case 19:    return (true);  // ntext
         case 20:    return (true);  // binary
@@ -1012,8 +1034,7 @@ function IsStreamable($k)
 
 function IsNumeric($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 1:     return (true);  // int
         case 2:     return (true);  // tinyint
         case 3:     return (true);  // smallint
@@ -1032,14 +1053,13 @@ function IsNumeric($k)
 
 function IsChar($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 12:    return (true);  // nchar(512)
-        case 13:    return (true);  // varchar(512) 
-        case 14:    return (true);  // varchar(max) 
-        case 15:    return (true);  // nchar(512) 
-        case 16:    return (true);  // nvarchar(512) 
-        case 17:    return (true);  // nvarchar(max) 
+        case 13:    return (true);  // varchar(512)
+        case 14:    return (true);  // varchar(max)
+        case 15:    return (true);  // nchar(512)
+        case 16:    return (true);  // nvarchar(512)
+        case 17:    return (true);  // nvarchar(max)
         case 18:    return (true);  // text
         case 19:    return (true);  // ntext
         case 28:    return (true);  // xml
@@ -1050,8 +1070,7 @@ function IsChar($k)
 
 function IsBinary($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 20:    return (true);  // binary
         case 21:    return (true);  // varbinary(512)
         case 22:    return (true);  // varbinary(max)
@@ -1063,8 +1082,7 @@ function IsBinary($k)
 
 function IsDateTime($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 25:    return (true);  // datetime
         case 26:    return (true);  // smalldatetime
         case 27:    return (true);  // timestamp
@@ -1075,11 +1093,10 @@ function IsDateTime($k)
 
 function IsUnicode($k)
 {
-    switch ($k)
-    {
-        case 15:    return (true);  // nchar(512) 
-        case 16:    return (true);  // nvarchar(512) 
-        case 17:    return (true);  // nvarchar(max) 
+    switch ($k) {
+        case 15:    return (true);  // nchar(512)
+        case 16:    return (true);  // nvarchar(512)
+        case 17:    return (true);  // nvarchar(max)
         case 19:    return (true);  // ntext
         default:    break;
     }
@@ -1088,8 +1105,7 @@ function IsUnicode($k)
 
 function IsUpdatable($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 27:    return (false); // timestamp
         default:    break;
     }
@@ -1098,14 +1114,13 @@ function IsUpdatable($k)
 
 function IsLiteral($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 12:    return (true);  // nchar(512)
-        case 13:    return (true);  // varchar(512) 
-        case 14:    return (true);  // varchar(max) 
-        case 15:    return (true);  // nchar(512) 
-        case 16:    return (true);  // nvarchar(512) 
-        case 17:    return (true);  // nvarchar(max) 
+        case 13:    return (true);  // varchar(512)
+        case 14:    return (true);  // varchar(max)
+        case 15:    return (true);  // nchar(512)
+        case 16:    return (true);  // nvarchar(512)
+        case 17:    return (true);  // nvarchar(max)
         case 18:    return (true);  // text
         case 19:    return (true);  // ntext
         case 24:    return (true);  // uniqueidentifier
@@ -1119,24 +1134,19 @@ function IsLiteral($k)
 
 function GetMetadata($k, $info)
 {
-    if (strcasecmp($info, 'Name') == 0)
-    {
+    if (strcasecmp($info, 'Name') == 0) {
         return (getColName($k));
     }
-    if (strcasecmp($info, 'Size') == 0)
-    {
+    if (strcasecmp($info, 'Size') == 0) {
         return (getColSize($k));
     }
-    if (strcasecmp($info, 'Precision') == 0)
-    {
+    if (strcasecmp($info, 'Precision') == 0) {
         return (getColPrecision($k));
     }
-    if (strcasecmp($info, 'Scale') == 0)
-    {
+    if (strcasecmp($info, 'Scale') == 0) {
         return (getColScale($k));
     }
-    if (strcasecmp($info, 'Nullable') == 0)
-    {
+    if (strcasecmp($info, 'Nullable') == 0) {
         return (getColNullable($k));
     }
     return ("");
@@ -1144,8 +1154,7 @@ function GetMetadata($k, $info)
 
 function GetColName($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 1:     return ("c1_int");
         case 2:     return ("c2_tinyint");
         case 3:     return ("c3_smallint");
@@ -1182,8 +1191,7 @@ function GetColName($k)
 
 function GetColSize($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 12:    return ("512");
         case 13:    return ("512");
         case 14:    return ("0");
@@ -1208,8 +1216,7 @@ function GetColSize($k)
 
 function GetColPrecision($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 1:     return ("10");
         case 2:     return ("3");
         case 3:     return ("5");
@@ -1230,8 +1237,7 @@ function GetColPrecision($k)
 
 function GetColScale($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 8:     return ("4");
         case 9:     return ("4");
         case 10:    return ("4");
@@ -1250,8 +1256,7 @@ function GetColNullable($k)
 
 function GetSampleData($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 1: // int
             return ("123456789");
 
@@ -1260,7 +1265,7 @@ function GetSampleData($k)
 
         case 3: // smallint
             return ("5678");
-    
+
         case 4: // bigint
             return ("123456789987654321");
 
@@ -1341,19 +1346,14 @@ function CreateDB($conn, $dbName)
     $tsql = "CREATE DATABASE [$dbName]";
     DropDB($conn, $dbName);
 
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $outcome = $conn->exec($tsql);
-        if ($outcome === false)
-        {
+        if ($outcome === false) {
             FatalError("Failed to create test database: $dbName");
         }
-    }
-    else
-    {
+    } else {
         $stmt = sqlsrv_query($conn, $tsql);
-        if ($stmt === false)
-        {
+        if ($stmt === false) {
             FatalError("Failed to create test database: $dbName");
         }
         sqlsrv_free_stmt($stmt);
@@ -1364,30 +1364,23 @@ function CreateDB($conn, $dbName)
 function DropDB($conn, $dbName)
 {
     $tsql = "DROP DATABASE [$dbName]";
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $mode = $conn->getAttribute(PDO::ATTR_ERRMODE);
 
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
         $outcome = $conn->exec($tsql);
         $conn->setAttribute(PDO::ATTR_ERRMODE, $mode);
-
-    }
-    else
-    {
+    } else {
         $stmt = sqlsrv_query($conn, $tsql);
-        if ($stmt === false)
-        {
-        }
-        else
-        {
+        if ($stmt === false) {
+        } else {
             sqlsrv_free_stmt($stmt);
         }
     }
 }
 
-
+/*
 function CreateTable($conn, $tableName)
 {
     $dataType = "[c1_int] int, [c2_tinyint] tinyint, [c3_smallint] smallint, [c4_bigint] bigint, [c5_bit] bit, [c6_float] float, [c7_real] real, [c8_decimal] decimal(28,4), [c9_numeric] numeric(32,4), [c10_money] money, [c11_smallmoney] smallmoney, [c12_char] char(512), [c13_varchar] varchar(512), [c14_varchar_max] varchar(max), [c15_nchar] nchar(512), [c16_nvarchar] nvarchar(512), [c17_nvarchar_max] nvarchar(max), [c18_text] text, [c19_ntext] ntext, [c20_binary] binary(512), [c21_varbinary] varbinary(512), [c22_varbinary_max] varbinary(max), [c23_image] image, [c24_uniqueidentifier] uniqueidentifier, [c25_datetime] datetime, [c26_smalldatetime] smalldatetime, [c27_timestamp] timestamp, [c28_xml] xml";
@@ -1398,26 +1391,21 @@ function CreateTable($conn, $tableName)
         CreateTableIndex($conn, $tableName, $colIndex);
     }
 }
-
+*/
 function CreateTableEx($conn, $tableName, $dataType)
 {
     Trace("Creating table $tableName ...");
     $tsql = "CREATE TABLE [$tableName] ($dataType)";
-    DropTable($conn,$tableName);
+    DropTable($conn, $tableName);
 
-    if (IsPdoMode())
-    {   
+    if (IsPdoMode()) {
         $outcome = $conn->exec($tsql);
-        if ($outcome === false)
-        {
+        if ($outcome === false) {
             FatalError("Failed to create test table: $tsql");
         }
-    }
-    else
-    {
+    } else {
         $stmt = sqlsrv_query($conn, $tsql);
-        if ($stmt === false)
-        {
+        if ($stmt === false) {
             FatalError("Failed to create test table: $tsql");
         }
         sqlsrv_free_stmt($stmt);
@@ -1437,19 +1425,14 @@ function CreateTableIndexEx($conn, $tableName, $tableIndex, $colIndex)
 {
     Trace("Creating table index for $tableName ...");
     $sqlIndex = "CREATE CLUSTERED INDEX [$tableIndex] ON [$tableName]($colIndex)";
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $outcome = $conn->exec($sqlIndex);
-        if ($outcome === false)
-        {
+        if ($outcome === false) {
             FatalError("Failed to create clustered index for test table: $sqlIndex");
         }
-    }
-    else
-    {
+    } else {
         $stmt = sqlsrv_query($conn, $sqlIndex);
-        if ($stmt === false)
-        {
+        if ($stmt === false) {
             FatalError("Failed to create clustered index for test table: $sqlIndex");
         }
         sqlsrv_free_stmt($stmt);
@@ -1467,19 +1450,14 @@ function CreateUniqueIndexEx($conn, $tableName, $tableIndex, $colIndex)
 {
     Trace("Creating unique table index for $tableName ...");
     $sqlIndex = "CREATE UNIQUE INDEX [$tableIndex] ON [$tableName]($colIndex)";
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $outcome = $conn->exec($sqlIndex);
-        if ($outcome === false)
-        {
+        if ($outcome === false) {
             FatalError("Failed to create unique index for test table: $sqlIndex");
         }
-    }
-    else
-    {
+    } else {
         $stmt = sqlsrv_query($conn, $sqlIndex);
-        if ($stmt === false)
-        {
+        if ($stmt === false) {
             FatalError("Failed to create unique index for test table: $sqlIndex");
         }
         sqlsrv_free_stmt($stmt);
@@ -1487,27 +1465,20 @@ function CreateUniqueIndexEx($conn, $tableName, $tableIndex, $colIndex)
     Trace(" completed successfully.\n");
 }
 
-function DropTable($conn, $tableName)
+function dropTable($conn, $tableName)
 {
     $tsql = "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName";
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $mode = $conn->getAttribute(PDO::ATTR_ERRMODE);
 
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
         $outcome = $conn->exec($tsql);
         $conn->setAttribute(PDO::ATTR_ERRMODE, $mode);
-
-    }
-    else
-    {
+    } else {
         $stmt = sqlsrv_query($conn, $tsql);
-        if ($stmt === false)
-        {
-        }
-        else
-        {
+        if ($stmt === false) {
+        } else {
             sqlsrv_free_stmt($stmt);
         }
     }
@@ -1521,12 +1492,9 @@ function SelectFromTable($conn, $tableName)
 
 function SelectFromTableEx($conn, $tableName, $cond)
 {
-    if (($cond != null) && (strlen($cond) > 0))
-    {
+    if (($cond != null) && (strlen($cond) > 0)) {
         return (SelectQuery($conn, "SELECT * FROM [$tableName] WHERE $cond"));
-    }
-    else
-    {
+    } else {
         return (SelectQuery($conn, "SELECT * FROM [$tableName]"));
     }
 }
@@ -1539,30 +1507,22 @@ function SelectQuery($conn, $query)
 function SelectQueryEx($conn, $query, $options)
 {
     $numFields = 0;
-    if (IsPDOMode())
-    {
+    if (IsPDOMode()) {
         $stmt = ExecuteQuery($conn, $query);
         $numFields = $stmt->columnCount();
-    }
-    else
-    {
-        if ($options != null)
-        {
+    } else {
+        if ($options != null) {
             $stmt = sqlsrv_query($conn, $query, null, $options);
-        }
-        else
-        {
+        } else {
             $stmt = sqlsrv_query($conn, $query);
         }
-        if ($stmt === false)
-        {
+        if ($stmt === false) {
             FatalError("Failed to query test table");
-        }   
+        }
 
         $numFields = sqlsrv_num_fields($stmt);
     }
-    if ($numFields <= 0)
-    {
+    if ($numFields <= 0) {
         die("Unexpected number of fields: .$numFields");
     }
     return ($stmt);
@@ -1571,17 +1531,12 @@ function SelectQueryEx($conn, $query, $options)
 function RowCount($stmt)
 {
     $rowCount = 0;
-    if (IsPdoMode())
-    {
-        while ($stmt->fetchColumn())
-        {
+    if (IsPdoMode()) {
+        while ($stmt->fetchColumn()) {
             $rowCount++;
         }
-    }
-    else
-    {
-        while (sqlsrv_fetch($stmt))
-        {
+    } else {
+        while (sqlsrv_fetch($stmt)) {
             $rowCount++;
         }
     }
@@ -1593,12 +1548,9 @@ function NumRows($conn, $tableName)
 {
     $stmt = SelectFromTable($conn, $tableName);
     $rowCount = RowCount($stmt);
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $stmt = null;
-    }
-    else
-    {
+    } else {
         sqlsrv_free_stmt($stmt);
     }
 
@@ -1616,17 +1568,14 @@ function InsertRows($conn, $tableName, $rowCount)
 {
     Trace("Inserting $rowCount rows into $tableName ...");
     $count = 0;
-    for($i = 0; $i < $rowCount; $i++)
-    {
-        if (InsertRow($conn, $tableName))
-        {
+    for ($i = 0; $i < $rowCount; $i++) {
+        if (InsertRow($conn, $tableName)) {
             $count++;
         }
     }
     Trace(" completed successfully.\n");
-    if ($count != $rowCount)
-    {
-        die("$count rows inserted instead of $rowCount\n"); 
+    if ($count != $rowCount) {
+        die("$count rows inserted instead of $rowCount\n");
     }
     return ($count);
 }
@@ -1634,17 +1583,15 @@ function InsertRows($conn, $tableName, $rowCount)
 function InsertRowsByRange($conn, $tableName, $minIndex, $maxIndex)
 {
     $rowCount = $maxIndex - $minIndex + 1;
-    if ($rowCount > 0)
-    {
+    if ($rowCount > 0) {
         Trace("Inserting $rowCount rows into $tableName ...");
-        for($i = $minIndex; $i <= $maxIndex; $i++)
-        {
+        for ($i = $minIndex; $i <= $maxIndex; $i++) {
             InsertRowByIndex($conn, $tableName, $i);
         }
         Trace(" completed successfully.\n");
-    } 
+    }
 }
-
+/*
 function InsertRow($conn, $tableName)
 {
     $tsql = InsertQuery($tableName);
@@ -1660,18 +1607,15 @@ function InsertRow($conn, $tableName)
     }
     return (InsertCheck($stmt));
 }
-
+*/
 function InsertRowEx($conn, $tableName, $dataCols, $dataValues, $dataOptions)
 {
     $tsql = "INSERT INTO [$tableName] ($dataCols) VALUES ($dataValues)";
     $stmt = null;
 
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $stmt = $conn->exec($tsql);
-    }
-    else
-    {
+    } else {
         $stmt = sqlsrv_query($conn, $tsql, $dataOptions);
     }
     return (InsertCheck($stmt));
@@ -1682,12 +1626,9 @@ function InsertRowByIndex($conn, $tableName, $index)
     $tsql = InsertQueryEx($tableName, $index);
     $stmt = null;
 
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $stmt = $conn->exec($tsql);
-    }
-    else
-    {
+    } else {
         $stmt = sqlsrv_query($conn, $tsql);
     }
     return (InsertCheck($stmt));
@@ -1698,23 +1639,15 @@ function InsertStream($conn, $tableName, $dataCols, $dataValues, $dataOptions, $
     $tsql = "INSERT INTO [$tableName] ($dataCols) VALUES ($dataValues)";
     $stmt = null;
 
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $stmt = $conn->exec($tsql);
-    }
-    else
-    {
-        if ($atExec)
-        {
+    } else {
+        if ($atExec) {
             $stmt = sqlsrv_query($conn, $tsql, $dataOptions, array('SendStreamParamsAtExec' => 1));
-        }
-        else
-        {
+        } else {
             $stmt = sqlsrv_query($conn, $tsql, $dataOptions);
-            if ($stmt)
-            {
-                while (sqlsrv_send_stream_data($stmt))
-                {
+            if ($stmt) {
+                while (sqlsrv_send_stream_data($stmt)) {
                 }
             }
         }
@@ -1728,21 +1661,16 @@ function InsertCheck($stmt)
 {
     $numRows = 0;
 
-    if ($stmt === false)
-    {
+    if ($stmt === false) {
         FatalError("Failed to insert row into test table");
     }
-    if (IsPdoMode())
-    {
+    if (IsPdoMode()) {
         $numRows = $stmt;
-    }
-    else
-    {
+    } else {
         $numRows = sqlsrv_rows_affected($stmt);
         sqlsrv_free_stmt($stmt);
     }
-    if ($numRows != 1)
-    {
+    if ($numRows != 1) {
         die("Unexpected row count at insert: ".$numRows);
     }
     return (true);
@@ -1753,42 +1681,32 @@ function GetInsertData($rowIndex, $colIndex, $skip)
     $query = InsertQueryEx("TestTable", $rowIndex);
     $data = strstr($query, "((");
     $pos = 1;
-    if ($data === false)
-    {
+    if ($data === false) {
         die("Failed to retrieve data on row $rowIndex");
     }
     $data = substr($data, 2);
 
-    while ($pos < ($colIndex - $skip))
-    {
+    while ($pos < ($colIndex - $skip)) {
         $data = strstr($data, ", (");
         $pos++;
-        if ($data === false)
-        {
+        if ($data === false) {
             die("Failed to retrieve data on row $rowIndex, column $pos");
         }
         $data = substr($data, 3);
     }
     $pos = strpos($data, ")");
-    if ($pos === false)
-    {
+    if ($pos === false) {
         die("Failed to isolate data on row $rowIndex, column $pos");
     }
     $data = substr($data, 0, $pos);
-    if (strcasecmp($data, "null") == 0)
-    {
+    if (strcasecmp($data, "null") == 0) {
         $data = "";
     }
-    if (IsUnicode($colIndex))
-    {   // N'data'
+    if (IsUnicode($colIndex)) {   // N'data'
         $data = substr($data, 2, strlen($data) - 3);
-    }
-    else if (IsLiteral($colIndex))
-    {   // 'data'
+    } elseif (IsLiteral($colIndex)) {   // 'data'
         $data = substr($data, 1, strlen($data) - 2);
-    }
-    else if (IsBinary($colIndex))
-    {   // 0xdata
+    } elseif (IsBinary($colIndex)) {   // 0xdata
         $data = substr($data, 2);
     }
     return (trim($data));
@@ -1796,31 +1714,25 @@ function GetInsertData($rowIndex, $colIndex, $skip)
 
 function CreateProc($conn, $procName, $procArgs, $procCode)
 {
-    DropProc($conn,$procName);
+    DropProc($conn, $procName);
 
-    if (!IsPdoMode())
-    {
+    if (!IsPdoMode()) {
         $stmt = sqlsrv_query($conn, "CREATE PROC [$procName] ($procArgs) AS BEGIN $procCode END");
-        if ($stmt === false)
+        if ($stmt === false) {
             FatalError("Failed to create test procedure");
+        }
         sqlsrv_free_stmt($stmt);
-    }
-    else
-    {
+    } else {
         $stmt = $conn->query("CREATE PROC [$procName] ($procArgs) AS BEGIN $procCode END");
     }
 }
 
-function DropProc($conn, $procName)
+function dropProc($conn, $procName)
 {
-    if (!IsPdoMode())
-    {
+    if (!IsPdoMode()) {
         $stmt = sqlsrv_query($conn, "DROP PROC [$procName]");
         sqlsrv_free_stmt($stmt);
-    }
-    else
-    {
-    
+    } else {
         $query = "IF OBJECT_ID('[$procName]', 'P') IS NOT NULL DROP PROCEDURE [$procName]";
         $stmt = $conn->query($query);
     }
@@ -1835,8 +1747,7 @@ function CallProc($conn, $procName, $procArgs, $procValues)
 function CallProcEx($conn, $procName, $procPrefix, $procArgs, $procValues)
 {
     $stmt = sqlsrv_query($conn, "{ $procPrefix CALL [$procName] ($procArgs)}", $procValues);
-    if ($stmt === false)
-    {
+    if ($stmt === false) {
         FatalError("Failed to call test procedure");
     }
     return ($stmt);
@@ -1845,10 +1756,9 @@ function CallProcEx($conn, $procName, $procPrefix, $procArgs, $procValues)
 
 function CreateFunc($conn, $funcName, $funcArgs, $retType, $funcCode)
 {
-    DropFunc($conn,$funcName);
+    DropFunc($conn, $funcName);
     $stmt = sqlsrv_query($conn, "CREATE FUNCTION [$funcName] ($funcArgs) RETURNS $retType AS BEGIN $funcCode END");
-    if ($stmt === false)
-    {
+    if ($stmt === false) {
         FatalError("Failed to create test function");
     }
     sqlsrv_free_stmt($stmt);
@@ -1857,11 +1767,8 @@ function CreateFunc($conn, $funcName, $funcArgs, $retType, $funcCode)
 function DropFunc($conn, $funcName)
 {
     $stmt = sqlsrv_query($conn, "DROP FUNCTION [$funcName]");
-    if ($stmt === false)
-    {
-    }
-    else
-    {
+    if ($stmt === false) {
+    } else {
         sqlsrv_free_stmt($stmt);
     }
 }
@@ -1870,8 +1777,7 @@ function DropFunc($conn, $funcName)
 function CallFunc($conn, $funcName, $funcArgs, $funcValues)
 {
     $stmt = sqlsrv_query($conn, "{ ? = CALL [$funcName]($funcArgs)}", $funcValues);
-    if ($stmt === false)
-    {
+    if ($stmt === false) {
         FatalError("Failed to call test function");
     }
     sqlsrv_free_stmt($stmt);
@@ -1881,15 +1787,12 @@ function handle_errors()
 {
     $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
     $count = count($errors);
-    if($count == 0)
-    {
+    if ($count == 0) {
         $errors = sqlsrv_errors(SQLSRV_ERR_ALL);
         $count = count($errors);
     }
-    if($count > 0)
-    {
-        for($i = 0; $i < $count; $i++)
-        {
+    if ($count > 0) {
+        for ($i = 0; $i < $count; $i++) {
             Trace($errors[$i]['message']."\n");
         }
     }
@@ -1899,50 +1802,32 @@ function str2hex($dataIn)
 {
     $dataOut = "";
     $len = strlen($dataIn);
-    for ($i = 0; $i < $len; $i++)
-    {
+    for ($i = 0; $i < $len; $i++) {
         $ch = strtoupper(substr($dataIn, $i, 1));
-        if ($ch == "A")
-        {
+        if ($ch == "A") {
             $dataOut = $dataOut."41";
-        }
-        else if ($ch == "B")
-        {
+        } elseif ($ch == "B") {
             $dataOut = $dataOut."42";
-        }
-        else if ($ch == "C")
-        {
+        } elseif ($ch == "C") {
             $dataOut = $dataOut."43";
-        }
-        else if ($ch == "D")
-        {
+        } elseif ($ch == "D") {
             $dataOut = $dataOut."44";
-        }
-        else if ($ch == "E")
-        {
+        } elseif ($ch == "E") {
             $dataOut = $dataOut."45";
-        }
-        else if ($ch == "F")
-        {
+        } elseif ($ch == "F") {
             $dataOut = $dataOut."46";
-        }
-        else
-        {
+        } else {
             $dataOut = $dataOut."3".$ch;
         }
-
     }
     return ($dataOut);
 }
 
-function PhpVersionComponents( &$major, &$minor, &$sub )
+function PhpVersionComponents(&$major, &$minor, &$sub)
 {
     $str_version = phpversion();
 
-    $major = strtok( $str_version, "." );
-    $minor = strtok( "." );
-    $sub = strtok( "." );
+    $major = strtok($str_version, ".");
+    $minor = strtok(".");
+    $sub = strtok(".");
 }
-
-
-?>
