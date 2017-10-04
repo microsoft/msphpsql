@@ -3,13 +3,12 @@ Data type precedence: conversion VARCHAR(n)
 --SKIPIF--
 --FILE--
 <?php
-
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect();
-if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+// connect
+$conn = connect();
+if (!$conn) {
+    fatalError("Connection could not be established.\n");
 }
 
 $tableName = GetTempTableName();
@@ -18,7 +17,7 @@ $tableName = GetTempTableName();
 $sql = "CREATE TABLE $tableName (c1 VARCHAR(30))";
 $stmt = sqlsrv_query($conn, $sql);
 
-// Insert data. The data type with the lower precedence is 
+// Insert data. The data type with the lower precedence is
 // converted to the data type with the higher precedence
 $sql = "INSERT INTO $tableName VALUES (''),(-378.4),(43000.4),(GETDATE())";
 $stmt = sqlsrv_query($conn, $sql);
@@ -26,8 +25,7 @@ $stmt = sqlsrv_query($conn, $sql);
 // Read data from the table
 $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query($conn, $sql);
-for($i=0; $i<3; $i++)
-{
+for ($i=0; $i<3; $i++) {
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
     var_dump($row[0]);
 }

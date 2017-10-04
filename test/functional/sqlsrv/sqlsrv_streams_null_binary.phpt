@@ -1,8 +1,8 @@
 --TEST--
-Populate different binary fields using null stream data as inputs. 
+Populate different binary fields using null stream data as inputs.
 --FILE--
 ﻿﻿<?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function NullStream_Bin2String($conn, $tableName)
 {
@@ -10,7 +10,7 @@ function NullStream_Bin2String($conn, $tableName)
     $value = -2106133115;
     $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_varbinary, c3_varbinary_max, c4_image) VALUES (?, ?, ?, ?)", array($value, array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY(512)), array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY('max')), array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_IMAGE)));
     sqlsrv_free_stmt($stmt);
-    
+
     FetchData($conn, $tableName, $value);
 }
 
@@ -21,7 +21,7 @@ function NullStreamPrep_Bin2String($conn, $tableName)
     $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (c1_int, c2_varbinary, c3_varbinary_max, c4_image) VALUES (?, ?, ?, ?)", array($value, array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY(512)), array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY('max')), array(&$fname, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_IMAGE)));
     sqlsrv_execute($stmt);
     sqlsrv_free_stmt($stmt);
-    
+
     FetchData($conn, $tableName, $value);
 }
 
@@ -30,12 +30,10 @@ function FetchData($conn, $tableName, $value)
     $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName WHERE c1_int = $value");
     $result = sqlsrv_fetch($stmt);
     $numfields = sqlsrv_num_fields($stmt);
-    for ($i = 1; $i < $numfields; $i++)
-    {
+    for ($i = 1; $i < $numfields; $i++) {
         $value = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-        var_dump($value);    
+        var_dump($value);
     }
-
 }
 
 //--------------------------------------------------------------------
@@ -44,33 +42,32 @@ function FetchData($conn, $tableName, $value)
 //--------------------------------------------------------------------
 function RunTest()
 {
-    StartTest("sqlsrv_streams_null_binary");
+    startTest("sqlsrv_streams_null_binary");
     echo "\nTest begins...\n";
-    try
-    {
-        set_time_limit(0);  
-        sqlsrv_configure('WarningsReturnAsErrors', 1);  
+    try {
+        set_time_limit(0);
+        sqlsrv_configure('WarningsReturnAsErrors', 1);
 
-        // Connect
-        $conn = Connect();
-        if( !$conn ) { FatalError("Could not connect.\n"); }
-                     
-        // create a test table 
+        // connect
+        $conn = connect();
+        if (!$conn) {
+            fatalError("Could not connect.\n");
+        }
+
+        // create a test table
         $tableName = GetTempTableName();
         $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varbinary] varbinary(512), [c3_varbinary_max] varbinary(max), [c4_image] image)");
-        sqlsrv_free_stmt($stmt);          
-                     
+        sqlsrv_free_stmt($stmt);
+
         NullStream_Bin2String($conn, $tableName);
         NullStreamPrep_Bin2String($conn, $tableName);
 
-        sqlsrv_close($conn);                   
-    }
-    catch (Exception $e)
-    {
+        sqlsrv_close($conn);
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
     echo "\nDone\n";
-    EndTest("sqlsrv_streams_null_binary");
+    endTest("sqlsrv_streams_null_binary");
 }
 
 RunTest();

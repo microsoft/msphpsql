@@ -6,49 +6,46 @@ Bind params using sqlsrv_prepare without any sql_type specified
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
-include 'AEData.inc';
+require_once('MsCommon.inc');
+require_once('AEData.inc');
 
 date_default_timezone_set("Canada/Pacific");
 $dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
-$conn = ae_connect();
+$conn = AE\connect();
 
-foreach ( $dataTypes as $dataType ) {
+foreach ($dataTypes as $dataType) {
     echo "\nTesting $dataType: \n";
-    
+
     // create table
-    $tbname = GetTempTableName( "", false );
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
-    create_table( $conn, $tbname, $colMetaArr );
-    
+    $tbname = GetTempTableName("", false);
+    $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, "randomized"));
+    AE\createTable($conn, $tbname, $colMetaArr);
+
     // insert a row
-    $inputValues = array_slice( ${explode( "(", $dataType )[0] . "_params"}, 1, 2 );
+    $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
-    $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r );
-    if ( $r === false ) {
-        is_incompatible_types_error( $dataType, "default type" );
-    }
-    else {
+    $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
+    if ($r === false) {
+        is_incompatible_types_error($dataType, "default type");
+    } else {
         echo "****Encrypted default type is compatible with encrypted $dataType****\n";
-        if ( $dataType != "time" )
-            fetch_all( $conn, $tbname );
-        else
-        {
+        if ($dataType != "time") {
+            AE\fetchAll($conn, $tbname);
+        } else {
             $sql = "SELECT * FROM $tbname";
-            $stmt = sqlsrv_query( $conn, $sql );
-            $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC );
-            foreach ( $row as $key => $value )
-            {
+            $stmt = sqlsrv_query($conn, $sql);
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            foreach ($row as $key => $value) {
                 //var_dump( $row );
-                $t = $value->format( 'H:i:s' );
+                $t = $value->format('H:i:s');
                 print "$key: $t\n";
             }
         }
     }
-    DropTable( $conn, $tbname );
+    dropTable($conn, $tbname);
 }
-sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
+sqlsrv_free_stmt($stmt);
+sqlsrv_close($conn);
 ?>
 --EXPECT--
 

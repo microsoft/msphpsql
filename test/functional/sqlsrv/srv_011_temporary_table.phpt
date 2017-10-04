@@ -4,12 +4,12 @@ Temporary table
 --FILE--
 <?php
 
-require_once("MsCommon.inc");
+    require_once("MsCommon.inc");
 
-    // Connect
-    $conn = Connect();
-    if( !$conn ) {
-        FatalError("Connection could not be established.\n");
+    // connect
+    $conn = connect();
+    if (!$conn) {
+        fatalError("Connection could not be established.\n");
     }
 
     // Create temporary table and insert data
@@ -17,11 +17,11 @@ require_once("MsCommon.inc");
             INSERT INTO #T VALUES ('PHP7 SQLSRV')";
     $stmt = sqlsrv_query($conn, $sql);
 
-    // Get the data 
+    // Get the data
     $sql = "SELECT * FROM #T";
     $stmt = sqlsrv_query($conn, $sql);
     sqlsrv_fetch($stmt);
-    var_dump(sqlsrv_get_field($stmt, 0));   
+    var_dump(sqlsrv_get_field($stmt, 0));
 
     // Free statement and close connection
     sqlsrv_free_stmt($stmt);

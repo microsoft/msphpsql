@@ -10,72 +10,63 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function Close()
 {
-    include 'MsSetup.inc';
-
     $testName = "Statement - Close";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
-    CreateTable($conn1, $tableName);
+    setup();
+    $conn1 = connect();
+    $tableName = 'TC36test';
+    
+    createTable($conn1, $tableName);
 
-    Trace("Executing SELECT query on $tableName ...");
-    $stmt1 = SelectFromTable($conn1, $tableName);
-    Trace(" successfull.\n");
+    trace("Executing SELECT query on $tableName ...");
+    $stmt1 = selectFromTable($conn1, $tableName);
+    trace(" successfull.\n");
     sqlsrv_free_stmt($stmt1);
 
-    Trace("Attempting to retrieve the number of fields after statement was closed ...\n");
-    if (sqlsrv_num_fields($stmt1) === false)
-    {
-        handle_errors();
-    }
-    else
-    {
+    trace("Attempting to retrieve the number of fields after statement was closed ...\n");
+    if (sqlsrv_num_fields($stmt1) === false) {
+        handleErrors();
+    } else {
         die("A closed statement cannot be reused.");
     }
 
-    Trace("\nClosing the statement again (no error expected) ...\n");
-    
-    if (sqlsrv_free_stmt($stmt1) === false)
-    {
-        FatalError("A statement can be closed multiple times.");
+    trace("\nClosing the statement again (no error expected) ...\n");
+
+    if (sqlsrv_free_stmt($stmt1) === false) {
+        fatalError("A statement can be closed multiple times.");
     }
 
-    DropTable($conn1, $tableName);  
-    
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         Close();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECTREGEX--
 
 Warning: sqlsrv_num_fields\(\): supplied resource is not a valid ss_sqlsrv_stmt resource in .*TC36_Close.php on line 21
 
-Warning: sqlsrv_free_stmt\(\): supplied resource is not a valid ss_sqlsrv_stmt resource in .*TC36_Close.php on line 32
+Warning: sqlsrv_free_stmt\(\): supplied resource is not a valid ss_sqlsrv_stmt resource in .*TC36_Close.php on line 29
 Test "Statement - Close" completed successfully.
-
-

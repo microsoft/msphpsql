@@ -10,22 +10,20 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function SendStream($minType, $maxType)
 {
     include 'MsSetup.inc';
 
     $testName = "Stream - Prepared Send";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
-    for ($k = $minType; $k <= $maxType; $k++)
-    {
-        switch ($k)
-        {
+    for ($k = $minType; $k <= $maxType; $k++) {
+        switch ($k) {
         case 12:    // char
         case 13:    // varchar
         case 14:    // varchar(max)
@@ -62,18 +60,18 @@ function SendStream($minType, $maxType)
                      array(&$fname2, SQLSRV_PARAM_IN, null, $phpDriverType));
         TraceData($sqlType, $data);
 
-        CreateTableEx($conn1, $tableName, $dataType);
+        createTableEx($conn1, $tableName, $dataType);
         InsertData($conn1, $tableName, "c1, c2", "?, ?", $dataOptions);
         CheckData($conn1, $tableName, 2, $data);
 
         fclose($fname2);
     }
 
-    DropTable($conn1, $tableName);  
-    
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
 
@@ -81,69 +79,57 @@ function InsertData($conn, $tableName, $dataCols, $dataValues, $dataOptions)
 {
     $sql = "INSERT INTO [$tableName] ($dataCols) VALUES ($dataValues)";
     $stmt = sqlsrv_prepare($conn, $sql, $dataOptions);
-    if ($stmt === false)
-    {
-        FatalError("Failed to prepare insert query: ".$sql);
+    if ($stmt === false) {
+        fatalError("Failed to prepare insert query: ".$sql);
     }
     $outcome = sqlsrv_execute($stmt);
-    if ($outcome === false)
-    {
-        FatalError("Failed to execute prepared query: ".$sql);
+    if ($outcome === false) {
+        fatalError("Failed to execute prepared query: ".$sql);
     }
-    while (sqlsrv_send_stream_data($stmt))
-    {
+    while (sqlsrv_send_stream_data($stmt)) {
     }
     $numRows = sqlsrv_rows_affected($stmt);
     sqlsrv_free_stmt($stmt);
-    if ($numRows != 1)
-    {
-        die("Unexpected row count at insert: ".$numRows);   
+    if ($numRows != 1) {
+        die("Unexpected row count at insert: ".$numRows);
     }
 }
 
 
 function CheckData($conn, $table, $cols, $expectedValue)
 {
-    $stmt = SelectFromTable($conn, $table);
-    if (!sqlsrv_fetch($stmt))
-    {
-        FatalError("Table $tableName was not expected to be empty.");
+    $stmt = selectFromTable($conn, $table);
+    if (!sqlsrv_fetch($stmt)) {
+        fatalError("Table $tableName was not expected to be empty.");
     }
     $numFields = sqlsrv_num_fields($stmt);
-    if ($numFields != $cols)
-    {
+    if ($numFields != $cols) {
         die("Table $tableName was expected to have $cols fields.");
     }
     $actualValue = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
     sqlsrv_free_stmt($stmt);
-    if (strncmp($actualValue, $expectedValue, strlen($expectedValue)) != 0)
-    {
+    if (strncmp($actualValue, $expectedValue, strlen($expectedValue)) != 0) {
         die("Data corruption: $expectedValue => $actualValue.");
     }
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         SendStream(12, 23);
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECTREGEX--
 
 Test "Stream - Prepared Send" completed successfully.
-
-

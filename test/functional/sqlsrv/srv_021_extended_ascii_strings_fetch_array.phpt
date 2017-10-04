@@ -10,35 +10,41 @@ using sqlsrv_fetch_array.
 require_once("MsCommon.inc");
 
 // Connect
-$conn = ConnectUTF8();
-if( !$conn ) { die( print_r( sqlsrv_errors(), true)); }
+$conn = connect(array( 'CharacterSet'=>'UTF-8' ));
+if (!$conn) {
+    die(print_r(sqlsrv_errors(), true));
+}
 
 // Create table
 $tableName = '#srv_021test';
 $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName (Cité NVARCHAR(10), Année SMALLINT)");
-if( $stmt === false ) { die( print_r( sqlsrv_errors(), true )); }
-sqlsrv_free_stmt( $stmt);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+sqlsrv_free_stmt($stmt);
 
 // Insert data
 $sql1 = "INSERT INTO $tableName VALUES ('Paris', 1911)";
-$stmt1 = sqlsrv_query( $conn, $sql1);
-sqlsrv_free_stmt( $stmt1);
+$stmt1 = sqlsrv_query($conn, $sql1);
+sqlsrv_free_stmt($stmt1);
 
 // Insert more data
 $sql2 = "INSERT INTO $tableName VALUES ('London', 2012), ('Berlin', 1990)";
 $stmt2 = sqlsrv_query($conn, $sql2);
-sqlsrv_free_stmt( $stmt2);
+sqlsrv_free_stmt($stmt2);
 
 // Query
 $sql = "SELECT * FROM $tableName";
-$stmt = sqlsrv_query( $conn, $sql );
-if( $stmt === false) { die( print_r( sqlsrv_errors(), true) ); }
+$stmt = sqlsrv_query($conn, $sql);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
 
 echo sqlsrv_num_fields($stmt)."\n";
 
 // Fetch array
-while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC) ) {
-    printf("%s %d\n",$row[0], $row[1]);
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC)) {
+    printf("%s %d\n", $row[0], $row[1]);
 }
 
 // Close connection

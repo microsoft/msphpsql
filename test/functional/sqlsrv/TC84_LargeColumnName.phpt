@@ -8,19 +8,17 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function LargeColumnNameTest($columnName, $expectfail)
 {
-    include 'MsSetup.inc';
+    setup();
 
-    Setup();
-
-    $conn = Connect();
+    $conn = connect();
 
     $tableName = "LargeColumnNameTest";
 
-    DropTable($conn, $tableName);
+    dropTable($conn, $tableName);
 
     sqlsrv_query($conn, "CREATE TABLE [$tableName] ([$columnName] int)");
 
@@ -28,61 +26,52 @@ function LargeColumnNameTest($columnName, $expectfail)
 
     $stmt = sqlsrv_query($conn, "SELECT * from [$tableName]");
 
-    if ( null == $stmt )
-    {
+    if (null == $stmt) {
         echo  "$";
         echo  "stmt = null";
         echo  "\n";
-    }
-    else 
-    {
-        if ( null == sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) ) 
-        {
-            if (!$expectfail)
-                FatalError("Possible regression: Unable to retrieve inserted value.");
+    } else {
+        if (null == sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            if (!$expectfail) {
+                fatalError("Possible regression: Unable to retrieve inserted value.");
+            }
         }
         sqlsrv_free_stmt($stmt);
     }
 
 
-    DropTable($conn, $tableName);
+    dropTable($conn, $tableName);
 
     sqlsrv_close($conn);
-
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    
     $testName = "PHP - Large Column Name Test";
 
-    StartTest($testName);
+    startTest($testName);
 
     $columnName = "a";
 
-    try
-    {
-        for ($a = 1; $a <= 129; $a++)
-        {
+    try {
+        for ($a = 1; $a <= 129; $a++) {
             LargeColumnNameTest($columnName, $a > 128);
             $columnName .= "A";
         }
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 
-    
-    EndTest($testName);
+
+    endTest($testName);
 }
 
-Repro();
+repro();
 ?>
 --EXPECT--
 $stmt = null

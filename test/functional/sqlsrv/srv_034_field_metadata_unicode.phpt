@@ -4,12 +4,12 @@ Field metadata unicode
 --FILE--
 <?php
 
-include ("MsCommon.inc");
+require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect(array("CharacterSet"=>"UTF-8"));
-if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+// connect
+$conn = connect(array("CharacterSet"=>"UTF-8"));
+if (!$conn) {
+    fatalError("Connection could not be established.\n");
 }
 
 $tableName = 'test_srv_034';
@@ -24,10 +24,11 @@ $stmt = sqlsrv_prepare($conn, $sql);
 
 // Get and display field metadata
 $metadata = sqlsrv_field_metadata($stmt);
-if ( ! $metadata ) 
-    PrintErrors(); 
-else
+if (! $metadata) {
+    printErrors();
+} else {
     var_dump($metadata);
+}
 
 sqlsrv_query($conn, "DROP TABLE $tableName");
 

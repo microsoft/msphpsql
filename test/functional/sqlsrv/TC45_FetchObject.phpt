@@ -1,20 +1,19 @@
 --TEST--
 Fetch Object Test
 --DESCRIPTION--
-Verifies data retrieval via “sqlsrv_fetch_object”.
+Verifies data retrieval via ï¿½sqlsrv_fetch_objectï¿½.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 class TestClass
 {
-    function __construct($a1, $a2, $a3)
+    public function __construct($a1, $a2, $a3)
     {
-
     }
 }
 
@@ -23,84 +22,74 @@ function FetchRow($minFetchMode, $maxFetchMode)
     include 'MsSetup.inc';
 
     $testName = "Fetch - Object";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    if (! IsWindows())
-        $conn1 = ConnectUTF8();
-    else 
-        $conn1 = Connect();
-    CreateTable($conn1, $tableName);
+    setup();
+    if (! isWindows()) {
+        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+    } else {
+        $conn1 = connect();
+    }
+    createTable($conn1, $tableName);
 
     $noRows = 10;
-    $noRowsInserted = InsertRows($conn1, $tableName, $noRows);
+    $noRowsInserted = insertRows($conn1, $tableName, $noRows);
 
     $actual = null;
     $expected = null;
     $numFields = 0;
-    for ($k = $minFetchMode; $k <= $maxFetchMode; $k++)
-    {
-        $stmt1 = SelectFromTable($conn1, $tableName);
-        if ($numFields == 0)
-        {
+    for ($k = $minFetchMode; $k <= $maxFetchMode; $k++) {
+        $stmt1 = selectFromTable($conn1, $tableName);
+        if ($numFields == 0) {
             $numFields = sqlsrv_num_fields($stmt1);
-        }
-        else
-        {
+        } else {
             $count = sqlsrv_num_fields($stmt1);
-            if ($count != $numFields)
-            {
+            if ($count != $numFields) {
                 die("Unexpected number of fields: $count");
             }
         }
 
-        switch ($k)
-        {
-        case 0:		// fetch array (to retrieve reference values)
+        switch ($k) {
+        case 0:        // fetch array (to retrieve reference values)
             $expected = FetchArray($stmt1, $noRowsInserted, $numFields);
             break;
 
-        case 1:		// fetch object (without class)
+        case 1:        // fetch object (without class)
             $actual = FetchObject($stmt1, $noRowsInserted, $numFields, false);
             CheckData($noRowsInserted, $numFields, $actual, $expected);
             break;
 
-        case 2:		// fetch object (with class)
+        case 2:        // fetch object (with class)
             $actual = FetchObject($stmt1, $noRowsInserted, $numFields, true);
             CheckData($noRowsInserted, $numFields, $actual, $expected);
             break;
 
-        default:	// default
+        default:    // default
             break;
         }
         sqlsrv_free_stmt($stmt1);
     }
 
-    DropTable($conn1, $tableName);	
-    
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName);	
+    endTest($testName);
 }
 
 
 function FetchObject($stmt, $rows, $fields, $useClass)
 {
-    Trace("\tRetrieving $rows objects with $fields fields each ...\n");
+    trace("\tRetrieving $rows objects with $fields fields each ...\n");
     $values = array();
-    for ($i = 0; $i < $rows; $i++)
-    {
-        if ($useClass)
-        {
+    for ($i = 0; $i < $rows; $i++) {
+        if ($useClass) {
             $obj = sqlsrv_fetch_object($stmt, "TestClass", array(1, 2, 3));
-        }
-        else
-        {
+        } else {
             $obj = sqlsrv_fetch_object($stmt);
         }
-        if ($obj === false)
-        {
-            FatalError("Row $i is missing");
+        if ($obj === false) {
+            fatalError("Row $i is missing");
         }
         $values[$i] = $obj;
     }
@@ -111,12 +100,10 @@ function FetchObject($stmt, $rows, $fields, $useClass)
 function FetchArray($stmt, $rows, $fields)
 {
     $values = array();
-    for ($i = 0; $i < $rows; $i++)
-    {
+    for ($i = 0; $i < $rows; $i++) {
         $row = sqlsrv_fetch_array($stmt);
-        if ($row === false)
-        {
-            FatalError("Row $i is missing");
+        if ($row === false) {
+            fatalError("Row $i is missing");
         }
         $values[$i] = $row;
     }
@@ -126,17 +113,13 @@ function FetchArray($stmt, $rows, $fields)
 
 function CheckData($rows, $fields, $actualValues, $expectedValues)
 {
-    if (($actualValues != null) && ($expectedValues != null))
-    {
-        for ($i = 0; $i < $rows; $i++)
-        {
-            for ($j = 0; $j < $fields; $j++)
-            {
+    if (($actualValues != null) && ($expectedValues != null)) {
+        for ($i = 0; $i < $rows; $i++) {
+            for ($j = 0; $j < $fields; $j++) {
                 $colName = GetColName($j + 1);
                 $actual = $actualValues[$i]->$colName;
                 $expected = $expectedValues[$i][$colName];
-                if ($actual != $expected)
-                {
+                if ($actual != $expected) {
                     die("Data corruption on row ".($i + 1)." column ".($j + 1).": $expected => $actual");
                 }
             }
@@ -146,22 +129,19 @@ function CheckData($rows, $fields, $actualValues, $expectedValues)
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         FetchRow(0, 2);
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

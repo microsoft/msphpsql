@@ -6,8 +6,8 @@ Bind params using sqlsrv_prepare with all sql_type
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
-include 'AEData.inc';
+require_once('MsCommon.inc');
+require_once('AEData.inc');
 
 $dataTypes = array( "bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5)", "numeric(10,5)", "float", "real" );
 
@@ -23,88 +23,74 @@ $compatList = array( "bit" => array( "SQLSRV_SQLTYPE_BINARY", "SQLSRV_SQLTYPE_VA
                      "real" => array( "SQLSRV_SQLTYPE_BINARY", "SQLSRV_SQLTYPE_VARBINARY", "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DECIMAL(18,5)", "SQLSRV_SQLTYPE_NUMERIC(10,5)", "SQLSRV_SQLTYPE_FLOAT", "SQLSRV_SQLTYPE_REAL", "SQLSRV_SQLTYPE_BIGINT", "SQLSRV_SQLTYPE_INT", "SQLSRV_SQLTYPE_SMALLINT", "SQLSRV_SQLTYPE_TINYINT", "SQLSRV_SQLTYPE_MONEY", "SQLSRV_SQLTYPE_SMALLMONEY", "SQLSRV_SQLTYPE_BIT" ));
 $epsilon = 0.0001;
 
-$conn = ae_connect();
+$conn = AE\connect();
 
-foreach ( $dataTypes as $dataType ) {
+foreach ($dataTypes as $dataType) {
     echo "\nTesting $dataType: \n";
     $success = true;
-    
+
     // create table
-    $tbname = GetTempTableName( "", false );
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
-    create_table( $conn, $tbname, $colMetaArr );
-    
+    $tbname = GetTempTableName("", false);
+    $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, "randomized"));
+    AE\createTable($conn, $tbname, $colMetaArr);
+
     // test each SQLSRV_SQLTYPE_ constants
-    foreach ( $sqlTypes as $sqlType )
-    {
+    foreach ($sqlTypes as $sqlType) {
         // insert a row
-        $inputValues = array_slice( ${explode( "(", $dataType )[0] . "_params"}, 1, 2 );
-        $sqlType = get_default_size_prec( $sqlType );
-        $paramOp = array( new bindParamOption( 1, null, null, $sqlType ), new bindParamOption( 2, null, null, $sqlType ));
+        $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
+        $sqlType = get_default_size_prec($sqlType);
+        $paramOp = array( new AE\BindParamOption(1, null, null, $sqlType), new AE\BindParamOption(2, null, null, $sqlType));
         $r;
-        $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r, "prepareParamsOp", $paramOp );
-        
-        if ( !is_col_enc() )
-        {
-            if ( $r === false  )
-            {
+        $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r, "prepareParamsOp", $paramOp);
+
+        if (!AE\isColEncrypted()) {
+            if ($r === false) {
                 $isCompatibleible = false;
-                foreach ( $compatList[$dataType] as $compatType )
-                {
-                    if ( stripos( $compatType, $sqlType ) !== false )
+                foreach ($compatList[$dataType] as $compatType) {
+                    if (stripos($compatType, $sqlType) !== false) {
                         $isCompatibleible = true;
+                    }
                 }
                 // 22018 is the SQLSTATE for any incompatible conversion errors
-                if ( $isCompatibleible && sqlsrv_errors()[0]['SQLSTATE'] == 22018 )
-                {
-                    echo "$sqlType should be compatible with $dataType\n";
-                    $success = false;
-                }
-            } 
-        }
-        else
-        {
-            if ( $r === false )
-            {
-                // always encrypted only allow sqlType that is identical to the encrypted column datatype
-                if ( stripos( "SQLSRV_SQLTYPE_" . $dataType, $sqlType ) !== false )
-                {
+                if ($isCompatibleible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
                     echo "$sqlType should be compatible with $dataType\n";
                     $success = false;
                 }
             }
-            else
-            {
+        } else {
+            if ($r === false) {
+                // always encrypted only allow sqlType that is identical to the encrypted column datatype
+                if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
+                    echo "$sqlType should be compatible with $dataType\n";
+                    $success = false;
+                }
+            } else {
                 $sql = "SELECT * FROM $tbname";
-                $stmt = sqlsrv_query( $conn, $sql );
-                $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC );
-                
-                if ( $dataType == "float" || $dataType == "real" )
-                {
-                    if ( abs( $row["c_det"] - $inputValues[0] ) > $epsilon || abs( $row["c_rand"] - $inputValues[1] ) > $epsilon )
-                    {
+                $stmt = sqlsrv_query($conn, $sql);
+                $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+
+                if ($dataType == "float" || $dataType == "real") {
+                    if (abs($row["c_det"] - $inputValues[0]) > $epsilon || abs($row["c_rand"] - $inputValues[1]) > $epsilon) {
+                        echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                        $success = false;
+                    }
+                } else {
+                    if ($row["c_det"] != $inputValues[0] || $row["c_rand"] != $inputValues[1]) {
                         echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
                         $success = false;
                     }
                 }
-                else
-                {
-                    if ( $row["c_det"] != $inputValues[0] || $row["c_rand"] != $inputValues[1] )
-                    {
-                        echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
-                        $success = false;
-                    }
-                }
-            }       
+            }
         }
-        sqlsrv_query( $conn, "TRUNCATE TABLE $tbname" );
+        sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
     }
-    if ( $success )
+    if ($success) {
         echo "Test successfully done.\n";
-    DropTable( $conn, $tbname );
+    }
+    dropTable($conn, $tbname);
 }
-sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
+sqlsrv_free_stmt($stmt);
+sqlsrv_close($conn);
 ?>
 --EXPECT--
 

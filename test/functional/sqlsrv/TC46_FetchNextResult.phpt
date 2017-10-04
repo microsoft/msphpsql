@@ -1,121 +1,106 @@
 --TEST--
 Fetch Next Result Test
 --DESCRIPTION--
-Verifies the functionality of “sqlsvr_next_result”
+Verifies the functionality of ï¿½sqlsvr_next_resultï¿½
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function FetchFields()
 {
     include 'MsSetup.inc';
 
     $testName = "Fetch - Next Result";
-    StartTest($testName);
+    startTest($testName);
 
-    if (!IsMarsSupported())
-    {
-        EndTest($testName);	
+    if (!IsMarsSupported()) {
+        endTest($testName);
         return;
     }
 
-    Setup();
-    $conn1 = Connect();
-    CreateTable($conn1, $tableName);
+    setup();
+    $conn1 = connect();
+    createTable($conn1, $tableName);
 
     $noRows = 10;
-    InsertRows($conn1, $tableName, $noRows);
+    insertRows($conn1, $tableName, $noRows);
 
-    $stmt1 = SelectQuery($conn1, "SELECT * FROM [$tableName]");
-    $stmt2 = SelectQuery($conn1, "SELECT * FROM [$tableName]; SELECT * FROM [$tableName]");
-    if (sqlsrv_next_result($stmt2) === false)
-    {
-        FatalError("Failed to retrieve next result set");
+    $stmt1 = selectQuery($conn1, "SELECT * FROM [$tableName]");
+    $stmt2 = selectQuery($conn1, "SELECT * FROM [$tableName]; SELECT * FROM [$tableName]");
+    if (sqlsrv_next_result($stmt2) === false) {
+        fatalError("Failed to retrieve next result set");
     }
 
     $numFields1 = sqlsrv_num_fields($stmt1);
     $numFields2 = sqlsrv_num_fields($stmt2);
-    if ($numFields1 != $numFields2)
-    {
-        SetUTF8Data(false);
+    if ($numFields1 != $numFields2) {
+        setUTF8Data(false);
         die("Unexpected number of fields: $numField1 => $numFields2");
     }
 
-    Trace("Retrieving $noRows rows with $numFields1 fields each ...");
-    for ($i = 0; $i < $noRows; $i++)
-    {
+    trace("Retrieving $noRows rows with $numFields1 fields each ...");
+    for ($i = 0; $i < $noRows; $i++) {
         $row1 = sqlsrv_fetch($stmt1);
         $row2 = sqlsrv_fetch($stmt2);
-        if (($row1 === false) || ($row2 === false))
-        {
-            FatalError("Row $i is missing");
+        if (($row1 === false) || ($row2 === false)) {
+            fatalError("Row $i is missing");
         }
-        for ($j = 0; $j < $numFields1; $j++)
-        {   
-            if (UseUTF8Data()){
+        for ($j = 0; $j < $numFields1; $j++) {
+            if (useUTF8Data()) {
                 $fld1 = sqlsrv_get_field($stmt1, $j, SQLSRV_PHPTYPE_STRING('UTF-8'));
                 $fld2 = sqlsrv_get_field($stmt2, $j, SQLSRV_PHPTYPE_STRING('UTF-8'));
-            }
-            else {
+            } else {
                 $fld1 = sqlsrv_get_field($stmt1, $j, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
                 $fld2 = sqlsrv_get_field($stmt2, $j, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
             }
-            if (($fld1 === false) || ($fld2 === false))
-            {
-                FatalError("Field $j of Row $i is missing");
+            if (($fld1 === false) || ($fld2 === false)) {
+                fatalError("Field $j of Row $i is missing");
             }
-            if ($fld1 != $fld2)
-            {
-                SetUTF8Data(false);
+            if ($fld1 != $fld2) {
+                setUTF8Data(false);
                 die("Data corruption on row ".($i + 1)." column ".($j + 1)." $fld1 => $fld2");
             }
-
         }
     }
     if (sqlsrv_next_result($stmt1) ||
-        sqlsrv_next_result($stmt2))
-    {
-        SetUTF8Data(false);
+        sqlsrv_next_result($stmt2)) {
+        setUTF8Data(false);
         die("No more results were expected");
     }
     sqlsrv_free_stmt($stmt1);
     sqlsrv_free_stmt($stmt2);
-    Trace(" completed successfully.\n");
+    trace(" completed successfully.\n");
 
-    DropTable($conn1, $tableName);	
-    
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName);	
+    endTest($testName);
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    if (! IsWindows())
-    {
-        SetUTF8Data(true);
+    if (! isWindows()) {
+        setUTF8Data(true);
     }
-    
-    try
-    {
+
+    try {
         FetchFields();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
-    SetUTF8Data(false);
+    setUTF8Data(false);
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

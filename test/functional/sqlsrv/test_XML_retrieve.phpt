@@ -4,37 +4,37 @@ retrieval of XML as a string and a stream.
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-    sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-    sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
+    sqlsrv_configure('WarningsReturnAsErrors', 0);
+    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-    require( 'MsCommon.inc' );
+    require_once("MsCommon.inc");
 
-    $conn = Connect();
-    if( !$conn ) {
-        FatalError( "Failed to connect." );
+    $conn = connect();
+    if (!$conn) {
+        fatalError("Failed to connect.");
     }
 
-    $stmt = sqlsrv_query( $conn, "SELECT xml_type FROM [159137]" );
-    if( $stmt == false ) {
-        var_dump( sqlsrv_errors() );
-        die( "sqlsrv_query failed." );
+    $stmt = sqlsrv_query($conn, "SELECT xml_type FROM [159137]");
+    if ($stmt == false) {
+        var_dump(sqlsrv_errors());
+        die("sqlsrv_query failed.");
     }
-   
-    sqlsrv_fetch( $stmt );
-    $str = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR) );
-    if( $str === false ) {
-        var_dump( sqlsrv_errors() );
+
+    sqlsrv_fetch($stmt);
+    $str = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+    if ($str === false) {
+        var_dump(sqlsrv_errors());
     }
     echo "$str\n";
 
-    sqlsrv_fetch( $stmt );
-    $stream = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR) );
-    if( $stream === false ) {
-        var_dump( sqlsrv_errors() );
-        die( "reading as a stream failed.");
+    sqlsrv_fetch($stmt);
+    $stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
+    if ($stream === false) {
+        var_dump(sqlsrv_errors());
+        die("reading as a stream failed.");
     }
-    while( !feof( $stream )) { 
-        $xml = fread( $stream, 79 );
+    while (!feof($stream)) {
+        $xml = fread($stream, 79);
         echo "$xml\n";
     }
 

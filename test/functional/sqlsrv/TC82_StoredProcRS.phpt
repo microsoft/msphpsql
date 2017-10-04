@@ -8,19 +8,19 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function StoredProcCheck()
 {
     include 'MsSetup.inc';
-
+    
     $testName = "ResultSet with Stored Proc";
 
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
+    setup();
 
-    $conn1 = Connect();
+    $conn1 = connect();
 
     $table1 = $tableName."_1";
     $table2 = $tableName."_2";
@@ -43,66 +43,59 @@ function StoredProcCheck()
         INSERT INTO [$table2] (DataID, DataNo) values (@p1, @p2)
         SELECT @p4=(SELECT Intro from [$table3] WHERE DataID=@p1) ";
 
-    CreateTableEx($conn1, $table1, "DataID int, ExecTime datetime, DataNo nchar(32), DataRef nvarchar(64)");
-    CreateTableEx($conn1, $table2, "DataID int, DataNo nchar(32)");
-    CreateTableEx($conn1, $table3, "DataID int, Intro nvarchar(max)");
-    CreateProc($conn1, $procName, $procArgs, $procCode);
+    createTableEx($conn1, $table1, "DataID int, ExecTime datetime, DataNo nchar(32), DataRef nvarchar(64)");
+    createTableEx($conn1, $table2, "DataID int, DataNo nchar(32)");
+    createTableEx($conn1, $table3, "DataID int, Intro nvarchar(max)");
+    createProc($conn1, $procName, $procArgs, $procCode);
 
     $stmt1 = sqlsrv_query($conn1, "INSERT INTO [$table3] (DataID, Intro) VALUES (1, 'Test Value 1')");
-    InsertCheck($stmt1);
+    insertCheck($stmt1);
 
     $stmt2 = sqlsrv_query($conn1, "INSERT INTO [$table3] (DataID, Intro) VALUES (2, 'Test Value 2')");
-    InsertCheck($stmt2);
+    insertCheck($stmt2);
 
     $stmt3 = sqlsrv_query($conn1, "INSERT INTO [$table3] (DataID, Intro) VALUES (3, 'Test Value 3')");
-    InsertCheck($stmt3);
+    insertCheck($stmt3);
 
-    $stmt4 = CallProcEx($conn1, $procName, "", "?, ?, ?, ?", $callArgs);
+    $stmt4 = callProcEx($conn1, $procName, "", "?, ?, ?, ?", $callArgs);
     $result = sqlsrv_next_result($stmt4);
-    while ($result != null)
-    {
-        if( $result === false )
-        {
-            FatalError("Failed to execute sqlsrv_next_result");
+    while ($result != null) {
+        if ($result === false) {
+            fatalError("Failed to execute sqlsrv_next_result");
         }
         $result = sqlsrv_next_result($stmt4);
     }
     sqlsrv_free_stmt($stmt4);
 
-    DropProc($conn1, $procName);
+    dropProc($conn1, $procName);
 
     echo "$introText\n";
 
-    DropTable($conn1, $table1);
-    DropTable($conn1, $table2);
-    DropTable($conn1, $table3);
+    dropTable($conn1, $table1);
+    dropTable($conn1, $table2);
+    dropTable($conn1, $table3);
     sqlsrv_close($conn1);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         StoredProcCheck();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--
 Test Value 1
 Test "ResultSet with Stored Proc" completed successfully.
-
-

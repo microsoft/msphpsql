@@ -1,14 +1,14 @@
 --TEST--
-Connect with options
+connect with options
 --SKIPIF--
 --FILE--
 <?php
 
 require_once("MsCommon.inc");
 
-$conn = Connect();
-if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+$conn = connect();
+if (!$conn) {
+    fatalError("Connection could not be established.\n");
 }
 sqlsrv_close($conn);
 print "Done";

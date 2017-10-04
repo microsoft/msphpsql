@@ -9,43 +9,39 @@ PHPT_EXEC=true
 
 include 'MsCommon.inc';
 include 'MsSetup.inc';
-$conn = Connect();
-CreateTable($conn, $tableName);
+$conn = connect();
+createTable($conn, $tableName);
 
 $query = "SELECT * FROM [$tableName]";
 //integer keys are invalid
 $option = array( 5 => 1 );
 $stmt = sqlsrv_query($conn, $query, null, $option);
-if ( !$stmt )
-{
-    print_r (sqlsrv_errors());
+if (!$stmt) {
+    print_r(sqlsrv_errors());
 }
 
 $stmt = null;
 $stmt = sqlsrv_prepare($conn, $query, null, $option);
-if ( !$stmt )
-{
-    print_r (sqlsrv_errors());
+if (!$stmt) {
+    print_r(sqlsrv_errors());
 }
 
 $stmt = null;
 //a key that is not supported by the driver
 $option = array( "invalid_string_key" => 1 );
 $stmt = sqlsrv_query($conn, $query, null, $option);
-if ( !$stmt )
-{
-    print_r (sqlsrv_errors());
+if (!$stmt) {
+    print_r(sqlsrv_errors());
 }
 
 $stmt = null;
 $stmt = sqlsrv_prepare($conn, $query, null, $option);
-if ( !$stmt )
-{
-    print_r (sqlsrv_errors());
+if (!$stmt) {
+    print_r(sqlsrv_errors());
 }
 
 
-DropTable($conn, $tableName);	
+dropTable($conn, $tableName);
 sqlsrv_close($conn);
 
 ?>

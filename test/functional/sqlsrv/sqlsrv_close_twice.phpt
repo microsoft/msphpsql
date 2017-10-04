@@ -1,28 +1,29 @@
 --TEST--
-Free statement twice 
+Free statement twice
 --FILE--
 ﻿<?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function CloseTwice()
-{  
-    set_time_limit(0);  
-    sqlsrv_configure('WarningsReturnAsErrors', 1);  
+{
+    set_time_limit(0);
+    sqlsrv_configure('WarningsReturnAsErrors', 1);
 
     // Connect
-    $conn = Connect();
-    if( !$conn ) { FatalError("Could not connect.\n"); }
-    
-    $tableName = GetTempTableName();  
+    $conn = connect();
+    if (!$conn) {
+        fatalError("Could not connect.\n");
+    }
 
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_tinyint] tinyint)");  
-    sqlsrv_free_stmt($stmt);   
-    
-    $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName");  
-    sqlsrv_free_stmt($stmt);   
-    sqlsrv_free_stmt($stmt);   
-    sqlsrv_close($conn);   
-    
+    $tableName = GetTempTableName();
+
+    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_tinyint] tinyint)");
+    sqlsrv_free_stmt($stmt);
+
+    $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName");
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_close($conn);
 }
 
 //--------------------------------------------------------------------
@@ -31,17 +32,14 @@ function CloseTwice()
 //--------------------------------------------------------------------
 function Repro()
 {
-    StartTest("sqlsrv_close_twice");
-    try
-    {
+    startTest("sqlsrv_close_twice");
+    try {
         CloseTwice();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
     echo "\nDone\n";
-    EndTest("sqlsrv_close_twice");
+    endTest("sqlsrv_close_twice");
 }
 
 Repro();

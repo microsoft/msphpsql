@@ -5,59 +5,55 @@ various fetch types.
 --FILE--
 <?php
 
-sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
- 
-require( 'MsCommon.inc' );
+sqlsrv_configure('WarningsReturnAsErrors', 0);
+sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-$conn = Connect();
-if (!$conn)
-{
-    FatalError( "connect failed" );
+require_once("MsCommon.inc");
+
+$conn = connect();
+if (!$conn) {
+    fatalError("connect failed");
 }
 
-$stmt = sqlsrv_query( $conn, "SELECT * FROM [tracks];" );
-if( $stmt === false ) {
-    FatalError( "sqlsrv_query failed" );
+$stmt = sqlsrv_query($conn, "SELECT * FROM [tracks];");
+if ($stmt === false) {
+    fatalError("sqlsrv_query failed");
 }
 
 $fetch_type = SQLSRV_FETCH_NUMERIC;
 
-while( $row = sqlsrv_fetch_array( $stmt, $fetch_type )) {
-    
-    var_dump( $row );
-    if( $fetch_type == SQLSRV_FETCH_NUMERIC ) {
+while ($row = sqlsrv_fetch_array($stmt, $fetch_type)) {
+    var_dump($row);
+    if ($fetch_type == SQLSRV_FETCH_NUMERIC) {
         $fetch_type = SQLSRV_FETCH_ASSOC;
-    }
-    else if( $fetch_type == SQLSRV_FETCH_ASSOC ) {
-         $fetch_type = SQLSRV_FETCH_BOTH;
-    }
-    else if( $fetch_type == SQLSRV_FETCH_BOTH ) {
-         $fetch_type = SQLSRV_FETCH_NUMERIC;
+    } elseif ($fetch_type == SQLSRV_FETCH_ASSOC) {
+        $fetch_type = SQLSRV_FETCH_BOTH;
+    } elseif ($fetch_type == SQLSRV_FETCH_BOTH) {
+        $fetch_type = SQLSRV_FETCH_NUMERIC;
     }
 }
 
 // try some out of range values
-$stmt = sqlsrv_query( $conn, "SELECT * FROM [tracks];" );
-if( $stmt === false ) {
-    FatalError( "sqlsrv_query failed" );
+$stmt = sqlsrv_query($conn, "SELECT * FROM [tracks];");
+if ($stmt === false) {
+    fatalError("sqlsrv_query failed");
 }
 
-$row = sqlsrv_fetch_array( $stmt, 0 );
-if( $row !== false ) {
-    die( "Invalid fetch type succeeded." );
+$row = sqlsrv_fetch_array($stmt, 0);
+if ($row !== false) {
+    die("Invalid fetch type succeeded.");
 }
-print_r( sqlsrv_errors() );
-$row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_BOTH + 1 );
-if( $row !== false ) {
-    die( "Invalid fetch type succeeded." );
+print_r(sqlsrv_errors());
+$row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_BOTH + 1);
+if ($row !== false) {
+    die("Invalid fetch type succeeded.");
 }
-print_r( sqlsrv_errors() );
+print_r(sqlsrv_errors());
 
-sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
+sqlsrv_free_stmt($stmt);
+sqlsrv_close($conn);
 
-?> 
+?>
 --EXPECT--
 array(2) {
   [0]=>

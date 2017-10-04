@@ -1,7 +1,7 @@
 --TEST--
 Simple Query Test
 --DESCRIPTION--
-Basic verification of query statements (via "sqlsrv_query"): 
+Basic verification of query statements (via "sqlsrv_query"):
 - Establish a connection
 - Creates a table (including all 28 SQL types currently supported)
 - Executes a SELECT query (on the empty table)
@@ -13,58 +13,54 @@ PHPT_EXEC=true
 --FILE--
 <?php
 
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function SimpleQuery()
 {
-    include 'MsSetup.inc';
-
     $testName = "Statement - Simple Query";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $tableName = 'TC31test';
 
-    CreateTable($conn1, $tableName);
+    $conn1 = connect();
 
-    Trace("Executing SELECT query on $tableName ...");  
-    $stmt1 = SelectFromTable($conn1, $tableName);
-    $rows = RowCount($stmt1);;
+    createTable($conn1, $tableName);
+
+    trace("Executing SELECT query on $tableName ...");
+    $stmt1 = selectFromTable($conn1, $tableName);
+    $rows = rowCount($stmt1);
+    ;
     sqlsrv_free_stmt($stmt1);
-    Trace(" $rows rows retrieved.\n");
+    trace(" $rows rows retrieved.\n");
 
-    if ($rows > 0)
-    {
+    if ($rows > 0) {
         die("Table $tableName, expected to be empty, has $rows rows.");
     }
 
-    DropTable($conn1, $tableName);  
-    
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         SimpleQuery();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
 
-Repro();
+repro();
 
 ?>
 --EXPECT--
 Test "Statement - Simple Query" completed successfully.
-

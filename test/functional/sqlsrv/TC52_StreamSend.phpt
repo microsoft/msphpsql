@@ -11,22 +11,20 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function SendStream($minType, $maxType, $atExec)
 {
     include 'MsSetup.inc';
 
     $testName = "Stream - ".($atExec ? "Send at Execution" : "Send after Execution");
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
-    for ($k = $minType; $k <= $maxType; $k++)
-    {
-        switch ($k)
-        {
+    for ($k = $minType; $k <= $maxType; $k++) {
+        switch ($k) {
         case 1: // int
         case 2: // tinyint
         case 3: // smallint
@@ -97,8 +95,7 @@ function SendStream($minType, $maxType, $atExec)
             break;
         }
 
-        if ($data != null)
-        {
+        if ($data != null) {
             $fname1 = fopen($fileName, "w");
             fwrite($fname1, $data);
             fclose($fname1);
@@ -116,62 +113,55 @@ function SendStream($minType, $maxType, $atExec)
         }
     }
 
-    
-    DropTable($conn1, $tableName);  
-    
+
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
 function CreateQueryTable($conn, $table, $dataType, $dataCols, $dataValues, $dataOptions, $execMode)
 {
-    CreateTableEx($conn, $table, $dataType);
-    InsertStream($conn, $table, $dataCols, $dataValues, $dataOptions, $execMode);
+    createTableEx($conn, $table, $dataType);
+    insertStream($conn, $table, $dataCols, $dataValues, $dataOptions, $execMode);
 }
 
 function CheckData($conn, $table, $cols, $expectedValue)
 {
-    $stmt = SelectFromTable($conn, $table);
-    if (!sqlsrv_fetch($stmt))
-    {
-        FatalError("Table $tableName was not expected to be empty.");
+    $stmt = selectFromTable($conn, $table);
+    if (!sqlsrv_fetch($stmt)) {
+        fatalError("Table $tableName was not expected to be empty.");
     }
     $numFields = sqlsrv_num_fields($stmt);
-    if ($numFields != $cols)
-    {
+    if ($numFields != $cols) {
         die("Table $tableName was expected to have $cols fields.");
     }
     $actualValue = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
     sqlsrv_free_stmt($stmt);
-    if (strncmp($actualValue, $expectedValue, strlen($expectedValue)) != 0)
-    {
+    if (strncmp($actualValue, $expectedValue, strlen($expectedValue)) != 0) {
         die("Data corruption: $expectedValue => $actualValue.");
     }
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         SendStream(12, 28, true);   // send stream at execution
         SendStream(12, 28, false);  // send stream after execution
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--
 Test "Stream - Send at Execution" completed successfully.
 Test "Stream - Send after Execution" completed successfully.
-

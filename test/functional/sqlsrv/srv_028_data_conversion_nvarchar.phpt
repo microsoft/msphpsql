@@ -6,10 +6,10 @@ Data type precedence: conversion NVARCHAR(n)
 
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect(array("CharacterSet"=>"UTF-8"));
-if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+// connect
+$conn = connect(array("CharacterSet"=>"UTF-8"));
+if (!$conn) {
+    fatalError("Connection could not be established.\n");
 }
 
 $tableName = GetTempTableName();
@@ -31,7 +31,7 @@ $stmt = sqlsrv_query($conn, $sql);
 $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query($conn, $sql);
 
-while($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC)) {
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC)) {
     var_dump($row[0]);
 }
 

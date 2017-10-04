@@ -1,70 +1,63 @@
 --TEST--
 Statement Cancel Test
 --DESCRIPTION--
-Verifies that “sqlsrv_cancel” discards any pending data in current result set
+Verifies that ï¿½sqlsrv_cancelï¿½ discards any pending data in current result set
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function Cancel()
 {
-    include 'MsSetup.inc';
-
     $testName = "Statement - Cancel";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
-    CreateTable($conn1, $tableName);
-    InsertRows($conn1, $tableName, 5);  
+    setup();
+    $conn1 = connect();
 
-    Trace("Executing SELECT query on $tableName ...");
-    $stmt1 = SelectFromTable($conn1, $tableName);
-    if (sqlsrv_fetch($stmt1) === false)
-    {
-        FatalError("Failed to retrieve data from test table");
+    $tableName = 'TC35test';
+    createTable($conn1, $tableName);
+    insertRows($conn1, $tableName, 5);
+
+    trace("Executing SELECT query on $tableName ...");
+    $stmt1 = selectFromTable($conn1, $tableName);
+    if (sqlsrv_fetch($stmt1) === false) {
+        fatalError("Failed to retrieve data from test table");
     }
-    Trace(" data fetched successfully.\n");
+    trace(" data fetched successfully.\n");
 
-    Trace("Cancel statement and attempt another fetch (expected to fail) ...\n");
+    trace("Cancel statement and attempt another fetch (expected to fail) ...\n");
     sqlsrv_cancel($stmt1);
-    if (sqlsrv_fetch($stmt1) === false)
-    {
-        handle_errors();
-    }
-    else
-    {
+    if (sqlsrv_fetch($stmt1) === false) {
+        handleErrors();
+    } else {
         die("No succesfull data fetch expectd after statement cancel");
     }
 
-    DropTable($conn1, $tableName);  
-    
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         Cancel();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

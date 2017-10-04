@@ -8,7 +8,7 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function StoredFunc()
 {
@@ -18,10 +18,10 @@ function StoredFunc()
     $data1 = "Microsoft SQL Server ";
     $data2 = "Driver for PHP";
 
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
     ExecFunc($conn1, $procName, "CHAR", $data1, $data2);
     ExecFunc($conn1, $procName, "VARCHAR", $data1, $data2);
@@ -30,7 +30,7 @@ function StoredFunc()
 
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 function ExecFunc($conn, $funcName, $sqlType, $inValue1, $inValue2)
@@ -52,32 +52,28 @@ function ExecFunc($conn, $funcName, $sqlType, $inValue1, $inValue2)
 
 
     CreateFunc($conn, $funcName, $funcArgs, $sqlTypeOut, $funcCode);
-    CallFunc($conn, $funcName, "?, ?", $callArgs);
-    DropFunc($conn, $funcName);
+    callFunc($conn, $funcName, "?, ?", $callArgs);
+    dropFunc($conn, $funcName);
 
-    if (strncmp($actual, $expected, strlen($expected)) != 0)
-    {
+    if (strncmp($actual, $expected, strlen($expected)) != 0) {
         die("Data corruption: $expected => $actual.");
     }
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         StoredFunc();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

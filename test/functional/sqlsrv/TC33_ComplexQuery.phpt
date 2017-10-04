@@ -9,20 +9,19 @@ PHPT_EXEC=true
 --FILE--
 <?php
 
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function ComplexQuery()
 {
-    include 'MsSetup.inc';
-
     $testName = "Statement - Complex Query";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
+    $tableName = 'TC33test';
     $dataTypes = "[c1_int] int IDENTITY, [c2_tinyint] tinyint, [c3_smallint] smallint, [c4_bigint] bigint, [c5_varchar] varchar(512)";
-    CreateTableEx($conn1, $tableName, $dataTypes);
+    createTableEx($conn1, $tableName, $dataTypes);
 
     Execute($conn1, true, "SET IDENTITY_INSERT [$tableName] ON;");
     Execute($conn1, true, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_varchar) VALUES (-204401468, 168, 4787, 1583186637, 'о<ƒдC~zггa.Oa._я£*©<u_яяC√oa дгд–яa+OьhдobUa:zB_C÷@~Uƒz+√о–//Z@ьo_:r,oҐ√rяzoZя*я™™е~ UҐa>£√ZUƒ/д_ZгрдеhьCг+/.obо|цяя,рҐрр:ƒ–:*/>+/Ґaц.цƒ<р:>дO~*~яƒzеҐ<™£рэ.O,>№,еbь@bцhэC*<<hb÷д*o©ҐhҐ–ьa+A/_@b/√BэB™я@г~z÷ZэC@дU_яUяhvU*a@√рƒ:™ZAяAb£U_Ґяbгд:ьегorэ√я™_г–÷™zгрегoaь <я~zZ™aB.+еAҐг÷><о:/Ur оҐUяеOaƒ:a|++™©.r~:/+д|©эo++v_@BZ:©©AяCр.©/Ab<,оя>Uг№№цbb|я–я£:о<<bоцa+,<_aƒ._™>№<|÷z√z@>Ґ™:a,C№r__™.<ц№Cг+U÷UҐ_ьzь b√~яo|, .о,b/U>дэaBZ@№£: b÷vэb>√/№√@ь÷/дbҐ+r:Zя>–№|ьu©яZAC:Cяh *.√££_эоu|Urе.:aAUv@u>@<÷ь.<гZ bцZA№÷£oь–д*,ь:рд')");
@@ -30,8 +29,8 @@ function ComplexQuery()
     Execute($conn1, false,"INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_varchar) VALUES (1264768176, 111, 23449, 1421472052, 'uе©C@bрUOv~,©v,BZ№*oh>zb_е–д<@*OOе_÷<гuя/oяr <ргb№Uя№√÷ƒ~Ґ~£ b№©о.u№–Ґ™:|_–ьƒB–bьея√v@,<CяOдv~:+,CZоvhC/oяUuцяa<е>©/Ub,+A–©о:÷rэB+~~яяяг№+_<vO@ я√ь÷оaCz–ое@:rэ.~vh~r.√b√г©е_оCдr B÷№:BbUvдецZ+|,CоaAцC,aоbb*U№яяA hCuҐhOb р|яC.<C<.aBяvu√÷е,A–a>ABрцU/O<÷гь™Oгuя£~u÷+яƒrbо/:÷÷o  /_√O:u√zрUvг£Aг_B–/>UCr,ƒе aƒ–a√£v÷Z@™r*_::~/+.е~р©aƒяbz*z<~о©™rU~O+Z|A<_Bья©Ґц ::.№bэьяr/цrhҐ:ддU дOA~Aоr<ҐдvҐƒ+hC/vяoU™+Oг™г*рҐBц.Zbh/д,ед>*цряUяэ>a™bBbvяг÷/bг|э÷ u.zэ©~дрz–U.UA*a*.Ґ>о rя ~Cьяaц+r™~я@aг/–Cя*a,™ƒbb<o+v.еu<£B<оBZяеu£/_>*~')");
     Execute($conn1, true, "SET IDENTITY_INSERT [$tableName] ON;INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_varchar) VALUES (-411114769, 198, 1378, 140345831, '№@яaцr√™A*–ьяA>_hOьv@|h~O<Ґ+*√–Cbaz№aеZ/÷ц:эгuц–az£–Ah+u+rя:| U*Ґ™еяƒ–_vо@@~Ch–ц_е*AAэBцҐB,яbяе.√B+u*CAv№,г>™яCU<ео©ьrzҐ@цrҐ*÷ubҐBеa№@™.дBvҐo~ яэo oоu/>№–ƒ,р,рaO÷е>рC:цZ>яер©<рҐ+£r.bO.©,uAяr><ov:,ƒяое√+е./||CU№№_÷ƒ™h~<г_е/hbэ ƒ©uBuя<÷@bo÷эBгC№A/цƒ:© яUь*эvuя.Bгееo_ьbэr_ья>–√№£BҐA™vaоvэяC№Uя  еvцu™><о–UC*a÷U©r™hr+>|дэо|oрrц–£<™<÷|A™ohдAо_vu~:~£√hь+√Buƒр ь@Z+ƒ@h÷оҐ|@bU£_ь/£ |:Ґzb>@Uя©  √гo ÷@г–Bг_цBOBƒ–hC№b~÷>оь rэеьUzuгrbzя/™оU–р©uе.я@£__vBb©/№rҐ÷uеz£д*е£/*√O');SET IDENTITY_INSERT [$tableName] OFF;"); 
 
-    $stmt1 = SelectFromTable($conn1, $tableName);
-    $rowCount = RowCount($stmt1);
+    $stmt1 = selectFromTable($conn1, $tableName);
+    $rowCount = rowCount($stmt1);
     sqlsrv_free_stmt($stmt1);
     
     if ($rowCount != 2)
@@ -39,25 +38,25 @@ function ComplexQuery()
         die("Table $tableName has $rowCount rows instead of 2.");
     }
 
-    DropTable($conn1, $tableName);  
+    dropTable($conn1, $tableName);  
     
     sqlsrv_close($conn1);
     
-    EndTest($testName);
+    endTest($testName);
 }
 
 function Execute($conn, $expectedOutcome, $query)
 {
-    Trace("Executing query ".ltrim(substr($query, 0, 40))." ... ");
+    trace("Executing query ".ltrim(substr($query, 0, 40))." ... ");
     $stmt = ExecuteQueryEx($conn, $query, true);
     if ($stmt === false)
     {
-        Trace("failed.\n");
+        trace("failed.\n");
         $actualOutcome = false;
     }
     else
     {
-        Trace("succeeded.\n");
+        trace("succeeded.\n");
         sqlsrv_free_stmt($stmt);
         $actualOutcome = true;
     }
@@ -68,10 +67,10 @@ function Execute($conn, $expectedOutcome, $query)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
     try
     {
@@ -83,7 +82,7 @@ function Repro()
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

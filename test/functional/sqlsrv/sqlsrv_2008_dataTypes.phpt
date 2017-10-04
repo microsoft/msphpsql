@@ -4,101 +4,107 @@ new SQL Server 2008 date types.
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
+date_default_timezone_set('America/Los_Angeles');
+sqlsrv_configure('WarningsReturnAsErrors', 0);
+sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
+sqlsrv_configure('LogSubsystems', SQLSRV_LOG_SYSTEM_OFF);
 
-
-date_default_timezone_set( 'America/Los_Angeles' );
-sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
-sqlsrv_configure( 'LogSubsystems', SQLSRV_LOG_SYSTEM_OFF );
-
-require( 'MsCommon.inc' );
+require_once('MsCommon.inc');
 
 // For testing in Azure, can not switch databases
-$conn = Connect(array( 'ReturnDatesAsStrings' => true ));
+$conn = connect(array( 'ReturnDatesAsStrings' => true ));
 
-if( !$conn ) {
-    FatalError("Could not connect");
+if (!$conn) {
+    fatalError("Could not connect");
 }
 
-$stmt = sqlsrv_query( $conn, "IF OBJECT_ID('2008_date_types', 'U') IS NOT NULL DROP TABLE [2008_date_types]" );
+$stmt = sqlsrv_query($conn, "IF OBJECT_ID('2008_date_types', 'U') IS NOT NULL DROP TABLE [2008_date_types]");
 
-$stmt = sqlsrv_query( $conn, "CREATE TABLE [2008_date_types] (id int, [c1_date] date, [c2_time] time, [c3_datetimeoffset] datetimeoffset, [c4_datetime2] datetime2)" );
-if( $stmt === false ) {
-    FatalError("Create table failed");
+$stmt = sqlsrv_query($conn, "CREATE TABLE [2008_date_types] (id int, [c1_date] date, [c2_time] time, [c3_datetimeoffset] datetimeoffset, [c4_datetime2] datetime2)");
+if ($stmt === false) {
+    fatalError("Create table failed");
 }
 
 // insert new date time types as strings (this works now)
-$stmt = sqlsrv_query( $conn, "INSERT INTO [2008_date_types] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2])" .
+$stmt = sqlsrv_query(
+    $conn,
+    "INSERT INTO [2008_date_types] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2])" .
                       " VALUES (?, ?, ?, ?, ?)",
-                      array( rand(0,99999),
+                      array( rand(0, 99999),
                              array( strftime('%Y-%m-%d'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATE ),
-                             array( strftime( '%H:%M:%S' ), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING( 'utf-8' ), SQLSRV_SQLTYPE_TIME ),
-                             array( date_format( date_create(), 'Y-m-d H:i:s.u P'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATETIMEOFFSET ),
-                             array( date_format( date_create(), 'Y-m-d H:i:s.u'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATETIME2 )));
-if( $stmt === false ) {
-
-    FatalError("Insert 1 failed");
+                             array( strftime('%H:%M:%S'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_TIME ),
+                             array( date_format(date_create(), 'Y-m-d H:i:s.u P'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATETIMEOFFSET ),
+                             array( date_format(date_create(), 'Y-m-d H:i:s.u'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATETIME2 ))
+);
+if ($stmt === false) {
+    fatalError("Insert 1 failed");
 }
 // insert new date time types as DateTime objects (this works now)
-$stmt = sqlsrv_query( $conn, "INSERT INTO [2008_date_types] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2])" .
+$stmt = sqlsrv_query(
+    $conn,
+    "INSERT INTO [2008_date_types] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2])" .
                       " VALUES (?, ?, ?, ?, ?)",
-                      array( rand(0,99999),
+                      array( rand(0, 99999),
                              array( date_create(), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_DATETIME, SQLSRV_SQLTYPE_DATE ),
                              array( date_create(), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_DATETIME, SQLSRV_SQLTYPE_TIME ),
                              array( date_create(), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_DATETIME, SQLSRV_SQLTYPE_DATETIMEOFFSET ),
-                             array( date_create(), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_DATETIME, SQLSRV_SQLTYPE_DATETIME2 )));
-if( $stmt === false ) {
-
-    FatalError("Insert 2 failed");
+                             array( date_create(), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_DATETIME, SQLSRV_SQLTYPE_DATETIME2 ))
+);
+if ($stmt === false) {
+    fatalError("Insert 2 failed");
 }
 // insert new date time types as default DateTime objects with no type information (this works now)
-$stmt = sqlsrv_query( $conn, "INSERT INTO [2008_date_types] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2])" .
-                      " VALUES (?, ?, ?, ?, ?)", 
-                      array( rand(0,99999), date_create(), date_create(), date_create(), date_create()));
-if( $stmt === false ) {
-    FatalError("Insert 3 failed");
+$stmt = sqlsrv_query(
+    $conn,
+    "INSERT INTO [2008_date_types] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2])" .
+                      " VALUES (?, ?, ?, ?, ?)",
+                      array( rand(0, 99999), date_create(), date_create(), date_create(), date_create())
+);
+if ($stmt === false) {
+    fatalError("Insert 3 failed");
 }
 // insert new date time types as strings with no type information (this works)
-$stmt = sqlsrv_query( $conn, "INSERT INTO [2008_date_types] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2])" .
+$stmt = sqlsrv_query(
+    $conn,
+    "INSERT INTO [2008_date_types] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2])" .
                       " VALUES (?, ?, ?, ?, ?)",
-                      array( rand(0,99999), strftime('%Y-%m-%d'), strftime( '%H:%M:%S' ), date_format( date_create(), 'Y-m-d H:i:s.u P'), date_format( date_create(), 'Y-m-d H:i:s.u P')));
-if( $stmt === false ) {
-    FatalError("Insert 4 failed");
+                      array( rand(0, 99999), strftime('%Y-%m-%d'), strftime('%H:%M:%S'), date_format(date_create(), 'Y-m-d H:i:s.u P'), date_format(date_create(), 'Y-m-d H:i:s.u P'))
+);
+if ($stmt === false) {
+    fatalError("Insert 4 failed");
 }
 
 // retrieve date time fields as strings (this works)
-$stmt = sqlsrv_query( $conn, "SELECT * FROM [2008_date_types]" );
-while( sqlsrv_fetch( $stmt )) {
-
-    for( $i = 0; $i < sqlsrv_num_fields( $stmt ); ++$i ) {
-        $fld = sqlsrv_get_field( $stmt, $i, SQLSRV_PHPTYPE_STRING( SQLSRV_ENC_CHAR ));
+$stmt = sqlsrv_query($conn, "SELECT * FROM [2008_date_types]");
+while (sqlsrv_fetch($stmt)) {
+    for ($i = 0; $i < sqlsrv_num_fields($stmt); ++$i) {
+        $fld = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         echo "field $i = $fld\n";
     }
 }
 
 // retrieve date time fields as default (should come back as DateTime objects) (this works now)
-$stmt = sqlsrv_query( $conn, "SELECT * FROM [2008_date_types]" );
-if( $stmt === false ) {
-    FatalError("Select from table failed");
+$stmt = sqlsrv_query($conn, "SELECT * FROM [2008_date_types]");
+if ($stmt === false) {
+    fatalError("Select from table failed");
 }
-while( $row = sqlsrv_fetch_array( $stmt )) {
-    var_dump( $row );
+while ($row = sqlsrv_fetch_array($stmt)) {
+    var_dump($row);
 }
 
 // retrieve date itme fields as DateTime objects
-$stmt = sqlsrv_query( $conn, "SELECT * FROM [2008_date_types]" );
-while( sqlsrv_fetch( $stmt )) {
-
-    for( $i = 1; $i < sqlsrv_num_fields( $stmt ); ++$i ) {
-        $fld = sqlsrv_get_field( $stmt, $i, SQLSRV_PHPTYPE_DATETIME );
-        $str = date_format( $fld, 'Y-m-d H:i:s.u P' );
+$stmt = sqlsrv_query($conn, "SELECT * FROM [2008_date_types]");
+while (sqlsrv_fetch($stmt)) {
+    for ($i = 1; $i < sqlsrv_num_fields($stmt); ++$i) {
+        $fld = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_DATETIME);
+        $str = date_format($fld, 'Y-m-d H:i:s.u P');
         echo "field $i = $str\n";
     }
 }
 
-print_r( sqlsrv_field_metadata( $stmt ));
+print_r(sqlsrv_field_metadata($stmt));
 
-sqlsrv_close( $conn );
+sqlsrv_close($conn);
 
 ?>
 --EXPECTREGEX--

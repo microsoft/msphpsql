@@ -9,48 +9,51 @@ steps to reproduce the issue:
 4 - call sp.
 --FILE--
 <?php
-require_once("MsCommon.inc");
+require_once('MsCommon.inc');
 
-$conn = Connect(); 
-if( $conn === false ) {
-    die( print_r( sqlsrv_errors(), true ));
+$conn = connect();
+if ($conn === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
 //----------------Main---------------------------
 $procName = GetTempProcName();
 createSP($conn, $procName);
 
-sqlsrv_configure( 'WarningsReturnAsErrors', true );
+sqlsrv_configure('WarningsReturnAsErrors', true);
 executeSP($conn, $procName);
 
-sqlsrv_configure( 'WarningsReturnAsErrors', false );
+sqlsrv_configure('WarningsReturnAsErrors', false);
 executeSP($conn, $procName);
 echo "Done";
 //-------------------functions-------------------
-function createSP($conn, $procName){
-	
-	$sp_sql="create proc $procName @p1 integer, @p2 integer, @p3 integer output
+function createSP($conn, $procName)
+{
+    $sp_sql="create proc $procName @p1 integer, @p2 integer, @p3 integer output
 	as
 	begin
 		select @p3 = @p1 + @p2
 		print @p3
 	end
 	";
-	$stmt = sqlsrv_query($conn, $sp_sql);
-	if ($stmt === false) { FatalError("Failed to create stored procedure"); }
+    $stmt = sqlsrv_query($conn, $sp_sql);
+    if ($stmt === false) {
+        fatalError("Failed to create stored procedure");
+    }
 }
 
-function executeSP($conn, $procName){
-	$expected = 3;
-	$v1 = 1;
-	$v2 = 2;
-	$v3 = 'str';
-	$stmt = sqlsrv_query( $conn, "{call $procName( ?, ?, ? )}", array( $v1, $v2, array( &$v3, SQLSRV_PARAM_OUT )));
-	if( $stmt === false ) {
-		print_r( sqlsrv_errors(), true );
-	}
-	if ( $v3 != $expected ) {
-		FatalError("The expected value is $expected, actual value is $v3\n");
-	}
+function executeSP($conn, $procName)
+{
+    $expected = 3;
+    $v1 = 1;
+    $v2 = 2;
+    $v3 = 'str';
+    $stmt = sqlsrv_query($conn, "{call $procName( ?, ?, ? )}", array( $v1, $v2, array( &$v3, SQLSRV_PARAM_OUT )));
+    if ($stmt === false) {
+        print_r(sqlsrv_errors(), true);
+    }
+    if ($v3 != $expected) {
+        fatalError("The expected value is $expected, actual value is $v3\n");
+    }
 }
 ?>
 --EXPECT--

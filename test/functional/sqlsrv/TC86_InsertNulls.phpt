@@ -8,57 +8,57 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function InsertNullsTest($phptype, $sqltype)
 {
-    include 'MsSetup.inc';
-
     $outvar = null;
 
     $failed = false;
 
-    Setup();
+    setup();
 
-    $conn = Connect();
+    $conn = connect();
 
-    DropTable($conn, $tableName);
+    $tableName = 'TC86test';
+    dropTable($conn, $tableName);
 
-    CreateTable($conn, $tableName);
+    createTable($conn, $tableName);
 
-    $stmt = sqlsrv_query($conn, <<<SQL
+    $stmt = sqlsrv_query(
+        $conn,
+        <<<SQL
 SELECT [TABLE_NAME],[COLUMN_NAME],[IS_NULLABLE] FROM [INFORMATION_SCHEMA].[COLUMNS] WHERE [TABLE_NAME] = '$tableName'
 SQL
 );
 
-    if ($stmt === false)
-    {
-        FatalError("Could not query for column information on table $tableName");
+    if ($stmt === false) {
+        fatalError("Could not query for column information on table $tableName");
     }
 
-    while ($row = sqlsrv_fetch($stmt))
-    {
+    while ($row = sqlsrv_fetch($stmt)) {
         $tableName = sqlsrv_get_field($stmt, 0);
         $columnName = sqlsrv_get_field($stmt, 1);
         $nullable = sqlsrv_get_field($stmt, 2);
-        
-        Trace($columnName . ": " . $nullable . "\n");
 
-        if (($nullable == 'YES') && (strpos($columnName, "binary") !== false))
-        {
-            $stmt2 = sqlsrv_prepare($conn, "INSERT INTO [$tableName] ([" . $columnName . "]) VALUES (?)", 
-                array(array( null, SQLSRV_PARAM_IN, $phptype, $sqltype)) );
+        trace($columnName . ": " . $nullable . "\n");
 
-            if (!sqlsrv_execute($stmt2))
-            {
+        if (($nullable == 'YES') && (strpos($columnName, "binary") !== false)) {
+            $stmt2 = sqlsrv_prepare(
+                $conn,
+                "INSERT INTO [$tableName] ([" . $columnName . "]) VALUES (?)",
+                array(array( null, SQLSRV_PARAM_IN, $phptype, $sqltype))
+            );
+
+            if (!sqlsrv_execute($stmt2)) {
                 print_r(sqlsrv_errors(SQLSRV_ERR_ALL));
                 $failed = true;
             }
         }
     }
-    
 
-    DropTable($conn, $tableName);
+
+    dropTable($conn, $tableName);
 
     return $failed;
 }
@@ -66,34 +66,32 @@ SQL
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
     $failed = null;
-    
+
     $testName = "PHP - Insert Nulls";
 
-    StartTest($testName);
+    startTest($testName);
 
-    try
-    {
+    try {
         $failed |= InsertNullsTest(SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY), null);
         $failed |= InsertNullsTest(null, SQLSRV_SQLTYPE_VARBINARY('10'));
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 
-    if ($failed)
-        FatalError("Possible Regression: Could not insert NULL");
-    
-    EndTest($testName);
+    if ($failed) {
+        fatalError("Possible Regression: Could not insert NULL");
+    }
+
+    endTest($testName);
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

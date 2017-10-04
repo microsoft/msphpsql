@@ -9,62 +9,62 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function Transaction()
 {
     include 'MsSetup.inc';
 
     $testName = "Transaction - Disconnect";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
-    CreateTable($conn1, $tableName);
+    setup();
+    $conn1 = connect();
+    createTable($conn1, $tableName);
 
     $noRows = 10;
 
     // Insert rows and disconnect before the transaction is commited (implicit rollback)
-    Trace("\nBegin transaction...\n");
+    trace("\nBegin transaction...\n");
     sqlsrv_begin_transaction($conn1);
-    InsertRows($conn1, $tableName, $noRows);
-    Trace("Disconnect prior to commit...\n\n");
+    insertRows($conn1, $tableName, $noRows);
+    trace("Disconnect prior to commit...\n\n");
     sqlsrv_close($conn1);
 
     // Insert rows and commit the transaction
-    $conn2 = Connect();
-    Trace("Begin transaction...\n");
+    $conn2 = connect();
+    trace("Begin transaction...\n");
     sqlsrv_begin_transaction($conn2);
-    $noRowsInserted = InsertRows($conn2, $tableName, $noRows);
-    Trace("Transaction commit...\n");
+    $noRowsInserted = insertRows($conn2, $tableName, $noRows);
+    trace("Transaction commit...\n");
     sqlsrv_commit($conn2);
 
     $rowCount = 0;
-    $stmt1 = SelectFromTable($conn2, $tableName);
+    $stmt1 = selectFromTable($conn2, $tableName);
     while (sqlsrv_fetch($stmt1))
     {
         $rowCount++;
     }
     sqlsrv_free_stmt($stmt1);
 
-    Trace("\nRows effectively inserted through both transactions: ".$rowCount."\n");
+    trace("\nRows effectively inserted through both transactions: ".$rowCount."\n");
     if ($rowCount != $noRowsInserted)
     {
         die("An incorrect number of rows was fetched. Expected: ".$noRowsInserted);
     }
 
-    DropTable($conn2, $tableName);  
-    
+    dropTable($conn2, $tableName);
+
     sqlsrv_close($conn2);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
     try
     {
@@ -76,9 +76,8 @@ function Repro()
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--
 Test "Transaction - Disconnect" completed successfully.
-

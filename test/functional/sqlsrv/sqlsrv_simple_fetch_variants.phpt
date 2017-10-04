@@ -15,86 +15,84 @@ datetimeoffset
 User-defined types
 --FILE--
 ﻿<?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function CreateVariantTable($conn, $tableName)
 {
-    // create a table for testing    
-    $dataType = "[c1_int] sql_variant, [c2_tinyint] sql_variant, [c3_smallint] sql_variant, [c4_bigint] sql_variant, [c5_bit] sql_variant, [c6_float] sql_variant, [c7_real] sql_variant, [c8_decimal] sql_variant, [c9_numeric] sql_variant, [c10_money] sql_variant, [c11_smallmoney] sql_variant, [c12_char] sql_variant, [c13_varchar] sql_variant, [c14_nchar] sql_variant, [c15_nvarchar] sql_variant, [c16_binary] sql_variant, [c17_varbinary] sql_variant, [c18_uniqueidentifier] sql_variant, [c19_datetime] sql_variant, [c20_smalldatetime] sql_variant, [c21_time] sql_variant, [c22_date] sql_variant, [c23_datetime2] sql_variant";  
-    CreateTableEx($conn, $tableName, $dataType);
+    // create a table for testing
+    $dataType = "[c1_int] sql_variant, [c2_tinyint] sql_variant, [c3_smallint] sql_variant, [c4_bigint] sql_variant, [c5_bit] sql_variant, [c6_float] sql_variant, [c7_real] sql_variant, [c8_decimal] sql_variant, [c9_numeric] sql_variant, [c10_money] sql_variant, [c11_smallmoney] sql_variant, [c12_char] sql_variant, [c13_varchar] sql_variant, [c14_nchar] sql_variant, [c15_nvarchar] sql_variant, [c16_binary] sql_variant, [c17_varbinary] sql_variant, [c18_uniqueidentifier] sql_variant, [c19_datetime] sql_variant, [c20_smalldatetime] sql_variant, [c21_time] sql_variant, [c22_date] sql_variant, [c23_datetime2] sql_variant";
+    createTableEx($conn, $tableName, $dataType);
 }
 
 function InsertData($conn, $tableName, $index)
 {
     $query = GetQuery($index, $tableName);
     $stmt = sqlsrv_query($conn, $query);
-    if (! $stmt) 
-        FatalError("Failed to insert row $index.\n"); 
-    
-    sqlsrv_free_stmt($stmt);  
+    if (! $stmt) {
+        fatalError("Failed to insert row $index.\n");
+    }
+
+    sqlsrv_free_stmt($stmt);
 }
 
 function Fetch($conn, $tableName, $numRows)
 {
     $select = "SELECT * FROM $tableName ORDER BY c1_int";
-    $stmt = sqlsrv_query($conn, $select);  
-    $stmt2 = sqlsrv_query($conn, $select);  
+    $stmt = sqlsrv_query($conn, $select);
+    $stmt2 = sqlsrv_query($conn, $select);
     $stmt3 = sqlsrv_query($conn, $select);
-    
+
     $metadata = sqlsrv_field_metadata($stmt);
     $numFields = count($metadata);
-    
+
     $fetched = 0;
-    while ($result = sqlsrv_fetch($stmt))
-    {
+    while ($result = sqlsrv_fetch($stmt)) {
         echo "Comparing data in row " . ++$fetched . "\n";
 
         $row = sqlsrv_fetch_array($stmt2);
-        if (! $row)
-            FatalError("Failed to retrieve row $fetched!\n");
+        if (! $row) {
+            fatalError("Failed to retrieve row $fetched!\n");
+        }
 
         $obj = sqlsrv_fetch_object($stmt3);
-        if (! $obj)
-            FatalError("Failed to fetch data in an object from row $fetched!\n");
-        
-        for ($j = 0; $j < $numFields; $j++)
-        {
-            $value1 = sqlsrv_get_field($stmt, $j); 
+        if (! $obj) {
+            fatalError("Failed to fetch data in an object from row $fetched!\n");
+        }
+
+        for ($j = 0; $j < $numFields; $j++) {
+            $value1 = sqlsrv_get_field($stmt, $j);
 
             $col = $j + 1;
             DoValuesMatched($value1, $row[$j], $fetched, $col);
-            
+
             $value2 = GetValueFromObject($obj, $col);
             DoValuesMatched($value1, $value2, $fetched, $col);
         }
     }
 
-    $noActualRows = $fetched;    
-    echo "Number of rows fetched: $noActualRows\n";    
-    if ($noActualRows != $numRows)
-    {
+    $noActualRows = $fetched;
+    echo "Number of rows fetched: $noActualRows\n";
+    if ($noActualRows != $numRows) {
         echo("Number of rows does not match expected value\n");
     }
-    
-    sqlsrv_free_stmt($stmt);  
-    sqlsrv_free_stmt($stmt2);  
-    sqlsrv_free_stmt($stmt3);  
+
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_free_stmt($stmt2);
+    sqlsrv_free_stmt($stmt3);
 }
 
 function DoValuesMatched($value1, $value2, $row, $col)
 {
     $matched = ($value1 === $value2);
-    if (! $matched)
-    {            
+    if (! $matched) {
         echo "Values from row $row and column $col do not matched\n";
-        echo "One is $value1 but the other is $value2\n";    
+        echo "One is $value1 but the other is $value2\n";
     }
 }
 
 function GetValueFromObject($obj, $col)
 {
-    switch ($col)
-    {
+    switch ($col) {
         case 1: return $obj->c1_int;
         case 2: return $obj->c2_tinyint;
         case 3: return $obj->c3_smallint;
@@ -119,14 +117,13 @@ function GetValueFromObject($obj, $col)
         case 22: return $obj->c22_date;
         case 23: return $obj->c23_datetime2;
         default: return null;
-    }    
+    }
 }
 
 function GetQuery($index, $tableName)
 {
     $query = "";
-    switch ($index)
-    {
+    switch ($index) {
         case 1:
             $query = "INSERT INTO $tableName ([c1_int], [c2_tinyint], [c3_smallint], [c4_bigint], [c5_bit], [c6_float], [c7_real], [c8_decimal], [c9_numeric], [c10_money], [c11_smallmoney], [c12_char], [c13_varchar], [c14_nchar], [c15_nvarchar], [c16_binary], [c17_varbinary], [c18_uniqueidentifier], [c19_datetime], [c20_smalldatetime], [c21_time], [c22_date], [c23_datetime2]) VALUES ((1), (null), (-6650), (null), (0), (1), (0), (-100000000000000000000000), (0.0504), (0.5199), (-214748.3648), ('/.Zð©vãÄAßÖðÐöuo©_Ä£öªÄ@£ß¢,Oðua*bª*>ããCvzªuðBÜ|uåîü~¢ÃãÄÜvå£<_BªÐ~©+î©ãÄ~+¢a<~|abozaU:Ä.Ö¢Ð|ü>ßß>£r@COzubvývbßuOÄä~Zrb*ZåvªZövÐB_ã@ã,bîåäböü::*ö._äBî_~.Zð£ã~Avß|îÖuZ,ß©üÄ:hh,ä:ð©å./£raUC_</bZßßob_~ßÜÄ:£åUbî*rböz~aãöåä'), ('o©:îoo/vbýý@h££ÜÃCb_h@î@|hoBroÃC|__ßrüBî<bhböß/+OorÐ.Öb£Öð*Aa*bîzåüªBä~ÄAObB,ã~ÜÄßîbööÄß<åAv¢båCýuÖbßãvz~>ÄuÄývð+'), (N'vvöªß/îa©î++|>üªßBÄ¢öªrÖßC+<OvÃrv.AhÄÖO+C~Z@~bÖ>aß<~ª@£ÃbOÜÃb/ã,robo:ãîbð+>,zÃOÖ+ä<,ßCªÖÖ+b@ü>ZÃÐîz.ýªboî/£uAv++aAzOü<~B~z.BÖ,b/bß£.,ÜÜÖßZ<+<+Ð>ýÐ@öOCÐUzrãÃrö/_*uou¢öýuU~,©ar¢r~ðBAähUüb,BoöB|äå<ýuäðÃb|:böä>bäÐÐu__ÖuýÐßO<vZßru@~Ã/ßö+B@*_UAA©bãäåbAÃßUa@bÖrÜv£åÄ+î+/ðÜå/a/ÃÖÃÜ_.:/ðorßÜ:/zî¢åÖbî,zÃÖÄ/ðBOª©,|Ußvrß*ãÄÐ@_h'), (N'¢åU_v+ß,,BÜÄa>ãüªo,îO>¢.b/uO©ßh¢Ü/zuöb,AÖå:O/Bz*åÖî,ÖAßCUã<äh¢Ä~öoðªOªA|Ü*hZb:ýýCåZîîÜäÖªOýBª_îhoäuvoÄoZÐ+ª.å_bßä<ÖUzß©Ozoaý¢ðöU:aCOrÄß.ÐaO|o:åbBOuhß£ã+OAüýÄoÃß.*üä/î~h£*_Z£CaäZöå/Ãß<ßOÖýoÖßÄ~*ß/>a@ÖuUÄå¢ßäB_äßä+ßou._|äßCÃz+ã¢öoBaUî£UÄ:Uªßý@zßhýßÄÜ~Aö<©öC|,@ßOîö:ã|üÄ|:ßhöÐäzßîO+aðO~bbßUÃhhbÐß£b|åö~ABozÜåýÐß£z©roÜUÄ'), (0x3F69A37E16303C7AC955661D1BED304E9674FA57E87BF1B2B85E7F31B75D57EEB7FAE5F97FA9E7E77C921B2910D481C88E564752D3FDD5C477F1C5B8B10AC36CFD7765210837CEEC8D12DB555FC8A1E4DDB6A26016051BB92421818DE42F3671CFAF2C996F5FC057885AC5C1227F64AF4FE1DAFA686256F75BACFCE7B540085DDB6A85B09B08747DF64BD8BB405A97A5BCDE9E72E8EA6D08E46AC42909973DB63CA2E2EB3A6E63B604), (0x0F), ('00000000-0000-0000-0000-000000000000'), ('2326-02-20 08:51:23.203'), ('2024-02-29 15:02:00'), ('12:39:54.0255300'), ('2001-01-01'), ('2924-06-04 08:59:21.2768412'))";
             break;
@@ -151,33 +148,31 @@ function GetQuery($index, $tableName)
 //--------------------------------------------------------------------
 function RunTest()
 {
-    StartTest("sqlsrv_simple_fetch_variants");
-    try
-    {
-        Setup();
+    startTest("sqlsrv_simple_fetch_variants");
+    try {
+        setup();
 
-        // Connect
-        $conn = Connect();
+        // connect
+        $conn = connect();
         // Create a temp table that will be automatically dropped once the connection is closed
         $tableName = GetTempTableName();
         CreateVariantTable($conn, $tableName);
 
         // Insert data
         $numRows = 4;
-        for ($i = 1; $i <= $numRows; $i++)
+        for ($i = 1; $i <= $numRows; $i++) {
             InsertData($conn, $tableName, $i);
-        
+        }
+
         // Read data
         Fetch($conn, $tableName, $numRows);
-        
-        sqlsrv_close($conn);   
-    }
-    catch (Exception $e)
-    {
+
+        sqlsrv_close($conn);
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
     echo "\nDone\n";
-    EndTest("sqlsrv_simple_fetch_variants");
+    endTest("sqlsrv_simple_fetch_variants");
 }
 
 RunTest();

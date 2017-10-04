@@ -4,28 +4,27 @@ Fix for 168256.
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-    sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-    sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
+    sqlsrv_configure('WarningsReturnAsErrors', 0);
+    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-    require( 'MsCommon.inc' );
-    if( !($conn = Connect()))
-    {
-         FatalError("Could not connect");
+    require_once('MsCommon.inc');
+    if (!($conn = Connect())) {
+        fatalError("Could not connect");
     }
 
     $tsql = "SELECT OrderQty, UnitPrice FROM [168256]";
-    $stmt = sqlsrv_query( $conn, $tsql);
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $stmt = sqlsrv_query($conn, $tsql);
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    for($i = 0; $i < 10; $i++){
-        $row = sqlsrv_fetch_array( $stmt);
+    for ($i = 0; $i < 10; $i++) {
+        $row = sqlsrv_fetch_array($stmt);
         print_r($row);
     }
 
-    sqlsrv_free_stmt( $stmt);
-    sqlsrv_close( $conn );
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_close($conn);
 ?>
 --EXPECT--
 Array

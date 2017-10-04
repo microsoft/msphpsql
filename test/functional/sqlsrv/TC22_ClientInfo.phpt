@@ -1,44 +1,38 @@
 --TEST--
 Client Info Test
 --DESCRIPTION--
-Verifies the functionality of "sqlsrv_client_info”.
+Verifies the functionality of "sqlsrv_client_infoï¿½.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function ClientInfo()
 {
-    include 'MsSetup.inc';
-
     $testName = "Connection - Client Info";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
     $clientinfo1 = sqlsrv_client_info($conn1);
     $count1 = count($clientinfo1);
-    if ($count1 != 4)
-    {
+    if ($count1 != 4) {
         die("Unexpected size for client_info array: ".$count1);
     }
-    
+
     $driverName = 'DriverDllName';
     $uname = php_uname();
-    
-    if (IsWindows())    
-    {
+
+    if (isWindows()) {
         $driverName = 'DriverDllName';
-    } 
-    else // other than Windows
-    {
+    } else { // other than Windows
         $driverName = 'DriverName';
     }
-    
+
     ShowInfo($clientinfo1, 'ExtensionVer');
     ShowInfo($clientinfo1, $driverName);
     ShowInfo($clientinfo1, 'DriverVer');
@@ -46,34 +40,30 @@ function ClientInfo()
 
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 function ShowInfo($clientInfo, $infoTag)
 {
     $info = $clientInfo[$infoTag];
-    Trace("$infoTag\t= $info\n");
+    trace("$infoTag\t= $info\n");
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-
-    try
-    {
+    try {
         ClientInfo();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

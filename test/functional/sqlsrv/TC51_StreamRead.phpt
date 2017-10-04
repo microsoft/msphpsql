@@ -9,97 +9,82 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function StreamRead($noRows, $startRow)
 {
     include 'MsSetup.inc';
 
     $testName = "Stream - Read";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    if (! IsWindows())
-        $conn1 = ConnectUTF8();
-    else 
-        $conn1 = Connect();
+    setup();
+    if (! isWindows()) {
+        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+    } else {
+        $conn1 = connect();
+    }
 
-    CreateTable($conn1, $tableName);
-    InsertRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
+    createTable($conn1, $tableName);
+    insertRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
-    $stmt1 = SelectQuery($conn1, $query);
+    $stmt1 = selectQuery($conn1, $query);
     $numFields = sqlsrv_num_fields($stmt1);
 
-    for ($row = 1; $row <= $noRows; $row++)
-    {
-        if (!sqlsrv_fetch($stmt1))
-        {
-            FatalError("Failed to fetch row ".$row);
+    for ($row = 1; $row <= $noRows; $row++) {
+        if (!sqlsrv_fetch($stmt1)) {
+            fatalError("Failed to fetch row ".$row);
         }
-        Trace("\nStreaming row $row:\n");
+        trace("\nStreaming row $row:\n");
         $skipCount = 0;
-        for ($j = 0; $j < $numFields; $j++)
-        {
+        for ($j = 0; $j < $numFields; $j++) {
             $col = $j + 1;
-            if (!IsUpdatable($col))
-            {
+            if (!IsUpdatable($col)) {
                 $skipCount++;
             }
-            if (IsStreamable($col))
-            {
+            if (IsStreamable($col)) {
                 VerifyStream($stmt1, $startRow + $row - 1, $j, $skipCount);
             }
         }
     }
 
     sqlsrv_free_stmt($stmt1);
-    
-    DropTable($conn1, $tableName);	
-    
+
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 function VerifyStream($stmt, $row, $colIndex, $skip)
 {
     $col = $colIndex + 1;
-    if (IsStreamable($col))
-    {
+    if (IsStreamable($col)) {
         $type = GetSqlType($col);
-        if (IsBinary($col))
-        {
+        if (IsBinary($col)) {
             $stream = sqlsrv_get_field($stmt, $colIndex, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-        }
-        else
-        {
-            if (UseUTF8Data()){
+        } else {
+            if (useUTF8Data()) {
                 $stream = sqlsrv_get_field($stmt, $colIndex, SQLSRV_PHPTYPE_STREAM('UTF-8'));
-            }
-            else{
+            } else {
                 $stream = sqlsrv_get_field($stmt, $colIndex, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
             }
         }
-        if ($stream === false)
-        {
-            FatalError("Failed to read field $col: $type");
-        }
-        else
-        {
+        if ($stream === false) {
+            fatalError("Failed to read field $col: $type");
+        } else {
             $value = '';
-            if ($stream)
-            {
-                while (!feof($stream))
-                {
+            if ($stream) {
+                while (!feof($stream)) {
                     $value .= fread($stream, 8192);
                 }
                 fclose($stream);
-                $data = GetInsertData($row, $col, $skip);
-                if (!CheckData($col, $value, $data))
-                {
-                    SetUTF8Data(false);
-                    Trace("Data corruption on row $row column $col\n");
+                $data = getInsertData($row, $col, $skip);
+                if (!CheckData($col, $value, $data)) {
+                    setUTF8Data(false);
+                    trace("Data corruption on row $row column $col\n");
                     die("Data corruption on row $row column $col\n");
                 }
             }
@@ -113,31 +98,23 @@ function CheckData($col, $actual, $expected)
 {
     $success = true;
 
-    if (IsBinary($col))
-    {
+    if (IsBinary($col)) {
         $actual = bin2hex($actual);
-        if (strncasecmp($actual, $expected, strlen($expected)) != 0)
-        {
+        if (strncasecmp($actual, $expected, strlen($expected)) != 0) {
             $success = false;
         }
-    }
-    else
-    {
-        if (strncasecmp($actual, $expected, strlen($expected)) != 0)
-        {
-            if ($col != 19)
-            {	// skip ntext
+    } else {
+        if (strncasecmp($actual, $expected, strlen($expected)) != 0) {
+            if ($col != 19) {    // skip ntext
                 $pos = strpos($actual, $expected);
-                if (($pos === false) || ($pos > 1))
-                {
+                if (($pos === false) || ($pos > 1)) {
                     $success = false;
                 }
             }
         }
     }
-    if (!$success)
-    {
-        Trace("\nData error\nExpected:\n$expected\nActual:\n$actual\n");
+    if (!$success) {
+        trace("\nData error\nExpected:\n$expected\nActual:\n$actual\n");
     }
 
     return ($success);
@@ -145,31 +122,26 @@ function CheckData($col, $actual, $expected)
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    if (! IsWindows())
-    {
-        SetUTF8Data(true);
+    if (! isWindows()) {
+        setUTF8Data(true);
     }
-        
-    try
-    {
+
+    try {
         StreamRead(20, 1);
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 
-    SetUTF8Data(false);
+    setUTF8Data(false);
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--
 Test "Stream - Read" completed successfully.
-

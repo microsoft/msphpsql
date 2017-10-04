@@ -1,5 +1,5 @@
 --TEST--
-GitHub issue #308 - empty string set to output parameter on stored procedure 
+GitHub issue #308 - empty string set to output parameter on stored procedure
 --DESCRIPTION--
 A variation of the example in GitHub issue 308. A NULL value returned as output parameter will remain as NULL.
 --SKIPIF--
@@ -7,8 +7,8 @@ A variation of the example in GitHub issue 308. A NULL value returned as output 
 <?php
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect() ?: FatalError("Failed to connect");
+// connect
+$conn = connect() ?: fatalError("Failed to connect");
 
 $procName = GetTempProcName();
 
@@ -19,14 +19,18 @@ SET @TEST=NULL;
 SELECT HELLO_WORLD_COLUMN='THIS IS A COLUMN IN A SINGLE DATASET';
 END";
 $stmt = sqlsrv_query($conn, $sql);
-if ($stmt === false) { FatalError("Failed to create stored procedure"); }
+if ($stmt === false) {
+    fatalError("Failed to create stored procedure");
+}
 
 $sql = "EXEC $procName @Test = ?";
 $out = '';
 
 $param = array(array(&$out, SQLSRV_PARAM_INOUT));
 $stmt = sqlsrv_query($conn, $sql, $param);
-if ($stmt === false) { FatalError("Failed to execute stored procedure"); }
+if ($stmt === false) {
+    fatalError("Failed to execute stored procedure");
+}
 
 $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
 sqlsrv_next_result($stmt);

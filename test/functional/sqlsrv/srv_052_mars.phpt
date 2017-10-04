@@ -6,19 +6,19 @@ Enable multiple active result sets (MARS)
 
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect(array('MultipleActiveResultSets' => true));
-if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+// connect
+$conn = connect(array('MultipleActiveResultSets' => true));
+if (!$conn) {
+    fatalError("Connection could not be established.\n");
 }
 
 // Query
-$stmt1 = sqlsrv_query( $conn, "SELECT 'ONE'" ) ?: die(print_r( sqlsrv_errors(), true ));
-sqlsrv_fetch( $stmt1 );
+$stmt1 = sqlsrv_query($conn, "SELECT 'ONE'") ?: die(print_r(sqlsrv_errors(), true));
+sqlsrv_fetch($stmt1);
 
 // Query. Returns if multiple result sets are disabled
-$stmt2 = sqlsrv_query( $conn, "SELECT 'TWO'" ) ?: die(print_r( sqlsrv_errors(), true ));
-sqlsrv_fetch( $stmt2 );
+$stmt2 = sqlsrv_query($conn, "SELECT 'TWO'") ?: die(print_r(sqlsrv_errors(), true));
+sqlsrv_fetch($stmt2);
 
 // Print the data
 $res = [ sqlsrv_get_field($stmt1, 0), sqlsrv_get_field($stmt2, 0) ];

@@ -8,38 +8,50 @@ function test()
 {
     require_once("MsCommon.inc");
 
-    // Connect
-    $conn = Connect();
-    if( !$conn ) {
-        PrintErrors("Connection could not be established.\n");
+    // connect
+    $conn = connect();
+    if (!$conn) {
+        printErrors("Connection could not be established.\n");
     }
 
     // Prepare the statement
     $sql = "select * from cd_info";
-    $stmt = sqlsrv_prepare( $conn, $sql, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED) );
-    if( $stmt === false ) { PrintErrors(); }
+    $stmt = sqlsrv_prepare($conn, $sql, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+    if ($stmt === false) {
+        printErrors();
+    }
     sqlsrv_execute($stmt);
 
     // Get row count
-    $row_count = sqlsrv_num_rows( $stmt );  
-    if ($row_count == 0) { PrintErrors("There should be at least one row!\n"); }
+    $row_count = sqlsrv_num_rows($stmt);
+    if ($row_count == 0) {
+        printErrors("There should be at least one row!\n");
+    }
 
     sqlsrv_execute($stmt);
-    $row = sqlsrv_fetch($stmt, SQLSRV_SCROLL_FIRST);  
+    $row = sqlsrv_fetch($stmt, SQLSRV_SCROLL_FIRST);
     $field = sqlsrv_get_field($stmt, 0);
-    if (! $field) { PrintErrors(); }
+    if (! $field) {
+        printErrors();
+    }
 
-    $row = sqlsrv_fetch($stmt, SQLSRV_SCROLL_LAST);  
+    $row = sqlsrv_fetch($stmt, SQLSRV_SCROLL_LAST);
     $field = sqlsrv_get_field($stmt, 0);
-    if (! $field) { PrintErrors(); }
+    if (! $field) {
+        printErrors();
+    }
 
     // this should return false
-    $row = sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, $row_count);  
-    if ($row) { PrintErrors("This should return false!"); }
+    $row = sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, $row_count);
+    if ($row) {
+        printErrors("This should return false!");
+    }
     $field = sqlsrv_get_field($stmt, 0);
-    if ($field !== false) { PrintErrors("This should have resulted in error!"); }
+    if ($field !== false) {
+        printErrors("This should have resulted in error!");
+    }
 
-    sqlsrv_free_stmt( $stmt);
+    sqlsrv_free_stmt($stmt);
     sqlsrv_close($conn);
 }
 

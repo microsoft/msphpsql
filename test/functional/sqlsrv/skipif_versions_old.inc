@@ -1,16 +1,15 @@
 <?php
 
-if(! extension_loaded( "sqlsrv" ) ) 
-    die( "skip extension not loaded" );
-
-require_once( "MsCommon.inc" );
-$conn = ae_connect();
-if( ! $conn )
-{
-    echo( "Error: could not connect during SKIPIF!" );
+if (! extension_loaded("sqlsrv")) {
+    die("skip extension not loaded");
 }
-else if(! IsAEQualified( $conn ) )
-{
-    die( "skip - AE feature not supported in the current environment." );
-}  
+
+require_once('MsCommon.inc');
+
+$conn = connect();
+if (! $conn) {
+    echo("Error: could not connect during SKIPIF!");
+} elseif (AE\isColEncrypted() && !AE\isQualified($conn)) {
+    die("skip - AE feature not supported in the current environment.");
+}
 ?>

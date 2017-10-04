@@ -1,29 +1,26 @@
 --TEST--
 Server Info Test
 --DESCRIPTION--
-Verifies the functionality of “sqlsrv_server_info”.
+Verifies the functionality of ï¿½sqlsrv_server_infoï¿½.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function ServerInfo()
 {
-    include 'MsSetup.inc';
-
     $testName = "Connection - Server Info";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
-    $serverinfo1 = sqlsrv_server_info($conn1);  
-    $count1 = count($serverinfo1);  
-    if ($count1 != 3)
-    {
+    $serverinfo1 = sqlsrv_server_info($conn1);
+    $count1 = count($serverinfo1);
+    if ($count1 != 3) {
         die("Unexpected size for server_info array: ".$count1);
     }
 
@@ -33,17 +30,15 @@ function ServerInfo()
 
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 function ShowInfo($serverInfo, $infoTag)
 {
     $info = $serverInfo[$infoTag];
-    if (TraceMode())
-    {
+    if (traceMode()) {
         echo "$infoTag\t";
-        if (strlen($infoTag) <= 15)
-        {
+        if (strlen($infoTag) <= 15) {
             echo "\t";
         }
         echo "$info\n";
@@ -51,22 +46,19 @@ function ShowInfo($serverInfo, $infoTag)
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         ServerInfo();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

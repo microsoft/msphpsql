@@ -8,11 +8,17 @@
 
 */
 $PhpDriver = "Microsoft SQL Server Driver for PHP";
-
+/*
 $server = 'TARGET_SERVER';
 $database = 'TARGET_DATABASE';
 $userName = 'TARGET_USERNAME';
 $userPassword = 'TARGET_PASSWORD';
+*/
+
+$server = 'SQL-2K16-01.galaxy.ad';
+$database = 'php_test';
+$userName = 'sa';
+$userPassword = 'Moonshine4me';
 
 $tableName = "php_test_table";
 $tableIndex = "php_test_table_index";
