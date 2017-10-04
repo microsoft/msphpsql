@@ -31,7 +31,7 @@ foreach ($dataTypes as $dataType) {
 
     // create table
     $tbname = GetTempTableName("", false);
-    $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, "randomized"));
+    $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
 
     // test each SQLSRV_SQLTYPE_ constants
@@ -39,9 +39,9 @@ foreach ($dataTypes as $dataType) {
         // insert a row
         $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
         $sqlType = get_default_size_prec($sqlType);
-        $paramOp = array( new AE\BindParamOption(1, null, null, $sqlType), new AE\BindParamOption(2, null, null, $sqlType));
+        $inputs = array(new AE\BindParamOption($inputValues[0], null, null, $sqlType), new AE\BindParamOption($inputValues[1], null, null, $sqlType));
         $r;
-        $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r, "prepareParamsOp", $paramOp);
+        $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputs[0], $colMetaArr[1]->colName => $inputs[1] ), $r, AE\INSERT_PREPARE_PARAMS);
 
         if (!AE\isColEncrypted()) {
             if ($r === false) {

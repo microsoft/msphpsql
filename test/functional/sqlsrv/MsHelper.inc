@@ -12,25 +12,37 @@ namespace AE {
 
 require_once('MsSetup.inc');
 
+const KEYSTORE_NONE = 'none';
+const KEYSTORE_WIN = 'win';
+const KEYSTORE_KSP = 'ksp';
+const KEYSTORE_AKV = 'akv';
+
+const INSERT_QUERY = 1;
+const INSERT_PREPARE = 2;
+const INSERT_QUERY_PARAMS = 3;
+const INSERT_PREPARE_PARAMS = 4;
+
+
 /**
  * class for encapsulating column metadata needed for creating a table
  */
 class ColumnMeta
 {
     public $colName;
-    public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
-    public $encType;    //randomized or deterministic; default is deterministic
-    public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
+    public $dataType;   // a string that includes the size of the type if necessary (e.g., decimal(10,5))
+    public $encType;    // randomized or deterministic; default is deterministic
+    public $options;    // a string that is null by default (e.g. NOT NULL Identity (1,1) )
 
-    public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic")
+    public function __construct($dataType, $colName = null, $options = null, $deterministic = true)
     {
         if (is_null($colName)) {
             $this->colName = getDefaultColname($dataType);
         } else {
             $this->colName = $colName;
         }
+        
+        $this->encType = ($deterministic ? "deterministic" : "randomized");
         $this->dataType = $dataType;
-        $this->encType = $encType;
         $this->options = $options;
     }
     /**
@@ -41,7 +53,6 @@ class ColumnMeta
         $append = " ";
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        // if ( $keystore != "none" && stripos( $this->options, "identity" ) === false )
         if (isColEncrypted() && stripos($this->options, "identity") === false) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
@@ -60,14 +71,14 @@ class ColumnMeta
  */
 class BindParamOption
 {
-    public $index;      //1-based index of the parameter
-    public $direction;  //SQLSRV_PARAM_ constant indicating the parameter direction
-    public $phpType;    //SQLSRV_PHPTYPE_ constant specifying the php type of the return values
-    public $sqlType;    //SQLSRV_SQLTYPE_ constant specifying the SQL type of the input
+    public $value;      // the param value
+    public $direction;  // SQLSRV_PARAM_ constant indicating the parameter direction
+    public $phpType;    // SQLSRV_PHPTYPE_ constant specifying the php type of the return values
+    public $sqlType;    // SQLSRV_SQLTYPE_ constant specifying the SQL type of the input
 
-    public function __construct($index, $direction = null, $phpType = null, $sqlType = null)
+    public function __construct($value, $direction = null, $phpType = null, $sqlType = null)
     {
-        $this->index = $index;
+        $this->value = $value;
         $this->direction = $direction;
         $this->phpType = $phpType;
         $this->sqlType = $sqlType;
@@ -114,7 +125,7 @@ class BindParamOption
                 $sqlType = constant($type);
             }
         }
-        return array( $var, $direction, $phpType, $sqlType );
+        return array($var, $direction, $phpType, $sqlType);
     }
 }
 
@@ -127,16 +138,16 @@ function getCekName()
 
     $cekName = '';
     switch ($keystore) {
-        case "none":
+        case KEYSTORE_NONE:
             $cekName = '';
             break;
-        case "win":
+        case KEYSTORE_WIN:
             $cekName = 'AEColumnKey';
             break;
-        case "ksp":
+        case KEYSTORE_KSP:
             $cekName = 'CustomCEK';
             break;
-        case "akv":
+        case KEYSTORE_AKV:
             $cekName = 'AKVColumnKey';
             break;
         default:
@@ -240,7 +251,7 @@ function getSeqPlaceholders($num)
 function isColEncrypted()
 {
     global $keystore, $dataEncrypted;
-    if ($keystore == "none" || !$dataEncrypted) {
+    if ($keystore == KEYSTORE_NONE || !$dataEncrypted) {
         return false;
     } else {
         return true;
@@ -318,25 +329,25 @@ function createTable($conn, $tbname, $columnMetaArr)
  * Insert a row into a table
  * @param  object  $conn : sqlsrv connection object
  * @param  string  $tbname : name of the table for the row to be inserted
- * @param  array  $inputs : an associative array column name and its value
+ * @param  array  $inputs : an associative array column name and its value, which may be a 
+ *                          literal or a BindParamOption object
  * @param  bool  $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
  * $param  string  $api : SQLSRV API used for executing the insert query
- *                      accepted values: "query", "queryParamsOp", "prepare", "prepareParamsOp"
- * @param  array  $paramOption : an array of bindParamOptions. Should only be provided if $api is "perpareWithParamOp", if provided, has to be in the same order as $inputs
- * @return object PDOStatement object of the insert statement
+ *                      accepted values: INSERT_QUERY, INSERT_PREPARE, INSERT_QUERY_PARAMS, INSERT_PREPARE_PARAMS
+ * @return object sqlsrv statement object of the insert statement
  */
-function insertRow($conn, $tbname, $inputs, &$r = null, $api = "query", $paramOption = array())
+function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
 {
     require  'MsSetup.inc';
 
     $stmt = null;
-    if ($keystore == "none" && $api != "queryParamsOp" && $api != "prepareParamsOp") {
+    if (!isColEncrypted() && $api < INSERT_QUERY_PARAMS) {
         $insertSql = getInsertSqlComplete($tbname, $inputs);
         switch ($api) {
-            case "query":
+            case INSERT_QUERY:
                 $stmt = sqlsrv_query($conn, $insertSql);
                 break;
-            case "prepare":
+            case INSERT_PREPARE:
                 $stmt = sqlsrv_prepare($conn, $insertSql);
                 $r = sqlsrv_execute($stmt);
                 break;
@@ -345,29 +356,15 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = "query", $paramOp
         // if AE is on, must bind param
         $insertSql = getInsertSqlPlaceholders($tbname, $inputs);
         $params = array();
-        if (empty($paramOption)) {
-            foreach ($inputs as $key => $value) {
+        foreach ($inputs as $key => $input) {
+            if (!is_object($input)) {
+                array_push($params, $input->bindParamArr($inputs[$key]));               
+            } else {
                 array_push($params, $inputs[$key]);
             }
-        } else {
-            $i = 1;
-            foreach ($inputs as $key => $value) {
-                $nooption = true;
-                foreach ($paramOption as $op) {
-                    if ($op->index == $i) {
-                        array_push($params, $op->bindParamArr($inputs[$key]));
-                        $nooption = false;
-                        $i++;
-                        break;
-                    }
-                }
-                if ($nooption) {
-                    array_push($params, $inputs[$key]);
-                    $i++;
-                }
-            }
         }
-        if ($keystore != "none" || $api == "prepareParamsOp") {
+        
+        if ($api == INSERT_PREPARE_PARAMS) {
             $stmt = sqlsrv_prepare($conn, $insertSql, $params);
             $r = sqlsrv_execute($stmt);
         } else {

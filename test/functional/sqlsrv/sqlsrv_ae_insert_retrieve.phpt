@@ -17,7 +17,7 @@ $colMetaArr = array( new AE\ColumnMeta("int", "PatientId", "IDENTITY(1,1)"),
                          new AE\ColumnMeta("char(11)", "SSN"),
                          new AE\ColumnMeta("nvarchar(50)", "FirstName", "NULL"),
                          new AE\ColumnMeta("nvarchar(50)", "LastName", "NULL"),
-                         new AE\ColumnMeta("date", "BirthDate", null, "randomized"));
+                         new AE\ColumnMeta("date", "BirthDate", null, false));
 AE\createTable($conn, $tbname, $colMetaArr);
 
 // insert a row

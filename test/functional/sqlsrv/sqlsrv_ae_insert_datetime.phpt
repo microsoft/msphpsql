@@ -18,7 +18,7 @@ foreach ($dataTypes as $dataType) {
 
     // create table
     $tbname = GetTempTableName("", false);
-    $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, "randomized"));
+    $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
 
     // insert a row
