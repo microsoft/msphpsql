@@ -1057,7 +1057,7 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
         CHECK_CUSTOM_ERROR( stmt->past_next_result_end, stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
             throw core::CoreException();
         }
-
+        
         close_active_stream( stmt TSRMLS_CC );
 
         //Clear column sql types and sql display sizes.

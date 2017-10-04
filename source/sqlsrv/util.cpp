@@ -397,12 +397,16 @@ ss_error SS_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -104, false}
     },
     {
-        SQLSRV_ERROR_AE_DRIVER_NOT_INSTALLED,
+        SQLSRV_ERROR_CE_DRIVER_REQUIRED,
         { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.", -105, false }
     },
     {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
         { IMSSP, (SQLCHAR*) "Invalid value %1!s! was specified for Driver option.", -106, true }
+    },
+    {
+        SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND,
+        { IMSSP, (SQLCHAR*) "The specified ODBC Driver is not found.", -107, false }
     },
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
