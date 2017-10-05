@@ -129,6 +129,7 @@ install:
     - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - appveyor DownloadFile http://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/release-0.9.6.1/OpenCppCoverageSetup-x64-0.9.6.1.exe
     - OpenCppCoverageSetup-x64-0.9.6.1.exe /VERYSILENT
+    - OpenCppCoverage.exe
         
 build_script:
     - '"C:\\Program Files (x86)\\Microsoft Visual Studio %PHP_VC%.0\\VC\\vcvarsall.bat" %BUILD_PLATFORM%'
