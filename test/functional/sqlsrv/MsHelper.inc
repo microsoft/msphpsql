@@ -338,8 +338,6 @@ function createTable($conn, $tbname, $columnMetaArr)
  */
 function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
 {
-    require  'MsSetup.inc';
-
     $stmt = null;
     if (!isColEncrypted() && $api < INSERT_QUERY_PARAMS) {
         $insertSql = getInsertSqlComplete($tbname, $inputs);
