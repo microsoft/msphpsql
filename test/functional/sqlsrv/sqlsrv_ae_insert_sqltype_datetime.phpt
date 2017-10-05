@@ -18,7 +18,7 @@ $compatList = array( "date" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VAR
                      "datetime2" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2" ),
                      "smalldatetime" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2" ),
                      "time" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2" ),
-                     "datetimeoffset" => array("SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2") );
+                     "datetimeoffset" => array("SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIMEOFFSET") );
 
 $conn = AE\connect();
 
@@ -51,6 +51,7 @@ foreach ($dataTypes as $dataType) {
                 // 22018 is the SQLSTATE for any incompatible conversion errors
                 if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
                     echo "$sqlType should be compatible with $dataType\n";
+                    var_dump(sqlsrv_errors());
                     $success = false;
                 }
             }
@@ -59,6 +60,7 @@ foreach ($dataTypes as $dataType) {
                 // always encrypted only allow sqlType that is identical to the encrypted column datatype
                 if ("SQLSRV_SQLTYPE_" . strtoupper($dataType) == $sqlType) {
                     echo "$sqlType should be compatible with $dataType\n";
+                    var_dump(sqlsrv_errors());
                     $success = false;
                 }
             } else {
@@ -86,20 +88,20 @@ sqlsrv_close($conn);
 ?>
 --EXPECT--
 
-Testing date: 
+Testing date:
 Test successfully done.
 
-Testing datetime: 
+Testing datetime:
 Test successfully done.
 
-Testing datetime2: 
+Testing datetime2:
 Test successfully done.
 
-Testing smalldatetime: 
+Testing smalldatetime:
 Test successfully done.
 
-Testing time: 
+Testing time:
 Test successfully done.
 
-Testing datetimeoffset: 
+Testing datetimeoffset:
 Test successfully done.
