@@ -132,7 +132,6 @@ install:
     - ps: ls "c:\Program Files"
     - set CPPCOVER="C:\\Program Files\\OpenCppCoverage"
     - set PATH=%CPPCOVER%;%PATH%
-    - OpenCppCoverage.exe
     
 build_script:
     - '"C:\\Program Files (x86)\\Microsoft Visual Studio %PHP_VC%.0\\VC\\vcvarsall.bat" %BUILD_PLATFORM%'
