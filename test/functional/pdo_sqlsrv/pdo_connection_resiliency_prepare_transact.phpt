@@ -6,7 +6,7 @@ test transactions by breaking the connection before beginning a transaction
 and in the middle of the transaction. The latter case should fail.
 --SKIPIF--
 <?php require('skipif_protocol_not_tcp.inc');
-      require('skipif_version_not_2k14.inc');  ?>
+      require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
 <?php
 require_once( "break_pdo.php" );

@@ -8,7 +8,7 @@ that should fail. Finally, execute two queries in two threads on a recovered
 non-MARS connection. This should fail too.
 --SKIPIF--
 <?php require('skipif_protocol_not_tcp.inc');
-      require('skipif_version_not_2k14.inc');  ?>
+      require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
 <?php
 // There is a lot of repeated code here that could be refactored with helper methods,

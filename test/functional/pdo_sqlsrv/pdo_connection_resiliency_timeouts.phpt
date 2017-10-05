@@ -5,7 +5,7 @@ Test connection resiliency timeouts
 2. Reconnect with the default value of ConnectRetryCount(1).
 --SKIPIF--
 <?php require('skipif_protocol_not_tcp.inc');
-      require('skipif_version_not_2k14.inc'); ?>
+      require('skipif_version_less_than_2k14.inc'); ?>
 --FILE--
 <?php
 require_once( "break_pdo.php" );
