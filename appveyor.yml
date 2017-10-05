@@ -130,7 +130,7 @@ install:
     - appveyor DownloadFile http://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/release-0.9.6.1/OpenCppCoverageSetup-x64-0.9.6.1.exe
     - OpenCppCoverageSetup-x64-0.9.6.1.exe /VERYSILENT
     - ps: ls "c:\Program Files"
-    - ps: & 'C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe'
+    - 'C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe'
         
 build_script:
     - '"C:\\Program Files (x86)\\Microsoft Visual Studio %PHP_VC%.0\\VC\\vcvarsall.bat" %BUILD_PLATFORM%'
@@ -180,7 +180,7 @@ test_script:
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1    
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
-    - OpenCppCoverage.exe --sources %APPVEYOR_BUILD_FOLDER%\source --modules *sqlsrv*.dll --export_type=cobertura:coverage.xml -- php %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\sqlsrv_param_input_variants.phpt
+    - 'C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe' --sources %APPVEYOR_BUILD_FOLDER%\source --modules *sqlsrv*.dll --export_type=cobertura:coverage.xml -- php %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\sqlsrv_param_input_variants.phpt
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
 
