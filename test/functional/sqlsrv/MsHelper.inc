@@ -351,8 +351,9 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
                 break;
         }
     } else {
-        // if AE is on, must bind param
+        // if AE is enabled, must bind param
         $insertSql = getInsertSqlPlaceholders($tbname, $inputs);
+        echo $insertSql . "\n";
         $params = array();
         foreach ($inputs as $key => $input) {
             if (is_object($input)) {
@@ -362,12 +363,11 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
             }
         }
         
-        if ($api == INSERT_PREPARE_PARAMS) {
-            $stmt = sqlsrv_prepare($conn, $insertSql, $params);
-            $r = sqlsrv_execute($stmt);
-        } else {
-            $stmt = sqlsrv_query($conn, $insertSql, $params);
-        }
+        var_dump($params);
+        
+        // use prepare for inserts when AE is enabled
+        $stmt = sqlsrv_prepare($conn, $insertSql, $params);
+        $r = sqlsrv_execute($stmt);
     }
     return $stmt;
 }
