@@ -6,7 +6,7 @@ if (! extension_loaded("sqlsrv")) {
 
 require_once('MsCommon.inc');
 
-$conn = connect();
+$conn = AE\connect();
 if (! $conn) {
     echo("Error: could not connect during SKIPIF!");
 } elseif (AE\isColEncrypted() && !AE\isQualified($conn)) {
