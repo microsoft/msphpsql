@@ -184,12 +184,12 @@ test_script:
     - OpenCppCoverage.exe --sources %APPVEYOR_BUILD_FOLDER%\source --modules *sqlsrv*.dll --export_type=cobertura:coverage.xml -- .\php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\sqlsrv_param_input_variants.phpt
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    - pip install codecov
+    - codecov -f "coverage.xml" -t 431e6338-ad88-4c3e-9be0-1bf180826d26
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\    
     - python output.py 
-    - pip install codecov
-    - codecov -f "coverage.xml" -t 431e6338-ad88-4c3e-9be0-1bf180826d26
     - ps: $difffiles = Get-ChildItem sqlsrv\*.diff   
     - ps: $outfiles = Get-ChildItem sqlsrv\*.out   
     - ps: foreach($file in $difffiles){ls $file; more $file}  
