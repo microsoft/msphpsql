@@ -355,7 +355,7 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
         $insertSql = getInsertSqlPlaceholders($tbname, $inputs);
         $params = array();
         foreach ($inputs as $key => $input) {
-            if (!is_object($input)) {
+            if (is_object($input)) {
                 array_push($params, $input->bindParamArr($inputs[$key]));               
             } else {
                 array_push($params, $inputs[$key]);
