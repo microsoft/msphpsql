@@ -7,8 +7,7 @@ prepare with emulate prepare and binding integer
 require_once("MsCommon_mid-refactor.inc");
 
 try {
-    $conn = connect();
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+    $conn = connect("", array(), "silent");
 
     $tableName = "number_types";
     if (!isColEncrypted()) {

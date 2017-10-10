@@ -8,8 +8,7 @@ Test getting invalid attributes
 require_once("MsCommon_mid-refactor.inc");
 
 try {
-    $conn = connect();
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+    $conn = connect("", array(), "silent");
 
     @$conn->getAttribute(PDO::ATTR_FETCH_TABLE_NAMES);
     print_r(($conn->errorInfo())[2]);

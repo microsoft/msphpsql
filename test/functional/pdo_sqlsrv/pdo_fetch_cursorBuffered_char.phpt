@@ -11,7 +11,7 @@ try {
     $sample = "eight";
 
     $tbname = "TESTTABLE";
-    createTable($conn, $tbname, array("exist" => "varchar(10)"));
+    createTable($conn, $tbname, array("c1" => "varchar(10)"));
 
     $query = "INSERT INTO $tbname VALUES(:p0)";
     $stmt = $conn->prepare($query);

@@ -8,11 +8,13 @@ require_once("MsCommon_mid-refactor.inc");
 
 try {
     // Connect
-    $conn = connect();
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+    // set errmode to silent to compare sqlstates in the test
+    $conn = connect("", array(), "silent");
 
     // Create table
     $tableName = 'pdo_040test';
+    // common function insertRow() is not used here since the test deliberately executes an invalid insertion statement
+    // thus it's not necessary to create an encrypted column for testing column encryption
     $sql = "CREATE TABLE $tableName (code INT)";
     $stmt = $conn->exec($sql);
 
@@ -29,12 +31,14 @@ try {
     $success = true;
     if (!isColEncrypted()) {
         // 21S01 is the expected ODBC Column name or number of supplied values does not match table definition error
-        if ($error[0] != "21S01")
+        if ($error[0] != "21S01") {
             $success = false;
+        }
     } else {
         // 07009 is the expected ODBC Invalid Descriptor Index error
-        if ($error[0] != "07009")
+        if ($error[0] != "07009") {
             $success = false;
+        }
     }
 
     // Close connection
@@ -42,10 +46,11 @@ try {
     unset($stmt);
     unset($conn);
 
-    if ($success)
+    if ($success) {
         print "Done";
-    else
+    } else {
         var_dump($error);
+    }
 } catch (PDOException $e) {
     var_dump($e->errorInfo);
 }

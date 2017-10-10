@@ -3,8 +3,8 @@ This test verifies that GitHub issue #378 is fixed in pdo_sqlsrv.
 --DESCRIPTION--
 GitHub issue #378 - output parameters appends garbage info when variable is initialized with different data type
 steps to reproduce the issue:
-1- create a store procedure with print and output parameter
-2- initialize output parameters to a different data type other than the type declared in sp.
+1 - create a store procedure with print and output parameter
+2 - initialize output parameters to a different data type other than the type declared in sp.
 3 - call sp.
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
@@ -23,7 +23,7 @@ try {
     createSP($conn, $procName);
     executeSP($conn, $procName);
     executeSP($conn, $procName);
-    DropProc($conn, $procName);
+    dropProc($conn, $procName);
     echo "Done\n";
     unset($conn);
 } catch (PDOException $e) {

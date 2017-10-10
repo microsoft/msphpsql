@@ -11,7 +11,7 @@ try {
     $sample = "가각";
 
     $tbname = "TERSTTABLE";
-    createTable($conn, $tbname, array("exist" => "nvarchar(10)"));
+    createTable($conn, $tbname, array("c1" => "nvarchar(10)"));
 
     $query = "INSERT INTO $tbname VALUES(:p0)";
     $stmt = $conn->prepare($query);

@@ -20,8 +20,10 @@ try {
     $result;
     $stmt = insertRow($conn, $tableName, array("c1" => new BindParamOp(1, $input, "PDO::PARAM_STR", 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam", $result);
     
-    if (!$result)
+    if (!$result) {
         echo "Failed to insert!\n";
+        exit;
+    }
 
     $stmt = $conn->query("SELECT * FROM $tableName");
     $utf8 = $stmt->fetchColumn();

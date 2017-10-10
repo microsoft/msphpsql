@@ -19,16 +19,14 @@ function testException()
 
 function testWarning()
 {
-    $db = connect();
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+    $db = connect("", array(), "warning");
     $sql = "SELECT * FROM temp_table";
     $q = $db->query($sql);
 }
 
 function testSilent()
 {
-    $db = connect();
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+    $db = connect("", array(), "silent");
     $sql = "SELECT * FROM temp_table";
     $q = $db->query($sql);
 }

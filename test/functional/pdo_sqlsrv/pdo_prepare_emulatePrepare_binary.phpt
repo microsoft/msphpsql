@@ -8,8 +8,7 @@ require_once("MsCommon_mid-refactor.inc");
 try {
     $connection_options = array();
     $connection_options[PDO::ATTR_STRINGIFY_FETCHES] = true;
-    $cnn = connect("", $connection_options);
-    $cnn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
+    $cnn = connect("", $connection_options, "silent");
 
     $pdo_options = array();
     $pdo_options[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;
@@ -55,7 +54,7 @@ try {
     //EMULATE PREPARE with no bind param options; expects an error
     print_r("Prepare with emulate prepare and no bindparam options:\n");
     rewind($p);
-    
+
     $st = $cnn->prepare("INSERT INTO $tbname VALUES(:p0)", $pdo_options);
     $st->bindParam(':p0', $p, PDO::PARAM_LOB);
     $st->execute();

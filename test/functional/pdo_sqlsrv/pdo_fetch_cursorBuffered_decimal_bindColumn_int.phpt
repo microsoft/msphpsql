@@ -11,20 +11,20 @@ try {
     $sample = 1234567890.1234;
 
     $tbname = "TESTTABLE";
-    createTable($conn, $tbname, array("exist" => "decimal(18,8)"));
+    createTable($conn, $tbname, array("c1" => "decimal(18,8)"));
 
     $query = "INSERT INTO $tbname VALUES(:p0)";
     $stmt = $conn->prepare($query);
     $stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
     $stmt->execute();
 
-    $query = "SELECT exist FROM $tbname";
+    $query = "SELECT c1 FROM $tbname";
 
     //prepare with no buffered cursor
-print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
-$stmt = $conn->prepare($query);
+    print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
+    $stmt = $conn->prepare($query);
     $stmt->execute();
-    $stmt->bindColumn('exist', $decimal_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $decimal_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($decimal_col);
 
@@ -32,7 +32,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
     $stmt = $conn->prepare($query);
     $stmt->execute();
-    $stmt->bindColumn('exist', $decimal_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $decimal_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($decimal_col);
 
@@ -40,7 +40,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, true);
     $stmt = $conn->prepare($query);
     $stmt->execute();
-    $stmt->bindColumn('exist', $decimal_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $decimal_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($decimal_col);
 
@@ -48,7 +48,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, false);
     $stmt = $conn->prepare($query);
     $stmt->execute();
-    $stmt->bindColumn('exist', $decimal_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $decimal_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($decimal_col);
 
@@ -57,7 +57,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $stmt->execute();
-    $stmt->bindColumn('exist', $decimal_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $decimal_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($decimal_col);
 
@@ -65,7 +65,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
     $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $stmt->execute();
-    $stmt->bindColumn('exist', $decimal_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $decimal_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($decimal_col);
 
@@ -73,7 +73,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, true);
     $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $stmt->execute();
-    $stmt->bindColumn('exist', $decimal_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $decimal_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($decimal_col);
 
@@ -81,7 +81,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, false);
     $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $stmt->execute();
-    $stmt->bindColumn('exist', $decimal_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $decimal_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($decimal_col);
 

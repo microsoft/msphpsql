@@ -15,7 +15,7 @@ try {
     $sample = 1234567890.1234;
 
     $tbname = "TESTTABLE";
-    createTable($conn, $tbname, array("exist" => "float(53)"));
+    createTable($conn, $tbname, array("c1" => "float(53)"));
 
     $query = "INSERT INTO $tbname VALUES(:p0)";
     $stmt = $conn->prepare($query);
@@ -25,8 +25,8 @@ try {
     $query = "SELECT TOP 1 * FROM $tbname";
 
     //prepare with no buffered cursor
-print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
-$stmt = $conn->prepare($query);
+    print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
+    $stmt = $conn->prepare($query);
     $stmt->execute();
     $value = $stmt->fetchColumn();
     var_dump($value);

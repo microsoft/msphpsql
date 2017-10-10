@@ -9,18 +9,9 @@ In Azure for this test to pass do not specify any particular database when conne
 --FILE--
 <?php
 require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
-$dsn = "sqlsrv:Server=$server;ConnectionPooling=false;";
-// get DSN information for Column Encryption
-if ($keystore != "none") {
-    $dsn .= "ColumnEncryption=Enabled;";
-}
-if ($keystore == "ksp") {
-    require('AE_Ksp.inc');
-    $ksp_path = getKSPPath();
-    $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
-}
-
+$dsn = getDSN($server, null, "ConnectionPooling=false;");
 try {
     // Test 1
     $conn = new PDO($dsn, "test_password", "! ;4triou");

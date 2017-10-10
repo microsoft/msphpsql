@@ -14,7 +14,6 @@ function getNextSeq($conn, $sequenceName)
 }
 
 try {
-    $database = "tempdb";
     $conn = connect();
 
     // sequence is only supported in SQL server 2012 and up (or version 11 and up)

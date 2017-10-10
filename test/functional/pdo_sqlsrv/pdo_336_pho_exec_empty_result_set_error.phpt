@@ -38,11 +38,11 @@ try {
     }
 
     //test direct exec
-    $stmt = $conn->exec($sql);
+    $numrow = $conn->exec($sql);
     $err = $conn->errorCode();
-    if ($stmt == 0 && $err == "00000") {
+    if ($numrow == 0 && $err == "00000") {
         echo "direct exec OK\n";
-    } elseif ($stmt != 0) {
+    } elseif ($numrow != 0) {
         echo "unexpected row returned at direct exec\n";
     }
     if ($err != "00000") {

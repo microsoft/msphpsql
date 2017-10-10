@@ -11,7 +11,7 @@ try {
     $sample = '2012-06-18 10:34:09';
 
     $tbname = "TESTTABLE";
-    createTable($conn, $tbname, array("exist" => "datetime"));
+    createTable($conn, $tbname, array("c1" => "datetime"));
 
     $query = "INSERT INTO $tbname VALUES(:p0)";
     $stmt = $conn->prepare($query);

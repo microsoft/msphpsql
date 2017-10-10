@@ -25,8 +25,8 @@ try {
     $query = "SELECT exist FROM $tbname";
 
     //prepare with no buffered cursor
-print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
-$stmt = $conn->prepare($query);
+    print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
+    $stmt = $conn->prepare($query);
     $stmt->execute();
     $stmt->bindColumn('exist', $float_col, PDO::PARAM_LOB);
     $value = $stmt->fetch();

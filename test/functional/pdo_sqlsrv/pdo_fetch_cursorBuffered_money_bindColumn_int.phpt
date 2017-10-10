@@ -12,10 +12,10 @@ try {
 
     $tbname = "TESTTABLE";
     if (!isColEncrypted()) {
-        createTable($conn, $tbname, array("exist" => "money"));
+        createTable($conn, $tbname, array("c1" => "money"));
     } else {
         // inserting money types is not supported for Always Encrypted; use decimal(19,4) instead
-        createTable($conn, $tbname, array("exist" => "decimal(19,4)"));
+        createTable($conn, $tbname, array("c1" => "decimal(19,4)"));
     }
 
     $query = "INSERT INTO $tbname VALUES(:p0)";
@@ -23,13 +23,13 @@ try {
     $stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
     $stmt->execute();
 
-    $query = "SELECT exist FROM $tbname";
+    $query = "SELECT c1 FROM $tbname";
 
     //prepare with no buffered cursor
 print "no buffered cursor, stringify off, fetch_numeric off\n"; //stringify and fetch_numeric is off by default
 $stmt = $conn->prepare($query);
     $stmt->execute();
-    $stmt->bindColumn('exist', $money_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $money_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($money_col);
 
@@ -37,7 +37,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
     $stmt = $conn->prepare($query);
     $stmt->execute();
-    $stmt->bindColumn('exist', $money_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $money_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($money_col);
 
@@ -45,7 +45,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, true);
     $stmt = $conn->prepare($query);
     $stmt->execute();
-    $stmt->bindColumn('exist', $money_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $money_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($money_col);
 
@@ -53,7 +53,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, false);
     $stmt = $conn->prepare($query);
     $stmt->execute();
-    $stmt->bindColumn('exist', $money_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $money_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($money_col);
 
@@ -62,7 +62,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $stmt->execute();
-    $stmt->bindColumn('exist', $money_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $money_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($money_col);
 
@@ -70,7 +70,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
     $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $stmt->execute();
-    $stmt->bindColumn('exist', $money_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $money_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($money_col);
 
@@ -78,7 +78,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, true);
     $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $stmt->execute();
-    $stmt->bindColumn('exist', $money_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $money_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($money_col);
 
@@ -86,7 +86,7 @@ $stmt = $conn->prepare($query);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, false);
     $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
     $stmt->execute();
-    $stmt->bindColumn('exist', $money_col, PDO::PARAM_INT);
+    $stmt->bindColumn('c1', $money_col, PDO::PARAM_INT);
     $value = $stmt->fetch(PDO::FETCH_BOUND);
     var_dump($money_col);
 

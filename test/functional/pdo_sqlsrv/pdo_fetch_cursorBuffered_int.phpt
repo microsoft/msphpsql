@@ -11,7 +11,7 @@ try {
     $sample = 1234567890;
 
     $tbname = "TESTTABLE";
-    createTable($conn, $tbname, array("exist" => "int"));
+    createTable($conn, $tbname, array("c1" => "int"));
 
     $query = "INSERT INTO $tbname VALUES(:p0)";
     $stmt = $conn->prepare($query);

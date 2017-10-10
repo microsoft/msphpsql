@@ -12,10 +12,10 @@ try {
 
     $tbname = "TESTTABLE";
     if (!isColEncrypted()) {
-        createTable($conn, $tbname, array("exist" => "money"));
+        createTable($conn, $tbname, array("c1" => "money"));
     } else {
         // inserting money types is not supported for Always Encrypted; use decimal(19,4) instead
-        createTable($conn, $tbname, array("exist" => "decimal(19,4)"));
+        createTable($conn, $tbname, array("c1" => "decimal(19,4)"));
     }
 
     $query = "INSERT INTO $tbname VALUES(:p0)";

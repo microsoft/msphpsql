@@ -73,7 +73,7 @@ try {
 
     $cd_arr = array();
     foreach ($cm_arr as $cm) {
-        array_push( $cd_arr, $cm->getColDefOps());
+        array_push( $cd_arr, $cm->getColDef());
     }
      
     $tablescript = "CREATE TABLE [dbo].[$tbname](

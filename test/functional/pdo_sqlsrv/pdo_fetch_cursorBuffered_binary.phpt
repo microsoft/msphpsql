@@ -11,7 +11,7 @@ try {
     $sample = 'asdgasdgasdgsadg';
 
     $tbname = "TESTTABLE";
-    createTable($conn, $tbname, array("exist" => "varbinary(max)"));
+    createTable($conn, $tbname, array("c1" => "varbinary(max)"));
 
     $query = "INSERT INTO $tbname VALUES(:p0)";
     $stmt = $conn->prepare($query);

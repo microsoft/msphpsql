@@ -7,8 +7,9 @@ Test errorInfo when prepare with and without emulate prepare
 require_once("MsCommon_mid-refactor.inc");
 
 try {
-    $conn = connect();
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+    // connection with and without column encryption returns different warning since column encryption cannot use emulate prepare
+    // turn ERRMODE to silent to compare the errorCode in the test
+    $conn = connect("", array(), "silent");
 
     //drop, create and insert
     $tbname = "test_table";

@@ -8,7 +8,6 @@ require_once("MsCommon_mid-refactor.inc");
 
 // Connect
 $conn = connect();
-$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Create a temporary table
 $tableName = '#testXMLBindValue';
@@ -44,8 +43,8 @@ try {
 
 // Get data
 $row = selectAll($conn, $tableName, "PDO::FETCH_ASSOC");
-var_dump($row);  
- 
+var_dump($row);
+
 // Close connection
 unset($stmt);
 unset($conn);
