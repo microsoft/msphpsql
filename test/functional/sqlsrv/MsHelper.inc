@@ -351,7 +351,7 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
                 break;
         }
     } else {
-        // if AE is enabled, must bind param
+        // must bind param
         $insertSql = getInsertSqlPlaceholders($tbname, $inputs);
         $params = array();
         foreach ($inputs as $key => $input) {
@@ -363,8 +363,12 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
         }
         
         // use prepare for inserts when AE is enabled
-        $stmt = sqlsrv_prepare($conn, $insertSql, $params);
-        $r = sqlsrv_execute($stmt);
+        if (isColEncrypted() || $api == INSERT_PREPARE_PARAMS) {
+            $stmt = sqlsrv_prepare($conn, $insertSql, $params);
+            $r = sqlsrv_execute($stmt);
+        } else {
+            $stmt = sqlsrv_query($conn, $insertSql, $params);
+        } 
     }
     return $stmt;
 }
