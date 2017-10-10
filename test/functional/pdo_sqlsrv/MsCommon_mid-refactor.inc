@@ -19,35 +19,70 @@ function isAEQualified($conn)
     $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
     $server_ver = $conn->getAttribute(PDO::ATTR_SERVER_VERSION);
     $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
-    if ($msodbcsql_maj < 13 || explode('.', $server_ver)[0] < 13) {
+    if ($msodbcsql_maj < 17 || explode('.', $server_ver)[0] < 13) {
         return false;
     }
     return true;
 }
+/*
+// TO BE DELETED
+function connect($options=array())
+{
+  try
+  {
+    // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
+    // which does not support switching databases
+    require  'MsSetup.inc';
+    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;" , $uid, $pwd, $options);
+    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+    create_and_insert_table1($conn);
+    create_and_insert_table2($conn);
+      return $conn;
+  }
+
+  catch( PDOException $e )
+  {
+    var_dump( $e );
+    exit;
+  }
+
+  catch(Exception $e)
+  {
+     var_dump( $e );
+     exit;
+  }
+}
+*/
 
 
 /**
  * Connect to the database specified in MsSetup.inc; Column Encryption keywords automatically added when $keystore is not none
  * @param  string  $keywords : string to append to the dsn string in PDO::_construct
  * @param  array  $options : attributes to pass to PDO::_construct
- * @param  string $errmode : specifies how the driver reports failures: one of exception, warning, or silent; default is exception
  * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
  *                          for testing fetching encrypted data when connection column encryption is off
  * @return PDO connection object
  */
-function connect($keywords = '', $options=array(), $errmode = "exception", $disableCE = false)
+function connect($keywords='', $options=array(), $disableCE = false)
 {
     try {
         // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
         // which does not support switching databases
-        require("MsSetup.inc");
-        $dsn = getDSN($server, $databaseName, $keywords, $disableCE);
-        $conn = new PDO($dsn, $uid, $pwd, $options);
-        if (!strcasecmp($errmode, "exception") || !strcasecmp($errmode, "warning") || !strcasecmp($errmode, "silent")) {
-            $conn->setAttribute(PDO::ATTR_ERRMODE, constant("PDO::ERRMODE_" . strtoupper($errmode)));
-        } else {
-            printf("connect: The errmode provided must be one of exception, warning, or silent.\n");
+        require  'MsSetup.inc';
+        $dsn = "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;";
+        if ($keystore != "none" && !$disableCE) {
+            $dsn .= "ColumnEncryption=Enabled;";
         }
+        if ($keystore == "ksp" && !$disableCE) {
+            require('AE_Ksp.inc');
+            $ksp_path = getKSPPath();
+            $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
+        }
+        if ($keywords) {
+            $dsn .= $keywords;
+        }
+        $conn = new PDO($dsn, $uid, $pwd, $options);
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $conn;
     } catch (PDOException $e) {
         var_dump($e->errorInfo);
@@ -55,41 +90,6 @@ function connect($keywords = '', $options=array(), $errmode = "exception", $disa
         var_dump($e->errorInfo);
         exit;
     }
-}
-
-
-/**
- * @param  string  $sqlsrvserver : server name
- * @param  string  $database : database name
- * @param  string  $keywords : string to append to the dsn string in PDO::_construct
- * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
- * @return string dsn string used for PDO constructor
- */
-function getDSN($sqlsrvserver, $database, $keywords = '', $disableCE = false)
-{
-    require("MsSetup.inc");
-    $dsn = "";
-    if ($sqlsrvserver) {
-        $dsn .= "sqlsrv:Server=$sqlsrvserver;";
-    } else {
-        printf("getDSN: the sqlsrvserver provided must not be null.\n");
-        exit;
-    }
-    if ($database) {
-        $dsn .= "database=$database;";
-    }
-    if ($keystore != "none" && !$disableCE) {
-        $dsn .= "ColumnEncryption=Enabled;";
-    }
-    if ($keystore == "ksp" && !$disableCE) {
-        require('AE_Ksp.inc');
-        $ksp_path = getKSPPath();
-        $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
-    }
-    if ($keywords) {
-        $dsn .= $keywords;
-    }
-    return $dsn;
 }
 
 
@@ -125,8 +125,8 @@ function getCekName()
  */
 class ColumnMeta
 {
-    public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $colName;    //column name
+    public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $encType;    //randomized or deterministic; default is deterministic
     public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
 
@@ -144,22 +144,9 @@ class ColumnMeta
     /**
      * @return string column definition for creating a table
      */
-    public function getColDef()
+    public function getColDefOps()
     {
-        //return getColDef($this->colName, $this->dataType, $this->options, $this->encType);
-        $append = " ";
-
-        // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if (isColEncrypted() && stripos($this->options, "identity") === false) {
-            $cekName = getCekName();
-            if (stripos($this->dataType, "char") !== false) {
-                $append .= "COLLATE Latin1_General_BIN2 ";
-            }
-            $append .= sprintf("ENCRYPTED WITH (ENCRYPTION_TYPE = %s, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ", $this->encType);
-        }
-        $append .= $this->options;
-        $colDef = "[" . $this->colName . "] " . $this->dataType . $append;
-        return $colDef;
+        return getColDef($this->colName, $this->dataType, $this->options, $this->encType);
     }
 }
 
@@ -171,7 +158,6 @@ class ColumnMeta
  * @param  string  $encType : randomized or deterministic; default is deterministic
  * @return string column definition for creating a table
  */
- /*
 function getColDef($colName, $dataType, $options = null, $encType = "deterministic")
 {
     $append = " ";
@@ -188,7 +174,7 @@ function getColDef($colName, $dataType, $options = null, $encType = "determinist
     $colDef = "[" . $colName . "] " . $dataType . $append;
     return $colDef;
 }
-*/
+
 
 /**
  * @return string default column name when a name is not provided in the ColumnMeta class
@@ -218,12 +204,9 @@ function createTable($conn, $tbname, $columnMetaArr, $disableCE = false)
         $colDef = "";
         foreach ($columnMetaArr as $key => $value) {
             if (!is_object($value)) {
-                $cm = new ColumnMeta($value, $key);
-                $colDef = $colDef . $cm->getColDef() . ", ";
-                //$colDef = $colDef . getColDef($key, $value) . ", ";
+                $colDef = $colDef . getColDef($key, $value) . ", ";
             } elseif (get_class($value) == "ColumnMeta") {
-                $colDef = $colDef . $value->getColDef() . ", ";
-                //$colDef = $colDef . $value->getColDefOps() . ", ";
+                $colDef = $colDef . $value->getColDefOps() . ", ";
             }
         }
         $colDef = rtrim($colDef, ", ");
@@ -254,7 +237,7 @@ class BindParamOp
     {
         $this->parameter = $parameter;
         $this->variable = $variable;
-
+        
         $pdoParams = array("PDO::PARAM_BOOL", "PDO::PARAM_NULL", "PDO::PARAM_INT", "PDO::PARAM_STR", "PDO::PARAM_LOB");
         if (in_array($pdoType, $pdoParams)) {
             $this->pdoType = $pdoType;
@@ -262,14 +245,14 @@ class BindParamOp
             prinft("BindParamOp construct: The pdoType provided must be one of PDO::PARAM_BOOL, PDO::PARAM_NULL, PDO::PARAM_INT, PDO::PARAM_STR, or PDO::PARAM_LOB.\n");
             exit;
         }
-
+        
         if ($length >= 0) {
             $this->length = $length;
         } else {
             printf("BindParamOp construct: The length provided must be great or equal to 0.\n");
             exit;
         }
-
+        
         $encodingAttrs = array("PDO::SQLSRV_ENCODING_BINARY", "PDO::SQLSRV_ENCODING_SYSTEM", "PDO::SQLSRV_ENCODING_UTF8", "PDO::SQLSRV_ENCODING_DEFAULT");
         if (in_array($options, $encodingAttrs)) {
             $this->options = $options;
@@ -348,7 +331,6 @@ function insertRow($conn, $tbname, $inputs, $api = null, &$r = null)
                         $value->bindWithOp($stmt);
                     } else {
                         printf("insertRow: The inputs provided must be a literal value or a BindParamOp object.\n");
-                        exit;
                     }
                     $i++;
                 }
