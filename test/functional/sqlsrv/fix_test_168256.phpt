@@ -8,7 +8,7 @@ Fix for 168256.
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
     require_once('MsCommon.inc');
-    if (!($conn = Connect())) {
+    if (!($conn = connect())) {
         fatalError("Could not connect");
     }
 

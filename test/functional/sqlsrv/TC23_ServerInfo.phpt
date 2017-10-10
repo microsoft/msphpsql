@@ -1,7 +1,7 @@
 --TEST--
 Server Info Test
 --DESCRIPTION--
-Verifies the functionality of �sqlsrv_server_info�.
+Verifies the functionality of "sqlsrv_server_info".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -10,7 +10,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function ServerInfo()
+function serverInfo()
 {
     $testName = "Connection - Server Info";
     startTest($testName);
@@ -24,16 +24,16 @@ function ServerInfo()
         die("Unexpected size for server_info array: ".$count1);
     }
 
-    ShowInfo($serverinfo1, 'CurrentDatabase');
-    ShowInfo($serverinfo1, 'SQLServerName');
-    ShowInfo($serverinfo1, 'SQLServerVersion');
+    showInfo($serverinfo1, 'CurrentDatabase');
+    showInfo($serverinfo1, 'SQLServerName');
+    showInfo($serverinfo1, 'SQLServerVersion');
 
     sqlsrv_close($conn1);
 
     endTest($testName);
 }
 
-function ShowInfo($serverInfo, $infoTag)
+function showInfo($serverInfo, $infoTag)
 {
     $info = $serverInfo[$infoTag];
     if (traceMode()) {
@@ -45,20 +45,11 @@ function ShowInfo($serverInfo, $infoTag)
     }
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        ServerInfo();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    serverInfo();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

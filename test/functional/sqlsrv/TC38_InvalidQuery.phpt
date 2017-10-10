@@ -10,7 +10,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function InvalidQuery()
+function invalidQuery()
 {
     $testName = "Statement - Invalid Query";
     startTest($testName);
@@ -61,21 +61,11 @@ function InvalidQuery()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        InvalidQuery();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    invalidQuery();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-
-repro();
 
 ?>
 --EXPECT--

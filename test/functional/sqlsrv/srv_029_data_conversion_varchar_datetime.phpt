@@ -25,7 +25,7 @@ $stmt = sqlsrv_query($conn, $sql);
 // Read data from the table
 $sql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query($conn, $sql);
-for ($i=0; $i<3; $i++) {
+for ($i = 0; $i < 3; $i++) {
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
     var_dump($row[0]);
 }

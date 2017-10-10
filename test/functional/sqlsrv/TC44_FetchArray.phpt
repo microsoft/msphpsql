@@ -1,7 +1,7 @@
 --TEST--
 Fetch Array Test
 --DESCRIPTION--
-Verifies data retrieval via �sqlsrv_fetch_array�,
+Verifies data retrieval via "sqlsrv_fetch_array",
 by checking all fetch type modes.
 --ENV--
 PHPT_EXEC=true
@@ -11,10 +11,8 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function FetchRow($minFetchMode, $maxFetchMode)
+function fetchRow($minFetchMode, $maxFetchMode)
 {
-    include 'MsSetup.inc';
-
     $testName = "Fetch - Array";
     startTest($testName);
 
@@ -24,11 +22,12 @@ function FetchRow($minFetchMode, $maxFetchMode)
     }
 
     setup();
-    if (! isWindows()) {
+    if (!isWindows()) {
         $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
         $conn1 = connect();
     }
+    $tableName = 'TC44Test';
     createTable($conn1, $tableName);
 
     $noRows = 10;
@@ -50,19 +49,19 @@ function FetchRow($minFetchMode, $maxFetchMode)
 
         switch ($k) {
         case 1:        // fetch array - numeric mode
-            FetchArray($stmt1, $stmt2, SQLSRV_FETCH_NUMERIC, $noRows, $numFields);
+            fetchArray($stmt1, $stmt2, SQLSRV_FETCH_NUMERIC, $noRows, $numFields);
             break;
 
         case 2:        // fetch array - associative mode
-            FetchArray($stmt1, $stmt2, SQLSRV_FETCH_ASSOC, $noRows, $numFields);
+            fetchArray($stmt1, $stmt2, SQLSRV_FETCH_ASSOC, $noRows, $numFields);
             break;
 
         case 3:        // fetch array - both numeric & associative
-            FetchArray($stmt1, $stmt2, SQLSRV_FETCH_BOTH, $noRows, $numFields);
+            fetchArray($stmt1, $stmt2, SQLSRV_FETCH_BOTH, $noRows, $numFields);
             break;
 
         default:    // default
-            FetchArray($stmt1, $stmt2, null, $noRows, $numFields);
+            fetchArray($stmt1, $stmt2, null, $noRows, $numFields);
             break;
         }
 
@@ -77,7 +76,7 @@ function FetchRow($minFetchMode, $maxFetchMode)
     endTest($testName);
 }
 
-function FetchArray($stmt, $stmtRef, $mode, $rows, $fields)
+function fetchArray($stmt, $stmtRef, $mode, $rows, $fields)
 {
     $size = $fields;
     $fetchMode = $mode;
@@ -109,7 +108,7 @@ function FetchArray($stmt, $stmtRef, $mode, $rows, $fields)
         }
         $rowRref = sqlsrv_fetch($stmtRef);
         for ($j = 0; $j < $fields; $j++) {
-            if (!CheckData($row, $stmtRef, $j, $fetchMode)) {
+            if (!checkData($row, $stmtRef, $j, $fetchMode)) {
                 setUTF8Data(false);
                 die("Data corruption on row ".($i + 1)." column ".($j + 1));
             }
@@ -118,7 +117,7 @@ function FetchArray($stmt, $stmtRef, $mode, $rows, $fields)
 }
 
 
-function CheckData($row, $stmt, $index, $mode)
+function checkData($row, $stmt, $index, $mode)
 {
     $success = true;
 
@@ -156,24 +155,15 @@ function CheckData($row, $stmt, $index, $mode)
 }
 
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    if (! isWindows()) {
-        setUTF8Data(true);
-    }
-    try {
-        FetchRow(1, 4);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    setUTF8Data(false);
+if (!isWindows()) {
+    setUTF8Data(true);
 }
-
-repro();
+try {
+    fetchRow(1, 4);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+setUTF8Data(false);
 
 ?>
 --EXPECT--

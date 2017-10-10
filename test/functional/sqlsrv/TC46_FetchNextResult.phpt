@@ -1,7 +1,7 @@
 --TEST--
 Fetch Next Result Test
 --DESCRIPTION--
-Verifies the functionality of �sqlsvr_next_result�
+Verifies the functionality of "sqlsrv_next_result"
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -10,7 +10,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function FetchFields()
+function fetchFields()
 {
     include 'MsSetup.inc';
 
@@ -82,25 +82,16 @@ function FetchFields()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    if (! isWindows()) {
-        setUTF8Data(true);
-    }
-
-    try {
-        FetchFields();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    setUTF8Data(false);
+if (!isWindows()) {
+    setUTF8Data(true);
 }
 
-repro();
+try {
+    fetchFields();
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+setUTF8Data(false);
 
 ?>
 --EXPECT--

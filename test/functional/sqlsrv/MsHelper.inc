@@ -84,7 +84,6 @@ class BindParamOption
         $this->sqlType = $sqlType;
     }
     /**
-     * @param  resource  $conn : connection resource
      * @param  mix  $var : variable to bind to the SQL statement parameter
      * @return array needed to bind parameter in sqlsrv_prepare
      */
@@ -94,14 +93,23 @@ class BindParamOption
         $direction = null;
         $phpType = null;
         $sqlType = null;
-        if ($this->direction) {
-            $direction = constant($this->direction);
+        if ($this->direction) {          
+            if (in_array($this->direction, array(SQLSRV_PARAM_IN, SQLSRV_PARAM_OUT, SQLSRV_PARAM_INOUT))) {
+                $direction = constant($this->direction);
+            } else {
+                echo "BindParamOption: invalid direction for parameter!\n";
+            }
         }
         if ($this->phpType) {
-            $phpType = constant($this->phpType);
+            try {
+                $phpType = constant($this->phpType);
+            } catch (Exception $e) {
+                // there's something wrong with the input php type 
+                echo $e->getMessage();
+            }
         }
         if ($this->sqlType) {
-            // parse out the datatype name, size, precision, and/or scale from a SQLSRV_SQLTYPE_ constant
+            // parse the datatype name, size, precision, and/or scale from a SQLSRV_SQLTYPE_ constant
             $size = null;
             $prec = null;
             $scal = null;
@@ -117,12 +125,17 @@ class BindParamOption
                 }
             }
             // get the sqlType constant
-            if ($prec && $scal) {
-                $sqlType = call_user_func($type, $prec, $scal);
-            } elseif ($size) {
-                $sqlType = call_user_func($type, $size);
-            } else {
-                $sqlType = constant($type);
+            try {
+                if ($prec && $scal) {
+                    $sqlType = call_user_func($type, $prec, $scal);
+                } elseif ($size) {
+                    $sqlType = call_user_func($type, $size);
+                } else {
+                    $sqlType = constant($type);
+                }
+            } catch (Exception $e) {
+                // there's something wrong with the input SQL type 
+                echo $e->getMessage();
             }
         }
         return array($var, $direction, $phpType, $sqlType);

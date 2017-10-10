@@ -1,7 +1,7 @@
 --TEST--
 Fetch Object Test
 --DESCRIPTION--
-Verifies data retrieval via �sqlsrv_fetch_object�.
+Verifies data retrieval via "sqlsrv_fetch_object".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -17,7 +17,7 @@ class TestClass
     }
 }
 
-function FetchRow($minFetchMode, $maxFetchMode)
+function fetchRow($minFetchMode, $maxFetchMode)
 {
     include 'MsSetup.inc';
 
@@ -51,17 +51,17 @@ function FetchRow($minFetchMode, $maxFetchMode)
 
         switch ($k) {
         case 0:        // fetch array (to retrieve reference values)
-            $expected = FetchArray($stmt1, $noRowsInserted, $numFields);
+            $expected = fetchArray($stmt1, $noRowsInserted, $numFields);
             break;
 
         case 1:        // fetch object (without class)
-            $actual = FetchObject($stmt1, $noRowsInserted, $numFields, false);
-            CheckData($noRowsInserted, $numFields, $actual, $expected);
+            $actual = fetchObject($stmt1, $noRowsInserted, $numFields, false);
+            checkData($noRowsInserted, $numFields, $actual, $expected);
             break;
 
         case 2:        // fetch object (with class)
-            $actual = FetchObject($stmt1, $noRowsInserted, $numFields, true);
-            CheckData($noRowsInserted, $numFields, $actual, $expected);
+            $actual = fetchObject($stmt1, $noRowsInserted, $numFields, true);
+            checkData($noRowsInserted, $numFields, $actual, $expected);
             break;
 
         default:    // default
@@ -78,7 +78,7 @@ function FetchRow($minFetchMode, $maxFetchMode)
 }
 
 
-function FetchObject($stmt, $rows, $fields, $useClass)
+function fetchObject($stmt, $rows, $fields, $useClass)
 {
     trace("\tRetrieving $rows objects with $fields fields each ...\n");
     $values = array();
@@ -97,7 +97,7 @@ function FetchObject($stmt, $rows, $fields, $useClass)
 }
 
 
-function FetchArray($stmt, $rows, $fields)
+function fetchArray($stmt, $rows, $fields)
 {
     $values = array();
     for ($i = 0; $i < $rows; $i++) {
@@ -111,12 +111,12 @@ function FetchArray($stmt, $rows, $fields)
 }
 
 
-function CheckData($rows, $fields, $actualValues, $expectedValues)
+function checkData($rows, $fields, $actualValues, $expectedValues)
 {
     if (($actualValues != null) && ($expectedValues != null)) {
         for ($i = 0; $i < $rows; $i++) {
             for ($j = 0; $j < $fields; $j++) {
-                $colName = GetColName($j + 1);
+                $colName = getColName($j + 1);
                 $actual = $actualValues[$i]->$colName;
                 $expected = $expectedValues[$i][$colName];
                 if ($actual != $expected) {
@@ -127,21 +127,11 @@ function CheckData($rows, $fields, $actualValues, $expectedValues)
     }
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        FetchRow(0, 2);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    fetchRow(0, 2);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

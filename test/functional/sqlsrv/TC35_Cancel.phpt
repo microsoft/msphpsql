@@ -1,7 +1,7 @@
 --TEST--
 Statement Cancel Test
 --DESCRIPTION--
-Verifies that �sqlsrv_cancel� discards any pending data in current result set
+Verifies that "sqlsrv_cancel" discards any pending data in current result set
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -10,7 +10,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function Cancel()
+function cancel()
 {
     $testName = "Statement - Cancel";
     startTest($testName);
@@ -44,20 +44,11 @@ function Cancel()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        Cancel();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    cancel();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

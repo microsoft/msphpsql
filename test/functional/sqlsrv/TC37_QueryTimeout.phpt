@@ -1,8 +1,8 @@
 --TEST--
 Query Timeout Test
 --DESCRIPTION--
-Verifies the functionality of QueryTimeout option for both �sqlsrv_query�
-and �sqlsrv_prepare�.
+Verifies the functionality of QueryTimeout option for both "sqlsrv_query"
+and "sqlsrv_prepare".
 Executes a batch query that is expected to time out because it includes
 a request to delay the server execution (via WAITFOR DELAY) for a duration
 longer than the query timeout.
@@ -14,7 +14,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function QueryTimeout()
+function queryTimeout()
 {
     $testName = "Statement - Query Timeout";
     startTest($testName);
@@ -58,20 +58,11 @@ function QueryTimeout()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        QueryTimeout();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    queryTimeout();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

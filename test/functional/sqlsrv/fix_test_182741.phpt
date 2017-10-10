@@ -9,7 +9,7 @@ fix for 182741.
 
     require_once('MsCommon.inc');
 
-    $conn = Connect();
+    $conn = connect();
 
     if (!$conn) {
         fatalError("Could not connect");

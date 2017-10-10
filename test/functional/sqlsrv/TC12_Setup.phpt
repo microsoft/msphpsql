@@ -2,7 +2,7 @@
 Driver setup Test
 --DESCRIPTION--
 Verifies the logging facility by checking the ability to set
-and retrieve the values of �LogSubsystem� and "LogSeverity�
+and retrieve the values of "LogSubsystem" and "LogSeverity"
 parameters.
 --ENV--
 PHPT_EXEC=true
@@ -12,7 +12,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function LoggingSetup()
+function loggingSetup()
 {
     $testName = "Driver Logging setup";
     startTest($testName);
@@ -35,22 +35,12 @@ function LoggingSetup()
     endTest($testName);
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        LoggingSetup();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-}
-
 sqlsrv_configure('WarningsReturnAsError', 0);
-repro();
+try {
+    loggingSetup();
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
 
 ?>
 --EXPECT--

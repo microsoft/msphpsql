@@ -9,7 +9,7 @@ Fix for 168256.
 
     require_once('MsCommon.inc');
     $connectionInfo = array( "Database"=>"test");
-    if (!($conn = Connect())) {
+    if (!($conn = connect())) {
         fatalError("Could not connect");
     }
 

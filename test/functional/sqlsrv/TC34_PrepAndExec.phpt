@@ -11,7 +11,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function PrepareAndExecute($noPasses)
+function prepareAndExecute($noPasses)
 {
     $testName = "Statement - Prepare and Execute";
     startTest($testName);
@@ -48,7 +48,7 @@ function PrepareAndExecute($noPasses)
 
     // Prepare once and execute several times
     trace("Prepare a SELECT query on $tableName ...");
-    $stmt2 = PrepareQuery($conn1, "SELECT * FROM [$tableName]");
+    $stmt2 = prepareQuery($conn1, "SELECT * FROM [$tableName]");
     $numFields2 = sqlsrv_num_fields($stmt2);
     trace(" $numFields2 fields expected.\n");
     if ($numFields2 != $numFields1) {
@@ -85,24 +85,15 @@ function PrepareAndExecute($noPasses)
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    if (! isWindows()) {
-        setUTF8Data(true);
-    }
-    try {
-        PrepareAndExecute(5);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    setUTF8Data(false);
+if (!isWindows()) {
+    setUTF8Data(true);
 }
-
-repro();
+try {
+    prepareAndExecute(5);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+setUTF8Data(false);
 
 ?>
 --EXPECT--
