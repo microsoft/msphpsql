@@ -181,7 +181,7 @@ test_script:
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1    
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
-    - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\
+    - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\
     - ls
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
