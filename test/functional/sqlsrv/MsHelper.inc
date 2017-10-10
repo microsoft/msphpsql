@@ -353,7 +353,6 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
     } else {
         // if AE is enabled, must bind param
         $insertSql = getInsertSqlPlaceholders($tbname, $inputs);
-        echo $insertSql . "\n";
         $params = array();
         foreach ($inputs as $key => $input) {
             if (is_object($input)) {
@@ -362,8 +361,6 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
                 array_push($params, $inputs[$key]);
             }
         }
-        
-        var_dump($params);
         
         // use prepare for inserts when AE is enabled
         $stmt = sqlsrv_prepare($conn, $insertSql, $params);
