@@ -9,7 +9,7 @@ require_once("MsCommon_mid-refactor.inc");
 try {
     // connection with and without column encryption returns different warning since column encryption cannot use emulate prepare
     // turn ERRMODE to silent to compare the errorCode in the test
-    $conn = connect("", array(), "silent");
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
 
     //drop, create and insert
     $tbname = "test_table";

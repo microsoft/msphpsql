@@ -9,7 +9,7 @@ require_once("MsCommon_mid-refactor.inc");
 try {
     // Connect
     // set errmode to silent to compare sqlstates in the test
-    $conn = connect("", array(), "silent");
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
 
     // Create table
     $tableName = 'pdo_040test';

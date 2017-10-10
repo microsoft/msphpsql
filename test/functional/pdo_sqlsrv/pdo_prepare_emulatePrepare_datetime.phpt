@@ -7,7 +7,7 @@ prepare with emulate prepare and binding integer
 require_once("MsCommon_mid-refactor.inc");
 
 try {
-    $conn = connect("", array(), "silent");
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
 
     $tableName = "date_types";
     createTable($conn, $tableName, array("c1_datetime" => "datetime", "c2_nvarchar" => "nvarchar(20)"));

@@ -8,7 +8,7 @@ require_once("MsCommon_mid-refactor.inc");
 try {
     $connection_options = array();
     $connection_options[PDO::ATTR_STRINGIFY_FETCHES] = true;
-    $cnn = connect("", $connection_options, "silent");
+    $cnn = connect("", $connection_options, PDO::ERRMODE_SILENT);
 
     $pdo_options = array();
     $pdo_options[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;

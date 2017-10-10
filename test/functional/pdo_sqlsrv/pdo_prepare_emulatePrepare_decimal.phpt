@@ -7,7 +7,7 @@ prepare with emulate prepare and binding integer
 require_once("MsCommon_mid-refactor.inc");
 
 try {
-    $conn = connect("", array(), "silent");
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
 
     $tableName = "number_types";
     if (!isColEncrypted()) {
@@ -79,7 +79,8 @@ try {
     var_dump($e->errorInfo);
 }
 ?>
-
+--XFAIL--
+Bug with column encryption: Insertion fails if input has more decimal places than the column definition
 --EXPECT--
 Prepare without emulate prepare:
 Array

@@ -8,7 +8,7 @@ testing the quote method with different inputs and then test with a empty query
 require_once("MsCommon_mid-refactor.inc");
 
 try {
-    $conn = connect("", array(), "silent");
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
 
     $output1 = $conn->quote("1'2'3'4'5'6'7'8", PDO::PARAM_INT);
     var_dump($output1);

@@ -75,7 +75,7 @@ try {
     }
 
     // Close connection
-    //dropTable($conn, $tableName);
+    dropTable($conn, $tableName);
     unset($stmt);
     unset($con);
 

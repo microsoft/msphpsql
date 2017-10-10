@@ -7,7 +7,7 @@ direct execution of an invalid query
     require_once("MsCommon_mid-refactor.inc");
 
     // set ERRMODE to silent to return in errorCode in the test
-    $conn = connect("", array(), "silent");
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
 
     $tbname = "table1";
     dropTable($conn, $tbname);
