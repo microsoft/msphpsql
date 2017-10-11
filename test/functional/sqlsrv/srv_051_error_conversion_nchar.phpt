@@ -6,10 +6,10 @@ Error checking for failed explicit data type conversions NCHAR(2)
 
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect(array("CharacterSet"=>"utf-8"));
-if( !$conn ) {
-    PrintErrors("Connection could not be established.\n");
+// connect
+$conn = connect(array("CharacterSet"=>"utf-8"));
+if (!$conn) {
+    printErrors("Connection could not be established.\n");
 }
 
 $tableName = GetTempTableName();

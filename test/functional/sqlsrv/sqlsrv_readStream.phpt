@@ -5,34 +5,34 @@ Read varchar(max) fields from a stream
 --FILE--
 <?php
 
-    sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-    sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
+    sqlsrv_configure('WarningsReturnAsErrors', 0);
+    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-    require( 'MsCommon.inc' );
+    require_once('MsCommon.inc');
 
-    $conn = Connect();
-    if( !$conn ) {
-        FatalError( "Failed to connect." );
+    $conn = connect();
+    if (!$conn) {
+        fatalError("Failed to connect.");
     }
 
-    $stmt = sqlsrv_prepare( $conn, "SELECT review1 FROM cd_info" );
-    
-    sqlsrv_execute( $stmt );
- 
-    while( sqlsrv_fetch( $stmt )) {
+    $stmt = sqlsrv_prepare($conn, "SELECT review1 FROM cd_info");
+
+    sqlsrv_execute($stmt);
+
+    while (sqlsrv_fetch($stmt)) {
         $strlen = 0;
-        $stream = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STREAM("binary"));
-        while( !feof( $stream )) { 
-            $str = fread( $stream, 80 );
-            $strlen += strlen( $str );
+        $stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM("binary"));
+        while (!feof($stream)) {
+            $str = fread($stream, 80);
+            $strlen += strlen($str);
             echo "$str\n";
         }
         echo "length = $strlen\n\n";
     }
-    
-    sqlsrv_free_stmt( $stmt );
 
-    sqlsrv_close( $conn );
+    sqlsrv_free_stmt($stmt);
+
+    sqlsrv_close($conn);
 ?>
 --EXPECT--
 Source: Amazon.com - As it turned out, Led Zeppelins infamous 1969 debut album w

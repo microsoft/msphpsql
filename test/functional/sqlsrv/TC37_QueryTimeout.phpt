@@ -1,8 +1,8 @@
 --TEST--
 Query Timeout Test
 --DESCRIPTION--
-Verifies the functionality of QueryTimeout option for both “sqlsrv_query”
-and “sqlsrv_prepare”.
+Verifies the functionality of QueryTimeout option for both "sqlsrv_query"
+and "sqlsrv_prepare".
 Executes a batch query that is expected to time out because it includes
 a request to delay the server execution (via WAITFOR DELAY) for a duration
 longer than the query timeout.
@@ -12,77 +12,57 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
-function QueryTimeout()
+function queryTimeout()
 {
-    include 'MsSetup.inc';
-
     $testName = "Statement - Query Timeout";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
-    CreateTable($conn1, $tableName);
+    setup();
+    $conn1 = connect();
+    $tableName = 'TC37test';
+    createTable($conn1, $tableName);
 
-    Trace("Executing batch queries requiring 3 seconds with 1 second timeout.\n"); 
+    trace("Executing batch queries requiring 3 seconds with 1 second timeout.\n");
     $query = "WAITFOR DELAY '00:00:03'; SELECT * FROM [$tableName]";
     $option = array('QueryTimeout' => 1);
 
     // Test timeout with sqlsrv_query()
-    Trace("\tDirect execution ...");
+    trace("\tDirect execution ...");
     $stmt1 = sqlsrv_query($conn1, $query, null, $option);
-    if ($stmt1 === false)
-    {
-        Trace(" query timed out (as expected).\n");
-    }
-    else
-    {
+    if ($stmt1 === false) {
+        trace(" query timed out (as expected).\n");
+    } else {
         die("Query was expected to time out");
     }
 
     // Test timeout with sqlsrv_prepare()/sqlsrv_execute()
-    Trace("\tPrepared execution ...");
+    trace("\tPrepared execution ...");
     $stmt2 = sqlsrv_prepare($conn1, $query, null, $option);
-    if ($stmt2 === false)
-    {
-        FatalError("Query preparation failed: $query");
+    if ($stmt2 === false) {
+        fatalError("Query preparation failed: $query");
     }
     $execOutcome = sqlsrv_execute($stmt2);
-    if ($execOutcome === false)
-    {
-        Trace(" query timed out (as expected).\n");
-    }
-    else
-    {
+    if ($execOutcome === false) {
+        trace(" query timed out (as expected).\n");
+    } else {
         die("Query execution was expected to time out");
     }
     sqlsrv_free_stmt($stmt2);
-    
-    DropTable($conn1, $tableName);  
-    
+
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-    try
-    {
-        QueryTimeout();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
+try {
+    queryTimeout();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-Repro();
 
 ?>
 --EXPECT--

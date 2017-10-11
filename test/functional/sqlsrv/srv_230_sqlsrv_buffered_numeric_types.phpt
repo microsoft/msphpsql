@@ -8,9 +8,9 @@ Test numeric conversion (number to string, string to number) functionality for b
 
 require_once("MsCommon.inc");
 
-$conn = Connect(array("CharacterSet"=>"utf-8"));
-if( !$conn ) {
-    PrintErrors("Connection could not be established.\n");
+$conn = connect(array("CharacterSet"=>"utf-8"));
+if (!$conn) {
+    printErrors("Connection could not be established.\n");
 }
 
 $sample = 1234567890.1234;
@@ -23,56 +23,54 @@ $sample5 = -0.55;
 $query = 'CREATE TABLE #TESTTABLE (a float(53), neg_a float(53), b int, neg_b int, c decimal(16, 6), neg_c decimal(16, 6), zero int, zerof float(53), zerod decimal(16,6))';
 
 // Create table
-$stmt = sqlsrv_query( $conn, $query );
-if( $stmt === false ) {
-    die( print_r( sqlsrv_errors(), true ));
+$stmt = sqlsrv_query($conn, $query);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
 
 $query = 'INSERT INTO #TESTTABLE (a, neg_a, b, neg_b, c, neg_c, zero, zerof, zerod) VALUES(?, ?, ?, ?, ?, ?, 0, 0, 0)';
-$params = array($sample, $sample1, $sample2, $sample3, $sample4, $sample5);  
+$params = array($sample, $sample1, $sample2, $sample3, $sample4, $sample5);
 
-$stmt = sqlsrv_query( $conn, $query, $params );
-if( $stmt === false ) {
-    die( print_r( sqlsrv_errors(), true ));
+$stmt = sqlsrv_query($conn, $query, $params);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
-$params = array($sample4, $sample5, 100000, -1234567, $sample, $sample1);  
-$stmt = sqlsrv_query( $conn, $query, $params );
-if( $stmt === false ) {
-    die( print_r( sqlsrv_errors(), true ));
+$params = array($sample4, $sample5, 100000, -1234567, $sample, $sample1);
+$stmt = sqlsrv_query($conn, $query, $params);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
 
 $query = 'SELECT TOP 2 * FROM #TESTTABLE';
-$stmt = sqlsrv_query( $conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
-if(!$stmt)
-{
+$stmt = sqlsrv_query($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+if (!$stmt) {
     echo "Statement could not be prepared.\n";
-    die( print_r( sqlsrv_errors(),true));
+    die(print_r(sqlsrv_errors(), true));
 }
-sqlsrv_execute( $stmt );
+sqlsrv_execute($stmt);
 
-$array = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC );
+$array = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
 var_dump($array);
-$array = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC );
+$array = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
 var_dump($array);
 
-$numFields = sqlsrv_num_fields( $stmt );
-$meta = sqlsrv_field_metadata( $stmt );
-$rowcount = sqlsrv_num_rows( $stmt);
-for($i = 0; $i < $rowcount; $i++){
-        sqlsrv_fetch( $stmt, SQLSRV_SCROLL_ABSOLUTE, $i );
-        for($j = 0; $j < $numFields; $j++) { 
-                $name = $meta[$j]["Name"];
-                print("\ncolumn: $name\n");
-                $field = sqlsrv_get_field( $stmt, $j, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR) );        
-                var_dump($field);        
-                if ($meta[$j]["Type"] == SQLSRV_SQLTYPE_INT)
-                {
-                        $field = sqlsrv_get_field( $stmt, $j, SQLSRV_PHPTYPE_INT );
-                        var_dump($field);
-                }
-                $field = sqlsrv_get_field( $stmt, $j, SQLSRV_PHPTYPE_FLOAT);
-                var_dump($field);
+$numFields = sqlsrv_num_fields($stmt);
+$meta = sqlsrv_field_metadata($stmt);
+$rowcount = sqlsrv_num_rows($stmt);
+for ($i = 0; $i < $rowcount; $i++) {
+    sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, $i);
+    for ($j = 0; $j < $numFields; $j++) {
+        $name = $meta[$j]["Name"];
+        print("\ncolumn: $name\n");
+        $field = sqlsrv_get_field($stmt, $j, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+        var_dump($field);
+        if ($meta[$j]["Type"] == SQLSRV_SQLTYPE_INT) {
+            $field = sqlsrv_get_field($stmt, $j, SQLSRV_PHPTYPE_INT);
+            var_dump($field);
         }
+        $field = sqlsrv_get_field($stmt, $j, SQLSRV_PHPTYPE_FLOAT);
+        var_dump($field);
+    }
 }
 
 sqlsrv_free_stmt($stmt);
@@ -198,4 +196,3 @@ float(0)
 column: zerod
 string(7) ".000000"
 float(0)
-

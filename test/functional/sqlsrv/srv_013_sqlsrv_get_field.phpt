@@ -6,10 +6,10 @@ sqlsrv_get_field() using SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR)
 
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect(array("CharacterSet"=>"UTF-8"));
+// connect
+$conn = connect(array("CharacterSet"=>"UTF-8"));
 if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+    fatalError("Connection could not be established.\n");
 }
 
 // Create table
@@ -27,7 +27,7 @@ $stmt = sqlsrv_query( $conn, $query ) ?: die( print_r( sqlsrv_errors(), true) );
 while(sqlsrv_fetch($stmt)) {
     $field = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
     var_dump(get_resource_type($field));
-    
+
     while(!feof($field))
     {
         echo fread($field, 100)."\n";

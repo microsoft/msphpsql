@@ -10,11 +10,11 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require( 'MsCommon.inc' );
+require_once('MsCommon.inc');
 
 $conn = Connect();
 if( !$conn ) {
-    FatalError("Could not connect");
+    fatalError("Could not connect");
 }
 
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('testBoolean', 'P') IS NOT NULL DROP PROCEDURE testBoolean");

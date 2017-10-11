@@ -4,25 +4,25 @@ Test for stream zombifying.
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-    sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-    sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
+    sqlsrv_configure('WarningsReturnAsErrors', 0);
+    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-    require( 'MsCommon.inc' );
+    require_once("MsCommon.inc");
 
-    $conn = Connect();
-    if( !$conn ) {
-        FatalError( "Failed to connect." );
+    $conn = connect();
+    if (!$conn) {
+        fatalError("Failed to connect.");
     }
 
-    $stmt = sqlsrv_query( $conn, "SELECT * FROM [test_streamable_types]" );
-    $metadata = sqlsrv_field_metadata( $stmt );
-    $count = count( $metadata );
-    sqlsrv_fetch( $stmt );
-    $stream = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STREAM("binary"));
-    sqlsrv_fetch( $stmt );
-    $name = fread( $stream, 100 );
-    sqlsrv_free_stmt( $stmt );
-    sqlsrv_close( $conn );
+    $stmt = sqlsrv_query($conn, "SELECT * FROM [test_streamable_types]");
+    $metadata = sqlsrv_field_metadata($stmt);
+    $count = count($metadata);
+    sqlsrv_fetch($stmt);
+    $stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM("binary"));
+    sqlsrv_fetch($stmt);
+    $name = fread($stream, 100);
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_close($conn);
 
 ?>
 --EXPECTREGEX--

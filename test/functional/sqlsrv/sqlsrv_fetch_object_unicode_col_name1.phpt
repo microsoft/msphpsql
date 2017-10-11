@@ -7,238 +7,231 @@ Test for fetch_object with Unicode column name
 
 class foo
 {
-	public $stuff = "stuff";
+    public $stuff = "stuff";
 
-	private $id = -1;
-	
-	private $id_foo = -2;
-	
-	function __construct( $a, $b )
-	{
-		echo "Creating a foo with params $a & $b\n";
-	}
+    private $id = -1;
 
-    function do_foo()
+    private $id_foo = -2;
+
+    public function __construct($a, $b)
     {
-        echo "Doing foo. $this->id_foo $this->id $this->stuff\n"; 
+        echo "Creating a foo with params $a & $b\n";
+    }
+
+    public function do_foo()
+    {
+        echo "Doing foo. $this->id_foo $this->id $this->stuff\n";
         $this->id_foo = 4;
     }
 }
 
 class foo_noargs
 {
-	public $stuff = "stuff";
+    public $stuff = "stuff";
 
-	private $id = -1;
-	
-	private $id_foo = -2;
-	
-    function do_foo()
+    private $id = -1;
+
+    private $id_foo = -2;
+
+    public function do_foo()
     {
-        echo "Doing foo. $this->id_foo $this->id $this->stuff\n"; 
+        echo "Doing foo. $this->id_foo $this->id $this->stuff\n";
         $this->id_foo = 4;
     }
 } // end class foo_noargs
 
-sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
+sqlsrv_configure('WarningsReturnAsErrors', 0);
 //sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
 //sqlsrv_configure( 'LogSubsystems', SQLSRV_LOG_SYSTEM_ALL );
 
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
-include 'MsSetup.inc';
+$conn = connect(array( 'CharacterSet'=>'UTF-8' ));
 
-$conn = ConnectUTF8();
+$stmt = sqlsrv_prepare($conn, "IF OBJECT_ID('test_params', 'U') IS NOT NULL DROP TABLE test_params");
+sqlsrv_execute($stmt);
+sqlsrv_free_stmt($stmt);
 
-$stmt = sqlsrv_prepare( $conn, "IF OBJECT_ID('test_params', 'U') IS NOT NULL DROP TABLE test_params" );
-sqlsrv_execute( $stmt );
-sqlsrv_free_stmt( $stmt );
-
-$stmt = sqlsrv_prepare( $conn, "CREATE TABLE test_params (id tinyint, 吉安而來 char(10), [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é] float, stuff varchar(max))" );
-sqlsrv_execute( $stmt );
-sqlsrv_free_stmt( $stmt );
+$stmt = sqlsrv_prepare($conn, "CREATE TABLE test_params (id tinyint, 吉安而來 char(10), [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é] float, stuff varchar(max))");
+sqlsrv_execute($stmt);
+sqlsrv_free_stmt($stmt);
 
 $f1 = 1;
 $f2 = "testtestte";
 $f3 = 12.0;
-$f4 = fopen( "data://text/plain,This%20is%20some%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r" );
+$f4 = fopen("data://text/plain,This%20is%20some%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
 
-$stmt = sqlsrv_prepare( $conn, "INSERT INTO test_params (id, 吉安而來, [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é], stuff) VALUES (?, ?, ?, ?)", array( &$f1, "testtestte", &$f3, &$f4 )); //,
-	//~ array( SQLSRV_SQLTYPE_INTEGER, SQLSRV_SQLTYPE_CHAR(10), SQLSRV_SQLTYPE_此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é, SQLSRV_SQLTYPE_VARBINARY(4000)));
-if( !$stmt ) {
-	var_dump( sqlsrv_errors() );
-	die( "sqlsrv_prepare failed." );        
+$stmt = sqlsrv_prepare($conn, "INSERT INTO test_params (id, 吉安而來, [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é], stuff) VALUES (?, ?, ?, ?)", array( &$f1, "testtestte", &$f3, &$f4 )); //,
+    //~ array( SQLSRV_SQLTYPE_INTEGER, SQLSRV_SQLTYPE_CHAR(10), SQLSRV_SQLTYPE_此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é, SQLSRV_SQLTYPE_VARBINARY(4000)));
+if (!$stmt) {
+    var_dump(sqlsrv_errors());
+    die("sqlsrv_prepare failed.");
 }
 
-$success = sqlsrv_execute( $stmt );
-if( !$success ) {
-	var_dump( sqlsrv_errors() );
-	die( "sqlsrv_execute failed." );        
+$success = sqlsrv_execute($stmt);
+if (!$success) {
+    var_dump(sqlsrv_errors());
+    die("sqlsrv_execute failed.");
 }
-while( $success = sqlsrv_send_stream_data( $stmt )) {
+while ($success = sqlsrv_send_stream_data($stmt)) {
 }
-if( !is_null( $success )) {
-	sqlsrv_cancel( $stmt );
-	sqlsrv_free_stmt( $stmt );
-	die( "sqlsrv_send_stream_data failed." );
+if (!is_null($success)) {
+    sqlsrv_cancel($stmt);
+    sqlsrv_free_stmt($stmt);
+    die("sqlsrv_send_stream_data failed.");
 }
 
 $f1 = 2;
 $f3 = 13.0;
-$f4 = fopen( "data://text/plain,This%20is%20some%20more%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r" );
-$success = sqlsrv_execute( $stmt );
-if( !$success ) {
-	var_dump( sqlsrv_errors() );
-	die( "sqlsrv_execute failed." );        
+$f4 = fopen("data://text/plain,This%20is%20some%20more%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
+$success = sqlsrv_execute($stmt);
+if (!$success) {
+    var_dump(sqlsrv_errors());
+    die("sqlsrv_execute failed.");
 }
-while( $success = sqlsrv_send_stream_data( $stmt )) {
+while ($success = sqlsrv_send_stream_data($stmt)) {
 }
-if( !is_null( $success )) {
-	sqlsrv_cancel( $stmt );
-	sqlsrv_free_stmt( $stmt );
-	die( "sqlsrv_send_stream_data failed." );
+if (!is_null($success)) {
+    sqlsrv_cancel($stmt);
+    sqlsrv_free_stmt($stmt);
+    die("sqlsrv_send_stream_data failed.");
 }
 
 $f1 = 3;
 $f3 = 14.0;
-$f4 = fopen( "data://text/plain,This%20is%20some%20more%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r" );
-$success = sqlsrv_execute( $stmt );
-if( !$success ) {
-	var_dump( sqlsrv_errors() );
-	die( "sqlsrv_execute failed." );        
+$f4 = fopen("data://text/plain,This%20is%20some%20more%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
+$success = sqlsrv_execute($stmt);
+if (!$success) {
+    var_dump(sqlsrv_errors());
+    die("sqlsrv_execute failed.");
 }
-while( $success = sqlsrv_send_stream_data( $stmt )) {
+while ($success = sqlsrv_send_stream_data($stmt)) {
 }
-if( !is_null( $success )) {
-	sqlsrv_cancel( $stmt );
-	sqlsrv_free_stmt( $stmt );
-	die( "sqlsrv_send_stream_data failed." );
+if (!is_null($success)) {
+    sqlsrv_cancel($stmt);
+    sqlsrv_free_stmt($stmt);
+    die("sqlsrv_send_stream_data failed.");
 }
 
 $f1 = 4;
 $f3 = 15.0;
-$f4 = fopen( "data://text/plain,This%20is%20some%20more%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r" );
-$success = sqlsrv_execute( $stmt );
-if( !$success ) {
-	var_dump( sqlsrv_errors() );
-	die( "sqlsrv_execute failed." );        
+$f4 = fopen("data://text/plain,This%20is%20some%20more%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
+$success = sqlsrv_execute($stmt);
+if (!$success) {
+    var_dump(sqlsrv_errors());
+    die("sqlsrv_execute failed.");
 }
-while( $success = sqlsrv_send_stream_data( $stmt )) {
+while ($success = sqlsrv_send_stream_data($stmt)) {
 }
-if( !is_null( $success )) {
-	sqlsrv_cancel( $stmt );
-	sqlsrv_free_stmt( $stmt );
-	die( "sqlsrv_send_stream_data failed." );
+if (!is_null($success)) {
+    sqlsrv_cancel($stmt);
+    sqlsrv_free_stmt($stmt);
+    die("sqlsrv_send_stream_data failed.");
 }
 
 $f1 = 5;
 $f3 = 16.0;
-$f4 = fopen( "data://text/plain,This%20is%20some%20more%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r" );
-$success = sqlsrv_execute( $stmt );
-if( !$success ) {
-	var_dump( sqlsrv_errors() );
-	die( "sqlsrv_execute failed." );        
+$f4 = fopen("data://text/plain,This%20is%20some%20more%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
+$success = sqlsrv_execute($stmt);
+if (!$success) {
+    var_dump(sqlsrv_errors());
+    die("sqlsrv_execute failed.");
 }
-while( $success = sqlsrv_send_stream_data( $stmt )) {
+while ($success = sqlsrv_send_stream_data($stmt)) {
 }
-if( !is_null( $success )) {
-	sqlsrv_cancel( $stmt );
-	sqlsrv_free_stmt( $stmt );
-	die( "sqlsrv_send_stream_data failed." );
+if (!is_null($success)) {
+    sqlsrv_cancel($stmt);
+    sqlsrv_free_stmt($stmt);
+    die("sqlsrv_send_stream_data failed.");
 }
 
-sqlsrv_free_stmt( $stmt );
+sqlsrv_free_stmt($stmt);
 
-$stmt = sqlsrv_prepare( $conn, "SELECT id, [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é], 吉安而來, stuff FROM test_params" );
-$success = sqlsrv_execute( $stmt );
-if( !$success ) {
-	var_dump( sqlsrv_errors() );
-	die( "sqlsrv_execute failed." );        
+$stmt = sqlsrv_prepare($conn, "SELECT id, [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é], 吉安而來, stuff FROM test_params");
+$success = sqlsrv_execute($stmt);
+if (!$success) {
+    var_dump(sqlsrv_errors());
+    die("sqlsrv_execute failed.");
 }
 
 echo "Fetch a stdClass object (1)\n";
-$obj = sqlsrv_fetch_object( $stmt );
-if( $obj === false ) {
-	die( print_r( sqlsrv_errors(), true ));
+$obj = sqlsrv_fetch_object($stmt);
+if ($obj === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
-print_r( $obj );
+print_r($obj);
 
 echo "Fetch a foo_noargs object (2)\n";
-$obj = sqlsrv_fetch_object( $stmt, "foo_noargs" );
-if( $obj === false ) {
-	die( print_r( sqlsrv_errors(), true ));
+$obj = sqlsrv_fetch_object($stmt, "foo_noargs");
+if ($obj === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
 $obj->do_foo();
-print_r( $obj );
+print_r($obj);
 
 echo "Fetch a foo object (with constructor args) (3)\n";
-$obj = sqlsrv_fetch_object( $stmt, "foo", array( 2, 1 ) );
-if( $obj === false ) {
-	die( print_r( sqlsrv_errors(), true ));
+$obj = sqlsrv_fetch_object($stmt, "foo", array( 2, 1 ));
+if ($obj === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
 $obj->do_foo();
-print_r( $obj );
+print_r($obj);
 
 echo "Just create a normal foo in the script\n";
-$next_obj = new foo( 1, 2 );
-print_r( $next_obj );
+$next_obj = new foo(1, 2);
+print_r($next_obj);
 
-// this case prints out warnings for 7.0.x but not passing enough argument 
+// this case prints out warnings for 7.0.x but not passing enough argument
 // results in a fatal error for 7.1.x
 echo "With no constructor arguments (4)\n";
 try {
-	$obj = sqlsrv_fetch_object( $stmt, "foo" );
-	if( $obj === false ) {
-		die( print_r( sqlsrv_errors(), true ));
-	}
-	$obj->do_foo();
-	print_r( $obj );
-}
-catch (Error $e)
-{
-	echo "Caught error: " . $e->getMessage() . "\n";
+    $obj = sqlsrv_fetch_object($stmt, "foo");
+    if ($obj === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+    $obj->do_foo();
+    print_r($obj);
+} catch (Error $e) {
+    echo "Caught error: " . $e->getMessage() . "\n";
 }
 
 // the case with args to an object that doesn't take them
 echo "Non args constructor with args (5)\n";
-$obj = sqlsrv_fetch_object( $stmt, "foo_noargs", array( 1, 2 ));
-if( $obj === false ) {
-	die( print_r( sqlsrv_errors(), true ));
+$obj = sqlsrv_fetch_object($stmt, "foo_noargs", array( 1, 2 ));
+if ($obj === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
-if( is_null( $obj )) {
-	echo "Done fetching objects.\n";        
-}
-else {
-	$obj->do_foo();
-	print_r( $obj );
+if (is_null($obj)) {
+    echo "Done fetching objects.\n";
+} else {
+    $obj->do_foo();
+    print_r($obj);
 }
 
 // the end of result set case
 echo "At the end of the result set (6)\n";
-$obj = sqlsrv_fetch_object( $stmt, "foo" );
-if( $obj === false ) {
-	die( print_r( sqlsrv_errors(), true ));
+$obj = sqlsrv_fetch_object($stmt, "foo");
+if ($obj === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
-if( is_null( $obj )) {
-	echo "Done fetching objects.\n";        
-}
-else {
-	$obj->do_foo();
-	print_r( $obj );
+if (is_null($obj)) {
+    echo "Done fetching objects.\n";
+} else {
+    $obj->do_foo();
+    print_r($obj);
 }
 
 // past the end of result set case
 echo "Past the end of the result set (7)\n";
-$obj = sqlsrv_fetch_object( $stmt, "foo" );
-if( $obj === false ) {
-	die( print_r( sqlsrv_errors(), true ));
+$obj = sqlsrv_fetch_object($stmt, "foo");
+if ($obj === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
-if( is_null( $obj )) {
-	echo "Done fetching objects.\n";        
-}
-else {
-$obj->do_foo();
-print_r( $obj );
+if (is_null($obj)) {
+    echo "Done fetching objects.\n";
+} else {
+    $obj->do_foo();
+    print_r($obj);
 }
 
 ?>

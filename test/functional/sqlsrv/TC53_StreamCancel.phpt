@@ -10,23 +10,23 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function CancelStream()
 {
     include 'MsSetup.inc';
 
     $testName = "Stream - Cancel";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
     $noRows = 5;
-    CreateTable($conn1, $tableName);
-    InsertRows($conn1, $tableName, $noRows);
+    createTable($conn1, $tableName);
+    insertRows($conn1, $tableName, $noRows);
 
-    $stmt1 = SelectFromTable($conn1, $tableName);
+    $stmt1 = selectFromTable($conn1, $tableName);
 
     // Expired stream
     $stream1 = GetStream($stmt1);
@@ -39,40 +39,36 @@ function CancelStream()
     CheckStream($stream2);
 
     // Closed statement
-    $stmt2 = SelectFromTable($conn1, $tableName);
+    $stmt2 = selectFromTable($conn1, $tableName);
     $stream3 = GetStream($stmt2);
     sqlsrv_free_stmt($stmt2);
     CheckStream($stream3);
-    
-    DropTable($conn1, $tableName);  
-    
+
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 function GetStream($stmt)
 {
     $stream = null;
 
-    if (!sqlsrv_fetch($stmt))
-    {
-        FatalError("Failed to fetch row ".$row);
+    if (!sqlsrv_fetch($stmt)) {
+        fatalError("Failed to fetch row ".$row);
     }
-    while ($stream == null)
-    {
+    while ($stream == null) {
         $col = rand(11, 22);    // select a streamable field
-        if (!IsStreamable($col + 1))
-        {
+        if (!IsStreamable($col + 1)) {
             die("Failed to select a streamable field.");
         }
         $type = GetSqlType($col  + 1);
-        Trace("Selected streamable type: $type ...\n");
+        trace("Selected streamable type: $type ...\n");
 
         $stream = sqlsrv_get_field($stmt, $col, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-        if ($stream === false)
-        {
-            FatalError("Failed to read field $col: $type");
+        if ($stream === false) {
+            fatalError("Failed to read field $col: $type");
         }
     }
 
@@ -82,39 +78,32 @@ function GetStream($stmt)
 function CheckStream($stream)
 {
     $bytesRead = 0;
-    try
-    {
+    try {
         $value = fread($stream, 8192);
         $bytesRread = strlen($value);
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         $bytesRead = 0;
-        Trace($e->getMessage());
+        trace($e->getMessage());
     }
-    if ($bytesRead > 0)
-    {
+    if ($bytesRead > 0) {
         die("Invalid stream should not return any data.");
     }
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         CancelStream();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECTREGEX--
@@ -125,4 +114,3 @@ Repro();
 
 |Warning: fread\(\): supplied argument is not a valid stream resource in .+\\TC53_StreamCancel.php on line 86|Warning: fread\(\): expects parameter 1 to be resource, null given in .+\\TC53_StreamCancel.php on line 86
 Test "Stream - Cancel" completed successfully.
-

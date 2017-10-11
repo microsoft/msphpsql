@@ -8,7 +8,6 @@
 
 */
 $PhpDriver = "Microsoft SQL Server Driver for PHP";
-
 $server = 'TARGET_SERVER';
 $database = 'TARGET_DATABASE';
 $userName = 'TARGET_USERNAME';

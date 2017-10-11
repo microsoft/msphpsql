@@ -6,34 +6,29 @@ Encoding of sqlsrv errors
 <?php
 header('content-type: text/plain;encoding=ISO-8859-1');
 
-include( 'MsCommon.inc' );
+require_once("MsCommon.inc");
 
-$conn = ConnectUTF8();          
-if ( !$conn )
-{
-    die( print_r(sqlsrv_errors(),true));
+$conn = connect(array( 'CharacterSet'=>'UTF-8' ));
+if (!$conn) {
+    die(print_r(sqlsrv_errors(), true));
 }
-   
+
 $stmt = sqlsrv_query($conn, "SET LANGUAGE German");
-if ( !$stmt )
-{
+if (!$stmt) {
     print_r(sqlsrv_errors());
     exit;
 }
 sqlsrv_free_stmt($stmt);
- 
+
 $stmt = sqlsrv_query($conn, "select *, BadColumn from sys.syslanguages");
-if ( $stmt )
-{
+if ($stmt) {
     echo 'OK!';
     sqlsrv_free_stmt($stmt);
-}
-else
-{
+} else {
     $errs = sqlsrv_errors();
     print_r($errs);
 }
- 
+
 sqlsrv_close($conn);
 
 ?>

@@ -6,35 +6,34 @@ Bind params using sqlsrv_prepare without any sql_type specified
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
-include 'AEData.inc';
+require_once('MsCommon.inc');
+require_once('AEData.inc');
 
 $dataTypes = array( "bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5)", "numeric(10,5)", "float", "real" );
-$conn = ae_connect();
+$conn = AE\connect();
 
-foreach ( $dataTypes as $dataType ) {
+foreach ($dataTypes as $dataType) {
     echo "\nTesting $dataType: \n";
-    
+
     // create table
-    $tbname = GetTempTableName( "", false );
-    $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
-    create_table( $conn, $tbname, $colMetaArr );
-    
+    $tbname = GetTempTableName("", false);
+    $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
+    AE\createTable($conn, $tbname, $colMetaArr);
+
     // insert a row
-    $inputValues = array_slice( ${explode( "(", $dataType )[0] . "_params"}, 1, 2 );
+    $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
-    $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r );
-    if ( $r === false ) {
-        is_incompatible_types_error( $dataType, "default type" );
-    }
-    else {
+    $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
+    if ($r === false) {
+        is_incompatible_types_error($dataType, "default type");
+    } else {
         echo "****Encrypted default type is compatible with encrypted $dataType****\n";
-        fetch_all( $conn, $tbname );
+        AE\fetchAll($conn, $tbname);
     }
-    DropTable( $conn, $tbname );
+    dropTable($conn, $tbname);
 }
-sqlsrv_free_stmt( $stmt );
-sqlsrv_close( $conn );
+sqlsrv_free_stmt($stmt);
+sqlsrv_close($conn);
 ?>
 --EXPECT--
 

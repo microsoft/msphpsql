@@ -9,113 +9,91 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
-function PrepareAndExecute($noPasses)
+function prepareAndExecute($noPasses)
 {
-    include 'MsSetup.inc';
-
     $testName = "Statement - Prepare and Execute";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
-    CreateTable($conn1, $tableName);
+    setup();
+    $conn1 = connect();
 
-    InsertRows($conn1, $tableName, 1);
+    $tableName = 'TC34test';
+    createTable($conn1, $tableName);
+
+    insertRows($conn1, $tableName, 1);
 
     $values = array();
     $fieldlVal = "";
 
     // Prepare reference values
-    Trace("Execute a direct SELECT query on $tableName ...");
-    $stmt1 = SelectFromTable($conn1, $tableName);
+    trace("Execute a direct SELECT query on $tableName ...");
+    $stmt1 = selectFromTable($conn1, $tableName);
     $numFields1 = sqlsrv_num_fields($stmt1);
     sqlsrv_fetch($stmt1);
-    for ($i = 0; $i < $numFields1; $i++)
-    {
-        if (UseUTF8Data()){    
+    for ($i = 0; $i < $numFields1; $i++) {
+        if (useUTF8Data()) {
             $fieldVal = sqlsrv_get_field($stmt1, $i, SQLSRV_PHPTYPE_STRING('UTF-8'));
-        }
-        else{
+        } else {
             $fieldVal = sqlsrv_get_field($stmt1, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         }
-        if ($fieldVal === false)
-        {
-            FatalError("Failed to retrieve field $i");
+        if ($fieldVal === false) {
+            fatalError("Failed to retrieve field $i");
         }
         $values[$i] = $fieldVal;
     }
     sqlsrv_free_stmt($stmt1);
-    Trace(" $numFields1 fields retrieved.\n"); 
+    trace(" $numFields1 fields retrieved.\n");
 
     // Prepare once and execute several times
-    Trace("Prepare a SELECT query on $tableName ...");
-    $stmt2 = PrepareQuery($conn1, "SELECT * FROM [$tableName]");
+    trace("Prepare a SELECT query on $tableName ...");
+    $stmt2 = prepareQuery($conn1, "SELECT * FROM [$tableName]");
     $numFields2 = sqlsrv_num_fields($stmt2);
-    Trace(" $numFields2 fields expected.\n"); 
-    if ($numFields2 != $numFields1)
-    {
-        SetUTF8Data(false);
+    trace(" $numFields2 fields expected.\n");
+    if ($numFields2 != $numFields1) {
+        setUTF8Data(false);
         die("Incorrect number of fields: $numFields2");
     }
 
-    for ($j = 0; $j < $noPasses; $j++)
-    {
-        Trace("Executing the prepared query ...");
+    for ($j = 0; $j < $noPasses; $j++) {
+        trace("Executing the prepared query ...");
         sqlsrv_execute($stmt2);
         sqlsrv_fetch($stmt2);
-        for ($i = 0; $i < $numFields2; $i++)
-        {
-            if (UseUTF8Data()){
+        for ($i = 0; $i < $numFields2; $i++) {
+            if (useUTF8Data()) {
                 $fieldVal = sqlsrv_get_field($stmt2, $i, SQLSRV_PHPTYPE_STRING('UTF-8'));
-            }
-            else{
+            } else {
                 $fieldVal = sqlsrv_get_field($stmt2, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
             }
-            if ($fieldVal === false)
-            {
-                FatalError("Failed to retrieve field $i");
+            if ($fieldVal === false) {
+                fatalError("Failed to retrieve field $i");
             }
-            if ($values[$i] != $fieldVal)
-            {
-                SetUTF8Data(false);
+            if ($values[$i] != $fieldVal) {
+                setUTF8Data(false);
                 die("Incorrect value for field $i at iteration $j");
             }
         }
-        Trace(" $numFields2 fields verified.\n"); 
+        trace(" $numFields2 fields verified.\n");
     }
     sqlsrv_free_stmt($stmt2);
 
-    DropTable($conn1, $tableName);  
-    
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-    if (! IsWindows())
-    {
-        SetUTF8Data(true);
-    }
-    try
-    {
-        PrepareAndExecute(5);
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-    SetUTF8Data(false);
+if (!isWindows()) {
+    setUTF8Data(true);
 }
-
-Repro();
+try {
+    prepareAndExecute(5);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+setUTF8Data(false);
 
 ?>
 --EXPECT--

@@ -9,95 +9,84 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function DeleteQuery()
 {
-    include 'MsSetup.inc';
-
     $testName = "Statement - Delete Query";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
     $noRows = 10;
-    CreateTable($conn1, $tableName);
-    $noRowsInserted = InsertRows($conn1, $tableName, $noRows);
+    $tableName = 'TC32test';
+    createTable($conn1, $tableName);
+    $noRowsInserted = insertRows($conn1, $tableName, $noRows);
 
     $row = 1;
     $keyValue = "0";
-    while ($row <= $noRowsInserted)
-    {
-        $stmt1 = SelectFromTable($conn1, $tableName);
-        if (sqlsrv_fetch($stmt1) === false)
-        {
-            FatalError("Failed to retrieve 1st row of data from test table");
+    while ($row <= $noRowsInserted) {
+        $stmt1 = selectFromTable($conn1, $tableName);
+        if (sqlsrv_fetch($stmt1) === false) {
+            fatalError("Failed to retrieve 1st row of data from test table");
         }
         $keyValue = sqlsrv_get_field($stmt1, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         sqlsrv_free_stmt($stmt1);
 
-        Trace("Deleting rows from $tableName ...");
+        trace("Deleting rows from $tableName ...");
         $delRows = 1;
-        if (strlen($keyValue) == 0)
-        {
-            $stmt2 = ExecuteQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
+        if (strlen($keyValue) == 0) {
+            $stmt2 = executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
             $cond = "(top row)";
-        }
-        else
-        {
+        } else {
             $cond = "(c1_int = $keyValue)";
 
-            $stmt3 = SelectFromTableEx($conn1, $tableName, $cond);
-            $delRows = RowCount($stmt3);
+            $stmt3 = selectFromTableEx($conn1, $tableName, $cond);
+            $delRows = rowCount($stmt3);
             sqlsrv_free_stmt($stmt3);
 
-            $stmt2 = ExecuteQuery($conn1, "DELETE FROM [$tableName] WHERE $cond");
+            $stmt2 = executeQuery($conn1, "DELETE FROM [$tableName] WHERE $cond");
         }
         $numRows1 = sqlsrv_rows_affected($stmt2);
         sqlsrv_free_stmt($stmt2);
-        Trace(" $numRows1 row".(($numRows1 > 1) ? "s" : " ")." $cond.\n");
+        trace(" $numRows1 row".(($numRows1 > 1) ? "s" : " ")." $cond.\n");
 
-        if ($numRows1 != $delRows)
-        {
-            die("Unexpected row count at delete: $numRows1 instead of $delRows");   
+        if ($numRows1 != $delRows) {
+            die("Unexpected row count at delete: $numRows1 instead of $delRows");
         }
         $row += $numRows1;
     }
 
-    $stmt3 = ExecuteQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
+    $stmt3 = executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
     $numRows2 = sqlsrv_rows_affected($stmt3);
     sqlsrv_free_stmt($stmt3);
 
-    if ($numRows2 > 0)
-    {
+    if ($numRows2 > 0) {
         die("Unexpected row count at delete: $numRows2");
-    }   
-    
-    DropTable($conn1, $tableName);  
-    
+    }
+
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         DeleteQuery();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

@@ -5,11 +5,11 @@ reading different encodings in strings and streams.
 --FILE--
 <?php
 
-function setup_test( $conn, $field_type )
+function setup_test($conn, $field_type)
 {
-    prepare_params( $params, $field_type );
+    prepare_params($params, $field_type);
     $tableName = "[dbo.TestTable" . $field_type . "]";
-    
+
     put_image_into_table($conn, $params);
 
     return $params;
@@ -17,172 +17,174 @@ function setup_test( $conn, $field_type )
 
 function start_test()
 {
-    require( 'MsCommon.inc' );
+    require_once('MsCommon.inc');
 
-    sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-    $conn = Connect();
-    if( !$conn ) {
-        FatalError( "Failed to Connect." );
+    sqlsrv_configure('WarningsReturnAsErrors', 0);
+    $conn = connect();
+    if (!$conn) {
+        fatalError("Failed to connect.");
     }
 
-    $params = setup_test( $conn, "varbinary(max)" ); 
-    
+    $params = setup_test($conn, "varbinary(max)");
+
     echo "retrieving binary encoded varbinary(max)\n";
 
     $stmt = sqlsrv_query($conn, $params['selectQuery']);
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
     $result = sqlsrv_fetch($stmt);
-    if( $result === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    if ($result === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
-    
+
     $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-    if( $db_stream === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    if ($db_stream === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
     $file_stream = fopen($params['testImageURL'], "rb");
 
-    while (($file_line = fread( $file_stream, 80 )) &&
-            ($db_line = fread( $db_stream, 80 ))) {
-        if( $file_line != $db_line )
-            die( "Binary not identical" );
+    while (($file_line = fread($file_stream, 80)) &&
+            ($db_line = fread($db_stream, 80))) {
+        if ($file_line != $db_line) {
+            die("Binary not identical");
+        }
     }
 
-    sqlsrv_free_stmt( $stmt );
-    fclose( $file_stream );
+    sqlsrv_free_stmt($stmt);
+    fclose($file_stream);
 
     echo "retrieving char encoded varbinary(max)\n";
 
-    $stmt = sqlsrv_query( $conn, $params['selectQuery'] );
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-
-    $result = sqlsrv_fetch( $stmt );
-    if( $result === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-    
-    $db_stream = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR) );
-    if( $db_stream === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-
-    while ($db_line = fread( $db_stream, 80 )) {
-        echo "$db_line\n";
-    }
-    sqlsrv_free_stmt( $stmt );
-
-    $params = setup_test( $conn, "varchar(max)" ); 
-    
     $stmt = sqlsrv_query($conn, $params['selectQuery']);
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
     $result = sqlsrv_fetch($stmt);
-    if( $result === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-    
-    echo "retrieving binary encoded varchar(max)\n";
-    
-    $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-    if( $db_stream === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-    $file_stream = fopen($params['testImageURL'], "rb");
-    while (($file_line = fread( $file_stream, 80 )) &&
-            ($db_line = fread( $db_stream, 80 ))) {
-        if( $file_line != $db_line )
-            die( "Binary not identical" );
+    if ($result === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    sqlsrv_free_stmt( $stmt );
+    $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
+    if ($db_stream === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    while ($db_line = fread($db_stream, 80)) {
+        echo "$db_line\n";
+    }
+    sqlsrv_free_stmt($stmt);
+
+    $params = setup_test($conn, "varchar(max)");
+
+    $stmt = sqlsrv_query($conn, $params['selectQuery']);
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    $result = sqlsrv_fetch($stmt);
+    if ($result === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    echo "retrieving binary encoded varchar(max)\n";
+
+    $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
+    if ($db_stream === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+    $file_stream = fopen($params['testImageURL'], "rb");
+    while (($file_line = fread($file_stream, 80)) &&
+            ($db_line = fread($db_stream, 80))) {
+        if ($file_line != $db_line) {
+            die("Binary not identical");
+        }
+    }
+
+    sqlsrv_free_stmt($stmt);
 
     echo "retrieving char encoded varchar(max)\n";
 
-    $stmt = sqlsrv_query( $conn, $params['selectQuery'] );
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $stmt = sqlsrv_query($conn, $params['selectQuery']);
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    $result = sqlsrv_fetch( $stmt );
-    if( $result === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $result = sqlsrv_fetch($stmt);
+    if ($result === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
-    
-    $db_stream = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR) );
-    if( $db_stream === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+
+    $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
+    if ($db_stream === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
     $file_stream = fopen($params['testImageURL'], "rb");
-    while (($file_line = fread( $file_stream, 80 )) &&
-            ($db_line = fread( $db_stream, 80 ))) {
-        if( $file_line != $db_line ) 
-        {
+    while (($file_line = fread($file_stream, 80)) &&
+            ($db_line = fread($db_stream, 80))) {
+        if ($file_line != $db_line) {
             // continue testing even if the data not identical
-            echo( "Characters not identical!!\n" );
+            echo("Characters not identical!!\n");
             break;
         }
     }
 
-    sqlsrv_free_stmt( $stmt );
+    sqlsrv_free_stmt($stmt);
 
-    $params = setup_test( $conn, "nvarchar(max)" ); 
-    
+    $params = setup_test($conn, "nvarchar(max)");
+
     $stmt = sqlsrv_query($conn, $params['selectQuery']);
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
     $result = sqlsrv_fetch($stmt);
-    if( $result === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-    
-    echo "retrieving binary encoded nvarchar(max)\n";
-    
-    $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-    if( $db_stream === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-    $file_stream = fopen($params['testImageURL'], "rb");
-    while (($file_line = fread( $file_stream, 80 )) &&
-            ($db_line = fread( $db_stream, 80 ))) {
-        if( $file_line != $db_line )
-            die( "Binary not identical" );
+    if ($result === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    sqlsrv_free_stmt( $stmt );
+    echo "retrieving binary encoded nvarchar(max)\n";
+
+    $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
+    if ($db_stream === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+    $file_stream = fopen($params['testImageURL'], "rb");
+    while (($file_line = fread($file_stream, 80)) &&
+            ($db_line = fread($db_stream, 80))) {
+        if ($file_line != $db_line) {
+            die("Binary not identical");
+        }
+    }
+
+    sqlsrv_free_stmt($stmt);
 
     echo "retrieving char encoded nvarchar(max)\n";
 
-    $stmt = sqlsrv_query( $conn, $params['selectQuery'] );
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $stmt = sqlsrv_query($conn, $params['selectQuery']);
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    $result = sqlsrv_fetch( $stmt );
-    if( $result === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-    
-    $db_stream = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR) );
-    if( $db_stream === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $result = sqlsrv_fetch($stmt);
+    if ($result === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    while ($db_line = fread( $db_stream, 80 )) {
+    $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
+    if ($db_stream === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    while ($db_line = fread($db_stream, 80)) {
         echo "$db_line\n";
     }
-    sqlsrv_free_stmt( $stmt );
+    sqlsrv_free_stmt($stmt);
 
-    sqlsrv_close( $conn );
+    sqlsrv_close($conn);
 
     echo "Test successful.\n";
 }
@@ -193,37 +195,36 @@ function put_image_into_table($conn, $params)
     create_test_table($conn, $params);
 
     $data = fopen($params['testImageURL'], "rb");
-    if( !$data  ) {
+    if (!$data) {
         die("Couldn't open image for reading.");
     }
 
     $stmt = sqlsrv_query($conn, $params['insertQuery'], array( array($data, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY))));
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
-    do { 
+    do {
         $read = sqlsrv_send_stream_data($stmt);
-        if ($read === false) die(print_r(sqlsrv_errors(), true));
+        if ($read === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
     } while ($read);
-        
+
     fclose($data);
     sqlsrv_free_stmt($stmt);
 }
 
-function prepare_params( &$arr, $field_type ) 
+function prepare_params(&$arr, $field_type)
 {
     $uname = php_uname();
     $phpgif = "\\php.gif";
-    
-    if (IsWindows())        
-    {
+
+    if (isWindows()) {
         $phpgif = '\\php.gif';
-    } 
-    else // other than Windows
-    {
+    } else { // other than Windows
         $phpgif = '/php.gif';
     }
-        
+
     $arr['tableName'] = $tblName = "[encoding_test_" . $field_type . "]";
     $arr['columnName'] = $colName = "php_gif";
     $arr['fieldType'] = $field_type;
@@ -231,29 +232,29 @@ function prepare_params( &$arr, $field_type )
     $arr['createQuery'] = "CREATE TABLE $tblName ($colName $field_type)";
     $arr['insertQuery'] = "INSERT INTO $tblName ($colName) VALUES (?)";
     $arr['selectQuery'] = "SELECT TOP 1 $colName FROM $tblName";
-    $arr['testImageURL'] = dirname( $_SERVER['PHP_SELF'] ) . $phpgif; // use this when no http access
+    $arr['testImageURL'] = dirname($_SERVER['PHP_SELF']) . $phpgif; // use this when no http access
     $arr['MIMEType'] = "image/gif";
 }
 
-function drop_test_table( $conn, $params )
+function drop_test_table($conn, $params)
 {
-    run_query( $conn, $params['dropQuery'] ); 
+    run_query($conn, $params['dropQuery']);
 }
 
-function create_test_table( $conn, $params )
-{ 
-    run_query( $conn, $params['createQuery'] ); 
+function create_test_table($conn, $params)
+{
+    run_query($conn, $params['createQuery']);
 }
 
-function run_query($conn, $query) 
+function run_query($conn, $query)
 {
-    $qStmt = sqlsrv_query( $conn, $query );
+    $qStmt = sqlsrv_query($conn, $query);
 
-    if( !$qStmt ) {
-        die( print_r(sqlsrv_errors(), true) );
+    if (!$qStmt) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    sqlsrv_free_stmt( $qStmt );
+    sqlsrv_free_stmt($qStmt);
 }
 
 start_test();

@@ -4,25 +4,27 @@ sqlsrv_field_metadata() VARCHAR(n), NVARCHAR(n), INT
 --FILE--
 <?php
 
-include ("MsCommon.inc");
+require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect();
-if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+// connect
+$conn = connect();
+if (!$conn) {
+    fatalError("Connection could not be established.\n");
 }
 
 $tableName = 'test_srv_031';
 
 // Create table
 $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName (FirstName VARCHAR(10), LastName NVARCHAR(20), Age INT)");
-if( $stmt === false ) { die( print_r( sqlsrv_errors(), true )); }
-sqlsrv_free_stmt( $stmt);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+sqlsrv_free_stmt($stmt);
 
 // Insert data
 $sql = "INSERT INTO $tableName VALUES ('John', 'Doe', 30)";
-$stmt = sqlsrv_query( $conn, $sql);
-sqlsrv_free_stmt( $stmt);
+$stmt = sqlsrv_query($conn, $sql);
+sqlsrv_free_stmt($stmt);
 
 // Insert data
 $sql = "INSERT INTO $tableName VALUES ('Nhoj', N'Eoduard', -3),('Vi Lo', N'N/A', 1987)";
@@ -35,14 +37,15 @@ $stmt = sqlsrv_prepare($conn, $query);
 
 // Get field metadata
 $metadata = sqlsrv_field_metadata($stmt);
-if ( ! $metadata ) 
-    PrintErrors(); 
-else
+if (! $metadata) {
+    printErrors();
+} else {
     var_dump($metadata);
+}
 
 sqlsrv_query($conn, "DROP TABLE $tableName");
 
-sqlsrv_free_stmt( $stmt);
+sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
 print "Done";
 ?>

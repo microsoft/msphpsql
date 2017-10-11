@@ -4,40 +4,39 @@ GitHub issue #231 - String truncation when binding varchar(max)
 --FILE--
 <?php
 
-sqlsrv_configure( 'WarningsReturnAsErrors', 1 );
+sqlsrv_configure('WarningsReturnAsErrors', 1);
 
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect();
-if( !$conn ) {
-    PrintErrors("Connection could not be established.\n");
+// connect
+$conn = connect();
+if (!$conn) {
+    printErrors("Connection could not be established.\n");
 }
 
 $tableName = GetTempTableName('testDataTypes_GH231');
 $columnNames = array( "c1","c2" );
 
-for ($k = 1; $k <= 8; $k++)
-{
+for ($k = 1; $k <= 8; $k++) {
     $sqlType = SqlType($k);
     $dataType = "[$columnNames[0]] int, [$columnNames[1]] $sqlType";
-    
+
     $sql = "CREATE TABLE [$tableName] ($dataType)";
     $stmt1 = sqlsrv_query($conn, $sql);
     sqlsrv_free_stmt($stmt1);
 
-    $sql = "INSERT INTO [$tableName] ($columnNames[0], $columnNames[1]) VALUES (?, ?)";     
+    $sql = "INSERT INTO [$tableName] ($columnNames[0], $columnNames[1]) VALUES (?, ?)";
     $data = GetData($k);
     $phpType = PhpType($k);
     $driverType = DriverType($k, strlen($data));
-    
+
     $params = array($k, array($data, SQLSRV_PARAM_IN, $phpType, $driverType));
     $stmt2 = sqlsrv_prepare($conn, $sql, $params);
-    sqlsrv_execute($stmt2);       
+    sqlsrv_execute($stmt2);
     sqlsrv_free_stmt($stmt2);
 
     ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType);
-    
+
     $stmt3 = sqlsrv_query($conn, "DROP TABLE [$tableName]");
     sqlsrv_free_stmt($stmt3);
 }
@@ -53,17 +52,17 @@ function ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
 
     $stmt1 = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
     sqlsrv_free_stmt($stmt1);
-    
+
     echo "\nData Type: ".$sqlType." binding as \n";
-    
-    $direction = SQLSRV_PARAM_OUT;    
+
+    $direction = SQLSRV_PARAM_OUT;
     echo "Output parameter: \t";
     InvokeProc($conn, $procName, $k, $direction, $data);
-    
+
     $direction = SQLSRV_PARAM_INOUT;
     echo "InOut parameter: \t";
     InvokeProc($conn, $procName, $k, $direction, $data);
-   
+
     $stmt2 = sqlsrv_query($conn, "DROP PROC [$procName]");
     sqlsrv_free_stmt($stmt2);
 }
@@ -72,34 +71,35 @@ function InvokeProc($conn, $procName, $k, $direction, $data)
 {
     $driverType = DriverType($k, strlen($data));
     $callArgs = "?, ?";
-    
+
     // Data to initialize $callResult variable. This variable should be shorter than inserted data in the table
     $initData = "ShortString";
     $callResult = $initData;
 
     // Make sure not to specify the PHP type
-    $params = array( array( $k, SQLSRV_PARAM_IN ), 
+    $params = array( array( $k, SQLSRV_PARAM_IN ),
                      array( &$callResult, $direction, null, $driverType ));
     $stmt = sqlsrv_query($conn, "{ CALL [$procName] ($callArgs)}", $params);
-    if($stmt === false) {    
-        die( print_r( sqlsrv_errors(), true )); 
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
-    
+
     // $callResult should be updated to the value in the table
     $matched = ($callResult === $data);
-    if ($matched) 
+    if ($matched) {
         echo "data matched!\n";
-    else       
+    } else {
         echo "failed!\n";
+    }
 
-    sqlsrv_free_stmt($stmt);    
+    sqlsrv_free_stmt($stmt);
 }
 
 function GetData($k)
 {
     $data = "LongStringForTesting";
     if ($k == 8) {
-        $data = "<XmlTestData><Letters1>The quick brown fox jumps over the lazy dog</Letters1><Digits1>0123456789</Digits1></XmlTestData>";        
+        $data = "<XmlTestData><Letters1>The quick brown fox jumps over the lazy dog</Letters1><Digits1>0123456789</Digits1></XmlTestData>";
     }
 
     return $data;
@@ -109,16 +109,15 @@ function PhpType($k)
 {
     $phpType = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR);
     if ($k == 7) {
-        $phpType = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY);    
+        $phpType = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY);
     }
 
-    return $phpType;    
+    return $phpType;
 }
 
 function SqlType($k)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 1:  return ("char(512)");
         case 2:  return ("varchar(512)");
         case 3:  return ("varchar(max)");
@@ -134,8 +133,7 @@ function SqlType($k)
 
 function DriverType($k, $dataSize)
 {
-    switch ($k)
-    {
+    switch ($k) {
         case 1:  return (SQLSRV_SQLTYPE_CHAR($dataSize));
         case 2:  return (SQLSRV_SQLTYPE_VARCHAR($dataSize));
         case 3:  return (SQLSRV_SQLTYPE_VARCHAR('max'));
@@ -150,7 +148,7 @@ function DriverType($k, $dataSize)
     return (SQLSRV_SQLTYPE_UDT);
 }
 
-?> 
+?>
 
 --EXPECT--
 
@@ -185,4 +183,3 @@ InOut parameter: 	data matched!
 Data Type: xml binding as 
 Output parameter: 	data matched!
 InOut parameter: 	data matched!
- 

@@ -7,72 +7,63 @@ PHPT_EXEC=true
 --FILE--
 <?php
 
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function FetchFields()
 {
     include 'MsSetup.inc';
 
     $testName = "Fetch - Field Data";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
-    CreateTable($conn1, $tableName);
+    setup();
+    $conn1 = connect();
+    createTable($conn1, $tableName);
 
     $startRow = 1;
     $noRows = 20;
-    InsertRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
+    insertRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
-    $stmt1 = SelectQuery($conn1, $query);
+    $stmt1 = selectQuery($conn1, $query);
     $numFields = sqlsrv_num_fields($stmt1);
 
-    Trace("Retrieving $noRows rows with $numFields fields each ...");
-    for ($i = 0; $i < $noRows; $i++)
-    {
+    trace("Retrieving $noRows rows with $numFields fields each ...");
+    for ($i = 0; $i < $noRows; $i++) {
         $row = sqlsrv_fetch($stmt1);
-        if ($row === false)
-        {
-            FatalError("Row $i is missing");
+        if ($row === false) {
+            fatalError("Row $i is missing");
         }
         $skipCount = 0;
-        for ($j = 0; $j < $numFields; $j++)
-        {
-            if (UseUTF8Data()){
+        for ($j = 0; $j < $numFields; $j++) {
+            if (useUTF8Data()) {
                 $fld = sqlsrv_get_field($stmt1, $j, SQLSRV_PHPTYPE_STRING('UTF-8'));
-            }
-            else{
+            } else {
                 $fld = sqlsrv_get_field($stmt1, $j, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
             }
-            if ($fld === false)
-            {
-                FatalError("Field $j of Row $i is missing");
+            if ($fld === false) {
+                fatalError("Field $j of Row $i is missing");
             }
             $col = $j + 1;
-            if (!IsUpdatable($col))
-            {
+            if (!IsUpdatable($col)) {
                 $skipCount++;
-            }
-            else // should check data even if $fld is null
-            {
-                $data = GetInsertData($startRow + $i, $col, $skipCount);
-                if (!CheckData($col, $fld, $data))
-                {
-                    SetUTF8Data(false);
+            } else { // should check data even if $fld is null
+                $data = getInsertData($startRow + $i, $col, $skipCount);
+                if (!CheckData($col, $fld, $data)) {
+                    setUTF8Data(false);
                     die("Data corruption on row ".($startRow + $i)." column $col");
                 }
             }
         }
     }
     sqlsrv_free_stmt($stmt1);
-    Trace(" completed successfully.\n");
+    trace(" completed successfully.\n");
 
-    DropTable($conn1, $tableName);  
-    
+    dropTable($conn1, $tableName);
+
     sqlsrv_close($conn1);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
 
@@ -80,57 +71,46 @@ function CheckData($col, $actual, $expected)
 {
     $success = true;
 
-    if (IsNumeric($col))
-    {
-        if (floatval($actual) != floatval($expected))
-        {
+    if (IsNumeric($col)) {
+        if (floatval($actual) != floatval($expected)) {
             $success = false;
         }
-    }
-    else
-    {
+    } else {
         $actual = trim($actual);
         $len = strlen($expected);
-        if (IsDateTime($col))
-        {
+        if (IsDateTime($col)) {
             $len = min(strlen("YYYY-MM-DD HH:mm:ss"), $len);
         }
-        if (strncasecmp($actual, $expected, $len) != 0)
-        {
+        if (strncasecmp($actual, $expected, $len) != 0) {
             $success = false;
         }
     }
-    if (!$success)
-    {
-        Trace("\nData error\nExpected:\n$expected\nActual:\n$actual\n");
+    if (!$success) {
+        trace("\nData error\nExpected:\n$expected\nActual:\n$actual\n");
     }
 
     return ($success);
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    if (! IsWindows())
-    {
-        SetUTF8Data(true);
+    if (! isWindows()) {
+        setUTF8Data(true);
     }
-    
-    try
-    {
+
+    try {
         FetchFields();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
-    SetUTF8Data(false);
+    setUTF8Data(false);
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

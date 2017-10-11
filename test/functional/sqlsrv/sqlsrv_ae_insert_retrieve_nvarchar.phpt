@@ -4,60 +4,54 @@ Test for inserting encrypted nvarchar data of variable lengths and retrieving en
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
-$conn = ae_connect();
+$conn = AE\connect();
 $testPass = true;
 
 // Create the table
 $tbname = 'NVarcharAnalysis';
-$colMetaArr = array( new columnMeta( "int", "CharCount", "IDENTITY(0,1)" ), new columnMeta( "nvarchar(1000)" ));
-create_table( $conn, $tbname, $colMetaArr );
+$colMetaArr = array( new AE\ColumnMeta("int", "CharCount", "IDENTITY(0,1)"), new AE\ColumnMeta("nvarchar(1000)"));
+AE\createTable($conn, $tbname, $colMetaArr);
 
 
 // insert 1000 rows
-for ( $i = 0; $i < 1000; $i++ )
-{
-    $data = str_repeat( "*", $i );
-    $stmt = insert_row( $conn, $tbname, array( get_default_colname( "nvarchar(1000)" ) => $data ));
+for ($i = 0; $i < 1000; $i++) {
+    $data = str_repeat("*", $i);
+    $stmt = AE\insertRow($conn, $tbname, array( AE\getDefaultColname("nvarchar(1000)") => $data ));
 }
 
 $selectSql = "SELECT * FROM $tbname";
-$stmt = sqlsrv_query( $conn, $selectSql );
-while ( $decrypted_row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ))
-{
-    if ( $decrypted_row[ 'CharCount' ] != strlen( $decrypted_row[ get_default_colname( "nvarchar(1000)" ) ] ))
-    {
+$stmt = sqlsrv_query($conn, $selectSql);
+while ($decrypted_row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    if ($decrypted_row[ 'CharCount' ] != strlen($decrypted_row[ AE\getDefaultColname("nvarchar(1000)") ])) {
         $rowInd = $decrypted_row[ 'CharCount' ] + 1;
         echo "Failed to decrypted at row $rowInd\n";
         $testPass = false;
     }
 }
-sqlsrv_free_stmt( $stmt );
+sqlsrv_free_stmt($stmt);
 
 // for AE only
-if ( is_col_enc() )
-{
-    $conn1 = ae_connect( null, true );
-    $stmt = sqlsrv_query( $conn1, $selectSql );
-    while ( $encrypted_row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ))
-    {
-        if ( $encrypted_row[ 'CharCount' ] == strlen( $encrypted_row[ get_default_colname( "nvarchar(1000)" ) ] ))
-        {
+if (AE\isColEncrypted()) {
+    $conn1 = connect(null, true);
+    $stmt = sqlsrv_query($conn1, $selectSql);
+    while ($encrypted_row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        if ($encrypted_row[ 'CharCount' ] == strlen($encrypted_row[ AE\getDefaultColname("nvarchar(1000)") ])) {
             $rowInd = $encrypted_row[ 'CharCount' ] + 1;
             echo "Failed to encrypted at row $rowInd\n";
             $testPass = false;
         }
     }
-    
-    sqlsrv_free_stmt( $stmt );
-    sqlsrv_close( $conn1 );
+
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_close($conn1);
 }
 
-DropTable( $conn, $tbname );
-sqlsrv_close( $conn );
+dropTable($conn, $tbname);
+sqlsrv_close($conn);
 
-if ( $testPass ) {
+if ($testPass) {
     echo "Test successfully done.\n";
 }
 

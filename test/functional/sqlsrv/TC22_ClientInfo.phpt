@@ -1,79 +1,60 @@
 --TEST--
 Client Info Test
 --DESCRIPTION--
-Verifies the functionality of "sqlsrv_client_info”.
+Verifies the functionality of "sqlsrv_client_info".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
-function ClientInfo()
+function clientInfo()
 {
-    include 'MsSetup.inc';
-
     $testName = "Connection - Client Info";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
     $clientinfo1 = sqlsrv_client_info($conn1);
     $count1 = count($clientinfo1);
-    if ($count1 != 4)
-    {
+    if ($count1 != 4) {
         die("Unexpected size for client_info array: ".$count1);
     }
-    
+
     $driverName = 'DriverDllName';
     $uname = php_uname();
-    
-    if (IsWindows())    
-    {
+
+    if (isWindows()) {
         $driverName = 'DriverDllName';
-    } 
-    else // other than Windows
-    {
+    } else { // other than Windows
         $driverName = 'DriverName';
     }
-    
-    ShowInfo($clientinfo1, 'ExtensionVer');
-    ShowInfo($clientinfo1, $driverName);
-    ShowInfo($clientinfo1, 'DriverVer');
-    ShowInfo($clientinfo1, 'DriverODBCVer');
+
+    showInfo($clientinfo1, 'ExtensionVer');
+    showInfo($clientinfo1, $driverName);
+    showInfo($clientinfo1, 'DriverVer');
+    showInfo($clientinfo1, 'DriverODBCVer');
 
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
-function ShowInfo($clientInfo, $infoTag)
+function showInfo($clientInfo, $infoTag)
 {
     $info = $clientInfo[$infoTag];
-    Trace("$infoTag\t= $info\n");
+    trace("$infoTag\t= $info\n");
 }
 
 
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-    try
-    {
-        ClientInfo();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
+try {
+    clientInfo();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-Repro();
 
 ?>
 --EXPECT--

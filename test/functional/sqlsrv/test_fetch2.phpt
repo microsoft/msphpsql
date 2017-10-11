@@ -5,50 +5,49 @@ nameless fields return correctly in sqlsrv_fetch_array and sqlsrv_fetch_object.
 --FILE--
 <?php
 
-    sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-    sqlsrv_configure( 'LogSubsystems', SQLSRV_LOG_SYSTEM_ALL );
+    sqlsrv_configure('WarningsReturnAsErrors', 0);
+    sqlsrv_configure('LogSubsystems', SQLSRV_LOG_SYSTEM_ALL);
 
-    require( 'MsCommon.inc' );
+    require_once("MsCommon.inc");
 
-    $conn = Connect();
-    if ( $conn === false ) {
-        FatalError( "connect failed" );
+    $conn = connect();
+    if ($conn === false) {
+        fatalError("connect failed");
     }
 
-    $stmt = sqlsrv_query( $conn, "SELECT COUNT(track) FROM tracks" );
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $stmt = sqlsrv_query($conn, "SELECT COUNT(track) FROM tracks");
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    while( $row = sqlsrv_fetch_array( $stmt )) {
-        print_r( $row );
+    while ($row = sqlsrv_fetch_array($stmt)) {
+        print_r($row);
     }
 
-    sqlsrv_free_stmt( $stmt );
+    sqlsrv_free_stmt($stmt);
 
-    $stmt = sqlsrv_query( $conn, "SELECT COUNT(track) FROM tracks" );
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $stmt = sqlsrv_query($conn, "SELECT COUNT(track) FROM tracks");
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    $row = sqlsrv_fetch_object( $stmt );
-    print_r( sqlsrv_errors( SQLSRV_ERR_WARNINGS ));
+    $row = sqlsrv_fetch_object($stmt);
+    print_r(sqlsrv_errors(SQLSRV_ERR_WARNINGS));
 
-    sqlsrv_configure( 'WarningsReturnAsErrors', 1 );
-    $stmt = sqlsrv_query( $conn, "SELECT COUNT(track) FROM tracks" );
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    sqlsrv_configure('WarningsReturnAsErrors', 1);
+    $stmt = sqlsrv_query($conn, "SELECT COUNT(track) FROM tracks");
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
-    $row = sqlsrv_fetch_object( $stmt );
-    if( $row === false ) {
-        print_r( sqlsrv_errors() );
-    }
-    else {
+    $row = sqlsrv_fetch_object($stmt);
+    if ($row === false) {
+        print_r(sqlsrv_errors());
+    } else {
         echo "Should have failed since warnings return as errors.\n";
     }
 
-    sqlsrv_close( $conn );
+    sqlsrv_close($conn);
 
 ?>
 --EXPECT--

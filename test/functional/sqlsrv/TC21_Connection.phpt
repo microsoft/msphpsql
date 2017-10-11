@@ -9,63 +9,49 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function ConnectionTest()
 {
-    include 'MsSetup.inc';
-
     $testName = "Connection";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    
+    setup();
+
     // Invalid connection attempt => errors are expected
-    Trace("Invalid connection attempt (to a non-existing server) ....\n");
     $conn1 = sqlsrv_connect('InvalidServerName');
-    if ($conn1 === false)
-    {
-        handle_errors();
-    }
-    else
-    {
+    if ($conn1 === false) {
+        handleErrors();
+    } else {
         die("Invalid connection attempt should have failed.");
     }
 
     // Valid connection attempt => no errors are expected
-    Trace("\nValid connection attempt (to $server) ....\n");
-    $conn2 = Connect();
+    $conn2 = connect();
     $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
-    if (!empty($errors))
-    {
+    if (!empty($errors)) {
         die("No errors were expected on valid connection attempts.");
     }
     sqlsrv_close($conn2);
 
-    EndTest($testName);
-    
+    endTest($testName);
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-
-    try
-    {
+    try {
         ConnectionTest();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--
 Test "Connection" completed successfully.
-
