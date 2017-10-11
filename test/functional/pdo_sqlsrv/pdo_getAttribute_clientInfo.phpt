@@ -1,16 +1,21 @@
 --TEST--
-Test client info by calling PDO::getAttribute with PDO::ATTR_CLIENT_VERSION 
+Test client info by calling PDO::getAttribute with PDO::ATTR_CLIENT_VERSION
+--SKIPIF--
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
-$conn = new PDO( "sqlsrv:server=$server", "$uid", "$pwd" );
+try {
+    $conn = connect();
+    // An example using PDO::ATTR_CLIENT_VERSION
+    print_r($conn->getAttribute(PDO::ATTR_CLIENT_VERSION));
 
-// An example using PDO::ATTR_CLIENT_VERSION
-print_r($conn->getAttribute( PDO::ATTR_CLIENT_VERSION ));
-
-//free the connection
-$conn=null;
+    //free the connection
+    unset($conn);
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 --EXPECTREGEX--
 Array

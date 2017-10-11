@@ -1,47 +1,58 @@
 --TEST--
 Number MAX_INT to string with custom formats
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
-/* Sample number MAX_INT */
-$sample = 2*(2**30-1)+1;
-var_dump ($sample);
+try{
+    /* Sample number MAX_INT */
+    $sample = 2*(2**30-1)+1;
+    var_dump ($sample);
 
-/* Connect */
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+    /* Connect */
+    $conn = connect();
 
-// Create table
-$tableName = '#testCustomFormats';
-$query = "CREATE TABLE $tableName (col1 INT)";
-$stmt = $conn->exec($query);
+    // Create table
+    $tableName = 'testCustomFormats';
+    createTable($conn, $tableName, array("col1" => "int"));
 
-// Query number with custom format
-$query ="SELECT CAST($sample as varchar) + '.00'";
-$stmt = $conn->query($query);
-$data = $stmt->fetchColumn();
-var_dump ($data);
+    // Query number with custom format
+    $query = "SELECT CAST($sample as varchar) + '.00'";
+    $stmt = $conn->query($query);
+    $data = $stmt->fetchColumn();
+    var_dump($data);
 
-// Insert data using bind parameters
-$query = "INSERT INTO $tableName VALUES(:p0)";
-$stmt = $conn->prepare($query);
-$stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
-$stmt->execute();
+    // Insert data using bind parameters
+    $query = "INSERT INTO $tableName VALUES(:p0)";
+    $stmt = $conn->prepare($query);
+    $stmt->bindValue(':p0', $sample, PDO::PARAM_INT);
+    $stmt->execute();
 
-// Fetching. Prepare with client buffered cursor
-$query = "SELECT TOP 1 cast(col1 as varchar) + '.00 EUR' FROM $tableName";
-$stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
-$stmt->execute();
-$value = $stmt->fetchColumn();
-var_dump ($value);
+    // Fetching. Prepare with client buffered cursor
+    if (!isColEncrypted())
+        $query = "SELECT TOP 1 cast(col1 as varchar) + '.00 EUR' FROM $tableName";
+    else
+        // cannot explicitly cast data to another type from an encrypted column
+        $query = "SELECT TOP 1 col1 FROM $tableName";
+        
+    $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
+    $stmt->execute();
+    $value = $stmt->fetchColumn();
+    if (isColEncrypted())
+        $value .= ".00 EUR";
+    var_dump($value);
 
-//Free the statement and connection
-$stmt = null;
-$conn = null;
+    //Free the statement and connection
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
 
-print "Done";
+    print "Done";
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 
 --EXPECT--

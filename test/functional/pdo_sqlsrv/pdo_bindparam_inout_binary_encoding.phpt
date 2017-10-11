@@ -1,44 +1,37 @@
 --TEST--
 bind inout param with PDO::SQLSRV_ENCODING_BINARY
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require('MsSetup.inc');
-$pdo = new PDO("sqlsrv:Server=$server ; Database = $databaseName ", $uid, $pwd);
+require_once("MsCommon_mid-refactor.inc");
 
-$sql = "DROP TABLE my_table";
-$stmt = $pdo->query($sql);
-$stmt = null;
+try {
+    $pdo = connect();
 
-$sql = "CREATE TABLE my_table (value varchar(20), name varchar(20))";
-$stmt = $pdo->query($sql);
-$stmt = null;
+    $tbname = "my_table";
+    createTable($pdo, $tbname, array("value" => "varchar(20)", "name" => "varchar(20)"));
+    insertRow($pdo, $tbname, array( "value" => "Initial string", "name" => "name" ));
 
-$sql = "INSERT INTO my_table (value, name) VALUES ('Initial string', 'name')";
-$stmt = $pdo->query($sql);
-$stmt = null;
+    $value = 'Some string value.';
+    $name = 'name';
 
-$value = 'Some string value.';
-$name = 'name';
+    $sql = "UPDATE my_table SET value = :value WHERE name = :name";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':value', $value, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
+    $stmt->bindParam(':name', $name);
+    $stmt->execute();
 
-$sql = "UPDATE my_table SET value = :value WHERE name = :name";
+    $result = selectRow($pdo, $tbname, "PDO::FETCH_ASSOC");
+    print_r($result);
 
-$stmt = $pdo->prepare($sql);
-
-$stmt->bindParam(':value', $value, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
-$stmt->bindParam(':name', $name);
-
-$stmt->execute();
-$stmt = null;
-
-$sql = "SELECT * FROM my_table";
-$stmt = $pdo->query($sql);
-$result = $stmt->fetch(PDO::FETCH_ASSOC);
-print_r($result);
-
-$stmt->closeCursor();
-$pdo = null;
+    $stmt->closeCursor();
+    dropTable($pdo, $tbname);
+    unset($stmt);
+    unset($pdo);
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 --EXPECT--
 Array

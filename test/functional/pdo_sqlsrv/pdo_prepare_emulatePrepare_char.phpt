@@ -1,78 +1,74 @@
 --TEST--
 prepare with emulate prepare and binding varchar
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require('MsSetup.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", $uid, $pwd);
+require_once("MsCommon_mid-refactor.inc");
 
-$tableName = "fruit";
+try {
+    $conn = connect();
 
-$query = "IF OBJECT_ID('fruit') IS NOT NULL DROP TABLE [$tableName]";
-$stmt = $conn->query($query);
+    $tableName = "fruit";
+    createTable($conn, $tableName, array("name" => "varchar(max)", "calories" => "int"));
 
-$query = "CREATE TABLE [$tableName] (name varchar(max), calories int)";
-$stmt = $conn->query($query);
+    insertRow($conn, $tableName, array("name" => "apple", "calories" => 150));
+    insertRow($conn, $tableName, array("name" => "banana", "calories" => 175));
+    insertRow($conn, $tableName, array("name" => "blueberry", "calories" => 1));
 
-$query = "INSERT INTO [$tableName] (name, calories) VALUES ('apple', 150)";
-$stmt = $conn->query($query);
+    $query = "SELECT * FROM [$tableName] WHERE name = :name";
 
-$query = "INSERT INTO [$tableName] (name, calories) VALUES ('banana', 175)";
-$stmt = $conn->query($query);
+    //prepare without emulate prepare
+    print_r("Prepare without emulate prepare:\n");
+    $options = array(PDO::ATTR_EMULATE_PREPARES => false);
+    $stmt = $conn->prepare($query, $options);
+    $name = 'blueberry';
+    $stmt->bindParam(':name', $name);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-$query = "INSERT INTO [$tableName] (name, calories) VALUES ('blueberry', 1)";
-$stmt = $conn->query($query);
+    //prepare with emulate prepare and no bind param options
+    print_r("Prepare with emulate prepare and no bindParam options:\n");
+    if (!isColEncrypted()) {
+        $options = array(PDO::ATTR_EMULATE_PREPARES => true);
+    }
+    $stmt = $conn->prepare($query, $options);
+    $stmt->bindParam(':name', $name);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-$query = "SELECT * FROM [$tableName] WHERE name = :name";
+    //prepare with emulate prepare and encoding SQLSRV_ENCODING_SYSTEM
+    print_r("Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:\n");
+    $stmt = $conn->prepare($query, $options);
+    $stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-//prepare without emulate prepare
-print_r("Prepare without emulate prepare:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => false));
-$name = 'blueberry';
-$stmt->bindParam(':name', $name);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
+    //prepare with emulate prepare and encoding SQLSRV_ENCODING_UTF8
+    print_r("Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:\n");
+    $stmt = $conn->prepare($query, $options);
+    $stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-//prepare with emulate prepare and no bind param options
-print_r("Prepare with emulate prepare and no bindParam options:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$name = 'blueberry';
-$stmt->bindParam(':name', $name);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
+    //prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY
+    print_r("Prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY:\n");
+    $stmt = $conn->prepare($query, $options);
+    $stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
 
-//prepare with emulate prepare and encoding SQLSRV_ENCODING_SYSTEM
-print_r("Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$name = 'blueberry';
-$stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-
-//prepare with emulate prepare and encoding SQLSRV_ENCODING_UTF8
-print_r("Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$name = 'blueberry';
-$stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-
-//prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY
-print_r("Prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$name = 'blueberry';
-$stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-
-$stmt = null;
-$conn=null;
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 
 --EXPECT--

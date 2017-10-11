@@ -1,82 +1,70 @@
 --TEST--
 fetch multiple result sets with MARS on and then off
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-
-include 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
 
 function NestedQuery_Mars($on)
 {
-    require("MsSetup.inc");
-    
-    $tableName = GetTempTableName();
-          
-    $conn = new PDO( "sqlsrv:server=$server;database=$databaseName;MultipleActiveResultSets=$on", $uid, $pwd);
-    $conn->SetAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    $stmt = $conn->exec("CREATE TABLE $tableName ([c1_int] int, [c2_varchar] varchar(20))");
-    
-    $query = "INSERT INTO $tableName ([c1_int], [c2_varchar]) VALUES (1, 'Dummy value 1')";
-    $stmt = $conn->query($query);
-    
-    $query = "INSERT INTO $tableName ([c1_int], [c2_varchar]) VALUES (2, 'Dummy value 2')";
-    $stmt = $conn->query($query);
+    $tableName = getTableName();
 
-    $query = "SELECT * FROM $tableName ORDER BY [c1_int]";
+    $conn = connect("MultipleActiveResultSets=$on");
+
+    createTable($conn, $tableName, array("c1_int" => "int", "c2_varchar" => "varchar(20)"));
+
+    insertRow($conn, $tableName, array("c1_int" => 1, "c2_varchar" => "Dummy value 1"));
+    insertRow($conn, $tableName, array("c1_int" => 2, "c2_varchar" => "Dummy value 2"));
+
+    if (!isColEncrypted()) {
+        $query = "SELECT * FROM $tableName ORDER BY [c1_int]";
+    } else {
+        // ORDER BY is not support for encrypted columns
+        $query = "SELECT * FROM $tableName";
+    }
     $stmt = $conn->query($query);
     $numRows = 0;
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $numRows++;
+    }
 
-    if ($numRows !== 2) echo "Number of rows is unexpected!\n";
-    $stmt = null;
+    if ($numRows !== 2) {
+        echo "Number of rows is unexpected!\n";
+    }
+    unset($stmt);
 
     // more than one active results
     $stmt1 = $conn->query($query);
     $stmt2 = $conn->prepare($query);
     $stmt2->execute();
-            
+
     echo "\nNumber of columns in First set: " . $stmt2->columnCount() . "\n";
-    while ($row = $stmt1->fetch(PDO::FETCH_ASSOC))
-    {
-        print_r($row);        
+    while ($row = $stmt1->fetch(PDO::FETCH_ASSOC)) {
+        print_r($row);
     }
 
     echo "\nNumber of columns in Second set: " . $stmt1->columnCount() . "\n\n";
-    while ($row = $stmt2->fetch(PDO::FETCH_OBJ))
-    {
-        print_r($row);        
+    while ($row = $stmt2->fetch(PDO::FETCH_OBJ)) {
+        print_r($row);
     }
-    
-    $stmt1 = null;  
-    $stmt2 = null;  
-    $conn = null;   
+
+    dropTable($conn, $tableName);
+    unset($stmt1);
+    unset($stmt2);
+    unset($conn);
 }
 
-function RunTest()
-{
-    StartTest("pdo_nested_query_mars");
-    echo "\nStarting test...\n";
-    try
-    {
-        NestedQuery_Mars(true);
-        NestedQuery_Mars(false);
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    EndTest("pdo_nested_query_mars");
+echo "Starting test...\n";
+try {
+    NestedQuery_Mars(true);
+    NestedQuery_Mars(false);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-RunTest();
-
+echo "\nDone\n";
 ?>
 --EXPECT--
-
 Starting test...
 
 Number of columns in First set: 2
@@ -105,4 +93,3 @@ stdClass Object
 )
 SQLSTATE[IMSSP]: The connection cannot process this operation because there is a statement with pending results.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.
 Done
-Test "pdo_nested_query_mars" completed successfully.

@@ -1,60 +1,53 @@
 --TEST--
 Prepare, execute statement and fetch with pooling disabled
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
-// Allow PHP types for numeric fields
-$connection_options['pdo'][PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE] = TRUE;
+try {
+    // Allow PHP types for numeric fields
+    $connection_options = array(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE => TRUE);
 
-// Create a pool
-$conn0 = new PDO( "sqlsrv:server=$server;database=$databaseName;ConnectionPooling=0;",
-    $uid, $pwd, $connection_options['pdo']);
-$conn0 = null;
+    // Create a pool
+    $conn0 = connect('ConnectionPooling=0', $connection_options);
+    unset($conn0);
 
-// Connection can use an existing pool
-$conn = new PDO( "sqlsrv:server=$server;database=$databaseName;ConnectionPooling=0;",
-    $uid, $pwd, $connection_options['pdo']);
+    // Connection can use an existing pool
+    $conn = connect('ConnectionPooling=0', $connection_options);
 
-// Create table
-$tableName = 'pdo_62test';
-$sql = "CREATE TABLE $tableName (Столица NVARCHAR(32), year INT)";
-$stmt = $conn->exec($sql);
+    // Create table
+    $tableName = 'pdo_62test';
+    createTable($conn, $tableName, array("Столица" => "nvarchar(32)", "year" => "int"));
 
-// Insert data
-$sql = "INSERT INTO $tableName VALUES (?,?)";
-$stmt = $conn->prepare($sql);
-$stmt->execute(array("Лондон",2012));
+    // Insert data
+    insertRow($conn, $tableName, array( "Столица" => "Лондон", "year" => 2012 ), "prepareExecuteBind");
 
-// Get data
-$stmt = $conn->query("SELECT * FROM $tableName");
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-var_dump($row);  
-$conn = null;
+    // Get data
+    $row = selectRow($conn, $tableName, "PDO::FETCH_ASSOC");
+    var_dump($row);  
+    unset($conn);
 
-// Create a new pool
-$conn0 = new PDO( "sqlsrv:server=$server;database=$databaseName;ConnectionPooling=0;",
-    $uid, $pwd);
-$conn0 = null;
-    
-// Connection can use an existing pool?
-$conn = new PDO( "sqlsrv:server=$server;database=$databaseName;ConnectionPooling=0;",
-    $uid, $pwd);
+    // Create a new pool
+    $conn0 = connect('ConnectionPooling=0');
+    unset($conn0);
+        
+    // Connection can use an existing pool?
+    $conn = connect('ConnectionPooling=0');
 
-// Get data
-$stmt = $conn->query("SELECT * FROM $tableName");
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-var_dump($row); 
-    
+    // Get data
+    $row = selectRow($conn, $tableName, "PDO::FETCH_ASSOC");
+    var_dump($row);
 
-$conn->query("DROP TABLE $tableName");
-
-// Close connection
-$stmt=null;
-$conn=null;
-print "Done"
+    // Close connection
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
+    print "Done\n";
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 --EXPECT--
 array(2) {

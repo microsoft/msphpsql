@@ -1,38 +1,32 @@
 --TEST--
 Test PDO::__Construct connection option TransactionIsolation
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-function Connect($value) {
-    require("MsSetup.inc");
-    $dsn = "sqlsrv:Server = $server;" .
-           "database = $databaseName;" .
-           "TransactionIsolation = $value";
-    $conn = new PDO( $dsn, $uid, $pwd );
-    $conn = NULL;
-    echo "Test Successful\n";
+require_once("MsCommon_mid-refactor.inc");
+function connectTransaction($value)
+{
+    $conn = connect("TransactionIsolation = $value");
+    if (is_object($conn) && get_class($conn) == "PDO") {
+        echo "Test Successful\n";
+    }
+    unset($conn);
 }
 
 // TEST BEGIN
 try {
-    Connect("READ_UNCOMMITTED");
-    Connect("READ_COMMITTED");
-    Connect("REPEATABLE_READ");
-    Connect("SNAPSHOT");
-    Connect("SERIALIZABLE");
-    Connect("INVALID_KEY");
-  
-    echo "Test Successful";
+    connectTransaction("READ_UNCOMMITTED");
+    connectTransaction("READ_COMMITTED");
+    connectTransaction("REPEATABLE_READ");
+    connectTransaction("SNAPSHOT");
+    connectTransaction("SERIALIZABLE");
+    connectTransaction("INVALID_KEY");
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
 }
-catch( PDOException $e ) {
-    var_dump( $e->errorInfo );
-    exit;
-}
-?> 
-
+?>
 --EXPECT--
-
 Test Successful
 Test Successful
 Test Successful

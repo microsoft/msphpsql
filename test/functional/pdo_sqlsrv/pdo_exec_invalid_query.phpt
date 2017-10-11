@@ -1,28 +1,30 @@
 --TEST--
 direct execution of an invalid query
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-    require_once("MsSetup.inc");
+    require_once("MsCommon_mid-refactor.inc");
 
-    $conn = new PDO( "sqlsrv:Server=$server; database = $databaseName ", $uid, $pwd);
-    
-    $conn->exec("IF OBJECT_ID('table1', 'U') IS NOT NULL DROP TABLE table1");
-    
+    // set ERRMODE to silent to return in errorCode in the test
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
+
+    $tbname = "table1";
+    dropTable($conn, $tbname);
+
     // execute a query with typo (spelling error in CREATE)
-    $conn->exec("CRETE TABLE table1(id INT NOT NULL PRIMARY KEY, val VARCHAR(10)) ");
-    print_r( $conn->errorCode() );
+    $conn->exec("CRETE TABLE $tbname (id INT NOT NULL PRIMARY KEY, val VARCHAR(10)) ");
+    print_r($conn->errorCode());
     echo "\n";
-    
+
     // execute a properly formatted query
-    $conn->exec("CREATE TABLE table1(id INT NOT NULL PRIMARY KEY, val VARCHAR(10)) ");
-    print_r( $conn->errorCode() );
+    $conn->exec("CREATE TABLE $tbname (id INT NOT NULL PRIMARY KEY, val VARCHAR(10)) ");
+    print_r($conn->errorCode());
     echo "\n";
-    
+
     // drop table1 and free connections
-    $conn->exec("DROP TABLE table1");
-    $conn = NULL;
+    dropTable($conn, $tbname);
+    unset($conn);
 ?>
 --EXPECT--
 42000
