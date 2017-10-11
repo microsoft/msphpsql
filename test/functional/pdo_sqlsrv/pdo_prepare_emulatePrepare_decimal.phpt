@@ -79,8 +79,7 @@ try {
     var_dump($e->errorInfo);
 }
 ?>
---XFAIL--
-Bug with column encryption: Insertion fails if input has more decimal places than the column definition
+
 --EXPECT--
 Prepare without emulate prepare:
 Array
