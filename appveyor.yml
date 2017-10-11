@@ -186,7 +186,7 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - pip install codecov
-    - codecov -f ".\coverage.xml" -t 431e6338-ad88-4c3e-9be0-1bf180826d26
+    - codecov -f ".\coverage.xml" -t 3b60e073-05f0-4771-a968-aeef8158f06f
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\    
