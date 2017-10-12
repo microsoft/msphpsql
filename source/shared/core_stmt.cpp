@@ -342,7 +342,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
 // The sql type is given as a hint if the driver provides it. 
 
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
-                             _In_ SQLSRV_PHPTYPE php_out_type, _In_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
+                             _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
                              _Inout_ SQLSMALLINT decimal_digits TSRMLS_DC )
 {
     SQLSMALLINT c_type;
@@ -373,7 +373,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     }
     bool zval_was_null = ( Z_TYPE_P( param_z ) == IS_NULL );
     bool zval_was_bool = ( Z_TYPE_P( param_z ) == IS_TRUE || Z_TYPE_P( param_z ) == IS_FALSE );
-    bool zval_was_long = ( Z_TYPE_P( param_z ) == IS_LONG && php_out_type == SQLSRV_PHPTYPE_INT );
+    bool zval_was_long = ( Z_TYPE_P( param_z ) == IS_LONG && php_out_type == SQLSRV_PHPTYPE_INT && (sql_type == SQL_BIGINT || sql_type == SQL_UNKNOWN_TYPE ));
     // if the user asks for for a specific type for input and output, make sure the data type we send matches the data we
     // type we expect back, since we can only send and receive the same type.  Anything can be converted to a string, so
     // we always let that match if they want a string back.
@@ -386,6 +386,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 }
                 if( zval_was_long ){
                     convert_to_string( param_z );
+					encoding = SQLSRV_ENCODING_SYSTEM;
                     match = Z_TYPE_P( param_z ) == IS_STRING;
                 }
                 else {
@@ -424,6 +425,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             case SQLSRV_PHPTYPE_INT:
                 if( zval_was_long ){
                     convert_to_string( param_z );
+                    encoding = SQLSRV_ENCODING_SYSTEM;
                 }
                 else {
                     convert_to_long( param_z );

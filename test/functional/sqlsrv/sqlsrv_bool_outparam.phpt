@@ -66,14 +66,14 @@ sqlsrv_close($conn);
 
 ?>
 --EXPECT--
-True bool output: 
+True bool output:
 bool(true)
 
-True bool inout: 
+True bool inout:
 bool(true)
 
-False bool output: 
+False bool output:
 bool(false)
 
-False bool inout: 
+False bool inout:
 bool(false)

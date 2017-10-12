@@ -1433,7 +1433,7 @@ typedef sqlsrv_stmt* (*driver_stmt_factory)( sqlsrv_conn* conn, SQLHANDLE h, err
 sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stmt_factory stmt_factory, _In_opt_ HashTable* options_ht, 
                                       _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver TSRMLS_DC );
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
-                             _In_ SQLSRV_PHPTYPE php_out_type, _In_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
+                             _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
                              _Inout_ SQLSMALLINT decimal_digits TSRMLS_DC );
 SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
 field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno TSRMLS_DC );

@@ -328,6 +328,7 @@ function connect($options = array(), $disableCE = false)
  */
 function createTable($conn, $tbname, $columnMetaArr)
 {
+    require_once("MsCommon.inc");
     dropTable($conn, $tbname);
     $colDef = "";
     foreach ($columnMetaArr as $meta) {

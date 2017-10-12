@@ -66,14 +66,14 @@ sqlsrv_close($conn);
 
 ?>
 --EXPECT--
-Large bigint output: 
+Large bigint output:
 string(18) "922337203685479936"
 
-Large bigint inout: 
+Large bigint inout:
 string(18) "922337203685479936"
 
-Small bigint output: 
-int(922337203)     
+Small bigint output:
+int(922337203)
                                                                                                     
-Small bigint inout: 
+Small bigint inout:
 int(922337203)

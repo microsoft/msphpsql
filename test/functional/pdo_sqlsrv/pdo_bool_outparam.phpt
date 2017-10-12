@@ -69,14 +69,14 @@ unset($stmt);
 unset($conn);
 ?>
 --EXPECT--
-True bool output: 
+True bool output:
 int(1)
 
-True bool inout: 
+True bool inout:
 int(1)
 
-True bool output: 
+True bool output:
 int(0)
 
-True bool inout: 
+True bool inout:
 int(0)
