@@ -74,6 +74,6 @@ string(18) "922337203685479936"
 
 Small bigint output:
 int(922337203)
-                                                                                                    
+
 Small bigint inout:
 int(922337203)
