@@ -40,7 +40,7 @@ var_dump($bigintOut);
 printf("\n");
 sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
 
-// Insert a small bigint
+// Insert a random small value truncated from the bigint input
 AE\insertRow($conn, $tbname, array("c1_bigint" => 922337203));
 
 // Call stored procedure with SQLSRV_PARAM_OUT
