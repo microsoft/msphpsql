@@ -12,7 +12,7 @@ $conn = connect();
 $tbname = "bool_table";
 createTable($conn, $tbname, array("c1_bool" => "int"));
 
-// Create a Store Procedure
+// Create a Stored Procedure
 $spname = "selectBool";
 $spSql = "CREATE PROCEDURE $spname (@c1_bool int OUTPUT) AS
           SELECT @c1_bool = c1_bool FROM $tbname";
@@ -21,7 +21,7 @@ $conn->query($spSql);
 // Insert 1
 insertRow($conn, $tbname, array("c1_bool" => 1));
 
-// Call store procedure with output
+// Call stored procedure with output
 $outSql = "{CALL $spname (?)}";
 $boolOut = false;
 $stmt = $conn->prepare($outSql);
@@ -31,7 +31,7 @@ printf("True bool output:\n" );
 var_dump($boolOut);
 printf("\n");
 
-// Call store procedure with inout
+// Call stored procedure with inout
 $boolOut = false;
 $stmt = $conn->prepare($outSql);
 $stmt->bindParam(1, $boolOut, PDO::PARAM_INT | PDO::PARAM_INPUT_OUTPUT, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
@@ -45,7 +45,7 @@ $conn->exec("TRUNCATE TABLE $tbname");
 // Insert 0
 insertRow($conn, $tbname, array("c1_bool" => 0));
 
-// Call store procedure with output
+// Call stored procedure with output
 $boolOut = true;
 $stmt = $conn->prepare($outSql);
 $stmt->bindParam(1, $boolOut, PDO::PARAM_INT, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
@@ -54,7 +54,7 @@ printf("True bool output:\n" );
 var_dump($boolOut);
 printf("\n");
 
-// Call store procedure with inout
+// Call stored procedure with inout
 $boolOut = true;
 $stmt = $conn->prepare($outSql);
 $stmt->bindParam(1, $boolOut, PDO::PARAM_INT | PDO::PARAM_INPUT_OUTPUT, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);

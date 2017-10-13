@@ -386,7 +386,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 }
                 if( zval_was_long ){
                     convert_to_string( param_z );
-					encoding = SQLSRV_ENCODING_SYSTEM;
+                    encoding = SQLSRV_ENCODING_SYSTEM;
                     match = Z_TYPE_P( param_z ) == IS_STRING;
                 }
                 else {
@@ -565,7 +565,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                                                    buffer, buffer_len TSRMLS_CC );
 
                 // save the parameter to be adjusted and/or converted after the results are processed
-				sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ), zval_was_long );
+                sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ), zval_was_long );
 
                 save_output_param_for_later( stmt, output_param TSRMLS_CC );
 

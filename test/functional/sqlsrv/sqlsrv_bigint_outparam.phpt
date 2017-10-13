@@ -13,16 +13,16 @@ $tbname = "bigint_table";
 AE\createTable($conn, $tbname, array(new AE\ColumnMeta("bigint", "c1_bigint")));
 
 
-// Create a Store Procedure with output
+// Create a Stored Procedure with output
 $spname = "selectBigint";
 $spSql = "CREATE PROCEDURE $spname (@c1_bigint bigint OUTPUT) AS
           SELECT @c1_bigint = c1_bigint FROM $tbname";
 sqlsrv_query( $conn, $spSql );
 
 // Insert a large bigint
-AE\insertRow($conn, $tbname, array("c1_bigint" => 922337203685479936));
+AE\insertRow($conn, $tbname, array("c1_bigint" => 922,337,203,685,479,936));
 
-// Call store procedure with SQLSRV_PARAM_OUT
+// Call stored procedure with SQLSRV_PARAM_OUT
 $outSql = "{CALL $spname (?)}";
 $bigintOut = 0;
 $stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_OUT)));
@@ -31,7 +31,7 @@ printf("Large bigint output:\n");
 var_dump($bigintOut);
 printf("\n");
 
-// Call store procedure with SQLSRV_PARAM_INOUT
+// Call stored procedure with SQLSRV_PARAM_INOUT
 $bigintOut = 0;
 $stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_INOUT)));
 sqlsrv_execute($stmt);
@@ -43,7 +43,7 @@ sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
 // Insert a small bigint
 AE\insertRow($conn, $tbname, array("c1_bigint" => 922337203));
 
-// Call store procedure with SQLSRV_PARAM_OUT
+// Call stored procedure with SQLSRV_PARAM_OUT
 $bigintOut = 0;
 $stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_OUT)));
 sqlsrv_execute($stmt);
@@ -51,7 +51,7 @@ printf("Small bigint output:\n");
 var_dump($bigintOut);
 printf("\n");
 
-// Call store procedure with SQLSRV_PARAM_INOUT
+// Call stored procedure with SQLSRV_PARAM_INOUT
 $bigintOut = 0;
 $stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_INOUT)));
 sqlsrv_execute($stmt);

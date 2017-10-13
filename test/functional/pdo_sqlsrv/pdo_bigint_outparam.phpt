@@ -12,7 +12,7 @@ $conn = connect();
 $tbname = "bigint_table";
 createTable($conn, $tbname, array("c1_bigint" => "bigint"));
 
-// Create a Store Procedure
+// Create a Stored Procedure
 $spname = "selectBigint";
 $spSql = "CREATE PROCEDURE $spname (@c1_bigint bigint OUTPUT) AS
           SELECT @c1_bigint = c1_bigint FROM $tbname";
@@ -21,7 +21,7 @@ $conn->query($spSql);
 // Insert a large bigint
 insertRow($conn, $tbname, array("c1_bigint" => 922337203685479936));
 
-// Call store procedure with output
+// Call stored procedure with output
 $outSql = "{CALL $spname (?)}";
 $bigintOut = 0;
 $stmt = $conn->prepare($outSql);
@@ -31,7 +31,7 @@ printf("Large bigint output:\n" );
 var_dump($bigintOut);
 printf("\n");
 
-// Call store procedure with inout
+// Call stored procedure with inout
 $bigintOut = 0;
 $stmt = $conn->prepare($outSql);
 $stmt->bindParam(1, $bigintOut, PDO::PARAM_INT | PDO::PARAM_INPUT_OUTPUT, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
@@ -45,7 +45,7 @@ $conn->exec("TRUNCATE TABLE $tbname");
 // Insert a small bigint
 insertRow($conn, $tbname, array("c1_bigint" => 922337203));
 
-// Call store procedure with output
+// Call stored procedure with output
 $bigintOut = 0;
 $stmt = $conn->prepare($outSql);
 $stmt->bindParam(1, $bigintOut, PDO::PARAM_INT, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
@@ -54,7 +54,7 @@ printf("Small bigint output:\n" );
 var_dump($bigintOut);
 printf("\n");
 
-// Call store procedure with inout
+// Call stored procedure with inout
 $bigintOut = 0;
 $stmt = $conn->prepare($outSql);
 $stmt->bindParam(1, $bigintOut, PDO::PARAM_INT | PDO::PARAM_INPUT_OUTPUT, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
