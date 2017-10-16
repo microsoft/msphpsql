@@ -20,7 +20,7 @@ $spSql = "CREATE PROCEDURE $spname (@c1_bigint bigint OUTPUT) AS
 sqlsrv_query( $conn, $spSql );
 
 // Insert a large bigint
-AE\insertRow($conn, $tbname, array("c1_bigint" => 922,337,203,685,479,936));
+AE\insertRow($conn, $tbname, array("c1_bigint" => 922337203685479936));
 
 // Call stored procedure with SQLSRV_PARAM_OUT
 $outSql = "{CALL $spname (?)}";
