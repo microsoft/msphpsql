@@ -425,7 +425,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             case SQLSRV_PHPTYPE_INT:
                 if( zval_was_long ){
                     convert_to_string( param_z );
-                    encoding = SQLSRV_ENCODING_SYSTEM;
+                    encoding = SQLSRV_ENCODING_UTF8;
                 }
                 else {
                     convert_to_long( param_z );
