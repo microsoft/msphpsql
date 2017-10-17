@@ -373,6 +373,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     }
     bool zval_was_null = ( Z_TYPE_P( param_z ) == IS_NULL );
     bool zval_was_bool = ( Z_TYPE_P( param_z ) == IS_TRUE || Z_TYPE_P( param_z ) == IS_FALSE );
+    bool zval_was_long = ( Z_TYPE_P( param_z ) == IS_LONG && php_out_type == SQLSRV_PHPTYPE_INT && (sql_type == SQL_BIGINT || sql_type == SQL_UNKNOWN_TYPE ));
     // if the user asks for for a specific type for input and output, make sure the data type we send matches the data we
     // type we expect back, since we can only send and receive the same type.  Anything can be converted to a string, so
     // we always let that match if they want a string back.
