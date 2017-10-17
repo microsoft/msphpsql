@@ -342,7 +342,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
 // The sql type is given as a hint if the driver provides it. 
 
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
-                             _In_ SQLSRV_PHPTYPE php_out_type, _In_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
+                             _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
                              _Inout_ SQLSMALLINT decimal_digits TSRMLS_DC )
 {
     SQLSMALLINT c_type;
@@ -384,14 +384,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 if( zval_was_null || zval_was_bool ) {
                     convert_to_long( param_z );
                 }
-                if( zval_was_long ){
-                    convert_to_string( param_z );
-                    encoding = SQLSRV_ENCODING_SYSTEM;
-                    match = Z_TYPE_P( param_z ) == IS_STRING;
-                }
-                else {
-                    match = Z_TYPE_P(param_z) == IS_LONG;
-                }
+                match = Z_TYPE_P( param_z ) == IS_LONG;
                 break;
             case SQLSRV_PHPTYPE_FLOAT:
                 if( zval_was_null ) {
@@ -423,7 +416,13 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     if( direction == SQL_PARAM_OUTPUT ) {
         switch( php_out_type ) {
             case SQLSRV_PHPTYPE_INT:
-                convert_to_long( param_z );
+                if( zval_was_long ){
+                    convert_to_string( param_z );
+                    encoding = SQLSRV_ENCODING_SYSTEM;
+                }
+                else {
+                    convert_to_long( param_z );
+                }
                 break;
             case SQLSRV_PHPTYPE_FLOAT:
                 convert_to_double( param_z );
@@ -559,7 +558,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                                                    buffer, buffer_len TSRMLS_CC );
 
                 // save the parameter to be adjusted and/or converted after the results are processed
-				sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ));
+                sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ), zval_was_long );
 
                 save_output_param_for_later( stmt, output_param TSRMLS_CC );
 
@@ -2134,6 +2133,15 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
             }
             else {
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
+            }
+            if ( output_param->is_long ) {
+                zval* value_z_temp = ( zval * )sqlsrv_malloc( sizeof( zval ));
+                ZVAL_COPY( value_z_temp, value_z );
+                convert_to_double( value_z_temp );
+                if ( Z_DVAL_P( value_z_temp ) > INT_MIN && Z_DVAL_P( value_z_temp ) < INT_MAX ) {
+                    convert_to_long( value_z );
+                }
+                sqlsrv_free( value_z_temp );
             }
         }
         break;
