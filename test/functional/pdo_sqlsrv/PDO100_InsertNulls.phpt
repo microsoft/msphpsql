@@ -102,12 +102,9 @@ function Repro()
 
     if ($failed)
         FatalError("Possible Regression: Could not insert NULL");
-    
-    EndTest($testName);
 }
 
 Repro();
 
 ?>
 --EXPECT--
-Test "PDO - Insert Nulls" completed successfully.
