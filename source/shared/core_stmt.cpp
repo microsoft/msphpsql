@@ -386,6 +386,8 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 }
                 if( zval_was_long ){
                     convert_to_string( param_z );
+
+                    match = Z_TYPE_P( param_z ) == IS_STRING;
                 }
                 else {
                     match = Z_TYPE_P(param_z) == IS_LONG;
