@@ -386,6 +386,8 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 }
                 if( zval_was_long ){
                     convert_to_string( param_z );
+                    if ( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY )
+                        encoding = SQLSRV_ENCODING_UTF8;
                     match = Z_TYPE_P( param_z ) == IS_STRING;
                 }
                 else {
@@ -424,6 +426,8 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             case SQLSRV_PHPTYPE_INT:
                 if( zval_was_long ){
                     convert_to_string( param_z );
+                    if ( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY )
+                        encoding = SQLSRV_ENCODING_UTF8;
                 }
                 else {
                     convert_to_long( param_z );
@@ -2091,6 +2095,54 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 ZVAL_NULL( value_z );
                 continue;
             }
+
+            // if there was more to output than buffer size to hold it, then throw a truncation error
+            int null_size = 0;
+            switch( output_param->encoding ) {
+            case SQLSRV_ENCODING_UTF8:
+                null_size = sizeof( SQLWCHAR );  // string isn't yet converted to UTF-8, still UTF-16
+                break;
+            case SQLSRV_ENCODING_SYSTEM:
+                null_size = 1;
+                break;
+            case SQLSRV_ENCODING_BINARY:
+                null_size = 0;
+                break;
+            default:
+                SQLSRV_ASSERT( false, "Invalid encoding in output_param structure." );
+                break;
+            }
+            CHECK_CUSTOM_ERROR( str_len > ( output_param->original_buffer_len - null_size ), stmt,
+                SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, output_param->param_num + 1 ) {
+                throw core::CoreException();
+            }
+
+            // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
+            // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains up to
+            // output_param->original_buffer_len data and is NULL terminated.             
+            // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
+            if ( str_len == SQL_NO_TOTAL )
+            {
+                str_len = output_param->original_buffer_len - null_size;
+            }
+
+            // if it's not in the 8 bit encodings, then it's in UTF-16
+            if( output_param->encoding != SQLSRV_ENCODING_CHAR && output_param->encoding != SQLSRV_ENCODING_BINARY ) {
+				bool converted = convert_zval_string_from_utf16(output_param->encoding, value_z, str_len);
+                CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
+                    throw core::CoreException();
+                }
+            }
+            else if( output_param->encoding == SQLSRV_ENCODING_BINARY && str_len < output_param->original_buffer_len ) {
+                // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
+                // so we do that here if the length of the returned data is less than the original allocation.  The 
+                // original allocation null terminates the buffer already.
+                str[ str_len ] = '\0';
+                core::sqlsrv_zval_stringl(value_z, str, str_len);
+            }
+            else {
+                core::sqlsrv_zval_stringl(value_z, str, str_len);
+            }
             if ( output_param->is_long ) {
                 zval* value_z_temp = ( zval * )sqlsrv_malloc( sizeof( zval ));
                 ZVAL_COPY( value_z_temp, value_z );
@@ -2099,55 +2151,6 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                     convert_to_long( value_z );
                 }
                 sqlsrv_free( value_z_temp );
-            }
-            else {
-                // if there was more to output than buffer size to hold it, then throw a truncation error
-                int null_size = 0;
-                switch ( output_param->encoding ) {
-                case SQLSRV_ENCODING_UTF8:
-                    null_size = sizeof( SQLWCHAR );  // string isn't yet converted to UTF-8, still UTF-16
-                    break;
-                case SQLSRV_ENCODING_SYSTEM:
-                    null_size = 1;
-                    break;
-                case SQLSRV_ENCODING_BINARY:
-                    null_size = 0;
-                    break;
-                default:
-                    SQLSRV_ASSERT( false, "Invalid encoding in output_param structure." );
-                    break;
-                }
-                CHECK_CUSTOM_ERROR( str_len > ( output_param->original_buffer_len - null_size ), stmt,
-                    SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, output_param->param_num + 1 ) {
-                    throw core::CoreException();
-                }
-
-                // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
-                // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains up to
-                // output_param->original_buffer_len data and is NULL terminated.             
-                // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
-                if ( str_len == SQL_NO_TOTAL )
-                {
-                    str_len = output_param->original_buffer_len - null_size;
-                }
-
-                // if it's not in the 8 bit encodings, then it's in UTF-16
-                if ( output_param->encoding != SQLSRV_ENCODING_CHAR && output_param->encoding != SQLSRV_ENCODING_BINARY ) {
-                    bool converted = convert_zval_string_from_utf16( output_param->encoding, value_z, str_len );
-                    CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message() ) {
-                        throw core::CoreException();
-                    }
-                }
-                else if ( output_param->encoding == SQLSRV_ENCODING_BINARY && str_len < output_param->original_buffer_len ) {
-                    // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
-                    // so we do that here if the length of the returned data is less than the original allocation.  The 
-                    // original allocation null terminates the buffer already.
-                    str[str_len] = '\0';
-                    core::sqlsrv_zval_stringl( value_z, str, str_len );
-                }
-                else {
-                    core::sqlsrv_zval_stringl( value_z, str, str_len );
-                }
             }
         }
         break;
