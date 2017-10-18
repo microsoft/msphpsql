@@ -386,8 +386,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 }
                 if( zval_was_long ){
                     convert_to_string( param_z );
-                    if ( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY )
-                        encoding = SQLSRV_ENCODING_UTF8;
+                    if (encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY) {
+                        encoding = stmt->encoding();
+                        if (encoding == SQLSRV_ENCODING_DEFAULT) {
+                            encoding = stmt->conn->encoding();
+                        }
+                    }
                     match = Z_TYPE_P( param_z ) == IS_STRING;
                 }
                 else {
@@ -426,8 +430,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             case SQLSRV_PHPTYPE_INT:
                 if( zval_was_long ){
                     convert_to_string( param_z );
-                    if ( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY )
-                        encoding = SQLSRV_ENCODING_UTF8;
+                    if (encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY) {
+                        encoding = stmt->encoding();
+                        if (encoding == SQLSRV_ENCODING_DEFAULT) {
+                            encoding = stmt->conn->encoding();
+                        }
+                    }
                 }
                 else {
                     convert_to_long( param_z );
