@@ -1,5 +1,5 @@
 --TEST--
-prepare with emulate prepare and binding integer
+Insert into decimal columns with inputs of various scale and precision
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--

@@ -1,5 +1,5 @@
 --TEST--
-prepare with emulate prepare and binding integer
+Insert into decimal columns with inputs of various scale and precision
 --SKIPIF--
 
 --FILE--
@@ -19,7 +19,6 @@ AE\insertRow($conn, $tableName, array("c1_decimal0" => 99999.99999, "c2_decimal4
 $query = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query($conn, $query);
 while (($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) != NULL) {
-    //print_r($row);
     var_dump($row);
 }
 
