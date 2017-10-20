@@ -22,7 +22,7 @@ Updated PECL release packages. Here is the list of updates:
 - No support for inout / output params when using sql_variant type
 
 ### Known Issues
-- Connection pooling on Linux doesn't work properly if the user uses the MSODBC17 preview
+- Connection pooling on Linux doesn't work properly when using the MSODBC17 preview
 - When pooling is enabled in Linux or MAC
   - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
