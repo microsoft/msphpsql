@@ -8,9 +8,9 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Fixed
 - PDO::quote with string containing ASCII NUL character (Issue [#538]( https://github.com/Microsoft/msphpsql/issues/538))
-- Appropriate error message is returned when calling nextRowset() on an empty result set (issue [#507 ](https://github.com/Microsoft/msphpsql/issues/507))
-- Decimal types with no decimals are correctly handled when AE is enabled(PR [#544](https://github.com/Microsoft/msphpsql/pull/544))
-- Search for installed ODBC drivers in Linux/mac first before attempting to connect using the default ODBC driver 
+- Appropriate error message is returned when calling nextRowset() or sqlsrv_next_result() on an empty result set (issue [#507 ](https://github.com/Microsoft/msphpsql/issues/507))
+- Decimal types with no decimals are correctly handled when AE is enabled (PR [#544](https://github.com/Microsoft/msphpsql/pull/544))
+- Search for installed ODBC drivers in Linux/macOS first before attempting to connect using the default ODBC driver 
 - BIGINT as an output param no longer results in value out of range exception when the returned value is larger than a maximum integer ([PR #567](https://github.com/Microsoft/msphpsql/pull/567))
 
 ### Limitations
@@ -18,13 +18,11 @@ Updated PECL release packages. Here is the list of updates:
   - ODBC binaries for macOS available upon request
 - MSODBC 17 preview msodbcsql.msi only works for Windows10
 - [Always Encrypted limitations](https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation)
-- when using sqlsrv_query with Always Encrypted feature, SQL type has to be specified for each input (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
+- When using sqlsrv_query with Always Encrypted feature, SQL type has to be specified for each input (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
 - No support for inout / output params when using sql_variant type
 
 ### Known Issues
 - Connection pooling on Linux doesn't work properly if the user uses the MSODBC17 preview
-- PDO::quote returns truncated string with garbage characters appended if the string contains a ASCII NUL ('/0') character
-- Binding decimal type when using Always Encrypted in the SQLSRV x64 driver returns an error during insertion when the input does not have any decimal places
 - When pooling is enabled in Linux or MAC
   - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
