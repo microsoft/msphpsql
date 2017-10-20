@@ -9,8 +9,8 @@ Updated PECL release packages. Here is the list of updates:
 ### Fixed
 - PDO::quote with string containing ASCII NUL character (Issue [#538]( https://github.com/Microsoft/msphpsql/issues/538))
 - Appropriate error message is returned when calling nextRowset() on an empty result set (issue [#507 ](https://github.com/Microsoft/msphpsql/issues/507))
-- Now decimal types with no decimals are correctly handled when AE is enable (PR [#544](https://github.com/Microsoft/msphpsql/pull/544))
-- Now search for installed ODBC drivers in Linux/mac first before attempting to connect using the default ODBC driver 
+- Decimal types with no decimals are correctly handled when AE is enabled(PR [#544](https://github.com/Microsoft/msphpsql/pull/544))
+- Search for installed ODBC drivers in Linux/mac first before attempting to connect using the default ODBC driver 
 - BIGINT as an output param no longer results in value out of range exception when the returned value is larger than a maximum integer ([PR #567](https://github.com/Microsoft/msphpsql/pull/567))
 
 ### Limitations
