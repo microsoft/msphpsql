@@ -13,15 +13,15 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function SendStream($minType, $maxType, $atExec)
+function sendStream($minType, $maxType, $atExec)
 {
-    include 'MsSetup.inc';
-
     $testName = "Stream - ".($atExec ? "Send at Execution" : "Send after Execution");
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $tableName = "TC52test";
+    $fileName = "TC52test.dat";
+    $conn1 = AE\connect();
 
     for ($k = $minType; $k <= $maxType; $k++) {
         switch ($k) {
@@ -101,35 +101,58 @@ function SendStream($minType, $maxType, $atExec)
             fclose($fname1);
             $fname2 = fopen($fileName, "r");
 
-            $sqlType = GetSqlType($k);
-            $phpDriverType = GetDriverType($k, strlen($data));
-            $dataType = "[c1] int, [c2] $sqlType";
-            $dataOptions = array($k, array($fname2, SQLSRV_PARAM_IN, null, $phpDriverType));
-            TraceData($sqlType, $data);
-            CreateQueryTable($conn1, $tableName, $dataType, "c1, c2", "?, ?", $dataOptions, $atExec);
-            CheckData($conn1, $tableName, 2, $data);
+            $sqlType = getSqlType($k);
+            $phpDriverType = getDriverType($k, strlen($data));
+            traceData($sqlType, $data);
+
+            // create table
+            $columns = array(new AE\ColumnMeta('int', 'c1'),
+                             new AE\ColumnMeta($sqlType, 'c2'));
+            AE\createTable($conn1, $tableName, $columns);
+
+            // insert data
+            $params = array($k, array($fname2, SQLSRV_PARAM_IN, null, $phpDriverType));
+            insertQueryTable($conn1, $tableName, $params, $atExec);
+            checkData($conn1, $tableName, 2, $data);
 
             fclose($fname2);
         }
     }
-
-
     dropTable($conn1, $tableName);
+    unlink($fileName);
 
     sqlsrv_close($conn1);
 
     endTest($testName);
 }
 
-function CreateQueryTable($conn, $table, $dataType, $dataCols, $dataValues, $dataOptions, $execMode)
+function insertQueryTable($conn, $tableName, $params, $execMode)
 {
-    createTableEx($conn, $table, $dataType);
-    insertStream($conn, $table, $dataCols, $dataValues, $dataOptions, $execMode);
+    $sql = "INSERT INTO $tableName (c1, c2) VALUES (?, ?)";
+    $flag = $execMode ? 1 : 0;
+    $options = array('SendStreamParamsAtExec' => $flag);
+    if (AE\isColEncrypted()) {
+        $stmt = sqlsrv_prepare($conn, $sql, $params, $options);
+        if (!sqlsrv_execute($stmt)) {
+            fatalError("Failed to execute query!", true);
+        }
+    } else {
+        $stmt = sqlsrv_query($conn, $sql, $params, $options);
+    }
+
+    if (!$stmt) {
+        fatalError("Failed to run query!", true);
+    }
+    if (!$execMode) {
+        while (sqlsrv_send_stream_data($stmt)) {
+        }
+    }
+    insertCheck($stmt);
 }
 
-function CheckData($conn, $table, $cols, $expectedValue)
+function checkData($conn, $table, $cols, $expectedValue)
 {
-    $stmt = selectFromTable($conn, $table);
+    $stmt = AE\selectFromTable($conn, $table);
     if (!sqlsrv_fetch($stmt)) {
         fatalError("Table $tableName was not expected to be empty.");
     }
@@ -144,22 +167,12 @@ function CheckData($conn, $table, $cols, $expectedValue)
     }
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        SendStream(12, 28, true);   // send stream at execution
-        SendStream(12, 28, false);  // send stream after execution
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    sendStream(12, 28, true);   // send stream at execution
+    sendStream(12, 28, false);  // send stream after execution
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

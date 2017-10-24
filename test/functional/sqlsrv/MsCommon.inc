@@ -220,16 +220,6 @@ function executeQueryEx($conn, $query, $modeDirect)
     return ($stmt);
 }
 
-function createTable($conn, $tableName)
-{
-    trace("Creating table $tableName ...");
-
-    $dataType = "[c1_int] int, [c2_tinyint] tinyint, [c3_smallint] smallint, [c4_bigint] bigint, [c5_bit] bit, [c6_float] float, [c7_real] real, [c8_decimal] decimal(28,4), [c9_numeric] numeric(32,4), [c10_money] money, [c11_smallmoney] smallmoney, [c12_char] char(512), [c13_varchar] varchar(512), [c14_varchar_max] varchar(max), [c15_nchar] nchar(512), [c16_nvarchar] nvarchar(512), [c17_nvarchar_max] nvarchar(max), [c18_text] text, [c19_ntext] ntext, [c20_binary] binary(512), [c21_varbinary] varbinary(512), [c22_varbinary_max] varbinary(max), [c23_image] image, [c24_uniqueidentifier] uniqueidentifier, [c25_datetime] datetime, [c26_smalldatetime] smalldatetime, [c27_timestamp] timestamp, [c28_xml] xml";
-    createTableEx($conn, $tableName, $dataType);
-
-    trace(" completed successfully.\n");
-}
-
 function createTableEx($conn, $tableName, $dataType)
 {
     $sql = "CREATE TABLE [$tableName] ($dataType)";
@@ -288,7 +278,6 @@ function dropTable($conn, $tableName)
     }
 }
 
-
 function selectFromTable($conn, $tableName)
 {
     return (selectFromTableEx($conn, $tableName, null));
@@ -345,84 +334,6 @@ function numRows($conn, $tableName)
     return ($rowCount);
 }
 
-function insertQueryData($tableName, $index)
-{
-    if (UseUTF8data()) {
-        include_once 'MsData_UTF8.inc';
-        return (InsertQueryExUTF8($tableName, $index));
-    } else {
-        include_once 'MsData.inc';
-        return (InsertQueryEx($tableName, $index));
-    }
-}
-
-function insertQuery($tableName)
-{
-    return (insertQueryData($tableName, rand(1, 20)));
-}
-
-function insertRows($conn, $tableName, $rowCount)
-{
-    trace("Inserting $rowCount rows into $tableName ...");
-    $count = 0;
-    for ($i = 0; $i < $rowCount; $i++) {
-        if (insertRow($conn, $tableName)) {
-            $count++;
-        }
-    }
-    trace(" completed successfully.\n");
-    if ($count != $rowCount) {
-        die("$count rows inserted instead of $rowCount\n");
-    }
-    return ($count);
-}
-
-function insertRowsByRange($conn, $tableName, $minIndex, $maxIndex)
-{
-    $rowCount = $maxIndex - $minIndex + 1;
-    if ($rowCount > 0) {
-        trace("Inserting $rowCount rows into $tableName ...");
-        for ($i = $minIndex; $i <= $maxIndex; $i++) {
-            insertRowByIndex($conn, $tableName, $i);
-        }
-        trace(" completed successfully.\n");
-    }
-}
-
-function insertRow($conn, $tableName)
-{
-    $query = insertQuery($tableName);
-    $stmt = sqlsrv_query($conn, $query);
-    return (insertCheck($stmt));
-}
-
-function insertRowEx($conn, $tableName, $dataCols, $dataValues, $dataOptions)
-{
-    $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] ($dataCols) VALUES ($dataValues)", $dataOptions);
-    return (insertCheck($stmt));
-}
-
-function insertRowByIndex($conn, $tableName, $index)
-{
-    $query = insertQueryData($tableName, $index);
-    $stmt = sqlsrv_query($conn, $query);
-    return (insertCheck($stmt));
-}
-
-function insertStream($conn, $tableName, $dataCols, $dataValues, $dataOptions, $atExec)
-{
-    if ($atExec) {
-        $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] ($dataCols) VALUES ($dataValues)", $dataOptions, array('SendStreamParamsAtExec' => 1));
-    } else {
-        $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] ($dataCols) VALUES ($dataValues)", $dataOptions);
-        if ($stmt) {
-            while (sqlsrv_send_stream_data($stmt)) {
-            }
-        }
-    }
-    return (insertCheck($stmt));
-}
-
 function insertCheck($stmt)
 {
     if ($stmt === false) {
@@ -436,56 +347,12 @@ function insertCheck($stmt)
     return (true);
 }
 
-function getInsertData($rowIndex, $colIndex, $skip)
-{
-    $query = insertQueryData("TestTable", $rowIndex);
-    $data = strstr($query, "((");
-    $pos = 1;
-    if ($data === false) {
-        die("Failed to retrieve data on row $rowIndex");
-    }
-    $data = substr($data, 2);
-
-    while ($pos < ($colIndex - $skip)) {
-        $data = strstr($data, ", (");
-        $pos++;
-        if ($data === false) {
-            die("Failed to retrieve data on row $rowIndex, column $pos");
-        }
-        $data = substr($data, 3);
-    }
-
-    // Is it's XML type, we can't use the closing bracket as the next delimiter
-    // because a bracket can be part of the xml data, unless the data is null
-    $pos = strpos($data, ")");
-    if ($pos === false) {
-        die("Failed to isolate data on row $rowIndex, column $pos");
-    }
-    $tmp = substr($data, 0, $pos);      // don't replace $data in case it's xml data
-    if (strcasecmp($tmp, "null") == 0 || strlen($tmp) == 0) { // data can actually be blank for null
-        $tmp = "";
-    } elseif (IsXml($colIndex)) {
-        $str = ">')";   // use the XML closing angle bracket as the delimiter
-        $pos = strpos($data, $str);
-        $tmp = substr($data, 0, $pos + 2);
-    }
-    $data = $tmp;   // update $data
-    if (IsUnicode($colIndex)) {   // N'data'
-        $data = substr($data, 2, strlen($data) - 3);
-    } elseif (IsLiteral($colIndex)) {   // 'data'
-        $data = substr($data, 1, strlen($data) - 2);
-    } elseif (IsBinary($colIndex)) {   // 0xdata
-        $data = substr($data, 2);
-    }
-    return (trim($data));
-}
-
 function createProc($conn, $procName, $procArgs, $procCode)
 {
     dropProc($conn, $procName);
     $stmt = sqlsrv_query($conn, "CREATE PROC [$procName] ($procArgs) AS BEGIN $procCode END");
     if ($stmt === false) {
-        fatalError("Failed to create test procedure");
+        fatalError("Failed to create test procedure", true);
     }
     sqlsrv_free_stmt($stmt);
 }
@@ -509,7 +376,7 @@ function callProcEx($conn, $procName, $procPrefix, $procArgs, $procValues)
 {
     $stmt = sqlsrv_query($conn, "{ $procPrefix CALL [$procName] ($procArgs)}", $procValues);
     if ($stmt === false) {
-        fatalError("Failed to call test procedure");
+        fatalError("Failed to call test procedure", true);
     }
     return ($stmt);
 }
@@ -542,10 +409,14 @@ function callFunc($conn, $funcName, $funcArgs, $funcValues)
     sqlsrv_free_stmt($stmt);
 }
 
-function fatalError($errorMsg)
+function fatalError($errorMsg, $print = false)
 {
     SetUTF8Data(false);
-    handleErrors();
+    if ($print) {
+        printErrors();
+    } else {
+        handleErrors();
+    }
     die($errorMsg."\n");
 }
 

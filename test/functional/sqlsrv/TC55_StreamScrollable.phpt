@@ -10,53 +10,75 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function StreamScroll($noRows, $startRow)
+function streamScroll($noRows, $startRow)
 {
-    include 'MsSetup.inc';
-
     $testName = "Stream - Scrollable";
     startTest($testName);
 
     setup();
+    $tableName = "TC55test";
     if (! isWindows()) {
-        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+        $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
-        $conn1 = connect();
+        $conn1 = AE\connect();
     }
 
-    createTable($conn1, $tableName);
-    insertRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
+    AE\createTestTable($conn1, $tableName);
+    AE\insertTestRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
-    $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
-    $stmt1 = selectQueryEx($conn1, $query, $options);
-    $numFields = sqlsrv_num_fields($stmt1);
-
-    $row = $noRows;
-    while ($row >= 1) {
-        if ($row == $noRows) {
-            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_LAST)) {
-                fatalError("Failed to fetch row ".$row);
-            }
-        } else {
-            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_PRIOR)) {
-                fatalError("Failed to fetch row ".$row);
-            }
-        }
-        trace("\nStreaming row $row:\n");
-        $skipCount = 0;
-        for ($j = 0; $j < $numFields; $j++) {
-            $col = $j + 1;
-            if (!IsUpdatable($col)) {
-                $skipCount++;
-            }
-            if (IsStreamable($col)) {
-                VerifyStream($stmt1, $startRow + $row - 1, $j, $skipCount);
-            }
-        }
-        $row--;
+    // Always Encrypted feature does not support SQLSRV_CURSOR_STATIC
+    // https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation
+    if (AE\isColEncrypted()) {
+        $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
+    } else {
+        $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
     }
-
+    $stmt1 = AE\executeQueryEx($conn1, $query, $options);
+    $numFields = sqlsrv_num_fields($stmt1);
+    if (AE\isColEncrypted()) {
+        $row = $startRow;
+        while ($row <= $noRows) {
+            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_NEXT)) {
+                fatalError("Failed to fetch row ".$row);
+            }
+            trace("\nStreaming row $row:\n");
+            for ($j = 0; $j < $numFields; $j++) {
+                $col = $j + 1;
+                if (!isUpdatable($col)) {
+                    continue;
+                }
+                if (isStreamable($col)) {
+                    verifyStream($stmt1, $startRow + $row - 1, $j);
+                }
+            }
+            $row++;
+        }
+    } else {
+        $row = $noRows;
+        while ($row >= 1) {
+            if ($row == $noRows) {
+                if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_LAST)) {
+                    fatalError("Failed to fetch row ".$row);
+                }
+            } else {
+                if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_PRIOR)) {
+                    fatalError("Failed to fetch row ".$row);
+                }
+            }
+            trace("\nStreaming row $row:\n");
+            for ($j = 0; $j < $numFields; $j++) {
+                $col = $j + 1;
+                if (!isUpdatable($col)) {
+                    continue;
+                }
+                if (isStreamable($col)) {
+                    verifyStream($stmt1, $startRow + $row - 1, $j);
+                }
+            }
+            $row--;
+        }
+    }
     sqlsrv_free_stmt($stmt1);
 
     dropTable($conn1, $tableName);
@@ -66,12 +88,12 @@ function StreamScroll($noRows, $startRow)
     endTest($testName);
 }
 
-function VerifyStream($stmt, $row, $colIndex, $skip)
+function verifyStream($stmt, $row, $colIndex)
 {
     $col = $colIndex + 1;
-    if (IsStreamable($col)) {
-        $type = GetSqlType($col);
-        if (IsBinary($col)) {
+    if (isStreamable($col)) {
+        $type = getSqlType($col);
+        if (isBinary($col)) {
             $stream = sqlsrv_get_field($stmt, $colIndex, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
         } else {
             if (useUTF8Data()) {
@@ -89,24 +111,23 @@ function VerifyStream($stmt, $row, $colIndex, $skip)
                     $value .= fread($stream, 8192);
                 }
                 fclose($stream);
-                $data = getInsertData($row, $col, $skip);
-                if (!CheckData($col, $value, $data)) {
+                $data = AE\getInsertData($row, $col);
+                if (!checkData($col, $value, $data)) {
                     trace("Data corruption on row $row column $col\n");
                     setUTF8Data(false);
                     die("Data corruption on row $row column $col\n");
                 }
             }
-            TraceData($type, "".strlen($value)." bytes");
+            traceData($type, "".strlen($value)." bytes");
         }
     }
 }
 
-
-function CheckData($col, $actual, $expected)
+function checkData($col, $actual, $expected)
 {
     $success = true;
 
-    if (IsBinary($col)) {
+    if (isBinary($col)) {
         $actual = bin2hex($actual);
         if (strncasecmp($actual, $expected, strlen($expected)) != 0) {
             $success = false;
@@ -129,25 +150,15 @@ function CheckData($col, $actual, $expected)
     return ($success);
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    if (! isWindows()) {
-        setUTF8Data(true);
-    }
-    try {
-        StreamScroll(20, 1);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    setUTF8Data(false);
+if (! isWindows()) {
+    setUTF8Data(true);
 }
-
-repro();
+try {
+    streamScroll(20, 1);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+setUTF8Data(false);
 
 ?>
 --EXPECT--

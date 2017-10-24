@@ -10,36 +10,34 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function StoredProc()
+function storedProc()
 {
-    include 'MsSetup.inc';
-
     $testName = "Stored Proc - Null Data";
     $data1 = "Microsoft SQL Server ";
     $data2 = "Driver for PHP";
 
     startTest($testName);
-
     setup();
-    $conn1 = connect();
+    $tableName = 'TC76test';
+    $procName = "TC76test_proc";
+    $conn1 = AE\connect();
 
-    ExecProc($conn1, $procName, "VARCHAR(32)", SQLSRV_SQLTYPE_VARCHAR(32), "ABC");
-    ExecProc($conn1, $procName, "FLOAT", SQLSRV_SQLTYPE_FLOAT, 3.2);
-    ExecProc($conn1, $procName, "INT", SQLSRV_SQLTYPE_INT, 5);
+    execProc($conn1, $procName, "VARCHAR(32)", SQLSRV_SQLTYPE_VARCHAR(32), "ABC");
+    execProc($conn1, $procName, "FLOAT", SQLSRV_SQLTYPE_FLOAT, 3.2);
+    execProc($conn1, $procName, "INT", SQLSRV_SQLTYPE_INT, 5);
 
     sqlsrv_close($conn1);
 
     endTest($testName);
 }
 
-function ExecProc($conn, $procName, $sqlType, $sqlTypeEx, $initData)
+function execProc($conn, $procName, $sqlType, $sqlTypeEx, $initData)
 {
     $data = $initData;
 
     $procArgs = "@p1 $sqlType OUTPUT";
     $procCode = "SET @p1 = NULL";
     $callArgs =  array(array(&$data, SQLSRV_PARAM_OUT, null, $sqlTypeEx));
-
 
     createProc($conn, $procName, $procArgs, $procCode);
     callProc($conn, $procName, "?", $callArgs);
@@ -50,20 +48,11 @@ function ExecProc($conn, $procName, $sqlType, $sqlTypeEx, $initData)
     }
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        StoredProc();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    storedProc();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

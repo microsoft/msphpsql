@@ -9,13 +9,13 @@ Basic verification of query statements (via "sqlsrv_query"):
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
 require_once('MsCommon.inc');
 
-function SimpleQuery()
+function simpleQuery()
 {
     $testName = "Statement - Simple Query";
     startTest($testName);
@@ -23,14 +23,14 @@ function SimpleQuery()
     setup();
     $tableName = 'TC31test';
 
-    $conn1 = connect();
+    $conn1 = AE\connect();
 
-    createTable($conn1, $tableName);
+    // just create an empty table
+    $stmt1 = sqlsrv_query($conn1, "CREATE TABLE $tableName (dummyColumn int)");
 
     trace("Executing SELECT query on $tableName ...");
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = sqlsrv_query($conn1, "SELECT * FROM $tableName");
     $rows = rowCount($stmt1);
-    ;
     sqlsrv_free_stmt($stmt1);
     trace(" $rows rows retrieved.\n");
 
@@ -45,21 +45,11 @@ function SimpleQuery()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        SimpleQuery();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    simpleQuery();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-
-repro();
 
 ?>
 --EXPECT--

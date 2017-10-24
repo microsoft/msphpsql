@@ -12,8 +12,6 @@ require_once('MsCommon.inc');
 
 function fetchFields()
 {
-    include 'MsSetup.inc';
-
     $testName = "Fetch - Next Result";
     startTest($testName);
 
@@ -23,14 +21,15 @@ function fetchFields()
     }
 
     setup();
-    $conn1 = connect();
-    createTable($conn1, $tableName);
+    $tableName = 'TC46test';
+    $conn1 = AE\connect();
+    AE\createTestTable($conn1, $tableName);
 
     $noRows = 10;
-    insertRows($conn1, $tableName, $noRows);
+    AE\insertTestRows($conn1, $tableName, $noRows);
 
-    $stmt1 = selectQuery($conn1, "SELECT * FROM [$tableName]");
-    $stmt2 = selectQuery($conn1, "SELECT * FROM [$tableName]; SELECT * FROM [$tableName]");
+    $stmt1 = AE\executeQuery($conn1, "SELECT * FROM [$tableName]");
+    $stmt2 = AE\executeQuery($conn1, "SELECT * FROM [$tableName]; SELECT * FROM [$tableName]");
     if (sqlsrv_next_result($stmt2) === false) {
         fatalError("Failed to retrieve next result set");
     }
@@ -66,10 +65,10 @@ function fetchFields()
             }
         }
     }
-    if (sqlsrv_next_result($stmt1) ||
-        sqlsrv_next_result($stmt2)) {
+    if ($r1 = sqlsrv_next_result($stmt1) ||
+        $r2 = sqlsrv_next_result($stmt2)) {
         setUTF8Data(false);
-        die("No more results were expected");
+        fatalError("No more results were expected", true);
     }
     sqlsrv_free_stmt($stmt1);
     sqlsrv_free_stmt($stmt2);

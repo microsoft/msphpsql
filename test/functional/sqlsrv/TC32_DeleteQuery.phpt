@@ -6,30 +6,31 @@ validates the outcome reported by "sqlsrv_rows_affected".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function DeleteQuery()
+function deleteQuery()
 {
     $testName = "Statement - Delete Query";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $conn1 = AE\connect();
 
     $noRows = 10;
     $tableName = 'TC32test';
-    createTable($conn1, $tableName);
-    $noRowsInserted = insertRows($conn1, $tableName, $noRows);
+    AE\createTestTable($conn1, $tableName);
+    // Insert some random rows
+    $noRowsInserted = AE\insertTestRows($conn1, $tableName, $noRows);
 
     $row = 1;
     $keyValue = "0";
     while ($row <= $noRowsInserted) {
-        $stmt1 = selectFromTable($conn1, $tableName);
+        $stmt1 = AE\selectFromTable($conn1, $tableName);
         if (sqlsrv_fetch($stmt1) === false) {
-            fatalError("Failed to retrieve 1st row of data from test table");
+            fatalError("Failed to retrieve 1st row of data from test table", true);
         }
         $keyValue = sqlsrv_get_field($stmt1, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         sqlsrv_free_stmt($stmt1);
@@ -37,16 +38,17 @@ function DeleteQuery()
         trace("Deleting rows from $tableName ...");
         $delRows = 1;
         if (strlen($keyValue) == 0) {
-            $stmt2 = executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
+            $stmt2 = AE\executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
             $cond = "(top row)";
         } else {
-            $cond = "(c1_int = $keyValue)";
-
-            $stmt3 = selectFromTableEx($conn1, $tableName, $cond);
+            $cond = "(c1_int = ?)";
+            $params = array($keyValue);
+            $stmt3 = AE\selectFromTable($conn1, $tableName, $cond, $params);
+            
             $delRows = rowCount($stmt3);
             sqlsrv_free_stmt($stmt3);
 
-            $stmt2 = executeQuery($conn1, "DELETE FROM [$tableName] WHERE $cond");
+            $stmt2 = AE\executeQuery($conn1, "DELETE FROM [$tableName]", $cond, $params );
         }
         $numRows1 = sqlsrv_rows_affected($stmt2);
         sqlsrv_free_stmt($stmt2);
@@ -58,7 +60,7 @@ function DeleteQuery()
         $row += $numRows1;
     }
 
-    $stmt3 = executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
+    $stmt3 = AE\executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
     $numRows2 = sqlsrv_rows_affected($stmt3);
     sqlsrv_free_stmt($stmt3);
 
@@ -73,20 +75,11 @@ function DeleteQuery()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        DeleteQuery();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    deleteQuery();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

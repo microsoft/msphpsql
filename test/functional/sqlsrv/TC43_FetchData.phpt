@@ -9,23 +9,23 @@ PHPT_EXEC=true
 
 require_once('MsCommon.inc');
 
-function FetchFields()
+function fetchFields()
 {
-    include 'MsSetup.inc';
-
     $testName = "Fetch - Field Data";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
-    createTable($conn1, $tableName);
+    $tableName = 'TC43test';
+
+    $conn1 = AE\connect();
+    AE\createTestTable($conn1, $tableName);
 
     $startRow = 1;
     $noRows = 20;
-    insertRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
+    AE\insertTestRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
-    $stmt1 = selectQuery($conn1, $query);
+    $stmt1 = AE\executeQuery($conn1, $query);
     $numFields = sqlsrv_num_fields($stmt1);
 
     trace("Retrieving $noRows rows with $numFields fields each ...");
@@ -34,7 +34,6 @@ function FetchFields()
         if ($row === false) {
             fatalError("Row $i is missing");
         }
-        $skipCount = 0;
         for ($j = 0; $j < $numFields; $j++) {
             if (useUTF8Data()) {
                 $fld = sqlsrv_get_field($stmt1, $j, SQLSRV_PHPTYPE_STRING('UTF-8'));
@@ -45,11 +44,13 @@ function FetchFields()
                 fatalError("Field $j of Row $i is missing");
             }
             $col = $j + 1;
-            if (!IsUpdatable($col)) {
-                $skipCount++;
-            } else { // should check data even if $fld is null
-                $data = getInsertData($startRow + $i, $col, $skipCount);
-                if (!CheckData($col, $fld, $data)) {
+            $data = AE\getInsertData($startRow + $i, $col);
+            if (isUpdatable($col)) {
+                // should check data even if $fld is null
+                $data = AE\getInsertData($startRow + $i, $col);
+                if (!checkData($col, $fld, $data)) {
+                    echo("\nData error\nExpected:\n$data\nActual:\n$fld\n");
+
                     setUTF8Data(false);
                     die("Data corruption on row ".($startRow + $i)." column $col");
                 }
@@ -66,19 +67,18 @@ function FetchFields()
     endTest($testName);
 }
 
-
-function CheckData($col, $actual, $expected)
+function checkData($col, $actual, $expected)
 {
     $success = true;
 
-    if (IsNumeric($col)) {
+    if (isNumeric($col)) {
         if (floatval($actual) != floatval($expected)) {
             $success = false;
         }
     } else {
-        $actual = trim($actual);
+        // Do not trim data because the data itself can be some space characters
         $len = strlen($expected);
-        if (IsDateTime($col)) {
+        if (isDateTime($col)) {
             $len = min(strlen("YYYY-MM-DD HH:mm:ss"), $len);
         }
         if (strncasecmp($actual, $expected, $len) != 0) {
@@ -92,25 +92,15 @@ function CheckData($col, $actual, $expected)
     return ($success);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    if (! isWindows()) {
-        setUTF8Data(true);
-    }
-
-    try {
-        FetchFields();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    setUTF8Data(false);
+if (! isWindows()) {
+    setUTF8Data(true);
 }
-
-repro();
+try {
+    fetchFields();
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+setUTF8Data(false);
 
 ?>
 --EXPECT--

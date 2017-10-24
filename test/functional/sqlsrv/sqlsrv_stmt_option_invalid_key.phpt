@@ -8,9 +8,9 @@ PHPT_EXEC=true
 <?php
 
 include 'MsCommon.inc';
-include 'MsSetup.inc';
-$conn = connect();
-createTable($conn, $tableName);
+$conn = AE\connect();
+$tableName = 'InvalidKeyTest';
+AE\createTestTable($conn, $tableName);
 
 $query = "SELECT * FROM [$tableName]";
 //integer keys are invalid
@@ -39,7 +39,6 @@ $stmt = sqlsrv_prepare($conn, $query, null, $option);
 if (!$stmt) {
     print_r(sqlsrv_errors());
 }
-
 
 dropTable($conn, $tableName);
 sqlsrv_close($conn);

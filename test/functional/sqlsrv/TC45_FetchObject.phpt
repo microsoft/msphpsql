@@ -19,27 +19,27 @@ class TestClass
 
 function fetchRow($minFetchMode, $maxFetchMode)
 {
-    include 'MsSetup.inc';
-
     $testName = "Fetch - Object";
     startTest($testName);
 
     setup();
+    $tableName = 'TC45test';
+
     if (! isWindows()) {
-        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+        $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
-        $conn1 = connect();
+        $conn1 = AE\connect();
     }
-    createTable($conn1, $tableName);
+    AE\createTestTable($conn1, $tableName);
 
     $noRows = 10;
-    $noRowsInserted = insertRows($conn1, $tableName, $noRows);
+    $noRowsInserted = AE\insertTestRows($conn1, $tableName, $noRows);
 
     $actual = null;
     $expected = null;
     $numFields = 0;
     for ($k = $minFetchMode; $k <= $maxFetchMode; $k++) {
-        $stmt1 = selectFromTable($conn1, $tableName);
+        $stmt1 = AE\selectFromTable($conn1, $tableName);
         if ($numFields == 0) {
             $numFields = sqlsrv_num_fields($stmt1);
         } else {

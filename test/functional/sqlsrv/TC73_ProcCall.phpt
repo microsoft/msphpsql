@@ -10,15 +10,15 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function StoredProc()
+function storedProc()
 {
-    include 'MsSetup.inc';
-
     $testName = "Stored Proc Call";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $tableName = 'TC73test';
+    $procName = "TC73test_proc";
+    $conn1 = AE\connect();
 
     $step = 0;
     $dataStr = "The quick brown fox jumps over the lazy dog.";
@@ -26,31 +26,31 @@ function StoredProc()
 
     // Scenario #1: using a null buffer
     $step++;
-    if (!ExecProc1($conn1, $procName, $dataStr, 40, 0)) {
+    if (!execProc1($conn1, $procName, $dataStr, 40, 0)) {
         die("Execution failure at step $step.");
     }
 
     // Scenario #2: using a pre-allocated buffer
     $step++;
-    if (!ExecProc1($conn1, $procName, $dataStr, 25, 1)) {
+    if (!execProc1($conn1, $procName, $dataStr, 25, 1)) {
         die("Execution failure at step $step.");
     }
 
     // Scenario #3: specifying an exact return size
     $step++;
-    if (!ExecProc1($conn1, $procName, $dataStr, 0, 2)) {
+    if (!execProc1($conn1, $procName, $dataStr, 0, 2)) {
         die("Execution failure at step $step.");
     }
 
     // Scenario #4: specifying a larger return size
     $step++;
-    if (!ExecProc1($conn1, $procName, $dataStr, 50, 2)) {
+    if (!execProc1($conn1, $procName, $dataStr, 50, 2)) {
         die("Execution failure at step $step.");
     }
 
     // Scenario #5: returning a value
     $step++;
-    if (!ExecProc2($conn1, $procName, $dataInt)) {
+    if (!execProc2($conn1, $procName, $dataInt)) {
         die("Execution failure at step $step.");
     }
 
@@ -59,7 +59,7 @@ function StoredProc()
     endTest($testName);
 }
 
-function ExecProc1($conn, $procName, $dataIn, $extraSize, $phpInit)
+function execProc1($conn, $procName, $dataIn, $extraSize, $phpInit)
 {
     $inValue = trim($dataIn);
     $outValue = null;
@@ -90,12 +90,15 @@ function ExecProc1($conn, $procName, $dataIn, $extraSize, $phpInit)
 }
 
 
-function ExecProc2($conn, $procName, $dataIn)
+function execProc2($conn, $procName, $dataIn)
 {
     $procArgs = "@p1 INT";
     $procCode = "SET NOCOUNT ON; SELECT 199 IF @p1 = 0 RETURN 11 ELSE RETURN 22";
     $retValue = -1;
-    $callArgs =  array(array(&$retValue, SQLSRV_PARAM_OUT), array($dataIn, SQLSRV_PARAM_IN));
+    $driverType = AE\isColEncrypted() ? SQLSRV_SQLTYPE_INT : null;
+
+    $callArgs =  array(array(&$retValue, SQLSRV_PARAM_OUT, null, $driverType), 
+                       array($dataIn, SQLSRV_PARAM_IN, null, $driverType));
 
     createProc($conn, $procName, $procArgs, $procCode);
     $stmt = callProcEx($conn, $procName, "? = ", "?", $callArgs);
@@ -114,20 +117,11 @@ function ExecProc2($conn, $procName, $dataIn)
     return (true);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        StoredProc();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    storedProc();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

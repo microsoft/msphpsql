@@ -14,35 +14,34 @@ require_once('MsCommon.inc');
 
 function CancelStream()
 {
-    include 'MsSetup.inc';
-
     $testName = "Stream - Cancel";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $tableName = "TC53test";
+    $conn1 = AE\connect();
 
     $noRows = 5;
-    createTable($conn1, $tableName);
-    insertRows($conn1, $tableName, $noRows);
+    AE\createTestTable($conn1, $tableName);
+    AE\insertTestRows($conn1, $tableName, $noRows);
 
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
 
     // Expired stream
-    $stream1 = GetStream($stmt1);
+    $stream1 = getStream($stmt1);
     sqlsrv_fetch($stmt1);
-    CheckStream($stream1);
+    checkStream($stream1);
 
     // Cancelled statement
-    $stream2 = GetStream($stmt1);
+    $stream2 = getStream($stmt1);
     sqlsrv_cancel($stmt1);
-    CheckStream($stream2);
+    checkStream($stream2);
 
     // Closed statement
-    $stmt2 = selectFromTable($conn1, $tableName);
-    $stream3 = GetStream($stmt2);
+    $stmt2 = AE\selectFromTable($conn1, $tableName);
+    $stream3 = getStream($stmt2);
     sqlsrv_free_stmt($stmt2);
-    CheckStream($stream3);
+    checkStream($stream3);
 
     dropTable($conn1, $tableName);
 
@@ -51,7 +50,7 @@ function CancelStream()
     endTest($testName);
 }
 
-function GetStream($stmt)
+function getStream($stmt)
 {
     $stream = null;
 
@@ -60,10 +59,10 @@ function GetStream($stmt)
     }
     while ($stream == null) {
         $col = rand(11, 22);    // select a streamable field
-        if (!IsStreamable($col + 1)) {
+        if (!isStreamable($col + 1)) {
             die("Failed to select a streamable field.");
         }
-        $type = GetSqlType($col  + 1);
+        $type = getSqlType($col  + 1);
         trace("Selected streamable type: $type ...\n");
 
         $stream = sqlsrv_get_field($stmt, $col, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
@@ -75,7 +74,7 @@ function GetStream($stmt)
     return ($stream);
 }
 
-function CheckStream($stream)
+function checkStream($stream)
 {
     $bytesRead = 0;
     try {
@@ -90,27 +89,18 @@ function CheckStream($stream)
     }
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        CancelStream();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    CancelStream();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECTREGEX--
 
-|Warning: fread\(\): supplied argument is not a valid stream resource in .+\\TC53_StreamCancel.php on line 86|Warning: fread\(\): expects parameter 1 to be resource, null given in .+\\TC53_StreamCancel.php on line 86
+|Warning: fread\(\): supplied argument is not a valid stream resource in .+\\TC53_StreamCancel.php on line 86|Warning: fread\(\): expects parameter 1 to be resource, null given in .+\\TC53_StreamCancel.php on line 84
 
-|Warning: fread\(\): supplied argument is not a valid stream resource in .+\\TC53_StreamCancel.php on line 86|Warning: fread\(\): expects parameter 1 to be resource, null given in .+\\TC53_StreamCancel.php on line 86
+|Warning: fread\(\): supplied argument is not a valid stream resource in .+\\TC53_StreamCancel.php on line 86|Warning: fread\(\): expects parameter 1 to be resource, null given in .+\\TC53_StreamCancel.php on line 84
 
-|Warning: fread\(\): supplied argument is not a valid stream resource in .+\\TC53_StreamCancel.php on line 86|Warning: fread\(\): expects parameter 1 to be resource, null given in .+\\TC53_StreamCancel.php on line 86
+|Warning: fread\(\): supplied argument is not a valid stream resource in .+\\TC53_StreamCancel.php on line 86|Warning: fread\(\): expects parameter 1 to be resource, null given in .+\\TC53_StreamCancel.php on line 84
 Test "Stream - Cancel" completed successfully.

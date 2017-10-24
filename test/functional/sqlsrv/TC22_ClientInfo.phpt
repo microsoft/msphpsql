@@ -5,7 +5,7 @@ Verifies the functionality of "sqlsrv_client_info".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -24,14 +24,7 @@ function clientInfo()
         die("Unexpected size for client_info array: ".$count1);
     }
 
-    $driverName = 'DriverDllName';
-    $uname = php_uname();
-
-    if (isWindows()) {
-        $driverName = 'DriverDllName';
-    } else { // other than Windows
-        $driverName = 'DriverName';
-    }
+    $driverName = isWindows() ? 'DriverDllName' : 'DriverName';
 
     showInfo($clientinfo1, 'ExtensionVer');
     showInfo($clientinfo1, $driverName);
@@ -48,7 +41,6 @@ function showInfo($clientInfo, $infoTag)
     $info = $clientInfo[$infoTag];
     trace("$infoTag\t= $info\n");
 }
-
 
 try {
     clientInfo();

@@ -16,27 +16,28 @@ function fetchRow($minFetchMode, $maxFetchMode)
     $testName = "Fetch - Array";
     startTest($testName);
 
-    if (!IsMarsSupported()) {
+    if (!isMarsSupported()) {
         endTest($testName);
         return;
     }
 
     setup();
+    $tableName = 'TC44test';
     if (!isWindows()) {
-        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+        $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
-        $conn1 = connect();
+        $conn1 = AE\connect();
     }
     $tableName = 'TC44Test';
-    createTable($conn1, $tableName);
+    AE\createTestTable($conn1, $tableName);
 
     $noRows = 10;
     $numFields = 0;
-    insertRows($conn1, $tableName, $noRows);
+    AE\insertTestRows($conn1, $tableName, $noRows);
 
     for ($k = $minFetchMode; $k <= $maxFetchMode; $k++) {
-        $stmt1 = selectFromTable($conn1, $tableName);
-        $stmt2 = selectFromTable($conn1, $tableName);
+        $stmt1 = AE\selectFromTable($conn1, $tableName);
+        $stmt2 = AE\selectFromTable($conn1, $tableName);
         if ($numFields == 0) {
             $numFields = sqlsrv_num_fields($stmt1);
         } else {
@@ -122,23 +123,23 @@ function checkData($row, $stmt, $index, $mode)
     $success = true;
 
     $col = $index + 1;
-    $actual = (($mode == SQLSRV_FETCH_ASSOC) ? $row[GetColName($col)] : $row[$index]);
+    $actual = (($mode == SQLSRV_FETCH_ASSOC) ? $row[getColName($col)] : $row[$index]);
     $expected = null;
 
-    if (!IsUpdatable($col)) {
+    if (!isUpdatable($col)) {
         // do not check the timestamp
-    } elseif (IsNumeric($col) || IsDateTime($col)) {
+    } elseif (isNumeric($col) || isDateTime($col)) {
         $expected = sqlsrv_get_field($stmt, $index);
         if ($expected != $actual) {
             $success = false;
         }
-    } elseif (IsBinary($col)) {
+    } elseif (isBinary($col)) {
         $expected = sqlsrv_get_field($stmt, $index, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         $actual = bin2hex($actual);
         if (strcasecmp($actual, $expected) != 0) {
             $success = false;
         }
-    } else { // if (IsChar($col))
+    } else { // if (isChar($col))
         if (useUTF8Data()) {
             $expected = sqlsrv_get_field($stmt, $index, SQLSRV_PHPTYPE_STRING('UTF-8'));
         } else {

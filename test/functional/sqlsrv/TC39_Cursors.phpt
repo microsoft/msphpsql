@@ -10,16 +10,16 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function CursorTest($noRows1, $noRows2)
+function cursorTest($noRows1, $noRows2)
 {
-    include 'MsSetup.inc';
-
     $testName = "Statement - Cursor Mode";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $conn1 = AE\connect();
 
+    $tableName = 'TC39test';
+    
     $cursor = "";
     for ($k = 0; $k < 4; $k++) {
         switch ($k) {
@@ -27,9 +27,9 @@ function CursorTest($noRows1, $noRows2)
             case 1: $cursor = SQLSRV_CURSOR_STATIC;     break;
             case 2: $cursor = SQLSRV_CURSOR_DYNAMIC;    break;
             case 3: $cursor = SQLSRV_CURSOR_KEYSET;     break;
-            default:                    break;
+            default:                                    break;
         }
-        ScrollableFetch($conn1, $tableName, $noRows1, $noRows2, $cursor);
+        scrollableFetch($conn1, $tableName, $noRows1, $noRows2, $cursor);
     }
 
     sqlsrv_close($conn1);
@@ -37,25 +37,26 @@ function CursorTest($noRows1, $noRows2)
     endTest($testName);
 }
 
-function ScrollableFetch($conn, $tableName, $noRows1, $noRows2, $cursor)
+function scrollableFetch($conn, $tableName, $noRows1, $noRows2, $cursor)
 {
     $colIndex = "c27_timestamp";
+    $tableIndex = "TC39index";
 
-    createTable($conn, $tableName);
-    createUniqueIndex($conn, $tableName, $colIndex);
+    AE\createTestTable($conn, $tableName);
+    createUniqueIndexEx($conn, $tableName, $tableIndex, $colIndex);
 
-    $stmt1 = selectFromTable($conn, $tableName);
+    $stmt1 = AE\selectFromTable($conn, $tableName);
     if (sqlsrv_has_rows($stmt1)) {
         die("Table $tableName is expected to be empty...");
     }
     sqlsrv_free_stmt($stmt1);
 
-    $noRows = insertRows($conn, $tableName, $noRows1);
+    $noRows = AE\insertTestRows($conn, $tableName, $noRows1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY $colIndex";
     $options = array('Scrollable' => $cursor);
 
-    $stmt2 = selectQueryEx($conn, $query, $options);
+    $stmt2 = sqlsrv_query($conn, $query, null, $options);
     if (!sqlsrv_has_rows($stmt2)) {
         die("Table $tableName is not expected to be empty...");
     }
@@ -71,7 +72,7 @@ function ScrollableFetch($conn, $tableName, $noRows1, $noRows2, $cursor)
         $noRows--;
     }
     if ($noRows2 > 0) {
-        $extraRows = insertRows($conn, $tableName, $noRows2);
+        $extraRows = AE\insertTestRows($conn, $tableName, $noRows2);
         if ($cursor == SQLSRV_CURSOR_DYNAMIC) {
             $noRows += $extraRows;
         }
@@ -88,21 +89,11 @@ function ScrollableFetch($conn, $tableName, $noRows1, $noRows2, $cursor)
     dropTable($conn, $tableName);
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        CursorTest(10, 5);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    cursorTest(10, 5);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

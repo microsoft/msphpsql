@@ -11,22 +11,24 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function StoredProcRoundtrip($minType, $maxType)
+function storedProcRoundtrip($minType, $maxType)
 {
-    include 'MsSetup.inc';
+    // include 'MsSetup.inc';
 
     $testName = "Stored Proc Roundtrip";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $tableName = 'TC75test';
+    $procName = "TC75test_proc";
+    $conn1 = AE\connect();
 
     $data = "The quick brown fox jumps over the lazy dog 0123456789";
     $dataSize = strlen($data);
 
     for ($i = $minType; $i <= $maxType; $i++) {
-        $dataTypeIn = GetSqlType($i);
-        $phpTypeIn = GetDriverType($i, $dataSize);
+        $dataTypeIn = getSqlType($i);
+        $phpTypeIn = getDriverType($i, $dataSize);
 
         for ($j = $minType; $j <= $maxType; $j++) {
             $k = $j;
@@ -45,9 +47,9 @@ function StoredProcRoundtrip($minType, $maxType)
                     break;
 
             }
-            $dataTypeOut = GetSqlType($k);
-            $phpTypeOut = GetDriverType($k, 512);
-            ExecProcRoundtrip($conn1, $procName, $dataTypeIn, $dataTypeOut, $phpTypeIn, $phpTypeOut, $data);
+            $dataTypeOut = getSqlType($k);
+            $phpTypeOut = getDriverType($k, 512);
+            execProcRoundtrip($conn1, $procName, $dataTypeIn, $dataTypeOut, $phpTypeIn, $phpTypeOut, $data);
         }
     }
 
@@ -57,7 +59,7 @@ function StoredProcRoundtrip($minType, $maxType)
 }
 
 
-function ExecProcRoundtrip($conn, $procName, $dataTypeIn, $dataTypeOut, $phpTypeIn, $phpTypeOut, $dataIn)
+function execProcRoundtrip($conn, $procName, $dataTypeIn, $dataTypeOut, $phpTypeIn, $phpTypeOut, $dataIn)
 {
     $procArgs = "@p1 $dataTypeIn, @p2 $dataTypeOut OUTPUT";
     $procCode = "SELECT @p2 = CONVERT($dataTypeOut, @p1)";
@@ -73,25 +75,16 @@ function ExecProcRoundtrip($conn, $procName, $dataTypeIn, $dataTypeOut, $phpType
     $dataOut = trim($callResult);
 
     if (strncmp($dataOut, $dataIn, strlen($dataIn)) != 0) {
-        TraceData($dataTypeIn."=>".$dataTypeOut, "\n In: [".$dataIn."]\nOut: [".$dataOut."]");
+        traceData($dataTypeIn."=>".$dataTypeOut, "\n In: [".$dataIn."]\nOut: [".$dataOut."]");
         die("Unexpected result for ".$dataTypeIn."=>".$dataTypeOut);
     }
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        StoredProcRoundtrip(12, 19);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    storedProcRoundtrip(12, 19);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

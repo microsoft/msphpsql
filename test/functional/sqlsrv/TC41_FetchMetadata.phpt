@@ -14,21 +14,19 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function FetchMetadata()
+function fetchMetadata()
 {
-    include 'MsSetup.inc';
-
     $testName = "Fetch - Metadata";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
-    createTable($conn1, $tableName);
+    $tableName = 'TC41test';
+    
+    $conn1 = AE\connect();
+    AE\createTestTable($conn1, $tableName);
+    AE\insertTestRows($conn1, $tableName, 1);
 
-    insertRow($conn1, $tableName);
-
-
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     $numFields = sqlsrv_num_fields($stmt1);
 
     trace("Expecting $numFields fields...\n");
@@ -40,11 +38,11 @@ function FetchMetadata()
     }
     for ($k = 0; $k < $count; $k++) {
         trace(" ".($k + 1)."\t");
-        ShowMetadata($metadata, $k, 'Name');
-        ShowMetadata($metadata, $k, 'Size');
-        ShowMetadata($metadata, $k, 'Precision');
-        ShowMetadata($metadata, $k, 'Scale');
-        ShowMetadata($metadata, $k, 'Nullable');
+        showMetadata($metadata, $k, 'Name');
+        showMetadata($metadata, $k, 'Size');
+        showMetadata($metadata, $k, 'Precision');
+        showMetadata($metadata, $k, 'Scale');
+        showMetadata($metadata, $k, 'Nullable');
         trace("\n");
     }
 
@@ -57,30 +55,21 @@ function FetchMetadata()
     endTest($testName);
 }
 
-function ShowMetadata($mdArray, $field, $info)
+function showMetadata($mdArray, $field, $info)
 {
     $mdInfo = $mdArray[$field][$info];
-    $refInfo = GetMetadata($field + 1, $info);
+    $refInfo = getMetadata($field + 1, $info);
     trace("[$info=$mdInfo]");
     if ($mdInfo != $refInfo) {
         die("Unexpected metadata value for $info in field ".($field + 1).": $mdInfo instead of $refInfo");
     }
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        FetchMetadata();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    fetchMetadata();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

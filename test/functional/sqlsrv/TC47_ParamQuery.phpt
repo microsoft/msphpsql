@@ -11,27 +11,34 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function ParamQuery($minType, $maxType)
+function paramQuery($minType, $maxType)
 {
-    include 'MsSetup.inc';
-
     $testName = "Parameterized Query";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $tableName = 'TC47test';
+    $conn1 = AE\connect();
 
     for ($k = $minType; $k <= $maxType; $k++) {
-        $data = GetSampleData($k);
+        $data = getSampleData($k);
         if ($data != null) {
-            $sqlType = GetSqlType($k);
-            $phpDriverType = GetDriverType($k, strlen($data));
-            $dataType = "[c1] int, [c2] $sqlType";
-            $dataOptions = array($k, array($data, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), $phpDriverType));
+            $sqlType = getSqlType($k);
+            $phpDriverType = getDriverType($k, strlen($data));
+            $columns = array(new AE\ColumnMeta('int', 'c1'),
+                             new AE\ColumnMeta($sqlType, 'c2'));
+            traceData($sqlType, $data);
 
-            TraceData($sqlType, $data);
-            CreateQueryTable($conn1, $tableName, $dataType, "c1, c2", "?, ?", $dataOptions);
-            CheckData($conn1, $tableName, 2, $data);
+            $res = null;
+            AE\createTable($conn1, $tableName, $columns);
+            AE\insertRow($conn1,
+                $tableName,
+                array("c1"=>$k, "c2"=>array($data, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), $phpDriverType)), 
+                $res,
+                AE\INSERT_QUERY_PARAMS
+            );
+
+            checkData($conn1, $tableName, 2, $data);
             dropTable($conn1, $tableName);
         }
     }
@@ -41,16 +48,9 @@ function ParamQuery($minType, $maxType)
     endTest($testName);
 }
 
-
-function CreateQueryTable($conn, $table, $dataType, $dataCols, $dataValues, $dataOptions)
+function checkData($conn, $tableName, $cols, $expectedValue)
 {
-    createTableEx($conn, $table, $dataType);
-    insertRowEx($conn, $table, $dataCols, $dataValues, $dataOptions);
-}
-
-function CheckData($conn, $table, $cols, $expectedValue)
-{
-    $stmt = selectFromTable($conn, $table);
+    $stmt = AE\selectFromTable($conn, $tableName);
     if (!sqlsrv_fetch($stmt)) {
         die("Table $tableName was not expected to be empty.");
     }
@@ -65,20 +65,11 @@ function CheckData($conn, $table, $cols, $expectedValue)
     }
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        ParamQuery(1, 28);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    paramQuery(1, 28);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

@@ -11,15 +11,13 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function BugRepro()
+function bugRepro()
 {
-    include 'MsSetup.inc';
-
     $testName = "Regression VSTS 611146";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $conn1 = AE\connect();
     // empty parameter array
     $s = sqlsrv_query($conn1, "select ?", array( array() ));
     if ($s !== false) {
@@ -44,21 +42,11 @@ function BugRepro()
     endTest($testName);
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        BugRepro();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    bugRepro();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--
