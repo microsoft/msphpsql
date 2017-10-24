@@ -409,7 +409,7 @@ function callFunc($conn, $funcName, $funcArgs, $funcValues)
     sqlsrv_free_stmt($stmt);
 }
 
-function fatalError($errorMsg, $print = false)
+function fatalError($errorMsg, $print = true) 
 {
     SetUTF8Data(false);
     if ($print) {
@@ -425,7 +425,6 @@ function printErrors($message = "")
     if (strlen($message) > 0) {
         echo $message . "\n";
     }
-
     $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
     if (count($errors) == 0) {
         $errors = sqlsrv_errors(SQLSRV_ERR_ALL);

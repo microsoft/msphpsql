@@ -481,12 +481,12 @@ function executeQuery($conn, $sql, $conds = null, $values = null)
         if ($stmt) {
             $r = sqlsrv_execute($stmt);
             if (!$r) {
-                fatalError("executeQuery: failed to execute \'$sql\'!", true);
+                fatalError("executeQuery: failed to execute \'$sql\'!");
             }
         }
     }
     if (!$stmt) {
-        fatalError("executeQuery: failed to run query \'$sql\'!", true);
+        fatalError("executeQuery: failed to run query \'$sql\'!");
     }
 
     return $stmt;
@@ -506,12 +506,12 @@ function executeQueryEx($conn, $sql, $options)
         if ($stmt) {
             $r = sqlsrv_execute($stmt);
             if (!$r) {
-                fatalError("executeQueryEx: failed to execute \'$sql\'!", true);
+                fatalError("executeQueryEx: failed to execute \'$sql\'!");
             }
         }
     }
     if (!$stmt) {
-        fatalError("executeQueryEx: failed to run query \'$sql\'!", true);
+        fatalError("executeQueryEx: failed to run query \'$sql\'!");
     }
 
     return $stmt;
@@ -683,7 +683,7 @@ function insertTestRow($conn, $tbname, $index)
         $stmt = sqlsrv_query($conn, $insertSql);
     }
     if (!$stmt || $result === false) {
-        fatalError("insertTestRow: failed to insert row $index!\n", true);
+        fatalError("insertTestRow: failed to insert row $index!\n");
     }
     return $stmt;
 }
