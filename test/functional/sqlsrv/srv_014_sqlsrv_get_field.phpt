@@ -6,10 +6,10 @@ sqlsrv_get_field() using SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY)
 
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect();
-if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+// connect
+$conn = connect();
+if (!$conn) {
+    fatalError("Connection could not be established.\n");
 }
 
 $tableName = GetTempTableName();
@@ -19,18 +19,17 @@ $query = "CREATE TABLE ".$tableName." (ID VARCHAR(10))";
 $stmt = sqlsrv_query($conn, $query);
 
 $query = "INSERT INTO ".$tableName." VALUES ('1998.1'),('-2004.2436'),('4.2EUR')";
-$stmt = sqlsrv_query($conn, $query) ?: die( print_r( sqlsrv_errors(), true) );
+$stmt = sqlsrv_query($conn, $query) ?: die(print_r(sqlsrv_errors(), true));
 
 // Fetch data
 $query = "SELECT * FROM ".$tableName;
-$stmt = sqlsrv_query( $conn, $query ) ?: die( print_r( sqlsrv_errors(), true) );
+$stmt = sqlsrv_query($conn, $query) ?: die(print_r(sqlsrv_errors(), true));
 
-while(sqlsrv_fetch($stmt)) {
-    $field = sqlsrv_get_field($stmt,0,SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
+while (sqlsrv_fetch($stmt)) {
+    $field = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
     var_dump(get_resource_type($field));
-    
-    while(!feof($field))
-    {
+
+    while (!feof($field)) {
         echo fread($field, 100)."\n";
     }
 }

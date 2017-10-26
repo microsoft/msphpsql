@@ -12,11 +12,11 @@ PHPT_EXEC=true
 <?php
 /* Fails on PHP 7, producing 1's and 2's instead of 0's and 1's. */
 
-require( 'MsCommon.inc' );
+require_once('MsCommon.inc');
 
 $conn = Connect();
-if( !$conn ) {
-    FatalError("Could not connect");
+if (!$conn) {
+    fatalError("Could not connect");
 }
 
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('testBoolean', 'P') IS NOT NULL DROP PROCEDURE testBoolean");

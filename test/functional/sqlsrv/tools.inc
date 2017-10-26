@@ -25,102 +25,85 @@ define("_SQL_SS_XML", -152);
 define("_SQL_GUID", -11);
 define("_SQL_SS_TIME2", -154);
 define("_SQL_SS_TIMESTAMPOFFSET", -155);
-
 define("_CHUNK_SIZE", 8192);
 define("_EPSILON", 0.00001);
 
-function Verify($stmt, $metadata, $numFields, $encoding)
+function verify($stmt, $metadata, $numFields, $encoding)
 {
     $i = 0;
-    while ($result = sqlsrv_fetch($stmt))
-    {
+    while ($result = sqlsrv_fetch($stmt)) {
         echo "Comparing data in row " . ++$i . "\n";
-        $data = GetInputData($i);
-        $dataArray = SimplifyDataArray($data, $metadata, $i);
-        for ($j = 0; $j < $numFields; $j++)
-        {
+        $data = getInputData($i);
+        $dataArray = simplifyDataArray($data, $metadata, $i);
+        for ($j = 0; $j < $numFields; $j++) {
             $value = sqlsrv_get_field($stmt, $j, SQLSRV_PHPTYPE_STRING($encoding));
-            CompareData($metadata, $i, $j, $value, $dataArray[$j], False, False);
+            compareData($metadata, $i, $j, $value, $dataArray[$j], false, false);
         }
     }
     //  returns the number of rows fetched
     return $i;
 }
 
-function ConvertDataToString($type, $data)
+function convertDataToString($type, $data)
 {
-    if ($data === null)
+    if ($data === null) {
         return "";
-        
+    }
+
     // Convert raw data to strings for datetime and binary types only
     // Do nothing for other types
     //
-    if (IsDateTimeType($type)) 
-    {
-        if ($type != _SQL_SS_TIME2)
-            return date_format( $data, 'Y-m-d H:i:s' );  
-        else
-            return date_format( $data, 'H:i:s' );
-    }
-    else if (IsBinaryType($type))
-    {
-        return bin2hex($data); 
-    }
-    else 
-    {
+    if (isDateTimeType($type)) {
+        if ($type != _SQL_SS_TIME2) {
+            return date_format($data, 'Y-m-d H:i:s');
+        } else {
+            return date_format($data, 'H:i:s');
+        }
+    } elseif (isBinaryType($type)) {
+        return bin2hex($data);
+    } else {
         return $data;
     }
 }
 
-function CompareCharacterData($actual, $expected, $errorMode = false)
+function compareCharacterData($actual, $expected, $errorMode = false)
 {
-    // $errorMode is true if an error is expected                
+    // $errorMode is true if an error is expected
     $matched = false;
-    if ($actual === $expected)
-    {   
+    if ($actual === $expected) {
         $matched = true;
-    }
-    else
-    {
+    } else {
         $len = strlen($expected);
 
-        $result = strncmp($expected, $actual, $len);    
-        if ($result == 0)
-        {
+        $result = strncmp($expected, $actual, $len);
+        if ($result == 0) {
             $matched = true;
         }
     }
-    
-//  echo "Expected: $expected\nActual: $actual\n";
-    if ($matched)
-    {
-        if ($errorMode)
-        {
-            echo "Data corruption expected...\n";   
+
+    //  echo "Expected: $expected\nActual: $actual\n";
+    if ($matched) {
+        if ($errorMode) {
+            echo "Data corruption expected...\n";
         }
-    }
-    else
-    {
-        if (! $errorMode)
-        {
+    } else {
+        if (! $errorMode) {
             echo "Data corruption!! Expected: $expected\nActual: $actual\n";
         }
-    }       
-    
+    }
+
     return $matched;
 }
 
-function CompareNumericData($actual, $expected)
+function compareNumericData($actual, $expected)
 {
-    if (! is_numeric($actual))
-    {
+    if (! is_numeric($actual)) {
         return false;
     }
 
     // only compare up to the length of the expected value, especially for floats
-    if (is_float($expected))
-    {
-        $len = strlen($expected);   
+    if (is_float($expected)) {
+        $len = strlen($expected);
         $actual = substr($actual, 0, $len);
     }
 
@@ -128,72 +111,65 @@ function CompareNumericData($actual, $expected)
     $f_expected = floatval($expected);
 
     $matched = ($f_actual == $f_expected);
-    if (! $matched)
-    {
-        // compare floating point values 
+    if (! $matched) {
+        // compare floating point values
         $diff = abs(($f_actual - $f_expected) / $f_expected);
         $matched = ($diff < _EPSILON);
 
-        if (! $matched)
-        {
+        if (! $matched) {
             echo "Data corruption: values don't match\n";
         }
-    }   
-    
+    }
+
     return $matched;
 }
 
-function CheckData($colType, $actual, $expected)
+function checkData($colType, $actual, $expected)
 {
     $success = true;
 
-    if (IsNumericType($colType))
-    {
-        if (! CompareNumericData($actual, $expected))
-        {
+    if (isNumericType($colType)) {
+        if (! compareNumericData($actual, $expected)) {
             $success = false;
         }
-    }
-    else 
-    {
+    } else {
         $actual = trim($actual);
         $len = strlen($expected);
-        
-        if (IsDateTimeType($colType))
-        {
-            if ($colType != _SQL_SS_TIME2)
+
+        if (isDateTimeType($colType)) {
+            if ($colType != _SQL_SS_TIME2) {
                 $len = min(strlen("YYYY-MM-DD HH:mm:ss"), $len);
-            else
+            } else {
                 $len = min(strlen("HH:mm:ss"), $len);
+            }
         }
-        if (strncasecmp($actual, $expected, $len) != 0)
-        {
+        if (strncasecmp($actual, $expected, $len) != 0) {
             $success = false;
         }
     }
     return ($success);
 }
 
-function ReadBinaryStream($filename)
+function readBinaryStream($filename)
 {
-    $handle = fopen($filename, "rb");   
+    $handle = fopen($filename, "rb");
     $contents = fread($handle, filesize($filename));
     fclose($handle);
-    
+
     return $contents;
 }
 
-function ToByteArray($input)
+function toByteArray($input)
 {
     // this should be int[] which can be converted
     // to byte[] in C# since values are range of 0 - 255
     return unpack('C*', $input);
 }
 
-function CompareByteArrays($actual, $expected)
+function compareByteArrays($actual, $expected)
 {
-    $actualArray = ToByteArray($actual);
-    $expectedArray = ToByteArray($expected);
+    $actualArray = toByteArray($actual);
+    $expectedArray = toByteArray($expected);
 
     echo "Data read:\t";
     print_r($actualArray);
@@ -201,38 +177,30 @@ function CompareByteArrays($actual, $expected)
     print_r($expectedArray);
 }
 
-function CompareDataStream($colType, $rowIndex, $colName, $stream, $expected)
+function compareDataStream($colType, $rowIndex, $colName, $stream, $expected)
 {
     $len = strlen($expected);
     $matched = false;
-    
-    if ($len == 0)
-    {
-        $contents = fread($stream, _CHUNK_SIZE);    
-        $contents = trim($contents);    // removes all whitespace 
-        if (strlen($contents) == 0)
-        {
+
+    if ($len == 0) {
+        $contents = fread($stream, _CHUNK_SIZE);
+        $contents = trim($contents);    // removes all whitespace
+        if (strlen($contents) == 0) {
             $matched = true;
         }
-    }
-    else if ($len < _CHUNK_SIZE)
-    {
+    } elseif ($len < _CHUNK_SIZE) {
         $contents = fread($stream, $len);
-        $matched = CompareDataValue($colType, $rowIndex, $colName, $contents, $expected);
-    }
-    else 
-    {
+        $matched = compareDataValue($colType, $rowIndex, $colName, $contents, $expected);
+    } else {
         $matched = true;
         $pos = 0;
-        while (! feof($stream) && $pos < $len)
-        {
-            $contents = fread($stream, _CHUNK_SIZE);    
-            $contents = ConvertDataToString($colType, $contents);
+        while (! feof($stream) && $pos < $len) {
+            $contents = fread($stream, _CHUNK_SIZE);
+            $contents = convertDataToString($colType, $contents);
 
             $contents_len = strlen($contents);
-            $result = substr_compare($expected, $contents, $pos, $contents_len, TRUE);
-            if ($result != 0)
-            {
+            $result = substr_compare($expected, $contents, $pos, $contents_len, true);
+            if ($result != 0) {
                 break;
                 $matched = false;
             }
@@ -240,39 +208,35 @@ function CompareDataStream($colType, $rowIndex, $colName, $stream, $expected)
         }
     }
 
-    if (! $matched)
-    {
+    if (! $matched) {
         echo "Data corruption on row $rowIndex column $colName\n";
     }
 
     return $matched;
 }
 
-function CompareBinaryData($actual, $expected)
+function compareBinaryData($actual, $expected)
 {
-    // this function assumes $actual is a stream of hex 
-    $len = strlen($expected);       
+    // this function assumes $actual is a stream of hex
+    $len = strlen($expected);
     $pos = 0;
 
     $matched = true;
-    while (! feof($actual) && $pos < $len)
-    {
-        $contents = fread($actual, _CHUNK_SIZE);    
+    while (! feof($actual) && $pos < $len) {
+        $contents = fread($actual, _CHUNK_SIZE);
         $result = 0;
 
         $str = unpack("H*", $contents);
-        
+
         $contents = $str[1];
         $contents_len = strlen($contents);
-        
+
         $count = $contents_len;
-        if ($len < ($pos + $contents_len))
-        { 
+        if ($len < ($pos + $contents_len)) {
             $count = $len - $pos;
         }
-        $result = substr_compare($expected, $contents, $pos, $count, TRUE);
-        if ($result != 0)
-        {
+        $result = substr_compare($expected, $contents, $pos, $count, true);
+        if ($result != 0) {
             //echo "Expected: " . substr($expected, $pos, $count) . "\nActual: $contents\n";
             $matched = false;
             break;
@@ -280,404 +244,349 @@ function CompareBinaryData($actual, $expected)
 
         $pos += $count;
     }
-    
+
     return $matched;
 }
 
-function CompareStreamData($actual, $expected, $IsUnicodeType)
+function compareStreamData($actual, $expected, $IsUnicodeType)
 {
-    // this function assumes $actual is a stream of character data  
+    // this function assumes $actual is a stream of character data
     $matched = true;
-    
+
     // convert $expected to UCS-2LE (Little Endian)
     $str = iconv("UTF-8", "UCS-2LE", $expected);
 
-    // every character of $str consists of two bytes but if 
+    // every character of $str consists of two bytes but if
     // it's unicode, the character of data is also two bytes
 
     $shift = 1;
-    if ($IsUnicodeType)
+    if ($IsUnicodeType) {
         $shift = 2;
-            
+    }
+
     $len = strlen($str);
     $pos = 0;
-    while ($matched && ! feof($actual) && $pos < $len)
-    {
-        $contents = fread($actual, _CHUNK_SIZE);    
+    while ($matched && ! feof($actual) && $pos < $len) {
+        $contents = fread($actual, _CHUNK_SIZE);
         $contents_len = strlen($contents);
 
-        $i = 0; 
-        while ($matched && $i < $contents_len && $pos < $len)
-        {
-            if ($contents[$i] != $str[$pos])            
-            {
+        $i = 0;
+        while ($matched && $i < $contents_len && $pos < $len) {
+            if ($contents[$i] != $str[$pos]) {
                 //echo "Expected at [$pos]: $str[$pos]\nActual at [$i]: $contents[$i]\n";
                 $matched = false;
-                break;                                  
+                break;
             }
             $pos += 2;
             $i += $shift;
         }
     }
-    
+
     return $matched;
 }
 
-function CompareBinaryStream($metadata, $rowIndex, $colIndex, $actual, $expected)
+function compareBinaryStream($metadata, $rowIndex, $colIndex, $actual, $expected)
 {
-    // unlike CompareDataStream(), this method assumes $actual is a stream 
+    // unlike compareDataStream(), this method assumes $actual is a stream
     // and no non-updatable fields (timestamp column)
-    
-    if (is_null($actual))
-    {
-        if ($expected === "")
+
+    if (is_null($actual)) {
+        if ($expected === "") {
             return true;
-        else
+        } else {
             return false;
+        }
     }
-    
+
     $colName = $metadata[$colIndex]['Name'];
     $colType = $metadata[$colIndex]['Type'];
 
     $matched = false;
-    if (IsBinaryType($colType))
-    {
-        $matched = CompareBinaryData($actual, $expected);
-    }
-    else 
-    {
+    if (isBinaryType($colType)) {
+        $matched = compareBinaryData($actual, $expected);
+    } else {
         // stream of characters
-        $matched = CompareStreamData($actual, $expected, IsUnicodeType($colType));
+        $matched = compareStreamData($actual, $expected, isUnicodeType($colType));
     }
-    
-    if (! $matched)
-    {
+
+    if (! $matched) {
         echo "Data not matching on row $rowIndex column $colName\n";
     }
 
     return $matched;
 }
 
-function CompareStringToFile($rowIndex, $colName, $actual, $file, $IsBinaryType)
+function compareStringToFile($rowIndex, $colName, $actual, $file, $IsBinaryType)
 {
-    $matched = true;    
+    $matched = true;
     $pos = 0;
-    while ($matched && ! feof($file))
-    {
-        $expected = fread($file, _CHUNK_SIZE);  
-        if ($IsBinaryType) 
-        {
-            $str = unpack("H*", $expected);     
-            $expected = $str[1];    
+    while ($matched && ! feof($file)) {
+        $expected = fread($file, _CHUNK_SIZE);
+        if ($IsBinaryType) {
+            $str = unpack("H*", $expected);
+            $expected = $str[1];
         }
         $len = strlen($expected);
-        
+
         $contents = substr($actual, $pos, $len);
         $result = strcasecmp($expected, $contents);
 
         $matched = ($result == 0);
         $pos += $len;
-    }   
+    }
 
-    if (! $matched)
-    {
+    if (! $matched) {
         echo "Data not matching on row $rowIndex column $colName\n";
     }
-    
+
     return $matched;
 }
 
-function CompareStreamToFile($rowIndex, $colName, $stream, $file, $colType)
-{   
-    // This function is complicated because it's comparing two stream data 
+function compareStreamToFile($rowIndex, $colName, $stream, $file, $colType)
+{
+    // This function is complicated because it's comparing two stream data
     // one from stream resource and one from a file
     // Moreover, the data can be binary or character/unicode character
-    
-    $IsBinaryType = IsBinaryType($colType);
 
-    $matched = true;    
-    while ($matched && ! feof($file) && ! feof ($stream))
-    {
-        $expected = fread($file, _CHUNK_SIZE);  
+    $IsBinaryType = isBinaryType($colType);
+
+    $matched = true;
+    while ($matched && ! feof($file) && ! feof($stream)) {
+        $expected = fread($file, _CHUNK_SIZE);
         $actual  = fread($stream, _CHUNK_SIZE);
 
-        if ($IsBinaryType) 
-        {
-            $str = unpack("H*", $expected);     
-            $expected = $str[1];        
+        if ($IsBinaryType) {
+            $str = unpack("H*", $expected);
+            $expected = $str[1];
 
-            $str = unpack("H*", $actual);       
+            $str = unpack("H*", $actual);
             $actual = $str[1];
 
             $matched = ($expected == $actual);
-        }
-        else 
-        { 
+        } else {
             // not reading binary hex data here
-            // similar to CompareStreamData(), except comparing two chunks at a time
+            // similar to compareStreamData(), except comparing two chunks at a time
             // first convert $expected to UCS-2LE (Little Endian)
             $expected = iconv("UTF-8", "UCS-2LE", $expected);
-            
-            // every character of $expected consists of two bytes but if 
+
+            // every character of $expected consists of two bytes but if
             // it's unicode, the character of data is also two bytes
 
             $shift = 1;
-            if (IsUnicodeType($colType))
+            if (isUnicodeType($colType)) {
                 $shift = 2;
-                    
-            $i = 0; 
+            }
+
+            $i = 0;
             $pos = 0;
             $data_len = strlen($actual);
-            while ($matched && $i < $data_len)
-            {
-                if ($actual[$i] != $expected[$pos])         
-                {
+            while ($matched && $i < $data_len) {
+                if ($actual[$i] != $expected[$pos]) {
                     echo "Expected at [$pos]: $expected[$pos]\nActual at [$i]: $actual[$i]\n";
                     $matched = false;
-                    break;                                  
+                    break;
                 }
                 $pos += 2;
                 $i += $shift;
             }
         }
-    }   
+    }
 
-    if (! $matched)
-    {
+    if (! $matched) {
         echo "Data not matching on row $rowIndex column $colName\n";
     }
-    
+
     return $matched;
 }
 
-function CompareDataValue($colType, $rowIndex, $colName, $actual, $expected, $bConvert = true)
+function compareDataValue($colType, $rowIndex, $colName, $actual, $expected, $bConvert = true)
 {
-    if ($bConvert)
-    {
-        $actual = ConvertDataToString($colType, $actual);
+    if ($bConvert) {
+        $actual = convertDataToString($colType, $actual);
     }
-    $matched = CheckData($colType, $actual, $expected);
-    if (! $matched)
-    {
+    $matched = checkData($colType, $actual, $expected);
+    if (! $matched) {
         echo "Data corruption on row $rowIndex column $colName\n";
         echo "Expected: $expected\nActual: $actual\n";
     }
-    
+
     return $matched;
 }
 
-function CompareData($metadata, $rowIndex, $colIndex, $actual, $expected, $isStream, $bConvert = true)
+function compareData($metadata, $rowIndex, $colIndex, $actual, $expected, $isStream, $bConvert = true)
 {
-    if (is_null($actual))
-    {
-        if ($expected === "")
+    if (is_null($actual)) {
+        if ($expected === "") {
             return true;
-        else
+        } else {
             return false;
+        }
     }
 
     $colName = $metadata[$colIndex]['Name'];
     $colType = $metadata[$colIndex]['Type'];
 
-    if ($actual === false)
-    {
-        FatalError("Field $colName of row $rowIndex is missing\n");
+    if ($actual === false) {
+        fatalError("Field $colName of row $rowIndex is missing\n");
     }
-    if (! IsColumnUpdatable($colName))
-    {
+    if (! isColumnUpdatable($colName)) {
         return true;    // do nothing for non-IsColumnUpdatable fields
     }
 
-    if ($isStream)
-    {
-        return CompareDataStream($colType, $rowIndex, $colName, $actual, $expected);
-    }
-    else
-    {
-        return CompareDataValue($colType, $rowIndex, $colName, $actual, $expected, $bConvert);
+    if ($isStream) {
+        return compareDataStream($colType, $rowIndex, $colName, $actual, $expected);
+    } else {
+        return compareDataValue($colType, $rowIndex, $colName, $actual, $expected, $bConvert);
     }
 }
 
-function CompareLOBToFile($rowIndex, $colType, $colName, $actual, $filename, $readStream)
+function compareLOBToFile($rowIndex, $colType, $colName, $actual, $filename, $readStream)
 {
-    $IsBinaryType = IsBinaryType($colType);
+    $IsBinaryType = isBinaryType($colType);
     $mode = ($IsBinaryType)? "rb" : "r";
-    $file = fopen($filename, $mode);        
+    $file = fopen($filename, $mode);
 
     echo "...reading LOB data from '$filename'...";
 
     $matched = false;
-    if ($readStream)
-    {
-        $matched = CompareStreamToFile($rowIndex, $colName, $actual, $file, $colType);
-    } 
-    else
-    {
-        $matched = CompareStringToFile($rowIndex, $colName, $actual, $file, $IsBinaryType);
+    if ($readStream) {
+        $matched = compareStreamToFile($rowIndex, $colName, $actual, $file, $colType);
+    } else {
+        $matched = compareStringToFile($rowIndex, $colName, $actual, $file, $IsBinaryType);
     }
-    
+
     fclose($file);
-    
+
     return $matched;
 }
 
-function VerifyLOBData($metadata, $rowIndex, $colIndex, $lobColumn, $actual, $expected, $filename, $readStream)
+function verifyLOBData($metadata, $rowIndex, $colIndex, $lobColumn, $actual, $expected, $filename, $readStream)
 {
     $colName = $metadata[$colIndex]['Name'];
     $colType = $metadata[$colIndex]['Type'];
 
     $matched = false;
-    if ($readStream && IsStreamableType($colType))
-    {
-        if ($colIndex != $lobColumn)
-        {
+    if ($readStream && isStreamableType($colType)) {
+        if ($colIndex != $lobColumn) {
             echo "...reading binary stream...";
-            $matched = CompareBinaryStream($metadata, $rowIndex, $colIndex, $actual, $expected);
+            $matched = compareBinaryStream($metadata, $rowIndex, $colIndex, $actual, $expected);
+        } else {
+            $matched = compareLOBToFile($rowIndex, $colType, $colName, $actual, $filename, true);
         }
-        else 
-        {
-            $matched = CompareLOBToFile($rowIndex, $colType, $colName, $actual, $filename, true);
-        }
-    }
-    else
-    {
-        if ($colIndex != $lobColumn) 
-        {
+    } else {
+        if ($colIndex != $lobColumn) {
             echo "...reading string value...";
-            $matched = CompareDataValue($colType, $rowIndex, $colName, $actual, $expected, false);
-        }
-        else 
-        {
-            $matched = CompareLOBToFile($rowIndex, $colType, $colName, $actual, $filename, false);
+            $matched = compareDataValue($colType, $rowIndex, $colName, $actual, $expected, false);
+        } else {
+            $matched = compareLOBToFile($rowIndex, $colType, $colName, $actual, $filename, false);
         }
     }
-    
+
     return $matched;
 }
 
-function SimplifyDataArray($data, $metadata, $row)
+function simplifyDataArray($data, $metadata, $row)
 {
     $dataArray = array();
     $numFields = count($metadata);
 
     $skipCount = 0;
-    for ($j = 0; $j < $numFields; $j++)
-    {
+    for ($j = 0; $j < $numFields; $j++) {
         $colName = $metadata[$j]['Name'];
         $colType = $metadata[$j]['Type'];
 
-        if (!IsColumnUpdatable($colName))
-        {
+        if (!isColumnUpdatable($colName)) {
             $skipCount++;
             array_push($dataArray, "");
-        }
-        else 
-        {
+        } else {
             // only need the first element of each array
             $value = $data[$j - $skipCount][0];
-            if (is_a($value, 'DateTime'))
-            {
-                $value = date_format( $value, 'Y-m-d H:i:s' ); 
+            if (is_a($value, 'DateTime')) {
+                $value = date_format($value, 'Y-m-d H:i:s');
             }
 
             array_push($dataArray, $value);
         }
-    }   
-    
+    }
+
     return $dataArray;
 }
 
-function InsertDataToArray($query, $metadata, $row)
+function insertDataToArray($query, $metadata, $row)
 {
     $dataArray = array();
     $numFields = count($metadata);
 
     $skipCount = 0;
-    for ($j = 0; $j < $numFields; $j++)
-    {
+    for ($j = 0; $j < $numFields; $j++) {
         $colName = $metadata[$j]['Name'];
         $type = $metadata[$j]['Type'];
 
         $col = $j + 1;
-        if (!IsColumnUpdatable($colName))
-        {
+        if (!isColumnUpdatable($colName)) {
             $skipCount++;
             array_push($dataArray, "");
-        }
-        else 
-        {
-            $data = GetInsertDataByType($query, $type, $row, $col, $skipCount);
+        } else {
+            $data = getInsertDataByType($query, $type, $row, $col, $skipCount);
             array_push($dataArray, $data);
         }
-    }   
-    
+    }
+
     return $dataArray;
 }
 
-function GetInsertDataByType($query, $colType, $rowIndex, $colIndex, $skip)
+function getInsertDataByType($query, $colType, $rowIndex, $colIndex, $skip)
 {
     $data = strstr($query, "((");
     $pos = 1;
-    if ($data === false)
-    {
+    if ($data === false) {
         die("Failed to retrieve data on row $rowIndex");
     }
     $data = substr($data, 2);
-    
-    while ($pos < ($colIndex - $skip))
-    {
+
+    while ($pos < ($colIndex - $skip)) {
         $data = strstr($data, ", (");
         $pos++;
 
-        if ($data === false)
-        {
+        if ($data === false) {
             die("Failed to retrieve data on column $pos");
         }
         $data = substr($data, 3);
     }
-    
+
     // Is it's XML type, we can't use the closing bracket as the next delimiter
     // because a bracket can be part of the xml data, unless the data is null
     $str = ")";
     $pos = strpos($data, $str);
-    if ($pos === false)
-    {
+    if ($pos === false) {
         die("Failed to isolate data on row $rowIndex, column $pos");
     }
     $tmp = substr($data, 0, $pos);
-    if ((strcasecmp($tmp, "null") == 0) || strlen($tmp) == 0)
-    {
+    if ((strcasecmp($tmp, "null") == 0) || strlen($tmp) == 0) {
         $tmp = "";
-    }
-    else if (IsXmlType($colType))
-    {
+    } elseif (isXmlType($colType)) {
         $str = ">')";
         $pos = strpos($data, $str);
         $tmp = substr($data, 0, $pos + 2);
     }
-    
-    $data = $tmp;   
 
-    if (IsDataUnicode($colType, $data)) // this includes unicode data type and XML data that is in Unicode
-    {   // N'data'
+    $data = $tmp;
+
+    if (isDataUnicode($colType, $data)) { // this includes unicode data type and XML data that is in Unicode
+       // N'data'
         $data = substr($data, 2, strlen($data) - 3);
-    }
-    else if (IsLiteralType($colType))
-    {   // 'data'
+    } elseif (isLiteralType($colType)) {   // 'data'
         $data = substr($data, 1, strlen($data) - 2);
-    }
-    else if (IsBinaryType($colType))
-    {   // 0xdata
+    } elseif (isBinaryType($colType)) {   // 0xdata
         $data = substr($data, 2);
     }
 
     return (trim($data));
 }
 
-function IsStreamableType($type)
+function isStreamableType($type)
 {
-    switch ($type)
-    {
+    switch ($type) {
         case _SQL_CHAR:             // char
             return true;
         case _SQL_WCHAR:            // nchar
@@ -698,43 +607,41 @@ function IsStreamableType($type)
             return true;
         case _SQL_SS_XML:           // xml
             return true;
-        default:    
+        default:
             break;
     }
     return (false);
 }
 
-function IsNumericType($type)
+function isNumericType($type)
 {
-    switch ($type)
-    {
-        case _SQL_INTEGER :     // int
-            return true;        
-        case _SQL_TINYINT :     // tinyint
+    switch ($type) {
+        case _SQL_INTEGER:     // int
             return true;
-        case _SQL_SMALLINT :    // smallint
+        case _SQL_TINYINT:     // tinyint
             return true;
-        case _SQL_BIGINT :      // bigint
+        case _SQL_SMALLINT:    // smallint
             return true;
-        case _SQL_BIT :         // bit
+        case _SQL_BIGINT:      // bigint
             return true;
-        case _SQL_FLOAT :       // float
+        case _SQL_BIT:         // bit
             return true;
-        case _SQL_REAL :        // real
+        case _SQL_FLOAT:       // float
             return true;
-        case _SQL_DECIMAL :     // decimal
+        case _SQL_REAL:        // real
             return true;
-        case _SQL_NUMERIC :     // numeric, money, smallmoney
+        case _SQL_DECIMAL:     // decimal
+            return true;
+        case _SQL_NUMERIC:     // numeric, money, smallmoney
             return true;
         default:    break;
     }
     return (false);
 }
 
-function IsCharType($type)
+function isCharType($type)
 {
-    switch ($type)
-    {
+    switch ($type) {
         case _SQL_WCHAR:            // nchar
             return true;
         case _SQL_VARCHAR:          // varchar
@@ -747,32 +654,30 @@ function IsCharType($type)
             return true;
         case _SQL_SS_XML:           // xml
             return true;
-        default:    
+        default:
             break;
     }
     return (false);
 }
 
-function IsBinaryType($type)
+function isBinaryType($type)
 {
-    switch ($type)
-    {
+    switch ($type) {
         case _SQL_BINARY:           // binary
             return true;
         case _SQL_VARBINARY:        // varbinary
             return true;
         case _SQL_LONGVARBINARY:    // image
             return true;
-        default:    
+        default:
             break;
     }
     return (false);
 }
 
-function IsDateTimeType($type)
+function isDateTimeType($type)
 {
-    switch ($type)
-    {
+    switch ($type) {
         case _SQL_TYPE_TIMESTAMP:       // datetime, smalldatetime
             return true;
         case _SQL_TYPE_DATE:            // date
@@ -781,17 +686,18 @@ function IsDateTimeType($type)
             return true;
         case _SQL_SS_TIMESTAMPOFFSET:   // datetimeoffset
             return true;
-        default:    
+        default:
             break;
     }
     return (false);
 }
 
-function IsDataUnicode($colType, $data)
+function isDataUnicode($colType, $data)
 {
-    if (IsUnicodeType($colType))
+    if (isUnicodeType($colType)) {
         return true;
-        
+    }
+
     // This input string may be an XML string in unicode (i.e. // N'<xmldata>...</xmldata>')
     $letterN = 'N';
     $index = strpos($data, $letterN);
@@ -802,43 +708,41 @@ function IsDataUnicode($colType, $data)
     if ($index === 0) {
         return true;
     }
-    
+
     return false;
 }
 
-function IsUnicodeType($type)
+function isUnicodeType($type)
 {
-    switch ($type)
-    {
+    switch ($type) {
         case _SQL_WCHAR:            // nchar
             return true;
         case _SQL_WVARCHAR:         // nvarchar
             return true;
         case _SQL_WLONGVARCHAR:     // ntext
             return true;
-        default:    
+        default:
             break;
     }
     return (false);
 }
 
-function IsXmlType($type)
+function isXmlType($type)
 {
     return ($type == _SQL_SS_XML);
 }
 
-function IsColumnUpdatable($colName)
+function isColumnUpdatable($colName)
 {
     $pos = strpos($colName, "_");
     $type = substr($colName, $pos + 1);
-    
+
     return (strcasecmp($type, "timestamp") != 0);
 }
 
-function IsLiteralType($type)
+function isLiteralType($type)
 {
-    switch ($type)
-    {
+    switch ($type) {
         case _SQL_CHAR:                 // char
             return true;
         case _SQL_WCHAR:                // nchar
@@ -853,20 +757,18 @@ function IsLiteralType($type)
             return true;
         case _SQL_GUID:                 // uniqueidentifier
             return true;
-        case _SQL_TYPE_TIMESTAMP:       // datetime, smalldatetime 
+        case _SQL_TYPE_TIMESTAMP:       // datetime, smalldatetime
             return true;
         case _SQL_TYPE_DATE:            // date
             return true;
         case _SQL_SS_TIME2:             // time
             return true;
         case _SQL_SS_TIMESTAMPOFFSET:   // datetimeoffset
-            return true;            
+            return true;
         case _SQL_SS_XML:               // xml
             return true;
-        default:    
+        default:
             break;
     }
     return (false);
 }
-
-?>

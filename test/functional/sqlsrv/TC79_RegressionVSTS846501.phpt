@@ -9,62 +9,58 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function BugRepro()
 {
     include 'MsSetup.inc';
 
     $testName = "Regression VSTS 846501";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
     // empty parameter array
-    $s = sqlsrv_query( $conn1, "DROP TABLE test_bq" );
-    $s = sqlsrv_query( $conn1, "CREATE TABLE test_bq (id INT IDENTITY NOT NULL, test_varchar_max varchar(max))" );
-    if( $s === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $s = sqlsrv_query($conn1, "DROP TABLE test_bq");
+    $s = sqlsrv_query($conn1, "CREATE TABLE test_bq (id INT IDENTITY NOT NULL, test_varchar_max varchar(max))");
+    if ($s === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
-    $s = sqlsrv_query( $conn1, "CREATE CLUSTERED INDEX [idx_test_int] ON test_bq (id)" );
-    if( $s === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $s = sqlsrv_query($conn1, "CREATE CLUSTERED INDEX [idx_test_int] ON test_bq (id)");
+    if ($s === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
-    $s = sqlsrv_query( $conn1, "INSERT INTO test_bq (test_varchar_max) VALUES ('ABCD')" );
-    if( $s === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    $s = sqlsrv_query($conn1, "INSERT INTO test_bq (test_varchar_max) VALUES ('ABCD')");
+    if ($s === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
     $tsql = "select test_varchar_max from test_bq";
-    $result = sqlsrv_query( $conn1, $tsql, array(), array( "Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED ));
+    $result = sqlsrv_query($conn1, $tsql, array(), array( "Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED ));
 
-    while($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_BOTH))
-    {
+    while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_BOTH)) {
         print $row['test_varchar_max']."\n";
     }
-    
-    sqlsrv_query( $conn1, "DROP TABLE test_bq" );
-    EndTest($testName);
+
+    sqlsrv_query($conn1, "DROP TABLE test_bq");
+    endTest($testName);
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         BugRepro();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

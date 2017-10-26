@@ -7,8 +7,8 @@ A variation of the example in GitHub issue 330. A -1 value returned as numrow of
 <?php
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect() ?: FatalError("Failed to connect");
+// connect
+$conn = connect() ?: fatalError("Failed to connect");
 
 $stmt = sqlsrv_query($conn, "IF EXISTS (SELECT * FROM [sys].[objects] WHERE (name LIKE 'non_existent_table_name%') AND type in (N'U'))
     BEGIN

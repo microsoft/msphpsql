@@ -1,17 +1,17 @@
 --TEST--
 Unicode XML message using bindValue()
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
 // Connect
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
-$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$conn = connect();
 
 // Create a temporary table
 $tableName = '#testXMLBindValue';
+// XML encrypted is not supported, thus do not create table with encrypted columns
 $sql = "CREATE TABLE $tableName (ID INT PRIMARY KEY NOT NULL IDENTITY, XMLMessage XML)";
 $stmt = $conn->exec($sql);
 
@@ -29,8 +29,7 @@ $xml2 = '<?xml version="1.0" encoding="utf-16"?>
 </PTag>';
 
 // Insert data
-try 
-{
+try {
     $stmt = $conn->prepare("INSERT INTO $tableName (XMLMessage) VALUES (:msg)");
     $stmt->bindValue(':msg', $xml1);
     $stmt->execute();
@@ -38,19 +37,17 @@ try
     $stmt = $conn->prepare("INSERT INTO $tableName (XMLMessage) VALUES (?)");
     $stmt->bindValue(1, $xml2);
     $stmt->execute();
-}
-catch (PDOException $ex) {
+} catch (PDOException $ex) {
     echo "Error: " . $ex->getMessage();
 }
 
 // Get data
-$stmt = $conn->query("select * from $tableName");
-$row = $stmt->fetchAll(PDO::FETCH_ASSOC);  
-var_dump($row);  
- 
+$row = selectAll($conn, $tableName, "PDO::FETCH_ASSOC");
+var_dump($row);
+
 // Close connection
-$stmt=null;
-$conn=null;
+unset($stmt);
+unset($conn);
 
 print "Done"
 ?>

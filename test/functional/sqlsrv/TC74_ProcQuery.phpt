@@ -10,22 +10,20 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function ProcQuery($minType, $maxType)
 {
     include 'MsSetup.inc';
 
     $testName = "Stored Proc Query";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
-    for ($k = $minType; $k <= $maxType; $k++)
-    {
-        switch ($k)
-        {
+    for ($k = $minType; $k <= $maxType; $k++) {
+        switch ($k) {
         case 1: // TINYINT
             ExecProcQuery($conn1, $procName, "TINYINT", 11, 12, 23);
             break;
@@ -69,53 +67,47 @@ function ProcQuery($minType, $maxType)
         default:// default
             break;
         }
-    }   
+    }
 
     sqlsrv_close($conn1);
 
-    EndTest($testName);
-    
+    endTest($testName);
 }
 
 function ExecProcQuery($conn, $procName, $dataType, $inData1, $inData2, $outData)
 {
     $procArgs = "@p1 $dataType, @p2 $dataType, @p3 $dataType OUTPUT";
     $procCode = "SELECT @p3 = CONVERT($dataType, @p1 + @p2)";
-    CreateProc($conn, $procName, $procArgs, $procCode);
+    createProc($conn, $procName, $procArgs, $procCode);
 
     $callArgs = "?, ?, ?";
     $callResult = 0.0;
     $callValues = array($inData1, $inData2, array(&$callResult, SQLSRV_PARAM_OUT));
-    CallProc($conn, $procName, $callArgs, $callValues);
-    DropProc($conn, $procName);
+    callProc($conn, $procName, $callArgs, $callValues);
+    dropProc($conn, $procName);
 
     TraceData($dataType, "".$inData1." + ".$inData2." = ".$callResult);
-    if ($callResult != $outData)
-    {
+    if ($callResult != $outData) {
         die("Expected result for ".$dataType." was ".$outData);
     }
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         ProcQuery(1, 10);
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--
 Test "Stored Proc Query" completed successfully.
-

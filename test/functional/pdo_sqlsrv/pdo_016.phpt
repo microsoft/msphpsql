@@ -1,41 +1,44 @@
 --TEST--
 Bind integer parameters; allow fetch numeric types.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
-/* Sample numbers MIN_INT, MAX_INT */
-$sample = array(-2**31, 2**31-1);
+try {
+    /* Sample numbers MIN_INT, MAX_INT */
+    $sample = array(-2**31, 2**31-1);
 
-/* Connect */
-$conn_ops['pdo'][PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE] = TRUE;
-$conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd, $conn_ops['pdo']);
+    /* Connect */
+    $conn = connect('', array(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE => TRUE));
 
-// Create table
-$tableName = '#testPDO016';
-$sql = "CREATE TABLE $tableName (c1 INT, c2 INT)";
-$stmt = $conn->exec($sql);
+    // Create table
+    $tableName = 'testPDO016';
+    createTable($conn, $tableName, array("c1" => "int", "c2" => "int"));
 
-// Insert data using bind parameters
-$sql = "INSERT INTO $tableName VALUES (:num1, :num2)";
-$stmt = $conn->prepare($sql);
-$stmt->bindParam(':num1', $sample[0], PDO::PARAM_INT);
-$stmt->bindParam(':num2', $sample[1], PDO::PARAM_INT);
-$stmt->execute();
+    // Insert data using bind parameters
+    $sql = "INSERT INTO $tableName VALUES (:num1, :num2)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':num1', $sample[0], PDO::PARAM_INT);
+    $stmt->bindParam(':num2', $sample[1], PDO::PARAM_INT);
+    $stmt->execute();
 
-// Fetch, get data
-$sql = "SELECT * FROM $tableName";
-$stmt = $conn->query($sql);
-$row = $stmt->fetch(PDO::FETCH_NUM);
-var_dump ($row);
+    // Fetch, get data
+    $sql = "SELECT * FROM $tableName";
+    $stmt = $conn->query($sql);
+    $row = $stmt->fetch(PDO::FETCH_NUM);
+    var_dump($row);
 
-// Close connection
-$stmt = null;
-$conn = null;
+    // Close connection
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
 
-print "Done";
+    print "Done";
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 
 --EXPECT--

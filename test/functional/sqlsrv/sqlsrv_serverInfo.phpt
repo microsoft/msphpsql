@@ -3,22 +3,22 @@ Verify sqlsrv_server_info
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
-<?php 
-    sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-    sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
+<?php
+    sqlsrv_configure('WarningsReturnAsErrors', 0);
+    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-    require( 'MsCommon.inc' );
+    require_once('MsCommon.inc');
 
-    $conn = Connect();
+    $conn = connect();
 
-    if( !$conn ) {
-        FatalError( "Failed to connect." );
+    if (!$conn) {
+        fatalError("Failed to connect.");
     }
 
-    $server_info = sqlsrv_server_info( $conn );
-    var_dump( $server_info );
-    
-    sqlsrv_close( $conn );
+    $server_info = sqlsrv_server_info($conn);
+    var_dump($server_info);
+
+    sqlsrv_close($conn);
 
 ?>
 --EXPECTREGEX--

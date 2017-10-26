@@ -2,7 +2,7 @@
 Populate a test table with many fields and fetch them back using wrong data types
 --FILE--
 ﻿﻿<?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function PopulateTestTable($conn, $tableName)
 {
@@ -17,14 +17,11 @@ function FetchData($conn, $tableName, $phpType)
 {
     $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName");
     $result = sqlsrv_fetch($stmt);
-    if ($result)
-    {
+    if ($result) {
         $numFields = sqlsrv_num_fields($stmt);
-        for ($i = 0; $i < $numFields; $i++)
-        {
+        for ($i = 0; $i < $numFields; $i++) {
             $value = sqlsrv_get_field($stmt, $i, $phpType);
-            if ($value === false)
-            {
+            if ($value === false) {
                 echo "Failed in field $i\n";
             }
         }
@@ -37,36 +34,35 @@ function FetchData($conn, $tableName, $phpType)
 //--------------------------------------------------------------------
 function RunTest()
 {
-    StartTest("sqlsrv_fetch_invalid_types");
-    try
-    {
-        set_time_limit(0);  
-        sqlsrv_configure('WarningsReturnAsErrors', 1);  
-    
+    startTest("sqlsrv_fetch_invalid_types");
+    try {
+        set_time_limit(0);
+        sqlsrv_configure('WarningsReturnAsErrors', 1);
+
         echo "\nTest begins...\n";
 
         // Connect
-        $conn = Connect(array('CharacterSet'=>'UTF-8'));
-        if( !$conn ) { FatalError("Could not connect.\n"); }
-                     
+        $conn = connect(array('CharacterSet'=>'UTF-8'));
+        if (!$conn) {
+            fatalError("Could not connect.\n");
+        }
+
         $tableName = GetTempTableName();
         PopulateTestTable($conn, $tableName);
-        
+
         echo "Fetch all as integers...\n";
         FetchData($conn, $tableName, SQLSRV_PHPTYPE_INT);
         echo "Fetch all as floats...\n";
         FetchData($conn, $tableName, SQLSRV_PHPTYPE_FLOAT);
         echo "Fetch all as datetimes...\n";
-        FetchData($conn, $tableName, SQLSRV_PHPTYPE_DATETIME);        
-                
-        sqlsrv_close($conn);                   
-    }
-    catch (Exception $e)
-    {
+        FetchData($conn, $tableName, SQLSRV_PHPTYPE_DATETIME);
+
+        sqlsrv_close($conn);
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
     echo "\nDone\n";
-    EndTest("sqlsrv_fetch_invalid_types");
+    endTest("sqlsrv_fetch_invalid_types");
 }
 
 RunTest();

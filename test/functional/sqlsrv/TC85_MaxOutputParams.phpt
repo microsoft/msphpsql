@@ -8,27 +8,26 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function MaxOutputParamsTest($buffer, $phptype, $sqltype, $expected)
 {
-    include 'MsSetup.inc';
+    setup();
 
-    Setup();
+    $conn = connect();
 
-    $conn = Connect();
+    dropProc($conn, "EXEC_TEST");
 
-    DropProc($conn, "EXEC_TEST");
-
-    CreateProc(
+    createProc(
         $conn,
         "EXEC_TEST",
         "@OUT varchar(80) output",
         "SET NOCOUNT ON; select @OUT = '$expected'; return (0)
-    ");
+    "
+    );
 
     $outstr = $buffer;
-    
+
     $sql = "execute EXEC_TEST ?";
 
     $stmt = sqlsrv_prepare($conn, $sql, array(array( &$outstr, SQLSRV_PARAM_OUT, $phptype, $sqltype)));
@@ -37,8 +36,7 @@ function MaxOutputParamsTest($buffer, $phptype, $sqltype, $expected)
 
     echo "Expected: $expected Received: $outstr\n";
 
-    if ($outstr !== $expected)
-    {
+    if ($outstr !== $expected) {
         print_r(sqlsrv_errors(SQLSRV_ERR_ALL));
         return(-1);
     }
@@ -53,37 +51,35 @@ function MaxOutputParamsTest($buffer, $phptype, $sqltype, $expected)
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
     $failed = null;
 
     $testName = "PHP - Max Output Params Test";
 
-    StartTest($testName);
+    startTest($testName);
 
-    try
-    {
+    try {
         $failed |= MaxOutputParamsTest("ab", SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR('MAX'), "abc");
         $failed |= MaxOutputParamsTest(null, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR('10'), "abc");
         $failed |= MaxOutputParamsTest(null, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR('MAX'), "abc");
         $failed |= MaxOutputParamsTest(null, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARCHAR('MAX'), "abc");
         $failed |= MaxOutputParamsTest("abc", SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), null, "abc");
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 
-    if ($failed)
-        FatalError("Possible Regression: Value returned as VARCHAR(MAX) truncated");
+    if ($failed) {
+        fatalError("Possible Regression: Value returned as VARCHAR(MAX) truncated");
+    }
 
-    EndTest($testName);
+    endTest($testName);
 }
 
-Repro();
+repro();
 ?>
 --EXPECT--
 Expected: abc Received: abc

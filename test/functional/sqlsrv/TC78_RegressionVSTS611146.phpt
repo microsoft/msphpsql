@@ -9,65 +9,56 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function BugRepro()
 {
     include 'MsSetup.inc';
 
     $testName = "Regression VSTS 611146";
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
     // empty parameter array
-    $s = sqlsrv_query( $conn1, "select ?", array( array() ));
-    if( $s !== false ) 
-    {
-        die( "Should have failed." );
-    }
-    else
-    {
+    $s = sqlsrv_query($conn1, "select ?", array( array() ));
+    if ($s !== false) {
+        die("Should have failed.");
+    } else {
         $arr = sqlsrv_errors();
-        print_r( $arr[0][2] );
-        print_r( "\n" );
+        print_r($arr[0][2]);
+        print_r("\n");
     }
 
 
     // unknown direction
-    $s = sqlsrv_query( $conn1, "select ?", array( array( 1, 1000 ) ));
-    if( $s !== false ) 
-    {
-        die( "Should have failed." );
-    }
-    else
-    {
+    $s = sqlsrv_query($conn1, "select ?", array( array( 1, 1000 ) ));
+    if ($s !== false) {
+        die("Should have failed.");
+    } else {
         $arr = sqlsrv_errors();
-        print_r( $arr[0][2] );
-        print_r( "\n" );
+        print_r($arr[0][2]);
+        print_r("\n");
     }
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         BugRepro();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

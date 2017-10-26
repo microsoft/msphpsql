@@ -6,10 +6,10 @@ Error checking for failed conversion: VARCHAR value 'null' to data type INT
 
 require_once("MsCommon.inc");
 
-// Connect
-$conn = Connect();
-if( !$conn ) {
-    FatalError("Connection could not be established.\n");
+// connect
+$conn = connect();
+if (!$conn) {
+    fatalError("Connection could not be established.\n");
 }
 
 $tableName = GetTempTableName();

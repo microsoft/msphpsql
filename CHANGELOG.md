@@ -3,6 +3,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux 5.1.1-preview - 2017-10-20
+Updated PECL release packages. Here is the list of updates:
+
+### Fixed
+- PDO::quote with string containing ASCII NUL character (Issue [#538]( https://github.com/Microsoft/msphpsql/issues/538))
+- Appropriate error message is returned when calling nextRowset() or sqlsrv_next_result() on an empty result set (issue [#507 ](https://github.com/Microsoft/msphpsql/issues/507))
+- Decimal types with no decimals are correctly handled when AE is enabled (PR [#544](https://github.com/Microsoft/msphpsql/pull/544))
+- Search for installed ODBC drivers in Linux/macOS first before attempting to connect using the default ODBC driver 
+- BIGINT as an output param no longer results in value out of range exception when the returned value is larger than a maximum integer ([PR #567](https://github.com/Microsoft/msphpsql/pull/567))
+
+### Limitations
+- Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview)
+  - ODBC binaries for macOS available upon request
+- MSODBC 17 preview msodbcsql.msi only works for Windows10
+- [Always Encrypted limitations](https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation)
+- When using sqlsrv_query with Always Encrypted feature, SQL type has to be specified for each input (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
+- No support for inout / output params when using sql_variant type
+
+### Known Issues
+- Connection pooling on Linux doesn't work properly when using the MSODBC17 preview
+- When pooling is enabled in Linux or MAC
+  - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
 ## Windows/Linux 5.1.0-preview - 2017-09-15
 Updated PECL release packages. Here is the list of updates:
 

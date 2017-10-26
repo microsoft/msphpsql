@@ -4,7 +4,7 @@
 
 The Microsoft Drivers for PHP for SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PDO for accessing data in all editions of SQL Server 2008 R2 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
 
-This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7 with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
+This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.0.* or above with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming release(s) will contain more functionality, bug fixes, and more (see Plans below for more details).
 
 SQL Server Team
 
@@ -16,16 +16,18 @@ Thank you for taking time to take our February survey. Let us know how we are do
 <a href="https://www.surveymonkey.com/r/CZNSBYW"><img style="float: right;"  height="67" width="156" src="https://meetsstorenew.blob.core.windows.net/contianerhd/survey.png?st=2017-02-17T22%3A03%3A00Z&se=2100-02-18T22%3A03%3A00Z&sp=rl&sv=2015-12-11&sr=b&sig=DJSFoihBptSvO%2BjvWzwpHecf8o5yfAbJoD2qW5oB8tc%3D"></a>
 
 ### Status of Most Recent Builds
-| AppVeyor (Windows)      |Travis CI (Linux) |        Coverage Status  
-|-------------------------|--------------------------| ------------------
-| [![av-image][]][av-site]| [![tv-image][]][tv-site] |[![Coverage Status][]][coveralls-site]
+| AppVeyor (Windows)       | Travis CI (Linux)        | Coverage (Windows)                    | Coverage (Linux)                          |
+|--------------------------|--------------------------|---------------------------------------|-------------------------------------------|
+| [![av-image][]][av-site] | [![tv-image][]][tv-site] | [![Coverage Codecov][]][codecov-site] | [![Coverage Coveralls][]][coveralls-site] |
 
 [av-image]:  https://ci.appveyor.com/api/projects/status/xhp4nq9ouljnhxqf/branch/dev?svg=true
 [av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql-frhmr/branch/dev
 [tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=dev
 [tv-site]: https://travis-ci.org/Microsoft/msphpsql/
-[Coverage Status]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=dev
+[Coverage Coveralls]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=dev
 [coveralls-site]: https://coveralls.io/github/Microsoft/msphpsql?branch=dev
+[Coverage Codecov]: https://codecov.io/gh/microsoft/msphpsql/branch/dev/graph/badge.svg
+[codecov-site]: https://codecov.io/gh/microsoft/msphpsql
 
 ## Get Started
 
@@ -43,15 +45,15 @@ Thank you for taking time to take our February survey. Let us know how we are do
 
 ## Build (Windows)
 
-Note: if you prefer, you can use the pre-compiled binary found [HERE](https://github.com/Microsoft/msphpsql/releases)
+Note: if you prefer, you can use the pre-compiled binaries found in the [releases](https://github.com/Microsoft/msphpsql/releases)
 
 #### Prerequisites
 
-You must first be able to build PHP 7* without including these extensions.  For help with doing this, see the [official PHP website][phpbuild] for building your own PHP in Windows.
+You must first be able to build PHP 7.0.* or above without including these extensions.  For help with doing this, see the [official PHP website][phpbuild] for building your own PHP in Windows.
 
 #### Compile the drivers
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0 beta using Visual C++ 2017 v15.0. 
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0RC* using Visual C++ 2017 v15.0. 
 For details, please read the documentation and/or take a look at the sample [build scripts](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows).
 
 ## Install (Windows)

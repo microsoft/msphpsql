@@ -11,11 +11,11 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-require( 'MsCommon.inc' );
+require_once('MsCommon.inc');
 
 $conn = Connect();
-if( !$conn ) {
-    FatalError("Could not connect");
+if (!$conn) {
+    fatalError("Could not connect");
 }
 
 $tsql = <<<SQL
@@ -25,7 +25,7 @@ SELECT 'bit_true'=@bit_true, 'bit_false'=@bit_false, 'bit_cast_true'=@bit_cast_t
    'int_true'=@int_true, 'direct_true'=?, 'direct_false'=?,
    'direct_bit_cast_true'=CAST(? AS bit)
 SQL;
-$stmt = sqlsrv_query($conn,$tsql,[1,0,1,1,1,0,1]);
+$stmt = sqlsrv_query($conn, $tsql, [1,0,1,1,1,0,1]);
 $row = sqlsrv_fetch_object($stmt);
 
 var_dump($row);

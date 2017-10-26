@@ -1,33 +1,33 @@
 --TEST--
-Test with static cursor and select different rows in some random order 
+Test with static cursor and select different rows in some random order
 --FILE--
 ﻿﻿<?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function FetchRow_Query($conn)
 {
     $tableName = GetTempTableName();
-    
+
     $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varchar] varchar(10))");
     sqlsrv_free_stmt($stmt);
 
     // insert data
     $numRows = 10;
     InsertData($conn, $tableName, $numRows);
-    
-    // select table 
+
+    // select table
     $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName", array(), array('Scrollable' => 'static'));
 
     HasRows($stmt);
     $numRowsFetched = 0;
-    while ($obj = sqlsrv_fetch_object($stmt))
-    {
+    while ($obj = sqlsrv_fetch_object($stmt)) {
         echo $obj->c1_int . ", " . $obj->c2_varchar . "\n";
         $numRowsFetched++;
     }
-    
-    if ($numRowsFetched != $numRows)
+
+    if ($numRowsFetched != $numRows) {
         echo "Number of rows fetched $numRowsFetched is wrong! Expected $numRows\n";
+    }
 
     GetFirstRow($stmt);
     GetNextRow($stmt);
@@ -51,76 +51,78 @@ function InsertData($conn, $tableName, $numRows)
 {
     $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (c1_int, c2_varchar) VALUES (?, ?)", array(&$v1, &$v2));
 
-    for ($i = 0; $i < $numRows; $i++)
-    {
+    for ($i = 0; $i < $numRows; $i++) {
         $v1 = $i + 1;
         $v2 = "Row " . $v1;
 
-        sqlsrv_execute($stmt); 
+        sqlsrv_execute($stmt);
     }
 }
 
 function GetFirstRow($stmt)
 {
-    echo "\nfirst row: ";      
-    $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_FIRST);       
-    if ($result)
-    {
-        $field1 = sqlsrv_get_field( $stmt, 0 );  
-        $field2 = sqlsrv_get_field( $stmt, 1 );  
-        echo "$field1, $field2\n";     
+    echo "\nfirst row: ";
+    $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_FIRST);
+    if ($result) {
+        $field1 = sqlsrv_get_field($stmt, 0);
+        $field2 = sqlsrv_get_field($stmt, 1);
+        echo "$field1, $field2\n";
     }
 }
 
 function GetNextRow($stmt)
 {
-    echo "\nnext row: ";      
-    $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_NEXT);       
-    if ($result)
-    {
-        $field1 = sqlsrv_get_field( $stmt, 0 );  
-        $field2 = sqlsrv_get_field( $stmt, 1 );  
-        echo "$field1, $field2\n";     
+    echo "\nnext row: ";
+    $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_NEXT);
+    if ($result) {
+        $field1 = sqlsrv_get_field($stmt, 0);
+        $field2 = sqlsrv_get_field($stmt, 1);
+        echo "$field1, $field2\n";
     }
 }
 
 function GetPriorRow($stmt)
 {
-    echo "\nprior row: ";      
-    $obj = sqlsrv_fetch_object($stmt, null, null, SQLSRV_SCROLL_PRIOR);       
-    if ($obj)
+    echo "\nprior row: ";
+    $obj = sqlsrv_fetch_object($stmt, null, null, SQLSRV_SCROLL_PRIOR);
+    if ($obj) {
         echo $obj->c1_int . ", " . $obj->c2_varchar . "\n";
+    }
 }
 
 function GetLastRow($stmt)
 {
-    echo "\nlast row: ";      
+    echo "\nlast row: ";
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC, SQLSRV_SCROLL_LAST);
-    if ($row)
+    if ($row) {
         echo $row[0] . ", " . $row[1] . "\n";
+    }
 }
 
 function GetRelativeRow($stmt, $offset)
 {
-    echo "\nrow $offset from the current row: ";      
+    echo "\nrow $offset from the current row: ";
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC, SQLSRV_SCROLL_RELATIVE, $offset);
-    if ($row)
+    if ($row) {
         echo $row['c1_int'] . ", " . $row['c2_varchar'] . "\n";
+    }
 }
 
 function GetAbsoluteRow($stmt, $offset)
 {
-    echo "\nabsolute row with offset $offset: ";      
-    $obj = sqlsrv_fetch_object($stmt, null, null, SQLSRV_SCROLL_ABSOLUTE, $offset);       
-    if ($obj)
+    echo "\nabsolute row with offset $offset: ";
+    $obj = sqlsrv_fetch_object($stmt, null, null, SQLSRV_SCROLL_ABSOLUTE, $offset);
+    if ($obj) {
         echo $obj->c1_int . ", " . $obj->c2_varchar . "\n";
+    }
 }
 
 function HasRows($stmt)
 {
-    $rows = sqlsrv_has_rows( $stmt );  
-    if ( $rows != true ) 
-       echo "Should have rows!\n";  
+    $rows = sqlsrv_has_rows($stmt);
+    if ($rows != true) {
+        echo "Should have rows!\n";
+    }
 }
 
 //--------------------------------------------------------------------
@@ -129,28 +131,27 @@ function HasRows($stmt)
 //--------------------------------------------------------------------
 function RunTest()
 {
-    StartTest("sqlsrv_fetch_cursor_static_scroll");
-    try
-    {
-        set_time_limit(0);  
-        sqlsrv_configure('WarningsReturnAsErrors', 1);  
+    startTest("sqlsrv_fetch_cursor_static_scroll");
+    try {
+        set_time_limit(0);
+        sqlsrv_configure('WarningsReturnAsErrors', 1);
 
         echo "\nTest begins...\n";
 
         // Connect
-        $conn = Connect(); 
-        if( !$conn ) { FatalError("Could not connect.\n"); }
+        $conn = connect();
+        if (!$conn) {
+            fatalError("Could not connect.\n");
+        }
 
         FetchRow_Query($conn);
 
-        sqlsrv_close($conn);    
-    }
-    catch (Exception $e)
-    {
+        sqlsrv_close($conn);
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
     echo "\nDone\n";
-    EndTest("sqlsrv_fetch_cursor_static_scroll");
+    endTest("sqlsrv_fetch_cursor_static_scroll");
 }
 
 RunTest();

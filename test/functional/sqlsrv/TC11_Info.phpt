@@ -6,7 +6,7 @@ Loads the PHP driver to check whether it is operational or not by checking if SQ
 PHPT_EXEC=true
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function Info()
 {
@@ -14,17 +14,17 @@ function Info()
     phpinfo();
     $data = ob_get_contents();
     ob_clean();
-    
+
     return $data;
 }
 
 $testName = "Driver Loading";
-StartTest($testName);
+startTest($testName);
 
-preg_match ( '/sqlsrv support.*/', Info(), $matches );
-var_dump( $matches );
+preg_match('/sqlsrv support.*/', Info(), $matches);
+var_dump($matches);
 
-EndTest($testName);
+endTest($testName);
 
 ?>
 --EXPECT--

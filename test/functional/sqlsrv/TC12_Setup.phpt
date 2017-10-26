@@ -1,8 +1,8 @@
 --TEST--
-Driver Setup Test
+Driver setup Test
 --DESCRIPTION--
 Verifies the logging facility by checking the ability to set
-and retrieve the values of “LogSubsystem” and "LogSeverity”
+and retrieve the values of "LogSubsystem" and "LogSeverity"
 parameters.
 --ENV--
 PHPT_EXEC=true
@@ -10,51 +10,38 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
-function LoggingSetup()
+function loggingSetup()
 {
-    $testName = "Driver Logging Setup";
-    StartTest($testName);
+    $testName = "Driver Logging setup";
+    startTest($testName);
 
-    Configure('LogSubsystems', -1);
-    Configure('LogSubsystems', 1);
-    Configure('LogSubsystems', 2);
-    Configure('LogSubsystems', 4);
-    Configure('LogSubsystems', 8);
-    Configure('LogSubsystems', 0);
+    configure('LogSubsystems', -1);
+    configure('LogSubsystems', 1);
+    configure('LogSubsystems', 2);
+    configure('LogSubsystems', 4);
+    configure('LogSubsystems', 8);
+    configure('LogSubsystems', 0);
 
-    Configure('LogSeverity', -1);
-    Configure('LogSeverity', 1);
-    Configure('LogSeverity', 2);
-    Configure('LogSeverity', 4);
-    
-    Configure('LogSubsystems', SQLSRV_LOG_SYSTEM_OFF);
-    Configure('LogSeverity', SQLSRV_LOG_SEVERITY_ERROR);
+    configure('LogSeverity', -1);
+    configure('LogSeverity', 1);
+    configure('LogSeverity', 2);
+    configure('LogSeverity', 4);
 
-    EndTest($testName);
-}
+    configure('LogSubsystems', SQLSRV_LOG_SYSTEM_OFF);
+    configure('LogSeverity', SQLSRV_LOG_SEVERITY_ERROR);
 
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-    try
-    {
-        LoggingSetup();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
+    endTest($testName);
 }
 
 sqlsrv_configure('WarningsReturnAsError', 0);
-Repro();
+try {
+    loggingSetup();
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
 
 ?>
 --EXPECT--
-Test "Driver Logging Setup" completed successfully.
+Test "Driver Logging setup" completed successfully.

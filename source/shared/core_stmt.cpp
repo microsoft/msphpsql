@@ -342,7 +342,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
 // The sql type is given as a hint if the driver provides it. 
 
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
-                             _In_ SQLSRV_PHPTYPE php_out_type, _In_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
+                             _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
                              _Inout_ SQLSMALLINT decimal_digits TSRMLS_DC )
 {
     SQLSMALLINT c_type;
@@ -373,6 +373,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     }
     bool zval_was_null = ( Z_TYPE_P( param_z ) == IS_NULL );
     bool zval_was_bool = ( Z_TYPE_P( param_z ) == IS_TRUE || Z_TYPE_P( param_z ) == IS_FALSE );
+    bool zval_was_long = ( Z_TYPE_P( param_z ) == IS_LONG && php_out_type == SQLSRV_PHPTYPE_INT && (sql_type == SQL_BIGINT || sql_type == SQL_UNKNOWN_TYPE ));
     // if the user asks for for a specific type for input and output, make sure the data type we send matches the data we
     // type we expect back, since we can only send and receive the same type.  Anything can be converted to a string, so
     // we always let that match if they want a string back.
@@ -383,7 +384,16 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 if( zval_was_null || zval_was_bool ) {
                     convert_to_long( param_z );
                 }
-                match = Z_TYPE_P( param_z ) == IS_LONG;
+                if( zval_was_long ){
+                    convert_to_string( param_z );
+                    if ( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY ) {
+                        encoding = SQLSRV_ENCODING_SYSTEM;
+                    }
+                    match = Z_TYPE_P( param_z ) == IS_STRING;
+                }
+                else {
+                    match = Z_TYPE_P( param_z ) == IS_LONG;
+                }
                 break;
             case SQLSRV_PHPTYPE_FLOAT:
                 if( zval_was_null ) {
@@ -415,7 +425,15 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     if( direction == SQL_PARAM_OUTPUT ) {
         switch( php_out_type ) {
             case SQLSRV_PHPTYPE_INT:
-                convert_to_long( param_z );
+                if( zval_was_long ){
+                    convert_to_string( param_z );
+                    if ( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY ) {
+                        encoding = SQLSRV_ENCODING_SYSTEM;
+                    }
+                }
+                else {
+                    convert_to_long( param_z );
+                }
                 break;
             case SQLSRV_PHPTYPE_FLOAT:
                 convert_to_double( param_z );
@@ -440,6 +458,9 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
     if ( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE )) {
         ae_get_sql_type_info( stmt, param_num, direction, param_z, encoding, sql_type, column_size, decimal_digits TSRMLS_CC );
+        // change long to double if the sql type is decimal
+        if ( sql_type == SQL_DECIMAL && Z_TYPE_P( param_z ) == IS_LONG )
+            convert_to_double( param_z );
     }
     else {
         // if the sql type is unknown, then set the default based on the PHP type passed in
@@ -548,7 +569,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                                                    buffer, buffer_len TSRMLS_CC );
 
                 // save the parameter to be adjusted and/or converted after the results are processed
-				sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ));
+                sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ), zval_was_long );
 
                 save_output_param_for_later( stmt, output_param TSRMLS_CC );
 
@@ -1054,7 +1075,7 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
         CHECK_CUSTOM_ERROR( stmt->past_next_result_end, stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
             throw core::CoreException();
         }
-
+        
         close_active_stream( stmt TSRMLS_CC );
 
         //Clear column sql types and sql display sizes.
@@ -2123,6 +2144,15 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
             }
             else {
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
+            }
+            if ( output_param->is_long ) {
+                zval* value_z_temp = ( zval * )sqlsrv_malloc( sizeof( zval ));
+                ZVAL_COPY( value_z_temp, value_z );
+                convert_to_double( value_z_temp );
+                if ( Z_DVAL_P( value_z_temp ) > INT_MIN && Z_DVAL_P( value_z_temp ) < INT_MAX ) {
+                    convert_to_long( value_z );
+                }
+                sqlsrv_free( value_z_temp );
             }
         }
         break;

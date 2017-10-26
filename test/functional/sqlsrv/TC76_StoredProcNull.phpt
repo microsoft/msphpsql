@@ -8,7 +8,7 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 function StoredProc()
 {
@@ -18,10 +18,10 @@ function StoredProc()
     $data1 = "Microsoft SQL Server ";
     $data2 = "Driver for PHP";
 
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn1 = Connect();
+    setup();
+    $conn1 = connect();
 
     ExecProc($conn1, $procName, "VARCHAR(32)", SQLSRV_SQLTYPE_VARCHAR(32), "ABC");
     ExecProc($conn1, $procName, "FLOAT", SQLSRV_SQLTYPE_FLOAT, 3.2);
@@ -29,7 +29,7 @@ function StoredProc()
 
     sqlsrv_close($conn1);
 
-    EndTest($testName);
+    endTest($testName);
 }
 
 function ExecProc($conn, $procName, $sqlType, $sqlTypeEx, $initData)
@@ -41,33 +41,29 @@ function ExecProc($conn, $procName, $sqlType, $sqlTypeEx, $initData)
     $callArgs =  array(array(&$data, SQLSRV_PARAM_OUT, null, $sqlTypeEx));
 
 
-    CreateProc($conn, $procName, $procArgs, $procCode);
-    CallProc($conn, $procName, "?", $callArgs);
-    DropProc($conn, $procName);
+    createProc($conn, $procName, $procArgs, $procCode);
+    callProc($conn, $procName, "?", $callArgs);
+    dropProc($conn, $procName);
 
-    if ($data != null)
-    {
+    if ($data != null) {
         die("Data corruption: [$data] instead of null.");
     }
 }
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    try
-    {
+    try {
         StoredProc();
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }
 
-Repro();
+repro();
 
 ?>
 --EXPECT--

@@ -30,7 +30,7 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
 /**
  *  main function called by repro to set up the test, iterate through the given datatypes and test the output param.
@@ -42,39 +42,37 @@ function main($minType, $maxType)
     $testName = "BindParam - OutputParam";
     $tableName = "test_Datatypes_Output";
     $columnNames = array( "c1","c2" );
-    StartTest($testName);
+    startTest($testName);
 
-    Setup();
-    $conn = Connect();
-    
-    for ($k = $minType; $k <= $maxType; $k++)
-    {
-        if ($k == 18 || $k == 19)
-        {
-            // skip text and ntext types; not supported as output params 
+    setup();
+    $conn = connect();
+
+    for ($k = $minType; $k <= $maxType; $k++) {
+        if ($k == 18 || $k == 19) {
+            // skip text and ntext types; not supported as output params
             continue;
         }
         $sqlType = GetSqlType($k);
         // for each data type create a table with two columns, 1: dataType id 2: data type
         $dataType = "[$columnNames[0]] int, [$columnNames[1]] $sqlType";
-        CreateTableEx($conn, $tableName, $dataType);
-        
+        createTableEx($conn, $tableName, $dataType);
+
         // data to populate the table, false since we don't want to initialize a variable using this data.
         $data = GetData($k, false);
-        
+
         TraceData($sqlType, $data);
         $dataValues = array($k, $data);
-        
-        InsertRowNoOption( $conn, $tableName, $columnNames, $dataValues );
+
+        InsertRowNoOption($conn, $tableName, $columnNames, $dataValues);
 
         ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType);
     }
-    
-    DropTable($conn, $tableName, $k);
-    
+
+    dropTable($conn, $tableName, $k);
+
     sqlsrv_close($conn);
 
-    EndTest($testName); 
+    endTest($testName);
 }
 
 /**
@@ -88,29 +86,29 @@ function main($minType, $maxType)
  */
 function ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
 {
-        $phpDriverType = GetDriverType($k, strlen($data));
-        
-        $spArgs = "@p1 int, @p2 $sqlType OUTPUT";
-        
-        $spCode = "SET @p2 = ( SELECT c2 FROM $tableName WHERE c1 = @p1 )";
-        
-        $procName = "testBindOutSp";
-        CreateProc( $conn, $procName, $spArgs, $spCode );
-        
-        $callArgs = "?, ?";
-        //get data to initialize $callResult variable, this variable should be different than inserted data in the table
-        $initData = GetData( $k , true);
-        $callResult = $initData;
-        
-        $params = array( array( $k, SQLSRV_PARAM_IN ), 
+    $phpDriverType = GetDriverType($k, strlen($data));
+
+    $spArgs = "@p1 int, @p2 $sqlType OUTPUT";
+
+    $spCode = "SET @p2 = ( SELECT c2 FROM $tableName WHERE c1 = @p1 )";
+
+    $procName = "testBindOutSp";
+    createProc($conn, $procName, $spArgs, $spCode);
+
+    $callArgs = "?, ?";
+    //get data to initialize $callResult variable, this variable should be different than inserted data in the table
+    $initData = GetData($k, true);
+    $callResult = $initData;
+
+    $params = array( array( $k, SQLSRV_PARAM_IN ),
                     array( &$callResult, SQLSRV_PARAM_OUT, null, $phpDriverType ));
-    
-        CallProc($conn, $procName, $callArgs, $params);
-        // check if it is updated
-        if( $callResult === $initData ){
-            die("the result should be different");
-        }
-        DropProc($conn, $procName); 
+
+    callProc($conn, $procName, $callArgs, $params);
+    // check if it is updated
+    if ($callResult === $initData) {
+        die("the result should be different");
+    }
+    dropProc($conn, $procName);
 }
 
 /**
@@ -118,14 +116,14 @@ function ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
  *  @param $conn
  *  @param $tableName
  *  @param $columnNames array containig the column names
- *  @param $dataValues array of values to be insetred in the table 
+ *  @param $dataValues array of values to be insetred in the table
  */
-function InsertRowNoOption( $conn, $tableName, $columnNames, $dataValues )
+function InsertRowNoOption($conn, $tableName, $columnNames, $dataValues)
 {
-    $tsql = "INSERT INTO [$tableName] ($columnNames[0], $columnNames[1]) VALUES (?, ?)";    
-    $stmt = sqlsrv_query( $conn, $tsql, $dataValues );
-    if( false === $stmt ){
-        print_r( sqlsrv_errors() );
+    $tsql = "INSERT INTO [$tableName] ($columnNames[0], $columnNames[1]) VALUES (?, ?)";
+    $stmt = sqlsrv_query($conn, $tsql, $dataValues);
+    if (false === $stmt) {
+        print_r(sqlsrv_errors());
     }
 }
 
@@ -134,39 +132,37 @@ function InsertRowNoOption( $conn, $tableName, $columnNames, $dataValues )
  *  @param $k  data type id, this id of each datatype are the same as the one in the MsCommon.inc file
  *  @param $initData  boolean parameter, if true it means the returned data value is used to initialize a variable.
  */
-function GetData( $k , $initData)
+function GetData($k, $initData)
 {
-    if(false == $initData)
-    {
-        switch ($k)
-        {
+    if (false == $initData) {
+        switch ($k) {
             case 1:     // int
                 return(123456789);
-            
+
             case 2:     // tinyint
                 return(234);
-            
+
             case 3:     // smallint
                 return(5678);
 
             case 4:     // bigint
                 return(123456789987654321);
-                
+
             case 5:     // bit
                 return (1);
-                
+
             case 6:     // float
                 return (123.456);
-            
+
             case 7:     // real
                 return (789.012);
-                
+
             case 8:     // decimal(28,4)
             case 9:     // numeric(32,4)
             case 10:    // money
             case 11:    // smallmoney
                 return(987.0123);
-                
+
             case 12:    // char(512)
             case 13:    // varchar(512)
             case 14:    // varchar(max)
@@ -175,28 +171,24 @@ function GetData( $k , $initData)
             case 17:    // nvarchar(max)
             case 18:    // text
             case 19:    // ntext - deprecated
-                return("HelloWorld");   
-                
+                return("HelloWorld");
+
             case 20:    // binary(512)
             case 21:    // varbinary(512)
             case 22:    // varbinary(max)
                 return(0x0001e240); //123456
             default:
-                return(null);   
-        } // switch 
-        
-    }
-    else
-    {
-        switch ($k)
-        {
+                return(null);
+        } // switch
+    } else {
+        switch ($k) {
             case 1:     // int
             case 2:     // tinyint
             case 3:     // smallint
             case 4:     // bigint
             case 5:     // bit
                 return (0);
-                
+
             case 6:     // float
             case 7:     // real
             case 8:     // decimal(28,4)
@@ -204,7 +196,7 @@ function GetData( $k , $initData)
             case 10:    // money
             case 11:    // smallmoney
                 return(00.00);
-                
+
             case 12:    // char(512)
             case 13:    // varchar(512)
             case 14:    // varchar(max)
@@ -214,17 +206,16 @@ function GetData( $k , $initData)
             case 18:    // text
             case 19:    // ntext
                 return("default");
-                
+
             case 20:    // binary(512)
             case 21:    // varbinary(512)
             case 22:    // varbinary(max)
                 return(0x0);
-            
+
             default:
                 return(null);
         } // switch
     }
-    
 }
 
 //--------------------------------------------------------------------
@@ -233,12 +224,9 @@ function GetData( $k , $initData)
 //--------------------------------------------------------------------
 function Repro()
 {
-    try
-    {
+    try {
         main(1, 22);
-    }
-    catch (Exception $e)
-    {
+    } catch (Exception $e) {
         echo $e->getMessage();
     }
 }

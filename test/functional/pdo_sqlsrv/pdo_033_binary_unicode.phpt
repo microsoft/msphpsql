@@ -1,46 +1,46 @@
 --TEST--
 Insert binary HEX data then fetch it back as string
 --DESCRIPTION--
-Insert binary HEX data into an nvarchar field then read it back as UTF-8 string 
+Insert binary HEX data into an nvarchar field then read it back as UTF-8 string
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-try
-{
-    require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
+try {
     // Connect
-    $conn = new PDO("sqlsrv:server=$server; database=$databaseName", $uid, $pwd);
+    $conn = connect();
 
     // Create table
-    $tableName = '#pdo_033test';
-    $sql = "CREATE TABLE $tableName (c1 NVARCHAR(100))";
-    $stmt = $conn->exec($sql);
+    $tableName = 'pdo_033test';
+    createTable($conn, $tableName, array("c1" => "nvarchar(100)"));
 
-    $input = pack( "H*", '49006427500048005000' );  // I'LOVE_SYMBOL'PHP
+    $input = pack("H*", '49006427500048005000');  // I'LOVE_SYMBOL'PHP
+    $result;
+    $stmt = insertRow($conn, $tableName, array("c1" => new BindParamOp(1, $input, "PDO::PARAM_STR", 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam", $result);
 
-    $stmt = $conn->prepare("INSERT INTO $tableName (c1) VALUES (?)");
-    $stmt->bindParam(1, $input, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
-    $result = $stmt->execute();
-    if (! $result)
+    if (!$result) {
         echo "Failed to insert!\n";
+        dropTable($conn, $tableName);
+        unset($stmt);
+        unset($conn);
+        exit;
+    }
 
     $stmt = $conn->query("SELECT * FROM $tableName");
     $utf8 = $stmt->fetchColumn();
 
-    echo "\n". $utf8 ."\n";
+    echo "$utf8\n";
 
-    $stmt = null;
-    $conn = null;
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
 }
-catch (Exception $e)
-{
-    echo $e->getMessage();
-}
-    
+
 print "Done";
-
 ?>
 
 --EXPECT--

@@ -1,47 +1,58 @@
 --TEST--
 Test the PDO::exec() method.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-  
-require_once 'MsCommon.inc';
-   
-try 
-{         
+require_once("MsCommon_mid-refactor.inc");
+
+try {
     $db = connect();
-    
-    $sql = "CREATE TABLE #tmp_table(id INT NOT NULL PRIMARY KEY, val VARCHAR(10))";
-    $numRows = $db->exec($sql);
-    if($numRows === false)
-    {
-        die("Create table failed\n");
+
+    $tbname = "tmp_table";
+    $numRows = createTable($db, $tbname, array( new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "val" => "varchar(10)"));
+    var_dump($numRows);
+
+    if (!isColEncrypted()) {
+        $sql = "INSERT INTO $tbname VALUES(1, 'A')";
+        $numRows = $db->exec($sql);
+        var_dump($numRows);
+
+        $sql = "INSERT INTO $tbname VALUES(2, 'B')";
+        $numRows = $db->exec($sql);
+        var_dump($numRows);
+
+        $numRows = $db->exec("UPDATE $tbname SET val = 'X' WHERE id > 0");
+        var_dump($numRows);
+    } else {
+        // cannot use exec for insertion and update with Always Encrypted
+        $stmt = insertRow($db, $tbname, array( "id" => 1, "val" => "A" ));
+        $numRows = $stmt->rowCount();
+        var_dump($numRows);
+
+        $stmt = insertRow($db, $tbname, array( "id" => 2, "val" => "B" ));
+        $numRows = $stmt->rowCount();
+        var_dump($numRows);
+
+        // greater or less than operator is not support for encrypted columns
+        $sql = "UPDATE $tbname SET val = ?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(array( "X" ));
+        $numRows = $stmt->rowCount();
+        var_dump($numRows);
     }
+
+    $numRows = $db->exec("DELETE FROM $tbname");
     var_dump($numRows);
 
-    $sql = "INSERT INTO #tmp_table VALUES(1, 'A')";
-    $numRows = $db->exec($sql);
-    var_dump($numRows);
-
-    $sql = "INSERT INTO #tmp_table VALUES(2, 'B')";
-    $numRows = $db->exec($sql);
-    var_dump($numRows);
-
-    $numRows = $db->exec("UPDATE #tmp_table SET val = 'X' WHERE id > 0");
-    var_dump($numRows);
-    
-    $numRows = $db->exec("DELETE FROM #tmp_table");
-    var_dump($numRows);
-    
-}
-
-catch( PDOException $e ) {
-    var_dump( $e );
+    dropTable($db, $tbname);
+    unset($stmt);
+    unset($db);
+} catch (PDOException $e) {
+    var_dump($e);
     exit;
 }
-
-
-?> 
+?>
 --EXPECT--
 int(0)
 int(1)
