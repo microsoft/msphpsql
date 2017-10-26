@@ -39,7 +39,15 @@ function transaction($minType, $maxType)
             $sqlType = getSqlType($k);
             $driverType = getSqlsrvSqlType($k, $dataSize);
 
-            AE\createTable($conn1, $tableName, array(new AE\ColumnMeta($sqlType, $colName)));
+            if ($k == 10 || $k == 11) {
+                // do not encrypt money type -- ODBC restrictions
+                $noEncrypt = true;
+            } else {
+                $noEncrypt = false;
+            }
+            $columns = array(new AE\ColumnMeta($sqlType, $colName, null, true, $noEncrypt));
+            
+            AE\createTable($conn1, $tableName, $columns);
             createTransactionProc($conn1, $tableName, $colName, $procName, $sqlType);
 
             $noRows = execTransactionProc($conn1, $procName, $data, $driverType, true);

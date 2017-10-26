@@ -25,8 +25,15 @@ function paramQuery($minType, $maxType)
         if ($data != null) {
             $sqlType = getSqlType($k);
             $phpDriverType = getSqlsrvSqlType($k, strlen($data));
+            
+            if ($k == 10 || $k == 11) {
+                // do not encrypt money type -- ODBC restrictions
+                $noEncrypt = true;
+            } else {
+                $noEncrypt = false;
+            }
             $columns = array(new AE\ColumnMeta('int', 'c1'),
-                             new AE\ColumnMeta($sqlType, 'c2'));
+                             new AE\ColumnMeta($sqlType, 'c2', null, true, $noEncrypt));
             traceData($sqlType, $data);
 
             $res = null;

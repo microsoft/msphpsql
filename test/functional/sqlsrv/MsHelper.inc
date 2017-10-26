@@ -121,10 +121,9 @@ class BindParamOption
     }
 
     /**
-     * @param  mix  $var : variable to bind to the SQL statement parameter
      * @return array needed to bind parameter in sqlsrv_prepare
      */
-    public function bindParamArr($var)
+    public function bindParamArr()
     {
         // get the constant values of direction, phpType, and sqlType
         $direction = null;
@@ -182,7 +181,7 @@ class BindParamOption
                 echo $e->getMessage();
             }
         }
-        return array($var, $direction, $phpType, $sqlType);
+        return array($this->value, $direction, $phpType, $sqlType);
     }
 }
 
@@ -417,19 +416,19 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
         $params = array();
         foreach ($inputs as $key => $input) {
             if (is_object($input)) {
-                array_push($params, $input->bindParamArr($inputs[$key]));
+                array_push($params, $input->bindParamArr());
             } else {
                 array_push($params, $inputs[$key]);
             }
         }
-
+       
         // use prepare for inserts when AE is enabled
         if (isColEncrypted() || $api == INSERT_PREPARE_PARAMS) {
             $stmt = sqlsrv_prepare($conn, $insertSql, $params);
             if ($stmt) {
                 $r = sqlsrv_execute($stmt);
             } else {
-                fatalError("insertRow: failed to prepare insert query!");
+                fatalError("insertRow: failed to prepare insert query!");            
             }
         } else {
             $stmt = sqlsrv_query($conn, $insertSql, $params);
