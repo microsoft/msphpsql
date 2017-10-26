@@ -1146,9 +1146,19 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 
             // since the param isn't reliable, we don't do anything here
             case PDO_PARAM_EVT_ALLOC:
-                if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE && (param->param_type & PDO_PARAM_INPUT_OUTPUT )) {
-                    sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
-                    THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED );
+                {
+                    pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>(stmt->driver_data);
+                    if (driver_stmt->conn->ce_option.enabled) {
+                        if (driver_stmt->direct_query) {
+                            THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED);
+                        }
+                        if (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE) {
+                            THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED);
+                        }
+                    }
+                    if (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE && (param->param_type & PDO_PARAM_INPUT_OUTPUT)) {
+                        THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED);
+                    }
                 }
                 break;
             case PDO_PARAM_EVT_FREE:
