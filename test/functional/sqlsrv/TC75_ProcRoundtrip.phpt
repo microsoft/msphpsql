@@ -13,8 +13,6 @@ require_once('MsCommon.inc');
 
 function storedProcRoundtrip($minType, $maxType)
 {
-    // include 'MsSetup.inc';
-
     $testName = "Stored Proc Roundtrip";
     startTest($testName);
 
@@ -28,7 +26,7 @@ function storedProcRoundtrip($minType, $maxType)
 
     for ($i = $minType; $i <= $maxType; $i++) {
         $dataTypeIn = getSqlType($i);
-        $phpTypeIn = getDriverType($i, $dataSize);
+        $phpTypeIn = getSqlsrvSqlType($i, $dataSize);
 
         for ($j = $minType; $j <= $maxType; $j++) {
             $k = $j;
@@ -48,7 +46,7 @@ function storedProcRoundtrip($minType, $maxType)
 
             }
             $dataTypeOut = getSqlType($k);
-            $phpTypeOut = getDriverType($k, 512);
+            $phpTypeOut = getSqlsrvSqlType($k, 512);
             execProcRoundtrip($conn1, $procName, $dataTypeIn, $dataTypeOut, $phpTypeIn, $phpTypeOut, $data);
         }
     }

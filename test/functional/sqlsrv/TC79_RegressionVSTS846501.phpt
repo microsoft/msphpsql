@@ -20,7 +20,6 @@ function bugRepro()
     $conn1 = AE\connect();
     // empty parameter array
     $tableName = "test_bq";
-    dropTable($conn1, $tableName);
     $columns = array(new AE\ColumnMeta("int", "id", "IDENTITY NOT NULL"),
                      new AE\ColumnMeta("varchar(max)", "test_varchar_max"));
     $s = AE\createTable($conn1, $tableName, $columns);

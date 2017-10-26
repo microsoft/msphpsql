@@ -65,8 +65,8 @@ function fetchFields()
             }
         }
     }
-    if ($r1 = sqlsrv_next_result($stmt1) ||
-        $r2 = sqlsrv_next_result($stmt2)) {
+    if (sqlsrv_next_result($stmt1) ||
+        sqlsrv_next_result($stmt2)) {
         setUTF8Data(false);
         fatalError("No more results were expected", true);
     }

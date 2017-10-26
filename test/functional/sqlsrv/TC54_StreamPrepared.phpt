@@ -53,7 +53,7 @@ function sendStream($minType, $maxType)
         $fname2 = fopen($fileName, "r");
 
         $sqlType = getSqlType($k);
-        $phpDriverType = getDriverType($k, strlen($data));
+        $phpDriverType = getSqlsrvSqlType($k, strlen($data));
 
         $dataOptions = array(array($k, SQLSRV_PARAM_IN),
                      array(&$fname2, SQLSRV_PARAM_IN, null, $phpDriverType));

@@ -44,7 +44,6 @@ function deleteQuery()
             $cond = "(c1_int = ?)";
             $params = array($keyValue);
             $stmt3 = AE\selectFromTable($conn1, $tableName, $cond, $params);
-            
             $delRows = rowCount($stmt3);
             sqlsrv_free_stmt($stmt3);
 
@@ -60,7 +59,7 @@ function deleteQuery()
         $row += $numRows1;
     }
 
-    $stmt3 = AE\executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
+    $stmt3 = executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
     $numRows2 = sqlsrv_rows_affected($stmt3);
     sqlsrv_free_stmt($stmt3);
 

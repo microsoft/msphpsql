@@ -24,7 +24,7 @@ function paramQuery($minType, $maxType)
         $data = getSampleData($k);
         if ($data != null) {
             $sqlType = getSqlType($k);
-            $phpDriverType = getDriverType($k, strlen($data));
+            $phpDriverType = getSqlsrvSqlType($k, strlen($data));
             $columns = array(new AE\ColumnMeta('int', 'c1'),
                              new AE\ColumnMeta($sqlType, 'c2'));
             traceData($sqlType, $data);

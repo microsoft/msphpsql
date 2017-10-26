@@ -26,19 +26,20 @@ function simpleQuery()
     $conn1 = AE\connect();
 
     // just create an empty table
-    $stmt1 = sqlsrv_query($conn1, "CREATE TABLE $tableName (dummyColumn int)");
+    $columns = array(new AE\ColumnMeta('int', 'dummyColumn'));
+    AE\createTable($conn1, $tableName, $columns);
 
     trace("Executing SELECT query on $tableName ...");
-    $stmt1 = sqlsrv_query($conn1, "SELECT * FROM $tableName");
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     $rows = rowCount($stmt1);
     sqlsrv_free_stmt($stmt1);
     trace(" $rows rows retrieved.\n");
 
+    dropTable($conn1, $tableName);
+
     if ($rows > 0) {
         die("Table $tableName, expected to be empty, has $rows rows.");
     }
-
-    dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
 

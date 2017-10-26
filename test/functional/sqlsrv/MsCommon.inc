@@ -352,7 +352,7 @@ function createProc($conn, $procName, $procArgs, $procCode)
     dropProc($conn, $procName);
     $stmt = sqlsrv_query($conn, "CREATE PROC [$procName] ($procArgs) AS BEGIN $procCode END");
     if ($stmt === false) {
-        fatalError("Failed to create test procedure", true);
+        fatalError("Failed to create test procedure");
     }
     sqlsrv_free_stmt($stmt);
 }
@@ -376,7 +376,7 @@ function callProcEx($conn, $procName, $procPrefix, $procArgs, $procValues)
 {
     $stmt = sqlsrv_query($conn, "{ $procPrefix CALL [$procName] ($procArgs)}", $procValues);
     if ($stmt === false) {
-        fatalError("Failed to call test procedure", true);
+        fatalError("Failed to call test procedure");
     }
     return ($stmt);
 }

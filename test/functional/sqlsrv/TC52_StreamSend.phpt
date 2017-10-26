@@ -102,7 +102,7 @@ function sendStream($minType, $maxType, $atExec)
             $fname2 = fopen($fileName, "r");
 
             $sqlType = getSqlType($k);
-            $phpDriverType = getDriverType($k, strlen($data));
+            $phpDriverType = getSqlsrvSqlType($k, strlen($data));
             traceData($sqlType, $data);
 
             // create table

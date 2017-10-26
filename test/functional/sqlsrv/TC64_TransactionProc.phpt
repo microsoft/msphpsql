@@ -23,6 +23,7 @@ function transaction($minType, $maxType)
     $conn1 = AE\connect();
 
     $colName = "c1";
+    $dataSize = 512;
     for ($k = $minType; $k <= $maxType; $k++) {
         switch ($k) {
             case 20:    // binary
@@ -36,7 +37,7 @@ function transaction($minType, $maxType)
         }
         if ($data != null) {
             $sqlType = getSqlType($k);
-            $driverType = getDriverType($k);
+            $driverType = getSqlsrvSqlType($k, $dataSize);
 
             AE\createTable($conn1, $tableName, array(new AE\ColumnMeta($sqlType, $colName)));
             createTransactionProc($conn1, $tableName, $colName, $procName, $sqlType);

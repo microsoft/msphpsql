@@ -25,43 +25,43 @@ function procQuery($minType, $maxType)
     for ($k = $minType; $k <= $maxType; $k++) {
         switch ($k) {
         case 1: // TINYINT
-            execprocQuery($conn1, $procName, $k, "TINYINT", 11, 12, 23);
+            execProcQuery($conn1, $procName, $k, "TINYINT", 11, 12, 23);
             break;
 
         case 2: // SMALLINT
-            execprocQuery($conn1, $procName, $k, "SMALLINT", 4.3, 5.5, 9);
+            execProcQuery($conn1, $procName, $k, "SMALLINT", 4.3, 5.5, 9);
             break;
 
         case 3: // INT
-            execprocQuery($conn1, $procName, $k, "INT", 3.2, 4, 7);
+            execProcQuery($conn1, $procName, $k, "INT", 3.2, 4, 7);
             break;
 
         case 4: // BIGINT
-            execprocQuery($conn1, $procName, $k, "BIGINT", 5.2, 3.7, 8);
+            execProcQuery($conn1, $procName, $k, "BIGINT", 5.2, 3.7, 8);
             break;
 
         case 5: // FLOAT
-            execprocQuery($conn1, $procName, $k, "FLOAT", 2.5, 5.25, 7.75);
+            execProcQuery($conn1, $procName, $k, "FLOAT", 2.5, 5.25, 7.75);
             break;
 
         case 6: // REAL
-            execprocQuery($conn1, $procName, $k, "REAL", 3.4, 6.6, 10);
+            execProcQuery($conn1, $procName, $k, "REAL", 3.4, 6.6, 10);
             break;
 
         case 7: // DECIMAL
-            execprocQuery($conn1, $procName, $k, "DECIMAL", 2.1, 5.3, 7);
+            execProcQuery($conn1, $procName, $k, "DECIMAL", 2.1, 5.3, 7);
             break;
 
         case 8: // NUMERIC
-            execprocQuery($conn1, $procName, $k, "NUMERIC", 2.8, 5.4, 8);
+            execProcQuery($conn1, $procName, $k, "NUMERIC", 2.8, 5.4, 8);
             break;
 
         case 9: // SMALLMONEY
-            execprocQuery($conn1, $procName, $k, "SMALLMONEY", 10, 11.7, 21.7);
+            execProcQuery($conn1, $procName, $k, "SMALLMONEY", 10, 11.7, 21.7);
             break;
 
         case 10:// MONEY
-            execprocQuery($conn1, $procName, $k, "MONEY", 22.3, 16.1, 38.4);
+            execProcQuery($conn1, $procName, $k, "MONEY", 22.3, 16.1, 38.4);
             break;
 
         default:// default
@@ -74,7 +74,7 @@ function procQuery($minType, $maxType)
     endTest($testName);
 }
 
-function execprocQuery($conn, $procName, $type, $dataType, $inData1, $inData2, $outData)
+function execProcQuery($conn, $procName, $type, $dataType, $inData1, $inData2, $outData)
 {
     $procArgs = "@p1 $dataType, @p2 $dataType, @p3 $dataType OUTPUT";
     $procCode = "SELECT @p3 = CONVERT($dataType, @p1 + @p2)";

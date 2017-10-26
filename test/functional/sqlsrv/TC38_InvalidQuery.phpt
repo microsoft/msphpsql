@@ -27,7 +27,8 @@ function invalidQuery()
     $tableName = 'TC38test';
     $columns = array(new AE\ColumnMeta('int', 'c1'), 
                      new AE\ColumnMeta('int', 'c2'));
-                     
+    AE\createTable($conn1, $tableName, $columns);
+    
     // Invalid PHPTYPE parameter
     $stmt2 = sqlsrv_query(
         $conn1,

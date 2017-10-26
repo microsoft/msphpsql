@@ -19,9 +19,9 @@ function connectionClose()
     $conn1 = AE\connect();
     $tableName = 'TC24test';  
     
-    // Insert a couple of random rows
+    // Insert some random rows
     AE\createTestTable($conn1, $tableName);
-    AE\insertTestRows($conn1, $tableName, 2);
+    AE\insertTestRows($conn1, $tableName, 5);
 
     // Close connection twice
     for ($i = 0; $i < 2; $i++) {
@@ -39,7 +39,7 @@ function connectionClose()
 
     // Invalid Statement
     $conn2 = AE\connect();
-    $stmt2 = sqlsrv_query($conn2, "SELECT * FROM [$tableName]");
+    $stmt2 = AE\selectFromTable($conn2, $tableName);
     sqlsrv_close($conn2);
     if (sqlsrv_fetch($stmt2)) {
         die("Fetch should fail when connection is closed");

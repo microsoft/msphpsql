@@ -51,9 +51,11 @@ class ColumnMeta
         $this->options = $options;
 
         // first asssumes the column is not encryptable
-        $this->encryptable = false;
+        // $this->encryptable = false;
         if (!$noEncrypt) {
             $this->checkIfUnsupported();
+        } else {
+            $this->encryptable = false;
         }
     }
 
@@ -63,8 +65,6 @@ class ColumnMeta
      */
     protected function checkIfUnsupported()
     {
-        $this->encryptable = true;
-
         // Always Encrypted is not supported for columns with the IDENTITY property
         // or any column using one of the following datatypes:
         //
@@ -72,22 +72,14 @@ class ColumnMeta
         // user defined-types.
         // https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/always-encrypted-database-engine
 
+        $unsupported = array("xml", "timestamp", "image", "ntext", "text", "sql_variant", "hierarchyid", "geography", "geometry", "alias");
+        
         if (stripos($this->options, "identity") !== false) {
             $this->encryptable = false;
-        // } elseif (stripos($this->dataType, "money") !== false) {
-            // // this is a limitation in ODBC, including money and smallmoney
-            // $this->encryptable = false;
-        } elseif (!strcasecmp($this->dataType, "xml") ||
-            !strcasecmp($this->dataType, "timestamp") ||
-            !strcasecmp($this->dataType, "image") ||
-            !strcasecmp($this->dataType, "ntext") ||
-            !strcasecmp($this->dataType, "text") ||
-            !strcasecmp($this->dataType, "sql_variant") ||
-            !strcasecmp($this->dataType, "hierarchyid") ||
-            !strcasecmp($this->dataType, "geography") ||
-            !strcasecmp($this->dataType, "geometry") ||
-            !strcasecmp($this->dataType, "alias")) {
+        } elseif (in_array($this->dataType, $unsupported)) { 
             $this->encryptable = false;
+        } else {
+            $this->encryptable = true;
         }
     }
     /**
@@ -374,10 +366,10 @@ function connect($options = array(), $disableCE = false)
 
 /**
  * Create a table
- * @param  object  $conn : sqlsrv connection object
+ * @param  resource  $conn : sqlsrv connection resource
  * @param  string  $tbname : name of the table to be created
  * @param  array  $columnMetaArr : array of ColumnMeta objects, which contain metadata for one column
- * @return object sqlsrv statement
+ * @return resource sqlsrv statement resource
  */
 function createTable($conn, $tbname, $columnMetaArr)
 {
@@ -394,14 +386,14 @@ function createTable($conn, $tbname, $columnMetaArr)
 
 /**
  * Insert a row into a table
- * @param  object  $conn : sqlsrv connection object
+ * @param  resource  $conn : sqlsrv connection resource
  * @param  string  $tbname : name of the table for the row to be inserted
  * @param  array  $inputs : an associative array column name and its value, which may be a
  *                          literal or a BindParamOption object
  * @param  bool  $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
- * $param  string  $api : SQLSRV API used for executing the insert query
+ * $param  int  $api : SQLSRV API used for executing the insert query
  *                        accepted values: INSERT_QUERY, INSERT_PREPARE, INSERT_QUERY_PARAMS, INSERT_PREPARE_PARAMS
- * @return object sqlsrv statement object of the insert statement
+ * @return resource sqlsrv statement resource of the insert statement
  */
 function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
 {
@@ -425,7 +417,7 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
         $params = array();
         foreach ($inputs as $key => $input) {
             if (is_object($input)) {
-                array_push($params, $input->bindParamArr($input->value));
+                array_push($params, $input->bindParamArr($inputs[$key]));
             } else {
                 array_push($params, $inputs[$key]);
             }
@@ -436,6 +428,8 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
             $stmt = sqlsrv_prepare($conn, $insertSql, $params);
             if ($stmt) {
                 $r = sqlsrv_execute($stmt);
+            } else {
+                fatalError("insertRow: failed to prepare insert query!");
             }
         } else {
             $stmt = sqlsrv_query($conn, $insertSql, $params);
@@ -450,7 +444,7 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
  * @param  string  $tbname : name of the table
  * @param  string  $conds : string of condition(s) with placeholders, null by default
  * @param  array  $values : array of parameters, null by default
- * @return object sqlsrv statement upon success or false otherwise
+ * @return resource sqlsrv statement upon success or false otherwise
  */
 function selectFromTable($conn, $tbname, $conds = null, $values = null)
 {
@@ -462,22 +456,38 @@ function selectFromTable($conn, $tbname, $conds = null, $values = null)
  * Perform a query from a table with or without where condition(s)
  * @param  resource  $conn : connection resource
  * @param  string  $sql : T-SQL query
- * @param  string  $conds : string of condition(s) with placeholders, null by default
+ * @param  string  $conds : string of condition(s) possibly with placeholders, null by default
  * @param  array  $values : array of parameters, null by default
- * @return object sqlsrv statement upon success or false otherwise
+ * @return resource sqlsrv statement upon success or false otherwise
  */
 function executeQuery($conn, $sql, $conds = null, $values = null)
 {
-    // when AE is enabled, use sqlsrv_prepare() to handle fields with unlimited size
-    if (!isColEncrypted() && (is_null($conds) || empty($values))) {
+    if (!isColEncrypted()) {
+        if (!empty($values)) {
+            $tmpArray = explode('?', $conds);
+            $i = 0;
+            foreach ($values as $value) {
+                if (!is_numeric($value)) {
+                    $tmpArray[$i++] .= "'$value'";
+                } else {
+                    $tmpArray[$i++] .= "$value";
+                }
+            }
+            $clause = implode($tmpArray);
+            $sql = $sql . " WHERE $clause ";
+        } elseif (!empty($conds)) {
+            $sql = $sql . " WHERE $conds ";
+        }        
         $stmt = sqlsrv_query($conn, $sql);
     } else {
-        if (is_string($conds) && is_array($values)) {
+        // with AE enabled, use sqlsrv_prepare() in case there are 
+        // fields with unlimited size
+        if (empty($conds) || empty($values)) {
+            $stmt = sqlsrv_prepare($conn, $sql);
+        } else {
             $sql = $sql . " WHERE $conds ";
             $stmt = sqlsrv_prepare($conn, $sql, $values);
-        } else {
-            $stmt = sqlsrv_prepare($conn, $sql);
-        }
+        } 
         if ($stmt) {
             $r = sqlsrv_execute($stmt);
             if (!$r) {
@@ -494,7 +504,7 @@ function executeQuery($conn, $sql, $conds = null, $values = null)
 
 /**
  * Similar to executeQuery() but with query options
- * @return object sqlsrv statement upon success or false otherwise
+ * @return resource sqlsrv statement upon success or false otherwise
  */
 function executeQueryEx($conn, $sql, $options)
 {
@@ -544,11 +554,10 @@ function fetchAll($conn, $tbname)
  * all deterministic if AE is enabled
  * @param  resource  $conn : connection resource
  * @param  string  $tbname : name of the table to create
- * @return object sqlsrv statement
+ * @return resource sqlsrv statement
  */
 function createTestTable($conn, $tbname)
 {
-    
     $columns = array(new ColumnMeta('int', 'c1_int'),
                      new ColumnMeta('tinyint', 'c2_tinyint'),
                      new ColumnMeta('smallint', 'c3_smallint'),
@@ -634,7 +643,7 @@ function insertTestRowsByRange($conn, $tbame, $minIndex, $maxIndex)
  * @param  resource  $conn : connection resource
  * @param  string  $tbname : name of the table to create
  * @param  int  $index : the index of a certain row of test data
- * @return object sqlsrv statement upon success or false otherwise
+ * @return resource sqlsrv statement upon success or false otherwise
  */
 function insertTestRow($conn, $tbname, $index)
 {
@@ -651,7 +660,7 @@ function insertTestRow($conn, $tbname, $index)
     
     $result = null;
     if (isColEncrypted()) {
-        $stmt = insertRow($conn, $tbname, $inputArray, $result, INSERT_PREPARE_PARAMS);
+        $stmt = insertRow($conn, $tbname, $inputArray, $result);
     } else {
         // do not use the generic insertRow as the binary data needs some pre-processing
         // before calling sqlsrv_query()
@@ -716,7 +725,7 @@ function getInsertData($rowIndex, $colIndex)
     // get array of input values
     $inputArray = getInsertArray($rowIndex);
     if (empty($inputArray)) {
-        fatalError("getInsertData: failed to retrieve data at row $rowIndex and column $colIndex.\n");
+        fatalError("getInsertData: failed to retrieve data at row $rowIndex.\n");
     }
     $count = 0;
     foreach ($inputArray as $key => $value) {
@@ -773,7 +782,7 @@ function getSqlType($k)
     return ("udt");
 }
 
-function getDriverType($k, $dataSize = 512)
+function getSqlsrvSqlType($k, $dataSize)
 {
     switch ($k) {
         case 1:     return (SQLSRV_SQLTYPE_INT);
