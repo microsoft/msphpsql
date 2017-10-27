@@ -44,7 +44,6 @@ function fetchFields()
                 fatalError("Field $j of Row $i is missing");
             }
             $col = $j + 1;
-            $data = AE\getInsertData($startRow + $i, $col);
             if (isUpdatable($col)) {
                 // should check data even if $fld is null
                 $data = AE\getInsertData($startRow + $i, $col);

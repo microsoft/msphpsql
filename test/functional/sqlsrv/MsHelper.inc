@@ -50,8 +50,6 @@ class ColumnMeta
         $this->dataType = $dataType;
         $this->options = $options;
 
-        // first asssumes the column is not encryptable
-        // $this->encryptable = false;
         if (!$noEncrypt) {
             $this->checkIfUnsupported();
         } else {
@@ -462,6 +460,7 @@ function selectFromTable($conn, $tbname, $conds = null, $values = null)
 function executeQuery($conn, $sql, $conds = null, $values = null)
 {
     if (!isColEncrypted()) {
+        // if not encrypted replace placeholders ('?') with values, if array not empty
         if (!empty($values)) {
             $tmpArray = explode('?', $conds);
             $i = 0;
