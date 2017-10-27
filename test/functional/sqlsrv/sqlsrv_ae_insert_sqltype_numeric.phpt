@@ -45,14 +45,14 @@ foreach ($dataTypes as $dataType) {
 
         if (!AE\isColEncrypted()) {
             if ($r === false) {
-                $isCompatibleible = false;
+                $isCompatible = false;
                 foreach ($compatList[$dataType] as $compatType) {
                     if (stripos($compatType, $sqlType) !== false) {
-                        $isCompatibleible = true;
+                        $isCompatible = true;
                     }
                 }
                 // 22018 is the SQLSTATE for any incompatible conversion errors
-                if ($isCompatibleible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
+                if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
                     echo "$sqlType should be compatible with $dataType\n";
                     $success = false;
                 }
