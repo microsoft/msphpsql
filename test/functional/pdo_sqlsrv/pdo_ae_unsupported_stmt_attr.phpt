@@ -24,7 +24,7 @@ try {
     if (isColEncrypted()) {
         if ($error[0] != "IMSSP" ||
             $error[1] != -81 ||
-            $error[2] != "Connection with Column Encryption enabled do no support PDO::SQLSRV_ATTR_DIRECT_QUERY with binding parameters.") {
+            $error[2] != "Parameterized statement with attribute PDO::SQLSRV_ATTR_DIRECT_QUERY is not supported in a Column Encryption enabled Connection.") {
             echo "An unexpected exception was caught.\n";
             var_dump($error);
         }
@@ -43,7 +43,7 @@ try {
     if (isColEncrypted()) {
         if ($error[0] != "IMSSP" ||
             $error[1] != -82 ||
-            $error[2] != "Connection with Column Encryption enabled do no support PDO::ATTR_EMULATE_PREPARES with binding parameters.") {
+            $error[2] != "Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.") {
             echo "An unexpected exception was caught.\n";
             var_dump($error);
         }

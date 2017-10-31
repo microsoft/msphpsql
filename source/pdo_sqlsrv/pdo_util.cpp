@@ -411,11 +411,11 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED,
-        { IMSSP, (SQLCHAR*) "Connection with Column Encryption enabled do no support PDO::SQLSRV_ATTR_DIRECT_QUERY with binding parameters.", -81, false }
+        { IMSSP, (SQLCHAR*) "Parameterized statement with attribute PDO::SQLSRV_ATTR_DIRECT_QUERY is not supported in a Column Encryption enabled Connection.", -81, false }
     },
     {
         PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED,
-        { IMSSP, (SQLCHAR*) "Connection with Column Encryption enabled do no support PDO::ATTR_EMULATE_PREPARES with binding parameters.", -82, false }
+        { IMSSP, (SQLCHAR*) "Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.", -82, false }
     },
     { UINT_MAX, {} }
 };
