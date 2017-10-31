@@ -5,67 +5,70 @@ Verifies data retrieval with scrollable result sets.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function FetchRow($noRows)
+function fetchRow($noRows)
 {
-    include 'MsSetup.inc';
-
     $testName = "Fetch - Scrollable";
     startTest($testName);
 
     setup();
+    $tableName = 'TC48test';
     if (! isWindows()) {
-        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+        $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
     } else {
-        $conn1 = connect();
+        $conn1 = AE\connect();
     }
-    createTable($conn1, $tableName);
+    AE\createTestTable($conn1, $tableName);
 
-    $noRowsInserted = insertRows($conn1, $tableName, $noRows);
+    $noRowsInserted = AE\insertTestRows($conn1, $tableName, $noRows);
 
     $actual = null;
     $expected = null;
 
     // fetch array (to retrieve reference values)
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     $numFields = sqlsrv_num_fields($stmt1);
-    $expected = FetchArray($stmt1, $noRowsInserted, $numFields);
+    $expected = fetchArray($stmt1, $noRowsInserted, $numFields);
     sqlsrv_free_stmt($stmt1);
-
+    
     $query = "SELECT * FROM [$tableName]";
 
     // fetch object - FORWARD cursor
     $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
-    $stmt2 = selectQueryEx($conn1, $query, $options);
-    $actual = FetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_NEXT);
+    $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+    $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_NEXT);
     sqlsrv_free_stmt($stmt2);
-    CheckData($noRowsInserted, $numFields, $actual, $expected);
+    checkData($noRowsInserted, $numFields, $actual, $expected);
 
-    // fetch object - STATIC cursor
-    $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
-    $stmt2 = selectQueryEx($conn1, $query, $options);
-    $actual = FetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_RELATIVE);
-    sqlsrv_free_stmt($stmt2);
-    CheckData($noRowsInserted, $numFields, $actual, $expected);
+    // Always Encrypted feature does not support the following options
+    // https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation
+    if (!AE\isColEncrypted()) {
+        // fetch object - STATIC cursor
+        $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
+        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_RELATIVE);
+        sqlsrv_free_stmt($stmt2);
+        checkData($noRowsInserted, $numFields, $actual, $expected);
 
-    // fetch object - DYNAMIC cursor
-    $options = array('Scrollable' => SQLSRV_CURSOR_DYNAMIC);
-    $stmt2 = selectQueryEx($conn1, $query, $options);
-    $actual = FetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_ABSOLUTE);
-    sqlsrv_free_stmt($stmt2);
-    CheckData($noRowsInserted, $numFields, $actual, $expected);
+        // fetch object - DYNAMIC cursor
+        $options = array('Scrollable' => SQLSRV_CURSOR_DYNAMIC);
+        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_ABSOLUTE);
+        sqlsrv_free_stmt($stmt2);
+        checkData($noRowsInserted, $numFields, $actual, $expected);
 
-    // fetch object - KEYSET cursor
-    $options = array('Scrollable' => SQLSRV_CURSOR_KEYSET);
-    $stmt2 = selectQueryEx($conn1, $query, $options);
-    $actual = FetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_PRIOR, 0);
-    sqlsrv_free_stmt($stmt2);
-    CheckData($noRowsInserted, $numFields, $actual, $expected);
-
+        // fetch object - KEYSET cursor
+        $options = array('Scrollable' => SQLSRV_CURSOR_KEYSET);
+        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_PRIOR, 0);
+        sqlsrv_free_stmt($stmt2);
+        checkData($noRowsInserted, $numFields, $actual, $expected);
+    }
+    
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
@@ -73,8 +76,7 @@ function FetchRow($noRows)
     endTest($testName);
 }
 
-
-function FetchArray($stmt, $rows, $fields)
+function fetchArray($stmt, $rows, $fields)
 {
     $values = array();
     for ($i = 0; $i < $rows; $i++) {
@@ -87,8 +89,7 @@ function FetchArray($stmt, $rows, $fields)
     return ($values);
 }
 
-
-function FetchObject($stmt, $rows, $fields, $dir)
+function fetchObject($stmt, $rows, $fields, $dir)
 {
     trace("\tRetrieving $rows objects with $fields fields each ...\n");
     $values = array();
@@ -118,12 +119,12 @@ function FetchObject($stmt, $rows, $fields, $dir)
     return ($values);
 }
 
-function CheckData($rows, $fields, $actualValues, $expectedValues)
+function checkData($rows, $fields, $actualValues, $expectedValues)
 {
     if (($actualValues != null) && ($expectedValues != null)) {
         for ($i = 0; $i < $rows; $i++) {
             for ($j = 0; $j < $fields; $j++) {
-                $colName = GetColName($j + 1);
+                $colName = getColName($j + 1);
                 $actual = $actualValues[$i]->$colName;
                 $expected = $expectedValues[$i][$colName];
                 if ($actual != $expected) {
@@ -134,21 +135,11 @@ function CheckData($rows, $fields, $actualValues, $expectedValues)
     }
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        FetchRow(10);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    fetchRow(10);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

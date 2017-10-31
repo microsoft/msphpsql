@@ -6,7 +6,7 @@ Validates that a prepared statement can be successfully executed more than once.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -17,19 +17,18 @@ function prepareAndExecute($noPasses)
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $conn1 = AE\connect();
 
     $tableName = 'TC34test';
-    createTable($conn1, $tableName);
-
-    insertRows($conn1, $tableName, 1);
+    AE\createTestTable($conn1, $tableName);
+    AE\insertTestRows($conn1, $tableName, 1);
 
     $values = array();
     $fieldlVal = "";
 
     // Prepare reference values
     trace("Execute a direct SELECT query on $tableName ...");
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     $numFields1 = sqlsrv_num_fields($stmt1);
     sqlsrv_fetch($stmt1);
     for ($i = 0; $i < $numFields1; $i++) {
@@ -39,7 +38,7 @@ function prepareAndExecute($noPasses)
             $fieldVal = sqlsrv_get_field($stmt1, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         }
         if ($fieldVal === false) {
-            fatalError("Failed to retrieve field $i");
+            fatalError("Failed to retrieve field $i", true);
         }
         $values[$i] = $fieldVal;
     }

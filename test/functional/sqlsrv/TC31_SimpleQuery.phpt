@@ -9,13 +9,13 @@ Basic verification of query statements (via "sqlsrv_query"):
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
 require_once('MsCommon.inc');
 
-function SimpleQuery()
+function simpleQuery()
 {
     $testName = "Statement - Simple Query";
     startTest($testName);
@@ -23,43 +23,34 @@ function SimpleQuery()
     setup();
     $tableName = 'TC31test';
 
-    $conn1 = connect();
+    $conn1 = AE\connect();
 
-    createTable($conn1, $tableName);
+    // just create an empty table
+    $columns = array(new AE\ColumnMeta('int', 'dummyColumn'));
+    AE\createTable($conn1, $tableName, $columns);
 
     trace("Executing SELECT query on $tableName ...");
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     $rows = rowCount($stmt1);
-    ;
     sqlsrv_free_stmt($stmt1);
     trace(" $rows rows retrieved.\n");
+
+    dropTable($conn1, $tableName);
 
     if ($rows > 0) {
         die("Table $tableName, expected to be empty, has $rows rows.");
     }
-
-    dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
 
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        SimpleQuery();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    simpleQuery();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-
-repro();
 
 ?>
 --EXPECT--

@@ -7,61 +7,61 @@ Checks all numeric data types (i.e. 10 SQL types).
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function ProcQuery($minType, $maxType)
+function procQuery($minType, $maxType)
 {
-    include 'MsSetup.inc';
-
     $testName = "Stored Proc Query";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $tableName = 'TC74test';
+    $procName = "TC74test_proc";
+    $conn1 = AE\connect();
 
     for ($k = $minType; $k <= $maxType; $k++) {
         switch ($k) {
         case 1: // TINYINT
-            ExecProcQuery($conn1, $procName, "TINYINT", 11, 12, 23);
+            execProcQuery($conn1, $procName, $k, "TINYINT", 11, 12, 23);
             break;
 
         case 2: // SMALLINT
-            ExecProcQuery($conn1, $procName, "SMALLINT", 4.3, 5.5, 9);
+            execProcQuery($conn1, $procName, $k, "SMALLINT", 4.3, 5.5, 9);
             break;
 
         case 3: // INT
-            ExecProcQuery($conn1, $procName, "INT", 3.2, 4, 7);
+            execProcQuery($conn1, $procName, $k, "INT", 3.2, 4, 7);
             break;
 
         case 4: // BIGINT
-            ExecProcQuery($conn1, $procName, "BIGINT", 5.2, 3.7, 8);
+            execProcQuery($conn1, $procName, $k, "BIGINT", 5.2, 3.7, 8);
             break;
 
         case 5: // FLOAT
-            ExecProcQuery($conn1, $procName, "FLOAT", 2.5, 5.25, 7.75);
+            execProcQuery($conn1, $procName, $k, "FLOAT", 2.5, 5.25, 7.75);
             break;
 
         case 6: // REAL
-            ExecProcQuery($conn1, $procName, "REAL", 3.4, 6.6, 10);
+            execProcQuery($conn1, $procName, $k, "REAL", 3.4, 6.6, 10);
             break;
 
         case 7: // DECIMAL
-            ExecProcQuery($conn1, $procName, "DECIMAL", 2.1, 5.3, 7);
+            execProcQuery($conn1, $procName, $k, "DECIMAL", 2.1, 5.3, 7);
             break;
 
         case 8: // NUMERIC
-            ExecProcQuery($conn1, $procName, "NUMERIC", 2.8, 5.4, 8);
+            execProcQuery($conn1, $procName, $k, "NUMERIC", 2.8, 5.4, 8);
             break;
 
         case 9: // SMALLMONEY
-            ExecProcQuery($conn1, $procName, "SMALLMONEY", 10, 11.7, 21.7);
+            execProcQuery($conn1, $procName, $k, "SMALLMONEY", 10, 11.7, 21.7);
             break;
 
         case 10:// MONEY
-            ExecProcQuery($conn1, $procName, "MONEY", 22.3, 16.1, 38.4);
+            execProcQuery($conn1, $procName, $k, "MONEY", 22.3, 16.1, 38.4);
             break;
 
         default:// default
@@ -74,7 +74,7 @@ function ProcQuery($minType, $maxType)
     endTest($testName);
 }
 
-function ExecProcQuery($conn, $procName, $dataType, $inData1, $inData2, $outData)
+function execProcQuery($conn, $procName, $type, $dataType, $inData1, $inData2, $outData)
 {
     $procArgs = "@p1 $dataType, @p2 $dataType, @p3 $dataType OUTPUT";
     $procCode = "SELECT @p3 = CONVERT($dataType, @p1 + @p2)";
@@ -82,31 +82,41 @@ function ExecProcQuery($conn, $procName, $dataType, $inData1, $inData2, $outData
 
     $callArgs = "?, ?, ?";
     $callResult = 0.0;
-    $callValues = array($inData1, $inData2, array(&$callResult, SQLSRV_PARAM_OUT));
+    if (!AE\isColEncrypted()) {
+        $callValues = array($inData1, $inData2, array(&$callResult, SQLSRV_PARAM_OUT));
+    } else {
+        if ($type == 7 || $type == 8) { 
+            // DECIMAL or NUMERIC
+            $driverType = call_user_func("SQLSRV_SQLTYPE_$dataType", 2, 1);
+        } else {
+            $driverType = constant("SQLSRV_SQLTYPE_$dataType");
+        }
+        
+        if ($type >= 1 && $type < 5) { 
+            // for any kinds of integers convert the inputs to integers first
+            // AE is stricter with data types
+            $inData1 = floor($inData1);
+            $inData2 = floor($inData2);
+        }
+        $callValues = array(array($inData1, null, null, $driverType),
+                        array($inData2, null, null, $driverType),
+                        array(&$callResult, SQLSRV_PARAM_OUT, null, $driverType));
+    }
+    
     callProc($conn, $procName, $callArgs, $callValues);
     dropProc($conn, $procName);
 
-    TraceData($dataType, "".$inData1." + ".$inData2." = ".$callResult);
+    traceData($dataType, "".$inData1." + ".$inData2." = ".$callResult);
     if ($callResult != $outData) {
         die("Expected result for ".$dataType." was ".$outData);
     }
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        ProcQuery(1, 10);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    procQuery(1, 10);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

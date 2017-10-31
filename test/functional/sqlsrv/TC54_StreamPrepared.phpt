@@ -7,20 +7,20 @@ Validates that a warning message is issued when parameters are not passed by ref
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function SendStream($minType, $maxType)
+function sendStream($minType, $maxType)
 {
-    include 'MsSetup.inc';
-
     $testName = "Stream - Prepared Send";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $tableName = "TC54test";
+    $fileName = "TC53test.dat";
+    $conn1 = AE\connect();
 
     for ($k = $minType; $k <= $maxType; $k++) {
         switch ($k) {
@@ -52,30 +52,31 @@ function SendStream($minType, $maxType)
         fclose($fname1);
         $fname2 = fopen($fileName, "r");
 
-        $sqlType = GetSqlType($k);
-        $phpDriverType = GetDriverType($k, strlen($data));
+        $sqlType = getSqlType($k);
+        $phpDriverType = getSqlsrvSqlType($k, strlen($data));
 
-        $dataType = "[c1] int, [c2] $sqlType";
         $dataOptions = array(array($k, SQLSRV_PARAM_IN),
                      array(&$fname2, SQLSRV_PARAM_IN, null, $phpDriverType));
-        TraceData($sqlType, $data);
+        traceData($sqlType, $data);
 
-        createTableEx($conn1, $tableName, $dataType);
-        InsertData($conn1, $tableName, "c1, c2", "?, ?", $dataOptions);
-        CheckData($conn1, $tableName, 2, $data);
+        $columns = array(new AE\ColumnMeta('int', 'c1'),
+                         new AE\ColumnMeta($sqlType, 'c2'));
+        AE\createTable($conn1, $tableName, $columns);
+        insertData($conn1, $tableName, "c1, c2", "?, ?", $dataOptions);
+        checkData($conn1, $tableName, 2, $data);
 
         fclose($fname2);
     }
 
     dropTable($conn1, $tableName);
+    unlink($fileName);
 
     sqlsrv_close($conn1);
 
     endTest($testName);
 }
 
-
-function InsertData($conn, $tableName, $dataCols, $dataValues, $dataOptions)
+function insertData($conn, $tableName, $dataCols, $dataValues, $dataOptions)
 {
     $sql = "INSERT INTO [$tableName] ($dataCols) VALUES ($dataValues)";
     $stmt = sqlsrv_prepare($conn, $sql, $dataOptions);
@@ -95,10 +96,9 @@ function InsertData($conn, $tableName, $dataCols, $dataValues, $dataOptions)
     }
 }
 
-
-function CheckData($conn, $table, $cols, $expectedValue)
+function checkData($conn, $table, $cols, $expectedValue)
 {
-    $stmt = selectFromTable($conn, $table);
+    $stmt = AE\selectFromTable($conn, $table);
     if (!sqlsrv_fetch($stmt)) {
         fatalError("Table $tableName was not expected to be empty.");
     }
@@ -121,7 +121,7 @@ function CheckData($conn, $table, $cols, $expectedValue)
 function repro()
 {
     try {
-        SendStream(12, 23);
+        sendStream(12, 23);
     } catch (Exception $e) {
         echo $e->getMessage();
     }

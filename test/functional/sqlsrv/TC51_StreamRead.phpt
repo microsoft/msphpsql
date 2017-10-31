@@ -6,30 +6,29 @@ can be successfully retrieved as streams.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function StreamRead($noRows, $startRow)
+function streamRead($noRows, $startRow)
 {
-    include 'MsSetup.inc';
-
     $testName = "Stream - Read";
     startTest($testName);
 
     setup();
+    $tableName = 'TC51test';
     if (! isWindows()) {
-        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+        $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
-        $conn1 = connect();
+        $conn1 = AE\connect();
     }
 
-    createTable($conn1, $tableName);
-    insertRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
+    AE\createTestTable($conn1, $tableName);
+    AE\insertTestRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
-    $stmt1 = selectQuery($conn1, $query);
+    $stmt1 = AE\executeQuery($conn1, $query);
     $numFields = sqlsrv_num_fields($stmt1);
 
     for ($row = 1; $row <= $noRows; $row++) {
@@ -37,14 +36,12 @@ function StreamRead($noRows, $startRow)
             fatalError("Failed to fetch row ".$row);
         }
         trace("\nStreaming row $row:\n");
-        $skipCount = 0;
         for ($j = 0; $j < $numFields; $j++) {
             $col = $j + 1;
-            if (!IsUpdatable($col)) {
-                $skipCount++;
-            }
-            if (IsStreamable($col)) {
-                VerifyStream($stmt1, $startRow + $row - 1, $j, $skipCount);
+            if (isUpdatable($col)) {
+                if (isStreamable($col)) {
+                    verifyStream($stmt1, $startRow + $row - 1, $j);
+                }
             }
         }
     }
@@ -58,12 +55,12 @@ function StreamRead($noRows, $startRow)
     endTest($testName);
 }
 
-function VerifyStream($stmt, $row, $colIndex, $skip)
+function verifyStream($stmt, $row, $colIndex)
 {
     $col = $colIndex + 1;
-    if (IsStreamable($col)) {
-        $type = GetSqlType($col);
-        if (IsBinary($col)) {
+    if (isStreamable($col)) {
+        $type = getSqlType($col);
+        if (isBinary($col)) {
             $stream = sqlsrv_get_field($stmt, $colIndex, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
         } else {
             if (useUTF8Data()) {
@@ -81,24 +78,24 @@ function VerifyStream($stmt, $row, $colIndex, $skip)
                     $value .= fread($stream, 8192);
                 }
                 fclose($stream);
-                $data = getInsertData($row, $col, $skip);
-                if (!CheckData($col, $value, $data)) {
+                $data = AE\getInsertData($row, $col);
+                if (!checkData($col, $value, $data)) {
                     setUTF8Data(false);
                     trace("Data corruption on row $row column $col\n");
                     die("Data corruption on row $row column $col\n");
                 }
             }
-            TraceData($type, "".strlen($value)." bytes");
+            traceData($type, "".strlen($value)." bytes");
         }
     }
 }
 
 
-function CheckData($col, $actual, $expected)
+function checkData($col, $actual, $expected)
 {
     $success = true;
 
-    if (IsBinary($col)) {
+    if (isBinary($col)) {
         $actual = bin2hex($actual);
         if (strncasecmp($actual, $expected, strlen($expected)) != 0) {
             $success = false;
@@ -120,27 +117,17 @@ function CheckData($col, $actual, $expected)
     return ($success);
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    if (! isWindows()) {
-        setUTF8Data(true);
-    }
-
-    try {
-        StreamRead(20, 1);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-
-    setUTF8Data(false);
+if (! isWindows()) {
+    setUTF8Data(true);
 }
 
-repro();
+try {
+    streamRead(20, 1);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+
+setUTF8Data(false);
 
 ?>
 --EXPECT--

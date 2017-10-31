@@ -5,7 +5,7 @@ Test inserting nulls into nullable columns
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -18,12 +18,12 @@ function insertNullsTest($phptype, $sqltype)
 
     setup();
 
-    $conn = connect();
+    $conn = AE\connect();
 
     $tableName = 'TC86test';
     dropTable($conn, $tableName);
 
-    createTable($conn, $tableName);
+    AE\createTestTable($conn, $tableName);
 
     $stmt = sqlsrv_query($conn, "SELECT [TABLE_NAME],[COLUMN_NAME],[IS_NULLABLE] FROM [INFORMATION_SCHEMA].[COLUMNS] WHERE [TABLE_NAME] = '$tableName'");
 
