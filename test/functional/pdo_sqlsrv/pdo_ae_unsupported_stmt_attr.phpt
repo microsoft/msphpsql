@@ -1,5 +1,5 @@
 --TEST--
-Test emulate prepare utf8 encoding set at the statement level
+Test error from preparing a parameterized query with direct query or emulate prepare when Column Encryption is enabled 
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
