@@ -1,62 +1,55 @@
 --TEST--
 Test the PDOStatement::fetch() method with different fetch styles.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-  
-require_once 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
 
-function fetch_both( $conn )
+function fetchBoth($conn, $tbname)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );
+    $stmt = $conn->query("Select * from $tbname");
     $result = $stmt->fetch(PDO::FETCH_BOTH);
     var_dump($result);
     $stmt->closeCursor();
 }
 
-function fetch_assoc( $conn )
+function fetchAssoc($conn, $tbname)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );
+    $stmt = $conn->query("Select * from $tbname");
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     var_dump($result);
     $stmt->closeCursor();
 }
 
-function fetch_lazy( $conn )
+function fetchLazy($conn, $tbname)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from " . $table1 );
+    $stmt = $conn->query("Select * from $tbname");
     $result = $stmt->fetch(PDO::FETCH_LAZY);
     var_dump($result);
     $stmt->closeCursor();
 }
 
-function fetch_obj( $conn )
+function fetchObj($conn, $tbname)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );
+    $stmt = $conn->query("Select * from $tbname");
     $result = $stmt->fetch(PDO::FETCH_OBJ);
     var_dump($result);
     $stmt->closeCursor();
 }
 
-function fetch_num( $conn )
+function fetchNum($conn, $tbname)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );
+    $stmt = $conn->query("Select * from $tbname");
     $result = $stmt->fetch(PDO::FETCH_NUM);
     var_dump($result);
     $stmt->closeCursor();
-
 }
 
-function fetch_bound( $conn )
+function fetchBound($conn, $tbname)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );   
+    $stmt = $conn->query("Select * from $tbname");
     $stmt->bindColumn('IntCol', $IntCol);
     $stmt->bindColumn('CharCol', $CharCol);
     $stmt->bindColumn('NCharCol', $NCharCol);
@@ -66,8 +59,7 @@ function fetch_bound( $conn )
     $stmt->bindColumn('FloatCol', $FloatCol);
     $stmt->bindColumn('XmlCol', $XmlCol);
     $result = $stmt->fetch(PDO::FETCH_BOUND);
-    if (!$result)
-    {
+    if (!$result) {
         die("Error in FETCH_BOUND\n");
     }
     var_dump($IntCol);
@@ -81,73 +73,69 @@ function fetch_bound( $conn )
     $stmt->closeCursor();
 }
 
-function fetch_class( $conn )
+function fetchClass($conn, $tbname)
 {
-    global $table1;
-    global $table1_class;
-    $stmt = $conn->query( "Select * from ". $table1 );   
-    $stmt->setFetchMode(PDO::FETCH_CLASS, $table1_class);
+    global $mainTypesClass;
+    $stmt = $conn->query("Select * from $tbname");
+    $stmt->setFetchMode(PDO::FETCH_CLASS, $mainTypesClass);
     $result = $stmt->fetch(PDO::FETCH_CLASS);
-    $result->dumpAll(); 
+    $result->dumpAll();
     $stmt->closeCursor();
 }
 
-function fetch_into( $conn )
+function fetchInto($conn, $tbname)
 {
-    global $table1;
-    global $table1_class;
-    $stmt = $conn->query( "Select * from ". $table1 );   
-    $obj = new $table1_class;
+    global $mainTypesClass;
+    $stmt = $conn->query("Select * from $tbname");
+    $obj = new $mainTypesClass;
     $stmt->setFetchMode(PDO::FETCH_INTO, $obj);
     $result = $stmt->fetch(PDO::FETCH_INTO);
-    $obj->dumpAll();    
+    $obj->dumpAll();
     $stmt->closeCursor();
 }
 
-function fetch_invalid( $conn )
+function fetchInvalid($conn, $tbname)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );   
-    try
-    {
+    $stmt = $conn->query("Select * from $tbname");
+    try {
         $result = $stmt->fetch(PDO::FETCH_UNKNOWN);
-    }
-    catch(PDOException $err)
-    {
+    } catch (PDOException $err) {
         print_r($err);
-    }   
+    }
 }
 
-try 
-{      
+try {
     $db = connect();
-    create_and_insert_table1( $db );
+    $tbname = "PDO_MainTypes";
+    createAndInsertTableMainTypes($db, $tbname);
     echo "Test_1 : FETCH_BOTH :\n";
-    fetch_both($db);
+    fetchBoth($db, $tbname);
     echo "Test_2 : FETCH_ASSOC :\n";
-    fetch_assoc($db);
+    fetchAssoc($db, $tbname);
     echo "Test_3 : FETCH_LAZY :\n";
-    fetch_lazy($db);
+    fetchLazy($db, $tbname);
     echo "Test_4 : FETCH_OBJ :\n";
-    fetch_obj($db);
+    fetchObj($db, $tbname);
     echo "Test_5 : FETCH_NUM :\n";
-    fetch_num($db);
+    fetchNum($db, $tbname);
     echo "Test_6 : FETCH_BOUND :\n";
-    fetch_bound($db);
+    fetchBound($db, $tbname);
     echo "Test_7 : FETCH_CLASS :\n";
-    fetch_class($db);
+    fetchClass($db, $tbname);
     echo "Test_8 : FETCH_INTO :\n";
-    fetch_into($db);
+    fetchInto($db, $tbname);
     echo "Test_9 : FETCH_INVALID :\n";
-    fetch_invalid($db);
-}
-catch( PDOException $e ) {
-    var_dump( $e );
+    fetchInvalid($db, $tbname);
+
+    dropTable($db, $tbname);
+    unset($db);
+} catch (PDOException $e) {
+    var_dump($e);
     exit;
 }
 
 
-?>  
+?>
 
 --EXPECTF--
 Test_1 : FETCH_BOTH :
@@ -207,7 +195,7 @@ array(8) {
 Test_3 : FETCH_LAZY :
 object(PDORow)#%x (%x) {
   ["queryString"]=>
-  string(25) "Select * from PDO_Types_1"
+  string(27) "Select * from PDO_MainTypes"
   ["IntCol"]=>
   string(1) "1"
   ["CharCol"]=>
@@ -294,6 +282,6 @@ Test_9 : FETCH_INVALID :
 
 Fatal error: Uncaught Error: Undefined class constant 'FETCH_UNKNOWN' in %s:%x
 Stack trace:
-#0 %s: fetch_invalid(Object(PDO))
+#0 %s: fetchInvalid(Object(PDO), 'PDO_MainTypes')
 #1 {main}
   thrown in %s on line %x

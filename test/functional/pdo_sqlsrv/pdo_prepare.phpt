@@ -3,94 +3,84 @@ Test the PDO::prepare() method.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
 
-require 'MsSetup.inc';
-require_once 'MsCommon.inc';
-
-try
-{
+try {
     $db = connect();
-    $db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-        
+    $tbname = "PDO_MainTypes";
+    createAndInsertTableMainTypes($db, $tbname);
+
     // Test_1 : Test with no parameters
     echo "Test_1 : Test with no parameters :\n";
-    $stmt = $db->prepare('select * from ' . $table1);
-    if(!$stmt->execute())
-    {
+    $stmt = $db->prepare("select * from $tbname");
+    if (!$stmt->execute()) {
         die("Test_1 failed.");
     }
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    var_dump($result);  
+    var_dump($result);
 
     // Test_2 : Test with indexed parameters
     echo "Test_2 : Test with indexed parameters :\n";
-    $stmt = $db->prepare('select IntCol, CharCol from ' . $table1 . ' where IntCol = ? and CharCol = ?');   
-    if(!$stmt->execute(array(1, 'STRINGCOL1')))
-    {
+    $stmt = $db->prepare("select IntCol, CharCol from $tbname where IntCol = ? and CharCol = ?");
+    if (!$stmt->execute(array(1, 'STRINGCOL1'))) {
         die("Test_2 failed.");
     }
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    var_dump($result);  
+    var_dump($result);
 
     // Test_3 : Test with named parameters
     echo "Test_3 : Test with named parameters :\n";
     $IntColVal = 2;
     $CharColVal = 'STRINGCOL2';
-    $stmt = $db->prepare('select IntCol, CharCol from ' . $table1 . ' where IntCol = :IntColVal and CharCol = :CharColVal');    
-    if(!$stmt->execute(array(':IntColVal' => $IntColVal, ':CharColVal' => $CharColVal)))
-    {
+    $stmt = $db->prepare("select IntCol, CharCol from $tbname where IntCol = :IntColVal and CharCol = :CharColVal");
+    if (!$stmt->execute(array(':IntColVal' => $IntColVal, ':CharColVal' => $CharColVal))) {
         die("Test_3 failed.");
     }
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    var_dump($result);  
+    var_dump($result);
 
     // Test_4: Test single prepare, multiple execution with indexed parameters
     echo "Test_4 : Test single prepare, multiple execution with indexed parameters :\n";
     $IntColVal = 1;
-    $stmt = $db->prepare('select IntCol from ' . $table1 . ' where IntCol = ?');    
+    $stmt = $db->prepare("select IntCol from $tbname where IntCol = ?");
     $stmt->bindParam(1, $IntColVal);
-    if(!$stmt->execute())
-    {
+    if (!$stmt->execute()) {
         die("Test_4 failed.");
     }
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    var_dump($result);  
+    var_dump($result);
 
     // Execute the stmt again
     $IntColVal = 2;
-    if(!$stmt->execute())
-    {
+    if (!$stmt->execute()) {
         die("Test_4 failed.");
     }
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    var_dump($result);  
+    var_dump($result);
 
     // Test_5: Test single prepare, multiple execution with named parameters
     echo "Test_5 : Test single prepare, multiple execution with named parameters :\n";
     $IntColVal = 1;
-    $stmt = $db->prepare('select IntCol from ' . $table1 . ' where IntCol = :IntColVal');   
+    $stmt = $db->prepare("select IntCol from $tbname where IntCol = :IntColVal");
     $stmt->bindParam(':IntColVal', $IntColVal);
-    if(!$stmt->execute())
-    {
+    if (!$stmt->execute()) {
         die("Test_5 failed.");
     }
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    var_dump($result);  
+    var_dump($result);
 
     // Execute the stmt again
     $IntColVal = 2;
-    if(!$stmt->execute())
-    {
+    if (!$stmt->execute()) {
         die("Test_5 failed.");
     }
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    var_dump($result);      
-}
-catch(PDOException $err)
-{
+    var_dump($result);
+} catch (PDOException $err) {
     var_dump($err);
     exit();
 }

@@ -1,7 +1,7 @@
 --TEST--
 Test the TNIR keyword with enabled and disabled options and the MultiSubnetFailover keyword with true and false options
 --SKIPIF--
-
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 // The way SYN packets are sent from the host is different depending on the combination of the TNIR and MultiSubnetFailover values
@@ -12,23 +12,20 @@ Test the TNIR keyword with enabled and disabled options and the MultiSubnetFailo
 // TNIR is enabled by default
 // MultiSubnetFailover is disabled by default
 
-require_once("MsSetup.inc");
-$GLOBALS['uid'] = $uid;
-$GLOBALS['pwd'] = $pwd;
-$GLOBALS['server'] = $server;
+require_once("MsCommon_mid-refactor.inc");
 
-function test_tnir( $TNIRValue, $MSFValue ) {
+function test_tnir($TNIRValue, $MSFValue)
+{
     $MSFValueStr = ($MSFValue) ? 'true' : 'false';
-    $connectionString = "sqlsrv:Server=$GLOBALS[server]; TransparentNetworkIPResolution=$TNIRValue; MultiSubnetFailover=$MSFValueStr";
     try {
         $start = microtime(true);
-        $conn = new PDO($connectionString, $GLOBALS['uid'], $GLOBALS['pwd'], array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+        $conn = connect("TransparentNetworkIPResolution=$TNIRValue; MultiSubnetFailover=$MSFValueStr;");
+
         echo "Connection successful with TNIR $TNIRValue and MultiSubnetFailover $MSFValueStr.\n";
         $connect_time = round(microtime(true) - $start, 2);
         echo "Time to connect is $connect_time sec.\n\n";
-        $conn = NULL;
-    }
-    catch(PDOException $e) {
+        unset($conn);
+    } catch (PDOException $e) {
         echo "Connection failed with TNIR $TNIRValue and MultiSubnetFailover $MSFValueStr.\n";
         print_r($e->errorInfo);
     }

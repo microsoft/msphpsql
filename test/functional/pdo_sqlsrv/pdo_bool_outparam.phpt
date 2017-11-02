@@ -14,6 +14,7 @@ createTable($conn, $tbname, array("c1_bool" => "int"));
 
 // Create a Stored Procedure
 $spname = "selectBool";
+dropProc($conn, $spname);
 $spSql = "CREATE PROCEDURE $spname (@c1_bool int OUTPUT) AS
           SELECT @c1_bool = c1_bool FROM $tbname";
 $conn->query($spSql);

@@ -183,9 +183,10 @@ function getDefaultColName($dataType)
  * @param  array  $inputs : an associative array column name and its value; value may be a literal value or a ColumnMeta object
  * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
  *                          for creating table with datatypes not support for encryption
+ * @param  string  $tableOption : table options appended to the end of a create table statement
  * @return int reporting the number of rows affected (should always be 0 for creating table)
  */
-function createTable($conn, $tbname, $columnMetaArr, $disableCE = false)
+function createTable($conn, $tbname, $columnMetaArr, $tableOption = '', $disableCE = false)
 {
     try {
         dropTable($conn, $tbname);
@@ -202,7 +203,7 @@ function createTable($conn, $tbname, $columnMetaArr, $disableCE = false)
             }
         }
         $colDef = rtrim($colDef, ", ");
-        $createSql = "CREATE TABLE $tbname ($colDef)";
+        $createSql = "CREATE TABLE $tbname ($colDef) $tableOption";
         $numRows = $conn->exec($createSql);
         return $numRows;
     } catch (PDOException $e) {
@@ -234,7 +235,7 @@ class BindParamOp
         if (in_array($pdoType, $pdoParams)) {
             $this->pdoType = $pdoType;
         } else {
-            prinft("BindParamOp construct: The pdoType provided must be one of PDO::PARAM_BOOL, PDO::PARAM_NULL, PDO::PARAM_INT, PDO::PARAM_STR, or PDO::PARAM_LOB.\n");
+            printf("BindParamOp construct: The pdoType provided must be one of PDO::PARAM_BOOL, PDO::PARAM_NULL, PDO::PARAM_INT, PDO::PARAM_STR, or PDO::PARAM_LOB.\n");
             exit;
         }
 
@@ -1366,7 +1367,7 @@ function CreateTableEx($conn, $tableName, $dataType)
 {
     Trace("Creating table $tableName ...");
     $tsql = "CREATE TABLE [$tableName] ($dataType)";
-    DropTable($conn, $tableName);
+    dropTable($conn, $tableName);
 
     if (IsPdoMode()) {
         $outcome = $conn->exec($tsql);

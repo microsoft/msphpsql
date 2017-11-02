@@ -14,6 +14,7 @@ createTable($conn, $tbname, array("c1_bigint" => "bigint"));
 
 // Create a Stored Procedure
 $spname = "selectBigint";
+dropProc($conn, $spname);
 $spSql = "CREATE PROCEDURE $spname (@c1_bigint bigint OUTPUT) AS
           SELECT @c1_bigint = c1_bigint FROM $tbname";
 $conn->query($spSql);
