@@ -44,24 +44,24 @@ try {
 }
 echo "Done\n";
 ?>
---EXPECT--
-Starting test...
+--EXPECTREGEX--
+Starting test\.\.\.
 Setting query timeout as an attribute in connection
-array(3) {
-  [0]=>
-  string(5) "HYT00"
-  [1]=>
-  int(0)
-  [2]=>
-  string(63) "[Microsoft][ODBC Driver 13 for SQL Server]Query timeout expired"
-}
+array\(3\) \{
+  \[0\]=>
+  string\(5\) \"HYT00\"
+  \[1\]=>
+  int\(0\)
+  \[2\]=>
+  string\(63\) \"\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Query timeout expired\"
+\}
 Setting query timeout in the statement
-array(3) {
-  [0]=>
-  string(5) "HYT00"
-  [1]=>
-  int(0)
-  [2]=>
-  string(63) "[Microsoft][ODBC Driver 13 for SQL Server]Query timeout expired"
-}
+array\(3\) \{
+  \[0\]=>
+  string\(5\) \"HYT00\"
+  \[1\]=>
+  int\(0\)
+  \[2\]=>
+  string\(63\) \"\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Query timeout expired\"
+\}
 Done

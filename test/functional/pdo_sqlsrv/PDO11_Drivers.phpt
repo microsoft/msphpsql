@@ -1,7 +1,7 @@
 --TEST--
 PDO Drivers Info Test
 --DESCRIPTION--
-Verifies the functionality of "PDO:getAvailableDrivers()�.
+Verifies the functionality of "PDO:getAvailableDrivers()".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
