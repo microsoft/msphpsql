@@ -1,10 +1,10 @@
 --TEST--
 Test the PDO::quote() method.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsCommon.inc");
+require_once("MsCommon_mid-refactor.inc");
 
 try {
     $conn = connect("", array(PDO::SQLSRV_ATTR_ENCODING => 3, PDO::ATTR_CASE => 2));
