@@ -4,7 +4,7 @@ UTF-8 connection strings
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsCOmmon_mid-refactor.inc");
+require_once("MsCommon_mid-refactor.inc");
 
 $server = 'localhost';
 $databaseName = 'test';
