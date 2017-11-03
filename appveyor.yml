@@ -148,8 +148,9 @@ test_script:
     - copy %APPVEYOR_BUILD_FOLDER%\test\functional\setup\*.dll %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %SQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %PDOSQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%    
-    - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --quiet --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
+    - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --excluded_modules *pdo_sqlsrv*.dll --export_type=cobertura:.\coverage.xml --quiet --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1   
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
+    - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *pdo_sqlsrv*.dll --input_coverage=.\coverage.xml --quiet --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1   
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\    
     - ps: $difffiles = Get-ChildItem sqlsrv\*.diff   
