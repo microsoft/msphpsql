@@ -162,7 +162,7 @@ test_script:
     - ps: foreach($file in $difffiles){ls $file; more $file}  
     - ps: foreach($file in $outfiles){ls $file; more $file}  
     - cd %PHP_INSTALL_DIR%
-    - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --quiet --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
+    - OpenCppCoverage.exe --sources --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover-children --quiet --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt
     - ls
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
