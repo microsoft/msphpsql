@@ -149,7 +149,7 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %SQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %PDOSQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%    
     - ps: >-
-        if ($env:BUILD_PLATFORM -Match "x64' -and $env:SQL_INSTANCE -Match "SQL2016")
+        if ($env:BUILD_PLATFORM -Match "x64" -and $env:SQL_INSTANCE -Match "SQL2016")
         {
             OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --quiet --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
             pip install codecov
