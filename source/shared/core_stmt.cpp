@@ -422,6 +422,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
     // if it's an output parameter and the user asks for a certain type, we have to convert the zval to that type so
     // when the buffer is filled, the type is correct
+    CHECK_CUSTOM_ERROR( direction != SQL_PARAM_INPUT && (sql_type == SQL_LONGVARCHAR 
+                        || sql_type == SQL_WLONGVARCHAR || sql_type == SQL_LONGVARBINARY), 
+                        stmt, SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED ){
+        throw core::CoreException();
+    }
+
     if( direction == SQL_PARAM_OUTPUT ){
         switch( php_out_type ) {
             case SQLSRV_PHPTYPE_INT:
