@@ -76,7 +76,8 @@ function invokeProc($conn, $procName, $k, $direction, $data)
     $initData = "ShortString";
     $callResult = $initData;
 
-    // Make sure not to specify the PHP type
+    // No need to specify the SQLSRV PHP type but must specify SQLSRV SQL Type
+    // when AE is enabled
     $intType = AE\isColEncrypted()? SQLSRV_SQLTYPE_INT : null;
     $params = array( array( $k, SQLSRV_PARAM_IN, null, $intType ),
                      array( &$callResult, $direction, null, $sqlsrvSQLType ));
