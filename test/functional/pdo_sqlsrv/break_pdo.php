@@ -14,38 +14,39 @@ $tableName2 = "test_connres2";
 // from AppVeyor does not have AdventureWorks.
 function generateTables($server, $uid, $pwd, $dbName, $tableName1, $tableName2)
 {
-    $conn = new PDO("sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd);
-    if ($conn === false) {
-        die(print_r(sqlsrv_errors()));
+    try {
+        $conn = new PDO("sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd);
+
+        // Create table
+        $sql = "CREATE TABLE $tableName1 (c1 INT, c2 VARCHAR(40))";
+        $stmt = $conn->query($sql);
+
+        // Insert data
+        $sql = "INSERT INTO $tableName1 VALUES ( ?, ? )";
+        for ($t = 100; $t < 116; $t++) {
+            $stmt = $conn->prepare($sql);
+            $ts = substr(sha1($t), 0, 5);
+            $params = array( $t,$ts );
+            $stmt->execute($params);
+        }
+
+        // Create table
+        $sql = "CREATE TABLE $tableName2 ( c1 INT, c2 VARCHAR(40) )";
+        $stmt = $conn->query($sql);
+
+        // Insert data
+        $sql = "INSERT INTO $tableName2 VALUES ( ?, ? )";
+        for ($t = 200; $t < 209; $t++) {
+            $stmt = $conn->prepare($sql);
+            $ts = substr(sha1($t), 0, 5);
+            $params = array( $t,$ts );
+            $stmt->execute($params);
+        }
+
+        unset($conn);
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
     }
-
-    // Create table
-    $sql = "CREATE TABLE $tableName1 ( c1 INT, c2 VARCHAR(40) )";
-    $stmt = $conn->query($sql);
-
-    // Insert data
-    $sql = "INSERT INTO $tableName1 VALUES ( ?, ? )";
-    for ($t = 100; $t < 116; $t++) {
-        $stmt = $conn->prepare($sql);
-        $ts = substr(sha1($t), 0, 5);
-        $params = array( $t,$ts );
-        $stmt->execute($params);
-    }
-
-    // Create table
-    $sql = "CREATE TABLE $tableName2 ( c1 INT, c2 VARCHAR(40) )";
-    $stmt = $conn->query($sql);
-
-    // Insert data
-    $sql = "INSERT INTO $tableName2 VALUES ( ?, ? )";
-    for ($t = 200; $t < 209; $t++) {
-        $stmt = $conn->prepare($sql);
-        $ts = substr(sha1($t), 0, 5);
-        $params = array( $t,$ts );
-        $stmt->execute($params);
-    }
-
-    $conn = null;
 }
 
 // Break connection by getting the session ID and killing it.

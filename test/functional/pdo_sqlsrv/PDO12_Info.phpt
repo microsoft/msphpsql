@@ -18,7 +18,7 @@ try {
     if (stristr($info, "PDO support => enabled") === false) {
         printf("PDO is not enabled\n");
     } elseif (stristr($info, "pdo_sqlsrv support => enabled") === false) {
-        printf("Cannot find PDO driver line in phpinfo() output\n");
+        printf("Cannot find PDO_SQLSRV driver in phpinfo() output\n");
     } else {
         printf("Done\n");
     }

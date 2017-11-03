@@ -12,7 +12,7 @@ try {
     $tbname = "PDO_MainTypes";
     createTableMainTypes($db, $tbname);
     // query with a wrong column name.
-    $db->query("Select * from " . $tbname . " where IntColX = 1");
+    $db->query("SELECT * FROM $tbname WHERE IntColX = 1");
 
     dropTable($db, $tbname);
     unset($conn);

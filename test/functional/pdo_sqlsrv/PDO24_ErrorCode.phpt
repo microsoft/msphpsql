@@ -11,7 +11,7 @@ PHPT_EXEC=true
 require_once("MsCommon_mid-refactor.inc");
 try {
     $conn1 = connect();
-    checkError(1, $conn1, '00000');
+    checkError(1, $conn1);
 
     // Prepare test table
     $table1 = "Table1";
@@ -37,10 +37,11 @@ try {
     echo $e->getMessage();
 }
 
-function checkError($offset, &$obj, $expected = '00000')
+function checkError($offset, &$obj)
 {
     $code = $obj->errorCode();
-    if (($code != $expected) && (($expected != '00000') || ($code !=''))) {
+    $expected = '00000';
+    if ($code != $expected && !empty($code)) {
         printf("[%03d] Expecting error code '%s' got code '%s'\n", $offset, $expected, $code);
     }
 }

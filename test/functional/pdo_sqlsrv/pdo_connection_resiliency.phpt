@@ -31,6 +31,8 @@ $conn_break = connect();
 $connectionInfo = "ConnectRetryCount = 10; ConnectRetryInterval = 10;";
 
 try {
+    // TODO: Idle connection resiliency does not work with Column Encryption at this point
+    // Do not connect with ColumnEncryption for now
     $conn = connect($connectionInfo, array(), PDO::ERRMODE_EXCEPTION, true);
 } catch (PDOException $e) {
     echo "Could not connect.\n";

@@ -29,7 +29,7 @@ try {
     $stmt1->closeCursor();
 
     dropTable($conn1, $table1);
-    $stmt1->execute();
+    @$stmt1->execute();
     checkError(5, $conn1);
     checkError(6, $stmt1, '42S02');
     checkError(7, $stmt2, '42S02');
@@ -76,7 +76,7 @@ function checkError($offset, &$obj, $expected = '00000')
             printf("[%03d] Driver-specific error code not set\n", $offset);
         }
         if (!isset($info[2]) || ($info[2] == '')) {
-            printf("[%03d] Driver-specific error message.not set\n", $offset);
+            printf("[%03d] Driver-specific error message not set\n", $offset);
         }
     }
 }
