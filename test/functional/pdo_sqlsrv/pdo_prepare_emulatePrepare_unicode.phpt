@@ -24,7 +24,6 @@ function prepareStmt($conn, $query, $prepareOptions = array(), $dataType = null,
 
 try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
-    //$conn->setAttribute( PDO::SQLSRV_ATTR_QUERY_TIMEOUT, 1 );
 
     $tableName = "users";
     createTable($conn, $tableName, array("name" => "nvarchar(max)", "status" => "int", "age" => "int"));

@@ -1,5 +1,7 @@
 --TEST--
-Test the PDOStatement::getColumnMeta() method (Note: there could be an issue about using a non-existent column index --- doesn't give any error/output/warning).
+Test the PDOStatement::getColumnMeta() method
+--DESCRIPTION--
+there could be an issue about using a non-existent column index --- doesn't give any error/output/warning
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--

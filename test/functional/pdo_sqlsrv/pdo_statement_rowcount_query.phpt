@@ -35,18 +35,21 @@ function rowCountQuery($exec)
 function updateData($conn, $tableName, $value, $exec)
 {
     $newValue = $value * 100;
-    $query = "UPDATE $tableName SET c1_int = $newValue WHERE (c1_int = $value)";
     $rowCount = 0;
 
     if (isColEncrypted()) {
         // need to bind parameters for updating encrypted columns
         $query = "UPDATE $tableName SET c1_int = ? WHERE (c1_int = ?)";
         $stmt = $conn->prepare($query);
+        if ($rowCount > 0) {
+            echo "Number of rows affected prior to execution should be 0!\n";
+        }
         $stmt->bindParam(1, $newValue);
         $stmt->bindParam(2, $value);
         $stmt->execute();
         $rowCount = $stmt->rowCount();
     } else {
+        $query = "UPDATE $tableName SET c1_int = $newValue WHERE (c1_int = $value)";
         if ($exec) {
             $rowCount = $conn->exec($query);
         } else {
@@ -147,7 +150,7 @@ function deleteData($conn, $tableName, $exec)
 echo "Starting test...\n";
 try {
     rowCountQuery(true);
-    //rowCountQuery(false);
+    rowCountQuery(false);
 } catch (Exception $e) {
     echo $e->getMessage();
 }

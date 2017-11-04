@@ -14,7 +14,7 @@ try {
     createAndInsertTableAllTypes($db, $tbname);
     $bigint = 1;
     $string = "STRINGCOL1";
-    $stmt = $db->prepare("SELECT IntCol FROM " . $tbname . " WHERE BigIntCol = :bigint AND CharCol = :string");
+    $stmt = $db->prepare("SELECT IntCol FROM $tbname WHERE BigIntCol = :bigint AND CharCol = :string");
     $stmt->bindValue(':bigint', $bigint, PDO::PARAM_INT);
     $stmt->bindValue(':string', $string, PDO::PARAM_STR);
     $stmt->execute();

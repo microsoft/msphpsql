@@ -7,7 +7,7 @@ Test the bindColumn method using either by bind by column number or bind by colu
 require_once("MsCommon_mid-refactor.inc");
 require_once("MsData_PDO_AllTypes.inc");
 
-function bindColumn_byName($db, $tbname)
+function bindColumnByName($db, $tbname)
 {
     $stmt = $db->prepare("SELECT IntCol, CharCol, DateTimeCol FROM $tbname");
     $stmt->execute();
@@ -20,7 +20,7 @@ function bindColumn_byName($db, $tbname)
     }
 }
 
-function bindColumn_byNumber($db, $tbname)
+function bindColumnByNumber($db, $tbname)
 {
     $stmt = $db->prepare("SELECT IntCol, CharCol, DateTimeCol FROM $tbname");
     $stmt->execute();
@@ -38,9 +38,9 @@ try {
     $tbname = "PDO_MainTypes";
     createAndInsertTableMainTypes($db, $tbname);
     echo "Bind Column by name :\n";
-    bindColumn_byName($db, $tbname);
+    bindColumnByName($db, $tbname);
     echo "Bind Column by number :\n";
-    bindColumn_byNumber($db, $tbname);
+    bindColumnByNumber($db, $tbname);
 
     dropTable($db, $tbname);
     unset($db);

@@ -8,8 +8,7 @@ require_once('MsCommon_mid-refactor.inc');
 try {
     $conn = connect();
 
-    //$tableName = "fruit";
-    $tableName = getTableName();
+    $tableName = "fruit";
     createTable($conn, $tableName, array("name" => "varchar(max)", "calories" => "int"));
 
     insertRow($conn, $tableName, array("name" => "apple", "calories" => 150));
@@ -42,7 +41,7 @@ try {
 
     if (!isColEncrypted()) {
         // without emulate prepare, binding PARAM_INT with SQLSRV_ENCODING_SYSTEM is not allowed
-        // thus these are not tested when Column Encryption is disabled
+        // thus the following will not be tested when Column Encryption is enabled
 
         $results = array();
         //prepare with emulate prepare and encoding SQLSRV_ENCODING_SYSTEM

@@ -11,31 +11,15 @@ try {
     $db = connect();
     $tbname = "PDO_MainTypes";
     createAndInsertTableMainTypes($db, $tbname);
-    $stmt = $db->query("SELECT * FROM $tbname");
-    echo "Set Fetch Mode for PDO::FETCH_ASSOC\n";
-    $stmt->setFetchMode(PDO::FETCH_ASSOC);
-    $result = $stmt->fetch();
-    var_dump($result);
-    $stmt = $db->query("SELECT * FROM $tbname");
-    echo "Set Fetch Mode for PDO::FETCH_NUM\n";
-    $stmt->setFetchMode(PDO::FETCH_NUM);
-    $result = $stmt->fetch();
-    var_dump($result);
-    $stmt = $db->query("SELECT * FROM $tbname");
-    echo "Set Fetch Mode for PDO::FETCH_BOTH\n";
-    $stmt->setFetchMode(PDO::FETCH_BOTH);
-    $result = $stmt->fetch();
-    var_dump($result);
-    $stmt = $db->query("SELECT * FROM $tbname");
-    echo "Set Fetch Mode for PDO::FETCH_LAZY\n";
-    $stmt->setFetchMode(PDO::FETCH_LAZY);
-    $result = $stmt->fetch();
-    var_dump($result);
-    $stmt = $db->query("SELECT * FROM $tbname");
-    echo "Set Fetch Mode for PDO::FETCH_OBJ\n";
-    $stmt->setFetchMode(PDO::FETCH_OBJ);
-    $result = $stmt->fetch();
-    var_dump($result);
+    
+    $fetchModes = array("PDO::FETCH_ASSOC", "PDO::FETCH_NUM", "PDO::FETCH_BOTH", "PDO::FETCH_LAZY", "PDO::FETCH_OBJ");
+    foreach ($fetchModes as $mode) {
+        $stmt = $db->query("SELECT * FROM $tbname");
+        echo "Set Fetch Mode for $mode\n";
+        $stmt->setFetchMode(constant($mode));
+        $result = $stmt->fetch();
+        var_dump($result);
+    }
 } catch (PDOException $e) {
     var_dump($e);
 }

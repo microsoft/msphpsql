@@ -6,7 +6,7 @@ test query time out at the connection level and statement level
 <?php
 require_once("MsCommon_mid-refactor.inc");
 
-function QueryTimeout($connLevel)
+function queryTimeout($connLevel)
 {
     $conn = connect('', array(), PDO::ERRMODE_SILENT);
 
@@ -37,8 +37,8 @@ function QueryTimeout($connLevel)
 
 echo "Starting test...\n";
 try {
-    QueryTimeout(true);
-    QueryTimeout(false);
+    queryTimeout(true);
+    queryTimeout(false);
 } catch (Exception $e) {
     echo $e->getMessage();
 }

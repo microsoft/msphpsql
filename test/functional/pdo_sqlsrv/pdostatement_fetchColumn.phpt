@@ -14,7 +14,7 @@ try {
 
     $stmt = $db->query("Select * from $tbname");
 
-    // Fetch the first column from the next row in resultset. (This wud be first row since this is a first call to fetchcol)
+    // Fetch the first column from the next row in resultset. (This would be first row since this is a first call to fetchcol)
     $result = $stmt->fetchColumn();
     var_dump($result);
 
