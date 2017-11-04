@@ -10,17 +10,21 @@ require_once("MsCommon_mid-refactor.inc");
 
 function deleteRows($conn, $tbname)
 {
-    if (!isColEncrypted()) {
-        $rows = $conn->exec("DELETE FROM $tbname WHERE col1 = 'a'");
-    } else {
-        // needs to find parameter for encrypted columns
-        $sql = "DELETE FROM $tbname WHERE col1 = ?";
-        $stmt = $conn->prepare($sql);
-        $col1 = "a";
-        $stmt->execute(array($col1));
-        $rows = $stmt->rowCount();
+    try {
+        if (!isColEncrypted()) {
+            $rows = $conn->exec("DELETE FROM $tbname WHERE col1 = 'a'");
+        } else {
+            // needs to find parameter for encrypted columns
+            $sql = "DELETE FROM $tbname WHERE col1 = ?";
+            $stmt = $conn->prepare($sql);
+            $col1 = "a";
+            $stmt->execute(array($col1));
+            $rows = $stmt->rowCount();
+        }
+        return $rows;
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
     }
-    return $rows;
 }
 
 try {
