@@ -35,6 +35,7 @@ Thank you for taking time to take our February survey. Let us know how we are do
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/rhel)
 * [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/sles)
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/windows)
+* [**macOS + SQL Server + PHP 7**](https://sqlchoice.azurewebsites.net/en-us/sql-server/developer-get-started/php/mac)
 * [**Docker**](https://hub.docker.com/r/lbosqmsft/mssql-php-msphpsql/)
 
 
