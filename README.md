@@ -266,6 +266,11 @@ On Ubuntu, Debian, and SUSE systems only, run:
 
     sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
 
+On macOS, run:
+
+    chmod -R ug+w /usr/local/opt/php71/lib/php
+    pear config-set php_ini /usr/local/etc/php/7.1/php.ini system
+
 On all systems, run:
 
     pecl install sqlsrv
