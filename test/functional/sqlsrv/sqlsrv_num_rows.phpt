@@ -1,30 +1,30 @@
 --TEST--
 Test sqlsrv_num_rows method.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
     require_once('MsCommon.inc');
-    $conn = connect();
+    $conn = AE\connect();
+    $tableName = 'utf16invalid';
 
-    if (!$conn) {
-        fatalError("Failed to connect.");
+    $columns = array(new AE\ColumnMeta('int', 'id', 'identity'),
+                     new AE\ColumnMeta('nvarchar(100)', 'c1'));
+    AE\createTable($conn, $tableName, $columns);
+    
+    $stmt = AE\insertRow($conn, $tableName, array("c1" => 'TEST'));
+    
+    // Always Encrypted feature only supports SQLSRV_CURSOR_FORWARD or 
+    // SQLSRV_CURSOR_CLIENT_BUFFERED
+    if (AE\isColEncrypted()) {
+        $options = array('Scrollable' => SQLSRV_CURSOR_CLIENT_BUFFERED);
+    } else {
+        $options = array('Scrollable' => SQLSRV_CURSOR_KEYSET);
     }
-
-    dropTable($conn, 'utf16invalid');
-    $stmt = sqlsrv_query($conn, "CREATE TABLE utf16invalid (id int identity, c1 nvarchar(100))");
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
-
-    $stmt = sqlsrv_query($conn, "INSERT INTO utf16invalid (c1) VALUES ('TEST')");
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors()));
-    }
-    $stmt = sqlsrv_query($conn, "SELECT * FROM utf16invalid", array(), array("Scrollable" => SQLSRV_CURSOR_KEYSET ));
+    $stmt = AE\executeQueryEx($conn, "SELECT * FROM $tableName", $options);
     $row_nums = sqlsrv_num_rows($stmt);
 
     echo $row_nums;

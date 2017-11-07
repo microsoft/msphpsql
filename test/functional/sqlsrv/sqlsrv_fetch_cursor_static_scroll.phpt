@@ -1,24 +1,27 @@
 --TEST--
 Test with static cursor and select different rows in some random order
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿﻿<?php
 require_once('MsCommon.inc');
 
-function FetchRow_Query($conn)
+function fetchRowQuery($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = 'testScrollCursor'; 
 
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varchar] varchar(10))");
-    sqlsrv_free_stmt($stmt);
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                 new AE\ColumnMeta('varchar(10)', 'c2_varchar'));
+    AE\createTable($conn, $tableName, $columns);
 
     // insert data
     $numRows = 10;
-    InsertData($conn, $tableName, $numRows);
+    insertData($conn, $tableName, $numRows);
 
     // select table
     $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName", array(), array('Scrollable' => 'static'));
 
-    HasRows($stmt);
+    hasRows($stmt);
     $numRowsFetched = 0;
     while ($obj = sqlsrv_fetch_object($stmt)) {
         echo $obj->c1_int . ", " . $obj->c2_varchar . "\n";
@@ -29,25 +32,27 @@ function FetchRow_Query($conn)
         echo "Number of rows fetched $numRowsFetched is wrong! Expected $numRows\n";
     }
 
-    GetFirstRow($stmt);
-    GetNextRow($stmt);
-    GetLastRow($stmt);
-    GetPriorRow($stmt);
-    GetAbsoluteRow($stmt, 7);
-    GetAbsoluteRow($stmt, 2);
-    GetRelativeRow($stmt, 3);
-    GetPriorRow($stmt);
-    GetRelativeRow($stmt, -4);
-    GetAbsoluteRow($stmt, 0);
-    GetNextRow($stmt);
-    GetRelativeRow($stmt, 5);
-    GetAbsoluteRow($stmt, -1);
-    GetNextRow($stmt);
-    GetLastRow($stmt);
-    GetRelativeRow($stmt, 1);
+    getFirstRow($stmt);
+    getNextRow($stmt);
+    getLastRow($stmt);
+    getPriorRow($stmt);
+    getAbsoluteRow($stmt, 7);
+    getAbsoluteRow($stmt, 2);
+    getRelativeRow($stmt, 3);
+    getPriorRow($stmt);
+    getRelativeRow($stmt, -4);
+    getAbsoluteRow($stmt, 0);
+    getNextRow($stmt);
+    getRelativeRow($stmt, 5);
+    getAbsoluteRow($stmt, -1);
+    getNextRow($stmt);
+    getLastRow($stmt);
+    getRelativeRow($stmt, 1);
+    
+    dropTable($conn, $tableName);
 }
 
-function InsertData($conn, $tableName, $numRows)
+function insertData($conn, $tableName, $numRows)
 {
     $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (c1_int, c2_varchar) VALUES (?, ?)", array(&$v1, &$v2));
 
@@ -59,7 +64,7 @@ function InsertData($conn, $tableName, $numRows)
     }
 }
 
-function GetFirstRow($stmt)
+function getFirstRow($stmt)
 {
     echo "\nfirst row: ";
     $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_FIRST);
@@ -70,7 +75,7 @@ function GetFirstRow($stmt)
     }
 }
 
-function GetNextRow($stmt)
+function getNextRow($stmt)
 {
     echo "\nnext row: ";
     $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_NEXT);
@@ -81,7 +86,7 @@ function GetNextRow($stmt)
     }
 }
 
-function GetPriorRow($stmt)
+function getPriorRow($stmt)
 {
     echo "\nprior row: ";
     $obj = sqlsrv_fetch_object($stmt, null, null, SQLSRV_SCROLL_PRIOR);
@@ -90,7 +95,7 @@ function GetPriorRow($stmt)
     }
 }
 
-function GetLastRow($stmt)
+function getLastRow($stmt)
 {
     echo "\nlast row: ";
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC, SQLSRV_SCROLL_LAST);
@@ -99,7 +104,7 @@ function GetLastRow($stmt)
     }
 }
 
-function GetRelativeRow($stmt, $offset)
+function getRelativeRow($stmt, $offset)
 {
     echo "\nrow $offset from the current row: ";
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC, SQLSRV_SCROLL_RELATIVE, $offset);
@@ -108,7 +113,7 @@ function GetRelativeRow($stmt, $offset)
     }
 }
 
-function GetAbsoluteRow($stmt, $offset)
+function getAbsoluteRow($stmt, $offset)
 {
     echo "\nabsolute row with offset $offset: ";
     $obj = sqlsrv_fetch_object($stmt, null, null, SQLSRV_SCROLL_ABSOLUTE, $offset);
@@ -117,7 +122,7 @@ function GetAbsoluteRow($stmt, $offset)
     }
 }
 
-function HasRows($stmt)
+function hasRows($stmt)
 {
     $rows = sqlsrv_has_rows($stmt);
     if ($rows != true) {
@@ -125,36 +130,18 @@ function HasRows($stmt)
     }
 }
 
-//--------------------------------------------------------------------
-// RunTest
-//
-//--------------------------------------------------------------------
-function RunTest()
-{
-    startTest("sqlsrv_fetch_cursor_static_scroll");
-    try {
-        set_time_limit(0);
-        sqlsrv_configure('WarningsReturnAsErrors', 1);
+set_time_limit(0);
+sqlsrv_configure('WarningsReturnAsErrors', 1);
 
-        echo "\nTest begins...\n";
+echo "\nTest begins...\n";
 
-        // Connect
-        $conn = connect();
-        if (!$conn) {
-            fatalError("Could not connect.\n");
-        }
+// Connect
+$conn = AE\connect();
+fetchRowQuery($conn);
 
-        FetchRow_Query($conn);
-
-        sqlsrv_close($conn);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_fetch_cursor_static_scroll");
-}
-
-RunTest();
+sqlsrv_close($conn);
+echo "\nDone\n";
+endTest("sqlsrv_fetch_cursor_static_scroll");
 
 ?>
 --EXPECT--

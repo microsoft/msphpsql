@@ -1,7 +1,7 @@
 --TEST--
 Test for fetch_object with Unicode column name
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
@@ -41,28 +41,23 @@ class foo_noargs
 } // end class foo_noargs
 
 sqlsrv_configure('WarningsReturnAsErrors', 0);
-//sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
-//sqlsrv_configure( 'LogSubsystems', SQLSRV_LOG_SYSTEM_ALL );
-
 require_once('MsCommon.inc');
 
-$conn = connect(array( 'CharacterSet'=>'UTF-8' ));
+$conn = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
+$tableName = 'test_params';
 
-$stmt = sqlsrv_prepare($conn, "IF OBJECT_ID('test_params', 'U') IS NOT NULL DROP TABLE test_params");
-sqlsrv_execute($stmt);
-sqlsrv_free_stmt($stmt);
-
-$stmt = sqlsrv_prepare($conn, "CREATE TABLE test_params (id tinyint, 吉安而來 char(10), [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é] float, stuff varchar(max))");
-sqlsrv_execute($stmt);
-sqlsrv_free_stmt($stmt);
+$columns = array(new AE\ColumnMeta('tinyint', 'id'),
+                 new AE\ColumnMeta('char(10)', '吉安而來'),
+                 new AE\ColumnMeta('float', '此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é'),
+                 new AE\ColumnMeta('varchar(max)', 'stuff'));
+AE\createTable($conn, $tableName, $columns);
 
 $f1 = 1;
 $f2 = "testtestte";
 $f3 = 12.0;
 $f4 = fopen("data://text/plain,This%20is%20some%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
 
-$stmt = sqlsrv_prepare($conn, "INSERT INTO test_params (id, 吉安而來, [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é], stuff) VALUES (?, ?, ?, ?)", array( &$f1, "testtestte", &$f3, &$f4 )); //,
-    //~ array( SQLSRV_SQLTYPE_INTEGER, SQLSRV_SQLTYPE_CHAR(10), SQLSRV_SQLTYPE_此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é, SQLSRV_SQLTYPE_VARBINARY(4000)));
+$stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (id, 吉安而來, [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é], stuff) VALUES (?, ?, ?, ?)", array( &$f1, "testtestte", &$f3, &$f4 )); 
 if (!$stmt) {
     var_dump(sqlsrv_errors());
     die("sqlsrv_prepare failed.");
@@ -147,7 +142,7 @@ if (!is_null($success)) {
 
 sqlsrv_free_stmt($stmt);
 
-$stmt = sqlsrv_prepare($conn, "SELECT id, [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é], 吉安而來, stuff FROM test_params");
+$stmt = sqlsrv_prepare($conn, "SELECT id, [此是後話Κοντάוְאַתָּה第十四章BiałopioБунтевсемужирафиtest是أي بزمام الإنذارהნომინავიiałopioБунтевсемужирафиtest父親回衙 汗流如雨 吉安而來. 關雎 誨€¥É§é], 吉安而來, stuff FROM $tableName");
 $success = sqlsrv_execute($stmt);
 if (!$success) {
     var_dump(sqlsrv_errors());
@@ -233,6 +228,11 @@ if (is_null($obj)) {
     $obj->do_foo();
     print_r($obj);
 }
+
+dropTable($conn, $tableName);
+
+sqlsrv_free_stmt( $stmt );
+sqlsrv_close( $conn );
 
 ?>
 --EXPECTREGEX--

@@ -5,30 +5,27 @@ This test calls sqlsrv_has_rows multiple times. Previously, multiple calls
 with a forward cursor would advance the cursor. Subsequent fetch calls
 would then fail.
 --SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-
-require_once("MsCommon.inc");
+require_once('MsCommon.inc');
 
 // connect
-$conn = connect();
-if (!$conn) {
-    fatalError("Connection could not be established.\n");
-}
-
-$tableName = GetTempTableName();
+$conn = AE\connect();
+$tableName = 'test037'; 
 
 // Create table
-$query = "CREATE TABLE $tableName (ID VARCHAR(10))";
-$stmt = sqlsrv_query($conn, $query);
+$columns = array(new AE\ColumnMeta('VARCHAR(10)', 'ID'));
+AE\createTable($conn, $tableName, $columns);
 
-$query = "INSERT INTO $tableName VALUES ('1998.1'),('-2004'),('2016'),('4.2EUR')";
-$stmt = sqlsrv_query($conn, $query) ?: die(print_r(sqlsrv_errors(), true));
+AE\insertRow($conn, $tableName, array("ID" => '1998.1'));
+AE\insertRow($conn, $tableName, array("ID" => '-2004'));
+AE\insertRow($conn, $tableName, array("ID" => '2016'));
+AE\insertRow($conn, $tableName, array("ID" => '4.2EUR'));
 
 // Fetch data using forward only cursor
 $query = "SELECT ID FROM $tableName";
-$stmt = sqlsrv_query($conn, $query)
-        ?: die(print_r(sqlsrv_errors(), true));
+$stmt = AE\executeQuery($conn, $query);
 
 // repeated calls should return true and fetch should work.
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
@@ -43,8 +40,7 @@ if (sqlsrv_has_rows($stmt)) {
 }
 
 // Fetch data using a scrollable cursor
-$stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"))
-        ?: die(print_r(sqlsrv_errors(), true));
+$stmt = AE\executeQueryEx($conn, $query, array("Scrollable"=>"buffered"));
 
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
@@ -57,22 +53,21 @@ if (sqlsrv_has_rows($stmt)) {
     }
 }
 
-$query = "SELECT ID FROM $tableName where ID='nomatch'";
-$stmt = sqlsrv_query($conn, $query)
-        ?: die(print_r(sqlsrv_errors(), true));
+// $query = "SELECT ID FROM $tableName where ID='nomatch'";
+$stmt = AE\executeQuery($conn, $query, "ID = ?", array('nomatch'));
 
 // repeated calls should return false if there are no rows.
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 
 // Fetch data using a scrollable cursor
-$stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"))
-        ?: die(print_r(sqlsrv_errors(), true));
+$stmt = AE\executeQuery($conn, $query, "ID = ?", array('nomatch'), array("Scrollable"=>"buffered"));
 
 // repeated calls should return false if there are no rows.
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 
+dropTable($conn, $tableName);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);

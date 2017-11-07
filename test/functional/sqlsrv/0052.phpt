@@ -1,7 +1,9 @@
 --TEST--
 scrollable results with no rows.
+--DESCRIPTION--
+this test is very similar to test_scrollable.phpt... might consider removing this test as a duplicate
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);
@@ -9,23 +11,37 @@ scrollable results with no rows.
 
     require_once('MsCommon.inc');
 
-    $conn = connect();
-    if ($conn === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
+    $conn = AE\connect();
+    $tableName = 'ScrollTest';
 
-    $stmt = sqlsrv_query($conn, "IF OBJECT_ID('ScrollTest', 'U') IS NOT NULL DROP TABLE ScrollTest");
-    if ($stmt !== false) {
-        sqlsrv_free_stmt($stmt);
-    }
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE ScrollTest (id int, value char(10))");
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
+    $columns = array(new AE\ColumnMeta('int', 'id'),
+                     new AE\ColumnMeta('char(10)', 'value'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
     sqlsrv_free_stmt($stmt);
 
-    $stmt = sqlsrv_query($conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => 'static' ));
+    $query = "SELECT * FROM $tableName";
+    if (AE\isColEncrypted()) {
+        $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
+    } else {
+        $options = array('Scrollable' => 'static');
+    }
+
+    $stmt = AE\executeQueryEx($conn, $query, $options);
+    $rows = sqlsrv_has_rows($stmt);
+    if ($rows != false) {
+        fatalError("Should be no rows present");
+    };
+
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+    $row = sqlsrv_fetch_array($stmt);
+    print_r($row);
+    if ($row === false) {
+        print_r(sqlsrv_errors(), true);
+    }
+    
+    $stmt = AE\selectFromTable($conn, $tableName);
     $rows = sqlsrv_has_rows($stmt);
     if ($rows != false) {
         fatalError("Should be no rows present");
@@ -40,23 +56,7 @@ scrollable results with no rows.
         print_r(sqlsrv_errors(), true);
     }
 
-    $stmt = sqlsrv_query($conn, "SELECT * FROM ScrollTest");
-    $rows = sqlsrv_has_rows($stmt);
-    if ($rows != false) {
-        fatalError("Should be no rows present");
-    };
-
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
-    $row = sqlsrv_fetch_array($stmt);
-    print_r($row);
-    if ($row === false) {
-        print_r(sqlsrv_errors(), true);
-    }
-
-    $stmt = sqlsrv_query($conn, "DROP TABLE ScrollTest");
-
+    dropTable($conn, $tableName);
     echo "Test succeeded.\n";
 
 ?>

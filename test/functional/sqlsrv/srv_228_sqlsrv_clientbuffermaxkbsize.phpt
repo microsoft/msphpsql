@@ -1,10 +1,11 @@
 --TEST--
 sqlsrv_has_rows() using a forward and scrollable cursor
 --SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
-require_once("MsCommon.inc");
+require_once('MsCommon.inc');
 
 function fetchData($conn, $table, $size)
 {
@@ -27,21 +28,26 @@ function fetchData($conn, $table, $size)
 }
 
 // connect
-$conn = connect();
-if (!$conn) {
-    printErrors("Connection could not be established.\n");
-}
+$conn = AE\connect();
 
-$tableName1 = GetTempTableName('php_test_table_1');
-$tableName2 = GetTempTableName('php_test_table_2');
+$tableName1 = 'php_test_table_1';
+$tableName2 = 'php_test_table_2';
 
-// Create table
-$stmt = sqlsrv_query($conn, "CREATE TABLE $tableName1 ([c1_int] int, [c2_varchar_max] varchar(max))");
-$stmt = sqlsrv_query($conn, "CREATE TABLE $tableName2 ([c1_int] int, [c2_varchar_1036] varchar(1036))");
+// Create tables
+$columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                 new AE\ColumnMeta('varchar(max)', 'c2_varchar_max'));
+$stmt = AE\createTable($conn, $tableName1, $columns);
+
+unset($columns);
+$columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                 new AE\ColumnMeta('varchar(1036)', 'c2_varchar_1036'));
+$stmt = AE\createTable($conn, $tableName2, $columns);
 
 // insert > 1KB into c2_varchar_max & c2_varchar_1036 (1036 characters).
-$stmt = sqlsrv_query($conn, "INSERT INTO $tableName1 (c1_int, c2_varchar_max) VALUES (1, 'This is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a test')");
-$stmt = sqlsrv_query($conn, "INSERT INTO $tableName2 (c1_int, c2_varchar_1036) VALUES (1, 'This is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a test')");
+$longString = 'This is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a test';
+
+$stmt = AE\insertRow($conn, $tableName1, array('c1_int' => 1, 'c2_varchar_max' => $longString));
+$stmt = AE\insertRow($conn, $tableName2, array('c1_int' => 1, 'c2_varchar_1036' => $longString));
 
 // set client buffer size to 0KB returns false
 $ret = sqlsrv_configure('ClientBufferMaxKBSize', 0);

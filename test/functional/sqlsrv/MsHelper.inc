@@ -382,6 +382,36 @@ function createTable($conn, $tbname, $columnMetaArr)
 }
 
 /**
+ * Create a table with options for sqlsrv_prepare()
+ * @param  resource  $conn : sqlsrv connection resource
+ * @param  string  $tbname : name of the table to be created
+ * @param  array  $columnMetaArr : array of ColumnMeta objects, which contain metadata for one column
+ * @param  array  $options : array of options for sqlsrv_prepare()
+ * @return resource sqlsrv statement resource
+ */
+function createTableEx($conn, $tbname, $columnMetaArr, $options)
+{
+    require_once("MsCommon.inc");
+    dropTable($conn, $tbname);
+    $colDef = "";
+    foreach ($columnMetaArr as $meta) {
+        $colDef = $colDef . $meta->getColDef() . ", ";
+    }
+    $colDef = rtrim($colDef, ", ");
+    $createSql = "CREATE TABLE $tbname ( $colDef )";
+    $stmt = sqlsrv_prepare($conn, $createSql, array(), $options);
+    if ($stmt) {
+        $res = sqlsrv_execute($stmt);
+        if ($res == false) {
+            fatalError("createTableEx: failed to execute the query to create table\n");
+        }
+    } else {
+        fatalError("createTableEx: failed to prepare the statement to create table\n");
+    }
+    return $stmt;
+}
+
+/**
  * Insert a row into a table
  * @param  resource  $conn : sqlsrv connection resource
  * @param  string  $tbname : name of the table for the row to be inserted
@@ -455,9 +485,10 @@ function selectFromTable($conn, $tbname, $conds = null, $values = null)
  * @param  string  $sql : T-SQL query
  * @param  string  $conds : string of condition(s) possibly with placeholders, null by default
  * @param  array  $values : array of parameters, null by default
+ * @param  array  $options : array of query options, null by default
  * @return resource sqlsrv statement upon success or false otherwise
  */
-function executeQuery($conn, $sql, $conds = null, $values = null)
+function executeQuery($conn, $sql, $conds = null, $values = null, $options = null)
 {
     if (!isColEncrypted()) {
         // if not encrypted replace placeholders ('?') with values, if array not empty
@@ -475,16 +506,17 @@ function executeQuery($conn, $sql, $conds = null, $values = null)
             $sql = $sql . " WHERE $clause ";
         } elseif (!empty($conds)) {
             $sql = $sql . " WHERE $conds ";
-        }        
-        $stmt = sqlsrv_query($conn, $sql);
+        }   
+
+        $stmt = sqlsrv_query($conn, $sql, null, $options);
     } else {
         // with AE enabled, use sqlsrv_prepare() in case there are 
         // fields with unlimited size
-        if (empty($conds) || empty($values)) {
-            $stmt = sqlsrv_prepare($conn, $sql);
+        if (empty($conds) || empty($values)) {            
+            $stmt = sqlsrv_prepare($conn, $sql, null, $options);
         } else {
             $sql = $sql . " WHERE $conds ";
-            $stmt = sqlsrv_prepare($conn, $sql, $values);
+            $stmt = sqlsrv_prepare($conn, $sql, $values, $options);
         } 
         if ($stmt) {
             $r = sqlsrv_execute($stmt);
