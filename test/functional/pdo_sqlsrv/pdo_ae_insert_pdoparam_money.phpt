@@ -26,7 +26,7 @@ try {
             // insert a row
             $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
             $r;
-            $stmt = insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, $inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, $inputValues[1], $pdoParamType)), "prepareBindParam", $r);
+            $stmt = insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, (string)$inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, (string)$inputValues[1], $pdoParamType)), "prepareBindParam", $r);
 
 
             if (!isColEncrypted()) {

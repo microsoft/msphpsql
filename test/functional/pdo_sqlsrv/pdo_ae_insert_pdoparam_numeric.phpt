@@ -24,7 +24,11 @@ try {
             // insert a row
             $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
             $r;
-            $stmt = insertRow($conn, $tbname, array( "c_det" => new BindParamOp(1, $inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, $inputValues[1], $pdoParamType)), "prepareBindParam", $r);
+            if ($dataType == "decimal(18,5)") {
+                $stmt = insertRow($conn, $tbname, array( "c_det" => new BindParamOp(1, (string)$inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, (string)$inputValues[1], $pdoParamType)), "prepareBindParam", $r);
+            } else {
+                $stmt = insertRow($conn, $tbname, array( "c_det" => new BindParamOp(1, $inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, $inputValues[1], $pdoParamType)), "prepareBindParam", $r);
+            }
             if ($r === false) {
                 isIncompatibleTypesError($stmt, $dataType, $pdoParamType);
             } else {
@@ -113,20 +117,20 @@ c_rand: 2147483647
 
 Testing decimal(18,5):
 ****PDO param type PDO::PARAM_BOOL is compatible with encrypted decimal(18,5)****
-c_det: -9223372036854.80078
-c_rand: 9223372036854.80078
+c_det: -9223372036854.80000
+c_rand: 9223372036854.80000
 ****PDO param type PDO::PARAM_NULL is compatible with encrypted decimal(18,5)****
 c_det: 
 c_rand: 
 ****PDO param type PDO::PARAM_INT is compatible with encrypted decimal(18,5)****
-c_det: -9223372036854.80078
-c_rand: 9223372036854.80078
+c_det: -9223372036854.80000
+c_rand: 9223372036854.80000
 ****PDO param type PDO::PARAM_STR is compatible with encrypted decimal(18,5)****
 c_det: -9223372036854.80000
 c_rand: 9223372036854.80000
 ****PDO param type PDO::PARAM_LOB is compatible with encrypted decimal(18,5)****
-c_det: -9223372036854.80078
-c_rand: 9223372036854.80078
+c_det: -9223372036854.80000
+c_rand: 9223372036854.80000
 
 Testing numeric(10,5):
 ****PDO param type PDO::PARAM_BOOL is compatible with encrypted numeric(10,5)****
