@@ -17,7 +17,8 @@ try {
 
         // create table
         $tbname = getTableName();
-        $colMetaArr = array(new ColumnMeta($dataType, "c_det"), new ColumnMeta($dataType, "c_rand", null, "randomized"));
+        $colMetaArr = array(new ColumnMeta($dataType, "c_det", null, "deterministic", true),
+                            new ColumnMeta($dataType, "c_rand", null, "randomized", true));
         createTable($conn, $tbname, $colMetaArr);
 
         // test each PDO::PARAM_ type

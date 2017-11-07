@@ -43,13 +43,8 @@ function fetchBoth($conn, $tbname)
 
     // 8
     $meta = $stmt->getColumnMeta(7);
-    if (isColEncrypted()) {
-        $xmlType = "nvarchar";
-    } else {
-        $xmlType = "xml";
-    }
-    if ($meta["sqlsrv:decl_type"] != $xmlType) {
-        echo "Wrong column metadata was retrieved for a $xmlType column.\n";
+    if ($meta["sqlsrv:decl_type"] != "xml") {
+        echo "Wrong column metadata was retrieved for a xml column.\n";
     }
     unset($meta["sqlsrv:decl_type"]);
     var_dump($meta);

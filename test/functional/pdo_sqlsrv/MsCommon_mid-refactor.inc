@@ -127,10 +127,11 @@ class ColumnMeta
 {
     public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $colName;    //column name
-    public $encType;    //randomized or deterministic; default is deterministic
     public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
+    public $encType;    //randomized or deterministic; default is deterministic
+    public $forceEncrypt; //force encryption on a datatype no supported by Column Encrypton
 
-    public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic")
+    public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic", $forceEncrypt = false)
     {
         if (is_null($colName)) {
             $this->colName = getDefaultColName($dataType);
@@ -138,8 +139,9 @@ class ColumnMeta
             $this->colName = $colName;
         }
         $this->dataType = $dataType;
-        $this->encType = $encType;
         $this->options = $options;
+        $this->encType = $encType;
+        $this->forceEncrypt = $forceEncrypt;
     }
     /**
      * @return string column definition for creating a table
@@ -150,7 +152,7 @@ class ColumnMeta
         $append = " ";
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if (isColEncrypted() && stripos($this->options, "identity") === false) {
+        if (isColEncrypted() && $this->isEncryptableType() && stripos($this->options, "identity") === false) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
@@ -160,6 +162,19 @@ class ColumnMeta
         $append .= $this->options;
         $colDef = "[" . $this->colName . "] " . $this->dataType . $append;
         return $colDef;
+    }
+
+    /**
+     * @return bool if the datatype for this column is encryptable
+     */
+    public function isEncryptableType()
+    {
+        $unsupportedTypes = array("money", "smallmoney", "image", "ntext", "text", "xml", "sql_variant");
+        if (in_array(strtolower($this->dataType), $unsupportedTypes) && !$this->forceEncrypt) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 

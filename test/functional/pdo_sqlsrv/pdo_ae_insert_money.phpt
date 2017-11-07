@@ -17,7 +17,8 @@ try {
 
         // create table
         $tbname = getTableName();
-        $colMetaArr = array( new columnMeta($dataType, "c_det"), new columnMeta($dataType, "c_rand", null, "randomized"));
+        $colMetaArr = array(new columnMeta($dataType, "c_det", null, "deterministic", true),
+                            new columnMeta($dataType, "c_rand", null, "randomized", true));
         createTable($conn, $tbname, $colMetaArr);
 
         // insert a row
