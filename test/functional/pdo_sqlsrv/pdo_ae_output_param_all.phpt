@@ -70,7 +70,7 @@ $inputs = array( "c1_int" => 2147483647,
                  "c17_nchar" => 'th Un',
                  "c18_nvarchar" => 'When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).' );
 $r;
-$stmt = insertRow($conn, $tbname, $inputs, "prepareBindParam", $r);
+$stmt = insertRow($conn, $tbname, $inputs, null, $r);
 // Call store procedure
 $outSql = getCallProcSqlPlaceholders($spname, count($inputs));
 $intOut = 0;
