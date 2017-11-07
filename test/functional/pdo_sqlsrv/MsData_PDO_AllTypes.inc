@@ -66,11 +66,6 @@ function createTableMainTypes($conn, $tbname)
 {
     try {
         require_once("MsCommon_mid-refactor.inc");
-        if (isColEncrypted()) {
-            $xmlType = "nvarchar(max)";
-        } else {
-            $xmlType = "xml";
-        }
         $columnMetaArr = array("IntCol" => "int",
                                "CharCol" => "char(10)",
                                "NCharCol" => "nchar(10)",
@@ -78,7 +73,7 @@ function createTableMainTypes($conn, $tbname)
                                "VarcharCol" => "varchar(50)",
                                "NVarCharCol" => "nvarchar(50)",
                                "FloatCol" => "float",
-                               "XmlCol" => $xmlType);
+                               "XmlCol" => "xml");
         createTable($conn, $tbname, $columnMetaArr, "ON [PRIMARY]");
     } catch (Exception $e) {
         var_dump($e);
@@ -119,23 +114,6 @@ function createTableAllTypes($conn, $tbname)
 {
     try {
         require_once("MsCommon_mid-refactor.inc");
-
-        if (isColEncrypted()) {
-            $moneyType = "decimal(19,4)";
-            $smallmoneyType = "decimal(10,4)";
-            $imageType = "varbinary(max)";
-            $ntextType = "nvarchar(max)";
-            $textType = "varchar(max)";
-            $xmlType = "nvarchar(max)";
-        } else {
-            $moneyType = "money";
-            $smallmoneyType = "smallmoney";
-            $imageType = "image";
-            $ntextType = "ntext";
-            $textType = "text";
-            $xmlType = "xml";
-        }
-
         $columnMetaArr = array("BigIntCol" => "bigint",
                                "BinaryCol" => "binary(5)",
                                "BitCol" => "bit",
@@ -146,19 +124,19 @@ function createTableAllTypes($conn, $tbname)
                                "DTOffsetCol" => "datetimeoffset(7)",
                                "DecimalCol" => "decimal(18,0)",
                                "FloatCol" => "float",
-                               "ImageCol" => $imageType,
+                               "ImageCol" => "image",
                                "IntCol" => "int",
-                               "MoneyCol" => $moneyType,
+                               "MoneyCol" => "money",
                                "NCharCol" => "nchar(10)",
-                               "NTextCol" => $ntextType,
+                               "NTextCol" => "ntext",
                                "NumCol" => "numeric(18,0)",
                                "NVarCharCol" => "nvarchar(50)",
                                "NVarCharMaxCol" => "nvarchar(max)",
                                "RealCol" => "real",
                                "SmallDTCol" => "smalldatetime",
                                "SmallIntCol" => "smallint",
-                               "SmallMoneyCol" => $smallmoneyType,
-                               "TextCol" => $textType,
+                               "SmallMoneyCol" => "smallmoney",
+                               "TextCol" => "text",
                                "TimeCol" => "time(7)",
                                "TinyIntCol" => "tinyint",
                                "Guidcol" => "uniqueidentifier",
@@ -166,7 +144,7 @@ function createTableAllTypes($conn, $tbname)
                                "VarbinaryMaxCol" => "varbinary(max)",
                                "VarcharCol" => "varchar(50)",
                                "VarcharMaxCol" => "varchar(max)",
-                               "XmlCol" => $xmlType);
+                               "XmlCol" => "xml");
         createTable($conn, $tbname, $columnMetaArr, "ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]");
     } catch (Exception $e) {
         var_dump($e);
