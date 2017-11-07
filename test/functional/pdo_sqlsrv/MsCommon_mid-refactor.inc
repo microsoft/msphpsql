@@ -133,7 +133,7 @@ class ColumnMeta
     public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic")
     {
         if (is_null($colName)) {
-            $this->colName = get_default_colname($dataType);
+            $this->colName = getDefaultColName($dataType);
         } else {
             $this->colName = $colName;
         }
@@ -232,14 +232,14 @@ class BindParamOp
         $this->variable = $variable;
 
         $pdoParams = array("PDO::PARAM_BOOL", "PDO::PARAM_NULL", "PDO::PARAM_INT", "PDO::PARAM_STR", "PDO::PARAM_LOB");
-        if (in_array($pdoType, $pdoParams)) {
+        if (in_array($pdoType, $pdoParams) || is_null($pdoType)) {
             $this->pdoType = $pdoType;
         } else {
             printf("BindParamOp construct: The pdoType provided must be one of PDO::PARAM_BOOL, PDO::PARAM_NULL, PDO::PARAM_INT, PDO::PARAM_STR, or PDO::PARAM_LOB.\n");
             exit;
         }
 
-        if ($length >= 0) {
+        if ($length >= 0 || is_null($length)) {
             $this->length = $length;
         } else {
             printf("BindParamOp construct: The length provided must be greater or equal to 0.\n");
@@ -247,7 +247,7 @@ class BindParamOp
         }
 
         $encodingAttrs = array("PDO::SQLSRV_ENCODING_BINARY", "PDO::SQLSRV_ENCODING_SYSTEM", "PDO::SQLSRV_ENCODING_UTF8", "PDO::SQLSRV_ENCODING_DEFAULT");
-        if (in_array($options, $encodingAttrs)) {
+        if (in_array($options, $encodingAttrs) || is_null($options)) {
             $this->options = $options;
         } else {
             printf("BindParamOp construct: The option provided must be one of PDO::SQLSRV_ENCODING_BINARY, PDO::SQLSRV_ENCODING_SYSTEM, PDO::SQLSRV_ENCODING_UTF8, PDO::SQLSRV_ENCODING_DEFAULT");
