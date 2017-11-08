@@ -17,8 +17,13 @@ this test is very similar to test_scrollable.phpt... might consider removing thi
     $columns = array(new AE\ColumnMeta('int', 'id'),
                      new AE\ColumnMeta('char(10)', 'value'));
     $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table for the test]n");
+    }
     sqlsrv_free_stmt($stmt);
-
+    
+    // Always Encrypted feature only supports SQLSRV_CURSOR_FORWARD or 
+    // SQLSRV_CURSOR_CLIENT_BUFFERED
     $query = "SELECT * FROM $tableName";
     if (AE\isColEncrypted()) {
         $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);

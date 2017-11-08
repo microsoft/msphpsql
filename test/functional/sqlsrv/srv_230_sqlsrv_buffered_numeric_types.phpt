@@ -47,11 +47,17 @@ AE\createTable($conn, $tableName, $columns);
 $res = null;
 $params = array($sample, $sample1, $sample2, $sample3, $sample4, $sample5, 0, 0, 0);
 $data = getInputData($params);
-AE\insertRow($conn, $tableName, $data, $res, AE\INSERT_QUERY_PARAMS);
+$stmt = AE\insertRow($conn, $tableName, $data, $res, AE\INSERT_QUERY_PARAMS);
+if (!$stmt) {
+    fatalError("Failed to insert into $tableName!");
+}
 
 $params = array($sample4, $sample5, 100000, -1234567, $sample, $sample1, 0, 0, 0);
 $data = getInputData($params);
-AE\insertRow($conn, $tableName, $data, $res, AE\INSERT_QUERY_PARAMS);
+$stmt = AE\insertRow($conn, $tableName, $data, $res, AE\INSERT_QUERY_PARAMS);
+if (!$stmt) {
+    fatalError("Failed to insert into $tableName!");
+}
 
 $query = "SELECT TOP 2 * FROM $tableName";
 $stmt = AE\executeQueryEx($conn, $query, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));

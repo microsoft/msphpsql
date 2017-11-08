@@ -5,7 +5,7 @@ sqlsrv_fetch_object() into a class with Unicode column name
 --FILE--
 <?php
 
-// Define the Product classes
+// Define the Product class
 class Product
 {
     public function __construct($ID, $UID)

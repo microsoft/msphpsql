@@ -74,7 +74,7 @@ class ColumnMeta
         
         if (stripos($this->options, "identity") !== false) {
             $this->encryptable = false;
-        } elseif (in_array($this->dataType, $unsupported)) { 
+        } elseif (in_array(strtolower($this->dataType), $unsupported)) { 
             $this->encryptable = false;
         } else {
             $this->encryptable = true;
@@ -382,36 +382,6 @@ function createTable($conn, $tbname, $columnMetaArr)
 }
 
 /**
- * Create a table with options for sqlsrv_prepare()
- * @param  resource  $conn : sqlsrv connection resource
- * @param  string  $tbname : name of the table to be created
- * @param  array  $columnMetaArr : array of ColumnMeta objects, which contain metadata for one column
- * @param  array  $options : array of options for sqlsrv_prepare()
- * @return resource sqlsrv statement resource
- */
-function createTableEx($conn, $tbname, $columnMetaArr, $options)
-{
-    require_once("MsCommon.inc");
-    dropTable($conn, $tbname);
-    $colDef = "";
-    foreach ($columnMetaArr as $meta) {
-        $colDef = $colDef . $meta->getColDef() . ", ";
-    }
-    $colDef = rtrim($colDef, ", ");
-    $createSql = "CREATE TABLE $tbname ( $colDef )";
-    $stmt = sqlsrv_prepare($conn, $createSql, array(), $options);
-    if ($stmt) {
-        $res = sqlsrv_execute($stmt);
-        if ($res == false) {
-            fatalError("createTableEx: failed to execute the query to create table\n");
-        }
-    } else {
-        fatalError("createTableEx: failed to prepare the statement to create table\n");
-    }
-    return $stmt;
-}
-
-/**
  * Insert a row into a table
  * @param  resource  $conn : sqlsrv connection resource
  * @param  string  $tbname : name of the table for the row to be inserted
@@ -435,7 +405,7 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
                 $stmt = sqlsrv_prepare($conn, $insertSql);
                 if ($stmt) {
                     $r = sqlsrv_execute($stmt);
-                }
+                } 
                 break;
         }
     } else {
@@ -462,6 +432,7 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
             $stmt = sqlsrv_query($conn, $insertSql, $params);
         }
     }
+    
     return $stmt;
 }
 
@@ -681,7 +652,6 @@ function insertTestRow($conn, $tbname, $index)
         echo("Invalid row index $index for test data!\n");
         return false;
     }
-
     // get array of input values
     $inputArray = getInsertArray($index);
     if (empty($inputArray)) {

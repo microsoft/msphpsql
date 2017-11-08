@@ -19,12 +19,7 @@ function insertOneRow($conn, $tableName)
                       "Field7" => "This is field 7.");
         $query = AE\getInsertSqlPlaceholders($tableName, $data);
 
-        // form the array of parameters
-        $params = array();
-        foreach ($data as $key => $input) {
-            array_push($params, $input);
-        }
-        $stmt = sqlsrv_prepare($conn, $query, $params, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+        $stmt = sqlsrv_prepare($conn, $query, array_values($data), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
     } else {
         $query = "INSERT INTO $tableName ([Field2], [Field3], [Field4], [Field5], [Field6], [Field7]) VALUES ('This is field 2.', 0x010203, 'This is field 4.', 0x040506, 'This is field 6.', 'This is field 7.' )";
         $stmt = sqlsrv_prepare($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
@@ -75,7 +70,10 @@ $columns = array(new AE\ColumnMeta('int', 'Id', 'NOT NULL Identity (100,2) PRIMA
                  new AE\ColumnMeta('varchar(max)', 'Field6'),
                  new AE\ColumnMeta('nvarchar(max)', 'Field7'));
 
-AE\createTableEx($conn, $tableName, $columns, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+$stmt = AE\createTable($conn, $tableName, $columns);
+if (!$stmt) {
+    fatalError("Failed to create table for the test\n");
+}
 $stmt = insertOneRow($conn, $tableName);
 
 $f2 = fopen('php://memory', 'a');
