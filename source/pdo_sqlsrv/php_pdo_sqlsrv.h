@@ -310,7 +310,7 @@ inline void pdo_reset_dbh_error( _Inout_ pdo_dbh_t* dbh TSRMLS_DC )
     // release the last statement from the dbh so that error handling won't have a statement passed to it
     if( dbh->query_stmt ) {
         dbh->query_stmt = NULL;
-        zend_objects_store_del( Z_OBJ_P(&dbh->query_stmt_zval TSRMLS_CC) );
+        zval_ptr_dtor( &dbh->query_stmt_zval );
     }
 
     // if the driver isn't valid, just return (PDO calls close sometimes more than once?)
