@@ -22,6 +22,9 @@ const INSERT_PREPARE = 2;
 const INSERT_QUERY_PARAMS = 3;
 const INSERT_PREPARE_PARAMS = 4;
 
+const KSP_NAME = 'MyCustomKSPName';
+const ENCRYPT_KEY = 'LPKCWVD07N3RG98J0MBLG4H2';
+const KSP_TEST_TABLE = 'CustomKSPTestTable';
 
 /**
  * class for encapsulating column metadata needed for creating a table
@@ -211,6 +214,27 @@ function getCekName()
 }
 
 /**
+ * @return the path to the KSP dll/so file
+ */
+function getKSPpath()
+{
+    $name = 'myKSP';
+
+    $dir_name = realpath(dirname(__FILE__));
+    $ksp = $dir_name . DIRECTORY_SEPARATOR . $name;
+    if ( strtoupper( substr( php_uname( 's' ), 0, 3 ) ) == 'WIN' ) {
+        $arch = 'x64';
+        if ( PHP_INT_SIZE == 4 ) // running 32 bit
+            $arch = '';
+        $ksp .= $arch . '.dll';
+    }
+    else
+        $ksp .= '.so';
+        
+    return $ksp;
+}       
+
+/**
  * @return string default column name when a name is not provided in the ColumnMeta class
  */
 function getDefaultColname($dataType)
@@ -346,11 +370,11 @@ function connect($options = array(), $disableCE = false)
             $connectionOptions = array_merge($connectionOptions, array("ColumnEncryption" => "Enabled"));
         }
         if ($keystore == "ksp") {
-            require('AE_Ksp.inc');
+            // require('AE_Ksp.inc');
             $ksp_path = getKSPPath();
             $ksp_options = array("CEKeystoreProvider"=>$ksp_path,
-                                 "CEKeystoreName"=>$ksp_name,
-                                 "CEKeystoreEncryptKey"=>$encrypt_key);
+                                 "CEKeystoreName"=>KSP_NAME,
+                                 "CEKeystoreEncryptKey"=>ENCRYPT_KEY);
             $connectionOptions = array_merge($connectionOptions, $ksp_options);
         }
     }
