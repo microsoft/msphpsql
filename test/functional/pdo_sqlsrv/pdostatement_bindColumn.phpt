@@ -1,53 +1,50 @@
 --TEST--
 Test the bindColumn method using either by bind by column number or bind by column name
 --SKIPIF--
-<?php require "skipif.inc"; ?>
+<?php require "skipif_mid-refactor.inc"; ?>
 --FILE--
 <?php
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
 
-require_once "MsCommon.inc";
-
-function bindColumn_byName($db)
+function bindColumnByName($db, $tbname)
 {
-    global $table1;
-    $stmt = $db->prepare("SELECT IntCol, CharCol, DateTimeCol FROM " . $table1);
+    $stmt = $db->prepare("SELECT IntCol, CharCol, DateTimeCol FROM $tbname");
     $stmt->execute();
     $stmt->bindColumn('IntCol', $intCol);
     $stmt->bindColumn('CharCol', $charCol);
     $stmt->bindColumn('DateTimeCol', $dateTimeCol);
-    
-    while($row = $stmt->fetch(PDO::FETCH_BOUND))
-    {
+
+    while ($row = $stmt->fetch(PDO::FETCH_BOUND)) {
         echo $intCol . " : " . $charCol . " : " . $dateTimeCol . "\n";
     }
 }
 
-function bindColumn_byNumber($db)
+function bindColumnByNumber($db, $tbname)
 {
-    global $table1;
-    $stmt = $db->prepare("SELECT IntCol, CharCol, DateTimeCol FROM " . $table1);
+    $stmt = $db->prepare("SELECT IntCol, CharCol, DateTimeCol FROM $tbname");
     $stmt->execute();
     $stmt->bindColumn(1, $intCol);
     $stmt->bindColumn(2, $charCol);
     $stmt->bindColumn(3, $dateTimeCol);
-    
-    while($row = $stmt->fetch(PDO::FETCH_BOUND))
-    {
+
+    while ($row = $stmt->fetch(PDO::FETCH_BOUND)) {
         echo $intCol . " : " . $charCol . " : " . $dateTimeCol . "\n";
     }
 }
 
-try
-{
+try {
     $db = connect();
+    $tbname = "PDO_MainTypes";
+    createAndInsertTableMainTypes($db, $tbname);
     echo "Bind Column by name :\n";
-    bindColumn_byName($db);
+    bindColumnByName($db, $tbname);
     echo "Bind Column by number :\n";
-    bindColumn_byNumber($db);
-    
-}
-catch (PDOException $e)
-{
+    bindColumnByNumber($db, $tbname);
+
+    dropTable($db, $tbname);
+    unset($db);
+} catch (PDOException $e) {
     var_dump($e);
 }
 

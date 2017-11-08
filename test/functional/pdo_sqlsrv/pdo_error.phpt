@@ -1,28 +1,27 @@
 --TEST--
 Test the PDO::errorCode() and PDO::errorInfo() methods.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-  
-require_once 'MsCommon.inc';
-  
-try 
-{       
-    $db = connect();
-    // query with a wrong column name.
-    $db->query( "Select * from " . $table1 . " where IntColX = 1"   );
-}
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
 
-catch( PDOException $e ) {
+try {
+    $db = connect();
+    $tbname = "PDO_MainTypes";
+    createTableMainTypes($db, $tbname);
+    // query with a wrong column name.
+    $db->query("SELECT * FROM $tbname WHERE IntColX = 1");
+
+    dropTable($db, $tbname);
+    unset($conn);
+} catch (PDOException $e) {
     print($db->errorCode());
     echo "\n";
     print_r($db->errorInfo());
-    exit;
 }
-
-
-?> 
+?>
 --EXPECTREGEX--
 42S22
 Array

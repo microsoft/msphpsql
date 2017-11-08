@@ -3,44 +3,40 @@ Test for inserting and retrieving encrypted data of datetime types
 --DESCRIPTION--
 No PDO::PARAM_ type specified when binding parameters
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
-include 'AEData.inc';
+require_once("MsCommon_mid-refactor.inc");
+require_once("AEData.inc");
 
 $dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
 
-try
-{
-    $conn = ae_connect();
+try {
+    $conn = connect();
 
-    foreach ( $dataTypes as $dataType ) {
+    foreach ($dataTypes as $dataType) {
         echo "\nTesting $dataType:\n";
-        
+
         // create table
-        $tbname = GetTempTableName( "", false );
-        $colMetaArr = array( new columnMeta( $dataType, "c_det" ), new columnMeta( $dataType, "c_rand", null, "randomized" ));
-        create_table( $conn, $tbname, $colMetaArr );
-        
+        $tbname = getTableName();
+        $colMetaArr = array( new ColumnMeta($dataType, "c_det"), new ColumnMeta($dataType, "c_rand", null, "randomized"));
+        createTable($conn, $tbname, $colMetaArr);
+
         // insert a row
-        $inputValues = array_slice( ${explode( "(", $dataType )[0] . "_params"}, 1, 2 );
+        $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
         $r;
-        $stmt = insert_row( $conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r );
-        if ( $r === false ) {
-            is_incompatible_types_error( $stmt, $dataType, "default type" );
-        }
-        else {
+        $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null, $r);
+        if ($r === false) {
+            isIncompatibleTypesError($stmt, $dataType, "default type");
+        } else {
             echo "****Encrypted default type is compatible with encrypted $dataType****\n";
-            fetch_all( $conn, $tbname );
+            fetchAll($conn, $tbname);
         }
-        DropTable( $conn, $tbname );
+        dropTable($conn, $tbname);
     }
-    unset( $stmt );
-    unset( $conn );
-}
-catch( PDOException $e )
-{
+    unset($stmt);
+    unset($conn);
+} catch (PDOException $e) {
     echo $e->getMessage();
 }
 ?>

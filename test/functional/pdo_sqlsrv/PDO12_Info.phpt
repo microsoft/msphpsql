@@ -5,57 +5,26 @@ Verifies the functionality of PDO with phpinfo().
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
-
-function DriversInfo()
-{
-    include 'MsSetup.inc';
-
-    $testName = "PDO - phpinfo";
-    StartTest($testName);
-
+try {
     ob_start();
     phpinfo();
     $info = ob_get_contents();
     ob_end_clean();
 
     // Check phpinfo() data
-    if (stristr($info, "PDO support => enabled") === false)
-    {
+    if (stristr($info, "PDO support => enabled") === false) {
         printf("PDO is not enabled\n");
+    } elseif (stristr($info, "pdo_sqlsrv support => enabled") === false) {
+        printf("Cannot find PDO_SQLSRV driver in phpinfo() output\n");
+    } else {
+        printf("Done\n");
     }
-    else if (stristr($info, "pdo_sqlsrv support => enabled") === false)
-    {
-        printf("Cannot find PDO driver line in phpinfo() output\n");
-    }
-
-    EndTest($testName);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-    try
-    {
-        DriversInfo();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-}
-
-Repro();
-
 ?>
 --EXPECT--
-Test "PDO - phpinfo" completed successfully.
+Done

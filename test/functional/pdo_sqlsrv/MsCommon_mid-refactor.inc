@@ -12,7 +12,6 @@
 // looks like an additional file (in addition to pdo_test_base.inc) may be needed for these PHPTs
 // to be runnable from the MSSQL teams' internal proprietary test running system
 //
-require  'MsData.inc';
 
 function isAEQualified($conn)
 {
@@ -127,19 +126,21 @@ class ColumnMeta
 {
     public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $colName;    //column name
-    public $encType;    //randomized or deterministic; default is deterministic
     public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
+    public $encType;    //randomized or deterministic; default is deterministic
+    public $forceEncrypt; //force encryption on a datatype no supported by Column Encrypton
 
-    public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic")
+    public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic", $forceEncrypt = false)
     {
         if (is_null($colName)) {
-            $this->colName = get_default_colname($dataType);
+            $this->colName = getDefaultColName($dataType);
         } else {
             $this->colName = $colName;
         }
         $this->dataType = $dataType;
-        $this->encType = $encType;
         $this->options = $options;
+        $this->encType = $encType;
+        $this->forceEncrypt = $forceEncrypt;
     }
     /**
      * @return string column definition for creating a table
@@ -150,7 +151,7 @@ class ColumnMeta
         $append = " ";
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if (isColEncrypted() && stripos($this->options, "identity") === false) {
+        if (isColEncrypted() && $this->isEncryptableType() && stripos($this->options, "identity") === false) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
@@ -160,6 +161,19 @@ class ColumnMeta
         $append .= $this->options;
         $colDef = "[" . $this->colName . "] " . $this->dataType . $append;
         return $colDef;
+    }
+
+    /**
+     * @return bool if the datatype for this column is encryptable
+     */
+    public function isEncryptableType()
+    {
+        $unsupportedTypes = array("money", "smallmoney", "image", "ntext", "text", "xml", "sql_variant");
+        if (!$this->forceEncrypt && in_array(strtolower($this->dataType), $unsupportedTypes)) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 
@@ -183,9 +197,10 @@ function getDefaultColName($dataType)
  * @param  array  $inputs : an associative array column name and its value; value may be a literal value or a ColumnMeta object
  * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
  *                          for creating table with datatypes not support for encryption
+ * @param  string  $tableOption : table options appended to the end of a create table statement
  * @return int reporting the number of rows affected (should always be 0 for creating table)
  */
-function createTable($conn, $tbname, $columnMetaArr, $disableCE = false)
+function createTable($conn, $tbname, $columnMetaArr, $tableOption = '', $disableCE = false)
 {
     try {
         dropTable($conn, $tbname);
@@ -202,7 +217,7 @@ function createTable($conn, $tbname, $columnMetaArr, $disableCE = false)
             }
         }
         $colDef = rtrim($colDef, ", ");
-        $createSql = "CREATE TABLE $tbname ($colDef)";
+        $createSql = "CREATE TABLE $tbname ($colDef) $tableOption";
         $numRows = $conn->exec($createSql);
         return $numRows;
     } catch (PDOException $e) {
@@ -231,14 +246,14 @@ class BindParamOp
         $this->variable = $variable;
 
         $pdoParams = array("PDO::PARAM_BOOL", "PDO::PARAM_NULL", "PDO::PARAM_INT", "PDO::PARAM_STR", "PDO::PARAM_LOB");
-        if (in_array($pdoType, $pdoParams)) {
+        if (in_array($pdoType, $pdoParams) || is_null($pdoType)) {
             $this->pdoType = $pdoType;
         } else {
-            prinft("BindParamOp construct: The pdoType provided must be one of PDO::PARAM_BOOL, PDO::PARAM_NULL, PDO::PARAM_INT, PDO::PARAM_STR, or PDO::PARAM_LOB.\n");
+            printf("BindParamOp construct: The pdoType provided must be one of PDO::PARAM_BOOL, PDO::PARAM_NULL, PDO::PARAM_INT, PDO::PARAM_STR, or PDO::PARAM_LOB.\n");
             exit;
         }
 
-        if ($length >= 0) {
+        if ($length >= 0 || is_null($length)) {
             $this->length = $length;
         } else {
             printf("BindParamOp construct: The length provided must be greater or equal to 0.\n");
@@ -246,7 +261,7 @@ class BindParamOp
         }
 
         $encodingAttrs = array("PDO::SQLSRV_ENCODING_BINARY", "PDO::SQLSRV_ENCODING_SYSTEM", "PDO::SQLSRV_ENCODING_UTF8", "PDO::SQLSRV_ENCODING_DEFAULT");
-        if (in_array($options, $encodingAttrs)) {
+        if (in_array($options, $encodingAttrs) || is_null($options)) {
             $this->options = $options;
         } else {
             printf("BindParamOp construct: The option provided must be one of PDO::SQLSRV_ENCODING_BINARY, PDO::SQLSRV_ENCODING_SYSTEM, PDO::SQLSRV_ENCODING_UTF8, PDO::SQLSRV_ENCODING_DEFAULT");
@@ -505,146 +520,6 @@ function isColEncrypted()
         return false;
     } else {
         return true;
-    }
-}
-
-
-// Create and insert
-function create_and_insert_table1($conn)
-{
-    global $string_col, $date_col, $large_string_col, $xml_col, $binary_col, $int_col, $decimal_col, $guid_col, $null_col, $comma, $closing_brace, $table1;
-
-    try {
-        $create_query =
-
-        "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $table1 . "') AND type in (N'U'))
-        DROP TABLE " . $table1 .
-
-        " CREATE TABLE [dbo].[" . $table1 . "](
-          [IntCol] [int] NULL,
-          [CharCol] [char](10) NULL,
-          [NCharCol] [nchar](10) NULL,
-          [DateTimeCol] [datetime] NULL,
-          [VarcharCol] [varchar](50) NULL,
-          [NVarCharCol] [nvarchar](50) NULL,
-          [FloatCol] [float] NULL,
-        [XmlCol] [xml] NULL
-        ) ON [PRIMARY]
-        ";
-
-        $conn->query($create_query);
-
-        for ($i = 0 ; $i <= 1; ++ $i) {
-            $insert_query =
-                    "INSERT INTO PDO_Types_1 VALUES (".
-                    $int_col[$i] . $comma .
-                    $string_col[$i] . $comma .
-                    $string_col[$i] . $comma .
-                    "Convert(datetime, ". $date_col[$i] . ")" . $comma .
-                    $string_col[$i] . $comma .
-                    $string_col[$i] . $comma .
-                    $decimal_col[$i] . $comma .
-                    $xml_col[$i] .
-                    ")";
-
-            $conn->query($insert_query);
-        }
-    } catch (Exception $e) {
-        var_dump($e);
-        exit;
-    }
-}
-
-function create_and_insert_table2($conn)
-{
-    try {
-        //Timestamp is not present.
-        //VARIANT is not supported.
-        global $string_col, $date_col, $large_string_col, $xml_col, $binary_col, $int_col, $decimal_col, $guid_col, $null_col, $comma, $closing_brace, $table1, $table2;
-
-        $create_query =
-        "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'".$table2."') AND type in (N'U'))  DROP TABLE " . $table2 .
-
-        " CREATE TABLE " .$table2 . " (
-            [BigIntCol] [bigint] NULL,
-            [BinaryCol] [binary](5) NULL,
-            [BitCol] [bit] NULL,
-            [CharCol] [char](10) NULL,
-            [DateCol] [date] NULL,
-            [DateTimeCol] [datetime] NULL,
-            [DateTime2Col] [datetime2](7) NULL,
-            [DTOffsetCol] [datetimeoffset](7) NULL,
-            [DecimalCol] [decimal](18, 0) NULL,
-            [FloatCol] [float] NULL,
-            [ImageCol] [image] NULL,
-            [IntCol] [int] NULL,
-            [MoneyCol] [money] NULL,
-            [NCharCol] [nchar](10) NULL,
-            [NTextCol] [ntext] NULL,
-            [NumCol] [numeric](18, 0) NULL,
-            [NVarCharCol] [nvarchar](50) NULL,
-            [NVarCharMaxCol] [nvarchar](max) NULL,
-            [RealCol] [real] NULL,
-            [SmallDTCol] [smalldatetime] NULL,
-            [SmallIntCol] [smallint] NULL,
-            [SmallMoneyCol] [smallmoney] NULL,
-            [TextCol] [text] NULL,
-            [TimeCol] [time](7) NULL,
-            [TinyIntCol] [tinyint] NULL,
-            [Guidcol] [uniqueidentifier] NULL,
-            [VarbinaryCol] [varbinary](50) NULL,
-            [VarbinaryMaxCol] [varbinary](max) NULL,
-            [VarcharCol] [varchar](50) NULL,
-            [VarcharMaxCol] [varchar](max) NULL,
-            [XmlCol] [xml] NULL
-        ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-
-        ";
-
-        $stmt = $conn->query($create_query);
-
-        for ($i =0; $i<= 0 ; ++ $i) {
-            $insert_query =
-
-                  " INSERT INTO " .$table2 . " VALUES (".
-                    $int_col[$i] . $comma .
-                    $binary_col[$i] . $comma .
-                    "0" . $comma .
-                    $string_col[$i] . $comma .
-                    "Convert(date, ". $date_col[$i] . $closing_brace .
-                    "Convert(datetime, ". $date_col[$i] . $closing_brace .
-                    "Convert(datetime2(7),". $date_col[$i] . $closing_brace .
-                    "Convert(datetimeoffset(7)," . $date_col[$i] . $closing_brace .
-                    $decimal_col[$i] . $comma .
-                    $decimal_col[$i] .$comma .
-                    $binary_col[$i] . $comma .
-                    $int_col[$i] . $comma .
-                    $decimal_col[$i] . $comma .
-                    $string_col[$i]. $comma .
-                    $large_string_col[$i]. $comma.
-                    $int_col[$i]. $comma .
-                    $string_col[$i]. $comma .
-                    $large_string_col[$i]. $comma .
-                    $decimal_col[$i]. $comma .
-                    "Convert(smalldatetime, ". $date_col[$i]. $closing_brace .
-                    $int_col[$i]. $comma .
-                    $decimal_col[$i]. $comma .
-                    $large_string_col[$i]. $comma .
-                    "Convert(time(7), ". $date_col[$i] . $closing_brace .
-                    $int_col[$i] . $comma .
-                    $guid_col[$i] . $comma .
-                    $binary_col[$i] . $comma .
-                    $binary_col[$i] . $comma .
-                    $string_col[$i] . $comma .
-                    $large_string_col[$i] . $comma .
-                    $xml_col[$i] .
-                    ")";
-
-            $stmt = $conn->query($insert_query);
-        }
-    } catch (Exception $e) {
-        var_dump($e);
-        exit;
     }
 }
 
@@ -1366,7 +1241,7 @@ function CreateTableEx($conn, $tableName, $dataType)
 {
     Trace("Creating table $tableName ...");
     $tsql = "CREATE TABLE [$tableName] ($dataType)";
-    DropTable($conn, $tableName);
+    dropTable($conn, $tableName);
 
     if (IsPdoMode()) {
         $outcome = $conn->exec($tsql);

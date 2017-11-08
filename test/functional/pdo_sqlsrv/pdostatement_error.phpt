@@ -1,31 +1,30 @@
 --TEST--
 Test PDOStatement::errorInfo and PDOStatement::errorCode methods.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
 
-try
-{
+try {
     $db = connect();
-    $stmt = $db->prepare("SELECT * FROM PDO_Types_1");
+    $tbname = "PDO_MainTypes";
+    createAndInsertTableMainTypes($db, $tbname);
+    $stmt = $db->prepare("SELECT * FROM $tbname");
     $stmt->execute();
     $arr = $stmt->errorInfo();
     print_r("Error Info :\n");
     var_dump($arr);
     $arr = $stmt->errorCode();
     print_r("Error Code : " . $arr . "\n");
-    
-    
-    
-    $db = null;
-}
-catch (PDOException $e)
-{
+
+    dropTable($db, $tbname);
+    unset($stmt);
+    unset($db);
+} catch (PDOException $e) {
     var_dump($e);
 }
-
 ?>
 --EXPECT--
 Error Info :

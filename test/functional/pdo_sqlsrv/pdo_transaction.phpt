@@ -3,49 +3,71 @@ test transaction rollback and commit
 --DESCRIPTION--
 starts a transaction, delete rows and rollback the transaction; starts a transaction, delete rows and commit
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-    require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
-    $conn = new PDO( "sqlsrv:Server=$server; database = $databaseName", $uid, $pwd);
-    
-    $conn->exec("IF OBJECT_ID('Table1', 'U') IS NOT NULL DROP TABLE Table1");
-    $conn->exec("CREATE TABLE Table1(col1 CHARACTER(1), col2 CHARACTER(1))");
-   
-    $ret = $conn->exec("INSERT INTO Table1(col1, col2) VALUES('a', 'b')");
-    $ret = $conn->exec("INSERT INTO Table1(col1, col2) VALUES('a', 'c')");
-   
+function deleteRows($conn, $tbname)
+{
+    try {
+        if (!isColEncrypted()) {
+            $rows = $conn->exec("DELETE FROM $tbname WHERE col1 = 'a'");
+        } else {
+            // needs to find parameter for encrypted columns
+            $sql = "DELETE FROM $tbname WHERE col1 = ?";
+            $stmt = $conn->prepare($sql);
+            $col1 = "a";
+            $stmt->execute(array($col1));
+            $rows = $stmt->rowCount();
+        }
+        return $rows;
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
+    }
+}
+
+try {
+    $conn = connect();
+
+    $tbname = "Table1";
+    createTable($conn, $tbname, array("col1" => "char(1)", "col2" => "char(1)"));
+
+    insertRow($conn, $tbname, array("col1" => "a", "col2" => "b"));
+    insertRow($conn, $tbname, array("col1" => "a", "col2" => "c"));
+
     //revert the inserts but roll back
     $conn->beginTransaction();
-    $rows = $conn->exec("DELETE FROM Table1 WHERE col1 = 'a'");
+    $rows = deleteRows($conn, $tbname);
     $conn->rollback();
-    $stmt = $conn->query("SELECT * FROM Table1");
-    
+    $stmt = $conn->query("SELECT * FROM $tbname");
+
     // Table1 should still have 2 rows since delete was rolled back
-    if ( count( $stmt->fetchAll() ) == 2 )
+    if (count($stmt->fetchAll()) == 2) {
         echo "Transaction rolled back successfully\n";
-    else
+    } else {
         echo "Transaction failed to roll back\n";
-        
+    }
+
     //revert the inserts then commit
     $conn->beginTransaction();
-    $rows = $conn->exec("DELETE FROM Table1 WHERE col1 = 'a'");
+    $rows = deleteRows($conn, $tbname);
     $conn->commit();
     echo $rows." rows affected\n";
-    
-    $stmt = $conn->query("SELECT * FROM Table1");
-    if ( count( $stmt->fetchAll() ) == 0 )
+
+    $stmt = $conn->query("SELECT * FROM $tbname");
+    if (count($stmt->fetchAll()) == 0) {
         echo "Transaction committed successfully\n";
-    else
+    } else {
         echo "Transaction failed to commit\n";
-   
-    //drop the created temp table
-    $conn->exec("DROP TABLE Table1");
-   
-    //free statement and connection
-    $stmt = NULL;
-    $conn = NULL;
+    }
+
+    dropTable($conn, $tbname);
+    unset($stmt);
+    unset($conn);
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
+}
 ?>
 --EXPECT--
 Transaction rolled back successfully
