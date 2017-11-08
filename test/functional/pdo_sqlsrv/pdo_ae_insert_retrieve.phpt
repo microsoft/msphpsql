@@ -11,11 +11,11 @@ try {
     $conn = connect();
     // Create the table
     $tbname = 'Patients';
-    $colMetaArr = array( new columnMeta("int", "PatientId", "IDENTITY(1,1)"),
-                         new columnMeta("char(11)", "SSN"),
-                         new columnMeta("nvarchar(50)", "FirstName", "NULL"),
-                         new columnMeta("nvarchar(50)", "LastName", "NULL"),
-                         new columnMeta("date", "BirthDate", null, "randomized"));
+    $colMetaArr = array( new ColumnMeta("int", "PatientId", "IDENTITY(1,1)"),
+                         new ColumnMeta("char(11)", "SSN"),
+                         new ColumnMeta("nvarchar(50)", "FirstName", "NULL"),
+                         new ColumnMeta("nvarchar(50)", "LastName", "NULL"),
+                         new ColumnMeta("date", "BirthDate", null, "randomized"));
     createTable($conn, $tbname, $colMetaArr);
 
     // insert a row

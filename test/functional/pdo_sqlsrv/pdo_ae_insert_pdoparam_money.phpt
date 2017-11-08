@@ -10,6 +10,7 @@ require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
 $dataTypes = array( "smallmoney", "money" );
 try {
+    //set to ERRMODE_SILENT to compare actual error and expected unsupport money types in encrypted columns error
     $conn = connect('', array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
         echo "\nTesting $dataType:\n";
@@ -60,7 +61,7 @@ try {
         if ($success) {
             echo "Test successfully done.\n";
         }
-        DropTable($conn, $tbname);
+        dropTable($conn, $tbname);
     }
     unset($stmt);
     unset($conn);

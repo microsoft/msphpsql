@@ -38,7 +38,7 @@ if (isColEncrypted()) {
         $conn1 = connect('', array(), PDO::ERRMODE_EXCEPTION, true);
         $stmt = $conn1->query($selectSql);
         while ($decrypted_row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            if ($decrypted_row[ 'CharCount' ] == strlen($decrypted_row[getDefaultColName("nvarchar(1000)")])) {
+            if ($decrypted_row['CharCount'] == strlen($decrypted_row[getDefaultColName("nvarchar(1000)")])) {
                 $rowInd = $decrypted_row[ 'CharCount' ] + 1;
                 echo "Failed to encrypted at row $rowInd\n";
                 $testPass = false;

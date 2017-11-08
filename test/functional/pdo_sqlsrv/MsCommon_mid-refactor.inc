@@ -169,7 +169,7 @@ class ColumnMeta
     public function isEncryptableType()
     {
         $unsupportedTypes = array("money", "smallmoney", "image", "ntext", "text", "xml", "sql_variant");
-        if (in_array(strtolower($this->dataType), $unsupportedTypes) && !$this->forceEncrypt) {
+        if (!$this->forceEncrypt && in_array(strtolower($this->dataType), $unsupportedTypes)) {
             return false;
         } else {
             return true;
