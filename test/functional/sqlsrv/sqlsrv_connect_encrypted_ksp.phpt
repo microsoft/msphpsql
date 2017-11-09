@@ -9,7 +9,7 @@ Fetch data from a prepopulated test table given a custom keystore provider
 
     require_once('MsHelper.inc');
     $conn = AE\connect(array('ReturnDatesAsStrings'=>true));
-    if($conn === false) {
+    if ($conn === false) {
         echo "Failed to connect.\n";
         print_r(sqlsrv_errors());
     } else {
@@ -19,7 +19,7 @@ Fetch data from a prepopulated test table given a custom keystore provider
     $ksp_test_table = AE\KSP_TEST_TABLE;
     $tsql = "SELECT * FROM $ksp_test_table";
     $stmt = sqlsrv_prepare($conn, $tsql);
-    if (! sqlsrv_execute($stmt)) {
+    if (!sqlsrv_execute($stmt)) {
         echo "Failed to fetch data.\n";
         print_r(sqlsrv_errors());
     }

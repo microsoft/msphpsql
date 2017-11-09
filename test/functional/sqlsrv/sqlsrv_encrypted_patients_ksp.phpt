@@ -4,7 +4,7 @@ Test simple insert, fetch and update with ColumnEncryption enabled and a custome
 <?php require('skipif_not_ksp.inc'); ?>
 --FILE--
 <?php
-    function CreatePatientsTable()
+    function createPatientsTable()
     {
         global $conn;
         $tableName = 'Patients';
@@ -82,13 +82,13 @@ Test simple insert, fetch and update with ColumnEncryption enabled and a custome
 
     require_once('MsHelper.inc');
     $conn = AE\connect(array('ReturnDatesAsStrings'=>true));
-    if($conn === false) {
+    if ($conn === false) {
         fatalError( "Failed to connect.\n");
     } else {
         echo "Connected successfully with ColumnEncryption enabled.\n";
     }
 
-    $tableName = CreatePatientsTable();
+    $tableName = createPatientsTable();
 
     insertData('748-68-0245', 'Jeannette', 'McDonald', '2002-11-28');
     insertData('795-73-9838', 'John', 'Doe', '2001-05-29');
@@ -103,7 +103,7 @@ Test simple insert, fetch and update with ColumnEncryption enabled and a custome
                     array('Chang', null, null, SQLSRV_SQLTYPE_NVARCHAR(50)), 
                     array('456-12-5486', null, null, SQLSRV_SQLTYPE_CHAR(11)));
 
-    $tsql = "UPDATE Patients SET BirthDate = ?, LastName = ? WHERE SSN = ?";
+    $tsql = "UPDATE $tableName SET BirthDate = ?, LastName = ? WHERE SSN = ?";
     $stmt = sqlsrv_query($conn, $tsql, $params);
 
     if (!$stmt) {
@@ -112,7 +112,7 @@ Test simple insert, fetch and update with ColumnEncryption enabled and a custome
 
     echo "Update his birthdate too...\n";
     $params = array(array('456-12-5486', null, null, SQLSRV_SQLTYPE_CHAR(11)));
-    $tsql = "SELECT SSN, FirstName, LastName, BirthDate FROM Patients WHERE SSN = ?";
+    $tsql = "SELECT SSN, FirstName, LastName, BirthDate FROM $tableName WHERE SSN = ?";
     $stmt = sqlsrv_query($conn, $tsql, $params);
     if (!$stmt) {
         fatalError("Failed to select with a WHERE clause\n");
@@ -128,7 +128,7 @@ Test simple insert, fetch and update with ColumnEncryption enabled and a custome
     ///////////////////////////////////////////
     $procName = '#phpAEProc1';
     $spArgs = "@p1 INT, @p2 DATE OUTPUT";
-    $spCode = "SET @p2 = (SELECT [BirthDate] FROM Patients WHERE [PatientId] = @p1)";
+    $spCode = "SET @p2 = (SELECT [BirthDate] FROM $tableName WHERE [PatientId] = @p1)";
     $stmt = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
     sqlsrv_free_stmt($stmt);
 
@@ -147,7 +147,7 @@ Test simple insert, fetch and update with ColumnEncryption enabled and a custome
     ///////////////////////////////////////////
     $procName = '#phpAEProc2';
     $spArgs = "@p1 INT, @p2 CHAR(11) OUTPUT";
-    $spCode = "SET @p2 = (SELECT [SSN] FROM Patients WHERE [PatientId] = @p1)";
+    $spCode = "SET @p2 = (SELECT [SSN] FROM $tableName WHERE [PatientId] = @p1)";
     $stmt = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
     sqlsrv_free_stmt($stmt);
 

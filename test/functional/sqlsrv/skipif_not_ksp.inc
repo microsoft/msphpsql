@@ -1,7 +1,7 @@
 <?php
 
-if(! extension_loaded( "sqlsrv" ) ) 
-    die( "skip extension not loaded" );
+if (!extension_loaded("sqlsrv")) 
+    die("skip extension not loaded");
 
 require_once('MsCommon.inc');
 

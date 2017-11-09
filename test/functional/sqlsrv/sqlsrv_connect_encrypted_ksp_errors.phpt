@@ -8,7 +8,7 @@ Connect using a custom keystore provider with some required inputs missing
     function connect($server, $connectionInfo)
     {
         $conn = sqlsrv_connect($server, $connectionInfo);
-        if($conn === false) {
+        if ($conn === false) {
             echo "Failed to connect.\n";
             $errors = sqlsrv_errors();
             foreach ($errors[0] as $key => $error) {
@@ -31,20 +31,20 @@ Connect using a custom keystore provider with some required inputs missing
     $ksp_name = AE\KSP_NAME;
     $encrypt_key = AE\ENCRYPT_KEY;
 
-    echo("Connecting... with column encryption\n");
+    echo "Connecting... with column encryption\n";
     $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
                             "ColumnEncryption"=>"enabled");
 
     connect($server, $connectionInfo);
 
-    echo("Connecting... with an invalid input to CEKeystoreProvider\n");
+    echo "Connecting... with an invalid input to CEKeystoreProvider\n";
     $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
                             "ColumnEncryption"=>"enabled",
                             "CEKeystoreProvider"=>1);
 
     connect($server, $connectionInfo);
 
-    echo("Connecting... with an empty path\n");
+    echo "Connecting... with an empty path\n";
     $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
                             "ColumnEncryption"=>"enabled",
                             "CEKeystoreProvider"=>"",
@@ -53,7 +53,7 @@ Connect using a custom keystore provider with some required inputs missing
 
     connect($server, $connectionInfo);
 
-    echo("Connecting... without a name\n");
+    echo "Connecting... without a name\n";
     $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
                             "ColumnEncryption"=>"enabled",
                             "CEKeystoreProvider"=>$ksp_path,
@@ -61,7 +61,7 @@ Connect using a custom keystore provider with some required inputs missing
 
     connect($server, $connectionInfo);
 
-    echo("Connecting... with an empty name\n");
+    echo "Connecting... with an empty name\n";
     $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
                             "ColumnEncryption"=>"enabled",
                             "CEKeystoreProvider"=>$ksp_path,
@@ -70,7 +70,7 @@ Connect using a custom keystore provider with some required inputs missing
 
     connect($server, $connectionInfo);
 
-    echo("Connecting... without a key\n");
+    echo "Connecting... without a key\n";
     $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
                             "ColumnEncryption"=>"enabled",
                             "CEKeystoreProvider"=>$ksp_path,
@@ -78,7 +78,7 @@ Connect using a custom keystore provider with some required inputs missing
 
     connect($server, $connectionInfo);
 
-    echo("Connecting... with all required inputs\n");
+    echo "Connecting... with all required inputs\n";
     $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
                             "ColumnEncryption"=>"enabled",
                             "CEKeystoreProvider"=>$ksp_path,

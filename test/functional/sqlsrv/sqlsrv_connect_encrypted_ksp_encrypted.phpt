@@ -9,7 +9,7 @@ Fetch encrypted data from a prepopulated test table given a custom keystore prov
 
     require_once('MsHelper.inc');
     $conn = AE\connect(array('ReturnDatesAsStrings'=>true));
-    if($conn === false) {
+    if ($conn === false) {
         fatalError("Failed to connect.\n");
     } else {
         echo "Connected successfully with ColumnEncryption disabled.\n";

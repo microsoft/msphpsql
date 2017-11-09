@@ -31,7 +31,7 @@ this test is very similar to test_scrollable.phpt... might consider removing thi
         $options = array('Scrollable' => 'static');
     }
 
-    $stmt = AE\executeQueryEx($conn, $query, $options);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
     $rows = sqlsrv_has_rows($stmt);
     if ($rows != false) {
         fatalError("Should be no rows present");
@@ -46,7 +46,7 @@ this test is very similar to test_scrollable.phpt... might consider removing thi
         print_r(sqlsrv_errors(), true);
     }
     
-    $stmt = AE\selectFromTable($conn, $tableName);
+    $stmt = sqlsrv_query($conn, $query);
     $rows = sqlsrv_has_rows($stmt);
     if ($rows != false) {
         fatalError("Should be no rows present");
