@@ -135,6 +135,7 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     current_results( NULL ),
     cursor_type( SQL_CURSOR_FORWARD_ONLY ),
     fwd_row_index( -1 ),
+    curr_result_set( 0 ),
     has_rows( false ),
     fetch_called( false ),
     last_field_index( -1 ),
@@ -1138,9 +1139,13 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
 
             // mark we are past the end of all results
             stmt->past_next_result_end = true;
+
+            // reset the current active result set
+            stmt->curr_result_set = 0;
             return;
         }
 
+        stmt->curr_result_set++;
         stmt->new_result_set( TSRMLS_C );
     }
     catch( core::CoreException& e ) {
@@ -2655,6 +2660,12 @@ bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt ) {
         // close and reopen the cursor
         core::SQLCloseCursor(stmt->current_results->odbc);
         core::SQLExecute(stmt);
+
+        // advance to the previous active result set
+        for (int j = 0; j < stmt->curr_result_set; j++) {
+            core::SQLMoreResults(stmt);
+        }
+
         // FETCH_NEXT until the cursor reaches the row that it was at
         for (int i = 0; i <= stmt->fwd_row_index; i++) {
             core::SQLFetchScroll(stmt->current_results->odbc, SQL_FETCH_NEXT, 0);

@@ -1357,30 +1357,31 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool past_fetch_end;                  // Core_sqlsrv_fetch sets this field when the statement goes beyond the last row
     sqlsrv_result_set* current_results;   // Current result set
     SQLULEN cursor_type;                  // Type of cursor for the current result set
-    int fwd_row_index;                // fwd_row_index is the current row index, SQL_CURSOR_FORWARD_ONLY
+    int fwd_row_index;                    // fwd_row_index is the current row index, SQL_CURSOR_FORWARD_ONLY
+    int curr_result_set;                  // the current active result set, 0 by default but will be incremented by core_sqlsrv_next_result
     bool has_rows;                        // Has_rows is set if there are actual rows in the row set
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field
     bool past_next_result_end;            // core_sqlsrv_next_result sets this to true when the statement goes beyond the 
                                           // last results
     unsigned long query_timeout;          // maximum allowed statement execution time
-    zend_long buffered_query_limit;   // maximum allowed memory for a buffered query (measured in KB)
+    zend_long buffered_query_limit;       // maximum allowed memory for a buffered query (measured in KB)
 
     // holds output pointers for SQLBindParameter
     // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving
     // memory, which is important because we pass the pointer to an element of the deque to SQLBindParameter to hold
     std::deque<SQLLEN>   param_ind_ptrs;  // output pointers for lengths for calls to SQLBindParameter
-    zval param_input_strings;            // hold all UTF-16 input strings that aren't managed by PHP
-    zval output_params;                  // hold all the output parameters
-    zval param_streams;                  // track which streams to send data to the server
-    zval param_datetime_buffers;         // datetime strings to be converted back to DateTime objects
+    zval param_input_strings;             // hold all UTF-16 input strings that aren't managed by PHP
+    zval output_params;                   // hold all the output parameters
+    zval param_streams;                   // track which streams to send data to the server
+    zval param_datetime_buffers;          // datetime strings to be converted back to DateTime objects
     bool send_streams_at_exec;            // send all stream data right after execution before returning
     sqlsrv_stream current_stream;         // current stream sending data to the server as an input parameter
     unsigned int current_stream_read;     // # of bytes read so far. (if we read an empty PHP stream, we send an empty string 
                                           // to the server)
-    zval field_cache;                    // cache for a single row of fields, to allow multiple and out of order retrievals
-    zval col_cache;                      // Used by get_field_as_string not to call SQLColAttribute()  after every fetch. 
-    zval active_stream;                  // the currently active stream reading data from the database
+    zval field_cache;                     // cache for a single row of fields, to allow multiple and out of order retrievals
+    zval col_cache;                       // Used by get_field_as_string not to call SQLColAttribute()  after every fetch. 
+    zval active_stream;                   // the currently active stream reading data from the database
 
     sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
     virtual ~sqlsrv_stmt( void );
