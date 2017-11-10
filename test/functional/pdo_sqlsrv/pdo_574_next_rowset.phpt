@@ -24,12 +24,12 @@ try {
     createTable($conn, $tableName1, $columns);
 
     // insert one row to each table
-    $phrase = str_repeat('This is a test ', 250);
+    $phrase = str_repeat('This is a test ', 25000);
     $stmt = insertRow($conn, $tableName, array('col1' => $phrase));
     unset($stmt);
 
-    $phrase = str_repeat('This is indeed very long ', 300);
-    $stmt = insertRow($conn, $tableName1, array('col1' => $phrase));
+    $phrase1 = str_repeat('This is indeed very long ', 30000);
+    $stmt = insertRow($conn, $tableName1, array('col1' => $phrase1));
     unset($stmt);
 
     // run queries in a batch
@@ -39,7 +39,11 @@ try {
     // fetch from $tableName
     $row = $stmt->fetch(PDO::FETCH_NUM);
     if ($row) {
-        echo(substr($row[0], 0, 15)) . PHP_EOL;
+        if ($row[0] === $phrase) {
+            echo(substr($row[0], 0, 15)) . PHP_EOL;
+        } else {
+            echo "Incorrect value substr($row[0], 0, 1000)...!" . PHP_EOL;
+        }
     }
 
     // fetch from cd_info
@@ -49,7 +53,7 @@ try {
 
     $row = $stmt->fetch(PDO::FETCH_NUM);
     if ($row) {
-        echo(substr($row[0], 0, 15)) . PHP_EOL;
+        echo $row[0] . PHP_EOL;
     }
 
     // fetch from $tableName1
@@ -59,7 +63,11 @@ try {
 
     $row = $stmt->fetch(PDO::FETCH_NUM);
     if ($row) {
-        echo(substr($row[0], 0, 25)) . PHP_EOL;
+        if ($row[0] === $phrase1) {
+            echo(substr($row[0], 0, 25)) . PHP_EOL;
+        } else {
+            echo "Incorrect value substr($row[0], 0, 1000)...!" . PHP_EOL;
+        }
     }
 
     // should be no more next results, first returns false second throws an exception
@@ -90,7 +98,7 @@ try {
     // fetch from cd_info
     $row = $stmt->fetch(PDO::FETCH_NUM);
     if ($row) {
-        echo(substr($row[0], 0, 15)) . PHP_EOL;
+        echo $row[0] . PHP_EOL;
     }
 
     // re-execute the statement, should return to the first query in the batch
@@ -99,7 +107,11 @@ try {
     // fetch from $tableName1
     $row = $stmt->fetch(PDO::FETCH_NUM);
     if ($row) {
-        echo(substr($row[0], 0, 25)) . PHP_EOL;
+        if ($row[0] === $phrase1) {
+            echo(substr($row[0], 0, 25)) . PHP_EOL;
+        } else {
+            echo "Incorrect value substr($row[0], 0, 1000)...!" . PHP_EOL;
+        }
     }
     unset($stmt);
 
@@ -109,7 +121,11 @@ try {
     // fetch from $tableName
     $row = $stmt->fetch(PDO::FETCH_NUM);
     if ($row) {
-        echo(substr($row[0], 0, 15)) . PHP_EOL;
+        if ($row[0] === $phrase) {
+            echo(substr($row[0], 0, 15)) . PHP_EOL;
+        } else {
+            echo "Incorrect value substr($row[0], 0, 1000)...!" . PHP_EOL;
+        }
     }
 
     // should be no more next results, first returns false second throws an exception

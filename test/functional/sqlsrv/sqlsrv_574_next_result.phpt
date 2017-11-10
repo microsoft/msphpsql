@@ -30,7 +30,7 @@ if (!$stmt) {
 
 // insert one row to each table
 $sql = "insert into $tableName (col1) VALUES (?)";
-$phrase = str_repeat('This is a test ', 250);
+$phrase = str_repeat('This is a test ', 25000);
 
 $stmt = sqlsrv_prepare($conn, $sql, array($phrase));
 if ($stmt) {
@@ -40,9 +40,9 @@ if ($stmt) {
     }
 }
 
-$phrase = str_repeat('This is indeed very long ', 300);
+$phrase1 = str_repeat('This is indeed very long ', 30000);
 $sql = "insert into $tableName1 (col1) VALUES (?)";
-$stmt = sqlsrv_prepare($conn, $sql, array($phrase));
+$stmt = sqlsrv_prepare($conn, $sql, array($phrase1));
 if ($stmt) {
     $r = sqlsrv_execute($stmt);
     if (!$r) {
@@ -63,7 +63,11 @@ if ($stmt) {
 $row = sqlsrv_fetch($stmt);
 if ($row) {
     $fld = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    echo(substr($fld, 0, 15)) . PHP_EOL;
+    if ($fld === $phrase) {
+        echo(substr($fld, 0, 15)) . PHP_EOL;
+    } else {
+        echo "Incorrect value substr($fld, 0, 1000)...!" . PHP_EOL;
+    }
 }
 
 // fetch from cd_info
@@ -74,7 +78,7 @@ var_dump($next);
 $row = sqlsrv_fetch($stmt);
 if ($row) {
     $fld = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    echo(substr($fld, 0, 15)) . PHP_EOL;
+    echo $fld . PHP_EOL;
 }
 
 // fetch from $tableName1
@@ -85,7 +89,11 @@ var_dump($next);
 $row = sqlsrv_fetch($stmt);
 if ($row) {
     $fld = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    echo(substr($fld, 0, 25)) . PHP_EOL;
+    if ($fld === $phrase1) {
+        echo(substr($fld, 0, 25)) . PHP_EOL;
+    } else {
+        echo "Incorrect value substr($fld, 0, 1000)...!" . PHP_EOL;
+    }
 }
 
 // should be no more next results, first returns NULL second returns false
@@ -119,7 +127,7 @@ sqlsrv_next_result($stmt);
 $row = sqlsrv_fetch($stmt);
 if ($row) {
     $fld = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    echo(substr($fld, 0, 15)) . PHP_EOL;
+    echo $fld . PHP_EOL;
 }
 
 // re-execute the statement, should return to the first query in the batch
@@ -132,7 +140,11 @@ if (!$r) {
 $row = sqlsrv_fetch($stmt);
 if ($row) {
     $fld = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    echo(substr($fld, 0, 25)) . PHP_EOL;
+    if ($fld === $phrase1) {
+        echo(substr($fld, 0, 25)) . PHP_EOL;
+    } else {
+        echo "Incorrect value substr($fld, 0, 1000)...!" . PHP_EOL;
+    }
 }
 sqlsrv_free_stmt($stmt);
 
@@ -149,7 +161,11 @@ if ($stmt) {
 $row = sqlsrv_fetch($stmt);
 if ($row) {
     $fld = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-    echo(substr($fld, 0, 15)) . PHP_EOL;
+    if ($fld === $phrase) {
+        echo(substr($fld, 0, 15)) . PHP_EOL;
+    } else {
+        echo "Incorrect value substr($fld, 0, 1000)...!" . PHP_EOL;
+    }
 }
 
 // should be no more next results, first returns NULL second returns false

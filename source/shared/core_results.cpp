@@ -45,7 +45,7 @@ namespace {
 
 // *** internal constants ***
 
-const int INITIAL_FIELD_STRING_LEN = 1024;      // base allocation size when retrieving a string field
+const int INITIAL_FIELD_STRING_LEN = 8000;      // base allocation size when retrieving a string field
 
 // *** internal functions ***
 
