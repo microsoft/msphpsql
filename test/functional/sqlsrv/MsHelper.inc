@@ -372,7 +372,6 @@ function connect($options = array(), $disableCE = false)
             $connectionOptions = array_merge($connectionOptions, array("ColumnEncryption" => "Enabled"));
         }
         if ($keystore == "ksp") {
-            // require('AE_Ksp.inc');
             $ksp_path = getKSPPath();
             $ksp_options = array("CEKeystoreProvider"=>$ksp_path,
                                  "CEKeystoreName"=>KSP_NAME,
@@ -481,7 +480,7 @@ function selectFromTable($conn, $tbname, $conds = null, $values = null)
  * @param  resource  $conn : connection resource
  * @param  string  $sql : T-SQL query
  * @param  string  $conds : string of condition(s) possibly with placeholders, null by default
- * @param  array  $values : array of parameters, null by default
+ * @param  array  $values : array of parameters for placeholders in $conds, null by default
  * @param  array  $options : array of query options, null by default
  * @return resource sqlsrv statement upon success or false otherwise
  */

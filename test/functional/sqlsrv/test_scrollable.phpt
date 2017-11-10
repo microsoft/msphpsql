@@ -73,14 +73,15 @@ for ($i = 1; $i <= $numRows; $i++) {
 // https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation
 $query = "SELECT * FROM $tableName";
 $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
-$stmt = AE\executeQueryEx($conn, $query, $options);
+$stmt = sqlsrv_query($conn, $query, array(), $options);
+
 hasRows($stmt, false);
 countRows($stmt, $numRows, 'forward only'); 
 sqlsrv_free_stmt($stmt);
 
 if (! AE\isColEncrypted()) {
     $options = array('Scrollable' => 'static'); 
-    $stmt = AE\executeQueryEx($conn, $query, $options);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
 
     $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, 4);
     if($result !== null) {
@@ -128,13 +129,14 @@ if (! AE\isColEncrypted()) {
     sqlsrv_free_stmt($stmt);
     
     $options = array('Scrollable' => 'static');
-    $stmt = AE\executeQueryEx($conn, $query, $options);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
+
     hasRows($stmt, false);
     countRows($stmt, $numRows, 'static'); 
     sqlsrv_free_stmt($stmt);
 
     $options = array('Scrollable' => 'dynamic');
-    $stmt = AE\executeQueryEx($conn, $query, $options);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
     
     sqlsrv_fetch($stmt);
     sqlsrv_fetch($stmt);
@@ -148,7 +150,8 @@ if (! AE\isColEncrypted()) {
     sqlsrv_free_stmt($stmt);
     
     $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
-    $stmt = AE\executeQueryEx($conn, $query, $options);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
+
     $row_count = sqlsrv_num_rows($stmt);
     if($row_count != $numRows) {
         die("sqlsrv_num_rows should have returned 6 rows in the static cursor\n");
@@ -164,7 +167,7 @@ if (! AE\isColEncrypted()) {
     }
 
     $options = array('Scrollable' => SQLSRV_CURSOR_DYNAMIC);
-    $stmt = AE\executeQueryEx($conn, $query, $options);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
 
     $result = sqlsrv_num_rows($stmt);
     if($result !== false) {

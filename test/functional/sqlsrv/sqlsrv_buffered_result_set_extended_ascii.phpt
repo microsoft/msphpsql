@@ -20,7 +20,7 @@ $stmt = AE\insertRow($conn, $tableName, array('ID' => 'Aå_Ð×Æ×Ø_B'));
 
 // Fetch data
 $query = "SELECT * FROM $tableName";
-$stmt = AE\executeQueryEx($conn, $query, array("Scrollable"=>"buffered"));
+$stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"));
 
 // Fetch
 $row = sqlsrv_fetch_array($stmt);

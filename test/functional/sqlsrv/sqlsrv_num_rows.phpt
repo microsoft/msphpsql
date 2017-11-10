@@ -9,7 +9,7 @@ Test sqlsrv_num_rows method.
 
     require_once('MsCommon.inc');
     $conn = AE\connect();
-    $tableName = 'utf16invalid';
+    $tableName = 'testNumRows';
 
     $columns = array(new AE\ColumnMeta('int', 'id', 'identity'),
                      new AE\ColumnMeta('nvarchar(100)', 'c1'));
@@ -24,7 +24,7 @@ Test sqlsrv_num_rows method.
     } else {
         $options = array('Scrollable' => SQLSRV_CURSOR_KEYSET);
     }
-    $stmt = AE\executeQueryEx($conn, "SELECT * FROM $tableName", $options);
+    $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName", array(), $options);
     $row_nums = sqlsrv_num_rows($stmt);
 
     echo $row_nums;

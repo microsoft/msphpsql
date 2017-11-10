@@ -91,21 +91,51 @@ $columns = array(new AE\ColumnMeta('CHAR(4)', 'ID'),
 AE\createTable($conn, $tableName1, $columns);
 
 // Insert data
-$params = array('P001', 'Pencil 2B', '102', '24', '0.24', '2016-02-01', 'Red');
-$data = getInputData1($params);
-AE\insertRow($conn, $tableName1, $data);
-
-$params = array('P002', 'Notepad', '102', '12', '3.87', '2016-02-21', null);
-$data = getInputData1($params);
-AE\insertRow($conn, $tableName1, $data);
-
-$params = array('P001', 'Mirror 2\"', '652', '3', '15.99', '2016-02-01', null);
-$data = getInputData1($params);
-AE\insertRow($conn, $tableName1, $data);
-
-$params = array('P003', 'USB connector', '1652', '31', '9.99', '2016-02-01', null);
-$data = getInputData1($params);
-AE\insertRow($conn, $tableName1, $data);
+if (AE\isColEncrypted()) {
+    $sql = "INSERT INTO $tableName1 VALUES
+                    (?, ?, ?, ?, ?, ?, ?), 
+                    (?, ?, ?, ?, ?, ?, ?), 
+                    (?, ?, ?, ?, ?, ?, ?), 
+                    (?, ?, ?, ?, ?, ?, ?)";
+    $stmt = sqlsrv_query($conn, $sql, array(array('P001', null, null, SQLSRV_SQLTYPE_CHAR(4)), 
+                                            array('Pencil 2B', null, null, SQLSRV_SQLTYPE_VARCHAR(128)), 
+                                            array('102', null, null, SQLSRV_SQLTYPE_SMALLINT), 
+                                            array('24', null, null, SQLSRV_SQLTYPE_INT), 
+                                            array('0.24', null, null, SQLSRV_SQLTYPE_FLOAT), 
+                                            array('2016-02-01', null, null, SQLSRV_SQLTYPE_DATETIME), 
+                                            array('Red', null, null, SQLSRV_SQLTYPE_VARCHAR(20)), 
+                                            array('P002', null, null, SQLSRV_SQLTYPE_CHAR(4)), 
+                                            array('Notepad', null, null, SQLSRV_SQLTYPE_VARCHAR(128)), 
+                                            array('102', null, null, SQLSRV_SQLTYPE_SMALLINT), 
+                                            array('12', null, null, SQLSRV_SQLTYPE_INT), 
+                                            array('3.87', null, null, SQLSRV_SQLTYPE_FLOAT), 
+                                            array('2016-02-21', null, null, SQLSRV_SQLTYPE_DATETIME), 
+                                            array(null, null, null, SQLSRV_SQLTYPE_VARCHAR(20)), 
+                                            array('P001', null, null, SQLSRV_SQLTYPE_CHAR(4)), 
+                                            array('Mirror 2\"', null, null, SQLSRV_SQLTYPE_VARCHAR(128)), 
+                                            array('652', null, null, SQLSRV_SQLTYPE_SMALLINT), 
+                                            array('3', null, null, SQLSRV_SQLTYPE_INT), 
+                                            array('15.99', null, null, SQLSRV_SQLTYPE_FLOAT), 
+                                            array('2016-02-01', null, null, SQLSRV_SQLTYPE_DATETIME), 
+                                            array(null, null, null, SQLSRV_SQLTYPE_VARCHAR(20)), 
+                                            array('P003', null, null, SQLSRV_SQLTYPE_CHAR(4)), 
+                                            array('USB connector', null, null, SQLSRV_SQLTYPE_VARCHAR(128)), 
+                                            array('1652', null, null, SQLSRV_SQLTYPE_SMALLINT), 
+                                            array('31', null, null, SQLSRV_SQLTYPE_INT), 
+                                            array('9.99', null, null, SQLSRV_SQLTYPE_FLOAT), 
+                                            array('2016-02-01', null, null, SQLSRV_SQLTYPE_DATETIME), 
+                                            array(null, null, null, SQLSRV_SQLTYPE_VARCHAR(20))));
+} else {
+    $sql = "INSERT INTO $tableName1 VALUES
+                    ('P001', 'Pencil 2B', '102', '24', '0.24', '2016-02-01', 'Red'), 
+                    ('P002', 'Notepad', '102', '12', '3.87',  '2016-02-21', Null), 
+                    ('P001', 'Mirror 2\"', '652', '3', '15.99',  '2016-02-01', NULL), 
+                    ('P003', 'USB connector', '1652', '31', '9.99', '2016-02-01', NULL)";
+    $stmt = sqlsrv_query($conn, $sql);
+}
+if (!$stmt) {
+    fatalError("Failed to insert test data into $tableName1\n");
+}
 
 // Create table Country
 $columns = array(new AE\ColumnMeta('CHAR(4)', 'SerialNumber'),
@@ -113,17 +143,21 @@ $columns = array(new AE\ColumnMeta('CHAR(4)', 'SerialNumber'),
 AE\createTable($conn, $tableName2, $columns);
 
 // Insert data
-$params = array('P001', 'FR');
-$data = getInputData2($params);
-AE\insertRow($conn, $tableName2, $data);
-
-$params = array('P002', 'UK');
-$data = getInputData2($params);
-AE\insertRow($conn, $tableName2, $data);
-
-$params = array('P003', 'DE');
-$data = getInputData2($params);
-AE\insertRow($conn, $tableName2, $data);
+if (AE\isColEncrypted()) {
+    $sql = "INSERT INTO $tableName2 VALUES (?, ?), (?, ?), (?, ?)";
+    $stmt = sqlsrv_query($conn, $sql, array(array('P001', null, null, SQLSRV_SQLTYPE_CHAR(4)), 
+                                            array('FR', null, null, SQLSRV_SQLTYPE_VARCHAR(2)),
+                                            array('P002', null, null, SQLSRV_SQLTYPE_CHAR(4)), 
+                                            array('UK', null, null, SQLSRV_SQLTYPE_VARCHAR(2)),
+                                            array('P003', null, null, SQLSRV_SQLTYPE_CHAR(4)), 
+                                            array('DE', null, null, SQLSRV_SQLTYPE_VARCHAR(2))));
+} else {
+    $sql = "INSERT INTO $tableName2 VALUES ('P001', 'FR'), ('P002', 'UK'), ('P003', 'DE')";
+    $stmt = sqlsrv_query($conn, $sql);
+}
+if (!$stmt) {
+    fatalError("Failed to insert test data into $tableName2\n");
+}
 
 // With AE enabled, we cannot do comparisons with encrypted columns
 // Also, only forward cursor or client buffer is supported

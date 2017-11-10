@@ -60,7 +60,7 @@ if (!$stmt) {
 }
 
 $query = "SELECT TOP 2 * FROM $tableName";
-$stmt = AE\executeQueryEx($conn, $query, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+$stmt = sqlsrv_query($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
 
 $array = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
 var_dump($array);

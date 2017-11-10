@@ -40,7 +40,7 @@ if (sqlsrv_has_rows($stmt)) {
 }
 
 // Fetch data using a scrollable cursor
-$stmt = AE\executeQueryEx($conn, $query, array("Scrollable"=>"buffered"));
+$stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"));
 
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
 echo "Has Rows?" . (sqlsrv_has_rows($stmt) ? " Yes!" : " NO!") . "\n";
