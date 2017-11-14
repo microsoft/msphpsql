@@ -3,83 +3,80 @@ Test the PDO::query() method.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-  
-require_once 'MsCommon.inc';
- 
-  
-function query_default( $conn )
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
+
+function queryDefault($conn, $tbname)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from " . $table1 );
+    $stmt = $conn->query("Select * from $tbname");
     $result = $stmt->fetch();
     var_dump($result);
-}
- 
-function query_column( $conn )
-{
-    global $table1;
-    $stmt = $conn->query( "Select * from " . $table1, PDO::FETCH_COLUMN, 2 );
-    $result = $stmt->fetch();
-    var_dump($result);
-}
- 
-function query_class( $conn )
-{
-    global $table1;
-    global $table1_class;
-    $stmt = $conn->query( "Select * from " . $table1, PDO::FETCH_CLASS, $table1_class );
-    $result = $stmt->fetch();
-    $result->dumpAll();
-}
-  
-function query_into( $conn )
-{
-    global $table1;
-    global $table1_class;
-    $obj = new $table1_class;
-    $stmt = $conn->query( "Select * from " . $table1, PDO::FETCH_INTO, $obj );
-    $result = $stmt->fetch();
-    $result->dumpAll();
-}
-  
-function query_empty_table( $conn )
-{
-    CreateTableEx($conn, 'emptyTable', "c1 INT, c2 INT");
-    $stmt = $conn->query( "Select * from emptyTable");
-    $result = $stmt->fetch();
-    var_dump($result);
-    DropTable($conn, 'emptyTable');
 }
 
-try 
-{      
+function queryColumn($conn, $tbname)
+{
+    $stmt = $conn->query("Select * from $tbname", PDO::FETCH_COLUMN, 2);
+    $result = $stmt->fetch();
+    var_dump($result);
+}
+
+function queryClass($conn, $tbname)
+{
+    global $mainTypesClass;
+    $stmt = $conn->query("Select * from $tbname", PDO::FETCH_CLASS, $mainTypesClass);
+    $result = $stmt->fetch();
+    $result->dumpAll();
+}
+
+function queryInto($conn, $tbname)
+{
+    global $mainTypesClass;
+    $obj = new $mainTypesClass;
+    $stmt = $conn->query("Select * from $tbname", PDO::FETCH_INTO, $obj);
+    $result = $stmt->fetch();
+    $result->dumpAll();
+}
+
+function queryEmptyTable($conn)
+{
+    createTable($conn, 'emptyTable', array("c1" => "int", "c2" => "int"));
+    $stmt = $conn->query("Select * from emptyTable");
+    $result = $stmt->fetch();
+    var_dump($result);
+    dropTable($conn, 'emptyTable');
+}
+
+try {
     $db = connect();
+    $tbname = "PDO_MainTypes";
+    createAndInsertTableMainTypes($db, $tbname);
     echo "TEST_1 : query with default fetch style :\n";
-    query_default($db); 
+    queryDefault($db, $tbname);
 
     echo "TEST_2 : query with FETCH_COLUMN :\n";
-    query_column($db);
+    queryColumn($db, $tbname);
 
     echo "TEST_3 : query with FETCH_CLASS :\n";
-    query_class($db);
+    queryClass($db, $tbname);
 
     echo "TEST_4 : query with FETCH_INTO :\n";
-    query_into($db);
-    
-    echo "TEST_5 : query an empty table :\n";
-    query_empty_table($db);
-}
+    queryInto($db, $tbname);
 
-catch( PDOException $e ) {
-    var_dump( $e );
+    echo "TEST_5 : query an empty table :\n";
+    queryEmptyTable($db);
+
+    dropTable($db, $tbname);
+    unset($db);
+} catch (PDOException $e) {
+    var_dump($e);
     exit;
 }
 
 
-?> 
+?>
 --EXPECT--
 TEST_1 : query with default fetch style :
 array(16) {

@@ -1,124 +1,117 @@
 --TEST--
-Test the PDOStatement::getColumnMeta() method for Unicode column names (Note: there could be an issue about using a non-existent column index --- doesn't give any error/output/warning).
+Test the PDOStatement::getColumnMeta() method for Unicode column names
+--DESCRIPTION--
+there could be an issue about using a non-existent column index --- doesn't give any error/output/warning
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-  
-require_once 'MsCommon.inc';
-  
-function fetch_both( $conn )
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
+
+function fetchBoth($conn, $tbname)
 {
-    global $table1; 
-    $stmt = $conn->query( "Select * from ". $table1 );
+    $stmt = $conn->query("Select * from $tbname");
 
     // 1
-    $meta = $stmt->getColumnMeta( 0 );
-    var_dump($meta);         
+    $meta = $stmt->getColumnMeta(0);
+    var_dump($meta);
 
     // 2
-    $meta = $stmt->getColumnMeta( 1 );
-    var_dump($meta);         
+    $meta = $stmt->getColumnMeta(1);
+    var_dump($meta);
 
     // 3
-    $meta = $stmt->getColumnMeta( 2 );
-    var_dump($meta);        
+    $meta = $stmt->getColumnMeta(2);
+    var_dump($meta);
 
     // 4
-    $meta = $stmt->getColumnMeta( 3 );
-    var_dump($meta);    
-     
+    $meta = $stmt->getColumnMeta(3);
+    var_dump($meta);
+
     // 5
-    $meta = $stmt->getColumnMeta( 4 );
-    var_dump($meta);        
+    $meta = $stmt->getColumnMeta(4);
+    var_dump($meta);
 
     // 6
-    $meta = $stmt->getColumnMeta( 5 );
-    var_dump($meta);        
+    $meta = $stmt->getColumnMeta(5);
+    var_dump($meta);
 
     // 7
-    $meta = $stmt->getColumnMeta( 6 );
-    var_dump($meta);        
+    $meta = $stmt->getColumnMeta(6);
+    var_dump($meta);
 
     // 8
-    $meta = $stmt->getColumnMeta( 7 );
-    var_dump($meta);        
+    $meta = $stmt->getColumnMeta(7);
+    if (isColEncrypted()) {
+        $xmlType = "nvarchar";
+    } else {
+        $xmlType = "xml";
+    }
+    if ($meta["sqlsrv:decl_type"] != $xmlType) {
+        echo "Wrong column metadata was retrieved for a $xmlType column.\n";
+    }
+    unset($meta["sqlsrv:decl_type"]);
+    var_dump($meta);
 
     // Test invalid arguments, set error mode to silent to reduce the amount of error messages generated
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
     // Test negative column number, ignore the error messages
-    $meta = $stmt->getColumnMeta( -1 );
+    $meta = $stmt->getColumnMeta(-1);
     var_dump($meta);
 
     // Test non-existent column number
-    //$meta = $stmt->getColumnMeta( 10 );
-    //var_dump($meta);
+    $meta = $stmt->getColumnMeta(10);
+    var_dump($meta);
 }
- 
-function create_and_insert_table_unicode( $conn )
+
+function createAndInsertTableUnicode($conn, $tbname)
 {
-    global $string_col, $date_col, $large_string_col, $xml_col, $binary_col, $int_col, $decimal_col, $guid_col, $null_col, $comma, $closing_brace, $table1;
-   
-    try
-    {
-      $create_query = 
-      
-        "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $table1 . "') AND type in (N'U'))
-        DROP TABLE " . $table1 . 
-        
-        " CREATE TABLE [dbo].[" . $table1 . "](
-          [此是後話] [int] NULL,
-          [Κοντάוְאַתָּה第] [char](10) NULL,
-          [NΚοντάוְאַתָּה第] [nchar](10) NULL,
-          [ნომინავიiałopioБун] [datetime] NULL,
-          [VarcharCol] [varchar](50) NULL,
-          [NVarΚοντάוְאַתָּה第] [nvarchar](50) NULL,
-          [FloatCol] [float] NULL,
-        [XmlCol] [xml] NULL
-        ) ON [PRIMARY]
-        ";
-        
-        $conn->query( $create_query );
-        
-        for ($i = 0 ; $i <= 1; ++ $i)
-        {
-          $insert_query = 
-                    "INSERT INTO PDO_Types_1 VALUES (".
-                    $int_col[$i] . $comma . 
-                    $string_col[$i] . $comma .
-                    $string_col[$i] . $comma . 
-                    "Convert(datetime, ". $date_col[$i] . ")" . $comma .
-                    $string_col[$i] . $comma . 
-                    $string_col[$i] . $comma . 
-                    $decimal_col[$i] . $comma .
-                    $xml_col[$i] .
-                    ")";
-        
-          $conn->query ( $insert_query );
+    try {
+        global $string_col, $xml_col, $int_col, $decimal_col, $datetime_col;
+        if (isColEncrypted()) {
+            $xmlType = "nvarchar(max)";
+        } else {
+            $xmlType = "xml";
         }
-    }
-    catch(Exception $e)
-    {
-        var_dump( $e);
+        $columnMetaArr = array("此是後話" => "int",
+                               "Κοντάוְאַתָּה第" => "char(10)",
+                               "NΚοντάוְאַתָּה第" => "nchar(10)",
+                               "ნომინავიiałopioБун" => "datetime",
+                               "VarcharCol" => "varchar(50)",
+                               "NVarΚοντάוְאַתָּה第" => "nvarchar(50)",
+                               "FloatCol" => "float",
+                               "XmlCol" => $xmlType);
+        createTable($conn, $tbname, $columnMetaArr, "ON [PRIMARY]");
+
+        for ($i = 0 ; $i <= 1; ++ $i) {
+            $inputs = array("此是後話" => $int_col[$i],
+                                "Κοντάוְאַתָּה第" => $string_col[$i],
+                                "NΚοντάוְאַתָּה第" => $string_col[$i],
+                                "ნომინავიiałopioБун" => $datetime_col[$i],
+                                "VarcharCol" => $string_col[$i],
+                                "NVarΚοντάוְאַתָּה第" => $string_col[$i],
+                                "FloatCol" => $decimal_col[$i],
+                                "XmlCol" => $xml_col[$i]);
+            $stmt = insertRow($conn, $tbname, $inputs, "prepareBindParam");
+        }
+    } catch (Exception $e) {
+        var_dump($e);
         exit;
     }
-} 
-try 
-{      
-    $db = connect();
-    create_and_insert_table_unicode( $db );
-    fetch_both($db);
 }
 
-catch( PDOException $e ) {
-
-    var_dump( $e );
+try {
+    $db = connect();
+    $tbname = "PDO_MainTypes";
+    createAndInsertTableUnicode($db, $tbname);
+    fetchBoth($db, $tbname);
+} catch (PDOException $e) {
+    var_dump($e);
     exit;
 }
-
-
-?> 
+?>
 --EXPECTF--
 
 array(8) {
@@ -247,11 +240,9 @@ array(8) {
   ["precision"]=>
   int(0)
 }
-array(8) {
+array(7) {
   ["flags"]=>
   int(0)
-  ["sqlsrv:decl_type"]=>
-  string(3) "xml"
   ["native_type"]=>
   string(6) "string"
   ["table"]=>
@@ -268,3 +259,5 @@ array(8) {
 
 Warning: PDOStatement::getColumnMeta(): SQLSTATE[42P10]: Invalid column reference: column number must be non-negative in %s on line %x
 bool(false)
+
+Fatal error: pdo_sqlsrv_stmt_get_col_meta: invalid column number. in %s on line %x

@@ -28,22 +28,57 @@ const INSERT_PREPARE_PARAMS = 4;
  */
 class ColumnMeta
 {
-    public $colName;
-    public $dataType;   // a string that includes the size of the type if necessary (e.g., decimal(10,5))
-    public $encType;    // randomized or deterministic; default is deterministic
-    public $options;    // a string that is null by default (e.g. NOT NULL Identity (1,1) )
+    public      $dataType;      // a string that includes the size of the type if necessary (e.g., decimal(10,5))
+    public      $colName;       // column name
+    public      $encType;       // randomized or deterministic; default is deterministic
+    public      $options;       // a string that is null by default (e.g. NOT NULL Identity (1,1) )
 
-    public function __construct($dataType, $colName = null, $options = null, $deterministic = true)
+    protected   $encryptable;   // whether Always Encrypted supports this column
+
+    public function __construct($dataType, $colName = null, $options = null, $deterministic = true, $noEncrypt = false)
     {
         if (is_null($colName)) {
             $this->colName = getDefaultColname($dataType);
         } else {
             $this->colName = $colName;
         }
-        
+
         $this->encType = ($deterministic ? "deterministic" : "randomized");
+        if (empty($dataType)) {
+            echo "Data type can not be null or empty!\n";
+        }
         $this->dataType = $dataType;
         $this->options = $options;
+
+        if (!$noEncrypt) {
+            $this->checkIfUnsupported();
+        } else {
+            $this->encryptable = false;
+        }
+    }
+
+    /**
+     * if Always Encrypted not supported for this data type set $noEncryption to false
+     * @return void
+     */
+    protected function checkIfUnsupported()
+    {
+        // Always Encrypted is not supported for columns with the IDENTITY property
+        // or any column using one of the following datatypes:
+        //
+        // xml, timestamp, image, ntext, text, sql_variant, hierarchyid, geography, geometry, alias,
+        // user defined-types.
+        // https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/always-encrypted-database-engine
+
+        $unsupported = array("xml", "timestamp", "image", "ntext", "text", "sql_variant", "hierarchyid", "geography", "geometry", "alias");
+        
+        if (stripos($this->options, "identity") !== false) {
+            $this->encryptable = false;
+        } elseif (in_array($this->dataType, $unsupported)) { 
+            $this->encryptable = false;
+        } else {
+            $this->encryptable = true;
+        }
     }
     /**
      * @return string column definition for creating a table
@@ -52,8 +87,7 @@ class ColumnMeta
     {
         $append = " ";
 
-        // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if (isColEncrypted() && stripos($this->options, "identity") === false) {
+        if (isColEncrypted() && $this->encryptable) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
@@ -83,17 +117,17 @@ class BindParamOption
         $this->phpType = $phpType;
         $this->sqlType = $sqlType;
     }
+
     /**
-     * @param  mix  $var : variable to bind to the SQL statement parameter
      * @return array needed to bind parameter in sqlsrv_prepare
      */
-    public function bindParamArr($var)
+    public function bindParamArr()
     {
         // get the constant values of direction, phpType, and sqlType
         $direction = null;
         $phpType = null;
         $sqlType = null;
-        if ($this->direction) {          
+        if ($this->direction) {
             if (in_array($this->direction, array(SQLSRV_PARAM_IN, SQLSRV_PARAM_OUT, SQLSRV_PARAM_INOUT))) {
                 $direction = constant($this->direction);
             } else {
@@ -102,9 +136,16 @@ class BindParamOption
         }
         if ($this->phpType) {
             try {
-                $phpType = constant($this->phpType);
+                $arr = explode("(", $this->phpType);
+                $type = $arr[0];
+                if (count($arr) > 1) {
+                    $enc = rtrim($arr[1], ")");
+                    $phpType = call_user_func($type, constant($enc));
+                } else {
+                    $phpType = constant($this->phpType);
+                }
             } catch (Exception $e) {
-                // there's something wrong with the input php type 
+                // there's something wrong with the input php type
                 echo $e->getMessage();
             }
         }
@@ -134,11 +175,11 @@ class BindParamOption
                     $sqlType = constant($type);
                 }
             } catch (Exception $e) {
-                // there's something wrong with the input SQL type 
+                // there's something wrong with the input SQL type
                 echo $e->getMessage();
             }
         }
-        return array($var, $direction, $phpType, $sqlType);
+        return array($this->value, $direction, $phpType, $sqlType);
     }
 }
 
@@ -195,7 +236,7 @@ function getInsertSqlComplete($tbname, $inputs)
     foreach ($inputs as $key => $value) {
         $colStr .= $key . ", ";
         if (is_null($value)) {
-            echo "getInsertSqlComplete: value provided for input $value is null.\n";
+            $valStr .= "null, ";
         } elseif (is_string($value)) {
             $valStr .= "'" . $value . "', ";
         } else {
@@ -258,7 +299,7 @@ function getSeqPlaceholders($num)
 }
 
 /**
- * @return bool false if $keystore specified in MsSetup.inc is none or data not encrypted, 
+ * @return bool false if $keystore specified in MsSetup.inc is none or data not encrypted,
  *              otherwise return true
  */
 function isColEncrypted()
@@ -307,8 +348,8 @@ function connect($options = array(), $disableCE = false)
         if ($keystore == "ksp") {
             require('AE_Ksp.inc');
             $ksp_path = getKSPPath();
-            $ksp_options = array("CEKeystoreProvider"=>$ksp_path, 
-                                 "CEKeystoreName"=>$ksp_name, 
+            $ksp_options = array("CEKeystoreProvider"=>$ksp_path,
+                                 "CEKeystoreName"=>$ksp_name,
                                  "CEKeystoreEncryptKey"=>$encrypt_key);
             $connectionOptions = array_merge($connectionOptions, $ksp_options);
         }
@@ -322,9 +363,10 @@ function connect($options = array(), $disableCE = false)
 
 /**
  * Create a table
- * @param  object  $conn : sqlsrv connection object
+ * @param  resource  $conn : sqlsrv connection resource
  * @param  string  $tbname : name of the table to be created
  * @param  array  $columnMetaArr : array of ColumnMeta objects, which contain metadata for one column
+ * @return resource sqlsrv statement resource
  */
 function createTable($conn, $tbname, $columnMetaArr)
 {
@@ -336,19 +378,19 @@ function createTable($conn, $tbname, $columnMetaArr)
     }
     $colDef = rtrim($colDef, ", ");
     $createSql = "CREATE TABLE $tbname ( $colDef )";
-    sqlsrv_query($conn, $createSql);
+    return sqlsrv_query($conn, $createSql);
 }
 
 /**
  * Insert a row into a table
- * @param  object  $conn : sqlsrv connection object
+ * @param  resource  $conn : sqlsrv connection resource
  * @param  string  $tbname : name of the table for the row to be inserted
- * @param  array  $inputs : an associative array column name and its value, which may be a 
+ * @param  array  $inputs : an associative array column name and its value, which may be a
  *                          literal or a BindParamOption object
  * @param  bool  $r : true if the row was successfully inserted, otherwise false. Default value is null to make this parameter optional.
- * $param  string  $api : SQLSRV API used for executing the insert query
- *                      accepted values: INSERT_QUERY, INSERT_PREPARE, INSERT_QUERY_PARAMS, INSERT_PREPARE_PARAMS
- * @return object sqlsrv statement object of the insert statement
+ * $param  int  $api : SQLSRV API used for executing the insert query
+ *                        accepted values: INSERT_QUERY, INSERT_PREPARE, INSERT_QUERY_PARAMS, INSERT_PREPARE_PARAMS
+ * @return resource sqlsrv statement resource of the insert statement
  */
 function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
 {
@@ -361,7 +403,9 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
                 break;
             case INSERT_PREPARE:
                 $stmt = sqlsrv_prepare($conn, $insertSql);
-                $r = sqlsrv_execute($stmt);
+                if ($stmt) {
+                    $r = sqlsrv_execute($stmt);
+                }
                 break;
         }
     } else {
@@ -370,32 +414,125 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
         $params = array();
         foreach ($inputs as $key => $input) {
             if (is_object($input)) {
-                array_push($params, $input->bindParamArr($inputs[$key]));               
+                array_push($params, $input->bindParamArr());
             } else {
                 array_push($params, $inputs[$key]);
             }
         }
-        
+       
         // use prepare for inserts when AE is enabled
         if (isColEncrypted() || $api == INSERT_PREPARE_PARAMS) {
             $stmt = sqlsrv_prepare($conn, $insertSql, $params);
-            $r = sqlsrv_execute($stmt);
+            if ($stmt) {
+                $r = sqlsrv_execute($stmt);
+            } else {
+                fatalError("insertRow: failed to prepare insert query!");            
+            }
         } else {
             $stmt = sqlsrv_query($conn, $insertSql, $params);
-        } 
+        }
     }
+    return $stmt;
+}
+
+/**
+ * Perform a simple select from a table with or without where condition(s)
+ * @param  resource  $conn : connection resource
+ * @param  string  $tbname : name of the table
+ * @param  string  $conds : string of condition(s) with placeholders, null by default
+ * @param  array  $values : array of parameters, null by default
+ * @return resource sqlsrv statement upon success or false otherwise
+ */
+function selectFromTable($conn, $tbname, $conds = null, $values = null)
+{
+    $sql = "SELECT * FROM $tbname";
+    return executeQuery($conn, $sql, $conds, $values);
+}
+
+/**
+ * Perform a query from a table with or without where condition(s)
+ * @param  resource  $conn : connection resource
+ * @param  string  $sql : T-SQL query
+ * @param  string  $conds : string of condition(s) possibly with placeholders, null by default
+ * @param  array  $values : array of parameters, null by default
+ * @return resource sqlsrv statement upon success or false otherwise
+ */
+function executeQuery($conn, $sql, $conds = null, $values = null)
+{
+    if (!isColEncrypted()) {
+        // if not encrypted replace placeholders ('?') with values, if array not empty
+        if (!empty($values)) {
+            $tmpArray = explode('?', $conds);
+            $i = 0;
+            foreach ($values as $value) {
+                if (!is_numeric($value)) {
+                    $tmpArray[$i++] .= "'$value'";
+                } else {
+                    $tmpArray[$i++] .= "$value";
+                }
+            }
+            $clause = implode($tmpArray);
+            $sql = $sql . " WHERE $clause ";
+        } elseif (!empty($conds)) {
+            $sql = $sql . " WHERE $conds ";
+        }        
+        $stmt = sqlsrv_query($conn, $sql);
+    } else {
+        // with AE enabled, use sqlsrv_prepare() in case there are 
+        // fields with unlimited size
+        if (empty($conds) || empty($values)) {
+            $stmt = sqlsrv_prepare($conn, $sql);
+        } else {
+            $sql = $sql . " WHERE $conds ";
+            $stmt = sqlsrv_prepare($conn, $sql, $values);
+        } 
+        if ($stmt) {
+            $r = sqlsrv_execute($stmt);
+            if (!$r) {
+                fatalError("executeQuery: failed to execute \'$sql\'!");
+            }
+        }
+    }
+    if (!$stmt) {
+        fatalError("executeQuery: failed to run query \'$sql\'!");
+    }
+
+    return $stmt;
+}
+
+/**
+ * Similar to executeQuery() but with query options
+ * @return resource sqlsrv statement upon success or false otherwise
+ */
+function executeQueryEx($conn, $sql, $options)
+{
+    // when AE is enabled, use sqlsrv_prepare() to handle fields with unlimited size
+    if (!isColEncrypted()) {
+        $stmt = sqlsrv_query($conn, $sql, null, $options);
+    } else {
+        $stmt = sqlsrv_prepare($conn, $sql, null, $options);
+        if ($stmt) {
+            $r = sqlsrv_execute($stmt);
+            if (!$r) {
+                fatalError("executeQueryEx: failed to execute \'$sql\'!");
+            }
+        }
+    }
+    if (!$stmt) {
+        fatalError("executeQueryEx: failed to run query \'$sql\'!");
+    }
+
     return $stmt;
 }
 
 /**
  * Fetch all rows and all columns given a table name, and print them
  * @param  resource  $conn : connection resource
- * @param string $tbname : name of the table to fetch from
+ * @param  string $tbname : name of the table to fetch from
  */
 function fetchAll($conn, $tbname)
 {
-    $sql = "SELECT * FROM $tbname";
-    $stmt = sqlsrv_query($conn, $sql);
+    $stmt = selectFromTable($conn, $tbname);
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         foreach ($row as $key => $value) {
             if (is_object($value)) {
@@ -409,6 +546,200 @@ function fetchAll($conn, $tbname)
         }
     }
 }
+
+/**
+ * Create a test table with columns of various types given a table name,
+ * all deterministic if AE is enabled
+ * @param  resource  $conn : connection resource
+ * @param  string  $tbname : name of the table to create
+ * @return resource sqlsrv statement
+ */
+function createTestTable($conn, $tbname)
+{
+    $columns = array(new ColumnMeta('int', 'c1_int'),
+                     new ColumnMeta('tinyint', 'c2_tinyint'),
+                     new ColumnMeta('smallint', 'c3_smallint'),
+                     new ColumnMeta('bigint', 'c4_bigint'),
+                     new ColumnMeta('bit', 'c5_bit'),
+                     new ColumnMeta('float', 'c6_float'),
+                     new ColumnMeta('real', 'c7_real'),
+                     new ColumnMeta('decimal(28,4)', 'c8_decimal'),
+                     new ColumnMeta('numeric(32,4)', 'c9_numeric'),
+                     new ColumnMeta('money', 'c10_money', null, true, true),
+                     new ColumnMeta('smallmoney', 'c11_smallmoney', null, true, true),
+                     new ColumnMeta('char(512)', 'c12_char'),
+                     new ColumnMeta('varchar(512)', 'c13_varchar'),
+                     new ColumnMeta('varchar(max)', 'c14_varchar_max'),
+                     new ColumnMeta('nchar(512)', 'c15_nchar'),
+                     new ColumnMeta('nvarchar(512)', 'c16_nvarchar'),
+                     new ColumnMeta('nvarchar(max)', 'c17_nvarchar_max'),
+                     new ColumnMeta('text', 'c18_text'),
+                     new ColumnMeta('ntext', 'c19_ntext'),
+                     new ColumnMeta('binary(512)', 'c20_binary'),
+                     new ColumnMeta('varbinary(512)', 'c21_varbinary'),
+                     new ColumnMeta('varbinary(max)', 'c22_varbinary_max'),
+                     new ColumnMeta('image', 'c23_image'),
+                     new ColumnMeta('uniqueidentifier', 'c24_uniqueidentifier'),
+                     new ColumnMeta('datetime', 'c25_datetime'),
+                     new ColumnMeta('smalldatetime', 'c26_smalldatetime'),
+                     new ColumnMeta('timestamp', 'c27_timestamp'),
+                     new ColumnMeta('xml', 'c28_xml'),
+                     );
+
+    return createTable($conn, $tbname, $columns);
+}
+
+/**
+ * Insert the specified number of rows with test data into the test table
+ * @param  resource  $conn : connection resource
+ * @param  string  $tbname : name of the table to create
+ * @param  int  $rowCount : number of test rows to be inserted
+ * @return number of rows inserted
+ */
+function insertTestRows($conn, $tbame, $rowCount)
+{
+    $count = 0;
+    for ($i = 0; $i < $rowCount; $i++) {
+        if (insertTestRow($conn, $tbame, rand(1, 20))) {
+            $count++;
+        }
+    }
+
+    if ($count != $rowCount) {
+        die("$count rows inserted instead of $rowCount\n");
+    }
+    return ($count);
+}
+
+/**
+ * Insert a number of rows with test data into the test table given the indexes
+ * @param  resource  $conn : connection resource
+ * @param  string  $tbname : name of the table to create
+ * @param  int  $minIndex : index of the first row to be inserted
+ * @param  int  $maxIndex : index of the last row to be inserted
+ * @return number of rows inserted
+ */
+function insertTestRowsByRange($conn, $tbame, $minIndex, $maxIndex)
+{
+    $count = 0;
+    $rowCount = $maxIndex - $minIndex + 1;
+    if ($rowCount > 0) {
+        for ($i = $minIndex; $i <= $maxIndex; $i++) {
+            if (insertTestRow($conn, $tbame, $i)) {
+                $count++;
+            }
+        }
+    }
+    if ($count != $rowCount) {
+        die("$count rows inserted instead of $rowCount\n");
+    }
+    return ($count);
+}
+
+/**
+ * Insert one or more specific rows of test data into the test table
+ * @param  resource  $conn : connection resource
+ * @param  string  $tbname : name of the table to create
+ * @param  int  $index : the index of a certain row of test data
+ * @return resource sqlsrv statement upon success or false otherwise
+ */
+function insertTestRow($conn, $tbname, $index)
+{
+    if ($index < 1 || $index > 20) {
+        echo("Invalid row index $index for test data!\n");
+        return false;
+    }
+
+    // get array of input values
+    $inputArray = getInsertArray($index);
+    if (empty($inputArray)) {
+        fatalError("getInsertSqlComplete: inputs for inserting a row cannot be empty");
+    }
+    
+    $result = null;
+    if (isColEncrypted()) {
+        $stmt = insertRow($conn, $tbname, $inputArray, $result);
+    } else {
+        // do not use the generic insertRow as the binary data needs some pre-processing
+        // before calling sqlsrv_query()
+        $colStr = "INSERT INTO $tbname (";
+        $valStr = "VALUES (";
+        $col = 1;
+        foreach ($inputArray as $key => $value) {
+            $colStr .= $key . ", ";
+            
+            if (is_array($value)) {
+                $value = $value[0];
+                // this might be an input to a decimal, a numeric or a binary field
+                if (isBinary($col)) {
+                    $value = "0x" . $value;    // annotate the input string as a hex string
+                }
+            } 
+            if (is_null($value)) {
+                $valStr .= "null, ";
+            } elseif (is_string($value) && !isBinary($col)) {
+                $valStr .= "'" . $value . "', ";
+            } else {
+                $valStr .= $value . ", ";
+            }
+            $col++;
+        }
+        $colStr = rtrim($colStr, ", ") . ") ";
+        $valStr = rtrim($valStr, ", ") . ") ";
+        $insertSql = $colStr . $valStr;
+        $stmt = sqlsrv_query($conn, $insertSql);
+    }
+    if (!$stmt || $result === false) {
+        fatalError("insertTestRow: failed to insert row $index!\n");
+    }
+    return $stmt;
+}
+
+/**
+ * Get a row of data to be inserted into the test table
+ * @param  int  $index : the index of a certain row of test data
+ * @return an array of key-value pairs
+ */
+function getInsertArray($index)
+{
+    if (! UseUTF8data()) {
+        require_once('MsData.inc');
+    } else {
+        require_once('MsData_UTF8.inc');
+    }
+
+    // get array of input values
+    return getTestData($index);
+}
+
+/**
+ * Get test data based on the row and column
+ * @param  int  $rowIndex : the row index
+ * @param  int  $colIndex : the column index
+ * @return data of mixed type or null if something went wrong
+ */
+function getInsertData($rowIndex, $colIndex)
+{
+    // get array of input values
+    $inputArray = getInsertArray($rowIndex);
+    if (empty($inputArray)) {
+        fatalError("getInsertData: failed to retrieve data at row $rowIndex.\n");
+    }
+    $count = 0;
+    foreach ($inputArray as $key => $value) {
+        if (++$count == $colIndex) {
+            if (is_array($value)) {
+                return $value[0];
+            } else {
+                return $value;
+            }
+            break;
+        }
+    }
+
+    return null;
+}
+
 
 } // end of namespace AlwaysEncrypted
 
@@ -449,7 +780,7 @@ function getSqlType($k)
     return ("udt");
 }
 
-function getDriverType($k, $dataSize)
+function getSqlsrvSqlType($k, $dataSize)
 {
     switch ($k) {
         case 1:     return (SQLSRV_SQLTYPE_INT);
@@ -497,7 +828,7 @@ function isXml($k)
 function isStreamable($k)
 {
     switch ($k) {
-        case 12:    return (true);  // nchar(512)
+        case 12:    return (true);  // char(512)
         case 13:    return (true);  // varchar(512)
         case 14:    return (true);  // varchar(max)
         case 15:    return (true);  // nchar(512)
@@ -666,7 +997,9 @@ function getColName($k)
         case 26:    return ("c26_smalldatetime");
         case 27:    return ("c27_timestamp");
         case 28:    return ("c28_xml");
-        default:    break;
+        default:
+            fatalError("Invalid column index $k");
+            break;
     }
     return ("");
 }

@@ -8,7 +8,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function Info()
+function info()
 {
     ob_start();
     phpinfo();
@@ -21,7 +21,7 @@ function Info()
 $testName = "Driver Loading";
 startTest($testName);
 
-preg_match('/sqlsrv support.*/', Info(), $matches);
+preg_match('/sqlsrv support.*/', info(), $matches);
 var_dump($matches);
 
 endTest($testName);

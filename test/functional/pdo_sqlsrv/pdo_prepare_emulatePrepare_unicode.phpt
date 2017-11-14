@@ -1,89 +1,95 @@
 --TEST--
 prepare with emulate prepare and binding uft8 characters
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require('MsSetup.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", $uid, $pwd);
-//$conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-//$conn->setAttribute( PDO::SQLSRV_ATTR_QUERY_TIMEOUT, 1 );
+require_once('MsCommon_mid-refactor.inc');
 
-$tableName = "users";
-
-$query = "IF OBJECT_ID('users') IS NOT NULL DROP TABLE [$tableName]";
-$stmt = $conn->query($query);
-
-$query = "CREATE TABLE [$tableName] (name nvarchar(max), status int, age int)";
-$stmt = $conn->query($query);
-
-$query = "INSERT INTO [$tableName] (name, status, age) VALUES (N'Belle', 1, 34)";
-$stmt = $conn->query($query);
-
-$query = "INSERT INTO [$tableName] (name, status, age) VALUES (N'Абрам', 1, 40)";
-$stmt = $conn->query($query);
-
-$query = "INSERT INTO [$tableName] (name, status, age) VALUES (N'가각', 1, 30)";
-$stmt = $conn->query($query);
-
-$name = "가각";
-
-$query = "SELECT * FROM [$tableName] WHERE name = :name AND status = 1";
-
-//without emulate prepare
-print_r("Prepare without emulate prepare:\n");
-$stmt = $conn->prepare($query);
-$stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
-$stmt->execute();
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-print_r($row);
-
-//with emulate prepare and no bind param options
-print_r("Prepare with emulate prepare and no bindParam options:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$stmt->bindParam(':name', $name );
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-if ($stmt->rowCount() == 0){
-	print_r("No results for this query\n");
+function prepareStmt($conn, $query, $prepareOptions = array(), $dataType = null, $length = null, $driverOptions = null)
+{
+    $name = "가각";
+    if (!isColEncrypted()) {
+        $stmt = $conn->prepare($query, $prepareOptions);
+        $stmt->bindParam(':name', $name, $dataType, $length, $driverOptions);
+    } else {
+        $status = 1;
+        $stmt = $conn->prepare($query, $prepareOptions);
+        $stmt->bindParam(':name', $name, $dataType, $length, $driverOptions);
+        $stmt->bindParam(':status', $status);
+    }
+    $stmt->execute();
+    return $stmt;
 }
 
-//with emulate prepare and SQLSRV_ENCODING_UTF8
-print_r("Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
+try {
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
 
-//with emulate prepare and SQLSRV_ENCODING_SYSTEM
-print_r("Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-if ($stmt->rowCount() == 0){
-	print_r("No results for this query\n");
+    $tableName = "users";
+    createTable($conn, $tableName, array("name" => "nvarchar(max)", "status" => "int", "age" => "int"));
+
+    if (!isColEncrypted()) {
+        $conn->exec("INSERT INTO [$tableName] (name, status, age) VALUES (N'Belle', 1, 34)");
+        $conn->exec("INSERT INTO [$tableName] (name, status, age) VALUES (N'Абрам', 1, 40)");
+        $conn->exec("INSERT INTO [$tableName] (name, status, age) VALUES (N'가각', 1, 30)");
+        $query = "SELECT * FROM [$tableName] WHERE name = :name AND status = 1";
+    } else {
+        insertRow($conn, $tableName, array("name" => "Belle", "status" => 1, "age" => 34));
+        insertRow($conn, $tableName, array("name" => "Абрам", "status" => 1, "age" => 40));
+        insertRow($conn, $tableName, array("name" => "가각", "status" => 1, "age" => 30));
+        $query = "SELECT * FROM [$tableName] WHERE name = :name AND status = :status";
+    }
+
+    //without emulate prepare
+    print_r("Prepare without emulate prepare:\n");
+    $stmt = prepareStmt($conn, $query, array(), PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
+
+    //with emulate prepare and no bind param options
+    print_r("Prepare with emulate prepare and no bindParam options:\n");
+    if (!isColEncrypted()) {
+        $options = array(PDO::ATTR_EMULATE_PREPARES => true);
+    } else {
+        $options = array(PDO::ATTR_EMULATE_PREPARES => false);
+    }
+    $stmt = prepareStmt($conn, $query, $options);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
+    if ($stmt->rowCount() == 0) {
+        print_r("No results for this query\n");
+    }
+
+    //with emulate prepare and SQLSRV_ENCODING_UTF8
+    print_r("Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:\n");
+    $stmt = prepareStmt($conn, $query, $options, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
+
+    //with emulate prepare and SQLSRV_ENCODING_SYSTEM
+    print_r("Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:\n");
+    $stmt = prepareStmt($conn, $query, $options, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
+    if ($stmt->rowCount() == 0) {
+        print_r("No results for this query\n");
+    }
+
+    //with emulate prepare and encoding SQLSRV_ENCODING_BINARY
+    print_r("Prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY:\n");
+    $stmt = prepareStmt($conn, $query, $options, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    print_r($row);
+    if ($stmt->rowCount() == 0) {
+        print_r("No results for this query\n");
+    }
+
+    dropTable($conn, $tableName);
+    unset($stmt);
+    unset($conn);
+} catch (PDOException $e) {
+    var_dump($e->errorInfo);
 }
-
-//with emulate prepare and encoding SQLSRV_ENCODING_BINARY
-print_r("Prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY:\n");
-$stmt = $conn->prepare($query, array(PDO::ATTR_EMULATE_PREPARES => true));
-$stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
-$stmt->execute();
-$row = $stmt->fetch( PDO::FETCH_ASSOC );
-print_r($row);
-if ($stmt->rowCount() == 0){
-	print_r("No results for this query\n");
-}
-
-//$query = "DROP TABLE [$tableName]";
-//$stmt = $conn->query($query);
-
-$stmt = null;
-$conn=null;
 ?>
 
 --EXPECT--

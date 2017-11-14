@@ -5,12 +5,12 @@ Test the driver behavior with a complex insert query.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function ComplexInsert($count)
+function complexInsert($count)
 {
     $testName = "Complex Insert Query";
 
@@ -18,7 +18,7 @@ function ComplexInsert($count)
 
     setup();
 
-    $conn1 = connect();
+    $conn1 = AE\connect();
 
     $tableName = 'TC83test';
     dropTable($conn1, $tableName);
@@ -53,21 +53,11 @@ function ComplexInsert($count)
     endTest($testName);
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        ComplexInsert(160);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    complexInsert(160);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

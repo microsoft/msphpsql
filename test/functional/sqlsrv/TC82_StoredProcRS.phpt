@@ -5,59 +5,84 @@ Test output string parameters with rows affected return results before output pa
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function StoredProcCheck()
+function storedProcCheck()
 {
-    include 'MsSetup.inc';
-    
     $testName = "ResultSet with Stored Proc";
 
     startTest($testName);
 
     setup();
-
-    $conn1 = connect();
+    $tableName = 'TC82test';
+    $procName = "TC82test_proc";
+    $conn1 = AE\connect();
 
     $table1 = $tableName."_1";
     $table2 = $tableName."_2";
     $table3 = $tableName."_3";
-    $procArgs = "@p1 int, @p2 nchar(32), @p3 nvarchar(64), @p4 nvarchar(max) OUTPUT";
+    $date = date("Y-m-d H:i:s"); 
+    // When AE is enabled, the size must match exactly
+    $size = AE\isColEncrypted() ? "256" : "max";
+    
+    $procArgs = "@p1 int, @p2 nchar(32), @p3 nvarchar(64), @p4 datetime, @p5 nvarchar($size) OUTPUT";
     $introText="Initial Value";
-    $callArgs = array(array(1, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT, SQLSRV_SQLTYPE_INT),
-                  array('Dummy No', SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NCHAR(32)),
-                      array('Dummy ID', SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NVARCHAR(50)),
-                  array( &$introText, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NVARCHAR(256)));
+    $callArgs = array(array(1, SQLSRV_PARAM_IN, 
+                            SQLSRV_PHPTYPE_INT, SQLSRV_SQLTYPE_INT),
+                      array('Dummy No', SQLSRV_PARAM_IN, 
+                            SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
+                            SQLSRV_SQLTYPE_NCHAR(32)),
+                      array('Dummy ID', SQLSRV_PARAM_IN, 
+                            SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
+                            SQLSRV_SQLTYPE_NVARCHAR(50)),
+                      array($date, SQLSRV_PARAM_IN, 
+                            SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
+                            SQLSRV_SQLTYPE_DATETIME),
+                      array(&$introText, SQLSRV_PARAM_OUT, 
+                            SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), 
+                            SQLSRV_SQLTYPE_NVARCHAR(256)));
     $procCode =
         "IF (@p3 IS NULL)
         BEGIN
-            INSERT INTO [$table1] (DataID, ExecTime, DataNo) values (@p1, GETDATE(), @p2)
+            INSERT INTO [$table1] (DataID, ExecTime, DataNo) values (@p1, @p4, @p2)
         END
         ELSE
         BEGIN
-            INSERT INTO [$table1] (DataID, ExecTime, DataNo, DataRef) values (@p1, GETDATE(), @p2, @p3)
+            INSERT INTO [$table1] (DataID, ExecTime, DataNo, DataRef) values (@p1, @p4, @p2, @p3)
         END
         INSERT INTO [$table2] (DataID, DataNo) values (@p1, @p2)
-        SELECT @p4=(SELECT Intro from [$table3] WHERE DataID=@p1) ";
+        SELECT @p5=(SELECT Intro from [$table3] WHERE DataID=@p1) ";
 
-    createTableEx($conn1, $table1, "DataID int, ExecTime datetime, DataNo nchar(32), DataRef nvarchar(64)");
-    createTableEx($conn1, $table2, "DataID int, DataNo nchar(32)");
-    createTableEx($conn1, $table3, "DataID int, Intro nvarchar(max)");
+    $columns1 = array(new AE\ColumnMeta("int", "DataID"),
+                      new AE\ColumnMeta("datetime", "ExecTime"),
+                      new AE\ColumnMeta("nchar(32)", "DataNo"),
+                      new AE\ColumnMeta("nvarchar(64)", "DataRef"));
+    AE\createTable($conn1, $table1, $columns1);
+    
+    $columns2 = array(new AE\ColumnMeta("int", "DataID"),
+                      new AE\ColumnMeta("nchar(32)", "DataNo"));
+    AE\createTable($conn1, $table2, $columns2);
+
+    $columns3 = array(new AE\ColumnMeta("int", "DataID"),
+                      new AE\ColumnMeta("nvarchar($size)", "Intro"));
+    AE\createTable($conn1, $table3, $columns3);
+
     createProc($conn1, $procName, $procArgs, $procCode);
 
-    $stmt1 = sqlsrv_query($conn1, "INSERT INTO [$table3] (DataID, Intro) VALUES (1, 'Test Value 1')");
+    $r = null;
+    $stmt1 = AE\insertRow($conn1, $table3, array("DataID" => 1, "Intro" => 'Test Value 1'), $r, AE\INSERT_PREPARE_PARAMS);
     insertCheck($stmt1);
 
-    $stmt2 = sqlsrv_query($conn1, "INSERT INTO [$table3] (DataID, Intro) VALUES (2, 'Test Value 2')");
+    $stmt2 = AE\insertRow($conn1, $table3, array("DataID" => 2, "Intro" => 'Test Value 2'), $r, AE\INSERT_PREPARE_PARAMS);
     insertCheck($stmt2);
 
-    $stmt3 = sqlsrv_query($conn1, "INSERT INTO [$table3] (DataID, Intro) VALUES (3, 'Test Value 3')");
+    $stmt3 = AE\insertRow($conn1, $table3, array("DataID" => 3, "Intro" => 'Test Value 3'), $r, AE\INSERT_PREPARE_PARAMS);
     insertCheck($stmt3);
 
-    $stmt4 = callProcEx($conn1, $procName, "", "?, ?, ?, ?", $callArgs);
+    $stmt4 = callProcEx($conn1, $procName, "", "?, ?, ?, ?, ?", $callArgs);
     $result = sqlsrv_next_result($stmt4);
     while ($result != null) {
         if ($result === false) {
@@ -79,21 +104,11 @@ function StoredProcCheck()
     endTest($testName);
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        StoredProcCheck();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    storedProcCheck();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

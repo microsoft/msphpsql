@@ -5,7 +5,7 @@ Verifies that "sqlsrv_cancel" discards any pending data in current result set
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -16,14 +16,14 @@ function cancel()
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $conn1 = AE\connect();
 
     $tableName = 'TC35test';
-    createTable($conn1, $tableName);
-    insertRows($conn1, $tableName, 5);
+    AE\createTestTable($conn1, $tableName);
+    AE\insertTestRows($conn1, $tableName, 5);
 
     trace("Executing SELECT query on $tableName ...");
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     if (sqlsrv_fetch($stmt1) === false) {
         fatalError("Failed to retrieve data from test table");
     }

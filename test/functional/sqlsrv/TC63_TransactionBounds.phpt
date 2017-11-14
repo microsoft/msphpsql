@@ -10,22 +10,21 @@ are inserted into the same table.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function Transaction($steps)
+function transaction($steps)
 {
-    include 'MsSetup.inc';
-
     $testName = "Transaction - Boundaries";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
-    $conn2 = connect();
-    createTable($conn1, $tableName);
+    $tableName = 'TC63test';
+    $conn1 = AE\connect();
+    $conn2 = AE\connect();
+    AE\createTestTable($conn1, $tableName);
 
     $noRows1 = 2;   // inserted rows
     $noRows2 = 3;
@@ -36,8 +35,8 @@ function Transaction($steps)
         case 0: // nested commit
             sqlsrv_begin_transaction($conn1);
             sqlsrv_begin_transaction($conn2);
-            insertRows($conn1, $tableName, $noRows1);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             sqlsrv_commit($conn2);
             sqlsrv_commit($conn1);
             $noRows += ($noRows1 + $noRows2);
@@ -46,8 +45,8 @@ function Transaction($steps)
         case 1: // nested rollback
             sqlsrv_begin_transaction($conn1);
             sqlsrv_begin_transaction($conn2);
-            insertRows($conn1, $tableName, $noRows1);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             sqlsrv_rollback($conn2);
             sqlsrv_rollback($conn1);
             break;
@@ -55,8 +54,8 @@ function Transaction($steps)
         case 2: // nested commit & rollback
             sqlsrv_begin_transaction($conn1);
             sqlsrv_begin_transaction($conn2);
-            insertRows($conn1, $tableName, $noRows1);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             sqlsrv_rollback($conn2);
             sqlsrv_commit($conn1);
             $noRows += $noRows1;
@@ -64,19 +63,19 @@ function Transaction($steps)
 
         case 3: // interleaved commit
             sqlsrv_begin_transaction($conn1);
-            insertRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
             sqlsrv_begin_transaction($conn2);
             sqlsrv_commit($conn1);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             sqlsrv_commit($conn2);
             $noRows += ($noRows1 + $noRows2);
             break;
 
         case 4: // interleaved insert
             sqlsrv_begin_transaction($conn1);
-            insertRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
             sqlsrv_begin_transaction($conn2);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             sqlsrv_commit($conn1);
             sqlsrv_commit($conn2);
             $noRows += ($noRows1 + $noRows2);
@@ -85,18 +84,18 @@ function Transaction($steps)
         case 5: // interleaved insert & commit
             sqlsrv_begin_transaction($conn1);
             sqlsrv_begin_transaction($conn2);
-            insertRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
             sqlsrv_commit($conn1);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             sqlsrv_commit($conn2);
             $noRows += ($noRows1 + $noRows2);
             break;
 
         case 6: // interleaved execution with commit & rollback
             sqlsrv_begin_transaction($conn1);
-            insertRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
             sqlsrv_begin_transaction($conn2);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             sqlsrv_commit($conn2);
             sqlsrv_rollback($conn1);
             $noRows += $noRows2;
@@ -104,22 +103,22 @@ function Transaction($steps)
 
         case 7: // mixed execution
             sqlsrv_begin_transaction($conn1);
-            insertRows($conn1, $tableName, $noRows1);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             sqlsrv_commit($conn1);
             $noRows += ($noRows1 + $noRows2);
             break;
 
         default:// no transaction
-            insertRows($conn1, $tableName, $noRows1);
-            insertRows($conn2, $tableName, $noRows2);
+            AE\insertTestRows($conn1, $tableName, $noRows1);
+            AE\insertTestRows($conn2, $tableName, $noRows2);
             $noRows += ($noRows1 + $noRows2);
             break;
         }
     }
 
     $rowCount = 0;
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     while (sqlsrv_fetch($stmt1)) {
         $rowCount++;
     }
@@ -139,20 +138,11 @@ function Transaction($steps)
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        Transaction(9);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    transaction(9);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

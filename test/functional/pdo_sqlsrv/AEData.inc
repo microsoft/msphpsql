@@ -62,11 +62,11 @@ $pdoParamTypes = array(
 
 // Checks if the current error is the incompatible types error
 // if so, state which sql type is incompatible with which data type
-function is_incompatible_types_error( $stmt, $dataType, $pdoParamType ) {
-    if ( $stmt->errorInfo()[0] == "22018" )
+function isIncompatibleTypesError($stmt, $dataType, $pdoParamType)
+{
+    if ($stmt->errorInfo()[0] == "22018") {
         echo "PDO param type $pdoParamType is incompatible with encrypted $dataType\n";
-    else
-        var_dump( $stmt->errorInfo() );
+    } else {
+        var_dump($stmt->errorInfo());
+    }
 }
-                             
-?>

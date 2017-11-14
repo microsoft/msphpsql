@@ -6,12 +6,12 @@ Verifies as well that invalid connection attempts fail as expected.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function ConnectionTest()
+function connectionTest()
 {
     $testName = "Connection";
     startTest($testName);
@@ -37,20 +37,11 @@ function ConnectionTest()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        ConnectionTest();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    connectionTest();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

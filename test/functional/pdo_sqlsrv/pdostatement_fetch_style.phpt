@@ -1,153 +1,116 @@
 --TEST--
 Test the PDOStatement::fetch() method with different fetch styles.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-  
-require_once 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
 
-function fetch_both( $conn )
+function fetchWithStyle($conn, $tbname, $style)
 {
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );
-    $result = $stmt->fetch(PDO::FETCH_BOTH);
-    var_dump($result);
-    $stmt->closeCursor();
-}
-
-function fetch_assoc( $conn )
-{
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    var_dump($result);
-    $stmt->closeCursor();
-}
-
-function fetch_lazy( $conn )
-{
-    global $table1;
-    $stmt = $conn->query( "Select * from " . $table1 );
-    $result = $stmt->fetch(PDO::FETCH_LAZY);
-    var_dump($result);
-    $stmt->closeCursor();
-}
-
-function fetch_obj( $conn )
-{
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );
-    $result = $stmt->fetch(PDO::FETCH_OBJ);
-    var_dump($result);
-    $stmt->closeCursor();
-}
-
-function fetch_num( $conn )
-{
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );
-    $result = $stmt->fetch(PDO::FETCH_NUM);
-    var_dump($result);
-    $stmt->closeCursor();
-
-}
-
-function fetch_bound( $conn )
-{
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );   
-    $stmt->bindColumn('IntCol', $IntCol);
-    $stmt->bindColumn('CharCol', $CharCol);
-    $stmt->bindColumn('NCharCol', $NCharCol);
-    $stmt->bindColumn('DateTimeCol', $DateTimeCol);
-    $stmt->bindColumn('VarcharCol', $VarcharCol);
-    $stmt->bindColumn('NVarCharCol', $NVarCharCol);
-    $stmt->bindColumn('FloatCol', $FloatCol);
-    $stmt->bindColumn('XmlCol', $XmlCol);
-    $result = $stmt->fetch(PDO::FETCH_BOUND);
-    if (!$result)
-    {
-        die("Error in FETCH_BOUND\n");
+    $stmt = $conn->query("SELECT * FROM $tbname");
+    switch ($style) {
+        case PDO::FETCH_BOTH:
+        case PDO::FETCH_ASSOC:
+        case PDO::FETCH_LAZY:
+        case PDO::FETCH_OBJ:
+        case PDO::FETCH_NUM:
+        {
+            $result = $stmt->fetch($style);
+            var_dump($result);
+            unset($stmt);
+            break;
+        }
+        case PDO::FETCH_BOUND:
+        {
+            $stmt->bindColumn('IntCol', $IntCol);
+            $stmt->bindColumn('CharCol', $CharCol);
+            $stmt->bindColumn('NCharCol', $NCharCol);
+            $stmt->bindColumn('DateTimeCol', $DateTimeCol);
+            $stmt->bindColumn('VarcharCol', $VarcharCol);
+            $stmt->bindColumn('NVarCharCol', $NVarCharCol);
+            $stmt->bindColumn('FloatCol', $FloatCol);
+            $stmt->bindColumn('XmlCol', $XmlCol);
+            $result = $stmt->fetch($style);
+            if (!$result) {
+                die("Error in FETCH_BOUND\n");
+            }
+            var_dump($IntCol);
+            var_dump($CharCol);
+            var_dump($NCharCol);
+            var_dump($DateTimeCol);
+            var_dump($VarcharCol);
+            var_dump($NVarCharCol);
+            var_dump($FloatCol);
+            var_dump($XmlCol);
+            unset($stmt);
+            break;
+        }
+        case PDO::FETCH_CLASS:
+        {
+            global $mainTypesClass;
+            $stmt->setFetchMode($style, $mainTypesClass);
+            $result = $stmt->fetch($style);
+            $result->dumpAll();
+            unset($stmt);
+            break;
+        }
+        case PDO::FETCH_INTO:
+        {
+            global $mainTypesClass;
+            $obj = new $mainTypesClass;
+            $stmt->setFetchMode($style, $obj);
+            $result = $stmt->fetch($style);
+            $obj->dumpAll();
+            unset($stmt);
+            break;
+        }
+        case "PDO::FETCH_INVALID":
+        {
+            try {
+                $result = $stmt->fetch(PDO::FETCH_UNKNOWN);
+            } catch (PDOException $err) {
+                print_r($err);
+            }
+            break;
+        }
+        
     }
-    var_dump($IntCol);
-    var_dump($CharCol);
-    var_dump($NCharCol);
-    var_dump($DateTimeCol);
-    var_dump($VarcharCol);
-    var_dump($NVarCharCol);
-    var_dump($FloatCol);
-    var_dump($XmlCol);
-    $stmt->closeCursor();
 }
 
-function fetch_class( $conn )
-{
-    global $table1;
-    global $table1_class;
-    $stmt = $conn->query( "Select * from ". $table1 );   
-    $stmt->setFetchMode(PDO::FETCH_CLASS, $table1_class);
-    $result = $stmt->fetch(PDO::FETCH_CLASS);
-    $result->dumpAll(); 
-    $stmt->closeCursor();
-}
-
-function fetch_into( $conn )
-{
-    global $table1;
-    global $table1_class;
-    $stmt = $conn->query( "Select * from ". $table1 );   
-    $obj = new $table1_class;
-    $stmt->setFetchMode(PDO::FETCH_INTO, $obj);
-    $result = $stmt->fetch(PDO::FETCH_INTO);
-    $obj->dumpAll();    
-    $stmt->closeCursor();
-}
-
-function fetch_invalid( $conn )
-{
-    global $table1;
-    $stmt = $conn->query( "Select * from ". $table1 );   
-    try
-    {
-        $result = $stmt->fetch(PDO::FETCH_UNKNOWN);
-    }
-    catch(PDOException $err)
-    {
-        print_r($err);
-    }   
-}
-
-try 
-{      
+try {
     $db = connect();
-    create_and_insert_table1( $db );
+    $tbname = "PDO_MainTypes";
+    createAndInsertTableMainTypes($db, $tbname);
     echo "Test_1 : FETCH_BOTH :\n";
-    fetch_both($db);
+    fetchWithStyle($db, $tbname, PDO::FETCH_BOTH);
     echo "Test_2 : FETCH_ASSOC :\n";
-    fetch_assoc($db);
+    fetchWithStyle($db, $tbname, PDO::FETCH_ASSOC);
     echo "Test_3 : FETCH_LAZY :\n";
-    fetch_lazy($db);
+    fetchWithStyle($db, $tbname, PDO::FETCH_LAZY);
     echo "Test_4 : FETCH_OBJ :\n";
-    fetch_obj($db);
+    fetchWithStyle($db, $tbname, PDO::FETCH_OBJ);
     echo "Test_5 : FETCH_NUM :\n";
-    fetch_num($db);
+    fetchWithStyle($db, $tbname, PDO::FETCH_NUM);
     echo "Test_6 : FETCH_BOUND :\n";
-    fetch_bound($db);
+    fetchWithStyle($db, $tbname, PDO::FETCH_BOUND);
     echo "Test_7 : FETCH_CLASS :\n";
-    fetch_class($db);
+    fetchWithStyle($db, $tbname, PDO::FETCH_CLASS);
     echo "Test_8 : FETCH_INTO :\n";
-    fetch_into($db);
+    fetchWithStyle($db, $tbname, PDO::FETCH_INTO);
     echo "Test_9 : FETCH_INVALID :\n";
-    fetch_invalid($db);
-}
-catch( PDOException $e ) {
-    var_dump( $e );
+    fetchWithStyle($db, $tbname, "PDO::FETCH_INVALID");
+
+    dropTable($db, $tbname);
+    unset($db);
+} catch (PDOException $e) {
+    var_dump($e);
     exit;
 }
 
 
-?>  
+?>
 
 --EXPECTF--
 Test_1 : FETCH_BOTH :
@@ -207,7 +170,7 @@ array(8) {
 Test_3 : FETCH_LAZY :
 object(PDORow)#%x (%x) {
   ["queryString"]=>
-  string(25) "Select * from PDO_Types_1"
+  string(27) "SELECT * FROM PDO_MainTypes"
   ["IntCol"]=>
   string(1) "1"
   ["CharCol"]=>
@@ -294,6 +257,6 @@ Test_9 : FETCH_INVALID :
 
 Fatal error: Uncaught Error: Undefined class constant 'FETCH_UNKNOWN' in %s:%x
 Stack trace:
-#0 %s: fetch_invalid(Object(PDO))
+#0 %s: fetchWithStyle(Object(PDO), 'PDO_MainTypes', 'PDO::FETCH_INVA...')
 #1 {main}
   thrown in %s on line %x

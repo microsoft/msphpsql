@@ -7,24 +7,24 @@ Validates that a closed statement cannot be reused.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function Close()
+function close()
 {
     $testName = "Statement - Close";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $conn1 = AE\connect();
     $tableName = 'TC36test';
     
-    createTable($conn1, $tableName);
+    AE\createTestTable($conn1, $tableName);
 
     trace("Executing SELECT query on $tableName ...");
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     trace(" successfull.\n");
     sqlsrv_free_stmt($stmt1);
 
@@ -48,20 +48,11 @@ function Close()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        Close();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    close();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECTREGEX--

@@ -9,7 +9,7 @@ longer than the query timeout.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -20,9 +20,9 @@ function queryTimeout()
     startTest($testName);
 
     setup();
-    $conn1 = connect();
+    $conn1 = AE\connect();
     $tableName = 'TC37test';
-    createTable($conn1, $tableName);
+    AE\createTestTable($conn1, $tableName);
 
     trace("Executing batch queries requiring 3 seconds with 1 second timeout.\n");
     $query = "WAITFOR DELAY '00:00:03'; SELECT * FROM [$tableName]";
