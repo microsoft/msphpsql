@@ -1,25 +1,28 @@
 --TEST--
 Test various cursor types and whether they reflect changes in the database
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
-﻿﻿<?php
+<?php
 require_once('MsCommon.inc');
 
-function Fetch_WithCursor($conn, $cursorType)
+function fetchWithCursor($conn, $cursorType)
 {
-    $tableName = GetTempTableName();
+    $tableName = "table_$cursorType"; 
 
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_char] char(10))");
-    sqlsrv_free_stmt($stmt);
-
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('char(10)', 'c2_char'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    
     // insert four rows
     $numRows = 4;
-    InsertData($conn, $tableName, 0, $numRows);
+    insertData($conn, $tableName, 0, $numRows);
 
     // select table
     $stmt = sqlsrv_prepare($conn, "SELECT * FROM $tableName", array(), array('Scrollable' => $cursorType));
     sqlsrv_execute($stmt);
 
-    GetNumRows($stmt, $cursorType);
+    getNumRows($stmt, $cursorType);
     $numRowsFetched = 0;
     while ($obj = sqlsrv_fetch_object($stmt)) {
         echo $obj->c1_int . "\n";
@@ -30,10 +33,12 @@ function Fetch_WithCursor($conn, $cursorType)
         echo "Number of rows fetched $numRowsFetched is wrong! Expected $numRows\n";
     }
 
-    DeleteThenFetchLastRow($conn, $stmt, $tableName, 4);
+    deleteThenFetchLastRow($conn, $stmt, $tableName, 4);
+    
+    dropTable($conn, $tableName);
 }
 
-function InsertData($conn, $tableName, $start, $count)
+function insertData($conn, $tableName, $start, $count)
 {
     $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (c1_int, c2_char) VALUES (?, ?)", array(&$v1, &$v2));
 
@@ -46,13 +51,10 @@ function InsertData($conn, $tableName, $start, $count)
     }
 }
 
-function DeleteThenFetchLastRow($conn, $stmt, $tableName, $id)
+function deleteThenFetchLastRow($conn, $stmt, $tableName, $id)
 {
     echo "\nNow delete the last row then try to fetch it...\n";
-    $stmt2 = sqlsrv_query($conn, "DELETE FROM $tableName WHERE [c1_int] = 4");
-    if ($stmt2 !== false) {
-        sqlsrv_free_stmt($stmt2);
-    }
+    $stmt2 = AE\executeQuery($conn, "DELETE FROM $tableName", "[c1_int] = ?", array(4));
 
     $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_LAST);
     if ($result) {
@@ -65,7 +67,7 @@ function DeleteThenFetchLastRow($conn, $stmt, $tableName, $id)
     }
 }
 
-function GetNumRows($stmt, $cursorType)
+function getNumRows($stmt, $cursorType)
 {
     $expectedToFail = false;
     if ($cursorType == SQLSRV_CURSOR_FORWARD || $cursorType == SQLSRV_CURSOR_DYNAMIC) {
@@ -89,48 +91,31 @@ function GetNumRows($stmt, $cursorType)
     }
 }
 
-//--------------------------------------------------------------------
-// RunTest
-//
-//--------------------------------------------------------------------
-function RunTest()
-{
-    startTest("sqlsrv_fetch_cursor_types");
-    try {
-        set_time_limit(0);
-        sqlsrv_configure('WarningsReturnAsErrors', 1);
+try {
+    set_time_limit(0);
+    sqlsrv_configure('WarningsReturnAsErrors', 1);
 
-        echo "\nTest begins...\n";
+    // Connect
+    $conn = AE\connect();
 
-        // Connect
-        $conn = connect();
-        if (!$conn) {
-            fatalError("Could not connect.\n");
-        }
+    echo "\nUsing SQLSRV_CURSOR_FORWARD...\n";
+    fetchWithCursor($conn, SQLSRV_CURSOR_FORWARD);
+    echo "\nUsing SQLSRV_CURSOR_DYNAMIC...\n";
+    fetchWithCursor($conn, SQLSRV_CURSOR_DYNAMIC);
+    echo "\nUsing SQLSRV_CURSOR_KEYSET...\n";
+    fetchWithCursor($conn, SQLSRV_CURSOR_KEYSET);
+    echo "\nUsing SQLSRV_CURSOR_STATIC...\n";
+    fetchWithCursor($conn, SQLSRV_CURSOR_STATIC);
 
-        echo "\nUsing SQLSRV_CURSOR_FORWARD...\n";
-        Fetch_WithCursor($conn, SQLSRV_CURSOR_FORWARD);
-        echo "\nUsing SQLSRV_CURSOR_DYNAMIC...\n";
-        Fetch_WithCursor($conn, SQLSRV_CURSOR_DYNAMIC);
-        echo "\nUsing SQLSRV_CURSOR_KEYSET...\n";
-        Fetch_WithCursor($conn, SQLSRV_CURSOR_KEYSET);
-        echo "\nUsing SQLSRV_CURSOR_STATIC...\n";
-        Fetch_WithCursor($conn, SQLSRV_CURSOR_STATIC);
-
-        sqlsrv_close($conn);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_fetch_cursor_types");
+    sqlsrv_close($conn);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-RunTest();
+echo "\nDone\n";
+endTest("sqlsrv_fetch_cursor_types");
 
 ?>
 --EXPECT--
-﻿﻿
-Test begins...
 
 Using SQLSRV_CURSOR_FORWARD...
 Error occurred in sqlsrv_num_rows, which is expected

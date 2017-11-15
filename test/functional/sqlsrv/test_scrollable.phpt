@@ -1,249 +1,213 @@
 --TEST--
 scrollable result sets.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
-sqlsrv_configure( 'WarningsReturnAsErrors', false );
-sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
+sqlsrv_configure('WarningsReturnAsErrors', false);
+sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-require( 'MsCommon.inc' );
+require_once('MsCommon.inc');
 
-$conn = Connect();
-if( $conn === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-
-$stmt = sqlsrv_query( $conn, "IF OBJECT_ID('ScrollTest', 'U') IS NOT NULL DROP TABLE ScrollTest" );
-if( $stmt !== false ) { sqlsrv_free_stmt( $stmt ); }
-
-$stmt = sqlsrv_query( $conn, "CREATE TABLE ScrollTest (id int, value char(10))" );
-if( $stmt === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-$rows = sqlsrv_has_rows( $stmt );
-if( $rows == true ) {
-    die( "Shouldn't have rows" );
-}
-sqlsrv_free_stmt( $stmt );
-
-$stmt = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 1, "Row 1" ));
-if( $stmt === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-$rows = sqlsrv_has_rows( $stmt );
-if( $rows == true ) {
-    die( "Shouldn't have rows" );
-}
-$stmt = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 2, "Row 2" ));
-if( $stmt === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-$rows = sqlsrv_has_rows( $stmt );
-if( $rows == true ) {
-    die( "Shouldn't have rows" );
-}
-$stmt = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 3, "Row 3" ));
-if( $stmt === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-$rows = sqlsrv_has_rows( $stmt );
-if( $rows == true ) {
-    die( "Shouldn't have rows" );
-}
-$stmt = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 4, "Row 4" ));
-if( $stmt === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-$rows = sqlsrv_has_rows( $stmt );
-if( $rows == true ) {
-    die( "Shouldn't have rows" );
-}
-
-$stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => 'static' ));
-
-$result = sqlsrv_fetch( $stmt, SQLSRV_SCROLL_ABSOLUTE, 4 );
-if( $result !== null ) {
-    die( "Should have failed with an invalid row number" );
-}
-$rows = sqlsrv_has_rows( $stmt );
-if( $rows != true ) {
-    die( "Should have rows" );
-}
-print_r( sqlsrv_errors() );
-$result = sqlsrv_fetch( $stmt, SQLSRV_SCROLL_ABSOLUTE, -1 );
-if( $result !== null ) {
-    die( "Should have failed with an invalid row number" );
-}
-print_r( sqlsrv_errors() );
-
-$rows = sqlsrv_rows_affected( $stmt );
-print_r( sqlsrv_errors() );
-
-$rows = sqlsrv_num_rows( $stmt );
-echo "Query returned $rows rows\n";
-
-$row = 3;
-$result = sqlsrv_fetch( $stmt, SQLSRV_SCROLL_ABSOLUTE, $row );
-do { 
-    $result = sqlsrv_fetch( $stmt, SQLSRV_SCROLL_ABSOLUTE, $row );
-    if( $result === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+function hasRows($stmt, $expectedFail)
+{
+    $rows = sqlsrv_has_rows($stmt);
+    if ($expectedFail) {
+        if ($rows == true) {
+            die("Shouldn't have rows");
+        }
+    } else {
+        if ($rows != true) {
+            die("Should have rows");
+        }
     }
-    $field1 = sqlsrv_get_field( $stmt, 0 );
-    $field2 = sqlsrv_get_field( $stmt, 1 );
-    echo "$field1 $field2\n";
-    $row = $row - 1;
-} while( $row >= 0 );
-
-sqlsrv_free_stmt( $stmt );
-
-$stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => SQLSRV_CURSOR_FORWARD ));
-$rows = sqlsrv_has_rows( $stmt );
-if( $rows != true ) {
-    die( "Should have rows" );
 }
-$row_count = 0;
-while( $row = sqlsrv_fetch( $stmt )) {
+
+function countRows($stmt, $numRows, $cursorType, $initialCount = 0) 
+{
+    $row_count = $initialCount;
+    while ($row = sqlsrv_fetch($stmt)) {
        ++$row_count;
-}
-if( $row === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-echo "$row_count rows retrieved on the forward only cursor\n";
-sqlsrv_free_stmt( $stmt );
-
-$stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => 'static' ));
-$rows = sqlsrv_has_rows( $stmt );
-if( $rows != true ) {
-    die( "Should have rows" );
-}
-$row_count = 0;
-while( $row = sqlsrv_fetch( $stmt )) {
-       ++$row_count;
-}
-if( $row === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-echo "$row_count rows retrieved on the static cursor\n";
-sqlsrv_free_stmt( $stmt );
-
-$stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => 'dynamic' ));
-
-sqlsrv_fetch( $stmt );
-sqlsrv_fetch( $stmt );
-
-$stmt2 = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 5, "Row 5" ));
-if( $stmt2 === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
-$stmt2 = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 6, "Row 6" ));
-if( $stmt2 === false ) {
-    die( print_r( sqlsrv_errors(), true ));
+    }
+    if($row === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+    if ($row_count != $numRows) {
+        echo "ERROR: $row_count rows retrieved on the $cursorType cursor\n";
+    }
 }
 
-$row_count = 2; // for the two fetches above
-while( sqlsrv_fetch( $stmt )) {
-       ++$row_count;
-}
-echo "$row_count rows retrieved on the dynamic cursor\n";
-sqlsrv_free_stmt( $stmt );
+function insertOneRow($conn, $tableName, $idx, $expectedFail)
+{
+    $res = null;
+    $stmt = AE\insertRow($conn, $tableName, array('id' => $idx, 'value' => 'Row ' . $idx), $res, AE\INSERT_QUERY_PARAMS);
 
-
-$stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => SQLSRV_CURSOR_STATIC ));
-$row_count = sqlsrv_num_rows( $stmt );
-if( $row_count != 6 ) {
-    die( "sqlsrv_num_rows should have returned 6 rows in the static cursor\n" );
-}
-$row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC, SQLSRV_SCROLL_ABSOLUTE, -1 );
-if( $row !== null ) {
-    die( "sqlsrv_fetch_array should have returned null\n" );
+    if (!$stmt || $res === false) {
+        fatalError("failed to insert row $idx!\n");
+    }
+    hasRows($stmt, $expectedFail);
+    sqlsrv_free_stmt($stmt);
 }
 
-$row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC, SQLSRV_SCROLL_ABSOLUTE, 6 );
-if( $row !== null ) {
-    die( "sqlsrv_fetch_array should have returned null\n" );
+$conn = AE\connect();
+$tableName = 'ScrollTest';
+$numRows = 4;
+
+$columns = array(new AE\ColumnMeta('int', 'id'),
+                 new AE\ColumnMeta('char(10)', 'value'));
+$stmt = AE\createTable($conn, $tableName, $columns);
+
+$rows = sqlsrv_has_rows($stmt);
+if($rows == true) {
+    die("Shouldn't have rows");
+}
+sqlsrv_free_stmt($stmt);
+
+for ($i = 1; $i <= $numRows; $i++) {
+    insertOneRow($conn, $tableName, $i, true);
 }
 
-$stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => SQLSRV_CURSOR_DYNAMIC ));
+// Always Encrypted feature only supports SQLSRV_CURSOR_FORWARD, so skip the rest of the test
+// when AE is enabled
+// https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation
+$query = "SELECT * FROM $tableName";
+$options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
+$stmt = sqlsrv_query($conn, $query, array(), $options);
 
-$result = sqlsrv_num_rows( $stmt );
-if( $result !== false ) {
-    die( "sqlsrv_num_rows should have failed for a dynamic cursor." );
-}
-sqlsrv_fetch( $stmt );
-sqlsrv_fetch( $stmt );
+hasRows($stmt, false);
+countRows($stmt, $numRows, 'forward only'); 
+sqlsrv_free_stmt($stmt);
 
-$stmt2 = sqlsrv_query( $conn, "DELETE FROM ScrollTest WHERE id = 2" );
-if( $stmt2 === false ) {
-    die( print_r( sqlsrv_errors(), true ));
-}
+if (! AE\isColEncrypted()) {
+    $options = array('Scrollable' => 'static'); 
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
 
-$row = sqlsrv_get_field( $stmt, 0 );
-if( $row !== false ) {
-    die( "Should have returned false retrieving a field deleted by another query\n" );
-}
-echo "sqlsrv_get_field returned false when retrieving a field deleted by another query\n";
-print_r( sqlsrv_errors() );
+    $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, 4);
+    if($result !== null) {
+        die("Should have failed with an invalid row number");
+    }
+    hasRows($stmt, false);
+    // this is empty
+    print_r(sqlsrv_errors());
+    $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, -1);
+    if($result !== null) {
+        die("Should have failed with an invalid row number");
+    }
+    // this is empty
+    print_r(sqlsrv_errors());
 
-// verify the sqlsrv_fetch_object is working
-$obj = sqlsrv_fetch_object( $stmt, null, array(null), SQLSRV_SCROLL_LAST, 1 );
+    // expected an error here
+    $rows = sqlsrv_rows_affected($stmt);
+    $message = !empty(sqlsrv_errors()) ? sqlsrv_errors()[0]['message'] : '';
+    $expected = 'This function only works with statements that are not scrollable.';
+    if (strcmp($message, $expected)) {
+        echo "Expected this error message: \'$expected\'\nbut it is: \'$message\'\n";
+    }    
 
-if( $obj === false ) {
+    $rows = sqlsrv_num_rows($stmt);
+    if ($rows != $numRows) {
+        echo "Error: Query returned $rows rows\n";
+    }
     
-    print_r( sqlsrv_errors() );
+    $row = 3; 
+    $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, $row);
+    do {
+        $result = sqlsrv_fetch($stmt, SQLSRV_SCROLL_ABSOLUTE, $row);
+        if($result === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+        $field1 = sqlsrv_get_field($stmt, 0);
+        $field2 = sqlsrv_get_field($stmt, 1);
+        $idx = $row + 1;
+        
+        if ($field1 != $idx || trim($field2) != "Row $idx")
+            echo "Field values unexpected $field1 $field2!\n";
+            
+        $row = $row - 1;
+    } while($row >= 0);
+    sqlsrv_free_stmt($stmt);
+    
+    $options = array('Scrollable' => 'static');
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
+
+    hasRows($stmt, false);
+    countRows($stmt, $numRows, 'static'); 
+    sqlsrv_free_stmt($stmt);
+
+    $options = array('Scrollable' => 'dynamic');
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
+    
+    sqlsrv_fetch($stmt);
+    sqlsrv_fetch($stmt);
+
+    insertOneRow($conn, $tableName, 5, true);
+    insertOneRow($conn, $tableName, 6, true);
+    $numRows = 6;
+    
+    // to account for the two fetches above
+    countRows($stmt, $numRows, 'dynamic', 2);
+    sqlsrv_free_stmt($stmt);
+    
+    $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
+
+    $row_count = sqlsrv_num_rows($stmt);
+    if($row_count != $numRows) {
+        die("sqlsrv_num_rows should have returned 6 rows in the static cursor\n");
+    }
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC, SQLSRV_SCROLL_ABSOLUTE, -1);
+    if($row !== null) {
+        die("sqlsrv_fetch_array should have returned null\n");
+    }
+
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC, SQLSRV_SCROLL_ABSOLUTE, 6);
+    if($row !== null) {
+        die("sqlsrv_fetch_array should have returned null\n");
+    }
+
+    $options = array('Scrollable' => SQLSRV_CURSOR_DYNAMIC);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
+
+    $result = sqlsrv_num_rows($stmt);
+    if($result !== false) {
+        die("sqlsrv_num_rows should have failed for a dynamic cursor.");
+    }
+    sqlsrv_fetch($stmt);
+    sqlsrv_fetch($stmt);
+
+    $stmt2 = sqlsrv_query($conn, "DELETE FROM ScrollTest WHERE id = 2");
+    if($stmt2 === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    $row = sqlsrv_get_field($stmt, 0);
+    if($row !== false) {
+        die("sqlsrv_get_field should have returned false retrieving a field deleted by another query");
+    }
+    $error = sqlsrv_errors()[0];  
+    $message = $error['message'];
+    $sqlstate = $error['SQLSTATE'];
+    if (strcmp($sqlstate, 'HY109') || strpos($message, 'Invalid cursor position') === false) {
+        die("Unexpected SQL state $sqlstate or error \'$message\'");
+    }
+
+    // verify the sqlsrv_fetch_object is working
+    $obj = sqlsrv_fetch_object($stmt, null, array(null), SQLSRV_SCROLL_LAST, 1);
+    if($obj === false) {
+        print_r(sqlsrv_errors());
+    } else {
+        if ($obj->id != $numRows || trim($obj->value) != "Row $numRows")
+            echo "Field values unexpected $obj->id $obj->value!\n";
+    }
+    sqlsrv_free_stmt($stmt);
 }
-print_r( $obj );
-
-sqlsrv_query( $conn, "DROP TABLE ScrollTest" );
-
-sqlsrv_free_stmt( $stmt );
-
-sqlsrv_close( $conn );
+    
+dropTable($conn, $tableName);
+sqlsrv_close($conn);
 
 echo "Test succeeded.\n";
 
 ?>
---EXPECTREGEX-- 
-Array
-\(
-    \[0\] => Array
-        \(
-            \[0\] => IMSSP
-            \[SQLSTATE\] => IMSSP
-            \[1\] => \-51
-            \[code\] => \-51
-            \[2\] => This function only works with statements that are not scrollable\.
-            \[message\] => This function only works with statements that are not scrollable\.
-        \)
-
-\)
-Query returned 4 rows
-4 Row 4     
-3 Row 3     
-2 Row 2     
-1 Row 1     
-4 rows retrieved on the forward only cursor
-4 rows retrieved on the static cursor
-6 rows retrieved on the dynamic cursor
-sqlsrv_get_field returned false when retrieving a field deleted by another query
-Array
-\(
-    \[0\] => Array
-        \(
-            \[0\] => HY109
-            \[SQLSTATE\] => HY109
-            \[1\] => 0
-            \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid cursor position
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid cursor position
-        \)
-
-\)
-stdClass Object
-\(
-    \[id\] => 6
-    \[value\] => Row 6     
-\)
-Test succeeded\.
+--EXPECT--
+Test succeeded.

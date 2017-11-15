@@ -1,39 +1,32 @@
 --TEST--
 Fetch array of extended ASCII data using a scrollable buffered cursor
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-require_once("MsCommon.inc");
+require_once('MsCommon.inc');
 
 // Connect
-$conn = connect(array( 'CharacterSet'=>'UTF-8' ));
-if (!$conn) {
-    die(print_r(sqlsrv_errors(), true));
-}
+$conn = AE\connect(array('CharacterSet'=>'UTF-8'));
 
 // Create table
-$tableName = '#exAsciiTest';
-$query = "CREATE TABLE $tableName (ID CHAR(10))";
-$stmt = sqlsrv_query($conn, $query);
+$tableName = 'exAsciiTest';
+$columns = array(new AE\ColumnMeta('CHAR(10)', 'ID'));
+AE\createTable($conn, $tableName, $columns);
 
 // Insert data
-$query = "INSERT INTO $tableName VALUES ('Aå_Ð×Æ×Ø_B')";
-$stmt = sqlsrv_query($conn, $query);
-if (! $stmt) {
-    die(print_r(sqlsrv_errors(), true));
-}
+$res = null;
+$stmt = AE\insertRow($conn, $tableName, array('ID' => 'Aå_Ð×Æ×Ø_B'));
 
 // Fetch data
 $query = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"));
-if (! $stmt) {
-    die(print_r(sqlsrv_errors(), true));
-}
 
 // Fetch
 $row = sqlsrv_fetch_array($stmt);
 var_dump($row);
+
+dropTable($conn, $tableName);
 
 // Close connection
 sqlsrv_free_stmt($stmt);

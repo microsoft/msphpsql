@@ -4,46 +4,31 @@ Fetch data from a prepopulated test table given a custom keystore provider
 <?php require('skipif_not_ksp.inc'); ?>
 --FILE--
 <?php
-    sqlsrv_configure( 'WarningsReturnAsErrors', 1 );
-    sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );  
+    sqlsrv_configure('WarningsReturnAsErrors', 1);
+    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-    require( 'MsSetup.inc' );
-    require( 'AE_Ksp.inc' );
-
-    $ksp_path = getKSPpath();
-
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                             "ColumnEncryption"=>"enabled", 
-                             "CEKeystoreProvider"=>$ksp_path, 
-                             "CEKeystoreName"=>$ksp_name,
-                             "CEKeystoreEncryptKey"=>$encrypt_key,
-                             'ReturnDatesAsStrings'=>true);
-
-    $conn = sqlsrv_connect( $server, $connectionInfo );
-    if( $conn === false )
-    {
+    require_once('MsHelper.inc');
+    $conn = AE\connect(array('ReturnDatesAsStrings'=>true));
+    if ($conn === false) {
         echo "Failed to connect.\n";
-        print_r( sqlsrv_errors() );
-    }
-    else
-    {
+        print_r(sqlsrv_errors());
+    } else {
         echo "Connected successfully with ColumnEncryption enabled.\n";
     }
 
+    $ksp_test_table = AE\KSP_TEST_TABLE;
     $tsql = "SELECT * FROM $ksp_test_table";
     $stmt = sqlsrv_prepare($conn, $tsql);
-    if (! sqlsrv_execute($stmt) )
-    {
+    if (!sqlsrv_execute($stmt)) {
         echo "Failed to fetch data.\n";
-        print_r( sqlsrv_errors() );        
+        print_r(sqlsrv_errors());
     }
 
     // fetch data
-    while ($row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC ))
-    {
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC)) {
         echo "c1=" . $row[0] . "\tc2=" . $row[1] . "\tc3=" . $row[2] . "\tc4=" . $row[3] . "\n" ;
-    }   
-    
+    }
+
     sqlsrv_free_stmt($stmt);
     sqlsrv_close($conn);
 

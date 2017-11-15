@@ -3,15 +3,27 @@ Read numeric types from SQLSRV with buffered query.
 --DESCRIPTION--
 Test numeric conversion (number to string, string to number) functionality for buffered queries with SQLSRV.
 --SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
-require_once("MsCommon.inc");
-
-$conn = connect(array("CharacterSet"=>"utf-8"));
-if (!$conn) {
-    printErrors("Connection could not be established.\n");
+function getInputData($inputs)
+{
+    return array('a' => $inputs[0],
+                 'neg_a'=> $inputs[1], 
+                 'b' => $inputs[2], 
+                 'neg_b' => $inputs[3], 
+                 'c' => $inputs[4], 
+                 'neg_c' => $inputs[5], 
+                 'zero' => $inputs[6], 
+                 'zerof' => $inputs[7], 
+                 'zerod' => $inputs[8]);
 }
+
+require_once('MsCommon.inc');
+
+$conn = AE\connect(array("CharacterSet"=>"utf-8"));
+$tableName = 'test230';
 
 $sample = 1234567890.1234;
 $sample1 = -1234567890.1234;
@@ -20,34 +32,35 @@ $sample3 = -1;
 $sample4 = 0.5;
 $sample5 = -0.55;
 
-$query = 'CREATE TABLE #TESTTABLE (a float(53), neg_a float(53), b int, neg_b int, c decimal(16, 6), neg_c decimal(16, 6), zero int, zerof float(53), zerod decimal(16,6))';
-
 // Create table
-$stmt = sqlsrv_query($conn, $query);
-if ($stmt === false) {
-    die(print_r(sqlsrv_errors(), true));
-}
+$columns = array(new AE\ColumnMeta('float(53)', 'a'),
+                 new AE\ColumnMeta('float(53)', 'neg_a'),
+                 new AE\ColumnMeta('int', 'b'),
+                 new AE\ColumnMeta('int', 'neg_b'),
+                 new AE\ColumnMeta('decimal(16, 6)', 'c'),
+                 new AE\ColumnMeta('decimal(16, 6)', 'neg_c'),
+                 new AE\ColumnMeta('int', 'zero'),
+                 new AE\ColumnMeta('float(53)', 'zerof'),
+                 new AE\ColumnMeta('decimal(16, 6)', 'zerod'));
+AE\createTable($conn, $tableName, $columns);
 
-$query = 'INSERT INTO #TESTTABLE (a, neg_a, b, neg_b, c, neg_c, zero, zerof, zerod) VALUES(?, ?, ?, ?, ?, ?, 0, 0, 0)';
-$params = array($sample, $sample1, $sample2, $sample3, $sample4, $sample5);
-
-$stmt = sqlsrv_query($conn, $query, $params);
-if ($stmt === false) {
-    die(print_r(sqlsrv_errors(), true));
-}
-$params = array($sample4, $sample5, 100000, -1234567, $sample, $sample1);
-$stmt = sqlsrv_query($conn, $query, $params);
-if ($stmt === false) {
-    die(print_r(sqlsrv_errors(), true));
-}
-
-$query = 'SELECT TOP 2 * FROM #TESTTABLE';
-$stmt = sqlsrv_query($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+$res = null;
+$params = array($sample, $sample1, $sample2, $sample3, $sample4, $sample5, 0, 0, 0);
+$data = getInputData($params);
+$stmt = AE\insertRow($conn, $tableName, $data, $res, AE\INSERT_QUERY_PARAMS);
 if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
+    fatalError("Failed to insert into $tableName!");
 }
-sqlsrv_execute($stmt);
+
+$params = array($sample4, $sample5, 100000, -1234567, $sample, $sample1, 0, 0, 0);
+$data = getInputData($params);
+$stmt = AE\insertRow($conn, $tableName, $data, $res, AE\INSERT_QUERY_PARAMS);
+if (!$stmt) {
+    fatalError("Failed to insert into $tableName!");
+}
+
+$query = "SELECT TOP 2 * FROM $tableName";
+$stmt = sqlsrv_query($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
 
 $array = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
 var_dump($array);
@@ -72,6 +85,8 @@ for ($i = 0; $i < $rowcount; $i++) {
         var_dump($field);
     }
 }
+
+dropTable($conn, $tableName);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);

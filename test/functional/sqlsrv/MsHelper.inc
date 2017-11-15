@@ -22,6 +22,9 @@ const INSERT_PREPARE = 2;
 const INSERT_QUERY_PARAMS = 3;
 const INSERT_PREPARE_PARAMS = 4;
 
+const KSP_NAME = 'MyCustomKSPName';
+const ENCRYPT_KEY = 'LPKCWVD07N3RG98J0MBLG4H2';
+const KSP_TEST_TABLE = 'CustomKSPTestTable';
 
 /**
  * class for encapsulating column metadata needed for creating a table
@@ -71,10 +74,10 @@ class ColumnMeta
         // https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/always-encrypted-database-engine
 
         $unsupported = array("xml", "timestamp", "image", "ntext", "text", "sql_variant", "hierarchyid", "geography", "geometry", "alias");
-        
+
         if (stripos($this->options, "identity") !== false) {
             $this->encryptable = false;
-        } elseif (in_array($this->dataType, $unsupported)) { 
+        } elseif (in_array(strtolower($this->dataType), $unsupported)) {
             $this->encryptable = false;
         } else {
             $this->encryptable = true;
@@ -208,6 +211,29 @@ function getCekName()
             echo "getCekName: Invalid keystore name.\n";
     }
     return $cekName;
+}
+
+/**
+ * @return the path to the KSP dll/so file
+ */
+function getKSPpath()
+{
+    $name = 'myKSP';
+
+    $dir_name = realpath(dirname(__FILE__));
+    $ksp = $dir_name . DIRECTORY_SEPARATOR . $name;
+    if (strtoupper(substr(php_uname('s'), 0, 3)) == 'WIN') {
+        $arch = 'x64';
+        if (PHP_INT_SIZE == 4) {
+            // running 32 bit
+            $arch = '';
+        }
+        $ksp .= $arch . '.dll';
+    } else {
+        $ksp .= '.so';
+    }
+
+    return $ksp;
 }
 
 /**
@@ -346,11 +372,10 @@ function connect($options = array(), $disableCE = false)
             $connectionOptions = array_merge($connectionOptions, array("ColumnEncryption" => "Enabled"));
         }
         if ($keystore == "ksp") {
-            require('AE_Ksp.inc');
             $ksp_path = getKSPPath();
             $ksp_options = array("CEKeystoreProvider"=>$ksp_path,
-                                 "CEKeystoreName"=>$ksp_name,
-                                 "CEKeystoreEncryptKey"=>$encrypt_key);
+                                 "CEKeystoreName"=>KSP_NAME,
+                                 "CEKeystoreEncryptKey"=>ENCRYPT_KEY);
             $connectionOptions = array_merge($connectionOptions, $ksp_options);
         }
     }
@@ -419,19 +444,20 @@ function insertRow($conn, $tbname, $inputs, &$r = null, $api = INSERT_QUERY)
                 array_push($params, $inputs[$key]);
             }
         }
-       
+
         // use prepare for inserts when AE is enabled
         if (isColEncrypted() || $api == INSERT_PREPARE_PARAMS) {
             $stmt = sqlsrv_prepare($conn, $insertSql, $params);
             if ($stmt) {
                 $r = sqlsrv_execute($stmt);
             } else {
-                fatalError("insertRow: failed to prepare insert query!");            
+                fatalError("insertRow: failed to prepare insert query!");
             }
         } else {
             $stmt = sqlsrv_query($conn, $insertSql, $params);
         }
     }
+
     return $stmt;
 }
 
@@ -454,10 +480,11 @@ function selectFromTable($conn, $tbname, $conds = null, $values = null)
  * @param  resource  $conn : connection resource
  * @param  string  $sql : T-SQL query
  * @param  string  $conds : string of condition(s) possibly with placeholders, null by default
- * @param  array  $values : array of parameters, null by default
+ * @param  array  $values : array of parameters for placeholders in $conds, null by default
+ * @param  array  $options : array of query options, null by default
  * @return resource sqlsrv statement upon success or false otherwise
  */
-function executeQuery($conn, $sql, $conds = null, $values = null)
+function executeQuery($conn, $sql, $conds = null, $values = null, $options = null)
 {
     if (!isColEncrypted()) {
         // if not encrypted replace placeholders ('?') with values, if array not empty
@@ -475,17 +502,19 @@ function executeQuery($conn, $sql, $conds = null, $values = null)
             $sql = $sql . " WHERE $clause ";
         } elseif (!empty($conds)) {
             $sql = $sql . " WHERE $conds ";
-        }        
-        $stmt = sqlsrv_query($conn, $sql);
+        }
+
+        $stmt = sqlsrv_query($conn, $sql, null, $options);
     } else {
-        // with AE enabled, use sqlsrv_prepare() in case there are 
+        // with AE enabled, use sqlsrv_prepare() in case there are
         // fields with unlimited size
-        if (empty($conds) || empty($values)) {
-            $stmt = sqlsrv_prepare($conn, $sql);
+        if (empty($conds)) {
+            $stmt = sqlsrv_prepare($conn, $sql, null, $options);
         } else {
             $sql = $sql . " WHERE $conds ";
-            $stmt = sqlsrv_prepare($conn, $sql, $values);
-        } 
+            // pass $values to sqlsrv_prepare whether the array is null, empty or filled
+            $stmt = sqlsrv_prepare($conn, $sql, $values, $options);
+        }
         if ($stmt) {
             $r = sqlsrv_execute($stmt);
             if (!$r) {
@@ -649,13 +678,12 @@ function insertTestRow($conn, $tbname, $index)
         echo("Invalid row index $index for test data!\n");
         return false;
     }
-
     // get array of input values
     $inputArray = getInsertArray($index);
     if (empty($inputArray)) {
         fatalError("getInsertSqlComplete: inputs for inserting a row cannot be empty");
     }
-    
+
     $result = null;
     if (isColEncrypted()) {
         $stmt = insertRow($conn, $tbname, $inputArray, $result);
@@ -667,14 +695,14 @@ function insertTestRow($conn, $tbname, $index)
         $col = 1;
         foreach ($inputArray as $key => $value) {
             $colStr .= $key . ", ";
-            
+
             if (is_array($value)) {
                 $value = $value[0];
                 // this might be an input to a decimal, a numeric or a binary field
                 if (isBinary($col)) {
                     $value = "0x" . $value;    // annotate the input string as a hex string
                 }
-            } 
+            }
             if (is_null($value)) {
                 $valStr .= "null, ";
             } elseif (is_string($value) && !isBinary($col)) {
