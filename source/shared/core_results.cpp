@@ -45,7 +45,7 @@ namespace {
 
 // *** internal constants ***
 
-const int INITIAL_FIELD_STRING_LEN = 8000;      // base allocation size when retrieving a string field
+const int INITIAL_LOB_FIELD_LEN = 2048;      // base allocation size when retrieving a LOB field
 
 // *** internal functions ***
 
@@ -1520,9 +1520,9 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
     }
 
     SQLLEN already_read = 0;
-    SQLLEN to_read = INITIAL_FIELD_STRING_LEN;
+    SQLLEN to_read = INITIAL_LOB_FIELD_LEN;
     sqlsrv_malloc_auto_ptr<char> buffer;
-    buffer = static_cast<char*>( sqlsrv_malloc( INITIAL_FIELD_STRING_LEN + extra + sizeof( SQLULEN )));
+    buffer = static_cast<char*>( sqlsrv_malloc( INITIAL_LOB_FIELD_LEN + extra + sizeof( SQLULEN )));
     SQLRETURN r = SQL_SUCCESS;
     SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
     SQLLEN last_field_len = 0;
