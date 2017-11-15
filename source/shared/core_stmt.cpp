@@ -60,7 +60,8 @@ struct col_cache {
     }
 };
 
-const int INITIAL_FIELD_STRING_LEN = 256;    // base allocation size when retrieving a string field
+const int INITIAL_FIELD_STRING_LEN = 2048;          // base allocation size when retrieving a string field
+const int INITIAL_AE_FIELD_STRING_LEN = 8000;       // base allocation size when retrieving a string field when AE is enabled
 
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
 const unsigned int UTF8_MIDBYTE_MASK = 0xc0;
@@ -135,6 +136,7 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     current_results( NULL ),
     cursor_type( SQL_CURSOR_FORWARD_ONLY ),
     fwd_row_index( -1 ),
+    curr_result_set( 0 ),
     has_rows( false ),
     fetch_called( false ),
     last_field_index( -1 ),
@@ -1138,9 +1140,13 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
 
             // mark we are past the end of all results
             stmt->past_next_result_end = true;
+
+            // reset the current active result set
+            stmt->curr_result_set = 0;
             return;
         }
 
+        stmt->curr_result_set++;
         stmt->new_result_set( TSRMLS_C );
     }
     catch( core::CoreException& e ) {
@@ -2236,6 +2242,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
     SQLLEN field_len_temp = 0;
     SQLLEN sql_display_size = 0;
     char* field_value_temp = NULL;
+    unsigned int intial_field_len = INITIAL_FIELD_STRING_LEN; 
 
     try {
 
@@ -2262,6 +2269,11 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             break;
         }
 
+        if( stmt->conn->ce_option.enabled ) {
+            // when AE is enabled, increase the intial field len 
+            intial_field_len = INITIAL_AE_FIELD_STRING_LEN;
+        } 
+
         col_cache* cached = NULL;
         if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
             sql_field_type = cached->sql_type;
@@ -2282,7 +2294,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
         if( sql_display_size == 0 || sql_display_size == INT_MAX ||
             sql_display_size == INT_MAX >> 1 || sql_display_size == UINT_MAX - 1 ) {
             
-            field_len_temp = INITIAL_FIELD_STRING_LEN;
+            field_len_temp = intial_field_len;
 
             SQLLEN initiallen = field_len_temp + extra;
 
@@ -2323,7 +2335,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                     if( field_len_temp == SQL_NO_TOTAL ) {
 
                         // reset the field_len_temp
-                        field_len_temp = INITIAL_FIELD_STRING_LEN;
+                        field_len_temp = intial_field_len;
 
                         do {
                             SQLLEN initial_field_len = field_len_temp;
@@ -2378,14 +2390,14 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                                 &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
                         }
                         else {
-                            // We have already recieved INITIAL_FIELD_STRING_LEN size data.
-                            field_len_temp -= INITIAL_FIELD_STRING_LEN;
+                            // We have already recieved intial_field_len size data.
+                            field_len_temp -= intial_field_len;
 
                             // Get the rest of the data.
-                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + INITIAL_FIELD_STRING_LEN,
+                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + intial_field_len,
                                 field_len_temp + extra, &dummy_field_len,
                                 true /*handle_warning*/ TSRMLS_CC );
-                            field_len_temp += INITIAL_FIELD_STRING_LEN;
+                            field_len_temp += intial_field_len;
                         }
 
                         if( dummy_field_len == SQL_NULL_DATA ) {
@@ -2655,6 +2667,12 @@ bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt ) {
         // close and reopen the cursor
         core::SQLCloseCursor(stmt->current_results->odbc);
         core::SQLExecute(stmt);
+
+        // advance to the previous active result set
+        for (int j = 0; j < stmt->curr_result_set; j++) {
+            core::SQLMoreResults(stmt);
+        }
+
         // FETCH_NEXT until the cursor reaches the row that it was at
         for (int i = 0; i <= stmt->fwd_row_index; i++) {
             core::SQLFetchScroll(stmt->current_results->odbc, SQL_FETCH_NEXT, 0);
