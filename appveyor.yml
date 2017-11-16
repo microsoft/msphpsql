@@ -127,11 +127,13 @@ install:
     - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:SQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
-    - appveyor DownloadFile http://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/release-0.9.6.1/OpenCppCoverageSetup-x64-0.9.6.1.exe
-    - OpenCppCoverageSetup-x64-0.9.6.1.exe /VERYSILENT
-    - ps: ls "c:\Program Files"
-    - set CPPCOVER="C:\\Program Files\\OpenCppCoverage"
-    - set PATH=%CPPCOVER%;%PATH%
+    #- appveyor DownloadFile http://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/release-0.9.6.1/OpenCppCoverageSetup-x64-0.9.6.1.exe
+    #- OpenCppCoverageSetup-x64-0.9.6.1.exe /VERYSILENT
+    #- ps: ls "c:\Program Files"
+    #- set CPPCOVER="C:\\Program Files\\OpenCppCoverage"
+    #- set PATH=%CPPCOVER%;%PATH%
+    - choco install opencppcoverage
+    - set path=C:\Program Files\OpenCppCoverage;%path%
     
 build_script:
     - '"C:\\Program Files (x86)\\Microsoft Visual Studio %PHP_VC%.0\\VC\\vcvarsall.bat" %BUILD_PLATFORM%'
