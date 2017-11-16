@@ -39,6 +39,8 @@ void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_contex
     SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_sqltype ) == sizeof( zend_long ) );
     SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_phptype ) == sizeof( zend_long ));
 
+    setlocale(LC_ALL, "");
+
     *henv_cp = *henv_ncp = SQL_NULL_HANDLE; // initialize return values to NULL
 
     try {

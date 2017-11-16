@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------------------------------------------------------------
-// File: LocalizationImpl.hpp
+// File: localizationimpl.cpp
 //
 // Contents: Contains non-inline code for the SystemLocale class
 //           Must be included in one c/cpp file per binary
@@ -71,6 +71,17 @@ const cp_iconv cp_iconv::g_cp_iconv[] = {
     {  1256, "CP1256//TRANSLIT" },
     {  1257, "CP1257//TRANSLIT" },
     {  1258, "CP1258//TRANSLIT" },
+    { CP_ISO8859_1, "ISO8859-1//TRANSLIT" },
+    { CP_ISO8859_2, "ISO8859-2//TRANSLIT" },
+    { CP_ISO8859_3, "ISO8859-3//TRANSLIT" },
+    { CP_ISO8859_4, "ISO8859-4//TRANSLIT" },
+    { CP_ISO8859_5, "ISO8859-5//TRANSLIT" },
+    { CP_ISO8859_6, "ISO8859-6//TRANSLIT" },
+    { CP_ISO8859_7, "ISO8859-7//TRANSLIT" },
+    { CP_ISO8859_8, "ISO8859-8//TRANSLIT" },
+    { CP_ISO8859_9, "ISO8859-9//TRANSLIT" },
+    { CP_ISO8859_13, "ISO8859-13//TRANSLIT" },
+    { CP_ISO8859_15, "ISO8859-15//TRANSLIT" },
     { 12000, "UTF-32LE" }
 };
 const size_t cp_iconv::g_cp_iconv_count = ARRAYSIZE(cp_iconv::g_cp_iconv);
@@ -270,7 +281,43 @@ using namespace std;
 
 SystemLocale::SystemLocale( const char * localeName )
     :   m_pLocale( new std::locale(localeName) )
+    , m_uAnsiCP(CP_UTF8)
 {
+    struct LocaleCP
+    {
+        const char* localeName;
+        UINT codePage;
+    };
+#define CPxxx(cp) { "CP" #cp, cp }
+#define ISO8859(n) { "ISO-8859-" #n, CP_ISO8859_ ## n }, \
+                   { "8859_" #n, CP_ISO8859_ ## n }, \
+                   { "ISO8859-" #n, CP_ISO8859_ ## n }, \
+                   { "ISO8859" #n, CP_ISO8859_ ## n }, \
+                   { "ISO_8859-" #n, CP_ISO8859_ ## n }, \
+                   { "ISO_8859_" #n, CP_ISO8859_ ## n }
+    const LocaleCP lcpTable[] = {
+        { "utf8", CP_UTF8 },
+        { "UTF-8", CP_UTF8 },
+        CPxxx(1252), CPxxx(850), CPxxx(437), CPxxx(874), CPxxx(932), CPxxx(936), CPxxx(949), CPxxx(950),
+        CPxxx(1250), CPxxx(1251), CPxxx(1253), CPxxx(1254), CPxxx(1255), CPxxx(1256), CPxxx(1257), CPxxx(1258),
+        ISO8859(1), ISO8859(2), ISO8859(3), ISO8859(4), ISO8859(5), ISO8859(6),
+        ISO8859(7), ISO8859(8), ISO8859(9), ISO8859(13), ISO8859(15),
+        { "UTF-32LE", 12000 }
+    };
+    if (localeName)
+    {
+        const char *charsetName = strchr(localeName, '.');
+        charsetName = charsetName ? charsetName + 1 : localeName;
+        for (const LocaleCP& lcp : lcpTable)
+        {
+        //    if (!strcasecmp(lcp.localeName, charsetName))
+           if (!strncasecmp(lcp.localeName, charsetName, strlen(lcp.localeName)))
+            {
+                m_uAnsiCP = lcp.codePage;
+                return;
+            }
+        }
+    }
 }
 
 SystemLocale::~SystemLocale()
@@ -285,7 +332,7 @@ const SystemLocale & SystemLocale::Singleton()
 #if !defined(__GNUC__) || defined(NO_THREADSAFE_STATICS)
     #error "Relying on GCC's threadsafe initialization of local statics."
 #endif
-    static const SystemLocale s_Default( "en_US.utf-8" );
+    static const SystemLocale s_Default(setlocale(LC_ALL, NULL));
     return s_Default;
 }
 

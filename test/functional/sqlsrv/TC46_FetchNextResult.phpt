@@ -5,7 +5,16 @@ Verifies the functionality of "sqlsrv_next_result"
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?
+// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+
+// this skips for older ODBC versions in Linux which doesn't support non-UTF8
+setTestAnsiData(true)
+php require('skipif_versions_old.inc');
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -22,7 +31,11 @@ function fetchFields()
 
     setup();
     $tableName = 'TC46test';
-    $conn1 = AE\connect();
+    if (useUTF8Data()) {
+        $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
+    } else {
+        $conn1 = AE\connect();
+    }
     AE\createTestTable($conn1, $tableName);
 
     $noRows = 10;
@@ -81,17 +94,28 @@ function fetchFields()
     endTest($testName);
 }
 
-if (!isWindows()) {
-    setUTF8Data(true);
+// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
+// test ansi
 try {
+    setUTF8Data(false);
     fetchFields();
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-setUTF8Data(false);
+
+// test utf8
+try {
+    setUTF8Data(true);
+    fetchFields();
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
 
 ?>
 --EXPECT--
+Test "Fetch - Next Result" completed successfully.
 Test "Fetch - Next Result" completed successfully.

@@ -732,12 +732,13 @@ function getInsertArray($index)
 {
     if (! UseUTF8data()) {
         require_once('MsData.inc');
+        return getTestData($index);
     } else {
         require_once('MsData_UTF8.inc');
+        return getTestData_UTF8($index);
     }
 
     // get array of input values
-    return getTestData($index);
 }
 
 /**

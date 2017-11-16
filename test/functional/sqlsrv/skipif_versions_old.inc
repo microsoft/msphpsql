@@ -12,4 +12,7 @@ if (! $conn) {
 } elseif (AE\isColEncrypted() && !AE\isQualified($conn)) {
     die("skip - AE feature not supported in the current environment.");
 }
+} elseif (testAnsiData() && !isWindows() && !AE\isQualified($conn)) {
+    die("skip - non-UTF8 not supported in the current environment.");
+}
 ?>

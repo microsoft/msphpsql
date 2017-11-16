@@ -27,6 +27,17 @@
 #include <locale>
 
 #define CP_UTF8  65001
+#define CP_ISO8859_1 28591
+#define CP_ISO8859_2 28592
+#define CP_ISO8859_3 28593
+#define CP_ISO8859_4 28594
+#define CP_ISO8859_5 28595
+#define CP_ISO8859_6 28596
+#define CP_ISO8859_7 28597
+#define CP_ISO8859_8 28598
+#define CP_ISO8859_9 28599
+#define CP_ISO8859_13 28603
+#define CP_ISO8859_15 28605
 #define CP_UTF16 1200
 #define CP_ACP  0           // default to ANSI code page
 
@@ -178,14 +189,15 @@ private:
     SystemLocale & operator=( const SystemLocale & );
 
     std::locale * m_pLocale;
+    UINT m_uAnsiCP;
 
     explicit SystemLocale( const char * localeName );
     ~SystemLocale();
 
     static UINT ExpandSpecialCP( UINT codepage )
     {
-        // Convert CP_ACP, CP_OEM to CP_UTF8
-        return (codepage < 2 ? CP_UTF8 : codepage);
+        // skip SQLSRV_ENCODING_CHAR
+        return (codepage <= 3 ? Singleton().m_uAnsiCP : codepage);
     }
 
     // Returns the number of bytes this UTF8 code point expects
@@ -217,7 +229,7 @@ private:
 
 inline UINT SystemLocale::AnsiCP() const
 {
-    return CP_UTF8;
+    return m_uAnsiCP;
 }
 
 inline UINT SystemLocale::MaxCharCchSize( UINT codepage )

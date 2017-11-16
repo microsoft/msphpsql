@@ -6,7 +6,16 @@ by checking all fetch type modes.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?
+// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+
+// this skips for older ODBC versions in Linux which doesn't support non-UTF8
+setTestAnsiData(true)
+php require('skipif_versions_old.inc');
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -23,7 +32,7 @@ function fetchRow($minFetchMode, $maxFetchMode)
 
     setup();
     $tableName = 'TC44test';
-    if (!isWindows()) {
+    if (useUTF8Data()) {
         $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
         $conn1 = AE\connect();
@@ -43,7 +52,6 @@ function fetchRow($minFetchMode, $maxFetchMode)
         } else {
             $count = sqlsrv_num_fields($stmt1);
             if ($count != $numFields) {
-                setUTF8Data(false);
                 die("Unexpected number of fields: $count");
             }
         }
@@ -104,13 +112,11 @@ function fetchArray($stmt, $stmtRef, $mode, $rows, $fields)
         }
         $rowSize = count($row);
         if ($rowSize != $size) {
-            setUTF8Data(false);
             die("Row array has an incorrect size: ".$rowSize);
         }
         $rowRref = sqlsrv_fetch($stmtRef);
         for ($j = 0; $j < $fields; $j++) {
             if (!checkData($row, $stmtRef, $j, $fetchMode)) {
-                setUTF8Data(false);
                 die("Data corruption on row ".($i + 1)." column ".($j + 1));
             }
         }
@@ -155,17 +161,28 @@ function checkData($row, $stmt, $index, $mode)
     return ($success);
 }
 
-
-if (!isWindows()) {
-    setUTF8Data(true);
+// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
+
+// test ansi
 try {
+    setUTF8Data(false);
     fetchRow(1, 4);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-setUTF8Data(false);
+
+// test utf8
+try {
+    setUTF8Data(true);
+    fetchRow(1, 4);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
 
 ?>
 --EXPECT--
+Test "Fetch - Array" completed successfully.
 Test "Fetch - Array" completed successfully.

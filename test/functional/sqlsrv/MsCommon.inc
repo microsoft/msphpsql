@@ -12,6 +12,7 @@ require_once('MsHelper.inc');
 require_once('MsSetup.inc');
 
 $usingUTF8data = false;
+$testingAnsiData = false;
 
 function isWindows()
 {
@@ -30,6 +31,18 @@ function setUTF8Data($val)
 {
     global $usingUTF8data;
     $usingUTF8data = $val;
+}
+
+function testAnsiData()
+{
+    global $testingAnsiData;
+    return $testingAnsiData;
+}
+
+function setTestAnsiData($val)
+{
+    global $testingAnsiData;
+    $testingAnsiData = $val;
 }
 
 function testMode()
