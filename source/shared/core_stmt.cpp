@@ -19,6 +19,7 @@
 
 #include "core_sqlsrv.h"
 
+#include <string>
 namespace {
 
 // certain drivers using this layer will call for repeated or out of order field retrievals.  To allow this, we cache the
@@ -115,6 +116,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding,
                                         _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits,
                                         _Out_writes_(buffer_len) SQLPOINTER& buffer, _Out_ SQLLEN& buffer_len TSRMLS_DC );
+void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits );
 bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt );
 void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param TSRMLS_DC );
 // send all the stream data 
@@ -526,38 +528,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             break;
         case IS_STRING:
             {
+                if( stmt->conn->ce_option.enabled && ( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC )){
+                    adjustInputPrecision( param_z, decimal_digits );
+                }
+
                 buffer = Z_STRVAL_P( param_z );
                 buffer_len = Z_STRLEN_P( param_z );
-                
-                if( stmt->conn->ce_option.enabled && ( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC )){
-                    // get the double value
-                    double dval = zend_strtod( ZSTR_VAL( Z_STR_P( param_z )), NULL );
-                    // find the precision: number of digits before decimal place + decimal_digits
-                    size_t numDigitsBeforeDec = 0;
-                    double temp = dval;
-                    if( abs( dval ) < 1){
-                        numDigitsBeforeDec = 0;
-                    }
-                    else{
-                        while( abs( temp ) > 1 ){
-                            temp /= 10;
-                            numDigitsBeforeDec++;
-                        }
-                    }
-                    size_t precision = numDigitsBeforeDec + decimal_digits;
-                    // when passing a precision 0 to strppintf, it still returns a string with precision of 1
-                    // work around it by manually rounding the zval
-                    if( precision == 0 && abs( dval ) < 1 ){
-                        if( dval < 0.5 )
-                            dval = 0;
-                        else
-                            dval = 1;
-                    }
-                    // reformat it with the right number of decimal digits
-                    zend_string *str = strpprintf( 0, "%.*G", ( int )precision, dval );
-                    zend_string_release( Z_STR_P( param_z ));
-                    ZVAL_NEW_STR( param_z, str );
-                }
                 
                 // if the encoding is UTF-8, translate from UTF-8 to UTF-16 (the type variables should have already been adjusted)
                 if( direction == SQL_PARAM_INPUT && encoding == CP_UTF8 ){
@@ -2680,6 +2656,129 @@ bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt ) {
         return true;
     }
     return false;
+}
+
+void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits ) {
+    // 38 is the maximum precision supported for sql decimal types
+    // 6 is a composition of: 1 for '.'; 1 for sign of the number;
+    //   1 for 'e' or 'E' (scientific notation); 1 for sign of scientific exponent; 2 for length of scientific exponent
+    size_t maxDecimalLen = 38 + 6;
+    SQLSRV_ASSERT( Z_STRLEN_P( param_z ) < maxDecimalLen, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
+    std::vector<size_t> digits;
+    char* ptr = ZSTR_VAL( Z_STR_P( param_z ));
+    bool isNeg = false;
+    char scientificChar = ' ';
+    int scientificExp = 0;
+    // parse digits in param_z into the vector digits
+    if( *ptr == '+' || *ptr == '-' ){
+        if( *ptr = '-' ){
+            isNeg = true;
+        }
+        ptr++;
+    }
+    size_t numInt = 0;
+    size_t numDec = 0;
+    while( isdigit( *ptr )){
+        digits.push_back( *ptr - '0' );
+        ptr++;
+        numInt++;
+    }
+    if( *ptr == '.' ){
+        ptr++;
+        while( isdigit(*ptr) ){
+            digits.push_back( *ptr - '0' );
+            ptr++;
+            numDec++;
+        }
+    }
+    if( *ptr == 'e' || *ptr == 'E' ){
+        scientificChar = *ptr;
+    }
+    if( scientificChar != ' ' ){
+        ptr++;
+        bool isNegExp = false;
+        if( *ptr == '+' || *ptr == '-' ){
+            if( *ptr == '-' ){
+                isNegExp = true;
+            }
+            ptr++;
+        }
+        while( isdigit( *ptr )){
+            scientificExp = scientificExp * 10 + *ptr - '0';
+            ptr++;
+        }
+        SQLSRV_ASSERT( scientificExp <=38, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
+        if( isNegExp ){
+            scientificExp = scientificExp * -1;
+        }
+    }
+    SQLSRV_ASSERT( *ptr == '\0', "Invalid input decimal: Invalid character found in the decimal string." );
+    // if number of decimal is less than the exponent, that means the number is a whole number, so no need to adjust the precision
+    if(( int )numDec > scientificExp ){
+        int decToRemove = numDec - scientificExp - decimal_digits;
+        if( decToRemove > 0 ){
+            bool carryOver = false;
+            int backInd = 0;
+            // pop digits from the vector until there is only 1 more decimal place than required decimal_digits
+            while( decToRemove != 1 && !digits.empty() ){
+                digits.pop_back();
+                decToRemove--;
+            }
+            if( !digits.empty() ){
+                // check if the last digit to be popped is greater than 5, if so, the digit before is needs to round up
+                carryOver = digits.back() >= 5;
+                digits.pop_back();
+                backInd = digits.size() - 1;
+                // round up from the end until no more carry over
+                while( carryOver && backInd >= 0 ){
+                    if( digits.at( backInd ) != 9 ){
+                        digits.at( backInd )++;
+                        carryOver = false;
+                    }
+                    else{
+                        digits.at( backInd ) = 0;
+                    }
+                    backInd--;
+                }
+            }
+            std::ostringstream oss;
+            if( isNeg ){
+                oss << '-';
+            }
+            // insert 1 if carry over persist all the way to the beginning of the number 
+            if( carryOver && backInd == -1 ){
+                oss << 1;
+            }
+            if( digits.empty() && !carryOver ){
+                oss << 0;
+            }
+            else{
+                int i = 0;
+                for( i; i < numInt && i < digits.size(); i++ ){
+                    oss << digits[i];
+                }
+                // fill string with 0 if the number of digits in digits is less then numInt
+                if( i < numInt ){
+                    for( i; i < numInt; i++ ){
+                        oss << 0;
+                    }
+                }
+                if( numInt < digits.size() ){
+                    oss << '.';
+                    for( i; i < digits.size(); i++ ){
+                        oss << digits[i];
+                    }
+                }
+                if( scientificExp != 0 ){
+                    oss << scientificChar << std::to_string( scientificExp );
+                }
+            }
+            std::string str = oss.str();
+            zend_string* zstr = zend_string_init( str.c_str(), str.length(), 0 );
+            zend_string_release( Z_STR_P( param_z ));
+            ZVAL_NEW_STR( param_z, zstr );
+        }
+    }
 }
 
 // output parameters have their reference count incremented so that they do not disappear
