@@ -1,7 +1,7 @@
 --TEST--
-Error messages from null result sets
+Error messages from nonempty, empty, and null result sets
 --DESCRIPTION--
-Test that calling nextRowset() on an empty result set produces the correct error message. Fix for Github 507.
+Test that calling nextRowset() and fetching on nonempty, empty, and null result sets produces the correct results or error messages.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
@@ -16,32 +16,44 @@ DropTable($conn, 'TestEmptySetTable');
 $stmt = $conn->query("CREATE TABLE TestEmptySetTable ([c1] nvarchar(10),[c2] nvarchar(10))");
 $stmt = $conn->query("INSERT INTO TestEmptySetTable (c1, c2) VALUES ('a', 'b')");
 
-// Create a procedure that can return a result set or can return nothing
+// Create a procedure that can return a nonempty result set, an empty result set, or a null result
 DropProc($conn, 'TestEmptySetProc');
 $stmt = $conn->query("CREATE PROCEDURE TestEmptySetProc @a nvarchar(10), @b nvarchar(10)
-                      AS SET NOCOUNT ON
-                      BEGIN
-                          IF @b='b'
+                          AS SET NOCOUNT ON
                           BEGIN
-                              SELECT 'a' as testValue
-                          END
-                          ELSE
-                          BEGIN
-                              UPDATE TestEmptySetTable SET c2 = 'c' WHERE c1 = @a
-                          END
-                      END");
+                              IF @b='b'
+                              BEGIN
+                                  SELECT 'a' as testValue
+                              END
+                              ELSE IF @b='w'
+                              BEGIN
+                                  SELECT * FROM TestEmptySetTable WHERE c1 = @b
+                              END
+                              ELSE
+                              BEGIN
+                                  UPDATE TestEmptySetTable SET c2 = 'c' WHERE c1 = @a
+                              END
+                          END");
 
-// errors out when reaching the second nextRowset() call
-// returned error indicates there are no more results
-echo "Return a nonempty result set:\n";
+// Call fetch on a nonempty result set
+echo "Nonempty result set, call fetch first: ###############################\n";
+
 try
 {
     $stmt = $conn->query("TestEmptySetProc @a='a', @b='b'");
-    $result = $stmt->fetchAll();
+
+    echo "First fetch...\n";
+    $result = $stmt->fetchObject();
     print_r($result);
+
+    echo "Next result...\n";
     $stmt->nextRowset();
-    $result = $stmt->fetchAll();
+
+    echo "Fetch...\n";
+    $result = $stmt->fetch();
     print_r($result);
+
+    echo "Next result...\n";
     $stmt->nextRowset();
 }
 catch(Exception $e)
@@ -49,11 +61,21 @@ catch(Exception $e)
     echo $e->getMessage()."\n";
 }
 
-// errors out indicating the result set contains no fields
-echo "Return an empty result set, call nextRowset on it before fetching anything:\n";
+// Call next_result on a nonempty result set
+echo "Nonempty result set, call next_result first: #########################\n";
+
 try
 {
-    $stmt = $conn->query("TestEmptySetProc @a='a', @b='c'");
+    $stmt = $conn->query("TestEmptySetProc @a='a', @b='b'");
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+
+    echo "Fetch...\n";
+    $result = $stmt->fetchObject();
+    print_r($result);
+
+    echo "Next result...\n";
     $stmt->nextRowset();
 }
 catch(Exception $e)
@@ -61,13 +83,141 @@ catch(Exception $e)
     echo $e->getMessage()."\n";
 }
 
-// errors out indicating the result set contains no fields
-echo "Return an empty result set, call fetch on it:\n";
+// Call next_result twice in succession on a nonempty result set
+echo "Nonempty result set, call next_result twice: #########################\n";
+try
+{
+    $stmt = $conn->query("TestEmptySetProc @a='a', @b='b'");
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+}
+catch(Exception $e)
+{
+    echo $e->getMessage()."\n";
+}
+
+// Call fetch on an empty result set
+echo "Empty result set, call fetch first: ##################################\n";
+
+try
+{
+    $stmt = $conn->query("TestEmptySetProc @a='a', @b='w'");
+
+    echo "First fetch...\n";
+    $result = $stmt->fetchObject();
+    print_r($result);
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+
+    echo "Fetch...\n";
+    $result = $stmt->fetchObject();
+    print_r($result);
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+}
+catch(Exception $e)
+{
+    echo $e->getMessage()."\n";
+}
+
+// Call next_result on an empty result set
+echo "Empty result set, call next_result first: ############################\n";
+
+try
+{
+    $stmt = $conn->query("TestEmptySetProc @a='a', @b='w'");
+
+    echo "First go to next result...\n";
+    $stmt->nextRowset();
+
+    echo "Fetch...\n";
+    $result = $stmt->fetchObject();
+    print_r($result);
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+}
+catch(Exception $e)
+{
+    echo $e->getMessage()."\n";
+}
+
+// Call next_result twice in succession on an empty result set
+echo "Empty result set, call next_result twice: ############################\n";
+
+try
+{
+    $stmt = $conn->query("TestEmptySetProc @a='a', @b='w'");
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+}
+catch(Exception $e)
+{
+    echo $e->getMessage()."\n";
+}
+
+// Call fetch on a null result set
+echo "Null result set, call fetch first: ###################################\n";
+
 try
 {
     $stmt = $conn->query("TestEmptySetProc @a='a', @b='c'");
-    $result = $stmt->fetchAll();
+
+    echo "Fetch...\n";
+    $result = $stmt->fetchObject();
     print_r($result);
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+}
+catch(Exception $e)
+{
+    echo $e->getMessage()."\n";
+}
+
+// Call next_result on a null result set
+echo "Null result set, call next result first: #############################\n";
+
+try
+{
+    $stmt = $conn->query("TestEmptySetProc @a='a', @b='c'");
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+
+    echo "Fetch...\n";
+    $result = $stmt->fetchObject();
+    print_r($result);
+}
+catch(Exception $e)
+{
+    echo $e->getMessage()."\n";
+}
+
+// Call next_result twice in succession on a null result set
+echo "Null result set, call next result twice: #############################\n";
+
+try
+{
+    $stmt = $conn->query("TestEmptySetProc @a='a', @b='c'");
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+
+
+    echo "Next result...\n";
+    $stmt->nextRowset();
+
 }
 catch(Exception $e)
 {
@@ -76,25 +226,51 @@ catch(Exception $e)
 
 $stmt = $conn->query("DROP TABLE TestEmptySetTable");
 $stmt = $conn->query("DROP PROCEDURE TestEmptySetProc");
-
+$stmt = null;
 $conn = null;
 ?>
 --EXPECT--
-Return a nonempty result set:
-Array
+Nonempty result set, call fetch first: ###############################
+First fetch...
+stdClass Object
 (
-    [0] => Array
-        (
-            [testValue] => a
-            [0] => a
-        )
-
+    [testValue] => a
 )
-Array
-(
-)
+Next result...
+Fetch...
+Next result...
 SQLSTATE[IMSSP]: There are no more results returned by the query.
-Return an empty result set, call nextRowset on it before fetching anything:
+Nonempty result set, call next_result first: #########################
+Next result...
+Fetch...
+Next result...
+SQLSTATE[IMSSP]: There are no more results returned by the query.
+Nonempty result set, call next_result twice: #########################
+Next result...
+Next result...
+SQLSTATE[IMSSP]: There are no more results returned by the query.
+Empty result set, call fetch first: ##################################
+First fetch...
+Next result...
+Fetch...
+Next result...
+SQLSTATE[IMSSP]: There are no more results returned by the query.
+Empty result set, call next_result first: ############################
+First go to next result...
+Fetch...
+Next result...
+SQLSTATE[IMSSP]: There are no more results returned by the query.
+Empty result set, call next_result twice: ############################
+Next result...
+Next result...
+SQLSTATE[IMSSP]: There are no more results returned by the query.
+Null result set, call fetch first: ###################################
+Fetch...
 SQLSTATE[IMSSP]: The active result for the query contains no fields.
-Return an empty result set, call fetch on it:
-SQLSTATE[IMSSP]: The active result for the query contains no fields.
+Null result set, call next result first: #############################
+Next result...
+Fetch...
+Null result set, call next result twice: #############################
+Next result...
+Next result...
+SQLSTATE[IMSSP]: There are no more results returned by the query.
