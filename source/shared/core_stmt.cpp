@@ -20,6 +20,9 @@
 #include "core_sqlsrv.h"
 
 #include <string>
+#include <sstream>
+#include <vector>
+
 namespace {
 
 // certain drivers using this layer will call for repeated or out of order field retrievals.  To allow this, we cache the
