@@ -531,7 +531,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             break;
         case IS_STRING:
             {
-                if( stmt->conn->ce_option.enabled && ( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC )){
+                if ( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC ) {
                     adjustInputPrecision( param_z, decimal_digits );
                 }
 
@@ -2662,25 +2662,26 @@ bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt ) {
 }
 
 void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits ) {
-    // 38 is the maximum precision supported for sql decimal types
-    // 6 is a composition of: 1 for '.'; 1 for sign of the number;
-    //   1 for 'e' or 'E' (scientific notation); 1 for sign of scientific exponent; 2 for length of scientific exponent
-    size_t maxDecimalLen = 38 + 6;
-    SQLSRV_ASSERT( Z_STRLEN_P( param_z ) < maxDecimalLen, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
+    size_t maxDecimalPrecision = 38;
+    // maxDecimalStrLen is the maximum length of a stringified decimal number
+    // 6 is derived from: 1 for '.'; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
+    //                    1 for sign of scientific exponent; 2 for length of scientific exponent
+    size_t maxDecimalStrLen = maxDecimalPrecision + 6;
+    SQLSRV_ASSERT( Z_STRLEN_P( param_z ) < maxDecimalStrLen, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
     std::vector<size_t> digits;
     char* ptr = ZSTR_VAL( Z_STR_P( param_z ));
     bool isNeg = false;
     char scientificChar = ' ';
-    int scientificExp = 0;
+    short scientificExp = 0;
     // parse digits in param_z into the vector digits
     if( *ptr == '+' || *ptr == '-' ){
-        if( *ptr = '-' ){
+        if( *ptr == '-' ){
             isNeg = true;
         }
         ptr++;
     }
-    size_t numInt = 0;
-    size_t numDec = 0;
+    short numInt = 0;
+    short numDec = 0;
     while( isdigit( *ptr )){
         digits.push_back( *ptr - '0' );
         ptr++;
@@ -2707,28 +2708,28 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
             ptr++;
         }
         while( isdigit( *ptr )){
-            scientificExp = scientificExp * 10 + *ptr - '0';
+            scientificExp = scientificExp * 10 + ( *ptr - '0' );
             ptr++;
         }
-        SQLSRV_ASSERT( scientificExp <=38, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
+        SQLSRV_ASSERT( scientificExp <= maxDecimalPrecision, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
         if( isNegExp ){
             scientificExp = scientificExp * -1;
         }
     }
     SQLSRV_ASSERT( *ptr == '\0', "Invalid input decimal: Invalid character found in the decimal string." );
     // if number of decimal is less than the exponent, that means the number is a whole number, so no need to adjust the precision
-    if(( int )numDec > scientificExp ){
-        int decToRemove = numDec - scientificExp - decimal_digits;
+    if( numDec > scientificExp ){
+        short decToRemove = numDec - scientificExp - decimal_digits;
         if( decToRemove > 0 ){
             bool carryOver = false;
-            int backInd = 0;
+            short backInd = 0;
             // pop digits from the vector until there is only 1 more decimal place than required decimal_digits
             while( decToRemove != 1 && !digits.empty() ){
                 digits.pop_back();
                 decToRemove--;
             }
             if( !digits.empty() ){
-                // check if the last digit to be popped is greater than 5, if so, the digit before is needs to round up
+                // check if the last digit to be popped is greater than 5, if so, the digit before it needs to round up
                 carryOver = digits.back() >= 5;
                 digits.pop_back();
                 backInd = digits.size() - 1;
@@ -2756,7 +2757,7 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
                 oss << 0;
             }
             else{
-                int i = 0;
+                short i = 0;
                 for( i; i < numInt && i < digits.size(); i++ ){
                     oss << digits[i];
                 }
