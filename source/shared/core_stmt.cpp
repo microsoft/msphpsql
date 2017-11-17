@@ -2666,8 +2666,11 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
     // maxDecimalStrLen is the maximum length of a stringified decimal number
     // 6 is derived from: 1 for '.'; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
     //                    1 for sign of scientific exponent; 2 for length of scientific exponent
+    // if the length is greater than maxDecimalStrLen, do not change the string
     size_t maxDecimalStrLen = maxDecimalPrecision + 6;
-    SQLSRV_ASSERT( Z_STRLEN_P( param_z ) < maxDecimalStrLen, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
+    if (Z_STRLEN_P(param_z) > maxDecimalStrLen) {
+        return;
+    }
     std::vector<size_t> digits;
     char* ptr = ZSTR_VAL( Z_STR_P( param_z ));
     bool isNeg = false;
@@ -2717,7 +2720,7 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
         }
     }
     // if ptr is not pointing to a null terminator at this point, that means the decimal string input is invalid
-    // no to change to string and let SQL Server handle the invalid decimal string
+    // do not change the string and let SQL Server handle the invalid decimal string
     // if number of decimal is less than the exponent, that means the number is a whole number, so no need to adjust the precision
     if(*ptr == '\0' && ( int )numDec > scientificExp ){
         int decToRemove = numDec - scientificExp - decimal_digits;
