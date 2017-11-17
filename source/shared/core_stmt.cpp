@@ -2716,10 +2716,11 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
             scientificExp = scientificExp * -1;
         }
     }
-    SQLSRV_ASSERT( *ptr == '\0', "Invalid input decimal: Invalid character found in the decimal string." );
+    // if ptr is not pointing to a null terminator at this point, that means the decimal string input is invalid
+    // no to change to string and let SQL Server handle the invalid decimal string
     // if number of decimal is less than the exponent, that means the number is a whole number, so no need to adjust the precision
-    if( numDec > scientificExp ){
-        short decToRemove = numDec - scientificExp - decimal_digits;
+    if(*ptr == '\0' && ( int )numDec > scientificExp ){
+        int decToRemove = numDec - scientificExp - decimal_digits;
         if( decToRemove > 0 ){
             bool carryOver = false;
             short backInd = 0;
