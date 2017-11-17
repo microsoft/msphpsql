@@ -8,10 +8,10 @@
 
 */
 $PhpDriver = "Microsoft SQL Server Driver for PHP";
-$server = 'TARGET_SERVER';
-$database = 'TARGET_DATABASE';
-$userName = 'TARGET_USERNAME';
-$userPassword = 'TARGET_PASSWORD';
+$server = 'tcp:SQL-2K16-02.galaxy.ad';
+$database = 'tempDB';
+$userName = 'sa';
+$userPassword = 'Moonshine4me';
 
 $tableName = "php_test_table";
 $tableIndex = "php_test_table_index";
@@ -22,7 +22,7 @@ $connectionOptions = array("Database"=>$database, "UID"=>$userName, "PWD"=>$user
 $daasMode = false;
 $marsMode = true;
 
-$traceEnabled = false; 
+$traceEnabled = true; 
 
 $adServer = 'TARGET_AD_SERVER';
 $adDatabase = 'TARGET_AD_DATABASE';

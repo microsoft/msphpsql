@@ -39,7 +39,11 @@ void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_contex
     SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_sqltype ) == sizeof( zend_long ) );
     SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_phptype ) == sizeof( zend_long ));
 
+#ifndef _WIN32
+    // set locale from environment
+    // this is necessary for ODBC and MUST be done before connection
     setlocale(LC_ALL, "");
+#endif
 
     *henv_cp = *henv_ncp = SQL_NULL_HANDLE; // initialize return values to NULL
 

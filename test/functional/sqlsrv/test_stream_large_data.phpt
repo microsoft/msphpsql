@@ -258,9 +258,11 @@ if ( !isWindows() ) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
-// test ansi
-setUTF8Data(false);
-runtest();
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+if ( isWindows() || isLocaleSupported() ) {
+    setUTF8Data(false);
+    runtest();
+}
 
 // test utf8
 setUTF8Data(true);
