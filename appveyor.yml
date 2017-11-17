@@ -180,7 +180,8 @@ test_script:
             "Running phpt tests via OpenCppCoverage..."
             ls .\ext\*sqlsrv*.dll; 
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\;
+            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log 2>&1;
+            cat ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
         } Else {
             "Running phpt tests the regular way..."
             .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log 2>&1;
@@ -200,7 +201,7 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - cd %PHP_INSTALL_DIR%
-    - ps: $covFile = ".\coverage.xml"
+    - ps: $covFile = "coverage.xml"
     - ps: $fileExists = Test-Path $covFile
     - ps: >-
         If ($fileExists -eq $true) {
@@ -213,16 +214,39 @@ test_script:
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
     - python output.py
-    - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
-    - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml))
+    # there is only one xml file if running tests with coverage analysis
     - ps: >-
-        [xml]$results = Get-Content nativeresult1.xml ;
-        [xml]$results2 = Get-Content nativeresult2.xml ;
-        $failure = $results.SelectSingleNode("//failure");
-        $failure2 = $results2.SelectSingleNode("//failure");
-        if ($failure -ne $null -Or $failure2 -ne $null)
-        {
-            $host.SetShouldExit(1);
-            Write-Host "Forcing build failure due to phpt unit test failure(s)";
+        If ($env:SQL_INSTANCE -Match "SQL2016") {
+            (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml));
+            [xml]$results = Get-Content nativeresult1.xml ;
+            $failure = $results.SelectSingleNode("//failure");
+            if ($failure -ne $null) {
+                $host.SetShouldExit(1);
+                Write-Host "Forcing build failure due to phpt unit test failure(s)";
+            }
+        } Else {
+            (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml));
+            (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml));
+            [xml]$results = Get-Content nativeresult1.xml ;
+            [xml]$results2 = Get-Content nativeresult2.xml ;
+            $failure = $results.SelectSingleNode("//failure");
+            $failure2 = $results2.SelectSingleNode("//failure");
+            if ($failure -ne $null -Or $failure2 -ne $null) {
+                $host.SetShouldExit(1);
+                Write-Host "Forcing build failure due to phpt unit test failure(s)";
+            }
         }
+
+    # - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
+    # - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml))
+    # - ps: >-
+        # [xml]$results = Get-Content nativeresult1.xml ;
+        # [xml]$results2 = Get-Content nativeresult2.xml ;
+        # $failure = $results.SelectSingleNode("//failure");
+        # $failure2 = $results2.SelectSingleNode("//failure");
+        # if ($failure -ne $null -Or $failure2 -ne $null)
+        # {
+            # $host.SetShouldExit(1);
+            # Write-Host "Forcing build failure due to phpt unit test failure(s)";
+        # }
 
