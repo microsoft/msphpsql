@@ -188,9 +188,9 @@ test_script:
     - ps: $outfiles = Get-ChildItem pdo_sqlsrv\*.out
     - ps: foreach($file in $difffiles){ls $file; more $file}
     - ps: foreach($file in $outfiles){ls $file; more $file}
-    - if [%SQL_INSTANCE%]==[SQL2016] (
+    - if [%SQL_INSTANCE%] == [SQL2016] (
         SET EXT_DIR=%PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext
-        OpenCppCoverage.exe --sources %EXT_DIR%\pdo_sqlsrv --sources %EXT_DIR%\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
+        OpenCppCoverage.exe --sources %EXT_DIR%\pdo_sqlsrv --sources %EXT_DIR%\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
         pip install codecov
         codecov -f ".\coverage.xml"
         ) 
