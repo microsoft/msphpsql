@@ -310,7 +310,6 @@ SystemLocale::SystemLocale( const char * localeName )
         charsetName = charsetName ? charsetName + 1 : localeName;
         for (const LocaleCP& lcp : lcpTable)
         {
-        //    if (!strcasecmp(lcp.localeName, charsetName))
            if (!strncasecmp(lcp.localeName, charsetName, strlen(lcp.localeName)))
             {
                 m_uAnsiCP = lcp.codePage;
@@ -332,6 +331,7 @@ const SystemLocale & SystemLocale::Singleton()
 #if !defined(__GNUC__) || defined(NO_THREADSAFE_STATICS)
     #error "Relying on GCC's threadsafe initialization of local statics."
 #endif
+    // get locale from environment and set as default
     static const SystemLocale s_Default(setlocale(LC_ALL, NULL));
     return s_Default;
 }

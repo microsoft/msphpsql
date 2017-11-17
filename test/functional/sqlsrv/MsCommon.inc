@@ -12,7 +12,6 @@ require_once('MsHelper.inc');
 require_once('MsSetup.inc');
 
 $usingUTF8data = false;
-$testingAnsiData = false;
 
 function isWindows()
 {
@@ -31,18 +30,6 @@ function setUTF8Data($val)
 {
     global $usingUTF8data;
     $usingUTF8data = $val;
-}
-
-function testAnsiData()
-{
-    global $testingAnsiData;
-    return $testingAnsiData;
-}
-
-function setTestAnsiData($val)
-{
-    global $testingAnsiData;
-    $testingAnsiData = $val;
 }
 
 function testMode()
@@ -464,6 +451,15 @@ function handleErrors()
 
     for ($i = 0; $i < $count; $i++) {
         trace($errors[$i]['message']."\n");
+    }
+}
+
+// non-UTF8 locale support in ODBC 17 and above only
+function isLocaleSupported()
+{
+    $msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
+    if (explode(".", $msodbcsql_ver)[0] < 17) {
+        return false;
     }
 }
 

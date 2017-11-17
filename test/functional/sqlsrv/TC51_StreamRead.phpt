@@ -10,10 +10,6 @@ PHPT_EXEC=true
 if ( !isWindows() ) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
-
-// this skips for older ODBC versions in Linux which doesn't support non-UTF8
-setTestAnsiData(true)
-php require('skipif_versions_old.inc');
 ?>
 --FILE--
 <?php
@@ -129,12 +125,14 @@ if ( !isWindows() ) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
-// test ansi
-try {
-    setUTF8Data(false);
-    streamRead(20, 1);
-} catch (Exception $e) {
-    echo $e->getMessage();
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+if ( isWindows() || isLocaleSupported() ) {
+    try {
+        setUTF8Data(false);
+        fetchFields();
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
 }
 
 // test utf8 
@@ -144,6 +142,7 @@ try {
 } catch (Exception $e) {
     echo $e->getMessage();
 }
+
 ?>
 --EXPECT--
 Test "Stream - Read" completed successfully.
