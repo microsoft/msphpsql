@@ -36,7 +36,7 @@ function CheckError($expectedErrors)
         $sizeActualErrors = sizeof($actualErrors);
     }
 
-    if ($sizeActualErrors) != sizeof($expectedErrors)) {
+    if (($sizeActualErrors) != sizeof($expectedErrors)) {
         echo "Wrong size for error array\n";
         print_r($actualErrors);
         return;
