@@ -9,6 +9,61 @@ Test that calling sqlsrv_next_result() and fetching on nonempty, empty, and null
 require_once("MsSetup.inc");
 require_once("MsCommon.inc");
 
+// These are the error messages we expect at various points below
+$errorNoMoreResults = "There are no more results returned by the query.";
+$errorNoMoreRows    = "There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.";
+$errorNoFields      = "The active result for the query contains no fields.";
+
+// Variable function gets an error message that depends on the OS
+function getFuncSeqError()
+{
+    if ( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) {
+        return "[Microsoft][ODBC Driver Manager] Function sequence error";
+    } else {
+        return "[unixODBC][Driver Manager] Function sequence error";
+    }
+}
+        
+$errorFuncSeq = 'getFuncSeqError';
+
+// This function takes an array of expected error messages and compares the
+// contents to the actual errors
+function CheckError($expectedErrors)
+{
+    $actualErrors = sqlsrv_errors();
+
+    if (sizeof($actualErrors) != sizeof($expectedErrors)) {
+        echo "Wrong size for error array\n";
+        print_r($actualErrors);
+        return;
+    }
+    
+    $i = 0;
+    
+    foreach ($expectedErrors as $e) {
+        if ($actualErrors[$i]['message'] != $e) {
+            echo "Wrong error message:\n";
+            print_r($actualErrors[$i]);
+        }
+        $i++;
+    }
+}
+ 
+function Fetch($stmt, $errors)
+{
+    echo "Fetch...\n";
+    $result = sqlsrv_fetch_array($stmt);
+    print_r($result);
+    CheckError($errors);
+}
+
+function NextResult($stmt, $errors)
+{
+    echo "Next result...\n";
+    sqlsrv_next_result($stmt);
+    CheckError($errors);
+}
+
 $conn = sqlsrv_connect($server, array("Database"=>$databaseName, "uid"=>$uid, "pwd"=>$pwd));
 
 DropTable($conn, 'TestEmptySetTable');
@@ -38,158 +93,79 @@ $stmt = sqlsrv_query($conn, "CREATE PROCEDURE TestEmptySetProc @a nvarchar(10), 
 echo "Nonempty result set, call fetch first: ###############################\n";
 
 $stmt = sqlsrv_query($conn,"TestEmptySetProc @a='a', @b='b'");
-
-echo "First fetch...\n";
-$result = sqlsrv_fetch_array($stmt);//$result=sqlsrv_get_field($stmt,0);
-print_r($result);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
-
-echo "Fetch...\n";
-$result = sqlsrv_fetch_array($stmt);
-print_r($result);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
+Fetch($stmt, []);
+NextResult($stmt, []);
+Fetch($stmt, [$errorFuncSeq()]);
+NextResult($stmt, [$errorNoMoreResults, $errorFuncSeq()]);
 
 // Call next_result on a nonempty result set
 echo "Nonempty result set, call next_result first: #########################\n";
 
 $stmt = sqlsrv_query($conn,"TestEmptySetProc @a='a', @b='b'");
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
-
-echo "Fetch...\n";
-$result = sqlsrv_fetch_array($stmt);
-print_r($result);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
+NextResult($stmt, []);
+Fetch($stmt, [$errorFuncSeq()]);
+NextResult($stmt, [$errorNoMoreResults, $errorFuncSeq()]);
 
 // Call next_result twice in succession on a nonempty result set
 echo "Nonempty result set, call next_result twice: #########################\n";
 
 $stmt = sqlsrv_query($conn, "TestEmptySetProc @a='a', @b='b'");
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
+NextResult($stmt, []);
+NextResult($stmt, [$errorNoMoreResults]);
 
 // Call fetch on an empty result set
 echo "Empty result set, call fetch first: ##################################\n";
 
 $stmt = sqlsrv_query($conn,"TestEmptySetProc @a='a', @b='w'");
-
-echo "First fetch...\n";
-$result = sqlsrv_fetch_array($stmt);
-print_r($result);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
-
-echo "Fetch...\n";
-$result = sqlsrv_fetch_array($stmt);
-print_r($result);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
+Fetch($stmt, []);
+NextResult($stmt, []);
+Fetch($stmt, [$errorNoMoreRows]);
+NextResult($stmt, [$errorNoMoreResults]);
 
 // Call next_result on an empty result set
 echo "Empty result set, call next_result first: ############################\n";
 
 $stmt = sqlsrv_query($conn,"TestEmptySetProc @a='a', @b='w'");
-
-echo "First go to next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
-
-echo "Fetch...\n";
-$result = sqlsrv_fetch_array($stmt);
-print_r($result);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
+NextResult($stmt, []);
+Fetch($stmt, [$errorFuncSeq()]);
+NextResult($stmt, [$errorNoMoreResults, $errorFuncSeq()]);
 
 // Call next_result twice in succession on an empty result set
 echo "Empty result set, call next_result twice: ############################\n";
 
 $stmt = sqlsrv_query($conn, "TestEmptySetProc @a='a', @b='w'");
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
+NextResult($stmt, []);
+NextResult($stmt, [$errorNoMoreResults]);
 
 // Call fetch on a null result set
 echo "Null result set, call fetch first: ###################################\n";
 
 $stmt = sqlsrv_query($conn, "TestEmptySetProc @a='a', @b='c'");
-
-echo "Fetch...\n";
-$result = sqlsrv_fetch_array($stmt);
-print_r($result);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
+Fetch($stmt, [$errorNoFields]);
+NextResult($stmt, []);
 
 // Call next_result on a null result set
 echo "Null result set, call next result first: #############################\n";
 
 $stmt = sqlsrv_query($conn, "TestEmptySetProc @a='a', @b='c'");
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
-
-echo "Fetch...\n";
-$result = sqlsrv_fetch_array($stmt);
-print_r(sqlsrv_errors());
+NextResult($stmt, []);
+Fetch($stmt, [$errorFuncSeq()]);
 
 // Call next_result twice in succession on a null result set
 echo "Null result set, call next result twice: #############################\n";
 
 $stmt = sqlsrv_query($conn, "TestEmptySetProc @a='a', @b='c'");
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
-
-echo "Next result...\n";
-sqlsrv_next_result($stmt);
-print_r(sqlsrv_errors());
+NextResult($stmt, []);
+NextResult($stmt, [$errorNoMoreResults]);
 
 $stmt = sqlsrv_query($conn, "DROP TABLE TestEmptySetTable");
 $stmt = sqlsrv_query($conn, "DROP PROCEDURE TestEmptySetProc");
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
 ?>
---EXPECTF--
+--EXPECT--
 Nonempty result set, call fetch first: ###############################
-First fetch...
+Fetch...
 Array
 (
     [0] => a
@@ -197,231 +173,32 @@ Array
 )
 Next result...
 Fetch...
-Array
-(
-    [0] => Array
-        (
-            [0] => HY010
-            [SQLSTATE] => HY010
-            [1] => 0
-            [code] => 0
-            [2] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-            [message] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-        )
-
-)
 Next result...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -26
-            [code] => -26
-            [2] => There are no more results returned by the query.
-            [message] => There are no more results returned by the query.
-        )
-
-    [1] => Array
-        (
-            [0] => HY010
-            [SQLSTATE] => HY010
-            [1] => 0
-            [code] => 0
-            [2] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-            [message] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-        )
-
-)
 Nonempty result set, call next_result first: #########################
 Next result...
 Fetch...
-Array
-(
-    [0] => Array
-        (
-            [0] => HY010
-            [SQLSTATE] => HY010
-            [1] => 0
-            [code] => 0
-            [2] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-            [message] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-        )
-
-)
 Next result...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -26
-            [code] => -26
-            [2] => There are no more results returned by the query.
-            [message] => There are no more results returned by the query.
-        )
-
-    [1] => Array
-        (
-            [0] => HY010
-            [SQLSTATE] => HY010
-            [1] => 0
-            [code] => 0
-            [2] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-            [message] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-        )
-
-)
 Nonempty result set, call next_result twice: #########################
 Next result...
 Next result...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -26
-            [code] => -26
-            [2] => There are no more results returned by the query.
-            [message] => There are no more results returned by the query.
-        )
-
-)
 Empty result set, call fetch first: ##################################
-First fetch...
+Fetch...
 Next result...
 Fetch...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -22
-            [code] => -22
-            [2] => There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.
-            [message] => There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.
-        )
-
-)
 Next result...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -26
-            [code] => -26
-            [2] => There are no more results returned by the query.
-            [message] => There are no more results returned by the query.
-        )
-
-)
 Empty result set, call next_result first: ############################
-First go to next result...
-Fetch...
-Array
-(
-    [0] => Array
-        (
-            [0] => HY010
-            [SQLSTATE] => HY010
-            [1] => 0
-            [code] => 0
-            [2] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-            [message] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-        )
-
-)
 Next result...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -26
-            [code] => -26
-            [2] => There are no more results returned by the query.
-            [message] => There are no more results returned by the query.
-        )
-
-    [1] => Array
-        (
-            [0] => HY010
-            [SQLSTATE] => HY010
-            [1] => 0
-            [code] => 0
-            [2] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-            [message] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-        )
-
-)
+Fetch...
+Next result...
 Empty result set, call next_result twice: ############################
 Next result...
 Next result...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -26
-            [code] => -26
-            [2] => There are no more results returned by the query.
-            [message] => There are no more results returned by the query.
-        )
-
-)
 Null result set, call fetch first: ###################################
 Fetch...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -28
-            [code] => -28
-            [2] => The active result for the query contains no fields.
-            [message] => The active result for the query contains no fields.
-        )
-
-)
 Next result...
 Null result set, call next result first: #############################
 Next result...
 Fetch...
-Array
-(
-    [0] => Array
-        (
-            [0] => HY010
-            [SQLSTATE] => HY010
-            [1] => 0
-            [code] => 0
-            [2] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-            [message] => [%rMicrosoft|unixODBC%r][%rODBC D|D%rriver Manager]Function sequence error
-        )
-
-)
 Null result set, call next result twice: #############################
 Next result...
 Next result...
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -26
-            [code] => -26
-            [2] => There are no more results returned by the query.
-            [message] => There are no more results returned by the query.
-        )
-
-)
