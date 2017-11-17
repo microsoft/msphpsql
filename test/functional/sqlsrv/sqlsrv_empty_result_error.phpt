@@ -20,7 +20,7 @@ function getFuncSeqError()
     if ( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) {
         return "[Microsoft][ODBC Driver Manager] Function sequence error";
     } else {
-        return "[unixODBC][Driver Manager] Function sequence error";
+        return "[unixODBC][Driver Manager]Function sequence error";
     }
 }
         
