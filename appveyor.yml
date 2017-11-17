@@ -179,6 +179,18 @@ test_script:
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
+    - ps: >-
+        If ($env:SQL_INSTANCE -Match "SQL2016") {
+            "SQL2016";
+            ls .\ext\*sqlsrv*.dll; 
+            $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
+            "ext dir is " + $ext_dir;
+            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\;
+            pip install codecov
+            codecov -f ".\coverage.xml"
+        } Else {
+            "Not SQL2016"
+        }
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
     - ps: $difffiles = Get-ChildItem sqlsrv\*.diff
     - ps: $outfiles = Get-ChildItem sqlsrv\*.out
@@ -188,12 +200,6 @@ test_script:
     - ps: $outfiles = Get-ChildItem pdo_sqlsrv\*.out
     - ps: foreach($file in $difffiles){ls $file; more $file}
     - ps: foreach($file in $outfiles){ls $file; more $file}
-    - if [%SQL_INSTANCE%] == [SQL2016] (
-        SET EXT_DIR=%PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext
-        OpenCppCoverage.exe --sources %EXT_DIR%\pdo_sqlsrv --sources %EXT_DIR%\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
-        pip install codecov
-        codecov -f ".\coverage.xml"
-        ) 
     # - cd %PHP_INSTALL_DIR%
     # - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
     - ls
