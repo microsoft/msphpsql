@@ -254,14 +254,17 @@ function CompareLengths($filesizes, $lens1, $lens2, $count, $useUTF8)
 }
 
 // locale must be set before 1st connection
-if ( !isWindows() ) {
+if (!isWindows()) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
-if ( isWindows() || isLocaleSupported() ) {
+if (isWindows() || isLocaleSupported()) {
     setUTF8Data(false);
     runtest();
+}
+else {
+    echo "Test finished'n";
 }
 
 // test utf8

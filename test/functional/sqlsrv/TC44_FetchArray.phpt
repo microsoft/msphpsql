@@ -158,18 +158,21 @@ function checkData($row, $stmt, $index, $mode)
 }
 
 // locale must be set before 1st connection
-if ( !isWindows() ) {
+if (!isWindows()) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
-if ( isWindows() || isLocaleSupported() ) {
+if (isWindows() || isLocaleSupported()) {
     try {
         setUTF8Data(false);
         fetchRow(1, 4);
     } catch (Exception $e) {
         echo $e->getMessage();
     }
+}
+else {
+    endTest($testName);
 }
 
 // test utf8
