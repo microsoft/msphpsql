@@ -181,12 +181,12 @@ test_script:
     # - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
-            "SQL2016";
+            "Running phpt tests via OpenCppCoverage..."
             ls .\ext\*sqlsrv*.dll; 
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
             OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\;
         } Else {
-            "Not SQL2016"
+            "Running phpt tests the regular way..."
             .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log 2>&1;
             cat ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
             .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log 2>&1;
@@ -208,9 +208,10 @@ test_script:
     - ps: $fileExists = Test-Path $covFile
     - ps: >-
         If ($fileExists -eq $true) {
-            "Installing codecov...";
-            pip install codecov;
-            codecov -f $covFile;
+            "Running coverage analysis...";
+            $env:PATH = ${env:PHP_INSTALL_DIR} + $env:PATH;
+            Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+            bash codecov.sh -f $covFile
         }
 
 after_test:
