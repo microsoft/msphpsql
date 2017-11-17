@@ -19,13 +19,23 @@ environment:
     PHP_SDK: c:\projects\php
     matrix:
       - BUILD_PLATFORM: x64
+        TEST_PHP_SQL_SERVER: (local)\SQL2014
+        SQL_INSTANCE: SQL2014
+        PHP_VC: 14
+        PHP_MAJOR_VER: 7.0
+        PHP_MINOR_VER: latest
+        PHP_SDK_DIR: c:\projects\php\x64
+        PHP_INSTALL_DIR: c:\projects\php\x64\bin
+        PHP_ZTS: --disable-zts
+        platform: x64
+      - BUILD_PLATFORM: x64
         TEST_PHP_SQL_SERVER: (local)\SQL2016
         SQL_INSTANCE: SQL2016
         PHP_VC: 14
         PHP_MAJOR_VER: 7.1
         PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x86
-        PHP_INSTALL_DIR: c:\projects\php\x86\bin
+        PHP_SDK_DIR: c:\projects\php\x64
+        PHP_INSTALL_DIR: c:\projects\php\x64\bin
         platform: x64
       - BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
@@ -35,17 +45,7 @@ environment:
         PHP_MINOR_VER: latest
         PHP_SDK_DIR: c:\projects\php\x86
         PHP_INSTALL_DIR: c:\projects\php\x86\bin
-        PHP_ZTS: --disable-zts
         platform: x86
-      - BUILD_PLATFORM: x64
-        TEST_PHP_SQL_SERVER: (local)\SQL2014
-        SQL_INSTANCE: SQL2014
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.0
-        PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x86
-        PHP_INSTALL_DIR: c:\projects\php\x86\bin
-        platform: x64
       - BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2008R2SP2
         SQL_INSTANCE: SQL2008R2SP2
@@ -184,7 +184,6 @@ test_script:
             "SQL2016";
             ls .\ext\*sqlsrv*.dll; 
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            "ext dir is " + $ext_dir;
             OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\;
         } Else {
             "Not SQL2016"
@@ -202,16 +201,17 @@ test_script:
     - ps: $outfiles = Get-ChildItem pdo_sqlsrv\*.out
     - ps: foreach($file in $difffiles){ls $file; more $file}
     - ps: foreach($file in $outfiles){ls $file; more $file}
-    - ls
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    - cd %PHP_INSTALL_DIR%
+    - ls *.xml
+    - ps: $covFile = ".\coverage.xml"
+    - ps: $fileExists = Test-Path $covFile
     - ps: >-
-        $covFile = ${env:PHP_INSTALL_DIR} + "\coverage.xml";
-        $fileExists = Test-Path $covFile
-        If ($fileExists -eq $True) {
-            "Installing codecov..."
-            pip install codecov
-            codecov -f $covFile
+        If ($fileExists -eq $true) {
+            "Installing codecov...";
+            pip install codecov;
+            codecov -f $covFile;
         }
 
 after_test:
