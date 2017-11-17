@@ -14,6 +14,8 @@ if ( !isWindows() ) {
 
 require_once('MsCommon.inc');
 
+global $testName;
+
 function fetchFields()
 {
     $testName = "Fetch - Field Data";

@@ -264,7 +264,7 @@ if (isWindows() || isLocaleSupported()) {
     runtest();
 }
 else {
-    echo "Test finished'n";
+    echo "Test finished\n";
 }
 
 // test utf8

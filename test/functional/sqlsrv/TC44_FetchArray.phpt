@@ -16,6 +16,8 @@ if ( !isWindows() ) {
 <?php
 require_once('MsCommon.inc');
 
+global $testName;
+
 function fetchRow($minFetchMode, $maxFetchMode)
 {
     $testName = "Fetch - Array";

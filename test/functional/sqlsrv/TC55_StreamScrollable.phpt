@@ -15,6 +15,8 @@ if ( !isWindows() ) {
 <?php
 require_once('MsCommon.inc');
 
+global $testName;
+
 function streamScroll($noRows, $startRow)
 {
     $testName = "Stream - Scrollable";
