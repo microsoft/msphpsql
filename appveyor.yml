@@ -169,16 +169,16 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
     - Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    - copy %APPVEYOR_BUILD_FOLDER%\source\shared\msodbcsql.h %APPVEYOR_BUILD_FOLDER%\test\functional\setup\
-    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\build_ksp.py
-    - copy %APPVEYOR_BUILD_FOLDER%\test\functional\setup\*.dll %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\
-    - copy %APPVEYOR_BUILD_FOLDER%\test\functional\setup\*.dll %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\
-    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %SQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
-    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %PDOSQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
-    - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
-    - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
-    - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1
-    - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
+    #- copy %APPVEYOR_BUILD_FOLDER%\source\shared\msodbcsql.h %APPVEYOR_BUILD_FOLDER%\test\functional\setup\
+    #- python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\build_ksp.py
+    #- copy %APPVEYOR_BUILD_FOLDER%\test\functional\setup\*.dll %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\
+    #- copy %APPVEYOR_BUILD_FOLDER%\test\functional\setup\*.dll %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\
+    #- python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %SQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
+    #- python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %PDOSQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
+    # - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
+    # - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
+    # - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1
+    # - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             "SQL2016";
@@ -186,10 +186,12 @@ test_script:
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
             "ext dir is " + $ext_dir;
             OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\;
-            pip install codecov
-            codecov -f ".\coverage.xml"
         } Else {
             "Not SQL2016"
+            .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log 2>&1;
+            cat ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
+            .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log 2>&1;
+            cat ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
         }
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
     - ps: $difffiles = Get-ChildItem sqlsrv\*.diff
@@ -200,13 +202,17 @@ test_script:
     - ps: $outfiles = Get-ChildItem pdo_sqlsrv\*.out
     - ps: foreach($file in $difffiles){ls $file; more $file}
     - ps: foreach($file in $outfiles){ls $file; more $file}
-    # - cd %PHP_INSTALL_DIR%
-    # - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
     - ls
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    # - pip install codecov
-    # - codecov -f ".\coverage.xml"
+    - ps: >-
+        $covFile = ${env:PHP_INSTALL_DIR} + "\coverage.xml";
+        $fileExists = Test-Path $covFile
+        If ($fileExists -eq $True) {
+            "Installing codecov..."
+            pip install codecov
+            codecov -f $covFile
+        }
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
