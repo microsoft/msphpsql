@@ -31,8 +31,12 @@ $errorFuncSeq = 'getFuncSeqError';
 function CheckError($expectedErrors)
 {
     $actualErrors = sqlsrv_errors();
+    $sizeActualErrors = 0;
+    if (!is_null($actualErrors)) {
+        $sizeActualErrors = sizeof($actualErrors);
+    }
 
-    if (sizeof($actualErrors) != sizeof($expectedErrors)) {
+    if (($sizeActualErrors) != sizeof($expectedErrors)) {
         echo "Wrong size for error array\n";
         print_r($actualErrors);
         return;
