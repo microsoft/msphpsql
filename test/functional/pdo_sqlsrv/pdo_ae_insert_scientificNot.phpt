@@ -8,8 +8,8 @@ require_once("MsCommon_mid-refactor.inc");
 
 $posExp = array(-0.00e+01, 10.0E+00, -1.333e+1, 1.9178464696202265E+2, -8.3333e+2, 8.5000000000000006E+2, -8.5164835164835168E+2, 3.16E+05, -5E+05, 1.53502e+006, -7.5013e+006, 7.54001e+006, -7.54045e+006, 820.0E+10, -1.12255E+7, 1.23456789E+9, -1.23456789012346E+7, 1.377532E+10);
 $negExp = array(0.00e-01, -10.0E-00, 1.333e-1, -1.9178464696202265E-2, 8.3333e-2, -8.5000000000000006E-2, 8.5164835164835168E-2, -3.16E-01, 5E-03, -1.53502e-004, 7.5013e-004, -7.54001e-004, 7.54045e-004, -820.0E-1, 1.12255E-4, -1.23456789E-3, 1.23456789012346E-4, -1.377532E-1);
-$numSets = array("Testing numbers greater than 1:" => $posExp,
-                 "Testing numbers greater than 0 and less than 1:" => $negExp);
+$numSets = array("Testing numbers greater than 1 or less than -1:" => $posExp,
+                 "Testing numbers between 1 and -1:" => $negExp);
 $scalesToTest = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 19);
 
 try {
