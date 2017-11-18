@@ -218,7 +218,6 @@ after_test:
     #- cd %APPVEYOR_BUILD_FOLDER%\test\functional\
     # there is only one xml file if running tests with coverage analysis
     - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
-    - ps: [xml]$results = Get-Content nativeresult1.xml ;
     - ps: $result2Exists = Test-Path "nativeresult2.xml"
     - ps: >- 
         If ($result2Exists -eq $true) {
