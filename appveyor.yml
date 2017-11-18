@@ -178,7 +178,6 @@ test_script:
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             "Running phpt tests via OpenCppCoverage..."
-            ls .\ext\*sqlsrv*.dll; 
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
             OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log 2>&1;
             cat ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
@@ -201,7 +200,7 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - cd %PHP_INSTALL_DIR%
-    - ps: $covFile = "coverage.xml"
+    - ps: $covFile = ${env:PHP_INSTALL_DIR} + "\coverage.xml"
     - ps: $fileExists = Test-Path $covFile
     - ps: >-
         If ($fileExists -eq $true) {
@@ -217,6 +216,7 @@ after_test:
     # there is only one xml file if running tests with coverage analysis
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
+            cat .\nativeresult1.xml
             (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml));
             [xml]$results = Get-Content nativeresult1.xml ;
             $failure = $results.SelectSingleNode("//failure");
@@ -225,6 +225,7 @@ after_test:
                 Write-Host "Forcing build failure due to phpt unit test failure(s)";
             }
         } Else {
+            cat .\nativeresult1.xml
             (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml));
             (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml));
             [xml]$results = Get-Content nativeresult1.xml ;
