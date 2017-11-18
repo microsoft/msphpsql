@@ -179,7 +179,7 @@ test_script:
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             "Running phpt tests via OpenCppCoverage..."
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            cd ext
+            cd ${env:PHP_INSTALL_DIR}\ext
             OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:${env:PHP_INSTALL_DIR}\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- ..\php.exe ..\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ 
             cd ..
             ls *.xml
