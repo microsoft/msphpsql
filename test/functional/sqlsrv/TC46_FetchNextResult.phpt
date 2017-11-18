@@ -16,10 +16,10 @@ if ( !isWindows() ) {
 require_once('MsCommon.inc');
 
 global $testName;
+$testName = "Fetch - Next Result";
 
 function fetchFields()
 {
-    $testName = "Fetch - Next Result";
     startTest($testName);
 
     if (!IsMarsSupported()) {
@@ -107,6 +107,7 @@ if (isWindows() || isLocaleSupported()) {
     }
 }
 else {
+    startTest($testName);
     endTest($testName);
 }
 

@@ -17,10 +17,10 @@ if ( !isWindows() ) {
 require_once('MsCommon.inc');
 
 global $testName;
+$testName = "Fetch - Array";
 
 function fetchRow($minFetchMode, $maxFetchMode)
 {
-    $testName = "Fetch - Array";
     startTest($testName);
 
     if (!isMarsSupported()) {
@@ -174,6 +174,7 @@ if (isWindows() || isLocaleSupported()) {
     }
 }
 else {
+    startTest($testName);
     endTest($testName);
 }
 

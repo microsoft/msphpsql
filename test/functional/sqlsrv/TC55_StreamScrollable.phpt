@@ -16,10 +16,10 @@ if ( !isWindows() ) {
 require_once('MsCommon.inc');
 
 global $testName;
+$testName = "Stream - Scrollable";
 
 function streamScroll($noRows, $startRow)
 {
-    $testName = "Stream - Scrollable";
     startTest($testName);
 
     setup();
@@ -173,6 +173,7 @@ if (isWindows() || isLocaleSupported()) {
     }
 }
 else {
+    startTest($testName);
     endTest($testName);
 }
 

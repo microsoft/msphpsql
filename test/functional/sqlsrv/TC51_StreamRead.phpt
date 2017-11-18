@@ -16,10 +16,10 @@ if ( !isWindows() ) {
 require_once('MsCommon.inc');
 
 global $testName;
+$testName = "Stream - Read";
 
 function streamRead($noRows, $startRow)
 {
-    $testName = "Stream - Read";
     startTest($testName);
 
     setup();
@@ -137,6 +137,7 @@ if (isWindows() || isLocaleSupported()) {
     }
 }
 else {
+    startTest($testName);
     endTest($testName);
 }
 

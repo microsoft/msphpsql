@@ -15,10 +15,10 @@ if ( !isWindows() ) {
 require_once('MsCommon.inc');
 
 global $testName;
+$testName = "Fetch - Field Data";
 
 function fetchFields()
 {
-    $testName = "Fetch - Field Data";
     startTest($testName);
 
     setup();
@@ -117,6 +117,7 @@ if (isWindows() || isLocaleSupported()) {
     }
 }
 else {
+    startTest($testName);
     endTest($testName);
 }
 
