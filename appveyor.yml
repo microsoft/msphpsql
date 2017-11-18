@@ -179,9 +179,11 @@ test_script:
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             "Running phpt tests via OpenCppCoverage..."
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log 2>&1;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
-            ls
+            cd ${env:PHP_INSTALL_DIR}\ext
+            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:${env:PHP_INSTALL_DIR}\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- ..\php.exe ..\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrvtests.log 2>&1;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrvtests.log;
+            cd ..
+            ls *.xml
         } Else {
             "Running phpt tests the regular way..."
             php run-tests.php -p php.exe  ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log 2>&1;
@@ -214,40 +216,21 @@ after_test:
     - ps: foreach($file in $outfiles){ls $file; more $file}
     #- cd %APPVEYOR_BUILD_FOLDER%\test\functional\
     # there is only one xml file if running tests with coverage analysis
-    - ps: >-
-        If ($env:SQL_INSTANCE -Match "SQL2016") {
-            cat .\nativeresult1.xml
-            (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml));
-            [xml]$results = Get-Content nativeresult1.xml ;
-            $failure = $results.SelectSingleNode("//failure");
-            if ($failure -ne $null) {
-                $host.SetShouldExit(1);
-                Write-Host "Forcing build failure due to phpt unit test failure(s)";
-            }
-        } Else {
-            cat .\nativeresult1.xml
-            (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml));
+    - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
+    - ps: [xml]$results = Get-Content nativeresult1.xml;
+    - ps: $result2Exists = Test-Path "nativeresult2.xml"
+    - ps: $failure = $results.SelectSingleNode("//failure");
+    - ps: $failure2 = $null
+    - ps: >- 
+        If ($result2Exists -eq $true) {
             (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml));
-            [xml]$results = Get-Content nativeresult1.xml ;
-            [xml]$results2 = Get-Content nativeresult2.xml ;
-            $failure = $results.SelectSingleNode("//failure");
+            [xml]$results2 = Get-Content nativeresult2.xml;
             $failure2 = $results2.SelectSingleNode("//failure");
-            if ($failure -ne $null -Or $failure2 -ne $null) {
-                $host.SetShouldExit(1);
-                Write-Host "Forcing build failure due to phpt unit test failure(s)";
-            }
         }
-
-    # - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
-    # - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml))
-    # - ps: >-
-        # [xml]$results = Get-Content nativeresult1.xml ;
-        # [xml]$results2 = Get-Content nativeresult2.xml ;
-        # $failure = $results.SelectSingleNode("//failure");
-        # $failure2 = $results2.SelectSingleNode("//failure");
-        # if ($failure -ne $null -Or $failure2 -ne $null)
-        # {
-            # $host.SetShouldExit(1);
-            # Write-Host "Forcing build failure due to phpt unit test failure(s)";
-        # }
+    - ps: >-        
+        if ($failure -ne $null -Or $failure2 -ne $null)
+        {
+            $host.SetShouldExit(1);
+            Write-Host "Forcing build failure due to phpt unit test failure(s)";
+        }
 
