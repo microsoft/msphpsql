@@ -180,15 +180,14 @@ test_script:
             "Running phpt tests via OpenCppCoverage..."
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
             cd ext
-            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:${env:PHP_INSTALL_DIR}\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- ..\php.exe ..\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrvtests.log 2>&1;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrvtests.log;
+            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:${env:PHP_INSTALL_DIR}\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- ..\php.exe ..\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ 
             cd ..
             ls *.xml
         } Else {
             "Running phpt tests the regular way..."
-            php run-tests.php -p php.exe  ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log 2>&1;
+            php run-tests.php -p php.exe  ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log 2>&1
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
-            php run-tests.php -p php.exe  ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log 2>&1;
+            php run-tests.php -p php.exe  ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log 2>&1
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
