@@ -180,15 +180,29 @@ test_script:
             "Running phpt tests via OpenCppCoverage..."
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
             OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules .\ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log 2>&1;
-            cat ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
         } Else {
             "Running phpt tests the regular way..."
             .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log 2>&1;
-            cat ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
             .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt > ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log 2>&1;
-            cat ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
         }
+    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
+    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    - cd %PHP_INSTALL_DIR%
+    - ps: $fileExists = Test-Path "coverage.xml"
+    - ps: >-
+        If ($fileExists -eq $true) {
+            "Running coverage analysis...";
+            $env:PATH = ${env:PHP_INSTALL_DIR} + $env:PATH;
+            Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+            bash codecov.sh -f "coverage.xml"
+        }
+
+after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
+    - python output.py
     - ps: $difffiles = Get-ChildItem sqlsrv\*.diff
     - ps: $outfiles = Get-ChildItem sqlsrv\*.out
     - ps: foreach($file in $difffiles){ls $file; more $file}
@@ -197,22 +211,7 @@ test_script:
     - ps: $outfiles = Get-ChildItem pdo_sqlsrv\*.out
     - ps: foreach($file in $difffiles){ls $file; more $file}
     - ps: foreach($file in $outfiles){ls $file; more $file}
-    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
-    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    - cd %PHP_INSTALL_DIR%
-    - ps: $covFile = ${env:PHP_INSTALL_DIR} + "\coverage.xml"
-    - ps: $fileExists = Test-Path $covFile
-    - ps: >-
-        If ($fileExists -eq $true) {
-            "Running coverage analysis...";
-            $env:PATH = ${env:PHP_INSTALL_DIR} + $env:PATH;
-            Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            bash codecov.sh -f $covFile
-        }
-
-after_test:
-    - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
-    - python output.py
+    #- cd %APPVEYOR_BUILD_FOLDER%\test\functional\
     # there is only one xml file if running tests with coverage analysis
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
