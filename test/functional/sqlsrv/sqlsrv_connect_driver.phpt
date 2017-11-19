@@ -44,6 +44,7 @@ function testValidValues($msodbcsqlMaj, $server, $connectionOptions)
         case 17:
             $value = "{ODBC Driver 17 for SQL Server}";
             break;
+        case 14:
         case 13:
             $value = "{ODBC Driver 13 for SQL Server}";
             break;
@@ -52,7 +53,7 @@ function testValidValues($msodbcsqlMaj, $server, $connectionOptions)
             $value = "{ODBC Driver 11 for SQL Server}";
             break;
         default:
-            $value = "invalid value";
+            $value = "invalid value $msodbcsqlMaj";
     }
     $connectionOptions['Driver']=$value;
     connectVerifyOutput($server, $connectionOptions);
@@ -62,6 +63,7 @@ function testValidValues($msodbcsqlMaj, $server, $connectionOptions)
         case 17:
             $value = "ODBC Driver 17 for SQL Server";
             break;
+        case 14:
         case 13:
             $value = "ODBC Driver 13 for SQL Server";
             break;
@@ -70,7 +72,7 @@ function testValidValues($msodbcsqlMaj, $server, $connectionOptions)
             $value = "ODBC Driver 11 for SQL Server";
             break;
         default:
-            $value = "invalid value";
+            $value = "invalid value $msodbcsqlMaj";
     }
 
     $connectionOptions['Driver']=$value;
