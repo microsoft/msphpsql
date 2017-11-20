@@ -128,7 +128,7 @@ startTest($testName);
 if (isWindows() || isLocaleSupported()) {
     try {
         setUTF8Data(false);
-        fetchFields();
+        streamRead(20, 1);
     } catch (Exception $e) {
         echo $e->getMessage();
     }
