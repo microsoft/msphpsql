@@ -38,6 +38,7 @@ def returnCount(var):
 #           path - path of the file.
 # Output:   null
 def readAndPrint(inputStr, file, path):
+    print(path)
     filn = open(path + os.sep + file).readlines()
     for lines in filn:
         if inputStr in lines:
@@ -50,6 +51,8 @@ def TestFilename(line):
     terminateChar = os.sep
     currentPos = 0
     firstpos = len(line) * -1
+    print(line)
+    print(firstpos)
     while True:
         currentPos = currentPos - 1
         # if passed the first pos, stop
