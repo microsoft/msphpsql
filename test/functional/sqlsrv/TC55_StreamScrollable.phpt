@@ -15,13 +15,8 @@ if ( !isWindows() ) {
 <?php
 require_once('MsCommon.inc');
 
-global $testName;
-$testName = "Stream - Scrollable";
-
 function streamScroll($noRows, $startRow)
 {
-    startTest($testName);
-
     setup();
     $tableName = "TC55test";
 
@@ -92,8 +87,6 @@ function streamScroll($noRows, $startRow)
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
 function verifyStream($stmt, $row, $colIndex)
@@ -163,7 +156,11 @@ if (!isWindows()) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
+global $testName;
+$testName = "Stream - Scrollable";
+
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
 if (isWindows() || isLocaleSupported()) {
     try {
         setUTF8Data(false);
@@ -172,18 +169,17 @@ if (isWindows() || isLocaleSupported()) {
         echo $e->getMessage();
     }
 }
-else {
-    startTest($testName);
-    endTest($testName);
-}
+endTest($testName);
 
 // test utf8
+startTest($testName);
 try {
     setUTF8Data(true);
     streamScroll(20, 1);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
+endTest($testName);
 
 ?>
 --EXPECT--

@@ -15,15 +15,9 @@ if ( !isWindows() ) {
 <?php
 require_once('MsCommon.inc');
 
-global $testName;
-$testName = "Fetch - Next Result";
-
 function fetchFields()
 {
-    startTest($testName);
-
     if (!IsMarsSupported()) {
-        endTest($testName);
         return;
     }
 
@@ -88,8 +82,6 @@ function fetchFields()
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
 // locale must be set before 1st connection
@@ -97,7 +89,11 @@ if (!isWindows()) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
+global $testName;
+$testName = "Fetch - Next Result";
+
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
 if (isWindows() || isLocaleSupported()) {
     try {
         setUTF8Data(false);
@@ -106,18 +102,17 @@ if (isWindows() || isLocaleSupported()) {
         echo $e->getMessage();
     }
 }
-else {
-    startTest($testName);
-    endTest($testName);
-}
+endTest($testName);
 
 // test utf8
+startTest($testName);
 try {
     setUTF8Data(true);
     fetchFields();
 } catch (Exception $e) {
     echo $e->getMessage();
 }
+endTest($testName);
 
 ?>
 --EXPECT--
