@@ -3,10 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
-## Windows/Linux/macOS 5.1.2-preview - 2017-11-20
+## Windows/Linux/macOS 5.1.2-preview - 2017-11-21
 Updated PECL release packages. Here is the list of updates:
 
 ### Fixed
+- Support for non-UTF8 locales in Linux and macOS
 - Fixed crash caused by executing an invalid query in a transaction (Issue [#434](https://github.com/Microsoft/msphpsql/issues/434))
 - Fixed regression in sqlsrv_next_result returning a no fields error when the active result set is null (Issue [#581](https://github.com/Microsoft/msphpsql/issues/581))
 - Fixed incorrect active result set when sqlsrv_next_result or PDOStatement::nextRowset is called when Column Encryption is enabled (Issue [#574](https://github.com/Microsoft/msphpsql/issues/574))
@@ -15,6 +16,7 @@ Updated PECL release packages. Here is the list of updates:
 - Added error handling for binding TEXT, NTEXT or IMAGE as output parameter (Issue [#231](https://github.com/Microsoft/msphpsql/issues/231))
 
 ### Limitations
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. The subsequent locale setting will not work
 - Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview)
   - ODBC binaries for macOS available upon request
 - MSODBC 17 preview msodbcsql.msi only works in Windows10
