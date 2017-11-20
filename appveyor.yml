@@ -188,7 +188,6 @@ test_script:
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1    
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
-    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - cd %PHP_INSTALL_DIR%
     - ps: $fileExists = Test-Path "coverage.xml"
