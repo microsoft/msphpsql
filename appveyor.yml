@@ -178,7 +178,8 @@ test_script:
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
+            OpenCppCoverage.exe --sources=$ext_dir\*sqlsrv* --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --quiet -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
             ls *.xml
         } Else {
@@ -188,10 +189,6 @@ test_script:
             .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -encoding UTF8;
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
         }
-    # - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
-    # - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
-    # - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1
-    # - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - cd %PHP_INSTALL_DIR%
@@ -219,8 +216,6 @@ after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
     - ps: $xmlfiles = Get-ChildItem *.xml
     - ps: foreach($file in $xmlfiles){(new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $file))}
-    # - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
-    # - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml))
     - ps: >-        
         If ($difffiles -ne $null -Or $diff2files -ne $null) {
             $host.SetShouldExit(1);
