@@ -179,8 +179,10 @@ test_script:
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            OpenCppCoverage.exe --sources=$ext_dir\*sqlsrv* --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --optimized_build -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
+            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --modules php_sqlsrv.dll --export_type=binary:sqlsrv.cov --quiet --cover_children --optimized_build -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -encoding UTF8;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
+            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --modules php_pdo_sqlsrv.dll --export_type=cobertura:.\coverage.xml --input_coverage=sqlsrv.cov --quiet --cover_children --optimized_build -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -encoding UTF8;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
             ls *.xml
         } Else {
             Write-Host "Running phpt tests the regular way..."
