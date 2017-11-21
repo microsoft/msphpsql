@@ -178,13 +178,20 @@ test_script:
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\
+            OpenCppCoverage.exe --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
             ls *.xml
-        } 
-    - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
-    - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
-    - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1
-    - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
+        } Else {
+            Write-Host "Running phpt tests the regular way..."
+            .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -encoding UTF8;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
+            .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -encoding UTF8;
+            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
+        }
+    # - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
+    # - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
+    # - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1
+    # - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - cd %PHP_INSTALL_DIR%
@@ -194,7 +201,7 @@ test_script:
             Write-Host "Running coverage analysis...";
             $env:PATH = ${env:PHP_INSTALL_DIR} + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            .\codecov.sh -f "coverage.xml"
+            bash codecov.sh -f "coverage.xml"
         }
 
 after_test:
@@ -210,8 +217,10 @@ after_test:
     - ps: foreach($file in $diff2files){ls $file; more $file}
     - ps: foreach($file in $out2files){ls $file; more $file}
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
-    - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
-    - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml))
+    - ps: $xmlfiles = Get-ChildItem *.xml
+    - ps: foreach($file in $xmlfiles){(new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $file))}
+    # - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult1.xml))
+    # - ps: (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nativeresult2.xml))
     - ps: >-        
         If ($difffiles -ne $null -Or $diff2files -ne $null) {
             $host.SetShouldExit(1);
