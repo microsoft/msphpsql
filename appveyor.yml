@@ -178,7 +178,7 @@ test_script:
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\
+            OpenCppCoverage.exe --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --optimized_build -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\
             ls *.xml
         } 
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
