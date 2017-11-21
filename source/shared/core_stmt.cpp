@@ -2673,8 +2673,12 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
     std::vector<size_t> digits;
     char* ptr = ZSTR_VAL( Z_STR_P( param_z ));
     bool isNeg = false;
+    bool isScientificNot = false;
     char scientificChar = ' ';
     short scientificExp = 0;
+    if( strchr( ptr, 'e' ) || strchr( ptr, 'E' )){
+        isScientificNot = true;
+    }
     // parse digits in param_z into the vector digits
     if( *ptr == '+' || *ptr == '-' ){
         if( *ptr == '-' ){
@@ -2691,16 +2695,29 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
     }
     if( *ptr == '.' ){
         ptr++;
-        while( isdigit(*ptr) ){
-            digits.push_back( *ptr - '0' );
-            ptr++;
-            numDec++;
+        if( !isScientificNot ){
+            while( isdigit( *ptr ) && numDec < decimal_digits + 1 ){
+                digits.push_back( *ptr - '0' );
+                ptr++;
+                numDec++;
+            }
+            // make sure the rest of the number are digits
+            while( isdigit( *ptr )){
+                ptr++;
+            }
+        }
+        else {
+            while( isdigit( *ptr )){
+                digits.push_back( *ptr - '0' );
+                ptr++;
+                numDec++;
+            }
         }
     }
-    if( *ptr == 'e' || *ptr == 'E' ){
-        scientificChar = *ptr;
-    }
-    if( scientificChar != ' ' ){
+    if( isScientificNot ){
+        if ( *ptr == 'e' || *ptr == 'E' ) {
+            scientificChar = *ptr;
+        }
         ptr++;
         bool isNegExp = false;
         if( *ptr == '+' || *ptr == '-' ){
@@ -2720,8 +2737,11 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
     }
     // if ptr is not pointing to a null terminator at this point, that means the decimal string input is invalid
     // do not change the string and let SQL Server handle the invalid decimal string
+    if ( *ptr != '\0' ) {
+        return;
+    }
     // if number of decimal is less than the exponent, that means the number is a whole number, so no need to adjust the precision
-    if(*ptr == '\0' && ( int )numDec > scientificExp ){
+    if( numDec > scientificExp ){
         int decToRemove = numDec - scientificExp - decimal_digits;
         if( decToRemove > 0 ){
             bool carryOver = false;
