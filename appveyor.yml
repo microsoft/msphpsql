@@ -177,9 +177,8 @@ test_script:
     #- python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %PDOSQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
-            "Running phpt tests via OpenCppCoverage..."
-            $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            OpenCppCoverage.exe --sources $ext_dir\pdo_sqlsrv --sources $ext_dir\sqlsrv --modules ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\
+            Write-Host "Running phpt tests via OpenCppCoverage..."
+            OpenCppCoverage.exe --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --optimized_build -- .\php.exe .\run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\
             ls *.xml
         } 
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
@@ -192,10 +191,10 @@ test_script:
     - ps: $fileExists = Test-Path "coverage.xml"
     - ps: >-
         If ($fileExists -eq $true) {
-            "Running coverage analysis...";
+            Write-Host "Running coverage analysis...";
             $env:PATH = ${env:PHP_INSTALL_DIR} + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            bash codecov.sh -f "coverage.xml"
+            .\codecov.sh -f "coverage.xml"
         }
 
 after_test:
