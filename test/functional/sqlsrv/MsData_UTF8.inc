@@ -9,7 +9,7 @@
 */
 
 
-function getTestData($index)
+function getTestData_UTF8($index)
 {
     $inputs = null;
     switch ($index)
