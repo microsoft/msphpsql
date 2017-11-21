@@ -55,7 +55,7 @@ try {
 ?>
 --EXPECT--
 
-Testing numbers greater than 1:
+Testing numbers greater than 1 or less than -1:
 c0: -10
 c1: -10.0
 c2: -10.00
@@ -211,7 +211,7 @@ c5: 123456789012346261234567890123.46290
 c7: 123456789012346261234567890123.4629000
 c0: -13775323913775323913775323913775323913
 
-Testing numbers greater than 0 and less than 1:
+Testing numbers between 1 and -1:
 c1: .1
 c2: .10
 c3: .100

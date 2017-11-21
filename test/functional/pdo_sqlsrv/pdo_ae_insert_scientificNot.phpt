@@ -60,7 +60,7 @@ try {
 ?>
 --EXPECT--
 
-Testing numbers greater than 1:
+Testing numbers greater than 1 or less than -1:
 c0: 10
 c1: 10.0
 c2: 10.00
@@ -249,7 +249,7 @@ c8: 13775320000.00000000
 c9: 13775320000.000000000
 c19: 13775320000.0000000000000000000
 
-Testing numbers greater than 0 and less than 1:
+Testing numbers between 1 and -1:
 c0: -10
 c1: -10.0
 c2: -10.00

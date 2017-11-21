@@ -19,7 +19,6 @@
 
 #include "core_sqlsrv.h"
 
-#include <string>
 #include <sstream>
 #include <vector>
 
