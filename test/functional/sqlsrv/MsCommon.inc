@@ -454,4 +454,15 @@ function handleErrors()
     }
 }
 
+// non-UTF8 locale support in ODBC 17 and above only
+function isLocaleSupported()
+{
+    $conn = AE\connect();
+
+    $msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
+    if (explode(".", $msodbcsql_ver)[0] < 17) {
+        return false;
+    }
+}
+
 ?>

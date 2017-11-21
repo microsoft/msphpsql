@@ -5,20 +5,23 @@ Verifies the streaming behavior with scrollable resultsets.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?
+// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function streamScroll($noRows, $startRow)
 {
-    $testName = "Stream - Scrollable";
-    startTest($testName);
-
     setup();
     $tableName = "TC55test";
-    if (! isWindows()) {
-        $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
+
+    if (useUTF8Data()) {
+        $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
     } else {
         $conn1 = AE\connect();
     }
@@ -84,8 +87,6 @@ function streamScroll($noRows, $startRow)
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
 function verifyStream($stmt, $row, $colIndex)
@@ -150,16 +151,37 @@ function checkData($col, $actual, $expected)
     return ($success);
 }
 
-if (! isWindows()) {
-    setUTF8Data(true);
+// locale must be set before 1st connection
+if (!isWindows()) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
+
+global $testName;
+$testName = "Stream - Scrollable";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isWindows() || isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        streamScroll(20, 1);
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
     streamScroll(20, 1);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-setUTF8Data(false);
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Stream - Scrollable" completed successfully.
 Test "Stream - Scrollable" completed successfully.

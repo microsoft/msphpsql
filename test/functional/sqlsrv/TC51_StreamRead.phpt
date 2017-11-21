@@ -6,19 +6,20 @@ can be successfully retrieved as streams.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function streamRead($noRows, $startRow)
 {
-    $testName = "Stream - Read";
-    startTest($testName);
-
     setup();
     $tableName = 'TC51test';
-    if (! isWindows()) {
+    if (useUTF8Data()) {
         $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
         $conn1 = AE\connect();
@@ -51,8 +52,6 @@ function streamRead($noRows, $startRow)
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
 function verifyStream($stmt, $row, $colIndex)
@@ -80,7 +79,6 @@ function verifyStream($stmt, $row, $colIndex)
                 fclose($stream);
                 $data = AE\getInsertData($row, $col);
                 if (!checkData($col, $value, $data)) {
-                    setUTF8Data(false);
                     trace("Data corruption on row $row column $col\n");
                     die("Data corruption on row $row column $col\n");
                 }
@@ -117,18 +115,37 @@ function checkData($col, $actual, $expected)
     return ($success);
 }
 
-if (! isWindows()) {
-    setUTF8Data(true);
+// locale must be set before 1st connection
+if (!isWindows()) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
+global $testName;
+$testName = "Stream - Read";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isWindows() || isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        streamRead(20, 1);
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8 
+startTest($testName);
 try {
+    setUTF8Data(true);
     streamRead(20, 1);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-
-setUTF8Data(false);
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Stream - Read" completed successfully.
 Test "Stream - Read" completed successfully.
