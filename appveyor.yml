@@ -179,7 +179,7 @@ test_script:
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
             $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules ext\php_sqlsrv.dll --modules ext\php_pdo_sqlsrv.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules ext\php_sqlsrv.dll --modules ext\php_pdo_sqlsrv.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
             ls *.xml
         } Else {
@@ -189,11 +189,7 @@ test_script:
             .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -encoding UTF8;
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
         }
-    # - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules ext\*sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
-    # - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
-    # - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
-    # - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1
-    # - type %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
+    - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - cd %PHP_INSTALL_DIR%
     - ps: $fileExists = Test-Path "coverage.xml"
