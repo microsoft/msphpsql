@@ -1361,6 +1361,11 @@ struct param_meta_data
     ~param_meta_data()
     {
     }
+
+    SQLSMALLINT get_sql_type() { return sql_type; }
+    SQLSMALLINT get_decimal_digits() { return decimal_digits; }
+    SQLSMALLINT get_nullable() { return nullable; }
+    SQLULEN get_column_size() { return column_size; }
 };
 
 // *** Statement resource structure *** 

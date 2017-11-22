@@ -465,9 +465,10 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
     if( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE )){
         // use the meta data only if the user has not specified the sql type or column size
-        sql_type = stmt->param_descriptions[param_num].sql_type;
-        column_size = stmt->param_descriptions[param_num].column_size;
-        decimal_digits = stmt->param_descriptions[param_num].decimal_digits;
+        SQLSRV_ASSERT( param_num < stmt->param_descriptions.size(), "Invalid param_num passed in core_sqlsrv_bind_param!" );
+        sql_type = stmt->param_descriptions[param_num].get_sql_type();
+        column_size = stmt->param_descriptions[param_num].get_column_size();
+        decimal_digits = stmt->param_descriptions[param_num].get_decimal_digits();
 
         // change long to double if the sql type is decimal
         if(( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC ) && Z_TYPE_P(param_z) == IS_LONG )
