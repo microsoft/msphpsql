@@ -175,12 +175,13 @@ test_script:
     #- copy %APPVEYOR_BUILD_FOLDER%\test\functional\setup\*.dll %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\
     #- python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %SQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
     #- python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\run_ksp.py -server %TEST_PHP_SQL_SERVER% -dbname %PDOSQLSRV_DBNAME% -uid %TEST_PHP_SQL_UID% -pwd %TEST_PHP_SQL_PWD%
-    - ps: >-
-        If ($env:SQL_INSTANCE -Match "SQL2016") {
-            Write-Host "Running phpt tests via OpenCppCoverage..."
-            $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\
-        }
+    #- ps: >-
+        # If ($env:SQL_INSTANCE -Match "SQL2016") {
+            # Write-Host "Running phpt tests via OpenCppCoverage..."
+            # $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
+            # OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\
+        # }
+    - OpenCppCoverage.exe --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv --sources %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml --cover_children --quiet --continue_after_cpp_exception --optimized_build -- .\php.exe .\run-tests.php -P %APPVEYOR_BUILD_FOLDER%\test\functional\
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log 2>&1
     - type %APPVEYOR_BUILD_FOLDER%\test\functional\sqlsrv.log
     - php run-tests.php -p php.exe %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv\*.phpt > %APPVEYOR_BUILD_FOLDER%\test\functional\pdo_sqlsrv.log 2>&1
