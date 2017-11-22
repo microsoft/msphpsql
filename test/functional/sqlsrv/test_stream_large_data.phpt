@@ -1,20 +1,32 @@
 --TEST--
 streaming large amounts of data into a database and getting it out as a string exactly the same.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?
+// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+
+php require('skipif.inc');
+?>
 --FILE--
 <?php
+
+require_once("MsCommon.inc");
+    
+function runtest()
+{
     set_time_limit(0);
     sqlsrv_configure('WarningsReturnAsErrors', 0);
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
     sqlsrv_configure('LogSubsystems', SQLSRV_LOG_SYSTEM_OFF);
 
-    require_once("MsCommon.inc");
-    
-    $notWindows = (! isWindows());
-    // required charset UTF-8 when NOT running in Windows
-
-    $conn1 = ($notWindows) ? connect(array( 'CharacterSet'=>'UTF-8' )) : connect() ;
+    $useUTF8 = useUTF8Data();
+    if ($useUTF8) {
+        $conn1 = connect(array('CharacterSet'=>'UTF-8'));
+    } else {
+        $conn1 = connect();
+    }
     if ($conn1 === false) {
         fatalError("Failed to connect");
     }
@@ -31,18 +43,17 @@ streaming large amounts of data into a database and getting it out as a string e
     sqlsrv_free_stmt($stmt2);
     sqlsrv_close($conn1);
 
-    if ($notWindows) {
-        $conn2 = connect(array( 'CharacterSet' =>'utf-8' ));
+    if ($useUTF8) {
+        $conn2 = connect(array('CharacterSet'=>'UTF-8'));
     } else {
         $conn2 = connect();
     }
-
     if ($conn2 === false) {
         echo "sqlsrv_connect failed 2nd.\n";
         die(print_r(sqlsrv_errors(), true));
     }
 
-    if ($notWindows) {
+    if ($useUTF8) {
         require('test_stream_large_data_UTF8.inc');
         GenerateInputUTF8Data();
     } else {
@@ -147,27 +158,27 @@ streaming large amounts of data into a database and getting it out as a string e
     $metadata1 = sqlsrv_field_metadata($stmt8);
     $count = count($metadata1);
     sqlsrv_fetch($stmt8);
-    $value1 = GetField($stmt8, 13, $notWindows);
+    $value1 = GetField($stmt8, 13, $useUTF8);
     $lens1[$i++] = strlen($value1) . "\n";
     $fout = fopen("varchar_max.out", "w");
     fwrite($fout, $value1);
     fclose($fout);
-    $value2 = GetField($stmt8, 16, $notWindows);
+    $value2 = GetField($stmt8, 16, $useUTF8);
     $lens1[$i++] = strlen($value2) . "\n";
     $fout = fopen("nvarchar_max.out", "w");
     fwrite($fout, $value2);
     fclose($fout);
-    $value3 = GetField($stmt8, 17, $notWindows);
+    $value3 = GetField($stmt8, 17, $useUTF8);
     $lens1[$i++] = strlen($value3) . "\n";
     $fout = fopen("text.out", "w");
     fwrite($fout, $value3);
     fclose($fout);
-    $value4 = GetField($stmt8, 18, $notWindows);
+    $value4 = GetField($stmt8, 18, $useUTF8);
     $lens1[$i++] = strlen($value4) . "\n";
     $fout = fopen("ntext.out", "w");
     fwrite($fout, $value4);
     fclose($fout);
-    $value5 = GetField($stmt8, 27, $notWindows);
+    $value5 = GetField($stmt8, 27, $useUTF8);
     $lens1[$i++] = strlen($value5) . "\n";
     $fout = fopen("xml.out", "w");
     fwrite($fout, $value5);
@@ -189,57 +200,78 @@ streaming large amounts of data into a database and getting it out as a string e
     $metadata1 = sqlsrv_field_metadata($stmt8);
     $count = count($metadata1);
     sqlsrv_fetch($stmt8);
-    $value1 = GetField($stmt8, 13, $notWindows);
+    $value1 = GetField($stmt8, 13, $useUTF8);
     $lens2[$i++] = strlen($value1);
-    $value2 = GetField($stmt8, 16, $notWindows);
+    $value2 = GetField($stmt8, 16, $useUTF8);
     $lens2[$i++] = strlen($value2) . "\n";
-    $value3 = GetField($stmt8, 17, $notWindows);
+    $value3 = GetField($stmt8, 17, $useUTF8);
     $lens2[$i++] = strlen($value3) . "\n";
-    $value4 = GetField($stmt8, 18, $notWindows);
+    $value4 = GetField($stmt8, 18, $useUTF8);
     $lens2[$i++] = strlen($value4) . "\n";
-    $value5 = GetField($stmt8, 27, $notWindows);
+    $value5 = GetField($stmt8, 27, $useUTF8);
     $lens2[$i++] = strlen($value5) . "\n";
 
-    CompareLengths($filesizes, $lens1, $lens2, $i, $notWindows);
+    CompareLengths($filesizes, $lens1, $lens2, $i, $useUTF8);
 
     echo "Test finished\n";
 
     sqlsrv_free_stmt($stmt8);
     sqlsrv_close($conn2);
+}
 
-    function GetField($stmt, $idx, $notWindows)
-    {
-        if ($notWindows) {
-            return sqlsrv_get_field($stmt, $idx, SQLSRV_PHPTYPE_STRING('UTF-8'));
-        } else {
-            return sqlsrv_get_field($stmt, $idx, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-        }
+function GetField($stmt, $idx, $useUTF8)
+{
+    if ($useUTF8) {
+        return sqlsrv_get_field($stmt, $idx, SQLSRV_PHPTYPE_STRING('UTF-8'));
+    } else {
+        return sqlsrv_get_field($stmt, $idx, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
     }
+}
 
-    function CompareLengths($filesizes, $lens1, $lens2, $count, $notWindows)
-    {
-        if ($notWindows) {
-            // in Linux or Mac, same field should return same length, and strlen() for Unicode data is different
-            for ($i = 0; $i < $count; $i++) {
-                $length = $filesizes[$i];
-                if ($lens1[$i] != $length || $lens2[$i] != $length) {
-                    echo "Data length mismatched!\n";
-                }
-            }
-        } else {
-            // in Windows, all lengths are equal
-            $length = 1048576;  // number of characters in the data (in ANSI encoding)
-            for ($i = 0; $i < $count; $i++) {
-                if ($filesizes[$i] != $length) {
-                    echo "File $i size unexpected\n";
-                }
-
-                if ($lens1[$i] != $length || $lens2[$i] != $length) {
-                    echo "Data length mismatched!\n";
-                }
+function CompareLengths($filesizes, $lens1, $lens2, $count, $useUTF8)
+{
+    if ($useUTF8) {
+        // in Linux or Mac, same field should return same length, and strlen() for Unicode data is different
+        for ($i = 0; $i < $count; $i++) {
+            $length = $filesizes[$i];
+            if ($lens1[$i] != $length || $lens2[$i] != $length) {
+                echo "Data length mismatched!\n";
             }
         }
+    } else {
+        // in Windows, all lengths are equal
+        $length = 1048576;  // number of characters in the data (in ANSI encoding)
+        for ($i = 0; $i < $count; $i++) {
+            if ($filesizes[$i] != $length) {
+                echo "File $i size unexpected\n";
+            }
+
+            if ($lens1[$i] != $length || $lens2[$i] != $length) {
+                echo "Data length mismatched!\n";
+                }
+        }
     }
+}
+
+// locale must be set before 1st connection
+if (!isWindows()) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+if (isWindows() || isLocaleSupported()) {
+    setUTF8Data(false);
+    runtest();
+}
+else {
+    echo "Test finished\n";
+}
+
+// test utf8
+setUTF8Data(true);
+runtest();
+
 ?>
 --EXPECT--
+Test finished
 Test finished

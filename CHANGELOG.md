@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
+## Windows/Linux/macOS 5.1.2-preview - 2017-11-21
+Updated PECL release packages. Here is the list of updates:
+
+### Fixed
+- Support for non-UTF8 locales in Linux and macOS
+- Fixed crash caused by executing an invalid query in a transaction (Issue [#434](https://github.com/Microsoft/msphpsql/issues/434))
+- Fixed regression in sqlsrv_next_result returning a no fields error when the active result set is null (Issue [#581](https://github.com/Microsoft/msphpsql/issues/581))
+- Fixed incorrect active result set when sqlsrv_next_result or PDOStatement::nextRowset is called when Column Encryption is enabled (Issue [#574](https://github.com/Microsoft/msphpsql/issues/574))
+- Fixed data corruption in fetching from an encrypted max column after calling sqlsrv_next_result or PDOStatemet::nextRowset (Issue [#580](https://github.com/Microsoft/msphpsql/issues/580))
+- Added error handling for using PDO::SQLSRV_ATTR_DIRECT_QUERY or PDO::ATTR_EMULATE_PREPARES in a Column Encryption enabled connection
+- Added error handling for binding TEXT, NTEXT or IMAGE as output parameter (Issue [#231](https://github.com/Microsoft/msphpsql/issues/231))
+
+### Limitations
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. The subsequent locale setting will not work
+- Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview)
+  - ODBC binaries for macOS available upon request
+- MSODBC 17 preview msodbcsql.msi only works in Windows10
+- [Always Encrypted limitations](https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation)
+- When using sqlsrv_query with Always Encrypted feature, SQL type has to be specified for each input (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
+- No support for inout / output params when using sql_variant type
+
+### Known Issues
+- Binding decimal input as a string when Column Encryption is enabled may change the precision of the input
+- Connection pooling on Linux doesn't work properly when using the MSODBC17 preview
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+
 ## Windows/Linux 5.1.1-preview - 2017-10-20
 Updated PECL release packages. Here is the list of updates:
 

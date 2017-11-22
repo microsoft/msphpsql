@@ -5,24 +5,29 @@ Verifies the functionality of "sqlsrv_next_result"
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?
+// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function fetchFields()
 {
-    $testName = "Fetch - Next Result";
-    startTest($testName);
-
     if (!IsMarsSupported()) {
-        endTest($testName);
         return;
     }
 
     setup();
     $tableName = 'TC46test';
-    $conn1 = AE\connect();
+    if (useUTF8Data()) {
+        $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
+    } else {
+        $conn1 = AE\connect();
+    }
     AE\createTestTable($conn1, $tableName);
 
     $noRows = 10;
@@ -77,21 +82,39 @@ function fetchFields()
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
+// locale must be set before 1st connection
 if (!isWindows()) {
-    setUTF8Data(true);
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
+global $testName;
+$testName = "Fetch - Next Result";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isWindows() || isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        fetchFields();
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
     fetchFields();
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-setUTF8Data(false);
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Fetch - Next Result" completed successfully.
 Test "Fetch - Next Result" completed successfully.
