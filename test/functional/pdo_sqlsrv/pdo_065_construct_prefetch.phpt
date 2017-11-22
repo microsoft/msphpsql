@@ -7,20 +7,14 @@ Exception is thrown for the unsupported connection attribute ATTR_PREFETCH only 
 --FILE--
 <?php
 require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 try {
     echo "Testing a connection with ATTR_PREFETCH before ERRMODE_EXCEPTION...\n";
-    $dsn = "sqlsrv:Server = $server;database = $databaseName";
-    if ($keystore != "none")
-        $dsn .= "ColumnEncryption=Enabled;";
-    if ($keystore == "ksp") {   
-        require_once("AE_Ksp.inc");
-        $ksp_path = getKSPPath();
-        $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
-    }
+    $dsn = getDSN($server, $databaseName);
     
     $attr = array(PDO::ATTR_PREFETCH => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
     $conn = new PDO($dsn, $uid, $pwd, $attr); 
-    echo "Error from supported attribute (ATTR_PREFETCH) is silented\n\n";
+    echo "Error from unsupported attribute (ATTR_PREFETCH) is silenced\n\n";
     unset($conn);
    
     echo "Testing a connection with ATTR_PREFETCH after ERRMODE_EXCEPTION...\n";
@@ -35,7 +29,7 @@ try {
 
 --EXPECT--
 Testing a connection with ATTR_PREFETCH before ERRMODE_EXCEPTION...
-Error from supported attribute (ATTR_PREFETCH) is silented
+Error from unsupported attribute (ATTR_PREFETCH) is silenced
 
 Testing a connection with ATTR_PREFETCH after ERRMODE_EXCEPTION...
 Exception from unsupported attribute (ATTR_PREFETCH) is caught
