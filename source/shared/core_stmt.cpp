@@ -102,8 +102,6 @@ void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned in
 // given a zval and encoding, determine the appropriate sql type, column size, and decimal scale (if appropriate)
 void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding, 
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC );
-void ae_get_sql_type_info( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ SQLSMALLINT direction, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
-                           _Out_ SQLSMALLINT& sql_type, _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC );
 void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
@@ -466,7 +464,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                     encoding == SQLSRV_ENCODING_BINARY ), "core_sqlsrv_bind_param: invalid encoding" );
 
     if( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE )){
-        ae_get_sql_type_info( stmt, param_num, direction, param_z, encoding, sql_type, column_size, decimal_digits TSRMLS_CC );
+        // use the meta data only if the user has not specified the sql type or column size
+        SQLSRV_ASSERT( param_num < stmt->param_descriptions.size(), "Invalid param_num passed in core_sqlsrv_bind_param!" );
+        sql_type = stmt->param_descriptions[param_num].get_sql_type();
+        column_size = stmt->param_descriptions[param_num].get_column_size();
+        decimal_digits = stmt->param_descriptions[param_num].get_decimal_digits();
+
         // change long to double if the sql type is decimal
         if(( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC ) && Z_TYPE_P(param_z) == IS_LONG )
                 convert_to_double( param_z );
@@ -2083,13 +2086,6 @@ void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned in
             THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, paramno );
             break;
     }
-}
-
-void ae_get_sql_type_info( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ SQLSMALLINT direction, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
-                           _Out_ SQLSMALLINT& sql_type, _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC )
-{
-    SQLSMALLINT Nullable;
-    core::SQLDescribeParam( stmt, paramno + 1, &sql_type, &column_size, &decimal_digits, &Nullable );
 }
 
 void col_cache_dtor( _Inout_ zval* data_z )

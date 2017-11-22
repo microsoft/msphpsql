@@ -12,9 +12,9 @@ function insertOneRow($conn, $tableName)
     $result = null;
     if (AE\isColEncrypted()) {
         $data = array("Field2" => "This is field 2.",
-                      "Field3" => array("010203", null, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_IMAGE),
+                      "Field3" => "010203",
                       "Field4" => "This is field 4.",
-                      "Field5" => array("040506", null, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARBINARY('max')),
+                      "Field5" => "040506",
                       "Field6" => "This is field 6.",
                       "Field7" => "This is field 7.");
         $query = AE\getInsertSqlPlaceholders($tableName, $data);
@@ -42,8 +42,7 @@ function updateRow($conn, $tableName, $updateField, $params)
 
     if (AE\isColEncrypted()) {
         $query = "UPDATE $tableName SET $updateField=? WHERE $condField = ?";
-
-        array_push($params, array($condition, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_NVARCHAR('max')));
+        array_push($params, $condition);
     } else {
         $query = "UPDATE $tableName SET $updateField=? WHERE $condField = '$condition'";
     }

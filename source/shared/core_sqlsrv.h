@@ -156,6 +156,7 @@ OACR_WARNING_POP
 #include <limits>
 #include <cassert>
 #include <memory>
+#include <vector>
 // included for SQL Server specific constants
 #include "msodbcsql.h"
 
@@ -1345,6 +1346,28 @@ struct sqlsrv_output_param {
 // forward decls
 struct sqlsrv_result_set;
 
+// *** parameter metadata struct ***
+struct param_meta_data
+{
+    SQLSMALLINT sql_type; 
+    SQLSMALLINT decimal_digits;
+    SQLSMALLINT nullable; 
+    SQLULEN     column_size;
+
+    param_meta_data() : sql_type(0), decimal_digits(0), column_size(0), nullable(0)
+    {
+    }
+
+    ~param_meta_data()
+    {
+    }
+
+    SQLSMALLINT get_sql_type() { return sql_type; }
+    SQLSMALLINT get_decimal_digits() { return decimal_digits; }
+    SQLSMALLINT get_nullable() { return nullable; }
+    SQLULEN get_column_size() { return column_size; }
+};
+
 // *** Statement resource structure *** 
 struct sqlsrv_stmt : public sqlsrv_context {
 
@@ -1382,6 +1405,8 @@ struct sqlsrv_stmt : public sqlsrv_context {
     zval field_cache;                     // cache for a single row of fields, to allow multiple and out of order retrievals
     zval col_cache;                       // Used by get_field_as_string not to call SQLColAttribute()  after every fetch. 
     zval active_stream;                   // the currently active stream reading data from the database
+
+    std::vector<param_meta_data> param_descriptions;
 
     sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
     virtual ~sqlsrv_stmt( void );
@@ -2001,6 +2026,16 @@ namespace core {
     {
         SQLRETURN r;
         r = ::SQLDescribeParam( stmt->handle(), paramno, data_type, col_size, decimal_digits, nullable );
+
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            throw CoreException();
+        }
+    }
+
+    inline void SQLNumParams( _Inout_ sqlsrv_stmt* stmt, _Out_opt_ SQLSMALLINT* num_params)
+    {
+        SQLRETURN r;
+        r = ::SQLNumParams( stmt->handle(), num_params );
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
