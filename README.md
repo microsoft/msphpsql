@@ -35,6 +35,7 @@ Thank you for taking time to take our February survey. Let us know how we are do
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/rhel)
 * [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/sles)
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/windows)
+* [**macOS + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/mac/)
 * [**Docker**](https://hub.docker.com/r/lbosqmsft/mssql-php-msphpsql/)
 
 
@@ -265,6 +266,11 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
 On Ubuntu, Debian, and SUSE systems only, run:
 
     sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
+
+On macOS, run:
+
+    chmod -R ug+w /usr/local/opt/php71/lib/php
+    pear config-set php_ini /usr/local/etc/php/7.1/php.ini system
 
 On all systems, run:
 

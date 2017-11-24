@@ -6,43 +6,44 @@ by checking all fetch type modes.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?
+// locale must be set before 1st connection
+if ( !isWindows() ) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function fetchRow($minFetchMode, $maxFetchMode)
 {
-    $testName = "Fetch - Array";
-    startTest($testName);
-
-    if (!IsMarsSupported()) {
-        endTest($testName);
+    if (!isMarsSupported()) {
         return;
     }
 
     setup();
-    if (!isWindows()) {
-        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+    $tableName = 'TC44test';
+    if (useUTF8Data()) {
+        $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
-        $conn1 = connect();
+        $conn1 = AE\connect();
     }
     $tableName = 'TC44Test';
-    createTable($conn1, $tableName);
+    AE\createTestTable($conn1, $tableName);
 
     $noRows = 10;
     $numFields = 0;
-    insertRows($conn1, $tableName, $noRows);
+    AE\insertTestRows($conn1, $tableName, $noRows);
 
     for ($k = $minFetchMode; $k <= $maxFetchMode; $k++) {
-        $stmt1 = selectFromTable($conn1, $tableName);
-        $stmt2 = selectFromTable($conn1, $tableName);
+        $stmt1 = AE\selectFromTable($conn1, $tableName);
+        $stmt2 = AE\selectFromTable($conn1, $tableName);
         if ($numFields == 0) {
             $numFields = sqlsrv_num_fields($stmt1);
         } else {
             $count = sqlsrv_num_fields($stmt1);
             if ($count != $numFields) {
-                setUTF8Data(false);
                 die("Unexpected number of fields: $count");
             }
         }
@@ -72,8 +73,6 @@ function fetchRow($minFetchMode, $maxFetchMode)
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
 function fetchArray($stmt, $stmtRef, $mode, $rows, $fields)
@@ -103,13 +102,11 @@ function fetchArray($stmt, $stmtRef, $mode, $rows, $fields)
         }
         $rowSize = count($row);
         if ($rowSize != $size) {
-            setUTF8Data(false);
             die("Row array has an incorrect size: ".$rowSize);
         }
         $rowRref = sqlsrv_fetch($stmtRef);
         for ($j = 0; $j < $fields; $j++) {
             if (!checkData($row, $stmtRef, $j, $fetchMode)) {
-                setUTF8Data(false);
                 die("Data corruption on row ".($i + 1)." column ".($j + 1));
             }
         }
@@ -122,23 +119,23 @@ function checkData($row, $stmt, $index, $mode)
     $success = true;
 
     $col = $index + 1;
-    $actual = (($mode == SQLSRV_FETCH_ASSOC) ? $row[GetColName($col)] : $row[$index]);
+    $actual = (($mode == SQLSRV_FETCH_ASSOC) ? $row[getColName($col)] : $row[$index]);
     $expected = null;
 
-    if (!IsUpdatable($col)) {
+    if (!isUpdatable($col)) {
         // do not check the timestamp
-    } elseif (IsNumeric($col) || IsDateTime($col)) {
+    } elseif (isNumeric($col) || isDateTime($col)) {
         $expected = sqlsrv_get_field($stmt, $index);
         if ($expected != $actual) {
             $success = false;
         }
-    } elseif (IsBinary($col)) {
+    } elseif (isBinary($col)) {
         $expected = sqlsrv_get_field($stmt, $index, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         $actual = bin2hex($actual);
         if (strcasecmp($actual, $expected) != 0) {
             $success = false;
         }
-    } else { // if (IsChar($col))
+    } else { // if (isChar($col))
         if (useUTF8Data()) {
             $expected = sqlsrv_get_field($stmt, $index, SQLSRV_PHPTYPE_STRING('UTF-8'));
         } else {
@@ -154,17 +151,37 @@ function checkData($row, $stmt, $index, $mode)
     return ($success);
 }
 
-
+// locale must be set before 1st connection
 if (!isWindows()) {
-    setUTF8Data(true);
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
+
+global $testName;
+$testName = "Fetch - Array";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isWindows() || isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        fetchRow(1, 4);
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
     fetchRow(1, 4);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-setUTF8Data(false);
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Fetch - Array" completed successfully.
 Test "Fetch - Array" completed successfully.

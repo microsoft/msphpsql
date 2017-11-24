@@ -27,7 +27,7 @@ This test verifys binding output paramter for data types below except null, Date
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -45,27 +45,37 @@ function main($minType, $maxType)
     startTest($testName);
 
     setup();
-    $conn = connect();
+    $conn = AE\connect();
 
     for ($k = $minType; $k <= $maxType; $k++) {
         if ($k == 18 || $k == 19) {
             // skip text and ntext types; not supported as output params
             continue;
-        }
-        $sqlType = GetSqlType($k);
+        } 
+              
+        $sqlType = getSqlType($k);
         // for each data type create a table with two columns, 1: dataType id 2: data type
-        $dataType = "[$columnNames[0]] int, [$columnNames[1]] $sqlType";
-        createTableEx($conn, $tableName, $dataType);
+        // $dataType = "[$columnNames[0]] int, [$columnNames[1]] $sqlType";
+        if ($k == 10 || $k == 11) {
+            // do not encrypt money type -- ODBC restrictions
+            $noEncrypt = true;
+        } else {
+            $noEncrypt = false;
+        }
+
+        $columns = array(new AE\ColumnMeta('int', $columnNames[0]),
+                         new AE\ColumnMeta($sqlType, $columnNames[1], null, true, $noEncrypt));
+        AE\createTable($conn, $tableName, $columns);
 
         // data to populate the table, false since we don't want to initialize a variable using this data.
-        $data = GetData($k, false);
+        $data = getData($k, false);
 
-        TraceData($sqlType, $data);
+        traceData($sqlType, $data);
         $dataValues = array($k, $data);
 
-        InsertRowNoOption($conn, $tableName, $columnNames, $dataValues);
+        insertRowNoOption($conn, $tableName, $columnNames, $dataValues);
 
-        ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType);
+        execProc($conn, $tableName, $columnNames, $k, $data, $sqlType);
     }
 
     dropTable($conn, $tableName, $k);
@@ -84,9 +94,11 @@ function main($minType, $maxType)
  *  @param $data is used to get the SQLSRV_PHPTYPE_*
  *  @param $sqlType the same datatype used to create the table with
  */
-function ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
+function execProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
 {
-    $phpDriverType = GetDriverType($k, strlen($data));
+    // With AE enabled it is stricter with data size
+    $dataSize = AE\isColEncrypted() ? 512 : strlen($data);
+    $phpDriverType = getSqlsrvSqlType($k, $dataSize);
 
     $spArgs = "@p1 int, @p2 $sqlType OUTPUT";
 
@@ -97,11 +109,12 @@ function ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
 
     $callArgs = "?, ?";
     //get data to initialize $callResult variable, this variable should be different than inserted data in the table
-    $initData = GetData($k, true);
+    $initData = getData($k, true);
     $callResult = $initData;
 
-    $params = array( array( $k, SQLSRV_PARAM_IN ),
-                    array( &$callResult, SQLSRV_PARAM_OUT, null, $phpDriverType ));
+    $inType = AE\isColEncrypted() ? SQLSRV_SQLTYPE_INT : null;
+    $params = array(array($k, SQLSRV_PARAM_IN, null, $inType),
+                    array(&$callResult, SQLSRV_PARAM_OUT, null, $phpDriverType));
 
     callProc($conn, $procName, $callArgs, $params);
     // check if it is updated
@@ -118,11 +131,17 @@ function ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
  *  @param $columnNames array containig the column names
  *  @param $dataValues array of values to be insetred in the table
  */
-function InsertRowNoOption($conn, $tableName, $columnNames, $dataValues)
+function insertRowNoOption($conn, $tableName, $columnNames, $dataValues)
 {
-    $tsql = "INSERT INTO [$tableName] ($columnNames[0], $columnNames[1]) VALUES (?, ?)";
-    $stmt = sqlsrv_query($conn, $tsql, $dataValues);
-    if (false === $stmt) {
+    $res = null;
+    $stmt = AE\insertRow($conn, 
+        $tableName, 
+        array($columnNames[0] => $dataValues[0], $columnNames[1] => $dataValues[1]),
+        $res,
+        AE\INSERT_QUERY_PARAMS
+    );
+    
+    if ($stmt === false || $res === false) {
         print_r(sqlsrv_errors());
     }
 }
@@ -132,7 +151,7 @@ function InsertRowNoOption($conn, $tableName, $columnNames, $dataValues)
  *  @param $k  data type id, this id of each datatype are the same as the one in the MsCommon.inc file
  *  @param $initData  boolean parameter, if true it means the returned data value is used to initialize a variable.
  */
-function GetData($k, $initData)
+function getData($k, $initData)
 {
     if (false == $initData) {
         switch ($k) {
@@ -218,20 +237,16 @@ function GetData($k, $initData)
     }
 }
 
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-    try {
+try {
+    if (AE\isColEncrypted()) {
+        // TODO: fix this test to work with binary types when enabling AE
+        main(1, 17);
+    } else {
         main(1, 22);
-    } catch (Exception $e) {
-        echo $e->getMessage();
     }
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-Repro();
 
 ?>
 --EXPECTREGEX--

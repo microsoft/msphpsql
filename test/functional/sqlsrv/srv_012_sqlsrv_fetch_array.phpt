@@ -1,30 +1,27 @@
 --TEST--
 sqlsrv_fetch_array() using a scrollable cursor
 --SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-
-require_once("MsCommon.inc");
+require_once('MsCommon.inc');
 
 // connect
-$conn = connect();
-if (!$conn) {
-    fatalError("Connection could not be established.\n");
-}
-
-$tableName = GetTempTableName();
+$conn = AE\connect();
+$tableName = 'test012'; 
 
 // Create table
-$query = "CREATE TABLE $tableName (ID VARCHAR(10))";
-$stmt = sqlsrv_query($conn, $query);
+$columns = array(new AE\ColumnMeta('VARCHAR(10)', 'ID'));
+AE\createTable($conn, $tableName, $columns);
 
-$query = "INSERT INTO $tableName VALUES ('1998.1'),('-2004'),('2016'),('4.2EUR')";
-$stmt = sqlsrv_query($conn, $query) ?: die(print_r(sqlsrv_errors(), true));
+AE\insertRow($conn, $tableName, array("ID" => '1998.1'));
+AE\insertRow($conn, $tableName, array("ID" => '-2004'));
+AE\insertRow($conn, $tableName, array("ID" => '2016'));
+AE\insertRow($conn, $tableName, array("ID" => '4.2EUR'));
 
 // Fetch data
 $query = "SELECT ID FROM $tableName";
-$stmt = sqlsrv_query($conn, $query, [], array("Scrollable"=>"buffered"))
-    ?: die(print_r(sqlsrv_errors(), true));
+$stmt = AE\executeQueryEx($conn, $query, array("Scrollable"=>"buffered"));
 
 // Fetch first row
 $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC, SQLSRV_SCROLL_NEXT);
@@ -37,6 +34,8 @@ echo $row['ID']."\n";
 // Fetch last row
 $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC, SQLSRV_SCROLL_LAST);
 echo $row['ID']."\n";
+
+dropTable($conn, $tableName);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);

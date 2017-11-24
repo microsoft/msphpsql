@@ -408,6 +408,11 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND,
         { IMSSP, (SQLCHAR*) "The specified ODBC Driver is not found.", -107, false }
     },
+    {
+        SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
+        { IMSSP, (SQLCHAR*) "Stored Procedures do not support text, ntext or image as OUTPUT parameters.", -108, false }
+    },
+
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
 };

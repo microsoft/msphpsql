@@ -1,48 +1,32 @@
 --TEST--
 Test setFetchMode method.
 --SKIPIF--
-<?php require 'skipif.inc'; ?>
+<?php require 'skipif_mid-refactor.inc'; ?>
 --FILE--
 <?php
+require_once("MsCommon_mid-refactor.inc");
+require_once("MsData_PDO_AllTypes.inc");
 
-require_once 'MsCommon.inc';
-
-try{
+try {
     $db = connect();
-    $stmt = $db->query("SELECT * FROM " . $table1 );
-    echo "Set Fetch Mode for PDO::FETCH_ASSOC \n";
-    $stmt->setFetchMode(PDO::FETCH_ASSOC);
-    $result = $stmt->fetch();
-    var_dump($result);
-    $stmt = $db->query("SELECT * FROM " . $table1 );
-    echo "Set Fetch Mode for PDO::FETCH_NUM \n";
-    $stmt->setFetchMode(PDO::FETCH_NUM);
-    $result = $stmt->fetch();
-    var_dump($result);
-    $stmt = $db->query("SELECT * FROM " . $table1 );
-    echo "Set Fetch Mode for PDO::FETCH_BOTH \n";
-    $stmt->setFetchMode(PDO::FETCH_BOTH);
-    $result = $stmt->fetch();
-    var_dump($result);  
-    $stmt = $db->query("SELECT * FROM " . $table1 );
-    echo "Set Fetch Mode for PDO::FETCH_LAZY \n";
-    $stmt->setFetchMode(PDO::FETCH_LAZY);
-    $result = $stmt->fetch();
-    var_dump($result);
-    $stmt = $db->query("SELECT * FROM " . $table1 );
-    echo "Set Fetch Mode for PDO::FETCH_OBJ \n";
-    $stmt->setFetchMode(PDO::FETCH_OBJ);
-    $result = $stmt->fetch();
-    var_dump($result);
-} 
-catch ( PDOException $e)
-{
+    $tbname = "PDO_MainTypes";
+    createAndInsertTableMainTypes($db, $tbname);
+    
+    $fetchModes = array("PDO::FETCH_ASSOC", "PDO::FETCH_NUM", "PDO::FETCH_BOTH", "PDO::FETCH_LAZY", "PDO::FETCH_OBJ");
+    foreach ($fetchModes as $mode) {
+        $stmt = $db->query("SELECT * FROM $tbname");
+        echo "Set Fetch Mode for $mode\n";
+        $stmt->setFetchMode(constant($mode));
+        $result = $stmt->fetch();
+        var_dump($result);
+    }
+} catch (PDOException $e) {
     var_dump($e);
 }
 
 ?>
 --EXPECT--
-Set Fetch Mode for PDO::FETCH_ASSOC 
+Set Fetch Mode for PDO::FETCH_ASSOC
 array(8) {
   ["IntCol"]=>
   string(1) "1"
@@ -61,7 +45,7 @@ array(8) {
   ["XmlCol"]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 }
-Set Fetch Mode for PDO::FETCH_NUM 
+Set Fetch Mode for PDO::FETCH_NUM
 array(8) {
   [0]=>
   string(1) "1"
@@ -80,7 +64,7 @@ array(8) {
   [7]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 }
-Set Fetch Mode for PDO::FETCH_BOTH 
+Set Fetch Mode for PDO::FETCH_BOTH
 array(16) {
   ["IntCol"]=>
   string(1) "1"
@@ -115,10 +99,10 @@ array(16) {
   [7]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 }
-Set Fetch Mode for PDO::FETCH_LAZY 
+Set Fetch Mode for PDO::FETCH_LAZY
 object(PDORow)#3 (9) {
   ["queryString"]=>
-  string(25) "SELECT * FROM PDO_Types_1"
+  string(27) "SELECT * FROM PDO_MainTypes"
   ["IntCol"]=>
   string(1) "1"
   ["CharCol"]=>
@@ -136,7 +120,7 @@ object(PDORow)#3 (9) {
   ["XmlCol"]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 }
-Set Fetch Mode for PDO::FETCH_OBJ 
+Set Fetch Mode for PDO::FETCH_OBJ
 object(stdClass)#5 (8) {
   ["IntCol"]=>
   string(1) "1"

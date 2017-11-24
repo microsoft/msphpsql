@@ -12,7 +12,6 @@
 // looks like an additional file (in addition to pdo_test_base.inc) may be needed for these PHPTs
 // to be runnable from the MSSQL teams' internal proprietary test running system
 //
-require  'MsData.inc';
 
 function IsAEQualified($conn)
 {
@@ -35,9 +34,7 @@ function connect($options=array())
     require  'MsSetup.inc';
     $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;" , $uid, $pwd, $options); 
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-    create_and_insert_table1($conn);
-    create_and_insert_table2($conn);
-      return $conn;
+    return $conn;
   }
   
   catch( PDOException $e ) 
@@ -445,155 +442,6 @@ function is_col_enc()
         return false;
     else
         return true;
-}
-
-
-// Create and insert
-function create_and_insert_table1( $conn )
-{
-    global $string_col, $date_col, $large_string_col, $xml_col, $binary_col, $int_col, $decimal_col, $guid_col, $null_col, $comma, $closing_brace, $table1;
-   
-    try
-    {
-      $create_query = 
-      
-        "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $table1 . "') AND type in (N'U'))
-        DROP TABLE " . $table1 . 
-        
-        " CREATE TABLE [dbo].[" . $table1 . "](
-          [IntCol] [int] NULL,
-          [CharCol] [char](10) NULL,
-          [NCharCol] [nchar](10) NULL,
-          [DateTimeCol] [datetime] NULL,
-          [VarcharCol] [varchar](50) NULL,
-          [NVarCharCol] [nvarchar](50) NULL,
-          [FloatCol] [float] NULL,
-        [XmlCol] [xml] NULL
-        ) ON [PRIMARY]
-        ";
-        
-        $conn->query( $create_query );
-        
-        for ($i = 0 ; $i <= 1; ++ $i)
-        {
-          $insert_query = 
-                    "INSERT INTO PDO_Types_1 VALUES (".
-                    $int_col[$i] . $comma . 
-                    $string_col[$i] . $comma .
-                    $string_col[$i] . $comma . 
-                    "Convert(datetime, ". $date_col[$i] . ")" . $comma .
-                    $string_col[$i] . $comma . 
-                    $string_col[$i] . $comma . 
-                    $decimal_col[$i] . $comma .
-                    $xml_col[$i] .
-                    ")";
-        
-          $conn->query ( $insert_query );
-        }
-    }
-    catch(Exception $e)
-    {
-       var_dump( $e);
-       exit;
-    }
-}
-
-function create_and_insert_table2( $conn )
-{
-  try
-  {
-     //Timestamp is not present.
-     //VARIANT is not supported.
-     global $string_col, $date_col, $large_string_col, $xml_col, $binary_col, $int_col, $decimal_col, $guid_col, $null_col, $comma, $closing_brace, $table1, $table2;
-   
-     $create_query = 
-        "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'".$table2."') AND type in (N'U'))  DROP TABLE " . $table2 . 
-        
-        " CREATE TABLE " .$table2 . " (
-            [BigIntCol] [bigint] NULL,
-            [BinaryCol] [binary](5) NULL,
-            [BitCol] [bit] NULL,
-            [CharCol] [char](10) NULL,
-            [DateCol] [date] NULL,
-            [DateTimeCol] [datetime] NULL,
-            [DateTime2Col] [datetime2](7) NULL,
-            [DTOffsetCol] [datetimeoffset](7) NULL,
-            [DecimalCol] [decimal](18, 0) NULL,
-            [FloatCol] [float] NULL,
-            [ImageCol] [image] NULL,
-            [IntCol] [int] NULL,
-            [MoneyCol] [money] NULL,
-            [NCharCol] [nchar](10) NULL,
-            [NTextCol] [ntext] NULL,
-            [NumCol] [numeric](18, 0) NULL,
-            [NVarCharCol] [nvarchar](50) NULL,
-            [NVarCharMaxCol] [nvarchar](max) NULL,
-            [RealCol] [real] NULL,
-            [SmallDTCol] [smalldatetime] NULL,
-            [SmallIntCol] [smallint] NULL,
-            [SmallMoneyCol] [smallmoney] NULL,
-            [TextCol] [text] NULL,
-            [TimeCol] [time](7) NULL,
-            [TinyIntCol] [tinyint] NULL,
-            [Guidcol] [uniqueidentifier] NULL,
-            [VarbinaryCol] [varbinary](50) NULL,
-            [VarbinaryMaxCol] [varbinary](max) NULL,
-            [VarcharCol] [varchar](50) NULL,
-            [VarcharMaxCol] [varchar](max) NULL,
-            [XmlCol] [xml] NULL
-        ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-        
-        ";
-          
-        $stmt = $conn->query( $create_query );
-        
-        for ($i =0; $i<= 0 ; ++ $i)
-        {
-          $insert_query = 
-                    
-                  " INSERT INTO " .$table2 . " VALUES (".
-                    $int_col[$i] . $comma . 
-                    $binary_col[$i] . $comma .
-                    "0" . $comma . 
-                    $string_col[$i] . $comma . 
-                    "Convert(date, ". $date_col[$i] . $closing_brace . 
-                    "Convert(datetime, ". $date_col[$i] . $closing_brace .
-                    "Convert(datetime2(7),". $date_col[$i] . $closing_brace . 
-                    "Convert(datetimeoffset(7)," . $date_col[$i] . $closing_brace . 
-                    $decimal_col[$i] . $comma . 
-                    $decimal_col[$i] .$comma . 
-                    $binary_col[$i] . $comma . 
-                    $int_col[$i] . $comma .
-                    $decimal_col[$i] . $comma . 
-                    $string_col[$i]. $comma . 
-                    $large_string_col[$i]. $comma. 
-                    $int_col[$i]. $comma . 
-                    $string_col[$i]. $comma . 
-                    $large_string_col[$i]. $comma .
-                    $decimal_col[$i]. $comma . 
-                    "Convert(smalldatetime, ". $date_col[$i]. $closing_brace . 
-                    $int_col[$i]. $comma . 
-                    $decimal_col[$i]. $comma . 
-                    $large_string_col[$i]. $comma . 
-                    "Convert(time(7), ". $date_col[$i] . $closing_brace . 
-                    $int_col[$i] . $comma . 
-                    $guid_col[$i] . $comma . 
-                    $binary_col[$i] . $comma . 
-                    $binary_col[$i] . $comma . 
-                    $string_col[$i] . $comma . 
-                    $large_string_col[$i] . $comma .
-                    $xml_col[$i] . 
-                    ")";
-         
-          $stmt = $conn->query ($insert_query );   
-        }
-        
-  }
-  catch(Exception $e)
-  {
-     var_dump( $e);
-     exit;
-  }
 }
 
 function teardown()

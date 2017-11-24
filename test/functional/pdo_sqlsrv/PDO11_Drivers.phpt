@@ -1,60 +1,23 @@
 --TEST--
 PDO Drivers Info Test
 --DESCRIPTION--
-Verifies the functionality of "PDO:getAvailableDrivers()”.
+Verifies the functionality of "PDO:getAvailableDrivers()".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
-
-function DriversInfo()
-{
-    include 'MsSetup.inc';
-
-    $testName = "PDO - Drivers";
-    StartTest($testName);
-
+try {
     $drivers = PDO::getAvailableDrivers();
-    if (in_array("sqlsrv", $drivers))
-    {
-        $count = count($drivers);
-        for ($i = 0; $i < $count; $i++)
-        {
-            Trace("Driver #".($i + 1).": ".$drivers[$i]."\n");
-        }
-    }
-    else
-    {
+    if (!in_array("sqlsrv", $drivers)) {
         printf("$PhpDriver is missing.\n");
+    } else {
+        printf("Done\n");
     }
-
-    EndTest($testName);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-    try
-    {
-        DriversInfo();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-}
-
-Repro();
-
 ?>
 --EXPECT--
-Test "PDO - Drivers" completed successfully.
+Done

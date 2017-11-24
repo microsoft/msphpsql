@@ -6,12 +6,12 @@ emalloc (which only allocate memory in the memory space allocated for the PHP pr
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
+function memCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
 {
     $testName = "Memory Leakage Check";
 
@@ -26,12 +26,12 @@ function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
     // set the encoding to UTF-8. We can set the UTF-8 option elsewhere
     // (in the options for sqlsrv_fetch for example) but it is easier
     // to simply call connect(array( 'CharacterSet'=>'UTF-8' )).
-    $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+    $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     setUTF8Data(true);
 
     $tableName = 'TC81test';
-    createTable($conn1, $tableName);
-    $noRowsInserted = insertRows($conn1, $tableName, $noRows1);
+    AE\createTestTable($conn1, $tableName);
+    $noRowsInserted = AE\insertTestRows($conn1, $tableName, $noRows1);
 
     // Calibration
     // when fetching DateTime in the test, the DateTime PHP extension is used, and memory is allocated when this
@@ -39,26 +39,26 @@ function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
     // appear to be a leak in the testing step.
     $date = new DateTime();
     unset($date);
-    $phpLeak =  RunTest($noPasses, 0, $tableName, $conn1, false, true, 0);
+    $phpLeak =  runTest($noPasses, 0, $tableName, $conn1, false, true, 0);
     trace("\n0. Calibration\t - PHP memory leak: $phpLeak bytes\n");
 
     // Preliminary Execution
     trace("\nPreliminary Execution:\n");
-    $drvLeak = ExecTest(1, $noRows1, $startStep, $endStep, $tableName, $conn1, false, true, $phpLeak);
+    $drvLeak = execTest(1, $noRows1, $startStep, $endStep, $tableName, $conn1, false, true, $phpLeak);
     $totalLeak = 0;
 
     // Connection & Query
     $start = Max($startStep, 1);
     $end = Min($endStep, 3);
     trace("\nConnection & Direct Query Execution:\n");
-    $leak = ExecTest($noPasses, $noRows1, $start, $end, $tableName, $conn1, false, true, $phpLeak) - $drvLeak;
+    $leak = execTest($noPasses, $noRows1, $start, $end, $tableName, $conn1, false, true, $phpLeak) - $drvLeak;
     if ($leak > $totalLeak) {
         $totalLeak = $leak;
     }
 
     trace("\nPrepared Query Execution:\n");
     $start = Max($startStep, 2);
-    $leak = ExecTest($noPasses, $noRows1, $start, $end, $tableName, $conn1, true, true, $phpLeak) - $drvLeak;
+    $leak = execTest($noPasses, $noRows1, $start, $end, $tableName, $conn1, true, true, $phpLeak) - $drvLeak;
     if ($leak > $totalLeak) {
         $totalLeak = $leak;
     }
@@ -92,7 +92,7 @@ function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
                 break;
 
             case 4:
-                insertRows($conn1, $tableName, $noRows2);
+                AE\insertTestRows($conn1, $tableName, $noRows2);
                 $noRows = $noRows1 + $noRows2;
                 $prepared = false;
                 $release =  false;
@@ -127,7 +127,7 @@ function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
         } else {
             trace(" without statement release:\n");
         }
-        $leak = ExecTest($noPasses, $noRows, $start, $end, $tableName, $conn1, $prepared, $release, $phpLeak) - $drvLeak;
+        $leak = execTest($noPasses, $noRows, $start, $end, $tableName, $conn1, $prepared, $release, $phpLeak) - $drvLeak;
         if ($leak > $totalLeak) {
             $totalLeak = $leak;
         }
@@ -135,7 +135,7 @@ function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
 
     sqlsrv_close($conn1);
 
-    $conn2 = connect();
+    $conn2 = AE\connect();
     dropTable($conn2, $tableName);
     sqlsrv_close($conn2);
     setUTF8Data(false);
@@ -147,36 +147,38 @@ function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
     endTest($testName);
 }
 
-function GetConnection()
+function getConnection()
 {
-    include 'MsSetup.inc';
-    $conn = sqlsrv_connect($server, $connectionOptions);
+    $conn = AE\connect();
     return ($conn);
 }
 
-function ExecQuery($conn, $tableName, $prepared)
+function execQuery($conn, $tableName, $prepared)
 {
     $selectQuery = "SELECT * FROM [$tableName]";
     $stmt = null;
 
-    if ($prepared) {
-        $stmt = sqlsrv_prepare($conn, $selectQuery);
+    if (AE\isColEncrypted()){
+        $stmt = AE\executeQuery($conn, $selectQuery);
     } else {
-        $stmt = sqlsrv_query($conn, $selectQuery);
-    }
-    if ($stmt === false) {
-        fatalError("Query execution failed: $selectQuery");
-    }
-    if ($prepared) {
-        if (!sqlsrv_execute($stmt)) {
+        if ($prepared) {
+            $stmt = sqlsrv_prepare($conn, $selectQuery);
+        } else {
+            $stmt = sqlsrv_query($conn, $selectQuery);
+        }
+        if ($stmt === false) {
             fatalError("Query execution failed: $selectQuery");
         }
+        if ($prepared) {
+            if (!sqlsrv_execute($stmt)) {
+                fatalError("Query execution failed: $selectQuery");
+            }
+        }
     }
-
     return ($stmt);
 }
 
-function ExecTest($noPasses, $noRows, $startStep, $endStep, $tableName, $conn, $prepared, $release, $phpLeak)
+function execTest($noPasses, $noRows, $startStep, $endStep, $tableName, $conn, $prepared, $release, $phpLeak)
 {
     $leak = 0;
 
@@ -214,7 +216,7 @@ function ExecTest($noPasses, $noRows, $startStep, $endStep, $tableName, $conn, $
             default:
                 break;
         }
-        $memLeak = RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $i) - $phpLeak;
+        $memLeak = runTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $i) - $phpLeak;
         trace("Driver memory leak: $memLeak bytes\n");
         if ($memLeak > 0) {
             if ($leak <= 0) {
@@ -227,7 +229,7 @@ function ExecTest($noPasses, $noRows, $startStep, $endStep, $tableName, $conn, $
     return ($leak);
 }
 
-function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mode)
+function runTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mode)
 {
     $memStart =  memory_get_usage();
     for ($k = 1; $k <= $noPasses; $k++) {
@@ -243,21 +245,21 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 break;
 
             case 1:    // no release
-                $conn2 = GetConnection();
+                $conn2 = getConnection();
                 sqlsrv_close($conn2);
                 break;
 
             case 2:    // query with no release
-                $stmt = ExecQuery($conn, $tableName, $prepared);
+                $stmt = execQuery($conn, $tableName, $prepared);
                 break;
 
             case 3:    // query with release
-                $stmt = ExecQuery($conn, $tableName, $prepared);
+                $stmt = execQuery($conn, $tableName, $prepared);
                 sqlsrv_free_stmt($stmt);
                 break;
 
             case 4:    // fetch
-                $stmt = ExecQuery($conn, $tableName, $prepared);
+                $stmt = execQuery($conn, $tableName, $prepared);
                 while (sqlsrv_fetch($stmt)) {
                     $rowCount++;
                 }
@@ -270,7 +272,7 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 break;
 
             case 5:    // fetch fields
-                $stmt = ExecQuery($conn, $tableName, $prepared);
+                $stmt = execQuery($conn, $tableName, $prepared);
                 $numFields = sqlsrv_num_fields($stmt);
                 while (sqlsrv_fetch($stmt)) {
                     $rowCount++;
@@ -291,7 +293,7 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 break;
 
             case 6:    // fetch array
-                $stmt = ExecQuery($conn, $tableName, $prepared);
+                $stmt = execQuery($conn, $tableName, $prepared);
                 while (sqlsrv_fetch_array($stmt)) {
                     $rowCount++;
                 }
@@ -304,7 +306,7 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 break;
 
             case 7:    // fetch object
-                $stmt = ExecQuery($conn, $tableName, $prepared);
+                $stmt = execQuery($conn, $tableName, $prepared);
                 while (sqlsrv_fetch_object($stmt)) {
                     $rowCount++;
                 }
@@ -329,21 +331,11 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
     return ($memEnd - $memStart);
 }
 
-
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        MemCheck(20, 10, 15, 1, 7);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    memCheck(20, 10, 15, 1, 7);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

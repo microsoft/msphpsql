@@ -8,25 +8,24 @@ Two types of sequences are explored:
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function Transaction()
+function transaction()
 {
-    include 'MsSetup.inc';
-
     $testName = "Transaction - Execution";
     startTest($testName);
 
     setup();
-    $conn1 = connect();
-    createTable($conn1, $tableName);
+    $tableName = 'TC61test';
+    $conn1 = AE\connect();
+    AE\createTestTable($conn1, $tableName);
 
     $noRows = 10;
-    ExecTransaction($conn1, false, $tableName, $noRows);    // rollback
-    ExecTransaction($conn1, true, $tableName, $noRows); // submit
+    execTransaction($conn1, false, $tableName, $noRows);    // rollback
+    execTransaction($conn1, true, $tableName, $noRows); // submit
 
     dropTable($conn1, $tableName);
 
@@ -35,8 +34,7 @@ function Transaction()
     endTest($testName);
 }
 
-
-function ExecTransaction($conn, $mode, $tableName, $noRows)
+function execTransaction($conn, $mode, $tableName, $noRows)
 {
     if ($mode === true) {
         trace("\nSUBMIT sequence:\n\t");
@@ -44,7 +42,7 @@ function ExecTransaction($conn, $mode, $tableName, $noRows)
         trace("\nROLLBACK sequence:\n\t");
     }
     sqlsrv_begin_transaction($conn);
-    $noRowsInserted = insertRows($conn, $tableName, $noRows);
+    $noRowsInserted = AE\insertTestRows($conn, $tableName, $noRows);
     if ($mode === true) {
         trace("\tTransaction submit...");
         sqlsrv_commit($conn);
@@ -54,7 +52,7 @@ function ExecTransaction($conn, $mode, $tableName, $noRows)
     }
 
     $rowCount = 0;
-    $stmt = selectFromTable($conn, $tableName);
+    $stmt = AE\selectFromTable($conn, $tableName);
     while (sqlsrv_fetch($stmt)) {
         $rowCount++;
     }
@@ -72,20 +70,11 @@ function ExecTransaction($conn, $mode, $tableName, $noRows)
     }
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        Transaction();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    transaction();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--

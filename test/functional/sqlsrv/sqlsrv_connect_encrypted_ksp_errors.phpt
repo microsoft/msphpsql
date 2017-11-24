@@ -5,91 +5,88 @@ Connect using a custom keystore provider with some required inputs missing
 --FILE--
 <?php
 
-    function connect( $server, $connectionInfo )
+    function connect($server, $connectionInfo)
     {
-        $conn = sqlsrv_connect( $server, $connectionInfo );
-        if( $conn === false )
-        {
+        $conn = sqlsrv_connect($server, $connectionInfo);
+        if ($conn === false) {
             echo "Failed to connect.\n";
             $errors = sqlsrv_errors();
-            foreach ( $errors[0] as $key => $error ) 
-            {
-                if( is_string( $key ) )
+            foreach ($errors[0] as $key => $error) {
+                if(is_string($key)) {
                     echo "[$key] => $error\n";
+                }
             }
             echo "\n";
-        }
-        else
-        {
+        } else {
             echo "Connected successfully with ColumnEncryption enabled.\n";
         }
-        
+
         return $conn;
     }
-    
-    sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );  
 
-    require( 'MsSetup.inc' );
-    require( 'AE_Ksp.inc' );
-    
-    $ksp_path = getKSPpath();
+    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-    echo("Connecting... with column encryption\n");
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                             "ColumnEncryption"=>"enabled");
+    require_once('MsHelper.inc');
+    $ksp_path = AE\getKSPpath();
+    $ksp_name = AE\KSP_NAME;
+    $encrypt_key = AE\ENCRYPT_KEY;
 
-    connect( $server, $connectionInfo );
-    
-    echo("Connecting... with an invalid input to CEKeystoreProvider\n");
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                             "ColumnEncryption"=>"enabled", 
-                             "CEKeystoreProvider"=>1);
+    echo "Connecting... with column encryption\n";
+    $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
+                            "ColumnEncryption"=>"enabled");
 
-    connect( $server, $connectionInfo );
+    connect($server, $connectionInfo);
 
-    echo("Connecting... with an empty path\n");
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                             "ColumnEncryption"=>"enabled", 
-                             "CEKeystoreProvider"=>"",
-                             "CEKeystoreName"=>$ksp_name,
-                             "CEKeystoreEncryptKey"=>$encrypt_key);
+    echo "Connecting... with an invalid input to CEKeystoreProvider\n";
+    $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
+                            "ColumnEncryption"=>"enabled",
+                            "CEKeystoreProvider"=>1);
 
-    connect( $server, $connectionInfo );
-    
-    echo("Connecting... without a name\n");
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                             "ColumnEncryption"=>"enabled", 
-                             "CEKeystoreProvider"=>$ksp_path, 
-                             "CEKeystoreEncryptKey"=>$encrypt_key);
+    connect($server, $connectionInfo);
 
-    connect( $server, $connectionInfo );
+    echo "Connecting... with an empty path\n";
+    $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
+                            "ColumnEncryption"=>"enabled",
+                            "CEKeystoreProvider"=>"",
+                            "CEKeystoreName"=>$ksp_name,
+                            "CEKeystoreEncryptKey"=>$encrypt_key);
 
-    echo("Connecting... with an empty name\n");
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                             "ColumnEncryption"=>"enabled", 
-                             "CEKeystoreProvider"=>$ksp_path, 
-                             "CEKeystoreName"=>"",
-                             "CEKeystoreEncryptKey"=>$encrypt_key);
+    connect($server, $connectionInfo);
 
-    connect( $server, $connectionInfo );
+    echo "Connecting... without a name\n";
+    $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
+                            "ColumnEncryption"=>"enabled",
+                            "CEKeystoreProvider"=>$ksp_path,
+                            "CEKeystoreEncryptKey"=>$encrypt_key);
 
-    echo("Connecting... without a key\n");
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                             "ColumnEncryption"=>"enabled", 
-                             "CEKeystoreProvider"=>$ksp_path, 
-                             "CEKeystoreName"=>$ksp_name);
-                             
-    connect( $server, $connectionInfo );
+    connect($server, $connectionInfo);
 
-    echo("Connecting... with all required inputs\n");
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
-                             "ColumnEncryption"=>"enabled", 
-                             "CEKeystoreProvider"=>$ksp_path, 
-                             "CEKeystoreName"=>$ksp_name,
-                             "CEKeystoreEncryptKey"=>$encrypt_key);
-                             
-    connect( $server, $connectionInfo );
-    
+    echo "Connecting... with an empty name\n";
+    $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
+                            "ColumnEncryption"=>"enabled",
+                            "CEKeystoreProvider"=>$ksp_path,
+                            "CEKeystoreName"=>"",
+                            "CEKeystoreEncryptKey"=>$encrypt_key);
+
+    connect($server, $connectionInfo);
+
+    echo "Connecting... without a key\n";
+    $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
+                            "ColumnEncryption"=>"enabled",
+                            "CEKeystoreProvider"=>$ksp_path,
+                            "CEKeystoreName"=>$ksp_name);
+
+    connect($server, $connectionInfo);
+
+    echo "Connecting... with all required inputs\n";
+    $connectionInfo = array("Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd,
+                            "ColumnEncryption"=>"enabled",
+                            "CEKeystoreProvider"=>$ksp_path,
+                            "CEKeystoreName"=>$ksp_name,
+                            "CEKeystoreEncryptKey"=>$encrypt_key);
+
+    connect($server, $connectionInfo);
+
     echo "Done\n";
 ?>
 --EXPECT--

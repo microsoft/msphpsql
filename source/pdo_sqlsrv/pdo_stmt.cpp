@@ -1067,33 +1067,6 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
-        // Return the correct error in case the user calls nextRowset() on a null result set. 
-        // Null means that SQLNumResultCols() returns 0 and SQLRowCount does not return > 0. But first 
-        // check that the statement has been executed and that we are not past the end of a non-null 
-        // result set to make sure the user gets the correct error message. These checks are also 
-        // done in core_sqlsrv_next_result(), but we cannot check for null results there because that
-        // function can be called without calling this one, and SQLSRV_ERROR_NO_FIELDS can then
-        // be triggered incorrectly. 
-        CHECK_CUSTOM_ERROR( !driver_stmt->executed, driver_stmt, SQLSRV_ERROR_STATEMENT_NOT_EXECUTED ) {
-            throw core::CoreException();
-        }
-
-        CHECK_CUSTOM_ERROR( driver_stmt->past_next_result_end, driver_stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END ) {
-            throw core::CoreException();
-        }
-        
-        // Now make sure the result set is not null. 
-        bool has_result = core_sqlsrv_has_any_result( driver_stmt );
-
-        // Note that if fetch_called is false but has_result is true (i.e. the user is calling 
-        // nextRowset() on a non-null result set before calling fetch()), it is handled 
-        // in core_sqlsrv_next_result() below.
-        if( !driver_stmt->fetch_called ) {
-            CHECK_CUSTOM_ERROR( !has_result, driver_stmt, SQLSRV_ERROR_NO_FIELDS ) {
-                throw core::CoreException();
-            }
-        }
-
         core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ) TSRMLS_CC );
 
         // clear the current meta data since the new result will generate new meta data
@@ -1146,9 +1119,19 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 
             // since the param isn't reliable, we don't do anything here
             case PDO_PARAM_EVT_ALLOC:
-                if ( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE && (param->param_type & PDO_PARAM_INPUT_OUTPUT )) {
-                    sqlsrv_stmt* driver_stmt = reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data );
-                    THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED );
+                {
+                    pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>(stmt->driver_data);
+                    if (driver_stmt->conn->ce_option.enabled) {
+                        if (driver_stmt->direct_query) {
+                            THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED);
+                        }
+                        if (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE) {
+                            THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED);
+                        }
+                    }
+                    if (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE && (param->param_type & PDO_PARAM_INPUT_OUTPUT)) {
+                        THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED);
+                    }
                 }
                 break;
             case PDO_PARAM_EVT_FREE:

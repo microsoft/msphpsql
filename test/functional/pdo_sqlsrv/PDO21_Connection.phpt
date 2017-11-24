@@ -6,57 +6,32 @@ Verifies as well that invalid connection attempts fail as expected.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
-
-function ConnectionTest()
-{
-    include 'MsSetup.inc';
-
-    $testName = "PDO Connection";
-    StartTest($testName);
-    
+require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
+try {
     // Invalid connection attempt => errors are expected
-    Trace("Invalid connection attempt (to a non-existing server) ....\n");
-    $conn1 = PDOConnect('PDO', "InvalidServerName", $uid, $pwd, false);
-    if ($conn1)
-    {
+    $serverName="InvalidServerName";
+
+    $dsn = getDSN($serverName, $databaseName);
+    $conn1 = new PDO($dsn, $uid, $pwd, $connectionOptions);
+    if ($conn1) {
         printf("Invalid connection attempt should have failed.\n");
     }
-    $conn1 = null;
-
-
+    unset($conn1);
+} catch (Exception $e) {
+    unset($conn1);
+    echo "Done\n";
+}
+try {
     // Valid connection attempt => no errors are expected
-    Trace("\nValid connection attempt (to $server) ....\n");
-    $conn2 = Connect();
-    $conn2 = null;
-
-    EndTest($testName);
-    
+    $conn2 = connect();
+    unset($conn2);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-    try
-    {
-        ConnectionTest();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-}
-
-Repro();
-
 ?>
 --EXPECT--
-Test "PDO Connection" completed successfully.
-
+Done

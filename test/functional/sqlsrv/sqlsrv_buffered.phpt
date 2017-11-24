@@ -1,46 +1,79 @@
 --TEST--
 Read, Update, Insert from a SQLSRV stream with buffered query
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
 require_once('MsCommon.inc');
 
-$conn = connect();
-if (!$conn) {
-    fatalError("Could not connect");
+function insertOneRow($conn, $tableName)
+{
+    $result = null;
+    if (AE\isColEncrypted()) {
+        $data = array("Field2" => "This is field 2.",
+                      "Field3" => "010203",
+                      "Field4" => "This is field 4.",
+                      "Field5" => "040506",
+                      "Field6" => "This is field 6.",
+                      "Field7" => "This is field 7.");
+        $query = AE\getInsertSqlPlaceholders($tableName, $data);
+
+        $stmt = sqlsrv_prepare($conn, $query, array_values($data), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+    } else {
+        $query = "INSERT INTO $tableName ([Field2], [Field3], [Field4], [Field5], [Field6], [Field7]) VALUES ('This is field 2.', 0x010203, 'This is field 4.', 0x040506, 'This is field 6.', 'This is field 7.' )";
+        $stmt = sqlsrv_prepare($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+    }
+
+    if (!$stmt) {
+        fatalError("insertOneRow: query could not be prepared.\n");
+    }
+    $result = sqlsrv_execute($stmt);
+    if ($result === false) {
+        fatalError("insertOneRow: failed to insert data!\n");
+    }
+    return $stmt;
 }
 
-$query = "IF OBJECT_ID('PhpCustomerTable', 'U') IS NOT NULL DROP TABLE [PhpCustomerTable]";
-$stmt = sqlsrv_prepare($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+function updateRow($conn, $tableName, $updateField, $params)
+{
+    $condField = 'Field7';
+    $condition = 'This is field 7.';
 
+    if (AE\isColEncrypted()) {
+        $query = "UPDATE $tableName SET $updateField=? WHERE $condField = ?";
+        array_push($params, $condition);
+    } else {
+        $query = "UPDATE $tableName SET $updateField=? WHERE $condField = '$condition'";
+    }
+    $stmt = sqlsrv_prepare($conn, $query, $params, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+    if (!$stmt) {
+        fatalError("updateRow: query could not be prepared.\n");
+    }
+    $result = sqlsrv_execute($stmt);
+    if ($result === false) {
+        fatalError("updateRow: failed to update $updateField!\n");
+    }
+    sqlsrv_free_stmt($stmt);
+}
+
+$conn = AE\connect();
+$tableName = 'PhpCustomerTable';
+
+// Create the test table and insert one row
+$columns = array(new AE\ColumnMeta('int', 'Id', 'NOT NULL Identity (100,2) PRIMARY KEY'),
+                 new AE\ColumnMeta('text', 'Field2'),
+                 new AE\ColumnMeta('image', 'Field3'),
+                 new AE\ColumnMeta('ntext', 'Field4'),
+                 new AE\ColumnMeta('varbinary(max)', 'Field5'),
+                 new AE\ColumnMeta('varchar(max)', 'Field6'),
+                 new AE\ColumnMeta('nvarchar(max)', 'Field7'));
+
+$stmt = AE\createTable($conn, $tableName, $columns);
 if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
+    fatalError("Failed to create table for the test\n");
 }
-
-sqlsrv_execute($stmt);
-
-$query = "CREATE TABLE [PhpCustomerTable] ([Id] int NOT NULL Identity (100,2) PRIMARY KEY, [Field2] text, [Field3] image, [Field4] ntext, [Field5] varbinary(max), [Field6] varchar(max), [Field7] nvarchar(max))";
-$stmt = sqlsrv_prepare($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
-
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
-
-sqlsrv_execute($stmt);
-
-$query = "INSERT [PhpCustomerTable] ([Field2], [Field3], [Field4], [Field5], [Field6], [Field7]) VALUES ('This is field 2.', 0x010203, 'This is field 4.', 0x040506, 'This is field 6.', 'This is field 7.' )";
-$stmt = sqlsrv_prepare($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
-
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
-
-sqlsrv_execute($stmt);
+$stmt = insertOneRow($conn, $tableName);
 
 $f2 = fopen('php://memory', 'a');
 fwrite($f2, 'Update field 2.');
@@ -61,88 +94,27 @@ $f7 = fopen('php://memory', 'a');
 fwrite($f7, 'Update field 7.');
 rewind($f7);
 
-
-
-$query = "UPDATE [PhpCustomerTable] SET [Field2]=? WHERE [Field7]='This is field 7.'";
+// Update data in the table
 $params = array(array(&$f2, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_TEXT));
-$stmt = sqlsrv_prepare($conn, $query, $params, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+updateRow($conn, $tableName, 'Field2', $params);
 
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
-
-sqlsrv_execute($stmt);
-sqlsrv_free_stmt($stmt);
-
-$query = "UPDATE [PhpCustomerTable] SET [Field3]=? WHERE [Field7]='This is field 7.'";
 $params = array(array(&$f3, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_IMAGE));
-$stmt = sqlsrv_prepare($conn, $query, $params, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+updateRow($conn, $tableName, 'Field3', $params);
 
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
-
-sqlsrv_execute($stmt);
-sqlsrv_free_stmt($stmt);
-
-$query = "UPDATE [PhpCustomerTable] SET [Field4]=? WHERE [Field7]='This is field 7.'";
 $params = array(array(&$f4, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NTEXT));
-$stmt = sqlsrv_prepare($conn, $query, $params, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+updateRow($conn, $tableName, 'Field4', $params);
 
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
-
-sqlsrv_execute($stmt);
-sqlsrv_free_stmt($stmt);
-
-$query = "UPDATE [PhpCustomerTable] SET [Field5]=? WHERE [Field7]='This is field 7.'";
 $params = array(array(&$f5, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY('max')));
-$stmt = sqlsrv_prepare($conn, $query, $params, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+updateRow($conn, $tableName, 'Field5', $params);
 
-
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
-
-sqlsrv_execute($stmt);
-sqlsrv_free_stmt($stmt);
-
-
-$query = "UPDATE [PhpCustomerTable] SET [Field6]=? WHERE [Field7]='This is field 7.'";
 $params = array(array(&$f6, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR('MAX')));
-$stmt = sqlsrv_prepare($conn, $query, $params, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+updateRow($conn, $tableName, 'Field6', $params);
 
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
-
-sqlsrv_execute($stmt);
-sqlsrv_free_stmt($stmt);
-
-$query = "UPDATE [PhpCustomerTable] SET [Field7]=? WHERE [Field7]='This is field 7.'";
 $params = array(array(&$f7, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NVARCHAR('MAX')));
-$stmt = sqlsrv_prepare($conn, $query, $params, array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+updateRow($conn, $tableName, 'Field7', $params);
 
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
-
-sqlsrv_execute($stmt);
-sqlsrv_free_stmt($stmt);
-
-
-$stmt = sqlsrv_query($conn, "SELECT * FROM [PhpCustomerTable]", array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
-if (!$stmt) {
-    echo "Statement could not be prepared.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
+// Fetch data from the table
+$stmt = AE\executeQueryEx($conn, "SELECT * FROM [PhpCustomerTable]", array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
 sqlsrv_fetch($stmt);
 
 $field = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
@@ -195,7 +167,7 @@ if (!$field) {
     print("$field\n");
 }
 
-sqlsrv_query($conn, "DROP TABLE [PhpCustomerTable]");
+dropTable($conn, $tableName);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);

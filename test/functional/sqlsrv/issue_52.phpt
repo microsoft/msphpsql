@@ -63,6 +63,12 @@ function FetchData($conn, $tableName)
     }
 }
 
+function insertRowEx($conn, $tableName, $dataCols, $dataValues, $dataOptions)
+{
+    $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] ($dataCols) VALUES ($dataValues)", $dataOptions);
+    return (insertCheck($stmt));
+}
+ 
 function PopulateTable($conn, $tableName)
 {
     $dataCols = 'Pagename,URL,Description,Keywords';

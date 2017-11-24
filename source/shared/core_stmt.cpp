@@ -19,6 +19,9 @@
 
 #include "core_sqlsrv.h"
 
+#include <sstream>
+#include <vector>
+
 namespace {
 
 // certain drivers using this layer will call for repeated or out of order field retrievals.  To allow this, we cache the
@@ -60,7 +63,8 @@ struct col_cache {
     }
 };
 
-const int INITIAL_FIELD_STRING_LEN = 256;    // base allocation size when retrieving a string field
+const int INITIAL_FIELD_STRING_LEN = 2048;          // base allocation size when retrieving a string field
+const int INITIAL_AE_FIELD_STRING_LEN = 8000;       // base allocation size when retrieving a string field when AE is enabled
 
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
 const unsigned int UTF8_MIDBYTE_MASK = 0xc0;
@@ -101,8 +105,6 @@ void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned in
 // given a zval and encoding, determine the appropriate sql type, column size, and decimal scale (if appropriate)
 void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding, 
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC );
-void ae_get_sql_type_info( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ SQLSMALLINT direction, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
-                           _Out_ SQLSMALLINT& sql_type, _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC );
 void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
@@ -114,6 +116,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding,
                                         _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits,
                                         _Out_writes_(buffer_len) SQLPOINTER& buffer, _Out_ SQLLEN& buffer_len TSRMLS_DC );
+void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits );
 bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt );
 void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param TSRMLS_DC );
 // send all the stream data 
@@ -135,6 +138,7 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     current_results( NULL ),
     cursor_type( SQL_CURSOR_FORWARD_ONLY ),
     fwd_row_index( -1 ),
+    curr_result_set( 0 ),
     has_rows( false ),
     fetch_called( false ),
     last_field_index( -1 ),
@@ -357,18 +361,18 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     try {
 
     // check is only < because params are 0 based
-    CHECK_CUSTOM_ERROR( param_num >= SQL_SERVER_MAX_PARAMS, stmt, SQLSRV_ERROR_MAX_PARAMS_EXCEEDED, param_num + 1 ) {
+    CHECK_CUSTOM_ERROR( param_num >= SQL_SERVER_MAX_PARAMS, stmt, SQLSRV_ERROR_MAX_PARAMS_EXCEEDED, param_num + 1 ){
         throw core::CoreException();
     }
 
     // resize the statements array of int_ptrs if the parameter isn't already set.
-    if( stmt->param_ind_ptrs.size() < static_cast<size_t>(param_num + 1) ) {
+    if( stmt->param_ind_ptrs.size() < static_cast<size_t>( param_num + 1 )){
         stmt->param_ind_ptrs.resize( param_num + 1, SQL_NULL_DATA );
     }
     SQLLEN& ind_ptr = stmt->param_ind_ptrs[ param_num ];
 
     zval* param_ref = param_z;
-    if ( Z_ISREF_P( param_z ) ) {
+    if( Z_ISREF_P( param_z )){
         ZVAL_DEREF( param_z );
     }
     bool zval_was_null = ( Z_TYPE_P( param_z ) == IS_NULL );
@@ -379,24 +383,24 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     // we always let that match if they want a string back.
     if( direction == SQL_PARAM_INPUT_OUTPUT ) {
         bool match = false;
-        switch( php_out_type ) {
+        switch( php_out_type ){
             case SQLSRV_PHPTYPE_INT:
-                if( zval_was_null || zval_was_bool ) {
+                if( zval_was_null || zval_was_bool ){
                     convert_to_long( param_z );
                 }
                 if( zval_was_long ){
                     convert_to_string( param_z );
-                    if ( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY ) {
+                    if( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY ){
                         encoding = SQLSRV_ENCODING_SYSTEM;
                     }
                     match = Z_TYPE_P( param_z ) == IS_STRING;
                 }
-                else {
+                else{
                     match = Z_TYPE_P( param_z ) == IS_LONG;
                 }
                 break;
             case SQLSRV_PHPTYPE_FLOAT:
-                if( zval_was_null ) {
+                if( zval_was_null ){
                     convert_to_double( param_z );
                 }
                 match = Z_TYPE_P( param_z ) == IS_DOUBLE;
@@ -415,23 +419,30 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 SQLSRV_ASSERT( false, "Unknown SQLSRV_PHPTYPE_* constant given." );
                 break;
         }
-        CHECK_CUSTOM_ERROR( !match, stmt, SQLSRV_ERROR_INPUT_OUTPUT_PARAM_TYPE_MATCH, param_num + 1 ) {
+        CHECK_CUSTOM_ERROR( !match, stmt, SQLSRV_ERROR_INPUT_OUTPUT_PARAM_TYPE_MATCH, param_num + 1 ){
             throw core::CoreException();
         }
     }
 
-    // if it's an output parameter and the user asks for a certain type, we have to convert the zval to that type so
-    // when the buffer is filled, the type is correct
-    if( direction == SQL_PARAM_OUTPUT ) {
+    // If the user specifies a certain type for an output parameter, we have to convert the zval 
+    // to that type so that when the buffer is filled, the type is correct. But first,
+    // should check if a LOB type is specified. 
+    CHECK_CUSTOM_ERROR( direction != SQL_PARAM_INPUT && ( sql_type == SQL_LONGVARCHAR 
+                        || sql_type == SQL_WLONGVARCHAR || sql_type == SQL_LONGVARBINARY ), 
+                        stmt, SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED ){
+        throw core::CoreException();
+    }
+
+    if( direction == SQL_PARAM_OUTPUT ){
         switch( php_out_type ) {
             case SQLSRV_PHPTYPE_INT:
                 if( zval_was_long ){
                     convert_to_string( param_z );
-                    if ( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY ) {
+                    if( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY ){
                         encoding = SQLSRV_ENCODING_SYSTEM;
                     }
                 }
-                else {
+                else{
                     convert_to_long( param_z );
                 }
                 break;
@@ -456,20 +467,25 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                   ( encoding == SQLSRV_ENCODING_SYSTEM || encoding == SQLSRV_ENCODING_UTF8 || 
                     encoding == SQLSRV_ENCODING_BINARY ), "core_sqlsrv_bind_param: invalid encoding" );
 
-    if ( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE )) {
-        ae_get_sql_type_info( stmt, param_num, direction, param_z, encoding, sql_type, column_size, decimal_digits TSRMLS_CC );
+    if( stmt->conn->ce_option.enabled && ( sql_type == SQL_UNKNOWN_TYPE || column_size == SQLSRV_UNKNOWN_SIZE )){
+        // use the meta data only if the user has not specified the sql type or column size
+        SQLSRV_ASSERT( param_num < stmt->param_descriptions.size(), "Invalid param_num passed in core_sqlsrv_bind_param!" );
+        sql_type = stmt->param_descriptions[param_num].get_sql_type();
+        column_size = stmt->param_descriptions[param_num].get_column_size();
+        decimal_digits = stmt->param_descriptions[param_num].get_decimal_digits();
+
         // change long to double if the sql type is decimal
-        if ( sql_type == SQL_DECIMAL && Z_TYPE_P( param_z ) == IS_LONG )
-            convert_to_double( param_z );
+        if(( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC ) && Z_TYPE_P(param_z) == IS_LONG )
+                convert_to_double( param_z );
     }
-    else {
+    else{
         // if the sql type is unknown, then set the default based on the PHP type passed in
-        if ( sql_type == SQL_UNKNOWN_TYPE ) {
+        if( sql_type == SQL_UNKNOWN_TYPE ){
             default_sql_type( stmt, param_num, param_z, encoding, sql_type TSRMLS_CC );
         }
 
         // if the size is unknown, then set the default based on the PHP type passed in
-        if ( column_size == SQLSRV_UNKNOWN_SIZE ) {
+        if( column_size == SQLSRV_UNKNOWN_SIZE ){
             default_sql_size_and_scale( stmt, static_cast<unsigned int>(param_num), param_z, encoding, column_size, decimal_digits TSRMLS_CC );
         }
     }
@@ -477,7 +493,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     c_type = default_c_type( stmt, param_num, param_z, encoding TSRMLS_CC );
 
     // set the buffer based on the PHP parameter type
-    switch( Z_TYPE_P( param_z )) {
+    switch( Z_TYPE_P( param_z )){
 
         case IS_NULL:
             {
@@ -491,12 +507,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         case IS_FALSE:
         case IS_LONG:
             {	
-				// if it is boolean, set the lval to 0 or 1
-				convert_to_long( param_z );
+                // if it is boolean, set the lval to 0 or 1
+                convert_to_long( param_z );
                 buffer = &param_z->value;
                 buffer_len = sizeof( Z_LVAL_P( param_z ));
                 ind_ptr = buffer_len;
-                if( direction != SQL_PARAM_INPUT ) {
+                if( direction != SQL_PARAM_INPUT ){
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
 					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), zval_was_bool );
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
@@ -508,7 +524,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 buffer = &param_z->value;
 				buffer_len = sizeof( Z_DVAL_P( param_z ));
                 ind_ptr = buffer_len;
-                if( direction != SQL_PARAM_INPUT ) {
+                if( direction != SQL_PARAM_INPUT ){
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
 					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), false );
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
@@ -516,82 +532,89 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             }
             break;
         case IS_STRING:
-            buffer = Z_STRVAL_P( param_z );
-            buffer_len = Z_STRLEN_P( param_z );
-            // if the encoding is UTF-8, translate from UTF-8 to UTF-16 (the type variables should have already been adjusted)
-            if( direction == SQL_PARAM_INPUT && encoding == CP_UTF8 ) {
-
-                zval wbuffer_z;
-                ZVAL_NULL( &wbuffer_z );
-
-                bool converted = convert_input_param_to_utf16( param_z, &wbuffer_z );
-                CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, 
-                                    param_num + 1, get_last_error_message() ) {
-                    throw core::CoreException();
+            {
+                if ( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC ) {
+                    adjustInputPrecision( param_z, decimal_digits );
                 }
-                buffer = Z_STRVAL_P( &wbuffer_z );
-                buffer_len = Z_STRLEN_P( &wbuffer_z );
-                core::sqlsrv_add_index_zval(*stmt, &(stmt->param_input_strings), param_num, &wbuffer_z TSRMLS_CC);
-            }
-            ind_ptr = buffer_len;
-            if( direction != SQL_PARAM_INPUT ) {
-				// PHP 5.4 added interned strings, so since we obviously want to change that string here in some fashion,
-				// we reallocate the string if it's interned
-				if ( ZSTR_IS_INTERNED( Z_STR_P( param_z ))) {
-					core::sqlsrv_zval_stringl( param_z, static_cast<const char*>(buffer), buffer_len );
-					buffer = Z_STRVAL_P( param_z );
-					buffer_len = Z_STRLEN_P( param_z );
-				}
-				
-                // if it's a UTF-8 input output parameter (signified by the C type being SQL_C_WCHAR)
-                // or if the PHP type is a binary encoded string with a N(VAR)CHAR/NTEXTSQL type,
-                // convert it to wchar first
-                if( direction == SQL_PARAM_INPUT_OUTPUT && 
-                    ( c_type == SQL_C_WCHAR || 
-                     ( c_type == SQL_C_BINARY && 
-                      ( sql_type == SQL_WCHAR || 
-                        sql_type == SQL_WVARCHAR ||
-                        sql_type == SQL_WLONGVARCHAR )))) {
 
-                    bool converted = convert_input_param_to_utf16( param_z, param_z );
-                    CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, 
-                                        param_num + 1, get_last_error_message() ) {
+                buffer = Z_STRVAL_P( param_z );
+                buffer_len = Z_STRLEN_P( param_z );
+                
+                // if the encoding is UTF-8, translate from UTF-8 to UTF-16 (the type variables should have already been adjusted)
+                if( direction == SQL_PARAM_INPUT && encoding == CP_UTF8 ){
+
+                    zval wbuffer_z;
+                    ZVAL_NULL( &wbuffer_z );
+
+                    bool converted = convert_input_param_to_utf16( param_z, &wbuffer_z );
+                    CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE,
+                                        param_num + 1, get_last_error_message() ){
                         throw core::CoreException();
                     }
-                    buffer = Z_STRVAL_P( param_z );
-                    buffer_len = Z_STRLEN_P( param_z );
-                    ind_ptr = buffer_len;
+                    buffer = Z_STRVAL_P( &wbuffer_z );
+                    buffer_len = Z_STRLEN_P( &wbuffer_z );
+                    core::sqlsrv_add_index_zval( *stmt, &( stmt->param_input_strings ), param_num, &wbuffer_z TSRMLS_CC );
                 }
+                ind_ptr = buffer_len;
+                if( direction != SQL_PARAM_INPUT ){
+                    // PHP 5.4 added interned strings, so since we obviously want to change that string here in some fashion,
+                    // we reallocate the string if it's interned
+                    if( ZSTR_IS_INTERNED( Z_STR_P( param_z ))){
+                        core::sqlsrv_zval_stringl( param_z, static_cast<const char*>(buffer), buffer_len );
+                        buffer = Z_STRVAL_P( param_z );
+                        buffer_len = Z_STRLEN_P( param_z );
+                    }
 
-                // since this is an output string, assure there is enough space to hold the requested size and
-                // set all the variables necessary (param_z, buffer, buffer_len, and ind_ptr)
-                resize_output_buffer_if_necessary( stmt, param_z, param_num, encoding, c_type, sql_type, column_size, decimal_digits, 
-                                                   buffer, buffer_len TSRMLS_CC );
+                    // if it's a UTF-8 input output parameter (signified by the C type being SQL_C_WCHAR)
+                    // or if the PHP type is a binary encoded string with a N(VAR)CHAR/NTEXTSQL type,
+                    // convert it to wchar first
+                    if( direction == SQL_PARAM_INPUT_OUTPUT &&
+                        ( c_type == SQL_C_WCHAR ||
+                        ( c_type == SQL_C_BINARY &&
+                          ( sql_type == SQL_WCHAR ||
+                            sql_type == SQL_WVARCHAR ||
+                            sql_type == SQL_WLONGVARCHAR )))){
 
-                // save the parameter to be adjusted and/or converted after the results are processed
-                sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ), zval_was_long );
+                        bool converted = convert_input_param_to_utf16( param_z, param_z );
+                        CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE,
+                            param_num + 1, get_last_error_message() ){
+                            throw core::CoreException();
+                        }
+                        buffer = Z_STRVAL_P( param_z );
+                        buffer_len = Z_STRLEN_P( param_z );
+                        ind_ptr = buffer_len;
+                    }
 
-                save_output_param_for_later( stmt, output_param TSRMLS_CC );
+                    // since this is an output string, assure there is enough space to hold the requested size and
+                    // set all the variables necessary (param_z, buffer, buffer_len, and ind_ptr)
+                    resize_output_buffer_if_necessary( stmt, param_z, param_num, encoding, c_type, sql_type, column_size, decimal_digits,
+                        buffer, buffer_len TSRMLS_CC );
 
-                // For output parameters, if we set the column_size to be same as the buffer_len, 
-                // then if there is a truncation due to the data coming from the server being 
-                // greater than the column_size, we don't get any truncation error. In order to
-                // avoid this silent truncation, we set the column_size to be "MAX" size for 
-                // string types. This will guarantee that there is no silent truncation for 
-                // output parameters.
-                // if column encryption is enabled, at this point the correct column size has been set by SQLDescribeParam
-                if( direction == SQL_PARAM_OUTPUT && !stmt->conn->ce_option.enabled ) {
-                    
-                    switch( sql_type ) {
+                    // save the parameter to be adjusted and/or converted after the results are processed
+                    sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ), zval_was_long );
+
+                    save_output_param_for_later( stmt, output_param TSRMLS_CC );
+
+                    // For output parameters, if we set the column_size to be same as the buffer_len, 
+                    // then if there is a truncation due to the data coming from the server being 
+                    // greater than the column_size, we don't get any truncation error. In order to
+                    // avoid this silent truncation, we set the column_size to be "MAX" size for 
+                    // string types. This will guarantee that there is no silent truncation for 
+                    // output parameters.
+                    // if column encryption is enabled, at this point the correct column size has been set by SQLDescribeParam
+                    if( direction == SQL_PARAM_OUTPUT && !stmt->conn->ce_option.enabled ){
+
+                        switch( sql_type ){
 
                         case SQL_VARBINARY:
                         case SQL_VARCHAR:
-                        case SQL_WVARCHAR: 
+                        case SQL_WVARCHAR:
                             column_size = SQL_SS_LENGTH_UNLIMITED;
                             break;
 
                         default:
                             break;
+                        }
                     }
                 }
             }
@@ -624,36 +647,36 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
          
             zend_class_entry *class_entry = Z_OBJCE_P( param_z TSRMLS_CC );
 
-            while( class_entry != NULL ) {
+            while( class_entry != NULL ){
                 SQLSRV_ASSERT( class_entry->name != NULL, "core_sqlsrv_bind_param: class_entry->name is NULL." );
                 if( class_entry->name->len == DateTime::DATETIME_CLASS_NAME_LEN && class_entry->name != NULL && 
-                    stricmp( class_entry->name->val, DateTime::DATETIME_CLASS_NAME ) == 0 ) {
+                    stricmp( class_entry->name->val, DateTime::DATETIME_CLASS_NAME ) == 0 ){
                     valid_class_name_found = true;
                     break;
                 }
 
-                else {
+                else{
 
                     // Check the parent 
                     class_entry = class_entry->parent;
                 }
             }
 
-            CHECK_CUSTOM_ERROR( !valid_class_name_found, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
+            CHECK_CUSTOM_ERROR( !valid_class_name_found, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ){
                 throw core::CoreException();
             }
             
             // if the user specifies the 'date' sql type, giving it the normal format will cause a 'date overflow error'
             // meaning there is too much information in the character string.  If the user specifies the 'datetimeoffset'
             // sql type, it lacks the timezone.
-            if( sql_type == SQL_SS_TIMESTAMPOFFSET ) {
+            if( sql_type == SQL_SS_TIMESTAMPOFFSET ){
 				core::sqlsrv_zval_stringl( &format_z, const_cast<char*>( DateTime::DATETIMEOFFSET_FORMAT ),
                               DateTime::DATETIMEOFFSET_FORMAT_LEN );
             }
-            else if( sql_type == SQL_TYPE_DATE ) {
+            else if( sql_type == SQL_TYPE_DATE ){
 				core::sqlsrv_zval_stringl( &format_z, const_cast<char*>( DateTime::DATE_FORMAT ), DateTime::DATE_FORMAT_LEN );
             }
-            else {
+            else{
 				core::sqlsrv_zval_stringl( &format_z, const_cast<char*>( DateTime::DATETIME_FORMAT ), DateTime::DATETIME_FORMAT_LEN );
             }
             // call the DateTime::format member function to convert the object to a string that SQL Server understands
@@ -664,12 +687,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             int zr = call_user_function( EG( function_table ), param_z, &function_z, &buffer_z, 1, params TSRMLS_CC );
 			zend_string_release( Z_STR( format_z ));
 			zend_string_release( Z_STR( function_z ));
-            CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
+            CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ){
                 throw core::CoreException();
             }
             buffer = Z_STRVAL( buffer_z );
             zr = add_next_index_zval( &( stmt->param_datetime_buffers ), &buffer_z );
-            CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ) {
+            CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_num + 1 ){
                 throw core::CoreException();
             }
             buffer_len = Z_STRLEN( buffer_z ) - 1;
@@ -685,7 +708,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             break;
     }
 
-    if( zval_was_null ) {
+    if( zval_was_null ){
         ind_ptr = SQL_NULL_DATA;
     }
 
@@ -693,13 +716,13 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 		c_type, sql_type, column_size, decimal_digits, buffer, buffer_len, &ind_ptr TSRMLS_CC );
     if ( stmt->conn->ce_option.enabled && sql_type == SQL_TYPE_TIMESTAMP )
     {
-        if ( decimal_digits == 3 )
+        if( decimal_digits == 3 )
             core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, 0 );
         else if (decimal_digits == 0)
             core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_SMALLDATETIME, 0 );
     }
     }
-    catch( core::CoreException& e ) {
+    catch( core::CoreException& e ){
         stmt->free_param_data( TSRMLS_C );
         SQLFreeStmt( stmt->handle(), SQL_RESET_PARAMS );
         throw e;
@@ -1098,9 +1121,13 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
 
             // mark we are past the end of all results
             stmt->past_next_result_end = true;
+
+            // reset the current active result set
+            stmt->curr_result_set = 0;
             return;
         }
 
+        stmt->curr_result_set++;
         stmt->new_result_set( TSRMLS_C );
     }
     catch( core::CoreException& e ) {
@@ -2039,13 +2066,6 @@ void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned in
     }
 }
 
-void ae_get_sql_type_info( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ SQLSMALLINT direction, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
-                           _Out_ SQLSMALLINT& sql_type, _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC )
-{
-    SQLSMALLINT Nullable;
-    core::SQLDescribeParam( stmt, paramno + 1, &sql_type, &column_size, &decimal_digits, &Nullable );
-}
-
 void col_cache_dtor( _Inout_ zval* data_z )
 {
     col_cache* cache = static_cast<col_cache*>( Z_PTR_P( data_z ));
@@ -2196,6 +2216,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
     SQLLEN field_len_temp = 0;
     SQLLEN sql_display_size = 0;
     char* field_value_temp = NULL;
+    unsigned int intial_field_len = INITIAL_FIELD_STRING_LEN; 
 
     try {
 
@@ -2222,6 +2243,11 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             break;
         }
 
+        if( stmt->conn->ce_option.enabled ) {
+            // when AE is enabled, increase the intial field len 
+            intial_field_len = INITIAL_AE_FIELD_STRING_LEN;
+        } 
+
         col_cache* cached = NULL;
         if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
             sql_field_type = cached->sql_type;
@@ -2242,7 +2268,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
         if( sql_display_size == 0 || sql_display_size == INT_MAX ||
             sql_display_size == INT_MAX >> 1 || sql_display_size == UINT_MAX - 1 ) {
             
-            field_len_temp = INITIAL_FIELD_STRING_LEN;
+            field_len_temp = intial_field_len;
 
             SQLLEN initiallen = field_len_temp + extra;
 
@@ -2283,7 +2309,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                     if( field_len_temp == SQL_NO_TOTAL ) {
 
                         // reset the field_len_temp
-                        field_len_temp = INITIAL_FIELD_STRING_LEN;
+                        field_len_temp = intial_field_len;
 
                         do {
                             SQLLEN initial_field_len = field_len_temp;
@@ -2338,14 +2364,14 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                                 &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
                         }
                         else {
-                            // We have already recieved INITIAL_FIELD_STRING_LEN size data.
-                            field_len_temp -= INITIAL_FIELD_STRING_LEN;
+                            // We have already recieved intial_field_len size data.
+                            field_len_temp -= intial_field_len;
 
                             // Get the rest of the data.
-                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + INITIAL_FIELD_STRING_LEN,
+                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + intial_field_len,
                                 field_len_temp + extra, &dummy_field_len,
                                 true /*handle_warning*/ TSRMLS_CC );
-                            field_len_temp += INITIAL_FIELD_STRING_LEN;
+                            field_len_temp += intial_field_len;
                         }
 
                         if( dummy_field_len == SQL_NULL_DATA ) {
@@ -2615,6 +2641,12 @@ bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt ) {
         // close and reopen the cursor
         core::SQLCloseCursor(stmt->current_results->odbc);
         core::SQLExecute(stmt);
+
+        // advance to the previous active result set
+        for (int j = 0; j < stmt->curr_result_set; j++) {
+            core::SQLMoreResults(stmt);
+        }
+
         // FETCH_NEXT until the cursor reaches the row that it was at
         for (int i = 0; i <= stmt->fwd_row_index; i++) {
             core::SQLFetchScroll(stmt->current_results->odbc, SQL_FETCH_NEXT, 0);
@@ -2622,6 +2654,154 @@ bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt ) {
         return true;
     }
     return false;
+}
+
+void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits ) {
+    size_t maxDecimalPrecision = 38;
+    // maxDecimalStrLen is the maximum length of a stringified decimal number
+    // 6 is derived from: 1 for '.'; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
+    //                    1 for sign of scientific exponent; 2 for length of scientific exponent
+    // if the length is greater than maxDecimalStrLen, do not change the string
+    size_t maxDecimalStrLen = maxDecimalPrecision + 6;
+    if (Z_STRLEN_P(param_z) > maxDecimalStrLen) {
+        return;
+    }
+    std::vector<size_t> digits;
+    char* ptr = ZSTR_VAL( Z_STR_P( param_z ));
+    bool isNeg = false;
+    bool isScientificNot = false;
+    char scientificChar = ' ';
+    short scientificExp = 0;
+    if( strchr( ptr, 'e' ) || strchr( ptr, 'E' )){
+        isScientificNot = true;
+    }
+    // parse digits in param_z into the vector digits
+    if( *ptr == '+' || *ptr == '-' ){
+        if( *ptr == '-' ){
+            isNeg = true;
+        }
+        ptr++;
+    }
+    short numInt = 0;
+    short numDec = 0;
+    while( isdigit( *ptr )){
+        digits.push_back( *ptr - '0' );
+        ptr++;
+        numInt++;
+    }
+    if( *ptr == '.' ){
+        ptr++;
+        if( !isScientificNot ){
+            while( isdigit( *ptr ) && numDec < decimal_digits + 1 ){
+                digits.push_back( *ptr - '0' );
+                ptr++;
+                numDec++;
+            }
+            // make sure the rest of the number are digits
+            while( isdigit( *ptr )){
+                ptr++;
+            }
+        }
+        else {
+            while( isdigit( *ptr )){
+                digits.push_back( *ptr - '0' );
+                ptr++;
+                numDec++;
+            }
+        }
+    }
+    if( isScientificNot ){
+        if ( *ptr == 'e' || *ptr == 'E' ) {
+            scientificChar = *ptr;
+        }
+        ptr++;
+        bool isNegExp = false;
+        if( *ptr == '+' || *ptr == '-' ){
+            if( *ptr == '-' ){
+                isNegExp = true;
+            }
+            ptr++;
+        }
+        while( isdigit( *ptr )){
+            scientificExp = scientificExp * 10 + ( *ptr - '0' );
+            ptr++;
+        }
+        SQLSRV_ASSERT( scientificExp <= maxDecimalPrecision, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
+        if( isNegExp ){
+            scientificExp = scientificExp * -1;
+        }
+    }
+    // if ptr is not pointing to a null terminator at this point, that means the decimal string input is invalid
+    // do not change the string and let SQL Server handle the invalid decimal string
+    if ( *ptr != '\0' ) {
+        return;
+    }
+    // if number of decimal is less than the exponent, that means the number is a whole number, so no need to adjust the precision
+    if( numDec > scientificExp ){
+        int decToRemove = numDec - scientificExp - decimal_digits;
+        if( decToRemove > 0 ){
+            bool carryOver = false;
+            short backInd = 0;
+            // pop digits from the vector until there is only 1 more decimal place than required decimal_digits
+            while( decToRemove != 1 && !digits.empty() ){
+                digits.pop_back();
+                decToRemove--;
+            }
+            if( !digits.empty() ){
+                // check if the last digit to be popped is greater than 5, if so, the digit before it needs to round up
+                carryOver = digits.back() >= 5;
+                digits.pop_back();
+                backInd = digits.size() - 1;
+                // round up from the end until no more carry over
+                while( carryOver && backInd >= 0 ){
+                    if( digits.at( backInd ) != 9 ){
+                        digits.at( backInd )++;
+                        carryOver = false;
+                    }
+                    else{
+                        digits.at( backInd ) = 0;
+                    }
+                    backInd--;
+                }
+            }
+            std::ostringstream oss;
+            if( isNeg ){
+                oss << '-';
+            }
+            // insert 1 if carry over persist all the way to the beginning of the number 
+            if( carryOver && backInd == -1 ){
+                oss << 1;
+            }
+            if( digits.empty() && !carryOver ){
+                oss << 0;
+            }
+            else{
+                short i = 0;
+                for( i; i < numInt && i < digits.size(); i++ ){
+                    oss << digits[i];
+                }
+                // fill string with 0 if the number of digits in digits is less then numInt
+                if( i < numInt ){
+                    for( i; i < numInt; i++ ){
+                        oss << 0;
+                    }
+                }
+                if( numInt < digits.size() ){
+                    oss << '.';
+                    for( i; i < digits.size(); i++ ){
+                        oss << digits[i];
+                    }
+                }
+                if( scientificExp != 0 ){
+                    oss << scientificChar << std::to_string( scientificExp );
+                }
+            }
+            std::string str = oss.str();
+            zend_string* zstr = zend_string_init( str.c_str(), str.length(), 0 );
+            zend_string_release( Z_STR_P( param_z ));
+            ZVAL_NEW_STR( param_z, zstr );
+        }
+    }
 }
 
 // output parameters have their reference count incremented so that they do not disappear

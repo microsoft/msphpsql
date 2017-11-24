@@ -12,7 +12,9 @@ require_once('AEData.inc');
 $dataTypes = array( "bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5)", "numeric(10,5)", "float", "real" );
 $conn = AE\connect();
 
-foreach ($dataTypes as $dataType) {
+$count = count($dataTypes);
+for ($i = 0; $i < $count; $i++) {
+    $dataType = $dataTypes[$i];
     echo "\nTesting $dataType: \n";
 
     // create table
@@ -23,7 +25,12 @@ foreach ($dataTypes as $dataType) {
     // insert a row
     $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
-    $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
+    // convert input values to strings for decimals and numerics
+    if ($i == 5 || $i == 6) {
+        $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => (string) $inputValues[0], $colMetaArr[1]->colName => (string) $inputValues[1] ), $r);
+    } else {
+        $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
+    }
     if ($r === false) {
         is_incompatible_types_error($dataType, "default type");
     } else {

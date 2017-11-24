@@ -310,7 +310,7 @@ inline void pdo_reset_dbh_error( _Inout_ pdo_dbh_t* dbh TSRMLS_DC )
     // release the last statement from the dbh so that error handling won't have a statement passed to it
     if( dbh->query_stmt ) {
         dbh->query_stmt = NULL;
-        zend_objects_store_del( Z_OBJ_P(&dbh->query_stmt_zval TSRMLS_CC) );
+        zval_ptr_dtor( &dbh->query_stmt_zval );
     }
 
     // if the driver isn't valid, just return (PDO calls close sometimes more than once?)
@@ -393,7 +393,9 @@ enum PDO_ERROR_CODES {
     PDO_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE,
     PDO_SQLSRV_ERROR_INVALID_CURSOR_WITH_SCROLL_TYPE,
     PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
-    PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION
+    PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
+    PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED,
+    PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED
 };
 
 extern pdo_error PDO_ERRORS[];

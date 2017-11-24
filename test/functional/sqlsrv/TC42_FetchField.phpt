@@ -6,43 +6,43 @@ retrieving fields from a table including rows with all supported SQL types (28 t
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-function FetchFields()
+function fetchFields()
 {
-    include 'MsSetup.inc';
-
     $testName = "Fetch - Field";
     startTest($testName);
 
     setup();
+    $tableName = 'TC42test';
+
     if (! isWindows()) {
-        $conn1 = connect(array( 'CharacterSet'=>'UTF-8' ));
+        $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
     } else {
-        $conn1 = connect();
+        $conn1 = AE\connect();
     }
 
-    createTable($conn1, $tableName);
+    AE\createTestTable($conn1, $tableName);
 
     $noRows = 10;
-    $noRowsInserted = insertRows($conn1, $tableName, $noRows);
+    $noRowsInserted = AE\insertTestRows($conn1, $tableName, $noRows);
 
-    $stmt1 = selectFromTable($conn1, $tableName);
+    $stmt1 = AE\selectFromTable($conn1, $tableName);
     $numFields = sqlsrv_num_fields($stmt1);
 
     trace("Retrieving $noRowsInserted rows with $numFields fields each ...");
     for ($i = 0; $i < $noRowsInserted; $i++) {
         $row = sqlsrv_fetch($stmt1);
         if ($row === false) {
-            fatalError("Row $i is missing");
+            fatalError("Row $i is missing", true);
         }
         for ($j = 0; $j < $numFields; $j++) {
             $fld = sqlsrv_get_field($stmt1, $j);
             if ($fld === false) {
-                fatalError("Field $j of Row $i is missing\n");
+                fatalError("Field $j of Row $i is missing\n", true);
             }
         }
     }
@@ -56,20 +56,11 @@ function FetchFields()
     endTest($testName);
 }
 
-//--------------------------------------------------------------------
-// repro
-//
-//--------------------------------------------------------------------
-function repro()
-{
-    try {
-        FetchFields();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+try {
+    fetchFields();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-repro();
 
 ?>
 --EXPECT--
