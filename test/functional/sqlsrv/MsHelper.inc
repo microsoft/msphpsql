@@ -253,7 +253,7 @@ function getDefaultColname($dataType)
  */
 function getInsertSqlComplete($tbname, $inputs)
 {
-    $colStr = "INSERT INTO $tbname (";
+    $colStr = "INSERT INTO [$tbname] (";
     $valStr = "VALUES (";
     if (empty($inputs)) {
         echo "getInsertSqlComplete: inputs for inserting a row cannot be empty.\n";
@@ -282,7 +282,7 @@ function getInsertSqlComplete($tbname, $inputs)
  */
 function getInsertSqlPlaceholders($tbname, $inputs)
 {
-    $colStr = "INSERT INTO $tbname (";
+    $colStr = "INSERT INTO [$tbname] (";
     $valStr = "VALUES (";
     if (empty($inputs)) {
         echo "getInsertSqlPlaceholders: inputs for inserting a row cannot be empty.\n";
@@ -304,7 +304,7 @@ function getInsertSqlPlaceholders($tbname, $inputs)
  */
 function getCallProcSqlPlaceholders($spname, $num)
 {
-    $callStr = "{CALL $spname (";
+    $callStr = "{CALL [$spname] (";
     $callStr .= getSeqPlaceholders($num) . ")} ";
     return $callStr;
 }
@@ -396,13 +396,13 @@ function connect($options = array(), $disableCE = false)
 function createTable($conn, $tbname, $columnMetaArr)
 {
     require_once("MsCommon.inc");
-    dropTable($conn, $tbname);
+    dropTable($conn, $tbname, true);
     $colDef = "";
     foreach ($columnMetaArr as $meta) {
         $colDef = $colDef . $meta->getColDef() . ", ";
     }
     $colDef = rtrim($colDef, ", ");
-    $createSql = "CREATE TABLE $tbname ( $colDef )";
+    $createSql = "CREATE TABLE [$tbname] ( $colDef )";
     return sqlsrv_query($conn, $createSql);
 }
 
@@ -551,6 +551,38 @@ function executeQueryEx($conn, $sql, $options)
         fatalError("executeQueryEx: failed to run query \'$sql\'!");
     }
 
+    return $stmt;
+}
+
+/**
+ * Similar to executeQuery() but with params for binding and 
+ * whether this query is expected to fail
+ * @return resource sqlsrv statement upon success or false otherwise
+ */
+function executeQueryParams($conn, $sql, $params, $expectedToFail = false, $message = '')
+{
+    $res = true;
+    if (isColEncrypted()) {
+        $stmt = sqlsrv_prepare($conn, $sql, $params);
+        if ($stmt) {
+            $res = sqlsrv_execute($stmt);
+        }
+    } else {
+        $stmt = sqlsrv_query($conn, $sql, $params);
+    }
+    
+    if ($stmt === false || !$res ) {
+        if (! $expectedToFail) {
+            fatalError($message);
+        } else {
+            print_r(sqlsrv_errors());
+        }
+    } else {
+        if ($expectedToFail) {
+            fatalError($message);
+        } 
+    }
+    
     return $stmt;
 }
 

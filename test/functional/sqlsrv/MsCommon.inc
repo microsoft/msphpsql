@@ -269,9 +269,13 @@ function createUniqueIndexEx($conn, $tableName, $tableIndex, $colIndex)
     trace(" completed successfully.\n");
 }
 
-function dropTable($conn, $tableName)
+function dropTable($conn, $tableName, $check = false)
 {
-    $stmt = sqlsrv_query($conn, "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName");
+    if ($check) {
+        $stmt = sqlsrv_query($conn, "IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE [$tableName]");
+    } else {
+        $stmt = sqlsrv_query($conn, "DROP TABLE [$tableName]");
+    }
     if ($stmt === false) {
     } else {
         sqlsrv_free_stmt($stmt);
@@ -359,7 +363,7 @@ function createProc($conn, $procName, $procArgs, $procCode)
 
 function dropProc($conn, $procName)
 {
-    $stmt = sqlsrv_query($conn, "DROP PROC [$procName]");
+    $stmt = sqlsrv_query($conn, "IF OBJECT_ID('". $procName ."', 'P') IS NOT NULL DROP PROCEDURE [$procName]");
     if ($stmt === false) {
     } else {
         sqlsrv_free_stmt($stmt);
@@ -462,6 +466,19 @@ function isLocaleSupported()
     $msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
     if (explode(".", $msodbcsql_ver)[0] < 17) {
         return false;
+    }
+}
+
+function verifyError($error, $state, $message)
+{
+    if ($error['SQLSTATE'] !== $state) {
+        echo $error['SQLSTATE'] . PHP_EOL;
+        fatalError("Unexpected SQL state\n");
+    }
+    
+    if (strpos($error['message'], $message) === false) {
+        echo $error['message'] . PHP_EOL;
+        fatalError("Unexpected error message\n");
     }
 }
 

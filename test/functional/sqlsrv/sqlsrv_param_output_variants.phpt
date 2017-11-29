@@ -1,15 +1,20 @@
 --TEST--
 Test parametrized insert and sql_variant as an output parameter.
 --DESCRIPTION--
-sql_variant is not supported for output parameters, this test checks the error handling in this case
+Normally, sql_variant is not supported for output parameters, this test checks the error handling in this case. However, when Always Encrypted is enabled, we are able to bind output parameters with prepared
+statements.
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
 
-function CreateVariantTable($conn, $tableName)
+function createVariantTable($conn, $tableName)
 {
-    $stmt = sqlsrv_query($conn, "CREATE TABLE [$tableName] ([c1_int] int, [c2_variant] sql_variant)");
-    if (! $stmt) {
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('sql_variant', 'c2_variant'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
         fatalError("Failed to create table.\n");
     }
 
@@ -25,14 +30,28 @@ function CreateVariantTable($conn, $tableName)
     sqlsrv_free_stmt($stmt);
 }
 
-function TestOutputParam($conn, $tableName)
+function execProcedure($conn, $tsql, $params)
 {
-    // First, create a temporary stored procedure
-    $procName = GetTempProcName('sqlVariant');
+    if (AE\isColEncrypted()) {
+        $stmt = sqlsrv_prepare($conn, $tsql, $params);
+        if ($stmt) {
+            sqlsrv_execute($stmt);
+        }
+    } else {
+        $stmt = sqlsrv_query($conn, $tsql, $params);
+    }
+    return $stmt;
+}
+
+function testOutputParam($conn, $tableName)
+{
+    // First, create a stored procedure
+    $procName = getTempProcName('sqlVariant', false);
 
     $spArgs = "@p2 sql_variant OUTPUT";
 
-    $spCode = "SET @p2 = ( SELECT [c2_variant] FROM $tableName WHERE [c1_int] = 1 )";
+    // There is only one row in the table
+    $spCode = "SET @p2 = ( SELECT [c2_variant] FROM $tableName )";
 
     $stmt = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
     sqlsrv_free_stmt($stmt);
@@ -46,23 +65,21 @@ function TestOutputParam($conn, $tableName)
 
     $phpType = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR);
 
-    $params = array( array( &$callResult, SQLSRV_PARAM_OUT, $phpType ));
+    $params = array(array(&$callResult, SQLSRV_PARAM_OUT, $phpType));
 
-    $stmt = sqlsrv_query($conn, "{ CALL [$procName] ($callArgs)}", $params);
-    if (! $stmt) {
-        print_errors();
-        if (strcmp($initData, $callResult)) {
-            echo "initialized data and results should be the same";
-        }
-        echo "\n";
+    $stmt = execProcedure($conn, "{ CALL [$procName] ($callArgs)}", $params);
+    if (!$stmt) {
+        verifyErrorMessage(sqlsrv_errors()[0]);
     }
+    
+    dropProc($conn, $procName);
 }
 
-function TestInputAndOutputParam($conn, $tableName)
+function testInputAndOutputParam($conn, $tableName)
 {
-    $procName = GetTempProcName('sqlVariant');
+    $procName = getTempProcName('sqlVariant', false);
     $spArgs = "@p1 int, @p2 sql_variant OUTPUT";
-    $spCode = "SET @p2 = ( SELECT [c2_variant] FROM $tableName WHERE [c1_int] = @p1 )";
+    $spCode = "SET @p2 = ( SELECT [c2_variant] FROM $tableName WHERE [c1_int] = @p1)";
     $stmt = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
     sqlsrv_free_stmt($stmt);
 
@@ -70,62 +87,46 @@ function TestInputAndOutputParam($conn, $tableName)
     $callResult = $initData;
     $phpType = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR);
 
-    $params = array( array( 1, SQLSRV_PARAM_IN ), array( &$callResult, SQLSRV_PARAM_OUT, $phpType ));
+    $params = array(array(1, SQLSRV_PARAM_IN), array(&$callResult, SQLSRV_PARAM_OUT, $phpType));
     $callArgs = "?, ?";
-    $stmt = sqlsrv_query($conn, "{ CALL [$procName] ($callArgs)}", $params);
-    if (! $stmt) {
-        print_errors();
-        if (strcmp($initData, $callResult)) {
-            echo "initialized data and results should be the same\n";
-        }
+    $stmt = execProcedure($conn, "{ CALL [$procName] ($callArgs)}", $params);
+    if (!$stmt) {
+        verifyErrorMessage(sqlsrv_errors()[0]);
     }
+
+    dropProc($conn, $procName);
 }
 
-function print_errors()
+function verifyErrorMessage($error)
 {
-    $errors = sqlsrv_errors();
-    $count = count($errors);
-
-    if ($count > 0) {
-        for ($i = 0; $i < $count; $i++) {
-            print($errors[$i]['message']."\n");
-        }
+    if (AE\isColEncrypted()) {
+        fatalError("With AE this should not have failed!");
+    }
+    
+    // Expect to fail only when AE is disabled
+    $expected = "Operand type clash: varchar(max) is incompatible with sql_variant";
+    if (strpos($error['message'], $expected) === false) {
+        echo $error['message'] . PHP_EOL;
+        fatalError("Expected error: $expected\n");
     }
 }
 
-function RunTest()
-{
-    startTest("sqlsrv_param_output_variants");
-    try {
-        setup();
+setup();
 
-        // connect
-        $conn = connect();
+// connect
+$conn = AE\connect();
 
-        // Create a temp table that will be automatically dropped once the connection is closed
-        $tableName = GetTempTableName();
-        CreateVariantTable($conn, $tableName);
-        echo "\n";
+// Create a test table that will be automatically dropped once the connection is closed
+$tableName = GetTempTableName('test_output_variants', false);
+createVariantTable($conn, $tableName);
 
-        TestOutputParam($conn, $tableName);
-        TestInputAndOutputParam($conn, $tableName);
+testOutputParam($conn, $tableName);
+testInputAndOutputParam($conn, $tableName);
 
-        sqlsrv_close($conn);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_param_output_variants");
-}
+dropTable($conn, $tableName);
 
-RunTest();
-
+sqlsrv_close($conn);
+print "Test completed successfully\n";
 ?>
---EXPECTREGEX--
- ﻿
-\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Operand type clash: varchar\(max\) is incompatible with sql_variant
-
-\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Operand type clash: varchar\(max\) is incompatible with sql_variant
-
-Done
-Test \"sqlsrv_param_output_variants\" completed successfully\.
+--EXPECT--
+﻿Test completed successfully

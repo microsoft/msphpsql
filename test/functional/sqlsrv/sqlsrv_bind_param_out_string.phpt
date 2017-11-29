@@ -1,22 +1,18 @@
 --TEST--
-Verify the Binary and Char encoding output when binding output string with SQLSTYPE option with different size
+Verify the Binary and Char encoding output 
+--DESCRIPTION--
+Verify the Binary and Char encoding output when binding output string with SQLSRV SQL TYPE option with different size
+Will not convert this test for AE testing because the goal of this test is to deliberately use a different size for SQLSRV SQL TYPE from the designated output param in the stored procedure
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
-
 <?php
 require_once('MsCommon.inc');
-$conn = Connect();
-if ($conn === false) {
-    fatalError("Could not connect");
-}
+$conn = AE\connect(null, true); // disable Always Encrypted feature
 
-$stmt = sqlsrv_query($conn, "IF OBJECT_ID('BindStringTest', 'U') IS NOT NULL DROP TABLE BindStringTest");
-$stmt = sqlsrv_query($conn, "IF OBJECT_ID('uspPerson', 'P') IS NOT NULL DROP PROCEDURE uspPerson");
-if ($stmt === false) {
-    echo "Error in executing statement 1.\n";
-    die(print_r(sqlsrv_errors(), true));
-}
+$tableName = 'BindStringTest';
+dropTable($conn, $tableName);
+dropProc($conn, 'uspPerson');
 
 $stmt = sqlsrv_query($conn, "CREATE TABLE BindStringTest (PersonID int, Name nvarchar(50))");
 if ($stmt === false) {
@@ -60,7 +56,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),
-                   SQLSRV_SQLTYPE_NVARCHAR(32)
+                    SQLSRV_SQLTYPE_NVARCHAR(32)
             ));
 
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false) {
@@ -80,7 +76,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),
-                   SQLSRV_SQLTYPE_NVARCHAR(32)
+                    SQLSRV_SQLTYPE_NVARCHAR(32)
             ));
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false) {
     print_r(sqlsrv_errors(), true);
@@ -102,7 +98,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),
-                   SQLSRV_SQLTYPE_NVARCHAR(50)
+                    SQLSRV_SQLTYPE_NVARCHAR(50)
             ));
 
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false) {
@@ -123,7 +119,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),
-                   SQLSRV_SQLTYPE_NVARCHAR(50)
+                    SQLSRV_SQLTYPE_NVARCHAR(50)
             ));
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false) {
     print_r(sqlsrv_errors(), true);
@@ -147,7 +143,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),
-                   SQLSRV_SQLTYPE_NVARCHAR(1)
+                    SQLSRV_SQLTYPE_NVARCHAR(1)
             ));
 
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false) {
@@ -167,7 +163,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),
-                   SQLSRV_SQLTYPE_NVARCHAR(1)
+                    SQLSRV_SQLTYPE_NVARCHAR(1)
             ));
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false) {
     echo "Statement should fail\n";
@@ -189,7 +185,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),
-                   SQLSRV_SQLTYPE_NCHAR(32)
+                    SQLSRV_SQLTYPE_NCHAR(32)
             ));
 
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false) {
@@ -209,7 +205,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),
-                   SQLSRV_SQLTYPE_NCHAR(32)
+                    SQLSRV_SQLTYPE_NCHAR(32)
             ));
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false) {
     print_r(sqlsrv_errors(), true);
@@ -231,7 +227,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),
-                   SQLSRV_SQLTYPE_NCHAR(0)
+                    SQLSRV_SQLTYPE_NCHAR(0)
             ));
 
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false) {
@@ -251,7 +247,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),
-                   SQLSRV_SQLTYPE_NCHAR(0)
+                    SQLSRV_SQLTYPE_NCHAR(0)
             ));
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false) {
     echo "Statement should fail\n";
@@ -273,7 +269,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),
-                   SQLSRV_SQLTYPE_NCHAR(50)
+                    SQLSRV_SQLTYPE_NCHAR(50)
             ));
 
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false) {
@@ -293,7 +289,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),
-                   SQLSRV_SQLTYPE_NCHAR(50)
+                    SQLSRV_SQLTYPE_NCHAR(50)
             ));
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false) {
     print_r(sqlsrv_errors(), true);
@@ -316,7 +312,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR),
-                   SQLSRV_SQLTYPE_NCHAR(1)
+                    SQLSRV_SQLTYPE_NCHAR(1)
             ));
 
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) === false) {
@@ -336,7 +332,7 @@ $params = array(
     array($id, SQLSRV_PARAM_IN),
     array(&$return, SQLSRV_PARAM_OUT,
                     SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY),
-                   SQLSRV_SQLTYPE_NCHAR(1)
+                    SQLSRV_SQLTYPE_NCHAR(1)
             ));
 if ($stmt = sqlsrv_query($conn, $tsql_callSP, $params) == false) {
     print_r(sqlsrv_errors(), true);
@@ -348,8 +344,10 @@ $actualValue = $return;
 $actualLength = strlen($return);
 compareResults($expectedLength, $expectedValue, $actualLength, $actualValue);
 
-sqlsrv_query($conn, "DROP TABLE BindStringTest");
-sqlsrv_query($conn, "DROP PROCEDURE uspPerson");
+// sqlsrv_query($conn, "DROP TABLE BindStringTest");
+// sqlsrv_query($conn, "DROP PROCEDURE uspPerson");
+dropTable($conn, $tableName);
+dropProc($conn, 'uspPerson');
 
 sqlsrv_close($conn);
 
@@ -372,6 +370,7 @@ function compareResults($expectedLength, $expectedValue, $actualLength, $actualV
     }
     if (!$match) {
         echo "The actual result is different from the expected one \n";
+        echo "Expected $expectedValue($expectedLength) but get $actualValue($actualLength) \n";
     } else {
         echo "The actual result is the same as the expected one \n";
     }

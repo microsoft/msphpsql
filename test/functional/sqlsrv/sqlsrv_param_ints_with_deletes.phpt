@@ -1,24 +1,27 @@
 --TEST--
 Test insertion with floats
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
 
-function ExecData($withParams)
+function execData($withParams)
 {
     set_time_limit(0);
     sqlsrv_configure('WarningsReturnAsErrors', 1);
 
     // connect
-    $conn = connect();
-    if (!$conn) {
-        fatalError("Could not connect.\n");
+    $conn = AE\connect();
+
+    $tableName = 'test_ints_with_deletes';
+
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('smallint', 'c2_smallint'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
     }
-
-    $tableName = GetTempTableName();
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_smallint] smallint)");
-    sqlsrv_free_stmt($stmt);
 
     if ($withParams) {
         $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (c1_int, c2_smallint) VALUES (?, ?)", array(array(&$v1, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT), array(&$v2, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT)));
@@ -79,11 +82,13 @@ function ExecData($withParams)
     }
     sqlsrv_free_stmt($stmt);
 
-    DeleteRows($conn, $numRows, $tableName);
+    deleteRows($conn, $numRows, $tableName);
+    
+    dropTable($conn, $tableName);
     sqlsrv_close($conn);
 }
 
-function DeleteRows($conn, $numRows, $tableName)
+function deleteRows($conn, $numRows, $tableName)
 {
     $stmt1 = sqlsrv_prepare($conn, "SELECT * FROM $tableName");
     $stmt2 = sqlsrv_prepare($conn, "DELETE TOP(3) FROM $tableName");
@@ -115,21 +120,15 @@ function DeleteRows($conn, $numRows, $tableName)
     sqlsrv_free_stmt($stmt2);
 }
 
-function Repro()
-{
-    startTest("sqlsrv_statement_exec_param_ints");
-    echo "\nTest begins...\n";
-    try {
-        ExecData(true);
-        ExecData(false);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_statement_exec_param_ints");
+echo "\nTest begins...\n";
+try {
+    execData(true);
+    execData(false);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-Repro();
+echo "\nDone\n";
+endTest("sqlsrv_statement_exec_param_ints");
 
 ?>
 --EXPECT--

@@ -1,7 +1,7 @@
 --TEST--
-sqlsrv_query test.  Performs same tasks as 0006.phpt, using sqlsrv_query.
+sqlsrv_query test. Performs same tasks as 0006.phpt, using sqlsrv_query.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);
@@ -9,37 +9,24 @@ sqlsrv_query test.  Performs same tasks as 0006.phpt, using sqlsrv_query.
 
     require_once('MsCommon.inc');
 
-    $conn = connect();
-    if (!$conn) {
-        fatalError("Failed to connect.");
-    }
-
-    $stmt = sqlsrv_query($conn, "IF OBJECT_ID('test_params', 'U') IS NOT NULL DROP TABLE test_params");
+    $conn = AE\connect();
+    $tableName = 'test_params';
+    $columns = array(new AE\ColumnMeta('tinyint', 'id'),
+                     new AE\ColumnMeta('char(10)', 'name'),
+                     new AE\ColumnMeta('float', 'double'),
+                     new AE\ColumnMeta('varchar(max)', 'stuff'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
     if (!$stmt) {
-        $errors = sqlsrv_errors();
-        if ($errors[0]["SQLSTATE"] != "42S02") {
-            var_dump($errors);
-            die("sqlsrv_query(3) failed.");
-        }
+        fatalError("Failed to create table $tableName\n");
     }
 
-    $stmt = sqlsrv_query($conn, "CREATE TABLE test_params (id tinyint, name char(10), [double] float, stuff varchar(max))");
-    if (!$stmt) {
-        fatalError("sqlsrv_query(4) failed.");
-    }
-
+    $insertSql = "INSERT INTO $tableName (id, name, [double], stuff) VALUES (?, ?, ?, ?)";
+    
     $f1 = 1;
     $f2 = "testtestte";
     $f3 = 12.0;
     $f4 = fopen("data://text/plain,This%20is%20some%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
-    $stmt = sqlsrv_query(
-        $conn,
-        "INSERT INTO test_params (id, name, [double], stuff) VALUES (?, ?, ?, ?)",
-                                    array( $f1, $f2, $f3, $f4 )
-    );
-    if (!$stmt) {
-        fatalError("sqlsrv_query(5) failed.");
-    }
+    $stmt = AE\executeQueryParams($conn, $insertSql, array( $f1, $f2, $f3, $f4 ), false, "sqlsrv_query(1) failed.");
     while ($success = sqlsrv_send_stream_data($stmt)) {
     }
     if (!is_null($success)) {
@@ -50,7 +37,7 @@ sqlsrv_query test.  Performs same tasks as 0006.phpt, using sqlsrv_query.
 
     $stmt = sqlsrv_query($conn, "SELECT id, [double], name, stuff FROM test_params");
     if (!$stmt) {
-        fatalError("sqlsrv_query(6) failed.");
+        fatalError("sqlsrv_query(2) failed.");
     }
 
     while (sqlsrv_fetch($stmt)) {
@@ -69,6 +56,7 @@ sqlsrv_query test.  Performs same tasks as 0006.phpt, using sqlsrv_query.
     }
 
     sqlsrv_query($conn, "DROP TABLE test_params");
+    dropTable($conn, $tableName);
 
     sqlsrv_close($conn);
 

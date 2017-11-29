@@ -1,7 +1,7 @@
 --TEST--
 Invalid UTF-16 coming from the server
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
@@ -10,32 +10,31 @@ sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
 // For testing in Azure, can not switch databases
 require_once('MsCommon.inc');
-$conn = connect();
+$conn = AE\connect();
 
-if (!$conn) {
-    var_dump(sqlsrv_errors());
-}
-
-$s = sqlsrv_query($conn, "IF OBJECT_ID('utf16invalid', 'U') IS NOT NULL DROP TABLE utf16invalid");
-$s = sqlsrv_query($conn, "CREATE TABLE utf16invalid (id int identity, c1 nvarchar(100))");
-if ($s === false) {
-    die(print_r(sqlsrv_errors(), true));
+$tableName = 'utf16invalid';
+$columns = array(new AE\ColumnMeta('int', 'id', 'identity'),
+                 new AE\ColumnMeta('nvarchar(100)', 'c1'));
+$stmt = AE\createTable($conn, $tableName, $columns);
+if (!$stmt) {
+    fatalError("Failed to create table $tableName\n");
 }
 
 // 0xdc00,0xdbff is an invalid surrogate pair
 $invalid_utf16 = pack("H*", '410042004300440000DCFFDB45004600');
 
+$sqlType = AE\isColEncrypted()? SQLSRV_SQLTYPE_NVARCHAR(100) : null;
 $s = sqlsrv_query(
     $conn,
-    "INSERT INTO utf16invalid (c1) VALUES (?)",
+    "INSERT INTO $tableName (c1) VALUES (?)",
                    array(
-                       array( &$invalid_utf16, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY)) )
+                       array(&$invalid_utf16, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY), $sqlType))
 );
 if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-$s = sqlsrv_query($conn, 'SELECT * FROM utf16invalid');
+$s = sqlsrv_query($conn, "SELECT * FROM $tableName");
 if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
@@ -48,8 +47,7 @@ if ($utf8 !== false) {
 }
 print_r(sqlsrv_errors());
 
-$drop_proc = "DROP PROCEDURE Utf16InvalidOut";
-$s = sqlsrv_query($conn, $drop_proc);
+dropProc($conn, 'Utf16InvalidOut');
 
 $create_proc = <<<PROC
 CREATE PROCEDURE Utf16InvalidOut
@@ -78,8 +76,8 @@ if ($s !== false) {
 }
 print_r(sqlsrv_errors());
 
-sqlsrv_query($conn, "DROP TABLE utf16invalid");
-sqlsrv_query($conn, $drop_proc);
+dropTable($conn, $tableName);
+dropProc($conn, 'Utf16InvalidOut');
 
 sqlsrv_close($conn);
 echo "Test succeeded.\n";

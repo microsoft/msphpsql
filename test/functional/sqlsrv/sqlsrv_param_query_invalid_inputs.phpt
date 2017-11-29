@@ -1,82 +1,90 @@
 --TEST--
 Insert with query params but with various invalid inputs or boundaries
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿﻿<?php
 require_once('MsCommon.inc');
 
-function ParamQueryError_MinMaxScale($conn)
+function getFirstInputParam()
 {
-    $tableName = GetTempTableName('MinMaxScale');
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_decimal] decimal(28,4), [c3_numeric] numeric(32,4))");
-    sqlsrv_free_stmt($stmt);
-
-    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_decimal) VALUES (?, ?)", array(1, array(0.0, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_DECIMAL(28, 34))));
-    printErrors();
-
-    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c3_numeric) VALUES (?, ?)", array(1, array(0.0, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NUMERIC(32, -1))));
-    printErrors();
+    $intType = AE\isColEncrypted() ? SQLSRV_SQLTYPE_INT : null;
+    return array(1, null, null, $intType);
 }
 
-function ParamQueryError_MinMaxSize($conn)
+function MinMaxScale($conn)
 {
-    $tableName = GetTempTableName('MinMaxSize');
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varchar_max] varchar(max))");
-    sqlsrv_free_stmt($stmt);
-
-    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_varchar_max) VALUES (?, ?)", array(1, array("Test Data", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR(0))));
-    printErrors();
-
-    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_varchar_max) VALUES (?, ?)", array(1, array("Test Data", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR(9000))));
-    printErrors();
-}
-
-function ParamQueryError_MinMaxPrecision($conn)
-{
-    $tableName = GetTempTableName('MinMaxPrecision');
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_decimal] decimal(28,4), [c3_numeric] numeric(32,4))");
-    sqlsrv_free_stmt($stmt);
-
-    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c3_numeric) VALUES (?, ?)", array(1, array(0.0, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NUMERIC(40, 0))));
-    printErrors();
-
-    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_decimal) VALUES (?, ?)", array(1, array(0.0, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_DECIMAL(-1, 0))));
-    printErrors();
-}
-
-//--------------------------------------------------------------------
-// RunTest
-//
-//--------------------------------------------------------------------
-function RunTest()
-{
-    startTest("sqlsrv_param_query_invalid_inputs");
-    echo "\nTest begins...\n";
-    try {
-        set_time_limit(0);
-        sqlsrv_configure('WarningsReturnAsErrors', 1);
-
-        // connect
-        $conn = connect();
-        if (!$conn) {
-            fatalError("Could not connect.\n");
-        }
-
-        ParamQueryError_MinMaxScale($conn);
-        ParamQueryError_MinMaxSize($conn);
-        ParamQueryError_MinMaxPrecision($conn);
-
-        sqlsrv_close($conn);
-    } catch (Exception $e) {
-        echo $e->getMessage();
+    $tableName = 'MinMaxScale';
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('decimal(28,4)', 'c2_decimal'),
+                     new AE\ColumnMeta('numeric(32,4)', 'c3_numeric'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
     }
-    echo "\nDone\n";
-    endTest("sqlsrv_param_query_invalid_inputs");
+
+    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_decimal) VALUES (?, ?)", array(getFirstInputParam(), array(0.0, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_DECIMAL(28, 34))));
+    printErrors();
+
+    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c3_numeric) VALUES (?, ?)", array(getFirstInputParam(), array(0.0, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NUMERIC(32, -1))));
+    printErrors();
+    dropTable($conn, $tableName);
 }
 
-RunTest();
+function MinMaxSize($conn)
+{
+    $tableName = 'MinMaxSize';
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('varchar(max)', 'c2_varchar_max'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
+    }
+
+    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_varchar_max) VALUES (?, ?)", array(getFirstInputParam(), array("Test Data", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR(0))));
+    printErrors();
+
+    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_varchar_max) VALUES (?, ?)", array(getFirstInputParam(), array("Test Data", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR(9000))));
+    printErrors();
+    dropTable($conn, $tableName);
+}
+
+function MinMaxPrecision($conn)
+{
+    $tableName = 'MinMaxPrecision';
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('decimal(28,4)', 'c2_decimal'),
+                     new AE\ColumnMeta('numeric(32,4)', 'c3_numeric'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
+    }
+    
+    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c3_numeric) VALUES (?, ?)", array(getFirstInputParam(), array(0.0, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NUMERIC(40, 0))));
+    printErrors();
+
+    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_decimal) VALUES (?, ?)", array(getFirstInputParam(), array(0.0, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_DECIMAL(-1, 0))));
+    printErrors();
+    dropTable($conn, $tableName);
+}
+
+echo "\nTest begins...\n";
+try {
+    set_time_limit(0);
+    sqlsrv_configure('WarningsReturnAsErrors', 1);
+
+    // connect
+    $conn = AE\connect();
+
+    MinMaxScale($conn);
+    MinMaxSize($conn);
+    MinMaxPrecision($conn);
+
+    sqlsrv_close($conn);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+echo "\nDone\n";
 
 ?>
 --EXPECT--
@@ -90,4 +98,3 @@ An invalid size or precision for parameter 2 was specified.
 An invalid size or precision for parameter 2 was specified.
 
 Done
-Test "sqlsrv_param_query_invalid_inputs" completed successfully.
