@@ -1,7 +1,7 @@
 --TEST--
 sqlsrv_num_fields and output params without sqlsrv_next_result.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);
@@ -9,10 +9,7 @@ sqlsrv_num_fields and output params without sqlsrv_next_result.
 
     require_once('MsCommon.inc');
 
-    $conn = connect();
-    if (!$conn) {
-        fatalError("Failed to connect.");
-    }
+    $conn = AE\connect();
 
     // test num_fields on a statement that doesn't generate a result set.
     $stmt = sqlsrv_prepare($conn, "USE 'tempdb'");
@@ -24,12 +21,17 @@ sqlsrv_num_fields and output params without sqlsrv_next_result.
     echo "$field_count\n";
     sqlsrv_free_stmt($stmt);
 
-    $stmt = sqlsrv_prepare( $conn, "IF OBJECT_ID('test_params', 'U') IS NOT NULL DROP TABLE test_params" );
-    sqlsrv_execute($stmt);
-    sqlsrv_free_stmt($stmt);
-
-    // test sqlsrv_num_fields immediately after a prepare
-    $stmt = sqlsrv_prepare($conn, "CREATE TABLE test_params (id tinyint, name char(10), [double] float, stuff varchar(max))");
+    // test sqlsrv_num_fields immediately after creating a table
+    $tableName = 'test_params';
+    $columns = array(new AE\ColumnMeta('tinyint', 'id'),
+                     new AE\ColumnMeta('char(10)', 'name'),
+                     new AE\ColumnMeta('float', 'double'),
+                     new AE\ColumnMeta('varchar(max)', 'stuff'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
+    }
+    
     $field_count = sqlsrv_num_fields($stmt);
     if ($field_count === false) {
         die(print_r(sqlsrv_errors(), true));
@@ -43,7 +45,7 @@ sqlsrv_num_fields and output params without sqlsrv_next_result.
     $f3 = 12.0;
     $f4 = fopen("data://text/plain,This%20is%20some%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
 
-    $stmt = sqlsrv_prepare($conn, "INSERT INTO test_params (id, name, [double], stuff) VALUES (?, ?, ?, ?)", array( &$f1, "testtestte", &$f3, &$f4 ));
+    $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (id, name, [double], stuff) VALUES (?, ?, ?, ?)", array( &$f1, "testtestte", &$f3, &$f4 ));
     if (!$stmt) {
         fatalError("sqlsrv_prepare failed.");
     }
@@ -63,7 +65,7 @@ sqlsrv_num_fields and output params without sqlsrv_next_result.
     sqlsrv_free_stmt($stmt);
 
     // test num_fields on a valid statement that produces a result set.
-    $stmt = sqlsrv_prepare($conn, "SELECT id, [double], name, stuff FROM test_params");
+    $stmt = sqlsrv_prepare($conn, "SELECT id, [double], name, stuff FROM $tableName");
     $success = sqlsrv_execute($stmt);
     if (!$success) {
         var_dump(sqlsrv_errors());
@@ -91,7 +93,7 @@ sqlsrv_num_fields and output params without sqlsrv_next_result.
     // this should return 3, but shorthand output parameters are disabled for now.
     echo "$v3\n";
 
-    dropTable($conn, 'test_params');
+    dropTable($conn, $tableName);
 
     sqlsrv_free_stmt($stmt);
     sqlsrv_close($conn);

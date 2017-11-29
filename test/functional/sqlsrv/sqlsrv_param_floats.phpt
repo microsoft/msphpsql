@@ -1,25 +1,26 @@
 --TEST--
 Test insertion with floats
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
 
-function ExecData($withParams)
+function execData($withParams)
 {
     set_time_limit(0);
     sqlsrv_configure('WarningsReturnAsErrors', 1);
 
     // connect
-    $conn = connect();
-    if (!$conn) {
-        fatalError("Could not connect.\n");
+    $conn = AE\connect();
+    $tableName = 'param_floats';
+    $columns = array(new AE\ColumnMeta('float', 'c1_float'),
+                     new AE\ColumnMeta('real', 'c2_real'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
     }
-
-    $tableName = GetTempTableName();
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_float] float, [c2_real] real)");
-    sqlsrv_free_stmt($stmt);
-
+    
     if ($withParams) {
         $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (c1_float, c2_real) VALUES (?, ?)", array(array(&$v1, SQLSRV_PARAM_IN), array(&$v2, SQLSRV_PARAM_IN)));
     } else {
@@ -77,25 +78,20 @@ function ExecData($withParams)
         }
     }
     sqlsrv_free_stmt($stmt);
+    
+    dropTable($conn, $tableName);
     sqlsrv_close($conn);
 }
 
-function Repro()
-{
-    startTest("sqlsrv_statement_exec_param_floats");
-    echo "\nTest begins...\n";
+echo "\nTest begins...\n";
 
-    try {
-        ExecData(true);
-        ExecData(false);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_statement_exec_param_floats");
+try {
+    execData(true);
+    execData(false);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-Repro();
+echo "\nDone\n";
 
 ?>
 --EXPECT--
@@ -103,4 +99,3 @@ Repro();
 Test begins...
 
 Done
-Test "sqlsrv_statement_exec_param_floats" completed successfully.

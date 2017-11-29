@@ -1,33 +1,41 @@
 --TEST--
 Send an empty stream and null stream test.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-
     sqlsrv_configure('WarningsReturnAsErrors', false);
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
     require_once("MsCommon.inc");
 
-    $conn = connect();
-    if (!$conn) {
-        fatalError("sqlsrv_connect failed.");
+    $conn = AE\connect();
+    // if (!$conn) {
+        // fatalError("sqlsrv_connect failed.");
+    // }
+
+    $tableName = 'test_empty_stream';
+    $columns = array(new AE\ColumnMeta('int', 'id'),
+                     new AE\ColumnMeta('varchar(max)', 'varchar_stream'),
+                     new AE\ColumnMeta('varbinary(max)', 'varbinary_stream'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
     }
 
-    $stmt = sqlsrv_query($conn, "IF OBJECT_ID('test_empty_stream', 'U') IS NOT NULL DROP TABLE test_empty_stream");
-    if ($stmt !== false) {
-        sqlsrv_free_stmt($stmt);
-    }
+    // $stmt = sqlsrv_query($conn, "IF OBJECT_ID('test_empty_stream', 'U') IS NOT NULL DROP TABLE test_empty_stream");
+    // if ($stmt !== false) {
+        // sqlsrv_free_stmt($stmt);
+    // }
 
-    $stmt = sqlsrv_query($conn, "CREATE TABLE test_empty_stream (id int, varchar_stream varchar(max), varbinary_stream varbinary(max))");
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
+    // $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName (id int, varchar_stream varchar(max), varbinary_stream varbinary(max))");
+    // if ($stmt === false) {
+        // die(print_r(sqlsrv_errors(), true));
+    // }
 
     $f1 = 1;
     $f2 = fopen("data://text/plain,", "r");
-    $stmt = sqlsrv_prepare($conn, "INSERT INTO test_empty_stream (id, varchar_stream) VALUES (?, ?)", array( &$f1, &$f2 ));
+    $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (id, varchar_stream) VALUES (?, ?)", array( &$f1, &$f2 ));
     if ($stmt === false) {
         print_r("sqlsrv_prepare failed.");
         die(print_r(sqlsrv_errors(), true));
@@ -50,7 +58,7 @@ Send an empty stream and null stream test.
     $f4 = fopen("data://text/plain,", "r");
     $stmt = sqlsrv_prepare(
         $conn,
-        "INSERT INTO test_empty_stream (id, varbinary_stream) VALUES (?, ?)",
+        "INSERT INTO $tableName (id, varbinary_stream) VALUES (?, ?)",
           array( &$f3,
                  array( &$f4, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY('max')) )
     );
@@ -72,7 +80,7 @@ Send an empty stream and null stream test.
         die(print_r(sqlsrv_errors(), true));
     }
 
-    $stmt = sqlsrv_query($conn, "SELECT id, varchar_stream, varbinary_stream FROM test_empty_stream");
+    $stmt = AE\executeQuery($conn, "SELECT id, varchar_stream, varbinary_stream FROM $tableName");
     if ($stmt === false) {
         die(print_r(sqlsrv_errors(), true));
     }
@@ -127,7 +135,7 @@ Send an empty stream and null stream test.
     }
     print_r(sqlsrv_errors());
 
-    sqlsrv_query($conn, "DROP TABLE test_empty_stream");
+    dropTable($conn, $tableName);
     sqlsrv_close($conn);
 ?>
 --EXPECT--

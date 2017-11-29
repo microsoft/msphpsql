@@ -1,6 +1,7 @@
 --TEST--
 GitHub issue #231 - String truncation when binding varchar(max)
 --SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
@@ -9,93 +10,104 @@ sqlsrv_configure('WarningsReturnAsErrors', 1);
 require_once("MsCommon.inc");
 
 // connect
-$conn = connect();
-if (!$conn) {
-    printErrors("Connection could not be established.\n");
-}
-
-$tableName = GetTempTableName('testDataTypes_GH231');
-$columnNames = array( "c1","c2" );
+$conn = AE\connect();
+$tableName = 'testDataTypes_GH231_VC';
+$columnNames = array("c1", "c2");
 
 for ($k = 1; $k <= 8; $k++) {
-    $sqlType = SqlType($k);
-    $dataType = "[$columnNames[0]] int, [$columnNames[1]] $sqlType";
+    $sqlType = getFieldType($k);
+    $columns = array(new AE\ColumnMeta('int', $columnNames[0]),
+                     new AE\ColumnMeta($sqlType, $columnNames[1]));
+    AE\createTable($conn, $tableName, $columns);
 
-    $sql = "CREATE TABLE [$tableName] ($dataType)";
-    $stmt1 = sqlsrv_query($conn, $sql);
-    sqlsrv_free_stmt($stmt1);
+    // $sql = "CREATE TABLE [$tableName] ($dataType)";
+    // $stmt1 = sqlsrv_query($conn, $sql);
+    // sqlsrv_free_stmt($stmt1);
 
     $sql = "INSERT INTO [$tableName] ($columnNames[0], $columnNames[1]) VALUES (?, ?)";
-    $data = GetData($k);
-    $phpType = PhpType($k);
-    $driverType = DriverType($k, strlen($data));
+    $data = getData($k);
+    $phpType = getPhpType($k);
+    
+    $len = AE\isColEncrypted() ? 512 : strlen($data);
+    $sqlsrvType = getSQLSRVType($k, $len);
 
-    $params = array($k, array($data, SQLSRV_PARAM_IN, $phpType, $driverType));
-    $stmt2 = sqlsrv_prepare($conn, $sql, $params);
-    sqlsrv_execute($stmt2);
-    sqlsrv_free_stmt($stmt2);
+    $params = array($k, array($data, SQLSRV_PARAM_IN, $phpType, $sqlsrvType));
+    $stmt = sqlsrv_prepare($conn, $sql, $params);
+    sqlsrv_execute($stmt);
+    sqlsrv_free_stmt($stmt);
 
-    ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType);
+    execProc($conn, $tableName, $columnNames, $k, $data, $sqlType);
 
-    $stmt3 = sqlsrv_query($conn, "DROP TABLE [$tableName]");
-    sqlsrv_free_stmt($stmt3);
+    dropTable($conn, $tableName);
 }
 
 sqlsrv_close($conn);
 
 
-function ExecProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
+function execProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
 {
     $spArgs = "@p1 int, @p2 $sqlType OUTPUT";
     $spCode = "SET @p2 = ( SELECT c2 FROM $tableName WHERE c1 = @p1 )";
     $procName = "testBindOutSp";
 
+    dropProc($conn, $procName);
     $stmt1 = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
-    sqlsrv_free_stmt($stmt1);
+    if (!$stmt1) {
+        fatalError("Failed to create stored procedure $procName");
+    } else {
+        sqlsrv_free_stmt($stmt1);
+    }
 
     echo "\nData Type: ".$sqlType." binding as \n";
 
     $direction = SQLSRV_PARAM_OUT;
     echo "Output parameter: \t";
-    InvokeProc($conn, $procName, $k, $direction, $data);
+    invokeProc($conn, $procName, $k, $direction, $data);
 
     $direction = SQLSRV_PARAM_INOUT;
     echo "InOut parameter: \t";
-    InvokeProc($conn, $procName, $k, $direction, $data);
+    invokeProc($conn, $procName, $k, $direction, $data);
 
-    $stmt2 = sqlsrv_query($conn, "DROP PROC [$procName]");
-    sqlsrv_free_stmt($stmt2);
+    dropProc($conn, $procName);
 }
 
-function InvokeProc($conn, $procName, $k, $direction, $data)
+function invokeProc($conn, $procName, $k, $direction, $data)
 {
-    $driverType = DriverType($k, strlen($data));
+    $len = AE\isColEncrypted() ? 512 : strlen($data);
+    $sqlsrvType = getSQLSRVType($k, $len);
+
     $callArgs = "?, ?";
 
-    // Data to initialize $callResult variable. This variable should be shorter than inserted data in the table
+    // Data to initialize $callResult variable. This variable 
+    // should be shorter than inserted data in the table
     $initData = "ShortString";
     $callResult = $initData;
 
     // Make sure not to specify the PHP type
     $params = array( array( $k, SQLSRV_PARAM_IN ),
-                     array( &$callResult, $direction, null, $driverType ));
-    $stmt = sqlsrv_query($conn, "{ CALL [$procName] ($callArgs)}", $params);
+                     array( &$callResult, $direction, null, $sqlsrvType ));
+    $stmt = AE\executeQueryParams($conn, "{ CALL [$procName] ($callArgs)}", $params);
     if ($stmt === false) {
         die(print_r(sqlsrv_errors(), true));
     }
 
     // $callResult should be updated to the value in the table
-    $matched = ($callResult === $data);
+    if (AE\isColEncrypted()) {
+        // with AE enabled, char/nchar fields have size up to 512
+        $matched = (trim($callResult) === $data);
+    } else {
+        $matched = ($callResult === $data);
+    }
     if ($matched) {
         echo "data matched!\n";
     } else {
-        echo "failed!\n";
+        echo "failed! $callResult vs $data\n";
     }
 
     sqlsrv_free_stmt($stmt);
 }
 
-function GetData($k)
+function getData($k)
 {
     $data = "LongStringForTesting";
     if ($k == 8) {
@@ -105,7 +117,7 @@ function GetData($k)
     return $data;
 }
 
-function PhpType($k)
+function getPhpType($k)
 {
     $phpType = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR);
     if ($k == 7) {
@@ -115,7 +127,7 @@ function PhpType($k)
     return $phpType;
 }
 
-function SqlType($k)
+function getFieldType($k)
 {
     switch ($k) {
         case 1:  return ("char(512)");
@@ -131,7 +143,7 @@ function SqlType($k)
     return ("udt");
 }
 
-function DriverType($k, $dataSize)
+function getSQLSRVType($k, $dataSize)
 {
     switch ($k) {
         case 1:  return (SQLSRV_SQLTYPE_CHAR($dataSize));
