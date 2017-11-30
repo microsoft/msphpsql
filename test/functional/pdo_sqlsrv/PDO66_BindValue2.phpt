@@ -5,183 +5,184 @@ Verification for "PDOStatement::bindValue()".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require_once('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
 
-function Bind()
-{
-	include 'MsSetup.inc';
+try {
+    $conn1 = connect();
 
-	$testName = "PDO Statement - Bind Value";
-	StartTest($testName);
+    // Prepare test table
+    $tableName = "pdo_test_table";
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "label" => "char(1)"));
+    insertRow($conn1, $tableName, array("id" => 1, "label" => "a"));
+    insertRow($conn1, $tableName, array("id" => 2, "label" => "b"));
+    insertRow($conn1, $tableName, array("id" => 3, "label" => "c"));
+    insertRow($conn1, $tableName, array("id" => 4, "label" => "d"));
+    insertRow($conn1, $tableName, array("id" => 5, "label" => "e"));
+    insertRow($conn1, $tableName, array("id" => 6, "label" => "f"));
 
-	$conn1 = Connect();
+    $id = null;
+    $label = null;
 
-	// Prepare test table
-	$dataCols = "id, label";
-	CreateTableEx($conn1, $tableName, "id int NOT NULL PRIMARY KEY, label CHAR(1)", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "1, 'a'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "2, 'b'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "3, 'c'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "4, 'd'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "5, 'e'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "6, 'f'", null);
+    // Check different value bind modes
+    if (!isColEncrypted()) {
+        $tsql1 = "SELECT TOP(2) id, label FROM [$tableName] WHERE id > ? ORDER BY id ASC";
+    } else {
+        $tsql1 = "SELECT id, label FROM [$tableName] WHERE id = ? OR id = ?";
+    }
+    $stmt1 = $conn1->prepare($tsql1);
 
-	$id = null;
-	$label = null;
+    printf("Binding value and not variable...\n");
+    if (!isColEncrypted()) {
+        bindValue(1, 1, $stmt1, 0);
+    } else {
+        bindValue(1, 1, $stmt1, 1);
+        bindValue(1, 2, $stmt1, 2);
+    }
+    execStmt(1, $stmt1);
+    bindColumn(1, $stmt1, $id, $label);
+    fetchBound($stmt1, $id, $label);
 
-	// Check different value bind modes
-	$tsql1 = "SELECT TOP(2) id, label FROM [$tableName] WHERE id > ? ORDER BY id ASC";
-	$stmt1 = PrepareQuery($conn1, $tsql1);
+    printf("Binding variable...\n");
+    $var1 = 0;
+    if (!isColEncrypted()) {
+        bindVar(2, 1, $stmt1, $var1);
+    } else {
+        $var11 = $var1 + 1;
+        $var12 = $var1 + 2;
+        bindVar(2, 1, $stmt1, $var11);
+        bindVar(2, 2, $stmt1, $var12);
+    }
+    execStmt(2, $stmt1);
+    bindColumn(2, $stmt1, $id, $label);
+    fetchBound($stmt1, $id, $label);
 
-	printf("Binding value and not variable...\n");
-	BindValue(1, $stmt1, 0);
-	ExecStmt(1, $stmt1);
-	BindColumn(1, $stmt1, $id, $label);
-	FetchBound($stmt1, $id, $label);
+    printf("Binding variable which references another variable...\n");
+    $var2 = 0;
+    $var_ref = &$var2;
+    if (!isColEncrypted()) {
+        bindVar(3, 1, $stmt1, $var_ref);
+    } else {
+        $var21 = $var2 + 1;
+        $var22 = $var2 + 2;
+        $var_ref1 = &$var21;
+        $var_ref2 = &$var22;
+        bindVar(3, 1, $stmt1, $var_ref1);
+        bindVar(3, 2, $stmt1, $var_ref2);
+    }
+    execStmt(3, $stmt1);
+    bindColumn(3, $stmt1, $id, $label);
+    fetchBound($stmt1, $id, $label);
+    unset($stmt1);
 
-	printf("Binding variable...\n");
-	$var1 = 0;
-	BindVar(2, $stmt1, $var1);
-	ExecStmt(2, $stmt1);
-	BindColumn(2, $stmt1, $id, $label);
-	FetchBound($stmt1, $id, $label);
+    if (!isColEncrypted()) {
+        $tsql2 = "SELECT TOP(2) id, label FROM [$tableName] WHERE id > ? AND id <= ? ORDER BY id ASC";
+    } else {
+        $tsql2 = "SELECT id, label FROM [$tableName] WHERE id = ? OR id = ?";
+    }
+    $stmt1 = $conn1->prepare($tsql2);
 
-	printf("Binding variable which references another variable...\n");
-	$var2 = 0;
-	$var_ref = &$var2;
-	BindVar(3, $stmt1, $var_ref);
-	ExecStmt(3, $stmt1);
-	BindColumn(3, $stmt1, $id, $label);
-	FetchBound($stmt1, $id, $label);
+    printf("Binding a variable and a value...\n");
+    $var3 = 0;
+    if (isColEncrypted()) {
+        $var3++;
+    }
+    bindMixed(4, $stmt1, $var3, 2);
+    execStmt(4, $stmt1);
+    bindColumn(4, $stmt1, $id, $label);
+    fetchBound($stmt1, $id, $label);
 
-	unset($stmt1);
+    printf("Binding a variable to two placeholders and changing the variable value in between the binds...\n");
+    $var4 = 0;
+    if (isColEncrypted()) {
+        $var4++;
+    }
+    $var5 = 2;
+    bindPlaceholder(5, $stmt1, $var4, $var5);
+    execStmt(5, $stmt1);
+    bindColumn(5, $stmt1, $id, $label);
+    fetchBound($stmt1, $id, $label);
+    unset($stmt1);
 
-	$tsql2 = "SELECT TOP(2) id, label FROM [$tableName] WHERE id > ? AND id <= ? ORDER BY id ASC";
-	$stmt1 = PrepareQuery($conn1, $tsql2);
-
-	printf("Binding a variable and a value...\n");
-	$var3 = 0;
-	BindMixed(4, $stmt1, $var3, 2);
-	ExecStmt(4, $stmt1);
-	BindColumn(4, $stmt1, $id, $label);
-	FetchBound($stmt1, $id, $label);
-
-	printf("Binding a variable to two placeholders and changing the variable value in between the binds...\n");
-	$var4 = 0;
-	$var5 = 2;
-	BindPlaceholder(5, $stmt1, $var4, $var5);
-	ExecStmt(5, $stmt1);
-	BindColumn(5, $stmt1, $id, $label);
-	FetchBound($stmt1, $id, $label);
-
-	unset($stmt1);
-
-	// Cleanup
-	DropTable($conn1, $tableName);
-	$stmt1 = null;
-	$conn1 = null;
-
-	EndTest($testName);
+    // Cleanup
+    dropTable($conn1, $tableName);
+    unset($stmt1);
+    unset($conn1);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
 
-function BindValue($offset, $stmt, $value)
+function bindValue($offset, $index, $stmt, $value)
 {
-	if (!$stmt->bindValue(1, $value))
-	{
-		LogInfo($offset, "Cannot bind value");
-	}
+    if (!$stmt->bindValue($index, $value)) {
+        logInfo($offset, "Cannot bind value");
+    }
 }
 
-function BindVar($offset, $stmt, &$var)
+function bindVar($offset, $index, $stmt, &$var)
 {
-	if (!$stmt->bindValue(1, $var))
-	{
-		LogInfo($offset, "Cannot bind variable");
-	}
-}
-
-
-function BindMixed($offset, $stmt, &$var, $value)
-{
-	if (!$stmt->bindValue(1, $var))
-	{
-		LogInfo($offset, "Cannot bind variable");
-	}
-	if (!$stmt->bindValue(2, $value))
-	{
-		LogInfo($offset, "Cannot bind value");
-	}
-}
-
-function BindPlaceholder($offset, $stmt, &$var1, &$var2)
-{
-	if (!$stmt->bindValue(1, $var1))
-	{
-		LogInfo($offset, "Cannot bind variable 1");
-	}
-	if (!$stmt->bindValue(2, $var2))
-	{
-		LogInfo($offset, "Cannot bind variable 2");
-	}
-}
-
-function BindColumn($offset, $stmt, &$param1, &$param2)
-{
-	if (!$stmt->bindColumn(1, $param1, PDO::PARAM_INT))
-	{
-		LogInfo($offset, "Cannot bind integer column");
-	}
-	if (!$stmt->bindColumn(2, $param2, PDO::PARAM_STR))
-	{
-		LogInfo($offset, "Cannot bind string column");
-	}
-}
-
-function ExecStmt($offset, $stmt)
-{
-	if (!$stmt->execute())
-	{
-		LogInfo($offset, "Cannot execute statement");
-	}
-}
-
-function FetchBound($stmt, &$param1, &$param2)
-{
-	while ($stmt->fetch(PDO::FETCH_BOUND))
-	{
-		printf("id = %s (%s) / label = %s (%s)\n",
-	 		var_export($param1, true), gettype($param1),
-			var_export($param2, true), gettype($param2));
-	}
-}
-
-function LogInfo($offset, $msg)
-{
-	printf("[%03d] %s\n", $offset, $msg);
+    if (!$stmt->bindValue($index, $var)) {
+        logInfo($offset, "Cannot bind variable");
+    }
 }
 
 
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
+function bindMixed($offset, $stmt, &$var, $value)
 {
-
-	try
-	{
-		Bind();
-	}
-	catch (Exception $e)
-	{
-		echo $e->getMessage();
-	}
+    if (!$stmt->bindValue(1, $var)) {
+        logInfo($offset, "Cannot bind variable");
+    }
+    if (!$stmt->bindValue(2, $value)) {
+        logInfo($offset, "Cannot bind value");
+    }
 }
 
-Repro();
+function bindPlaceholder($offset, $stmt, &$var1, &$var2)
+{
+    if (!$stmt->bindValue(1, $var1)) {
+        logInfo($offset, "Cannot bind variable 1");
+    }
+    if (!$stmt->bindValue(2, $var2)) {
+        logInfo($offset, "Cannot bind variable 2");
+    }
+}
+
+function bindColumn($offset, $stmt, &$param1, &$param2)
+{
+    if (!$stmt->bindColumn(1, $param1, PDO::PARAM_INT)) {
+        logInfo($offset, "Cannot bind integer column");
+    }
+    if (!$stmt->bindColumn(2, $param2, PDO::PARAM_STR)) {
+        logInfo($offset, "Cannot bind string column");
+    }
+}
+
+function execStmt($offset, $stmt)
+{
+    if (!$stmt->execute()) {
+        logInfo($offset, "Cannot execute statement");
+    }
+}
+
+function fetchBound($stmt, &$param1, &$param2)
+{
+    while ($stmt->fetch(PDO::FETCH_BOUND)) {
+        printf(
+            "id = %s (%s) / label = %s (%s)\n",
+            var_export($param1, true),
+            gettype($param1),
+            var_export($param2, true),
+            gettype($param2)
+        );
+    }
+}
+
+function logInfo($offset, $msg)
+{
+    printf("[%03d] %s\n", $offset, $msg);
+}
 
 ?>
 --EXPECT--
@@ -200,4 +201,3 @@ id = 2 (integer) / label = 'b' (string)
 Binding a variable to two placeholders and changing the variable value in between the binds...
 id = 1 (integer) / label = 'a' (string)
 id = 2 (integer) / label = 'b' (string)
-Test "PDO Statement - Bind Value" completed successfully.

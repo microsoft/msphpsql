@@ -151,7 +151,7 @@ class ColumnMeta
         $append = " ";
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if (isColEncrypted() && $this->isEncryptableType() && stripos($this->options, "identity") === false) {
+        if (isColEncrypted() && $this->isEncryptableType() && stripos($this->options, "identity") === false && stripos($this->options, "rowguidcol") === false) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
@@ -168,7 +168,7 @@ class ColumnMeta
      */
     public function isEncryptableType()
     {
-        $unsupportedTypes = array("money", "smallmoney", "image", "ntext", "text", "xml", "sql_variant");
+        $unsupportedTypes = array("money", "smallmoney", "image", "ntext", "text", "xml", "sql_variant", "timestamp", "geography", "geometry", "hierarchyid");
         if (!$this->forceEncrypt && in_array(strtolower($this->dataType), $unsupportedTypes)) {
             return false;
         } else {

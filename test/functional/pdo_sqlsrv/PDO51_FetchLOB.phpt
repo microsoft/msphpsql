@@ -5,118 +5,87 @@ Verification for LOB handling.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require_once('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
 
-function LobTest()
-{
-	include 'MsSetup.inc';
+try {
+    $conn1 = connect();
 
-	$testName = "PDO Statement - Fetch LOB";
-	StartTest($testName);
+    // Execute test
+    $data = str_repeat('A', 255);
+    $tableName = "pdo_test_table";
+    fetchLob(1, $conn1, $tableName, "VARCHAR(512)", 1, $data);
+    fetchLob(2, $conn1, $tableName, "NVARCHAR(512)", 2, $data);
+    unset($data);
 
-	$conn1 = Connect();
+    $data = str_repeat('B', 4000);
+    fetchLob(3, $conn1, $tableName, "VARCHAR(8000)", 3, $data);
+    fetchLob(4, $conn1, $tableName, "NVARCHAR(4000)", 4, $data);
+    unset($data);
 
-	// Execute test
-	$data = str_repeat('A', 255);
-	FetchLob(1, $conn1, $tableName, "VARCHAR(512)",   1, $data);
-	FetchLob(2, $conn1, $tableName, "NVARCHAR(512)",  2, $data);
-	unset($data);
+    $data = str_repeat('C', 100000);
+    fetchLob(5, $conn1, $tableName, "TEXT", 5, $data);
+    fetchLob(6, $conn1, $tableName, "NTEXT", 6, $data);
+    unset($data);
 
-	$data = str_repeat('B', 4000);
-	FetchLob(3, $conn1, $tableName, "VARCHAR(8000)",  3, $data);
-	FetchLob(4, $conn1, $tableName, "NVARCHAR(4000)", 4, $data);
-	unset($data);
+    // Cleanup
+    dropTable($conn1, $tableName);
+    unset($conn1);
 
-	$data = str_repeat('C', 100000);
-	FetchLob(5, $conn1, $tableName, "TEXT",           5, $data);
-	FetchLob(6, $conn1, $tableName, "NTEXT",          6, $data);
-	unset($data);
-
-	// Cleanup
-	DropTable($conn1, $tableName);
-	$conn1 = null;
-
-	EndTest($testName);
+    echo "Test 'PDO Statement - Fetch LOB' completed successfully.\n";
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
 
-function FetchLob($offset, $conn, $table, $sqlType, $data1, $data2)
+function fetchLob($offset, $conn, $table, $sqlType, $data1, $data2)
 {
-	$id = NULL;
-	$label = NULL;
+    $id = null;
+    $label = null;
 
-	CreateTableEx($conn, $table, "id int NOT NULL PRIMARY KEY, label $sqlType", null);
-	InsertRowEx($conn, $table, "id, label", "$data1, '$data2'", null);
+    createTable($conn, $table, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "label" => $sqlType));
+    insertRow($conn, $table, array("id" => $data1, "label" => $data2));
 
-	// Check data fetched with PDO::FETCH_BOUND
-	$stmt = ExecuteQuery($conn, "SELECT * FROM [$table]");
-	if (!$stmt->bindColumn(1, $id, PDO::PARAM_INT))
-	{
-		LogInfo($offset, "Cannot bind integer column");
-	}
-	if (!$stmt->bindColumn(2, $label, PDO::PARAM_LOB))
-	{
-		LogInfo($offset, "Cannot bind LOB column");
-	}
-	if (!$stmt->fetch(PDO::FETCH_BOUND))
-	{
-		LogInfo($offset, "Cannot fetch bound data");
-	}
-	if ($id != $data1)
-	{
-		LogInfo($offset, "ID data corruption: [$id] instead of [$data1]");
-	}
-	if ($label != $data2)
-	{
-		LogInfo($offset, "Label data corruption: [$label] instead of [$data2]");
-	}
-	unset($stmt);
-	unset($label);
+    // Check data fetched with PDO::FETCH_BOUND
+    $stmt = $conn->query("SELECT * FROM [$table]");
+    if (!$stmt->bindColumn(1, $id, PDO::PARAM_INT)) {
+        logInfo($offset, "Cannot bind integer column");
+    }
+    if (!$stmt->bindColumn(2, $label, PDO::PARAM_LOB)) {
+        logInfo($offset, "Cannot bind LOB column");
+    }
+    if (!$stmt->fetch(PDO::FETCH_BOUND)) {
+        logInfo($offset, "Cannot fetch bound data");
+    }
+    if ($id != $data1) {
+        logInfo($offset, "ID data corruption: [$id] instead of [$data1]");
+    }
+    if ($label != $data2) {
+        logInfo($offset, "Label data corruption: [$label] instead of [$data2]");
+    }
+    unset($stmt);
+    unset($label);
 
-	// Check data fetched with PDO::FETCH_ASSOC
-	$stmt = ExecuteQuery($conn, "SELECT * FROM [$table]");
-	$refData = $stmt->fetch(PDO::FETCH_ASSOC);
-	if ($refData['id'] != $data1)
-	{
-		$id = $refData['id'];
-		LogInfo($offset, "ID data corruption: [$id] instead of [$data1]");
-
-	}
-	if ($refData['label'] != $data2)
-	{
-		$label = $refData['label'];
-		LogInfo($offset, "Label data corruption: [$label] instead of [$data2]");
-	}
-	unset($stmt);
-	unset($refData);
+    // Check data fetched with PDO::FETCH_ASSOC
+    $stmt = $conn->query("SELECT * FROM [$table]");
+    $refData = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($refData['id'] != $data1) {
+        $id = $refData['id'];
+        logInfo($offset, "ID data corruption: [$id] instead of [$data1]");
+    }
+    if ($refData['label'] != $data2) {
+        $label = $refData['label'];
+        logInfo($offset, "Label data corruption: [$label] instead of [$data2]");
+    }
+    unset($stmt);
+    unset($refData);
 }
 
-function LogInfo($offset, $msg)
+function logInfo($offset, $msg)
 {
-	printf("[%03d] %s\n", $offset, $msg);
+    printf("[%03d] %s\n", $offset, $msg);
 }
-
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-	try
-	{
-		LobTest();
-	}
-	catch (Exception $e)
-	{
-		echo $e->getMessage();
-	}
-}
-
-Repro();
 
 ?>
 --EXPECT--

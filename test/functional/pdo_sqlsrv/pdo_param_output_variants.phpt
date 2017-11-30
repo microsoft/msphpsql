@@ -1,75 +1,81 @@
 --TEST--
 Test parametrized insert and sql_variant as an output parameter.
 --DESCRIPTION--
-Since output param is not supported for sql_variant columns, this test verifies a proper error message is returned  
+Since output param is not supported for sql_variant columns, this test verifies a proper error message is returned
 --FILE--
 ﻿<?php
-include 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
 
-function TestReverse($conn)
+function testReverse($conn)
 {
-    $procName = GetTempProcName('sqlReverse');
+    $procName = getProcName('sqlReverse');
 
-    try
-    {
+    try {
         $spCode = "CREATE PROC [$procName] @string AS SQL_VARIANT OUTPUT as SELECT @string = REVERSE(CAST(@string AS varchar(30)))";
-
-        $stmt = $conn->exec($spCode);
-    }
-    catch (Exception $e)
-    {
+        $conn->exec($spCode);
+    } catch (Exception $e) {
         echo "Failed to create the reverse procedure\n";
         echo $e->getMessage();
-    }        
-    
-    try
-    {
-        $stmt = $conn->prepare("{ CALL [$procName] (?) }");  
-        $string = "123456789";
-        $stmt->bindParam(1, $string, PDO::PARAM_STR, 30); 
-        $stmt->execute();
-        echo "Does REVERSE work? $string \n";  
     }
-    catch (Exception $e)
-    {
+
+    try {
+        $stmt = $conn->prepare("{ CALL [$procName] (?) }");
+        $string = "123456789";
+        $stmt->bindParam(1, $string, PDO::PARAM_STR  | PDO::PARAM_INPUT_OUTPUT, 30);
+        $stmt->execute();
+        // Connection with Column Encryption enabled works for non encrypted SQL_VARIANT
+        // Since SQLDescribeParam is called
+        if (isColEncrypted() && $string === "987654321") {
+            echo "Test input output parameter with SQL_VARIANT successfully.\n";
+        } else {
+            echo "Does REVERSE work? $string \n";
+        }
+    } catch (Exception $e) {
         //echo "Failed when calling the reverse procedure\n";
-        echo $e->getMessage();
-        echo "\n";
-    }        
+        $error = $e->getMessage();
+        if (!isColEncrypted() && strpos($error, "Implicit conversion from data type sql_variant to nvarchar is not allowed.") !== false) {
+            echo "Test input output parameter with SQL_VARIANT successfully.\n";
+        } else {
+            echo "$error\n";
+        }
+    }
 }
 
-function CreateVariantTable($conn, $tableName)
+function createVariantTable($conn, $tableName)
 {
-    try 
-    {
-        $stmt = $conn->exec("CREATE TABLE [$tableName] ([c1_int] int, [c2_variant] sql_variant)");    
-    }
-    catch (Exception $e)
-    {
+    try {
+        createTable($conn, $tableName, array("c1_int" => "int", "c2_variant" => "sql_variant"));
+    } catch (Exception $e) {
         echo "Failed to create a test table\n";
         echo $e->getMessage();
-    }        
+    }
 
-    $tsql = "INSERT INTO [$tableName] ([c1_int], [c2_variant]) VALUES (1, ?)";    
-    
     $data = "This is to test if sql_variant works with output parameters";
-    
-    $stmt = $conn->prepare($tsql);
-    $result = $stmt->execute(array($data));
-    if (! $result)
+    if (!isColEncrypted()) {
+        $tsql = "INSERT INTO [$tableName] ([c1_int], [c2_variant]) VALUES (1, ?)";
+        $stmt = $conn->prepare($tsql);
+        $result = $stmt->execute(array($data));
+    } else {
+        $tsql = "INSERT INTO [$tableName] ([c1_int], [c2_variant]) VALUES (?, ?)";
+        $stmt = $conn->prepare($tsql);
+        $intData = 1;
+        $result = $stmt->execute(array($intData, $data));
+    }
+
+    if (! $result) {
         echo "Failed to insert data\n";
+    }
 }
 
-function TestOutputParam($conn, $tableName)
+function testOutputParam($conn, $tableName)
 {
     // First, create a temporary stored procedure
-    $procName = GetTempProcName('sqlVariant');
-    
+    $procName = getProcName('sqlVariant');
+
     $spArgs = "@p1 int, @p2 sql_variant OUTPUT";
     $spCode = "SET @p2 = ( SELECT [c2_variant] FROM $tableName WHERE [c1_int] = @p1 )";
-    
-    $stmt = $conn->exec("CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
-    $stmt = null;
+
+    $conn->exec("CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
 
     $callArgs = "?, ?";
 
@@ -78,63 +84,48 @@ function TestOutputParam($conn, $tableName)
     $initData = "A short text";
     $callResult = $initData;
 
-    try
-    {
+    try {
         $stmt = $conn->prepare("{ CALL [$procName] ($callArgs)}");
         $stmt->bindValue(1, 1);
         $stmt->bindParam(2, $callResult, PDO::PARAM_STR, 100);
         $stmt->execute();
-
-
-    }
-    catch (Exception $e)
-    {
-        if(!strcmp($initData, $callResult))
-        {
+        if (isColEncrypted() && $callResult === "This is to test if sql_variant works with output parameters") {
+            echo "Test output parameter with SQL_VARIANT successfully.\n";
+        } else {
+            echo "Does SELECT from table work? $callResult \n";
+        }
+    } catch (Exception $e) {
+        if (!strcmp($initData, $callResult)) {
             echo "initialized data and result should be the same";
         }
-        echo $e->getMessage();
-        echo "\n";
-    }        
+        $error = $e->getMessage();
+        if (!isColEncrypted() && strpos($error, "Operand type clash: nvarchar(max) is incompatible with sql_variant") !== false) {
+            echo "Test output parameter with SQL_VARIANT successfully.\n";
+        } else {
+            echo "$error\n";
+        }
+    }
 }
 
-function RunTest()
-{
-    StartTest("pdo_param_output_variants");
-    try
-    {
-        include("MsSetup.inc");
-        // Connect
-        $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
-        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-        echo "\n";
+try {
+    // Connect
+    $conn = connect();
 
-        // Test with a simple stored procedure 
-        TestReverse($conn);
-        
-        // Now test with another stored procedure
-        $tableName = GetTempTableName();   
-        CreateVariantTable($conn, $tableName);
+    // Test with a simple stored procedure
+    testReverse($conn);
 
-        TestOutputParam($conn, $tableName);
-        
-        $conn = null;
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    EndTest("pdo_param_output_variants");
+    // Now test with another stored procedure
+    $tableName = getTableName();
+    createVariantTable($conn, $tableName);
+
+    testOutputParam($conn, $tableName);
+
+    $conn = null;
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-RunTest();
 
 ?>
 --EXPECTREGEX--
-﻿
-SQLSTATE\[22018\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Operand type clash: nvarchar\(max\) is incompatible with sql_variant
-SQLSTATE\[22018\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Operand type clash: nvarchar\(max\) is incompatible with sql_variant
-
-Done
-Test \"pdo_param_output_variants\" completed successfully\.
+Test input output parameter with SQL_VARIANT successfully.
+Test output parameter with SQL_VARIANT successfully.

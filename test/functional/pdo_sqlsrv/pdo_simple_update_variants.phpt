@@ -2,149 +2,143 @@
 Test simple insert and update sql_variants using parameters of some different data categorys
 --DESCRIPTION--
 ORDER BY should work with sql_variants
+--SKIPIF--
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 ﻿<?php
-
-include 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
 
 class Food
 {
-    function getFood()
+    public function getFood()
     {
         return $this->food;
     }
-    function getcategory()
+    public function getcategory()
     {
         return $this->category;
-    }    
+    }
 }
 
-function CreateVariantTable($conn, $tableName)
+function createVariantTable($conn, $tableName)
 {
-    try 
-    {
-        $stmt = $conn->exec("CREATE TABLE $tableName ([id] sql_variant, [food] sql_variant, [category] sql_variant)"); 
-    }
-    catch (Exception $e)
-    {
+    try {
+        createTable($conn, $tableName, array("id" => "sql_variant", "food" => "sql_variant", "category" => "sql_variant"));
+    } catch (Exception $e) {
         echo "Failed to create a test table\n";
         echo $e->getMessage();
-    }        
+    }
 }
 
-function InsertData($conn, $tableName, $id, $food, $category)
+function insertData($conn, $tableName, $id, $food, $category)
 {
-    try 
-    {
+    try {
         $query = "INSERT $tableName ([id], [food], [category]) VALUES (:id, :food, :category)";
 
         $stmt = $conn->prepare($query);
         $stmt->bindValue(':id', $id);
         $stmt->bindValue(':food', $food);
         $stmt->bindValue(':category', $category);
-        
-        $result = $stmt->execute();  
-        if ($result)
-            echo "\nAdded $food in $category with ID $id.";  
-    }
-    catch (Exception $e)
-    {
+
+        $result = $stmt->execute();
+        if ($result) {
+            echo "Added $food in $category with ID $id.\n";
+        }
+    } catch (Exception $e) {
         echo "Failed to insert food $food\n";
         echo $e->getMessage();
-    }        
+    }
 }
 
-function UpdateID($conn, $tableName, $id, $food, $category)
+function updateID($conn, $tableName, $id, $food, $category)
 {
     $query = "UPDATE $tableName SET id = ? WHERE food = ? AND category = ?";
     $stmt = $conn->prepare($query);
     $result = $stmt->execute(array($id, $food, $category));
-    
-    if ($result)
-        echo "\nFood $food now updated with new id $id.";
-    else
-        echo "Failed to update ID.\n";        
+
+    if ($result) {
+        echo "Food $food now updated with new id $id.\n";
+    } else {
+        echo "Failed to update ID.\n";
+    }
 }
 
-function UpdateFood($conn, $tableName, $id, $food, $category)
+function updateFood($conn, $tableName, $id, $food, $category)
 {
     $query = "UPDATE $tableName SET food = ? WHERE id = ? AND category = ?";
     $stmt = $conn->prepare($query);
     $result = $stmt->execute(array($food, $id, $category));
-    
-    if ($result)
-        echo "\nCategory $category now updated with $food.";
-    else
-        echo "Failed to update food.\n";     
+
+    if ($result) {
+        echo "Category $category now updated with $food.\n";
+    } else {
+        echo "Failed to update food.\n";
+    }
 }
 
-function FetchRows($conn, $tableName)
+function fetchRows($conn, $tableName)
 {
-    $query = "SELECT * FROM $tableName ORDER BY id";   
-  
-    $stmt = $conn->query($query);  
+    if (!isColEncrypted()) {
+        $query = "SELECT * FROM $tableName ORDER BY id";
+    } else {
+        $query = "SELECT * FROM $tableName";
+    }
+    $stmt = $conn->query($query);
 
     $stmt->setFetchMode(PDO::FETCH_CLASS, 'Food');
-    while ($food = $stmt->fetch())
-    {   
-        echo "\nID: " . $food->id . " "; 
+    $foodArray = array();
+    while ($food = $stmt->fetch()) {
+        array_push($foodArray, $food);
+    }
+    if (isColEncrypted()) {
+        sort($foodArray);
+    }
+    foreach ($foodArray as $food) {
+        echo "ID: " . $food->id . " ";
         echo $food->getFood() . ", ";
-        echo $food->getcategory();
+        echo $food->getcategory() . "\n";
     }
-    
-    $stmt = null;  
+    unset($stmt);
 }
 
 
-function RunTest()
-{
-    StartTest("pdo_simple_update_variants");
-    try
-    {
-        include("MsSetup.inc"); 
-        // Connect
-        $conn = new PDO( "sqlsrv:server=$server;Database=$databaseName", $uid, $pwd);
-        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
-        $tableName = GetTempTableName();   
-        CreateVariantTable($conn, $tableName);
-        
-        // Add three kinds of foods
-        InsertData($conn, $tableName, 1, 'Milk', 'Diary Products');
-        InsertData($conn, $tableName, 3, 'Chicken', 'Meat');
-        InsertData($conn, $tableName, 5, 'Blueberry', 'Fruits');
-        
-        FetchRows($conn, $tableName);
-        
-        UpdateID($conn, $tableName, 4, 'Milk', 'Diary Products');
+try {
+    // Connect
+    $conn = connect();
 
-        FetchRows($conn, $tableName);
-        
-        UpdateFood($conn, $tableName, 4, 'Cheese', 'Diary Products');
+    $tableName = getTableName();
+    createVariantTable($conn, $tableName);
 
-        FetchRows($conn, $tableName);
+    // Add three kinds of foods
+    insertData($conn, $tableName, 1, 'Milk', 'Diary Products');
+    insertData($conn, $tableName, 3, 'Chicken', 'Meat');
+    insertData($conn, $tableName, 5, 'Blueberry', 'Fruits');
 
-        // Add three kinds of foods
-        InsertData($conn, $tableName, 6, 'Salmon', 'Fish');
-        InsertData($conn, $tableName, 2, 'Broccoli', 'Vegetables');
-        
-        FetchRows($conn, $tableName);
-        
-        $conn = null;
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    EndTest("pdo_simple_update_variants");
+    fetchRows($conn, $tableName);
+
+    updateID($conn, $tableName, 4, 'Milk', 'Diary Products');
+
+    fetchRows($conn, $tableName);
+
+    updateFood($conn, $tableName, 4, 'Cheese', 'Diary Products');
+
+    fetchRows($conn, $tableName);
+
+    // Add three kinds of foods
+    insertData($conn, $tableName, 6, 'Salmon', 'Fish');
+    insertData($conn, $tableName, 2, 'Broccoli', 'Vegetables');
+
+    fetchRows($conn, $tableName);
+
+    dropTable($conn, $tableName);
+    unset($conn);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-RunTest();
 
 ?>
 --EXPECT--
- ﻿
 Added Milk in Diary Products with ID 1.
 Added Chicken in Meat with ID 3.
 Added Blueberry in Fruits with ID 5.
@@ -166,5 +160,3 @@ ID: 3 Chicken, Meat
 ID: 4 Cheese, Diary Products
 ID: 5 Blueberry, Fruits
 ID: 6 Salmon, Fish
-Done
-Test "pdo_simple_update_variants" completed successfully.
