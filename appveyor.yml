@@ -32,30 +32,11 @@ environment:
         TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
         SQL_INSTANCE: SQL2012SP1
         PHP_VC: 14
-        PHP_MAJOR_VER: 7.0
-        PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x64
-        PHP_INSTALL_DIR: c:\projects\php\x64\bin
-        platform: x64
-      - BUILD_PLATFORM: x64
-        TEST_PHP_SQL_SERVER: (local)\SQL2014
-        SQL_INSTANCE: SQL2014
-        PHP_VC: 14
         PHP_MAJOR_VER: 7.1
         PHP_MINOR_VER: latest
         PHP_SDK_DIR: c:\projects\php\x64
         PHP_INSTALL_DIR: c:\projects\php\x64\bin
         platform: x64
-      - BUILD_PLATFORM: x86
-        TEST_PHP_SQL_SERVER: (local)\SQL2008R2SP2
-        SQL_INSTANCE: SQL2008R2SP2
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.0
-        PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x86
-        PHP_INSTALL_DIR: c:\projects\php\x86\bin
-        PHP_ZTS: --disable-zts
-        platform: x86
 
 # PHP_MAJOR_VER is PHP major version to build (7.0, 7.1)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
