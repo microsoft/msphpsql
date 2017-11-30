@@ -7,17 +7,12 @@ false as a bit, a true value cast to a bit, a true value as an int.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-/* Fails on PHP 7, producing 1's and 2's instead of 0's and 1's. */
-
 require_once('MsCommon.inc');
 
-$conn = Connect();
-if (!$conn) {
-    fatalError("Could not connect");
-}
+$conn = AE\connect();
 
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('testBoolean', 'P') IS NOT NULL DROP PROCEDURE testBoolean");
 
@@ -43,14 +38,21 @@ $bit_true = 0;
 $bit_false = 0;
 $bit_cast_true = 0;
 $int_true = 0;
-$params = array(array(&$bit_true, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT), array(&$bit_false, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT), array(&$bit_cast_true, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT), array(&$int_true, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT));
+
+$sqlType = AE\isColEncrypted() ? SQLSRV_SQLTYPE_BIT : null;
+$params = array(array(&$bit_true, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT, $sqlType), array(&$bit_false, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT, $sqlType), array(&$bit_cast_true, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT, $sqlType), array(&$int_true, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT, $sqlType));
 
 $stmt = sqlsrv_query($conn, $callSP, $params);
+if (! $stmt){
+    fatalError("Failed when calling testBoolean.");
+}
 
 var_dump($bit_true);
 var_dump($bit_false);
 var_dump($bit_cast_true);
 var_dump($int_true);
+
+$stmt = sqlsrv_query($conn, "DROP PROCEDURE testBoolean");
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);

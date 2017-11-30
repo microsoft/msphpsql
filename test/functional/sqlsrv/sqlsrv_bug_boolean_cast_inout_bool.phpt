@@ -7,15 +7,12 @@ false as a bool, a true value cast to a bool, a true value as an bool.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-$conn = Connect();
-if( !$conn ) {
-    fatalError("Could not connect");
-}
+$conn = AE\connect();
 
 $stmt = sqlsrv_query($conn, "IF OBJECT_ID('testBoolean', 'P') IS NOT NULL DROP PROCEDURE testBoolean");
 
@@ -41,14 +38,21 @@ $bit_true = false;
 $bit_false = true;
 $bit_cast_true = false;
 $int_true = false;
-$params = array(array(&$bit_true, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT), array(&$bit_false, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT), array(&$bit_cast_true, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT), array(&$int_true, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT));
+
+$sqlType = AE\isColEncrypted() ? SQLSRV_SQLTYPE_BIT : null;
+$params = array(array(&$bit_true, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT, $sqlType), array(&$bit_false, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT, $sqlType), array(&$bit_cast_true, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT, $sqlType), array(&$int_true, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT, $sqlType));
 
 $stmt = sqlsrv_query($conn, $callSP, $params);
+if (! $stmt){
+    fatalError("Failed when calling testBoolean.");
+}
 
 var_dump($bit_true);
 var_dump($bit_false);
 var_dump($bit_cast_true);
 var_dump($int_true);
+
+$stmt = sqlsrv_query($conn, "DROP PROCEDURE testBoolean");
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
