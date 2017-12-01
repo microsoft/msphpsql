@@ -463,6 +463,8 @@ function isLocaleSupported()
     if (explode(".", $msodbcsql_ver)[0] < 17) {
         return false;
     }
+
+    return true;
 }
 
 ?>
