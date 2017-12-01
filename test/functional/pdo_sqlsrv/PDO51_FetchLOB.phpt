@@ -89,4 +89,4 @@ function logInfo($offset, $msg)
 
 ?>
 --EXPECT--
-Test "PDO Statement - Fetch LOB" completed successfully.
+Test 'PDO Statement - Fetch LOB' completed successfully.

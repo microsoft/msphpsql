@@ -139,7 +139,7 @@ try {
 
 ?>
 --EXPECT--
-Added Milk in Diary Products with ID 1.
+﻿Added Milk in Diary Products with ID 1.
 Added Chicken in Meat with ID 3.
 Added Blueberry in Fruits with ID 5.
 ID: 1 Milk, Diary Products

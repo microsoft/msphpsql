@@ -27,6 +27,7 @@ function testReverse($conn)
         // Since SQLDescribeParam is called
         if (isColEncrypted() && $string === "987654321") {
             echo "Test input output parameter with SQL_VARIANT successfully.\n";
+            
         } else {
             echo "Does REVERSE work? $string \n";
         }
@@ -124,8 +125,8 @@ try {
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-
 ?>
---EXPECTREGEX--
-Test input output parameter with SQL_VARIANT successfully.
+
+--EXPECT--
+﻿Test input output parameter with SQL_VARIANT successfully.
 Test output parameter with SQL_VARIANT successfully.

@@ -41,7 +41,7 @@ function katmaiBasicTypes($conn)
     $expOutput = array_values($expOutput);
     createTable($conn, $tableName, $dataTypes);
     insertRow($conn, $tableName, $data);
-    echo "\nComparing results of Katmai basic fields\n";
+    echo "Comparing results of Katmai basic fields\n";
 
     $stmt = $conn->query("SELECT * FROM $tableName");
     $numFields = $stmt->columnCount();
@@ -90,7 +90,7 @@ function katmaiSparseChar($conn)
     insertRow($conn, $tableName, array("c1" => 2, "c3" => $input, "c6" => $input));
     insertRow($conn, $tableName, array("c1" => 3, "c4" => $input, "c7" => $input));
 
-    echo "\nComparing results of Katmai sparse fields\n";
+    echo "Comparing results of Katmai sparse fields\n";
     $stmt = $conn->query("SELECT * FROM $tableName");
 
     while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
@@ -139,7 +139,7 @@ function katmaiSparseNumeric($conn)
     }
     insertRow($conn, $tableName, $data);
 
-    echo "\nShowing results of Katmai sparse numeric fields\n";
+    echo "Showing results of Katmai sparse numeric fields\n";
     $stmt = $conn->query("SELECT * FROM $tableName");
     $row = $stmt->fetch(PDO::FETCH_NUM);
     foreach ($row as $value) {
@@ -163,14 +163,11 @@ try {
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-
 ?>
+
 --EXPECT--
-
-Comparing results of Katmai basic fields
-
+﻿﻿Comparing results of Katmai basic fields
 Comparing results of Katmai sparse fields
-
 Showing results of Katmai sparse numeric fields
 string(1) "1"
 string(1) "1"

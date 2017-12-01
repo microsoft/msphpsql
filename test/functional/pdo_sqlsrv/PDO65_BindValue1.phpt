@@ -14,6 +14,7 @@ try {
     $conn1 = connect();
 
     // Prepare test table
+    $tableName = "pdo_test_table";
     createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "val1" => "varchar(10)", "val2" => "varchar(10)", "val3" => "varchar(10)"));
     $data = array("one", "two", "three");
 
