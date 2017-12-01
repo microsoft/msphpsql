@@ -29,7 +29,7 @@ try {
 
     // prepare with emulate prepare
     print_r("Prepare with emulate prepare and no bindParam options:\n");
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         // emulate prepare is not supported for encrypted columns
         $options = array(PDO::ATTR_EMULATE_PREPARES => true);
     }
@@ -39,7 +39,7 @@ try {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     print_r($row);
 
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         // without emulate prepare, binding PARAM_INT with SQLSRV_ENCODING_SYSTEM is not allowed
         // thus the following will not be tested when Column Encryption is enabled
 

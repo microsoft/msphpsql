@@ -29,7 +29,7 @@ try {
     print_r($row);
 
     //with emulate prepare and no bind param options
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         // emulate prepare is not supported in encrypted columns
         $options = array(PDO::ATTR_EMULATE_PREPARES => true);
     }

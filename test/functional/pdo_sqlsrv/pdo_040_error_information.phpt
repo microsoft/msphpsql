@@ -8,11 +8,11 @@ require_once("MsCommon_mid-refactor.inc");
 
 try {
     // Connect
-    $conn = connect(); 
+    $conn = connect();
 
     // Create table
     $tableName = 'pdo_040test';
-    // common function insertRow() is not used here since the test deliberately 
+    // common function insertRow() is not used here since the test deliberately
     // executes an invalid insertion statement
     // thus it's not necessary to create an encrypted column for testing column encryption
     $sql = "CREATE TABLE $tableName (code INT)";
@@ -31,7 +31,7 @@ try {
 } catch (PDOException $e) {
     $error = $e->errorInfo;
     $success = false;
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         // 21S01 is the expected ODBC Column name or number of supplied values does not match table definition error
         if ($error[0] === "21S01") {
             $success = true;
@@ -41,7 +41,7 @@ try {
         if ($error[0] === "07009") {
             $success = true;
         }
-    } 
+    }
     if ($success) {
         print "Done";
     } else {

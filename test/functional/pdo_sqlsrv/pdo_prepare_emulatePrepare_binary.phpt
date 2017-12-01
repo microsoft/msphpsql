@@ -35,7 +35,7 @@ try {
     $cnn->exec("TRUNCATE TABLE $tbname");
 
     //EMULATE PREPARE with SQLSRV_ENCODING_BINARY
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         // Emulate prepare does not work fro encrypted columns
         $pdo_options[PDO::ATTR_EMULATE_PREPARES] = true;
     }
@@ -59,10 +59,10 @@ try {
     $st->bindParam(':p0', $p, PDO::PARAM_LOB);
     $st->execute();
     $error = $st->errorInfo();
-    if (!isColEncrypted() && $error[0] !== "42000") {
+    if (!isAEConnected() && $error[0] !== "42000") {
         echo "Error 42000 is expected: Implicit conversion from data type varchar to varbinary(max) is not allowed.\n";
         var_dump($error);
-    } elseif (isColEncrypted() && $error[0] != "22018") {
+    } elseif (isAEConnected() && $error[0] != "22018") {
         echo "Error 22018 is expected: Invalid character value for cast specification.\n";
         var_dump($error);
     } else {
