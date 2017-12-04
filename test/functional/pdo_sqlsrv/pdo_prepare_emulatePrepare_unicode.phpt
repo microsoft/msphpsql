@@ -48,7 +48,7 @@ try {
 
     //with emulate prepare and no bind param options
     print_r("Prepare with emulate prepare and no bindParam options:\n");
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         $options = array(PDO::ATTR_EMULATE_PREPARES => true);
     } else {
         $options = array(PDO::ATTR_EMULATE_PREPARES => false);

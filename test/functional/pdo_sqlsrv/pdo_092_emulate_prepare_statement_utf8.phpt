@@ -15,7 +15,7 @@ try {
     // Always Encrypted does not support using DIRECT_QUERY for binding parameters
     // see https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam
     $pdo_options = [];
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         $pdo_options[PDO::SQLSRV_ATTR_DIRECT_QUERY] = true;
     }
     $pdo_options[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;
@@ -35,13 +35,13 @@ try {
     $st->execute(['p0' => $name]);
 
     // Always Encrypted does not support emulate prepare
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         $pdo_options[PDO::ATTR_EMULATE_PREPARES] = true;
     }
     $st = $connection->prepare("INSERT INTO $tbname (name) VALUES (:p0)", $pdo_options);
     $st->execute(['p0' => $name2]);
 
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         $statement1 = $connection->prepare("SELECT * FROM $tbname WHERE NAME LIKE :p0", $pdo_options);
         $statement1->execute(['p0' => "$prefix%"]);
         $pdo_options[PDO::ATTR_EMULATE_PREPARES] = false;

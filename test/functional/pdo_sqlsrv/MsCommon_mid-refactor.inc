@@ -81,7 +81,7 @@ function getDSN($sqlsrvserver, $database, $keywords = '', $disableCE = false)
         $dsn .= "ColumnEncryption=Enabled;";
     }
     if ($keystore == "ksp" && !$disableCE) {
-        require('AE_Ksp.inc');
+        require_once('AE_Ksp.inc');
         $ksp_path = getKSPPath();
         $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
     }
@@ -521,6 +521,13 @@ function isColEncrypted()
     } else {
         return true;
     }
+}
+
+
+function isAEConnected()
+{
+    require('MsSetup.inc');
+    return $keystore != "none";
 }
 
 function teardown()

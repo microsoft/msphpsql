@@ -11,13 +11,13 @@ Github 138. Test for Unicode Column Metadata.
  * @param mixed $query
  * @return PDOStatement
  */
-function prepare($connection, $query) {
+function prepare($connection, $query)
+{
     $pdo_options = array();
-    // emulate and binding parameter with direct query are not support in Always Encrypted
-    if ( !isColEncrypted() )
-    {
-        $pdo_options[PDO::ATTR_EMULATE_PREPARES] = TRUE;
-        $pdo_options[PDO::SQLSRV_ATTR_DIRECT_QUERY] = TRUE;
+    // emulate and binding parameter with direct query are not supported in Always Encrypted
+    if (!isAEConnected()) {
+        $pdo_options[PDO::ATTR_EMULATE_PREPARES] = true;
+        $pdo_options[PDO::SQLSRV_ATTR_DIRECT_QUERY] = true;
     }
     $pdo_options[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;
     $pdo_options[PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE] = PDO::SQLSRV_CURSOR_BUFFERED;
@@ -35,7 +35,7 @@ try {
 
     // Create Table
     $tbname = "mytáble";
-    createTable( $connection, $tbname, array( new ColumnMeta( "nchar(10)", "id" ), new ColumnMeta( "nchar(10)", "väriable" ), new ColumnMeta( "nchar(10)", "tésting" )));
+    createTable($connection, $tbname, array(new ColumnMeta("nchar(10)", "id"), new ColumnMeta("nchar(10)", "väriable"), new ColumnMeta("nchar(10)", "tésting")));
 
 
     $query = "INSERT INTO $tbname (id, tésting, väriable) VALUES (:db_insert0, :db_insert1, :db_insert2)";
@@ -55,9 +55,9 @@ try {
 
     while ($row = $st->fetchAll()) {
         $row = reset($row);
-        echo (isset($row['id']) ? "OK" : "FAIL") , "\n";
-        echo (isset($row['tésting']) ? "OK" : "FAIL") , "\n";
-        echo (isset($row['väriable']) ? "OK" : "FAIL") , "\n";
+        echo(isset($row['id']) ? "OK" : "FAIL") , "\n";
+        echo(isset($row['tésting']) ? "OK" : "FAIL") , "\n";
+        echo(isset($row['väriable']) ? "OK" : "FAIL") , "\n";
     }
 
     for ($i = 0; $i < $st->columnCount(); $i++) {

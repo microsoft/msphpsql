@@ -10,7 +10,7 @@ try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
 
     $tableName = "number_types";
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         createTable($conn, $tableName, array("c1_decimal" => "decimal", "c2_money" => "money", "c3_float" => "float"));
     } else {
         // money is not supported for column encryption, use decimal(19,4) instead
@@ -35,7 +35,7 @@ try {
 
     //with emulate prepare and no bind param options
     print_r("Prepare with emulate prepare and no bind param options:\n");
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         // emulate prepare is not supported for encrypted columns
         $options = array(PDO::ATTR_EMULATE_PREPARES => true);
     }
