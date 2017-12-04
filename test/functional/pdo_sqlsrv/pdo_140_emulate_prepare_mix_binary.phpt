@@ -6,7 +6,7 @@ Test emulate prepare with mix bound param encodings including binary data
 <?php
 class MyStatement extends PDOStatement
 {
-    public function BindValues(array &$values, $placeholder_prefix, $columnInformation)
+    public function bindValues(array &$values, $placeholder_prefix, $columnInformation)
     {
         $max_placeholder = 0;
         foreach ($values as $field_name => &$field_value) {
@@ -101,7 +101,7 @@ try {
     /** @var MyStatement */
     $st = $cnn->prepare($query, $pdo_options);
 
-    $st->BindValues($values, ':db_insert', $columnInformation);
+    $st->bindValues($values, ':db_insert', $columnInformation);
     $st->execute();
 
     $st = $cnn->query("SELECT * FROM [$tbname]");

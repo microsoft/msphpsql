@@ -14,7 +14,7 @@ Github 138. Test for Unicode Column Metadata.
 function prepare($connection, $query)
 {
     $pdo_options = array();
-    // emulate and binding parameter with direct query are not support in Always Encrypted
+    // emulate and binding parameter with direct query are not supported in Always Encrypted
     if (!isAEConnected()) {
         $pdo_options[PDO::ATTR_EMULATE_PREPARES] = true;
         $pdo_options[PDO::SQLSRV_ATTR_DIRECT_QUERY] = true;
@@ -35,7 +35,7 @@ try {
 
     // Create Table
     $tbname = "mytáble";
-    createTable($connection, $tbname, array( new ColumnMeta("nchar(10)", "id"), new ColumnMeta("nchar(10)", "väriable"), new ColumnMeta("nchar(10)", "tésting")));
+    createTable($connection, $tbname, array(new ColumnMeta("nchar(10)", "id"), new ColumnMeta("nchar(10)", "väriable"), new ColumnMeta("nchar(10)", "tésting")));
 
 
     $query = "INSERT INTO $tbname (id, tésting, väriable) VALUES (:db_insert0, :db_insert1, :db_insert2)";
