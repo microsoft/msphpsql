@@ -86,7 +86,9 @@ function getDSN($sqlsrvserver, $database, $keywords = '', $disableCE = false)
     }
     if ($keystore == "ksp" && !$disableCE) {
         $ksp_path = getKSPPath();
-        $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=KSP_NAME;CEKeystoreEncryptKey=ENCRYPT_KEY;";
+        $ksp_name = KSP_NAME;
+        $encrypt_key = ENCRYPT_KEY;
+        $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
     }
     if ($keywords) {
         $dsn .= $keywords;
