@@ -4,19 +4,11 @@ Fetch data from a prepopulated test table given a custom keystore provider
 <?php require('skipif_not_ksp.inc'); ?>
 --FILE--
 <?php
-    require( 'MsSetup.inc' );
-    require( 'AE_Ksp.inc' );
-
-    $ksp_path = getKSPpath();
-
-    $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
-    $connectionInfo .= "CEKeystoreProvider = $ksp_path; ";
-    $connectionInfo .= "CEKeystoreName = $ksp_name; "; 
-    $connectionInfo .= "CEKeystoreEncryptKey = $encrypt_key; ";
+    require_once("MsCommon_mid-refactor.inc");
 
     try
     {
-        $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+        $conn = connect();
         echo "Connected successfully with ColumnEncryption enabled and KSP specified.\n";
     }
     catch( PDOException $e )
@@ -26,15 +18,16 @@ Fetch data from a prepopulated test table given a custom keystore provider
         echo "\n";
     }
    
-    $tsql = "SELECT * FROM CustomKSPTestTable";
+    $tbname = KSP_TEST_TABLE;
+    $tsql = "SELECT * FROM $tbname";
     $stmt = $conn->query($tsql);
     while ($row = $stmt->fetch(PDO::FETCH_NUM))
     {
         echo "c1=" . $row[0] . "\tc2=" . $row[1] . "\tc3=" . $row[2] . "\tc4=" . $row[3] . "\n";
     }            
     
-    $stmt = null;
-    $conn = null;
+    unset($stmt);
+    unset($conn);
 
     echo "Done\n";
 

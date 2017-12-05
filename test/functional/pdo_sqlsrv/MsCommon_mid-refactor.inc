@@ -13,6 +13,10 @@
 // to be runnable from the MSSQL teams' internal proprietary test running system
 //
 
+const KSP_NAME = 'MyCustomKSPName';
+const ENCRYPT_KEY = 'LPKCWVD07N3RG98J0MBLG4H2';
+const KSP_TEST_TABLE = 'CustomKSPTestTable';
+
 function isAEQualified($conn)
 {
     $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
@@ -81,9 +85,8 @@ function getDSN($sqlsrvserver, $database, $keywords = '', $disableCE = false)
         $dsn .= "ColumnEncryption=Enabled;";
     }
     if ($keystore == "ksp" && !$disableCE) {
-        require_once('AE_Ksp.inc');
         $ksp_path = getKSPPath();
-        $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
+        $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=KSP_NAME;CEKeystoreEncryptKey=ENCRYPT_KEY;";
     }
     if ($keywords) {
         $dsn .= $keywords;
@@ -117,6 +120,27 @@ function getCekName()
     }
     return $cekName;
 }
+
+/**
+ * @return the path to the KSP dll/so file
+ */
+function getKSPpath() 
+{
+    $name = 'myKSP';
+
+    $dir_name = realpath(dirname(__FILE__));
+    $ksp = $dir_name . DIRECTORY_SEPARATOR . $name;
+    if ( strtoupper( substr( php_uname( 's' ), 0, 3 ) ) == 'WIN' ) {
+        $arch = 'x64';
+        if ( PHP_INT_SIZE == 4 ) // running 32 bit
+            $arch = '';
+        $ksp .= $arch . '.dll';
+    }
+    else
+        $ksp .= '.so';
+        
+    return $ksp;
+}  
 
 
 /**
