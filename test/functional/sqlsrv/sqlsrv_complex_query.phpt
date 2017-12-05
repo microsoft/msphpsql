@@ -9,7 +9,7 @@ This test is similar to the other test TC33_ComplexQuery but using UTF-8 data
 ﻿<?php
 require_once('MsCommon.inc');
 
-function insertTest($conn, $tableName, $inputs, $query = null)
+function insertTest($conn, $tableName, $inputs, $query)
 {
     $stmt = null;
     if (!AE\isColEncrypted()) {

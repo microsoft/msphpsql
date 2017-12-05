@@ -66,15 +66,18 @@ try {
     sqlsrv_configure('WarningsReturnAsErrors', 1);
 
     // connect
-    $conn = connect();
-    if (!$conn) {
-        fatalError("Could not connect.\n");
-    }
+    $conn = AE\connect();
 
     // create a test table
     $tableName = 'null_binary_stream';
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_varbinary] varbinary(512), [c3_varbinary_max] varbinary(max), [c4_image] image)");
-    sqlsrv_free_stmt($stmt);
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('varbinary(512)', 'c2_varbinary'),
+                     new AE\ColumnMeta('varbinary(max)', 'c3_varbinary_max'),
+                     new AE\ColumnMeta('image', 'c4_image'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table.\n");
+    }
 
     nullBin2String($conn, $tableName);
     nullPrepBin2String($conn, $tableName);

@@ -12,9 +12,9 @@ function getFirstInputParam()
     return array(1, null, null, $intType);
 }
 
-function MinMaxScale($conn)
+function minMaxScale($conn)
 {
-    $tableName = 'MinMaxScale';
+    $tableName = 'minMaxScale';
     $columns = array(new AE\ColumnMeta('int', 'c1_int'),
                      new AE\ColumnMeta('decimal(28,4)', 'c2_decimal'),
                      new AE\ColumnMeta('numeric(32,4)', 'c3_numeric'));
@@ -31,9 +31,9 @@ function MinMaxScale($conn)
     dropTable($conn, $tableName);
 }
 
-function MinMaxSize($conn)
+function minMaxSize($conn)
 {
-    $tableName = 'MinMaxSize';
+    $tableName = 'minMaxSize';
     $columns = array(new AE\ColumnMeta('int', 'c1_int'),
                      new AE\ColumnMeta('varchar(max)', 'c2_varchar_max'));
     $stmt = AE\createTable($conn, $tableName, $columns);
@@ -49,9 +49,9 @@ function MinMaxSize($conn)
     dropTable($conn, $tableName);
 }
 
-function MinMaxPrecision($conn)
+function minMaxPrecision($conn)
 {
-    $tableName = 'MinMaxPrecision';
+    $tableName = 'minMaxPrecision';
     $columns = array(new AE\ColumnMeta('int', 'c1_int'),
                      new AE\ColumnMeta('decimal(28,4)', 'c2_decimal'),
                      new AE\ColumnMeta('numeric(32,4)', 'c3_numeric'));
@@ -76,9 +76,9 @@ try {
     // connect
     $conn = AE\connect();
 
-    MinMaxScale($conn);
-    MinMaxSize($conn);
-    MinMaxPrecision($conn);
+    minMaxScale($conn);
+    minMaxSize($conn);
+    minMaxPrecision($conn);
 
     sqlsrv_close($conn);
 } catch (Exception $e) {

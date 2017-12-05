@@ -20,10 +20,6 @@ for ($k = 1; $k <= 8; $k++) {
                      new AE\ColumnMeta($sqlType, $columnNames[1]));
     AE\createTable($conn, $tableName, $columns);
 
-    // $sql = "CREATE TABLE [$tableName] ($dataType)";
-    // $stmt1 = sqlsrv_query($conn, $sql);
-    // sqlsrv_free_stmt($stmt1);
-
     $sql = "INSERT INTO [$tableName] ($columnNames[0], $columnNames[1]) VALUES (?, ?)";
     $data = getData($k);
     $phpType = getPhpType($k);

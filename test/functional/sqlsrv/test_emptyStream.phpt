@@ -10,9 +10,6 @@ Send an empty stream and null stream test.
     require_once("MsCommon.inc");
 
     $conn = AE\connect();
-    // if (!$conn) {
-        // fatalError("sqlsrv_connect failed.");
-    // }
 
     $tableName = 'test_empty_stream';
     $columns = array(new AE\ColumnMeta('int', 'id'),
@@ -22,16 +19,6 @@ Send an empty stream and null stream test.
     if (!$stmt) {
         fatalError("Failed to create table $tableName\n");
     }
-
-    // $stmt = sqlsrv_query($conn, "IF OBJECT_ID('test_empty_stream', 'U') IS NOT NULL DROP TABLE test_empty_stream");
-    // if ($stmt !== false) {
-        // sqlsrv_free_stmt($stmt);
-    // }
-
-    // $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName (id int, varchar_stream varchar(max), varbinary_stream varbinary(max))");
-    // if ($stmt === false) {
-        // die(print_r(sqlsrv_errors(), true));
-    // }
 
     $f1 = 1;
     $f2 = fopen("data://text/plain,", "r");

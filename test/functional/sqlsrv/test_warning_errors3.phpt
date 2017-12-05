@@ -105,7 +105,7 @@ error messages when trying to retrieve past the end of a result set and when no 
     }
     print_r(sqlsrv_errors());
 
-    sqlsrv_query($conn, "DROP TABLE $tableName");
+    dropTable($conn, $tableName);
 
     sqlsrv_free_stmt($stmt);
     sqlsrv_close($conn);

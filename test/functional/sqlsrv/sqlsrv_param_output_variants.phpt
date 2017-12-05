@@ -116,8 +116,8 @@ setup();
 // connect
 $conn = AE\connect();
 
-// Create a test table that will be automatically dropped once the connection is closed
-$tableName = GetTempTableName('test_output_variants', false);
+// Create a test table 
+$tableName = 'test_output_variants';
 createVariantTable($conn, $tableName);
 
 testOutputParam($conn, $tableName);

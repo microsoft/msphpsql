@@ -153,7 +153,7 @@ function getInputData($index)
 
 try {
     setup();
-    $conn = connect();
+    $conn = AE\connect();
 
     // Create a temp table that will be automatically dropped once the connection is closed
     $tableName = 'param_input_variants';

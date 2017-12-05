@@ -17,7 +17,7 @@ $tableName = 'testLOBTypes_GH231_lob';
 $columnNames = array("c1", "c2");
 
 for ($k = 1; $k <= 3; $k++) {
-    $sqlType = getFieldType($k);
+    $sqlType = SQLType($k);
     $columns = array(new AE\ColumnMeta('int', $columnNames[0]),
                      new AE\ColumnMeta($sqlType, $columnNames[1]));
     AE\createTable($conn, $tableName, $columns);
@@ -91,7 +91,7 @@ function getData($k)
     return $data;
 }
 
-function getFieldType($k)
+function SQLType($k)
 {
     switch ($k) {
         case 1: return ("text");

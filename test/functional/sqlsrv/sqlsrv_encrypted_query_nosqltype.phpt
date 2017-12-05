@@ -1,7 +1,7 @@
 --TEST--
 Test using sqlsrv_query for binding parameters with column encryption and a custom keystore provider
 --SKIPIF--
-<?php require('skipif_not_ksp.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     class Patient 
