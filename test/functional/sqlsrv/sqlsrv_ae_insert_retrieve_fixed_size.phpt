@@ -30,7 +30,7 @@ $inputs = array( "TinyIntData" => 255,
                  "DecimalData" => 79228162514264,
                  "BitData" => 1,
                  "DateTimeData" => '9999-12-31 23:59:59.997',
-                 "DateTime2Data" => '9999-12-31 23:59:59.9999999');
+                 "DateTime2Data" => '9999-12-31 23:59:59.123456');
 $r;
 $stmt = AE\insertRow($conn, $tbname, $inputs, $r);
 if ($r === false) {
@@ -80,7 +80,7 @@ DateTimeData:
   timezone_type: 3
   timezone: Canada/Pacific
 DateTime2Data:
-  date: 9999-12-31 23:59:59.1000000
+  date: 9999-12-31 23:59:59.123456
   timezone_type: 3
   timezone: Canada/Pacific
 Done
