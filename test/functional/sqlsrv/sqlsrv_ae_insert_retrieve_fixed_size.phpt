@@ -80,7 +80,7 @@ DateTimeData:
   timezone_type: 3
   timezone: Canada/Pacific
 DateTime2Data:
-  date: 9999-12-31 23:59:59.1000000
+  date: 9999-12-31 23:59:59.999999
   timezone_type: 3
   timezone: Canada/Pacific
 Done
