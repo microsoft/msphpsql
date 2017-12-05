@@ -344,8 +344,6 @@ $actualValue = $return;
 $actualLength = strlen($return);
 compareResults($expectedLength, $expectedValue, $actualLength, $actualValue);
 
-// sqlsrv_query($conn, "DROP TABLE BindStringTest");
-// sqlsrv_query($conn, "DROP PROCEDURE uspPerson");
 dropTable($conn, $tableName);
 dropProc($conn, 'uspPerson');
 

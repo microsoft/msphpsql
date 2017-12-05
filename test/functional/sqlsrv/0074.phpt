@@ -17,7 +17,7 @@ require_once('MsCommon.inc');
 $conn = AE\connect();
 
 // drop the procedure if exists
-$stmt = sqlsrv_query($conn, "IF OBJECT_ID('sp_MakeSubject', 'P') IS NOT NULL DROP PROCEDURE sp_MakeSubject");
+dropProc($conn, 'sp_MakeSubject');
 
 // Create Table 'Subjects' but do not encrypt the first column because in the stored procedure
 // we rely on the server to get the current date time. With Column Encryption, all input values
@@ -79,7 +79,7 @@ if ($stmt === false) {
 $tsql_callSP = "{call sp_MakeSubject(?,?,?,?)}";
 $introText="X";
 
-// With AE, the sql type has to match the column definition
+// With AE, the sql type has to match the stored procedure parameter definition
 $outSQLType = AE\isColEncrypted() ? SQLSRV_SQLTYPE_NVARCHAR('max') : SQLSRV_SQLTYPE_NVARCHAR(256);
 $params = array(
      array( 1, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT, SQLSRV_SQLTYPE_INT ),

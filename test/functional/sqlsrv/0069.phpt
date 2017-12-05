@@ -43,7 +43,6 @@ Variety of connection parameters.
     $conn = AE\connect();
     $tableName = 'php_table_SERIL1_1';
 
-    dropTable($conn, $tableName);
     if (AE\isColEncrypted()) {
         // With AE enabled, the sql types and SQLSRV SQLTYPES have to match exactly when binding
         // Since SQLSRV SQLTYPES with datetime columns have no options for precision/scale,
@@ -53,6 +52,7 @@ Variety of connection parameters.
                          new AE\ColumnMeta('time', 'c3_time'));
         $stmt = AE\createTable($conn, $tableName, $columns);
     } else {
+        dropTable($conn, $tableName);
         $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_datetime2] datetime2(0), [c2_datetimeoffset] datetimeoffset(0), [c3_time] time(0))");
     }
     if (!$stmt) {

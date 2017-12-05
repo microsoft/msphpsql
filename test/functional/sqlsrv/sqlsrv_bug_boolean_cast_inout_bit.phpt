@@ -14,7 +14,7 @@ require_once('MsCommon.inc');
 
 $conn = AE\connect();
 
-$stmt = sqlsrv_query($conn, "IF OBJECT_ID('testBoolean', 'P') IS NOT NULL DROP PROCEDURE testBoolean");
+dropProc($conn, 'testBoolean');
 
 $createSP = <<<SQL
 CREATE PROCEDURE testBoolean
@@ -51,7 +51,7 @@ var_dump($bit_false);
 var_dump($bit_cast_true);
 var_dump($int_true);
 
-$stmt = sqlsrv_query($conn, "DROP PROCEDURE testBoolean");
+dropProc($conn, 'testBoolean');
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
