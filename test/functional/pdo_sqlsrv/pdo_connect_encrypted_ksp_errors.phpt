@@ -4,8 +4,8 @@ Connect using a custom keystore provider with some required inputs missing
 <?php require('skipif_not_ksp.inc'); ?>
 --FILE--
 <?php
-    require( 'MsSetup.inc' );
-    require( 'AE_Ksp.inc' );
+    require("MsSetup.inc");
+    require_once("MsCommon_mid-refactor.inc");
 
     function connect( $connectionInfo )
     {
@@ -25,6 +25,8 @@ Connect using a custom keystore provider with some required inputs missing
     }
     
     $ksp_path = getKSPpath();
+    $ksp_name = KSP_NAME;
+    $encrypt_key = ENCRYPT_KEY;
 
     echo("Connecting... with column encryption\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
