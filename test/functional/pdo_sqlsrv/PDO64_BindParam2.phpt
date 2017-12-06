@@ -16,7 +16,7 @@ try {
     // Prepare test table
     $dataCols = "id, label";
     $tableName = "pdo_test_table";
-    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "label" => "char(1)"));
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY", "normal"), "label" => "char(1)"));
     insertRow($conn1, $tableName, array("id" => 1, "label" => 'a'));
     insertRow($conn1, $tableName, array("id" => 2, "label" => 'b'));
     insertRow($conn1, $tableName, array("id" => 3, "label" => 'c'));
@@ -28,13 +28,8 @@ try {
     $label = null;
 
     // Bind param @ SELECT
-    if (!isColEncrypted()) {
-        $tsql1 = "SELECT TOP(2) id, label FROM [$tableName] WHERE id > ? ORDER BY id ASC";
-        $value1 = array(1 => 0);
-    } else {
-        $tsql1 = "SELECT id, label FROM $tableName WHERE id = ? OR id = ?";
-        $value1 = array(1 => 1, 2 => 2);
-    }
+    $tsql1 = "SELECT TOP(2) id, label FROM [$tableName] WHERE id > ? ORDER BY id ASC";
+    $value1 = 0;
     $stmt1 = $conn1->prepare($tsql1);
     bindParam(1, $stmt1, $value1);
     execStmt(1, $stmt1);
@@ -45,13 +40,8 @@ try {
     unset($stmt1);
 
     // Bind param @ INSERT
-    if (!isColEncrypted()) {
-        $tsql2 = "INSERT INTO [$tableName](id, label) VALUES (100, ?)";
-        $value2 = array(1 => null);
-    } else {
-        $tsql2 = "INSERT INTO [$tableName](id, label) VALUES (?, ?)";
-        $value2 = array(1 => 100, 2 => null);
-    }
+    $tsql2 = "INSERT INTO [$tableName](id, label) VALUES (100, ?)";
+    $value2 = null;
     $stmt1 = $conn1->prepare($tsql2);
     bindParam(2, $stmt1, $value2);
     execStmt(2, $stmt1);
@@ -72,10 +62,10 @@ try {
     echo $e->getMessage();
 }
 
-function bindParam($offset, $stmt, $value)
+function bindParam($offset, $stmt, &$value)
 {
-    foreach ($value as $key => &$val) {
-        $stmt->bindParam($key, $val);
+    if (!$stmt->bindParam(1, $value)) {
+        logInfo($offset,"Cannot bind parameter");
     }
 }
 

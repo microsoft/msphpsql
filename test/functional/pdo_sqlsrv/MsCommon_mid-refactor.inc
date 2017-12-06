@@ -153,10 +153,10 @@ class ColumnMeta
     public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $colName;    //column name
     public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
-    public $encType;    //randomized or deterministic; default is deterministic
-    public $forceEncrypt; //force encryption on a datatype no supported by Column Encrypton
+    public $encType;    //randomized, deterministic, or normal; default is null
+    public $forceEncrypt; //force encryption on a datatype not supported by Column Encrypton
 
-    public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic", $forceEncrypt = false)
+    public function __construct($dataType, $colName = null, $options = null, $encType = null, $forceEncrypt = false)
     {
         if (is_null($colName)) {
             $this->colName = getDefaultColName($dataType);
@@ -165,6 +165,15 @@ class ColumnMeta
         }
         $this->dataType = $dataType;
         $this->options = $options;
+        if (is_null($encType)) {
+            if (isColEncrypted()) {
+                $this->encType = "deterministic";
+            } else {
+                $this->encType = "normal";
+            }
+        } else {
+            $this->encType = $encType;
+        }
         $this->encType = $encType;
         $this->forceEncrypt = $forceEncrypt;
     }
@@ -173,11 +182,11 @@ class ColumnMeta
      */
     public function getColDef()
     {
-        //return getColDef($this->colName, $this->dataType, $this->options, $this->encType);
         $append = " ";
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if (isColEncrypted() && $this->isEncryptableType() && stripos($this->options, "identity") === false && stripos($this->options, "rowguidcol") === false) {
+        if (isColEncrypted() && ($this->encType == "deterministic" || $this->encType == "ramdomized") && $this->isEncryptableType() 
+            && stripos($this->options, "identity") === false && stripos($this->options, "rowguidcol") === false) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";

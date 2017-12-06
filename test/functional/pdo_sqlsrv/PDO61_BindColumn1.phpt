@@ -15,7 +15,7 @@ try {
 
     // Prepare test table
     $tableName = "pdo_test_table";
-    createTable($conn1, $tableName, array(new ColumnMeta("int", "idx", "NOT NULL PRIMARY KEY"), "txt" => "varchar(20)"));
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "idx", "NOT NULL PRIMARY KEY", "normal"), "txt" => "varchar(20)"));
     insertRow($conn1, $tableName, array("idx" => 0, "txt" => "String0"));
     insertRow($conn1, $tableName, array("idx" => 1, "txt" => "String1"));
     insertRow($conn1, $tableName, array("idx" => 2, "txt" => "String2"));
@@ -28,36 +28,17 @@ try {
     unset($stmt1);
 
     logInfo(2, "Testing fetchAll() ...");
-    // ORDER BY doesn't work for encrypted columns
-    // need to fetch all rows first then sort and print
-    if (!isColEncrypted()) {
-        $stmt1 = $conn1->prepare("SELECT idx, txt FROM [$tableName] ORDER BY idx");
-    } else {
-        $stmt1 = $conn1->prepare("SELECT idx, txt FROM [$tableName]");
-    }
+    $stmt1 = $conn1->prepare("SELECT idx, txt FROM [$tableName] ORDER BY idx");
     $stmt1->execute();
     $data = $stmt1->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_UNIQUE);
-    if (isColEncrypted()) {
-        sort($data);
-    }
     var_dump($data);
 
     logInfo(3, "Testing bindColumn() ...");
     $stmt1->bindColumn('idx', $idx);
     $stmt1->bindColumn('txt', $txt);
     $stmt1->execute();
-    $idxArray = array();
-    $txtArray = array();
     while ($stmt1->fetch(PDO::FETCH_BOUND)) {
-        array_push($idxArray, $idx);
-        array_push($txtArray, $txt);
-    }
-    if (isColEncrypted()) {
-        sort($idxArray);
-        sort($txtArray);
-    }
-    for ($i = 0; $i < 4; $i++) {
-        var_dump(array($idxArray[$i] => $txtArray[$i]));
+        var_dump(array($idx=>$txt));
     }
 
     logInfo(4, "Testing bindColumn() with data check ...");
@@ -74,27 +55,13 @@ try {
     $stmt1->execute();
     while ($stmt1->fetch(PDO::FETCH_BOUND)) {
         $data[] = array('id' => $id, 'val' => $val);
+        printf("id = %s (%s) / val = %s (%s)\n",
+               var_export($id, true), gettype($id),
+               var_export($val, true), gettype($val));
     }
-    $sortedData = $data;
-    if (isColEncrypted()) {
-        sort($sortedData);
-    }
-    foreach ($sortedData as $d) {
-        printf(
-            "id = %s (%s) / val = %s (%s)\n",
-               var_export($d['id'], true),
-               gettype($d['id']),
-               var_export($d['val'], true),
-               gettype($d['val'])
-        );
-    }
-
     unset($stmt1);
-    if (!isColEncrypted()) {
-        $stmt1 = $conn1->query("SELECT idx, txt FROM [$tableName] ORDER BY idx");
-    } else {
-        $stmt1 = $conn1->query("SELECT idx, txt FROM [$tableName]");
-    }
+    
+    $stmt1 = $conn1->query("SELECT idx, txt FROM [$tableName] ORDER BY idx");
     while ($row = $stmt1->fetch(PDO::FETCH_ASSOC)) {
         if ($row['idx'] != $data[$index]['id']) {
             logInfo(6, "Data corruption for integer column in row $index");

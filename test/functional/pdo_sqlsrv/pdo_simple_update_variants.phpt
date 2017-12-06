@@ -78,23 +78,13 @@ function updateFood($conn, $tableName, $id, $food, $category)
 
 function fetchRows($conn, $tableName)
 {
-    if (!isColEncrypted()) {
-        $query = "SELECT * FROM $tableName ORDER BY id";
-    } else {
-        $query = "SELECT * FROM $tableName";
-    }
+    $query = "SELECT * FROM $tableName ORDER BY id";
     $stmt = $conn->query($query);
 
     $stmt->setFetchMode(PDO::FETCH_CLASS, 'Food');
     $foodArray = array();
     while ($food = $stmt->fetch()) {
-        array_push($foodArray, $food);
-    }
-    if (isColEncrypted()) {
-        sort($foodArray);
-    }
-    foreach ($foodArray as $food) {
-        echo "ID: " . $food->id . " ";
+        echo "ID: " . $food->id . " "; 
         echo $food->getFood() . ", ";
         echo $food->getcategory() . "\n";
     }

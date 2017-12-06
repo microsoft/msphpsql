@@ -15,7 +15,7 @@ try {
 
     // Prepare test table
     $tableName = "pdo_test_table";
-    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "label" => "char(1)"));
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY", "normal"), "label" => "char(1)"));
     insertRow($conn1, $tableName, array("id" => 1, "label" => "a"));
     insertRow($conn1, $tableName, array("id" => 2, "label" => "b"));
     insertRow($conn1, $tableName, array("id" => 3, "label" => "c"));
@@ -27,36 +27,13 @@ try {
     $midRow = 4;
 
     // Check bind column
-    // order by does not work for encrypted columns
-    if (!isColEncrypted()) {
-        $tsql1 = "SELECT TOP($rowCount) id, label FROM [$tableName] ORDER BY id ASC";
-    } else {
-        $tsql1 = "SELECT TOP($rowCount) id, label FROM [$tableName]";
-    }
-    $data1 = bindColumn($conn1, $tsql1);
-    checkBind($conn1, $tsql1, $data1);
+    $tsql1 = "SELECT TOP($rowCount) id, label FROM [$tableName] ORDER BY id ASC";
+    $data = bindColumn($conn1, $tsql1);
+    checkBind($conn1, $tsql1, $data);
 
-    if (!isColEncrypted()) {
-        $tsql2 = "SELECT TOP($rowCount) id, label FROM (SELECT *, ROW_NUMBER() OVER(ORDER BY id ASC) as row FROM [$tableName]) [$tableName] WHERE row >= $midRow";
-    } else {
-        $tsql2 = "SELECT TOP($rowCount) id, label FROM (SELECT *, ROW_NUMBER() OVER(ORDER BY (SELECT 1)) as row FROM [$tableName]) [$tableName] WHERE row >= $midRow";
-    }
-    $data2 = bindColumn($conn1, $tsql2);
-    checkBind($conn1, $tsql2, $data2);
-
-    $data = array_merge($data1, $data2);
-    if (isColEncrypted()) {
-        sort($data);
-    }
-    foreach ($data as $d) {
-        printf(
-            "id = %s (%s) / label = %s (%s)\n",
-               var_export($d['id'], true),
-               gettype($d['id']),
-               var_export($d['label'], true),
-               gettype($d['label'])
-        );
-    }
+    $tsql2 = "SELECT TOP($rowCount) id, label FROM (SELECT *, ROW_NUMBER() OVER(ORDER BY id ASC) as row FROM [$tableName]) [$tableName] WHERE row >= $midRow";
+    $data = bindColumn($conn1, $tsql2);
+    checkBind($conn1, $tsql2, $data);
 
     // Cleanup
     dropTable($conn1, $tableName);
@@ -80,6 +57,9 @@ function bindColumn($conn, $tsql)
         logInfo(1, "Cannot bind string column");
     }
     while ($stmt->fetch(PDO::FETCH_BOUND)) {
+        printf("id = %s (%s) / label = %s (%s)\n",
+               var_export($id, true), gettype($id),
+               var_export($label, true), gettype($label));
         $data[] = array('id' => $id, 'label' => $label);
     }
     unset($stmt);

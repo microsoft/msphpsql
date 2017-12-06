@@ -30,7 +30,10 @@ function katmaiBasicTypes($conn)
                   "c5_geometry" => '0000000001140000000000803e401f85eb51b81ee5bf48e17a14ae073f4052b81e85eb51d8bf',
                   "c6_hierarchyid" => '5bc0',
                   "c7_uniqueidentifier" => '35413141383846372d333734392d343641332d384137412d454641453733454645383846');
+                  
     if (isColEncrypted()) {
+        // remove these types from tests because these types require direct query for the data to be inserted
+        // and the insertRow common function uses bind parameters to insertion when column encryption is enabled
         $toRemove = array("c4_geography", "c5_geometry", "c6_hierarchyid");
         foreach ($toRemove as $key) {
             unset($dataTypes[$key]);

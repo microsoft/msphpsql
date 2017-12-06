@@ -48,7 +48,7 @@ try {
     $num = $stmt2->fetchColumn();
     echo "There are $num rows in the table.\n";
 
-    createTable($conn1, $tableName, array(new ColumnMeta("int", "idx", "NOT NULL PRIMARY KEY"), "txt" => "varchar(20)"));
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "idx", "NOT NULL PRIMARY KEY", "normal"), "txt" => "varchar(20)"));
     insertRow($conn1, $tableName, array("idx" => 0, "txt" => 'String0'));
     insertRow($conn1, $tableName, array("idx" => 1, "txt" => 'String1'));
     insertRow($conn1, $tableName, array("idx" => 2, "txt" => 'String2'));
@@ -59,18 +59,9 @@ try {
     var_dump($stmt1->fetchColumn());
     unset($stmt1);
 
-    if (!isColEncrypted()) {
-        $stmt1 = $conn1->prepare("SELECT idx, txt FROM [$tableName] ORDER BY idx");    
-    } else {
-        // ORDER BY does not work on encrypted columns
-        $stmt1 = $conn1->prepare("SELECT idx, txt FROM [$tableName]");
-    }
+    $stmt1 = $conn1->prepare("SELECT idx, txt FROM [$tableName] ORDER BY idx");    
     $stmt1->execute();
     $data = $stmt1->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_UNIQUE);
-    // needs to order the result set manually as ORDER BY does not work properly on encrypted columns
-    if (isColEncrypted()) {
-        ksort($data);
-    }
     var_dump($data);
 
     echo "===WHILE===\n";
@@ -100,7 +91,7 @@ try {
 
         var_dump($stmt2->execute());
         if ($idx == 0) {   // bindColumn()s after execute() has been called at least once
-            $stmt2->bindColumn('txt', $txtCol);
+            $stmt2->bindColumn('txt', $col);
         }
         var_dump($stmt2->fetch(PDO::FETCH_BOUND));
         $stmt2->closeCursor();
@@ -112,23 +103,23 @@ try {
         var_dump($stmt3->fetch(PDO::FETCH_BOUND));
         $stmt3->closeCursor();
 
-        var_dump(array($idxCol=>$txtCol));
+        var_dump(array($idxCol=>$col));
     }
 
     echo "===REBIND/SAME===\n";
 
-    $stmt3->bindColumn('idx', $idxCol);
+    $stmt3->bindColumn('idx', $col);
     foreach ($data as $idx => $txt) {
         var_dump(array($idx=>$txt));
         var_dump($stmt2->execute());
         var_dump($stmt2->fetch(PDO::FETCH_BOUND));
         $stmt2->closeCursor();
 
-        var_dump($idxCol);
+        var_dump($col);
         var_dump($stmt3->execute());
         var_dump($stmt3->fetch(PDO::FETCH_BOUND));
         $stmt3->closeCursor();
-        var_dump($idxCol);
+        var_dump($col);
     }
 
     echo "===REBIND/CONFLICT===\n";
