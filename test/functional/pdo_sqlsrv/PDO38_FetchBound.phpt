@@ -24,14 +24,14 @@ try {
                   array('60', 'Pqr', 'kji'));
 
     // Insert using question mark placeholders
-    $stmt1 = PrepareQuery($conn1, "INSERT INTO [$tableName] VALUES(?, ?, ?)");
+    $stmt1 = $conn1->prepare("INSERT INTO [$tableName] VALUES(?, ?, ?)");
     foreach ($data as $row) {
         $stmt1->execute($row);
     }
     unset($stmt1);
 
     // Count inserted rows
-    $stmt2 = PrepareQuery($conn1, "SELECT COUNT(id) FROM [$tableName]");
+    $stmt2 = $conn1->prepare("SELECT COUNT(id) FROM [$tableName]");
     $stmt2->execute();
     $num = $stmt2->fetchColumn();
     echo "There are $num rows in the table.\n";
@@ -60,13 +60,14 @@ try {
     unset($stmt1);
 
     if (!isColEncrypted()) {
-        $stmt1 = PrepareQuery($conn1, "SELECT idx, txt FROM [$tableName] ORDER BY idx");
+        $stmt1 = $conn1->prepare("SELECT idx, txt FROM [$tableName] ORDER BY idx");    
     } else {
         // ORDER BY does not work on encrypted columns
-        $stmt1 = PrepareQuery($conn1, "SELECT idx, txt FROM [$tableName]");
+        $stmt1 = $conn1->prepare("SELECT idx, txt FROM [$tableName]");
     }
     $stmt1->execute();
     $data = $stmt1->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_UNIQUE);
+    // needs to order the result set manually as ORDER BY does not work properly on encrypted columns
     if (isColEncrypted()) {
         ksort($data);
     }
@@ -99,50 +100,50 @@ try {
 
         var_dump($stmt2->execute());
         if ($idx == 0) {   // bindColumn()s after execute() has been called at least once
-            $stmt2->bindColumn('txt', $col1);
+            $stmt2->bindColumn('txt', $txtCol);
         }
         var_dump($stmt2->fetch(PDO::FETCH_BOUND));
         $stmt2->closeCursor();
 
         var_dump($stmt3->execute());
         if ($idx == 0) {   // bindColumn()s after execute() has been called at least once
-            $stmt3->bindColumn('idx', $col2);
+            $stmt3->bindColumn('idx', $idxCol);
         }
         var_dump($stmt3->fetch(PDO::FETCH_BOUND));
         $stmt3->closeCursor();
 
-        var_dump(array($col2=>$col1));
+        var_dump(array($idxCol=>$txtCol));
     }
 
     echo "===REBIND/SAME===\n";
 
-    $stmt3->bindColumn('idx', $col1);
+    $stmt3->bindColumn('idx', $idxCol);
     foreach ($data as $idx => $txt) {
         var_dump(array($idx=>$txt));
         var_dump($stmt2->execute());
         var_dump($stmt2->fetch(PDO::FETCH_BOUND));
         $stmt2->closeCursor();
 
-        var_dump($col1);
+        var_dump($idxCol);
         var_dump($stmt3->execute());
         var_dump($stmt3->fetch(PDO::FETCH_BOUND));
         $stmt3->closeCursor();
-        var_dump($col1);
+        var_dump($idxCol);
     }
 
     echo "===REBIND/CONFLICT===\n";
 
-    $stmt1->bindColumn('idx', $col1);
-    $stmt1->bindColumn('txt', $col1);
+    $stmt1->bindColumn('idx', $col);
+    $stmt1->bindColumn('txt', $col);
     $stmt1->execute();
-    $col1s = array();
+    $cols = array();
     while ($stmt1->fetch(PDO::FETCH_BOUND)) {
-        array_push($col1s, $col1);
+        array_push($cols, $col);
     }
     if (isColEncrypted()) {
-        sort($col1s);
+        sort($cols);
     }
-    var_dump($col1s);
+    var_dump($cols);
 
     // Cleanup
     dropTable($conn1, $tableName);

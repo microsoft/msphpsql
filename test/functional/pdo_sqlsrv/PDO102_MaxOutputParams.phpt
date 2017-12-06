@@ -27,13 +27,12 @@ function maxOutputParamsTest($expected, $length)
 
     echo "Expected: $expected Received: $outstr\n";
 
+    $failed = false;
     if ($outstr !== $expected) {
         print_r($stmt->errorInfo());
-        dropProc($conn, $procName);
-        return(-1);
+        $failed = true;
     }
-    dropProc($conn, $procName);
-    return(0);
+    return $failed;
 }
 
 
@@ -41,13 +40,13 @@ function maxOutputParamsTest($expected, $length)
 // Repro
 //
 //--------------------------------------------------------------------
-$failed = null;
+$failed = false;
 
 $failed |= maxOutputParamsTest("abc", 3);
 $failed |= maxOutputParamsTest("abc", 10);
 
 if ($failed) {
-    FatalError("Possible Regression: Value returned as VARCHAR(MAX) truncated");
+    fatalError("Possible Regression: Value returned as VARCHAR(MAX) truncated");
 }
 ?>
 --EXPECT--

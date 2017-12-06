@@ -40,7 +40,7 @@ if (!$exception_thrown) {
 
 // Column encryption is not supported by emulate prepared statement
 $option[PDO::ATTR_EMULATE_PREPARES] = true;
-if (isColEncrypted()) {
+if (isAEConnected()) {
     $option[PDO::ATTR_EMULATE_PREPARES] = false;
 }
 

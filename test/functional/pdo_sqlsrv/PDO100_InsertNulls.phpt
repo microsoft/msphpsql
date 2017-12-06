@@ -14,10 +14,10 @@ function insertNullsTest($bindType)
 {
     $outvar = null;
     $failed = false;
-    $conn =connect();
+    $conn = connect();
 
     $tableName = "pdo_test_table";
-    $dataType = array("c1_int" => "int",
+    $dataTypes = array("c1_int" => "int",
                       "c2_tinyint" => "tinyint",
                       "c3_smallint" => "smallint",
                       "c4_bigint" => "bigint",
@@ -45,12 +45,12 @@ function insertNullsTest($bindType)
                       "c26_smalldatetime" => "smalldatetime",
                       "c27_timestamp" => "timestamp",
                       "c28_xml" => "xml");
-    createTable($conn, $tableName, $dataType);
+    createTable($conn, $tableName, $dataTypes);
 
     $stmt = $conn->query("SELECT [TABLE_NAME],[COLUMN_NAME],[IS_NULLABLE] FROM [INFORMATION_SCHEMA].[COLUMNS] WHERE [TABLE_NAME] = '$tableName'");
 
     if ($stmt === false) {
-        FatalError("Could not query for column information on table $tableName");
+        fatalError("Could not query for column information on table $tableName");
     }
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -98,7 +98,7 @@ try {
     echo $e->getMessage();
 }
 if ($failed) {
-    FatalError("Possible Regression: Could not insert NULL");
+    fatalError("Possible Regression: Could not insert NULL");
 } else {
     echo "Test 'PDO - Insert Nulls' completed successfully.\n";
 }

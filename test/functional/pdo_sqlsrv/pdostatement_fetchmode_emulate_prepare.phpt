@@ -47,7 +47,7 @@ try {
     }
 
     $query1 = "INSERT INTO [$tableName](ID, Policy, Label, Budget) VALUES (:col1, :col2, :col3, :col4)";
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         $stmtOptions[PDO::ATTR_EMULATE_PREPARES] = true;
     }
     $stmt = $conn1->prepare($query1, $stmtOptions);

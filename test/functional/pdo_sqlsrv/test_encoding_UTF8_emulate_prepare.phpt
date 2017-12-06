@@ -53,7 +53,7 @@ try {
     unset($stmt4);
 
     $option;
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         $option[PDO::ATTR_EMULATE_PREPARES] = true;
     } else {
         $option[PDO::ATTR_EMULATE_PREPARES] = false;

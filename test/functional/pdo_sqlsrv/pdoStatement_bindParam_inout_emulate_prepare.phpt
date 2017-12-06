@@ -23,8 +23,8 @@ try {
     unset($dbh);
 } catch (PDOException $e) {
     $error = $e->getMessage();
-    $pass = !isColEncrypted() && $error === "SQLSTATE[IMSSP]: Statement with emulate prepare on does not support output or input_output parameters.";
-    $pass |= isColEncrypted() && ($error === "SQLSTATE[IMSSP]: Connection with Column Encryption enabled do no support PDO::ATTR_EMULATE_PREPARES with binding parameters.");
+    $pass = !isAEConnected() && $error === "SQLSTATE[IMSSP]: Statement with emulate prepare on does not support output or input_output parameters.";
+    $pass |= isAEConnected() && ($error === "SQLSTATE[IMSSP]: Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.");
     if (!$pass) {
         print("Error: " . $error . "\n");
     } else {
