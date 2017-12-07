@@ -82,7 +82,6 @@ function fetchRows($conn, $tableName)
     $stmt = $conn->query($query);
 
     $stmt->setFetchMode(PDO::FETCH_CLASS, 'Food');
-    $foodArray = array();
     while ($food = $stmt->fetch()) {
         echo "ID: " . $food->id . " "; 
         echo $food->getFood() . ", ";

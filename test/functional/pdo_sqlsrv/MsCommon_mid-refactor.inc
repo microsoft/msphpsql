@@ -185,7 +185,7 @@ class ColumnMeta
         $append = " ";
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if (isColEncrypted() && ($this->encType == "deterministic" || $this->encType == "ramdomized") && $this->isEncryptableType() 
+        if (isColEncrypted() && ($this->encType == "deterministic" || $this->encType == "randomized") && $this->isEncryptableType() 
             && stripos($this->options, "identity") === false && stripos($this->options, "rowguidcol") === false) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {

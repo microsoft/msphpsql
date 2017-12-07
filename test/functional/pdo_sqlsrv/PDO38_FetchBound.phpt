@@ -69,14 +69,9 @@ try {
     $stmt1->bindColumn('idx', $idx);
     $stmt1->bindColumn('txt', $txt);
     $stmt1->execute();
-    $boundCols = array();
     while ($stmt1->fetch(PDO::FETCH_BOUND)) {
-        $boundCols[$idx] = $txt;
+        var_dump(array($idx=>$txt));
     }
-    if (isColEncrypted()) {
-        ksort($boundCols);
-    }
-    var_dump($boundCols);
 
     echo "===ALONE===\n";
 
@@ -127,14 +122,9 @@ try {
     $stmt1->bindColumn('idx', $col);
     $stmt1->bindColumn('txt', $col);
     $stmt1->execute();
-    $cols = array();
     while ($stmt1->fetch(PDO::FETCH_BOUND)) {
-        array_push($cols, $col);
+        var_dump($col);
     }
-    if (isColEncrypted()) {
-        sort($cols);
-    }
-    var_dump($cols);
 
     // Cleanup
     dropTable($conn1, $tableName);
@@ -159,11 +149,15 @@ array(3) {
   string(7) "String2"
 }
 ===WHILE===
-array(3) {
+array(1) {
   [0]=>
   string(7) "String0"
+}
+array(1) {
   [1]=>
   string(7) "String1"
+}
+array(1) {
   [2]=>
   string(7) "String2"
 }
@@ -236,11 +230,6 @@ bool(true)
 bool(true)
 string(1) "2"
 ===REBIND/CONFLICT===
-array(3) {
-  [0]=>
-  string(7) "String0"
-  [1]=>
-  string(7) "String1"
-  [2]=>
-  string(7) "String2"
-}
+string(7) "String0"
+string(7) "String1"
+string(7) "String2"

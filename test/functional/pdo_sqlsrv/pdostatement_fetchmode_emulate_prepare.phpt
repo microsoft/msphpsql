@@ -1,7 +1,7 @@
 --TEST--
 PDO Fetch Mode Test with emulate prepare
 --DESCRIPTION--
-Basic verification for "PDOStatement::setFetchMode()�.
+Basic verification for PDOStatement::setFetchMode.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -93,7 +93,6 @@ try {
         $assocArr['Label'] = $resultset[0]['Label'];
         $assocArr['Budget'] = $resultset[0]['Budget'];
         var_dump($assocArr);
-        //print "$resultset[1][1]\n";
         print($resultset[1][1] . "\n");
         print($resultset[4][3] . "\n");
         print_r($resultset[3]);
@@ -178,7 +177,7 @@ try {
     var_dump($metadata);
 
     // Cleanup
-    DropTable($conn1, $tableName);
+    dropTable($conn1, $tableName);
     unset($stmt1);
     unset($stmt2);
     unset($stmt3);

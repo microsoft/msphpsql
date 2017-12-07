@@ -5,11 +5,9 @@ Since output param is not supported for sql_variant columns, this test verifies 
 --FILE--
 ﻿<?php
 require_once("MsCommon_mid-refactor.inc");
-
 function testReverse($conn)
 {
     $procName = getProcName('sqlReverse');
-
     try {
         $spCode = "CREATE PROC [$procName] @string AS SQL_VARIANT OUTPUT as SELECT @string = REVERSE(CAST(@string AS varchar(30)))";
         $conn->exec($spCode);
@@ -17,7 +15,6 @@ function testReverse($conn)
         echo "Failed to create the reverse procedure\n";
         echo $e->getMessage();
     }
-
     try {
         $stmt = $conn->prepare("{ CALL [$procName] (?) }");
         $string = "123456789";
@@ -26,7 +23,7 @@ function testReverse($conn)
         // Connection with Column Encryption enabled works for non encrypted SQL_VARIANT
         // Since SQLDescribeParam is called
         if (isColEncrypted() && $string === "987654321") {
-            echo "Test input output parameter with SQL_VARIANT successfully.\n";
+            echo "Testing input output parameter with SQL_VARIANT is successful.\n";
             
         } else {
             echo "Does REVERSE work? $string \n";
@@ -35,13 +32,12 @@ function testReverse($conn)
         //echo "Failed when calling the reverse procedure\n";
         $error = $e->getMessage();
         if (!isColEncrypted() && strpos($error, "Implicit conversion from data type sql_variant to nvarchar is not allowed.") !== false) {
-            echo "Test input output parameter with SQL_VARIANT successfully.\n";
+            echo "Testing input output parameter with SQL_VARIANT is successful.\n";
         } else {
             echo "$error\n";
         }
     }
 }
-
 function createVariantTable($conn, $tableName)
 {
     try {
@@ -50,7 +46,6 @@ function createVariantTable($conn, $tableName)
         echo "Failed to create a test table\n";
         echo $e->getMessage();
     }
-
     $data = "This is to test if sql_variant works with output parameters";
     if (!isColEncrypted()) {
         $tsql = "INSERT INTO [$tableName] ([c1_int], [c2_variant]) VALUES (1, ?)";
@@ -62,36 +57,29 @@ function createVariantTable($conn, $tableName)
         $intData = 1;
         $result = $stmt->execute(array($intData, $data));
     }
-
     if (! $result) {
         echo "Failed to insert data\n";
     }
 }
-
 function testOutputParam($conn, $tableName)
 {
     // First, create a temporary stored procedure
     $procName = getProcName('sqlVariant');
-
     $spArgs = "@p1 int, @p2 sql_variant OUTPUT";
     $spCode = "SET @p2 = ( SELECT [c2_variant] FROM $tableName WHERE [c1_int] = @p1 )";
-
     $conn->exec("CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
-
     $callArgs = "?, ?";
-
     // Data to initialize $callResult variable. This variable should be different from
     // the inserted data in the table
     $initData = "A short text";
     $callResult = $initData;
-
     try {
         $stmt = $conn->prepare("{ CALL [$procName] ($callArgs)}");
         $stmt->bindValue(1, 1);
         $stmt->bindParam(2, $callResult, PDO::PARAM_STR, 100);
         $stmt->execute();
         if (isColEncrypted() && $callResult === "This is to test if sql_variant works with output parameters") {
-            echo "Test output parameter with SQL_VARIANT successfully.\n";
+            echo "Testing output parameter with SQL_VARIANT is successful.\n";
         } else {
             echo "Does SELECT from table work? $callResult \n";
         }
@@ -101,26 +89,21 @@ function testOutputParam($conn, $tableName)
         }
         $error = $e->getMessage();
         if (!isColEncrypted() && strpos($error, "Operand type clash: nvarchar(max) is incompatible with sql_variant") !== false) {
-            echo "Test output parameter with SQL_VARIANT successfully.\n";
+            echo "Testing output parameter with SQL_VARIANT is successful.\n";
         } else {
             echo "$error\n";
         }
     }
 }
-
 try {
     // Connect
     $conn = connect();
-
     // Test with a simple stored procedure
     testReverse($conn);
-
     // Now test with another stored procedure
     $tableName = getTableName();
     createVariantTable($conn, $tableName);
-
     testOutputParam($conn, $tableName);
-
     $conn = null;
 } catch (Exception $e) {
     echo $e->getMessage();
@@ -128,5 +111,5 @@ try {
 ?>
 
 --EXPECT--
-﻿Test input output parameter with SQL_VARIANT successfully.
-Test output parameter with SQL_VARIANT successfully.
+﻿Testing input output parameter with SQL_VARIANT is successful.
+Testing output parameter with SQL_VARIANT is successful.
