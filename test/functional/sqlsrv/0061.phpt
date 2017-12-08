@@ -1,7 +1,7 @@
 --TEST--
 maximum size for both nonunicode and unicode data types.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
@@ -9,59 +9,48 @@ maximum size for both nonunicode and unicode data types.
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
     require_once('MsCommon.inc');
-    $conn = connect();
-    if (!$conn) {
-        die(print_r(sqlsrv_errors(), true));
-    }
+    $conn = AE\connect();
 
-    dropTable($conn, 'test_max_size');
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE test_max_size (id int, test_nvarchar nvarchar(4000), test_nchar nchar(4000), test_varchar varchar(8000), test_binary varbinary(8000))");
+    $tableName = 'test_max_size';
+    $columns = array(new AE\ColumnMeta('int', 'id'),
+                     new AE\ColumnMeta('nvarchar(4000)', 'test_nvarchar'),
+                     new AE\ColumnMeta('nchar(4000)', 'test_nchar'),
+                     new AE\ColumnMeta('varchar(8000)', 'test_varchar'),
+                     new AE\ColumnMeta('varbinary(8000)', 'test_binary'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
     if ($stmt === false) {
         die(print_r(sqlsrv_errors(), true));
     }
 
-    $stmt = sqlsrv_query(
+    $stmt = AE\executeQueryParams(
         $conn,
-        "INSERT INTO test_max_size (id, test_nvarchar, test_nchar) VALUES (?, ?)",
-          array( 1, array( "this is a test", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NVARCHAR(8000)))
+        "INSERT INTO $tableName (id, test_nvarchar, test_nchar) VALUES (?, ?)",
+        array( 1, array( "this is a test", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NVARCHAR(8000))),
+        true,
+        "Should have failed (1)."
     );
-    if ($stmt === false) {
-        print_r(sqlsrv_errors());
-    } else {
-        fatalError("Should have failed (1).");
-    }
 
-    $stmt = sqlsrv_query(
+    $stmt = AE\executeQueryParams(
         $conn,
-        "INSERT INTO test_max_size (id, test_nchar) VALUES (?, ?)",
-          array( 2, array( "this is a test", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NCHAR(8000)))
+        "INSERT INTO $tableName (id, test_nchar) VALUES (?, ?)",
+          array( 2, array( "this is a test", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_NCHAR(8000))),
+          true,
+          "Should have failed (2)."
     );
-    if ($stmt === false) {
-        print_r(sqlsrv_errors());
-    } else {
-        fatalError("Should have failed (2).");
-    }
 
-    $stmt = sqlsrv_query(
+    $stmt = AE\executeQueryParams(
         $conn,
-        "INSERT INTO test_max_size (id, test_varchar) VALUES (?, ?)",
+        "INSERT INTO $tableName (id, test_varchar) VALUES (?, ?)",
           array( 3, array( "this is a test", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR(8000)))
     );
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors()));
-    }
 
-    $stmt = sqlsrv_query(
+    $stmt = AE\executeQueryParams(
         $conn,
-        "INSERT INTO test_max_size (id, test_binary) VALUES (?, ?)",
+        "INSERT INTO $tableName (id, test_binary) VALUES (?, ?)",
           array( 4, array( "this is a test", SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY(8000)))
     );
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors()));
-    }
 
-    dropTable($conn, 'test_max_size');
+    dropTable($conn, '$tableName');
 
     echo "Test succeeded.\n";
 ?>

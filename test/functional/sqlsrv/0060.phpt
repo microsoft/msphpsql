@@ -1,7 +1,7 @@
 --TEST--
 binding parameters, including output parameters, using the simplified syntax.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);
@@ -9,10 +9,7 @@ binding parameters, including output parameters, using the simplified syntax.
 
     require_once('MsCommon.inc');
 
-    $conn = connect();
-    if (!$conn) {
-        fatalError("sqlsrv_create failed.");
-    }
+    $conn = AE\connect();
 
     $v1 = 1;
     $v2 = 2;

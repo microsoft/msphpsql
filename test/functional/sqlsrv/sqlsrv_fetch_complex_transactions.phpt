@@ -1,14 +1,20 @@
 --TEST--
 Test transactions commit, rollback and aborting in between
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿﻿<?php
 require_once('MsCommon.inc');
 
-function ComplexTransaction($conn, $conn2)
+function complexTransaction($conn, $conn2)
 {
-    $tableName = GetTempTableName('testTransaction', false);
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_real] real)");
+    $tableName = 'testTransaction';
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('real', 'c2_real'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
+    }
     sqlsrv_free_stmt($stmt);
 
     $stmtSelect = sqlsrv_prepare($conn, "SELECT * FROM $tableName");
@@ -16,8 +22,8 @@ function ComplexTransaction($conn, $conn2)
 
     // insert ten rows
     $numRows = 10;
-    InsertData($conn, $tableName, $numRows);
-    FetchData($stmtSelect, $tableName, $numRows);
+    insertData($conn, $tableName, $numRows);
+    fetchData($stmtSelect, $tableName, $numRows);
 
     sqlsrv_begin_transaction($conn);
     sqlsrv_execute($stmtDelete);
@@ -26,14 +32,14 @@ function ComplexTransaction($conn, $conn2)
     echo "Committed deleting 3 rows\n";
 
     $numRows = $numRows - $rowsAffected;
-    FetchData($stmtSelect, $tableName, $numRows);
+    fetchData($stmtSelect, $tableName, $numRows);
 
     sqlsrv_begin_transaction($conn);
     sqlsrv_execute($stmtDelete);
     sqlsrv_rollback($conn);
     echo "Rolled back\n";
 
-    FetchData($stmtSelect, $tableName, $numRows);
+    fetchData($stmtSelect, $tableName, $numRows);
 
     sqlsrv_begin_transaction($conn);
     sqlsrv_execute($stmtDelete);
@@ -42,14 +48,14 @@ function ComplexTransaction($conn, $conn2)
     echo "Committed deleting 3 rows\n";
 
     $numRows = $numRows - $rowsAffected;
-    FetchData($stmtSelect, $tableName, $numRows);
+    fetchData($stmtSelect, $tableName, $numRows);
 
     sqlsrv_begin_transaction($conn);
     sqlsrv_execute($stmtDelete);
     sqlsrv_rollback($conn);
     echo "Rolled back\n";
 
-    FetchData($stmtSelect, $tableName, $numRows);
+    fetchData($stmtSelect, $tableName, $numRows);
 
     sqlsrv_begin_transaction($conn);
     sqlsrv_execute($stmtDelete);
@@ -59,12 +65,12 @@ function ComplexTransaction($conn, $conn2)
 
     // select table using the second connection
     $stmt = sqlsrv_prepare($conn2, "SELECT * FROM $tableName");
-    FetchData($stmt, $tableName, $numRows);
+    fetchData($stmt, $tableName, $numRows);
 
-    sqlsrv_query($conn2, "DROP TABLE $tableName");
+    dropTable($conn2, $tableName);
 }
 
-function InsertData($conn, $tableName, $count)
+function insertData($conn, $tableName, $count)
 {
     $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (c1_int, c2_real) VALUES (?, ?)", array(&$v1, &$v2));
 
@@ -76,7 +82,7 @@ function InsertData($conn, $tableName, $count)
     }
 }
 
-function FetchData($stmt, $tableName, $numRows)
+function fetchData($stmt, $tableName, $numRows)
 {
     $numFetched = 0;
     sqlsrv_execute($stmt);
@@ -90,41 +96,23 @@ function FetchData($stmt, $tableName, $numRows)
     }
 }
 
-//--------------------------------------------------------------------
-// RunTest
-//
-//--------------------------------------------------------------------
-function RunTest()
-{
-    startTest("sqlsrv_fetch_complex_transactions");
-    try {
-        set_time_limit(0);
-        sqlsrv_configure('WarningsReturnAsErrors', 1);
+try {
+    set_time_limit(0);
+    sqlsrv_configure('WarningsReturnAsErrors', 1);
 
-        echo "\nTest begins...\n";
+    echo "\nTest begins...\n";
 
-        // Connect
-        $conn = connect();
-        if (!$conn) {
-            fatalError("Could not connect.\n");
-        }
+    // Connect
+    $conn = AE\connect();
+    $conn2 = AE\connect();
 
-        $conn2 = connect();
-        if (!$conn2) {
-            fatalError("Could not connect.\n");
-        }
+    complexTransaction($conn, $conn2);
 
-        ComplexTransaction($conn, $conn2);
-
-        sqlsrv_close($conn2);    // $conn should have been closed
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_fetch_complex_transactions");
+    sqlsrv_close($conn2);    // $conn should have been closed
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-RunTest();
+echo "\nDone\n";
 
 ?>
 --EXPECT--
@@ -143,4 +131,3 @@ Deletion aborted
 Number of rows fetched: 4
 
 Done
-Test "sqlsrv_fetch_complex_transactions" completed successfully.

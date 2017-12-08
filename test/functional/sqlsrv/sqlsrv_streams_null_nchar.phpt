@@ -1,25 +1,50 @@
 --TEST--
 Populate different unicode character fields using null stream data as inputs
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿﻿<?php
 require_once('MsCommon.inc');
 
-function NullStream_Char2Stream($conn)
+function char2Stream($conn)
 {
-    $tableName = GetTempTableName();
+    $tableName = 'streams_null_nchar'; 
 
     // create a test table
-    $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName ([c1_int] int, [c2_nchar] nchar(512), [c3_nvarchar] nvarchar(512), [c4_nvarchar_max] nvarchar(max), [c5_ntext] ntext)");
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('nchar(512)', 'c2_nchar'),
+                     new AE\ColumnMeta('nvarchar(512)', 'c3_nvarchar'),
+                     new AE\ColumnMeta('nvarchar(max)', 'c4_nvarchar_max'),
+                     new AE\ColumnMeta('ntext', 'c5_ntext'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
+    }
     sqlsrv_free_stmt($stmt);
 
     $fname = null;
-    $stmt = sqlsrv_query($conn, "INSERT INTO $tableName (c1_int, c2_nchar, c3_nvarchar, c4_nvarchar_max, c5_ntext) VALUES (?, ?, ?, ?, ?)", array(-187518515, &$fname, &$fname, &$fname, &$fname));
+    $query = "INSERT INTO $tableName (c1_int, c2_nchar, c3_nvarchar, c4_nvarchar_max, c5_ntext) VALUES (?, ?, ?, ?, ?)";
+    $res = true;
+    if (AE\isColEncrypted()) {
+        $stmt = sqlsrv_prepare($conn, $query, array(-187518515, &$fname, &$fname, &$fname, &$fname));
+        if ($stmt) {
+            $res = sqlsrv_execute($stmt);
+        }
+    } else {
+        $stmt = sqlsrv_query($conn, $query, array(-187518515, &$fname, &$fname, &$fname, &$fname));
+    }
+    if ($stmt === false || !$res) {
+        fatalError("Failed in sendQueryStream for $value\n");
+    }
+
+    sqlsrv_send_stream_data($stmt);
     sqlsrv_free_stmt($stmt);
 
-    FetchData($conn, $tableName);
+    fetchData($conn, $tableName);
+    dropTable($conn, $tableName);
 }
 
-function FetchData($conn, $tableName)
+function fetchData($conn, $tableName)
 {
     $stmt = sqlsrv_prepare($conn, "SELECT * FROM $tableName");
     sqlsrv_execute($stmt);
@@ -31,35 +56,21 @@ function FetchData($conn, $tableName)
     }
 }
 
-//--------------------------------------------------------------------
-// RunTest
-//
-//--------------------------------------------------------------------
-function RunTest()
-{
-    startTest("sqlsrv_streams_null_nchar");
-    echo "\nTest begins...\n";
-    try {
-        set_time_limit(0);
-        sqlsrv_configure('WarningsReturnAsErrors', 1);
+echo "\nTest begins...\n";
+try {
+    set_time_limit(0);
+    sqlsrv_configure('WarningsReturnAsErrors', 1);
 
-        // connect
-        $conn = connect();
-        if (!$conn) {
-            fatalError("Could not connect.\n");
-        }
+    // connect
+    $conn = AE\connect();
 
-        NullStream_Char2Stream($conn);
+    char2Stream($conn);
 
-        sqlsrv_close($conn);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_streams_null_nchar");
+    sqlsrv_close($conn);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-RunTest();
+echo "\nDone\n";
 
 ?>
 --EXPECT--
@@ -71,4 +82,3 @@ NULL
 NULL
 
 Done
-Test "sqlsrv_streams_null_nchar" completed successfully.

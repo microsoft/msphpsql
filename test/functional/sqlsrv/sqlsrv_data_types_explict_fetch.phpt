@@ -1,45 +1,64 @@
 --TEST--
 Test insert various data types and fetch as strings
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
 require_once('tools.inc');
 
-function ExplicitFetch()
+function explicitFetch()
 {
     set_time_limit(0);
     sqlsrv_configure('WarningsReturnAsErrors', 1);
 
     // Connect
     $connectionInfo = array("CharacterSet"=>"UTF-8");
-    $conn = connect($connectionInfo);
-    if (!$conn) {
-        fatalError("Could not connect.\n");
+    $conn = AE\connect($connectionInfo);
+
+    $tableName = 'types_explict_fetch';
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('tinyint', 'c2_tinyint'),
+                     new AE\ColumnMeta('smallint', 'c3_smallint'),
+                     new AE\ColumnMeta('bigint', 'c4_bigint'),
+                     new AE\ColumnMeta('bit', 'c5_bit'),
+                     new AE\ColumnMeta('float', 'c6_float'),
+                     new AE\ColumnMeta('real', 'c7_real'),
+                     new AE\ColumnMeta('decimal(28,4)', 'c8_decimal'),
+                     new AE\ColumnMeta('numeric(32,4)', 'c9_numeric'),
+                     new AE\ColumnMeta('money', 'c10_money', null, true, true),
+                     new AE\ColumnMeta('smallmoney', 'c11_smallmoney', null, true, true),
+                     new AE\ColumnMeta('char(512)', 'c12_char'),
+                     new AE\ColumnMeta('varchar(512)', 'c13_varchar'),
+                     new AE\ColumnMeta('varchar(max)', 'c14_varchar_max'),
+                     new AE\ColumnMeta('uniqueidentifier', 'c15_uniqueidentifier'),
+                     new AE\ColumnMeta('datetime', 'c16_datetime'),
+                     new AE\ColumnMeta('smalldatetime', 'c17_smalldatetime'),
+                     new AE\ColumnMeta('timestamp', 'c18_timestamp')
+                     );
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
     }
 
-    $tableName = GetTempTableName();
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE [$tableName] ([c1_int] int, [c2_tinyint] tinyint, [c3_smallint] smallint, [c4_bigint] bigint, [c5_bit] bit, [c6_float] float, [c7_real] real, [c8_decimal] decimal(28,4), [c9_numeric] numeric(32,4), [c10_money] money, [c11_smallmoney] smallmoney, [c12_char] char(512), [c13_varchar] varchar(512), [c14_varchar_max] varchar(max), [c15_uniqueidentifier] uniqueidentifier, [c16_datetime] datetime, [c17_smalldatetime] smalldatetime, [c18_timestamp] timestamp)");
-    sqlsrv_free_stmt($stmt);
-
     $numRows = 0;
-    $data = GetInputData(++$numRows);
-    $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_varchar_max, c15_uniqueidentifier, c16_datetime, c17_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
+    $data = getInputData(++$numRows);
+    $stmt = AE\executeQueryParams($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_varchar_max, c15_uniqueidentifier, c16_datetime, c17_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
     sqlsrv_free_stmt($stmt);
 
-    $data = GetInputData(++$numRows);
-    $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_varchar_max, c15_uniqueidentifier, c16_datetime, c17_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
+    $data = getInputData(++$numRows);
+    $stmt = AE\executeQueryParams($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_varchar_max, c15_uniqueidentifier, c16_datetime, c17_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
     sqlsrv_free_stmt($stmt);
 
-    $data = GetInputData(++$numRows);
-    $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_varchar_max, c15_uniqueidentifier, c16_datetime, c17_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
+    $data = getInputData(++$numRows);
+    $stmt = AE\executeQueryParams($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_varchar_max, c15_uniqueidentifier, c16_datetime, c17_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
     sqlsrv_free_stmt($stmt);
 
-    $data = GetInputData(++$numRows);
-    $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_varchar_max, c15_uniqueidentifier, c16_datetime, c17_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
+    $data = getInputData(++$numRows);
+    $stmt = AE\executeQueryParams($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_varchar_max, c15_uniqueidentifier, c16_datetime, c17_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
     sqlsrv_free_stmt($stmt);
 
-    $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName ORDER BY c18_timestamp");
+    $stmt = AE\executeQuery($conn, "SELECT * FROM $tableName ORDER BY c18_timestamp");
 
     $metadata = sqlsrv_field_metadata($stmt);
     $numFields = count($metadata);
@@ -49,10 +68,11 @@ function ExplicitFetch()
         echo "Number of Actual Rows $noActualRows is unexpected!\n";
     }
 
+    dropTable($conn, $tableName);
     sqlsrv_close($conn);
 }
 
-function GetInputData($index)
+function getInputData($index)
 {
     switch ($index) {
         case 1:
@@ -68,20 +88,13 @@ function GetInputData($index)
     }
 }
 
-function Repro()
-{
-    startTest("sqlsrv_data_types_explict_fetch");
-    echo "\nTest begins...\n";
-    try {
-        ExplicitFetch();
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_data_types_explict_fetch");
+echo "\nTest begins...\n";
+try {
+    explicitFetch();
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-Repro();
+echo "\nDone\n";
 
 ?>
 --EXPECT--
@@ -93,4 +106,3 @@ Comparing data in row 3
 Comparing data in row 4
 
 Done
-Test "sqlsrv_data_types_explict_fetch" completed successfully.

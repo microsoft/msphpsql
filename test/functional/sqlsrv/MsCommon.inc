@@ -271,7 +271,7 @@ function createUniqueIndexEx($conn, $tableName, $tableIndex, $colIndex)
 
 function dropTable($conn, $tableName)
 {
-    $stmt = sqlsrv_query($conn, "IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName");
+    $stmt = sqlsrv_query($conn, "IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE [$tableName]");
     if ($stmt === false) {
     } else {
         sqlsrv_free_stmt($stmt);
@@ -359,7 +359,7 @@ function createProc($conn, $procName, $procArgs, $procCode)
 
 function dropProc($conn, $procName)
 {
-    $stmt = sqlsrv_query($conn, "DROP PROC [$procName]");
+    $stmt = sqlsrv_query($conn, "IF OBJECT_ID('". $procName ."', 'P') IS NOT NULL DROP PROCEDURE [$procName]");
     if ($stmt === false) {
     } else {
         sqlsrv_free_stmt($stmt);
@@ -465,6 +465,19 @@ function isLocaleSupported()
     }
 
     return true;
+}
+
+function verifyError($error, $state, $message)
+{
+    if ($error['SQLSTATE'] !== $state) {
+        echo $error['SQLSTATE'] . PHP_EOL;
+        fatalError("Unexpected SQL state\n");
+    }
+    
+    if (strpos($error['message'], $message) === false) {
+        echo $error['message'] . PHP_EOL;
+        fatalError("Unexpected error message\n");
+    }
 }
 
 ?>
