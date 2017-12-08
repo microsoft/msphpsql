@@ -1711,6 +1711,9 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 		// for how these fields are used.
 		case SQLSRV_PHPTYPE_STREAM:
 		{
+            CHECK_CUSTOM_ERROR(stmt->conn->ce_option.enabled, stmt, SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH) {
+                throw core::CoreException();
+            }
 
 			php_stream* stream = NULL;
 			sqlsrv_stream* ss = NULL;

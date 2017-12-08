@@ -421,6 +421,10 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
         { IMSSP, (SQLCHAR*) "Stored Procedures do not support text, ntext or image as OUTPUT parameters.", -83, false }
     },
+    {
+        SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
+        { IMSSP, (SQLCHAR*) "Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.", -84, false }
+    },
     { UINT_MAX, {} }
 };
 
