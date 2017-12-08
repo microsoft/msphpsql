@@ -15,7 +15,7 @@ $tableName = 'testDataTypes_GH231_VC';
 $columnNames = array("c1", "c2");
 
 for ($k = 1; $k <= 8; $k++) {
-    $sqlType = getFieldType($k);
+    $sqlType = SQLType($k);
     $columns = array(new AE\ColumnMeta('int', $columnNames[0]),
                      new AE\ColumnMeta($sqlType, $columnNames[1]));
     AE\createTable($conn, $tableName, $columns);
@@ -123,7 +123,7 @@ function getPhpType($k)
     return $phpType;
 }
 
-function getFieldType($k)
+function SQLType($k)
 {
     switch ($k) {
         case 1:  return ("char(512)");

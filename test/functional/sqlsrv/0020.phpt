@@ -10,10 +10,9 @@ require_once('MsCommon.inc');
 
 function runTest($fieldType)
 {
-    prepareParams($params);
-    
     // change the input field type for each run
-    $params['fieldType'] = $fieldType;
+    prepareParams($params, $fieldType);
+    
     $conn = AE\connect();
     
     $originalStream = populateTestTable($conn, $params);
@@ -46,7 +45,7 @@ function runTest($fieldType)
 }
 
 runTest("varchar(max)");
-runTest("varbinary(max)");
+// runTest("varbinary(max)");
 runTest("nvarchar(max)");
 
 echo "Test successful.\n";
@@ -57,8 +56,8 @@ function populateTestTable($conn, $params)
     $colName = $params['columnName']; 
     $fieldType = $params['fieldType'];
     
-    // Create a test table of a column of type 'nvarchar(MAX)'
-    $columns = array(new AE\ColumnMeta('nvarchar(MAX)', $colName));
+    // Create a test table of a single column of a certain field type
+    $columns = array(new AE\ColumnMeta($fieldType, $colName));
     $stmt = AE\createTable($conn, $tblName, $columns);
     if (!$stmt) {
         fatalError("Failed to create table $tblName\n");
@@ -94,18 +93,17 @@ function populateTestTable($conn, $params)
     return fopen($params['testImageURL'], "rb"); 
 }
 
-function prepareParams(&$arr)
+function prepareParams(&$arr, $fieldType)
 {
-    if (IsWindows()) {
+    if (isWindows()) {
         $phpgif = '\\php.gif';
     } else {
         $phpgif = '/php.gif';
     }
-    
-    // the test table always has a column of type 'nvarchar(MAX)'
+
     $arr['tableName'] = $tblName = "B64TestTable"; 
     $arr['columnName'] = $colName = "Base64Image";
-    $arr['fieldType'] = $fieldType = "nvarchar(MAX)";
+    $arr['fieldType'] = $fieldType;
     $arr['insertQuery'] = "INSERT INTO $tblName ($colName) VALUES (?)";
     $arr['selectQuery'] = "SELECT TOP 1 $colName FROM $tblName";
     $arr['testImageURL'] = dirname($_SERVER['PHP_SELF']) . $phpgif; // use this when no http access

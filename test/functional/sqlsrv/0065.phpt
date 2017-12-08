@@ -12,12 +12,13 @@ sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 require_once('MsCommon.inc');
 $c = AE\connect();
 
+$tableName = 'utf8test';
 $columns = array(new AE\ColumnMeta('varchar(100)', 'c1'),
                  new AE\ColumnMeta('nvarchar(100)', 'c2'),
                  new AE\ColumnMeta('nvarchar(max)', 'c3'));
-$stmt = AE\createTable($c, "utf8test", $columns);
+$stmt = AE\createTable($c, $tableName, $columns);
 if (!$stmt) {
-    fatalError("Failed to create table 'utf8test'\n");
+    fatalError("Failed to create table $tableName\n");
 }
 
 $utf8 = "Şơмė śäოрŀề ΆŚĈĨİ-ť℮×ŧ";
@@ -25,17 +26,12 @@ $utf8 = "Şơмė śäოрŀề ΆŚĈĨİ-ť℮×ŧ";
 $params = array(array(&$utf8, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')),
                 array(&$utf8, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')),
                 array(&$utf8, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')));
-$insertSql = "INSERT INTO utf8test (c1, c2, c3) VALUES (?,?,?)";
+$insertSql = "INSERT INTO $tableName (c1, c2, c3) VALUES (?,?,?)";
 $s = AE\executeQueryParams($c, $insertSql, $params);
 
-$s = sqlsrv_query(
-    $c,
-"DROP PROCEDURE IntDoubleProc;
-DROP PROCEDURE Utf8OutProc;
-DROP PROCEDURE Utf8OutWithResultsetProc;
-DROP PROCEDURE Utf8InOutProc;
-DROP TABLE Utf8TestTable;"
-);
+$query = "DROP PROCEDURE IntDoubleProc; DROP PROCEDURE Utf8OutProc; DROP PROCEDURE Utf8OutWithResultsetProc; DROP PROCEDURE Utf8InOutProc; DROP TABLE Utf8TestTable;";
+
+$s = sqlsrv_query($c, $query);
 
 $create_proc = <<<PROC
 CREATE PROCEDURE Utf8OutProc
@@ -50,48 +46,25 @@ if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-$create_proc = <<<PROC
-CREATE PROCEDURE Utf8OutWithResultsetProc
-	@param nvarchar(25) output
-AS
-BEGIN
-	select c1, c2, c3 from utf8test
-    set @param = convert(nvarchar(25), 0x5E01A1013C04170120005B01E400DD1040044001C11E200086035A010801280130012D0065012E21D7006701);
-END;
-PROC;
-$s = sqlsrv_query($c, $create_proc);
+$createProc = "CREATE PROCEDURE Utf8OutWithResultsetProc @param NVARCHAR(25) OUTPUT AS BEGIN SELECT c1, c2, c3 FROM $tableName SET @param = CONVERT(NVARCHAR(25), 0x5E01A1013C04170120005B01E400DD1040044001C11E200086035A010801280130012D0065012E21D7006701); END";
+$s = sqlsrv_query($c, $createProc);
 if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-$create_proc = <<<PROC
-CREATE PROCEDURE Utf8InOutProc
-	@param nvarchar(25) output
-AS
-BEGIN
-    -- INSERT INTO utf8test (c1, c2, c3) VALUES (@param, @param, @param);
-    set @param = convert(nvarchar(25), 0x6001E11EDD10130120006101E200DD1040043A01BB1E2000C5005A01C700CF0007042D006501BF1E45046301);
-END;
-PROC;
-$s = sqlsrv_query($c, $create_proc);
+$createProc = "CREATE PROCEDURE Utf8InOutProc @param NVARCHAR(25) OUTPUT AS BEGIN SET @param = CONVERT(NVARCHAR(25), 0x6001E11EDD10130120006101E200DD1040043A01BB1E2000C5005A01C700CF0007042D006501BF1E45046301); END";
+$s = sqlsrv_query($c, $createProc);
 if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-$create_proc = <<<PROC
-CREATE PROCEDURE IntDoubleProc
-	@param int output
-AS
-BEGIN
-    set @param = @param + @param;
-END;
-PROC;
-$s = sqlsrv_query($c, $create_proc);
+$createProc = "CREATE PROCEDURE IntDoubleProc @param INT OUTPUT AS BEGIN SET @param = @param + @param; END;";
+$s = sqlsrv_query($c, $createProc);
 if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-$s = sqlsrv_query($c, 'SELECT c1, c2, c3 FROM utf8test');
+$s = sqlsrv_query($c, "SELECT c1, c2, c3 FROM $tableName");
 if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
@@ -219,12 +192,12 @@ $t = pack('H*', '7a61cc86c7bdceb2f18fb3bf');
 $params = array(array(&$t, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')),
                 array(&$t, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')),
                 array(&$t, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')));
-$insertSql = "INSERT INTO utf8test (c1, c2, c3) VALUES (?,?,?)";
+$insertSql = "INSERT INTO $tableName (c1, c2, c3) VALUES (?,?,?)";
 $s = AE\executeQueryParams($c, $insertSql, $params);
 
 print_r(sqlsrv_errors());
 
-$s = sqlsrv_query($c, 'SELECT c1, c2, c3 FROM utf8test');
+$s = sqlsrv_query($c, "SELECT c1, c2, c3 FROM $tableName");
 if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
@@ -253,7 +226,7 @@ $params = array(array(&$t, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')));
 $query = "{call IntDoubleProc(?)}";
 $s = AE\executeQueryParams($c, $query, $params, true, "no error from an invalid utf-8 string");
 
-dropTable($c, 'utf8test');
+dropTable($c, $tableName);
 
 sqlsrv_close($c);
 

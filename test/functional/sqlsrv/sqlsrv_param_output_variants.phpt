@@ -46,7 +46,7 @@ function execProcedure($conn, $tsql, $params)
 function testOutputParam($conn, $tableName)
 {
     // First, create a stored procedure
-    $procName = getTempProcName('sqlVariant', false);
+    $procName = 'sqlVariant_out_proc';
 
     $spArgs = "@p2 sql_variant OUTPUT";
 
@@ -77,7 +77,7 @@ function testOutputParam($conn, $tableName)
 
 function testInputAndOutputParam($conn, $tableName)
 {
-    $procName = getTempProcName('sqlVariant', false);
+    $procName = 'sqlVariant_inout_proc';
     $spArgs = "@p1 int, @p2 sql_variant OUTPUT";
     $spCode = "SET @p2 = ( SELECT [c2_variant] FROM $tableName WHERE [c1_int] = @p1)";
     $stmt = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");

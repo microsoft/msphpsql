@@ -27,20 +27,11 @@ function insertTest($conn, $tableName, $inputs, $query)
         foreach ($inputs as $key => $input) {
             array_push($params, $inputs[$key]);
         }
-        if (! is_null($query)) {
-            // this contains a batch of sql statements, 
-            // with set identity_insert on or off 
-            // thus, sqlsrv_query should be called
-            $sql = str_replace("SQL", $insertSql, $query);
-            $stmt = sqlsrv_query($conn, $sql, $params);
-        } else {
-            // just a regular insert, so use sqlsrv_prepare
-            $sql = $insertSql;
-            $stmt = sqlsrv_prepare($conn, $sql, $params);
-            if ($stmt) {
-                sqlsrv_execute($stmt);
-            }
-        }
+        // this contains a batch of sql statements, 
+        // with set identity_insert on or off 
+        // thus, sqlsrv_query should be called
+        $sql = str_replace("SQL", $insertSql, $query);
+        $stmt = sqlsrv_query($conn, $sql, $params);
     }
 
     return $stmt;
