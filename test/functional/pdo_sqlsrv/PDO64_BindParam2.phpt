@@ -5,133 +5,105 @@ Verification for "PDOStatement::bindParam()".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require_once('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
 
-function Bind()
-{
-	include 'MsSetup.inc';
+try {
+    $conn1 = connect();
 
-	$testName = "PDO Statement - Bind Param";
-	StartTest($testName);
+    // Prepare test table
+    $dataCols = "id, label";
+    $tableName = "pdo_test_table";
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY", "none"), "label" => "char(1)"));
+    insertRow($conn1, $tableName, array("id" => 1, "label" => 'a'));
+    insertRow($conn1, $tableName, array("id" => 2, "label" => 'b'));
+    insertRow($conn1, $tableName, array("id" => 3, "label" => 'c'));
+    insertRow($conn1, $tableName, array("id" => 4, "label" => 'd'));
+    insertRow($conn1, $tableName, array("id" => 5, "label" => 'e'));
+    insertRow($conn1, $tableName, array("id" => 6, "label" => 'f'));
 
-	$conn1 = Connect();
+    $id = null;
+    $label = null;
 
-	// Prepare test table
-	$dataCols = "id, label";
-	CreateTableEx($conn1, $tableName, "id int NOT NULL PRIMARY KEY, label CHAR(1)", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "1, 'a'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "2, 'b'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "3, 'c'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "4, 'd'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "5, 'e'", null);
-	InsertRowEx($conn1, $tableName, $dataCols, "6, 'f'", null);
+    // Bind param @ SELECT
+    $tsql1 = "SELECT TOP(2) id, label FROM [$tableName] WHERE id > ? ORDER BY id ASC";
+    $value1 = 0;
+    $stmt1 = $conn1->prepare($tsql1);
+    bindParam(1, $stmt1, $value1);
+    execStmt(1, $stmt1);
+    bindColumn(1, $stmt1, $id, $label);
+    fetchBound($stmt1, $id, $label);
+    execStmt(1, $stmt1);
+    fetchBound($stmt1, $id, $label);
+    unset($stmt1);
 
-	$id = null;
-	$label = null;
+    // Bind param @ INSERT
+    $tsql2 = "INSERT INTO [$tableName](id, label) VALUES (100, ?)";
+    $value2 = null;
+    $stmt1 = $conn1->prepare($tsql2);
+    bindParam(2, $stmt1, $value2);
+    execStmt(2, $stmt1);
+    unset($stmt1);
 
-	// Bind param @ SELECT
-	$tsql1 = "SELECT TOP(2) id, label FROM [$tableName] WHERE id > ? ORDER BY id ASC";
-	$value1 = 0; 
-	$stmt1 = PrepareQuery($conn1, $tsql1);
-	BindParam(1, $stmt1, $value1);
-	ExecStmt(1, $stmt1);
-	BindColumn(1, $stmt1, $id, $label);
-	FetchBound($stmt1, $id, $label);
-	ExecStmt(1, $stmt1);
-	FetchBound($stmt1, $id, $label);
-	unset($stmt1);
+    // Check binding
+    $tsql3 = "SELECT id, NULL AS _label FROM [$tableName] WHERE label IS NULL";
+    $stmt1 = $conn1->query($tsql3);
+    bindColumn(3, $stmt1, $id, $label);
+    fetchBound($stmt1, $id, $label);
+    unset($stmt1);
 
-	// Bind param @ INSERT
-	$tsql2 = "INSERT INTO [$tableName](id, label) VALUES (100, ?)";
-	$value2 = null; 
-	$stmt1 = PrepareQuery($conn1, $tsql2);
-	BindParam(2, $stmt1, $value2);
-	ExecStmt(2, $stmt1);
-	unset($stmt1);
-
-	// Check binding
-	$tsql3 = "SELECT id, NULL AS _label FROM [$tableName] WHERE label IS NULL";
-	$stmt1 = ExecuteQuery($conn1, $tsql3);
-	BindColumn(3, $stmt1, $id, $label);
-	FetchBound($stmt1, $id, $label);
-	unset($stmt1);
-
-	// Cleanup
-	DropTable($conn1, $tableName);
-	$stmt1 = null;
-	$conn1 = null;
-
-	EndTest($testName);
+    // Cleanup
+    dropTable($conn1, $tableName);
+    unset($stmt1);
+    unset($conn1);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
 
-function BindParam($offset, $stmt, &$value)
+function bindParam($offset, $stmt, &$value)
 {
-	if (!$stmt->bindParam(1, $value))
-	{
-		LogInfo($offset,"Cannot bind parameter");
-	}
+    if (!$stmt->bindParam(1, $value)) {
+        logInfo($offset,"Cannot bind parameter");
+    }
 }
 
-function BindColumn($offset, $stmt, &$param1, &$param2)
+function bindColumn($offset, $stmt, &$param1, &$param2)
 {
-	if (!$stmt->bindColumn(1, $param1, PDO::PARAM_INT))
-	{
-		LogInfo($offset, "Cannot bind integer column");
-	}
-	if (!$stmt->bindColumn(2, $param2, PDO::PARAM_STR))
-	{
-		LogInfo($offset, "Cannot bind string column");
-	}
+    if (!$stmt->bindColumn(1, $param1, PDO::PARAM_INT)) {
+        logInfo($offset, "Cannot bind integer column");
+    }
+    if (!$stmt->bindColumn(2, $param2, PDO::PARAM_STR)) {
+        logInfo($offset, "Cannot bind string column");
+    }
 }
 
-function ExecStmt($offset, $stmt)
+function execStmt($offset, $stmt)
 {
-	if (!$stmt->execute())
-	{
-		LogInfo($offset, "Cannot execute statement");
-	}
+    if (!$stmt->execute()) {
+        logInfo($offset, "Cannot execute statement");
+    }
 }
 
 
-function FetchBound($stmt, &$param1, &$param2)
+function fetchBound($stmt, &$param1, &$param2)
 {
-	while ($stmt->fetch(PDO::FETCH_BOUND))
-	{
-		printf("id = %s (%s) / label = %s (%s)\n",
-	 		var_export($param1, true), gettype($param1),
-			var_export($param2, true), gettype($param2));
-	}
+    while ($stmt->fetch(PDO::FETCH_BOUND)) {
+        printf(
+            "id = %s (%s) / label = %s (%s)\n",
+                  var_export($param1, true),
+                    gettype($param1),
+                  var_export($param2, true),
+                    gettype($param2)
+        );
+    }
 }
 
-
-function LogInfo($offset, $msg)
+function logInfo($offset, $msg)
 {
-	printf("[%03d] %s\n", $offset, $msg);
+    printf("[%03d] %s\n", $offset, $msg);
 }
-
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-	try
-	{
-		Bind();
-	}
-	catch (Exception $e)
-	{
-		echo $e->getMessage();
-	}
-}
-
-Repro();
-
 ?>
 --EXPECT--
 id = 1 (integer) / label = 'a' (string)
@@ -139,4 +111,3 @@ id = 2 (integer) / label = 'b' (string)
 id = 1 (integer) / label = 'a' (string)
 id = 2 (integer) / label = 'b' (string)
 id = 100 (integer) / label = NULL (NULL)
-Test "PDO Statement - Bind Param" completed successfully.

@@ -5,66 +5,47 @@ Verification for "PDOStatement::bindValue()".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require_once('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once('MsCommon_mid-refactor.inc');
 
-function Bind()
-{
-	include 'MsSetup.inc';
+try {
+    $conn1 = connect();
 
-	$testName = "PDO Statement - Bind Value";
-	StartTest($testName);
+    // Prepare test table
+    $tableName = "pdo_test_table";
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "val1" => "varchar(10)", "val2" => "varchar(10)", "val3" => "varchar(10)"));
+    $data = array("one", "two", "three");
 
-	$conn1 = Connect();
+    // Insert test data
+    $i = 1;
+    if (!isColEncrypted()) {
+        $stmt1 = $conn1->prepare("INSERT INTO [$tableName] VALUES(1, ?, ?, ?)");
+    } else {
+        $stmt1 = $conn1->prepare("INSERT INTO [$tableName] VALUES(?, ?, ?, ?)");
+        $stmt1->bindValue(1, 1);
+        $i++;
+    }
+    foreach ($data as $v) {
+        $stmt1->bindValue($i, $v);
+        $i++;
+    }
+    $stmt1->execute();
+    unset($stmt1);
 
-	// Prepare test table
-	CreateTableEx($conn1, $tableName, "id int NOT NULL PRIMARY KEY, val1 VARCHAR(10), val2 VARCHAR(10), val3 VARCHAR(10)", null);
-	$data = array("one", "two", "three");
+    // Retrieve test data
+    $stmt1 = $conn1->prepare("SELECT * FROM [$tableName]");
+    $stmt1->execute();
+    var_dump($stmt1->fetchAll(PDO::FETCH_ASSOC));
 
-	// Insert test data
-	$stmt1 = PrepareQuery($conn1, "INSERT INTO [$tableName] VALUES(1, ?, ?, ?)");
-	foreach ($data as $i => $v)
-	{
-		$stmt1->bindValue($i+1, $v);
-	}
-	$stmt1->execute();
-	unset($stmt1);
-
-	// Retrieve test data
-	$stmt1 = PrepareQuery($conn1, "SELECT * FROM [$tableName]");
-	$stmt1->execute();
-	var_dump($stmt1->fetchAll(PDO::FETCH_ASSOC));
-
-
-	// Cleanup
-	DropTable($conn1, $tableName);
-	$stmt1 = null;
-	$conn1 = null;
-
-	EndTest($testName);
+    // Cleanup
+    dropTable($conn1, $tableName);
+    unset($stmt1);
+    unset($conn1);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-	try
-	{
-		Bind();
-	}
-	catch (Exception $e)
-	{
-		echo $e->getMessage();
-	}
-}
-
-Repro();
 
 ?>
 --EXPECT--
@@ -81,4 +62,3 @@ array(1) {
     string(5) "three"
   }
 }
-Test "PDO Statement - Bind Value" completed successfully.

@@ -5,51 +5,34 @@ Fetch data as VARCHAR(MAX)
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require_once("skipif_mid-refactor.inc"); ?>
 --FILE--
 <?php
+require_once("MsCommon_mid-refactor.inc");
 
-include 'MsCommon.inc';
-
-function MaxOutputParamsTest($expected, $length)
+function maxOutputParamsTest($expected, $length)
 {
-    include 'MsSetup.inc';
-
     $outstr = null;
+    $conn = connect();
 
-    $conn = Connect();
-
-    CreateProc(
-        $conn,
-        "EXEC_TEST",
-        "@OUT varchar(80) output",
-        "SET NOCOUNT ON; select @OUT = '$expected'; return (0)
-        ");
+    $procName = "EXEC_TEST";
+    dropProc($conn, $procName);
+    $conn->query("CREATE PROC [$procName] (@OUT varchar(80) output) AS BEGIN
+                  SET NOCOUNT ON; select @OUT = '$expected'; return(0) END");
 
     $sql = "execute EXEC_TEST ?";
-
     $stmt = $conn->prepare($sql);
-
-    if ($length)
-    {   
-        $stmt->bindParam(1, $outstr, PDO::PARAM_STR, 10);
-    }
-    else
-    {
-        $stmt->bindParam(1, $outstr, PDO::PARAM_STR, 3);
-    }
-
+    $stmt->bindParam(1, $outstr, PDO::PARAM_STR, $length);
     $stmt->execute();
 
     echo "Expected: $expected Received: $outstr\n";
 
-    if ($outstr !== $expected)
-    {
+    $failed = false;
+    if ($outstr !== $expected) {
         print_r($stmt->errorInfo());
-        return(-1);
+        $failed = true;
     }
-
-    return(0);
+    return $failed;
 }
 
 
@@ -57,26 +40,15 @@ function MaxOutputParamsTest($expected, $length)
 // Repro
 //
 //--------------------------------------------------------------------
-function Repro()
-{
-    $failed = null;
+$failed = false;
 
-    $testName = "PDO - Max Output Params Test";
+$failed |= maxOutputParamsTest("abc", 3);
+$failed |= maxOutputParamsTest("abc", 10);
 
-    StartTest($testName);
-
-    $failed |= MaxOutputParamsTest("abc", null);
-    $failed |= MaxOutputParamsTest("abc", -1);
-
-    if ($failed)
-        FatalError("Possible Regression: Value returned as VARCHAR(MAX) truncated");
-
-    EndTest($testName);
+if ($failed) {
+    fatalError("Possible Regression: Value returned as VARCHAR(MAX) truncated");
 }
-
-Repro();
 ?>
 --EXPECT--
 Expected: abc Received: abc
 Expected: abc Received: abc
-Test "PDO - Max Output Params Test" completed successfully.
