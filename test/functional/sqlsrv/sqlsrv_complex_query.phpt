@@ -14,11 +14,7 @@ function insertTest($conn, $tableName, $inputs, $query)
     $stmt = null;
     if (!AE\isColEncrypted()) {
         $insertSql = AE\getInsertSqlComplete($tableName, $inputs);
-        if (! is_null($query)) {
-            $sql = str_replace("SQL", $insertSql, $query);
-        } else {
-            $sql = $insertSql;
-        }
+        $sql = str_replace("SQL", $insertSql, $query);
         $stmt = sqlsrv_query($conn, $sql);
     } else {
         // must bind parameters
