@@ -153,7 +153,7 @@ class ColumnMeta
     public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $colName;    //column name
     public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
-    public $encType;    //randomized, deterministic, or normal; default is null
+    public $encType;    //randomized, deterministic, or none; default is null
     public $forceEncrypt; //force encryption on a datatype not supported by Column Encrypton
 
     public function __construct($dataType, $colName = null, $options = null, $encType = null, $forceEncrypt = false)
@@ -169,7 +169,7 @@ class ColumnMeta
             if (isColEncrypted()) {
                 $this->encType = "deterministic";
             } else {
-                $this->encType = "normal";
+                $this->encType = "none";
             }
         } else {
             $this->encType = $encType;

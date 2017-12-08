@@ -15,7 +15,7 @@ try {
 
     // Prepare test table
     $tableName = "pdo_test_table";
-    createTable($conn1, $tableName, array(new ColumnMeta("int", "idx", "NOT NULL PRIMARY KEY", "normal"), "txt" => "varchar(20)"));
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "idx", "NOT NULL PRIMARY KEY", "none"), "txt" => "varchar(20)"));
     insertRow($conn1, $tableName, array("idx" => 0, "txt" => "String0"));
     insertRow($conn1, $tableName, array("idx" => 1, "txt" => "String1"));
     insertRow($conn1, $tableName, array("idx" => 2, "txt" => "String2"));

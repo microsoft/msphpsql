@@ -15,7 +15,7 @@ try {
 
     // Prepare test table
     $tableName = "pdo_test_table";
-    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY", "normal"), "label" => "char(1)"));
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY", "none"), "label" => "char(1)"));
     insertRow($conn1, $tableName, array("id" => 1, "label" => "a"));
     insertRow($conn1, $tableName, array("id" => 2, "label" => "b"));
     insertRow($conn1, $tableName, array("id" => 3, "label" => "c"));

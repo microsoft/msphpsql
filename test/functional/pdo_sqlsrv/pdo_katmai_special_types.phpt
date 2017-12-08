@@ -106,7 +106,7 @@ function katmaiSparseChar($conn)
         if ($input !== trim($value1)) {
             echo "The value is unexpected!\n";
         }
-        // trimming it required since SPARSE is not supported for encrypted columns
+        // trimming is required since SPARSE is not supported for encrypted columns
         if (trim($value1) !== trim($value2)) {
             echo "The values don't match!\n";
         }
