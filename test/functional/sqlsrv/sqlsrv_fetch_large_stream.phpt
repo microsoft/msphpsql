@@ -40,9 +40,6 @@ if ($stream === false) {
     if (AE\isColEncrypted() && $error['SQLSTATE'] === "IMSSP" && $error['code'] === -109 &&
         $error['message'] === "Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.") {
         $success = true;
-    } else {
-        var_dump($error);
-        fatalError("Failed to read field");
     }
 } else {
     $value = '';
@@ -54,15 +51,13 @@ if ($stream === false) {
         fclose($stream);
         if (checkData($value, $inValue)) {  // compare the data to see if they match!
             $success = true;
-        } else {
-            fatalError("Data corruption!\n");
         }
-    } else {
-        fatalError("Error in getting stream!");
     }
 }
 if ($success) {
     echo "Done.\n";
+} else {
+    fatalError("Failed to fetch stream ");
 }
 
 function checkData($actual, $expected)
