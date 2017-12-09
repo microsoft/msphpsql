@@ -11,7 +11,6 @@ require_once('MsCommon.inc');
 $conn = AE\connect();
 
 $tableName = "test_max_fields";
-dropTable($conn, $tableName);
 AE\createTable($conn, $tableName, array(new AE\ColumnMeta("varchar(max)", "varchar_max_col")));
 
 $inValue = str_repeat("ÃÜðßZZýA©", 600);
