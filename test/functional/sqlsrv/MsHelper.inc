@@ -364,7 +364,7 @@ function isQualified($conn)
 function connect($options = array(), $disableCE = false)
 {
     require('MsSetup.inc');
-    if (sizeof($options) > 0) {
+    if (! empty($options)) {
         $connectionOptions = array_merge($connectionOptions, $options);
     }
     if (!$disableCE) {
