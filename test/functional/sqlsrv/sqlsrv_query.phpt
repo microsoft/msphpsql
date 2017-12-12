@@ -42,17 +42,25 @@ sqlsrv_query test. Performs same tasks as 0006.phpt, using sqlsrv_query.
 
     while (sqlsrv_fetch($stmt)) {
         $id = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-        echo "$id <br/>";
+        echo "$id\n";
         $double = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-        echo "$double <br/>";
+        echo "$double\n";
         $name = sqlsrv_get_field($stmt, 2, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
-        echo "$name <br/>";
+        echo "$name\n";
         $stream = sqlsrv_get_field($stmt, 3, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-        while (!feof($stream)) {
-            $str = fread($stream, 4000);
-            echo $str;
+        if (!$stream) {
+            if (AE\isColEncrypted()) {
+                echo sqlsrv_errors()[0]['message'];
+            } else {
+                fatalError('Fetching data stream failed!');
+            }
+        } else {
+            while (!feof($stream)) {
+                $str = fread($stream, 4000);
+                echo $str;
+            }
         }
-        echo "<br/>";
+        echo "\n";
     }
 
     sqlsrv_query($conn, "DROP TABLE test_params");
@@ -61,5 +69,8 @@ sqlsrv_query test. Performs same tasks as 0006.phpt, using sqlsrv_query.
     sqlsrv_close($conn);
 
 ?>
---EXPECTF--
-1 <br/>12.0 <br/>testtestte <br/>This is some text meant to test binding parameters to streams<br/>%A
+--EXPECTREGEX--
+1
+12\.0
+testtestte
+(This is some text meant to test binding parameters to streams|Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.)

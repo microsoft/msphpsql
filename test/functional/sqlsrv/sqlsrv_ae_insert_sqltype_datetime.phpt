@@ -40,7 +40,7 @@ foreach ($dataTypes as $dataType) {
         $r;
         $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputs[0], $colMetaArr[1]->colName => $inputs[1] ), $r, AE\INSERT_PREPARE_PARAMS);
 
-        if (!AE\isColEncrypted()) {
+        if (!AE\isDataEncrypted()) {
             if ($r === false) {
                 $isCompatible = false;
                 foreach ($compatList[$dataType] as $compatType) {

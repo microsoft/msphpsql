@@ -76,9 +76,17 @@ binding parameters, including output parameters, using the simplified syntax.
         $name = sqlsrv_get_field($stmt, 2, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         echo "$name\n";
         $stream = sqlsrv_get_field($stmt, 3, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-        while (!feof($stream)) {
-            $str = fread($stream, 10000);
-            echo $str;
+        if (!$stream) {
+            if (AE\isColEncrypted()) {
+                verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
+            } else {
+                fatalError('Fetching data stream failed!');
+            }
+        } else {
+            while (!feof($stream)) {
+                $str = fread($stream, 10000);
+                echo $str;
+            }
         }
         echo "\n";
     }
@@ -121,14 +129,14 @@ binding parameters, including output parameters, using the simplified syntax.
     sqlsrv_free_stmt($stmt);
     sqlsrv_close($conn);
 ?>
---EXPECTF--
+--EXPECTREGEX--
 1
-12.0
+12\.0
 testtestte
-This is some text meant to test binding parameters to streams
+(This is some text meant to test binding parameters to streams)?
 2
-13.0
+13\.0
 testtestte
-This is some more text meant to test binding parameters to streams
+(This is some more text meant to test binding parameters to streams)?
 3
 4

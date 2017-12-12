@@ -28,7 +28,7 @@ foreach ($dataTypes as $dataType) {
     $r;
     $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
 
-    if (!AE\isColEncrypted()) {
+    if (!AE\isDataEncrypted()) {
         if ($r === false) {
             echo "Default type should be compatible with $dataType.\n";
             $success = false;

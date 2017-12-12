@@ -33,7 +33,7 @@ while ($decrypted_row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 sqlsrv_free_stmt($stmt);
 
 // for AE only
-if (AE\isColEncrypted()) {
+if (AE\isDataEncrypted()) {
     $conn1 = connect(null, true);
     $stmt = sqlsrv_query($conn1, $selectSql);
     while ($encrypted_row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {

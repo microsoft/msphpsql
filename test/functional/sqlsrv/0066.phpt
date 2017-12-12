@@ -38,14 +38,17 @@ inserting and retrieving UTF-8 text.
 
     $u = sqlsrv_get_field($s, 1, SQLSRV_PHPTYPE_STREAM('utf-8'));
     if ($u === false) {
-        die(print_r(sqlsrv_errors(), true));
+        if (AE\isColEncrypted()) {
+            verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
+        } else {
+            die(print_r(sqlsrv_errors(), true));
+        }
+    } else {
+        $utf8_2 = fread($u, 10000);
+        if ($utf8 != $utf8_2) {
+            fatalError("round trip failed");
+        }
     }
-
-    $utf8_2 = fread($u, 10000);
-    if ($utf8 != $utf8_2) {
-        fatalError("round trip failed");
-    }
-
     dropTable($c, 'utf8test');
 
     echo "Test succeeded\n";
