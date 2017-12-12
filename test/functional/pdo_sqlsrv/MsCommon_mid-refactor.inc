@@ -174,7 +174,6 @@ class ColumnMeta
         } else {
             $this->encType = $encType;
         }
-        $this->encType = $encType;
         $this->forceEncrypt = $forceEncrypt;
     }
     /**
