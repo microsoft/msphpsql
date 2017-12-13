@@ -91,7 +91,7 @@ error messages when trying to retrieve past the end of a result set and when no 
         } else {
             while (!feof($stream)) {
                 $str = fread($stream, 10000);
-                if ($str !== "This is some text meant to test binding parameters to streams") {
+                if ($str !== "This is some more text meant to test binding parameters to streams") {
                     fatalError("Incorrect data: \'$str\'!\n");
                 }
             }
