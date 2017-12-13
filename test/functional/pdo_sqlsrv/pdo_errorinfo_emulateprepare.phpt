@@ -20,7 +20,7 @@ try {
 
     echo "\n****testing with emulate prepare****\n";
     // Do not support emulate prepare with Always Encrypted
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         $stmt = $conn->prepare("SELECT c2 FROM $tbname WHERE c1= :int", array(PDO::ATTR_EMULATE_PREPARES => true));
     } else {
         $stmt = $conn->prepare("SELECT c2 FROM $tbname WHERE c1= :int");
@@ -32,7 +32,7 @@ try {
     $stmt->execute();
 
     $stmt_error = $stmt->errorInfo();
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         if ($stmt_error[0] != "HY093") {
             echo "SQLSTATE should be HY093 when Emulate Prepare is true.\n";
             print_r($stmt_error);

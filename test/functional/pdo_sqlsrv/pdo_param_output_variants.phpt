@@ -22,7 +22,7 @@ function testReverse($conn)
         $stmt->execute();
         // Connection with Column Encryption enabled works for non encrypted SQL_VARIANT
         // Since SQLDescribeParam is called
-        if (isColEncrypted() && $string === "987654321") {
+        if (isAEConnected() && $string === "987654321") {
             echo "Testing input output parameter with SQL_VARIANT is successful.\n";
             
         } else {
@@ -31,7 +31,7 @@ function testReverse($conn)
     } catch (Exception $e) {
         //echo "Failed when calling the reverse procedure\n";
         $error = $e->getMessage();
-        if (!isColEncrypted() && strpos($error, "Implicit conversion from data type sql_variant to nvarchar is not allowed.") !== false) {
+        if (!isAEConnected() && strpos($error, "Implicit conversion from data type sql_variant to nvarchar is not allowed.") !== false) {
             echo "Testing input output parameter with SQL_VARIANT is successful.\n";
         } else {
             echo "$error\n";
@@ -47,7 +47,7 @@ function createVariantTable($conn, $tableName)
         echo $e->getMessage();
     }
     $data = "This is to test if sql_variant works with output parameters";
-    if (!isColEncrypted()) {
+    if (!isAEConnected()) {
         $tsql = "INSERT INTO [$tableName] ([c1_int], [c2_variant]) VALUES (1, ?)";
         $stmt = $conn->prepare($tsql);
         $result = $stmt->execute(array($data));
@@ -78,7 +78,7 @@ function testOutputParam($conn, $tableName)
         $stmt->bindValue(1, 1);
         $stmt->bindParam(2, $callResult, PDO::PARAM_STR, 100);
         $stmt->execute();
-        if (isColEncrypted() && $callResult === "This is to test if sql_variant works with output parameters") {
+        if (isAEConnected() && $callResult === "This is to test if sql_variant works with output parameters") {
             echo "Testing output parameter with SQL_VARIANT is successful.\n";
         } else {
             echo "Does SELECT from table work? $callResult \n";
@@ -88,7 +88,7 @@ function testOutputParam($conn, $tableName)
             echo "initialized data and result should be the same";
         }
         $error = $e->getMessage();
-        if (!isColEncrypted() && strpos($error, "Operand type clash: nvarchar(max) is incompatible with sql_variant") !== false) {
+        if (!isAEConnected() && strpos($error, "Operand type clash: nvarchar(max) is incompatible with sql_variant") !== false) {
             echo "Testing output parameter with SQL_VARIANT is successful.\n";
         } else {
             echo "$error\n";
