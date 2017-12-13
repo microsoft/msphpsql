@@ -113,9 +113,19 @@ binding streams using full syntax.
         $name = sqlsrv_get_field($stmt, 2, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         echo "$name\n";
         $stream = sqlsrv_get_field($stmt, 3, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-        while (!feof($stream)) {
-            $str = fread($stream, 10000);
-            echo $str;
+        if (!$stream) {
+            if (AE\isColEncrypted()) {
+                verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
+            } else {
+                fatalError('Fetching data stream failed!');
+            }
+        } else {
+            while (!feof($stream)) {
+                $str = fread($stream, 10000);
+                if ($str !== "This is some text meant to test binding parameters to streams") {
+                    fatalError("Incorrect data: \'$str\'!\n");
+                }
+            }
         }
         echo "\n";
     }
@@ -159,5 +169,5 @@ sqlsrv_query(3) failed.
 1
 12.0
 testtestte
-This is some text meant to test binding parameters to streams
+
 Done

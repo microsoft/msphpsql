@@ -23,19 +23,26 @@ function runTest($fieldType)
     sqlsrv_fetch($stmt)
         || die(print_r(sqlsrv_errors(), true));
 
-    ($stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM("char")))
-        || die(print_r(sqlsrv_errors(), true));
-
-    stream_filter_append($originalStream, "convert.base64-encode")
-        || die(print_r(error_get_last()));
-        
-    while (($originalLine = fread($originalStream, 80)) &&
-            ($dbLine = fread($stream, 80))) {
-        if ($originalLine != $dbLine) {
-            die("Not identical");
+    // Do not support getting stream if AE enabled, so expect 
+    // it to fail with the correct error message
+    $stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM("char"));
+    if ($stream) {
+        stream_filter_append($originalStream, "convert.base64-encode")
+            || die(print_r(error_get_last()));
+            
+        while (($originalLine = fread($originalStream, 80)) &&
+                ($dbLine = fread($stream, 80))) {
+            if ($originalLine != $dbLine) {
+                die("Not identical");
+            }
+        }
+    } else {
+        if (AE\isColEncrypted()) {
+            verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
+        } else {
+            fatalError('Fetching data stream failed!');
         }
     }
-
     dropTable($conn, $params['tableName']);
     
     sqlsrv_free_stmt($stmt) || die(print_r(sqlsrv_errors(), true));

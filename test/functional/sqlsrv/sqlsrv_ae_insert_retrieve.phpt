@@ -44,7 +44,7 @@ sqlsrv_free_stmt($stmt);
 
 //for AE only
 echo "\nChecking ciphertext data:\n";
-if (AE\isColEncrypted()) {
+if (AE\isDataEncrypted()) {
     $conn1 = connect(null, true);
     $selectSql = "SELECT SSN, FirstName, LastName, BirthDate FROM $tbname";
     $stmt = sqlsrv_query($conn1, $selectSql);

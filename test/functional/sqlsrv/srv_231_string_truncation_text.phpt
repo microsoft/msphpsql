@@ -47,6 +47,7 @@ function execProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
     $spCode = "SET @p2 = ( SELECT c2 FROM $tableName WHERE c1 = @p1 )";
     $procName = "testBindOutSp";
     
+    dropProc($conn, $procName);
     $stmt1 = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
     sqlsrv_free_stmt($stmt1);
 

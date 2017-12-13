@@ -43,7 +43,7 @@ AE\fetchAll($conn, $tbname);
 sqlsrv_free_stmt($stmt);
 
 // for AE only
-if (AE\isColEncrypted()) {
+if (AE\isDataEncrypted()) {
     $conn1 = connect(null, true);
 
     $selectSql = "SELECT * FROM $tbname";

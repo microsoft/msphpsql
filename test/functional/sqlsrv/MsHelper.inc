@@ -90,7 +90,8 @@ class ColumnMeta
     {
         $append = " ";
 
-        if (isColEncrypted() && $this->encryptable) {
+        if ($this->encryptable && isDataEncrypted()) {
+
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
@@ -325,13 +326,26 @@ function getSeqPlaceholders($num)
 }
 
 /**
- * @return bool false if $keystore specified in MsSetup.inc is none or data not encrypted,
- *              otherwise return true
+ * @return bool false if $keystore specified in MsSetup.inc is none; return true otherwise
  */
 function isColEncrypted()
 {
     global $keystore, $dataEncrypted;
-    if ($keystore == KEYSTORE_NONE || !$dataEncrypted) {
+    if ($keystore === KEYSTORE_NONE) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+/**
+ * @return bool false if $keystore specified in MsSetup.inc is none or data not encrypted;
+ *              return true otherwise 
+ */
+function isDataEncrypted()
+{
+    global $keystore, $dataEncrypted;
+    if ($keystore === KEYSTORE_NONE || !$dataEncrypted) {
         return false;
     } else {
         return true;
@@ -1065,6 +1079,23 @@ function getColName($k)
     return ("");
 }
 
+function isStreamData($k)
+{
+    switch ($k) {
+        case 14:    return (true);  // varchar(max)
+        case 17:    return (true);  // nvarchar(max)
+        case 18:    return (true);  // text
+        case 19:    return (true);  // ntext
+        case 20:    return (true);  // binary
+        case 21:    return (true);  // varbinary(512)
+        case 22:    return (true);  // varbinary(max)
+        case 23:    return (true);  // image
+        case 27:    return (true);  // timestamp
+        case 28:    return (true);  // xml
+        default:    break;
+    }
+    return (false);
+}
 
 function getColSize($k)
 {

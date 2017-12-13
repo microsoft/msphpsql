@@ -14,7 +14,6 @@ $tbname = 'NVarcharAnalysis';
 $colMetaArr = array( new AE\ColumnMeta("int", "CharCount", "IDENTITY(0,1)"), new AE\ColumnMeta("nvarchar(1000)"));
 AE\createTable($conn, $tbname, $colMetaArr);
 
-
 // insert 1000 rows
 for ($i = 0; $i < 1000; $i++) {
     $data = str_repeat("*", $i);
@@ -33,7 +32,7 @@ while ($decrypted_row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 sqlsrv_free_stmt($stmt);
 
 // for AE only
-if (AE\isColEncrypted()) {
+if (AE\isDataEncrypted()) {
     $conn1 = connect(null, true);
     $stmt = sqlsrv_query($conn1, $selectSql);
     while ($encrypted_row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
