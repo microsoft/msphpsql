@@ -115,14 +115,16 @@ binding streams using full syntax.
         $stream = sqlsrv_get_field($stmt, 3, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
         if (!$stream) {
             if (AE\isColEncrypted()) {
-                echo sqlsrv_errors()[0]['message'];
+                verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
             } else {
                 fatalError('Fetching data stream failed!');
             }
         } else {
             while (!feof($stream)) {
                 $str = fread($stream, 10000);
-                echo $str;
+                if ($str !== "This is some text meant to test binding parameters to streams") {
+                    fatalError("Incorrect data: \'$str\'!\n");
+                }
             }
         }
         echo "\n";
@@ -161,11 +163,11 @@ binding streams using full syntax.
     dropTable($conn, $tableName);
     sqlsrv_close($conn);
 ?>
---EXPECTREGEX--
-sqlsrv_query\(2\) failed\.
-sqlsrv_query\(3\) failed\.
+--EXPECT--
+sqlsrv_query(2) failed.
+sqlsrv_query(3) failed.
 1
-12\.0
+12.0
 testtestte
-(This is some text meant to test binding parameters to streams|Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.)
+
 Done

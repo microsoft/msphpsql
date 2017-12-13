@@ -68,6 +68,9 @@ binding parameters, including output parameters, using the simplified syntax.
         die("sqlsrv_execute failed.");
     }
 
+    $textValues = array("This is some text meant to test binding parameters to streams", 
+                        "This is some more text meant to test binding parameters to streams");
+    $k = 0;
     while (sqlsrv_fetch($stmt)) {
         $id = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         echo "$id\n";
@@ -85,7 +88,9 @@ binding parameters, including output parameters, using the simplified syntax.
         } else {
             while (!feof($stream)) {
                 $str = fread($stream, 10000);
-                echo $str;
+                if ($str !== $textValues[$k++]) {
+                    fatalError("Incorrect data: \'$str\'!\n");
+                }
             }
         }
         echo "\n";
@@ -129,14 +134,14 @@ binding parameters, including output parameters, using the simplified syntax.
     sqlsrv_free_stmt($stmt);
     sqlsrv_close($conn);
 ?>
---EXPECTREGEX--
+--EXPECT--
 1
-12\.0
+12.0
 testtestte
-(This is some text meant to test binding parameters to streams)?
+
 2
-13\.0
+13.0
 testtestte
-(This is some more text meant to test binding parameters to streams)?
+
 3
 4
