@@ -157,7 +157,7 @@ void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC );
 // holds the field names for reuse by sqlsrv_fetch_array/object as keys
 struct sqlsrv_fetch_field_name {
     char* name;
-    unsigned int len;
+    SQLLEN len;
 };
 
 struct stmt_option_ss_scrollable : public stmt_option_functor {

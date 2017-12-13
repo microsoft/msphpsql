@@ -1229,7 +1229,7 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt TSRMLS_DC )
             }
             // bind the parameter
             SQLSRV_ASSERT( value_z != NULL, "bind_params: value_z is null." );
-            core_sqlsrv_bind_param( stmt, index, direction, value_z, php_out_type, encoding, sql_type, column_size, 
+            core_sqlsrv_bind_param( stmt, static_cast<SQLUSMALLINT>( index ), direction, value_z, php_out_type, encoding, sql_type, column_size, 
                 decimal_digits TSRMLS_CC );
 
 		} ZEND_HASH_FOREACH_END();

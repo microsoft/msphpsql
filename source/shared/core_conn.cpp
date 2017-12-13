@@ -305,7 +305,7 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ 
     if( SQL_SUCCEEDED( rc ) ) 
         return false;
 
-    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
+    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ] = { 0 };
     SQLSMALLINT len;
     SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
 
@@ -321,13 +321,12 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ 
 
 bool core_search_odbc_driver_unix( _In_ DRIVER_VERSION driver_version )
 {
+#ifndef _WIN32
     char szBuf[DEFAULT_CONN_STR_LEN+1];     // use a large enough buffer size
     WORD cbBufMax = DEFAULT_CONN_STR_LEN; 
     WORD cbBufOut;
     char *pszBuf = szBuf;
-    bool found_driver = false;
 
-#ifndef _WIN32
     // get all the names of the installed drivers delimited by null characters
     if(! SQLGetInstalledDrivers( szBuf, cbBufMax, &cbBufOut ) )
     {
@@ -966,8 +965,8 @@ void load_configure_ksp( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 
     char* ksp_name = Z_STRVAL_P( conn->ce_option.ksp_name );
     char* ksp_path = Z_STRVAL_P( conn->ce_option.ksp_path );
-    unsigned int name_len = Z_STRLEN_P( conn->ce_option.ksp_name );
-    unsigned int key_size = conn->ce_option.key_size;    
+    unsigned int name_len = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.ksp_name ));
+    unsigned int key_size = static_cast<unsigned int>( conn->ce_option.key_size );    
 
     sqlsrv_malloc_auto_ptr<unsigned char> ksp_data;
 

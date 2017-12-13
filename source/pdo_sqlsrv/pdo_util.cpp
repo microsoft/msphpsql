@@ -33,7 +33,7 @@ char EXCEPTION_PROPERTY_ERRORINFO[] = "errorInfo";
 const int MAX_DIGITS = 11; // +-2 billion = 10 digits + 1 for the sign if negative
 
 // the warning message is not the error message alone; it must take WARNING_TEMPLATE above into consideration without the formats
-const int WARNING_MIN_LENGTH = strlen(WARNING_TEMPLATE) - strlen("%1!s!%2!d!%3!s!");
+const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE ) - strlen( "%1!s!%2!d!%3!s!" ));
 
 // buffer used to hold a formatted log message prior to actually logging it.
 const int LOG_MSG_SIZE = 2048;
