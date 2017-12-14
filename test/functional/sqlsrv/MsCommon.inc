@@ -136,7 +136,7 @@ function connect($options = array())
 {
     include('MsSetup.inc');
 
-    if (sizeof($options) > 0) {
+    if (!empty($options)) {
         $connectionOptions = array_merge($connectionOptions, $options);
     }
 
