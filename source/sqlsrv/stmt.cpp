@@ -1882,20 +1882,20 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     }
 
     // if the direction is included, then use what they gave, otherwise INPUT is assumed
-    if (zend_hash_move_forward_ex(param_ht, &pos) == SUCCESS && (temp = zend_hash_get_current_data_ex(param_ht, &pos)) != NULL &&
+    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
 
         CHECK_CUSTOM_ERROR( Z_TYPE_P( temp ) != IS_LONG, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
 
             throw ss::SSException();
         }
-        direction = static_cast<SQLSMALLINT>(Z_LVAL_P( temp ));
+        direction = static_cast<SQLSMALLINT>( Z_LVAL_P( temp ));
         CHECK_CUSTOM_ERROR( direction != SQL_PARAM_INPUT && direction != SQL_PARAM_OUTPUT && direction != SQL_PARAM_INPUT_OUTPUT,
                             stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
             throw ss::SSException();
         }
 
-        CHECK_CUSTOM_ERROR(!Z_ISREF_P(var_or_val) && (direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1) {
+        CHECK_CUSTOM_ERROR( !Z_ISREF_P( var_or_val ) && ( direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT ), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1 ) {
             throw ss::SSException();
         }
        
@@ -1905,7 +1905,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     }
 
     // extract the php type and encoding from the 3rd parameter
-    if (zend_hash_move_forward_ex(param_ht, &pos) == SUCCESS && (temp = zend_hash_get_current_data_ex(param_ht, &pos)) != NULL &&
+    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
                 
         php_type_param_was_null = false;
@@ -1925,7 +1925,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
         }
 
         php_out_type = static_cast<SQLSRV_PHPTYPE>( sqlsrv_phptype.typeinfo.type );
-        encoding = (SQLSRV_ENCODING) sqlsrv_phptype.typeinfo.encoding;
+        encoding = ( SQLSRV_ENCODING ) sqlsrv_phptype.typeinfo.encoding;
         // if the call has a SQLSRV_PHPTYPE_STRING/STREAM('default'), then the stream is in the encoding established 
         // by the connection
         if( encoding == SQLSRV_ENCODING_DEFAULT ) {
@@ -1937,11 +1937,11 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
                     
         php_type_param_was_null = true;
 
-        if (Z_ISREF_P(var_or_val)){
-            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P(Z_REFVAL_P(var_or_val))];
+        if ( Z_ISREF_P( var_or_val )){
+            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P( Z_REFVAL_P( var_or_val ))];
         }
         else{
-            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P(var_or_val)];
+            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P( var_or_val )];
         }
         encoding = stmt->encoding();
         if( encoding == SQLSRV_ENCODING_DEFAULT ) {
@@ -1950,7 +1950,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     }
 
     // get the server type, column size/precision and the decimal digits if provided
-    if (zend_hash_move_forward_ex(param_ht, &pos) == SUCCESS && (temp = zend_hash_get_current_data_ex(param_ht, &pos)) != NULL &&
+    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
 
         sql_type_param_was_null = false;
@@ -1969,7 +1969,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
             throw ss::SSException();
         }             
         
-		bool size_okay = determine_column_size_or_precision(stmt, sqlsrv_sql_type, &column_size, &decimal_digits);
+		bool size_okay = determine_column_size_or_precision( stmt, sqlsrv_sql_type, &column_size, &decimal_digits );
 
         CHECK_CUSTOM_ERROR( !size_okay, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_PRECISION, index + 1 ) {
 
