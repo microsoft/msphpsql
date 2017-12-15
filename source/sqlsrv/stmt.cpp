@@ -1863,6 +1863,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     zval* temp = NULL;
     HashTable* param_ht = Z_ARRVAL_P( param_array );
     sqlsrv_sqltype sqlsrv_sql_type;
+    HashPosition pos;
 
     try {
 
@@ -1873,15 +1874,15 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     encoding = SQLSRV_ENCODING_INVALID;
 
     // handle the array parameters that contain the value/var, direction, php_type, sql_type
-    zend_hash_internal_pointer_reset( param_ht );
-    if( zend_hash_has_more_elements( param_ht ) == FAILURE || 
-        (var_or_val = zend_hash_get_current_data(param_ht)) == NULL) {
+    zend_hash_internal_pointer_reset_ex( param_ht, &pos );
+    if( zend_hash_has_more_elements_ex( param_ht, &pos ) == FAILURE || 
+        (var_or_val = zend_hash_get_current_data_ex(param_ht, &pos)) == NULL) {
 
         THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1 );
     }
 
     // if the direction is included, then use what they gave, otherwise INPUT is assumed
-    if (zend_hash_move_forward(param_ht) == SUCCESS && (temp = zend_hash_get_current_data(param_ht)) != NULL &&
+    if (zend_hash_move_forward_ex(param_ht, &pos) == SUCCESS && (temp = zend_hash_get_current_data_ex(param_ht, &pos)) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
 
         CHECK_CUSTOM_ERROR( Z_TYPE_P( temp ) != IS_LONG, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
@@ -1904,7 +1905,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     }
 
     // extract the php type and encoding from the 3rd parameter
-    if (zend_hash_move_forward(param_ht) == SUCCESS && (temp = zend_hash_get_current_data(param_ht)) != NULL &&
+    if (zend_hash_move_forward_ex(param_ht, &pos) == SUCCESS && (temp = zend_hash_get_current_data_ex(param_ht, &pos)) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
                 
         php_type_param_was_null = false;
@@ -1949,7 +1950,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     }
 
     // get the server type, column size/precision and the decimal digits if provided
-    if (zend_hash_move_forward(param_ht) == SUCCESS && (temp = zend_hash_get_current_data(param_ht)) != NULL &&
+    if (zend_hash_move_forward_ex(param_ht, &pos) == SUCCESS && (temp = zend_hash_get_current_data_ex(param_ht, &pos)) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
 
         sql_type_param_was_null = false;
