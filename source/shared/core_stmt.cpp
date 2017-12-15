@@ -2670,12 +2670,12 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
         return;
     }
     std::vector<size_t> digits;
-    char* ptr = ZSTR_VAL( Z_STR_P( param_z ));
+    unsigned char* ptr = reinterpret_cast<unsigned char*>(ZSTR_VAL( Z_STR_P( param_z )));
     bool isNeg = false;
     bool isScientificNot = false;
     char scientificChar = ' ';
     short scientificExp = 0;
-    if( strchr( ptr, 'e' ) || strchr( ptr, 'E' )){
+    if( strchr( reinterpret_cast<char*>( ptr ), 'e' ) || strchr( reinterpret_cast<char*>( ptr ), 'E' )){
         isScientificNot = true;
     }
     // parse digits in param_z into the vector digits
@@ -2754,7 +2754,7 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
                 // check if the last digit to be popped is greater than 5, if so, the digit before it needs to round up
                 carryOver = digits.back() >= 5;
                 digits.pop_back();
-                backInd = digits.size() - 1;
+                backInd = static_cast<short>(digits.size() - 1);
                 // round up from the end until no more carry over
                 while( carryOver && backInd >= 0 ){
                     if( digits.at( backInd ) != 9 ){
