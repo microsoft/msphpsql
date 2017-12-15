@@ -299,6 +299,8 @@ function runTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 if ($rowCount != $noRows) {
                     die("$rowCount rows retrieved instead of $noRows\n");
                 }
+                unset($errState);
+                unset($errMessage);
                 break;
 
             case 6:    // fetch array
