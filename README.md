@@ -53,7 +53,7 @@ You must first be able to build PHP 7.0.* or above without including these exten
 
 #### Compile the drivers
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0RC* using Visual C++ 2017 v15.0. 
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0* using Visual C++ 2017 v15.0. 
 For details, please read the documentation and/or take a look at the sample [build scripts](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows).
 
 ## Install (Windows)
@@ -72,7 +72,7 @@ For details, please read the documentation and/or take a look at the sample [bui
 3. Restart the Web server.
 
 ## Install (UNIX)
-The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, Apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, SUSE 12, and macOS. 
+The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, Apache, and Microsoft PHP drivers on Ubuntu 16, 17 RedHat 7, Debian 8, 9 SUSE 12, and macOS 10.11, 10.12. 
 
 ### Step 1: Install PHP7+ 
 
@@ -134,8 +134,6 @@ The following instructions assume a clean environment and show how to install PH
     source ~/.bash_profile
 
 #### PHP 7.1
-
-Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
 
 **Ubuntu 16.04, 17.10**
 
