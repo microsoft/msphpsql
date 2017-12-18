@@ -61,7 +61,7 @@ For details, please read the documentation and/or take a look at the sample [bui
 #### Prerequisites
 
 - A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
-- [Microsoft ODBC Driver 11][odbc11] or [Microsoft ODBC Driver 13][odbc13]
+- [Microsoft ODBC Driver 11][odbc11], [Microsoft ODBC Driver 13][odbc13] or [Microsoft ODBC Driver 17][odbc17]
 
 #### Enable the drivers
 
@@ -73,6 +73,8 @@ For details, please read the documentation and/or take a look at the sample [bui
 
 ## Install (UNIX)
 The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, Apache, and Microsoft PHP drivers on Ubuntu 16, 17 RedHat 7, Debian 8, 9 SUSE 12, and macOS 10.11, 10.12. 
+
+Note that [Microsoft ODBC Driver 17][odbc17] is required for Ubuntu 17 and Debian 9.
 
 ### Step 1: Install PHP7+ 
 
@@ -527,6 +529,8 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 [odbc11]: https://www.microsoft.com/download/details.aspx?id=36434
 
 [odbc13]: https://www.microsoft.com/download/details.aspx?id=50420
+
+[odbc17]: https://github.com/Microsoft/msphpsql/tree/master/ODBC%2017%20binaries%20preview
 
 [odbcLinux]: https://msdn.microsoft.com/library/hh568454(v=sql.110).aspx
 
