@@ -12,9 +12,15 @@ function testSimpleSelect($conn, $tableName)
 {
     $count = 0;
 
-    $stmt = $conn->prepare("SELECT ? = COUNT(* ) FROM $tableName");
-    $stmt->bindParam(1, $count, PDO::PARAM_INT, 4);
-    $stmt->execute();
+    if (!isAEConnected()) {
+        $stmt = $conn->prepare("SELECT ? = COUNT(* ) FROM $tableName");
+        $stmt->bindParam(1, $count, PDO::PARAM_INT, 4);
+        $stmt->execute();
+    } else {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM $tableName");
+        $stmt->execute();
+        $count = $stmt->fetch()[0];
+    }
     echo "Number of rows: $count\n";
 
     $value = 'xx';
@@ -65,12 +71,15 @@ try {
     dropTable($conn, $tableName);
     unset($conn);
 } catch (Exception $e) {
-    echo $e->getMessage();
+    $error = $e->getMessage();
+    if (!(!isAEConnected() && strpos($error, "Implicit conversion from data type sql_variant to nvarchar(max) is not allowed. Use the CONVERT function to run this query.") !== false) &&
+        !(isAEConnected() && strpos($error, "Invalid Descriptor Index") !== false)) {
+        echo $error;
+    }
 }
-echo "\nDone\n";
+echo "Done\n";
 
 ?>
---EXPECTREGEX--
+--EXPECT--
 ﻿Number of rows: 1
-SQLSTATE\[42000\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type sql_variant to nvarchar\(max\) is not allowed. Use the CONVERT function to run this query.
 Done

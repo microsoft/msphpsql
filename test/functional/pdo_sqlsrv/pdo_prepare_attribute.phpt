@@ -44,8 +44,12 @@ if (isAEConnected()) {
     $option[PDO::ATTR_EMULATE_PREPARES] = false;
 }
 
-$s = $db->prepare("SELECT :prefix + TITLE FROM cd_info GROUP BY :prefix + TITLE", $option);
-$s->bindValue(':prefix', "");
+if (!isAEConnected()) {
+    $s = $db->prepare("SELECT :prefix + TITLE FROM cd_info GROUP BY :prefix + TITLE", $option);
+    $s->bindValue(':prefix', "");
+} else {
+    $s = $db->prepare("SELECT TITLE FROM cd_info GROUP BY TITLE", $option);
+}
 $s->execute();
 
 $param_titles = array();

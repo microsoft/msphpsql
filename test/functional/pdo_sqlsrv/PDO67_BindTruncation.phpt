@@ -15,9 +15,9 @@ try {
 
     // Prepare test table
     $tableName = "pdo_test_table";
-    createTable($conn1, $tableName, array("id" => "int", "class" => "int", "value" => "char(32)"));
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "IDENTITY NOT NULL"), "class" => "int", "value" => "char(32)"));
     $conn1->exec("CREATE CLUSTERED INDEX [idx_test_int] ON $tableName (id)");
-    $tsql = "INSERT INTO [$tableName] (id, class, value) VALUES(:id, :class, :value)";
+    $tsql = "INSERT INTO [$tableName] (class, value) VALUES(:class, :value)";
 
     $id = 0;
     $class = 0;
@@ -25,22 +25,18 @@ try {
 
     // Prepare insert query$
     $stmt1 = $conn1->prepare($tsql);
-    bindParam(1, $stmt1, ':id', $id);
-    bindParam(2, $stmt1, ':class', $class);
-    bindParam(3, $stmt1, ':value', $value);
+    bindParam(1, $stmt1, ':class', $class);
+    bindParam(2, $stmt1, ':value', $value);
         
     // Insert test rows
-    $id = 1;
     $class = 4;
     $value = '2011';
     execStmt(1, $stmt1);
 
-    $id = 2;
     $class = 5;
     $value = 'Sat, 20 Mar 10 21:29:13 -0600';
     execStmt(2, $stmt1);
 
-    $id = 3;
     $class = 6;
     $value = 'Fri, 07 May 10 11:35:32 -0600';
     execStmt(3, $stmt1);
@@ -50,7 +46,7 @@ try {
     // Check data
     $id = 0;
     $value = '';
-    $tsql = "SELECT id, value FROM [$tableName]";
+    $tsql = "SELECT id, value FROM [$tableName] ORDER BY id";
     $stmt2 = $conn1->query($tsql);
     bindColumn(1, $stmt2, $id, $value);
     while ($stmt2->fetch(PDO::FETCH_BOUND)) {

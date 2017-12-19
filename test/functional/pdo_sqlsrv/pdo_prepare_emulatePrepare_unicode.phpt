@@ -70,9 +70,21 @@ try {
     print_r("Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:\n");
     $stmt = prepareStmt($conn, $query, $options, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    print_r($row);
-    if ($stmt->rowCount() == 0) {
-        print_r("No results for this query\n");
+    // Linux supports binding UTF8 data with SQLSRV_ENCODING_SYSTEM since the default encoding in Linux is UTF8
+    $success = true;
+    if (!(strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN') && isAEConnected()) {
+        if ($row['name'] != "가각" || $row['status'] != 1 || $row['age'] != 30) {
+            print_r("Incorrect results retrieved.\n");
+            $success = false;
+        }
+    } else {
+        if ($stmt->rowCount() != 0) {
+            print_r("Binding UTF8 data when encoding is SQLSRV_ENCODING_SYSTEM should not work.\n");
+            $success = false;
+        }
+    }
+    if ($success) {
+        print_r("Binding UTF8 data with SQLSRV_ENCODING_SYSTEM is tested successfully.\n");
     }
 
     //with emulate prepare and encoding SQLSRV_ENCODING_BINARY
@@ -110,6 +122,6 @@ Array
     [age] => 30
 )
 Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:
-No results for this query
+Binding UTF8 data with SQLSRV_ENCODING_SYSTEM is tested successfully.
 Prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY:
 No results for this query

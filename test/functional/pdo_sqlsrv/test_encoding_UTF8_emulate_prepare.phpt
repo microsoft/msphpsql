@@ -72,8 +72,11 @@ try {
     dropTable($conn, $tbname);
     unset($conn);
 } catch (PDOexception $e) {
-    print_r(($e->errorInfo)[2]);
-    echo "\n";
+    $error = $e->getMessage();
+    if (!(!isAEConnected() && strpos($error, "Statement with emulate prepare on does not support output or input_output parameters.") !== false) &&
+        !(isAEConnected() && strpos($error, "Invalid Descriptor Index") !== false)) {
+        echo $error;
+    }
 }
 ?>
 --EXPECT--
@@ -83,4 +86,3 @@ outValue is the same as inValue.
 outValue is the same as inValue.
 outValue is the same as inValue.
 outValue is the same as inValue.
-Statement with emulate prepare on does not support output or input_output parameters.
