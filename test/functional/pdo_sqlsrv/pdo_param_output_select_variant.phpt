@@ -81,6 +81,7 @@ try {
     dropTable($conn, $tableName);
     unset($conn);
 } catch (Exception $e) {
+    // binding parameters in the select list is not supported with Column Encryption
     $expMsg = "Implicit conversion from data type sql_variant to nvarchar(max) is not allowed. Use the CONVERT function to run this query.";
     $aeExpMsg = "Invalid Descriptor Index";
     checkError($e, $expMsg, $aeExpMsg);

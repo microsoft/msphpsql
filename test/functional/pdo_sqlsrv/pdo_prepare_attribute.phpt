@@ -48,6 +48,7 @@ if (!isAEConnected()) {
     $s = $db->prepare("SELECT :prefix + TITLE FROM cd_info GROUP BY :prefix + TITLE", $option);
     $s->bindValue(':prefix', "");
 } else {
+    // binding parameters in the select list is not supported with Column Encryption
     $s = $db->prepare("SELECT TITLE FROM cd_info GROUP BY TITLE", $option);
 }
 $s->execute();

@@ -82,6 +82,7 @@ try {
     dropTable($conn, $tbname);
     unset($conn);
 } catch (PDOexception $e) {
+    // binding parameters in the select list is not supported with Column Encryption
     $expMsg = "Statement with emulate prepare on does not support output or input_output parameters.";
     $aeExpMsg = "Invalid Descriptor Index";
     checkError($e, $expMsg, $aeExpMsg);
