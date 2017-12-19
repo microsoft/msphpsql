@@ -48,8 +48,8 @@ COPY . $PHPSQLDIR
 
 #install ODBC 17 preview driver
 WORKDIR $PHPSQLDIR
-RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y dpkg -i "./ODBC 17 binaries preview/Ubuntu 16/msodbcsql_17.0.0.1-1_amd64.deb"
-RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y dpkg -i "./ODBC 17 binaries preview/Ubuntu 16/mssql-tools_17.0.0.1-1_amd64.deb"
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y dpkg -i "./ODBC 17 binaries preview/Ubuntu 16/msodbcsql_17.0.0.5-1_amd64.deb"
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y dpkg -i "./ODBC 17 binaries preview/Ubuntu 16/mssql-tools_17.0.0.5-1_amd64.deb"
 ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
 WORKDIR $PHPSQLDIR/source/ 
