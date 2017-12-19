@@ -330,7 +330,7 @@ function getSeqPlaceholders($num)
  */
 function isColEncrypted()
 {
-    global $keystore, $dataEncrypted;
+    global $keystore;
     if ($keystore === KEYSTORE_NONE) {
         return false;
     } else {
