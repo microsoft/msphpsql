@@ -57,6 +57,16 @@ function createVariantTable($conn, $tableName)
     }
 }
 
+function checkError($e, $expMsg, $aeExpMsg)
+{
+    $error = $e->getMessage();
+    if (!isAEConnected()) {
+        if (strpos($error, $expMsg) === false) echo $error;
+    } else {
+        if (strpos($error, $aeExpMsg) === false) echo $error;
+    }
+}
+
 try {
     // Connect
     $conn = connect();
@@ -71,11 +81,9 @@ try {
     dropTable($conn, $tableName);
     unset($conn);
 } catch (Exception $e) {
-    $error = $e->getMessage();
-    if (!(!isAEConnected() && strpos($error, "Implicit conversion from data type sql_variant to nvarchar(max) is not allowed. Use the CONVERT function to run this query.") !== false) &&
-        !(isAEConnected() && strpos($error, "Invalid Descriptor Index") !== false)) {
-        echo $error;
-    }
+    $expMsg = "Implicit conversion from data type sql_variant to nvarchar(max) is not allowed. Use the CONVERT function to run this query.";
+    $aeExpMsg = "Invalid Descriptor Index";
+    checkError($e, $expMsg, $aeExpMsg);
 }
 echo "Done\n";
 
