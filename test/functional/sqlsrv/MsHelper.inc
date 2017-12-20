@@ -90,7 +90,8 @@ class ColumnMeta
     {
         $append = " ";
 
-        if (isColEncrypted() && $this->encryptable) {
+        if ($this->encryptable && isDataEncrypted()) {
+
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
@@ -253,7 +254,7 @@ function getDefaultColname($dataType)
  */
 function getInsertSqlComplete($tbname, $inputs)
 {
-    $colStr = "INSERT INTO $tbname (";
+    $colStr = "INSERT INTO [$tbname] (";
     $valStr = "VALUES (";
     if (empty($inputs)) {
         echo "getInsertSqlComplete: inputs for inserting a row cannot be empty.\n";
@@ -282,7 +283,7 @@ function getInsertSqlComplete($tbname, $inputs)
  */
 function getInsertSqlPlaceholders($tbname, $inputs)
 {
-    $colStr = "INSERT INTO $tbname (";
+    $colStr = "INSERT INTO [$tbname] (";
     $valStr = "VALUES (";
     if (empty($inputs)) {
         echo "getInsertSqlPlaceholders: inputs for inserting a row cannot be empty.\n";
@@ -304,7 +305,7 @@ function getInsertSqlPlaceholders($tbname, $inputs)
  */
 function getCallProcSqlPlaceholders($spname, $num)
 {
-    $callStr = "{CALL $spname (";
+    $callStr = "{CALL [$spname] (";
     $callStr .= getSeqPlaceholders($num) . ")} ";
     return $callStr;
 }
@@ -325,13 +326,26 @@ function getSeqPlaceholders($num)
 }
 
 /**
- * @return bool false if $keystore specified in MsSetup.inc is none or data not encrypted,
- *              otherwise return true
+ * @return bool false if $keystore specified in MsSetup.inc is none; return true otherwise
  */
 function isColEncrypted()
 {
     global $keystore, $dataEncrypted;
-    if ($keystore == KEYSTORE_NONE || !$dataEncrypted) {
+    if ($keystore === KEYSTORE_NONE) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+/**
+ * @return bool false if $keystore specified in MsSetup.inc is none or data not encrypted;
+ *              return true otherwise 
+ */
+function isDataEncrypted()
+{
+    global $keystore, $dataEncrypted;
+    if ($keystore === KEYSTORE_NONE || !$dataEncrypted) {
         return false;
     } else {
         return true;
@@ -364,7 +378,7 @@ function isQualified($conn)
 function connect($options = array(), $disableCE = false)
 {
     require('MsSetup.inc');
-    if (sizeof($options) > 0) {
+    if (!empty($options)) {
         $connectionOptions = array_merge($connectionOptions, $options);
     }
     if (!$disableCE) {
@@ -402,7 +416,7 @@ function createTable($conn, $tbname, $columnMetaArr)
         $colDef = $colDef . $meta->getColDef() . ", ";
     }
     $colDef = rtrim($colDef, ", ");
-    $createSql = "CREATE TABLE $tbname ( $colDef )";
+    $createSql = "CREATE TABLE [$tbname] ( $colDef )";
     return sqlsrv_query($conn, $createSql);
 }
 
@@ -551,6 +565,38 @@ function executeQueryEx($conn, $sql, $options)
         fatalError("executeQueryEx: failed to run query \'$sql\'!");
     }
 
+    return $stmt;
+}
+
+/**
+ * Similar to executeQuery() but with params for binding and 
+ * whether this query is expected to fail
+ * @return resource sqlsrv statement upon success or false otherwise
+ */
+function executeQueryParams($conn, $sql, $params, $expectedToFail = false, $message = '')
+{
+    $res = true;
+    if (isColEncrypted()) {
+        $stmt = sqlsrv_prepare($conn, $sql, $params);
+        if ($stmt) {
+            $res = sqlsrv_execute($stmt);
+        }
+    } else {
+        $stmt = sqlsrv_query($conn, $sql, $params);
+    }
+    
+    if ($stmt === false || !$res ) {
+        if (! $expectedToFail) {
+            fatalError($message);
+        } else {
+            print_r(sqlsrv_errors());
+        }
+    } else {
+        if ($expectedToFail) {
+            fatalError($message);
+        } 
+    }
+    
     return $stmt;
 }
 
@@ -1033,6 +1079,23 @@ function getColName($k)
     return ("");
 }
 
+function isStreamData($k)
+{
+    switch ($k) {
+        case 14:    return (true);  // varchar(max)
+        case 17:    return (true);  // nvarchar(max)
+        case 18:    return (true);  // text
+        case 19:    return (true);  // ntext
+        case 20:    return (true);  // binary
+        case 21:    return (true);  // varbinary(512)
+        case 22:    return (true);  // varbinary(max)
+        case 23:    return (true);  // image
+        case 27:    return (true);  // timestamp
+        case 28:    return (true);  // xml
+        default:    break;
+    }
+    return (false);
+}
 
 function getColSize($k)
 {

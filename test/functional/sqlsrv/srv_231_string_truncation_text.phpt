@@ -13,15 +13,11 @@ require_once("MsCommon.inc");
 
 // connect
 $conn = AE\connect();
-if (!$conn) {
-    fatalError("Connection could not be established.\n");
-}
-
-$tableName = 'testLOBTypes_GH231';
+$tableName = 'testLOBTypes_GH231_lob';
 $columnNames = array("c1", "c2");
 
 for ($k = 1; $k <= 3; $k++) {
-    $sqlType = sqlType($k);
+    $sqlType = SQLType($k);
     $columns = array(new AE\ColumnMeta('int', $columnNames[0]),
                      new AE\ColumnMeta($sqlType, $columnNames[1]));
     AE\createTable($conn, $tableName, $columns);
@@ -51,6 +47,7 @@ function execProc($conn, $tableName, $columnNames, $k, $data, $sqlType)
     $spCode = "SET @p2 = ( SELECT c2 FROM $tableName WHERE c1 = @p1 )";
     $procName = "testBindOutSp";
     
+    dropProc($conn, $procName);
     $stmt1 = sqlsrv_query($conn, "CREATE PROC [$procName] ($spArgs) AS BEGIN $spCode END");
     sqlsrv_free_stmt($stmt1);
 
@@ -95,7 +92,7 @@ function getData($k)
     return $data;
 }
 
-function sqlType($k)
+function SQLType($k)
 {
     switch ($k) {
         case 1: return ("text");

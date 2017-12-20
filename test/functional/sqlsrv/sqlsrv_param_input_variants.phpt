@@ -13,27 +13,56 @@ hierarchyid
 geometry
 datetimeoffset
 User-defined types
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
 require_once('tools.inc');
 
-function CreateVariantTable($conn, $tableName)
+function createVariantTable($conn, $tableName)
 {
-    $dataType = "[c1_int] sql_variant, [c2_tinyint] sql_variant, [c3_smallint] sql_variant, [c4_bigint] sql_variant, [c5_bit] sql_variant, [c6_float] sql_variant, [c7_real] sql_variant, [c8_decimal] sql_variant, [c9_numeric] sql_variant, [c10_money] sql_variant, [c11_smallmoney] sql_variant, [c12_char] sql_variant, [c13_varchar] sql_variant, [c14_uniqueidentifier] sql_variant, [c15_datetime] sql_variant, [c16_smalldatetime] sql_variant";
-    createTableEx($conn, $tableName, $dataType);
+    // Do not encrypt the first column because we need to perform 'order by'
+    $columns = array(new AE\ColumnMeta('sql_variant', 'c1_int', null, null, true),
+                     new AE\ColumnMeta('sql_variant', 'c2_tinyint'),
+                     new AE\ColumnMeta('sql_variant', 'c3_smallint'),
+                     new AE\ColumnMeta('sql_variant', 'c4_bigint'),
+                     new AE\ColumnMeta('sql_variant', 'c5_bit'),
+                     new AE\ColumnMeta('sql_variant', 'c6_float'),
+                     new AE\ColumnMeta('sql_variant', 'c7_real'),
+                     new AE\ColumnMeta('sql_variant', 'c8_decimal'),
+                     new AE\ColumnMeta('sql_variant', 'c9_numeric'),
+                     new AE\ColumnMeta('sql_variant', 'c10_money'),
+                     new AE\ColumnMeta('sql_variant', 'c11_smallmoney'),
+                     new AE\ColumnMeta('sql_variant', 'c12_char'),
+                     new AE\ColumnMeta('sql_variant', 'c13_varchar'),
+                     new AE\ColumnMeta('sql_variant', 'c14_uniqueidentifier'),
+                     new AE\ColumnMeta('sql_variant', 'c15_datetime'),
+                     new AE\ColumnMeta('sql_variant', 'c16_smalldatetime'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
+    }
 }
 
-function InsertData($conn, $tableName, $index)
+function insertData($conn, $tableName, $index)
 {
-    $data = GetInputData($index, $tableName);
-    $stmt = sqlsrv_query($conn, "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_uniqueidentifier, c15_datetime, c16_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", $data);
+    $data = getInputData($index, $tableName);
+    $insertSql = "INSERT INTO [$tableName] (c1_int, c2_tinyint, c3_smallint, c4_bigint, c5_bit, c6_float, c7_real, c8_decimal, c9_numeric, c10_money, c11_smallmoney, c12_char, c13_varchar, c14_uniqueidentifier, c15_datetime, c16_smalldatetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    if (AE\isColEncrypted()) {
+        $stmt = sqlsrv_prepare($conn, $insertSql, $data);
+        if ($stmt) {
+            sqlsrv_execute($stmt);
+        }
+    } else {
+        $stmt = sqlsrv_query($conn, $insertSql, $data);
+    }
     if (! $stmt) {
         fatalError("Failed to insert row $index.\n");
     }
 }
 
-function FetchData($conn, $tableName, $numRows)
+function fetchData($conn, $tableName, $numRows)
 {
     $select = "SELECT * FROM $tableName ORDER BY c1_int";
     $stmt = sqlsrv_query($conn, $select);
@@ -41,7 +70,7 @@ function FetchData($conn, $tableName, $numRows)
 
     $metadata = sqlsrv_field_metadata($stmt);
     $numFields = count($metadata);
-    $noActualRows = ReadData($stmt, $stmt2, $numFields);
+    $noActualRows = readData($stmt, $stmt2, $numFields);
 
     echo "Number of rows fetched: $noActualRows\n";
     if ($noActualRows != $numRows) {
@@ -49,7 +78,7 @@ function FetchData($conn, $tableName, $numRows)
     }
 }
 
-function ReadData($stmt, $stmt2, $numFields)
+function readData($stmt, $stmt2, $numFields)
 {
     $fetched = 0;
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC)) {
@@ -66,28 +95,28 @@ function ReadData($stmt, $stmt2, $numFields)
         }
 
         $fld = 0;
-        DoValuesMatched($obj->c1_int, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c2_tinyint, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c3_smallint, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c4_bigint, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c5_bit, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c6_float, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c7_real, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c8_decimal, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c9_numeric, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c10_money, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c11_smallmoney, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c12_char, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c13_varchar, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c14_uniqueidentifier, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c15_datetime, $row[$fld], $fetched, $fld++);
-        DoValuesMatched($obj->c16_smalldatetime, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c1_int, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c2_tinyint, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c3_smallint, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c4_bigint, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c5_bit, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c6_float, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c7_real, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c8_decimal, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c9_numeric, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c10_money, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c11_smallmoney, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c12_char, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c13_varchar, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c14_uniqueidentifier, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c15_datetime, $row[$fld], $fetched, $fld++);
+        doValuesMatched($obj->c16_smalldatetime, $row[$fld], $fetched, $fld++);
     }
     //  returns the number of rows fetched
     return $fetched;
 }
 
-function DoValuesMatched($value1, $value2, $row, $col)
+function doValuesMatched($value1, $value2, $row, $col)
 {
     $matched = false;
     if (is_null($value1) && is_null($value2)) {
@@ -106,7 +135,7 @@ function DoValuesMatched($value1, $value2, $row, $col)
     }
 }
 
-function GetInputData($index)
+function getInputData($index)
 {
     switch ($index) {
         case 1:
@@ -122,34 +151,29 @@ function GetInputData($index)
     }
 }
 
-function RunTest()
-{
-    startTest("sqlsrv_param_input_variants");
-    try {
-        setup();
-        $conn = connect();
+try {
+    setup();
+    $conn = AE\connect();
 
-        // Create a temp table that will be automatically dropped once the connection is closed
-        $tableName = GetTempTableName();
-        CreateVariantTable($conn, $tableName);
+    // Create a temp table that will be automatically dropped once the connection is closed
+    $tableName = 'param_input_variants';
+    createVariantTable($conn, $tableName);
 
-        // Insert data
-        $numRows = 4;
-        for ($i = 1; $i <= $numRows; $i++) {
-            InsertData($conn, $tableName, $i);
-        }
-
-        FetchData($conn, $tableName, $numRows);
-
-        sqlsrv_close($conn);
-    } catch (Exception $e) {
-        echo $e->getMessage();
+    // Insert data
+    $numRows = 4;
+    for ($i = 1; $i <= $numRows; $i++) {
+        insertData($conn, $tableName, $i);
     }
-    echo "\nDone\n";
-    endTest("sqlsrv_param_input_variants");
-}
 
-RunTest();
+    fetchData($conn, $tableName, $numRows);
+    
+    dropTable($conn, $tableName);
+    
+    sqlsrv_close($conn);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+echo "\nDone\n";
 
 ?>
 --EXPECT--
@@ -160,4 +184,3 @@ Comparing data in row 4
 Number of rows fetched: 4
 
 Done
-Test "sqlsrv_param_input_variants" completed successfully.

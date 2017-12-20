@@ -7,7 +7,7 @@ Fetch encrypted data from a prepopulated test table given a custom keystore prov
     sqlsrv_configure('WarningsReturnAsErrors', 1);
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-    require_once('MsHelper.inc');
+    require_once('MsCommon.inc');
     $conn = AE\connect(array('ReturnDatesAsStrings'=>true));
     if ($conn === false) {
         fatalError("Failed to connect.\n");

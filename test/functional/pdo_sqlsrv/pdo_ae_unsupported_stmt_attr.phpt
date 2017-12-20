@@ -1,5 +1,5 @@
 --TEST--
-Test error from preparing a parameterized query with direct query or emulate prepare when Column Encryption is enabled 
+Test error from preparing a parameterized query with direct query or emulate prepare when Column Encryption is enabled
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -21,7 +21,7 @@ try {
 } catch (PDOException $e) {
     $error = $e->errorInfo;
     // expects an exception if Column Encryption is enabled
-    if (isColEncrypted()) {
+    if (isAEConnected()) {
         if ($error[0] != "IMSSP" ||
             $error[1] != -81 ||
             $error[2] != "Parameterized statement with attribute PDO::SQLSRV_ATTR_DIRECT_QUERY is not supported in a Column Encryption enabled Connection.") {
@@ -40,7 +40,7 @@ try {
 } catch (PDOException $e) {
     $error = $e->errorInfo;
     // expects an exception if Column Encryption is enabled
-    if (isColEncrypted()) {
+    if (isAEConnected()) {
         if ($error[0] != "IMSSP" ||
             $error[1] != -82 ||
             $error[2] != "Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.") {

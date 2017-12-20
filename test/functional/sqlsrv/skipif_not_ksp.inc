@@ -5,8 +5,9 @@ if (!extension_loaded("sqlsrv"))
 
 require_once('MsCommon.inc');
 
-if ($keystore != AE\KEYSTORE_KSP)
+if ($keystore != AE\KEYSTORE_KSP) {
     die('skip - this test requires a custom keystore provider.');
+} 
 
 $conn = AE\connect();
 if (! $conn) {

@@ -4,7 +4,7 @@ Test for binding boolean output and inout parameters
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-require_once("MsHelper.inc");
+require_once('MsCommon.inc');
 
 $conn = AE\connect();
 
@@ -12,12 +12,13 @@ $conn = AE\connect();
 $tbname = "bool_table";
 AE\createTable($conn, $tbname, array(new AE\ColumnMeta("int", "c1_bool")));
 
-
 // Create a Stored Procedure with output
 $spname = "selectBool";
+dropProc($conn, $spname);
+
 $spSql = "CREATE PROCEDURE $spname (@c1_bool int OUTPUT) AS
           SELECT @c1_bool = c1_bool FROM $tbname";
-sqlsrv_query( $conn, $spSql );
+sqlsrv_query($conn, $spSql);
 
 // Insert 1
 AE\insertRow($conn, $tbname, array("c1_bool" => 1));

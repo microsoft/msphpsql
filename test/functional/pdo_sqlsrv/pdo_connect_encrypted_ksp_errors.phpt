@@ -4,10 +4,10 @@ Connect using a custom keystore provider with some required inputs missing
 <?php require('skipif_not_ksp.inc'); ?>
 --FILE--
 <?php
-    require( 'MsSetup.inc' );
-    require( 'AE_Ksp.inc' );
+    require("MsSetup.inc");
+    require_once("MsCommon_mid-refactor.inc");
 
-    function connect( $connectionInfo )
+    function kspConnect( $connectionInfo )
     {
         global $server, $uid, $pwd;
         
@@ -25,49 +25,51 @@ Connect using a custom keystore provider with some required inputs missing
     }
     
     $ksp_path = getKSPpath();
+    $ksp_name = KSP_NAME;
+    $encrypt_key = ENCRYPT_KEY;
 
     echo("Connecting... with column encryption\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
-    connect( $connectionInfo );
+    kspConnect( $connectionInfo );
 
     echo("\nConnecting... with an invalid input to CEKeystoreProvider\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
     $connectionInfo .= "CEKeystoreName = 1; "; 
     $connectionInfo .= "CEKeystoreProvider = $ksp_path; ";
     $connectionInfo .= "CEKeystoreEncryptKey = $encrypt_key; ";    
-    connect( $connectionInfo );
+    kspConnect( $connectionInfo );
 
     echo("\nConnecting... with an empty path\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
     $connectionInfo .= "CEKeystoreName = $ksp_name; "; 
     $connectionInfo .= "CEKeystoreProvider = ; ";
     $connectionInfo .= "CEKeystoreEncryptKey = $encrypt_key; ";
-    connect( $connectionInfo );
+    kspConnect( $connectionInfo );
 
     echo("\nConnecting... without a path\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
     $connectionInfo .= "CEKeystoreName = $ksp_name; "; 
     $connectionInfo .= "CEKeystoreEncryptKey = $encrypt_key;";
-    connect( $connectionInfo );
+    kspConnect( $connectionInfo );
     
     echo("\nConnecting... without a name\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
     $connectionInfo .= "CEKeystoreProvider = $ksp_path; ";
     $connectionInfo .= "CEKeystoreEncryptKey = $encrypt_key; ";    
-    connect( $connectionInfo );
+    kspConnect( $connectionInfo );
     
     echo("\nConnecting... without a key\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
     $connectionInfo .= "CEKeystoreProvider = $ksp_path; ";
     $connectionInfo .= "CEKeystoreName = $ksp_name; "; 
-    connect( $connectionInfo );
+    kspConnect( $connectionInfo );
     
     echo("\nConnecting... with all required inputs\n");
     $connectionInfo = "Database = $databaseName; ColumnEncryption = Enabled; ";
     $connectionInfo .= "CEKeystoreProvider = $ksp_path; ";
     $connectionInfo .= "CEKeystoreName = $ksp_name; "; 
     $connectionInfo .= "CEKeystoreEncryptKey = $encrypt_key; ";    
-    connect( $connectionInfo );
+    kspConnect( $connectionInfo );
 
     echo "Done\n";
 ?>

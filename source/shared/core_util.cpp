@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.1 for PHP for SQL Server
+// Microsoft Drivers 5.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -263,7 +263,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
             }
 
             // We need to calculate number of characters
-            SQLLEN wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
+            SQLINTEGER wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
             SQLLEN sqlstate_len = 0;
             convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
 

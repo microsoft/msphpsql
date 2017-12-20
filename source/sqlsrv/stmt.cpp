@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use statement handles
 //
-// Microsoft Drivers 5.1 for PHP for SQL Server
+// Microsoft Drivers 5.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1229,7 +1229,7 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt TSRMLS_DC )
             }
             // bind the parameter
             SQLSRV_ASSERT( value_z != NULL, "bind_params: value_z is null." );
-            core_sqlsrv_bind_param( stmt, index, direction, value_z, php_out_type, encoding, sql_type, column_size, 
+            core_sqlsrv_bind_param( stmt, static_cast<SQLUSMALLINT>( index ), direction, value_z, php_out_type, encoding, sql_type, column_size, 
                 decimal_digits TSRMLS_CC );
 
 		} ZEND_HASH_FOREACH_END();
@@ -1863,6 +1863,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     zval* temp = NULL;
     HashTable* param_ht = Z_ARRVAL_P( param_array );
     sqlsrv_sqltype sqlsrv_sql_type;
+    HashPosition pos;
 
     try {
 
@@ -1873,28 +1874,28 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     encoding = SQLSRV_ENCODING_INVALID;
 
     // handle the array parameters that contain the value/var, direction, php_type, sql_type
-    zend_hash_internal_pointer_reset( param_ht );
-    if( zend_hash_has_more_elements( param_ht ) == FAILURE || 
-        (var_or_val = zend_hash_get_current_data(param_ht)) == NULL) {
+    zend_hash_internal_pointer_reset_ex( param_ht, &pos );
+    if( zend_hash_has_more_elements_ex( param_ht, &pos ) == FAILURE || 
+        (var_or_val = zend_hash_get_current_data_ex(param_ht, &pos)) == NULL) {
 
         THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1 );
     }
 
     // if the direction is included, then use what they gave, otherwise INPUT is assumed
-    if (zend_hash_move_forward(param_ht) == SUCCESS && (temp = zend_hash_get_current_data(param_ht)) != NULL &&
+    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
 
         CHECK_CUSTOM_ERROR( Z_TYPE_P( temp ) != IS_LONG, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
 
             throw ss::SSException();
         }
-        direction = static_cast<SQLSMALLINT>(Z_LVAL_P( temp ));
+        direction = static_cast<SQLSMALLINT>( Z_LVAL_P( temp ));
         CHECK_CUSTOM_ERROR( direction != SQL_PARAM_INPUT && direction != SQL_PARAM_OUTPUT && direction != SQL_PARAM_INPUT_OUTPUT,
                             stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
             throw ss::SSException();
         }
 
-        CHECK_CUSTOM_ERROR(!Z_ISREF_P(var_or_val) && (direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1) {
+        CHECK_CUSTOM_ERROR( !Z_ISREF_P( var_or_val ) && ( direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT ), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1 ) {
             throw ss::SSException();
         }
        
@@ -1904,7 +1905,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     }
 
     // extract the php type and encoding from the 3rd parameter
-    if (zend_hash_move_forward(param_ht) == SUCCESS && (temp = zend_hash_get_current_data(param_ht)) != NULL &&
+    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
                 
         php_type_param_was_null = false;
@@ -1924,7 +1925,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
         }
 
         php_out_type = static_cast<SQLSRV_PHPTYPE>( sqlsrv_phptype.typeinfo.type );
-        encoding = (SQLSRV_ENCODING) sqlsrv_phptype.typeinfo.encoding;
+        encoding = ( SQLSRV_ENCODING ) sqlsrv_phptype.typeinfo.encoding;
         // if the call has a SQLSRV_PHPTYPE_STRING/STREAM('default'), then the stream is in the encoding established 
         // by the connection
         if( encoding == SQLSRV_ENCODING_DEFAULT ) {
@@ -1936,11 +1937,11 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
                     
         php_type_param_was_null = true;
 
-        if (Z_ISREF_P(var_or_val)){
-            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P(Z_REFVAL_P(var_or_val))];
+        if ( Z_ISREF_P( var_or_val )){
+            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P( Z_REFVAL_P( var_or_val ))];
         }
         else{
-            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P(var_or_val)];
+            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P( var_or_val )];
         }
         encoding = stmt->encoding();
         if( encoding == SQLSRV_ENCODING_DEFAULT ) {
@@ -1949,7 +1950,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
     }
 
     // get the server type, column size/precision and the decimal digits if provided
-    if (zend_hash_move_forward(param_ht) == SUCCESS && (temp = zend_hash_get_current_data(param_ht)) != NULL &&
+    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
             Z_TYPE_P( temp ) != IS_NULL ) {
 
         sql_type_param_was_null = false;
@@ -1968,7 +1969,7 @@ void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array,
             throw ss::SSException();
         }             
         
-		bool size_okay = determine_column_size_or_precision(stmt, sqlsrv_sql_type, &column_size, &decimal_digits);
+		bool size_okay = determine_column_size_or_precision( stmt, sqlsrv_sql_type, &column_size, &decimal_digits );
 
         CHECK_CUSTOM_ERROR( !size_okay, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_PRECISION, index + 1 ) {
 

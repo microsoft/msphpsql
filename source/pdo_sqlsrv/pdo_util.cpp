@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Microsoft Drivers 5.1 for PHP for SQL Server
+// Microsoft Drivers 5.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -33,7 +33,7 @@ char EXCEPTION_PROPERTY_ERRORINFO[] = "errorInfo";
 const int MAX_DIGITS = 11; // +-2 billion = 10 digits + 1 for the sign if negative
 
 // the warning message is not the error message alone; it must take WARNING_TEMPLATE above into consideration without the formats
-const int WARNING_MIN_LENGTH = strlen(WARNING_TEMPLATE) - strlen("%1!s!%2!d!%3!s!");
+const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE ) - strlen( "%1!s!%2!d!%3!s!" ));
 
 // buffer used to hold a formatted log message prior to actually logging it.
 const int LOG_MSG_SIZE = 2048;
@@ -420,6 +420,10 @@ pdo_error PDO_ERRORS[] = {
     {
         SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
         { IMSSP, (SQLCHAR*) "Stored Procedures do not support text, ntext or image as OUTPUT parameters.", -83, false }
+    },
+    {
+        SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
+        { IMSSP, (SQLCHAR*) "Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.", -84, false }
     },
     { UINT_MAX, {} }
 };

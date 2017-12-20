@@ -1,22 +1,22 @@
 --TEST--
 binding parameters, including output parameters, using the simplified syntax.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     require_once('MsCommon.inc');
 
-    $conn = connect();
-    if (!$conn) {
-        fatalError("Failed to connect.");
+    $conn = AE\connect();
+
+    $tableName = 'test_params';
+    $columns = array(new AE\ColumnMeta('tinyint', 'id'),
+                     new AE\ColumnMeta('char(10)', 'name'),
+                     new AE\ColumnMeta('float', 'double'),
+                     new AE\ColumnMeta('varchar(max)', 'stuff'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
     }
-
-    $stmt = sqlsrv_prepare($conn, "IF OBJECT_ID('test_params', 'U') IS NOT NULL DROP TABLE test_params");
-    sqlsrv_execute($stmt);
-    sqlsrv_free_stmt($stmt);
-
-    $stmt = sqlsrv_prepare($conn, "CREATE TABLE test_params (id tinyint, name char(10), [double] float, stuff varchar(max))");
-    sqlsrv_execute($stmt);
     sqlsrv_free_stmt($stmt);
 
     $f1 = 1;
@@ -24,7 +24,7 @@ binding parameters, including output parameters, using the simplified syntax.
     $f3 = 12.0;
     $f4 = fopen("data://text/plain,This%20is%20some%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
 
-    $stmt = sqlsrv_prepare($conn, "INSERT INTO test_params (id, name, [double], stuff) VALUES (?, ?, ?, ?)", array( &$f1, "testtestte", &$f3, &$f4 ));
+    $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (id, name, [double], stuff) VALUES (?, ?, ?, ?)", array( &$f1, "testtestte", &$f3, &$f4 ));
     if (!$stmt) {
         var_dump(sqlsrv_errors());
         die("sqlsrv_prepare failed.");
@@ -61,13 +61,16 @@ binding parameters, including output parameters, using the simplified syntax.
 
     sqlsrv_free_stmt($stmt);
 
-    $stmt = sqlsrv_prepare($conn, "SELECT id, [double], name, stuff FROM test_params");
+    $stmt = sqlsrv_prepare($conn, "SELECT id, [double], name, stuff FROM $tableName");
     $success = sqlsrv_execute($stmt);
     if (!$success) {
         var_dump(sqlsrv_errors());
         die("sqlsrv_execute failed.");
     }
 
+    $textValues = array("This is some text meant to test binding parameters to streams", 
+                        "This is some more text meant to test binding parameters to streams");
+    $k = 0;
     while (sqlsrv_fetch($stmt)) {
         $id = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         echo "$id\n";
@@ -76,9 +79,19 @@ binding parameters, including output parameters, using the simplified syntax.
         $name = sqlsrv_get_field($stmt, 2, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         echo "$name\n";
         $stream = sqlsrv_get_field($stmt, 3, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-        while (!feof($stream)) {
-            $str = fread($stream, 10000);
-            echo $str;
+        if (!$stream) {
+            if (AE\isColEncrypted()) {
+                verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
+            } else {
+                fatalError('Fetching data stream failed!');
+            }
+        } else {
+            while (!feof($stream)) {
+                $str = fread($stream, 10000);
+                if ($str !== $textValues[$k++]) {
+                    fatalError("Incorrect data: \'$str\'!\n");
+                }
+            }
         }
         echo "\n";
     }
@@ -116,19 +129,19 @@ binding parameters, including output parameters, using the simplified syntax.
     // this should return 4, but shorthand output parameters are disabled for now.
     echo "$v3\n";
 
-    sqlsrv_query($conn, "DROP TABLE test_params");
+    sqlsrv_query($conn, "DROP TABLE $tableName");
 
     sqlsrv_free_stmt($stmt);
     sqlsrv_close($conn);
 ?>
---EXPECTF--
+--EXPECT--
 1
 12.0
 testtestte
-This is some text meant to test binding parameters to streams
+
 2
 13.0
 testtestte
-This is some more text meant to test binding parameters to streams
+
 3
 4

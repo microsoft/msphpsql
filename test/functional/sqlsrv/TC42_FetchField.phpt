@@ -33,6 +33,9 @@ function fetchFields()
     $stmt1 = AE\selectFromTable($conn1, $tableName);
     $numFields = sqlsrv_num_fields($stmt1);
 
+    $errState = 'IMSSP';
+    $errMessage = 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.';
+    
     trace("Retrieving $noRowsInserted rows with $numFields fields each ...");
     for ($i = 0; $i < $noRowsInserted; $i++) {
         $row = sqlsrv_fetch($stmt1);
@@ -41,8 +44,16 @@ function fetchFields()
         }
         for ($j = 0; $j < $numFields; $j++) {
             $fld = sqlsrv_get_field($stmt1, $j);
+            
+            // With AE enabled, those fields that sqlsrv_get_field() will fetch
+            // as stream data will return a specific error message
+            $col = $j+1;
             if ($fld === false) {
-                fatalError("Field $j of Row $i is missing\n", true);
+                if (AE\isColEncrypted() && isStreamData($col)) {
+                    verifyError(sqlsrv_errors()[0], $errState, $errMessage);
+                } else {
+                    fatalError("Field $j of Row $i is missing\n", true);
+                }
             }
         }
     }

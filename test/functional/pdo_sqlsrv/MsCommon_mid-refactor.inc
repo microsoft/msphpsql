@@ -13,6 +13,10 @@
 // to be runnable from the MSSQL teams' internal proprietary test running system
 //
 
+const KSP_NAME = 'MyCustomKSPName';
+const ENCRYPT_KEY = 'LPKCWVD07N3RG98J0MBLG4H2';
+const KSP_TEST_TABLE = 'CustomKSPTestTable';
+
 function isAEQualified($conn)
 {
     $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
@@ -81,8 +85,9 @@ function getDSN($sqlsrvserver, $database, $keywords = '', $disableCE = false)
         $dsn .= "ColumnEncryption=Enabled;";
     }
     if ($keystore == "ksp" && !$disableCE) {
-        require('AE_Ksp.inc');
         $ksp_path = getKSPPath();
+        $ksp_name = KSP_NAME;
+        $encrypt_key = ENCRYPT_KEY;
         $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
     }
     if ($keywords) {
@@ -118,6 +123,27 @@ function getCekName()
     return $cekName;
 }
 
+/**
+ * @return the path to the KSP dll/so file
+ */
+function getKSPpath() 
+{
+    $name = 'myKSP';
+
+    $dir_name = realpath(dirname(__FILE__));
+    $ksp = $dir_name . DIRECTORY_SEPARATOR . $name;
+    if ( strtoupper( substr( php_uname( 's' ), 0, 3 ) ) == 'WIN' ) {
+        $arch = 'x64';
+        if ( PHP_INT_SIZE == 4 ) // running 32 bit
+            $arch = '';
+        $ksp .= $arch . '.dll';
+    }
+    else
+        $ksp .= '.so';
+        
+    return $ksp;
+}  
+
 
 /**
  * class for encapsulating column metadata needed for creating a table
@@ -127,10 +153,10 @@ class ColumnMeta
     public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
     public $colName;    //column name
     public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
-    public $encType;    //randomized or deterministic; default is deterministic
-    public $forceEncrypt; //force encryption on a datatype no supported by Column Encrypton
+    public $encType;    //randomized, deterministic, or none; default is null
+    public $forceEncrypt; //force encryption on a datatype not supported by Column Encrypton
 
-    public function __construct($dataType, $colName = null, $options = null, $encType = "deterministic", $forceEncrypt = false)
+    public function __construct($dataType, $colName = null, $options = null, $encType = null, $forceEncrypt = false)
     {
         if (is_null($colName)) {
             $this->colName = getDefaultColName($dataType);
@@ -139,7 +165,15 @@ class ColumnMeta
         }
         $this->dataType = $dataType;
         $this->options = $options;
-        $this->encType = $encType;
+        if (is_null($encType)) {
+            if (isColEncrypted()) {
+                $this->encType = "deterministic";
+            } else {
+                $this->encType = "none";
+            }
+        } else {
+            $this->encType = $encType;
+        }
         $this->forceEncrypt = $forceEncrypt;
     }
     /**
@@ -147,11 +181,11 @@ class ColumnMeta
      */
     public function getColDef()
     {
-        //return getColDef($this->colName, $this->dataType, $this->options, $this->encType);
         $append = " ";
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if (isColEncrypted() && $this->isEncryptableType() && stripos($this->options, "identity") === false) {
+        if (isColEncrypted() && ($this->encType == "deterministic" || $this->encType == "randomized") && $this->isEncryptableType() 
+            && stripos($this->options, "identity") === false && stripos($this->options, "rowguidcol") === false) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
@@ -168,7 +202,7 @@ class ColumnMeta
      */
     public function isEncryptableType()
     {
-        $unsupportedTypes = array("money", "smallmoney", "image", "ntext", "text", "xml", "sql_variant");
+        $unsupportedTypes = array("money", "smallmoney", "image", "ntext", "text", "xml", "sql_variant", "timestamp", "geography", "geometry", "hierarchyid");
         if (!$this->forceEncrypt && in_array(strtolower($this->dataType), $unsupportedTypes)) {
             return false;
         } else {
@@ -521,6 +555,13 @@ function isColEncrypted()
     } else {
         return true;
     }
+}
+
+
+function isAEConnected()
+{
+    require('MsSetup.inc');
+    return $keystore != "none";
 }
 
 function teardown()

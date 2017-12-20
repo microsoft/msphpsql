@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.1 for PHP for SQL Server
+// Microsoft Drivers 5.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1716,6 +1716,7 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
     SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
     SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
+    SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
@@ -2266,10 +2267,11 @@ namespace core {
         SQLRETURN r;
         SQLHDESC hIpd = NULL;
         core::SQLGetStmtAttr( stmt, SQL_ATTR_IMP_PARAM_DESC, &hIpd, 0, 0 );
-        r = ::SQLSetDescField( hIpd, rec_num, fld_id, value_ptr, str_len );
-
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-            throw CoreException();
+        if( value_ptr ) {
+            r = ::SQLSetDescField( hIpd, rec_num, fld_id, value_ptr, str_len );
+            CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+                throw CoreException();
+            }
         }
     }
 

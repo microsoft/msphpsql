@@ -5,30 +5,26 @@ Verifies the compliance of the PDOStatement API Interface.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require_once('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+require_once("MsCommon_mid-refactor.inc");
 
-function StmtInfo()
-{
-    include 'MsSetup.inc';
+try {
+    $conn1 = connect();
+    $tableName = "pdo_test_table";
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "val" => "varchar(10)"));
+    $stmt1 = $conn1->query("SELECT * FROM [$tableName]");
 
-    $testName = "PDOStatement - Interface";
-    StartTest($testName);
-
-    $conn1 = Connect();
-    CreateTableEx($conn1, $tableName, "id int NOT NULL PRIMARY KEY, val VARCHAR(10)", null);
-    $stmt1 = ExecuteQuery($conn1, "SELECT * FROM [$tableName]");
-
-    CheckInterface($stmt1);
-    $stmt1 = null;
-    $conn1 = null;
-
-    EndTest($testName);
+    checkInterface($stmt1);
+    unset($stmt1);
+    unset($conn1);
+    echo "Test successfully completed\n";
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
 
-function CheckInterface($stmt)
+function checkInterface($stmt)
 {
     $expected = array(
         'errorCode'     => true,
@@ -55,46 +51,21 @@ function CheckInterface($stmt)
     );
     $classname = get_class($stmt);
     $methods = get_class_methods($classname);
-    foreach ($methods as $k => $method)
-    {
-        if (isset($expected[$method]))
-        {
+    foreach ($methods as $k => $method) {
+        if (isset($expected[$method])) {
             unset($expected[$method]);
             unset($methods[$k]);
         }
     }
-    if (!empty($expected))
-    {
+    if (!empty($expected)) {
         printf("Dumping missing class methods\n");
         var_dump($expected);
     }
-    if (!empty($methods))
-    {
+    if (!empty($methods)) {
         printf("Found more methods than expected, dumping list\n");
         var_dump($methods);
     }
 }
-
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-    try
-    {
-        StmtInfo();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-}
-
-Repro();
-
 ?>
 --EXPECT--
-Test "PDOStatement - Interface" completed successfully.
+Test successfully completed

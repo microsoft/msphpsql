@@ -5,7 +5,7 @@
 //
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.1 for PHP for SQL Server
+// Microsoft Drivers 5.2 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -411,6 +411,10 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
         { IMSSP, (SQLCHAR*) "Stored Procedures do not support text, ntext or image as OUTPUT parameters.", -108, false }
+    },
+    {
+        SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
+        { IMSSP, (SQLCHAR*) "Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.", -109, false }
     },
 
     // terminate the list of errors/warnings

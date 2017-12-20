@@ -1,7 +1,7 @@
 --TEST--
 For output string parameter crash when output variable is set initially to null
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     $sql = 'CREATE PROCEDURE #GetAGuid73
@@ -14,16 +14,12 @@ For output string parameter crash when output variable is set initially to null
             select 3
         END';
 
-    require( 'MsCommon.inc' );
-    $conn = Connect();
+    require_once('MsCommon.inc');
+    $conn = AE\connect();
     
-    if( $conn === false ) {
-        die( print_r( sqlsrv_errors(), true ));
-    }
-
     $stmt = sqlsrv_query($conn, $sql);
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
      
     $sql = '{CALL #GetAGuid73 (?)}';
@@ -37,13 +33,13 @@ For output string parameter crash when output variable is set initially to null
               );
 
     $stmt = sqlsrv_query($conn, $sql, $params);
-    if( $stmt === false ) {
-        die( print_r( sqlsrv_errors(), true ));
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
 
     echo 'New Guid: >'.$guid."<\n";
 
-    while( sqlsrv_next_result( $stmt ) != NULL ) {
+    while (sqlsrv_next_result($stmt) != null) {
     }
 
     echo 'New Guid: >'.$guid."<\n";

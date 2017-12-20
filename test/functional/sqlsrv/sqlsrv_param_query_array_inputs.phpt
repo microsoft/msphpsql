@@ -4,13 +4,15 @@ Test insert various numeric data types and fetch them back as strings
 ﻿<?php
 require_once('MsCommon.inc');
 
-function ExecData_Value($conn, $numRows, $phpType = SQLSRV_PHPTYPE_NULL)
+function execDataValue($conn, $numRows, $phpType = SQLSRV_PHPTYPE_NULL)
 {
-    $tableName = GetTempTableName();
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE [$tableName] ([c1_int] int, [c2_smallint] smallint)");
-    sqlsrv_free_stmt($stmt);
-
+    $tableName = 'param_query_value';
+    $columns = array(new AE\ColumnMeta('int', 'c1_int'),
+                     new AE\ColumnMeta('smallint', 'c2_smallint'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("failed to create table $tableName\n");
+    }
     if ($phpType == SQLSRV_PHPTYPE_NULL) {
         echo "Insert integers without PHP type\n";
         $stmt = sqlsrv_prepare($conn, "INSERT INTO [$tableName] (c1_int, c2_smallint) VALUES (?, ?)", array(array(&$v1), array(&$v2)));
@@ -18,12 +20,18 @@ function ExecData_Value($conn, $numRows, $phpType = SQLSRV_PHPTYPE_NULL)
         echo "Insert integers as SQLSRV_PHPTYPE_INT\n";
         $stmt = sqlsrv_prepare($conn, "INSERT INTO [$tableName] (c1_int, c2_smallint) VALUES (?, ?)", array(array(&$v1, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT), array(&$v2, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT)));
     }
+    if (!$stmt) {
+        fatalError("execDataValue: failed to prepare statement!");
+    }
 
     $value = 1;
     for ($i = 0; $i < $numRows; $i++) {
         $v1 = $value;
         $v2 = $v1 + 1;
-        sqlsrv_execute($stmt);
+        $res = sqlsrv_execute($stmt);
+        if (!$res) {
+            fatalError("execDataValue: failed to insert $v1, $v2");
+        }
 
         $value += 10;
     }
@@ -31,17 +39,22 @@ function ExecData_Value($conn, $numRows, $phpType = SQLSRV_PHPTYPE_NULL)
     sqlsrv_free_stmt($stmt);
 
     $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName");
-    FetchData($stmt, $numRows);
+    fetchData($stmt, $numRows);
 
     sqlsrv_free_stmt($stmt);
+    
+    dropTable($conn, $tableName);
 }
 
-function ExecData_Param($conn, $numRows, $withParam = false)
+function execDataParam($conn, $numRows, $withParam = false)
 {
-    $tableName = GetTempTableName();
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE [$tableName] ([c1_float] float, [c2_real] real)");
-    sqlsrv_free_stmt($stmt);
+    $tableName = 'param_query_param';
+    $columns = array(new AE\ColumnMeta('float', 'c1_float'),
+                     new AE\ColumnMeta('real', 'c2_real'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("failed to create table $tableName\n");
+    }
 
     if ($withParam) {
         echo "Insert floats with direction specified\n";
@@ -50,12 +63,18 @@ function ExecData_Param($conn, $numRows, $withParam = false)
         echo "Insert floats without direction\n";
         $stmt = sqlsrv_prepare($conn, "INSERT INTO [$tableName] (c1_float, c2_real) VALUES (?, ?)", array(&$v1, &$v2));
     }
+    if (!$stmt) {
+        fatalError("execDataParam: failed to prepare statement!");
+    }
 
     $value = 1.0;
     for ($i = 0; $i < $numRows; $i++) {
         $v1 = $value;
         $v2 = $v1 + 1.0;
-        sqlsrv_execute($stmt);
+        $res = sqlsrv_execute($stmt);
+        if (!$res) {
+            fatalError("execDataParam: failed to insert $v1, $v2");
+        }
 
         $value += 10;
     }
@@ -63,12 +82,14 @@ function ExecData_Param($conn, $numRows, $withParam = false)
     sqlsrv_free_stmt($stmt);
 
     $stmt = sqlsrv_query($conn, "SELECT * FROM $tableName");
-    FetchData($stmt, $numRows);
+    fetchData($stmt, $numRows);
 
     sqlsrv_free_stmt($stmt);
+
+    dropTable($conn, $tableName);
 }
 
-function FetchData($stmt, $numRows)
+function fetchData($stmt, $numRows)
 {
     for ($i = 0; $i < $numRows; $i++) {
         sqlsrv_fetch($stmt);
@@ -81,36 +102,26 @@ function FetchData($stmt, $numRows)
     }
 }
 
-function Repro()
-{
-    startTest("sqlsrv_param_query_array_inputs");
-    echo "\nTest begins...\n";
-    try {
-        set_time_limit(0);
-        sqlsrv_configure('WarningsReturnAsErrors', 1);
+echo "\nTest begins...\n";
+try {
+    set_time_limit(0);
+    sqlsrv_configure('WarningsReturnAsErrors', 1);
 
-        // connect
-        $conn = connect();
-        if (!$conn) {
-            fatalError("Could not connect.\n");
-        }
+    // connect
+    $conn = AE\connect();
 
-        $numRows = 5;
+    $numRows = 5;
 
-        ExecData_Value($conn, $numRows);
-        ExecData_Value($conn, $numRows, SQLSRV_PHPTYPE_INT);
-        ExecData_Param($conn, $numRows, true);
-        ExecData_Param($conn, $numRows);
+    execDataValue($conn, $numRows);
+    execDataValue($conn, $numRows, SQLSRV_PHPTYPE_INT);
+    execDataParam($conn, $numRows, true);
+    execDataParam($conn, $numRows);
 
-        sqlsrv_close($conn);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_param_query_array_inputs");
+    sqlsrv_close($conn);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-Repro();
+echo "\nDone\n";
 
 ?>
 --EXPECT--
@@ -142,4 +153,3 @@ Insert floats without direction
 41.0, 42.0
 
 Done
-Test "sqlsrv_param_query_array_inputs" completed successfully.

@@ -2,6 +2,8 @@
 Test simple insert and update sql_variants using parameters of some different data types
 --DESCRIPTION--
 ORDER BY should work with sql_variants
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
@@ -22,20 +24,25 @@ class Country
     }
 }
 
-function CreateVariantTable($conn, $tableName)
+function createVariantTable($conn, $tableName)
 {
     // create a table for testing
-    $dataType = "[id] sql_variant, [country] sql_variant, [continent] sql_variant";
-    createTableEx($conn, $tableName, $dataType);
+    $columns = array(new AE\ColumnMeta('sql_variant', 'id'),
+                     new AE\ColumnMeta('sql_variant', 'country'),
+                     new AE\ColumnMeta('sql_variant', 'continent'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
+    }
 }
 
-function AddCountry($conn, $tableName, $id, $country, $continent)
+function addCountry($conn, $tableName, $id, $country, $continent)
 {
     $query = "INSERT $tableName ([id], [country], [continent]) VALUES (?, ?, ?)";
 
     // set parameters
     $params = array($id, $country, $continent);
-    $stmt = sqlsrv_query($conn, $query, $params);
+    $stmt = AE\executeQueryParams($conn, $query, $params);
 
     if ($stmt) {
         echo "\nAdded $country in $continent with ID $id.";
@@ -44,7 +51,7 @@ function AddCountry($conn, $tableName, $id, $country, $continent)
     }
 }
 
-function UpdateID($conn, $tableName, $id, $country, $continent)
+function updateID($conn, $tableName, $id, $country, $continent)
 {
     $query = "UPDATE $tableName SET id = ? WHERE country = ? AND continent = ?";
     $param1 = $id;
@@ -63,7 +70,7 @@ function UpdateID($conn, $tableName, $id, $country, $continent)
     }
 }
 
-function UpdateCountry($conn, $tableName, $id, $country, $continent)
+function updateCountry($conn, $tableName, $id, $country, $continent)
 {
     $query = "UPDATE $tableName SET country = ? WHERE id = ? AND continent = ?";
     $param1 = $country;
@@ -82,7 +89,7 @@ function UpdateCountry($conn, $tableName, $id, $country, $continent)
     }
 }
 
-function Fetch($conn, $tableName)
+function fetch($conn, $tableName)
 {
     $select = "SELECT * FROM $tableName ORDER BY id";
     $stmt = sqlsrv_query($conn, $select);
@@ -96,59 +103,50 @@ function Fetch($conn, $tableName)
     sqlsrv_free_stmt($stmt);
 }
 
-//--------------------------------------------------------------------
-// RunTest
-//
-//--------------------------------------------------------------------
-function RunTest()
-{
-    startTest("sqlsrv_simple_update_variants");
-    try {
-        setup();
+try {
+    setup();
 
-        // connect
-        $conn = connect();
+    // connect
+    $conn = AE\connect();
 
-        // Create a temp table that will be automatically dropped once the connection is closed
-        $tableName = GetTempTableName();
-        CreateVariantTable($conn, $tableName);
+    // Create a temp table that will be automatically dropped once the connection is closed
+    $tableName = 'simple_update_variants';
+    createVariantTable($conn, $tableName);
 
-        // Add three countries
-        AddCountry($conn, $tableName, 1, 'Canada', 'North America');
-        AddCountry($conn, $tableName, 3, 'France', 'Europe');
-        AddCountry($conn, $tableName, 5, 'Australia', 'Australia');
+    // Add three countries
+    addCountry($conn, $tableName, 1, 'Canada', 'North America');
+    addCountry($conn, $tableName, 3, 'France', 'Europe');
+    addCountry($conn, $tableName, 5, 'Australia', 'Australia');
 
-        // Read data
-        Fetch($conn, $tableName);
+    // Read data
+    fetch($conn, $tableName);
 
-        // Update id
-        UpdateID($conn, $tableName, 4, 'Canada', 'North America');
+    // Update id
+    updateID($conn, $tableName, 4, 'Canada', 'North America');
 
-        // Read data
-        Fetch($conn, $tableName);
+    // Read data
+    fetch($conn, $tableName);
 
-        // Update country
-        UpdateCountry($conn, $tableName, 4, 'Mexico', 'North America');
+    // Update country
+    updateCountry($conn, $tableName, 4, 'Mexico', 'North America');
 
-        // Read data
-        Fetch($conn, $tableName);
+    // Read data
+    fetch($conn, $tableName);
 
-        // Add two more countries
-        AddCountry($conn, $tableName, 6, 'Brazil', 'South America');
-        AddCountry($conn, $tableName, 2, 'Egypt', 'Africa');
+    // Add two more countries
+    addCountry($conn, $tableName, 6, 'Brazil', 'South America');
+    addCountry($conn, $tableName, 2, 'Egypt', 'Africa');
 
-        // Read data
-        Fetch($conn, $tableName);
+    // Read data
+    fetch($conn, $tableName);
+    
+    dropTable($conn, $tableName);
 
-        sqlsrv_close($conn);
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
-    echo "\nDone\n";
-    endTest("sqlsrv_simple_update_variants");
+    sqlsrv_close($conn);
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-RunTest();
+echo "\nDone\n";
 
 ?>
 --EXPECT--
@@ -175,4 +173,3 @@ ID: 4 Mexico, North America
 ID: 5 Australia, Australia
 ID: 6 Brazil, South America
 Done
-Test "sqlsrv_simple_update_variants" completed successfully.

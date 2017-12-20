@@ -1,7 +1,7 @@
 --TEST--
 binding streams using full syntax.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);
@@ -9,33 +9,32 @@ binding streams using full syntax.
 
     require_once('MsCommon.inc');
     
-    $conn = connect();
-    if ($conn === false) {
-        fatalError("Failed to connect.");
+    $conn = AE\connect();
+    $tableName = 'test_params';
+    $columns = array(new AE\ColumnMeta('tinyint', 'id'),
+                     new AE\ColumnMeta('char(10)', 'name'),
+                     new AE\ColumnMeta('float', 'double'),
+                     new AE\ColumnMeta('varbinary(max)', 'stuff'));
+    $stmt = AE\createTable($conn, $tableName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tableName\n");
     }
-
-    $stmt = sqlsrv_query($conn, "IF OBJECT_ID('test_params', 'U') IS NOT NULL DROP TABLE test_params");
-    if ($stmt !== false) {
-        sqlsrv_free_stmt($stmt);
-    }
-
-    $stmt = sqlsrv_query($conn, "CREATE TABLE test_params (id tinyint, name char(10), [double] float, stuff varbinary(max))");
-    sqlsrv_free_stmt($stmt);
-
+    
     $f1 = 1;
     $f2 = "testtestte";
     $f3 = 12.0;
     $f4 = fopen("data://text/plain,This%20is%20some%20text%20meant%20to%20test%20binding%20parameters%20to%20streams", "r");
 
+    $insertSql = "INSERT INTO $tableName (id, name, [double], stuff) VALUES (?, ?, ?, ?)";
     // use full details
     $stmt = sqlsrv_query(
-        $conn,
-        "INSERT INTO test_params (id, name, [double], stuff) VALUES (?, ?, ?, ?)",
-                            array(
-                                array( &$f1, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT, SQLSRV_SQLTYPE_TINYINT ),
-                                array( &$f2, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_CHAR(10)),
-                                array( &$f3, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_FLOAT, SQLSRV_SQLTYPE_FLOAT),
-                                array( &$f4, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY('max')))
+        $conn, 
+        $insertSql,
+        array(
+            array(&$f1, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_INT, SQLSRV_SQLTYPE_TINYINT),
+            array(&$f2, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_CHAR(10)),
+            array(&$f3, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_FLOAT, SQLSRV_SQLTYPE_FLOAT),
+            array(&$f4, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY('max')))
     );
     if ($stmt === false) {
         var_dump(sqlsrv_errors());
@@ -55,17 +54,19 @@ binding streams using full syntax.
     // use nulls for php types
     $stmt = sqlsrv_query(
         $conn,
-        "INSERT INTO test_params (id, name, [double], stuff) VALUES (?, ?, ?, ?)",
-                            array(
-                                array( &$f1, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_TINYINT ),
-                                array( &$f2, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_CHAR(10)),
-                                array( &$f3, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_FLOAT),
-                                array( &$f4, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_VARBINARY('max')))
+        $insertSql,
+        array(
+            array(&$f1, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_TINYINT),
+            array(&$f2, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_CHAR(10)),
+            array(&$f3, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_FLOAT),
+            array(&$f4, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_VARBINARY('max')))
     );
     if ($stmt !== false) {
         die("sqlsrv_query(2) should have failed.");
+    } else {
+        $error = sqlsrv_errors()[0];
+        verifyError($error, '22018', 'Invalid character value for cast specification');
     }
-    print_r(sqlsrv_errors());
     print_r("sqlsrv_query(2) failed.\n");
     fclose($f4);
 
@@ -74,15 +75,24 @@ binding streams using full syntax.
     // use nulls for php types
     $stmt = sqlsrv_query(
         $conn,
-        "INSERT INTO test_params (id, name, [double], stuff) VALUES (?, ?, ?, ?)",
-                            array(
-                                array( &$f1, null, null, null ),
-                                array( &$f2, null, null, null ),
-                                array( &$f3, null, null, null ),
-                                array( &$f4, null, null, null ))
+        $insertSql,
+        array(
+            array(&$f1, null, null, null),
+            array(&$f2, null, null, null),
+            array(&$f3, null, null, null),
+            array(&$f4, null, null, null))
     );
+    
+    $AEQueryError = 'Must specify the SQL type for each parameter in a parameterized query when using sqlsrv_query in a column encryption enabled connection.';
     if ($stmt === false) {
-        print_r(sqlsrv_errors());
+        $error = sqlsrv_errors()[0];
+        if (AE\isColEncrypted()) {
+            // When AE is enabled, the error message will be about sqlsrv_query and 
+            // parameterized query
+            verifyError($error, 'IMSSP', $AEQueryError);
+        } else {
+            verifyError($error, '42000', 'Implicit conversion from data type varchar(max) to varbinary(max) is not allowed. Use the CONVERT function to run this query.');
+        }
         print_r("sqlsrv_query(3) failed.\n");
     } else {
         sqlsrv_free_stmt($stmt);
@@ -103,9 +113,19 @@ binding streams using full syntax.
         $name = sqlsrv_get_field($stmt, 2, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         echo "$name\n";
         $stream = sqlsrv_get_field($stmt, 3, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
-        while (!feof($stream)) {
-            $str = fread($stream, 10000);
-            echo $str;
+        if (!$stream) {
+            if (AE\isColEncrypted()) {
+                verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
+            } else {
+                fatalError('Fetching data stream failed!');
+            }
+        } else {
+            while (!feof($stream)) {
+                $str = fread($stream, 10000);
+                if ($str !== "This is some text meant to test binding parameters to streams") {
+                    fatalError("Incorrect data: \'$str\'!\n");
+                }
+            }
         }
         echo "\n";
     }
@@ -117,70 +137,37 @@ binding streams using full syntax.
     // use nulls for php types
     $stmt = sqlsrv_query(
         $conn,
-        "INSERT INTO test_params (id, name, [double], stuff) VALUES (?, ?, ?, ?)",
-                            array(
-                                array( &$f1, null, null, null ),
-                                array(),
-                                array( &$f3, null, null, null ),
-                                array( &$f4, null, null, null ))
+        $insertSql,
+        array(
+            array(&$f1, null, null, null),
+            array(),
+            array(&$f3, null, null, null),
+            array(&$f4, null, null, null))
     );
     if ($stmt !== false) {
         die("sqlsrv_query should have failed.");
     }
-    var_dump(sqlsrv_errors());
+
+    $error = sqlsrv_errors()[0];
+    if (AE\isColEncrypted()) {
+        // When AE is enabled, the error message will be about sqlsrv_query and 
+        // parameterized query
+        verifyError($error, 'IMSSP', $AEQueryError);
+    } else {
+        verifyError($error, 'IMSSP', 'Parameter array 2 must have at least one value or variable.');
+    }
+
     fclose($f4);
+    echo "Done\n";
 
-    sqlsrv_query($conn, "DROP TABLE test_params");
-
+    dropTable($conn, $tableName);
     sqlsrv_close($conn);
 ?>
---EXPECTF--
-Array
-(
-    [0] => Array
-        (
-            [0] => 22018
-            [SQLSTATE] => 22018
-            [1] => 0
-            [code] => 0
-            [2] => %SInvalid character value for cast specification
-            [message] => %SInvalid character value for cast specification
-        )
-
-)
+--EXPECT--
 sqlsrv_query(2) failed.
-Array
-(
-    [0] => Array
-        (
-            [0] => 42000
-            [SQLSTATE] => 42000
-            [1] => 257
-            [code] => 257
-            [2] => %SImplicit conversion from data type varchar(max) to varbinary(max) is not allowed. Use the CONVERT function to run this query.
-            [message] => %SImplicit conversion from data type varchar(max) to varbinary(max) is not allowed. Use the CONVERT function to run this query.
-        )
-
-)
 sqlsrv_query(3) failed.
 1
 12.0
 testtestte
-This is some text meant to test binding parameters to streams
-array(1) {
-  [0]=>
-  array(6) {
-    [0]=>
-    string(5) "IMSSP"
-    ["SQLSTATE"]=>
-    string(5) "IMSSP"
-    [1]=>
-    int(-9)
-    ["code"]=>
-    int(-9)
-    [2]=>
-    string(59) "Parameter array 2 must have at least one value or variable."
-    ["message"]=>
-    string(59) "Parameter array 2 must have at least one value or variable."
-  }
-}
+
+Done

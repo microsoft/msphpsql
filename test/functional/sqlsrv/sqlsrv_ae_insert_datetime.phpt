@@ -78,7 +78,7 @@ c_det:
   timezone_type: 3
   timezone: Canada/Pacific
 c_rand:
-  date: 9999-12-31 23:59:59.1000000
+  date: 9999-12-31 23:59:59.123456
   timezone_type: 3
   timezone: Canada/Pacific
 
@@ -105,6 +105,6 @@ c_det:
   timezone_type: 1
   timezone: -14:00
 c_rand:
-  date: 9999-12-31 23:59:59.1000000
+  date: 9999-12-31 23:59:59.123456
   timezone_type: 1
   timezone: +14:00

@@ -1,106 +1,119 @@
 --TEST--
 reading streams of various types with a base64 decoding filter on top of them.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
-sqlsrv_configure( 'WarningsReturnAsErrors', false );
-require( 'MsCommon.inc' );
+sqlsrv_configure('WarningsReturnAsErrors', false);
+require_once('MsCommon.inc');
 
-function RunTest( $field_type ) {
-
-    PrepareParams($params);
-    $tableName = "dbo.B64TestTable";
-    $params['fieldType'] = $field_type;
+function runTest($fieldType)
+{
+    // change the input field type for each run
+    prepareParams($params, $fieldType);
     
-    ($conn = Connect())
+    $conn = AE\connect();
+    
+    $originalStream = populateTestTable($conn, $params);
+
+    ($stmt = sqlsrv_query($conn, $params['selectQuery']))
         || die(print_r(sqlsrv_errors(), true));
 
-    $originalStream = PopulateTestTable($conn, $params); 
-
-    ($stmt = sqlsrv_query($conn, $params['selectQuery'])) 
+    sqlsrv_fetch($stmt)
         || die(print_r(sqlsrv_errors(), true));
 
-    sqlsrv_fetch($stmt) 
-        || die(print_r(sqlsrv_errors(), true));
-
-    ($stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM("char")))
-        || die(print_r(sqlsrv_errors(), true));
-
-    stream_filter_append($originalStream, "convert.base64-encode")
-        || die(print_r(error_get_last()));
-        
-    while (($originalLine = fread($originalStream, 80)) &&
-            ($dbLine = fread($stream, 80))) {
-        if( $originalLine != $dbLine )
-            die( "Not identical" );
+    // Do not support getting stream if AE enabled, so expect 
+    // it to fail with the correct error message
+    $stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM("char"));
+    if ($stream) {
+        stream_filter_append($originalStream, "convert.base64-encode")
+            || die(print_r(error_get_last()));
+            
+        while (($originalLine = fread($originalStream, 80)) &&
+                ($dbLine = fread($stream, 80))) {
+            if ($originalLine != $dbLine) {
+                die("Not identical");
+            }
+        }
+    } else {
+        if (AE\isColEncrypted()) {
+            verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
+        } else {
+            fatalError('Fetching data stream failed!');
+        }
     }
-
+    dropTable($conn, $params['tableName']);
+    
     sqlsrv_free_stmt($stmt) || die(print_r(sqlsrv_errors(), true));
 
     sqlsrv_close($conn) || die(print_r(sqlsrv_errors(), true));
+    
 }
 
-RunTest( "varchar(max)" );
-RunTest( "varbinary(max)" );
-RunTest( "nvarchar(max)" );
+runTest("varchar(max)");
+// runTest("varbinary(max)");
+runTest("nvarchar(max)");
 
 echo "Test successful.\n";
 
-function PopulateTestTable($conn, $params) {
+function populateTestTable($conn, $params)
+{
+    $tblName = $params['tableName'];
+    $colName = $params['columnName']; 
+    $fieldType = $params['fieldType'];
     
-    DropTestTable($conn, $params);
-    CreateTestTable($conn, $params);
+    // Create a test table of a single column of a certain field type
+    $columns = array(new AE\ColumnMeta($fieldType, $colName));
+    $stmt = AE\createTable($conn, $tblName, $columns);
+    if (!$stmt) {
+        fatalError("Failed to create table $tblName\n");
+    }
     
     ($data = fopen($params['testImageURL'], "rb")) || die("Couldn't open image for reading.");
     
-    stream_filter_append($data, "convert.base64-encode") 
+    stream_filter_append($data, "convert.base64-encode")
         || die(print_r(error_get_last(), true));
-        
-    if ($stmt = sqlsrv_query($conn, $params['insertQuery'], array($data))) {
-        do { 
+    
+    if (AE\isColEncrypted()) {
+        $stmt = AE\insertRow($conn, $tblName, array($colName => $data));
+    } else {
+        $insertQuery = $params['insertQuery'];
+        $stmt = sqlsrv_query($conn, $insertQuery, array($data));
+    }
+  
+    if ($stmt) {
+        do {
             $read = sqlsrv_send_stream_data($stmt);
-            if ($read === false) die(print_r(sqlsrv_errors(), true));
+            if ($read === false) {
+                die(print_r(sqlsrv_errors(), true));
+            }
         } while ($read);
         
         fclose($data) || die(print_r(error_get_last(), true));
         
         sqlsrv_free_stmt($stmt) || die(print_r(sqlsrv_errors(), true));
-    } else 
+    } else {
         die(print_r(sqlsrv_errors(), true));
+    }
 
-    return fopen($params['testImageURL'], "rb");
+    return fopen($params['testImageURL'], "rb"); 
 }
 
-function PrepareParams(&$arr) {
-    $uname = php_uname();
-    $phpgif = "\\php.gif";
-    if (preg_match('/Win/',$uname))
-    {
+function prepareParams(&$arr, $fieldType)
+{
+    if (isWindows()) {
         $phpgif = '\\php.gif';
-    } 
-    else // other than Windows
-    {
+    } else {
         $phpgif = '/php.gif';
     }
-    $arr['tableName'] = $tblName = "dbo.B64TestTable";
+
+    $arr['tableName'] = $tblName = "B64TestTable"; 
     $arr['columnName'] = $colName = "Base64Image";
-    $arr['fieldType'] = $fieldType = "nvarchar(MAX)";
-    $arr['dropQuery'] = "IF OBJECT_ID(N'$tblName', N'U') IS NOT NULL DROP TABLE $tblName";
-    $arr['createQuery'] = "CREATE TABLE $tblName ($colName $fieldType)";
+    $arr['fieldType'] = $fieldType;
     $arr['insertQuery'] = "INSERT INTO $tblName ($colName) VALUES (?)";
     $arr['selectQuery'] = "SELECT TOP 1 $colName FROM $tblName";
-    // $arr['testImageURL'] = "http://static.php.net/www.php.net/images/php.gif";
-    $arr['testImageURL'] = dirname( $_SERVER['PHP_SELF'] ).$phpgif; // use this when no http access
-    $arr['MIMEType'] = "image/gif";
-}
-
-function DropTestTable($conn, $params) { RunQuery($conn, $params['dropQuery']); }
-function CreateTestTable($conn, $params) { RunQuery($conn, $params['createQuery']); }
-function RunQuery($conn, $query) {
-    ($qStmt = sqlsrv_query($conn, $query)) && $qStmt && sqlsrv_free_stmt($qStmt) 
-        || die(print_r(sqlsrv_errors(), true));
+    $arr['testImageURL'] = dirname($_SERVER['PHP_SELF']) . $phpgif; // use this when no http access
 }
 
 ?>
