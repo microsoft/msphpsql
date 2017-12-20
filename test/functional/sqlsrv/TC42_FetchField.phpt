@@ -8,10 +8,10 @@ PHPT_EXEC=true
 --SKIPIF--
 <?php 
 // locale must be set before 1st connection
-if ( !isWindows() ) {
+if (!isWindows()) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
-require('skipif_versions_old.inc'); 
+require('skipif_versions_old.inc');
 ?>
 --FILE--
 <?php
