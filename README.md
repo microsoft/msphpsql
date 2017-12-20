@@ -54,7 +54,7 @@ You must first be able to build PHP 7.0.* or above without including these exten
 
 #### Compile the drivers
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0RC* using Visual C++ 2017 v15.0. 
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0* using Visual C++ 2017 v15.0. 
 For details, please read the documentation and/or take a look at the sample [build scripts](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows).
 
 ## Install (Windows)
@@ -62,7 +62,7 @@ For details, please read the documentation and/or take a look at the sample [bui
 #### Prerequisites
 
 - A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
-- [Microsoft ODBC Driver 11][odbc11] or [Microsoft ODBC Driver 13][odbc13]
+- [Microsoft ODBC Driver 11][odbc11], [Microsoft ODBC Driver 13][odbc13] or [Microsoft ODBC Driver 17][odbc17]
 
 #### Enable the drivers
 
@@ -73,20 +73,15 @@ For details, please read the documentation and/or take a look at the sample [bui
 3. Restart the Web server.
 
 ## Install (UNIX)
-The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, Apache, and Microsoft PHP drivers on Ubuntu 15, 16, RedHat 7, Debian 8, SUSE 12, and macOS. 
+The following instructions assume a clean environment and show how to install PHP 7.x, Microsoft ODBC driver, Apache, and Microsoft PHP drivers on Ubuntu 16, 17 RedHat 7, Debian 8, 9 SUSE 12, and macOS 10.11, 10.12. 
+
+Note that [Microsoft ODBC Driver 17][odbc17] is required for Ubuntu 17 and Debian 9.
 
 ### Step 1: Install PHP7+ 
 
 #### PHP 7.0
 
-**Ubuntu 15.10**
-
-    sudo su
-    sh -c 'echo "deb http://packages.dotdeb.org jessie all \ndeb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list'
-    apt-get update
-    apt-get install php7.0 php7.0-fpm php-pear php7.0-dev mcrypt php7.0-mcrypt php-mbstring php7.0-xml
-
-**Ubuntu 16.04**
+**Ubuntu 16.04, 17.10**
 
     sudo su
     apt-get update
@@ -113,13 +108,23 @@ The following instructions assume a clean environment and show how to install PH
     apt-get update
     apt-get install -y php7.0 php-pear php7.0-dev php7.0-xml
 
+**Debian 9**
+
+    sudo su
+    apt-get install curl apt-transport-https
+    curl https://www.dotdeb.org/dotdeb.gpg | apt-key add -
+    echo "deb http://packages.dotdeb.org stretch all" >> /etc/apt/sources.list
+    echo "deb-src http://packages.dotdeb.org stretch all" >> /etc/apt/sources.list
+    apt-get update
+    apt-get install -y php7.0 php-pear php7.0-dev php7.0-xml
+    
 **SUSE 12**
 
     sudo su
     zypper refresh
     zypper install -y php7 php7-pear php7-devel
 
-**macOS**
+**macOS 10.11, 10.12**
 
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     brew tap 
@@ -133,9 +138,7 @@ The following instructions assume a clean environment and show how to install PH
 
 #### PHP 7.1
 
-Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
-
-**Ubuntu 16.04**
+**Ubuntu 16.04, 17.10**
 
     sudo su
     add-apt-repository ppa:ondrej/php
@@ -153,7 +156,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     yum update
     yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
 
-**Debian 8**
+**Debian 8, 9**
 
     sudo su
     apt-get install curl apt-transport-https
@@ -169,7 +172,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     zypper --gpg-auto-import-keys refresh
     zypper -n install php7 php7-pear php7-devel
 
-**macOS**
+**macOS 10.11, 10.12**
 
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     brew tap 
@@ -184,19 +187,6 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
 
 ### Step 2: Install Prerequisites
 
-**Ubuntu 15.10**
-
-    sudo su 
-    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-    curl https://packages.microsoft.com/config/ubuntu/15.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
-    exit
-    sudo apt-get update
-    sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools
-    sudo apt-get install unixodbc-dev
-    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-    source ~/.bashrc
-
 **Ubuntu 16.04**
 
     sudo su 
@@ -210,6 +200,19 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
     source ~/.bashrc
 
+**Ubuntu 17.10**
+
+    sudo su 
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/ubuntu/17.10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    exit
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install msodbcsql mssql-tools 
+    sudo apt-get install unixodbc-dev
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
+    
 **RedHat 7**
 
     sudo su
@@ -236,6 +239,19 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     sudo ACCEPT_EULA=Y apt-get install msodbcsql
     sudo apt-get install unixodbc-dev
 
+**Debian 9**
+
+    sudo su 
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/debian/9/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get install -y locales
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+    locale-gen
+    exit
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install msodbcsql
+    sudo apt-get install unixodbc-dev
+
 **SUSE 12**
 
     sudo su
@@ -249,7 +265,7 @@ Note that there are no PHP 7.1 packages available for Ubuntu 15.10.
     echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
     source ~/.bashrc
 
-**macOS**
+**macOS 10.11, 10.12**
 
     brew tap microsoft/msodbcsql https://github.com/Microsoft/homebrew-mssql-release
     brew update
@@ -519,6 +535,8 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 [odbc11]: https://www.microsoft.com/download/details.aspx?id=36434
 
 [odbc13]: https://www.microsoft.com/download/details.aspx?id=50420
+
+[odbc17]: https://github.com/Microsoft/msphpsql/tree/master/ODBC%2017%20binaries%20preview
 
 [odbcLinux]: https://msdn.microsoft.com/library/hh568454(v=sql.110).aspx
 
