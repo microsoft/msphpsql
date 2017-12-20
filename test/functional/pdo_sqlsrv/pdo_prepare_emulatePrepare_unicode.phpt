@@ -70,9 +70,25 @@ try {
     print_r("Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:\n");
     $stmt = prepareStmt($conn, $query, $options, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    print_r($row);
-    if ($stmt->rowCount() == 0) {
-        print_r("No results for this query\n");
+    
+    // The combination of Column Encryption and Unix platforms support SQLSRV_ENCODING_SYSTEM because:
+    // With Column Encryption enabled, binding parameters uses exact datatypes as the column definition
+    // the default encoding in Linux and Mac is UTF8
+    $success = true;
+    if (!(strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN') && isAEConnected()) {
+        if ($row['name'] != "가각" || $row['status'] != 1 || $row['age'] != 30) {
+            print_r("Incorrect results retrieved.\n");
+            $success = false;
+        }
+    } else {
+        // the default encoding in Windows is non-UTF8, thus binding UTF8 parameters does not work
+        if ($stmt->rowCount() != 0) {
+            print_r("Binding UTF8 data when encoding is SQLSRV_ENCODING_SYSTEM should not work.\n");
+            $success = false;
+        }
+    }
+    if ($success) {
+        print_r("Binding UTF8 data with SQLSRV_ENCODING_SYSTEM is tested successfully.\n");
     }
 
     //with emulate prepare and encoding SQLSRV_ENCODING_BINARY
@@ -110,6 +126,6 @@ Array
     [age] => 30
 )
 Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:
-No results for this query
+Binding UTF8 data with SQLSRV_ENCODING_SYSTEM is tested successfully.
 Prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY:
 No results for this query

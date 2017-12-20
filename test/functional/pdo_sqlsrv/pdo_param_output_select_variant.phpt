@@ -12,9 +12,15 @@ function testSimpleSelect($conn, $tableName)
 {
     $count = 0;
 
-    $stmt = $conn->prepare("SELECT ? = COUNT(* ) FROM $tableName");
-    $stmt->bindParam(1, $count, PDO::PARAM_INT, 4);
-    $stmt->execute();
+    if (!isAEConnected()) {
+        $stmt = $conn->prepare("SELECT ? = COUNT(* ) FROM $tableName");
+        $stmt->bindParam(1, $count, PDO::PARAM_INT, 4);
+        $stmt->execute();
+    } else {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM $tableName");
+        $stmt->execute();
+        $count = $stmt->fetch()[0];
+    }
     echo "Number of rows: $count\n";
 
     $value = 'xx';
@@ -51,6 +57,16 @@ function createVariantTable($conn, $tableName)
     }
 }
 
+function checkError($e, $expMsg, $aeExpMsg)
+{
+    $error = $e->getMessage();
+    if (!isAEConnected()) {
+        if (strpos($error, $expMsg) === false) echo $error;
+    } else {
+        if (strpos($error, $aeExpMsg) === false) echo $error;
+    }
+}
+
 try {
     // Connect
     $conn = connect();
@@ -65,12 +81,14 @@ try {
     dropTable($conn, $tableName);
     unset($conn);
 } catch (Exception $e) {
-    echo $e->getMessage();
+    // binding parameters in the select list is not supported with Column Encryption
+    $expMsg = "Implicit conversion from data type sql_variant to nvarchar(max) is not allowed. Use the CONVERT function to run this query.";
+    $aeExpMsg = "Invalid Descriptor Index";
+    checkError($e, $expMsg, $aeExpMsg);
 }
-echo "\nDone\n";
+echo "Done\n";
 
 ?>
---EXPECTREGEX--
+--EXPECT--
 ﻿Number of rows: 1
-SQLSTATE\[42000\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Implicit conversion from data type sql_variant to nvarchar\(max\) is not allowed. Use the CONVERT function to run this query.
 Done

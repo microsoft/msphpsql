@@ -6,6 +6,16 @@ Test UTF8 Encoding with emulate prepare
 <?php
 require_once("MsCommon_mid-refactor.inc");
 
+function checkError($e, $expMsg, $aeExpMsg)
+{
+    $error = $e->getMessage();
+    if (!isAEConnected()) {
+        if (strpos($error, $expMsg) === false) echo $error;
+    } else {
+        if (strpos($error, $aeExpMsg) === false) echo $error;
+    }
+}
+
 try {
     $inValue1 = pack('H*', '3C586D6C54657374446174613E4A65207072C3A966C3A87265206C27C3A974C3A93C2F586D6C54657374446174613E');
     $inValueLen = strlen($inValue1);
@@ -72,8 +82,10 @@ try {
     dropTable($conn, $tbname);
     unset($conn);
 } catch (PDOexception $e) {
-    print_r(($e->errorInfo)[2]);
-    echo "\n";
+    // binding parameters in the select list is not supported with Column Encryption
+    $expMsg = "Statement with emulate prepare on does not support output or input_output parameters.";
+    $aeExpMsg = "Invalid Descriptor Index";
+    checkError($e, $expMsg, $aeExpMsg);
 }
 ?>
 --EXPECT--
@@ -83,4 +95,3 @@ outValue is the same as inValue.
 outValue is the same as inValue.
 outValue is the same as inValue.
 outValue is the same as inValue.
-Statement with emulate prepare on does not support output or input_output parameters.
