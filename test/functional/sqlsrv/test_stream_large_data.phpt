@@ -3,11 +3,11 @@ streaming large amounts of data into a database and getting it out as a string e
 --SKIPIF--
 <?
 // locale must be set before 1st connection
-if ( !isWindows() ) {
+if (!isWindows() ) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
 
-php require('skipif.inc');
+require('skipif.inc');
 ?>
 --FILE--
 <?php
@@ -259,7 +259,7 @@ if (!isWindows()) {
 }
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
-if (isWindows() || isLocaleSupported()) {
+if (isLocaleSupported()) {
     setUTF8Data(false);
     runtest();
 }
