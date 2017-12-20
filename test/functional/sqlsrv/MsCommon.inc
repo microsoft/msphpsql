@@ -449,7 +449,7 @@ function isLocaleSupported()
     if (isWindows()) {
         return true;
     }
-    if (AE\isDataEncrypted()) {
+    if (AE\isColEncrypted()) {
         return false;
     }
     // now check ODBC version
