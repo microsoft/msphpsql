@@ -10,7 +10,7 @@ PHPT_EXEC=true
 if (!isWindows()) {
     setlocale(LC_ALL, "en_US.ISO-8859-1");
 }
-require('skipif_versions_old.inc'); 
+require('skipif_versions_old.inc');
 ?>
 --FILE--
 <?php
@@ -28,7 +28,7 @@ function fetchRow($minFetchMode, $maxFetchMode)
     setup();
     $tableName = 'TC45test';
     if (useUTF8Data()) {
-        $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
+        $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
     } else {
         $conn1 = AE\connect();
     }
@@ -89,7 +89,7 @@ function fetchObject($stmt, $rows, $fields, $useClass)
             $obj = sqlsrv_fetch_object($stmt);
         }
         if ($obj === false) {
-            fatalError("Row $i is missing");
+            fatalError("In fetchObject: Row $i is missing");
         }
         $values[$i] = $obj;
     }
@@ -103,7 +103,7 @@ function fetchArray($stmt, $rows, $fields)
     for ($i = 0; $i < $rows; $i++) {
         $row = sqlsrv_fetch_array($stmt);
         if ($row === false) {
-            fatalError("Row $i is missing");
+            fatalError("In fetchArray: Row $i is missing");
         }
         $values[$i] = $row;
     }
@@ -127,7 +127,13 @@ function checkData($rows, $fields, $actualValues, $expectedValues)
     }
 }
 
+// locale must be set before 1st connection
+if (!isWindows()) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+
 $testName = "Fetch - Object";
+
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
 startTest($testName);
 if (isLocaleSupported()) {
