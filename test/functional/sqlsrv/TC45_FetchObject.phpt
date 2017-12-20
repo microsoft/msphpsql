@@ -5,7 +5,13 @@ Verifies data retrieval via "sqlsrv_fetch_object".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+// locale must be set before 1st connection
+if (!isWindows()) {
+    setlocale(LC_ALL, "en_US.ISO-8859-1");
+}
+require('skipif_versions_old.inc'); 
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -19,13 +25,9 @@ class TestClass
 
 function fetchRow($minFetchMode, $maxFetchMode)
 {
-    $testName = "Fetch - Object";
-    startTest($testName);
-
     setup();
     $tableName = 'TC45test';
-
-    if (! isWindows()) {
+    if (useUTF8Data()) {
         $conn1 = AE\connect(array( 'CharacterSet'=>'UTF-8' ));
     } else {
         $conn1 = AE\connect();
@@ -73,8 +75,6 @@ function fetchRow($minFetchMode, $maxFetchMode)
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
 
@@ -127,12 +127,30 @@ function checkData($rows, $fields, $actualValues, $expectedValues)
     }
 }
 
+$testName = "Fetch - Object";
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        fetchRow(0, 2);
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
     fetchRow(0, 2);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Fetch - Object" completed successfully.
 Test "Fetch - Object" completed successfully.
