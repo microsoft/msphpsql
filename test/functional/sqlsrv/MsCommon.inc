@@ -98,8 +98,6 @@ function startTest($testName)
  */
 function endTest($testName)
 {
-    // reset the utf-8 flag
-    setUTF8Data(false);
     echo "Test \"$testName\" completed successfully.\n";
 }
 
