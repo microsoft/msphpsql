@@ -200,7 +200,7 @@ Note that [Microsoft ODBC Driver 17][odbc17] is required for Ubuntu 17 and Debia
     echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
     source ~/.bashrc
 
-**Ubuntu 17.10**
+**Ubuntu 17.10 (available upon the official release of ODBC driver 17)**
 
     sudo su 
     curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
@@ -239,7 +239,7 @@ Note that [Microsoft ODBC Driver 17][odbc17] is required for Ubuntu 17 and Debia
     sudo ACCEPT_EULA=Y apt-get install msodbcsql
     sudo apt-get install unixodbc-dev
 
-**Debian 9**
+**Debian 9 (available upon the official release of ODBC driver 17)**
 
     sudo su 
     curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
