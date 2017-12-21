@@ -20,7 +20,7 @@ try {
 --EXPECTREGEX--
 Array
 \(
-    \[(DriverDllName|DriverName)\] => (msodbcsql1[1-9].dll|libmsodbcsql-[1-9]{2}.[0-9].so.[0-9].[0-9])
+    \[(DriverDllName|DriverName)\] => (msodbcsql1[1-9].dll|libmsodbcsql-[1-9]{2}.[0-9].so.[0-9].[0-9]|libmsodbcsql.1[1-9].dylib)
     \[DriverODBCVer\] => [0-9]{1,2}\.[0-9]{1,2}
     \[DriverVer\] => [0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}
     \[ExtensionVer\] => [0-9].[0-9]\.[0-9](-(RC[0-9]?|preview))?(\.[0-9]+)?(\+[0-9]+)?
