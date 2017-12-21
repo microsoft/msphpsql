@@ -331,11 +331,7 @@ function getSeqPlaceholders($num)
 function isColEncrypted()
 {
     global $keystore;
-    if ($keystore === KEYSTORE_NONE) {
-        return false;
-    } else {
-        return true;
-    }
+    return ($keystore !== KEYSTORE_NONE);
 }
 
 /**
@@ -345,11 +341,7 @@ function isColEncrypted()
 function isDataEncrypted()
 {
     global $keystore, $dataEncrypted;
-    if ($keystore === KEYSTORE_NONE || !$dataEncrypted) {
-        return false;
-    } else {
-        return true;
-    }
+    return ($keystore !== KEYSTORE_NONE && $dataEncrypted);
 }
 
 /**
