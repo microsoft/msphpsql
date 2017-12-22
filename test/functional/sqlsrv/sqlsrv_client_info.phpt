@@ -15,7 +15,7 @@ var_dump( $client_info );
 --EXPECTREGEX--
 array\(4\) {
   \[\"(DriverDllName|DriverName)\"\]=>
-  (string\(15\) \"msodbcsql1[1-9].dll\"|string\(24\) \"libmsodbcsql-[1-9]{2}.[0-9].so.[0-9].[0-9]|string\(21\) \"libmsodbcsql.1[1-9].dylib\")
+  (string\(15\) \"msodbcsql1[1-9].dll\"|string\(24\) \"libmsodbcsql-[1-9]{2}.[0-9].so.[0-9].[0-9]\"|string\(21\) \"libmsodbcsql.1[1-9].dylib\")
   \[\"DriverODBCVer\"\]=>
   string\(5\) \"[0-9]{1,2}\.[0-9]{1,2}\"
   \[\"DriverVer\"\]=>
