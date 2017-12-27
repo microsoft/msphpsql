@@ -84,18 +84,6 @@ function isDaasMode()
     return ($daasMode ? true : false);
 }
 
-// function isAEQualified($conn)
-// {
-    // $msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
-    // $server_ver = sqlsrv_server_info($conn)['SQLServerVersion'];
-    // $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
-    // $msodbcsql_min = explode(".", $msodbcsql_ver)[1];
-    // if ($msodbcsql_maj < 17 || explode('.', $server_ver)[0] < 13) {
-        // return false;
-    // }
-    // return true;
-// }
-
 function startTest($testName)
 {
     if (traceMode()) {
@@ -455,10 +443,17 @@ function handleErrors()
 }
 
 // non-UTF8 locale support in ODBC 17 and above only
+// if AE enabled, only supported in Windows (AE limitations)
 function isLocaleSupported()
 {
+    if (isWindows()) {
+        return true;
+    }
+    if (AE\isColEncrypted()) {
+        return false;
+    }
+    // now check ODBC version
     $conn = AE\connect();
-
     $msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
     if (explode(".", $msodbcsql_ver)[0] < 17) {
         return false;
