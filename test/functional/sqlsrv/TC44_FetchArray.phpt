@@ -8,9 +8,7 @@ PHPT_EXEC=true
 --SKIPIF--
 <?
 // locale must be set before 1st connection
-if (!isWindows()) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
+setUSLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--
@@ -153,11 +151,7 @@ function checkData($row, $stmt, $index, $mode)
 }
 
 // locale must be set before 1st connection
-if (!isWindows()) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
-
-global $testName;
+setUSLocale();
 $testName = "Fetch - Array";
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
