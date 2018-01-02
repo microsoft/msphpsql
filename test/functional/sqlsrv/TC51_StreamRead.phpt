@@ -7,9 +7,7 @@ can be successfully retrieved as streams.
 PHPT_EXEC=true
 --SKIPIF--
 <?// locale must be set before 1st connection
-if (!isWindows()) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
+setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--
@@ -126,10 +124,7 @@ function checkData($col, $actual, $expected)
 }
 
 // locale must be set before 1st connection
-if (!isWindows()) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
-
+setUSAnsiLocale();
 global $testName;
 $testName = "Stream - Read";
 

@@ -442,6 +442,16 @@ function handleErrors()
     }
 }
 
+function setUSAnsiLocale()
+{
+    if (!isWindows()) {
+        // macOS the locale names are different in Linux or macOS
+        $locale = strtoupper(PHP_OS) === 'LINUX' ? "en_US.ISO-8859-1" : "en_US.ISO8859-1";
+        
+        setlocale(LC_ALL, $locale);
+    }
+}
+
 // non-UTF8 locale support in ODBC 17 and above only
 // if AE enabled, only supported in Windows (AE limitations)
 function isLocaleSupported()
