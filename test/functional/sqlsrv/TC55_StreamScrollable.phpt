@@ -7,7 +7,7 @@ PHPT_EXEC=true
 --SKIPIF--
 <?
 // locale must be set before 1st connection
-setUSLocale();
+setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--
@@ -161,7 +161,7 @@ function checkData($col, $actual, $expected)
 }
 
 // locale must be set before 1st connection
-setUSLocale();
+setUSAnsiLocale();
 $testName = "Stream - Scrollable";
 
 // error message expected with AE enabled

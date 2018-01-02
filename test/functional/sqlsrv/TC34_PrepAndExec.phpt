@@ -8,7 +8,7 @@ PHPT_EXEC=true
 --SKIPIF--
 <?php 
 // locale must be set before 1st connection
-setUSLocale();
+setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--
@@ -88,7 +88,7 @@ function prepareAndExecute($noPasses)
 }
 
 // locale must be set before 1st connection
-setUSLocale();
+setUSAnsiLocale();
 $testName = "Statement - Prepare and Execute";
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
