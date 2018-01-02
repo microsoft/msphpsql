@@ -3,7 +3,7 @@ streaming large amounts of data into a database and getting it out as a string e
 --SKIPIF--
 <?
 // locale must be set before 1st connection
-setUSLocale();
+setUSAnsiLocale();
 require('skipif.inc');
 ?>
 --FILE--
@@ -251,7 +251,7 @@ function CompareLengths($filesizes, $lens1, $lens2, $count, $useUTF8)
 }
 
 // locale must be set before 1st connection
-setUSLocale();
+setUSAnsiLocale();
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
 if (isLocaleSupported()) {

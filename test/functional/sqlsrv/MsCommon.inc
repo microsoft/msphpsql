@@ -442,7 +442,7 @@ function handleErrors()
     }
 }
 
-function setUSLocale()
+function setUSAnsiLocale()
 {
     if (!isWindows()) {
         // macOS the locale names are different in Linux or macOS

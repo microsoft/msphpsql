@@ -5,7 +5,7 @@ PHPT_EXEC=true
 --SKIPIF--
 <?
 // locale must be set before 1st connection
-setUSLocale();
+setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--
@@ -95,7 +95,7 @@ function checkData($col, $actual, $expected)
     return ($success);
 }
 
-setUSLocale();
+setUSAnsiLocale();
 $testName = "Fetch - Field Data";
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
