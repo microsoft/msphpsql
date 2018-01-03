@@ -59,7 +59,7 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver for SQL Server to "
         "communicate with SQL Server. Access the following URL to download the ODBC Driver for SQL Server "
         "for %1!s!: "
-        "http://go.microsoft.com/fwlink/?LinkId=163712", -1, true }
+        "https://go.microsoft.com/fwlink/?LinkId=163712", -1, true }
     },  
     {
         SQLSRV_ERROR_ZEND_HASH,
