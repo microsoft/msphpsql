@@ -125,7 +125,7 @@ SQLSTATE\[IMSSP\]: A read-only attribute was designated on the PDO object.
 Get Result PDO::ATTR_CLIENT_VERSION :
 array\(4\) {
   \[\"(DriverDllName|DriverName)\"\]=>
-  string\(15\) \"msodbcsql[0-9]{2}\.dll|string\(24\) \"libmsodbcsql-[0-9]{2}\.[0-9]\.so\.[0-9]\.[0-9]\"
+  (string\([0-9]+\) \"msodbcsql1[1-9].dll\"|string\([0-9]+\) \"(libmsodbcsql-[0-9]{2}\.[0-9]\.so\.[0-9]\.[0-9]|libmsodbcsql.[0-9]{2}.dylib)\")
   \["DriverODBCVer"\]=>
   string\(5\) \"[0-9]{1,2}\.[0-9]{1,2}\"
   \["DriverVer"\]=>
