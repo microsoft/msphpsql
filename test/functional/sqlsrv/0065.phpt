@@ -78,8 +78,11 @@ if ($t === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != "So?e sä???? ?SCII-te×t") {
-    die("varchar(100) doesn't match So?e sä???? ?SCII-te×t");
+// $t may be different in Windows and other platforms
+// what matters is that there are some '?' in $t 
+$arr = explode('?', $t);
+if (count($arr) == 1) {
+    die("varchar(100) value \'$t\' is unexpected");
 }
 
 $t = sqlsrv_get_field($s, 1, SQLSRV_PHPTYPE_STRING('utf-8'));
@@ -87,7 +90,7 @@ if ($t === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("nvarchar(100) doesn't match the inserted UTF-8 text.");
 }
 
@@ -96,7 +99,7 @@ if ($t === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("nvarchar(max) doesn't match the inserted UTF-8 text.");
 }
 
@@ -129,7 +132,7 @@ if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("Incorrect results from Utf8OutProc\n");
 }
 
@@ -148,7 +151,7 @@ if ($s === false) {
 // retrieve all the results
 while (sqlsrv_next_result($s));
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("Incorrect results from Utf8OutWithResultsetProc\n");
 }
 
@@ -169,7 +172,7 @@ if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("Incorrect results from Utf8InOutProc 1\n");
 }
 
