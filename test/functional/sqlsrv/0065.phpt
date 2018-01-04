@@ -78,11 +78,16 @@ if ($t === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-// $t may be different in Windows and other platforms
-// what matters is that there are some '?' in $t 
-$arr = explode('?', $t);
-if (count($arr) == 1) {
-    die("varchar(100) value \'$t\' is unexpected");
+// If connected with AE, $t may be different in Windows and other platforms
+// this is a workaround for now -- to make sure there are some '?' in $t 
+if (!AE\isColEncrypted() && $t !== "So?e sä???? ?SCII-te×t") {
+    die("varchar(100) \'$t\' doesn't match So?e sä???? ?SCII-te×t");
+} else {
+    $arr = explode('?', $t);
+    if (count($arr) == 1) {
+        // this means there is no question mark in $t
+        die("varchar(100) value \'$t\' is unexpected");
+    }
 }
 
 $t = sqlsrv_get_field($s, 1, SQLSRV_PHPTYPE_STRING('utf-8'));
