@@ -145,6 +145,7 @@ endTest($testName);
 startTest($testName);
 try {
     setUTF8Data(true);
+    resetLocaleToDefault();
     fetchRow(0, 2);
 } catch (Exception $e) {
     echo $e->getMessage();

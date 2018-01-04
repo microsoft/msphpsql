@@ -264,6 +264,7 @@ else {
 
 // test utf8
 setUTF8Data(true);
+resetLocaleToDefault();
 runtest();
 
 ?>
