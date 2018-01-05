@@ -35,10 +35,10 @@ if test "$PHP_SQLSRV" != "no"; then
 
   HOST_OS_ARCH=`uname`
   if test "${HOST_OS_ARCH}" = "Darwin"; then
-      PDO_SQLSRV_SHARED_LIBADD="$PDO_SQLSRV_SHARED_LIBADD -Wl,-bind_at_load"
+      SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-bind_at_load"
       MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion`
   else
-      PDO_SQLSRV_SHARED_LIBADD="$PDO_SQLSRV_SHARED_LIBADD -Wl,-z,now"
+      SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-z,now"
   fi
 
   PHP_REQUIRE_CXX()

@@ -35,7 +35,7 @@
 // for stable releases should be empty
 // "-RC" for release candidates
 // "-preview" for ETP 
-#define SEMVER_PRERELEASE "RC"
+#define SEMVER_PRERELEASE "RC1"
 // Semantic versioning build metadata, build meta data is not counted in precedence order.
 #define SEMVER_BUILDMETA
 

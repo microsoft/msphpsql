@@ -6,20 +6,20 @@ retrieving fields from a table including rows with all supported SQL types (28 t
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+require('skipif_versions_old.inc');
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function fetchFields()
 {
-    $testName = "Fetch - Field";
-    startTest($testName);
-
     setup();
     $tableName = 'TC42test';
-
-    if (! isWindows()) {
+    if (useUTF8Data()) {
         $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
     } else {
         $conn1 = AE\connect();
@@ -63,16 +63,36 @@ function fetchFields()
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+$testName = "Fetch - Field";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        fetchFields();
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
+    resetLocaleToDefault();
     fetchFields();
 } catch (Exception $e) {
     echo $e->getMessage();
 }
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Fetch - Field" completed successfully.
 Test "Fetch - Field" completed successfully.

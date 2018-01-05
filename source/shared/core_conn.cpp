@@ -50,7 +50,7 @@ const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
 // ODBC driver names.
 // the order of this list should match the order of DRIVER_VERSION enum
-std::vector<std::string> CONNECTION_STRING_DRIVER_NAME{ "Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};", "Driver={ODBC Driver 17 for SQL Server};" };
+std::vector<std::string> CONNECTION_STRING_DRIVER_NAME{ "Driver={ODBC Driver 17 for SQL Server};", "Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};" };
 
 // default options if only the server is specified
 const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes};";
@@ -183,11 +183,11 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
             // https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server#microsoft-odbc-driver-11-for-sql-server-on-linux
 
             DRIVER_VERSION odbc_version = ODBC_DRIVER_UNKNOWN;
-            if( core_search_odbc_driver_unix( ODBC_DRIVER_13 ) ) {
-                odbc_version = ODBC_DRIVER_13;
-            } 
-            else if ( core_search_odbc_driver_unix( ODBC_DRIVER_17 ) ) {
+            if( core_search_odbc_driver_unix( ODBC_DRIVER_17 ) ) {
                 odbc_version = ODBC_DRIVER_17;
+            } 
+            else if ( core_search_odbc_driver_unix( ODBC_DRIVER_13 ) ) {
+                odbc_version = ODBC_DRIVER_13;
             }
 
             CHECK_CUSTOM_ERROR( odbc_version == ODBC_DRIVER_UNKNOWN, conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch() ) {

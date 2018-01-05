@@ -6,18 +6,23 @@ Validates that a prepared statement can be successfully executed more than once.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+require('skipif_versions_old.inc');
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function prepareAndExecute($noPasses)
 {
-    $testName = "Statement - Prepare and Execute";
-    startTest($testName);
-
     setup();
-    $conn1 = AE\connect();
+    if (useUTF8Data()) {
+        $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
+    } else {
+        $conn1 = AE\connect();
+    }
 
     $tableName = 'TC34test';
     AE\createTestTable($conn1, $tableName);
@@ -80,20 +85,36 @@ function prepareAndExecute($noPasses)
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
-if (!isWindows()) {
-    setUTF8Data(true);
+// locale must be set before 1st connection
+setUSAnsiLocale();
+$testName = "Statement - Prepare and Execute";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        prepareAndExecute(5);
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
 }
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
+    resetLocaleToDefault();
     prepareAndExecute(5);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
-setUTF8Data(false);
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Statement - Prepare and Execute" completed successfully.
 Test "Statement - Prepare and Execute" completed successfully.

@@ -7,9 +7,8 @@ PHPT_EXEC=true
 --SKIPIF--
 <?
 // locale must be set before 1st connection
-if ( !isWindows() ) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
+setUSAnsiLocale();
+require('skipif_versions_old.inc');
 ?>
 --FILE--
 <?php
@@ -162,11 +161,7 @@ function checkData($col, $actual, $expected)
 }
 
 // locale must be set before 1st connection
-if (!isWindows()) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
-
-global $testName;
+setUSAnsiLocale();
 $testName = "Stream - Scrollable";
 
 // error message expected with AE enabled
@@ -175,7 +170,7 @@ $errMessage = 'Connection with Column Encryption enabled does not support fetchi
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
 startTest($testName);
-if (isWindows() || isLocaleSupported()) {
+if (isLocaleSupported()) {
     try {
         setUTF8Data(false);
         streamScroll(20, 1);
@@ -189,6 +184,7 @@ endTest($testName);
 startTest($testName);
 try {
     setUTF8Data(true);
+    resetLocaleToDefault();
     streamScroll(20, 1);
 } catch (Exception $e) {
     echo $e->getMessage();

@@ -5,19 +5,20 @@ Verifies data retrieval with scrollable result sets.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+require('skipif_versions_old.inc'); 
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function fetchRow($noRows)
 {
-    $testName = "Fetch - Scrollable";
-    startTest($testName);
-
     setup();
     $tableName = 'TC48test';
-    if (! isWindows()) {
+    if (useUTF8Data()) {
         $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
     } else {
         $conn1 = AE\connect();
@@ -72,8 +73,6 @@ function fetchRow($noRows)
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
 function fetchArray($stmt, $rows, $fields)
@@ -135,12 +134,34 @@ function checkData($rows, $fields, $actualValues, $expectedValues)
     }
 }
 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+$testName = "Fetch - Scrollable";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        fetchRow(10);
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
+    resetLocaleToDefault();
     fetchRow(10);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Fetch - Scrollable" completed successfully.
 Test "Fetch - Scrollable" completed successfully.

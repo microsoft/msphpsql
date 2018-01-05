@@ -7,9 +7,8 @@ PHPT_EXEC=true
 --SKIPIF--
 <?
 // locale must be set before 1st connection
-if ( !isWindows() ) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
+setUSAnsiLocale();
+require('skipif_versions_old.inc');
 ?>
 --FILE--
 <?php
@@ -85,16 +84,12 @@ function fetchFields()
 }
 
 // locale must be set before 1st connection
-if (!isWindows()) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
-
-global $testName;
+setUSAnsiLocale();
 $testName = "Fetch - Next Result";
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
 startTest($testName);
-if (isWindows() || isLocaleSupported()) {
+if (isLocaleSupported()) {
     try {
         setUTF8Data(false);
         fetchFields();
@@ -108,6 +103,7 @@ endTest($testName);
 startTest($testName);
 try {
     setUTF8Data(true);
+    resetLocaleToDefault();
     fetchFields();
 } catch (Exception $e) {
     echo $e->getMessage();
