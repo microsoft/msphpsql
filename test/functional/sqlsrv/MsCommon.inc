@@ -452,6 +452,14 @@ function setUSAnsiLocale()
     }
 }
 
+function resetLocaleToDefault()
+{
+    // Like setUSAnsiLocale() above, this method is only needed in non-Windows environment
+    if (!isWindows()) {
+        setlocale(LC_ALL, null);
+    }
+}
+
 // non-UTF8 locale support in ODBC 17 and above only
 // if AE enabled, only supported in Windows (AE limitations)
 function isLocaleSupported()

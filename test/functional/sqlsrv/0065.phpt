@@ -78,8 +78,16 @@ if ($t === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != "So?e sä???? ?SCII-te×t") {
-    die("varchar(100) doesn't match So?e sä???? ?SCII-te×t");
+// If connected with AE, $t may be different in Windows and other platforms
+// this is a workaround for now -- to make sure there are some '?' in $t 
+if (!AE\isColEncrypted() && $t !== "So?e sä???? ?SCII-te×t") {
+    die("varchar(100) \'$t\' doesn't match So?e sä???? ?SCII-te×t");
+} else {
+    $arr = explode('?', $t);
+    if (count($arr) == 1) {
+        // this means there is no question mark in $t
+        die("varchar(100) value \'$t\' is unexpected");
+    }
 }
 
 $t = sqlsrv_get_field($s, 1, SQLSRV_PHPTYPE_STRING('utf-8'));
@@ -87,7 +95,7 @@ if ($t === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("nvarchar(100) doesn't match the inserted UTF-8 text.");
 }
 
@@ -96,7 +104,7 @@ if ($t === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("nvarchar(max) doesn't match the inserted UTF-8 text.");
 }
 
@@ -129,7 +137,7 @@ if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("Incorrect results from Utf8OutProc\n");
 }
 
@@ -148,7 +156,7 @@ if ($s === false) {
 // retrieve all the results
 while (sqlsrv_next_result($s));
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("Incorrect results from Utf8OutWithResultsetProc\n");
 }
 
@@ -169,7 +177,7 @@ if ($s === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-if ($t != $utf8) {
+if ($t !== $utf8) {
     die("Incorrect results from Utf8InOutProc 1\n");
 }
 
