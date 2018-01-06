@@ -279,9 +279,12 @@ Note that [Microsoft ODBC Driver 17][odbc17] is required for Ubuntu 17 and Debia
 
 *Note: You can run `sudo pecl search sqlsrv` to search for the latest releases and `sudo pecl install sqlsrv-[version]` to install a specific version. PECL installs the stable version when version is not specified. Drivers are Mac-compatible starting from `4.1.7preview` release.
 
-On Ubuntu, Debian, and SUSE systems only, run:
+On Linux systems, run:
 
-    sudo pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system
+    sudo su
+    echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/30-pdo_sqlsrv.ini
+    echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
+    exit
 
 On macOS, run:
 
