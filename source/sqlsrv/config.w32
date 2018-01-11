@@ -35,6 +35,7 @@ if( PHP_SQLSRV != "no" ) {
             ADD_FLAG( "CFLAGS_SQLSRV", "/EHsc" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/GS" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/Zi" );
+            ADD_FLAG( "CFLAGS_SQLSRV", "/GL" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/O2" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/guard:cf" );
             EXTENSION("sqlsrv", sqlsrv_src_class , PHP_SQLSRV_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
