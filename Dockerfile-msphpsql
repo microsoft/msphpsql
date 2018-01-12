@@ -56,7 +56,7 @@ WORKDIR $PHPSQLDIR/source/
 RUN chmod +x ./packagize.sh
 RUN /bin/bash -c "./packagize.sh"
 
-RUN echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+RUN echo "extension = pdo_sqlsrv.so" >> /etc/php/7.0/cli/conf.d/20-pdo_sqlsrv.ini
 RUN echo "extension = sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
 
 WORKDIR $PHPSQLDIR/source/sqlsrv
