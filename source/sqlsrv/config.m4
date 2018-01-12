@@ -29,14 +29,18 @@ if test "$PHP_SQLSRV" != "no"; then
     fi
         AC_MSG_RESULT($sqlsrv_inc_path)    
         
-  HOST_OS_ARCH=`uname`
-  if test "${HOST_OS_ARCH}" = "Darwin"; then
-      MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion` 
-  fi
-  
   CXXFLAGS="$CXXFLAGS -std=c++11"
   CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
   CXXFLAGS="$CXXFLAGS -fstack-protector"
+
+  HOST_OS_ARCH=`uname`
+  if test "${HOST_OS_ARCH}" = "Darwin"; then
+      SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-bind_at_load"
+      MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion`
+  else
+      SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-z,now"
+  fi
+
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, SQLSRV_SHARED_LIBADD)
