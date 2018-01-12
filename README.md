@@ -442,15 +442,9 @@ For samples, please see the sample folder.  For setup instructions, see [here](h
   - Local encodings other than UTF-8 are not supported, and SQLSRV_ENC_CHAR only supports ASCII characters with ASCII code of 0 to 127.
 
 ## Known Issues
--  User defined data types and SQL_VARIANT.
-- Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
-- Linux
-   - The following features are not supported with connection pooling:
-     - PDO is only supported with unixODBC 2.3.1.
-     - Unicode connection strings
-     - sqlsrv_server_info and sqlsrv_client_info return false 
-     - In certain scenarios a generic error message maybe returned instead of a specific error when pooling is disabled
-     - When retrieving data from columns with a data type of XML, varchar(max), nvarchar(max), or varbinary(max) no data maybe returned or the data maybe truncated depending on the length of the data in the source table.
+- When pooling is enabled in Linux or macOS
+   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostics information, such as error messages, warnings and informative messages
+   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#connection-pooling-in-linux-and-mac)
 
 ## Version number
 Version number of PHP drivers follow the [semantic versioning](http://semver.org/):
