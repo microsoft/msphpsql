@@ -64,7 +64,6 @@ struct col_cache {
 };
 
 const int INITIAL_FIELD_STRING_LEN = 2048;          // base allocation size when retrieving a string field
-const int INITIAL_AE_FIELD_STRING_LEN = 8000;       // base allocation size when retrieving a string field when AE is enabled
 
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
 const unsigned int UTF8_MIDBYTE_MASK = 0xc0;
@@ -117,7 +116,6 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
                                         _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits,
                                         _Out_writes_(buffer_len) SQLPOINTER& buffer, _Out_ SQLLEN& buffer_len TSRMLS_DC );
 void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits );
-bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt );
 void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param TSRMLS_DC );
 // send all the stream data
 void send_param_streams( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
@@ -137,8 +135,6 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     past_fetch_end( false ),
     current_results( NULL ),
     cursor_type( SQL_CURSOR_FORWARD_ONLY ),
-    fwd_row_index( -1 ),
-    curr_result_set( 0 ),
     has_rows( false ),
     fetch_called( false ),
     last_field_index( -1 ),
@@ -221,7 +217,6 @@ void sqlsrv_stmt::free_param_data( TSRMLS_D )
 void sqlsrv_stmt::new_result_set( TSRMLS_D )
 {
     this->fetch_called = false;
-    this->fwd_row_index = -1;
     this->has_rows = false;
     this->past_next_result_end = false;
     this->past_fetch_end = false;
@@ -858,10 +853,6 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
         // SQLFetchScroll uses a 1 based offset, otherwise for relative, just use the fetch_offset provided.
         SQLRETURN r = stmt->current_results->fetch( fetch_orientation, ( fetch_orientation == SQL_FETCH_RELATIVE ) ? fetch_offset : fetch_offset + 1 TSRMLS_CC );
 
-        // when AE is enabled, will keep track of the number of rows being fetched so far such that the cursor can be reset back to its original position when getting stream data
-        if ( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY && stmt->conn->ce_option.enabled == true ) {
-            stmt->fwd_row_index++;
-        }
         if( r == SQL_NO_DATA ) {
             // if this is a forward only cursor, mark that we've passed the end so future calls result in an error
             if( stmt->cursor_type == SQL_CURSOR_FORWARD_ONLY ) {
@@ -1121,13 +1112,9 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
 
             // mark we are past the end of all results
             stmt->past_next_result_end = true;
-
-            // reset the current active result set
-            stmt->curr_result_set = 0;
             return;
         }
 
-        stmt->curr_result_set++;
         stmt->new_result_set( TSRMLS_C );
     }
     catch( core::CoreException& e ) {
@@ -1711,10 +1698,6 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         // for how these fields are used.
         case SQLSRV_PHPTYPE_STREAM:
         {
-            CHECK_CUSTOM_ERROR(stmt->conn->ce_option.enabled, stmt, SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH) {
-                throw core::CoreException();
-            }
-
             php_stream* stream = NULL;
             sqlsrv_stream* ss = NULL;
             SQLLEN sql_type;
@@ -2246,11 +2229,6 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             break;
         }
 
-        if( stmt->conn->ce_option.enabled ) {
-            // when AE is enabled, increase the intial field len
-            intial_field_len = INITIAL_AE_FIELD_STRING_LEN;
-        }
-
         col_cache* cached = NULL;
         if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
             sql_field_type = cached->sql_type;
@@ -2321,32 +2299,18 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 
                             field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
-                            // reset AE stream fetch buffer
-                            if ( reset_ae_stream_cursor( stmt )){
-                                // fetch the original column again with a bigger buffer length
-                                r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, field_len_temp + extra,
-                                    &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
-                                // if field_len_temp was bit enough to hold all data, dummy_field_len contain the actual amount retrieved,
-                                // not SQL_NO_TOTAL
-                                if ( dummy_field_len != SQL_NO_TOTAL )
-                                    field_len_temp = dummy_field_len;
-                                else
-                                    field_len_temp += initial_field_len;
-                            }
-                            else {
-                                field_len_temp -= initial_field_len;
+                            field_len_temp -= initial_field_len;
 
-                                // Get the rest of the data.
-                                r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + initial_field_len,
-                                    field_len_temp + extra, &dummy_field_len,
-                                    false /*handle_warning*/ TSRMLS_CC );
-                                // the last packet will contain the actual amount retrieved, not SQL_NO_TOTAL
-                                // so we calculate the actual length of the string with that.
-                                if ( dummy_field_len != SQL_NO_TOTAL )
-                                    field_len_temp += dummy_field_len;
-                                else
-                                    field_len_temp += initial_field_len;
-                            }
+                            // Get the rest of the data.
+                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + initial_field_len,
+                                field_len_temp + extra, &dummy_field_len,
+                                false /*handle_warning*/ TSRMLS_CC );
+                            // the last packet will contain the actual amount retrieved, not SQL_NO_TOTAL
+                            // so we calculate the actual length of the string with that.
+                            if ( dummy_field_len != SQL_NO_TOTAL )
+                                field_len_temp += dummy_field_len;
+                            else
+                                field_len_temp += initial_field_len;
 
                             if( r == SQL_SUCCESS_WITH_INFO ) {
                                 core::SQLGetDiagField( stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len
@@ -2360,22 +2324,14 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                         // allocate field_len_temp (which is the field length retrieved from the first SQLGetData
                         field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
-                        // reset AE stream fetch buffer
-                        if ( reset_ae_stream_cursor( stmt ) ) {
-                            // fetch the original column again with a bigger buffer length
-                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp, field_len_temp + extra,
-                                &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
-                        }
-                        else {
-                            // We have already recieved intial_field_len size data.
-                            field_len_temp -= intial_field_len;
+                        // We have already recieved intial_field_len size data.
+                        field_len_temp -= intial_field_len;
 
-                            // Get the rest of the data.
-                            r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + intial_field_len,
-                                field_len_temp + extra, &dummy_field_len,
-                                true /*handle_warning*/ TSRMLS_CC );
-                            field_len_temp += intial_field_len;
-                        }
+                        // Get the rest of the data.
+                        r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + intial_field_len,
+                            field_len_temp + extra, &dummy_field_len,
+                            true /*handle_warning*/ TSRMLS_CC );
+                        field_len_temp += intial_field_len;
 
                         if( dummy_field_len == SQL_NULL_DATA ) {
                             field_value = NULL;
@@ -2635,28 +2591,6 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     if( stmt->param_ind_ptrs[ paramno ] > buffer_len - (elem_size - buffer_null_extra)) {
         stmt->param_ind_ptrs[ paramno ] = buffer_len - (elem_size - buffer_null_extra);
     }
-}
-
-bool reset_ae_stream_cursor( _Inout_ sqlsrv_stmt* stmt ) {
-    // only handled differently when AE is on because AE does not support streaming
-    // AE only works with SQL_CURSOR_FORWARD_ONLY for max types
-    if (stmt->conn->ce_option.enabled == true && stmt->current_results->odbc->cursor_type == SQL_CURSOR_FORWARD_ONLY) {
-        // close and reopen the cursor
-        core::SQLCloseCursor(stmt->current_results->odbc);
-        core::SQLExecute(stmt);
-
-        // advance to the previous active result set
-        for (int j = 0; j < stmt->curr_result_set; j++) {
-            core::SQLMoreResults(stmt);
-        }
-
-        // FETCH_NEXT until the cursor reaches the row that it was at
-        for (int i = 0; i <= stmt->fwd_row_index; i++) {
-            core::SQLFetchScroll(stmt->current_results->odbc, SQL_FETCH_NEXT, 0);
-        }
-        return true;
-    }
-    return false;
 }
 
 void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits ) {
