@@ -23,8 +23,6 @@ function runTest($fieldType)
     sqlsrv_fetch($stmt)
         || die(print_r(sqlsrv_errors(), true));
 
-    // Do not support getting stream if AE enabled, so expect 
-    // it to fail with the correct error message
     $stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM("char"));
     if ($stream) {
         stream_filter_append($originalStream, "convert.base64-encode")
@@ -37,11 +35,7 @@ function runTest($fieldType)
             }
         }
     } else {
-        if (AE\isColEncrypted()) {
-            verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
-        } else {
-            fatalError('Fetching data stream failed!');
-        }
+        fatalError('Fetching data stream failed!');
     }
     dropTable($conn, $params['tableName']);
     
