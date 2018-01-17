@@ -2303,8 +2303,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 
                             // Get the rest of the data.
                             r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + initial_field_len,
-                                field_len_temp + extra, &dummy_field_len,
-                                false /*handle_warning*/ TSRMLS_CC );
+                                field_len_temp + extra, &dummy_field_len, false /*handle_warning*/ TSRMLS_CC );
                             // the last packet will contain the actual amount retrieved, not SQL_NO_TOTAL
                             // so we calculate the actual length of the string with that.
                             if ( dummy_field_len != SQL_NO_TOTAL )
@@ -2329,8 +2328,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 
                         // Get the rest of the data.
                         r = stmt->current_results->get_data( field_index + 1, c_type, field_value_temp + intial_field_len,
-                            field_len_temp + extra, &dummy_field_len,
-                            true /*handle_warning*/ TSRMLS_CC );
+                            field_len_temp + extra, &dummy_field_len, true /*handle_warning*/ TSRMLS_CC );
                         field_len_temp += intial_field_len;
 
                         if( dummy_field_len == SQL_NULL_DATA ) {
