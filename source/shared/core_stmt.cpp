@@ -2323,7 +2323,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                         // allocate field_len_temp (which is the field length retrieved from the first SQLGetData
                         field_value_temp = static_cast<char*>( sqlsrv_realloc( field_value_temp, field_len_temp + extra + 1 ));
 
-                        // We have already recieved intial_field_len size data.
+                        // We have already received intial_field_len size data.
                         field_len_temp -= intial_field_len;
 
                         // Get the rest of the data.
@@ -2592,8 +2592,8 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
 }
 
 void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits ) {
+    // 38 is the maximum length of a stringified decimal number
     size_t maxDecimalPrecision = 38;
-    // maxDecimalStrLen is the maximum length of a stringified decimal number
     // 6 is derived from: 1 for '.'; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
     //                    1 for sign of scientific exponent; 2 for length of scientific exponent
     // if the length is greater than maxDecimalStrLen, do not change the string
