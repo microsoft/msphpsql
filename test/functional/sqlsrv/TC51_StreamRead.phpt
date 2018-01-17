@@ -68,7 +68,7 @@ function verifyStream($stmt, $row, $colIndex)
             }
         }
         if ($stream === false) {
-            verifyStreamError("Failed to read field $col: $type");
+            fatalError("Failed to read field $col: $type");
         } else {
             $value = '';
             if ($stream) {
@@ -84,16 +84,6 @@ function verifyStream($stmt, $row, $colIndex)
             }
             traceData($type, "".strlen($value)." bytes");
         }
-    }
-}
-
-function verifyStreamError($message)
-{
-    global $errState, $errMessage;
-    if (AE\isColEncrypted()) {
-        verifyError(sqlsrv_errors()[0], $errState, $errMessage);
-    } else {
-        fatalError($message);
     }
 }
 
@@ -127,10 +117,6 @@ function checkData($col, $actual, $expected)
 setUSAnsiLocale();
 global $testName;
 $testName = "Stream - Read";
-
-// error message expected with AE enabled
-$errState = 'IMSSP';
-$errMessage = 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.';
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
 startTest($testName);

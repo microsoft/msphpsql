@@ -1380,8 +1380,6 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool past_fetch_end;                  // Core_sqlsrv_fetch sets this field when the statement goes beyond the last row
     sqlsrv_result_set* current_results;   // Current result set
     SQLULEN cursor_type;                  // Type of cursor for the current result set
-    int fwd_row_index;                    // fwd_row_index is the current row index, SQL_CURSOR_FORWARD_ONLY
-    int curr_result_set;                  // the current active result set, 0 by default but will be incremented by core_sqlsrv_next_result
     bool has_rows;                        // Has_rows is set if there are actual rows in the row set
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field

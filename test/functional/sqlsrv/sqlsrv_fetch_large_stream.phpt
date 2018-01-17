@@ -35,23 +35,15 @@ if (!sqlsrv_fetch($stmt)) {
 $stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
 
 $success = false;
-if ($stream === false) {
-    $error = sqlsrv_errors()[0];
-    if (AE\isColEncrypted() && $error['SQLSTATE'] === "IMSSP" && $error['code'] === -109 &&
-        $error['message'] === "Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.") {
-        $success = true;
-    }
-} else {
+if ($stream !== false) {
     $value = '';
-    if (!AE\isColEncrypted()) {
-        $num = 0;
-        while (!feof($stream)) {
-            $value .= fread($stream, 8192);
-        }
-        fclose($stream);
-        if (checkData($value, $inValue)) {  // compare the data to see if they match!
-            $success = true;
-        }
+    $num = 0;
+    while (!feof($stream)) {
+        $value .= fread($stream, 8192);
+    }
+    fclose($stream);
+    if (checkData($value, $inValue)) {  // compare the data to see if they match!
+        $success = true;
     }
 }
 if ($success) {
