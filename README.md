@@ -435,19 +435,8 @@ The drivers are distributed as shared binary extensions for PHP. They are availa
 ## Sample Code
 For samples, please see the sample folder.  For setup instructions, see [here](https://docs.microsoft.com/en-us/azure/sql-database/sql-database-develop-php-simple).
 
-## Limitations
-
-- This release contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5.
-- Binding output parameters using emulate prepare is not supported.
-- Linux
-  - ODBC 3.52 is supported but not 3.8.
-  - Connection using named instances using '\' is not supported.
-  - Local encodings other than UTF-8 are not supported, and SQLSRV_ENC_CHAR only supports ASCII characters with ASCII code of 0 to 127.
-
-## Known Issues
-- When pooling is enabled in Linux or macOS
-   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostics information, such as error messages, warnings and informative messages
-   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#connection-pooling-in-linux-and-mac)
+## Limitations and Known Issues
+Please refer to [Releases](https://github.com/Microsoft/msphpsql/releases) for the latest limitations and known issues.
 
 ## Version number
 Version number of PHP drivers follow the [semantic versioning](http://semver.org/):
