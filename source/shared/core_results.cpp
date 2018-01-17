@@ -83,7 +83,7 @@ bool get_bit( _In_ void* ptr, _In_ unsigned int bit )
 
 // read in LOB field during buffered result creation
 SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_buffered_result_set::meta_data& meta,
-                           _In_ zend_long mem_used, _In_ size_t row_count TSRMLS_DC );
+                           _In_ zend_long mem_used TSRMLS_DC );
 
 // dtor for each row in the cache
 void cache_row_dtor( _In_ zval* data );
@@ -687,7 +687,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
 
                             out_buffer_length = &out_buffer_temp;
                             SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[ meta[i].offset ] );
-                            *lob_addr = read_lob_field( stmt, i, meta[i], mem_used, row_count TSRMLS_CC );
+                            *lob_addr = read_lob_field( stmt, i, meta[i], mem_used TSRMLS_CC );
                             // a NULL pointer means NULL field
                             if( *lob_addr == NULL ) {
                                 *out_buffer_length = SQL_NULL_DATA;
@@ -1498,7 +1498,7 @@ void cache_row_dtor( _In_ zval* data )
 }
 
 SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_buffered_result_set::meta_data& meta, 
-                           _In_ zend_long mem_used, _In_ size_t row_count TSRMLS_DC )
+                           _In_ zend_long mem_used TSRMLS_DC )
 {
     SQLSMALLINT extra = 0;
     SQLULEN* output_buffer_len = NULL;
@@ -1563,19 +1563,7 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
 
         SQLSRV_ASSERT( SQL_SUCCEEDED( r ), "Unknown SQL error not triggered" );
 
-        if ( stmt->conn->ce_option.enabled == true ) {
-            // cursor type SQLSRV_CURSOR_BUFFERED has to be FORWARD_ONLY
-            // thus has to close and reopen cursor to reset the cursor buffer
-            core::SQLCloseCursor(stmt);
-            core::SQLExecute(stmt);
-            // FETCH_NEXT until the cursor reaches the row that it was at
-            for (int i = 0; i <= row_count; i++) {
-                core::SQLFetchScroll(stmt, SQL_FETCH_NEXT, 0);
-            }
-        }
-        else {
-            already_read += to_read - already_read;
-        }
+        already_read += to_read - already_read;
         // if the type of the field returns the total to be read, we use that and preallocate the buffer
         if( last_field_len != SQL_NO_TOTAL ) {
 

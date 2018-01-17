@@ -114,11 +114,7 @@ binding streams using full syntax.
         echo "$name\n";
         $stream = sqlsrv_get_field($stmt, 3, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
         if (!$stream) {
-            if (AE\isColEncrypted()) {
-                verifyError(sqlsrv_errors()[0], 'IMSSP', 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.');
-            } else {
-                fatalError('Fetching data stream failed!');
-            }
+            fatalError('Fetching data stream failed!');
         } else {
             while (!feof($stream)) {
                 $str = fread($stream, 10000);

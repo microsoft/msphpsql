@@ -272,9 +272,6 @@ function runTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                 break;
 
             case 5:    // fetch fields
-                $errState = 'IMSSP';
-                $errMessage = 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.';
-
                 $stmt = execQuery($conn, $tableName, $prepared);
                 $numFields = sqlsrv_num_fields($stmt);
                 while (sqlsrv_fetch($stmt)) {
@@ -284,11 +281,7 @@ function runTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
                         $col = $i + 1;
 
                         if ($fld === false) {
-                            if (AE\isColEncrypted() && isStreamData($col)) {
-                                verifyError(sqlsrv_errors()[0], $errState, $errMessage);
-                            } else {
-                                fatalError("Field $i of row $rowCount is missing");
-                            }
+                            fatalError("Field $i of row $rowCount is missing");
                         }
                         unset($fld);
                     }
