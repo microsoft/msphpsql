@@ -41,8 +41,7 @@ function cursorScrollFetchRows($conn, $tableName)
         $stmt = $conn->prepare("SELECT * FROM $tableName ORDER BY c1_int", array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
     } else {
         // ORDER BY is not supported for encrypted columns
-        // scrollable cursor is not supported for encrypted tablee; use client side buffered cursor
-        $stmt = $conn->prepare("SELECT * FROM $tableName", array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
+        $stmt = $conn->prepare("SELECT * FROM $tableName", array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
     }
     $stmt->execute();
 

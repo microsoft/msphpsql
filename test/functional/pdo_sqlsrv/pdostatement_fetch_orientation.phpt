@@ -3,28 +3,20 @@ Test the fetch() method for different fetch orientations with PDO::ATTR_CURSOR s
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
+require_once("MsCommon_mid-refactor.inc");
 
-require_once 'MsCommon.inc';
-
-function FetchAll($execMode, $fetchMode)
-{
-    require_once 'MsCommon.inc';
-    require 'MsSetup.inc';
-
-    $testName = "PDO Statement - Fetch Scrollable";
-    StartTest($testName);
-
+try {
     $conn1 = connect();
 
     // Prepare test table
-    $dataCols = "id, val";
-    CreateTableEx($conn1, $tableName, "id int NOT NULL PRIMARY KEY, val VARCHAR(10)", null);
-    InsertRowEx($conn1, $tableName, $dataCols, "1, 'A'", null);
-    InsertRowEx($conn1, $tableName, $dataCols, "2, 'B'", null);
-    InsertRowEx($conn1, $tableName, $dataCols, "3, 'C'", null);
+    $tableName = "pdo_test_table";
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "val" => "varchar(10)"));
+    insertRow($conn1, $tableName, array("id" => 1, "val" => "A"));
+    insertRow($conn1, $tableName, array("id" => 2, "val" => "B"));
+    insertRow($conn1, $tableName, array("id" => 3, "val" => "C"));
 
     // Query table and retrieve data
     $stmt1 = $conn1->prepare( "SELECT val FROM $tableName", array( PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL ));
@@ -158,33 +150,15 @@ function FetchAll($execMode, $fetchMode)
     }
     
     // Cleanup
-    DropTable($conn1, $tableName);
-    $stmt1 = null;
-    $conn1 = null;
+    dropTable($conn1, $tableName);
+    unset($stmt1);
+    unset($conn1);
 
-    EndTest($testName);
+    echo "Test 'PDO Statement - Fetch Scrollable' completed successfully.\n";
+} catch (Exception $e) {
+    echo $e->getMessage();
 }
-
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-    try
-    {
-        FetchAll(false, PDO::FETCH_BOTH);
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-}
-
-Repro();
 
 ?>
 --EXPECT--
-Test "PDO Statement - Fetch Scrollable" completed successfully.
+Test 'PDO Statement - Fetch Scrollable' completed successfully.
