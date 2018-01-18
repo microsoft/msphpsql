@@ -433,7 +433,7 @@ You should be able to connect to your SQL Server/Azure SQL Database.
 The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
 
 ## Sample Code
-For samples, please see the sample folder.  For setup instructions, see [here](https://docs.microsoft.com/en-us/azure/sql-database/sql-database-develop-php-simple).
+For samples, please see the sample folder.  For setup instructions, see [here](https://docs.microsoft.com/en-us/sql/connect/php/code-samples-for-php-sql-driver).
 
 ## Limitations and Known Issues
 Please refer to [Releases](https://github.com/Microsoft/msphpsql/releases) for the latest limitations and known issues.
@@ -508,9 +508,9 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [blog]: http://blogs.msdn.com/b/sqlphp/
 
-[project]: https://github.com/Azure/msphpsql
+[project]: https://github.com/Microsoft/msphpsql
 
-[issues]: https://github.com/Azure/msphpsql/issues
+[issues]: https://github.com/Microsoft/msphpsql/issues
 
 [phpweb]: http://php.net
 
@@ -526,8 +526,6 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [odbcLinux]: https://msdn.microsoft.com/library/hh568454(v=sql.110).aspx
 
-[phpazure]: https://azure.microsoft.com/documentation/articles/sql-database-develop-php-simple-windows/
-
 [PHPMan]: http://php.net/manual/install.unix.php
 
 [LinuxDM]: https://msdn.microsoft.com/library/hh568449(v=sql.110).aspx
@@ -537,5 +535,3 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 [apr_source]: http://apr.apache.org/
 
 [httpdconf]: http://php.net/manual/en/install.unix.apache2.php
-
-[ODBCinstallers]: https://blogs.msdn.microsoft.com/sqlnativeclient/2016/09/06/preview-release-of-the-sql-server-cc-odbc-driver-13-0-0-for-linux
