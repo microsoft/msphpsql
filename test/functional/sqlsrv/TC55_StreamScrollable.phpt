@@ -29,57 +29,31 @@ function streamScroll($noRows, $startRow)
     AE\insertTestRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
-    // Always Encrypted feature does not support SQLSRV_CURSOR_STATIC
-    // https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation
-    if (AE\isColEncrypted()) {
-        $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
-    } else {
-        $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
-    }
+    $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
     $stmt1 = AE\executeQueryEx($conn1, $query, $options);
     $numFields = sqlsrv_num_fields($stmt1);
-    if (AE\isColEncrypted()) {
-        $row = $startRow;
-        while ($row <= $noRows) {
-            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_NEXT)) {
+    $row = $noRows;
+    while ($row >= 1) {
+        if ($row == $noRows) {
+            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_LAST)) {
                 fatalError("Failed to fetch row ".$row);
             }
-            trace("\nStreaming row $row:\n");
-            for ($j = 0; $j < $numFields; $j++) {
-                $col = $j + 1;
-                if (!isUpdatable($col)) {
-                    continue;
-                }
-                if (isStreamable($col)) {
-                    verifyStream($stmt1, $startRow + $row - 1, $j);
-                }
+        } else {
+            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_PRIOR)) {
+                fatalError("Failed to fetch row ".$row);
             }
-            $row++;
         }
-    } else {
-        $row = $noRows;
-        while ($row >= 1) {
-            if ($row == $noRows) {
-                if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_LAST)) {
-                    fatalError("Failed to fetch row ".$row);
-                }
-            } else {
-                if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_PRIOR)) {
-                    fatalError("Failed to fetch row ".$row);
-                }
+        trace("\nStreaming row $row:\n");
+        for ($j = 0; $j < $numFields; $j++) {
+            $col = $j + 1;
+            if (!isUpdatable($col)) {
+                continue;
             }
-            trace("\nStreaming row $row:\n");
-            for ($j = 0; $j < $numFields; $j++) {
-                $col = $j + 1;
-                if (!isUpdatable($col)) {
-                    continue;
-                }
-                if (isStreamable($col)) {
-                    verifyStream($stmt1, $startRow + $row - 1, $j);
-                }
+            if (isStreamable($col)) {
+                verifyStream($stmt1, $startRow + $row - 1, $j);
             }
-            $row--;
         }
+        $row--;
     }
     sqlsrv_free_stmt($stmt1);
 

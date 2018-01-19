@@ -22,14 +22,8 @@ this test is very similar to test_scrollable.phpt... might consider removing thi
     }
     sqlsrv_free_stmt($stmt);
     
-    // Always Encrypted feature only supports SQLSRV_CURSOR_FORWARD or 
-    // SQLSRV_CURSOR_CLIENT_BUFFERED
     $query = "SELECT * FROM $tableName";
-    if (AE\isColEncrypted()) {
-        $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
-    } else {
-        $options = array('Scrollable' => 'static');
-    }
+    $options = array('Scrollable' => 'static');
 
     $stmt = sqlsrv_query($conn, $query, array(), $options);
     $rows = sqlsrv_has_rows($stmt);

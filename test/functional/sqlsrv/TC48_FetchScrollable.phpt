@@ -45,30 +45,26 @@ function fetchRow($noRows)
     sqlsrv_free_stmt($stmt2);
     checkData($noRowsInserted, $numFields, $actual, $expected);
 
-    // Always Encrypted feature does not support the following options
-    // https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation
-    if (!AE\isColEncrypted()) {
-        // fetch object - STATIC cursor
-        $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
-        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
-        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_RELATIVE);
-        sqlsrv_free_stmt($stmt2);
-        checkData($noRowsInserted, $numFields, $actual, $expected);
+    // fetch object - STATIC cursor
+    $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
+    $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+    $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_RELATIVE);
+    sqlsrv_free_stmt($stmt2);
+    checkData($noRowsInserted, $numFields, $actual, $expected);
 
-        // fetch object - DYNAMIC cursor
-        $options = array('Scrollable' => SQLSRV_CURSOR_DYNAMIC);
-        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
-        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_ABSOLUTE);
-        sqlsrv_free_stmt($stmt2);
-        checkData($noRowsInserted, $numFields, $actual, $expected);
+    // fetch object - DYNAMIC cursor
+    $options = array('Scrollable' => SQLSRV_CURSOR_DYNAMIC);
+    $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+    $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_ABSOLUTE);
+    sqlsrv_free_stmt($stmt2);
+    checkData($noRowsInserted, $numFields, $actual, $expected);
 
-        // fetch object - KEYSET cursor
-        $options = array('Scrollable' => SQLSRV_CURSOR_KEYSET);
-        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
-        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_PRIOR, 0);
-        sqlsrv_free_stmt($stmt2);
-        checkData($noRowsInserted, $numFields, $actual, $expected);
-    }
+    // fetch object - KEYSET cursor
+    $options = array('Scrollable' => SQLSRV_CURSOR_KEYSET);
+    $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+    $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_PRIOR, 0);
+    sqlsrv_free_stmt($stmt2);
+    checkData($noRowsInserted, $numFields, $actual, $expected);
     
     dropTable($conn1, $tableName);
 
