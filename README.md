@@ -433,27 +433,10 @@ You should be able to connect to your SQL Server/Azure SQL Database.
 The drivers are distributed as shared binary extensions for PHP. They are available in thread safe (*_ts.so) and-non thread safe (*_nts.so) versions. The source code for the drivers is also available, and you can choose whether to compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
 
 ## Sample Code
-For samples, please see the sample folder.  For setup instructions, see [here](https://docs.microsoft.com/en-us/azure/sql-database/sql-database-develop-php-simple).
+For samples, please see the sample folder.  For setup instructions, see [here](https://docs.microsoft.com/en-us/sql/connect/php/code-samples-for-php-sql-driver).
 
-## Limitations
-
-- This release contains the PHP 7 port of the SQLSRV and PDO_SQLSRV drivers, and does not provide backwards compatibility with PHP 5.
-- Binding output parameters using emulate prepare is not supported.
-- Linux
-  - ODBC 3.52 is supported but not 3.8.
-  - Connection using named instances using '\' is not supported.
-  - Local encodings other than UTF-8 are not supported, and SQLSRV_ENC_CHAR only supports ASCII characters with ASCII code of 0 to 127.
-
-## Known Issues
--  User defined data types and SQL_VARIANT.
-- Binary column binding with emulate prepare ([issue#140](https://github.com/Microsoft/msphpsql/issues/140) )
-- Linux
-   - The following features are not supported with connection pooling:
-     - PDO is only supported with unixODBC 2.3.1.
-     - Unicode connection strings
-     - sqlsrv_server_info and sqlsrv_client_info return false 
-     - In certain scenarios a generic error message maybe returned instead of a specific error when pooling is disabled
-     - When retrieving data from columns with a data type of XML, varchar(max), nvarchar(max), or varbinary(max) no data maybe returned or the data maybe truncated depending on the length of the data in the source table.
+## Limitations and Known Issues
+Please refer to [Releases](https://github.com/Microsoft/msphpsql/releases) for the latest limitations and known issues.
 
 ## Version number
 Version number of PHP drivers follow the [semantic versioning](http://semver.org/):
@@ -525,9 +508,9 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [blog]: http://blogs.msdn.com/b/sqlphp/
 
-[project]: https://github.com/Azure/msphpsql
+[project]: https://github.com/Microsoft/msphpsql
 
-[issues]: https://github.com/Azure/msphpsql/issues
+[issues]: https://github.com/Microsoft/msphpsql/issues
 
 [phpweb]: http://php.net
 
@@ -543,8 +526,6 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [odbcLinux]: https://msdn.microsoft.com/library/hh568454(v=sql.110).aspx
 
-[phpazure]: https://azure.microsoft.com/documentation/articles/sql-database-develop-php-simple-windows/
-
 [PHPMan]: http://php.net/manual/install.unix.php
 
 [LinuxDM]: https://msdn.microsoft.com/library/hh568449(v=sql.110).aspx
@@ -554,5 +535,3 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 [apr_source]: http://apr.apache.org/
 
 [httpdconf]: http://php.net/manual/en/install.unix.apache2.php
-
-[ODBCinstallers]: https://blogs.msdn.microsoft.com/sqlnativeclient/2016/09/06/preview-release-of-the-sql-server-cc-odbc-driver-13-0-0-for-linux
