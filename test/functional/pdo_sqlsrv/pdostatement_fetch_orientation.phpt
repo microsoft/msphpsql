@@ -13,13 +13,13 @@ try {
 
     // Prepare test table
     $tableName = "pdo_test_table";
-    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY"), "val" => "varchar(10)"));
+    createTable($conn1, $tableName, array(new ColumnMeta("int", "id", "NOT NULL PRIMARY KEY", "none"), "val" => "varchar(10)"));
     insertRow($conn1, $tableName, array("id" => 1, "val" => "A"));
     insertRow($conn1, $tableName, array("id" => 2, "val" => "B"));
     insertRow($conn1, $tableName, array("id" => 3, "val" => "C"));
 
     // Query table and retrieve data
-    $stmt1 = $conn1->prepare( "SELECT val FROM $tableName", array( PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL ));
+    $stmt1 = $conn1->prepare( "SELECT val FROM $tableName ORDER BY id", array( PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL ));
     
     $stmt1->execute();  
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_LAST );
