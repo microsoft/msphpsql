@@ -271,7 +271,6 @@ if __name__ == '__main__':
         
         answer = input("Download source from a GitHub repo? [y/n]: ")
         if answer == 'yes' or answer == 'y' or answer == '':
-            # download = True
             repo = input("Name of the repo (hit enter for 'Microsoft'): ")
             branch = input("Name of the branch (hit enter for 'dev'): ")
             if repo == '':
