@@ -14,7 +14,7 @@ To use the sample build scripts `builddrivers.py` and `buildtools.py`, install P
 
 You must first be able to build PHP 7.* without including our PHP extensions. For help with building PHP 7.0* or PHP 7.1* in Windows, see the [official PHP website](https://wiki.php.net/internals/windows/stepbystepbuild). For PHP 7.2 or above, visit [PHP SDK page](https://github.com/OSTC/php-sdk-binary-tools) for new instructions.
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.0 beta using Visual C++ 2017 v15.0. 
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.1 using Visual C++ 2017 v15.5. 
 
 ### Manually building from source 
 
@@ -57,7 +57,7 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
 
 3. Interactive mode: 
     * Type `py builddrivers.py` to start the interactive mode. Use lower cases to answer the following questions:
-        * PHP Version (e.g. `7.1.7` or `7.2.0beta2`)
+        * PHP Version (e.g. `7.1.7` or `7.2.1`)
         * 64-bit?
         * Thread safe?
         * Driver?
@@ -68,8 +68,8 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
 4. Use Command-line arguments
     * Type `py builddrivers.py -h` to get a list of options and their descriptions
     * For example, 
-        * `py builddrivers.py --PHPVER=7.0.22 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE`
-        * `py builddrivers.py --PHPVER=7.1.8 --ARCH=x86 --THREAD=ts --DEBUG`
+        * `py builddrivers.py --PHPVER=7.2.1 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE=C:\local\source`
+        * `py builddrivers.py --PHPVER=7.1.13 --ARCH=x86 --THREAD=ts --DEBUG`
 
 5. Based on the given configuration, if the script detects the presence of the PHP source directory, you can choose whether to rebuild, clean or superclean:
     * `rebuild` to build again using the same configuration (32 bit, thread safe, etc.)
