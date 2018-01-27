@@ -14,8 +14,8 @@ Updated PECL release packages. Here is the list of updates:
   - Support for fetching from an encrypted column
 - Added support for PHP 7.2
 - Added support for MSODBC 17
-- Added support for Ubuntu 17 (requires [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview))
-- Added support for Debian 9 (requires [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview))
+- Added support for Ubuntu 17 (requires [MSODBC 17](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview))
+- Added support for Debian 9 (requires [MSODBC 17](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview))
 - Added support for SUSE 12
 - Added Driver option to set the ODBC driver, Added "Driver" option, valid values are ODBC Driver 13 for SQL Server,ODBC Driver 11 for SQL Server, and ODBC Driver 17 for SQL Server
   - The default driver is ODBC Driver 17 for SQL Server
@@ -24,8 +24,7 @@ Updated PECL release packages. Here is the list of updates:
 - Implementation of PDO::lastInsertId($name) to return the last inserted sequence number if the sequence name is supplied to the function ([lastInsertId](https://github.com/Microsoft/msphpsql/wiki/Features#lastinsertid))
 
 ### Fixed
-- Issue [#555](https://github.com/Microsoft/msphpsql/issues/555) - Hebrew strings truncation (requires [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview))
-- Issue [#615](https://github.com/Microsoft/msphpsql/issues/615) - Added error handling when fetching varchar(max) as a stream with Always Encrypted
+- Issue [#555](https://github.com/Microsoft/msphpsql/issues/555) - Hebrew strings truncation (requires [MSODBC 17](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview))
 - Adjusted precisions for numeric/decimal inputs with Always Encrypted
 - Support for non-UTF8 locales in Linux and macOS
 - Fixed crash caused by executing an invalid query in a transaction (Issue [#434](https://github.com/Microsoft/msphpsql/issues/434))
@@ -41,8 +40,7 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Limitations
 - In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. The subsequent locale setting will not work
-- Always Encrypted functionalities are only supported using [MSODBC 17 preview](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview)
-- MSODBC 17 preview msodbcsql.msi only works in Windows10
+- Always Encrypted functionalities are only supported using [MSODBC 17](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview)
 - [Always Encrypted limitations](https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation)
 - When using sqlsrv_query with Always Encrypted feature, SQL type has to be specified for each input (see [here](https://github.com/Microsoft/msphpsql/wiki/Features#aebindparam))
 - No support for inout / output params when using sql_variant type
