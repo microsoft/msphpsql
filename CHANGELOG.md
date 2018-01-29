@@ -17,7 +17,7 @@ Updated PECL release packages. Here is the list of updates:
 - Added support for Ubuntu 17 (requires [MSODBC 17](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview))
 - Added support for Debian 9 (requires [MSODBC 17](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview))
 - Added support for SUSE 12
-- Added Driver option to set the ODBC driver, Added "Driver" option, valid values are ODBC Driver 13 for SQL Server,ODBC Driver 11 for SQL Server, and ODBC Driver 17 for SQL Server
+- Added Driver option to set the ODBC driver, Added "Driver" option, valid values are ODBC Driver 17 for SQL Server,ODBC Driver 13 for SQL Server, and ODBC Driver 11 for SQL Server
   - The default driver is ODBC Driver 17 for SQL Server
 
 ### Changed
@@ -50,6 +50,7 @@ Updated PECL release packages. Here is the list of updates:
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostics information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
+- Calling stored procedure with XML parameter does not work with Column Encryption enabled (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
 
 ## Windows/Linux/macOS 5.2.0-RC - 2017-12-20
 Updated PECL release packages. Here is the list of updates:
