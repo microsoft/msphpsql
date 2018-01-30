@@ -712,9 +712,9 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     if ( stmt->conn->ce_option.enabled && sql_type == SQL_TYPE_TIMESTAMP )
     {
         if( decimal_digits == 3 )
-            core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, SQL_IS_SMALLINT );
+            core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, SQL_IS_INTEGER );
         else if (decimal_digits == 0)
-            core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_SMALLDATETIME, SQL_IS_SMALLINT );
+            core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_SMALLDATETIME, SQL_IS_INTEGER );
     }
     }
     catch( core::CoreException& e ){
