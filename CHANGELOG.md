@@ -51,6 +51,8 @@ Updated PECL release packages. Here is the list of updates:
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostics information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
 - Calling stored procedure with XML parameter does not work with Column Encryption enabled (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
+- Connection with Connection Resiliency enabled so not resume properly with Connection Pooling (Issue [#678](https://github.com/Microsoft/msphpsql/issues/678))
+- Cannot connect with both Connection Resiliency enabled and ColumnEncryption enabled (Issue [#577](https://github.com/Microsoft/msphpsql/issues/577))
 
 ## Windows/Linux/macOS 5.2.0-RC - 2017-12-20
 Updated PECL release packages. Here is the list of updates:
