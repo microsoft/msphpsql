@@ -85,7 +85,7 @@ if __name__ == '__main__':
     # populate these tables
     populateTables(conn_options, args.DBNAME)
     # setup AE (certificate, column master key and column encryption key)
-    setupAE(conn_options, args.DBNAME, args.AZURE)
+    setupAE(conn_options, args.DBNAME)
     
     os.chdir(current_working_dir)
     
