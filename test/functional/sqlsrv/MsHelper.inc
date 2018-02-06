@@ -353,6 +353,12 @@ function isQualified($conn)
     if (explode(".", $msodbcsql_ver)[0] < 17) {
         return false;
     }
+    global $daasMode;
+    if ($daasMode) {
+        // running against Azure
+        return true;
+    }
+    // if not Azure, check the server version
     $server_ver = sqlsrv_server_info($conn)['SQLServerVersion'];
     if (explode('.', $server_ver)[0] < 13) {
         return false;
