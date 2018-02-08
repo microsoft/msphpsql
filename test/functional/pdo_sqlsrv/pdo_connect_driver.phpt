@@ -105,10 +105,11 @@ function testInvalidValues()
 function testEncryptedWithODBC() 
 {
     // Skip this function if running outside Windows
-    if (!strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN') {
+    if (!(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')) {
         return;
     }
-    
+        return (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+
     global $msodbcsqlMaj, $server, $uid, $pwd;
        
     $value = "ODBC Driver 13 for SQL Server";

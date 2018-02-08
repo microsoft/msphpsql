@@ -103,7 +103,7 @@ function testInvalidValues($msodbcsqlMaj, $server, $connectionOptions)
 function testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions)
 {
     // Skip this function if running outside Windows
-    if (!strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN') {
+    if (!isWindows()) {
         return;
     }
     
