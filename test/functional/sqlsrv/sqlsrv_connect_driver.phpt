@@ -102,46 +102,17 @@ function testInvalidValues($msodbcsqlMaj, $server, $connectionOptions)
 
 function testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions)
 {
-    // Skip this function if running outside Windows
-    if (!(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')) {
-        return;
-    }
-    
     $value = "ODBC Driver 13 for SQL Server";
     $connectionOptions['Driver']=$value;
     $connectionOptions['ColumnEncryption']='Enabled';
 
-    $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
+    } else {
+        $expected = "Invalid option ColumnEncryption was passed to sqlsrv_connect.";
+    }
 
     connectVerifyOutput($server, $connectionOptions, $expected);
-
-    // TODO: the following block will change once ODBC 17 is officially released
-    $value = "ODBC Driver 17 for SQL Server";
-    $connectionOptions['Driver']=$value;
-    $connectionOptions['ColumnEncryption']='Enabled';
-
-    $success = "Successfully connected with column encryption.";
-    $expected = "The specified ODBC Driver is not found.";
-    $message = $success;
-
-    $conn = sqlsrv_connect($server, $connectionOptions);
-    if ($conn === false) {
-        $message = sqlsrv_errors($conn)[0]['message'];
-    }
-
-    if ($msodbcsqlMaj == 17) {
-        // this indicates that OCBC 17 is the only available driver
-        if (strcmp($message, $success)) {
-            print_r($message);
-        }
-    } else {
-        // OCBC 17 might or might not exist
-        if (strcmp($message, $success)) {
-            if (strpos($message, $expected) === false) {
-                print_r($message);
-            }
-        }
-    }
 }
 
 function testWrongODBC($msodbcsqlMaj, $server, $connectionOptions)
