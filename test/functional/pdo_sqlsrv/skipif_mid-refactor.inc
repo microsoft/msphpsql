@@ -11,6 +11,12 @@ $dsn = getDSN($server, null);
 $conn = new PDO($dsn, $uid, $pwd);
 if (! $conn) {
     echo("Error: could not connect during SKIPIF!");
-} elseif (isColEncrypted() && !isAEQualified($conn)) {
-    die("skip - AE feature not supported in the current environment.");
+} elseif (isColEncrypted()) {
+    if (!strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN') {
+        die( "Skip, AE test on windows only." );
+    }
+
+    if (!isAEQualified($conn)) {
+        die("skip - AE feature not supported in the current environment.");
+    }
 }
