@@ -1,7 +1,7 @@
 --TEST--
 Test new connection keyword ColumnEncryption
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_unix.inc'); ?>
 --FILE--
 <?php
 sqlsrv_configure( 'WarningsReturnAsErrors', 0 );

@@ -382,22 +382,6 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -73, false }
     },
     {
-        SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
-        { IMSSP, (SQLCHAR*) "The name of the custom keystore provider is missing.", -74, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_PATH_MISSING,
-        { IMSSP, (SQLCHAR*) "The path to the custom keystore provider is missing.", -75, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
-        { IMSSP, (SQLCHAR*) "The encryption key for the custom keystore provider is missing.", -76, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
-        { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -77, false}
-    },
-    {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,
         { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.", -78, false }
     },

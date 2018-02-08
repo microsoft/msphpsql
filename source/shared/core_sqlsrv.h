@@ -1056,13 +1056,8 @@ struct stmt_option;
 // This holds the various details of column encryption. 
 struct col_encryption_option {
     bool            enabled;            // column encryption enabled, false by default
-    zval_auto_ptr   ksp_name;           // keystore provider name 
-    zval_auto_ptr   ksp_path;           // keystore provider path to the dynamically linked libary (either a *.dll or *.so)
-    zval_auto_ptr   ksp_encrypt_key;    // the encryption key used to configure the keystore provider 
-    size_t          key_size;           // the length of ksp_encrypt_key without the NULL terminator
-    bool            ksp_required;       // a keystore provider is required to enable column encryption, false by default 
 
-    col_encryption_option() : enabled( false ), key_size ( 0 ), ksp_required( false )
+    col_encryption_option() : enabled( false )
     {
     }
 };
@@ -1109,14 +1104,11 @@ const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
-const char ColumnEncryption[] = "ColumnEncryption";
 const char Driver[] = "Driver";
-const char CEKeystoreProvider[] = "CEKeystoreProvider";
-const char CEKeystoreName[] = "CEKeystoreName";
-const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
+const char ColumnEncryption[] = "ColumnEncryption";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 #endif // _WIN32
@@ -1709,10 +1701,6 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_FIELD_INDEX_ERROR,
     SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
     SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
-    SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
-    SQLSRV_ERROR_KEYSTORE_PATH_MISSING,
-    SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
-    SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
     SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
     SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
 
