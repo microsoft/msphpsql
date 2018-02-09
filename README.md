@@ -2,7 +2,7 @@
 
 **Welcome to the Microsoft Drivers for PHP for Microsoft SQL Server**
 
-The Microsoft Drivers for PHP for Microsoft SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2008 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
+The Microsoft Drivers for PHP for Microsoft SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2008 R2 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
 
 This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.* with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming releases will contain additional functionality, bug fixes, and more (see Plans below for more details).
 
@@ -46,22 +46,22 @@ Thank you for taking the time to participate in our last survey. You can continu
 
 ## Prerequisites
 
-For full details on the requirements for the drivers, see the [system requirements](https://docs.microsoft.com/en-us/sql/connect/php/system-requirements-for-the-php-sql-driver) on MSDN.
+For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/en-us/sql/connect/php/system-requirements-for-the-php-sql-driver) on MSDN.
 
 On the client machine:
-- PHP 7.0.x, 7.1.x, or 7.2.1 and up on Windows, or 7.2.0 and up on Unix systems 
+- PHP 7.0.x, 7.1.x, or 7.2.x (7.2.0 and up on Unix, 7.2.1 and up on Windows)
 - A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
 - [Microsoft ODBC Driver 11][odbc11], [Microsoft ODBC Driver 13][odbc13], or [Microsoft ODBC Driver 17][odbc17]
 
-On the server side, SQL Server 2008 and above on Windows is supported, as is SQL Server 2016 and above on Linux.
+On the server side, Microsoft SQL Server 2008 R2 and above on Windows is supported, as is Microsoft SQL Server 2016 and above on Linux.
 
 ## Building and Installing the Drivers on Windows
 
 The drivers are distributed as pre-compiled extensions for PHP found on the [releases page](https://github.com/Microsoft/msphpsql/releases). They are available in thread-safe and non thread-safe versions, and in 32-bit and 64-bit versions. The source code for the drivers is also available, and you can compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
  
-If you choose to build the drivers, you must be able to build PHP 7 without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows) -- a buildscript is provided, but you can also compile the drivers manually.
+If you choose to build the drivers, you must be able to build PHP 7 without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows) -- an example buildscript is provided, but you can also compile the drivers manually.
 
-To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. for more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/en-us/sql/connect/php/loading-the-php-sql-driver) on MSDN.
+To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/en-us/sql/connect/php/loading-the-php-sql-driver) on MSDN.
 
 Finally, restart the Web server.
 
@@ -81,13 +81,12 @@ The version numbers of the PHP drivers follow [semantic versioning](http://semve
 Given a version number MAJOR.MINOR.PATCH, 
 
  - MAJOR version is incremented when an incompatible API change is made, 
- - MINOR version is incremented when functionality is add in a backwards-compatible manner, and
+ - MINOR version is incremented when functionality is added in a backwards-compatible manner, and
  - PATCH version is incremented when backwards-compatible bug fixes are made.
  
 The version number may have trailing pre-release version identifiers to indicate the stability and/or build metadata.
 
-- Pre-release version is denoted by a hyphen followed by `preview` or `rc` and may be followed by a series of dot separated identifiers. Production quality releases do not contain the pre-release version. `preview` has lower precedence than `rc. Example of precedence: *preview < preview.1 < rc < rc.1*. 
-*Note that the PECL package version numbers do not have the hyphen before the pre-release version, owing to restrictions in PECL. Example of a PECL package version number: 1.2.3preview*
+- Pre-release version is denoted by a hyphen followed by `preview` or `RC` and may be followed by a series of dot separated identifiers. Production quality releases do not contain the pre-release version. `preview` has lower precedence than `RC`. Example of precedence: *preview < preview.1 < RC < RC.1*. Note that the PECL package version numbers do not have the hyphen before the pre-release version, owing to restrictions in PECL. Example of a PECL package version number: 1.2.3preview
 - Build metadata may be denoted by a plus sign followed by 4 or 5 digits, such as  `1.2.3-preview+5678` or `1.2.3+5678`. Build metadata does not figure into the precedence order.
 
 ## Future Plans
