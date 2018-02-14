@@ -24,11 +24,7 @@ apt-get update
 apt-get install php7.2 php7.2-dev php7.2-xml -y --allow-unauthenticated
 ```
 ### Step 2. Install prerequisites
-For Ubuntu 16.04, install the ODBC driver for Ubuntu by following the instructions on the [Linux and macOS installation page](../../connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md). For Ubuntu 17.10, the preview of version 17 of the ODBC driver is required. Download it from the [Github project page](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview/Ubuntu%2017) and install as follows:
-```
-sudo ACCEPT_EULA=Y dpkg -i msodbcsql_17.0.0.5-1_amd64.deb
-sudo ACCEPT_EULA=Y dpkg -i mssql-tools_17.0.0.5-1_amd64.deb
-```
+Install the ODBC driver for Ubuntu by following the instructions on the [Linux and macOS installation page](../../connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md).
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```
@@ -90,7 +86,7 @@ exit
 sudo pecl install sqlsrv
 sudo pecl install pdo_sqlsrv
 ```
-An issue in PECL may prevent correct installation even if you have upgraded GCC. To install, download the packages and compile manually:
+An issue in PECL may prevent correct installation of the latest version of the drivers even if you have upgraded GCC. To install, download the packages and compile manually:
 ```
 pecl download sqlsrv
 tar xvzf sqlsrv-5.2.0.tgz
@@ -133,11 +129,7 @@ apt-get update
 apt-get install –y php7.2 php7.2-dev php7.2-xml
 ```
 ### Step 2. Install prerequisites
-For Debian 8, install the ODBC driver by following the instructions on the [Linux and macOS installation page](../../connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md). For Debian 9, the preview of version 17 of the ODBC driver is required. Download it from the [Github project page](https://github.com/Microsoft/msphpsql/tree/dev/ODBC%2017%20binaries%20preview/Debian%209) and install as follows:
-```
-sudo ACCEPT_EULA=Y dpkg -i msodbcsql_17.0.0.5-1_amd64.deb
-sudo ACCEPT_EULA=Y dpkg -i mssql-tools_17.0.0.5-1_amd64.deb
-```
+Install the ODBC driver for Debian by following the instructions on the [Linux and macOS installation page](../../connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md). 
 
 You may also need to generate the correct locale to get PHP output to display correctly in a browser. For example, for the en_US UTF-8 locale, run the following commands:
 ```
