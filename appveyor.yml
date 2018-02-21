@@ -82,14 +82,20 @@ install:
     - echo Downloading prerequisites
     - ps: | 
         $client = New-Object Net.WebClient;
-        $client.Headers.Add("user-agent", "appveyor-ci-build");
+        $client.Headers.Add("user-agent", "appveyor-ci-build1");
         $client.DownloadFile("http://windows.php.net/downloads/php-sdk/php-sdk-binary-tools-20110915.zip", "c:\projects\php-sdk-binary-tools-20110915.zip");
+    - ps: | 
+        $client = New-Object Net.WebClient;
+        $client.Headers.Add("user-agent", "appveyor-ci-build2");
         $client.DownloadFile("http://windows.php.net/downloads/releases/sha1sum.txt", "c:\projects\sha1sum.txt");
         If ($env:PHP_MINOR_VER -Match "latest") {
             $env:PHP_VERSION=type c:\projects\sha1sum.txt | where { $_ -match "php-($env:PHP_MAJOR_VER\.\d+)-src" } | foreach { $matches[1] }  ;
         } Else {
             $env:PHP_VERSION=$env:PHP_MAJOR_VER + '.' + $env:PHP_MINOR_VER;
         }
+    - ps: | 
+        $client = New-Object Net.WebClient;
+        $client.Headers.Add("user-agent", "appveyor-ci-build3");
         $client.DownloadFile("http://windows.php.net/downloads/releases/php-" + ${env:PHP_VERSION} + "-src.zip", ${env:APPVEYOR_BUILD_FOLDER} + "\..\php.zip");
     - dir c:\projects
     #- appveyor DownloadFile http://windows.php.net/downloads/releases/sha1sum.txt
