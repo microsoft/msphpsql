@@ -78,7 +78,6 @@ install:
 
         Set-Service SQLBrowser -StartupType Manual;
         Start-Service SQLBrowser;
-    # - echo Set PHP version...
     - echo Downloading prerequisites
     - ps: | 
         $client = New-Object Net.WebClient;
@@ -97,20 +96,6 @@ install:
         $client = New-Object Net.WebClient;
         $client.Headers.Add("user-agent", "appveyor-ci-build3");
         $client.DownloadFile("http://windows.php.net/downloads/releases/php-" + ${env:PHP_VERSION} + "-src.zip", ${env:APPVEYOR_BUILD_FOLDER} + "\..\php.zip");
-    - dir c:\projects
-    #- appveyor DownloadFile http://windows.php.net/downloads/releases/sha1sum.txt
-    # determine latest PHP versions
-    # - ps: >-
-        # If ($env:PHP_MINOR_VER -Match "latest") {
-            # $env:PHP_VERSION=type sha1sum.txt | where { $_ -match "php-($env:PHP_MAJOR_VER\.\d+)-src" } | foreach { $matches[1] }  ;
-        # } Else {
-            # $env:PHP_VERSION=$env:PHP_MAJOR_VER + '.' + $env:PHP_MINOR_VER;
-        # }
-    #- echo Downloading PHP-SDK
-    #- appveyor DownloadFile http://windows.php.net/downloads/php-sdk/php-sdk-binary-tools-20110915.zip
-    #- move php-sdk-binary-tools-20110915.zip ..
-    #- echo Downloading PHP source code [%PHP_VERSION%]
-    #- ps: (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/releases/php-' + ${env:PHP_VERSION} + '-src.zip', ${env:APPVEYOR_BUILD_FOLDER} + '\..\php.zip')
     - echo Downloading MSODBCSQL 13.1
     # AppVeyor build works are x64 VMs and 32-bit ODBC driver cannot be installed on it
     - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
@@ -118,7 +103,6 @@ install:
     - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
     - dir C:\Windows\System32\msodbcsql13.dll
-    #- cd ..
     - cd c:\projects
     - 7z x -y .\php-sdk-binary-tools-20110915.zip -o%PHP_SDK%
     - 7z x -y .\php.zip -o%PHP_SDK_DIR%
