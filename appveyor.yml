@@ -82,14 +82,14 @@ install:
     - ps: >- 
         $client = New-Object Net.WebClient;
         $client.Headers.Add("user-agent", "appveyor-ci-build");
-        $client.DownloadFile('http://windows.php.net/downloads/releases/sha1sum.txt','c:\projects\sha1sum.txt');
+        $client.DownloadFile('http://windows.php.net/downloads/releases/sha1sum.txt', 'c:\projects\sha1sum.txt');
         If ($env:PHP_MINOR_VER -Match "latest") {
             $env:PHP_VERSION=type c:\projects\sha1sum.txt | where { $_ -match "php-($env:PHP_MAJOR_VER\.\d+)-src" } | foreach { $matches[1] }  ;
         } Else {
             $env:PHP_VERSION=$env:PHP_MAJOR_VER + '.' + $env:PHP_MINOR_VER;
         }
         $client.DownloadFile('http://windows.php.net/downloads/php-sdk/php-sdk-binary-tools-20110915.zip', 'c:\projects\php-sdk-binary-tools-20110915.zip');
-        $client.DownloadFile('http://windows.php.net/downloads/releases/php-' + ${env:PHP_VERSION} + '-src.zip', ${env:APPVEYOR_BUILD_FOLDER} + 'c:\projects\php.zip');
+        $client.DownloadFile('http://windows.php.net/downloads/releases/php-' + ${env:PHP_VERSION} + '-src.zip', ${env:APPVEYOR_BUILD_FOLDER} + '\..\php.zip');
         $client.DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi');
 
     #- appveyor DownloadFile http://windows.php.net/downloads/releases/sha1sum.txt
