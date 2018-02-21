@@ -91,7 +91,7 @@ install:
             $env:PHP_VERSION=$env:PHP_MAJOR_VER + '.' + $env:PHP_MINOR_VER;
         }
         $client.DownloadFile("http://windows.php.net/downloads/releases/php-" + ${env:PHP_VERSION} + "-src.zip", ${env:APPVEYOR_BUILD_FOLDER} + "\..\php.zip");
-    dir c:\projects
+    - dir c:\projects
     #- appveyor DownloadFile http://windows.php.net/downloads/releases/sha1sum.txt
     # determine latest PHP versions
     # - ps: >-
