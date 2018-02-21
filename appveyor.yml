@@ -79,7 +79,10 @@ install:
         Set-Service SQLBrowser -StartupType Manual;
         Start-Service SQLBrowser;
     - echo Set PHP version...
-    - appveyor DownloadFile http://windows.php.net/downloads/releases/sha1sum.txt
+    - $client = New-Object Net.WebClient
+    - $client.Headers.Add("user-agent", "appveyor-ci-build")
+    - $client.DownloadFile("http://windows.php.net/downloads/php-sdk/php-sdk-binary-tools-20110915.zip", "c:\projects\php-sdk-binary-tools-20110915.zip")
+    #- appveyor DownloadFile http://windows.php.net/downloads/releases/sha1sum.txt
     # determine latest PHP versions
     - ps: >-
         If ($env:PHP_MINOR_VER -Match "latest") {
