@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted data of string types using out params
+Test for inserting and retrieving encrypted data of string types
 --DESCRIPTION--
 Bind output params using sqlsrv_prepare with all sql_type
 --SKIPIF--
@@ -27,7 +27,15 @@ foreach ($dataTypes as $dataType) {
     $tbname = GetTempTableName("", false);
     $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
-
+	
+    // insert a row
+    $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
+    $r;
+    $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
+    if ($r === false) {
+        is_incompatible_types_error($dataType, "default type");
+    }
+	
     // Create a Store Procedure
     $spname = 'selectAllColumns';
     $spSql = "CREATE PROCEDURE $spname (@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT ) AS SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
@@ -35,51 +43,53 @@ foreach ($dataTypes as $dataType) {
 
     // test each SQLSRV_SQLTYPE_ constants
     foreach ($sqlTypes as $sqlType) {
-		// insert a row
-        $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
-        $sqlType = get_default_size_prec($sqlType);
-        $inputs = array(new AE\BindParamOption($inputValues[0], null, null, $sqlType), new AE\BindParamOption($inputValues[1], null, null, $sqlType));
-        $r;
-        $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputs[0], $colMetaArr[1]->colName => $inputs[1] ), $r, AE\INSERT_PREPARE_PARAMS);
-
-        if ($r === false) {
-            if (!AE\isColEncrypted()) {
-                $isCompatible = false;
-                foreach ($compatList[$dataType] as $compatType) {
-					print("compatType=$compatType\n");
-                    if (stripos($compatType, $sqlType) !== false) {
-                        $isCompatible = true;
-                    }
-                }
-                // 22018 is the SQLSTATE for any incompatible conversion errors
-                if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
-                    echo "$sqlType should be compatible with $dataType\n";
-                    $success = false;
-                }
-            } else {
-                // always encrypted only allow sqlType that is identical to the encrypted column datatype
-                if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
-                    echo "$sqlType should be compatible with $dataType\n";
-                    $success = false;
+        if (!AE\isColEncrypted()) {
+            $isCompatible = false;
+            foreach ($compatList[$dataType] as $compatType) {
+                if (stripos($compatType, $sqlType) !== false) {
+                    $isCompatible = true;
                 }
             }
+            // 22018 is the SQLSTATE for any incompatible conversion errors
+            if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
+                echo "$sqlType should be compatible with $dataType\n";
+                $success = false;
+            }
         } else {
-	        // Call store procedure
-            $outSql = AE\getCallProcSqlPlaceholders($spname, count($inputs));
+            // always encrypted only allow sqlType that is identical to the encrypted column datatype
+            if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
+		        // insert a row
+                $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
+                $sqlType = get_default_size_prec($sqlType);
+                $inputs = array(new AE\BindParamOption($inputValues[0], null, null, $sqlType), new AE\BindParamOption($inputValues[1], null, null, $sqlType));
 
-        	$c_detOut = '';
-            $c_randOut = '';
-            $stmt = sqlsrv_prepare($conn, $outSql, array( array( &$c_detOut, SQLSRV_PARAM_OUT ),
-                                        array( &$c_randOut, SQLSRV_PARAM_OUT )));
-			if (!$stmt) {
-				print "died";
-			}							
-            sqlsrv_execute($stmt);
-            print("c_detOut: " . $c_detOut . "\n");
-            print("c_randOut: " . $c_randOut . "\n");
-        }
-        sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
+    	        // Call store procedure
+                $outSql = AE\getCallProcSqlPlaceholders($spname, count($inputs));
+
+         	    $c_detOut = '';
+                $c_randOut = '';
+                $stmt = sqlsrv_prepare($conn, $outSql, array( array( &$c_detOut, SQLSRV_PARAM_OUT ),
+                               array( &$c_randOut, SQLSRV_PARAM_OUT )));
+                if (!$stmt) {
+                    die(print_r(sqlsrv_errors(), true));
+                }							
+                sqlsrv_execute($stmt);
+                print("c_det: " . $c_detOut . "\n");
+                print("c_rand: " . $c_randOut . "\n");
+                if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
+                    echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                    $success = false;
+                }
+
+                sqlsrv_query($conn, "TRUNCATE TABLE $tbname");				
+            }
+		}		
     }
+	
+    if (!AE\isColEncrypted()) {
+        AE\fetchAll($conn, $tbname);
+	}
+	
     if ($success) {
         echo "Test successfully done.\n";
     }
@@ -93,21 +103,21 @@ sqlsrv_close($conn);
 --EXPECT--
 
 Testing char(5): 
-c_detOut: -leng
-c_randOut: th, n
+c_det: -leng
+c_rand: th, n
 Test successfully done.
 
 Testing varchar(max): 
-c_detOut: Use varchar(max) when the sizes of the column data entries vary considerably, and the size might exceed 8,000 bytes.
-c_randOut: Each non-null varchar(max) or nvarchar(max) column requires 24 bytes of additional fixed allocation which counts against the 8,060 byte row limit during a sort operation.
+c_det: Use varchar(max) when the sizes of the column data entries vary considerably, and the size might exceed 8,000 bytes.
+c_rand: Each non-null varchar(max) or nvarchar(max) column requires 24 bytes of additional fixed allocation which counts against the 8,060 byte row limit during a sort operation.
 Test successfully done.
 
 Testing nchar(5): 
-c_detOut: -leng
-c_randOut: th Un
+c_det: -leng
+c_rand: th Un
 Test successfully done.
 
 Testing nvarchar(max): 
-c_detOut: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
-c_randOut: Otherwise, the implicit conversion will result in a Unicode large-value (max).
+c_det: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
+c_rand: Otherwise, the implicit conversion will result in a Unicode large-value (max).
 Test successfully done.
