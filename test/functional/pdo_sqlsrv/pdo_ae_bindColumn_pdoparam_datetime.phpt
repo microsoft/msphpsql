@@ -1,7 +1,10 @@
 --TEST--
-Test for inserting and retrieving encrypted data of datetime types
+Test for retrieving encrypted data from datetime types columns using PDO::bindColumn
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Test conversion from datetime types column to output of PDO::PARAM types
+With or without AE, conversion works if:
+1. From any datetime type column to PDO::PARAM_STR
+2. From any datetime type column to PDO::PARAM_LOB
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -10,19 +13,20 @@ require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
 
 $dataTypes = array("date", "datetime", "smalldatetime");
+
 try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
         echo "\nTesting $dataType:\n";
 
-        // create and populate table
-        $tbname = getTableName();
+        // create and populate table containing date, datetime or smalldatetime columns
+        $tbname = "test_" . $dataType;
         $colMetaArr = array(new ColumnMeta($dataType, "c_det"), new ColumnMeta($dataType, "c_rand", null, "randomized"));
         createTable($conn, $tbname, $colMetaArr);
         $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
         insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1]));
         
-        // fetch with PDO::bindColumn and PDO::FETCH_BOUND
+        // fetch by specifying PDO::PARAM_ types with PDO::bindColumn
         $query = "SELECT c_det, c_rand FROM $tbname";
         foreach ($pdoParamTypes as $pdoParamType) {
             $det = "";
@@ -33,16 +37,23 @@ try {
             $stmt->bindColumn('c_rand', $rand, constant($pdoParamType));
             $row = $stmt->fetch(PDO::FETCH_BOUND);
             
+            // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_NULL or PDO::PARAM_INT
+            // with or without AE; should not work
             if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
                 if (!is_null($det) || !is_null($rand)) {
-                    echo "Retrieving encrypted $type data as $pdoParamType should not work\n";
+                    echo "Retrieving $dataType data as $pdoParamType should not be supported\n";
                 }
+            // check the case when fetching as PDO::PARAM_STR or PDO::PARAM_LOB
+            // with or without AE: should work
             } else {
-                echo "****PDO param type $pdoParamType is compatible with encrypted $dataType****\n";
-                echo "c_det: $det\n";
-                echo "c_rand: $rand\n";
+                if (strpos($det, $inputValues[0]) !== false && strpos($rand, $inputValues[1]) !== false) {
+                    echo "****Retrieving $dataType as $pdoParamType is supported****\n";
+                } else {
+                    echo "Retrieving $dataType as $pdoParamType fails\n";
+                }
             }
         }
+        // cleanup
         dropTable($conn, $tbname);
     }
     unset($stmt);
@@ -53,25 +64,13 @@ try {
 ?>
 --EXPECT--
 Testing date:
-****PDO param type PDO::PARAM_STR is compatible with encrypted date****
-c_det: 0001-01-01
-c_rand: 9999-12-31
-****PDO param type PDO::PARAM_LOB is compatible with encrypted date****
-c_det: 0001-01-01
-c_rand: 9999-12-31
+****Retrieving date as PDO::PARAM_STR is supported****
+****Retrieving date as PDO::PARAM_LOB is supported****
 
 Testing datetime:
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetime****
-c_det: 1753-01-01 00:00:00.000
-c_rand: 9999-12-31 23:59:59.997
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetime****
-c_det: 1753-01-01 00:00:00.000
-c_rand: 9999-12-31 23:59:59.997
+****Retrieving datetime as PDO::PARAM_STR is supported****
+****Retrieving datetime as PDO::PARAM_LOB is supported****
 
 Testing smalldatetime:
-****PDO param type PDO::PARAM_STR is compatible with encrypted smalldatetime****
-c_det: 1900-01-01 00:00:00
-c_rand: 2079-06-05 23:59:00
-****PDO param type PDO::PARAM_LOB is compatible with encrypted smalldatetime****
-c_det: 1900-01-01 00:00:00
-c_rand: 2079-06-05 23:59:00
+****Retrieving smalldatetime as PDO::PARAM_STR is supported****
+****Retrieving smalldatetime as PDO::PARAM_LOB is supported****

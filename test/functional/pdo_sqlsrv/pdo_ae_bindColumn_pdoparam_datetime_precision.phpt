@@ -1,13 +1,33 @@
 --TEST--
-Test for inserting and retrieving encrypted data of numeric types
+Test for retrieving encrypted data from datetime types columns with different precisions using PDO::bindColumn
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Test conversion from datetime types column to output of PDO::PARAM types
+With or without AE, conversion works if:
+1. From any datetime type column to PDO::PARAM_STR
+2. From any datetime type column to PDO::PARAM_LOB
+TODO: cannot insert into a datetime2(0) using the PDO_SQLSRV driver
+      returns operand type clash error between smalldatetime and datetime2(0)
+      to see error, uncomment 0 from the $precision array
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
+
+function compareDate($dtout, $dtin, $dataType) {
+    if ($dataType == "datetimeoffset") {
+        $dtarr = explode(' ', $dtin);
+        if (strpos($dtout, $dtarr[0]) !== false && strpos($dtout, $dtarr[1]) !== false && strpos($dtout, $dtarr[2]) !== false) {
+            return true;
+        }
+    } else {
+        if (strpos($dtout, $dtin) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
 
 $dataTypes = array("datetime2", "datetimeoffset", "time");
 $precisions = array(/*0,*/ 1, 2, 4, 7);
@@ -18,31 +38,31 @@ $inputValuesInit = array("datetime2" => array("0001-01-01 00:00:00", "9999-12-31
 try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
-        foreach ($precisions as $precision) {
-            // change the input values depending on the precision
+        foreach ($precisions as $m) {
+            // add $m number of decimal digits to the some input values
             $inputValues[0] = $inputValuesInit[$dataType][0];
             $inputValues[1] = $inputValuesInit[$dataType][1];
-            if ($precision != 0) {
+            if ($m != 0) {
                 if ($dataType == "datetime2") {
-                    $inputValues[1] .= "." . str_repeat("9", $precision);
+                    $inputValues[1] .= "." . str_repeat("9", $m);
                 } else if ($dataType == "datetimeoffset") {
-                    $inputPieces = explode(" ", $inputValues[1]);
-                    $inputValues[1] = $inputPieces[0] . " " . $inputPieces[1] . "." . str_repeat("9", $precision) . " " . $inputPieces[2];
+                    $dtoffsetPieces = explode(" ", $inputValues[1]);
+                    $inputValues[1] = $dtoffsetPieces[0] . " " . $dtoffsetPieces[1] . "." . str_repeat("9", $m) . " " . $dtoffsetPieces[2];
                 } else if ($dataType == "time") {
-                    $inputValues[0] .= "." . str_repeat("0", $precision);
-                    $inputValues[1] .= "." . str_repeat("9", $precision);
+                    $inputValues[0] .= "." . str_repeat("0", $m);
+                    $inputValues[1] .= "." . str_repeat("9", $m);
                 }
             }
-            $type = "$dataType($precision)";
-            echo "\nTesting $type:\n";
+            $typeFull = "$dataType($m)";
+            echo "\nTesting $typeFull:\n";
         
-            //create and populate table
-            $tbname = "test_datetime";
-            $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
+            //create and populate table containing datetime2(m), datetimeoffset(m) or time(m) columns
+            $tbname = "test_" . $dataType . $m;
+            $colMetaArr = array(new ColumnMeta($typeFull, "c_det"), new ColumnMeta($typeFull, "c_rand", null, "randomized"));
             createTable($conn, $tbname, $colMetaArr);
             insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1]));
-                
-            // fetch with PDO::bindColumn and PDO::FETCH_BOUND
+            
+            // fetch by specifying PDO::PARAM_ types with PDO:bindColumn
             $query = "SELECT c_det, c_rand FROM $tbname";
             foreach ($pdoParamTypes as $pdoParamType) {
                 $det = "";
@@ -53,16 +73,23 @@ try {
                 $stmt->bindColumn('c_rand', $rand, constant($pdoParamType));
                 $row = $stmt->fetch(PDO::FETCH_BOUND);
                 
+                // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_NULL or PDO::PARAM_INT
+                // with or without AE; should not work
                 if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
                     if (!is_null($det) || !is_null($rand)) {
-                        echo "Retrieving encrypted $type data as $pdoParamType should not work\n";
+                        echo "Retrieving $typeFull data as $pdoParamType should not be supported\n";
                     }
+                // check the case when fetching as PDO::PARAM_STR or PDO::PARAM_LOB
+                // with or without AE: should work
                 } else {
-                    echo "****PDO param type $pdoParamType is compatible with encrypted $type****\n";
-                    echo "c_det: $det\n";
-                    echo "c_rand: $rand\n";
+                    if (compareDate($det, $inputValues[0], $dataType) && compareDate($rand, $inputValues[1], $dataType)) {
+                        echo "****Retrieving $typeFull as $pdoParamType is supported****\n";
+                    } else {
+                        echo "Retrieving $typeFull as $pdoParamType fails\n";
+                    }
                 }
             }
+            // cleanup
             dropTable($conn, $tbname);
         }
     }
@@ -74,97 +101,49 @@ try {
 ?>
 --EXPECT--
 Testing datetime2(1):
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetime2(1)****
-c_det: 0001-01-01 00:00:00.0
-c_rand: 9999-12-31 23:59:59.9
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetime2(1)****
-c_det: 0001-01-01 00:00:00.0
-c_rand: 9999-12-31 23:59:59.9
+****Retrieving datetime2(1) as PDO::PARAM_STR is supported****
+****Retrieving datetime2(1) as PDO::PARAM_LOB is supported****
 
 Testing datetime2(2):
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetime2(2)****
-c_det: 0001-01-01 00:00:00.00
-c_rand: 9999-12-31 23:59:59.99
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetime2(2)****
-c_det: 0001-01-01 00:00:00.00
-c_rand: 9999-12-31 23:59:59.99
+****Retrieving datetime2(2) as PDO::PARAM_STR is supported****
+****Retrieving datetime2(2) as PDO::PARAM_LOB is supported****
 
 Testing datetime2(4):
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetime2(4)****
-c_det: 0001-01-01 00:00:00.0000
-c_rand: 9999-12-31 23:59:59.9999
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetime2(4)****
-c_det: 0001-01-01 00:00:00.0000
-c_rand: 9999-12-31 23:59:59.9999
+****Retrieving datetime2(4) as PDO::PARAM_STR is supported****
+****Retrieving datetime2(4) as PDO::PARAM_LOB is supported****
 
 Testing datetime2(7):
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetime2(7)****
-c_det: 0001-01-01 00:00:00.0000000
-c_rand: 9999-12-31 23:59:59.9999999
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetime2(7)****
-c_det: 0001-01-01 00:00:00.0000000
-c_rand: 9999-12-31 23:59:59.9999999
+****Retrieving datetime2(7) as PDO::PARAM_STR is supported****
+****Retrieving datetime2(7) as PDO::PARAM_LOB is supported****
 
 Testing datetimeoffset(1):
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetimeoffset(1)****
-c_det: 0001-01-01 00:00:00.0 -14:00
-c_rand: 9999-12-31 23:59:59.9 +14:00
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetimeoffset(1)****
-c_det: 0001-01-01 00:00:00.0 -14:00
-c_rand: 9999-12-31 23:59:59.9 +14:00
+****Retrieving datetimeoffset(1) as PDO::PARAM_STR is supported****
+****Retrieving datetimeoffset(1) as PDO::PARAM_LOB is supported****
 
 Testing datetimeoffset(2):
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetimeoffset(2)****
-c_det: 0001-01-01 00:00:00.00 -14:00
-c_rand: 9999-12-31 23:59:59.99 +14:00
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetimeoffset(2)****
-c_det: 0001-01-01 00:00:00.00 -14:00
-c_rand: 9999-12-31 23:59:59.99 +14:00
+****Retrieving datetimeoffset(2) as PDO::PARAM_STR is supported****
+****Retrieving datetimeoffset(2) as PDO::PARAM_LOB is supported****
 
 Testing datetimeoffset(4):
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetimeoffset(4)****
-c_det: 0001-01-01 00:00:00.0000 -14:00
-c_rand: 9999-12-31 23:59:59.9999 +14:00
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetimeoffset(4)****
-c_det: 0001-01-01 00:00:00.0000 -14:00
-c_rand: 9999-12-31 23:59:59.9999 +14:00
+****Retrieving datetimeoffset(4) as PDO::PARAM_STR is supported****
+****Retrieving datetimeoffset(4) as PDO::PARAM_LOB is supported****
 
 Testing datetimeoffset(7):
-****PDO param type PDO::PARAM_STR is compatible with encrypted datetimeoffset(7)****
-c_det: 0001-01-01 00:00:00.0000000 -14:00
-c_rand: 9999-12-31 23:59:59.9999999 +14:00
-****PDO param type PDO::PARAM_LOB is compatible with encrypted datetimeoffset(7)****
-c_det: 0001-01-01 00:00:00.0000000 -14:00
-c_rand: 9999-12-31 23:59:59.9999999 +14:00
+****Retrieving datetimeoffset(7) as PDO::PARAM_STR is supported****
+****Retrieving datetimeoffset(7) as PDO::PARAM_LOB is supported****
 
 Testing time(1):
-****PDO param type PDO::PARAM_STR is compatible with encrypted time(1)****
-c_det: 00:00:00.0
-c_rand: 23:59:59.9
-****PDO param type PDO::PARAM_LOB is compatible with encrypted time(1)****
-c_det: 00:00:00.0
-c_rand: 23:59:59.9
+****Retrieving time(1) as PDO::PARAM_STR is supported****
+****Retrieving time(1) as PDO::PARAM_LOB is supported****
 
 Testing time(2):
-****PDO param type PDO::PARAM_STR is compatible with encrypted time(2)****
-c_det: 00:00:00.00
-c_rand: 23:59:59.99
-****PDO param type PDO::PARAM_LOB is compatible with encrypted time(2)****
-c_det: 00:00:00.00
-c_rand: 23:59:59.99
+****Retrieving time(2) as PDO::PARAM_STR is supported****
+****Retrieving time(2) as PDO::PARAM_LOB is supported****
 
 Testing time(4):
-****PDO param type PDO::PARAM_STR is compatible with encrypted time(4)****
-c_det: 00:00:00.0000
-c_rand: 23:59:59.9999
-****PDO param type PDO::PARAM_LOB is compatible with encrypted time(4)****
-c_det: 00:00:00.0000
-c_rand: 23:59:59.9999
+****Retrieving time(4) as PDO::PARAM_STR is supported****
+****Retrieving time(4) as PDO::PARAM_LOB is supported****
 
 Testing time(7):
-****PDO param type PDO::PARAM_STR is compatible with encrypted time(7)****
-c_det: 00:00:00.0000000
-c_rand: 23:59:59.9999999
-****PDO param type PDO::PARAM_LOB is compatible with encrypted time(7)****
-c_det: 00:00:00.0000000
-c_rand: 23:59:59.9999999
+****Retrieving time(7) as PDO::PARAM_STR is supported****
+****Retrieving time(7) as PDO::PARAM_LOB is supported****

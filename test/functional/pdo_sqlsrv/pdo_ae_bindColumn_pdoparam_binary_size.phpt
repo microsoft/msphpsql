@@ -1,7 +1,10 @@
 --TEST--
-Test for inserting and retrieving encrypted data of numeric types
+Test for retrieving encrypted data from binary types columns using PDO::bindColumn
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Test conversion from binary types column to output of PDO::PARAM types
+With or without AE, conversion works if:
+1. From any binary type column to PDO::PARAM_STR
+2. From any binary type column to PDO::PARAM_LOB
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -15,25 +18,24 @@ $lengths = array(1, 8, 64, 512, 4000);
 try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
-        $maxtype = strpos($dataType, "(max)");
-        foreach ($lengths as $length) {
-            if ($maxtype !== false) {
-                $type = $dataType;
+        $maxcol = strpos($dataType, "(max)");
+        foreach ($lengths as $m) {
+            if ($maxcol !== false) {
+                $typeFull = $dataType;
             } else {
-                $type = "$dataType($length)";
+                $typeFull = "$dataType($m)";
             }
-            echo "\nTesting $type:\n";
+            echo "\nTesting $typeFull:\n";
                 
-            //create and populate table
-            $tbname = "test_binary";
-            $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
+            //create and populate table containing binary(m) or varbinary(m) columns
+            $tbname = "test_" . str_replace(array('(', ')'), '', $dataType) . $m;
+            $colMetaArr = array(new ColumnMeta($typeFull, "c_det"), new ColumnMeta($typeFull, "c_rand", null, "randomized"));
             createTable($conn, $tbname, $colMetaArr);
-            $input0 = str_repeat("d", $length);
-            $input1 = str_repeat("r", $length);
-            insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, $input0, "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY"),
-                                            "c_rand" => new BindParamOp(2, $input1, "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam");
+            $inputValues = array(str_repeat("d", $m), str_repeat("r", $m));
+            insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, $inputValues[0], "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY"),
+                                            "c_rand" => new BindParamOp(2, $inputValues[1], "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam");
                 
-            // fetch with PDO::bindColumn and PDO::FETCH_BOUND
+            // fetch by specifying PDO::PARAM_ types with PDO::bindColumn
             $query = "SELECT c_det, c_rand FROM $tbname";
             foreach ($pdoParamTypes as $pdoParamType) {
                 $det = "";
@@ -44,19 +46,23 @@ try {
                 $stmt->bindColumn('c_rand', $rand, constant($pdoParamType));
                 $row = $stmt->fetch(PDO::FETCH_BOUND);
                 
+                // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_NULL or PDO::PARAM_INT
+                // with or without AE: should not work
                 if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
                     if (!is_null($det) || !is_null($rand)) {
-                        echo "Retrieving encrypted $type data as $pdoParamType should not work\n";
+                        echo "Retrieving $typeFull data as $pdoParamType should not be supported\n";
                     }
+                // check the case when fetching as PDO::PARAM_STR or PDO::PARAM_LOB
+                // with or without AE: should work
                 } else {
-                    if (strlen($det) == $length && strlen($rand) == $length) {
-                        echo "****PDO param type $pdoParamType is compatible with encrypted $type****\n";
+                    if (strlen($det) == $m && strlen($rand) == $m) {
+                        echo "****Retrieving $typeFull data as $pdoParamType is supported****\n";
                     } else {
-                        echo "Data corruption when fetching encrypted $type as PDO param type $pdoParamType\n";
-                        print_r($stmt->errorInfo());
+                        echo "Retrieving $typeFull data as $pdoParamType fails\n";
                     }
                 }
             }
+            // cleanup
             dropTable($conn, $tbname);
         }
     }
@@ -68,61 +74,61 @@ try {
 ?>
 --EXPECT--
 Testing binary(1):
-****PDO param type PDO::PARAM_STR is compatible with encrypted binary(1)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted binary(1)****
+****Retrieving binary(1) data as PDO::PARAM_STR is supported****
+****Retrieving binary(1) data as PDO::PARAM_LOB is supported****
 
 Testing binary(8):
-****PDO param type PDO::PARAM_STR is compatible with encrypted binary(8)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted binary(8)****
+****Retrieving binary(8) data as PDO::PARAM_STR is supported****
+****Retrieving binary(8) data as PDO::PARAM_LOB is supported****
 
 Testing binary(64):
-****PDO param type PDO::PARAM_STR is compatible with encrypted binary(64)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted binary(64)****
+****Retrieving binary(64) data as PDO::PARAM_STR is supported****
+****Retrieving binary(64) data as PDO::PARAM_LOB is supported****
 
 Testing binary(512):
-****PDO param type PDO::PARAM_STR is compatible with encrypted binary(512)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted binary(512)****
+****Retrieving binary(512) data as PDO::PARAM_STR is supported****
+****Retrieving binary(512) data as PDO::PARAM_LOB is supported****
 
 Testing binary(4000):
-****PDO param type PDO::PARAM_STR is compatible with encrypted binary(4000)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted binary(4000)****
+****Retrieving binary(4000) data as PDO::PARAM_STR is supported****
+****Retrieving binary(4000) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(1):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(1)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(1)****
+****Retrieving varbinary(1) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(1) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(8):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(8)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(8)****
+****Retrieving varbinary(8) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(8) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(64):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(64)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(64)****
+****Retrieving varbinary(64) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(64) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(512):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(512)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(512)****
+****Retrieving varbinary(512) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(512) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(4000):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(4000)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(4000)****
+****Retrieving varbinary(4000) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(4000) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(max)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(max)****
+****Retrieving varbinary(max) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(max) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(max)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(max)****
+****Retrieving varbinary(max) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(max) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(max)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(max)****
+****Retrieving varbinary(max) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(max) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(max)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(max)****
+****Retrieving varbinary(max) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(max) data as PDO::PARAM_LOB is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR is compatible with encrypted varbinary(max)****
-****PDO param type PDO::PARAM_LOB is compatible with encrypted varbinary(max)****
+****Retrieving varbinary(max) data as PDO::PARAM_STR is supported****
+****Retrieving varbinary(max) data as PDO::PARAM_LOB is supported****

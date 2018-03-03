@@ -1,7 +1,12 @@
 --TEST--
-Test for inserting and retrieving encrypted data of numeric types
+Test for inserting encrypted data into float types columns
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Test conversions between different float types
+With or without Always Encrypted, implicit conversion works if:
+1. From input of PDO::PARAM_BOOL to a float column
+2. From input of PDO::PARAM_INT to a float column
+3. From input of PDO::PARAM_STR to a float column
+4. From input of PDO::PARAM_LOB to a float column
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -12,29 +17,60 @@ require_once("AEData.inc");
 $dataType = "float";
 $bits = array(1, 12, 24, 36, 53);
 $inputValues = array(9223372036854775808.9223372036854775808, -9223372036854775808.9223372036854775808);
+$numint = 19;
 
 try {
     $conn = connect();
-    foreach ($bits as $bit) {
-        $type = "$dataType($bit)";
-        echo "\nTesting $type:\n";
+    foreach ($bits as $m) {
+        // compute the epsilon for comparing doubles
+        // when $m <= 24, the precision is 7 digits
+        // when $m > 24, the precision is 15 digits, but PHP float only supports up to 14 digits
+        $epsilon;
+        if ($m <= 24) {
+            $epsilon = pow(10, $numint - 7);
+        } else {
+            $epsilon = pow(10, $numint - 14);
+        }
         
-        //create and populate table
-        $tbname = "test_float1";
-        $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
+        $typeFull = "$dataType($m)";
+        echo "\nTesting $typeFull:\n";
+        
+        //create table containing float(m) columns
+        $tbname = "test_" . $dataType . $m;
+        $colMetaArr = array(new ColumnMeta($typeFull, "c_det"), new ColumnMeta($typeFull, "c_rand", null, "randomized"));
         createTable($conn, $tbname, $colMetaArr);
 
-        // test each PDO::PARAM_ type
+        // insert by specifying PDO::PARAM_ types
         foreach ($pdoParamTypes as $pdoParamType) {
-            // insert a row
             $r;
             $stmt = insertRow($conn, $tbname, array( "c_det" => new BindParamOp(1, $inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, $inputValues[1], $pdoParamType)), "prepareBindParam", $r);
-            if ($r === false) {
-                isIncompatibleTypesError($stmt, $type, $pdoParamType);
+            
+            // check the case when inserting as PDO::PARAM_NULL
+            // with or without AE: NULL is inserted
+            if ($pdoParamType == "PDO::PARAM_NULL") {
+                if ($r === false) {
+                    echo "Conversion from $pdoParamType to $typeFull should be supported\n";
+                } else {
+                    $sql = "SELECT c_det, c_rand FROM $tbname";
+                    $stmt = $conn->query($sql);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if (!is_null($row['c_det']) || !is_null($row['c_rand'])) {
+                        echo "Conversion from $pdoParamType to $typeFull should insert NULL\n";
+                    }
+                }
+            // check the case when inserting as PDO::PARAM_BOOL, PDO::PARAM_INT, PDO::PARAM_STR or PDO::PARAM_LOB
+            // with or without AE: should work
             } else {
-                echo "****PDO param type $pdoParamType is compatible with encrypted $type****\n";
-                fetchAll($conn, $tbname);
+                $sql = "SELECT c_det, c_rand FROM $tbname";
+                $stmt = $conn->query($sql);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (abs($row['c_det'] - $inputValues[0]) < $epsilon && abs($row['c_rand'] - $inputValues[1]) < $epsilon) {
+                    echo "****Conversion from $pdoParamType to $typeFull is supported****\n";
+                } else {
+                    echo "Conversion from $pdoParamType to $typeFull causes data corruption\n";
+                }
             }
+            // cleanup
             $conn->query("TRUNCATE TABLE $tbname");
         }
         dropTable($conn, $tbname);
@@ -47,86 +83,31 @@ try {
 ?>
 --EXPECT--
 Testing float(1):
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted float(1)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_NULL is compatible with encrypted float(1)****
-c_det:
-c_rand:
-****PDO param type PDO::PARAM_INT is compatible with encrypted float(1)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_STR is compatible with encrypted float(1)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_LOB is compatible with encrypted float(1)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
+****Conversion from PDO::PARAM_BOOL to float(1) is supported****
+****Conversion from PDO::PARAM_INT to float(1) is supported****
+****Conversion from PDO::PARAM_STR to float(1) is supported****
+****Conversion from PDO::PARAM_LOB to float(1) is supported****
 
 Testing float(12):
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted float(12)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_NULL is compatible with encrypted float(12)****
-c_det:
-c_rand:
-****PDO param type PDO::PARAM_INT is compatible with encrypted float(12)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_STR is compatible with encrypted float(12)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_LOB is compatible with encrypted float(12)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
+****Conversion from PDO::PARAM_BOOL to float(12) is supported****
+****Conversion from PDO::PARAM_INT to float(12) is supported****
+****Conversion from PDO::PARAM_STR to float(12) is supported****
+****Conversion from PDO::PARAM_LOB to float(12) is supported****
 
 Testing float(24):
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted float(24)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_NULL is compatible with encrypted float(24)****
-c_det:
-c_rand:
-****PDO param type PDO::PARAM_INT is compatible with encrypted float(24)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_STR is compatible with encrypted float(24)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
-****PDO param type PDO::PARAM_LOB is compatible with encrypted float(24)****
-c_det: 9.223372E+18
-c_rand: -9.223372E+18
+****Conversion from PDO::PARAM_BOOL to float(24) is supported****
+****Conversion from PDO::PARAM_INT to float(24) is supported****
+****Conversion from PDO::PARAM_STR to float(24) is supported****
+****Conversion from PDO::PARAM_LOB to float(24) is supported****
 
 Testing float(36):
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted float(36)****
-c_det: 9.2233720368547758E+18
-c_rand: -9.2233720368547758E+18
-****PDO param type PDO::PARAM_NULL is compatible with encrypted float(36)****
-c_det:
-c_rand:
-****PDO param type PDO::PARAM_INT is compatible with encrypted float(36)****
-c_det: 9.2233720368547758E+18
-c_rand: -9.2233720368547758E+18
-****PDO param type PDO::PARAM_STR is compatible with encrypted float(36)****
-c_det: 9.2233720368548004E+18
-c_rand: -9.2233720368548004E+18
-****PDO param type PDO::PARAM_LOB is compatible with encrypted float(36)****
-c_det: 9.2233720368547758E+18
-c_rand: -9.2233720368547758E+18
+****Conversion from PDO::PARAM_BOOL to float(36) is supported****
+****Conversion from PDO::PARAM_INT to float(36) is supported****
+****Conversion from PDO::PARAM_STR to float(36) is supported****
+****Conversion from PDO::PARAM_LOB to float(36) is supported****
 
 Testing float(53):
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted float(53)****
-c_det: 9.2233720368547758E+18
-c_rand: -9.2233720368547758E+18
-****PDO param type PDO::PARAM_NULL is compatible with encrypted float(53)****
-c_det:
-c_rand:
-****PDO param type PDO::PARAM_INT is compatible with encrypted float(53)****
-c_det: 9.2233720368547758E+18
-c_rand: -9.2233720368547758E+18
-****PDO param type PDO::PARAM_STR is compatible with encrypted float(53)****
-c_det: 9.2233720368548004E+18
-c_rand: -9.2233720368548004E+18
-****PDO param type PDO::PARAM_LOB is compatible with encrypted float(53)****
-c_det: 9.2233720368547758E+18
-c_rand: -9.2233720368547758E+18
+****Conversion from PDO::PARAM_BOOL to float(53) is supported****
+****Conversion from PDO::PARAM_INT to float(53) is supported****
+****Conversion from PDO::PARAM_STR to float(53) is supported****
+****Conversion from PDO::PARAM_LOB to float(53) is supported****

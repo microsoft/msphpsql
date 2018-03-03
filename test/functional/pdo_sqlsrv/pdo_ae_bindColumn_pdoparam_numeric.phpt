@@ -1,7 +1,12 @@
 --TEST--
-Test for inserting and retrieving encrypted data of numeric types
+Test for retrieving encrypted data from numeric types columns using PDO::bindColumn
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Test conversion from numeric types column to output of PDO::PARAM types
+With or without AE, conversion works if:
+1. From any numeric type except for bigint column to PDO::PARAM_BOOL
+2. From any numeric type except for bigint column to PDO::PARAM_INT
+3. From any numeric type column to PDO::PARAM_STR
+4. From any numeric type column to PDO::PARAM_LOB
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -10,19 +15,21 @@ require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
 
 $dataTypes = array( "bit", "tinyint", "smallint", "int", "bigint", "real");
+$epsilon = 1;
+
 try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
         echo "\nTesting $dataType:\n";
 
-        // create and populate table
-        $tbname = getTableName();
+        // create and populate table containing bit, tinyint, smallint, int, bigint, or real columns
+        $tbname = "test_" . $dataType;
         $colMetaArr = array(new ColumnMeta($dataType, "c_det"), new ColumnMeta($dataType, "c_rand", null, "randomized"));
         createTable($conn, $tbname, $colMetaArr);
         $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
         insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1]));
         
-        // fetch with PDO::bindColumn and PDO::FETCH_BOUND
+        // fetch by specifying PDO::PARAM_ types with PDO::bindColumn
         $query = "SELECT c_det, c_rand FROM $tbname";
         foreach ($pdoParamTypes as $pdoParamType) {
             $det = "";
@@ -32,13 +39,48 @@ try {
             $stmt->bindColumn('c_det', $det, constant($pdoParamType));
             $stmt->bindColumn('c_rand', $rand, constant($pdoParamType));
             $row = $stmt->fetch(PDO::FETCH_BOUND);
-            if ($row != false) {
-                if (is_null($det) || is_null($rand)) {
-                    echo "PDO param type $pdoParamType is not compatible with encrypted $dataType\n";
+            
+            // check the case when fetching as PDO::PARAM_NULL
+            // with or without AE: should not work
+            if ($pdoParamType == "PDO::PARAM_NULL") {
+                if (!is_null($det) || !is_null($rand)) {
+                    echo "Retrieving $dataType data as $pdoParamType should not be supported\n";
+                }
+            // check the case when fetching as PDO::PARAM_BOOL or PDO::PARAM_INT
+            // with or without AE: should only not work with bigint
+            } else if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
+                if ($dataType == "bigint") {
+                    if (!is_null($det) || !is_null($rand)) {
+                        echo "Retrieving $dataType data as $pdoParamType should not be supported\n";
+                    }
+                } else if ($dataType == "real") {
+                    if (abs($det - $inputValues[0]) < $epsilon && abs($rand - $inputValues[1]) < $epsilon) {
+                        echo "****Retrieving $dataType as $pdoParamType is supported****\n";
+                    } else {
+                        echo "Retrieving $dataType as $pdoParamType fails\n";
+                    }
                 } else {
-                    echo "****PDO param type $pdoParamType is compatible with encrypted $dataType****\n";
-                    echo "c_det: $det\n";
-                    echo "c_rand: $rand\n";
+                    if ($det == $inputValues[0] && $rand == $inputValues[1]) {
+                        echo "****Retrieving $dataType as $pdoParamType is supported****\n";
+                    } else {
+                        echo "Retrieving $dataType as $pdoParamType fails\n";
+                    }
+                }
+            // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_INT, PDO::PARAM_STR or PDO::PARAM_LOB
+            // with or without AE: should work
+            } else {
+                if ($dataType == "real") {
+                    if (abs($det - $inputValues[0]) < $epsilon && abs($rand - $inputValues[1]) < $epsilon) {
+                        echo "****Retrieving $dataType as $pdoParamType is supported****\n";
+                    } else {
+                        echo "Retrieving $dataType as $pdoParamType fails\n";
+                    }
+                } else {
+                    if ($det == $inputValues[0] && $rand == $inputValues[1]) {
+                        echo "****Retrieving $dataType as $pdoParamType is supported****\n";
+                    } else {
+                        echo "Retrieving $dataType as $pdoParamType fails\n";
+                    }
                 }
             }
         }
@@ -52,87 +94,35 @@ try {
 ?>
 --EXPECT--
 Testing bit:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted bit****
-c_det: 1
-c_rand: 0
-PDO param type PDO::PARAM_NULL is not compatible with encrypted bit
-****PDO param type PDO::PARAM_INT is compatible with encrypted bit****
-c_det: 1
-c_rand: 0
-****PDO param type PDO::PARAM_STR is compatible with encrypted bit****
-c_det: 1
-c_rand: 0
-****PDO param type PDO::PARAM_LOB is compatible with encrypted bit****
-c_det: 1
-c_rand: 0
+****Retrieving bit as PDO::PARAM_BOOL is supported****
+****Retrieving bit as PDO::PARAM_INT is supported****
+****Retrieving bit as PDO::PARAM_STR is supported****
+****Retrieving bit as PDO::PARAM_LOB is supported****
 
 Testing tinyint:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted tinyint****
-c_det: 0
-c_rand: 255
-PDO param type PDO::PARAM_NULL is not compatible with encrypted tinyint
-****PDO param type PDO::PARAM_INT is compatible with encrypted tinyint****
-c_det: 0
-c_rand: 255
-****PDO param type PDO::PARAM_STR is compatible with encrypted tinyint****
-c_det: 0
-c_rand: 255
-****PDO param type PDO::PARAM_LOB is compatible with encrypted tinyint****
-c_det: 0
-c_rand: 255
+****Retrieving tinyint as PDO::PARAM_BOOL is supported****
+****Retrieving tinyint as PDO::PARAM_INT is supported****
+****Retrieving tinyint as PDO::PARAM_STR is supported****
+****Retrieving tinyint as PDO::PARAM_LOB is supported****
 
 Testing smallint:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted smallint****
-c_det: -32767
-c_rand: 32767
-PDO param type PDO::PARAM_NULL is not compatible with encrypted smallint
-****PDO param type PDO::PARAM_INT is compatible with encrypted smallint****
-c_det: -32767
-c_rand: 32767
-****PDO param type PDO::PARAM_STR is compatible with encrypted smallint****
-c_det: -32767
-c_rand: 32767
-****PDO param type PDO::PARAM_LOB is compatible with encrypted smallint****
-c_det: -32767
-c_rand: 32767
+****Retrieving smallint as PDO::PARAM_BOOL is supported****
+****Retrieving smallint as PDO::PARAM_INT is supported****
+****Retrieving smallint as PDO::PARAM_STR is supported****
+****Retrieving smallint as PDO::PARAM_LOB is supported****
 
 Testing int:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted int****
-c_det: -2147483647
-c_rand: 2147483647
-PDO param type PDO::PARAM_NULL is not compatible with encrypted int
-****PDO param type PDO::PARAM_INT is compatible with encrypted int****
-c_det: -2147483647
-c_rand: 2147483647
-****PDO param type PDO::PARAM_STR is compatible with encrypted int****
-c_det: -2147483647
-c_rand: 2147483647
-****PDO param type PDO::PARAM_LOB is compatible with encrypted int****
-c_det: -2147483647
-c_rand: 2147483647
+****Retrieving int as PDO::PARAM_BOOL is supported****
+****Retrieving int as PDO::PARAM_INT is supported****
+****Retrieving int as PDO::PARAM_STR is supported****
+****Retrieving int as PDO::PARAM_LOB is supported****
 
 Testing bigint:
-PDO param type PDO::PARAM_BOOL is not compatible with encrypted bigint
-PDO param type PDO::PARAM_NULL is not compatible with encrypted bigint
-PDO param type PDO::PARAM_INT is not compatible with encrypted bigint
-****PDO param type PDO::PARAM_STR is compatible with encrypted bigint****
-c_det: -922337203685479936
-c_rand: 922337203685479936
-****PDO param type PDO::PARAM_LOB is compatible with encrypted bigint****
-c_det: -922337203685479936
-c_rand: 922337203685479936
+****Retrieving bigint as PDO::PARAM_STR is supported****
+****Retrieving bigint as PDO::PARAM_LOB is supported****
 
 Testing real:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted real****
-c_det: -2147
-c_rand: 2147
-PDO param type PDO::PARAM_NULL is not compatible with encrypted real
-****PDO param type PDO::PARAM_INT is compatible with encrypted real****
-c_det: -2147
-c_rand: 2147
-****PDO param type PDO::PARAM_STR is compatible with encrypted real****
-c_det: -2147.4829
-c_rand: 2147.4829
-****PDO param type PDO::PARAM_LOB is compatible with encrypted real****
-c_det: -2147.4829
-c_rand: 2147.4829
+****Retrieving real as PDO::PARAM_BOOL is supported****
+****Retrieving real as PDO::PARAM_INT is supported****
+****Retrieving real as PDO::PARAM_STR is supported****
+****Retrieving real as PDO::PARAM_LOB is supported****

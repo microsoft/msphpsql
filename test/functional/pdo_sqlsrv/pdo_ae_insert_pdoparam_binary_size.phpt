@@ -1,7 +1,10 @@
 --TEST--
-Test for inserting and retrieving encrypted data of string types
+Test for inserting encrypted data into binary types columns with different sizes
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Test conversions between different binary types of different sizes
+With or without Always Encrypted, implicit conversion works if:
+1. From input of PDO::PARAM_STR to a any binary column
+2. From input of PDO::PARAM_LOB to a any binary column
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -15,68 +18,74 @@ $lengths = array(2, 8, 64, 512, 4000);
 try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
-        $maxtype = strpos($dataType, "(max)");
-        foreach ($lengths as $length) {
-            if ($maxtype !== false) {
-                $type = $dataType;
+        $maxcol = strpos($dataType, "(max)");
+        foreach ($lengths as $m) {
+            if ($maxcol !== false) {
+                $typeFull = $dataType;
             } else {
-                $type = "$dataType($length)";
+                $typeFull = "$dataType($m)";
             }
-            echo "\nTesting $type:\n";
+            echo "\nTesting $typeFull:\n";
                 
-            //create and populate table
-            $tbname = "test_binary";
-            $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
+            // create table containing binary(m) or varbinary(m) columns
+            $tbname = "test_" . str_replace(array('(', ')'), '', $dataType) . $m;
+            $colMetaArr = array(new ColumnMeta($typeFull, "c_det"), new ColumnMeta($typeFull, "c_rand", null, "randomized"));
             createTable($conn, $tbname, $colMetaArr);
-            $input0 = str_repeat("d", $length);
-            $input1 = str_repeat("r", $length);
+            $inputValues = array(str_repeat("d", $m), str_repeat("r", $m));
             
-            // prepare statement for inserting into table
+            // insert by specifying PDO::PARAM_ types
             foreach ($pdoParamTypes as $pdoParamType) {
-                // insert a row
                 $r;
                 if ($pdoParamType == 'PDO::PARAM_STR' || $pdoParamType == 'PDO::PARAM_LOB') {
-                    $stmt = insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, $input0, $pdoParamType, 0, "PDO::SQLSRV_ENCODING_BINARY"),
-                                                            "c_rand" => new BindParamOp(2, $input1, $pdoParamType, 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam", $r);
+                    $stmt = insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, $inputValues[0], $pdoParamType, 0, "PDO::SQLSRV_ENCODING_BINARY"),
+                                                            "c_rand" => new BindParamOp(2, $inputValues[1], $pdoParamType, 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam", $r);
                 } else {
-                    $stmt = insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, $input0, $pdoParamType), "c_rand" => new BindParamOp(2, $input1, $pdoParamType)), "prepareBindParam", $r);
+                    $stmt = insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, $inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, $inputValues[1], $pdoParamType)), "prepareBindParam", $r);
                 }
                 
-                if ($pdoParamType == "PDO::PARAM_STR" || $pdoParamType == "PDO::PARAM_LOB") {
-                    if ($r === false) {
-                        echo "$pdoParamType(PDO::SQLSRV_ENCODING_BINARY) should be compatible with encrypted $type\n";
-                    } else {
-                        $sql = "SELECT c_det, c_rand FROM $tbname";
-                        $stmt = $conn->query($sql);
-                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                        if (strlen($row['c_det']) == $length && strlen($row['c_rand']) == $length) {
-                            echo "****PDO param type $pdoParamType(PDO::SQLSRV_ENCODING_BINARY) is compatible with $type****\n";
-                        } else {
-                            echo "PDO param type $pdoParamType is incompatible with $type\n";
-                        }
-                    }
-                } elseif (!isAEConnected()) {
+                // check the case when inserting as PDO::PARAM_BOOL or PDO::PARAM_INT
+                // with or without AE: should not work
+                if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
                     if ($r !== false) {
-                        echo "PDO param type $pdoParamType should not be compatible with $type\n";
+                        echo "Conversion from $pdoParamType to $typeFull should not be supported\n";
                     }
-                } else {
-                    if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
-                        if ($r !== false) {
-                            echo "PDO param type $pdoParamType should not be compatible with $type\n";
-                            $sql = "SELECT c_det, c_rand FROM $tbname";
-                            $stmt = $conn->query($sql);
-                            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                            //var_dump($row);
+                // check the case when inserting as PDO::PARAM_NULL
+                // with AE: NULL is inserted
+                // without AE: insertion fails
+                } elseif ($pdoParamType == "PDO::PARAM_NULL") {
+                    if (isAEConnected()) {
+                        if ($r === false) {
+                            echo "Conversion from $pdoParamType to $typeFull should be supported\n";
                         } else {
                             $sql = "SELECT c_det, c_rand FROM $tbname";
                             $stmt = $conn->query($sql);
                             $row = $stmt->fetch(PDO::FETCH_ASSOC);
                             if (!is_null($row['c_det']) && !is_null($row['c_rand'])) {
-                                "Data inserted with $pdoParamType should be null\n";
+                                echo "Conversion from $pdoParamType to $typeFull should insert NULL\n";
                             }
+                        }
+                    } else {
+                        if ($r !== false) {
+                            echo "Conversion from $pdoParamType to $typeFull should not be supported\n";
+                        }
+                    }
+                // check the case when inserting as PDO::PARAM_STR or PDO::PARAM_LOB
+                // with or without AE: should work
+                } else {
+                    if ($r === false) {
+                        echo "Conversion from $pdoParamType to $typeFull should be supported\n";
+                    } else {
+                        $sql = "SELECT c_det, c_rand FROM $tbname";
+                        $stmt = $conn->query($sql);
+                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                        if (strlen($row['c_det']) == $m && strlen($row['c_rand']) == $m) {
+                            echo "****Conversion from $pdoParamType to $typeFull is supported****\n";
+                        } else {
+                            echo "Conversion from $pdoParamType to $typeFull causes data corruption\n";
                         }
                     }
                 }
+                // cleanup
                 $conn->query("TRUNCATE TABLE $tbname");
             }
             dropTable($conn, $tbname);
@@ -90,61 +99,61 @@ try {
 ?>
 --EXPECT--
 Testing binary(2):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(2)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(2)****
+****Conversion from PDO::PARAM_STR to binary(2) is supported****
+****Conversion from PDO::PARAM_LOB to binary(2) is supported****
 
 Testing binary(8):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(8)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(8)****
+****Conversion from PDO::PARAM_STR to binary(8) is supported****
+****Conversion from PDO::PARAM_LOB to binary(8) is supported****
 
 Testing binary(64):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(64)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(64)****
+****Conversion from PDO::PARAM_STR to binary(64) is supported****
+****Conversion from PDO::PARAM_LOB to binary(64) is supported****
 
 Testing binary(512):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(512)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(512)****
+****Conversion from PDO::PARAM_STR to binary(512) is supported****
+****Conversion from PDO::PARAM_LOB to binary(512) is supported****
 
 Testing binary(4000):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(4000)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with binary(4000)****
+****Conversion from PDO::PARAM_STR to binary(4000) is supported****
+****Conversion from PDO::PARAM_LOB to binary(4000) is supported****
 
 Testing varbinary(2):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(2)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(2)****
+****Conversion from PDO::PARAM_STR to varbinary(2) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(2) is supported****
 
 Testing varbinary(8):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(8)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(8)****
+****Conversion from PDO::PARAM_STR to varbinary(8) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(8) is supported****
 
 Testing varbinary(64):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(64)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(64)****
+****Conversion from PDO::PARAM_STR to varbinary(64) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(64) is supported****
 
 Testing varbinary(512):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(512)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(512)****
+****Conversion from PDO::PARAM_STR to varbinary(512) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(512) is supported****
 
 Testing varbinary(4000):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(4000)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(4000)****
+****Conversion from PDO::PARAM_STR to varbinary(4000) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(4000) is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
+****Conversion from PDO::PARAM_STR to varbinary(max) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(max) is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
+****Conversion from PDO::PARAM_STR to varbinary(max) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(max) is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
+****Conversion from PDO::PARAM_STR to varbinary(max) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(max) is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
+****Conversion from PDO::PARAM_STR to varbinary(max) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(max) is supported****
 
 Testing varbinary(max):
-****PDO param type PDO::PARAM_STR(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
-****PDO param type PDO::PARAM_LOB(PDO::SQLSRV_ENCODING_BINARY) is compatible with varbinary(max)****
+****Conversion from PDO::PARAM_STR to varbinary(max) is supported****
+****Conversion from PDO::PARAM_LOB to varbinary(max) is supported****

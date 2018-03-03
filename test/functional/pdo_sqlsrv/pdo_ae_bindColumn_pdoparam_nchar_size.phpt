@@ -1,7 +1,10 @@
 --TEST--
-Test for inserting and retrieving encrypted data of numeric types
+Test for retrieving encrypted data from nchar types columns using PDO::bindColumn
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Test conversion from nchar types column to output of PDO::PARAM types
+With or without AE, conversion works if:
+1. From any nchar type column to PDO::PARAM_STR
+2. From any nchar type column to PDO::PARAM_LOB
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -11,51 +14,54 @@ require_once("AEData.inc");
 
 $dataTypes = array("nchar", "nvarchar", "nvarchar(max)");
 $lengths = array(1, 8, 64, 512, 4000);
-$encTypes = array("deterministic", "randomized");
 
 try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
-        $maxtype = strpos($dataType, "(max)");
-        foreach ($lengths as $length) {
-            if ($maxtype !== false) {
-                $type = $dataType;
+        $maxcol = strpos($dataType, "(max)");
+        foreach ($lengths as $m) {
+            if ($maxcol !== false) {
+                $typeFull = $dataType;
             } else {
-                $type = "$dataType($length)";
+                $typeFull = "$dataType($m)";
             }
-            echo "\nTesting $type:\n";
+            echo "\nTesting $typeFull:\n";
                 
-            //create and populate table
-            foreach($encTypes as $encType) {
-                $tbname = getTableName();
-                $colMetaArr = array(new ColumnMeta($type, "c1", null, $encType));
-                createTable($conn, $tbname, $colMetaArr);
-                $input = str_repeat("d", $length);
-                insertRow($conn, $tbname, array("c1" => $input));
+            //create and populate table containing nchar(m) or nvarchar(m) columns
+            $tbname = "test_" . str_replace(array('(', ')'), '', $dataType) . $m;
+            $colMetaArr = array(new ColumnMeta($typeFull, "c1"));
+            createTable($conn, $tbname, $colMetaArr);
+            $inputValue = str_repeat("d", $m);
+            insertRow($conn, $tbname, array("c1" => $inputValue));
                     
-                // fetch with PDO::bindColumn and PDO::FETCH_BOUND
-                $query = "SELECT c1 FROM $tbname";
-                foreach ($pdoParamTypes as $pdoParamType) {
-                    $det = "";
-                    $rand = "";
-                    $stmt = $conn->prepare($query);
-                    $stmt->execute();
-                    $stmt->bindColumn('c1', $c1, constant($pdoParamType));
-                    $row = $stmt->fetch(PDO::FETCH_BOUND);
-                   if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
-                        if (!empty($det) || !empty($rand)) {
-                            echo "Fetching $type as PDO param type $pdoParamType should be empty\n";
-                        }
+            // fetch by specifying PDO::PARAM_ types with PDO::bindColumn
+            $query = "SELECT c1 FROM $tbname";
+            foreach ($pdoParamTypes as $pdoParamType) {
+                $det = "";
+                $rand = "";
+                $stmt = $conn->prepare($query);
+                $stmt->execute();
+                $stmt->bindColumn('c1', $c1, constant($pdoParamType));
+                $row = $stmt->fetch(PDO::FETCH_BOUND);
+                
+                // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_NULL or PDO::PARAM_INT
+                // with or without AE: should not work
+                if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
+                    if (!empty($det) || !empty($rand)) {
+                        echo "Retrieving $typeFull data as $pdoParamType should not be supported\n";
+                    }
+                // check the case when fetching as PDO::PARAM_STR or PDO::PARAM_LOB
+                // with or without AE: should work
+                } else {
+                    if (strlen($c1) == $m) {
+                        echo "****Retrieving $typeFull as $pdoParamType is supported****\n";
                     } else {
-                        if (strlen($c1) == $length) {
-                            echo "****PDO param type $pdoParamType is compatible with $encType encrypted $type****\n";
-                        } else {
-                             echo "PDO param type $pdoParamType is incompatible with $encType encrypted $type\n";
-                        }
+                        echo "Retrieving $typeFull as $pdoParamType fails\n";
                     }
                 }
-                dropTable($conn, $tbname);
             }
+            // cleanup
+            dropTable($conn, $tbname);
         }
     }
     unset($stmt);
@@ -66,91 +72,61 @@ try {
 ?>
 --EXPECT--
 Testing nchar(1):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nchar(1)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nchar(1)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nchar(1)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nchar(1)****
+****Retrieving nchar(1) as PDO::PARAM_STR is supported****
+****Retrieving nchar(1) as PDO::PARAM_LOB is supported****
 
 Testing nchar(8):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nchar(8)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nchar(8)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nchar(8)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nchar(8)****
+****Retrieving nchar(8) as PDO::PARAM_STR is supported****
+****Retrieving nchar(8) as PDO::PARAM_LOB is supported****
 
 Testing nchar(64):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nchar(64)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nchar(64)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nchar(64)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nchar(64)****
+****Retrieving nchar(64) as PDO::PARAM_STR is supported****
+****Retrieving nchar(64) as PDO::PARAM_LOB is supported****
 
 Testing nchar(512):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nchar(512)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nchar(512)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nchar(512)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nchar(512)****
+****Retrieving nchar(512) as PDO::PARAM_STR is supported****
+****Retrieving nchar(512) as PDO::PARAM_LOB is supported****
 
 Testing nchar(4000):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nchar(4000)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nchar(4000)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nchar(4000)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nchar(4000)****
+****Retrieving nchar(4000) as PDO::PARAM_STR is supported****
+****Retrieving nchar(4000) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(1):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(1)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(1)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(1)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(1)****
+****Retrieving nvarchar(1) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(1) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(8):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(8)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(8)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(8)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(8)****
+****Retrieving nvarchar(8) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(8) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(64):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(64)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(64)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(64)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(64)****
+****Retrieving nvarchar(64) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(64) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(512):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(512)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(512)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(512)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(512)****
+****Retrieving nvarchar(512) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(512) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(4000):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(4000)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(4000)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(4000)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(4000)****
+****Retrieving nvarchar(4000) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(4000) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(max):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(max)****
+****Retrieving nvarchar(max) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(max) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(max):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(max)****
+****Retrieving nvarchar(max) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(max) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(max):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(max)****
+****Retrieving nvarchar(max) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(max) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(max):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(max)****
+****Retrieving nvarchar(max) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(max) as PDO::PARAM_LOB is supported****
 
 Testing nvarchar(max):
-****PDO param type PDO::PARAM_STR is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with deterministic encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_STR is compatible with randomized encrypted nvarchar(max)****
-****PDO param type PDO::PARAM_LOB is compatible with randomized encrypted nvarchar(max)****
+****Retrieving nvarchar(max) as PDO::PARAM_STR is supported****
+****Retrieving nvarchar(max) as PDO::PARAM_LOB is supported****
