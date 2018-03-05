@@ -88,6 +88,7 @@ try {
                             echo "****Conversion from $pdoParamType to $dataType is supported****\n";
                         } else {
                             echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                            var_dump($row);
                         }
                     }
                 }

@@ -56,13 +56,13 @@ foreach($dataTypes as $dataType) {
         $inputValues[1] = $inputValuesInit[$dataType][1];
         if ($m != 0) {
             if ($dataType == "datetime2") {
-                $inputValues[1] .= "." . str_repeat("9", $m);
+                $inputValues[1] .= "." . str_repeat("4", $m);
             } else if ($dataType == "datetimeoffset") {
                 $dtoffsetPieces = explode(" ", $inputValues[1]);
-                $inputValues[1] = $dtoffsetPieces[0] . " " . $dtoffsetPieces[1] . "." . str_repeat("9", $m) . " " . $dtoffsetPieces[2];
+                $inputValues[1] = $dtoffsetPieces[0] . " " . $dtoffsetPieces[1] . "." . str_repeat("4", $m) . " " . $dtoffsetPieces[2];
             } else if ($dataType == "time") {
                 $inputValues[0] .= "." . str_repeat("0", $m);
-                $inputValues[1] .= "." . str_repeat("9", $m);
+                $inputValues[1] .= "." . str_repeat("4", $m);
             }
         }
         $typeFull = "$dataType($m)";
