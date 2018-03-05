@@ -50,36 +50,45 @@ try {
             // with or without AE: 1 or 0 should be inserted when inserting into an integer column
             //                     double is inserted when inserting into a real column
             } else if ($pdoParamType == "PDO::PARAM_BOOL") {
-                $sql = "SELECT c_det, c_rand FROM $tbname";
-                $stmt = $conn->query($sql);
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                if ($dataType == "real") {
-                    if (abs($row['c_det'] - $inputValues[0]) < $epsilon && abs($row['c_rand'] - $inputValues[1]) < $epsilon) {
-                        echo "****Conversion from $pdoParamType to $dataType is supported****\n";
-                    } else {
-                        echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
-                    }
+                if ($r === false) {
+                    echo "Conversion from $pdoParamType to $dataType should be supported\n";
                 } else {
-                    if ($row['c_det'] != ($inputValues[0] != 0) && $row['c_rand'] != ($inputValues[1] != 0)) {
-                        echo "Conversion from $pdoParamType to $dataType insert a boolean\n";
+                    $sql = "SELECT c_det, c_rand FROM $tbname";
+                    $stmt = $conn->query($sql);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($dataType == "real") {
+                        if (abs($row['c_det'] - $inputValues[0]) < $epsilon && abs($row['c_rand'] - $inputValues[1]) < $epsilon) {
+                            echo "****Conversion from $pdoParamType to $dataType is supported****\n";
+                        } else {
+                            echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                        }
+                    } else {
+                        if ($row['c_det'] != ($inputValues[0] != 0) && $row['c_rand'] != ($inputValues[1] != 0)) {
+                            echo "Conversion from $pdoParamType to $dataType insert a boolean\n";
+                        }
                     }
                 }
             // check the case when inserting as PDO::PARAM_INT, PDO::PARAM_STR or PDO::PARAM_LOB
+            // with or without AE: should work
             } else {
-                $sql = "SELECT c_det, c_rand FROM $tbname";
-                $stmt = $conn->query($sql);
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                if ($dataType == "real") {
-                    if (abs($row['c_det'] - $inputValues[0]) < $epsilon && abs($row['c_rand'] - $inputValues[1]) < $epsilon) {
-                        echo "****Conversion from $pdoParamType to $dataType is supported****\n";
-                    } else {
-                        echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
-                    }
+                if ($r === false) {
+                    echo "Conversion from $pdoParamType to $dataType should be supported\n";
                 } else {
-                    if ($row['c_det'] == $inputValues[0] && $row['c_rand'] == $inputValues[1]) {
-                        echo "****Conversion from $pdoParamType to $dataType is supported****\n";
+                    $sql = "SELECT c_det, c_rand FROM $tbname";
+                    $stmt = $conn->query($sql);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($dataType == "real") {
+                        if (abs($row['c_det'] - $inputValues[0]) < $epsilon && abs($row['c_rand'] - $inputValues[1]) < $epsilon) {
+                            echo "****Conversion from $pdoParamType to $dataType is supported****\n";
+                        } else {
+                            echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                        }
                     } else {
-                        echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                        if ($row['c_det'] == $inputValues[0] && $row['c_rand'] == $inputValues[1]) {
+                            echo "****Conversion from $pdoParamType to $dataType is supported****\n";
+                        } else {
+                            echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                        }
                     }
                 }
             }

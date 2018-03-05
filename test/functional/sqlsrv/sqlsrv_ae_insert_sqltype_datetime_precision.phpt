@@ -122,6 +122,7 @@ foreach($dataTypes as $dataType) {
                     echo "****Conversion from $sqlType to $typeFull is supported****\n";
                 } else {
                     echo "Conversion from $sqlType to $typeFull causes data corruption\n";
+                    var_dump($row);
                 }
             }
         }

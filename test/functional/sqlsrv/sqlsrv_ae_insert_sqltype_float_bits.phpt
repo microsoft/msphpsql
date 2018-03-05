@@ -97,7 +97,7 @@ Testing float(24):
 Test successfully done
 
 Testing float(36):
-Conversion from SQLSRV_SQLTYPE_FLOAT to float(36) should be supported
+****Conversion from SQLSRV_SQLTYPE_FLOAT to float(36) is supported****
 
 Testing float(53):
-Conversion from SQLSRV_SQLTYPE_FLOAT to float(53) should be supported
+****Conversion from SQLSRV_SQLTYPE_FLOAT to float(53) is supported****
