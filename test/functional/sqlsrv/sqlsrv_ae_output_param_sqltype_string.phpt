@@ -9,6 +9,101 @@ Bind output params using sqlsrv_prepare with all sql_type
 require_once('MsCommon.inc');
 require_once('AEData.inc');
 
+// get sqlType constant value from string
+function get_sqlType_constant( $sqlType )
+{
+    switch ( $sqlType ) {
+		case 'SQLSRV_SQLTYPE_BIGINT':
+		    return SQLSRV_SQLTYPE_BIGINT;
+			break;
+		case 'SQLSRV_SQLTYPE_BINARY':
+		    return SQLSRV_SQLTYPE_BINARY;
+			break;
+		case 'SQLSRV_SQLTYPE_BIT':
+		    return SQLSRV_SQLTYPE_BIT;
+			break;
+		case 'SQLSRV_SQLTYPE_CHAR':
+		    // our tests always use precision 5 for SQLSRV_SQLTYPE_CHAR
+		    return SQLSRV_SQLTYPE_CHAR(5);
+			break;		
+		case 'SQLSRV_SQLTYPE_DATETIME':
+		    return SQLSRV_SQLTYPE_DATETIME;
+			break;
+		case 'SQLSRV_SQLTYPE_DATETIME2':
+		    return SQLSRV_SQLTYPE_DATETIME2;
+			break;		
+		case 'SQLSRV_SQLTYPE_DATETIMEOFFSET':
+		    return SQLSRV_SQLTYPE_DATETIMEOFFSET;
+			break;
+		case 'SQLSRV_SQLTYPE_DECIMAL':
+		    return SQLSRV_SQLTYPE_DECIMAL;
+			break;
+		case 'SQLSRV_SQLTYPE_FLOAT':
+		    return SQLSRV_SQLTYPE_FLOAT;
+			break;
+		case 'SQLSRV_SQLTYPE_IMAGE':
+		    return SQLSRV_SQLTYPE_IMAGE;
+			break;
+		case 'SQLSRV_SQLTYPE_INT':
+		    return SQLSRV_SQLTYPE_INT;
+			break;			
+		case 'SQLSRV_SQLTYPE_MONEY':
+		    return SQLSRV_SQLTYPE_MONEY;
+			break;
+		case 'SQLSRV_SQLTYPE_NCHAR':
+			// our tests always use precision 5 for SQLSRV_SQLTYPE_NCHAR
+		    return SQLSRV_SQLTYPE_NCHAR(5);
+			break;		
+		case 'SQLSRV_SQLTYPE_NUMERIC':
+		    return SQLSRV_SQLTYPE_NUMERIC;
+			break;
+		case 'SQLSRV_SQLTYPE_NVARCHAR':
+		    return SQLSRV_SQLTYPE_NVARCHAR;
+			break;	
+		case 'SQLSRV_SQLTYPE_NTEXT':
+		    return SQLSRV_SQLTYPE_NTEXT;
+			break;
+		case 'SQLSRV_SQLTYPE_REAL':
+		    return SQLSRV_SQLTYPE_REAL;
+			break;			
+		case 'SQLSRV_SQLTYPE_SMALLDATETIME':
+		    return SQLSRV_SQLTYPE_SMALLDATETIME;
+			break;
+		case 'SQLSRV_SQLTYPE_SMALLINT':
+		    return SQLSRV_SQLTYPE_SMALLINT;
+			break;
+		case 'SQLSRV_SQLTYPE_SMALLMONEY':
+		    return SQLSRV_SQLTYPE_SMALLMONEY;
+			break;
+		case 'SQLSRV_SQLTYPE_TEXT':
+		    return SQLSRV_SQLTYPE_TEXT;
+			break;		
+		case 'SQLSRV_SQLTYPE_TIME':
+		    return SQLSRV_SQLTYPE_TIME;
+			break;	
+		case 'SQLSRV_SQLTYPE_TIMESTAMP':
+		    return SQLSRV_SQLTYPE_TIMESTAMP;
+			break;	
+		case 'SQLSRV_SQLTYPE_TINYINT':
+		    return SQLSRV_SQLTYPE_TINYINT;
+			break;		
+		case 'SQLSRV_SQLTYPE_UNIQUEIDENTIFIER':
+		    return SQLSRV_SQLTYPE_UNIQUEIDENTIFIER;
+			break;
+		case 'SQLSRV_SQLTYPE_VARBINARY':
+		    return SQLSRV_SQLTYPE_VARBINARY;
+			break;		
+		case 'SQLSRV_SQLTYPE_VARCHAR':
+		    return SQLSRV_SQLTYPE_VARCHAR;
+			break;			
+		case 'SQLSRV_SQLTYPE_XML':
+		    return SQLSRV_SQLTYPE_XML;
+		    break;
+		default:
+		     echo "get_sqlType_constant: Invalid SQL Type $sqlType\n";
+	}
+}
+
 $dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
 
 // this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
@@ -58,24 +153,23 @@ foreach ($dataTypes as $dataType) {
         } else {
             // always encrypted only allow sqlType that is identical to the encrypted column datatype
             if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
-		        // insert a row
-                $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
-                $sqlType = get_default_size_prec($sqlType);
-                $inputs = array(new AE\BindParamOption($inputValues[0], null, null, $sqlType), new AE\BindParamOption($inputValues[1], null, null, $sqlType));
+                $sqlTypeConstant = get_sqlType_constant($sqlType);
 
     	        // Call store procedure
-                $outSql = AE\getCallProcSqlPlaceholders($spname, count($inputs));
-
-         	    $c_detOut = '';
+                $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
+                $c_detOut = '';
                 $c_randOut = '';
-                $stmt = sqlsrv_prepare($conn, $outSql, array( array( &$c_detOut, SQLSRV_PARAM_OUT ),
-                               array( &$c_randOut, SQLSRV_PARAM_OUT )));
+                $stmt = sqlsrv_prepare( $conn, $outSql, 
+                    array( array( &$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant ),
+                    array( &$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant )));
                 if (!$stmt) {
                     die(print_r(sqlsrv_errors(), true));
                 }							
                 sqlsrv_execute($stmt);
                 print("c_det: " . $c_detOut . "\n");
                 print("c_rand: " . $c_randOut . "\n");
+                $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
+
                 if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
                     echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
                     $success = false;
@@ -98,7 +192,6 @@ foreach ($dataTypes as $dataType) {
 }
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
-
 ?>
 --EXPECT--
 
