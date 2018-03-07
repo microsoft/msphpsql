@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted data of string types
+Test for inserting and retrieving encrypted data of money types
 --DESCRIPTION--
 Bind output params using sqlsrv_prepare with all sql_type
 --SKIPIF--
@@ -9,13 +9,11 @@ Bind output params using sqlsrv_prepare with all sql_type
 require_once('MsCommon.inc');
 require_once('AEData.inc');
 
-$dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
+$dataTypes = array( "smallmoney", "money" );
 
 // this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
-$compatList = array( "char(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "varchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "nchar(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "nvarchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ));
+$compatList = array( "smallmoney" => array( "SQLSRV_SQLTYPE_BINARY", "SQLSRV_SQLTYPE_VARBINARY", "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DECIMAL(18,5)", "SQLSRV_SQLTYPE_NUMERIC(10,5)", "SQLSRV_SQLTYPE_FLOAT", "SQLSRV_SQLTYPE_REAL", "SQLSRV_SQLTYPE_BIGINT", "SQLSRV_SQLTYPE_INT", "SQLSRV_SQLTYPE_SMALLINT", "SQLSRV_SQLTYPE_TINYINT", "SQLSRV_SQLTYPE_MONEY", "SQLSRV_SQLTYPE_SMALLMONEY", "SQLSRV_SQLTYPE_BIT", "SQLSRV_SQLTYPE_TIMESTAMP" ),
+                     "money" => array( "SQLSRV_SQLTYPE_BINARY", "SQLSRV_SQLTYPE_VARBINARY", "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DECIMAL(18,5)", "SQLSRV_SQLTYPE_NUMERIC(10,5)", "SQLSRV_SQLTYPE_FLOAT", "SQLSRV_SQLTYPE_REAL", "SQLSRV_SQLTYPE_BIGINT", "SQLSRV_SQLTYPE_INT", "SQLSRV_SQLTYPE_SMALLINT", "SQLSRV_SQLTYPE_TINYINT", "SQLSRV_SQLTYPE_MONEY", "SQLSRV_SQLTYPE_SMALLMONEY", "SQLSRV_SQLTYPE_BIT", "SQLSRV_SQLTYPE_TIMESTAMP" ));
 
 $conn = AE\connect();
 	
@@ -32,8 +30,10 @@ foreach ($dataTypes as $dataType) {
     $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
     $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
-    if ($r === false) {
-        is_incompatible_types_error($dataType, "default type");
+
+    if ($r != false) {
+		echo "$dataType should not be compatible with any money type.\n";
+        $success = false;
     }
 	
     // Create a Store Procedure
@@ -69,33 +69,19 @@ foreach ($dataTypes as $dataType) {
                     array( &$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant )));
                 if (!$stmt) {
                     die(print_r(sqlsrv_errors(), true));
-                }						
-				
+                }							
                 sqlsrv_execute($stmt);
-				$errors = sqlsrv_errors();
-                if ( !empty($errors) ) {
-				    var_dump( sqlsrv_errors() );
-					die("Error executing statement.");
-				}
-				
-                print("c_det: " . $c_detOut . "\n");
-                print("c_rand: " . $c_randOut . "\n");
-                $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
-
-                if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
-                    echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                $errors = sqlsrv_errors();
+                if ( empty($errors) ) {
+		            echo "$dataType should not be compatible with any money type.\n";
                     $success = false;
-                }
+				}
 
-                sqlsrv_query($conn, "TRUNCATE TABLE $tbname");				
+				sqlsrv_query($conn, "TRUNCATE TABLE $tbname");				
             }
 		}		
     }
-	
-    if (!AE\isColEncrypted()) {
-        AE\fetchAll($conn, $tbname);
-	}
-	
+
     if ($success) {
         echo "Test successfully done.\n";
     }
@@ -107,22 +93,9 @@ sqlsrv_close($conn);
 ?>
 --EXPECT--
 
-Testing char(5): 
-c_det: -leng
-c_rand: th, n
+Testing smallmoney: 
 Test successfully done.
 
-Testing varchar(max): 
-c_det: Use varchar(max) when the sizes of the column data entries vary considerably, and the size might exceed 8,000 bytes.
-c_rand: Each non-null varchar(max) or nvarchar(max) column requires 24 bytes of additional fixed allocation which counts against the 8,060 byte row limit during a sort operation.
+Testing money: 
 Test successfully done.
 
-Testing nchar(5): 
-c_det: -leng
-c_rand: th Un
-Test successfully done.
-
-Testing nvarchar(max): 
-c_det: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
-c_rand: Otherwise, the implicit conversion will result in a Unicode large-value (max).
-Test successfully done.

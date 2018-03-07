@@ -1,5 +1,5 @@
 --TEST--
-Test for inserting and retrieving encrypted data of string types
+Test for inserting and retrieving encrypted data of datetime types
 --DESCRIPTION--
 Bind output params using sqlsrv_prepare with all sql_type
 --SKIPIF--
@@ -9,13 +9,16 @@ Bind output params using sqlsrv_prepare with all sql_type
 require_once('MsCommon.inc');
 require_once('AEData.inc');
 
-$dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
+date_default_timezone_set("Canada/Pacific");
+$dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
 
 // this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
-$compatList = array( "char(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "varchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "nchar(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "nvarchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ));
+$compatList = array( "date" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2" ),
+                     "datetime" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2" ),
+                     "datetime2" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2" ),
+                     "smalldatetime" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2" ),
+                     "time" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2" ),
+                     "datetimeoffset" => array("SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIMEOFFSET") );
 
 $conn = AE\connect();
 	
@@ -59,7 +62,6 @@ foreach ($dataTypes as $dataType) {
             // always encrypted only allow sqlType that is identical to the encrypted column datatype
             if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
                 $sqlTypeConstant = get_sqlType_constant($sqlType);
-
     	        // Call store procedure
                 $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
                 $c_detOut = '';
@@ -69,32 +71,19 @@ foreach ($dataTypes as $dataType) {
                     array( &$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant )));
                 if (!$stmt) {
                     die(print_r(sqlsrv_errors(), true));
-                }						
-				
+                }							
                 sqlsrv_execute($stmt);
 				$errors = sqlsrv_errors();
-                if ( !empty($errors) ) {
-				    var_dump( sqlsrv_errors() );
-					die("Error executing statement.");
-				}
-				
-                print("c_det: " . $c_detOut . "\n");
-                print("c_rand: " . $c_randOut . "\n");
-                $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
-
-                if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
-                    echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+				if ( empty($errors) ) {
+					// SQLSRV_PHPTYPE_DATETIME not supported
+		            echo "$dataType should not be compatible with any datetime type.\n";
                     $success = false;
-                }
+				}
 
                 sqlsrv_query($conn, "TRUNCATE TABLE $tbname");				
             }
 		}		
     }
-	
-    if (!AE\isColEncrypted()) {
-        AE\fetchAll($conn, $tbname);
-	}
 	
     if ($success) {
         echo "Test successfully done.\n";
@@ -107,22 +96,20 @@ sqlsrv_close($conn);
 ?>
 --EXPECT--
 
-Testing char(5): 
-c_det: -leng
-c_rand: th, n
+Testing date: 
 Test successfully done.
 
-Testing varchar(max): 
-c_det: Use varchar(max) when the sizes of the column data entries vary considerably, and the size might exceed 8,000 bytes.
-c_rand: Each non-null varchar(max) or nvarchar(max) column requires 24 bytes of additional fixed allocation which counts against the 8,060 byte row limit during a sort operation.
+Testing datetime: 
 Test successfully done.
 
-Testing nchar(5): 
-c_det: -leng
-c_rand: th Un
+Testing datetime2: 
 Test successfully done.
 
-Testing nvarchar(max): 
-c_det: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
-c_rand: Otherwise, the implicit conversion will result in a Unicode large-value (max).
+Testing smalldatetime: 
+Test successfully done.
+
+Testing time: 
+Test successfully done.
+
+Testing datetimeoffset: 
 Test successfully done.

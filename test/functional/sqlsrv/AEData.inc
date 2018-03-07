@@ -16,11 +16,11 @@ $real_params = array( 0, -2147.483, 2147.483, 1610, 1073, -1073 );
 
 // date and time
 $date_params = array( '1900-01-01', '0001-01-01', '9999-12-31', '5000-07-15', '2500-04-08', '7500-10-23' );
-$datetime2_params = array( '1900-01-01 00:00:00', '0001-01-01 00:00:00', '9999-12-31 23:59:59.123456', '5000-07-15 12:30:30.5555', '2500-04-08 06:15:15.33', '7500-10-23 18:45:45.888888' );
+$datetime2_params = array( '1900-01-01 00:00:00', '0001-01-01 00:00:00', '9999-12-31 23:59:59.9999999', '5000-07-15 12:30:30.5555', '2500-04-08 06:15:15.33', '7500-10-23 18:45:45.888888' );
 $datetime_params = array( '1900-01-01 00:00:00', '1753-01-01 00:00:00', '9999-12-31 23:59:59.997', '5000-07-15 12:30:30.5', '2500-04-08 06:15:15.33', '7500-10-23 18:45:45.888' );
-$datetimeoffset_params = array( '1900-01-01 00:00:00 +01:00', '0001-01-01 00:00:00 -14:00', '9999-12-31 23:59:59.123456+14:00', '5000-07-15 12:30:30.55 -03:00', '2500-04-08 06:15:15.3333 -07:00', '7500-10-23 18:45:45.888888 +07:00' );
+$datetimeoffset_params = array( '1900-01-01 00:00:00 +01:00', '0001-01-01 00:00:00 -14:00', '9999-12-31 23:59:59.9999999 +14:00', '5000-07-15 12:30:30.55 -03:00', '2500-04-08 06:15:15.3333 -07:00', '7500-10-23 18:45:45.888888 +07:00' );
 $smalldatetime_params = array( '1900-01-01 00:00:00', '1900-01-01 00:00:00', '2079-06-05 23:59:00', '1990-07-15 12:30:00', '1945-04-08 06:15:00', '2000-10-23 18:45:00' );
-$time_params = array( '00:00:00', '00:00:00.0000000', '23:59:59.123456', '12:30:30.5555', '06:15:15.33', '18:45:45.888888' );
+$time_params = array( '00:00:00', '00:00:00.0000000', '23:59:59.9999999', '12:30:30.5555', '06:15:15.33', '18:45:45.888888' );
 
 // character strings
 $char_params = array( 'Fixed', '-leng', 'th, n', 'on-Un', 'icode', 'strin' );
@@ -110,4 +110,103 @@ function get_default_size_prec( $sqlType )
     return $sqlType;
 }
 
+// get sqlType constant value from string
+function get_sqlType_constant( $sqlType )
+{
+    switch ( $sqlType ) {
+		case 'SQLSRV_SQLTYPE_BIGINT':
+		    return SQLSRV_SQLTYPE_BIGINT;
+			break;
+		case 'SQLSRV_SQLTYPE_BINARY':
+		    return SQLSRV_SQLTYPE_BINARY;
+			break;
+		case 'SQLSRV_SQLTYPE_BIT':
+		    return SQLSRV_SQLTYPE_BIT;
+			break;
+		case 'SQLSRV_SQLTYPE_CHAR':
+		    // our tests always use precision 5 for SQLSRV_SQLTYPE_CHAR
+		    return SQLSRV_SQLTYPE_CHAR(5);
+			break;		
+		case 'SQLSRV_SQLTYPE_DATE':
+		    return SQLSRV_SQLTYPE_DATE;
+			break;
+		case 'SQLSRV_SQLTYPE_DATETIME':
+		    return SQLSRV_SQLTYPE_DATETIME;
+			break;
+		case 'SQLSRV_SQLTYPE_DATETIME2':
+		    return SQLSRV_SQLTYPE_DATETIME2;
+			break;		
+		case 'SQLSRV_SQLTYPE_DATETIMEOFFSET':
+		    return SQLSRV_SQLTYPE_DATETIMEOFFSET;
+			break;
+		case 'SQLSRV_SQLTYPE_DECIMAL':
+			// our tests always use precision 18 scale 5 for SQLSRV_SQLTYPE_DECIMAL
+		    return SQLSRV_SQLTYPE_DECIMAL(18, 5);
+			break;
+		case 'SQLSRV_SQLTYPE_FLOAT':
+		    return SQLSRV_SQLTYPE_FLOAT;
+			break;
+		case 'SQLSRV_SQLTYPE_IMAGE':
+		    return SQLSRV_SQLTYPE_IMAGE;
+			break;
+		case 'SQLSRV_SQLTYPE_INT':
+		    return SQLSRV_SQLTYPE_INT;
+			break;			
+		case 'SQLSRV_SQLTYPE_MONEY':
+		    return SQLSRV_SQLTYPE_MONEY;
+			break;
+		case 'SQLSRV_SQLTYPE_NCHAR':
+			// our tests always use precision 5 for SQLSRV_SQLTYPE_NCHAR
+		    return SQLSRV_SQLTYPE_NCHAR(5);
+			break;		
+		case 'SQLSRV_SQLTYPE_NUMERIC':
+			// our tests always use precision 10 scale 5 for SQLSRV_SQLTYPE_NUMERIC
+		    return SQLSRV_SQLTYPE_NUMERIC(10, 5);
+			break;
+		case 'SQLSRV_SQLTYPE_NVARCHAR':
+		    return SQLSRV_SQLTYPE_NVARCHAR;
+			break;	
+		case 'SQLSRV_SQLTYPE_NTEXT':
+		    return SQLSRV_SQLTYPE_NTEXT;
+			break;
+		case 'SQLSRV_SQLTYPE_REAL':
+		    return SQLSRV_SQLTYPE_REAL;
+			break;			
+		case 'SQLSRV_SQLTYPE_SMALLDATETIME':
+		    return SQLSRV_SQLTYPE_SMALLDATETIME;
+			break;
+		case 'SQLSRV_SQLTYPE_SMALLINT':
+		    return SQLSRV_SQLTYPE_SMALLINT;
+			break;
+		case 'SQLSRV_SQLTYPE_SMALLMONEY':
+		    return SQLSRV_SQLTYPE_SMALLMONEY;
+			break;
+		case 'SQLSRV_SQLTYPE_TEXT':
+		    return SQLSRV_SQLTYPE_TEXT;
+			break;		
+		case 'SQLSRV_SQLTYPE_TIME':
+		    return SQLSRV_SQLTYPE_TIME;
+			break;	
+		case 'SQLSRV_SQLTYPE_TIMESTAMP':
+		    return SQLSRV_SQLTYPE_TIMESTAMP;
+			break;	
+		case 'SQLSRV_SQLTYPE_TINYINT':
+		    return SQLSRV_SQLTYPE_TINYINT;
+			break;		
+		case 'SQLSRV_SQLTYPE_UNIQUEIDENTIFIER':
+		    return SQLSRV_SQLTYPE_UNIQUEIDENTIFIER;
+			break;
+		case 'SQLSRV_SQLTYPE_VARBINARY':
+		    return SQLSRV_SQLTYPE_VARBINARY;
+			break;		
+		case 'SQLSRV_SQLTYPE_VARCHAR':
+		    return SQLSRV_SQLTYPE_VARCHAR;
+			break;			
+		case 'SQLSRV_SQLTYPE_XML':
+		    return SQLSRV_SQLTYPE_XML;
+		    break;
+		default:
+		     echo "get_sqlType_constant: Invalid SQL Type $sqlType\n";
+	}
+}
 ?>
