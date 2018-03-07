@@ -2,6 +2,8 @@
 Test for retrieving encrypted data of nchar types of various sizes as output parameters
 --DESCRIPTION--
 Use PDOstatement::bindParam with all PDO::PARAM_ types
+Note: Because the maximum allowable table row size is 8060 bytes, 7 bytes of which are reservedinternal for internal overhead. In other words, this allows up to two nvarchar() columns with length slightly 
+more than 2000 wide characters. Therefore, the max length in this test is 2010.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -12,7 +14,7 @@ require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
 
 $dataTypes = array("nchar", "nvarchar", "nvarchar(max)");
-$lengths = array(1, 8, 64, 512, 4000);
+$lengths = array(1, 8, 64, 512, 2010);
 $errors = array("IMSSP" => "An invalid PHP type was specified as an output parameter. DateTime objects, NULL values, and streams cannot be specified as output parameters.", "22018" => "Invalid character value for cast specification");
 
 try {
