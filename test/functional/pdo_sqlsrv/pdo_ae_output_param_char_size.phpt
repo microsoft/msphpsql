@@ -78,15 +78,21 @@ try {
                             echo "****$pdoParamType failed:\n$message****\n";
                         }
                     } elseif ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
-                        // Expected error 22018: "Invalid character value for 
-                        // cast specification"
-                        // What does this error mean? 
-                        // When an input/output or output parameter was returned, 
-                        // the SQL type was an exact or approximate numeric, a 
-                        // datetime, or an interval data type; the C type was 
-                        // SQL_C_CHAR; and the value in the column was not a valid 
-                        // literal of the bound SQL type.
-                        $found = strpos($message, $errors['22018']);
+                        if (isAEConnected()) {
+                            // Expected error 22018: "Invalid character value for 
+                            // cast specification"
+                            // When an input/output or output parameter was returned, 
+                            // the SQL type was an exact or approximate numeric, a 
+                            // datetime, or an interval data type; the C type was 
+                            // SQL_C_CHAR; and the value in the column was not a valid 
+                            // literal of the bound SQL type.
+                            $found = strpos($message, $errors['22018']);
+                        } else {
+                            // When not AE enabled, expected to fail to convert 
+                            // whatever char type to integers
+                            $msg = "Error converting data type $dataType to int"; 
+                            $found = strpos($message, $msg);
+                        }
                         if ($found === false) {
                             echo "****$pdoParamType failed:\n$message****\n";
                         }

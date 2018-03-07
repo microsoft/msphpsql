@@ -112,13 +112,19 @@ try {
                             echo "****$pdoParamType failed:\n$message****\n";
                         }
                     } elseif ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
-                        // Expected error 07006: "Restricted data type attribute violation"
-                        // What does this error mean? 
-                        // The data value returned for a parameter bound as 
-                        // SQL_PARAM_INPUT_OUTPUT or SQL_PARAM_OUTPUT could not 
-                        // be converted to the data type identified by the  
-                        // ValueType argument in SQLBindParameter.
-                        $found = strpos($message, $errors['07006']);
+                        if (isAEConnected()) {
+                            // Expected error 07006: "Restricted data type attribute violation"
+                            // What does this error mean? 
+                            // The data value returned for a parameter bound as 
+                            // SQL_PARAM_INPUT_OUTPUT or SQL_PARAM_OUTPUT could not 
+                            // be converted to the data type identified by the  
+                            // ValueType argument in SQLBindParameter.
+                            $found = strpos($message, $errors['07006']);
+                        } else {
+                            // When not AE enabled, expected to fail with the error below
+                            $msg = "Operand type clash: int is incompatible with $dataType"; 
+                            $found = strpos($message, $msg);
+                        }
                         if ($found === false) {
                             echo "****$pdoParamType failed:\n$message****\n";
                         }
