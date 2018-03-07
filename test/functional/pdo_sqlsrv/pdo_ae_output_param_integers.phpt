@@ -55,7 +55,7 @@ function generateInputs($dataType)
                 $randomNum *= -1;
             }
             array_push($inputValues, $randomNum);
-            if (TraceMode()) {
+            if (traceMode()) {
                 echo "input: "; var_dump($inputValues[$i]);
             }
         }

@@ -11,7 +11,6 @@ PHPT_EXEC=true
 require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
 
-$dataTypes = array("datetime2", "datetimeoffset", "time");
 $dataTypes = array("decimal", "numeric");
 $precisions = array(1 => array(0, 1), 
                     4 => array(0, 1, 4),
@@ -22,14 +21,25 @@ $inputPrecision = 38;
 
 $errors = array("IMSSP" => "An invalid PHP type was specified as an output parameter. DateTime objects, NULL values, and streams cannot be specified as output parameters.");
 
+function printValues($msg, $det, $rand, $inputValues)
+{
+    echo $msg;
+    echo "input 0: "; var_dump($inputValues[0]);
+    echo "fetched: "; var_dump($det);
+    echo "input 1: "; var_dump($inputValues[1]);
+    echo "fetched: "; var_dump($rand);
+}
+
 // function compareDecimals() returns false when the fetched values 
 // are different from the inputs, based on precision, scale and PDO Param Type
 function compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $scale) 
 {
     if (!isAEConnected() && ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT")) {
-        // Without AE, all values fetched as BOOL / INT will be integers 
-        $input0 = floor($inputValues[0]);
-        $input1 = ceil($inputValues[1]);
+        // Without AE, decimals or numerics are fetched as BOOL / INT will be integers
+        // Large numbers will fail to be connected, but the exception would have been
+        // caught
+        $input0 = floor($inputValues[0]); // the positive float
+        $input1 = ceil($inputValues[1]); // the negative float
         if ($det != $input0 || $rand != $input1) {
             return false;
         }
@@ -120,15 +130,16 @@ try {
             
                     try {
                         $stmt->execute();
+                        if (traceMode()) {
+                            $msg = "****For debugging -- $type as $pdoParamType ****\n";
+                            printValues($msg, $det, $rand, $inputValues);
+                        }
 
-                        // Compare the retrieved values against the input values
+                        // Compare the retrieved values against the input values:
                         // if very different, print them all
                         if (!compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $scale)) {
-                            echo "****$type as $pdoParamType failed:****\n";
-                            echo "input 0: "; var_dump($inputValues[0]);
-                            echo "fetched: "; var_dump($det);
-                            echo "input 1: "; var_dump($inputValues[1]);
-                            echo "fetched: "; var_dump($rand);
+                            $msg = "****$type as $pdoParamType failed:****\n";
+                            printValues($msg, $det, $rand, $inputValues);
                         }
                     } catch (PDOException $e) {
                         $message = $e->getMessage();
@@ -140,13 +151,14 @@ try {
                             if ($found === false) {
                                 echo "****$pdoParamType failed:\n$message****\n";
                             }
-                        } elseif (!isAEConnected() && ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT")) {
-                            // When not AE enabled, expected to fail to convert decimals
-                            // or numerics to integers
+                        } elseif (!isAEConnected() && ($precision >= 16) && ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT")) {
+                            // When not AE enabled, large numbers are expected to 
+                            // fail when converting to integers
                             $msg = "Error converting data type $dataType to int"; 
                             $found = strpos($message, $msg);
                             if ($found === false) {
-                                echo "****$pdoParamType failed:\n$message****\n";
+                                $msg = "****$type as $pdoParamType failed:****\n";
+                                printValues($msg, $det, $rand, $inputValues);
                             }
                         } else {
                             echo("****$pdoParamType failed:\n$message****\n");
