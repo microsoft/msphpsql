@@ -26,12 +26,22 @@ $errors = array("IMSSP" => "An invalid PHP type was specified as an output param
 // are different from the inputs, based on precision, scale and PDO Param Type
 function compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $scale) 
 {
+    if (!isAEConnected() && ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT")) {
+        // Without AE, all values fetched as BOOL / INT will be integers 
+        $input0 = floor($inputValues[0]);
+        $input1 = ceil($inputValues[1]);
+        if ($det != $input0 || $rand != $input1) {
+            return false;
+        }
+        return true;
+    }
+    
     for ($i = 0; $i < 2; $i++) {
         $inputStr = strval($inputValues[$i]);
 
-        if ($pdoParamType != "PDO::PARAM_STR") {
+        if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
             $fetchedStr = ($i == 0) ? strval($det) : strval($rand);
-        } else {
+        } elseif ($pdoParamType == "PDO::PARAM_STR") {
             // if decimals are fetched as strings, the zeroes before the radix point
             // are dropped - convert it to float then back to string
             $fetchedStr = ($i == 0) ? strval(floatval($det)) : strval(floatval($rand));
@@ -114,6 +124,7 @@ try {
                         // Compare the retrieved values against the input values
                         // if very different, print them all
                         if (!compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $scale)) {
+                            echo "****$type as $pdoParamType failed:****\n";
                             echo "input 0: "; var_dump($inputValues[0]);
                             echo "fetched: "; var_dump($det);
                             echo "input 1: "; var_dump($inputValues[1]);
@@ -126,6 +137,14 @@ try {
                             // as an output parameter. DateTime objects, NULL values, and
                             // streams cannot be specified as output parameters."
                             $found = strpos($message, $errors['IMSSP']);
+                            if ($found === false) {
+                                echo "****$pdoParamType failed:\n$message****\n";
+                            }
+                        } elseif (!isAEConnected() && ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT")) {
+                            // When not AE enabled, expected to fail to convert decimals
+                            // or numerics to integers
+                            $msg = "Error converting data type $dataType to int"; 
+                            $found = strpos($message, $msg);
                             if ($found === false) {
                                 echo "****$pdoParamType failed:\n$message****\n";
                             }

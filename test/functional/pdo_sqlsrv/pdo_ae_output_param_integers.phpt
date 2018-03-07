@@ -14,13 +14,53 @@ require_once("AEData.inc");
 $dataTypes = array("bit", "tinyint", "smallint", "int", "bigint");
 $errors = array("IMSSP" => "An invalid PHP type was specified as an output parameter. DateTime objects, NULL values, and streams cannot be specified as output parameters.", "22003" => "Numeric value out of range", "42000" => "Error converting data type bigint to int");
 
-function printValues($det, $rand, $inputValues)
+function printValues($msg, $det, $rand, $inputValues)
 {
-    echo "****Something was wrong:****\n";
+    echo $msg;
     echo "input 0: "; var_dump($inputValues[0]);
     echo "fetched: "; var_dump($det);
     echo "input 1: "; var_dump($inputValues[1]);
     echo "fetched: "; var_dump($rand);
+}
+
+function generateInputs($dataType)
+{
+    // create random input values based on data types
+    // make the second input negative but only for some data types
+    if ($dataType == "bit") {
+        $inputValues = array(0, 1);
+    } elseif ($dataType == "tinyint") {
+        $inputValues = array();
+        for ($i = 0; $i < 2; $i++) {
+            $randomNum = rand(0, 255);
+            array_push($inputValues, $randomNum);
+        }
+    } else {
+        switch ($dataType) {
+            case "smallint":
+                $max = 32767;
+                break;
+            case "int":
+                $max = 2147483647;
+                break;
+            default:
+                $max = getrandmax();
+        }
+        
+        $inputValues = array();
+        for ($i = 0; $i < 2; $i++) {
+            $randomNum = rand(0, $max);
+            if ($i > 0) {
+                // make the second input negative but only for some data types
+                $randomNum *= -1;
+            }
+            array_push($inputValues, $randomNum);
+            if (TraceMode()) {
+                echo "input: "; var_dump($inputValues[$i]);
+            }
+        }
+    }
+    return $inputValues;
 }
 
 try {
@@ -34,7 +74,7 @@ try {
         //create and populate table
         $colMetaArr = array(new ColumnMeta($dataType, "c_det"), new ColumnMeta($dataType, "c_rand", null, "randomized"));
         createTable($conn, $tbname, $colMetaArr);
-        $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
+        $inputValues = generateInputs($dataType);
         insertRow($conn, $tbname, array("c_det" => $inputValues[0],
                                         "c_rand" => $inputValues[1]));
             
@@ -63,18 +103,19 @@ try {
             
             try {
                 $stmt->execute();
+                $errorMsg = "****$dataType as $pdoParamType failed:****\n";
                 if ($pdoParamType == "PDO::PARAM_STR") {
-                    // comparisons between strings, use '!=='
                     if ($det !== strval($inputValues[0]) || $rand !== strval($inputValues[1])) {
-                        printValues($det, $rand, $inputValues);
+                        // comparisons between strings, use '!=='
+                        printValues($errorMsg, $det, $rand, $inputValues);
                     }
                 } elseif ($pdoParamType == "PDO::PARAM_INT" || $pdoParamType == "PDO::PARAM_BOOL") {
                     // comparisons between integers and booleans, do not use '!=='
                     if ($det != $inputValues[0] || $rand != $inputValues[1]) {
-                        printValues($det, $rand, $inputValues);
+                        printValues($errorMsg, $det, $rand, $inputValues);
                     }
                 } else {
-                    printValues($det, $rand, $inputValues);
+                    printValues($errorMsg, $det, $rand, $inputValues);
                 }
             } catch (PDOException $e) {
                 $message = $e->getMessage();

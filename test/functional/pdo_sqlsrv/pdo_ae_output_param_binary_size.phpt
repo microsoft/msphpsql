@@ -12,13 +12,33 @@ require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
 
 $dataTypes = array("binary", "varbinary", "varbinary(max)");
-$lengths = array(1, 8, 64, 512, 4000);
+$lengths = array(1, 2, 4, 8, 64, 512, 4000);
 $errors = array("IMSSP" => "An invalid PHP type was specified as an output parameter. DateTime objects, NULL values, and streams cannot be specified as output parameters.", "07006" => "Restricted data type attribute violation");
+
+function printValues($det, $rand, $input0, $input1)
+{
+    echo "input 0: "; var_dump($input0); 
+    echo "fetched: "; var_dump($det); var_dump(dechex($det));
+    echo "input 1: "; var_dump($input1);
+    echo "fetched: "; var_dump($rand); var_dump(dechex($rand)); 
+}
+
+function convert2Hex($ch, $length)
+{
+    // Without AE, the binary values returned as integers or booleans will
+    // have lengths no more than 4 times the original hex string value 
+    // (e.g. string(8) "65656565") - limited by the buffer sizes
+    $count = ($length <= 2) ? $length : 4;
+    
+    return str_repeat(bin2hex($ch), $count);
+}
 
 try {
     $conn = connect();
     $tbname = "test_binary_types";
     $spname = "test_binary_proc";
+    $ch0 = 'd';
+    $ch1 = 'e';
 
     foreach ($dataTypes as $dataType) {
         $maxtype = strpos($dataType, "(max)");
@@ -33,8 +53,10 @@ try {
             //create and populate table
             $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
             createTable($conn, $tbname, $colMetaArr);
-            $input0 = str_repeat("d", $length);
-            $input1 = str_repeat("r", $length);
+            $input0 = str_repeat($ch0, $length);
+            $input1 = str_repeat($ch1, $length);
+            $ord0 = convert2Hex($ch0, $length);
+            $ord1 = convert2Hex($ch1, $length);
             insertRow($conn, $tbname, array("c_det" => new BindParamOp(1, $input0, "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY"),
                                             "c_rand" => new BindParamOp(2, $input1, "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam");
                 
@@ -64,9 +86,19 @@ try {
                 }
                 try {
                     $stmt->execute();
-                    if ($det !== $input0 || $rand !== $input1) {
-                        var_dump($det);
-                        var_dump($rand);
+                    if ($pdoParamType == "PDO::PARAM_STR") {
+                        if ($det !== $input0 || $rand !== $input1) {
+                            echo "****$pdoParamType failed:****\n";
+                            printValues($det, $rand, $input0, $input1);
+                        }
+                    } else {
+                        // $pdoParamType is "PDO::PARAM_BOOL" or "PDO::PARAM_INT"
+                        // This only occurs without AE -- likely a rare use case
+                        // With AE enabled, this would have caused an exception
+                        if (dechex($det) != $ord0 || dechex($rand) != $ord1) {
+                            echo "****$pdoParamType failed:****\n";
+                            printValues($det, $rand, $ord0, $ord1);
+                        }
                     }
                 } catch (PDOException $e) {
                     $message = $e->getMessage();
@@ -78,8 +110,9 @@ try {
                         if ($found === false) {
                             echo "****$pdoParamType failed:\n$message****\n";
                         }
-                    } elseif ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
-                        // Expected error 07006: "Restricted data type attribute violation"
+                    } elseif (isAEConnected() && ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT")) {
+                        // Expected error 07006 with AE enabled: 
+                        // "Restricted data type attribute violation"
                         // What does this error mean? 
                         // The data value returned for a parameter bound as 
                         // SQL_PARAM_INPUT_OUTPUT or SQL_PARAM_OUTPUT could not 

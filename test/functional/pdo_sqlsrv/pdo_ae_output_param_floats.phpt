@@ -91,6 +91,7 @@ function testOutputFloats($fetchNumeric)
                     // if either of them is very different, print them all
                     if (compareFloats(floatval($det), $inputValues[0]) || 
                         compareFloats(floatval($rand), $inputValues[1])) {
+                        echo "****$type as $pdoParamType failed:****\n";
                         echo "input 0: "; var_dump($inputValues[0]);
                         echo "fetched: "; var_dump($det);
                         echo "input 1: "; var_dump($inputValues[1]);
