@@ -109,45 +109,39 @@ function get_sqlType_constant( $sqlType )
 {
     switch ( $sqlType ) {
 		case 'SQLSRV_SQLTYPE_BIGINT':
-		    return SQLSRV_SQLTYPE_BIGINT;
-			break;
 		case 'SQLSRV_SQLTYPE_BINARY':
-		    return SQLSRV_SQLTYPE_BINARY;
-			break;
 		case 'SQLSRV_SQLTYPE_BIT':
-		    return SQLSRV_SQLTYPE_BIT;
+		case 'SQLSRV_SQLTYPE_DATE':
+		case 'SQLSRV_SQLTYPE_DATETIME':
+		case 'SQLSRV_SQLTYPE_DATETIME2':
+		case 'SQLSRV_SQLTYPE_DATETIMEOFFSET':
+		case 'SQLSRV_SQLTYPE_FLOAT':
+		case 'SQLSRV_SQLTYPE_IMAGE':
+		case 'SQLSRV_SQLTYPE_INT':
+		case 'SQLSRV_SQLTYPE_MONEY':
+		case 'SQLSRV_SQLTYPE_NVARCHAR':
+		case 'SQLSRV_SQLTYPE_NTEXT':
+		case 'SQLSRV_SQLTYPE_REAL':
+		case 'SQLSRV_SQLTYPE_SMALLDATETIME':
+		case 'SQLSRV_SQLTYPE_SMALLINT':
+		case 'SQLSRV_SQLTYPE_SMALLMONEY':
+		case 'SQLSRV_SQLTYPE_TEXT':
+		case 'SQLSRV_SQLTYPE_TIME':
+		case 'SQLSRV_SQLTYPE_TIMESTAMP':
+		case 'SQLSRV_SQLTYPE_TINYINT':
+		case 'SQLSRV_SQLTYPE_UNIQUEIDENTIFIER':
+		case 'SQLSRV_SQLTYPE_VARBINARY':
+		case 'SQLSRV_SQLTYPE_VARCHAR':
+		case 'SQLSRV_SQLTYPE_XML':
+            return constant( $sqlType );
 			break;
 		case 'SQLSRV_SQLTYPE_CHAR':
 		    // our tests always use precision 5 for SQLSRV_SQLTYPE_CHAR
 		    return SQLSRV_SQLTYPE_CHAR(5);
-			break;		
-		case 'SQLSRV_SQLTYPE_DATE':
-		    return SQLSRV_SQLTYPE_DATE;
-			break;
-		case 'SQLSRV_SQLTYPE_DATETIME':
-		    return SQLSRV_SQLTYPE_DATETIME;
-			break;
-		case 'SQLSRV_SQLTYPE_DATETIME2':
-		    return SQLSRV_SQLTYPE_DATETIME2;
-			break;		
-		case 'SQLSRV_SQLTYPE_DATETIMEOFFSET':
-		    return SQLSRV_SQLTYPE_DATETIMEOFFSET;
 			break;
 		case 'SQLSRV_SQLTYPE_DECIMAL':
 			// our tests always use precision 18 scale 5 for SQLSRV_SQLTYPE_DECIMAL
 		    return SQLSRV_SQLTYPE_DECIMAL(18, 5);
-			break;
-		case 'SQLSRV_SQLTYPE_FLOAT':
-		    return SQLSRV_SQLTYPE_FLOAT;
-			break;
-		case 'SQLSRV_SQLTYPE_IMAGE':
-		    return SQLSRV_SQLTYPE_IMAGE;
-			break;
-		case 'SQLSRV_SQLTYPE_INT':
-		    return SQLSRV_SQLTYPE_INT;
-			break;			
-		case 'SQLSRV_SQLTYPE_MONEY':
-		    return SQLSRV_SQLTYPE_MONEY;
 			break;
 		case 'SQLSRV_SQLTYPE_NCHAR':
 			// our tests always use precision 5 for SQLSRV_SQLTYPE_NCHAR
@@ -157,50 +151,9 @@ function get_sqlType_constant( $sqlType )
 			// our tests always use precision 10 scale 5 for SQLSRV_SQLTYPE_NUMERIC
 		    return SQLSRV_SQLTYPE_NUMERIC(10, 5);
 			break;
-		case 'SQLSRV_SQLTYPE_NVARCHAR':
-		    return SQLSRV_SQLTYPE_NVARCHAR;
-			break;	
-		case 'SQLSRV_SQLTYPE_NTEXT':
-		    return SQLSRV_SQLTYPE_NTEXT;
-			break;
-		case 'SQLSRV_SQLTYPE_REAL':
-		    return SQLSRV_SQLTYPE_REAL;
-			break;			
-		case 'SQLSRV_SQLTYPE_SMALLDATETIME':
-		    return SQLSRV_SQLTYPE_SMALLDATETIME;
-			break;
-		case 'SQLSRV_SQLTYPE_SMALLINT':
-		    return SQLSRV_SQLTYPE_SMALLINT;
-			break;
-		case 'SQLSRV_SQLTYPE_SMALLMONEY':
-		    return SQLSRV_SQLTYPE_SMALLMONEY;
-			break;
-		case 'SQLSRV_SQLTYPE_TEXT':
-		    return SQLSRV_SQLTYPE_TEXT;
-			break;		
-		case 'SQLSRV_SQLTYPE_TIME':
-		    return SQLSRV_SQLTYPE_TIME;
-			break;	
-		case 'SQLSRV_SQLTYPE_TIMESTAMP':
-		    return SQLSRV_SQLTYPE_TIMESTAMP;
-			break;	
-		case 'SQLSRV_SQLTYPE_TINYINT':
-		    return SQLSRV_SQLTYPE_TINYINT;
-			break;		
-		case 'SQLSRV_SQLTYPE_UNIQUEIDENTIFIER':
-		    return SQLSRV_SQLTYPE_UNIQUEIDENTIFIER;
-			break;
-		case 'SQLSRV_SQLTYPE_VARBINARY':
-		    return SQLSRV_SQLTYPE_VARBINARY;
-			break;		
-		case 'SQLSRV_SQLTYPE_VARCHAR':
-		    return SQLSRV_SQLTYPE_VARCHAR;
-			break;			
-		case 'SQLSRV_SQLTYPE_XML':
-		    return SQLSRV_SQLTYPE_XML;
-		    break;
 		default:
 		     echo "get_sqlType_constant: Invalid SQL Type $sqlType\n";
+			 break;
 	}
 }
 ?>

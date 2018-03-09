@@ -30,7 +30,14 @@ foreach ($dataTypes as $dataType) {
     $tbname = GetTempTableName("", false);
     $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
-	
+
+    if (AE\isColEncrypted()) {
+		// Create a Store Procedure
+		$spname = 'selectAllColumns';
+		$spSql = "CREATE PROCEDURE $spname (@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT ) AS SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
+		sqlsrv_query($conn, $spSql);
+	}
+		
     // insert a row
     $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
@@ -38,11 +45,6 @@ foreach ($dataTypes as $dataType) {
     if ($r === false) {
         is_incompatible_types_error($dataType, "default type");
     }
-	
-    // Create a Store Procedure
-    $spname = 'selectAllColumns';
-    $spSql = "CREATE PROCEDURE $spname (@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT ) AS SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-    sqlsrv_query($conn, $spSql);
 
     // test each SQLSRV_SQLTYPE_ constants
     foreach ($sqlTypes as $sqlType) {
@@ -59,29 +61,27 @@ foreach ($dataTypes as $dataType) {
                 $success = false;
             }
         } else {
-            // always encrypted only allow sqlType that is identical to the encrypted column datatype
-            if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
-                $sqlTypeConstant = get_sqlType_constant($sqlType);
-    	        // Call store procedure
-                $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
-                $c_detOut = '';
-                $c_randOut = '';
-                $stmt = sqlsrv_prepare( $conn, $outSql, 
-                    array( array( &$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant ),
-                    array( &$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant )));
-                if (!$stmt) {
-                    die(print_r(sqlsrv_errors(), true));
-                }							
-                sqlsrv_execute($stmt);
-				$errors = sqlsrv_errors();
-				if ( empty($errors) ) {
-					// SQLSRV_PHPTYPE_DATETIME not supported
-		            echo "$dataType should not be compatible with any datetime type.\n";
-                    $success = false;
-				}
+            $sqlTypeConstant = get_sqlType_constant($sqlType);
+				
+	        // Call store procedure
+            $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
+            $c_detOut = '';
+            $c_randOut = '';
+            $stmt = sqlsrv_prepare( $conn, $outSql, 
+                array( array( &$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant ),
+                array( &$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant )));
+            if (!$stmt) {
+                die(print_r(sqlsrv_errors(), true));
+            }							
+            sqlsrv_execute($stmt);
+            $errors = sqlsrv_errors();
+			if ( empty($errors) ) {
+		        // SQLSRV_PHPTYPE_DATETIME not supported
+		        echo "$dataType should not be compatible with any datetime type.\n";
+                $success = false;
+			}
 
-                sqlsrv_query($conn, "TRUNCATE TABLE $tbname");				
-            }
+            sqlsrv_query($conn, "TRUNCATE TABLE $tbname");				
 		}		
     }
 	
