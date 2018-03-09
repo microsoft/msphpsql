@@ -1,5 +1,7 @@
 --TEST--
 Test insert various data types and fetch as strings
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
@@ -16,7 +18,7 @@ function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery, 
     $valuesString = "VALUES (";
     $numTypes = sizeof($dataTypes);
 
-    for ($i=0; $i<$numTypes; ++$i) {
+    for ($i = 0; $i < $numTypes; ++$i) {
         // Replace parentheses for column names
         $colname = str_replace("($strsize)", "_$strsize", $dataTypes[$i]);
         $colname = str_replace("($strsize2)", "_$strsize2", $colname);
@@ -87,12 +89,11 @@ if (!$stmt) {
 }
     
 // The data we test against is in values.php
-for ($v=0; $v<sizeof($values);++$v)
+for ($v = 0; $v < sizeof($values);++$v)
 {
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
-    for ($i=0; $i<sizeof($values[$v]); ++$i)
-    {
+    for ($i=0; $i<sizeof($values[$v]); ++$i) {
         $testValues[] = $values[$v][$i];
         $testValues[] = $values[$v][$i];
     }
@@ -105,7 +106,7 @@ for ($v=0; $v<sizeof($values);++$v)
         fatalError("sqlsrv_prepare failed\n");
     }
 
-    for ($i=0; $i<sizeof($SQLSRV_PHPTYPE_CONST); ++$i) {
+    for ($i = 0; $i < sizeof($SQLSRV_PHPTYPE_CONST); ++$i) {
         if (sqlsrv_execute($stmt) == false) {
             print_r(sqlsrv_errors());
             fatalError("sqlsrv_execute failed\n");
@@ -131,16 +132,14 @@ for ($v=0; $v<sizeof($values);++$v)
     $metadata = sqlsrv_field_metadata($stmt);
     $numFields = count($metadata);
 
-    $i=0;
+    $i = 0;
     $valueAE = null;
     $valueArrayAE = null;
     
-    while ($result = sqlsrv_fetch($stmt)) 
-    {
+    while ($result = sqlsrv_fetch($stmt)) {
         $dataArray = sqlsrv_fetch_array($stmt2, SQLSRV_FETCH_NUMERIC);
         
-        for ($j = 0; $j < $numFields; $j++)
-        {
+        for ($j = 0; $j < $numFields; $j++) {
             $value = sqlsrv_get_field($stmt, $j, $SQLSRV_PHPTYPE_CONST[$i]);
             $valueArray = $dataArray[$j];
             
@@ -149,13 +148,10 @@ for ($v=0; $v<sizeof($values);++$v)
 
             // For each type, the AE values come first and non-AE values second
             // So let's do the comparison every second field
-            if ($j%2 == 0)
-            {
+            if ($j%2 == 0) {
                 $valueAE = $value;
                 $valueArrayAE = $valueArray;
-            }
-            else if ($j%2 == 1)
-            {
+            } elseif ($j%2 == 1) {
                 // If returning a DateTime PHP type from a date only SQL type,
                 // PHP adds the current timestamp to make a DateTime object,
                 // and in this case the AE and non-AE times may be off by a 
@@ -163,20 +159,18 @@ for ($v=0; $v<sizeof($values);++$v)
                 // different times. This not a test-failing discrepancy, so 
                 // below the DateTime objects are made equal again for the next if
                 // block.
-                if ($value instanceof DateTime)
-                {
+                if ($value instanceof DateTime) {
                     // date_diff returns a DateInterval object, and f is
                     // the difference expressed as a fraction of a second
                     $datediff = date_diff($value, $valueAE);
                     $diff = $datediff->f; 
                     
-                    if ($diff < 1.0 and $diff > -1.0)
-                    {
+                    if ($diff < 1.0 and $diff > -1.0) {
                         $value = $valueAE;
                     }
                 }
-                if ($valueAE != $value or $valueArrayAE != $valueArray)
-                {
+                
+                if ($valueAE != $value or $valueArrayAE != $valueArray) {
                     echo "Values do not match! PHPType $i Field $j\n";
                     print_r($valueAE);echo "\n";
                     print_r($value);echo "\n";

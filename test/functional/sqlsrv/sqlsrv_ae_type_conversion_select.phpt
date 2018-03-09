@@ -1,5 +1,7 @@
 --TEST--
 Test insert various data types and fetch as strings
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
@@ -15,7 +17,7 @@ function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery, 
     $valuesString = "VALUES (";
     $numTypes = sizeof($dataTypes);
 
-    for ($i=0; $i<$numTypes; ++$i) {
+    for ($i = 0; $i < $numTypes; ++$i) {
         // Replace parentheses for column names
         $colname = str_replace("($strsize)", "_$strsize", $dataTypes[$i]);
         $colname = str_replace("($strsize2)", "_$strsize2", $colname);
@@ -44,11 +46,9 @@ function FormulateSelectQuery($tableName, &$selectQuery, &$selectQueryAE, &$data
 {
     $numTypes = sizeof($dataTypes);
     
-    for ($i=0; $i<$numTypes; ++$i)
-    {
+    for ($i = 0; $i < $numTypes; ++$i) {
         $selectQuery[] = array();
-        for ($j=0; $j<sizeof($dataTypes); ++$j) 
-        {
+        for ($j = 0; $j < sizeof($dataTypes); ++$j) {
             $colnamei = str_replace("($strsize)", "_$strsize", $dataTypes[$i]);
             $colnamei = str_replace("($strsize2)", "_$strsize2", $colnamei);
             $colnamei = str_replace("(max)", "_max", $colnamei);
@@ -188,12 +188,11 @@ if (!$stmt) {
 }
 
 // The data we test against is in values.php
-for ($v=0; $v<sizeof($values); ++$v)
+for ($v = 0; $v < sizeof($values); ++$v)
 {
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
-    for ($i=0; $i<sizeof($values[$v]); ++$i)
-    {
+    for ($i = 0; $i < sizeof($values[$v]); ++$i) {
         $testValues[] = $values[$v][$i];
         $testValues[] = $values[$v][$i];
     }
@@ -217,14 +216,11 @@ for ($v=0; $v<sizeof($values); ++$v)
     $selectQueryAE = array();
     FormulateSelectQuery($tableName, $selectQuery, $selectQueryAE, $dataTypes, $strsize, $strsize2);
 
-    for ($i=0; $i<sizeof($dataTypes); ++$i) 
-    {
-        for ($j=0; $j<sizeof($dataTypes); ++$j) 
-        {
+    for ($i = 0; $i < sizeof($dataTypes); ++$i) {
+        for ($j = 0; $j < sizeof($dataTypes); ++$j) {
             $stmt = sqlsrv_query($conn, $selectQuery[$i][$j]);
 
-            if ($stmt == false)
-            {
+            if ($stmt == false) {
                 $convError = sqlsrv_errors();
                 
                 // These are the errors we expect to see if a conversion fails.
@@ -236,8 +232,7 @@ for ($v=0; $v<sizeof($values); ++$v)
                     $convError[0][1] != '6234' and
                     $convError[0][1] != '6522' and
                     $convError[0][1] != '8114' and
-                    $convError[0][1] != '8169') 
-                {
+                    $convError[0][1] != '8169') {
                     print_r($convError);
                     fatalError("Conversion failed with unexpected error message. i=$i, j=$j\n");
                 }
@@ -248,54 +243,41 @@ for ($v=0; $v<sizeof($values); ++$v)
                 // if the non-AE conversion fails, certainly the AE conversion
                 // should fail but only with error 22018.
                 if ($stmtAE != false) fatalError("AE conversion should have failed. i=$i, j=$j\n\n");
-                if ($convError[0][0] != '22018')
-                {
+                if ($convError[0][0] != '22018') {
                     print_r($convError);
                     fatalError("AE conversion failed with unexpected error message. i=$i, j=$j\n");
                 }
-            }
-            else
-            {
+            } else {
                 if ($conversionMatrix[$i][$j] == 'x') fatalError("Conversion succeeded, should have failed. i=$i, j=$j\n");
                 $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
                 
                 // Check every combination of statement value and conversion.
                 // The last else if block covers the case where the select
                 // query worked and the retrieved values are compared.
-                if ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'x')
-                {
+                if ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'x') {
                     $convError = sqlsrv_errors();
-                    if ($convError[0][0] != '22018') 
-                    {
+                    if ($convError[0][0] != '22018') {
                         print_r($convError);
                         fatalError("AE conversion failed with unexpected error message. i=$i, j=$j\n");
                     }
-                }
-                else if ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'y')
-                {
+                } elseif ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'y') {
                     print_r(sqlsrv_errors());
                     fatalError("AE conversion failed, should have succeeded. i=$i, j=$j\n");
-                }
-                else if ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'x')
-                {
+                } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'x') {
                     fatalError("AE conversion succeeded, should have failed. i=$i, j=$j\n");
-                }
-                else if ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'y')
-                {
+                } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'y') {
                     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
                     $rowAE = sqlsrv_fetch_array($stmtAE, SQLSRV_FETCH_NUMERIC);
                     
                     // rtrim strips whitespace from the end of the string, which 
                     // takes care of a bug where some conversions lead to extraneous
                     // whitespace padding the end of the string
-                    if (is_string($row[0]))
-                    {
+                    if (is_string($row[0])) {
                         $row[0] = rtrim($row[0]);
                         $rowAE[0] = rtrim($rowAE[0]);
                     }
                     
-                    if ($row[0] != $rowAE[0])
-                    {
+                    if ($row[0] != $rowAE[0]) {
                         echo "Values do not match! i=$i, j=$j\n";
                         print_r($row[0]);
                         print_r($rowAE[0]);
@@ -310,8 +292,7 @@ for ($v=0; $v<sizeof($values); ++$v)
     
     $deleteQuery = "DELETE FROM $tableName";
     $stmt = sqlsrv_query($conn, $deleteQuery);
-    if ($stmt == false) 
-    {
+    if ($stmt == false) {
         print_r(sqlsrv_errors());
         fatalError("Delete statement failed");
     }

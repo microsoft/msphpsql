@@ -50,7 +50,7 @@ function CompareDateTime($datetimetype, $returnStrings, &$expectedDateTime, $ret
 
     // Split each element of the testing date/time into
     // [0]:date, [1]:time, and possibly [2]:timezone offset 
-    for ($i=0; $i<sizeof($expectedDateTime); ++$i) {
+    for ($i = 0; $i < sizeof($expectedDateTime); ++$i) {
         $expected_date_time[] = explode(" ", $expectedDateTime[$i]);
     }
     
@@ -128,8 +128,7 @@ function CompareDateTime($datetimetype, $returnStrings, &$expectedDateTime, $ret
                 }
                 break;
         }
-    }
-    else {
+    } else {
         // Combine the retrieved date and time. 
         if (sizeof($retrieved_date_time)>1) {
             $date_time_only = $retrieved_date_time[0]." ".$retrieved_date_time[1];
@@ -195,7 +194,8 @@ function InsertDatesAndOrTimes($conn, $datetimetype, &$formats_array, $array_siz
     }
 
     $insertSql = "INSERT INTO [$tableName] (id, [c1_$datetimetype]) VALUES (?, ?)";
-    for ($i=0; $i<$array_size; $i++) {
+    
+    for ($i = 0; $i < $array_size; $i++) {
         $stmt = sqlsrv_prepare($conn, $insertSql, array($i, array($formats_array[$i], SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), $SQLSRV_SQLTYPE_CONST)));
         ExecutePreparedStmt($stmt);
         $stmt = sqlsrv_prepare($conn, $insertSql, array($i, $formats_array[$i]));
@@ -274,8 +274,7 @@ function FetchDatesAndOrTimes($conn, $datetimetype, &$expectedDateTime, $returnD
             }
             
             CompareDateTime($datetimetype, $returnDatesAsStrings, $expectedDateTime, $datetime);
-        } 
-        else { // ReturnsDatesAsStrings is false
+        } else { // ReturnsDatesAsStrings is false
             if (!($datetime instanceof DateTime)) {
                 fatalError("DateTime object expected, not a DateTime");
             }
@@ -303,8 +302,7 @@ function FetchDatesAndOrTimes($conn, $datetimetype, &$expectedDateTime, $returnD
             }
             
             CompareDateTime($datetimetype, $returnDatesAsStrings, $expectedDateTime, $row[1]);
-        } 
-        else {
+        } else {
             if (!($row[1] instanceof DateTime)) {
                 fatalError("DateTime object expected, not a DateTime");
             }
@@ -416,8 +414,7 @@ for ($i=0; $i<$SZ_DATE_all; $i++)
         $datetimeoffset_formats_all[] = $date_formats_all[$i]." ".$time_formats_all[$j].$tz_correction;
         if (str_replace(".".$frac.$frac2, "", $date_formats_all[$i]." ".$time_formats_all[$j]) == ($date_formats_all[$i]." ".$time_formats_all[$j])) {
             $datetimesmall_formats_all[] = str_replace(".".$frac, "", $date_formats_all[$i]." ".$time_formats_all[$j]);
-        }
-        else {
+        } else {
             $datetimesmall_formats_all[] = str_replace(".".$frac.$frac2, "", $date_formats_all[$i]." ".$time_formats_all[$j]);
         }
     }
