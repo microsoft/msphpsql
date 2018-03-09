@@ -9,9 +9,18 @@ PHPT_EXEC=true
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
-require_once("AEData.inc");
 
 $errors = array("IMSSP" => "An invalid PHP type was specified as an output parameter. DateTime objects, NULL values, and streams cannot be specified as output parameters.");
+
+$pdoParamTypes = array(
+    PDO::PARAM_BOOL,    // 5
+    PDO::PARAM_NULL,    // 0
+    PDO::PARAM_INT,     // 1 
+    PDO::PARAM_STR,     // 2
+    PDO::PARAM_LOB      // 3
+);
+
+//////////////////////////////////////////////////////////////////////////////////
 
 // this function returns true if the floats are more different than expected
 function compareFloats($actual, $expected) 
@@ -30,7 +39,7 @@ function printValues($msg, $det, $rand, $inputValues)
     echo "fetched: "; var_dump($rand);
 }
 
-function testOutputFloats($fetchNumeric)
+function testOutputFloats($fetchNumeric, $inout)
 {
     global $pdoParamTypes, $inputValues, $errors;
     
@@ -83,39 +92,53 @@ function testOutputFloats($fetchNumeric)
                 $stmt = $conn->prepare($outSql);
                 
                 $len = 2048;
-                if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
+                if ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {
                     $len = PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE;
+                    $det = 0;
+                    $rand = 0;
                 } 
-                trace("\nParam $pdoParamType with $len\n");
+                trace("\nParam $pdoParamType with INOUT = $inout\n");
                 
-                $stmt->bindParam(1, $det, constant($pdoParamType), $len); 
-                $stmt->bindParam(2, $rand, constant($pdoParamType), $len); 
+                if ($inout) {
+                    $paramType = $pdoParamType | PDO::PARAM_INPUT_OUTPUT;
+                } else {
+                    $paramType = $pdoParamType;
+                }
+                $stmt->bindParam(1, $det, $paramType, $len); 
+                $stmt->bindParam(2, $rand, $paramType, $len); 
                 
                 try {
                     $stmt->execute();
-                    if (traceMode()) {
-                        $msg = "****For debugging -- $type as $pdoParamType ****\n";
-                        printValues($msg, $det, $rand, $inputValues);
-                    }
-                    // Compare the retrieved values against the input values
-                    // if either of them is very different, print them all
-                    if (compareFloats(floatval($det), $inputValues[0]) || 
-                        compareFloats(floatval($rand), $inputValues[1])) {
-                        $msg = "****$type as $pdoParamType failed:****\n";
-                        printValues($msg, $det, $rand, $inputValues);
+
+                    $errMsg = "****$type as $pdoParamType failed with INOUT = $inout:****\n";
+                    if ($pdoParamType == PDO::PARAM_BOOL) {
+                        // for boolean values, they should all be bool(true)
+                        // because all floats are non-zeroes
+                        if (!$det || !$rand) {
+                            printValues($errMsg, $det, $rand, $inputValues);
+                        }
+                    } else {
+                        // Compare the retrieved values against the input values
+                        // if either of them is very different, print them all
+                        if (compareFloats(floatval($det), $inputValues[0]) || 
+                            compareFloats(floatval($rand), $inputValues[1])) {
+                            printValues($errMsg, $det, $rand, $inputValues);
+                        }
                     }
                 } catch (PDOException $e) {
                     $message = $e->getMessage();
-                    if ($pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_LOB") {
+                    $errMsg = "EXCEPTION: ****$type as $pdoParamType failed with INOUT = $inout:****\n";
+
+                    if ($pdoParamType == PDO::PARAM_NULL || $pdoParamType == PDO::PARAM_LOB) {
                         // Expected error IMSSP: "An invalid PHP type was specified 
                         // as an output parameter. DateTime objects, NULL values, and
                         // streams cannot be specified as output parameters."
                         $found = strpos($message, $errors['IMSSP']);
                         if ($found === false) {
-                            echo "****$pdoParamType failed:\n$message****\n";
+                            printValues($errMsg, $det, $rand, $inputValues);
                         }
                     } else {
-                        echo("****$pdoParamType failed:\n$message****\n");
+                        printValues($errMsg, $det, $rand, $inputValues);
                     }
                 }
             }
@@ -129,8 +152,10 @@ function testOutputFloats($fetchNumeric)
     }
 }
 
-testOutputFloats(false);
-testOutputFloats(true);
+testOutputFloats(false, false);
+testOutputFloats(true, false);
+testOutputFloats(false, true);
+testOutputFloats(true, true);
 
 echo "Done\n";
 

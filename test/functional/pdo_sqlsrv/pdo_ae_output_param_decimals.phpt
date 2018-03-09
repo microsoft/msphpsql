@@ -9,7 +9,6 @@ PHPT_EXEC=true
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
-require_once("AEData.inc");
 
 $dataTypes = array("decimal", "numeric");
 $precisions = array(1 => array(0, 1), 
@@ -21,6 +20,14 @@ $inputPrecision = 38;
 
 $errors = array("IMSSP" => "An invalid PHP type was specified as an output parameter. DateTime objects, NULL values, and streams cannot be specified as output parameters.");
 
+$pdoParamTypes = array(
+    PDO::PARAM_BOOL,    // 5
+    PDO::PARAM_NULL,    // 0
+    PDO::PARAM_INT,     // 1 
+    PDO::PARAM_STR,     // 2
+    PDO::PARAM_LOB      // 3
+);
+
 function printValues($msg, $det, $rand, $inputValues)
 {
     echo $msg;
@@ -30,32 +37,54 @@ function printValues($msg, $det, $rand, $inputValues)
     echo "fetched: "; var_dump($rand);
 }
 
-// function compareDecimals() returns false when the fetched values 
-// are different from the inputs, based on precision, scale and PDO Param Type
-function compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $scale) 
+// this function returns true if the floats are more different than expected
+function compareFloats($actual, $expected) 
 {
-    if (!isAEConnected() && ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT")) {
-        // Without AE, decimals or numerics are fetched as BOOL / INT will be integers
-        // Large numbers will fail to be connected, but the exception would have been
-        // caught
+    $epsilon = 0.00001;
+    $diff = abs(($actual - $expected) / $expected);
+    return ($diff > $epsilon);
+}
+
+// function compareDecimals() returns false when the fetched values 
+// are different from the expected inputs 
+function compareIntegers($det, $rand, $inputValues, $pdoParamType)
+{
+    ///////////////////////////////////////////////////////////////////////
+    // See GitHub issue 707 - Fix this method when the problem is addressed
+    //
+    // Assume $pdoParamType is PDO::PARAM_BOOL or PDO::PARAM_INT
+    if (is_string($det)) {
+        return (!compareFloats(floatval($det), $inputValues[0]) 
+                && !compareFloats(floatval($rand), $inputValues[1]));
+    } elseif ($pdoParamType == PDO::PARAM_INT) {
         $input0 = floor($inputValues[0]); // the positive float
         $input1 = ceil($inputValues[1]); // the negative float
-        if ($det != $input0 || $rand != $input1) {
-            return false;
+        
+        return ($det == $input0 && $rand == $input1);
+    } else {
+        // $pdoParamType == PDO::PARAM_BOOL
+        // Expect bool(true) or bool(false) depending on the rounded input values
+        // But with AE enabled (aforementioned GitHub issue), the fetched values 
+        // are floats instead, which should be fixed
+        $input0 = floor($inputValues[0]); // the positive float
+        $input1 = ceil($inputValues[1]); // the negative float
+        if (isAEConnected()) {
+            $det = boolval(floor($det));
+            $rand = boolval(ceil($rand));
         }
-        return true;
+        
+        return ($det == boolval($input0) && $rand == boolval($input1));
     }
-    
+}
+
+// function compareDecimals() returns false when the fetched values 
+// are different from the inputs, based on precision, scale 
+function compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $scale) 
+{
+    // Assume $pdoParamType is PDO::PARAM_STR
     for ($i = 0; $i < 2; $i++) {
         $inputStr = strval($inputValues[$i]);
-
-        if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
-            $fetchedStr = ($i == 0) ? strval($det) : strval($rand);
-        } elseif ($pdoParamType == "PDO::PARAM_STR") {
-            // if decimals are fetched as strings, the zeroes before the radix point
-            // are dropped - convert it to float then back to string
-            $fetchedStr = ($i == 0) ? strval(floatval($det)) : strval(floatval($rand));
-        }
+        $fetchedStr = ($i == 0) ? strval(floatval($det)) : strval(floatval($rand));
         
         if ($precision == $scale) {
             // compare up to $precision + digits left if radix point ('.') + 
@@ -80,101 +109,118 @@ function compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $
     return true;
 }
 
-try {
-    $conn = connect();
+function testOutputDecimals($inout) 
+{
+    global $pdoParamTypes, $dataTypes, $inputValuesInit, $precisions, $inputPrecision, $errors;
     
-    $tbname = "test_decimals_types";
-    $spname = "test_decimals_proc";
-
-    foreach ($dataTypes as $dataType) {
-        foreach ($precisions as $precision => $scales) {
-            foreach ($scales as $scale) {
-                // construct the input values depending on the precision and scale
-                $precDiff = $inputPrecision - ($precision - $scale);
-                $inputValues = $inputValuesInit;
-                foreach ($inputValues as &$inputValue) {
-                    $inputValue = $inputValue / pow(10, $precDiff);
-                }
-                
-                $type = "$dataType($precision, $scale)";
-                trace("\nTesting $type:\n");
-                
-                //create and populate table
-                $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
-                createTable($conn, $tbname, $colMetaArr);
-
-                $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null, $r);
-                
-                // fetch with PDO::bindParam using a stored procedure
-                dropProc($conn, $spname);
-                $spSql = "CREATE PROCEDURE $spname (
-                                @c_det $type OUTPUT, @c_rand $type OUTPUT ) AS
-                                SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-                $conn->query($spSql);
+    try {
+        $conn = connect();
         
-                // call stored procedure
-                $outSql = getCallProcSqlPlaceholders($spname, 2);
-                foreach ($pdoParamTypes as $pdoParamType) {
-                    $det = 0.0;
-                    $rand = 0.0;
-                    $stmt = $conn->prepare($outSql);
-                
-                    $len = 2048;
-                    if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
-                        $len = PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE;
-                    } 
-                    trace("\nParam $pdoParamType with $len\n");
-                
-                    $stmt->bindParam(1, $det, constant($pdoParamType), $len); 
-                    $stmt->bindParam(2, $rand, constant($pdoParamType), $len); 
-            
-                    try {
-                        $stmt->execute();
-                        if (traceMode()) {
-                            $msg = "****For debugging -- $type as $pdoParamType ****\n";
-                            printValues($msg, $det, $rand, $inputValues);
-                        }
+        $tbname = "test_decimals_types";
+        $spname = "test_decimals_proc";
 
-                        // Compare the retrieved values against the input values:
-                        // if very different, print them all
-                        if (!compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $scale)) {
-                            $msg = "****$type as $pdoParamType failed:****\n";
-                            printValues($msg, $det, $rand, $inputValues);
-                        }
-                    } catch (PDOException $e) {
-                        $message = $e->getMessage();
-                        if ($pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_LOB") {
-                            // Expected error IMSSP: "An invalid PHP type was specified 
-                            // as an output parameter. DateTime objects, NULL values, and
-                            // streams cannot be specified as output parameters."
-                            $found = strpos($message, $errors['IMSSP']);
-                            if ($found === false) {
-                                echo "****$pdoParamType failed:\n$message****\n";
-                            }
-                        } elseif (!isAEConnected() && ($precision >= 16) && ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT")) {
-                            // When not AE enabled, large numbers are expected to 
-                            // fail when converting to integers
-                            $msg = "Error converting data type $dataType to int"; 
-                            $found = strpos($message, $msg);
-                            if ($found === false) {
-                                $msg = "****$type as $pdoParamType failed:****\n";
-                                printValues($msg, $det, $rand, $inputValues);
-                            }
+        foreach ($dataTypes as $dataType) {
+            foreach ($precisions as $precision => $scales) {
+                foreach ($scales as $scale) {
+                    // construct the input values depending on the precision and scale
+                    $precDiff = $inputPrecision - ($precision - $scale);
+                    $inputValues = $inputValuesInit;
+                    foreach ($inputValues as &$inputValue) {
+                        $inputValue = $inputValue / pow(10, $precDiff);
+                    }
+                    
+                    $type = "$dataType($precision, $scale)";
+                    trace("\nTesting $type:\n");
+                    
+                    //create and populate table
+                    $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
+                    createTable($conn, $tbname, $colMetaArr);
+
+                    $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null, $r);
+                    
+                    // fetch with PDO::bindParam using a stored procedure
+                    dropProc($conn, $spname);
+                    $spSql = "CREATE PROCEDURE $spname (
+                                    @c_det $type OUTPUT, @c_rand $type OUTPUT ) AS
+                                    SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
+                    $conn->query($spSql);
+            
+                    // call stored procedure
+                    $outSql = getCallProcSqlPlaceholders($spname, 2);
+                    foreach ($pdoParamTypes as $pdoParamType) {
+                        $det = $rand = 0.0;
+                        $stmt = $conn->prepare($outSql);
+                    
+                        $len = 2048;
+                        if ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {
+                            $len = PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE;
+                            $det = $rand = 0;
+                        } 
+                        trace("\nParam $pdoParamType with INOUT = $inout\n");
+                        if ($inout) {
+                            $paramType = $pdoParamType | PDO::PARAM_INPUT_OUTPUT;
                         } else {
-                            echo("****$pdoParamType failed:\n$message****\n");
+                            $paramType = $pdoParamType;
+                        }
+                        
+                        $stmt->bindParam(1, $det, $paramType, $len); 
+                        $stmt->bindParam(2, $rand, $paramType, $len); 
+                
+                        try {
+                            $stmt->execute();
+                            
+                            $errMsg = "****$type as $pdoParamType failed with INOUT = $inout:****\n";
+                            if ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {
+                                if (!compareIntegers($det, $rand, $inputValues, $pdoParamType)) {
+                                    printValues($errMsg, $det, $rand, $inputValues);
+                                }
+                            } else {
+                                // When $pdoParamType is PDO::PARAM_STR, the accuracies
+                                // should have been preserved based on the original
+                                // precision and scale, so compare the retrieved values 
+                                // against the input values with more details
+                                if (!compareDecimals($det, $rand, $inputValues, $pdoParamType, $precision, $scale)) {
+                                    printValues($errMsg, $det, $rand, $inputValues);
+                                }
+                            }
+                        } catch (PDOException $e) {
+                            $message = $e->getMessage();
+                            $errMsg = "EXCEPTION: ****$type as $pdoParamType failed with INOUT = $inout:****\n";
+                            if ($pdoParamType == PDO::PARAM_NULL || $pdoParamType == PDO::PARAM_LOB) {
+                                // Expected error IMSSP: "An invalid PHP type was specified 
+                                // as an output parameter. DateTime objects, NULL values, and
+                                // streams cannot be specified as output parameters."
+                                $found = strpos($message, $errors['IMSSP']);
+                                if ($found === false) {
+                                    printValues($errMsg, $det, $rand, $inputValues);
+                                }
+                            } elseif (!isAEConnected() && $precision >= 16 && $pdoParamType == PDO::PARAM_BOOL) { 
+                                // When not AE enabled, large numbers are expected to 
+                                // fail when converting to booleans
+                                $error = "Error converting data type $dataType to int"; 
+                                $found = strpos($message, $error);
+                                if ($found === false) {
+                                    printValues($errMsg, $det, $rand, $inputValues);
+                                }
+                            } else {
+                                printValues($errMsg, $det, $rand, $inputValues);
+                            }
                         }
                     }
+                    dropProc($conn, $spname);
+                    dropTable($conn, $tbname);
                 }
-                dropProc($conn, $spname);
-                dropTable($conn, $tbname);
             }
         }
+        unset($stmt); 
+        unset($conn);
+    } catch (PDOException $e) {
+        echo $e->getMessage();
     }
-    unset($stmt); 
-    unset($conn);
-} catch (PDOException $e) {
-    echo $e->getMessage();
 }
+
+testOutputDecimals(false);
+testOutputDecimals(true);
 
 echo "Done\n";
 
