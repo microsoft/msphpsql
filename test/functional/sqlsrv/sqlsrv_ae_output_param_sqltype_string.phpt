@@ -99,11 +99,12 @@ foreach ($dataTypes as $dataType) {
     if (!AE\isColEncrypted()) {
         AE\fetchAll($conn, $tbname);
 	}
-	
+	else {
+        dropProc($conn, $spname);
+    }
     if ($success) {
         echo "Test successfully done.\n";
     }
-	dropProc($conn, $spname);
     dropTable($conn, $tbname);
 }
 sqlsrv_free_stmt($stmt);
