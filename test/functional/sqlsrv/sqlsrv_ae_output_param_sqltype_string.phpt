@@ -58,8 +58,6 @@ foreach ($dataTypes as $dataType) {
                 $success = false;
             }
         } else {
-            // always encrypted only allow sqlType that is identical to the encrypted column datatype
-           // if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
             $sqlTypeConstant = get_sqlType_constant($sqlType);
 
     	    // Call store procedure
