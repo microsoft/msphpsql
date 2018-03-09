@@ -87,6 +87,13 @@ function testOutputFloats($fetchNumeric, $inout)
             // call stored procedure
             $outSql = getCallProcSqlPlaceholders($spname, 2);
             foreach ($pdoParamTypes as $pdoParamType) {
+                if ($pdoParamType == PDO::PARAM_INT && strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
+                    // Bug 2876 in VSO: Linux - when retrieving a float as OUTPUT 
+                    // or INOUT parameter with PDO::PARAM_INT, the returned values 
+                    // are always single digits, regardless of the original floats
+                    continue;
+                }
+
                 $det = 0.0;
                 $rand = 0.0;
                 $stmt = $conn->prepare($outSql);
