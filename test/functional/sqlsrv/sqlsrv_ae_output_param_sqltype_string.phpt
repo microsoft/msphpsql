@@ -9,13 +9,13 @@ Bind output params using sqlsrv_prepare with all sql_type
 require_once('MsCommon.inc');
 require_once('AEData.inc');
 
-$dataTypes = array( "char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)" );
+$dataTypes = array("char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)");
 
 // this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
-$compatList = array( "char(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "varchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "nchar(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ),
-                     "nvarchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML" ));
+$compatList = array("char(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML"),
+                    "varchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML"),
+                    "nchar(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML"),
+                    "nvarchar(max)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML"));
 
 $conn = AE\connect();
 	
@@ -25,7 +25,7 @@ foreach ($dataTypes as $dataType) {
 
     // create table
     $tbname = GetTempTableName("", false);
-    $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
+    $colMetaArr = array(new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
 
     if (AE\isColEncrypted()) {
@@ -64,9 +64,9 @@ foreach ($dataTypes as $dataType) {
             $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
             $c_detOut = '';
             $c_randOut = '';
-            $stmt = sqlsrv_prepare( $conn, $outSql, 
-                array( array( &$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant ),
-                array( &$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant )));
+            $stmt = sqlsrv_prepare($conn, $outSql, 
+                array(array(&$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant),
+                array(&$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant)));
             if (!$stmt) {
                 die(print_r(sqlsrv_errors(), true));
             }						
@@ -74,9 +74,9 @@ foreach ($dataTypes as $dataType) {
             sqlsrv_execute($stmt);
 			$errors = sqlsrv_errors();
 			
-            if ( !empty($errors) ) {
+            if (!empty($errors) ) {
                 if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
-					var_dump( sqlsrv_errors() );
+					var_dump(sqlsrv_errors());
                     $success = false;                    
                 }                
 			}
@@ -89,10 +89,7 @@ foreach ($dataTypes as $dataType) {
                     echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
                     $success = false;
                 }
-			}	
-
-            //    sqlsrv_query($conn, "TRUNCATE TABLE $tbname");				
-            //}
+			}
 		}		
     }
 	
