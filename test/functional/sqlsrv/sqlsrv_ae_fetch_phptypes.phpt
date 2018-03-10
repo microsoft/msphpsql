@@ -70,7 +70,7 @@ set_time_limit(0);
 sqlsrv_configure('WarningsReturnAsErrors', 1);
 
 // Connect
-$connectionInfo = array("CharacterSet"=>"UTF-8", "ColumnEncryption"=>"enabled");
+$connectionInfo = array("CharacterSet"=>"UTF-8");
 $conn = AE\connect($connectionInfo);
 if (!$conn) {
     fatalError("Could not connect.\n");

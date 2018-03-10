@@ -169,7 +169,7 @@ $conversionMatrixAE = array(array('y','y','y','x','x','x','x','x','x','x','x','x
 set_time_limit(0);
 sqlsrv_configure('WarningsReturnAsErrors', 1);
 
-$connectionInfo = array("CharacterSet"=>"UTF-8", "ColumnEncryption"=>"enabled");
+$connectionInfo = array("CharacterSet"=>"UTF-8");
 $conn = AE\connect($connectionInfo);
 if (!$conn) {
     fatalError("Could not connect.\n");
