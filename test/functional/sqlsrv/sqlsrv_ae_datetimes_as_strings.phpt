@@ -4,6 +4,8 @@ Test various date and time types with AE and ReturnDatesAsStrings set to true
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
+require_once('MsCommon.inc');
+
 // Check for expected errors. These are expected in cases where the dates and
 // times do not comply with ODBC standards.
 // 07006 Restricted data type attribute violation (Conversion failed)
@@ -421,11 +423,9 @@ for ($i=0; $i<$SZ_DATE_all; $i++)
 }
 
 date_default_timezone_set('Canada/Pacific');
-sqlsrv_configure('WarningsReturnAsErrors', 0);
+sqlsrv_configure('WarningsReturnAsErrors', 1);
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 sqlsrv_configure('LogSubsystems', SQLSRV_LOG_SYSTEM_OFF);
-
-require_once('MsCommon.inc');
 
 $returnDatesAsStrings = true;
 
