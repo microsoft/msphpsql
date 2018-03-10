@@ -83,7 +83,7 @@ foreach($dataTypes as $dataType) {
                                 }
                             }
                         } else {
-                            if (strpos($sqltypeFull, "NVARCHAR") !== false && $dataType == "nchar" && $m > $n  && strpos($sqltypeFull, "max") === false) {
+                            if (strpos($sqltypeFull, "NVARCHAR") !== false && $dataType == "nchar" && $m > $n  && strpos($sqltypeFull, "max") === false && $dir == "SQLSRV_PARAM_OUT") {
                                 if ($r !== false) {
                                     echo "Conversions from $typeFull to output $sqltypeFull should not be supported\n";
                                 }
