@@ -188,7 +188,7 @@ if (!$stmt) {
 }
 
 // The data we test against is in values.php
-for ($v = 0; $v < sizeof($values); ++$v)
+for ($v = 2; $v < sizeof($values); ++$v)
 {
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
@@ -234,7 +234,7 @@ for ($v = 0; $v < sizeof($values); ++$v)
                     $convError[0][1] != '8114' and
                     $convError[0][1] != '8169') {
                     print_r($convError);
-                    fatalError("Conversion failed with unexpected error message. i=$i, j=$j\n");
+                    fatalError("Conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
                 }
                 
                 $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
@@ -242,13 +242,13 @@ for ($v = 0; $v < sizeof($values); ++$v)
                 
                 // if the non-AE conversion fails, certainly the AE conversion
                 // should fail but only with error 22018.
-                if ($stmtAE != false) fatalError("AE conversion should have failed. i=$i, j=$j\n\n");
+                if ($stmtAE != false) fatalError("AE conversion should have failed. i=$i, j=$j, v=$v\n\n");
                 if ($convError[0][0] != '22018') {
                     print_r($convError);
-                    fatalError("AE conversion failed with unexpected error message. i=$i, j=$j\n");
+                    fatalError("AE conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
                 }
             } else {
-                if ($conversionMatrix[$i][$j] == 'x') fatalError("Conversion succeeded, should have failed. i=$i, j=$j\n");
+                if ($conversionMatrix[$i][$j] == 'x') fatalError("Conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
                 $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
                 
                 // Check every combination of statement value and conversion.
@@ -258,13 +258,13 @@ for ($v = 0; $v < sizeof($values); ++$v)
                     $convError = sqlsrv_errors();
                     if ($convError[0][0] != '22018') {
                         print_r($convError);
-                        fatalError("AE conversion failed with unexpected error message. i=$i, j=$j\n");
+                        fatalError("AE conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
                     }
                 } elseif ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'y') {
                     print_r(sqlsrv_errors());
-                    fatalError("AE conversion failed, should have succeeded. i=$i, j=$j\n");
+                    fatalError("AE conversion failed, should have succeeded. i=$i, j=$j, v=$v\n");
                 } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'x') {
-                    fatalError("AE conversion succeeded, should have failed. i=$i, j=$j\n");
+                    fatalError("AE conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
                 } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'y') {
                     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
                     $rowAE = sqlsrv_fetch_array($stmtAE, SQLSRV_FETCH_NUMERIC);
@@ -278,7 +278,7 @@ for ($v = 0; $v < sizeof($values); ++$v)
                     }
                     
                     if ($row[0] != $rowAE[0]) {
-                        echo "Values do not match! i=$i, j=$j\n";
+                        echo "Values do not match! i=$i, j=$j, v=$v\n";
                         print_r($row[0]);
                         print_r($rowAE[0]);
                         print_r($selectQuery[$i][$j]);echo "\n";
