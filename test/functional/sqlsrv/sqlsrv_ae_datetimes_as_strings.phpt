@@ -1,10 +1,10 @@
 --TEST--
 Test various date and time types with AE and ReturnDatesAsStrings set to true
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-require_once('MsCommon_mid-refactor.inc');
+require_once('MsCommon.inc');
 
 // Check for expected errors. These are expected in cases where the dates and
 // times do not comply with ODBC standards.
