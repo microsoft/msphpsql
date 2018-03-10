@@ -1,10 +1,10 @@
 --TEST--
 Test insert various data types and fetch as strings
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 ﻿<?php
-require_once('MsCommon.inc');
+require_once('MsCommon_mid-refactor.inc');
 require_once('tools.inc');
 require_once('values.php');
 
