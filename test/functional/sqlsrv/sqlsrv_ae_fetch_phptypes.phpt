@@ -53,8 +53,8 @@ $SQLSRV_PHPTYPE_CONST = array(SQLSRV_PHPTYPE_INT,
 
 // Two sizes for the string types so we can test conversion from
 // a shorter type to a longer type
-$strsize = 512;
-$strsize2 = 768;
+$strsize = 256;
+$strsize2 = 384;
 
 $dataTypes = array ("binary($strsize)", "varbinary($strsize)", "varbinary(max)", "char($strsize)",
                     "varchar($strsize)", "varchar(max)", "nchar($strsize)", "nvarchar($strsize)",
