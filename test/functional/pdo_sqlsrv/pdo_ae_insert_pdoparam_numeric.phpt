@@ -1,39 +1,123 @@
 --TEST--
-Test for inserting and retrieving encrypted data of numeric types
+Test for inserting encrypted data into numeric types columns
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Test conversions between different numeric types
+With Always Encrypted, implicit conversion works if:
+1. From input of PDO::PARAM_BOOL to a real column
+2. From input of PDO::PARAM_INT to a any numeric column
+3. From input of PDO::PARAM_STR to a any numeric column
+4. From input of PDO::PARAM_LOB to a any numeric column
+Without Always Encrypted, all of the above works except for input of PDO::PARAM_STR to a bigint column in a x86 platform
+PDO::PARAM_STR does not work for bigint in a x86 because in a x86 platform, the maximum value of an int is about 2147483647
+Whereas in a x64 platform, the maximum value is about 9E18
+In a x86 platform, when in integer is initialized to be > 2147483647, PHP implicitly change it to a float, represented by scientific notation
+When inserting a scientific notation form numeric string, SQL Server returns a converting data type nvarchar to bigint error
+Works for with AE because the sqltype used for binding parameter is determined by SQLDescribeParam,
+unlike without AE, the sqltype is predicted to be nvarchar when the input is a string and the encoding is utf8
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
-$dataTypes = array( "bit", "tinyint", "smallint", "int", "decimal(18,5)", "numeric(10,5)", "float", "real" );
+
+$dataTypes = array("bit", "tinyint", "smallint", "int", "bigint", "real");
+$epsilon = 1;
+
 try {
-    $conn = connect();
+    $conn = connect("", array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
         echo "\nTesting $dataType:\n";
 
-        // create table
-        $tbname = getTableName();
+        // create table containing bit, tinyint, smallint, int, bigint, or real columns
+        $tbname = "test_" . $dataType;
         $colMetaArr = array(new ColumnMeta($dataType, "c_det"), new ColumnMeta($dataType, "c_rand", null, "randomized"));
         createTable($conn, $tbname, $colMetaArr);
 
-        // test each PDO::PARAM_ type
+        // insert by specifying PDO::PARAM_ types
         foreach ($pdoParamTypes as $pdoParamType) {
-            // insert a row
             $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
             $r;
-            if ($dataType == "decimal(18,5)") {
-                $stmt = insertRow($conn, $tbname, array( "c_det" => new BindParamOp(1, (string)$inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, (string)$inputValues[1], $pdoParamType)), "prepareBindParam", $r);
+            $stmt = insertRow($conn, $tbname, array( "c_det" => new BindParamOp(1, $inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, $inputValues[1], $pdoParamType)), "prepareBindParam", $r);
+            
+            // check the case when inserting as PDO::PARAM_NULL
+            // with or without AE: NULL is inserted
+            if ($pdoParamType == "PDO::PARAM_NULL") {
+                if ($r === false) {
+                    echo "Conversion from $pdoParamType to $dataType should be supported\n";
+                } else {
+                    $sql = "SELECT c_det, c_rand FROM $tbname";
+                    $stmt = $conn->query($sql);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if (!is_null($row['c_det']) || !is_null($row['c_rand'])) {
+                        echo "Conversion from $pdoParamType to $dataType should insert NULL\n";
+                    }
+                }
+            // check the case when inserting as PDO::PARAM_BOOL
+            // with or without AE: 1 or 0 should be inserted when inserting into an integer column
+            //                     double is inserted when inserting into a real column
+            } else if ($pdoParamType == "PDO::PARAM_BOOL") {
+                if ($r === false) {
+                    echo "Conversion from $pdoParamType to $dataType should be supported\n";
+                } else {
+                    $sql = "SELECT c_det, c_rand FROM $tbname";
+                    $stmt = $conn->query($sql);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($dataType == "real") {
+                        if (abs($row['c_det'] - $inputValues[0]) < $epsilon && abs($row['c_rand'] - $inputValues[1]) < $epsilon) {
+                            echo "****Conversion from $pdoParamType to $dataType is supported****\n";
+                        } else {
+                            echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                        }
+                    } else {
+                        if ($row['c_det'] != ($inputValues[0] != 0) && $row['c_rand'] != ($inputValues[1] != 0)) {
+                            echo "Conversion from $pdoParamType to $dataType insert a boolean\n";
+                        }
+                    }
+                }
+            // check the case when inserting as PDO::PARAM_STR into a bigint column
+            // with AE: should work
+            // without AE: should not work on a x86 platform
+            } else if ($dataType == "bigint" && $pdoParamType == "PDO::PARAM_STR") {
+                if (!isAEConnected() && PHP_INT_SIZE == 4) {
+                    if ($r !== false) {
+                        echo "Conversion from $pdoParamType to $dataType should not be supported\n";
+                    }
+                } else {
+                    if ($r === false) {
+                        echo "Conversion from $pdoParamType to $dataType should be supported\n";
+                    } else {
+                        $sql = "SELECT c_det, c_rand FROM $tbname";
+                        $stmt = $conn->query($sql);
+                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                        if ($row['c_det'] != $inputValues[0] && $row['c_rand'] != $inputValues[1]) {
+                            echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                        }
+                    }
+                }
+            // check the case when inserting as PDO::PARAM_INT, PDO::PARAM_STR or PDO::PARAM_LOB
+            // with or without AE: should work
             } else {
-                $stmt = insertRow($conn, $tbname, array( "c_det" => new BindParamOp(1, $inputValues[0], $pdoParamType), "c_rand" => new BindParamOp(2, $inputValues[1], $pdoParamType)), "prepareBindParam", $r);
-            }
-            if ($r === false) {
-                isIncompatibleTypesError($stmt, $dataType, $pdoParamType);
-            } else {
-                echo "****PDO param type $pdoParamType is compatible with encrypted $dataType****\n";
-                fetchAll($conn, $tbname);
+                if ($r === false) {
+                    echo "Conversion from $pdoParamType to $dataType should be supported\n";
+                } else {
+                    $sql = "SELECT c_det, c_rand FROM $tbname";
+                    $stmt = $conn->query($sql);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($dataType == "real") {
+                        if (abs($row['c_det'] - $inputValues[0]) < $epsilon && abs($row['c_rand'] - $inputValues[1]) < $epsilon) {
+                            echo "****Conversion from $pdoParamType to $dataType is supported****\n";
+                        } else {
+                            echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                        }
+                    } else {
+                        if ($row['c_det'] == $inputValues[0] && $row['c_rand'] == $inputValues[1]) {
+                            echo "****Conversion from $pdoParamType to $dataType is supported****\n";
+                        } else {
+                            echo "Conversion from $pdoParamType to $dataType causes data corruption\n";
+                        }
+                    }
+                }
             }
             $conn->query("TRUNCATE TABLE $tbname");
         }
@@ -46,139 +130,32 @@ try {
 }
 ?>
 --EXPECT--
-
 Testing bit:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted bit****
-c_det: 1
-c_rand: 0
-****PDO param type PDO::PARAM_NULL is compatible with encrypted bit****
-c_det: 
-c_rand: 
-****PDO param type PDO::PARAM_INT is compatible with encrypted bit****
-c_det: 1
-c_rand: 0
-****PDO param type PDO::PARAM_STR is compatible with encrypted bit****
-c_det: 1
-c_rand: 0
-****PDO param type PDO::PARAM_LOB is compatible with encrypted bit****
-c_det: 1
-c_rand: 0
+****Conversion from PDO::PARAM_INT to bit is supported****
+****Conversion from PDO::PARAM_STR to bit is supported****
+****Conversion from PDO::PARAM_LOB to bit is supported****
 
 Testing tinyint:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted tinyint****
-c_det: 0
-c_rand: 1
-****PDO param type PDO::PARAM_NULL is compatible with encrypted tinyint****
-c_det: 
-c_rand: 
-****PDO param type PDO::PARAM_INT is compatible with encrypted tinyint****
-c_det: 0
-c_rand: 255
-****PDO param type PDO::PARAM_STR is compatible with encrypted tinyint****
-c_det: 0
-c_rand: 255
-****PDO param type PDO::PARAM_LOB is compatible with encrypted tinyint****
-c_det: 0
-c_rand: 255
+****Conversion from PDO::PARAM_INT to tinyint is supported****
+****Conversion from PDO::PARAM_STR to tinyint is supported****
+****Conversion from PDO::PARAM_LOB to tinyint is supported****
 
 Testing smallint:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted smallint****
-c_det: 1
-c_rand: 1
-****PDO param type PDO::PARAM_NULL is compatible with encrypted smallint****
-c_det: 
-c_rand: 
-****PDO param type PDO::PARAM_INT is compatible with encrypted smallint****
-c_det: -32767
-c_rand: 32767
-****PDO param type PDO::PARAM_STR is compatible with encrypted smallint****
-c_det: -32767
-c_rand: 32767
-****PDO param type PDO::PARAM_LOB is compatible with encrypted smallint****
-c_det: -32767
-c_rand: 32767
+****Conversion from PDO::PARAM_INT to smallint is supported****
+****Conversion from PDO::PARAM_STR to smallint is supported****
+****Conversion from PDO::PARAM_LOB to smallint is supported****
 
 Testing int:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted int****
-c_det: 1
-c_rand: 1
-****PDO param type PDO::PARAM_NULL is compatible with encrypted int****
-c_det: 
-c_rand: 
-****PDO param type PDO::PARAM_INT is compatible with encrypted int****
-c_det: -2147483647
-c_rand: 2147483647
-****PDO param type PDO::PARAM_STR is compatible with encrypted int****
-c_det: -2147483647
-c_rand: 2147483647
-****PDO param type PDO::PARAM_LOB is compatible with encrypted int****
-c_det: -2147483647
-c_rand: 2147483647
+****Conversion from PDO::PARAM_INT to int is supported****
+****Conversion from PDO::PARAM_STR to int is supported****
+****Conversion from PDO::PARAM_LOB to int is supported****
 
-Testing decimal(18,5):
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted decimal(18,5)****
-c_det: -9223372036854.80000
-c_rand: 9223372036854.80000
-****PDO param type PDO::PARAM_NULL is compatible with encrypted decimal(18,5)****
-c_det: 
-c_rand: 
-****PDO param type PDO::PARAM_INT is compatible with encrypted decimal(18,5)****
-c_det: -9223372036854.80000
-c_rand: 9223372036854.80000
-****PDO param type PDO::PARAM_STR is compatible with encrypted decimal(18,5)****
-c_det: -9223372036854.80000
-c_rand: 9223372036854.80000
-****PDO param type PDO::PARAM_LOB is compatible with encrypted decimal(18,5)****
-c_det: -9223372036854.80000
-c_rand: 9223372036854.80000
-
-Testing numeric(10,5):
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted numeric(10,5)****
-c_det: -21474.83647
-c_rand: 21474.83647
-****PDO param type PDO::PARAM_NULL is compatible with encrypted numeric(10,5)****
-c_det: 
-c_rand: 
-****PDO param type PDO::PARAM_INT is compatible with encrypted numeric(10,5)****
-c_det: -21474.83647
-c_rand: 21474.83647
-****PDO param type PDO::PARAM_STR is compatible with encrypted numeric(10,5)****
-c_det: -21474.83647
-c_rand: 21474.83647
-****PDO param type PDO::PARAM_LOB is compatible with encrypted numeric(10,5)****
-c_det: -21474.83647
-c_rand: 21474.83647
-
-Testing float:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted float****
-c_det: -9223372036.8547993
-c_rand: 9223372036.8547993
-****PDO param type PDO::PARAM_NULL is compatible with encrypted float****
-c_det: 
-c_rand: 
-****PDO param type PDO::PARAM_INT is compatible with encrypted float****
-c_det: -9223372036.8547993
-c_rand: 9223372036.8547993
-****PDO param type PDO::PARAM_STR is compatible with encrypted float****
-c_det: -9223372036.8547993
-c_rand: 9223372036.8547993
-****PDO param type PDO::PARAM_LOB is compatible with encrypted float****
-c_det: -9223372036.8547993
-c_rand: 9223372036.8547993
+Testing bigint:
+****Conversion from PDO::PARAM_INT to bigint is supported****
+****Conversion from PDO::PARAM_LOB to bigint is supported****
 
 Testing real:
-****PDO param type PDO::PARAM_BOOL is compatible with encrypted real****
-c_det: -2147.4829
-c_rand: 2147.4829
-****PDO param type PDO::PARAM_NULL is compatible with encrypted real****
-c_det: 
-c_rand: 
-****PDO param type PDO::PARAM_INT is compatible with encrypted real****
-c_det: -2147.4829
-c_rand: 2147.4829
-****PDO param type PDO::PARAM_STR is compatible with encrypted real****
-c_det: -2147.4829
-c_rand: 2147.4829
-****PDO param type PDO::PARAM_LOB is compatible with encrypted real****
-c_det: -2147.4829
-c_rand: 2147.4829
+****Conversion from PDO::PARAM_BOOL to real is supported****
+****Conversion from PDO::PARAM_INT to real is supported****
+****Conversion from PDO::PARAM_STR to real is supported****
+****Conversion from PDO::PARAM_LOB to real is supported****
