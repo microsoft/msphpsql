@@ -1,5 +1,5 @@
 --TEST--
-Test insert various data types and fetch as strings
+Test insert data and fetch as all possible php types
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
