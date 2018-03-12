@@ -41,7 +41,7 @@ foreach ($dataTypes as $dataType) {
             
             // check the case if the column type is not the same as the SQLSRV_SQLTYPE
             if ($sqlType != "SQLSRV_SQLTYPE_" . strtoupper($dataType)) {
-                if (AE\isColEncrypted()) {
+                if (AE\isDataEncrypted()) {
                     if ($r !== false) {
                         echo "AE: Conversion from $dataType to output $sqlType should not be supported\n";
                     } else {

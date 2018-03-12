@@ -5,7 +5,7 @@ Test implicit conversions between different number of bits
 With Always Encrypted, implicit conversion works if:
 1. From input of SQLSRV_SQLTYPE_FLOAT to a float(m) column where m > 24
 Note: with AE, implicit conversion should work as long as the SQLSRV_SQLTYPE has a smaller number of bits than the one defined in the column. However, the SQLSRV driver does not let the user specify the number of bits in the SQLSRV_SQLTYPE_FLOAT constant and it is default to 53. Hence when user specifies SQLSRV_SQLTYPE_FLOAT when binding parameter during insertion, only insertion into a column of > 24 is allowed.
-Without AlwaysEncrypted, inplicit conversion between different number of bits works.
+Without Always Encrypted, implicit conversion between different number of bits works.
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
@@ -36,9 +36,9 @@ foreach($bits as $m) {
 
     // check the case when the column number of bits is less than 25
     // with AE: should not work
-    // with AE: should work
+    // without AE: should work
     if ($m < 25) {
-        if (AE\isColEncrypted()) {
+        if (AE\isDataEncrypted()) {
             if ($r !== false) {
                 echo "AE: Conversion from $sqlType to $typeFull should not be supported\n";
             } else {

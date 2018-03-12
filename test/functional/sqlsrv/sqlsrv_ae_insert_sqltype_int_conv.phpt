@@ -18,7 +18,7 @@ With Always Encrypted, implicit conversion works if:
 13. From input SQLSRV_SQLTYPE_INT to an int column
 14. From input SQLSRV_SQLTYPE_INT to a bigint column
 15. From input SQLSRV_SQLTYPE_BIGINT to a bigint column
-Without AlwaysEncrypted, inplicit conversion between different integer types works
+Without AlwaysEncrypted, implicit conversion between different integer types works
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
@@ -54,7 +54,7 @@ foreach ($dataTypes as $dataType) {
         
         // check the case if the type conversion is not listed in $aeConvList
         if (!in_array($sqlType, $aeConvList["$dataType"])) {
-            if (AE\isColEncrypted()) {
+            if (AE\isDataEncrypted()) {
                 if ($r !== false) {
                     echo "AE: Conversion from $sqlType to $dataType should not be supported\n";
                 } else {

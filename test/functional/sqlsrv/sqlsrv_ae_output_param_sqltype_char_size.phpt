@@ -37,7 +37,7 @@ foreach($dataTypes as $dataType) {
         echo "\nTesting $typeFull:\n";
             
         // create and populate table containing char(m) or varchar(m) columns
-        $tbname = "test_" . str_replace(array('(', ')'), '', $dataType) . $m;
+        $tbname = getTempTableName("test_" . str_replace(array('(', ')'), '', $dataType) . $m, false);
         $colMetaArr = array(new AE\ColumnMeta($typeFull, "c1", null, false));
         AE\createTable($conn, $tbname, $colMetaArr);
         $stmt = AE\insertRow($conn, $tbname, array("c1" => $inputValue));
@@ -71,7 +71,7 @@ foreach($dataTypes as $dataType) {
                     // with AE: should not work
                     // without AE: should work, except when a SQLSRV_SQLTYPE_VARCHAR length (n) is less than a char column length (m)
                     if (($n != $m || $maxsqltype || $maxcol) && !($maxcol && $maxsqltype)) {
-                        if (AE\isColEncrypted()) {
+                        if (AE\isDataEncrypted()) {
                             if ($r !== false) {
                             var_dump($n);
                             var_dump($m);
@@ -83,7 +83,7 @@ foreach($dataTypes as $dataType) {
                                 }
                             }
                         } else {
-                            if (strpos($sqltypeFull, "VARCHAR") !== false && $dataType == "char" && $m > $n  && strpos($sqltypeFull, "max") === false && $dir == "SQLSRV_PARAM_OUT") {
+                            if (!AE\isColEncrypted() && strpos($sqltypeFull, "VARCHAR") !== false && $dataType == "char" && $m > $n  && strpos($sqltypeFull, "max") === false && $dir == "SQLSRV_PARAM_OUT") {
                                 if ($r !== false) {
                                     echo "Conversions from $typeFull to output $sqltypeFull should not be supported\n";
                                 }

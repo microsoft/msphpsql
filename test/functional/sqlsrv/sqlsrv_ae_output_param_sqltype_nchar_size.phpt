@@ -71,7 +71,7 @@ foreach($dataTypes as $dataType) {
                     // with AE: should not work
                     // without AE: should work, except when a SQLSRV_SQLTYPE_NVARCHAR length (n) is less than a nchar column length (m)
                     if (($n != $m || $maxsqltype || $maxcol) && !($maxcol && $maxsqltype)) {
-                        if (AE\isColEncrypted()) {
+                        if (AE\isDataEncrypted()) {
                             if ($r !== false) {
                             var_dump($n);
                             var_dump($m);
@@ -83,7 +83,7 @@ foreach($dataTypes as $dataType) {
                                 }
                             }
                         } else {
-                            if (strpos($sqltypeFull, "NVARCHAR") !== false && $dataType == "nchar" && $m > $n  && strpos($sqltypeFull, "max") === false && $dir == "SQLSRV_PARAM_OUT") {
+                            if (!AE\isColEncrypted() && strpos($sqltypeFull, "NVARCHAR") !== false && $dataType == "nchar" && $m > $n  && strpos($sqltypeFull, "max") === false && $dir == "SQLSRV_PARAM_OUT") {
                                 if ($r !== false) {
                                     echo "Conversions from $typeFull to output $sqltypeFull should not be supported\n";
                                 }

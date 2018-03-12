@@ -78,7 +78,7 @@ foreach($dataTypes as $dataType) {
                         // without AE: should not work if n1 - n2 < m1 - m2 (Numeric value out of range error)
                         //             or n2 != 0 && $m1 == $m2 (Arithmetic overflow error)
                         if ($n1 != $m1 || $n2 != $m2) {
-                            if (AE\isColEncrypted()) {
+                            if (AE\isDataEncrypted()) {
                                 if ($r !== false) {
                                     echo "AE: Conversion from $sqltypeFull to $typeFull should not be supported\n";
                                 } else {

@@ -82,9 +82,9 @@ foreach($dataTypes as $dataType) {
         
         // check the case when the column precision (m) is less than 7
         // with AE: should not work
-        // with AE: should work
+        // without AE: should work
         if ($m < 7) {
-            if (AE\isColEncrypted()) {
+            if (AE\isDataEncrypted()) {
                 if ($r !== false) {
                     echo "AE: Conversion from $sqlType to $typeFull should not be supported\n";
                 } else {

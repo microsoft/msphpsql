@@ -57,7 +57,7 @@ foreach($dataTypes as $dataType) {
                 // with AE: should not work
                 // without AE: should work
                 if (($n > $m || $maxsqltype) && !$maxcol) {
-                    if (AE\isColEncrypted()) {
+                    if (AE\isDataEncrypted()) {
                         if ($r !== false) {
                             echo "AE: Conversion from $sqltypeFull to $typeFull should not be supported\n";
                         } else {
