@@ -237,53 +237,57 @@ for ($v = 2; $v < sizeof($values); ++$v)
                     fatalError("Conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
                 }
                 
-                $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
-                $convError = sqlsrv_errors();
-                
-                // if the non-AE conversion fails, certainly the AE conversion
-                // should fail but only with error 22018.
-                if ($stmtAE != false) fatalError("AE conversion should have failed. i=$i, j=$j, v=$v\n\n");
-                if ($convError[0][0] != '22018') {
-                    print_r($convError);
-                    fatalError("AE conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
-                }
-            } else {
-                if ($conversionMatrix[$i][$j] == 'x') fatalError("Conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
-                $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
-                
-                // Check every combination of statement value and conversion.
-                // The last else if block covers the case where the select
-                // query worked and the retrieved values are compared.
-                if ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'x') {
+                if (AE\isDataEncrypted()) {
+                    $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
                     $convError = sqlsrv_errors();
+                    
+                    // if the non-AE conversion fails, certainly the AE conversion
+                    // should fail but only with error 22018.
+                    if ($stmtAE != false) fatalError("AE conversion should have failed. i=$i, j=$j, v=$v\n\n");
                     if ($convError[0][0] != '22018') {
                         print_r($convError);
                         fatalError("AE conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
                     }
-                } elseif ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'y') {
-                    print_r(sqlsrv_errors());
-                    fatalError("AE conversion failed, should have succeeded. i=$i, j=$j, v=$v\n");
-                } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'x') {
-                    fatalError("AE conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
-                } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'y') {
-                    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
-                    $rowAE = sqlsrv_fetch_array($stmtAE, SQLSRV_FETCH_NUMERIC);
+                }
+            } else {
+                if ($conversionMatrix[$i][$j] == 'x') fatalError("Conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
+                if (AE\isDataEncrypted()) {
+                    $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
                     
-                    // rtrim strips whitespace from the end of the string, which 
-                    // takes care of a bug where some conversions lead to extraneous
-                    // whitespace padding the end of the string
-                    if (is_string($row[0])) {
-                        $row[0] = rtrim($row[0]);
-                        $rowAE[0] = rtrim($rowAE[0]);
-                    }
-                    
-                    if ($row[0] != $rowAE[0]) {
-                        echo "Values do not match! i=$i, j=$j, v=$v\n";
-                        print_r($row[0]);
-                        print_r($rowAE[0]);
-                        print_r($selectQuery[$i][$j]);echo "\n";
-                        print_r($selectQueryAE[$i][$j]);echo "\n";
-                        fatalError("Test failed, values do not match\n");
+                    // Check every combination of statement value and conversion.
+                    // The last else if block covers the case where the select
+                    // query worked and the retrieved values are compared.
+                    if ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'x') {
+                        $convError = sqlsrv_errors();
+                        if ($convError[0][0] != '22018') {
+                            print_r($convError);
+                            fatalError("AE conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
+                        }
+                    } elseif ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'y') {
+                        print_r(sqlsrv_errors());
+                        fatalError("AE conversion failed, should have succeeded. i=$i, j=$j, v=$v\n");
+                    } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'x') {
+                        fatalError("AE conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
+                    } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'y') {
+                        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+                        $rowAE = sqlsrv_fetch_array($stmtAE, SQLSRV_FETCH_NUMERIC);
+                        
+                        // rtrim strips whitespace from the end of the string, which 
+                        // takes care of a bug where some conversions lead to extraneous
+                        // whitespace padding the end of the string
+                        if (is_string($row[0])) {
+                            $row[0] = rtrim($row[0]);
+                            $rowAE[0] = rtrim($rowAE[0]);
+                        }
+                        
+                        if ($row[0] != $rowAE[0]) {
+                            echo "Values do not match! i=$i, j=$j, v=$v\n";
+                            print_r($row[0]);
+                            print_r($rowAE[0]);
+                            print_r($selectQuery[$i][$j]);echo "\n";
+                            print_r($selectQueryAE[$i][$j]);echo "\n";
+                            fatalError("Test failed, values do not match\n");
+                        }
                     }
                 }
             }
