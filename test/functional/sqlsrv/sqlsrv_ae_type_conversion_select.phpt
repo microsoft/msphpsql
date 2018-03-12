@@ -1,5 +1,5 @@
 --TEST--
-Test insert various data types and fetch as strings
+Test fetching data by conversion with CAST in the SELECT statement
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
