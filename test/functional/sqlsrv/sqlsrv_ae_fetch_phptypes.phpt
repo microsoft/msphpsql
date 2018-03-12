@@ -3,7 +3,7 @@ Test insert data and fetch as all possible php types
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
-﻿<?php
+<?php
 require_once('MsCommon.inc');
 require_once('tools.inc');
 require_once('values.php');
