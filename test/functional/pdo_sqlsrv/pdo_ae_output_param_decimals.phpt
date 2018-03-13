@@ -136,7 +136,7 @@ function testOutputDecimals($inout)
                     $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
                     createTable($conn, $tbname, $colMetaArr);
 
-                    $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null);
+                    $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1]));
                     
                     // fetch with PDO::bindParam using a stored procedure
                     $procArgs = "@c_det $type OUTPUT, @c_rand $type OUTPUT";
