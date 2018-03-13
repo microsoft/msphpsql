@@ -3,10 +3,10 @@ Test for inserting encrypted data into char types columns with different sizes
 --DESCRIPTION--
 Test conversions between different char types of different sizes
 With or without Always Encrypted, implicit conversion works if:
-1. From input of PDO::PARAM_BOOL to a any char column
-2. From input of PDO::PARAM_INT to a any char column
-3. From input of PDO::PARAM_STR to a any char column
-4. From input of PDO::PARAM_LOB to a any char column
+1. From input of PDO::PARAM_BOOL to any char column
+2. From input of PDO::PARAM_INT to any char column
+3. From input of PDO::PARAM_STR to any char column
+4. From input of PDO::PARAM_LOB to any char column
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -29,7 +29,10 @@ try {
             }
             echo "\nTesting $typeFull:\n";
                 
-            //create table containing char(m) or varchar(m) columns
+            // create table containing a char(m) or varchar(m) column
+            // only one column is created because a row has a limitation of 8060 bytes
+            // for lengths 4096 and 8000, cannot create 2 columns as it will exceed the maximum row sizes
+            // for AE, only testing randomized here, deterministic is tested in the nchar test
             $tbname = getTableName("test_" . str_replace(array('(', ')'), '', $dataType) . $m);
             $colMetaArr = array(new ColumnMeta($typeFull, "c1", null, "randomized"));
             createTable($conn, $tbname, $colMetaArr);

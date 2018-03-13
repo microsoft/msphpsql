@@ -55,7 +55,7 @@ try {
                 // check the case when fetching as PDO::PARAM_STR or PDO::PARAM_LOB
                 // with or without AE: should work
                 } else {
-                    if (strlen($det) == $m && strlen($rand) == $m) {
+                    if (trim($det) == $inputValues[0] && trim($rand) == $inputValues[1]) {
                         echo "****Retrieving $typeFull data as $pdoParamType is supported****\n";
                     } else {
                         echo "Retrieving $typeFull data as $pdoParamType fails\n";

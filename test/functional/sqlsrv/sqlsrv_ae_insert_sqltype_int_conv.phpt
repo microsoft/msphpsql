@@ -27,6 +27,9 @@ require_once('MsCommon.inc');
 
 $dataTypes = array("bit", "tinyint", "smallint", "int", "bigint");
 $sqlTypes = array("SQLSRV_SQLTYPE_BIT", "SQLSRV_SQLTYPE_TINYINT", "SQLSRV_SQLTYPE_SMALLINT", "SQLSRV_SQLTYPE_INT", "SQLSRV_SQLTYPE_BIGINT");
+// only 1 and 0 inputs are tested as they are the only values that fit into all integer types
+// this test is for testing different integer conversions, if the input value does not fit into a datatype,
+// the conversion would fail not because the conversion is not supported, but because of other errors such as truncation
 $inputValues = array(1, 0);
 
 // this is a list of implicit datatype conversion that AE supports

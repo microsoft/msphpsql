@@ -32,6 +32,9 @@ foreach($dataTypes as $dataType) {
         echo "\nTesting $typeFull:\n";
             
         // create table containing nchar(m) or nvarchar(m) columns
+        // only one column is created because a row has a limitation of 8060 bytes
+        // for lengths 4096 and 8000, cannot create 2 columns as it will exceed the maximum row sizes
+        // for AE, only testing randomized here, deterministic is tested in the char test
         $tbname = "test_" . str_replace(array('(', ')'), '', $dataType) . $m;
         $colMetaArr = array(new AE\ColumnMeta($typeFull, "c1", null, false));
         AE\createTable($conn, $tbname, $colMetaArr);

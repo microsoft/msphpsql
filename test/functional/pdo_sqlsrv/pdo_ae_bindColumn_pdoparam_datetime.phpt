@@ -44,6 +44,7 @@ try {
                     echo "Retrieving $dataType data as $pdoParamType should not be supported\n";
                 }
             // check the case when fetching as PDO::PARAM_STR or PDO::PARAM_LOB
+            // only check if input values are part of fetched values because some input values do not contain any deicmal places, the value retrieved however has 3 decimal places if the type is a datetime
             // with or without AE: should work
             } else {
                 if (strpos($det, $inputValues[0]) !== false && strpos($rand, $inputValues[1]) !== false) {

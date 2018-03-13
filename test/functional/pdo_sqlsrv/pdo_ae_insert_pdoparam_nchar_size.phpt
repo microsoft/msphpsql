@@ -29,7 +29,10 @@ try {
             }
             echo "\nTesting $typeFull:\n";
                 
-            //create table containing nchar(m) or nvarchar(m) columns
+            // create table containing nchar(m) or nvarchar(m) columns
+            // only one column is created because a row has a limitation of 8060 bytes
+            // for lengths 4096 and 8000, cannot create 2 columns as it will exceed the maximum row sizes
+            // for AE, only testing deterministic here, randomized is tested in the char test
             $tbname = "test_" . str_replace(array('(', ')'), '', $dataType) . $m;
             $colMetaArr = array(new ColumnMeta($typeFull, "c1"));
             createTable($conn, $tbname, $colMetaArr);
