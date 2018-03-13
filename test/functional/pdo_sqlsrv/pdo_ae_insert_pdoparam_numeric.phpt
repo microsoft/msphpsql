@@ -146,7 +146,6 @@ Testing smallint:
 ****Conversion from PDO::PARAM_LOB to smallint is supported****
 
 Testing int:
-Conversion from PDO::PARAM_BOOL to int should be supported
 ****Conversion from PDO::PARAM_INT to int is supported****
 ****Conversion from PDO::PARAM_STR to int is supported****
 ****Conversion from PDO::PARAM_LOB to int is supported****
