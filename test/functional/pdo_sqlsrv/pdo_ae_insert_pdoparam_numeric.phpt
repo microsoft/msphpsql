@@ -4,16 +4,16 @@ Test for inserting encrypted data into numeric types columns
 Test conversions between different numeric types
 With Always Encrypted, implicit conversion works if:
 1. From input of PDO::PARAM_BOOL to a real column
-2. From input of PDO::PARAM_INT to a any numeric column
-3. From input of PDO::PARAM_STR to a any numeric column
-4. From input of PDO::PARAM_LOB to a any numeric column
-Without Always Encrypted, all of the above works except for input of PDO::PARAM_STR to a bigint column in a x86 platform
-PDO::PARAM_STR does not work for bigint in a x86 because in a x86 platform, the maximum value of an int is about 2147483647
+2. From input of PDO::PARAM_INT to any numeric column
+3. From input of PDO::PARAM_STR to any numeric column
+4. From input of PDO::PARAM_LOB to any numeric column
+Without Always Encrypted, all of the above work except for input of PDO::PARAM_STR to a bigint column in a x86 platform
+PDO::PARAM_STR does not work for bigint in a x86 platform because the maximum value of an int is about 2147483647
 Whereas in a x64 platform, the maximum value is about 9E18
-In a x86 platform, when in integer is initialized to be > 2147483647, PHP implicitly change it to a float, represented by scientific notation
+In a x86 platform, when an integer is > 2147483647, PHP implicitly changees it to a float, represented by scientific notation
 When inserting a scientific notation form numeric string, SQL Server returns a converting data type nvarchar to bigint error
 Works for with AE because the sqltype used for binding parameter is determined by SQLDescribeParam,
-unlike without AE, the sqltype is predicted to be nvarchar when the input is a string and the encoding is utf8
+unlike without AE, the sqltype is predicted to be nvarchar or varchar when the input is a string
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -146,6 +146,7 @@ Testing smallint:
 ****Conversion from PDO::PARAM_LOB to smallint is supported****
 
 Testing int:
+Conversion from PDO::PARAM_BOOL to int should be supported
 ****Conversion from PDO::PARAM_INT to int is supported****
 ****Conversion from PDO::PARAM_STR to int is supported****
 ****Conversion from PDO::PARAM_LOB to int is supported****

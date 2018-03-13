@@ -53,10 +53,12 @@ foreach($dataTypes as $dataType) {
                 $stmt = AE\insertRow($conn, $tbname, array("c1" => $input), $r, AE\INSERT_PREPARE_PARAMS);
                 
                 // check the case when SQLSRV_SQLTYPE length (n) is greater than the column length (m)
-                // with AE: should not works
+                // if SQLSRV_SQLTYPE_NVARCHAR(max) ($maxsqltype), no conversion is supported except if the column is also max ($maxcol)
+                // if column is max ($maxcol), all conversions are supported
+                // with AE: should not work
                 // without AE: should work
                 if (($n > $m || $maxsqltype) && !$maxcol) {
-                    if (AE\isColEncrypted()) {
+                    if (AE\isDataEncrypted()) {
                         if ($r !== false) {
                             echo "AE: Conversion from $sqltypeFull to $typeFull should not be supported\n";
                         } else {

@@ -6,7 +6,7 @@ With Always Encrypted, implicit conversion works if:
 1. From input of SQLSRV_SQLTYPE_DATETIME2 to a dateteim2(7) column
 2. From input of SQLSRV_SQLTYPE_DATETIMEOFFSET to a datetimeoffset(7) column
 3. From input of SQLSRV_SQLTYPE_TIME to a time(7) column
-Note: with AE, implicit converion should work as long as the SQLSRV_SQLTYPE has a smaller precision than the one defined in the column. However, the SQLSRV driver does not let the user specify the precision in these SQLSRV_SQLTYPE_* constants and they are all default to a precision of 7. Hence when user specifies SQLSRV_SQLTYPE_DATETIME2, SQLSRV_SQLTYPE_DATETIMEOFFSET or SQLSRV_SQLTYPE_TIME when binding parameter during insertion, only insertion into a column of precision 7 is allowed.
+Note: with Always Encrypted, implicit converion should work as long as the SQLSRV_SQLTYPE has a smaller precision than the one defined in the column. However, the SQLSRV driver does not let the user specify the precision in these SQLSRV_SQLTYPE_* constants and they are all default to a precision of 7. Hence when user specifies SQLSRV_SQLTYPE_DATETIME2, SQLSRV_SQLTYPE_DATETIMEOFFSET or SQLSRV_SQLTYPE_TIME when binding parameter during insertion, only insertion into a column of precision 7 is allowed.
 Without AlwaysEncrypted, implicit conversion between different precisions works
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
@@ -82,9 +82,9 @@ foreach($dataTypes as $dataType) {
         
         // check the case when the column precision (m) is less than 7
         // with AE: should not work
-        // with AE: should work
+        // without AE: should work
         if ($m < 7) {
-            if (AE\isColEncrypted()) {
+            if (AE\isDataEncrypted()) {
                 if ($r !== false) {
                     echo "AE: Conversion from $sqlType to $typeFull should not be supported\n";
                 } else {

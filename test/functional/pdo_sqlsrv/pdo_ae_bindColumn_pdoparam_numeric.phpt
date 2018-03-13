@@ -2,7 +2,7 @@
 Test for retrieving encrypted data from numeric types columns using PDO::bindColumn
 --DESCRIPTION--
 Test conversion from numeric types column to output of PDO::PARAM types
-With or without AE, conversion works if:
+With or without Always Encrypted, conversion works if:
 1. From any numeric type except for bigint column to PDO::PARAM_BOOL
 2. From any numeric type except for bigint column to PDO::PARAM_INT
 3. From any numeric type column to PDO::PARAM_STR

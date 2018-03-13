@@ -78,7 +78,7 @@ try {
                         $sql = "SELECT c_det, c_rand FROM $tbname";
                         $stmt = $conn->query($sql);
                         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                        if (strlen($row['c_det']) == $m && strlen($row['c_rand']) == $m) {
+                        if (trim($row['c_det']) == $inputValues[0] && trim($row['c_rand']) == $inputValues[1]) {
                             echo "****Conversion from $pdoParamType to $typeFull is supported****\n";
                         } else {
                             echo "Conversion from $pdoParamType to $typeFull causes data corruption\n";

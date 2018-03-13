@@ -2,7 +2,7 @@
 Test for retrieving encrypted data from char types columns using PDO::bindColumn
 --DESCRIPTION--
 Test conversion from char types column to output of PDO::PARAM types
-With or without AE, conversion works if:
+With or without Always Encrypted, conversion works if:
 1. From any char type column to PDO::PARAM_STR
 2. From any char type column to PDO::PARAM_LOB
 --SKIPIF--

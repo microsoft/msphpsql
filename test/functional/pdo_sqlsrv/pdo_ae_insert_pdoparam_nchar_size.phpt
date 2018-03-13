@@ -3,10 +3,10 @@ Test for inserting encrypted data into nchar types columns with different sizes
 --DESCRIPTION--
 Test conversions between different nchar types of different sizes
 With or without Always Encrypted, implicit conversion works if:
-1. From input of PDO::PARAM_BOOL to a any nchar column
-2. From input of PDO::PARAM_INT to a any nchar column
-3. From input of PDO::PARAM_STR to a any nchar column
-4. From input of PDO::PARAM_LOB to a any nchar column
+1. From input of PDO::PARAM_BOOL to any nchar column
+2. From input of PDO::PARAM_INT to any nchar column
+3. From input of PDO::PARAM_STR to any nchar column
+4. From input of PDO::PARAM_LOB to any nchar column
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--

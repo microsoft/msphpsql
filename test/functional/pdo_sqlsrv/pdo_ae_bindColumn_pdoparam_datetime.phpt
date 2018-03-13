@@ -2,7 +2,7 @@
 Test for retrieving encrypted data from datetime types columns using PDO::bindColumn
 --DESCRIPTION--
 Test conversion from datetime types column to output of PDO::PARAM types
-With or without AE, conversion works if:
+With or without Always Encrypted, conversion works if:
 1. From any datetime type column to PDO::PARAM_STR
 2. From any datetime type column to PDO::PARAM_LOB
 --SKIPIF--
@@ -38,7 +38,7 @@ try {
             $row = $stmt->fetch(PDO::FETCH_BOUND);
             
             // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_NULL or PDO::PARAM_INT
-            // with or without AE; should not work
+            // with or without AE: should not work
             if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
                 if (!is_null($det) || !is_null($rand)) {
                     echo "Retrieving $dataType data as $pdoParamType should not be supported\n";

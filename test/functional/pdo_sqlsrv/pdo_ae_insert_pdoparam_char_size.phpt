@@ -30,7 +30,7 @@ try {
             echo "\nTesting $typeFull:\n";
                 
             //create table containing char(m) or varchar(m) columns
-            $tbname = "test_" . str_replace(array('(', ')'), '', $dataType) . $m;
+            $tbname = getTableName("test_" . str_replace(array('(', ')'), '', $dataType) . $m);
             $colMetaArr = array(new ColumnMeta($typeFull, "c1", null, "randomized"));
             createTable($conn, $tbname, $colMetaArr);
             $input = str_repeat("d", $m);

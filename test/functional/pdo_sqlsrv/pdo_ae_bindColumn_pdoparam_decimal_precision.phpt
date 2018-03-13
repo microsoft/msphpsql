@@ -2,15 +2,16 @@
 Test for retrieving encrypted data from decimal types columns using PDO::bindColumn
 --DESCRIPTION--
 Test conversion from decimal types column to output of PDO::PARAM types
-With or without AE, conversion works if:
+With or without ALways Encrypted, conversion works if:
 1. From any decimal type column to PDO::PARAM_STR
 2. From any decimal type column to PDO::PARAM_LOB
 TODO: behavior for teching decimals as PARAM_BOOL and PARAM_INT varies depending on the number being fetched
       1. if the number is less than 1, returns 0 (even though the number being fetched is 0.9)
-      2. 2. if the number is greater than 1 and the number of digits is less than 11, returns the correctly rounded integer (e.g., returns 922 when fetching 922.3)
+      2. if the number is greater than 1 and the number of digits is less than 11, returns the correctly rounded integer (e.g., returns 922 when fetching 922.3)
       3. if the number is greater than 1 and the number of digits is greater than 11, returns NULL
       need to investigate which should be the correct behavior
       for this test, assume to correct behavior is to return NULL
+      documented in VSO 2730
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -55,7 +56,7 @@ try {
                 $typeFull = "$dataType($m1, $m2)";
                 echo "\nTesting $typeFull:\n";
                 
-                //create and populate table containing decimal(m1, m2) or numeric(m1, m2) columns
+                // create and populate table containing decimal(m1, m2) or numeric(m1, m2) columns
                 $tbname = "test_" . $dataType . $m1 . $m2;
                 $colMetaArr = array(new ColumnMeta($typeFull, "c_det"), new ColumnMeta($typeFull, "c_rand", null, "randomized"));
                 createTable($conn, $tbname, $colMetaArr);
@@ -73,7 +74,7 @@ try {
                     $row = $stmt->fetch(PDO::FETCH_BOUND);
                     
                     // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_NULL or PDO::PARAM_INT
-                    // with or without AE; should not work
+                    // with or without AE: should not work
                     // assume to correct behavior is to return NULL, see description
                     if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
                         if (!is_null($det) || !is_null($rand)) {

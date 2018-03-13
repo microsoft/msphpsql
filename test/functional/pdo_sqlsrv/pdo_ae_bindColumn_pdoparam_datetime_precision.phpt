@@ -2,12 +2,13 @@
 Test for retrieving encrypted data from datetime types columns with different precisions using PDO::bindColumn
 --DESCRIPTION--
 Test conversion from datetime types column to output of PDO::PARAM types
-With or without AE, conversion works if:
+With or without Always Encrypted, conversion works if:
 1. From any datetime type column to PDO::PARAM_STR
 2. From any datetime type column to PDO::PARAM_LOB
 TODO: cannot insert into a datetime2(0) using the PDO_SQLSRV driver
       returns operand type clash error between smalldatetime and datetime2(0)
       to see error, uncomment 0 from the $precision array
+      documented in VSO 2693
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -74,7 +75,7 @@ try {
                 $row = $stmt->fetch(PDO::FETCH_BOUND);
                 
                 // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_NULL or PDO::PARAM_INT
-                // with or without AE; should not work
+                // with or without AE: should not work
                 if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
                     if (!is_null($det) || !is_null($rand)) {
                         echo "Retrieving $typeFull data as $pdoParamType should not be supported\n";
