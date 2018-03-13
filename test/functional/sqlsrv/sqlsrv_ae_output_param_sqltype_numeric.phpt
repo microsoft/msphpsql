@@ -37,14 +37,18 @@ foreach ($dataTypes as $dataType) {
     if (AE\isColEncrypted()) {
 		// Create a Store Procedure
 		$spname = 'selectAllColumns';
-		$spSql = "CREATE PROCEDURE $spname (@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT ) AS SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-		sqlsrv_query($conn, $spSql);
+		createProc($conn, $spname, "@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT", "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname");
 	}
 	
     // insert a row
     $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
-    $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
+    // convert input values to strings for decimals and numerics
+    if ($dataTypes == "decimal(18,5)" || $dataTypes == "numeric(10,5)") {
+        $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => (string) $inputValues[0], $colMetaArr[1]->colName => (string) $inputValues[1] ), $r);
+    } else {
+        $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
+    }
     if ($r === false) {
         is_incompatible_types_error($dataType, "default type");
     }

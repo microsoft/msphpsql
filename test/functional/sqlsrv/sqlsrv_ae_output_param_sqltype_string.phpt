@@ -31,8 +31,7 @@ foreach ($dataTypes as $dataType) {
     if (AE\isColEncrypted()) {
 		// Create a Store Procedure
 		$spname = 'selectAllColumns';
-		$spSql = "CREATE PROCEDURE $spname (@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT ) AS SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-		sqlsrv_query($conn, $spSql);
+		createProc($conn, $spname, "@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT", "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname");
 	}
 	
     // insert a row
