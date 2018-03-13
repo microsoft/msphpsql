@@ -157,12 +157,15 @@ class BindParamOption
             $type_size = explode("(", $this->sqlType);
             $type = $type_size[0];
             if (count($type_size) > 1) {
-                $size = $type_size[1];
+                $size = rtrim($type_size[1], ")");
                 $prec_scal = explode(",", $size);
                 if (count($prec_scal) > 1) {
                     $prec = $prec_scal[0];
-                    $scal = rtrim($prec_scal[1], ")");
+                    $scal = $prec_scal[1];
                     $size = null;
+                }
+                if (strpos($size, "max") !== false) {
+                    $size = trim($size, "'");
                 }
             }
             // get the sqlType constant
