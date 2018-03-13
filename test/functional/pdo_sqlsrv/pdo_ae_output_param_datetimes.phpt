@@ -88,14 +88,12 @@ function testOutputDatetimes($inout)
                 $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
                 createTable($conn, $tbname, $colMetaArr);
 
-                $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null, $r);
+                $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null);
                 
                 // fetch with PDO::bindParam using a stored procedure
-                dropProc($conn, $spname);
-                $spSql = "CREATE PROCEDURE $spname (
-                                @c_det $type OUTPUT, @c_rand $type OUTPUT ) AS
-                                SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-                $conn->query($spSql);
+                $procArgs = "@c_det $type OUTPUT, @c_rand $type OUTPUT";
+                $procCode = "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
+                createProc($conn, $spname, $procArgs, $procCode);
             
                 // call stored procedure
                 $outSql = getCallProcSqlPlaceholders($spname, 2);

@@ -91,11 +91,9 @@ function testOutputInts($inout)
                                             "c_rand" => $inputValues[1]));
                 
             // fetch with PDO::bindParam using a stored procedure
-            dropProc($conn, $spname);
-            $spSql = "CREATE PROCEDURE $spname (
-                            @c_det $dataType OUTPUT, @c_rand $dataType OUTPUT ) AS
-                            SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-            $conn->query($spSql);
+            $procArgs = "@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT";
+            $procCode = "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
+            createProc($conn, $spname, $procArgs, $procCode);
             
             // call stored procedure
             $outSql = getCallProcSqlPlaceholders($spname, 2);

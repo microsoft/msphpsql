@@ -78,11 +78,9 @@ function testOutputBinary($inout)
                                                 "c_rand" => new BindParamOp(2, $input1, "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY")), "prepareBindParam");
                     
                 // fetch with PDO::bindParam using a stored procedure
-                dropProc($conn, $spname);
-                $spSql = "CREATE PROCEDURE $spname (
-                                @c_det $type OUTPUT, @c_rand $type OUTPUT ) AS
-                                SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-                $conn->query($spSql);
+                $procArgs = "@c_det $type OUTPUT, @c_rand $type OUTPUT";
+                $procCode = "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
+                createProc($conn, $spname, $procArgs, $procCode);
                 
                 // call stored  procedure
                 $outSql = getCallProcSqlPlaceholders($spname, 2);
@@ -92,6 +90,7 @@ function testOutputBinary($inout)
                     
                     if ($inout && $pdoParamType != PDO::PARAM_STR) {
                         // Currently do not support getting binary as strings + INOUT param
+                        // See VSO 2829 for details
                         $paramType = $pdoParamType | PDO::PARAM_INPUT_OUTPUT;
                     } else {
                         $paramType = $pdoParamType;
@@ -99,7 +98,7 @@ function testOutputBinary($inout)
 
                     $det = "";
                     $rand = "";
-                    if ($pdoParamType == PDO::PARAM_STR) {
+                    if ($pdoParamType == PDO::PARAM_STR || $pdoParamType == PDO::PARAM_LOB) {
                         $stmt->bindParam(1, $det, $paramType, $length, PDO::SQLSRV_ENCODING_BINARY); 
                         $stmt->bindParam(2, $rand, $paramType, $length, PDO::SQLSRV_ENCODING_BINARY); 
                     } elseif ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {

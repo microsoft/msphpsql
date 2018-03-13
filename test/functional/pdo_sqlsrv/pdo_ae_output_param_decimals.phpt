@@ -45,7 +45,7 @@ function compareFloats($actual, $expected)
     return ($diff > $epsilon);
 }
 
-// function compareDecimals() returns false when the fetched values 
+// function compareIntegers() returns false when the fetched values 
 // are different from the expected inputs 
 function compareIntegers($det, $rand, $inputValues, $pdoParamType)
 {
@@ -136,14 +136,12 @@ function testOutputDecimals($inout)
                     $colMetaArr = array(new ColumnMeta($type, "c_det"), new ColumnMeta($type, "c_rand", null, "randomized"));
                     createTable($conn, $tbname, $colMetaArr);
 
-                    $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null, $r);
+                    $stmt = insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null);
                     
                     // fetch with PDO::bindParam using a stored procedure
-                    dropProc($conn, $spname);
-                    $spSql = "CREATE PROCEDURE $spname (
-                                    @c_det $type OUTPUT, @c_rand $type OUTPUT ) AS
-                                    SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-                    $conn->query($spSql);
+                    $procArgs = "@c_det $type OUTPUT, @c_rand $type OUTPUT";
+                    $procCode = "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
+                    createProc($conn, $spname, $procArgs, $procCode);
             
                     // call stored procedure
                     $outSql = getCallProcSqlPlaceholders($spname, 2);
@@ -152,10 +150,13 @@ function testOutputDecimals($inout)
                         $stmt = $conn->prepare($outSql);
                     
                         $len = 2048;
+                        // Do not initialize $det or $rand as empty strings 
+                        // See VSO 2915 for details 
                         if ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {
                             $len = PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE;
                             $det = $rand = 0;
                         } 
+                        
                         trace("\nParam $pdoParamType with INOUT = $inout\n");
                         if ($inout) {
                             $paramType = $pdoParamType | PDO::PARAM_INPUT_OUTPUT;

@@ -62,11 +62,9 @@ function testOutputNChars($inout)
                                                 "c_rand" => $input1));
                     
                 // fetch with PDO::bindParam using a stored procedure
-                dropProc($conn, $spname);
-                $spSql = "CREATE PROCEDURE $spname (
-                                @c_det $type OUTPUT, @c_rand $type OUTPUT ) AS
-                                SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
-                $conn->query($spSql);
+                $procArgs = "@c_det $type OUTPUT, @c_rand $type OUTPUT";
+                $procCode = "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname";
+                createProc($conn, $spname, $procArgs, $procCode);
                 
                 // call stored procedure
                 $outSql = getCallProcSqlPlaceholders($spname, 2);
@@ -94,6 +92,7 @@ function testOutputNChars($inout)
                     try {
                         $stmt->execute();
                         $errMsg = "****$type as $pdoParamType failed with INOUT = $inout:****\n";
+                        // When $length >= 64, a string is returned regardless of $pdoParamType
                         if ($length < 64 && $pdoParamType != PDO::PARAM_STR) {
                             if ($pdoParamType == PDO::PARAM_BOOL) {
                                 // For boolean values, they should all be bool(true)
