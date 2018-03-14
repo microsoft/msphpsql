@@ -4,8 +4,14 @@ Test various date and time types with AE and ReturnDatesAsStrings set to true
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
+require_once('MsCommon.inc');
+
 // Check for expected errors. These are expected in cases where the dates and
 // times do not comply with ODBC standards.
+// 07006 Restricted data type attribute violation (Conversion failed)
+// 22007 Invalid datetime format (ODBC accepts only a few formats)
+// 22008 Datetime field overflow (Outside range)
+// 22018 Invalid character value for cast specification
 function ExecutePreparedStmt($stmt)
 {
     if ($stmt == false) {
@@ -14,10 +20,10 @@ function ExecutePreparedStmt($stmt)
         $r = sqlsrv_execute($stmt);
         if ($r == false) {
             $errors = sqlsrv_errors();
-            if ($errors[0]['SQLSTATE'] != '22018' and
-                $errors[0]['SQLSTATE'] != '22008' and
+            if ($errors[0]['SQLSTATE'] != '07006' and
                 $errors[0]['SQLSTATE'] != '22007' and
-                $errors[0]['SQLSTATE'] != '07006') {
+                $errors[0]['SQLSTATE'] != '22008' and
+                $errors[0]['SQLSTATE'] != '22018') {
                 print_r($errors);
                 fatalError("Unexpected error");
             }
@@ -26,131 +32,153 @@ function ExecutePreparedStmt($stmt)
 }
 
 // Compare dates retrieved from the database with the date used for testing.
-// $testingDate is an array of strings like '2002-01-31 23:59:59.049876' and
-// $retrieved_date is the string date of the format 'Y-m-d H:i:s.u', which 
-// the format returned by the date_format() calls below or by retrieval as 
-// strings, unless $datetimetype is date or time. In that case, if 
-// $returnStrings is false and $datetimetype is 'date', the time defaults to
-// 00:00:00.0000, and if $datetimetype is 'time' and $returnStrings is false,
-// the date defaults to the current date. If however $returnStrings is true
-// and $datetimetype is 'date', $retrieved_date is only a date,
-// and if $datetimetype is 'time' and $returnStrings is true, $retrieved_date
-// only a time.
-// The concatenations involving zeroes below are to make direct string
-// comparisons feasible. Also, because PHP maxes out at microsecond precision
-// and SQL Server maxes out at 0.1 microsecond precision, the more precise 
-// types require an extra 0 for some comparisons.
-function CompareDateTime($datetimetype, $returnStrings, &$testingDate, $retrievedDate)
+// $expectedDateTime is an array of strings like '2002-01-31 23:59:59.049876'
+// $retrievedDateTime is date/time string of format either 'Y-m-d H:i:s.u' or
+// 'Y-m-d H:i:s.u P', which is the format returned when $returnDatesAsStrings 
+// is true, or by the date_format() calls in FetchDatesAndOrTimes when a PHP 
+// DateTime object is retrieved (i.e. when $returnDatesAsStrings is false),
+// unless $datetimetype is date or time. In those cases:
+// If $datetimetype is date and $returnDatesAsStrings is false:
+//   The date is as expected, the time defaults to 00:00:00.0000
+// If $datetimetype is time and $returnStrings is false:
+//   The date defaults to the current date, the time is as expected. 
+// If $datetimetype is date and $returnStrings is true:
+//   $retrievedDateTime is only a date.
+// If $datetimetype is 'time' and $returnStrings is true:
+//   $retrievedDateTime is only a time.
+function CompareDateTime($datetimetype, $returnStrings, &$expectedDateTime, $retrievedDateTime)
 {
-    $test_date_time = array();
+    $expected_date_time = array();
 
-    for ($i=0; $i<sizeof($testingDate); ++$i) {
-        $test_date_time[] = explode(" ", $testingDate[$i]);
+    // Split each element of the testing date/time into
+    // [0]:date, [1]:time, and possibly [2]:timezone offset 
+    for ($i = 0; $i < sizeof($expectedDateTime); ++$i) {
+        $expected_date_time[] = explode(" ", $expectedDateTime[$i]);
     }
     
-    $ret_date_time = explode(" ", $retrievedDate);
-    if (sizeof($ret_date_time)>1) {
-        $datetimeonly = $ret_date_time[0]." ".$ret_date_time[1];
-    }
-    if (sizeof($ret_date_time)>2) {
-        $timezone = $ret_date_time[2];
-        $dtoffset = $ret_date_time[0]." ".substr($ret_date_time[1], 0, -1)." ".$ret_date_time[2];
-    }
+    // If $retrievedDateTime is a string of format 'Y-m-d H:i:s.u' or 'Y-m-d H:i:s.u P',
+    // split it into [0]:date, [1]:time, and possibly [2]:timezone offset
+    $retrieved_date_time = explode(" ", $retrievedDateTime);
    
     if ($returnStrings == true) {
         switch ($datetimetype) {
             case 'date':
-                if ($retrievedDate != $test_date_time[0][0]) {
+                // Direct comparison of retrieved date and expected date
+                if ($retrievedDateTime != $expected_date_time[0][0]) {
                     fatalError("Dates do not match!");
                 }                    
                 break;
-            case 'time':
-                if ($retrievedDate != $test_date_time[0][1]."0" and
-                    $retrievedDate != $test_date_time[1][1]."0" and
-                    $retrievedDate != $test_date_time[2][1]."0" and
-                    $retrievedDate != $test_date_time[3][1]."0" ) {
+            case 'time': 
+                // Compare SQL time with expected time. The expected time was input
+                // with an accuracy of microseconds and the SQL Servertime type has
+                // accuracy to 100 ns, so times are returned with an extra zero. For
+                // comparison the zero is appended to the times in expected_time_date.
+                if ($retrievedDateTime != $expected_date_time[0][1]."0" and
+                    $retrievedDateTime != $expected_date_time[1][1]."0" and
+                    $retrievedDateTime != $expected_date_time[2][1]."0" and
+                    $retrievedDateTime != $expected_date_time[3][1]."0" ) {
                         fatalError("Times do not match!");
                 }
                 break;
             case 'datetime':
-                if ($retrievedDate."000" != $testingDate[0] and
-                    $retrievedDate."000" != $testingDate[1] and
-                    $retrievedDate."000" != $testingDate[2] and
-                    $retrievedDate."000" != $testingDate[3] ) {
+                // Compare retrieved SQL datetime with expected date/time.
+                // SQL Server's datetime type is accurate to milliseconds and
+                // the expected time is accurate to microseconds, so append
+                // three zeroes to the retrieved time for comparison.
+                if ($retrievedDateTime."000" != $expectedDateTime[0] and
+                    $retrievedDateTime."000" != $expectedDateTime[1] and
+                    $retrievedDateTime."000" != $expectedDateTime[2] and
+                    $retrievedDateTime."000" != $expectedDateTime[3] ) {
                         fatalError("Datetimes do not match!");
                 }
                 break;
             case 'datetime2':
-                if ($retrievedDate != $testingDate[0]."0" and
-                    $retrievedDate != $testingDate[1]."0" and
-                    $retrievedDate != $testingDate[2]."0" and
-                    $retrievedDate != $testingDate[3]."0" ) {
+                // Compare retrieved SQL datetime2 with expected date/time.
+                // SQL Server's datetime2 type is accurate to 100 ns and
+                // the expected time is accurate to microseconds, so append
+                // a zero to the expected time for comparison.
+                if ($retrievedDateTime != $expectedDateTime[0]."0" and
+                    $retrievedDateTime != $expectedDateTime[1]."0" and
+                    $retrievedDateTime != $expectedDateTime[2]."0" and
+                    $retrievedDateTime != $expectedDateTime[3]."0" ) {
                         fatalError("Datetime2s do not match!");
                 }
                 break;
             case 'datetimeoffset':
-                if ($dtoffset != $testingDate[4] and
-                    $dtoffset != $testingDate[5] and
-                    $dtoffset != $testingDate[6] and
-                    $dtoffset != $testingDate[7] ) {
+                // Compare the SQL datetimeoffset retrieved with expected
+                // date/time. datetimeoffset is accurate to 100 ns, so the
+                // extra zero is removed in $dtoffset to create a format accurate 
+                // to microseconds for comparison with the expected date/time/timezone.
+                $dtoffset = $retrieved_date_time[0]." ".substr($retrieved_date_time[1], 0, -1)." ".$retrieved_date_time[2];
+                if ($dtoffset != $expectedDateTime[4] and
+                    $dtoffset != $expectedDateTime[5] and
+                    $dtoffset != $expectedDateTime[6] and
+                    $dtoffset != $expectedDateTime[7] ) {
                         fatalError("Datetimeoffsets do not match!");
                 }
                 break;
             case 'smalldatetime':
-                if ($retrievedDate.".000000" != $testingDate[0] and
-                    $retrievedDate.".000000" != $testingDate[1] and
-                    $retrievedDate.".000000" != $testingDate[2] and
-                    $retrievedDate.".000000" != $testingDate[3] ) {
+                // Compare retrieved SQL smalldatetime with expected date/time.
+                // SQL Server's smalldatetime type is accurate to seconds and
+                // the expected time is accurate to microseconds, so append
+                // '.000000' to the expected time for comparison.
+                if ($retrievedDateTime.".000000" != $expectedDateTime[0] and
+                    $retrievedDateTime.".000000" != $expectedDateTime[1] and
+                    $retrievedDateTime.".000000" != $expectedDateTime[2] and
+                    $retrievedDateTime.".000000" != $expectedDateTime[3] ) {
                         fatalError("Smalldatetimes do not match!");
                 }
                 break;
         }
-    }
-    else {
+    } else {
+        // Combine the retrieved date and time. 
+        if (sizeof($retrieved_date_time)>1) {
+            $date_time_only = $retrieved_date_time[0]." ".$retrieved_date_time[1];
+        }
+        
+        // Times returned by SQL Server are accurate to 100 ns, but when
+        // formatted using PHP's date_format() function, the times are accurate
+        // to microseconds. So both retrieved and expected times are accurate
+        // to microseconds, and no need for adding zeroes in any of the
+        // comparisons below.
         switch ($datetimetype) {
             case 'date':
-                if ($ret_date_time[0] != $test_date_time[0][0]) {
+                // Comparison of dates only.
+                if ($retrieved_date_time[0] != $expected_date_time[0][0]) {
                     fatalError("Dates do not match!");
                 }                    
                 break;
             case 'time':
-                if ($ret_date_time[1] != $test_date_time[0][1] and
-                    $ret_date_time[1] != $test_date_time[1][1] and
-                    $ret_date_time[1] != $test_date_time[2][1] and
-                    $ret_date_time[1] != $test_date_time[3][1] ) {
+                // Comparison of times only.
+                if ($retrieved_date_time[1] != $expected_date_time[0][1] and
+                    $retrieved_date_time[1] != $expected_date_time[1][1] and
+                    $retrieved_date_time[1] != $expected_date_time[2][1] and
+                    $retrieved_date_time[1] != $expected_date_time[3][1] ) {
                         fatalError("Times do not match!");
                 }
                 break;
             case 'datetime':
-                if ($datetimeonly != $testingDate[0] and
-                    $datetimeonly != $testingDate[1] and
-                    $datetimeonly != $testingDate[2] and
-                    $datetimeonly != $testingDate[3] ) {
+            case 'datetime2':
+            case 'smalldatetime':
+                // Test combined date and time. The $expectedDateTime values
+                // all have a different number of trailing zeroes to match
+                // the precision of different SQL types.
+                if ($date_time_only != $expectedDateTime[0] and
+                    $date_time_only != $expectedDateTime[1] and
+                    $date_time_only != $expectedDateTime[2] and
+                    $date_time_only != $expectedDateTime[3] ) {
                         fatalError("Datetimes do not match!");
                 }
                 break;
-            case 'datetime2':
-                if ($datetimeonly != $testingDate[0] and
-                    $datetimeonly != $testingDate[1] and
-                    $datetimeonly != $testingDate[2] and
-                    $datetimeonly != $testingDate[3] ) {
-                        fatalError("Datetime2s do not match!");
-                }
-                break;
             case 'datetimeoffset':
-                if ($retrievedDate != $testingDate[4] and
-                    $retrievedDate != $testingDate[5] and
-                    $retrievedDate != $testingDate[6] and
-                    $retrievedDate != $testingDate[7] ) {
+                // The retrieved date/time string will have a timezone
+                // correction appended to it when the returned type is
+                // datetimeoffset.
+                if ($retrievedDateTime != $expectedDateTime[4] and
+                    $retrievedDateTime != $expectedDateTime[5] and
+                    $retrievedDateTime != $expectedDateTime[6] and
+                    $retrievedDateTime != $expectedDateTime[7] ) {
                         fatalError("Datetimeoffsets do not match!");
-                }
-                break;
-            case 'smalldatetime':
-                if ($datetimeonly != $testingDate[0] and
-                    $datetimeonly != $testingDate[1] and
-                    $datetimeonly != $testingDate[2] and
-                    $datetimeonly != $testingDate[3] ) {
-                        fatalError("Smalldatetimes do not match!");
                 }
                 break;
         }
@@ -168,8 +196,8 @@ function InsertDatesAndOrTimes($conn, $datetimetype, &$formats_array, $array_siz
     }
 
     $insertSql = "INSERT INTO [$tableName] (id, [c1_$datetimetype]) VALUES (?, ?)";
-    for ($i=0; $i<$array_size; $i++)
-    {
+    
+    for ($i = 0; $i < $array_size; $i++) {
         $stmt = sqlsrv_prepare($conn, $insertSql, array($i, array($formats_array[$i], SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), $SQLSRV_SQLTYPE_CONST)));
         ExecutePreparedStmt($stmt);
         $stmt = sqlsrv_prepare($conn, $insertSql, array($i, $formats_array[$i]));
@@ -186,7 +214,7 @@ function InsertDatesAndOrTimes($conn, $datetimetype, &$formats_array, $array_siz
     }
 }
 
-function FetchDatesAndOrTimes($conn, $datetimetype, &$testingDate, $returnDatesAsStrings)
+function FetchDatesAndOrTimes($conn, $datetimetype, &$expectedDateTime, $returnDatesAsStrings)
 {
     $tableName = "table_of_$datetimetype";
     
@@ -205,10 +233,11 @@ function FetchDatesAndOrTimes($conn, $datetimetype, &$testingDate, $returnDatesA
             fatalError("sqlsrv_get_field did not return string but string was specified");
         }
 
-        CompareDateTime($datetimetype, true, $testingDate, $datetime);
+        CompareDateTime($datetimetype, true, $expectedDateTime, $datetime);
     }
     
     // retrieve date time fields as DateTime objects
+    // format them as strings using date_format() for comparison
     echo "Select fields as DateTime objects:\n";
     
     $stmt = sqlsrv_query($conn, "SELECT * FROM [$tableName]");
@@ -226,7 +255,7 @@ function FetchDatesAndOrTimes($conn, $datetimetype, &$testingDate, $returnDatesA
             
         $datetime = ($datetimetype == 'datetimeoffset') ? date_format($datetime, 'Y-m-d H:i:s.u P') : date_format($datetime, 'Y-m-d H:i:s.u');
         
-        CompareDateTime($datetimetype, false, $testingDate, $datetime);
+        CompareDateTime($datetimetype, false, $expectedDateTime, $datetime);
     }
 
     // retrieve date time fields without explicitly requesting the type
@@ -246,16 +275,15 @@ function FetchDatesAndOrTimes($conn, $datetimetype, &$testingDate, $returnDatesA
                 fatalError("String for date expected, not a string");
             }
             
-            CompareDateTime($datetimetype, $returnDatesAsStrings, $testingDate, $datetime);
-        } 
-        else { // ReturnsDatesAsStrings is false
+            CompareDateTime($datetimetype, $returnDatesAsStrings, $expectedDateTime, $datetime);
+        } else { // ReturnsDatesAsStrings is false
             if (!($datetime instanceof DateTime)) {
                 fatalError("DateTime object expected, not a DateTime");
             }
             
             $datetime = ($datetimetype == 'datetimeoffset') ? date_format($datetime, 'Y-m-d H:i:s.u P') : date_format($datetime, 'Y-m-d H:i:s.u');
             
-            CompareDateTime($datetimetype, $returnDatesAsStrings, $testingDate, $datetime);
+            CompareDateTime($datetimetype, $returnDatesAsStrings, $expectedDateTime, $datetime);
         }
     }
 
@@ -275,16 +303,15 @@ function FetchDatesAndOrTimes($conn, $datetimetype, &$testingDate, $returnDatesA
                 fatalError("String for date expected, not a string");
             }
             
-            CompareDateTime($datetimetype, $returnDatesAsStrings, $testingDate, $row[1]);
-        } 
-        else {
+            CompareDateTime($datetimetype, $returnDatesAsStrings, $expectedDateTime, $row[1]);
+        } else {
             if (!($row[1] instanceof DateTime)) {
                 fatalError("DateTime object expected, not a DateTime");
             }
 
             $datetime = ($datetimetype == 'datetimeoffset') ? date_format($row[1], 'Y-m-d H:i:s.u P') : date_format($row[1], 'Y-m-d H:i:s.u');
             
-            CompareDateTime($datetimetype, $returnDatesAsStrings, $testingDate, $datetime);
+            CompareDateTime($datetimetype, $returnDatesAsStrings, $expectedDateTime, $datetime);
         }
     }
     
@@ -313,15 +340,21 @@ $frac = '04';
 $frac2 = '9876';
 $tz_correction = '+08:00';
 
-$testingDate = array($year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac.$frac2,
-                      $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac."0000",
-                      $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".000000",
-                      $year."-".$month."-".$day." ".$hour.":".$minute.":00.000000",
-                      $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac.$frac2." ".$tz_correction,
-                      $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac."0000 ".$tz_correction,
-                      $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".000000 ".$tz_correction,
-                      $year."-".$month."-".$day." ".$hour.":".$minute.":00.000000 ".$tz_correction,
-                      );
+// This is the array of dates/times/timezones to test against. They have
+// different numbers of trailing zeroes to match the precision of different
+// SQL date and time types, but all go up to microseconds because that's
+// how PHP formats times with date_format(), allowing direct string comparisons
+// when the DateTime objects retrieved from a table are formatted as strings
+// with date_format().
+$expectedDateTime = array($year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac.$frac2,
+                          $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac."0000",
+                          $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".000000",
+                          $year."-".$month."-".$day." ".$hour.":".$minute.":00.000000",
+                          $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac.$frac2." ".$tz_correction,
+                          $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac."0000 ".$tz_correction,
+                          $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".000000 ".$tz_correction,
+                          $year."-".$month."-".$day." ".$hour.":".$minute.":00.000000 ".$tz_correction,
+                          );
  
 // These formats are for the ODBC driver with types specified in sqlsrv_prepare()
 $date_formats = array($year."-".$month."-".$day
@@ -365,12 +398,14 @@ $SZ_TIME_all = sizeof($time_formats_all);
 $SZ_DATE_all = sizeof($date_formats_all);
 $SZ_DATETIME_all = $SZ_TIME_all*$SZ_DATE_all;
 
-// Create compound date/time types. For datetime, remove the extra precision
-// of $frac2. For smalldatetime, remove the extra precision of $frac and $frac2.
-// If the data in $frac and/or $frac2 is found elsewhere in the date/time, the
-// data will be garbled. For example, if the year is 2002 and $frac2 is 2002, 
-// the code below will remove any instances of '2002' in the datetime and
-// smalldatetime strings, producing garbage for those types. User must be
+// Create compound date/time/timezone arrays corresponding to the SQL Server
+// date/time types by concatenating the dates and times from above. For the
+// datetime type, remove the extra precision of $frac2. For the smalldatetime
+// type, remove the extra precision of $frac and $frac2. If the numerical
+// string in $frac and/or $frac2 is found elsewhere in the date/time, the data
+// will be garbled. For example, if the year is 2002 and $frac2 is 2002, the
+// code below will remove any instances of '2002' in the  datetime and 
+// smalldatetime strings, producing garbage for those types. User must be 
 // cognizant of this when testing different dates and times.
 for ($i=0; $i<$SZ_DATE_all; $i++)
 {
@@ -381,19 +416,16 @@ for ($i=0; $i<$SZ_DATE_all; $i++)
         $datetimeoffset_formats_all[] = $date_formats_all[$i]." ".$time_formats_all[$j].$tz_correction;
         if (str_replace(".".$frac.$frac2, "", $date_formats_all[$i]." ".$time_formats_all[$j]) == ($date_formats_all[$i]." ".$time_formats_all[$j])) {
             $datetimesmall_formats_all[] = str_replace(".".$frac, "", $date_formats_all[$i]." ".$time_formats_all[$j]);
-        }
-        else {
+        } else {
             $datetimesmall_formats_all[] = str_replace(".".$frac.$frac2, "", $date_formats_all[$i]." ".$time_formats_all[$j]);
         }
     }
 }
 
 date_default_timezone_set('Canada/Pacific');
-sqlsrv_configure('WarningsReturnAsErrors', 0);
+sqlsrv_configure('WarningsReturnAsErrors', 1);
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 sqlsrv_configure('LogSubsystems', SQLSRV_LOG_SYSTEM_OFF);
-
-require_once('MsCommon.inc');
 
 $returnDatesAsStrings = true;
 
@@ -406,12 +438,12 @@ InsertDatesAndOrTimes($conn, 'datetime2', $datetime2_formats_all, $SZ_DATETIME_a
 InsertDatesAndOrTimes($conn, 'datetimeoffset', $datetimeoffset_formats_all, $SZ_DATETIME_all, SQLSRV_SQLTYPE_DATETIMEOFFSET);
 InsertDatesAndOrTimes($conn, 'smalldatetime', $datetimesmall_formats_all, $SZ_DATETIME_all, SQLSRV_SQLTYPE_SMALLDATETIME);
 
-FetchDatesAndOrTimes($conn, 'date', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'time', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'datetime', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'datetime2', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'datetimeoffset', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'smalldatetime', $testingDate, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'date', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'time', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'datetime', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'datetime2', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'datetimeoffset', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'smalldatetime', $expectedDateTime, $returnDatesAsStrings);
 
 sqlsrv_close($conn);
 
@@ -426,12 +458,12 @@ InsertDatesAndOrTimes($conn, 'datetime2', $datetime2_formats_all, $SZ_DATETIME_a
 InsertDatesAndOrTimes($conn, 'datetimeoffset', $datetimeoffset_formats_all, $SZ_DATETIME_all, SQLSRV_SQLTYPE_DATETIMEOFFSET);
 InsertDatesAndOrTimes($conn, 'smalldatetime', $datetimesmall_formats_all, $SZ_DATETIME_all, SQLSRV_SQLTYPE_SMALLDATETIME);
 
-FetchDatesAndOrTimes($conn, 'date', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'time', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'datetime', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'datetime2', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'datetimeoffset', $testingDate, $returnDatesAsStrings);
-FetchDatesAndOrTimes($conn, 'smalldatetime', $testingDate, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'date', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'time', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'datetime', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'datetime2', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'datetimeoffset', $expectedDateTime, $returnDatesAsStrings);
+FetchDatesAndOrTimes($conn, 'smalldatetime', $expectedDateTime, $returnDatesAsStrings);
 
 sqlsrv_close($conn);
 
