@@ -163,9 +163,9 @@ for ($v = 0; $v < sizeof($values);++$v)
                     // date_diff returns a DateInterval object, and f is
                     // the difference expressed as a fraction of a second
                     $datediff = date_diff($value, $valueAE);
-                    $diff = $datediff->f; 
+                    $diff = $datediff->s; 
                     
-                    if ($diff < 1.0 and $diff > -1.0) {
+                    if ($diff == 0) {
                         $value = $valueAE;
                     }
                 }
