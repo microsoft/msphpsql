@@ -75,7 +75,7 @@ foreach($dataTypes as $dataType) {
                     // with AE: should not work
                     // without AE: should work, except when a SQLSRV_SQLTYPE_VARBINARY length (n) is less than a binary column length (m) for SQLSRV_PARAM_OUT
                     if (($n != $m || $maxsqltype || $maxcol) && !($maxcol && $maxsqltype)) {
-                        if (AE\isColEncrypted()) {
+                        if (AE\isDataEncrypted()) {
                             if ($r !== false) {
                             var_dump($n);
                             var_dump($m);
@@ -87,7 +87,7 @@ foreach($dataTypes as $dataType) {
                                 }
                             }
                         } else {
-                            if (strpos($sqltypeFull, "VARBINARY") !== false && $dataType == "binary" && $m > $n  && strpos($sqltypeFull, "max") === false && $dir == "SQLSRV_PARAM_OUT") {
+                            if (!AE\isColEncrypted() && strpos($sqltypeFull, "VARBINARY") !== false && $dataType == "binary" && $m > $n  && strpos($sqltypeFull, "max") === false && $dir == "SQLSRV_PARAM_OUT") {
                                 if ($r !== false) {
                                     echo "Conversions from $typeFull to output $sqltypeFull should not be supported\n";
                                 }

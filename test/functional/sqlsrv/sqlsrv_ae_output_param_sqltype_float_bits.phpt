@@ -47,7 +47,7 @@ foreach($bits as $m) {
         // with AE: should not work
         // without AE: should work
         if ($m < 25) {
-            if (AE\isColEncrypted()) {
+            if (AE\isDataEncrypted()) {
                 if ($r !== false) {
                     echo "AE: Conversion between $typeFull to output $sqlType should not be supported\n";
                 } else {

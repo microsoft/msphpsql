@@ -77,7 +77,7 @@ foreach($dataTypes as $dataType) {
                             
                             $c_detOut = 0.0;
                             $c_randOut = 0.0;
-                            $stmt = sqlsrv_prepare($conn, $sql, array(array(&$c_detOut, constant($dir), SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), $sqltypeconst), array(&$c_randOut, constant($dir), SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), $sqltypeconst)));
+                            $stmt = sqlsrv_prepare($conn, $sql, array(array(&$c_detOut, constant($dir), null, $sqltypeconst), array(&$c_randOut, constant($dir), null, $sqltypeconst)));
                             $r = sqlsrv_execute($stmt);
                             
                             // check the case when the SQLSRV_SQLTYPE precision (n1) is not the same as the column precision (m1)
@@ -85,7 +85,7 @@ foreach($dataTypes as $dataType) {
                             // with AE: should not work
                             // without AE: should not work if n1 - n2 < m1 - m2
                             if ($n1 != $m1 || $n2 != $m2) {
-                                if (AE\isColEncrypted()) {
+                                if (AE\isDataEncrypted()) {
                                     if ($r !== false) {
                                         echo "AE: Conversion from $typeFull to output $sqltypeFull should not be supported\n";
                                     } else {
