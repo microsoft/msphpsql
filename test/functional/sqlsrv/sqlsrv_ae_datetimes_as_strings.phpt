@@ -71,7 +71,7 @@ function CompareDateTimeString($datetimetype, &$expectedDateTime, $retrievedDate
                 $retrievedDateTime != $expected_date_time[1][1]."0" and
                 $retrievedDateTime != $expected_date_time[2][1]."0" and
                 $retrievedDateTime != $expected_date_time[3][1]."0") {
-                    fatalError("Times do not match!");
+                fatalError("Times do not match!");
             }
             break;
         case 'datetime':
@@ -83,7 +83,7 @@ function CompareDateTimeString($datetimetype, &$expectedDateTime, $retrievedDate
                 $retrievedDateTime."000" != $expectedDateTime[1] and
                 $retrievedDateTime."000" != $expectedDateTime[2] and
                 $retrievedDateTime."000" != $expectedDateTime[3]) {
-                    fatalError("Datetimes do not match!");
+                fatalError("Datetimes do not match!");
             }
             break;
         case 'datetime2':
@@ -95,7 +95,7 @@ function CompareDateTimeString($datetimetype, &$expectedDateTime, $retrievedDate
                 $retrievedDateTime != $expectedDateTime[1]."0" and
                 $retrievedDateTime != $expectedDateTime[2]."0" and
                 $retrievedDateTime != $expectedDateTime[3]."0") {
-                    fatalError("Datetime2s do not match!");
+                fatalError("Datetime2s do not match!");
             }
             break;
         case 'datetimeoffset':
@@ -106,8 +106,9 @@ function CompareDateTimeString($datetimetype, &$expectedDateTime, $retrievedDate
             $dtoffset = $retrieved_date_time[0]." ".substr($retrieved_date_time[1], 0, -1)." ".$retrieved_date_time[2];
             if ($dtoffset != $expectedDateTime[4] and
                 $dtoffset != $expectedDateTime[5] and
-                $dtoffset != $expectedDateTime[6]) {
-                    fatalError("Datetimeoffsets do not match!");
+                $dtoffset != $expectedDateTime[6] and
+                $dtoffset != $expectedDateTime[7]) {echo "1: $dtoffset 2: $expectedDateTime[4] 3: $expectedDateTime[5] 4: $expectedDateTime[5]\n";
+                fatalError("Datetimeoffsets do not match!");
             }
             break;
         case 'smalldatetime':
@@ -119,7 +120,7 @@ function CompareDateTimeString($datetimetype, &$expectedDateTime, $retrievedDate
                 $retrievedDateTime.".000000" != $expectedDateTime[1] and
                 $retrievedDateTime.".000000" != $expectedDateTime[2] and
                 $retrievedDateTime.".000000" != $expectedDateTime[3]) {
-                    fatalError("Smalldatetimes do not match!");
+                fatalError("Smalldatetimes do not match!");
             }
             break;
     }
@@ -168,7 +169,7 @@ function CompareDateTimeObject($datetimetype, &$expectedDateTime, $retrievedDate
                 $retrieved_date_time[1] != $expected_date_time[1][1] and
                 $retrieved_date_time[1] != $expected_date_time[2][1] and
                 $retrieved_date_time[1] != $expected_date_time[3][1]) {
-                    fatalError("Times do not match!");
+                fatalError("Times do not match!");
             }
             break;
         case 'datetime':
@@ -186,7 +187,7 @@ function CompareDateTimeObject($datetimetype, &$expectedDateTime, $retrievedDate
                 $date_time_only != $expectedDateTime[1] and
                 $date_time_only != $expectedDateTime[2] and
                 $date_time_only != $expectedDateTime[3]) {
-                    fatalError("Datetimes do not match!");
+                fatalError("Datetimes do not match!");
             }
             break;
         case 'datetimeoffset':
@@ -195,8 +196,9 @@ function CompareDateTimeObject($datetimetype, &$expectedDateTime, $retrievedDate
             // datetimeoffset.
             if ($retrievedDateTime != $expectedDateTime[4] and
                 $retrievedDateTime != $expectedDateTime[5] and
-                $retrievedDateTime != $expectedDateTime[6]) {
-                    fatalError("Datetimeoffsets do not match!");
+                $retrievedDateTime != $expectedDateTime[6] and
+                $retrievedDateTime != $expectedDateTime[7]) {
+                fatalError("Datetimeoffsets do not match!");
             }
             break;
     }
@@ -373,6 +375,7 @@ $expectedDateTime = array($year."-".$month."-".$day." ".$hour.":".$minute.":".$s
                           $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac.$frac2." ".$tz_correction,
                           $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".".$frac."0000 ".$tz_correction,
                           $year."-".$month."-".$day." ".$hour.":".$minute.":".$second.".000000 ".$tz_correction,
+                          $year."-".$month."-".$day." ".$hour.":".$minute.":00.000000 ".$tz_correction,
                           );
  
 // These formats are for the ODBC driver with types specified in sqlsrv_prepare()
