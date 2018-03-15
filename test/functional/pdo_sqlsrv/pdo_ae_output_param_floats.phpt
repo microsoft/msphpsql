@@ -25,7 +25,7 @@ $pdoParamTypes = array(
 // this function returns true if the floats are more different than expected
 function compareFloats($actual, $expected) 
 {
-    $epsilon = 0.00001;
+    $epsilon = 0.0001;
     $diff = abs(($actual - $expected) / $expected);
     return ($diff > $epsilon);
 }
