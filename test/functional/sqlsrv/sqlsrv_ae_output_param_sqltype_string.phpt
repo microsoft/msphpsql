@@ -30,10 +30,10 @@ foreach ($dataTypes as $dataType) {
     AE\createTable($conn, $tbname, $colMetaArr);
 
     if (AE\isColEncrypted()) {
-		// Create a Store Procedure
-		$spname = 'selectAllColumns';
-		createProc($conn, $spname, "@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT", "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname");
-	}
+        // Create a Store Procedure
+        $spname = 'selectAllColumns';
+        createProc($conn, $spname, "@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT", "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname");
+    }
 	
     // insert a row
     $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
@@ -106,7 +106,7 @@ foreach ($dataTypes as $dataType) {
         if (!AE\isColEncrypted()) {
             AE\fetchAll($conn, $tbname);
         }
-	}
+    }
     
     if (AE\isColEncrypted()) {
         dropProc($conn, $spname);
