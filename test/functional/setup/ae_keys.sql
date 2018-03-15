@@ -1,6 +1,3 @@
-USE $(dbname) 
-GO
-
 /* DROP Column Encryption Key first, Column Master Key cannot be dropped until no encryption depends on it */
 IF EXISTS (SELECT * FROM sys.column_encryption_keys WHERE [name] LIKE '%AEColumnKey%')
 

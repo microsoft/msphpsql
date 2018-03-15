@@ -246,14 +246,13 @@ class BuildUtil(object):
         driver_dir = os.path.join(source_dir, driver)
         
         if self.debug_enabled:
-            # Remove the optimization flag in the config file for this driver
-            # because '/O2' option is incompatible with Debug mode
-            print('Removing optimization flag for', driver)
+            # Adding linker flags for creating more debugging information in the binaries
+            print('Adding linker flags for', driver)
             config_file = os.path.join(driver_dir, 'config.w32')
             if driver == 'sqlsrv':
-                self.update_file_content(config_file, 'ADD_FLAG( "CFLAGS_SQLSRV", "/O2" );', '')
+                self.update_file_content(config_file, 'ADD_FLAG( "LDFLAGS_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug /guard:cf" );', 'ADD_FLAG( "LDFLAGS_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug /guard:cf /debugtype:cv,fixup" );')
             elif driver == 'pdo_sqlsrv':
-                self.update_file_content(config_file, 'ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/O2" );', '')
+                self.update_file_content(config_file, 'ADD_FLAG( "LDFLAGS_PDO_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug /guard:cf" );', 'ADD_FLAG( "LDFLAGS_PDO_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug /guard:cf /debugtype:cv,fixup" );')
                     
         # Update Template.rc 
         template_file = os.path.join(driver_dir, 'template.rc')
