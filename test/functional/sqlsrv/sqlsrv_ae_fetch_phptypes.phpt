@@ -190,6 +190,8 @@ for ($v = 0; $v < sizeof($values);++$v)
     sqlsrv_free_stmt($stmt);
 }
 
+dropTable($conn, $tableName);
+
 sqlsrv_close($conn);
 
 echo "Test successful\n";

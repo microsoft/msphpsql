@@ -304,6 +304,8 @@ for ($v = 0; $v < sizeof($values); ++$v)
     echo "Step $v done\n";
 }
 
+dropTable($conn, $tableName);
+
 sqlsrv_close($conn);
 
 echo "Test successful\n";
