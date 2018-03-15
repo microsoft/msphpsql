@@ -200,7 +200,7 @@ if (!$stmt) {
 }
 
 // The data we test against is in values.php
-for ($v = 2; $v < sizeof($values); ++$v)
+for ($v = 0; $v < sizeof($values); ++$v)
 {
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
@@ -300,6 +300,8 @@ for ($v = 2; $v < sizeof($values); ++$v)
         print_r(sqlsrv_errors());
         fatalError("Delete statement failed");
     }
+    
+    echo "Step $v done\n";
 }
 
 sqlsrv_close($conn);
@@ -307,4 +309,25 @@ sqlsrv_close($conn);
 echo "Test successful\n";
 ?>
 --EXPECT--
+Step 0 done
+Step 1 done
+Step 2 done
+Step 3 done
+Step 4 done
+Step 5 done
+Step 6 done
+Step 7 done
+Step 8 done
+Step 9 done
+Step 10 done
+Step 11 done
+Step 12 done
+Step 13 done
+Step 14 done
+Step 15 done
+Step 16 done
+Step 17 done
+Step 18 done
+Step 19 done
+Step 20 done
 Test successful
