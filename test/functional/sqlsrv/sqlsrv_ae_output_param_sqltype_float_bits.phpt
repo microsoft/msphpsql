@@ -19,7 +19,7 @@ $directions = array("SQLSRV_PARAM_OUT", "SQLSRV_PARAM_INOUT");
 $epsilon = 100000;
 
 $conn = AE\connect();
-foreach($bits as $m) {
+foreach ($bits as $m) {
     $typeFull = "$dataType($m)";
     echo "\nTesting $typeFull:\n";
     
@@ -27,7 +27,7 @@ foreach($bits as $m) {
     $tbname = "test_" . $dataType . $m;
     $colMetaArr = array(new AE\ColumnMeta($typeFull, "c_det"), new AE\ColumnMeta($typeFull, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
-    $stmt = AE\insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1]));
+    $stmt = AE\insertRow($conn, $tbname, array($colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1]));
     
     // create a stored procedure and sql string for calling the stored procedure
     $spname = 'selectAllColumns';
@@ -35,7 +35,7 @@ foreach($bits as $m) {
     $sql = AE\getCallProcSqlPlaceholders($spname, 2);
 
     // retrieve by specifying SQLSRV_SQLTYPE_FLOAT as SQLSRV_PARAM_OUT or SQLSRV_PARAM_INOUT
-    foreach($directions as $dir) {
+    foreach ($directions as $dir) {
         echo "Testing as $dir:\n";
         
         $c_detOut = 0.0;
@@ -44,7 +44,9 @@ foreach($bits as $m) {
         $r = sqlsrv_execute($stmt);
         
         // check the case when the column number of bits is less than 25
-        // with AE: should not work
+        // when the number of bits is between 1 and 24, it corresponds to a storage size of 4 bytes
+        // when the number of bits is between 25 and 53, it corresponds to a storage size of 8 bytes
+        // with AE: should not work because SQLSRV_SQLTYPE_FLOAT maps to float(53) and conversion from a larger float to a smaller float is not supported
         // without AE: should work
         if ($m < 25) {
             if (AE\isDataEncrypted()) {
@@ -85,6 +87,7 @@ foreach($bits as $m) {
         // cleanup
         sqlsrv_free_stmt($stmt);
     }
+    dropProc($conn, $spname);
     dropTable($conn, $tbname);
 }
 sqlsrv_close($conn);

@@ -26,10 +26,10 @@ $directions = array("SQLSRV_PARAM_OUT", "SQLSRV_PARAM_INOUT");
 $inputValues = array("d", "f");
 
 $conn = AE\connect();
-foreach($dataTypes as $dataType) {
+foreach ($dataTypes as $dataType) {
     $maxcol = strpos($dataType, "(max)");
-    foreach($lengths as $m) {
-        if ($maxcol !== false) {
+    foreach ($lengths as $m) {
+        if ($maxcol) {
             $typeFull = $dataType;
         } else {
             $typeFull = "$dataType($m)";
@@ -43,7 +43,7 @@ foreach($dataTypes as $dataType) {
         $inputs = array(new AE\BindParamOption($inputValues[0], null, "SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY)"),
                                 new AE\BindParamOption($inputValues[1], null, "SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY)"));
         $r;
-        $stmt = AE\insertRow($conn, $tbname, array("c_det" => $inputs[0], "c_rand" => $inputs[1]), $r, AE\INSERT_PREPARE_PARAMS);
+        $stmt = AE\insertRow($conn, $tbname, array($colMetaArr[0]->colName => $inputs[0], $colMetaArr[1]->colName => $inputs[1]), $r, AE\INSERT_PREPARE_PARAMS);
         
         // create a stored procedure and sql string for calling the stored procedure
         $spname = 'selectAllColumns';
@@ -51,14 +51,14 @@ foreach($dataTypes as $dataType) {
         $sql = AE\getCallProcSqlPlaceholders($spname, 2);
         
         // retrieve by specifying SQLSRV_SQLTYPE_BINARY(n) or SQLSRV_SQLTYPE_VARBINARY(n) as SQLSRV_PARAM_OUT or SQLSRV_PARAM_INOUT
-        foreach($directions as $dir) {
+        foreach ($directions as $dir) {
             echo "Testing as $dir:\n";
-            foreach($sqlTypes as $sqlType) {
+            foreach ($sqlTypes as $sqlType) {
                 $maxsqltype = strpos($sqlType, "max");
-                foreach($sqltypeLengths as $n) {
+                foreach ($sqltypeLengths as $n) {
                     $sqltypeconst;
                     $sqltypeFull;
-                    if ($maxsqltype !== false) {
+                    if ($maxsqltype) {
                         $sqltypeconst = SQLSRV_SQLTYPE_VARBINARY('max');
                         $sqltypeFull = $sqlType;
                     } else {
@@ -77,8 +77,6 @@ foreach($dataTypes as $dataType) {
                     if (($n != $m || $maxsqltype || $maxcol) && !($maxcol && $maxsqltype)) {
                         if (AE\isDataEncrypted()) {
                             if ($r !== false) {
-                            var_dump($n);
-                            var_dump($m);
                                 echo "AE: Conversion from $typeFull to output $sqltypeFull should not be supported\n";
                             } else {
                                 if (sqlsrv_errors()[0]['SQLSTATE'] != "22018") {
@@ -121,6 +119,7 @@ foreach($dataTypes as $dataType) {
                 }
             }
         }
+        dropProc($conn, $spname);
         dropTable($conn, $tbname);
     }
 }

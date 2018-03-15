@@ -23,7 +23,7 @@ foreach ($dataTypes as $dataType) {
     $tbname = "test_" . $dataType;
     $colMetaArr = array( new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
-    $stmt = AE\insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1]));
+    $stmt = AE\insertRow($conn, $tbname, array($colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1]));
     
     // create a stored procedure and sql string for calling the stored procedure
     $spname = 'selectAllColumns';
@@ -31,9 +31,9 @@ foreach ($dataTypes as $dataType) {
     $sql = AE\getCallProcSqlPlaceholders($spname, 2);
     
     // retrieve by specifying different SQLSRV_SQLTYPE ingeter constants as SQLSRV_PARAM_OUT or SQLSRV_PARAM_INOUT
-    foreach($directions as $dir) {
+    foreach ($directions as $dir) {
         echo "Testing as $dir:\n";
-        foreach($sqlTypes as $sqlType) {
+        foreach ($sqlTypes as $sqlType) {
             $c_detOut = 0;
             $c_randOut = 0;
             $stmt = sqlsrv_prepare($conn, $sql, array(array(&$c_detOut, constant($dir), null, constant($sqlType)), array(&$c_randOut, constant($dir), null, constant($sqlType))));
@@ -75,6 +75,7 @@ foreach ($dataTypes as $dataType) {
             sqlsrv_free_stmt($stmt);
         }
     }
+    dropProc($conn, $spname);
     dropTable($conn, $tbname);
 }
 sqlsrv_close($conn);

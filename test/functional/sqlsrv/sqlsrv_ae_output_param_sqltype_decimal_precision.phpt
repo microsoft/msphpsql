@@ -25,9 +25,9 @@ $directions = array("SQLSRV_PARAM_OUT", "SQLSRV_PARAM_INOUT");
 
 $conn = AE\connect();
 
-foreach($dataTypes as $dataType) {
-    foreach($precisions as $m1 => $inScales) {
-        foreach($inScales as $m2) {
+foreach ($dataTypes as $dataType) {
+    foreach ($precisions as $m1 => $inScales) {
+        foreach ($inScales as $m2) {
             // change the number of integers in the input values to be $m1 - $m2
             $precDiff = $maxInPrecision - ($m1 - $m2);
             $inputValues = $inputValuesInit;
@@ -41,7 +41,7 @@ foreach($dataTypes as $dataType) {
             $tbname = "test_" . $dataType . $m1 . $m2;
             $colMetaArr = array(new AE\ColumnMeta($typeFull, "c_det"), new AE\ColumnMeta($typeFull, "c_rand", null, false));
             AE\createTable($conn, $tbname, $colMetaArr);
-            $stmt = AE\insertRow($conn, $tbname, array("c_det" => $inputValues[0], "c_rand" => $inputValues[1]));
+            $stmt = AE\insertRow($conn, $tbname, array($colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1]));
     
             // create a stored procedure and sql string for calling the stored procedure
             $spname = 'selectAllColumns';
@@ -49,11 +49,11 @@ foreach($dataTypes as $dataType) {
             $sql = AE\getCallProcSqlPlaceholders($spname, 2);
             
             // retrieve by specifying SQLSRV_SQLTYPE_DECIMAL(n1, n2) or SQLSRV_SQLTYPE_NUMERIC(n1, n2) as SQLSRV_PARAM_OUT or SQLSRV_PARAM_INOUT
-            foreach($directions as $dir) {
+            foreach ($directions as $dir) {
                 echo "Testing as $dir:\n";
-                foreach($sqlTypes as $sqlType) {
-                    foreach($sqltypePrecisions as $n1 => $sqltypeScales) {
-                        foreach($sqltypeScales as $n2) {
+                foreach ($sqlTypes as $sqlType) {
+                    foreach ($sqltypePrecisions as $n1 => $sqltypeScales) {
+                        foreach ($sqltypeScales as $n2) {
                         
                             // compute the epsilon for comparing doubles
                             // float in PHP only has a precision of roughtly 14 digits: http://php.net/manual/en/language.types.float.php
@@ -128,6 +128,7 @@ foreach($dataTypes as $dataType) {
                     }
                 }
             }
+            dropProc($conn, $spname);
             dropTable($conn, $tbname);
         }
     }
