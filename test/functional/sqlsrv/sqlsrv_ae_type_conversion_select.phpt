@@ -8,35 +8,53 @@ require_once('MsCommon.inc');
 require_once('tools.inc');
 require_once('values.php');
 
+// These are the errors we expect to see if a conversion fails.
+// 22001 String data is right-truncated
+// 22003 Numeric value out of range/Overflow converting to numeric type
+// 22007 Conversion (date/time from string) failed
+// 22018 Conversion not allowed
+// 42S22 Column not found
+// 6522 .NET Framework error in hierarchyId construction
+// 8114 Error converting binary/string type to numeric type
+// 8169 Error converting from string to uniqueID
+function checkAcceptableErrors(&$convError)
+{
+    if ($convError[0][0] != '22018' and
+        $convError[0][0] != '22001' and
+        $convError[0][0] != '22003' and
+        $convError[0][0] != '22007' and
+        $convError[0][0] != '42S22' and
+        $convError[0][1] != '6522' and
+        $convError[0][1] != '8114' and
+        $convError[0][1] != '8169') {
+        print_r($convError);
+        fatalError("Conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
+    }
+}
+                
 // Set up the columns and build the insert query. Each data type has an
 // AE-encrypted and a non-encrypted column side by side in the table.
 function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery, $strsize, $strsize2)
 {
     $columns = array();
-    $queryTypes = "(";
+    $columnsInQuery = "(";
     $valuesString = "VALUES (";
     $numTypes = sizeof($dataTypes);
 
     for ($i = 0; $i < $numTypes; ++$i) {
         // Replace parentheses for column names
-        $colname = str_replace("($strsize)", "_$strsize", $dataTypes[$i]);
-        $colname = str_replace("($strsize2)", "_$strsize2", $colname);
-        $colname = str_replace("(max)", "_max", $colname);
-        $colname = str_replace("(5)", "_5", $colname);
-        $colname = str_replace("(36,4)", "_36_4", $colname);
-        $colname = str_replace("(32,4)", "_32_4", $colname);
-        $colname = str_replace("(28,4)", "_28_4", $colname);
+        $colname = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
         $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname."_AE"); // encrypted column
         $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname, null, true, true);// non-encrypted column
-        $queryTypes .= "c_"."$colname, ";
-        $queryTypes .= "c_"."$colname"."_AE, ";
+        $columnsInQuery .= "c_"."$colname, ";
+        $columnsInQuery .= "c_"."$colname"."_AE, ";
         $valuesString .= "?, ?, ";
     }
 
-    $queryTypes = substr($queryTypes, 0, -2).")";
+    $columnsInQuery = substr($columnsInQuery, 0, -2).")";
     $valuesString = substr($valuesString, 0, -2).")";
 
-    $insertQuery = "INSERT INTO $tableName ".$queryTypes." ".$valuesString;
+    $insertQuery = "INSERT INTO $tableName ".$columnsInQuery." ".$valuesString;
 }
 
 // Build the select queries. We want every combination of types for conversion
@@ -48,14 +66,9 @@ function FormulateSelectQuery($tableName, &$selectQuery, &$selectQueryAE, &$data
     
     for ($i = 0; $i < $numTypes; ++$i) {
         $selectQuery[] = array();
+        $colnamei = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
+        
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
-            $colnamei = str_replace("($strsize)", "_$strsize", $dataTypes[$i]);
-            $colnamei = str_replace("($strsize2)", "_$strsize2", $colnamei);
-            $colnamei = str_replace("(max)", "_max", $colnamei);
-            $colnamei = str_replace("(5)", "_5", $colnamei);
-            $colnamei = str_replace("(36,4)", "_36_4", $colnamei);
-            $colnamei = str_replace("(32,4)", "_32_4", $colnamei);
-            $colnamei = str_replace("(28,4)", "_28_4", $colnamei);
             $selectQuery[$i][] = "SELECT CAST(c_".$colnamei." AS $dataTypes[$j]) FROM $tableName";
             $selectQueryAE[$i][] = "SELECT CAST(c_".$colnamei."_AE AS $dataTypes[$j]) FROM $tableName";
         }
@@ -176,7 +189,6 @@ if (!$conn) {
 }
 
 $tableName = "type_conversion_table";
-$stmt = sqlsrv_query($conn, "IF OBJECT_ID('$tableName', 'U') IS NOT NULL DROP TABLE $tableName");
 $columns = array();
 $insertQuery = "";
 
@@ -223,19 +235,7 @@ for ($v = 2; $v < sizeof($values); ++$v)
             if ($stmt == false) {
                 $convError = sqlsrv_errors();
                 
-                // These are the errors we expect to see if a conversion fails.
-                if ($convError[0][0] != '22018' and
-                    $convError[0][0] != '22001' and
-                    $convError[0][0] != '22003' and
-                    $convError[0][0] != '22007' and
-                    $convError[0][0] != '42S22' and
-                    $convError[0][1] != '6234' and
-                    $convError[0][1] != '6522' and
-                    $convError[0][1] != '8114' and
-                    $convError[0][1] != '8169') {
-                    print_r($convError);
-                    fatalError("Conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
-                }
+                checkAcceptableErrors($convError);
                 
                 if (AE\isDataEncrypted()) {
                     $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);

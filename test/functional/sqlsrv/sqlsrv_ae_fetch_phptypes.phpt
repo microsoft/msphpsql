@@ -20,13 +20,7 @@ function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery, 
 
     for ($i = 0; $i < $numTypes; ++$i) {
         // Replace parentheses for column names
-        $colname = str_replace("($strsize)", "_$strsize", $dataTypes[$i]);
-        $colname = str_replace("($strsize2)", "_$strsize2", $colname);
-        $colname = str_replace("(max)", "_max", $colname);
-        $colname = str_replace("(5)", "_5", $colname);
-        $colname = str_replace("(36,4)", "_36_4", $colname);
-        $colname = str_replace("(32,4)", "_32_4", $colname);
-        $colname = str_replace("(28,4)", "_28_4", $colname);
+        $colname = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
         $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname."_AE");
         $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname, null, true, true);
         $queryTypes .= "c_"."$colname, ";
@@ -77,7 +71,6 @@ if (!$conn) {
 }
 
 $tableName = "type_conversion_table";
-$stmt = sqlsrv_query($conn, "IF OBJECT_ID('$tableName', 'U') IS NOT NULL DROP TABLE $tableName");
 $columns = array();
 $insertQuery = "";
 
@@ -129,19 +122,18 @@ for ($v = 0; $v < sizeof($values);++$v)
         fatalError("Second sqlsrv_prepare failed\n");
     }
 
-    $metadata = sqlsrv_field_metadata($stmt);
-    $numFields = count($metadata);
+    $numFields = sqlsrv_num_fields($stmt);
 
     $i = 0;
     $valueAE = null;
-    $valueArrayAE = null;
+    $valueFromArrayAE = null;
     
     while ($result = sqlsrv_fetch($stmt)) {
         $dataArray = sqlsrv_fetch_array($stmt2, SQLSRV_FETCH_NUMERIC);
         
         for ($j = 0; $j < $numFields; $j++) {
             $value = sqlsrv_get_field($stmt, $j, $SQLSRV_PHPTYPE_CONST[$i]);
-            $valueArray = $dataArray[$j];
+            $valueFromArray = $dataArray[$j];
             
             // PHPTYPE_STREAM returns a PHP resource, so check the type
             if (is_resource($value)) $value = get_resource_type($value);
@@ -150,7 +142,7 @@ for ($v = 0; $v < sizeof($values);++$v)
             // So let's do the comparison every second field
             if ($j%2 == 0) {
                 $valueAE = $value;
-                $valueArrayAE = $valueArray;
+                $valueFromArrayAE = $valueFromArray;
             } elseif ($j%2 == 1) {
                 // If returning a DateTime PHP type from a date only SQL type,
                 // PHP adds the current timestamp to make a DateTime object,
@@ -160,8 +152,9 @@ for ($v = 0; $v < sizeof($values);++$v)
                 // below the DateTime objects are made equal again for the next if
                 // block.
                 if ($value instanceof DateTime) {
-                    // date_diff returns a DateInterval object, and f is
-                    // the difference expressed as a fraction of a second
+                    // date_diff returns a DateInterval object, and s is
+                    // the difference in seconds. s should be zero because
+                    // the difference should be just a fraction of a second.
                     $datediff = date_diff($value, $valueAE);
                     $diff = $datediff->s; 
                     
@@ -170,12 +163,12 @@ for ($v = 0; $v < sizeof($values);++$v)
                     }
                 }
                 
-                if ($valueAE != $value or $valueArrayAE != $valueArray) {
+                if ($valueAE != $value or $valueFromArrayAE != $valueFromArray) {
                     echo "Values do not match! PHPType $i Field $j\n";
                     print_r($valueAE);echo "\n";
                     print_r($value);echo "\n";
-                    print_r($valueArrayAE);echo "\n";
-                    print_r($valueArray);echo "\n";
+                    print_r($valueFromArrayAE);echo "\n";
+                    print_r($valueFromArray);echo "\n";
                     print_r(sqlsrv_errors());
                     fatalError("Test failed, values do not match.\n");
                 }
