@@ -10,6 +10,7 @@ require_once('MsCommon.inc');
 require_once('AEData.inc');
 
 $dataTypes = array("char(5)", "varchar(max)", "nchar(5)", "nvarchar(max)");
+$directions = array("SQLSRV_PARAM_OUT", "SQLSRV_PARAM_INOUT");
 
 // this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
 $compatList = array("char(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR(5)", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC", "SQLSRV_SQLTYPE_NTEXT", "SQLSRV_SQLTYPE_TEXT", "SQLSRV_SQLTYPE_XML"),
@@ -20,7 +21,7 @@ $compatList = array("char(5)" => array( "SQLSRV_SQLTYPE_CHAR(5)", "SQLSRV_SQLTYP
 $conn = AE\connect();
 	
 foreach ($dataTypes as $dataType) {
-    echo "\nTesting $dataType: \n";
+    echo "\nTesting $dataType:\n";
     $success = true;
 
     // create table
@@ -42,60 +43,72 @@ foreach ($dataTypes as $dataType) {
         is_incompatible_types_error($dataType, "default type");
     }
 	
-    // test each SQLSRV_SQLTYPE_ constants
-    foreach ($sqlTypes as $sqlType) {
-        if (!AE\isColEncrypted()) {
-            $isCompatible = false;
-            foreach ($compatList[$dataType] as $compatType) {
-                if (stripos($compatType, $sqlType) !== false) {
-                    $isCompatible = true;
-                }
-            }
-            // 22018 is the SQLSTATE for any incompatible conversion errors
-            if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
-                echo "$sqlType should be compatible with $dataType\n";
-                $success = false;
-            }
-        } else {
-            $sqlTypeConstant = get_sqlType_constant($sqlType);
+    foreach($directions as $direction) {
+        echo "Testing as $direction:\n";
 
-    	    // Call store procedure
-            $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
-            $c_detOut = '';
-            $c_randOut = '';
-            $stmt = sqlsrv_prepare($conn, $outSql, 
-                array(array(&$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant),
-                array(&$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant)));
-            if (!$stmt) {
-                die(print_r(sqlsrv_errors(), true));
-            }						
-				
-            sqlsrv_execute($stmt);
-			$errors = sqlsrv_errors();
-			
-            if (!empty($errors) ) {
-                if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
-					var_dump(sqlsrv_errors());
-                    $success = false;                    
-                }                
-			}
-			else
-			{
-                print("c_det: " . $c_detOut . "\n");
-                print("c_rand: " . $c_randOut . "\n");
-                
-                if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
-                    echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+        // test each SQLSRV_SQLTYPE_ constants
+        foreach ($sqlTypes as $sqlType) {
+            if (!AE\isColEncrypted()) {
+                $isCompatible = false;
+                foreach ($compatList[$dataType] as $compatType) {
+                    if (stripos($compatType, $sqlType) !== false) {
+                        $isCompatible = true;
+                    }
+                }
+                // 22018 is the SQLSTATE for any incompatible conversion errors
+                if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
+                    echo "$sqlType should be compatible with $dataType\n";
                     $success = false;
                 }
-			}
-		}		
-    }
-	
-    if (!AE\isColEncrypted()) {
-        AE\fetchAll($conn, $tbname);
+            } else {
+                // skip unsupported datetime types
+                if (!isDateTimeType($sqlType)) {
+                    $sqlTypeConstant = get_sqlType_constant($sqlType);
+
+                    // Call store procedure
+                    $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
+                    $c_detOut = '';
+                    $c_randOut = '';
+                    $stmt = sqlsrv_prepare($conn, $outSql, 
+                        //array(array(&$c_detOut, constant($direction), null, $sqlTypeConstant),
+                        //array(&$c_randOut, constant($direction), null, $sqlTypeConstant)));
+                        array(array(&$c_detOut, SQLSRV_PARAM_INOUT, null, $sqlTypeConstant),
+                        array(&$c_randOut, SQLSRV_PARAM_INOUT, null, $sqlTypeConstant)));
+
+                    if (!$stmt) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }						
+                        
+                    sqlsrv_execute($stmt);
+                    $errors = sqlsrv_errors();
+                    
+                    if (!empty($errors) ) {
+                        if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
+                            var_dump(sqlsrv_errors());
+                            $success = false;                    
+                        }                
+                    }
+                    else
+                    {
+                        print("c_det: " . $c_detOut . "\n");
+                        print("c_rand: " . $c_randOut . "\n");
+                        
+                        if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
+                            echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                            $success = false;
+                        }
+                    }
+                }
+                sqlsrv_free_stmt($stmt);
+            }            
+        }
+        
+        if (!AE\isColEncrypted()) {
+            AE\fetchAll($conn, $tbname);
+        }
 	}
-	else {
+    
+    if (AE\isColEncrypted()) {
         dropProc($conn, $spname);
     }
     if ($success) {
@@ -103,27 +116,43 @@ foreach ($dataTypes as $dataType) {
     }
     dropTable($conn, $tbname);
 }
-sqlsrv_free_stmt($stmt);
+
 sqlsrv_close($conn);
 ?>
 --EXPECT--
 
-Testing char(5): 
+Testing char(5):
+Testing as SQLSRV_PARAM_OUT:
+c_det: -leng
+c_rand: th, n
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -leng
 c_rand: th, n
 Test successfully done.
 
-Testing varchar(max): 
+Testing varchar(max):
+Testing as SQLSRV_PARAM_OUT:
+c_det: Use varchar(max) when the sizes of the column data entries vary considerably, and the size might exceed 8,000 bytes.
+c_rand: Each non-null varchar(max) or nvarchar(max) column requires 24 bytes of additional fixed allocation which counts against the 8,060 byte row limit during a sort operation.
+Testing as SQLSRV_PARAM_INOUT:
 c_det: Use varchar(max) when the sizes of the column data entries vary considerably, and the size might exceed 8,000 bytes.
 c_rand: Each non-null varchar(max) or nvarchar(max) column requires 24 bytes of additional fixed allocation which counts against the 8,060 byte row limit during a sort operation.
 Test successfully done.
 
-Testing nchar(5): 
+Testing nchar(5):
+Testing as SQLSRV_PARAM_OUT:
+c_det: -leng
+c_rand: th Un
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -leng
 c_rand: th Un
 Test successfully done.
 
-Testing nvarchar(max): 
+Testing nvarchar(max):
+Testing as SQLSRV_PARAM_OUT:
+c_det: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
+c_rand: Otherwise, the implicit conversion will result in a Unicode large-value (max).
+Testing as SQLSRV_PARAM_INOUT:
 c_det: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
 c_rand: Otherwise, the implicit conversion will result in a Unicode large-value (max).
 Test successfully done.

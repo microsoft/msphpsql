@@ -10,6 +10,7 @@ require_once('MsCommon.inc');
 require_once('AEData.inc');
 
 $dataTypes = array("bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5)", "numeric(10,5)", "float", "real" );
+$directions = array("SQLSRV_PARAM_OUT", "SQLSRV_PARAM_INOUT");
 
 // this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
 $compatList = array("bit" => array( "SQLSRV_SQLTYPE_BINARY", "SQLSRV_SQLTYPE_VARBINARY", "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DECIMAL(18,5)", "SQLSRV_SQLTYPE_NUMERIC(10,5)", "SQLSRV_SQLTYPE_FLOAT", "SQLSRV_SQLTYPE_REAL", "SQLSRV_SQLTYPE_BIGINT", "SQLSRV_SQLTYPE_INT", "SQLSRV_SQLTYPE_SMALLINT", "SQLSRV_SQLTYPE_TINYINT", "SQLSRV_SQLTYPE_MONEY", "SQLSRV_SQLTYPE_SMALLMONEY", "SQLSRV_SQLTYPE_BIT", "SQLSRV_SQLTYPE_TIMESTAMP"),
@@ -26,7 +27,7 @@ $epsilon = 0.0001;
 $conn = AE\connect();
 	
 foreach ($dataTypes as $dataType) {
-    echo "\nTesting $dataType: \n";
+    echo "\nTesting $dataType:\n";
     $success = true;
 
     // create table
@@ -53,65 +54,82 @@ foreach ($dataTypes as $dataType) {
         is_incompatible_types_error($dataType, "default type");
     }
 
-    // test each SQLSRV_SQLTYPE_ constants
-    foreach ($sqlTypes as $sqlType) {
-        if (!AE\isColEncrypted()) {
-            $isCompatible = false;
-            foreach ($compatList[$dataType] as $compatType) {
-                if (stripos($compatType, $sqlType) !== false) {
-                    $isCompatible = true;
+    foreach($directions as $direction) {
+        echo "Testing as $direction:\n";
+
+        // test each SQLSRV_SQLTYPE_ constants
+        foreach ($sqlTypes as $sqlType) {
+
+            if (!AE\isColEncrypted()) {
+                $isCompatible = false;
+                foreach ($compatList[$dataType] as $compatType) {
+                    if (stripos($compatType, $sqlType) !== false) {
+                        $isCompatible = true;
+                    }
                 }
-            }
-            // 22018 is the SQLSTATE for any incompatible conversion errors
-            if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
-                echo "$sqlType should be compatible with $dataType\n";
-                $success = false;
-            }
-        } else {
-			$sqlTypeConstant = get_sqlType_constant($sqlType);
+                // 22018 is the SQLSTATE for any incompatible conversion errors
+                if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
+                    echo "$sqlType should be compatible with $dataType\n";
+                    $success = false;
+                }
+            } else {
+                // skip unsupported datetime types
+                if (!isDateTimeType($sqlType)) {
+                    $sqlTypeConstant = get_sqlType_constant($sqlType);
 
-			// Call store procedure
-			$outSql = AE\getCallProcSqlPlaceholders($spname, 2);
-			$c_detOut = '';
-			$c_randOut = '';
-			$stmt = sqlsrv_prepare($conn, $outSql, 
-				array(array( &$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant),
-				array(&$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant)));
-			if (!$stmt) {
-				die(print_r(sqlsrv_errors(), true));
-			}							
-			sqlsrv_execute($stmt);
-			$errors = sqlsrv_errors();
-			
-			if (!empty($errors)) {
-                if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
-					var_dump( sqlsrv_errors() );
-                    $success = false;               
-				}					
-			}
-			else {
-				print("c_det: " . $c_detOut . "\n");
-				print("c_rand: " . $c_randOut . "\n");
+                    // Call store procedure
+                    $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
+                    if ($sqlType == 'SQLSRV_SQLTYPE_FLOAT' || $sqlType == 'SQLSRV_SQLTYPE_REAL') {
+                        $c_detOut = 0.0;
+                        $c_randOut = 0.0;
+                    } else {
+                        $c_detOut = 0;
+                        $c_randOut = 0;
+                    }
+                    $stmt = sqlsrv_prepare($conn, $outSql, 
+                        array(array( &$c_detOut, constant($direction), null, $sqlTypeConstant),
+                        array(&$c_randOut, constant($direction), null, $sqlTypeConstant)));
 
-				if ($dataType == "float" || $dataType == "real") {
-					if (abs($c_detOut - $inputValues[0]) > $epsilon || abs($c_randOut - $inputValues[1]) > $epsilon) {
-						echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
-						$success = false;
-					}
-				} else {
-					if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
-						echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
-						$success = false;
-					}
-				}				
-			}
-		}		
-    }
-	
-    if (!AE\isColEncrypted()) {
-        AE\fetchAll($conn, $tbname);
+                    if (!$stmt) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }							
+                    sqlsrv_execute($stmt);
+                    $errors = sqlsrv_errors();
+                    
+                    if (!empty($errors)) {
+                        if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
+                            var_dump(sqlsrv_errors());
+                            $success = false;               
+                        }	
+                    }
+                    else {
+                        print("c_det: " . $c_detOut . "\n");
+                        print("c_rand: " . $c_randOut . "\n");
+
+                        if ($dataType == "float" || $dataType == "real") {
+                            if (abs($c_detOut - $inputValues[0]) > $epsilon || abs($c_randOut - $inputValues[1]) > $epsilon) {
+                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                                $success = false;
+                            }
+                        } else {
+                            if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
+                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                                $success = false;
+                            }
+                        }				
+                    }
+                    
+                    sqlsrv_free_stmt($stmt); 
+                }                
+            }            
+        }
+        
+        if (!AE\isColEncrypted()) {
+            AE\fetchAll($conn, $tbname);
+        }        
 	}
-	else {
+    
+    if (AE\isColEncrypted()) {
 		dropProc($conn, $spname);	
 	}
 	
@@ -120,52 +138,88 @@ foreach ($dataTypes as $dataType) {
     }
     dropTable($conn, $tbname);
 }
-sqlsrv_free_stmt($stmt);
+
 sqlsrv_close($conn);
 ?>
 --EXPECT--
 
-Testing bit: 
+Testing bit:
+Testing as SQLSRV_PARAM_OUT:
+c_det: 1
+c_rand: 0
+Testing as SQLSRV_PARAM_INOUT:
 c_det: 1
 c_rand: 0
 Test successfully done.
 
-Testing tinyint: 
+Testing tinyint:
+Testing as SQLSRV_PARAM_OUT:
+c_det: 0
+c_rand: 255
+Testing as SQLSRV_PARAM_INOUT:
 c_det: 0
 c_rand: 255
 Test successfully done.
 
-Testing smallint: 
+Testing smallint:
+Testing as SQLSRV_PARAM_OUT:
+c_det: -32767
+c_rand: 32767
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -32767
 c_rand: 32767
 Test successfully done.
 
-Testing int: 
+Testing int:
+Testing as SQLSRV_PARAM_OUT:
+c_det: -2147483647
+c_rand: 2147483647
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -2147483647
 c_rand: 2147483647
 Test successfully done.
 
-Testing bigint: 
+Testing bigint:
+Testing as SQLSRV_PARAM_OUT:
+c_det: -922337203685479936
+c_rand: 922337203685479936
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -922337203685479936
 c_rand: 922337203685479936
 Test successfully done.
 
-Testing decimal(18,5): 
+Testing decimal(18,5):
+Testing as SQLSRV_PARAM_OUT:
+c_det: -9223372036854.80000
+c_rand: 9223372036854.80000
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -9223372036854.80000
 c_rand: 9223372036854.80000
 Test successfully done.
 
-Testing numeric(10,5): 
+Testing numeric(10,5):
+Testing as SQLSRV_PARAM_OUT:
+c_det: -21474.83647
+c_rand: 21474.83647
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -21474.83647
 c_rand: 21474.83647
 Test successfully done.
 
-Testing float: 
+Testing float:
+Testing as SQLSRV_PARAM_OUT:
+c_det: -9223372036.8548
+c_rand: 9223372036.8548
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -9223372036.8548
 c_rand: 9223372036.8548
 Test successfully done.
 
-Testing real: 
+Testing real:
+Testing as SQLSRV_PARAM_OUT:
+c_det: -2147.4829101562
+c_rand: 2147.4829101562
+Testing as SQLSRV_PARAM_INOUT:
 c_det: -2147.4829101562
 c_rand: 2147.4829101562
 Test successfully done.

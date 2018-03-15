@@ -163,4 +163,14 @@ function get_sqlType_constant( $sqlType )
 	}
 }
 
+function isDateTimeType( $sqlType )
+{
+    return ($sqlType == 'SQLSRV_SQLTYPE_DATE' ||
+            $sqlType == 'SQLSRV_SQLTYPE_DATETIME' ||
+            $sqlType == 'SQLSRV_SQLTYPE_DATETIME2' ||
+            $sqlType == 'SQLSRV_SQLTYPE_DATETIMEOFFSET' ||
+            $sqlType == 'SQLSRV_SQLTYPE_SMALLDATETIME' ||
+            $sqlType == 'SQLSRV_SQLTYPE_TIME');
+}
+
 ?>

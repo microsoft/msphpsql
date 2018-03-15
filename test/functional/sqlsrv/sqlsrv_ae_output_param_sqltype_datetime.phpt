@@ -11,6 +11,7 @@ require_once('AEData.inc');
 
 date_default_timezone_set("Canada/Pacific");
 $dataTypes = array("date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset");
+$directions = array("SQLSRV_PARAM_OUT", "SQLSRV_PARAM_INOUT");
 
 // this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
 $compatList = array("date" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_DATE", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2"),
@@ -23,7 +24,7 @@ $compatList = array("date" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARC
 $conn = AE\connect();
 	
 foreach ($dataTypes as $dataType) {
-    echo "\nTesting $dataType: \n";
+    echo "\nTesting $dataType:\n";
     $success = true;
 
     // create table
@@ -45,45 +46,52 @@ foreach ($dataTypes as $dataType) {
         is_incompatible_types_error($dataType, "default type");
     }
 
-    // test each SQLSRV_SQLTYPE_ constants
-    foreach ($sqlTypes as $sqlType) {
-        if (!AE\isColEncrypted()) {
-            $isCompatible = false;
-            foreach ($compatList[$dataType] as $compatType) {
-                if (stripos($compatType, $sqlType) !== false) {
-                    $isCompatible = true;
+    foreach($directions as $direction) {
+        echo "Testing as $direction:\n";
+   
+        // test each SQLSRV_SQLTYPE_ constants
+        foreach ($sqlTypes as $sqlType) {
+            if (!AE\isColEncrypted()) {
+                $isCompatible = false;
+                foreach ($compatList[$dataType] as $compatType) {
+                    if (stripos($compatType, $sqlType) !== false) {
+                        $isCompatible = true;
+                    }
                 }
-            }
-            // 22018 is the SQLSTATE for any incompatible conversion errors
-            if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
-                echo "$sqlType should be compatible with $dataType\n";
-                $success = false;
-            }
-        } else {
-            $sqlTypeConstant = get_sqlType_constant($sqlType);
-				
-	        // Call store procedure
-            $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
-            $c_detOut = '';
-            $c_randOut = '';
-            $stmt = sqlsrv_prepare( $conn, $outSql, 
-                array(array( &$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant),
-                array(&$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant )));
-            if (!$stmt) {
-                die(print_r(sqlsrv_errors(), true));
-            }							
-            sqlsrv_execute($stmt);
-            $errors = sqlsrv_errors();
-			if (empty($errors)) {
-		        // SQLSRV_PHPTYPE_DATETIME not supported
-		        echo "$dataType should not be compatible with any datetime type.\n";
-                $success = false;
-			}
-
-            sqlsrv_query($conn, "TRUNCATE TABLE $tbname");				
-		}		
-    }
-	
+                // 22018 is the SQLSTATE for any incompatible conversion errors
+                if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
+                    echo "$sqlType should be compatible with $dataType\n";
+                    $success = false;
+                }
+            } else {
+                // skip unsupported datetime types
+                if (!isDateTimeType($sqlType)) {
+                    $sqlTypeConstant = get_sqlType_constant($sqlType);
+                        
+                    // Call store procedure
+                    $outSql = AE\getCallProcSqlPlaceholders($spname, 2);
+                    $c_detOut = '';
+                    $c_randOut = '';
+                    $stmt = sqlsrv_prepare( $conn, $outSql, 
+                        array(array( &$c_detOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant),
+                        array(&$c_randOut, SQLSRV_PARAM_OUT, null, $sqlTypeConstant )));
+                    if (!$stmt) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }							
+                    sqlsrv_execute($stmt);
+                    $errors = sqlsrv_errors();
+                    if (empty($errors)) {
+                        // SQLSRV_PHPTYPE_DATETIME not supported
+                        echo "$dataType should not be compatible with any datetime type.\n";
+                        $success = false;
+                    }
+                }
+      
+                sqlsrv_free_stmt($stmt);
+            }           
+        }
+	}
+    
     if ($success) {
         echo "Test successfully done.\n";
     }
@@ -93,25 +101,37 @@ foreach ($dataTypes as $dataType) {
     }
     dropTable($conn, $tbname);
 }
-sqlsrv_free_stmt($stmt);
+
 sqlsrv_close($conn);
 ?>
 --EXPECT--
 
-Testing date: 
+Testing date:
+Testing as SQLSRV_PARAM_OUT:
+Testing as SQLSRV_PARAM_INOUT:
 Test successfully done.
 
-Testing datetime: 
+Testing datetime:
+Testing as SQLSRV_PARAM_OUT:
+Testing as SQLSRV_PARAM_INOUT:
 Test successfully done.
 
-Testing datetime2: 
+Testing datetime2:
+Testing as SQLSRV_PARAM_OUT:
+Testing as SQLSRV_PARAM_INOUT:
 Test successfully done.
 
-Testing smalldatetime: 
+Testing smalldatetime:
+Testing as SQLSRV_PARAM_OUT:
+Testing as SQLSRV_PARAM_INOUT:
 Test successfully done.
 
-Testing time: 
+Testing time:
+Testing as SQLSRV_PARAM_OUT:
+Testing as SQLSRV_PARAM_INOUT:
 Test successfully done.
 
-Testing datetimeoffset: 
+Testing datetimeoffset:
+Testing as SQLSRV_PARAM_OUT:
+Testing as SQLSRV_PARAM_INOUT:
 Test successfully done.
