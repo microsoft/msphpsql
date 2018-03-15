@@ -50,9 +50,13 @@ Updated PECL release packages. Here is the list of updates:
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostics information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
-- Calling stored procedure with XML parameter does not work with Column Encryption enabled (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
 - Connection with Connection Resiliency enabled so not resume properly with Connection Pooling (Issue [#678](https://github.com/Microsoft/msphpsql/issues/678))
+- With ColumnEncryption enabled, calling stored procedure with XML parameter does not work (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
 - Cannot connect with both Connection Resiliency enabled and ColumnEncryption enabled (Issue [#577](https://github.com/Microsoft/msphpsql/issues/577))
+- With ColumnEncryption enabled, retrieving a negative decimal value as output parameter causes truncation of the last digit (Issue [#705](https://github.com/Microsoft/msphpsql/issues/705))
+- With ColumnEncryption enabled, cannot insert a double into a decimal column with precision and scale of (38, 38) (Issue [#706](https://github.com/Microsoft/msphpsql/issues/706))
+- With ColumnEncryption enabled, when fetching decimals as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT, floats are returned, not integers (Issue [#707](https://github.com/Microsoft/msphpsql/issues/707))
+
 
 ## Windows/Linux/macOS 5.2.0-RC - 2017-12-20
 Updated PECL release packages. Here is the list of updates:
