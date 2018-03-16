@@ -29,6 +29,7 @@ foreach ($dataTypes as $dataType) {
     $colMetaArr = array(new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
 
+    // TODO: It's a good idea to test conversions between different datatypes when AE is off as well. 
     if (AE\isColEncrypted()) {
         // Create a Store Procedure
         $spname = 'selectAllColumns';
@@ -70,8 +71,6 @@ foreach ($dataTypes as $dataType) {
                     $c_detOut = '';
                     $c_randOut = '';
                     $stmt = sqlsrv_prepare($conn, $outSql, 
-                        //array(array(&$c_detOut, constant($direction), null, $sqlTypeConstant),
-                        //array(&$c_randOut, constant($direction), null, $sqlTypeConstant)));
                         array(array(&$c_detOut, SQLSRV_PARAM_INOUT, null, $sqlTypeConstant),
                         array(&$c_randOut, SQLSRV_PARAM_INOUT, null, $sqlTypeConstant)));
 
@@ -90,16 +89,16 @@ foreach ($dataTypes as $dataType) {
                     }
                     else
                     {
-                        print("c_det: " . $c_detOut . "\n");
-                        print("c_rand: " . $c_randOut . "\n");
-                        
                         if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
-                            echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                            echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
+                            print("    c_det: " . $c_detOut . "\n");
+                            print("    c_rand: " . $c_randOut . "\n");                          
                             $success = false;
                         }
                     }
+                    
+                    sqlsrv_free_stmt($stmt);
                 }
-                sqlsrv_free_stmt($stmt);
             }            
         }
         
@@ -123,36 +122,20 @@ sqlsrv_close($conn);
 
 Testing char(5):
 Testing as SQLSRV_PARAM_OUT:
-c_det: -leng
-c_rand: th, n
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -leng
-c_rand: th, n
 Test successfully done.
 
 Testing varchar(max):
 Testing as SQLSRV_PARAM_OUT:
-c_det: Use varchar(max) when the sizes of the column data entries vary considerably, and the size might exceed 8,000 bytes.
-c_rand: Each non-null varchar(max) or nvarchar(max) column requires 24 bytes of additional fixed allocation which counts against the 8,060 byte row limit during a sort operation.
 Testing as SQLSRV_PARAM_INOUT:
-c_det: Use varchar(max) when the sizes of the column data entries vary considerably, and the size might exceed 8,000 bytes.
-c_rand: Each non-null varchar(max) or nvarchar(max) column requires 24 bytes of additional fixed allocation which counts against the 8,060 byte row limit during a sort operation.
 Test successfully done.
 
 Testing nchar(5):
 Testing as SQLSRV_PARAM_OUT:
-c_det: -leng
-c_rand: th Un
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -leng
-c_rand: th Un
 Test successfully done.
 
 Testing nvarchar(max):
 Testing as SQLSRV_PARAM_OUT:
-c_det: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
-c_rand: Otherwise, the implicit conversion will result in a Unicode large-value (max).
 Testing as SQLSRV_PARAM_INOUT:
-c_det: When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).
-c_rand: Otherwise, the implicit conversion will result in a Unicode large-value (max).
 Test successfully done.

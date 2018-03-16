@@ -35,6 +35,7 @@ foreach ($dataTypes as $dataType) {
     $colMetaArr = array(new AE\ColumnMeta($dataType, "c_det"), new AE\ColumnMeta($dataType, "c_rand", null, false));
     AE\createTable($conn, $tbname, $colMetaArr);
 	
+    // TODO: It's a good idea to test conversions between different datatypes when AE is off as well. 
     if (AE\isColEncrypted()) {
         // Create a Store Procedure
         $spname = 'selectAllColumns';
@@ -103,20 +104,21 @@ foreach ($dataTypes as $dataType) {
                         }	
                     }
                     else {
-                        print("c_det: " . $c_detOut . "\n");
-                        print("c_rand: " . $c_randOut . "\n");
-
                         if ($dataType == "float" || $dataType == "real") {
                             if (abs($c_detOut - $inputValues[0]) > $epsilon || abs($c_randOut - $inputValues[1]) > $epsilon) {
-                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
+                                print("    c_det: " . $c_detOut . "\n");
+                                print("    c_rand: " . $c_randOut . "\n");
                                 $success = false;
                             }
                         } else {
                             if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
-                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType.\n";
+                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
+                                print("    c_det: " . $c_detOut . "\n");
+                                print("    c_rand: " . $c_randOut . "\n");                                
                                 $success = false;
                             }
-                        }				
+                        }			
                     }
                     
                     sqlsrv_free_stmt($stmt); 
@@ -145,81 +147,45 @@ sqlsrv_close($conn);
 
 Testing bit:
 Testing as SQLSRV_PARAM_OUT:
-c_det: 1
-c_rand: 0
 Testing as SQLSRV_PARAM_INOUT:
-c_det: 1
-c_rand: 0
 Test successfully done.
 
 Testing tinyint:
 Testing as SQLSRV_PARAM_OUT:
-c_det: 0
-c_rand: 255
 Testing as SQLSRV_PARAM_INOUT:
-c_det: 0
-c_rand: 255
 Test successfully done.
 
 Testing smallint:
 Testing as SQLSRV_PARAM_OUT:
-c_det: -32767
-c_rand: 32767
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -32767
-c_rand: 32767
 Test successfully done.
 
 Testing int:
 Testing as SQLSRV_PARAM_OUT:
-c_det: -2147483647
-c_rand: 2147483647
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -2147483647
-c_rand: 2147483647
 Test successfully done.
 
 Testing bigint:
 Testing as SQLSRV_PARAM_OUT:
-c_det: -922337203685479936
-c_rand: 922337203685479936
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -922337203685479936
-c_rand: 922337203685479936
 Test successfully done.
 
 Testing decimal(18,5):
 Testing as SQLSRV_PARAM_OUT:
-c_det: -9223372036854.80000
-c_rand: 9223372036854.80000
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -9223372036854.80000
-c_rand: 9223372036854.80000
 Test successfully done.
 
 Testing numeric(10,5):
 Testing as SQLSRV_PARAM_OUT:
-c_det: -21474.83647
-c_rand: 21474.83647
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -21474.83647
-c_rand: 21474.83647
 Test successfully done.
 
 Testing float:
 Testing as SQLSRV_PARAM_OUT:
-c_det: -9223372036.8548
-c_rand: 9223372036.8548
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -9223372036.8548
-c_rand: 9223372036.8548
 Test successfully done.
 
 Testing real:
 Testing as SQLSRV_PARAM_OUT:
-c_det: -2147.4829101562
-c_rand: 2147.4829101562
 Testing as SQLSRV_PARAM_INOUT:
-c_det: -2147.4829101562
-c_rand: 2147.4829101562
 Test successfully done.
