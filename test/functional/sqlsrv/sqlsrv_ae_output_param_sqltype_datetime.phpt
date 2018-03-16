@@ -88,7 +88,7 @@ foreach ($dataTypes as $dataType) {
                 }
             }           
         }
-	}
+    }
     
     // cleanup
     sqlsrv_free_stmt($stmt);
