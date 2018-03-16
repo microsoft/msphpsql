@@ -211,7 +211,7 @@ for ($v = 0; $v < sizeof($values); ++$v)
         $testValues[] = $values[$v][$i];
         $testValues[] = $values[$v][$i];
     }
-    echo "Testing values $v\n";
+    //echo "Testing values $v\n";
 
     // Insert the data using sqlsrv_prepare()
     $stmt = sqlsrv_prepare($conn, $insertQuery, $testValues);
@@ -219,29 +219,29 @@ for ($v = 0; $v < sizeof($values); ++$v)
         print_r(sqlsrv_errors());
         fatalError("sqlsrv_prepare failed\n");
     }
-    echo "Testing values $v\n";
+    //echo "Testing values $v\n";
 
     if (!sqlsrv_execute($stmt)) {
         print_r(sqlsrv_errors());
         fatalError("sqlsrv_execute failed\n");
     }
-    echo "Testing values $v\n";
+    //echo "Testing values $v\n";
     
     sqlsrv_free_stmt($stmt);
-    echo "Testing values $v\n";
+    //echo "Testing values $v\n";
 
     // Formulate the matrix of SELECT queries and iterate over each index.
     $selectQuery = array();
     $selectQueryAE = array();
     FormulateSelectQuery($tableName, $selectQuery, $selectQueryAE, $dataTypes, $strsize, $strsize2);
-    echo "Testing values $v\n";
+    //echo "Testing values $v\n";
 
     for ($i = 0; $i < sizeof($dataTypes); ++$i) {
-    echo "Testing values $v $i\n";
+//echo "Testing values $v $i\n";
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
-    echo "Testing values $v $i $j\n";
+//echo "Testing values $v $i $j\n";
             $stmt = sqlsrv_query($conn, $selectQuery[$i][$j]);
-    echo "Testing values $v $i $j\n";
+    //echo "Testing values $v $i $j\n";
 
             if ($stmt == false) {
     echo "Testing values $v $i $j false\n";
