@@ -32,8 +32,7 @@ AE\createTable($conn, $tbname, $colMetaArr);
 
 // Create a Store Procedure
 $spname = 'selectAllColumns';
-$spSql = "CREATE PROCEDURE $spname (
-                @c1_int int OUTPUT, @c2_smallint smallint OUTPUT,
+createProc($conn, $spname, "@c1_int int OUTPUT, @c2_smallint smallint OUTPUT,
                 @c3_tinyint tinyint OUTPUT, @c4_bit bit OUTPUT,
                 @c5_bigint bigint OUTPUT, @c6_decimal decimal(18,5) OUTPUT,
                 @c7_numeric numeric(10,5) OUTPUT, @c8_float float OUTPUT,
@@ -41,8 +40,7 @@ $spSql = "CREATE PROCEDURE $spname (
                 @c11_datetime datetime OUTPUT, @c12_datetime2 datetime2 OUTPUT,
                 @c13_datetimeoffset datetimeoffset OUTPUT, @c14_time time OUTPUT,
                 @c15_char char(5) OUTPUT, @c16_varchar varchar(max) OUTPUT,
-                @c17_nchar nchar(5) OUTPUT, @c18_nvarchar nvarchar(max) OUTPUT) AS
-                SELECT @c1_int = c1_int, @c2_smallint = c2_smallint,
+                @c17_nchar nchar(5) OUTPUT, @c18_nvarchar nvarchar(max) OUTPUT", "SELECT @c1_int = c1_int, @c2_smallint = c2_smallint,
                 @c3_tinyint = c3_tinyint, @c4_bit = c4_bit,
                 @c5_bigint = c5_bigint, @c6_decimal = c6_decimal,
                 @c7_numeric = c7_numeric, @c8_float = c8_float,
@@ -51,9 +49,7 @@ $spSql = "CREATE PROCEDURE $spname (
                 @c13_datetimeoffset = c13_datetimeoffset, @c14_time = c14_time,
                 @c15_char = c15_char, @c16_varchar = c16_varchar,
                 @c17_nchar = c17_nchar, @c18_nvarchar = c18_nvarchar
-                FROM $tbname";
-sqlsrv_query($conn, $spSql);
-
+                FROM $tbname");
 // Insert data
 $inputs = array( "c1_int" => 2147483647,
                  "c2_smallint" => 32767,
