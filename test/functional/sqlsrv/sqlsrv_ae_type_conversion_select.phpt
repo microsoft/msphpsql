@@ -55,7 +55,6 @@ function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery, 
     $valuesString = substr($valuesString, 0, -2).")";
 
     $insertQuery = "INSERT INTO $tableName ".$columnsInQuery." ".$valuesString;
-    print_r($insertQuery);
 }
 
 // Build the select queries. We want every combination of types for conversion
@@ -74,7 +73,6 @@ function FormulateSelectQuery($tableName, &$selectQuery, &$selectQueryAE, &$data
             $selectQueryAE[$i][] = "SELECT CAST(c_".$colnamei."_AE AS $dataTypes[$j]) FROM $tableName";
         }
     }
-    print_r($selectQuery);
 }
 
 // Two sizes for the string types so we can test conversion from
@@ -201,9 +199,12 @@ if (!$stmt) {
     fatalError("Failed to create table $tableName\n");
 }
 
+echo "Should have created table\n";
+
 // The data we test against is in values.php
 for ($v = 0; $v < sizeof($values); ++$v)
 {
+    echo "Testing values $v\n";
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
     for ($i = 0; $i < sizeof($values[$v]); ++$i) {
