@@ -80,7 +80,7 @@ foreach ($dataTypes as $dataType) {
                     }							
                     sqlsrv_execute($stmt);
                     $errors = sqlsrv_errors();
-                    if (empty($errors)) {
+                    if (empty($errors) && AE\IsDataEncrypted()) {
                         // SQLSRV_PHPTYPE_DATETIME not supported
                         echo "$dataType should not be compatible with any datetime type.\n";
                         $success = false;

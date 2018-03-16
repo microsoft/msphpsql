@@ -102,7 +102,6 @@ foreach ($dataTypes as $dataType) {
                             var_dump(sqlsrv_errors());
                             $success = false;               
                         }
-                        //else {print("sqlType=$sqlType\n");}
                     }
                     else {
                         if (AE\IsDataEncrypted() || stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
@@ -138,7 +137,6 @@ foreach ($dataTypes as $dataType) {
         echo "Test successfully done.\n";
     }
     
-    //print("tbname=$tbname\n");
     dropTable($conn, $tbname);
 }
 
