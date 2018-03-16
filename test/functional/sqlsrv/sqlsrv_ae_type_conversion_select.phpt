@@ -199,19 +199,15 @@ if (!$stmt) {
     fatalError("Failed to create table $tableName\n");
 }
 
-echo "Should have created table\n";
-
 // The data we test against is in values.php
 for ($v = 0; $v < sizeof($values); ++$v)
 {
-    echo "Testing values $v\n";
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
     for ($i = 0; $i < sizeof($values[$v]); ++$i) {
         $testValues[] = $values[$v][$i];
         $testValues[] = $values[$v][$i];
     }
-    //echo "Testing values $v\n";
 
     // Insert the data using sqlsrv_prepare()
     $stmt = sqlsrv_prepare($conn, $insertQuery, $testValues);
@@ -219,32 +215,24 @@ for ($v = 0; $v < sizeof($values); ++$v)
         print_r(sqlsrv_errors());
         fatalError("sqlsrv_prepare failed\n");
     }
-    //echo "Testing values $v\n";
 
     if (!sqlsrv_execute($stmt)) {
         print_r(sqlsrv_errors());
         fatalError("sqlsrv_execute failed\n");
     }
-    //echo "Testing values $v\n";
     
     sqlsrv_free_stmt($stmt);
-    //echo "Testing values $v\n";
 
     // Formulate the matrix of SELECT queries and iterate over each index.
     $selectQuery = array();
     $selectQueryAE = array();
     FormulateSelectQuery($tableName, $selectQuery, $selectQueryAE, $dataTypes, $strsize, $strsize2);
-    //echo "Testing values $v\n";
 
     for ($i = 0; $i < sizeof($dataTypes); ++$i) {
-//echo "Testing values $v $i\n";
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
-//echo "Testing values $v $i $j\n";
             $stmt = sqlsrv_query($conn, $selectQuery[$i][$j]);
-    //echo "Testing values $v $i $j\n";
 
             if ($stmt == false) {
-    echo "Testing values $v $i $j false\n";
                 $convError = sqlsrv_errors();
                 
                 checkAcceptableErrors($convError);
@@ -262,7 +250,6 @@ for ($v = 0; $v < sizeof($values); ++$v)
                     }
                 }
             } else {
-    echo "Testing values $v $i $j true\n";
                 if ($conversionMatrix[$i][$j] == 'x') fatalError("Conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
                 if (AE\isDataEncrypted()) {
                     $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
