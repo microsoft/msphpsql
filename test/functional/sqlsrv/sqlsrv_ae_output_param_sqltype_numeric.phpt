@@ -125,10 +125,6 @@ foreach ($dataTypes as $dataType) {
                 }                
             }            
         }
-        
-        if (!AE\isColEncrypted()) {
-            AE\fetchAll($conn, $tbname);
-        }        
     }
     
     if (AE\isColEncrypted()) {
