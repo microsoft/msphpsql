@@ -86,11 +86,13 @@ foreach ($dataTypes as $dataType) {
                         $success = false;
                     }
                 }
-      
-                sqlsrv_free_stmt($stmt);
             }           
         }
 	}
+    
+    // cleanup
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
     
     if ($success) {
         echo "Test successfully done.\n";
