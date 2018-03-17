@@ -24,7 +24,7 @@ $values[] = array(array(("BA3EA123EA8FFF46A01"), null, SQLSRV_PHPTYPE_STRING(SQL
                   -1,
                   113,
                   0,
-                  "b78933ce-e193-421c-9e3a-b2a5b93794ea", 
+                  null, 
                   null,
                   array(("BA3EA123EA8FFF46A01"), null, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_BINARY(384)),//0x0232345457878,
                   array(("7BDD1C6794E0BA9556F63B93A"), null, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARBINARY(384)),//0x0123222223344,
