@@ -89,11 +89,13 @@ foreach ($dataTypes as $dataType) {
                     }
                     else
                     {
-                        if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
-                            echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
-                            print("    c_det: " . $c_detOut . "\n");
-                            print("    c_rand: " . $c_randOut . "\n");                          
-                            $success = false;
+                        if (AE\IsDataEncrypted() || stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {                        
+                            if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
+                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
+                                print("    c_det: " . $c_detOut . "\n");
+                                print("    c_rand: " . $c_randOut . "\n");                          
+                                $success = false;
+                            }
                         }
                     }
                     

@@ -25,7 +25,7 @@ $compatList = array("bit" => array( "SQLSRV_SQLTYPE_BINARY", "SQLSRV_SQLTYPE_VAR
 $epsilon = 0.0001;
 
 $conn = AE\connect();
-	
+
 foreach ($dataTypes as $dataType) {
     echo "\nTesting $dataType:\n";
     $success = true;
@@ -101,24 +101,26 @@ foreach ($dataTypes as $dataType) {
                         if (stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
                             var_dump(sqlsrv_errors());
                             $success = false;               
-                        }	
+                        }
                     }
                     else {
-                        if ($dataType == "float" || $dataType == "real") {
-                            if (abs($c_detOut - $inputValues[0]) > $epsilon || abs($c_randOut - $inputValues[1]) > $epsilon) {
-                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
-                                print("    c_det: " . $c_detOut . "\n");
-                                print("    c_rand: " . $c_randOut . "\n");
-                                $success = false;
-                            }
-                        } else {
-                            if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
-                                echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
-                                print("    c_det: " . $c_detOut . "\n");
-                                print("    c_rand: " . $c_randOut . "\n");                                
-                                $success = false;
-                            }
-                        }			
+                        if (AE\IsDataEncrypted() || stripos("SQLSRV_SQLTYPE_" . $dataType, $sqlType) !== false) {
+                            if ($dataType == "float" || $dataType == "real") {
+                                if (abs($c_detOut - $inputValues[0]) > $epsilon || abs($c_randOut - $inputValues[1]) > $epsilon) {
+                                    echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
+                                    print("    c_det: " . $c_detOut . "\n");
+                                    print("    c_rand: " . $c_randOut . "\n");
+                                    $success = false;
+                                }
+                            } else {
+                                if ($c_detOut != $inputValues[0] || $c_randOut != $inputValues[1]) {
+                                    echo "Incorrect output retrieved for datatype $dataType and sqlType $sqlType:\n";
+                                    print("    c_det: " . $c_detOut . "\n");
+                                    print("    c_rand: " . $c_randOut . "\n");                                
+                                    $success = false;
+                                }
+                            }     
+                        }                       
                     }
                     
                     sqlsrv_free_stmt($stmt); 
@@ -130,10 +132,11 @@ foreach ($dataTypes as $dataType) {
     if (AE\isColEncrypted()) {
         dropProc($conn, $spname);	
     }
-	
+
     if ($success) {
         echo "Test successfully done.\n";
     }
+    
     dropTable($conn, $tbname);
 }
 
