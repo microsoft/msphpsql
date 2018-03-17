@@ -200,7 +200,7 @@ if (!$stmt) {
 }
 
 // The data we test against is in values.php
-for ($v = 0; $v < sizeof($values); ++$v)
+for ($v = 1; $v < sizeof($values); ++$v)
 {
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
