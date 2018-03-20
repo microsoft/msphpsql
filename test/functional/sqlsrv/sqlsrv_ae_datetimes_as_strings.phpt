@@ -318,8 +318,8 @@ function FetchDatesAndOrTimes($conn, $dateTimeType, &$expectedDateTime, $returnD
                                'smalldatetime'=>date_format($datetime, 'Y-m-d H:i').":00",
                                );
                                        
+        if ($dateTimeType == 'time') {echo "id = $idnum dt = ";print_r($datetime);print_r($datetimeArray);}
         CompareDateTimeObject($dateTimeType, $expectedDateTime, $datetimeArray);
-        if ($dateTimeType == 'time') {echo "id = $idnum dt = ";print_r($datetime);}
     }
 
     // retrieve date time fields without explicitly requesting the type
