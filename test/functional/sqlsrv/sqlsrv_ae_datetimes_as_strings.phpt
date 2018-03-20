@@ -31,6 +31,19 @@ function ExecutePreparedStmt($stmt)
     }
 }
 
+// If there is an error in comparison, output the types, the data, and die
+function mismatchError($dateTimeType, $compareType, $retrieved, $expected)
+{
+    echo "Error comparing dateTimeType = $dateTimeType against $compareType\n";
+    if (is_array($retrieved)) {
+        print_r($retrieved[$compareType]);
+    } else {
+        print_r($retrieved);
+    }
+    print_r($expected[$compareType]);
+    fatalError("Retrieved and expected output do not match!");
+}
+
 // Compare dates retrieved from the database with the date used for testing
 // when ReturnDatesAsStrings is true.
 // $expectedDateTime is an array of date/time strings corresponding to the different SQL Server types.
@@ -40,7 +53,7 @@ function CompareDateTimeString($dateTimeType, &$expectedDateTime, $retrievedDate
     switch ($dateTimeType) {
         case 'date':
             // Direct comparison of retrieved date and expected date
-            if ($retrievedDateTime != $expectedDateTime['date'][0]) fatalError("Dates do not match!");
+            if ($retrievedDateTime != $expectedDateTime['date'][0]) mismatchError('date', 'date', $retrievedDateTime, $expectedDateTime);
             break;
         case 'time': 
             // Compare SQL time with expected time. The expected time was input
@@ -50,7 +63,7 @@ function CompareDateTimeString($dateTimeType, &$expectedDateTime, $retrievedDate
             if ($retrievedDateTime != $expectedDateTime['time'][1]."0" and
                 $retrievedDateTime != $expectedDateTime['time'][2]."0" and
                 $retrievedDateTime != $expectedDateTime['time'][3]."0" and
-                $retrievedDateTime != $expectedDateTime['time'][4]."0") fatalError("Times do not match!");
+                $retrievedDateTime != $expectedDateTime['time'][4]."0") mismatchError('time', 'time', $retrievedDateTime, $expectedDateTime);
             break;
         case 'datetime':
             // Compare retrieved SQL datetime with expected date/time.
@@ -60,12 +73,7 @@ function CompareDateTimeString($dateTimeType, &$expectedDateTime, $retrievedDate
             if ($retrievedDateTime != $expectedDateTime['datetime'][0] and
                 $retrievedDateTime != $expectedDateTime['datetime'][1] and
                 $retrievedDateTime != $expectedDateTime['datetime'][2] and
-                $retrievedDateTime != $expectedDateTime['datetime'][3]) 
-                {
-                    print_r($retrievedDateTime);
-                    print_r($expectedDateTime);
-                    fatalError("Datetimes do not match!");
-                }
+                $retrievedDateTime != $expectedDateTime['datetime'][3]) mismatchError('datetime', 'datetime', $retrievedDateTime, $expectedDateTime);
             break;
         case 'datetime2':
             // Compare retrieved SQL datetime2 with expected date/time.
@@ -75,7 +83,7 @@ function CompareDateTimeString($dateTimeType, &$expectedDateTime, $retrievedDate
             if ($retrievedDateTime != $expectedDateTime['datetime2'][1]."0" and
                 $retrievedDateTime != $expectedDateTime['datetime2'][2]."0" and
                 $retrievedDateTime != $expectedDateTime['datetime2'][3]."0" and
-                $retrievedDateTime != $expectedDateTime['datetime2'][4]."0") fatalError("Datetime2s do not match!");
+                $retrievedDateTime != $expectedDateTime['datetime2'][4]."0") mismatchError('datetime2', 'datetime2', $retrievedDateTime, $expectedDateTime);
             break;
         case 'datetimeoffset':
             // Compare the SQL datetimeoffset retrieved with expected
@@ -87,12 +95,12 @@ function CompareDateTimeString($dateTimeType, &$expectedDateTime, $retrievedDate
             if ($dtoffset != $expectedDateTime['datetimeoffset'][1] and
                 $dtoffset != $expectedDateTime['datetimeoffset'][2] and
                 $dtoffset != $expectedDateTime['datetimeoffset'][3] and
-                $dtoffset != $expectedDateTime['datetimeoffset'][4]) fatalError("Datetimeoffsets do not match!");
+                $dtoffset != $expectedDateTime['datetimeoffset'][4]) mismatchError('datetimeoffset', 'datetimeoffset', $dtoffset, $expectedDateTime);
             break;
         case 'smalldatetime':
             // Compare retrieved SQL smalldatetime with expected date/time.
             // SQL Server's smalldatetime type is accurate to seconds only.
-            if ($retrievedDateTime != $expectedDateTime['smalldatetime'][0]) fatalError("Smalldatetimes do not match!");
+            if ($retrievedDateTime != $expectedDateTime['smalldatetime'][0]) mismatchError('smalldatetime', 'smalldatetime', $retrievedDateTime, $expectedDateTime);
             break;
     }
 }
@@ -123,112 +131,109 @@ function CompareDateTimeObject($dateTimeType, &$expectedDateTime, &$retrievedDat
     switch ($dateTimeType) {
         case 'date':
             // Comparison of dates only.
-            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) fatalError("Date tested, dates do not match!");
-            if (explode(" ", $retrievedDateTime['datetime'])[0] != explode(" ", $expectedDateTime['datetime'][0])[0]) fatalError("Date tested, datetimes do not match!");
-            if (explode(" ", $retrievedDateTime['datetime2'])[0] != explode(" ", $expectedDateTime['datetime2'][0])[0]) fatalError("Date tested, datetime2s do not match!");
-            if (explode(" ", $retrievedDateTime['datetimeoffset'])[0] != explode(" ", $expectedDateTime['datetimeoffset'][0])[0]) fatalError("Date tested, datetimeoffsets do not match!");
-            if (explode(" ", $retrievedDateTime['smalldatetime'])[0] != explode(" ", $expectedDateTime['smalldatetime'][0])[0]) fatalError("Date tested, smalldatetimes do not match!");
+            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) mismatchError('date', 'date', $retrievedDateTime, $expectedDateTime);
+            if (explode(" ", $retrievedDateTime['datetime'])[0] != explode(" ", $expectedDateTime['datetime'][0])[0]) mismatchError('date', 'datetime', $retrievedDateTime, $expectedDateTime);
+            if (explode(" ", $retrievedDateTime['datetime2'])[0] != explode(" ", $expectedDateTime['datetime2'][0])[0]) mismatchError('date', 'datetime2', $retrievedDateTime, $expectedDateTime);
+            if (explode(" ", $retrievedDateTime['datetimeoffset'])[0] != explode(" ", $expectedDateTime['datetimeoffset'][0])[0]) mismatchError('date', 'datetimeoffset', $retrievedDateTime, $expectedDateTime);
+            if (explode(" ", $retrievedDateTime['smalldatetime'])[0] != explode(" ", $expectedDateTime['smalldatetime'][0])[0]) mismatchError('date', 'smalldatetime', $retrievedDateTime, $expectedDateTime);
             break;
         case 'time':
             if ($retrievedDateTime['time'] != $expectedDateTime['time'][1] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
-                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) fatalError("Time tested, times do not match!");
+                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('time', 'time', $retrievedDateTime, $expectedDateTime);
             if (explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][1])[1] and
                 explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][2])[1] and
-                explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][3])[1]) {
-                    print_r($retrievedDateTime);
-                    print_r($expectedDateTime);
-                fatalError("Time tested, datetimes do not match!");}
+                explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][3])[1]) mismatchError('time', 'datetime', $retrievedDateTime, $expectedDateTime);
             if (explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][1])[1] and
                 explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][2])[1] and
                 explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][3])[1] and
-                explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][4])[1]) fatalError("Time tested, datetime2s do not match!");
+                explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][4])[1]) mismatchError('time', 'datetime2', $retrievedDateTime, $expectedDateTime);
             if (explode(" ", $retrievedDateTime['datetimeoffset'])[1] != explode(" ", $expectedDateTime['datetimeoffset'][1])[1] and
                 explode(" ", $retrievedDateTime['datetimeoffset'])[1] != explode(" ", $expectedDateTime['datetimeoffset'][2])[1] and
                 explode(" ", $retrievedDateTime['datetimeoffset'])[1] != explode(" ", $expectedDateTime['datetimeoffset'][3])[1] and
-                explode(" ", $retrievedDateTime['datetimeoffset'])[1] != explode(" ", $expectedDateTime['datetimeoffset'][4])[1]) fatalError("Time tested, datetimeoffsets do not match!");
-            if (explode(" ", $retrievedDateTime['smalldatetime'])[1] != explode(" ", $expectedDateTime['smalldatetime'][0])[1]) fatalError("Time tested, smalldatetimes do not match!");
+                explode(" ", $retrievedDateTime['datetimeoffset'])[1] != explode(" ", $expectedDateTime['datetimeoffset'][4])[1]) mismatchError('time', 'datetimeoffset', $retrievedDateTime, $expectedDateTime);
+            if (explode(" ", $retrievedDateTime['smalldatetime'])[1] != explode(" ", $expectedDateTime['smalldatetime'][0])[1]) mismatchError('time', 'smalldatetime', $retrievedDateTime, $expectedDateTime);
             break;
         case 'datetime':
-            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) fatalError("Datetime tested, dates do not match!");
+            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) mismatchError('datetime', 'date', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['time'] != $expectedDateTime['time'][0] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][1] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
-                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) fatalError("Datetime tested, times do not match!");
+                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('datetime', 'time', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][0] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][2] and
-                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) fatalError("Datetime tested, datetimes do not match!");
+                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) mismatchError('datetime', 'datetime', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][0] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][1] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][2] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][3] and
-                $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][4]) fatalError("Datetime tested, datetime2s do not match!");
+                $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][4]) mismatchError('datetime', 'datetime2', $retrievedDateTime, $expectedDateTime);
             if ($ret_date_time != $expectedDateTime['datetimeoffset'][0] and
                 $ret_date_time != $expectedDateTime['datetimeoffset'][1] and
                 $ret_date_time != $expectedDateTime['datetimeoffset'][2] and
                 $ret_date_time != $expectedDateTime['datetimeoffset'][3] and
-                $ret_date_time != $expectedDateTime['datetimeoffset'][4]) fatalError("Datetime tested, datetimeoffsets do not match!");
-            if ($retrievedDateTime['smalldatetime'] != $expectedDateTime['smalldatetime'][0]) fatalError("Datetime tested, smalldatetimes do not match!");
+                $ret_date_time != $expectedDateTime['datetimeoffset'][4]) mismatchError('datetime', 'datetimeoffset', $retrievedDateTime, $expectedDateTime);
+            if ($retrievedDateTime['smalldatetime'] != $expectedDateTime['smalldatetime'][0]) mismatchError('datetime', 'smalldatetime', $retrievedDateTime, $expectedDateTime);
             break;
         case 'datetime2':
-            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) fatalError("Datetime2 tested, dates do not match!");
+            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) mismatchError('datetime2', 'date', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['time'] != $expectedDateTime['time'][1] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
-                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) fatalError("Datetime2 tested, times do not match!");
+                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('datetime2', 'time', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][2] and
-                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) fatalError("Datetime2 tested, datetimes do not match!");
+                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) mismatchError('datetime2', 'datetime', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][1] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][2] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][3] and
-                $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][4]) fatalError("Datetime2 tested, datetime2s do not match!");
+                $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][4]) mismatchError('datetime2', 'datetime2', $retrievedDateTime, $expectedDateTime);
             if ($ret_date_time != $expectedDateTime['datetimeoffset'][1] and
                 $ret_date_time != $expectedDateTime['datetimeoffset'][2] and
                 $ret_date_time != $expectedDateTime['datetimeoffset'][3] and
-                $ret_date_time != $expectedDateTime['datetimeoffset'][4]) fatalError("Datetime2 tested, datetimeoffsets do not match!");
-            if ($retrievedDateTime['smalldatetime'] != $expectedDateTime['smalldatetime'][0]) fatalError("Datetime2 tested, smalldatetimes do not match!");
+                $ret_date_time != $expectedDateTime['datetimeoffset'][4]) mismatchError('datetime2', 'datetimeoffset', $retrievedDateTime, $expectedDateTime);
+            if ($retrievedDateTime['smalldatetime'] != $expectedDateTime['smalldatetime'][0]) mismatchError('datetime2', 'smalldatetime', $retrievedDateTime, $expectedDateTime);
             break;
         case 'datetimeoffset':
-            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) fatalError("Datetimeoffset tested, dates do not match!");
+            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) mismatchError('datetimeoffset', 'date', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['time'] != $expectedDateTime['time'][1] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
-                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) fatalError("Datetimeoffset tested, times do not match!");
+                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('datetimeoffset', 'time', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][2] and
-                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) fatalError("Datetimeoffset tested, datetimes do not match!");
+                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) mismatchError('datetimeoffset', 'datetime', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][1] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][2] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][3] and
-                $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][4]) fatalError("Datetimeoffset tested, datetime2s do not match!");
+                $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][4]) mismatchError('datetimeoffset', 'datetime2', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetimeoffset'] != $expectedDateTime['datetimeoffset'][1] and
                 $retrievedDateTime['datetimeoffset'] != $expectedDateTime['datetimeoffset'][2] and
                 $retrievedDateTime['datetimeoffset'] != $expectedDateTime['datetimeoffset'][3] and
-                $retrievedDateTime['datetimeoffset'] != $expectedDateTime['datetimeoffset'][4]) fatalError("Datetimeoffset tested, datetimeoffsets do not match!");
-            if ($retrievedDateTime['smalldatetime'] != $expectedDateTime['smalldatetime'][0]) fatalError("Datetimeoffset tested, smalldatetimes do not match!");
+                $retrievedDateTime['datetimeoffset'] != $expectedDateTime['datetimeoffset'][4]) mismatchError('datetimeoffset', 'datetimeoffset', $retrievedDateTime, $expectedDateTime);
+            if ($retrievedDateTime['smalldatetime'] != $expectedDateTime['smalldatetime'][0]) mismatchError('datetimeoffset', 'smalldatetime', $retrievedDateTime, $expectedDateTime);
             break;
         case 'smalldatetime':
-            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) fatalError("Smalldatetime tested, dates do not match!");
+            if ($retrievedDateTime['date'] != $expectedDateTime['date'][0]) mismatchError('smalldatetime', 'date', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['time'] != $expectedDateTime['time'][1] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
-                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) fatalError("Smalldatetime tested, times do not match!");
+                $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('smalldatetime', 'time', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][2] and
-                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) fatalError("Smalldatetime tested, datetimes do not match!");
+                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) mismatchError('smalldatetime', 'datetime', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][1] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][2] and
                 $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][3] and
-                $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][4]) fatalError("Smalldatetime tested, datetime2s do not match!");
+                $retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][4]) mismatchError('smalldatetime', 'datetime2', $retrievedDateTime, $expectedDateTime);
             if ($ret_date_time != $expectedDateTime['datetimeoffset'][1] and
                 $ret_date_time != $expectedDateTime['datetimeoffset'][2] and
                 $ret_date_time != $expectedDateTime['datetimeoffset'][3] and
-                $ret_date_time != $expectedDateTime['datetimeoffset'][4]) fatalError("Smalldatetime tested, datetimeoffsets do not match!");
-            if ($retrievedDateTime['smalldatetime'] != $expectedDateTime['smalldatetime'][0]) fatalError("Smalldatetime tested, smalldatetimes do not match!");
+                $ret_date_time != $expectedDateTime['datetimeoffset'][4]) mismatchError('smalldatetime', 'datetimeoffset', $retrievedDateTime, $expectedDateTime);
+            if ($retrievedDateTime['smalldatetime'] != $expectedDateTime['smalldatetime'][0]) mismatchError('smalldatetime', 'smalldatetime', $retrievedDateTime, $expectedDateTime);
             break;
     }
 }
@@ -282,6 +287,7 @@ function FetchDatesAndOrTimes($conn, $dateTimeType, &$expectedDateTime, $returnD
         }
         
         CompareDateTimeString($dateTimeType, $expectedDateTime, $datetime);
+        if ($dateTimeType == 'time') echo "id = $idnum dt = $datetime\n";
     }
     
     // retrieve date time fields as DateTime objects
@@ -313,6 +319,7 @@ function FetchDatesAndOrTimes($conn, $dateTimeType, &$expectedDateTime, $returnD
                                );
                                        
         CompareDateTimeObject($dateTimeType, $expectedDateTime, $datetimeArray);
+        if ($dateTimeType == 'time') {echo "id = $idnum dt = ";print_r($datetime);}
     }
 
     // retrieve date time fields without explicitly requesting the type
