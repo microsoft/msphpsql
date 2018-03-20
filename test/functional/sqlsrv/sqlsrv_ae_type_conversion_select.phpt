@@ -200,7 +200,7 @@ if (!$stmt) {
 }
 
 // The data we test against is in values.php
-for ($v = 1; $v < sizeof($values); ++$v)
+for ($v = 0; $v < sizeof($values); ++$v)
 {
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
@@ -231,7 +231,6 @@ for ($v = 1; $v < sizeof($values); ++$v)
     for ($i = 0; $i < sizeof($dataTypes); ++$i) {
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
             $stmt = sqlsrv_query($conn, $selectQuery[$i][$j]);
-            echo "$v $i $j\n";
 
             if ($stmt == false) {
                 $convError = sqlsrv_errors();
