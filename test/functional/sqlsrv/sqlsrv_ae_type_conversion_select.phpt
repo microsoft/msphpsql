@@ -231,6 +231,7 @@ for ($v = 1; $v < sizeof($values); ++$v)
     for ($i = 0; $i < sizeof($dataTypes); ++$i) {
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
             $stmt = sqlsrv_query($conn, $selectQuery[$i][$j]);
+            echo "$v $i $j\n";
 
             if ($stmt == false) {
                 $convError = sqlsrv_errors();
