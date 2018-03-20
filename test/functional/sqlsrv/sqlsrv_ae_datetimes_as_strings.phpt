@@ -142,7 +142,8 @@ function CompareDateTimeObject($dateTimeType, &$expectedDateTime, &$retrievedDat
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('time', 'time', $retrievedDateTime, $expectedDateTime);
-            if (explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][1])[1] and
+            if (explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][0])[1] and
+                explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][1])[1] and
                 explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][2])[1] and
                 explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][3])[1]) mismatchError('time', 'datetime', $retrievedDateTime, $expectedDateTime);
             if (explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][1])[1] and
@@ -184,7 +185,8 @@ function CompareDateTimeObject($dateTimeType, &$expectedDateTime, &$retrievedDat
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('datetime2', 'time', $retrievedDateTime, $expectedDateTime);
-            if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
+            if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][0] and
+                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][2] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) mismatchError('datetime2', 'datetime', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][1] and
@@ -203,7 +205,8 @@ function CompareDateTimeObject($dateTimeType, &$expectedDateTime, &$retrievedDat
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('datetimeoffset', 'time', $retrievedDateTime, $expectedDateTime);
-            if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
+            if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][0] and
+                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][2] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) mismatchError('datetimeoffset', 'datetime', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][1] and
@@ -222,7 +225,8 @@ function CompareDateTimeObject($dateTimeType, &$expectedDateTime, &$retrievedDat
                 $retrievedDateTime['time'] != $expectedDateTime['time'][2] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][3] and
                 $retrievedDateTime['time'] != $expectedDateTime['time'][4]) mismatchError('smalldatetime', 'time', $retrievedDateTime, $expectedDateTime);
-            if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
+            if ($retrievedDateTime['datetime'] != $expectedDateTime['datetime'][0] and
+                $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][1] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][2] and
                 $retrievedDateTime['datetime'] != $expectedDateTime['datetime'][3]) mismatchError('smalldatetime', 'datetime', $retrievedDateTime, $expectedDateTime);
             if ($retrievedDateTime['datetime2'] != $expectedDateTime['datetime2'][1] and
@@ -287,7 +291,6 @@ function FetchDatesAndOrTimes($conn, $dateTimeType, &$expectedDateTime, $returnD
         }
         
         CompareDateTimeString($dateTimeType, $expectedDateTime, $datetime);
-        if ($dateTimeType == 'time') echo "id = $idnum dt = $datetime\n";
     }
     
     // retrieve date time fields as DateTime objects
@@ -318,7 +321,6 @@ function FetchDatesAndOrTimes($conn, $dateTimeType, &$expectedDateTime, $returnD
                                'smalldatetime'=>date_format($datetime, 'Y-m-d H:i').":00",
                                );
                                        
-        if ($dateTimeType == 'time') {echo "id = $idnum dt = ";print_r($datetime);print_r($datetimeArray);}
         CompareDateTimeObject($dateTimeType, $expectedDateTime, $datetimeArray);
     }
 
