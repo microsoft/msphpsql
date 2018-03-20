@@ -136,7 +136,10 @@ function CompareDateTimeObject($dateTimeType, &$expectedDateTime, &$retrievedDat
                 $retrievedDateTime['time'] != $expectedDateTime['time'][4]) fatalError("Time tested, times do not match!");
             if (explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][1])[1] and
                 explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][2])[1] and
-                explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][3])[1]) fatalError("Time tested, datetimes do not match!");
+                explode(" ", $retrievedDateTime['datetime'])[1] != explode(" ", $expectedDateTime['datetime'][3])[1]) {
+                    print_r($retrievedDateTime);
+                    print_r($expectedDateTime);
+                fatalError("Time tested, datetimes do not match!");}
             if (explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][1])[1] and
                 explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][2])[1] and
                 explode(" ", $retrievedDateTime['datetime2'])[1] != explode(" ", $expectedDateTime['datetime2'][3])[1] and
