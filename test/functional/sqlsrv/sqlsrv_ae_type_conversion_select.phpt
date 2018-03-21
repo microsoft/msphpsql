@@ -98,85 +98,81 @@ $dataTypes = array ("binary($strsize)", "varbinary($strsize)", "varbinary(max)",
 // @ = not applicable
 // c = explicit CAST required
 // m = misc
-$conversionMatrix = array(array('@','i','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//binary
-                          array('i','@','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//varbinary
-                          array('i','i','@','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//varbinary(max)
-                          array('e','e','e','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//char
-                          array('e','e','e','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//varchar
-                          array('e','e','e','i','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//varchar(max)
-                          array('e','e','e','i','i','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//nchar
-                          array('e','e','e','i','i','i','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//nvarchar
-                          array('e','e','e','i','i','i','i','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//nvarchar(max)
-                          array('e','e','e','i','i','i','i','i','i','@','i','i','i','i','i','e','e','e','e','e','e','e','e','e','x','x','e','e','i','i','i','i','i','i','i','e','e'),//datetime
-                          array('e','e','e','i','i','i','i','i','i','i','@','i','i','i','i','e','e','e','e','e','e','e','e','e','x','x','e','e','i','i','i','i','i','i','i','e','e'),//samlldatetime
-                          array('e','e','e','i','i','i','i','i','i','i','i','@','x','i','i','x','x','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','x','i','i','x','x'),//date
-                          array('e','e','e','i','i','i','i','i','i','i','i','x','@','i','i','x','x','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','i','x','x'),//time
-                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','@','i','x','x','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','i','x','x'),//datetimeoffset
-                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','@','x','x','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','i','x','x'),//datetime2
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','x','x','i','i','i','i','i','i','x','x','x','c','c'),//decimal
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','x','x','i','i','i','i','i','i','x','x','x','c','c'),//numeric
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','c','i','i','i','i','i','i','x','x','i','i','i','i','i','i','x','x','x','i','i'),//float
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','@','i','i','i','i','i','x','x','i','i','i','i','i','i','x','x','x','i','i'),//real
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','@','i','i','i','i','x','x','i','i','i','i','i','i','x','x','x','i','i'),//bigint
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','i','@','i','i','i','x','x','i','i','i','i','i','i','x','x','x','i','i'),//int
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','i','i','@','i','i','x','x','i','i','i','i','i','i','x','x','x','i','i'),//smallint
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','i','i','i','@','i','x','x','i','i','i','i','i','i','x','x','x','i','i'),//tinyint
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','i','i','i','i','@','x','x','i','i','i','i','i','i','x','x','x','i','i'),//bit
-                          array('i','i','i','i','i','i','i','i','i','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','@','x','i','i','i','i','i','i','x','x','x','x','x'),//uniqueid
-                          array('e','e','e','e','e','e','e','e','e','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','m','e','e','e','e','e','e','x','x','x','x','x'),//hierarchyid
-                          array('i','i','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','@','i','i','i','i','i','e','e','e','i','i'),//binary
-                          array('i','i','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','@','i','i','i','i','e','e','e','i','i'),//varbinary
-                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','@','i','i','i','i','i','i','i','i'),//char
-                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','@','i','i','i','i','i','i','i'),//varchar
-                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','@','i','i','i','i','i','i'),//nchar
-                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','@','i','i','i','i','i'),//nvarchar
-                          array('e','e','e','i','i','i','i','i','i','i','i','x','i','i','i','x','x','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','@','i','i','x','x'),//time
-                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','@','i','x','x'),//datetimeoffset
-                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','@','x','x'),//datetime2
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','x','x','i','i','i','i','i','i','x','x','x','c','c'),//decimal
-                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','x','x','i','i','i','i','i','i','x','x','x','c','c'),//numeric
+$conversionMatrix = array(array('@','i','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//binary
+                          array('i','@','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//varbinary
+                          array('i','i','@','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//varbinary(max)
+                          array('e','e','e','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//char
+                          array('e','e','e','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//varchar
+                          array('e','e','e','i','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//varchar(max)
+                          array('e','e','e','i','i','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//nchar
+                          array('e','e','e','i','i','i','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//nvarchar
+                          array('e','e','e','i','i','i','i','i','@','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','i','i','i','i','i','i'),//nvarchar(max)
+                          array('e','e','e','i','i','i','i','i','i','@','i','i','i','i','i','e','e','e','e','e','e','e','e','e','e','e','i','i','i','i','i','i','i','e','e'),//datetime
+                          array('e','e','e','i','i','i','i','i','i','i','@','i','i','i','i','e','e','e','e','e','e','e','e','e','e','e','i','i','i','i','i','i','i','e','e'),//samlldatetime
+                          array('e','e','e','i','i','i','i','i','i','i','i','@','x','i','i','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','x','i','i','x','x'),//date
+                          array('e','e','e','i','i','i','i','i','i','i','i','x','@','i','i','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','i','x','x'),//time
+                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','@','i','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','i','x','x'),//datetimeoffset
+                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','@','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','i','x','x'),//datetime2
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','c','c'),//decimal
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','c','c'),//numeric
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','c','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','i','i'),//float
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','@','i','i','i','i','i','i','i','i','i','i','i','x','x','x','i','i'),//real
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','@','i','i','i','i','i','i','i','i','i','i','x','x','x','i','i'),//bigint
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','i','@','i','i','i','i','i','i','i','i','i','x','x','x','i','i'),//int
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','i','i','@','i','i','i','i','i','i','i','i','x','x','x','i','i'),//smallint
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','i','i','i','@','i','i','i','i','i','i','i','x','x','x','i','i'),//tinyint
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','i','i','i','i','i','i','i','i','@','i','i','i','i','i','i','x','x','x','i','i'),//bit
+                          array('i','i','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','@','i','i','i','i','i','e','e','e','i','i'),//binary
+                          array('i','i','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','@','i','i','i','i','e','e','e','i','i'),//varbinary
+                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','@','i','i','i','i','i','i','i','i'),//char
+                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','@','i','i','i','i','i','i','i'),//varchar
+                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','@','i','i','i','i','i','i'),//nchar
+                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','i','e','e','i','i','i','@','i','i','i','i','i'),//nvarchar
+                          array('e','e','e','i','i','i','i','i','i','i','i','x','i','i','i','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','@','i','i','x','x'),//time
+                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','@','i','x','x'),//datetimeoffset
+                          array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','@','x','x'),//datetime2
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','c','c'),//decimal
+                          array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','c','c'),//numeric
                           );
 
 // The conversion matrix for AE is more restrictive
 // y = allowed conversion
 // x = not allowed
-$conversionMatrixAE = array(array('y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x'),//binary
-                            array('y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x'),//varbinary
-                            array('x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//varbinary(max)
-                            array('x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x'),//char
-                            array('x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x'),//varchar
-                            array('x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//varchar(max)
-                            array('x','x','x','x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x'),//nchar
-                            array('x','x','x','x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x'),//nvarchar
-                            array('x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//nvarchar(max)
-                            array('x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//datetime
-                            array('x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//samlldatetime
-                            array('x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//date
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x'),//time
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x'),//datetimeoffset
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x'),//datetime2
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//decimal
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x'),//numeric
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//float
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//real
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//bigint
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//int
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//smallint
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//tinyint
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x'),//bit
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x'),//uniqueid
-                            array('y','y','y','y','y','y','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','y','y','y','y','y','x','x','x','x','x'),//hierarchyid
-                            array('x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x'),//binary
-                            array('x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x'),//varbinary
-                            array('x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x'),//char
-                            array('x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x'),//varchar
-                            array('x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x'),//nchar
-                            array('x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x'),//nvarchar
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x'),//time
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x'),//datetimeoffset
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x'),//datetime2
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x'),//decimal
-                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y'),//numeric
+$conversionMatrixAE = array(array('y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x'),//binary
+                            array('y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x'),//varbinary
+                            array('x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//varbinary(max)
+                            array('x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x'),//char
+                            array('x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x'),//varchar
+                            array('x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//varchar(max)
+                            array('x','x','x','x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x'),//nchar
+                            array('x','x','x','x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x'),//nvarchar
+                            array('x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//nvarchar(max)
+                            array('x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//datetime
+                            array('x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//samlldatetime
+                            array('x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//date
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x'),//time
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x'),//datetimeoffset
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x'),//datetime2
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//decimal
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x'),//numeric
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//float
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//real
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//bigint
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x'),//int
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x','x'),//smallint
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','y','y','x','x','x','x','x','x','x','x','x','x','x','x'),//tinyint
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','y','y','y','x','x','x','x','x','x','x','x','x','x','x'),//bit
+                            array('x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x'),//binary
+                            array('x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x','x','x'),//varbinary
+                            array('x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x'),//char
+                            array('x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x','x','x'),//varchar
+                            array('x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x'),//nchar
+                            array('x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','y','x','x','x','x','x'),//nvarchar
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x'),//time
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x'),//datetimeoffset
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x'),//datetime2
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x'),//decimal
+                            array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y'),//numeric
                             );
 
 set_time_limit(0);
@@ -231,6 +227,7 @@ for ($v = 0; $v < sizeof($values); ++$v)
     for ($i = 0; $i < sizeof($dataTypes); ++$i) {
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
             $stmt = sqlsrv_query($conn, $selectQuery[$i][$j]);
+            echo "$v $i $j\n";
 
             if ($stmt == false) {
                 $convError = sqlsrv_errors();
