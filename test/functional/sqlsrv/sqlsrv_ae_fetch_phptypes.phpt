@@ -54,7 +54,7 @@ $dataTypes = array ("binary($strsize)", "varbinary($strsize)", "varbinary(max)",
                     "varchar($strsize)", "varchar(max)", "nchar($strsize)", "nvarchar($strsize)",
                     "nvarchar(max)", "datetime", "smalldatetime", "date", "time(5)", "datetimeoffset(5)",
                     "datetime2(5)", "decimal(28,4)", "numeric(32,4)", "float", "real", "bigint", "int", 
-                    "smallint", "tinyint", "bit", "uniqueidentifier", "hierarchyid",
+                    "smallint", "tinyint", "bit", 
                     "binary($strsize2)", "varbinary($strsize2)", "char($strsize2)",
                     "varchar($strsize2)", "nchar($strsize2)", "nvarchar($strsize2)",
                     "time", "datetimeoffset", "datetime2", "decimal(32,4)", "numeric(36,4)"
