@@ -224,7 +224,7 @@ for ($v = 0; $v < sizeof($values); ++$v)
     $selectQueryAE = array();
     FormulateSelectQuery($tableName, $selectQuery, $selectQueryAE, $dataTypes, $strsize, $strsize2);
 
-    for ($i = 0; $i < sizeof($dataTypes); ++$i) {
+    for ($i = 8; $i < sizeof($dataTypes); ++$i) {
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
             $stmt = sqlsrv_query($conn, $selectQuery[$i][$j]);
 
