@@ -227,7 +227,7 @@ for ($v = 0; $v < sizeof($values); ++$v)
     for ($i = 8; $i < sizeof($dataTypes); ++$i) {
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
             $stmt = sqlsrv_query($conn, $selectQuery[$i][$j]);
-            if(phpversion()[2]=='1')echo "$v $i $j\n";//print_r( $selectQuery[$i][$j]);
+            echo "$v $i $j\n";
 
             if ($stmt == false) {
                 $convError = sqlsrv_errors();
