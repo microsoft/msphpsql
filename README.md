@@ -116,7 +116,7 @@ Thank you!
 
 **Q:** What's next?
 
-**A:** On March 16, 2018 we released the production release version 5.2.0 of our PHP Driver. We will continue working on our future plans and releasing previews of upcoming releases frequently.
+**A:** On March 23, 2018 we released the production release version 5.2.0 of our PHP Driver. We will continue working on our future plans and releasing previews of upcoming releases frequently.
 
 **Q:** Is Microsoft taking pull requests for this project?
 
