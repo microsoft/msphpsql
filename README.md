@@ -34,7 +34,6 @@ Thank you for taking the time to participate in our last survey. You can continu
 * [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/windows)
 * [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/ubuntu)
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/rhel)
-* [**Debian + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/debian)
 * [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/sles)
 * [**macOS + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/mac/)
 * [**Docker**](https://hub.docker.com/r/lbosqmsft/mssql-php-msphpsql/)
