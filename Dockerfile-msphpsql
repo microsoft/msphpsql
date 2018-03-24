@@ -37,6 +37,13 @@ RUN locale-gen en_US
 RUN locale-gen en_US.UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
+#install ODBC driver	
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -	
+RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list	
+
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools
+ENV PATH="/opt/mssql-tools/bin:${PATH}"	
+
 #install coveralls
 RUN pip install --upgrade pip && pip install cpp-coveralls
 
@@ -45,14 +52,8 @@ RUN pip install --upgrade pip && pip install cpp-coveralls
 #another option is to copy source to build directory on image
 RUN mkdir -p $PHPSQLDIR
 COPY . $PHPSQLDIR
-
-#install ODBC 17 preview driver
-WORKDIR $PHPSQLDIR
-RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y dpkg -i "./ODBC 17 binaries preview/Ubuntu 16/msodbcsql_17.0.0.5-1_amd64.deb"
-RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y dpkg -i "./ODBC 17 binaries preview/Ubuntu 16/mssql-tools_17.0.0.5-1_amd64.deb"
-ENV PATH="/opt/mssql-tools/bin:${PATH}"
-
 WORKDIR $PHPSQLDIR/source/ 
+
 RUN chmod +x ./packagize.sh
 RUN /bin/bash -c "./packagize.sh"
 
