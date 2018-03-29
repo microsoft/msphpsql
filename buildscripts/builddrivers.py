@@ -33,7 +33,6 @@ class BuildDriver(object):
         util            # BuildUtil object whose constructor takes phpver, driver, arch, thread, debug 
         repo            # GitHub repository
         branch          # GitHub repository branch
-        download_source # download source from GitHub or not
         dest_path       # alternative destination for the drivers (None for development builds)
         rebuild         # a boolean flag - whether the user is rebuilding
         make_clean      # a boolean flag - whether make clean is necessary
@@ -41,16 +40,15 @@ class BuildDriver(object):
         testing         # whether the user has turned on testing mode
     """
     
-    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, download, path, testing):
+    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, source, path, testing):
         self.util = BuildUtil(phpver, driver, arch, thread, debug)
         self.repo = repo
         self.branch = branch
-        self.download_source = download
+        self.source_path = source
         self.dest_path = path
         self.testing = testing
         self.rebuild = False
         self.make_clean = False
-        self.source_path = None     # None initially but will be set later if not downloading from GitHub
     
     def show_config(self):
         print()
@@ -58,6 +56,7 @@ class BuildDriver(object):
         print('Arch: ', self.util.arch)
         print('Thread: ', self.util.thread)
         print('Driver: ', self.util.driver) 
+        print('Source: ', self.source_path)
         print('Debug enabled: ', self.util.debug_enabled) 
         print()
 
@@ -91,6 +90,28 @@ class BuildDriver(object):
                 
             os.chdir(work_dir)  # change back to the working directory
 
+    def get_local_source(self, source_path):
+        """This assumes interactive mode (not testing) and takes care of getting 
+        the user's input to the path of the local source files for the drivers
+        """
+        while True:
+            if source_path is None:
+                source = input('Enter the full path to the source folder: ')
+            else:
+                source = input("Hit ENTER to use '" + source_path + "' or provide another path to the source folder: ")
+                if len(source) == 0:
+                    source = source_path
+
+            valid = True
+            if os.path.exists(source) and os.path.exists(os.path.join(source, 'shared')):
+                # Checking the existence of 'shared' folder only, assuming
+                # sqlsrv and/or pdo_sqlsrv are also present if it exists
+                self.source_path = source
+                break
+                
+            print("The path provided is invalid. Please re-enter.")
+        return source
+    
     def build_extensions(self, root_dir, logfile):
         """This takes care of getting the drivers' source files, building the drivers. 
         If dest_path is defined, the binaries will be copied to the designated destinations.
@@ -102,28 +123,15 @@ class BuildDriver(object):
         """
         work_dir = os.path.dirname(os.path.realpath(__file__))
         
-        if self.download_source:
+        if self.source_path is None:
             # This will download from the specified branch on GitHub repo and copy the source 
             self.util.download_msphpsql_source(repo, branch)
         else:
-            # This case only happens when building for development 
-            while True:
-                if self.source_path is None:
-                    source = input('Enter the full path to the Source folder: ')
-                else:
-                    source = input("Hit ENTER to reuse '" + self.source_path + "' or provide another path to the Source folder: ")
-                    if len(source) == 0:
-                        source = self.source_path
-
-                valid = True
-                if os.path.exists(source) and os.path.exists(os.path.join(source, 'shared')):
-                    # Checking the existence of 'shared' folder only, assuming
-                    # sqlsrv and/or pdo_sqlsrv are also present if it exists
-                    self.source_path = source
-                    break
-                    
-                print("The path provided is invalid. Please re-enter.")            
-                                
+            source = self.source_path 
+            # Do not prompt user for input if it's in a testing mode 
+            if not self.testing:
+                source = self.get_local_source(self.source_path)
+            
             print('Copying source files from', source)
                 
             os.system('ROBOCOPY ' + source + '\shared ' + work_dir + '\Source\shared /xx /xo ')
@@ -169,7 +177,10 @@ class BuildDriver(object):
         
         quit = False
         while not quit:
-            if not self.rebuild and not self.testing: 
+            if self.testing:
+                self.make_clean = True
+                self.util.remove_old_builds(work_dir)
+            elif not self.rebuild: 
                 self.clean_or_remove(root_dir, work_dir)
                 
             logfile = self.util.get_logfile_name()
@@ -223,7 +234,7 @@ if __name__ == '__main__':
     parser.add_argument('--DEBUG', action='store_true', help="enable debug mode (default: False)")
     parser.add_argument('--REPO', default='Microsoft', help="GitHub repository (default: Microsoft)")
     parser.add_argument('--BRANCH', default='dev', help="GitHub repository branch (default: dev)")
-    parser.add_argument('--SOURCE', action='store_true', help="get source from a local path (default: False)")
+    parser.add_argument('--SOURCE', default=None, help="a local path to source file (default: None)")
     parser.add_argument('--TESTING', action='store_true', help="turns on testing mode (default: False)")
     parser.add_argument('--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
 
@@ -236,7 +247,7 @@ if __name__ == '__main__':
     debug = args.DEBUG
     repo = args.REPO
     branch = args.BRANCH
-    download = args.SOURCE is False 
+    source = args.SOURCE
     path = args.DESTPATH
     testing = args.TESTING
 
@@ -259,9 +270,7 @@ if __name__ == '__main__':
         debug_mode = input("Debug enabled? [y/n]: ")
         
         answer = input("Download source from a GitHub repo? [y/n]: ")
-        download = False
         if answer == 'yes' or answer == 'y' or answer == '':
-            download = True
             repo = input("Name of the repo (hit enter for 'Microsoft'): ")
             branch = input("Name of the branch (hit enter for 'dev'): ")
             if repo == '':
@@ -282,7 +291,7 @@ if __name__ == '__main__':
                           debug, 
                           repo, 
                           branch, 
-                          download, 
+                          source, 
                           path,
                           testing)
     builder.build()

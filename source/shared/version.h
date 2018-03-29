@@ -35,7 +35,7 @@
 // for stable releases should be empty
 // "-RC" for release candidates
 // "-preview" for ETP 
-#define SEMVER_PRERELEASE "RC"
+#define SEMVER_PRERELEASE
 // Semantic versioning build metadata, build meta data is not counted in precedence order.
 #define SEMVER_BUILDMETA
 
@@ -50,7 +50,7 @@
 // For preview release, we want the following:
 // #define VER_FILEVERSION_STR     VER_APIVERSION_STR "-" SEMVER_PRERELEASE SEMVER_BUILDMETA
 // because pecl doesn't like dashes. However, if SEMVER_PRERELEASE is empty, the "-" must be removed
-#define VER_FILEVERSION_STR     VER_APIVERSION_STR "-" SEMVER_PRERELEASE SEMVER_BUILDMETA
+#define VER_FILEVERSION_STR     VER_APIVERSION_STR SEMVER_PRERELEASE SEMVER_BUILDMETA
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
 // PECL package version macros (can't have '-' or '+')

@@ -7,9 +7,8 @@ PHPT_EXEC=true
 --SKIPIF--
 <?
 // locale must be set before 1st connection
-if ( !isWindows() ) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
+setUSAnsiLocale();
+require('skipif_versions_old.inc');
 ?>
 --FILE--
 <?php
@@ -30,57 +29,31 @@ function streamScroll($noRows, $startRow)
     AE\insertTestRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
-    // Always Encrypted feature does not support SQLSRV_CURSOR_STATIC
-    // https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation
-    if (AE\isColEncrypted()) {
-        $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
-    } else {
-        $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
-    }
+    $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
     $stmt1 = AE\executeQueryEx($conn1, $query, $options);
     $numFields = sqlsrv_num_fields($stmt1);
-    if (AE\isColEncrypted()) {
-        $row = $startRow;
-        while ($row <= $noRows) {
-            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_NEXT)) {
+    $row = $noRows;
+    while ($row >= 1) {
+        if ($row == $noRows) {
+            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_LAST)) {
                 fatalError("Failed to fetch row ".$row);
             }
-            trace("\nStreaming row $row:\n");
-            for ($j = 0; $j < $numFields; $j++) {
-                $col = $j + 1;
-                if (!isUpdatable($col)) {
-                    continue;
-                }
-                if (isStreamable($col)) {
-                    verifyStream($stmt1, $startRow + $row - 1, $j);
-                }
+        } else {
+            if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_PRIOR)) {
+                fatalError("Failed to fetch row ".$row);
             }
-            $row++;
         }
-    } else {
-        $row = $noRows;
-        while ($row >= 1) {
-            if ($row == $noRows) {
-                if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_LAST)) {
-                    fatalError("Failed to fetch row ".$row);
-                }
-            } else {
-                if (!sqlsrv_fetch($stmt1, SQLSRV_SCROLL_PRIOR)) {
-                    fatalError("Failed to fetch row ".$row);
-                }
+        trace("\nStreaming row $row:\n");
+        for ($j = 0; $j < $numFields; $j++) {
+            $col = $j + 1;
+            if (!isUpdatable($col)) {
+                continue;
             }
-            trace("\nStreaming row $row:\n");
-            for ($j = 0; $j < $numFields; $j++) {
-                $col = $j + 1;
-                if (!isUpdatable($col)) {
-                    continue;
-                }
-                if (isStreamable($col)) {
-                    verifyStream($stmt1, $startRow + $row - 1, $j);
-                }
+            if (isStreamable($col)) {
+                verifyStream($stmt1, $startRow + $row - 1, $j);
             }
-            $row--;
         }
+        $row--;
     }
     sqlsrv_free_stmt($stmt1);
 
@@ -162,11 +135,7 @@ function checkData($col, $actual, $expected)
 }
 
 // locale must be set before 1st connection
-if (!isWindows()) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
-
-global $testName;
+setUSAnsiLocale();
 $testName = "Stream - Scrollable";
 
 // error message expected with AE enabled
@@ -175,7 +144,7 @@ $errMessage = 'Connection with Column Encryption enabled does not support fetchi
 
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
 startTest($testName);
-if (isWindows() || isLocaleSupported()) {
+if (isLocaleSupported()) {
     try {
         setUTF8Data(false);
         streamScroll(20, 1);
@@ -189,6 +158,7 @@ endTest($testName);
 startTest($testName);
 try {
     setUTF8Data(true);
+    resetLocaleToDefault();
     streamScroll(20, 1);
 } catch (Exception $e) {
     echo $e->getMessage();

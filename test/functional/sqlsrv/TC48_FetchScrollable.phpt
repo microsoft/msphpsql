@@ -5,19 +5,20 @@ Verifies data retrieval with scrollable result sets.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+require('skipif_versions_old.inc'); 
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function fetchRow($noRows)
 {
-    $testName = "Fetch - Scrollable";
-    startTest($testName);
-
     setup();
     $tableName = 'TC48test';
-    if (! isWindows()) {
+    if (useUTF8Data()) {
         $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
     } else {
         $conn1 = AE\connect();
@@ -44,36 +45,30 @@ function fetchRow($noRows)
     sqlsrv_free_stmt($stmt2);
     checkData($noRowsInserted, $numFields, $actual, $expected);
 
-    // Always Encrypted feature does not support the following options
-    // https://github.com/Microsoft/msphpsql/wiki/Features#aelimitation
-    if (!AE\isColEncrypted()) {
-        // fetch object - STATIC cursor
-        $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
-        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
-        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_RELATIVE);
-        sqlsrv_free_stmt($stmt2);
-        checkData($noRowsInserted, $numFields, $actual, $expected);
+    // fetch object - STATIC cursor
+    $options = array('Scrollable' => SQLSRV_CURSOR_STATIC);
+    $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+    $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_RELATIVE);
+    sqlsrv_free_stmt($stmt2);
+    checkData($noRowsInserted, $numFields, $actual, $expected);
 
-        // fetch object - DYNAMIC cursor
-        $options = array('Scrollable' => SQLSRV_CURSOR_DYNAMIC);
-        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
-        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_ABSOLUTE);
-        sqlsrv_free_stmt($stmt2);
-        checkData($noRowsInserted, $numFields, $actual, $expected);
+    // fetch object - DYNAMIC cursor
+    $options = array('Scrollable' => SQLSRV_CURSOR_DYNAMIC);
+    $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+    $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_ABSOLUTE);
+    sqlsrv_free_stmt($stmt2);
+    checkData($noRowsInserted, $numFields, $actual, $expected);
 
-        // fetch object - KEYSET cursor
-        $options = array('Scrollable' => SQLSRV_CURSOR_KEYSET);
-        $stmt2 = AE\executeQueryEx($conn1, $query, $options);
-        $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_PRIOR, 0);
-        sqlsrv_free_stmt($stmt2);
-        checkData($noRowsInserted, $numFields, $actual, $expected);
-    }
+    // fetch object - KEYSET cursor
+    $options = array('Scrollable' => SQLSRV_CURSOR_KEYSET);
+    $stmt2 = AE\executeQueryEx($conn1, $query, $options);
+    $actual = fetchObject($stmt2, $noRowsInserted, $numFields, SQLSRV_SCROLL_PRIOR, 0);
+    sqlsrv_free_stmt($stmt2);
+    checkData($noRowsInserted, $numFields, $actual, $expected);
     
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
 function fetchArray($stmt, $rows, $fields)
@@ -135,12 +130,34 @@ function checkData($rows, $fields, $actualValues, $expectedValues)
     }
 }
 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+$testName = "Fetch - Scrollable";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        fetchRow(10);
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
+    resetLocaleToDefault();
     fetchRow(10);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Fetch - Scrollable" completed successfully.
 Test "Fetch - Scrollable" completed successfully.

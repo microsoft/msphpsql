@@ -22,10 +22,6 @@ const INSERT_PREPARE = 2;
 const INSERT_QUERY_PARAMS = 3;
 const INSERT_PREPARE_PARAMS = 4;
 
-const KSP_NAME = 'MyCustomKSPName';
-const ENCRYPT_KEY = 'LPKCWVD07N3RG98J0MBLG4H2';
-const KSP_TEST_TABLE = 'CustomKSPTestTable';
-
 /**
  * class for encapsulating column metadata needed for creating a table
  */
@@ -161,12 +157,15 @@ class BindParamOption
             $type_size = explode("(", $this->sqlType);
             $type = $type_size[0];
             if (count($type_size) > 1) {
-                $size = $type_size[1];
+                $size = rtrim($type_size[1], ")");
                 $prec_scal = explode(",", $size);
                 if (count($prec_scal) > 1) {
                     $prec = $prec_scal[0];
-                    $scal = rtrim($prec_scal[1], ")");
+                    $scal = $prec_scal[1];
                     $size = null;
+                }
+                if (strpos($size, "max") !== false) {
+                    $size = trim($size, "'");
                 }
             }
             // get the sqlType constant
@@ -212,29 +211,6 @@ function getCekName()
             echo "getCekName: Invalid keystore name.\n";
     }
     return $cekName;
-}
-
-/**
- * @return the path to the KSP dll/so file
- */
-function getKSPpath()
-{
-    $name = 'myKSP';
-
-    $dir_name = realpath(dirname(__FILE__));
-    $ksp = $dir_name . DIRECTORY_SEPARATOR . $name;
-    if (strtoupper(substr(php_uname('s'), 0, 3)) == 'WIN') {
-        $arch = 'x64';
-        if (PHP_INT_SIZE == 4) {
-            // running 32 bit
-            $arch = '';
-        }
-        $ksp .= $arch . '.dll';
-    } else {
-        $ksp .= '.so';
-    }
-
-    return $ksp;
 }
 
 /**
@@ -330,12 +306,8 @@ function getSeqPlaceholders($num)
  */
 function isColEncrypted()
 {
-    global $keystore, $dataEncrypted;
-    if ($keystore === KEYSTORE_NONE) {
-        return false;
-    } else {
-        return true;
-    }
+    global $keystore;
+    return ($keystore !== KEYSTORE_NONE);
 }
 
 /**
@@ -345,11 +317,7 @@ function isColEncrypted()
 function isDataEncrypted()
 {
     global $keystore, $dataEncrypted;
-    if ($keystore === KEYSTORE_NONE || !$dataEncrypted) {
-        return false;
-    } else {
-        return true;
-    }
+    return ($keystore !== KEYSTORE_NONE && $dataEncrypted);
 }
 
 /**
@@ -361,6 +329,12 @@ function isQualified($conn)
     if (explode(".", $msodbcsql_ver)[0] < 17) {
         return false;
     }
+    global $daasMode;
+    if ($daasMode) {
+        // running against Azure
+        return true;
+    }
+    // if not Azure, check the server version
     $server_ver = sqlsrv_server_info($conn)['SQLServerVersion'];
     if (explode('.', $server_ver)[0] < 13) {
         return false;
@@ -384,13 +358,6 @@ function connect($options = array(), $disableCE = false)
     if (!$disableCE) {
         if (isColEncrypted()) {
             $connectionOptions = array_merge($connectionOptions, array("ColumnEncryption" => "Enabled"));
-        }
-        if ($keystore == "ksp") {
-            $ksp_path = getKSPPath();
-            $ksp_options = array("CEKeystoreProvider"=>$ksp_path,
-                                 "CEKeystoreName"=>KSP_NAME,
-                                 "CEKeystoreEncryptKey"=>ENCRYPT_KEY);
-            $connectionOptions = array_merge($connectionOptions, $ksp_options);
         }
     }
     $conn = sqlsrv_connect($server, $connectionOptions);

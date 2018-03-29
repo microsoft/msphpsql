@@ -59,7 +59,7 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver for SQL Server to "
         "communicate with SQL Server. Access the following URL to download the ODBC Driver for SQL Server "
         "for %1!s!: "
-        "http://go.microsoft.com/fwlink/?LinkId=163712", -1, true }
+        "https://go.microsoft.com/fwlink/?LinkId=163712", -1, true }
     },  
     {
         SQLSRV_ERROR_ZEND_HASH,
@@ -380,22 +380,6 @@ pdo_error PDO_ERRORS[] = {
     {
         PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
         { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -73, false }
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
-        { IMSSP, (SQLCHAR*) "The name of the custom keystore provider is missing.", -74, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_PATH_MISSING,
-        { IMSSP, (SQLCHAR*) "The path to the custom keystore provider is missing.", -75, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
-        { IMSSP, (SQLCHAR*) "The encryption key for the custom keystore provider is missing.", -76, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
-        { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -77, false}
     },
     {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,

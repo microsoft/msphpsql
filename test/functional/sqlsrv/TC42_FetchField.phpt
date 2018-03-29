@@ -6,20 +6,20 @@ retrieving fields from a table including rows with all supported SQL types (28 t
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+require('skipif_versions_old.inc');
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 function fetchFields()
 {
-    $testName = "Fetch - Field";
-    startTest($testName);
-
     setup();
     $tableName = 'TC42test';
-
-    if (! isWindows()) {
+    if (useUTF8Data()) {
         $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
     } else {
         $conn1 = AE\connect();
@@ -33,9 +33,6 @@ function fetchFields()
     $stmt1 = AE\selectFromTable($conn1, $tableName);
     $numFields = sqlsrv_num_fields($stmt1);
 
-    $errState = 'IMSSP';
-    $errMessage = 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.';
-    
     trace("Retrieving $noRowsInserted rows with $numFields fields each ...");
     for ($i = 0; $i < $noRowsInserted; $i++) {
         $row = sqlsrv_fetch($stmt1);
@@ -44,16 +41,9 @@ function fetchFields()
         }
         for ($j = 0; $j < $numFields; $j++) {
             $fld = sqlsrv_get_field($stmt1, $j);
-            
-            // With AE enabled, those fields that sqlsrv_get_field() will fetch
-            // as stream data will return a specific error message
             $col = $j+1;
             if ($fld === false) {
-                if (AE\isColEncrypted() && isStreamData($col)) {
-                    verifyError(sqlsrv_errors()[0], $errState, $errMessage);
-                } else {
-                    fatalError("Field $j of Row $i is missing\n", true);
-                }
+                fatalError("Field $j of Row $i is missing\n", true);
             }
         }
     }
@@ -63,16 +53,36 @@ function fetchFields()
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
-
-    endTest($testName);
 }
 
+// locale must be set before 1st connection
+setUSAnsiLocale();
+$testName = "Fetch - Field";
+
+// test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
+startTest($testName);
+if (isLocaleSupported()) {
+    try {
+        setUTF8Data(false);
+        fetchFields();
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+}
+endTest($testName);
+
+// test utf8
+startTest($testName);
 try {
+    setUTF8Data(true);
+    resetLocaleToDefault();
     fetchFields();
 } catch (Exception $e) {
     echo $e->getMessage();
 }
+endTest($testName);
 
 ?>
 --EXPECT--
+Test "Fetch - Field" completed successfully.
 Test "Fetch - Field" completed successfully.

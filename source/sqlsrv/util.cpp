@@ -302,7 +302,7 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_DRIVER_NOT_INSTALLED,
         { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver for SQL Server. "
         "Access the following URL to download the ODBC Driver for SQL Server for %1!s!: "
-        "http://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
+        "https://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
     },     
 
     {   
@@ -379,22 +379,6 @@ ss_error SS_ERRORS[] = {
     {
         SS_SQLSRV_WARNING_FIELD_NAME_EMPTY,
         { SSPWARN, (SQLCHAR*)"An empty field name was skipped by sqlsrv_fetch_object.", -100, false }
-    },
-	{
-        SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
-        { IMSSP, (SQLCHAR*) "The name of the custom keystore provider is missing.", -101, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_PATH_MISSING,
-        { IMSSP, (SQLCHAR*) "The path to the custom keystore provider is missing.", -102, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
-        { IMSSP, (SQLCHAR*) "The encryption key for the custom keystore provider is missing.", -103, false}
-    },
-    {
-        SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
-        { IMSSP, (SQLCHAR*) "Invalid value for loading a custom keystore provider.", -104, false}
     },
     {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,

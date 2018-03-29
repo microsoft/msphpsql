@@ -1043,10 +1043,10 @@ enum SERVER_VERSION {
 enum DRIVER_VERSION {
     ODBC_DRIVER_UNKNOWN = -1,
     FIRST = 0,
-    ODBC_DRIVER_13 = FIRST,
-    ODBC_DRIVER_11 = 1,
-    ODBC_DRIVER_17 = 2,
-    LAST = ODBC_DRIVER_17
+    ODBC_DRIVER_17 = FIRST,
+    ODBC_DRIVER_13 = 1,
+    ODBC_DRIVER_11 = 2,
+    LAST = ODBC_DRIVER_11
 };
 
 // forward decl
@@ -1056,13 +1056,8 @@ struct stmt_option;
 // This holds the various details of column encryption. 
 struct col_encryption_option {
     bool            enabled;            // column encryption enabled, false by default
-    zval_auto_ptr   ksp_name;           // keystore provider name 
-    zval_auto_ptr   ksp_path;           // keystore provider path to the dynamically linked libary (either a *.dll or *.so)
-    zval_auto_ptr   ksp_encrypt_key;    // the encryption key used to configure the keystore provider 
-    size_t          key_size;           // the length of ksp_encrypt_key without the NULL terminator
-    bool            ksp_required;       // a keystore provider is required to enable column encryption, false by default 
 
-    col_encryption_option() : enabled( false ), key_size ( 0 ), ksp_required( false )
+    col_encryption_option() : enabled( false )
     {
     }
 };
@@ -1109,14 +1104,11 @@ const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
-const char ColumnEncryption[] = "ColumnEncryption";
 const char Driver[] = "Driver";
-const char CEKeystoreProvider[] = "CEKeystoreProvider";
-const char CEKeystoreName[] = "CEKeystoreName";
-const char CEKeystoreEncryptKey[] = "CEKeystoreEncryptKey";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 #ifdef _WIN32
+const char ColumnEncryption[] = "ColumnEncryption";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 #endif // _WIN32
@@ -1380,8 +1372,6 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool past_fetch_end;                  // Core_sqlsrv_fetch sets this field when the statement goes beyond the last row
     sqlsrv_result_set* current_results;   // Current result set
     SQLULEN cursor_type;                  // Type of cursor for the current result set
-    int fwd_row_index;                    // fwd_row_index is the current row index, SQL_CURSOR_FORWARD_ONLY
-    int curr_result_set;                  // the current active result set, 0 by default but will be incremented by core_sqlsrv_next_result
     bool has_rows;                        // Has_rows is set if there are actual rows in the row set
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field
@@ -1711,10 +1701,6 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_FIELD_INDEX_ERROR,
     SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
     SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
-    SQLSRV_ERROR_KEYSTORE_NAME_MISSING,
-    SQLSRV_ERROR_KEYSTORE_PATH_MISSING,
-    SQLSRV_ERROR_KEYSTORE_KEY_MISSING,
-    SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
     SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
     SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
 

@@ -61,9 +61,7 @@ try {
     echo "Now selecting....\n";
     $tsql = "SELECT * FROM [$tableName]";
     $stmtOptions[PDO::ATTR_CURSOR] = PDO::CURSOR_SCROLL;
-    if (isColEncrypted()) {
-        $stmtOptions[PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE] = PDO::SQLSRV_CURSOR_BUFFERED;
-    }
+
     $stmt1 = $conn1->prepare($tsql, $stmtOptions);
     $stmt1->execute();
     // The row order in the resultset when the column is encrypted (which is dependent on the encrytion key used)
@@ -114,7 +112,6 @@ try {
     } else {
         // more and less than operators do not work for encrypted columns
         $tsql = "SELECT * FROM [$tableName] WHERE NOT ID = :id";
-        unset($stmtOptions[PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE]);
         $stmt2 = $conn1->prepare($tsql, $stmtOptions);
         $id = 3;
         $stmt2->bindParam(':id', $id);

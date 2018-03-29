@@ -30,12 +30,12 @@ if( PHP_SQLSRV != "no" ) {
             ADD_SOURCES( configure_module_dirname + "\\shared", shared_src_class, "sqlsrv" );
             CHECK_HEADER_ADD_INCLUDE("sql.h", "CFLAGS_SQLSRV_ODBC");
             CHECK_HEADER_ADD_INCLUDE("sqlext.h", "CFLAGS_SQLSRV_ODBC");
-            ADD_FLAG( "LDFLAGS_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug" );
+            ADD_FLAG( "LDFLAGS_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug /guard:cf" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/D ZEND_WIN32_FORCE_INLINE" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/EHsc" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/GS" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/Zi" );
-            ADD_FLAG( "CFLAGS_SQLSRV", "/O2" );
+            if (PHP_DEBUG != "yes") ADD_FLAG( "CFLAGS_SQLSRV", "/guard:cf /O2" );
             EXTENSION("sqlsrv", sqlsrv_src_class , PHP_SQLSRV_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
     } else {
         WARNING("sqlsrv not enabled; libraries and headers not found");

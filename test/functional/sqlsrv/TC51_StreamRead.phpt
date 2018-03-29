@@ -7,9 +7,8 @@ can be successfully retrieved as streams.
 PHPT_EXEC=true
 --SKIPIF--
 <?// locale must be set before 1st connection
-if ( !isWindows() ) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
+setUSAnsiLocale();
+require('skipif_versions_old.inc');
 ?>
 --FILE--
 <?php
@@ -69,7 +68,7 @@ function verifyStream($stmt, $row, $colIndex)
             }
         }
         if ($stream === false) {
-            verifyStreamError("Failed to read field $col: $type");
+            fatalError("Failed to read field $col: $type");
         } else {
             $value = '';
             if ($stream) {
@@ -85,16 +84,6 @@ function verifyStream($stmt, $row, $colIndex)
             }
             traceData($type, "".strlen($value)." bytes");
         }
-    }
-}
-
-function verifyStreamError($message)
-{
-    global $errState, $errMessage;
-    if (AE\isColEncrypted()) {
-        verifyError(sqlsrv_errors()[0], $errState, $errMessage);
-    } else {
-        fatalError($message);
     }
 }
 
@@ -125,20 +114,13 @@ function checkData($col, $actual, $expected)
 }
 
 // locale must be set before 1st connection
-if (!isWindows()) {
-    setlocale(LC_ALL, "en_US.ISO-8859-1");
-}
-
+setUSAnsiLocale();
 global $testName;
 $testName = "Stream - Read";
 
-// error message expected with AE enabled
-$errState = 'IMSSP';
-$errMessage = 'Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.';
-
 // test ansi only if windows or non-UTF8 locales are supported (ODBC 17 and above)
 startTest($testName);
-if (isWindows() || isLocaleSupported()) {
+if (isLocaleSupported()) {
     try {
         setUTF8Data(false);
         streamRead(20, 1);
@@ -152,6 +134,7 @@ endTest($testName);
 startTest($testName);
 try {
     setUTF8Data(true);
+    resetLocaleToDefault();
     streamRead(20, 1);
 } catch (Exception $e) {
     echo $e->getMessage();
