@@ -2536,7 +2536,7 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     // account for the NULL terminator returned by ODBC and needed by Zend to avoid a "String not null terminated" debug warning
     SQLULEN field_size = column_size;
     // with AE on, when column_size is retrieved from SQLDescribeParam, column_size does not include the negative sign or decimal place for numeric values
-    if (stmt->conn->ce_option.enabled && (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC || sql_type == SQL_INTEGER || sql_type == SQL_SMALLINT)) {
+    if (stmt->conn->ce_option.enabled && (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC || sql_type == SQL_BIGINT || sql_type == SQL_INTEGER || sql_type == SQL_SMALLINT)) {
         // include the possible negative sign
         field_size += elem_size;
         // include the decimal for output params by adding elem_size
