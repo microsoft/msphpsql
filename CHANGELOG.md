@@ -21,6 +21,7 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Changed
 - Implementation of PDO::lastInsertId($name) to return the last inserted sequence number if the sequence name is supplied to the function ([lastInsertId](https://github.com/Microsoft/msphpsql/wiki/Features#lastinsertid))
+- Added immediate binding for security, making it necessary to load PDO before PDO_SQLSRV; full install instructions [here](https://github.com/Microsoft/msphpsql/blob/master/Linux-mac-install.md) and [here](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver)
 
 ### Fixed
 - Issue [#555](https://github.com/Microsoft/msphpsql/issues/555) - Hebrew strings truncation (requires MS ODBC Driver 17)
