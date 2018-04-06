@@ -29,7 +29,7 @@ typedef const zend_function_entry pdo_sqlsrv_function_entry;
 namespace {
 
 const char LAST_INSERT_ID_QUERY[] = "SELECT @@IDENTITY;";
-const size_t LAST_INSERT_ID_BUFF_LEN = 10;    // size of the buffer to hold the string value of the last insert id integer
+const size_t LAST_INSERT_ID_BUFF_LEN = 50;    // size of the buffer to hold the string value of the last inserted id, which may be an int, bigint, decimal(p,0) or numeric(p,0)
 const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT CURRENT_VALUE FROM SYS.SEQUENCES WHERE NAME=%s";
 const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( SEQUENCE_CURRENT_VALUE_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
 
