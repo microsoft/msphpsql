@@ -1315,11 +1315,10 @@ struct sqlsrv_output_param {
     SQLUSMALLINT param_num;  // used to index into the ind_or_len of the statement
     SQLLEN original_buffer_len; // used to make sure the returned length didn't overflow the buffer
     bool is_bool;
-    bool is_long;
 
     // string output param constructor
-    sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len, _In_ bool is_long ) :
-        param_z( p_z ), encoding( enc ), param_num( num ), original_buffer_len( buffer_len ), is_bool( false ), is_long( is_long )
+    sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len ) :
+        param_z( p_z ), encoding( enc ), param_num( num ), original_buffer_len( buffer_len ), is_bool( false )
     {
     }
 
@@ -1329,8 +1328,7 @@ struct sqlsrv_output_param {
         encoding( SQLSRV_ENCODING_INVALID ),
         param_num( num ),
         original_buffer_len( -1 ),
-        is_bool( is_bool ),
-        is_long( false )
+        is_bool( is_bool )
     {
     }
 };

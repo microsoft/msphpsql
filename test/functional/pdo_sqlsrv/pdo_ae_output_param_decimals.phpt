@@ -56,14 +56,9 @@ function compareIntegers($det, $rand, $inputValues, $pdoParamType)
     if (is_string($det)) {
         return (!compareFloats(floatval($det), $inputValues[0]) 
                 && !compareFloats(floatval($rand), $inputValues[1]));
-    } elseif ($pdoParamType == PDO::PARAM_INT) {
-        $input0 = floor($inputValues[0]); // the positive float
-        $input1 = ceil($inputValues[1]); // the negative float
-        
-        return ($det == $input0 && $rand == $input1);
     } else {
-        // $pdoParamType == PDO::PARAM_BOOL
-        // Expect bool(true) or bool(false) depending on the rounded input values
+        // if $pdoParamType is PDO::PARAM_BOOL, 
+        // expect bool(true) or bool(false) depending on the rounded input values
         // But with AE enabled (aforementioned GitHub issue), the fetched values 
         // are floats instead, which should be fixed
         $input0 = floor($inputValues[0]); // the positive float
@@ -195,9 +190,9 @@ function testOutputDecimals($inout)
                                 if ($found === false) {
                                     printValues($errMsg, $det, $rand, $inputValues);
                                 }
-                            } elseif (!isAEConnected() && $precision >= 16 && $pdoParamType == PDO::PARAM_BOOL) { 
+                            } elseif (!isAEConnected() && $precision >= 16) {
                                 // When not AE enabled, large numbers are expected to 
-                                // fail when converting to booleans
+                                // fail when converting to booleans / integers
                                 $error = "Error converting data type $dataType to int"; 
                                 $found = strpos($message, $error);
                                 if ($found === false) {
