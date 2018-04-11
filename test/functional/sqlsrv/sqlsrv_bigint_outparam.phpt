@@ -33,7 +33,7 @@ printf("\n");
 
 // Call stored procedure with SQLSRV_PARAM_INOUT
 $bigintOut = 0;
-$stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_INOUT, null, SQLSRV_SQLTYPE_VARCHAR(32))));
+$stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_INOUT, null, SQLSRV_SQLTYPE_BIGINT)));
 sqlsrv_execute($stmt);
 printf("Large bigint inout:\n");
 var_dump($bigintOut);
