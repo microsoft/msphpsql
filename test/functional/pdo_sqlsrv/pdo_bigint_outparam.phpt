@@ -26,7 +26,7 @@ insertRow($conn, $tbname, array("c1_bigint" => 922337203685479936));
 $outSql = "{CALL $spname (?)}";
 $bigintOut = 0;
 $stmt = $conn->prepare($outSql);
-$stmt->bindParam(1, $bigintOut, PDO::PARAM_STR, 2048);
+$stmt->bindParam(1, $bigintOut, PDO::PARAM_STR, 32);
 $stmt->execute();
 printf("Large bigint output:\n" );
 var_dump($bigintOut);
