@@ -120,7 +120,7 @@ function testOutputChars($inout)
                             if ($found === false) {
                                 printValues($errMsg, $det, $rand, $input0, $input1);
                             }
-                        } elseif ($pdoParamType == PDO::PARAM_BOOL) {
+                        } elseif ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {
                             if (isAEConnected()) {
                                 // Expected error 22003: "Numeric value out of range"
                                 $found = strpos($message, $errors['22003']);

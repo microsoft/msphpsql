@@ -26,7 +26,6 @@ insertRow($conn, $tbname, array("c1_bigint" => 922337203685479936));
 $outSql = "{CALL $spname (?)}";
 $bigintOut = 0;
 $stmt = $conn->prepare($outSql);
-// $stmt->bindParam(1, $bigintOut, PDO::PARAM_INT, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
 $stmt->bindParam(1, $bigintOut, PDO::PARAM_STR, 2048);
 $stmt->execute();
 printf("Large bigint output:\n" );
@@ -36,7 +35,6 @@ printf("\n");
 // Call stored procedure with inout
 $bigintOut = 0;
 $stmt = $conn->prepare($outSql);
-// $stmt->bindParam(1, $bigintOut, PDO::PARAM_INT | PDO::PARAM_INPUT_OUTPUT, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
 $stmt->bindParam(1, $bigintOut, PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT, 2048);
 $stmt->execute();
 printf("Large bigint inout:\n" );

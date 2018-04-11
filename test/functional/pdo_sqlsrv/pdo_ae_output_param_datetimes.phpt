@@ -146,7 +146,7 @@ function testOutputDatetimes($inout)
                             // streams cannot be specified as output parameters."
                             $found = strpos($message, $errors['IMSSP']);
                         } elseif (isAEConnected()) {
-                            if ($pdoParamType == PDO::PARAM_BOOL) {
+                            if ($pdoParamType != PDO::PARAM_STR) {
                                 // Expected error 07006: "Restricted data type attribute violation"
                                 // What does this error mean? 
                                 // The data value returned for a parameter bound as 
@@ -159,7 +159,7 @@ function testOutputDatetimes($inout)
                                 $found = strpos($message, $error);
                             }
                         } else {
-                            if ($pdoParamType == PDO::PARAM_BOOL) {
+                            if ($pdoParamType != PDO::PARAM_STR) {
                                 $error = "Operand type clash: int is incompatible with $dataType"; 
                             } else {
                                 $error = "Error converting data type nvarchar to $dataType";
@@ -167,6 +167,7 @@ function testOutputDatetimes($inout)
                             $found = strpos($message, $error);
                         }
                         if ($found === false) {
+                            print $message . PHP_EOL;
                             printValues($errMsg, $det, $rand, $inputValues);
                         }
                     }
