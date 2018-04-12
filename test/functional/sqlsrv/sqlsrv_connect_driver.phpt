@@ -117,8 +117,7 @@ function testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions)
 
 function testWrongODBC($msodbcsqlMaj, $server, $connectionOptions)
 {
-    // TODO: this will change once ODBC 17 is officially released
-    $value = "ODBC Driver 17 for SQL Server";
+    $value = "ODBC Driver 11 for SQL Server";
     if ($msodbcsqlMaj == 17 || $msodbcsqlMaj < 13) {
         $value = "ODBC Driver 13 for SQL Server";
     }
