@@ -310,7 +310,7 @@ SystemLocale::SystemLocale( const char * localeName )
         charsetName = charsetName ? charsetName + 1 : localeName;
         for (const LocaleCP& lcp : lcpTable)
         {
-           if (!strncasecmp(lcp.localeName, charsetName, strlen(lcp.localeName)))
+           if (!strncasecmp(lcp.localeName, charsetName, strnlen_s(lcp.localeName)))
             {
                 m_uAnsiCP = lcp.codePage;
                 return;
@@ -346,7 +346,7 @@ size_t SystemLocale::ToUtf16( UINT srcCodePage, const char * src, SSIZE_T cchSrc
             *pErrorCode = ERROR_INVALID_PARAMETER;
         return 0;
     }
-    size_t cchSrcActual = (cchSrc < 0 ? (1+strlen(src)) : cchSrc);
+    size_t cchSrcActual = (cchSrc < 0 ? (1+strnlen_s(src)) : cchSrc);
     bool hasLoss;
     return cvt.Convert( dest, cchDest, src, cchSrcActual, false, &hasLoss, pErrorCode );
 }
@@ -361,7 +361,7 @@ size_t SystemLocale::ToUtf16Strict( UINT srcCodePage, const char * src, SSIZE_T 
             *pErrorCode = ERROR_INVALID_PARAMETER;
         return 0;
     }
-    size_t cchSrcActual = (cchSrc < 0 ? (1+strlen(src)) : cchSrc);
+    size_t cchSrcActual = (cchSrc < 0 ? (1+strnlen_s(src)) : cchSrc);
     bool hasLoss;
     return cvt.Convert( dest, cchDest, src, cchSrcActual, true, &hasLoss, pErrorCode );
 }

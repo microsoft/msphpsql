@@ -473,7 +473,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
         SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
-    SQLSRV_ASSERT(strlen(reinterpret_cast<const char*>(error->sqlstate)) <= sizeof(dbh->error_code), "Error code overflow");
+    SQLSRV_ASSERT(strnlen_s(reinterpret_cast<const char*>(error->sqlstate)) <= sizeof(dbh->error_code), "Error code overflow");
     strcpy_s(dbh->error_code, sizeof(dbh->error_code), reinterpret_cast<const char*>(error->sqlstate));
 
     switch( dbh->error_mode ) {
@@ -486,7 +486,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
             break;
         case PDO_ERRMODE_WARNING:
             if( !warning ) {
-                size_t msg_len = strlen( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE 
+                size_t msg_len = strnlen_s( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE 
                     + MAX_DIGITS + WARNING_MIN_LENGTH + 1;
                 sqlsrv_malloc_auto_ptr<char> msg;
                 msg = static_cast<char*>( sqlsrv_malloc( msg_len ) );
@@ -525,7 +525,7 @@ bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigne
         SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
-    SQLSRV_ASSERT( strlen( reinterpret_cast<const char*>( error->sqlstate ) ) <= sizeof( pdo_stmt->error_code ), "Error code overflow");
+    SQLSRV_ASSERT( strnlen_s( reinterpret_cast<const char*>( error->sqlstate ) ) <= sizeof( pdo_stmt->error_code ), "Error code overflow");
     strcpy_s( pdo_stmt->error_code, sizeof( pdo_stmt->error_code ), reinterpret_cast<const char*>( error->sqlstate ));
 
     switch( pdo_stmt->dbh->error_mode ) {
@@ -612,7 +612,7 @@ void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC )
     SQLSRV_ASSERT( zr != FAILURE, "Failed to initialize exception object" );
 
     sqlsrv_malloc_auto_ptr<char> ex_msg;
-    size_t ex_msg_len = strlen( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE +
+    size_t ex_msg_len = strnlen_s( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE +
         12 + 1; // 12 = "SQLSTATE[]: "
     ex_msg = reinterpret_cast<char*>( sqlsrv_malloc( ex_msg_len ));
     snprintf( ex_msg, ex_msg_len, EXCEPTION_MSG_TEMPLATE, error->sqlstate, error->native_message );
