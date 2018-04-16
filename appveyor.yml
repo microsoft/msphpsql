@@ -31,6 +31,7 @@ environment:
         PHP_EXE_PATH: x64\Release_TS
         THREAD: ts
         platform: x64
+        services: mssql2012sp1
       - BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2016
         SQL_INSTANCE: SQL2016
@@ -43,6 +44,7 @@ environment:
         PHP_ZTS: --disable-zts
         THREAD: nts
         platform: x86
+        services: mssql2016
 
 # PHP_MAJOR_VER is PHP major version to build (7.0, 7.1)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
@@ -70,20 +72,20 @@ build:
 install:
     - echo start SQL Server
     # Based on http://www.appveyor.com/docs/services-databases
-    - ps: >-
-        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null ;
-        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement") | Out-Null ;
+    # - ps: >-
+        # [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null ;
+        # [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement") | Out-Null ;
 
-        $instanceName = $env:SQL_INSTANCE;
-        $uri = "ManagedComputer[@Name='$env:COMPUTERNAME']/ServerInstance[@Name='$instanceName']/ServerProtocol[@Name='Tcp']";
-        $wmi = New-Object ('Microsoft.SqlServer.Management.Smo.Wmi.ManagedComputer');
-        $tcp = $wmi.GetSmoObject($uri);
-        $tcp.IsEnabled = $true;
-        $tcp.Alter();
-        Start-Service "MSSQL`$$instanceName";
+        # $instanceName = $env:SQL_INSTANCE;
+        # $uri = "ManagedComputer[@Name='$env:COMPUTERNAME']/ServerInstance[@Name='$instanceName']/ServerProtocol[@Name='Tcp']";
+        # $wmi = New-Object ('Microsoft.SqlServer.Management.Smo.Wmi.ManagedComputer');
+        # $tcp = $wmi.GetSmoObject($uri);
+        # $tcp.IsEnabled = $true;
+        # $tcp.Alter();
+        # Start-Service "MSSQL`$$instanceName";
 
-        Set-Service SQLBrowser -StartupType Manual;
-        Start-Service SQLBrowser;
+        # Set-Service SQLBrowser -StartupType Manual;
+        # Start-Service SQLBrowser;
     # - echo Downloading prerequisites
     #- ps: | 
         # $client = New-Object Net.WebClient;
@@ -142,8 +144,8 @@ build_script:
     - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py %PROJECTS%
     - cd %PROJECTS%
     - python -V
-    - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source  --TESTING 
-    - cd %PROJECTS%\php-sdk\phpdev\vc%VC\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
+    - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING 
+    - cd %PROJECTS%\php-sdk\phpdev\vc%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
     - set PHP_SRC_DIR=%CD%
     - cd %PHP_EXE_PATH%
     - set PHP_EXE_PATH=%CD%
