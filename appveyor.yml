@@ -143,8 +143,12 @@ build_script:
     - cd %PROJECTS%
     - python -V
     - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source  --TESTING 
-    - set PHP_SRC_DIR=%PROJECTS%\php-sdk\phpdev\vc%VC\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
-    - cd %PHP_SRC_DIR%
+    - cd %PROJECTS%\php-sdk\phpdev\vc%VC\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
+    - set PHP_SRC_DIR=%CD%
+    - cd %PHP_EXE_PATH%
+    - set PHP_EXE_PATH=%CD%
+    - php --ini
+    - php -m
     # - copy php.ini-development php.ini
     # - echo extension_dir=%PHP_INSTALL_DIR%\ext >> php.ini
     # - echo extension=php_sqlsrv_72_%THREAD%.dll >> php.ini
@@ -160,9 +164,6 @@ build_script:
 
 test_script:
     # - cd %PHP_INSTALL_DIR%
-    - cd %PHP_EXE_PATH%
-    - php --ini
-    - php -i
     # - python -V
     - Echo setup test database for SQLSRV tests  - %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
