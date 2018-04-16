@@ -53,7 +53,7 @@ environment:
 # PHP_ZTS is defined to disable thread safe build
 
 # Build worker image (VM template)
-image: Visual Studio 2015
+image: Visual Studio 2017
 
 matrix:
   fast_finish: true
