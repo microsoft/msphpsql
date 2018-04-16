@@ -18,6 +18,7 @@ environment:
     PHP_DEPSVER: 7.2
     PHP_SDK: c:\projects\php
     PROJECTS: c:\projects
+    PYTHON: c:\Python36
     matrix:
       - BUILD_PLATFORM: x64
         TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
@@ -118,7 +119,7 @@ install:
     - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - echo install opencppcoverage
     - choco install opencppcoverage
-    - set path=C:\Program Files\OpenCppCoverage;%path%
+    - set path=C:\Program Files\OpenCppCoverage;%PYTHON%;%PYTHON%\Scripts;%path%
 
 build_script:
     # - '"C:\\Program Files (x86)\\Microsoft Visual Studio %PHP_VC%.0\\VC\\vcvarsall.bat" %BUILD_PLATFORM%'
