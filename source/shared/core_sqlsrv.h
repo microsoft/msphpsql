@@ -56,10 +56,9 @@
 
 // #define MultiByteToWideChar SystemLocale::ToUtf16
 
-
-
 #define stricmp strcasecmp
 #define strnicmp strncasecmp
+#define strnlen_s(s) strnlen_s(s, INT_MAX)
 
 #ifndef _WIN32
 #define GetLastError() errno
@@ -998,7 +997,7 @@ struct sqlsrv_encoding {
     bool not_for_connection;
 
     sqlsrv_encoding( _In_ const char* iana, _In_ unsigned int code_page, _In_ bool not_for_conn = false ):
-        iana( iana ), iana_len( strlen( iana )), code_page( code_page ), not_for_connection( not_for_conn )
+        iana( iana ), iana_len( strnlen_s( iana )), code_page( code_page ), not_for_connection( not_for_conn )
     {
     }
 };
@@ -1784,7 +1783,7 @@ inline bool call_error_handler( _Inout_ sqlsrv_context* ctx, _In_ unsigned long 
 inline bool is_truncated_warning( _In_ SQLCHAR* state )
 {
 #if defined(ZEND_DEBUG)
-    if( state == NULL || strlen( reinterpret_cast<char*>( state )) != 5 ) { \
+    if( state == NULL || strnlen_s( reinterpret_cast<char*>( state )) != 5 ) { \
         DIE( "Incorrect SQLSTATE given to is_truncated_warning." ); \
     }
 #endif
