@@ -182,7 +182,7 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     # - cd %PHP_INSTALL_DIR%
-      - cd %PHP_EXE_PATH%
+    - cd %PHP_EXE_PATH%
     - ps: $fileExists = Test-Path "coverage.xml"
     - ps: >-
         If ($fileExists -eq $true) {
