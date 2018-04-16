@@ -17,6 +17,7 @@ environment:
     PDOSQLSRV_DBNAME: msphpsql_pdosqlsrv
     PHP_DEPSVER: 7.2
     PHP_SDK: c:\projects\php
+    PROJECTS: c:\projects
     matrix:
       - BUILD_PLATFORM: x64
         TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
@@ -82,7 +83,7 @@ install:
 
         Set-Service SQLBrowser -StartupType Manual;
         Start-Service SQLBrowser;
-    - echo Downloading prerequisites
+    # - echo Downloading prerequisites
     #- ps: | 
         # $client = New-Object Net.WebClient;
         # $client.Headers.Add("user-agent", "appveyor-ci-build1");
@@ -107,7 +108,7 @@ install:
     - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
     - dir C:\Windows\System32\msodbcsql13.dll
-    # - cd c:\projects
+    - cd %PROJECTS%
     # - 7z x -y .\php-sdk-binary-tools-20110915.zip -o%PHP_SDK%
     # - 7z x -y .\php.zip -o%PHP_SDK_DIR%
     - echo update SQL connection string
@@ -137,18 +138,18 @@ build_script:
     # - buildconf.bat
     # only build CLI and MSSQL extensions
     # - configure.bat --disable-all %PHP_ZTS% --enable-cli --enable-sqlsrv=shared --with-pdo-sqlsrv=shared --enable-pdo=shared --with-prefix=%PHP_INSTALL_DIR%
-    - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py %PHP_SDK%
-    - cd %PHP_SDK%
+    - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py %PROJECTS%
+    - cd %PROJECTS%
+    - python -V
     - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source  --TESTING 
-    - set PHP_SRC_DIR=%PHP_SDK%\php-sdk\phpdev\vc%VC\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
+    - set PHP_SRC_DIR=%PROJECTS%\php-sdk\phpdev\vc%VC\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
     - cd %PHP_SRC_DIR%
-    - copy php.ini-development php.ini
+    # - copy php.ini-development php.ini
     # - echo extension_dir=%PHP_INSTALL_DIR%\ext >> php.ini
-    - echo extension=php_sqlsrv_72_%THREAD%.dll >> php.ini
-    - echo extension=php_pdo_sqlsrv_72_%THREAD%.dll >> php.ini
-    - copy php.ini %PHP_EXE_PATH%
-    - copy run-tests.php %PHP_EXE_PATH%
-    - cd %PHP_EXE_PATH%
+    # - echo extension=php_sqlsrv_72_%THREAD%.dll >> php.ini
+    # - echo extension=php_pdo_sqlsrv_72_%THREAD%.dll >> php.ini
+    # - copy php.ini %PHP_EXE_PATH%
+    # - copy run-tests.php %PHP_EXE_PATH%
     # - nmake
     # - nmake install
     # - Echo copy php.ini and run-tests.php from php source to install directory.
@@ -158,9 +159,10 @@ build_script:
 
 test_script:
     # - cd %PHP_INSTALL_DIR%
+    - cd %PHP_EXE_PATH%
     - php --ini
     - php -i
-    - python -V
+    # - python -V
     - Echo setup test database for SQLSRV tests  - %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
     - Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
@@ -169,7 +171,7 @@ test_script:
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
             $ext_dir = ${env:PHP_SRC_DIR} + "\ext";
-            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules php_*sqlsrv*.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
             ls *.xml
         } Else {
@@ -182,7 +184,7 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     # - cd %PHP_INSTALL_DIR%
-    - cd %PHP_EXE_PATH%
+    # - cd %PHP_EXE_PATH%
     - ps: $fileExists = Test-Path "coverage.xml"
     - ps: >-
         If ($fileExists -eq $true) {

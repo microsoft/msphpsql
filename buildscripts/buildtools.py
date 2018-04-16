@@ -445,21 +445,42 @@ class BuildUtil(object):
         else:
             binary = self.driver_name(driver, suffix)
         shutil.copy2(os.path.join(from_dir, binary), dest_dir)
+        if suffix == '.dll':
+            php_ini_file = os.path.join(from_dir, 'php.ini')
+            with open(php_ini_file, 'a') as php_ini:
+                php_ini.write('extension=' + binary + '\n');
     
     def copy_binaries(self, sdk_dir, copy_to_ext):
         """Copy the sqlsrv and/or pdo_sqlsrv binaries, including the pdb files, 
         to the right place, depending on *copy_to_ext*. The default is to 
         copy them to the 'ext' folder.
-        """      
+        """
+        
+        # Get php.ini file from php.ini-production
         build_dir = self.build_abs_path(sdk_dir)
+        php_ini_file = os.path.join(build_dir, 'php.ini')
+        print('Setting up php ini file', php_ini_file)
+        
+        # Copy php.ini-production file to php.ini
+        phpsrc = self.phpsrc_root(sdk_dir)
+        shutil.copy(os.path.join(phpsrc, 'php.ini-production'), php_ini_file)
+        
+        # Copy run-tests.php as well
+        phpsrc = self.phpsrc_root(sdk_dir)
+        shutil.copy(os.path.join(phpsrc, 'run-tests.php'), build_dir)
+        
         print('Copying the binaries from', build_dir)
         if copy_to_ext:
             dest_dir = os.path.join(build_dir, 'ext') 
+            ext_dir_line = 'extension_dir=ext\\'
         else:   
+            ext_dir_line = 'extension_dir=.\\'
             # Simply make a copy of the binaries in sdk_dir
             dest_dir = sdk_dir
-        
+            
         print('Destination:', dest_dir)
+        with open(php_ini_file, 'a') as php_ini:
+            php_ini.write(ext_dir_line + '\n')
 
         # Now copy the binaries
         if self.driver == 'all':
