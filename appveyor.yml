@@ -31,7 +31,6 @@ environment:
         PHP_EXE_PATH: x64\Release_TS
         THREAD: ts
         platform: x64
-        services: mssql2012sp1
       - BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2016
         SQL_INSTANCE: SQL2016
@@ -44,7 +43,6 @@ environment:
         PHP_ZTS: --disable-zts
         THREAD: nts
         platform: x86
-        services: mssql2016
 
 # PHP_MAJOR_VER is PHP major version to build (7.0, 7.1)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
@@ -84,11 +82,11 @@ install:
         $tcp = $wmi.GetSmoObject($uri);
         $tcp.IsEnabled = $true;
         $tcp.Alter();
-        # Start-Service "MSSQL`$$instanceName";
+        Start-Service "MSSQL`$$instanceName";
 
         Set-Service SQLBrowser -StartupType Manual;
         Start-Service SQLBrowser;
-        Start-Service "MSSQL`$$instanceName";
+        # Start-Service "MSSQL`$$instanceName";
     # - echo Downloading prerequisites
     #- ps: | 
         # $client = New-Object Net.WebClient;
