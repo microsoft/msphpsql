@@ -15,22 +15,9 @@ environment:
     TEST_PHP_SQL_UID: sa
     SQLSRV_DBNAME: msphpsql_sqlsrv
     PDOSQLSRV_DBNAME: msphpsql_pdosqlsrv
-    PHP_SDK: c:\projects\php
-    PROJECTS: c:\projects
     PYTHON: c:\Python36
+    # For details about Appveyor build worker images (VM template): https://www.appveyor.com/docs/build-environment/#build-worker-images
     matrix:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-        BUILD_PLATFORM: x64
-        TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
-        SQL_INSTANCE: SQL2012SP1
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.1
-        PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x64
-        PHP_INSTALL_DIR: c:\projects\php\x64\bin
-        PHP_EXE_PATH: x64\Release_TS
-        THREAD: ts
-        platform: x64
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
         BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2016
@@ -38,29 +25,28 @@ environment:
         PHP_VC: 15
         PHP_MAJOR_VER: 7.2
         PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x86
-        PHP_INSTALL_DIR: c:\projects\php\x86\bin
         PHP_EXE_PATH: Release
-        PHP_ZTS: --disable-zts
         THREAD: nts
         platform: x86
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+        BUILD_PLATFORM: x64
+        TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
+        SQL_INSTANCE: SQL2012SP1
+        PHP_VC: 14
+        PHP_MAJOR_VER: 7.1
+        PHP_MINOR_VER: latest
+        PHP_EXE_PATH: x64\Release_TS
+        THREAD: ts
+        platform: x64
 
 # PHP_MAJOR_VER is PHP major version to build (7.0, 7.1)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
-# PHP_INSTALL_DIR is where the built PHP binaries go
-# PHP_SDK_DIR is where PHP source is extracted to (e.g. PHP_SDK_DIR\php-7.0.14-src)
-# PHP_SDK is where PHP sdk binary tools are extracted to
 # PHP_VC is the Visual C++ version
-# PHP_ZTS is defined to disable thread safe build
-
-# Build worker image (VM template)
-# image: Visual Studio 2015
+# PHP_EXE_PATH is the relative path from php src folder to php executable
+# THREAD is either non-thread-safe (nts) or thread-safe (ts)
 
 matrix:
   fast_finish: true
-
-#services:
-  #- mssql2012sp1
 
 # clone directory (or %APPVEYOR_BUILD_FOLDER%)
 clone_folder: c:\projects\sqlphp
@@ -102,7 +88,7 @@ install:
     - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
     - dir C:\Windows\System32\msodbcsql13.dll
-    - cd %PROJECTS%
+    - cd c:\projects
     - echo update SQL connection string
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:PDOSQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
@@ -113,14 +99,16 @@ install:
     - set path=C:\Program Files\OpenCppCoverage;%PYTHON%;%PYTHON%\Scripts;%path%
 
 build_script:
-    - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py %PROJECTS%
-    - cd %PROJECTS%
+    - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py c:\projects
+    - cd c:\projects
     - python -V
     - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING 
-    - cd %PROJECTS%\php-sdk\phpdev\vc%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
+    - cd c:\projects\php-sdk\phpdev\vc%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
     - set PHP_SRC_DIR=%CD%
     - cd %PHP_EXE_PATH%
     - set PHP_EXE_PATH=%CD%
+    - echo %PHP_EXE_PATH%
+    - dir *sqlsrv*.dll
     - php --ini
     - php -m
 
@@ -133,7 +121,7 @@ test_script:
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
             $ext_dir = ${env:PHP_SRC_DIR} + "\ext";
-            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules *sqlsrv*.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules php_sqlsrv*.dll --modules php_pdo_sqlsrv*.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
             ls *.xml
         } Else {
