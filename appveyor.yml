@@ -72,20 +72,23 @@ build:
 install:
     - echo start SQL Server
     # Based on http://www.appveyor.com/docs/services-databases
-    # - ps: >-
-        # [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null ;
-        # [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement") | Out-Null ;
+    - ps: >-
+        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null;
+        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement") | Out-Null;
 
-        # $instanceName = $env:SQL_INSTANCE;
-        # $uri = "ManagedComputer[@Name='$env:COMPUTERNAME']/ServerInstance[@Name='$instanceName']/ServerProtocol[@Name='Tcp']";
+        $instanceName = $env:SQL_INSTANCE;
+        $smo = 'Microsoft.SqlServer.Management.Smo.';
+        $wmi = new-object ($smo + 'Wmi.ManagedComputer');
+        $uri = "ManagedComputer[@Name='$env:COMPUTERNAME']/ServerInstance[@Name='$instanceName']/ServerProtocol[@Name='Tcp']";
         # $wmi = New-Object ('Microsoft.SqlServer.Management.Smo.Wmi.ManagedComputer');
-        # $tcp = $wmi.GetSmoObject($uri);
-        # $tcp.IsEnabled = $true;
-        # $tcp.Alter();
+        $tcp = $wmi.GetSmoObject($uri);
+        $tcp.IsEnabled = $true;
+        $tcp.Alter();
         # Start-Service "MSSQL`$$instanceName";
 
-        # Set-Service SQLBrowser -StartupType Manual;
-        # Start-Service SQLBrowser;
+        Set-Service SQLBrowser -StartupType Manual;
+        Start-Service SQLBrowser;
+        Start-Service "MSSQL`$$instanceName";
     # - echo Downloading prerequisites
     #- ps: | 
         # $client = New-Object Net.WebClient;
