@@ -86,8 +86,8 @@ install:
 
         Set-Service SQLBrowser -StartupType Manual;
         Start-Service SQLBrowser;
-        # Start-Service "MSSQL`$$instanceName";
-    # - echo Downloading prerequisites
+        sqlcmd -S ${env:TEST_PHP_SQL_SERVER} -U ${env:TEST_PHP_SQL_UID} -P ${env:TEST_PHP_SQL_PWD} -Q "SELECT * FROM information_schema.tables;" -d "master"
+    - echo Downloading prerequisites
     #- ps: | 
         # $client = New-Object Net.WebClient;
         # $client.Headers.Add("user-agent", "appveyor-ci-build1");
