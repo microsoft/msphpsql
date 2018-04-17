@@ -86,7 +86,6 @@ install:
 
         Set-Service SQLBrowser -StartupType Manual;
         Start-Service SQLBrowser;
-        sqlcmd -S ${env:TEST_PHP_SQL_SERVER} -U ${env:TEST_PHP_SQL_UID} -P ${env:TEST_PHP_SQL_PWD} -Q "SELECT * FROM information_schema.tables;" -d "master"
     - echo Downloading prerequisites
     #- ps: | 
         # $client = New-Object Net.WebClient;
@@ -112,6 +111,10 @@ install:
     - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
     - dir C:\Windows\System32\msodbcsql13.dll
+    - echo Downloading MS SQL tools
+    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/C/8/8/C88C2E51-8D23-4301-9F4B-64C8E2F163C5/x64/MsSqlCmdLnUtils.msi', 'c:\projects\MsSqlCmdLnUtils.msi')
+    - cmd /c start /wait msiexec /i "c:\projects\MsSqlCmdLnUtils.msi" /q
+    - ps: sqlcmd -S ${env:TEST_PHP_SQL_SERVER} -U ${env:TEST_PHP_SQL_UID} -P ${env:TEST_PHP_SQL_PWD} -Q "SELECT * FROM information_schema.tables;" -d "master"
     - cd %PROJECTS%
     # - 7z x -y .\php-sdk-binary-tools-20110915.zip -o%PHP_SDK%
     # - 7z x -y .\php.zip -o%PHP_SDK_DIR%
