@@ -39,7 +39,7 @@ environment:
         THREAD: ts
         platform: x64
 
-# PHP_MAJOR_VER is PHP major version to build (7.0, 7.1)
+# PHP_MAJOR_VER is PHP major version to build (7.2, 7.1)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
 # PHP_VC is the Visual C++ version
 # PHP_EXE_PATH is the relative path from php src folder to php executable
@@ -137,9 +137,8 @@ test_script:
     - ps: >-
         If ($fileExists -eq $true) {
             Write-Host "Running coverage analysis...";
-            $env:PATH = ${env:PHP_EXE_PATH} + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            bash codecov.sh -f "coverage.xml"
+            .\codecov.sh -x fix -f "coverage.xml"
         }
 
 after_test:
