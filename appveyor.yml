@@ -105,11 +105,13 @@ build_script:
     - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING 
     - cd c:\projects\php-sdk\phpdev\vc%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
     - set PHP_SRC_DIR=%CD%\ext
-    - echo %PHP_SRC_DIR%
     - cd %PHP_EXE_PATH%
     - set PHP_EXE_PATH=%CD%
-    - echo %PHP_EXE_PATH%
-    - dir *sqlsrv*.dll
+    - set path=%PHP_EXE_PATH%;%PYTHON%;%PYTHON%\Scripts;%path%
+    - ps: |  
+        $env:PHP_VER = $env:PHP_MAJOR_VER -replace '\.', ''
+        $env:SQLSRV = "php_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
+        $env:PDO_SQLSRV = "php_pdo_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
     - php --ini
     - php -m
 
@@ -121,7 +123,7 @@ test_script:
     - ps: >-
         If ($env:SQL_INSTANCE -Match "SQL2016") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\sqlsrv --sources ${env:PHP_SRC_DIR}\pdo_sqlsrv  --modules php_sqlsrv*.dll --modules php_pdo_sqlsrv*.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\sqlsrv --sources ${env:PHP_SRC_DIR}\pdo_sqlsrv  --modules ${env:SQLSRV} --modules ${env:PDO_SQLSRV} --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
             ls *.xml
         } Else {
@@ -137,9 +139,8 @@ test_script:
     - ps: >-
         If ($fileExists -eq $true) {
             Write-Host "Running coverage analysis...";
-            $env:PATH = ${env:PHP_EXE_PATH} + ";" + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            bash codecov.sh -x fix -f "coverage.xml"
+            bash codecov.sh -f "coverage.xml"
         }
 
 after_test:
