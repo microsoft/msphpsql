@@ -135,14 +135,15 @@ test_script:
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    - if exist coverage.xml curl -s https://codecov.io/bash | bash -f "coverage.xml"
     # - type coverage.xml
-    - ps: $fileExists = Test-Path "coverage.xml"
-    - ps: >-
-        If ($fileExists -eq $true) {
-            Write-Host "Running coverage analysis...";
-            Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            bash codecov.sh -f "coverage.xml"
-        }
+    # - ps: $fileExists = Test-Path "coverage.xml"
+    # - ps: >-
+        # If ($fileExists -eq $true) {
+            # Write-Host "Running coverage analysis...";
+            # Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+            # bash codecov.sh -f "coverage.xml"
+        # }
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
