@@ -124,25 +124,24 @@ test_script:
         If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
             OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\sqlsrv --sources ${env:PHP_SRC_DIR}\pdo_sqlsrv  --modules ${env:SQLSRV} --modules ${env:PDO_SQLSRV} --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 20;
             ls *.xml
         } Else {
             Write-Host "Running phpt tests the regular way..."
             .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -encoding UTF8;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -Tail 20;
             .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -encoding UTF8;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -Tail 20;
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    # - if exist coverage.xml (curl -s https://codecov.io/bash -o codecov.sh)
-    # - if exist codecov.sh codecov.sh -f coverage.xml
-    # - type coverage.xml
-    - ps: $fileExists = Test-Path "coverage.xml"
-    - ps: >-
-        If ($fileExists -eq $true) {
-            bash <(curl -s https://codecov.io/bash) -f "coverage.xml"
-        }
+    - if exist coverage.xml (curl -s https://codecov.io/bash -o codecov.sh)
+    - if exist codecov.sh codecov.sh -f "coverage.xml" 
+    # - ps: $fileExists = Test-Path "coverage.xml"
+    # - ps: >-
+        # If ($fileExists -eq $true) {
+            # bash <(curl -s https://codecov.io/bash) -f "coverage.xml"
+        # }
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
