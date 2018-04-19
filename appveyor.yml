@@ -92,11 +92,11 @@ install:
     - echo update SQL connection string
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:PDOSQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     # - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
-    - ps: Select-String ${env:TEST_PHP_SQL_SERVER} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:SQL_INSTANCE} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: Select-String ${env:PDOSQLSRV_DBNAME} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:SQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     # - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
-    - ps: Select-String ${env:TEST_PHP_SQL_SERVER} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:SQL_INSTANCE} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - ps: Select-String ${env:SQLSRV_DBNAME} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - echo install opencppcoverage
     - choco install opencppcoverage
@@ -128,23 +128,27 @@ test_script:
         If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
             OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\sqlsrv --sources ${env:PHP_SRC_DIR}\pdo_sqlsrv  --modules ${env:SQLSRV} --modules ${env:PDO_SQLSRV} --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
-            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 20;
+            Write-Host "Showing the last 25 lines of the log file..."
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 25;
             ls *.xml
         } Else {
             Write-Host "Running phpt tests the regular way..."
             .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -encoding UTF8;
-            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -Tail 20;
+            Write-Host "Showing the last 25 lines of the log file..."
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -Tail 25;
             .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -encoding UTF8;
-            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -Tail 20;
+            Write-Host "Showing the last 25 lines of the log file..."
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -Tail 25;
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    - if exist coverage.xml curl -s https://codecov.io/bash | bash -f "coverage.xml"
-    # - ps: $fileExists = Test-Path "coverage.xml"
-    # - ps: >-
-        # If ($fileExists -eq $true) {
-            # bash <(curl -s https://codecov.io/bash) -f "coverage.xml"
-        # }
+    - ps: $fileExists = Test-Path "coverage.xml"
+    - ps: >-
+        If ($fileExists -eq $true) {
+            Write-Host "Running coverage analysis...";
+            Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+            .\codecov.sh -f .\"coverage.xml"
+        }
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
