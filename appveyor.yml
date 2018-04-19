@@ -81,15 +81,11 @@ install:
         } Else {
             $env:PHP_VERSION=$env:PHP_MAJOR_VER + '.' + $env:PHP_MINOR_VER;
         }
-    # - echo Downloading MSODBCSQL 13.1 and 17.1
+    - echo Downloading MSODBCSQL 17.1
     # AppVeyor build works are x64 VMs and 32-bit ODBC driver cannot be installed on it
-    # - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
-    # - cmd /c start /wait msiexec /i "c:\projects\msodbcsql.msi" /q
     - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/E/6/B/E6BFDC7A-5BCD-4C51-9912-635646DA801E/msodbcsql_17.1.0.1_x64.msi', 'c:\projects\msodbcsql_17.1.0.1_x64.msi')
-    - dir c:\projects\msodbcsql*.msi
     - cmd /c start /wait msiexec /i "c:\projects\msodbcsql_17.1.0.1_x64.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
-    - echo Checking the versions of MSODBCSQL
-    # - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
+    - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
     - dir %WINDIR%\System32\msodbcsql*.dll
     - cd c:\projects
@@ -139,17 +135,14 @@ test_script:
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    - if exist coverage.xml (bash <(curl -s https://codecov.io/bash) -f coverage.xml || echo "Codecov did not collect coverage reports")
     # - if exist coverage.xml (curl -s https://codecov.io/bash -o codecov.sh)
     # - if exist codecov.sh codecov.sh -f coverage.xml
     # - type coverage.xml
-    # - ps: $fileExists = Test-Path "coverage.xml"
-    # - ps: >-
-        # If ($fileExists -eq $true) {
-            # Write-Host "Running coverage analysis...";
-            # Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            # bash codecov.sh -f "coverage.xml"
-        # }
+    - ps: $fileExists = Test-Path "coverage.xml"
+    - ps: >-
+        If ($fileExists -eq $true) {
+            bash <(curl -s https://codecov.io/bash) -f "coverage.xml"
+        }
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
