@@ -709,7 +709,7 @@ int FormattedPrintA( IFormattedPrintOutput<char> * output, const char *format, v
                     ++text.sz;
                 }
 
-                textlen = (int)strlen(text.sz);     /* compute length of text */
+                textlen = (int)strnlen_s(text.sz);     /* compute length of text */
             }
             break;
 

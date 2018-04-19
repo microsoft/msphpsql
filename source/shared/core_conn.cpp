@@ -755,31 +755,31 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
     try {
   
         // Add the server name
-        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strlen( server ), connection_string TSRMLS_CC );
+        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
 
         // if uid is not present then we use trusted connection.
-        if(uid == NULL || strlen( uid ) == 0 ) {
+        if(uid == NULL || strnlen_s( uid ) == 0 ) {
 
             connection_string += "Trusted_Connection={Yes};";
         }
         else {
 
-            bool escaped = core_is_conn_opt_value_escaped( uid, strlen( uid ));
+            bool escaped = core_is_conn_opt_value_escaped( uid, strnlen_s( uid ));
             CHECK_CUSTOM_ERROR( !escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED ) {
                 throw core::CoreException();
             }
 
-            common_conn_str_append_func( ODBCConnOptions::UID, uid, strlen( uid ), connection_string TSRMLS_CC );
+            common_conn_str_append_func( ODBCConnOptions::UID, uid, strnlen_s( uid ), connection_string TSRMLS_CC );
 
             // if no password was given, then don't add a password to the connection string.  Perhaps the UID
             // given doesn't have a password?
             if( pwd != NULL ) {
-                escaped = core_is_conn_opt_value_escaped( pwd, strlen( pwd ));
+                escaped = core_is_conn_opt_value_escaped( pwd, strnlen_s( pwd ));
                 CHECK_CUSTOM_ERROR( !escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED ) {
                     throw core::CoreException();
                 }
                     
-                common_conn_str_append_func( ODBCConnOptions::PWD, pwd, strlen( pwd ), connection_string TSRMLS_CC );
+                common_conn_str_append_func( ODBCConnOptions::PWD, pwd, strnlen_s( pwd ), connection_string TSRMLS_CC );
             }
         }
 
