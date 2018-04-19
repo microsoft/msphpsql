@@ -135,7 +135,7 @@ test_script:
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    - if exist coverage.xml bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+    - if exist coverage.xml bash <(curl -s https://codecov.io/bash) -f coverage.xml || echo "Codecov did not collect coverage reports"
     # - if exist coverage.xml (curl -s https://codecov.io/bash -o codecov.sh)
     # - if exist codecov.sh codecov.sh -f coverage.xml
     # - type coverage.xml
