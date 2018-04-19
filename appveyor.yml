@@ -86,6 +86,7 @@ install:
     # - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
     # - cmd /c start /wait msiexec /i "c:\projects\msodbcsql.msi" /q
     - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/E/6/B/E6BFDC7A-5BCD-4C51-9912-635646DA801E/msodbcsql_17.1.0.1_x64.msi', 'c:\projects\msodbcsql_17.1.0.1_x64.msi')
+    - dir c:\projects\msodbcsql*.msi
     - cmd /c start /wait msiexec /i "c:\projects\msodbcsql_17.1.0.1_x64.msi" /q 
     - echo Checking the versions of MSODBCSQL
     # - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
