@@ -18,16 +18,6 @@ environment:
     PYTHON: c:\Python36
     # For details about Appveyor build worker images (VM template): https://www.appveyor.com/docs/build-environment/#build-worker-images
     matrix:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-        BUILD_PLATFORM: x86
-        TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
-        SQL_INSTANCE: SQL2012SP1
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.1
-        PHP_MINOR_VER: latest
-        PHP_EXE_PATH: Release
-        THREAD: nts
-        platform: x86
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
         BUILD_PLATFORM: x64
         TEST_PHP_SQL_SERVER: (local)\SQL2016
@@ -38,6 +28,16 @@ environment:
         PHP_EXE_PATH: x64\Release_TS
         THREAD: ts
         platform: x64
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+        BUILD_PLATFORM: x86
+        TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
+        SQL_INSTANCE: SQL2012SP1
+        PHP_VC: 14
+        PHP_MAJOR_VER: 7.1
+        PHP_MINOR_VER: latest
+        PHP_EXE_PATH: Release
+        THREAD: nts
+        platform: x86
 
 # PHP_MAJOR_VER is PHP major version to build (7.2, 7.1)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
@@ -91,9 +91,13 @@ install:
     - cd c:\projects
     - echo update SQL connection string
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:PDOSQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
-    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
+    # - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:TEST_PHP_SQL_SERVER} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:PDOSQLSRV_DBNAME} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:SQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
-    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
+    # - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:TEST_PHP_SQL_SERVER} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:SQLSRV_DBNAME} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - echo install opencppcoverage
     - choco install opencppcoverage
     - set path=C:\Program Files\OpenCppCoverage;%PYTHON%;%PYTHON%\Scripts;%path%
@@ -135,8 +139,7 @@ test_script:
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    - if exist coverage.xml (curl -s https://codecov.io/bash -o codecov.sh)
-    - if exist codecov.sh codecov.sh -f "coverage.xml" 
+    - if exist coverage.xml curl -s https://codecov.io/bash | bash -f "coverage.xml"
     # - ps: $fileExists = Test-Path "coverage.xml"
     # - ps: >-
         # If ($fileExists -eq $true) {
