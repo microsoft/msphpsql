@@ -115,11 +115,11 @@ try {
                             // with AE, doubles cannot be inserted into a decimal(38, 38) column
                             // remove the following if block to see the bug
                             // for more information see VSO task 2723
-                            if (isAEConnected() && $m1 == 38 && $m2 == 38) {
-                                echo "****Conversion from $pdoParamType to $typeFull is supported****\n";
-                            } else {
+                            // if (isAEConnected() && $m1 == 38 && $m2 == 38) {
+                                // echo "****Conversion from $pdoParamType to $typeFull is supported****\n";
+                            // } else {
                                 echo "Conversion from $pdoParamType to $typeFull causes data corruption\n";
-                            }
+                            // }
                         } else {
                             echo "****Conversion from $pdoParamType to $typeFull is supported****\n";
                         }

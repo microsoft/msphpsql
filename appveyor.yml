@@ -147,7 +147,7 @@ test_script:
         If ($fileExists -eq $true) {
             Write-Host "Running coverage analysis...";
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            .\codecov.sh -f .\"coverage.xml"
+            bash codecov.sh -f "coverage.xml" || echo "Codecov did not collect coverage reports"
         }
 
 after_test:
