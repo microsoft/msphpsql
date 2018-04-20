@@ -45,7 +45,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && ACCEPT_EULA=Y apt
 ENV PATH="/opt/mssql-tools/bin:${PATH}"	
 
 #install coveralls
-RUN pip install --upgrade pip && pip install cpp-coveralls
+#RUN pip install --upgrade pip && pip install cpp-coveralls
+# TODO: Remove this workaround due to https://github.com/pypa/pip/issues/5240
+RUN pip install --upgrade pip==9.0.3 && pip install cpp-coveralls
 
 #Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
 #One option is to get source from zip file of repository.
