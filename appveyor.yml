@@ -147,8 +147,8 @@ test_script:
         If ($fileExists -eq $true) {
             Write-Host "Running coverage analysis...";
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            cmd /c start codecov.sh -f coverage.xml
         }
+    - bash codecov.sh -f "coverage.xml"
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
