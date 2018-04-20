@@ -111,7 +111,8 @@ build_script:
     - set PHP_SRC_DIR=%CD%\ext
     - cd %PHP_EXE_PATH%
     - set PHP_EXE_PATH=%CD%
-    - set path=%PHP_EXE_PATH%;%path%
+    - echo %PHP_EXE_PATH%
+    # - set path=%PHP_EXE_PATH%;%path%
     - ps: |  
         $env:PHP_VER = $env:PHP_MAJOR_VER -replace '\.', ''
         $env:SQLSRV = "php_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
@@ -142,13 +143,16 @@ test_script:
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    - cd %PHP_EXE_PATH%
     - ps: $fileExists = Test-Path "coverage.xml"
     - ps: >-
         If ($fileExists -eq $true) {
             Write-Host "Running coverage analysis...";
+            $env:PATH = ${env:PHP_EXE_PATH} + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+            bash codecov.sh -f "coverage.xml"
         }
-    - if exist codecov.sh (bash codecov.sh -f "coverage.xml")
+    # - if exist codecov.sh (bash codecov.sh -f "coverage.xml")
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
