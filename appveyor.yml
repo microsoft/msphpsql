@@ -18,16 +18,6 @@ environment:
     PYTHON: c:\Python36
     # For details about Appveyor build worker images (VM template): https://www.appveyor.com/docs/build-environment/#build-worker-images
     matrix:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-        BUILD_PLATFORM: x64
-        TEST_PHP_SQL_SERVER: (local)\SQL2016
-        SQL_INSTANCE: SQL2016
-        PHP_VC: 15
-        PHP_MAJOR_VER: 7.2
-        PHP_MINOR_VER: latest
-        PHP_EXE_PATH: x64\Release_TS
-        THREAD: ts
-        platform: x64
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
         BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
@@ -38,6 +28,16 @@ environment:
         PHP_EXE_PATH: Release
         THREAD: nts
         platform: x86
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+        BUILD_PLATFORM: x64
+        TEST_PHP_SQL_SERVER: (local)\SQL2016
+        SQL_INSTANCE: SQL2016
+        PHP_VC: 15
+        PHP_MAJOR_VER: 7.2
+        PHP_MINOR_VER: latest
+        PHP_EXE_PATH: x64\Release_TS
+        THREAD: ts
+        platform: x64
 
 # PHP_MAJOR_VER is PHP major version to build (7.2, 7.1)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
@@ -109,14 +109,16 @@ build_script:
     - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING 
     - cd c:\projects\php-sdk\phpdev\vc%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
     - set PHP_SRC_DIR=%CD%\ext
+    - echo %PHP_SRC_DIR%
     - cd %PHP_EXE_PATH%
     - set PHP_EXE_PATH=%CD%
     - echo %PHP_EXE_PATH%
-    # - set path=%PHP_EXE_PATH%;%path%
     - ps: |  
         $env:PHP_VER = $env:PHP_MAJOR_VER -replace '\.', ''
-        $env:SQLSRV = "php_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
-        $env:PDO_SQLSRV = "php_pdo_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
+        $env:SQLSRV = $env:PHP_EXE_PATH + "\php_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
+        echo $env:SQLSRV
+        $env:PDO_SQLSRV = $env:PHP_EXE_PATH + "\php_pdo_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
+        echo $env:PDO_SQLSRV
     - php --ini
     - php -m
 
@@ -128,7 +130,9 @@ test_script:
     - ps: >-
         If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\sqlsrv --sources ${env:PHP_SRC_DIR}\pdo_sqlsrv  --modules .\${env:SQLSRV} --modules .\${env:PDO_SQLSRV} --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            dir $env:PHP_SRC_DIR\sqlsrv
+            dir $env:PHP_SRC_DIR\pdo_sqlsrv
+            OpenCppCoverage.exe --sources $env:PHP_SRC_DIR\sqlsrv --sources $env:PHP_SRC_DIR\pdo_sqlsrv --modules $env:SQLSRV --modules $env:PDO_SQLSRV --export_type=cobertura:.\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             Write-Host "Showing the last 25 lines of the log file..."
             Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 25;
             ls *.xml
@@ -148,6 +152,8 @@ test_script:
     - ps: >-
         If ($fileExists -eq $true) {
             Write-Host "Running coverage analysis...";
+            Get-Content .\coverage.xml -Head 50;
+            Get-Content .\coverage.xml -Tail 50;
             $env:PATH = ${env:PHP_EXE_PATH} + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
             bash codecov.sh -f "coverage.xml"
