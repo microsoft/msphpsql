@@ -106,19 +106,19 @@ build_script:
     - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py c:\projects
     - cd c:\projects
     - python -V
-    - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING 
+    - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING --NO_RENAME
     - cd c:\projects\php-sdk\phpdev\vc%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
     - set PHP_SRC_DIR=%CD%\ext
     - echo %PHP_SRC_DIR%
     - cd %PHP_EXE_PATH%
     - set PHP_EXE_PATH=%CD%
     - echo %PHP_EXE_PATH%
-    - ps: |  
-        $env:PHP_VER = $env:PHP_MAJOR_VER -replace '\.', ''
-        $env:SQLSRV = $env:PHP_EXE_PATH + "\php_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
-        echo $env:SQLSRV
-        $env:PDO_SQLSRV = $env:PHP_EXE_PATH + "\php_pdo_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
-        echo $env:PDO_SQLSRV
+    # - ps: |  
+        # $env:PHP_VER = $env:PHP_MAJOR_VER -replace '\.', ''
+        # $env:SQLSRV = $env:PHP_EXE_PATH + "\php_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
+        # echo $env:SQLSRV
+        # $env:PDO_SQLSRV = $env:PHP_EXE_PATH + "\php_pdo_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
+        # echo $env:PDO_SQLSRV
     - php --ini
     - php -m
 
@@ -130,9 +130,7 @@ test_script:
     - ps: >-
         If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            dir $env:PHP_SRC_DIR\sqlsrv
-            dir $env:PHP_SRC_DIR\pdo_sqlsrv
-            OpenCppCoverage.exe --sources $env:PHP_SRC_DIR\sqlsrv --sources $env:PHP_SRC_DIR\pdo_sqlsrv --modules $env:SQLSRV --modules $env:PDO_SQLSRV --export_type=cobertura:.\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --sources $env:PHP_SRC_DIR\sqlsrv --sources $env:PHP_SRC_DIR\pdo_sqlsrv --modules .\php_sqlsrv.dll --modules .\php_pdo_sqlsrv.dll --export_type=cobertura:.\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             Write-Host "Showing the last 25 lines of the log file..."
             Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 25;
             ls *.xml
@@ -153,6 +151,7 @@ test_script:
         If ($fileExists -eq $true) {
             Write-Host "Running coverage analysis...";
             Get-Content .\coverage.xml -Head 50;
+            Write-Host "Showing the last 50 lines of coverage...";
             Get-Content .\coverage.xml -Tail 50;
             $env:PATH = ${env:PHP_EXE_PATH} + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh

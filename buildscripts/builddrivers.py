@@ -40,8 +40,8 @@ class BuildDriver(object):
         testing         # whether the user has turned on testing mode
     """
     
-    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, source, path, testing):
-        self.util = BuildUtil(phpver, driver, arch, thread, debug)
+    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, source, path, testing, no_rename):
+        self.util = BuildUtil(phpver, driver, arch, thread, no_rename, debug)
         self.repo = repo
         self.branch = branch
         self.source_path = source
@@ -243,6 +243,7 @@ if __name__ == '__main__':
     parser.add_argument('--SOURCE', default=None, help="a local path to source file (default: None)")
     parser.add_argument('--TESTING', action='store_true', help="turns on testing mode (default: False)")
     parser.add_argument('--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
+    parser.add_argument('--NO_RENAME', action='store_true', help="drivers will not be renamed(default: False)")
 
     args = parser.parse_args()
 
@@ -256,6 +257,7 @@ if __name__ == '__main__':
     source = args.SOURCE
     path = args.DESTPATH
     testing = args.TESTING
+    no_rename = args.NO_RENAME
 
     if phpver is None:
         # starts interactive mode, testing mode is False
@@ -301,5 +303,6 @@ if __name__ == '__main__':
                           branch, 
                           source, 
                           path,
-                          testing)
+                          testing,
+                          no_rename)
     builder.build()
