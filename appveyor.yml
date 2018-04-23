@@ -151,12 +151,12 @@ test_script:
     - ps: >-
         If ($fileExists -eq $true) {
             Write-Host "Running coverage analysis...";
-            Get-Content .\coverage.xml -Head 50;
-            Write-Host "Showing the last 50 lines of coverage...";
-            Get-Content .\coverage.xml -Tail 50;
+            Get-Content .\coverage.xml -Head 25;
+            Write-Host "Showing the packages...";
+            Select-String package .\coverage.xml;
             $env:PATH = ${env:PHP_EXE_PATH} + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            bash codecov.sh -f "coverage.xml"
+            bash codecov.sh -x fix -f "coverage.xml"
         }
     # - if exist codecov.sh (bash codecov.sh -f "coverage.xml")
 
