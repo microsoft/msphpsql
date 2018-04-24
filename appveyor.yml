@@ -91,11 +91,9 @@ install:
     - cd c:\projects
     - echo update SQL connection string
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:PDOSQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
-    # - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: Select-String ${env:SQL_INSTANCE} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: Select-String ${env:PDOSQLSRV_DBNAME} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:SQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
-    # - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - ps: Select-String ${env:SQL_INSTANCE} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - ps: Select-String ${env:SQLSRV_DBNAME} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - echo install opencppcoverage
@@ -109,19 +107,12 @@ build_script:
     - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING --NO_RENAME
     - cd c:\projects\php-sdk\phpdev\vc%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
     - set PHP_SRC_DIR=%CD%\ext
-    - echo %PHP_SRC_DIR%
     - cd %PHP_EXE_PATH%
     - set PHP_EXE_PATH=%CD%
-    - echo %PHP_EXE_PATH%
-    # - ps: |  
-        # $env:PHP_VER = $env:PHP_MAJOR_VER -replace '\.', ''
-        # $env:SQLSRV = $env:PHP_EXE_PATH + "\php_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
-        # echo $env:SQLSRV
-        # $env:PDO_SQLSRV = $env:PHP_EXE_PATH + "\php_pdo_sqlsrv_" + $env:PHP_VER + "_" + $env:THREAD + ".dll"
-        # echo $env:PDO_SQLSRV
+    - echo Showing the last few lines of php.ini
+    - ps: Get-Content ${env:PHP_EXE_PATH}\php.ini -Tail 5
     - php --ini
     - php -m
-    - ps: Get-Content ${env:PHP_EXE_PATH}\php.ini -Tail 10
 
 test_script:
     - Echo setup test database for SQLSRV tests  - %SQLSRV_DBNAME%
@@ -152,14 +143,12 @@ test_script:
         If ($fileExists -eq $true) {
             cd c:\projects
             Write-Host "Running coverage analysis...";
-            Get-Content .\coverage.xml -Head 25;
             Write-Host "Showing the packages...";
             Select-String package .\coverage.xml;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            bash codecov.sh -x fix -f "coverage.xml"
+            bash codecov.sh -f "coverage.xml"
             cd ${env:PHP_EXE_PATH}
         }
-    # - if exist codecov.sh (bash codecov.sh -f "coverage.xml")
 
 after_test:
     - cd %APPVEYOR_BUILD_FOLDER%\test\functional\
