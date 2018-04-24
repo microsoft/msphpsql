@@ -1180,9 +1180,9 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                     }
                     // if the parameter is output or input/output, translate the type between the PDO::PARAM_* constant
                     // and the SQLSRV_PHPTYPE_* constant
-                    int pdo_type = param->param_type;
+                    int pdo_type = (direction == SQL_PARAM_OUTPUT) ? param->param_type : param->param_type & ~PDO_PARAM_INPUT_OUTPUT;
                     SQLSRV_PHPTYPE php_out_type = SQLSRV_PHPTYPE_INVALID;
-                    switch( pdo_type & ~PDO_PARAM_INPUT_OUTPUT ) {
+                    switch (pdo_type) {
                         case PDO_PARAM_BOOL:
                         case PDO_PARAM_INT:
                             php_out_type = SQLSRV_PHPTYPE_INT;
