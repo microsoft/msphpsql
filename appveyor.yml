@@ -131,7 +131,7 @@ test_script:
     - ps: >-
         If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --export_type=cobertura:.\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --export_type=cobertura:c:\projects\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             Write-Host "Showing the last 25 lines of the log file..."
             Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 25;
             ls *.xml
@@ -147,16 +147,17 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - cd %PHP_EXE_PATH%
-    - ps: $fileExists = Test-Path "coverage.xml"
+    - ps: $fileExists = Test-Path "c:\projects\coverage.xml"
     - ps: >-
         If ($fileExists -eq $true) {
+            cd c:\projects
             Write-Host "Running coverage analysis...";
             Get-Content .\coverage.xml -Head 25;
             Write-Host "Showing the packages...";
             Select-String package .\coverage.xml;
-            $env:PATH = ${env:PHP_EXE_PATH} + $env:PATH;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
             bash codecov.sh -x fix -f "coverage.xml"
+            cd ${env:PHP_EXE_PATH}
         }
     # - if exist codecov.sh (bash codecov.sh -f "coverage.xml")
 
