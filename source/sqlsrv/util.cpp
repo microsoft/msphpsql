@@ -397,8 +397,8 @@ ss_error SS_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Stored Procedures do not support text, ntext or image as OUTPUT parameters.", -108, false }
     },
     {
-        SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
-        { IMSSP, (SQLCHAR*) "Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.", -109, false }
+        SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
+        { IMSSP, (SQLCHAR*)"Error converting a double value to an integer.", -109, false }
     },
 
     // terminate the list of errors/warnings

@@ -50,23 +50,15 @@ function compareFloats($actual, $expected)
 function compareIntegers($det, $rand, $inputValues, $pdoParamType)
 {
     ///////////////////////////////////////////////////////////////////////
-    // See GitHub issue 707 - Fix this method when the problem is addressed
-    //
     // Assume $pdoParamType is PDO::PARAM_BOOL or PDO::PARAM_INT
     if (is_string($det)) {
         return (!compareFloats(floatval($det), $inputValues[0]) 
                 && !compareFloats(floatval($rand), $inputValues[1]));
     } else {
-        // if $pdoParamType is PDO::PARAM_BOOL, 
-        // expect bool(true) or bool(false) depending on the rounded input values
-        // But with AE enabled (aforementioned GitHub issue), the fetched values 
-        // are floats instead, which should be fixed
+        // if $pdoParamType is PDO::PARAM_BOOL, expect bool(true) or bool(false) 
+        // depending on the rounded input values
         $input0 = floor($inputValues[0]); // the positive float
         $input1 = ceil($inputValues[1]); // the negative float
-        if (isAEConnected()) {
-            $det = boolval(floor($det));
-            $rand = boolval(ceil($rand));
-        }
         
         return ($det == boolval($input0) && $rand == boolval($input1));
     }
@@ -190,10 +182,14 @@ function testOutputDecimals($inout)
                                 if ($found === false) {
                                     printValues($errMsg, $det, $rand, $inputValues);
                                 }
-                            } elseif (!isAEConnected() && $precision >= 16) {
-                                // When not AE enabled, large numbers are expected to 
-                                // fail when converting to booleans / integers
-                                $error = "Error converting data type $dataType to int"; 
+                            } elseif ($precision >= 16) {
+                                // Large numbers are expected to fail when 
+                                // converting to booleans / integers
+                                if (isAEConnected()) {
+                                    $error = "Error converting a double value to an integer";
+                                } else {
+                                    $error = "Error converting data type $dataType to int"; 
+                                }
                                 $found = strpos($message, $error);
                                 if ($found === false) {
                                     printValues($errMsg, $det, $rand, $inputValues);

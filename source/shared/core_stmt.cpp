@@ -491,7 +491,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ){
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
-					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), zval_was_bool );
+					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), zval_was_bool, php_out_type);
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
                 }
             }
@@ -503,7 +503,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ){
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
-					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), false );
+					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), zval_was_bool, php_out_type);
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
                 }
             }
@@ -2149,8 +2149,19 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
             break;
         case IS_DOUBLE:
             // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
-            if( stmt->param_ind_ptrs[ output_param->param_num ] == SQL_NULL_DATA ) {
-                ZVAL_NULL( value_z );
+            if (stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA) {
+                ZVAL_NULL(value_z);
+            }
+            else if (output_param->php_out_type == SQLSRV_PHPTYPE_INT) {
+                if (Z_DVAL_P(value_z) > INT_MAX) {
+                    CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED) {
+                        throw core::CoreException();
+                    }
+                }
+                convert_to_long(value_z);
+                if (output_param->is_bool) {
+                    convert_to_boolean(value_z);
+                }
             }
             break;
         default:
