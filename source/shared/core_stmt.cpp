@@ -2153,11 +2153,15 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 ZVAL_NULL(value_z);
             }
             else if (output_param->php_out_type == SQLSRV_PHPTYPE_INT) {
-                if (Z_DVAL_P(value_z) > INT_MAX) {
+                // first check if its value is out of range
+                double dval = Z_DVAL_P(value_z);
+                if (dval > INT_MAX || dval < INT_MIN) {
                     CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED) {
                         throw core::CoreException();
                     }
                 }
+                // if the output param is a boolean, still convert to 
+                // a long integer first to take care of rounding
                 convert_to_long(value_z);
                 if (output_param->is_bool) {
                     convert_to_boolean(value_z);
