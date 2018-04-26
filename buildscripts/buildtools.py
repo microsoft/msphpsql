@@ -31,14 +31,16 @@ class BuildUtil(object):
         driver          # all, sqlsrv, or pdo_sqlsrv
         arch            # x64 or x86
         thread          # nts or ts
+        no_rename       # do NOT rename the drivers if True
         debug_enabled   # whether debug is enabled
     """
     
-    def __init__(self, phpver, driver, arch, thread, debug_enabled = False):
+    def __init__(self, phpver, driver, arch, thread, no_rename, debug_enabled = False):
         self.phpver = phpver
         self.driver = driver.lower()
         self.arch = arch.lower()
         self.thread = thread.lower()
+        self.no_rename = no_rename
         self.debug_enabled = debug_enabled
     
     def major_version(self):
@@ -409,8 +411,9 @@ class BuildUtil(object):
         # already been modified prior to building the extensions
         shutil.rmtree(os.path.join(phpSDK, 'Source'), ignore_errors=True) 
         
-        # Next, rename the newly compiled PHP extensions
-        self.rename_binaries(sdk_dir)
+        # Next, rename the newly compiled PHP extensions, if required
+        if not self.no_rename:
+            self.rename_binaries(sdk_dir)
         
         # Final step, copy the binaries to the right place
         ext_dir = self.copy_binaries(sdk_dir, copy_to_ext)
@@ -440,7 +443,7 @@ class BuildUtil(object):
                 
     def copy_binary(self, from_dir, dest_dir, driver, suffix):
         """Copy sqlsrv or pdo_sqlsrv binary (based on *suffix*) to *dest_dir*."""
-        if suffix == '.dll':
+        if not self.no_rename and suffix == '.dll':
             binary = self.driver_new_name(driver, suffix)
         else:
             binary = self.driver_name(driver, suffix)
