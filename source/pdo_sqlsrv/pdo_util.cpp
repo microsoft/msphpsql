@@ -407,7 +407,7 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
-        { IMSSP, (SQLCHAR*) "Error converting a double value to an integer.", -84, false }
+        { IMSSP, (SQLCHAR*) "Error converting a double (value out of range) to an integer.", -84, false }
     },
     { UINT_MAX, {} }
 };

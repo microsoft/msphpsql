@@ -398,7 +398,7 @@ ss_error SS_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
-        { IMSSP, (SQLCHAR*)"Error converting a double value to an integer.", -109, false }
+        { IMSSP, (SQLCHAR*)"Error converting a double (value out of range) to an integer.", -109, false }
     },
 
     // terminate the list of errors/warnings

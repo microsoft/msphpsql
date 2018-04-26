@@ -186,7 +186,7 @@ function testOutputDecimals($inout)
                                 // Large numbers are expected to fail when 
                                 // converting to booleans / integers
                                 if (isAEConnected()) {
-                                    $error = "Error converting a double value to an integer";
+                                    $error = "Error converting a double (value out of range) to an integer";
                                 } else {
                                     $error = "Error converting data type $dataType to int"; 
                                 }
