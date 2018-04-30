@@ -15,28 +15,6 @@ require_once("MsCommon_mid-refactor.inc");
 
 $error = "Error converting a double (value out of range) to an integer";
 
-function skipTest($conn)
-{
-    $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
-    $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
-    if ($msodbcsql_maj < 17) {
-        return true;
-    }
-    
-    global $daasMode;
-    if ($daasMode) {
-        // running against Azure
-        return false;
-    }
-    // otherwise, check server version
-    $server_ver = $conn->getAttribute(PDO::ATTR_SERVER_VERSION);
-    if (explode('.', $server_ver)[0] < 13) {
-        return true;
-    }
-    
-    return false;
-}
-
 function getOutputs($stmt, $outSql, $id, $pdoParamType, $inout = false) 
 {
     $dec = $num = 0;
@@ -108,7 +86,7 @@ function getHugeNumbers($conn, $outSql)
 try {
     // Check eligibility
     $conn = new PDO( "sqlsrv:server = $server", $uid, $pwd );
-    if (skipTest($conn)) {
+    if (!isAEQualified($conn)) {
         echo "Done\n";
         return;
     }
