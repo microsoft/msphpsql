@@ -88,12 +88,6 @@ function testOutputBinary($inout)
                     $stmt = $conn->prepare($outSql);
                     trace("\nParam $pdoParamType with INOUT = $inout\n");
                     
-                    if ($inout && $pdoParamType == PDO::PARAM_STR) {
-                        // Currently do not support getting binary as strings + INOUT param
-                        // See VSO 2829 for details
-                        continue;
-                    } 
-                    
                     if (!isAEConnected() && $pdoParamType == PDO::PARAM_INT) {
                         // Without AE, there is no possible way to specify
                         // binary encoding for this output param type, 
