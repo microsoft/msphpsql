@@ -6,7 +6,7 @@ Verifies that the issue has been fixed with ODBC 17.1
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif_protocol_not_tcp.inc');
-      require('skipif_versions_old.inc'); ?>
+      require('skipif_version_less_than_2k14.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon.inc");
