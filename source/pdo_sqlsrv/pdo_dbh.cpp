@@ -40,17 +40,20 @@ const char Server[] = "Server";
 const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
-const char ConnectionPooling[] = "ConnectionPooling";
 const char Authentication[] = "Authentication";
-const char Driver[] = "Driver";
-#ifdef _WIN32
 const char ColumnEncryption[] = "ColumnEncryption";
+const char ConnectionPooling[] = "ConnectionPooling";
+#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 #endif // _WIN32
 const char Database[] = "Database";
+const char Driver[] = "Driver";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
+const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
+const char KeyStoreSecret[] = "KeyStoreSecret";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
@@ -231,7 +234,6 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         driver_set_func::func
     },
-#ifdef _WIN32
     {
         PDOConnOptionNames::ColumnEncryption,
         sizeof(PDOConnOptionNames::ColumnEncryption),
@@ -241,6 +243,7 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         column_encryption_set_func::func
     },
+#ifdef _WIN32
     {
         PDOConnOptionNames::ConnectRetryCount,
         sizeof( PDOConnOptionNames::ConnectRetryCount ),
@@ -286,6 +289,33 @@ const connection_option PDO_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::Failover_Partner ), 
         CONN_ATTR_STRING,
         conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::KeyStoreAuthentication,
+        sizeof( PDOConnOptionNames::KeyStoreAuthentication ),
+        SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
+        ODBCConnOptions::KeyStoreAuthentication,
+        sizeof( ODBCConnOptions::KeyStoreAuthentication ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func 
+    },
+    {
+        PDOConnOptionNames::KeyStorePrincipalId,
+        sizeof( PDOConnOptionNames::KeyStorePrincipalId ),
+        SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID,
+        ODBCConnOptions::KeyStorePrincipalId,
+        sizeof( ODBCConnOptions::KeyStorePrincipalId ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func 
+    },
+    {
+        PDOConnOptionNames::KeyStoreSecret,
+        sizeof( PDOConnOptionNames::KeyStoreSecret ),
+        SQLSRV_CONN_OPTION_KEYSTORE_SECRET,
+        ODBCConnOptions::KeyStoreSecret,
+        sizeof( ODBCConnOptions::KeyStoreSecret ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func
     },
     {
         PDOConnOptionNames::LoginTimeout,
@@ -362,7 +392,7 @@ const connection_option PDO_CONN_OPTS[] = {
     {
         PDOConnOptionNames::TransparentNetworkIPResolution,
         sizeof(PDOConnOptionNames::TransparentNetworkIPResolution),
-        SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
+        SQLSRV_CONN_OPTION_TRANSPARENT_NETWORK_IP_RESOLUTION,
         ODBCConnOptions::TransparentNetworkIPResolution,
         sizeof(ODBCConnOptions::TransparentNetworkIPResolution),
         CONN_ATTR_STRING,

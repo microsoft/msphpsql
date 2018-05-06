@@ -44,4 +44,9 @@ $traceEnabled = false;
 $keystore = "none";         // key store provider, acceptable values are none, win, ksp, akv
 $dataEncrypted = false;     // whether data is to be encrypted
 
+$principalName = 'name';
+$clientID = 'clientid';
+$AKVPassword = 'password';
+$AKVSecret = 'secret';
+
 ?>

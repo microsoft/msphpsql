@@ -71,6 +71,9 @@ const char* get_processor_arch( void );
 void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len TSRMLS_DC );
 connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ const char* key, _In_ SQLULEN key_len TSRMLS_DC );
 void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC );
+void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
+void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t key_size);
+void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size);
 }
 
 // core_sqlsrv_connect
@@ -128,13 +131,13 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         // we do this earlier because we have to allocate the connection handle prior to setting attributes on
         // it in build_connection_string_and_set_conn_attr.
     
-         if( options_ht && zend_hash_num_elements( options_ht ) > 0 ) {
-         
-             zval* option_z = NULL; 
-             option_z = zend_hash_index_find( options_ht, SQLSRV_CONN_OPTION_CONN_POOLING );
-             if ( option_z ) {
-                 // if the option was found and it's not true, then use the non pooled environment handle
-                 if(( Z_TYPE_P( option_z ) == IS_STRING && !core_str_zval_is_true( option_z )) || !zend_is_true( option_z ) ) {  
+        if( options_ht && zend_hash_num_elements( options_ht ) > 0 ) {
+        
+            zval* option_z = NULL; 
+            option_z = zend_hash_index_find( options_ht, SQLSRV_CONN_OPTION_CONN_POOLING );
+            if ( option_z ) {
+                // if the option was found and it's not true, then use the non pooled environment handle
+                if(( Z_TYPE_P( option_z ) == IS_STRING && !core_str_zval_is_true( option_z )) || !zend_is_true( option_z ) ) {  
                 henv = &henv_ncp;
                 is_pooled = false;
             }
@@ -244,6 +247,8 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     CHECK_SQL_WARNING_AS_ERROR( r, conn ) {
         throw core::CoreException();
     }
+
+    load_azure_key_vault( conn );
 
     // determine the version of the server we're connected to.  The server version is left in the 
     // connection upon return.
@@ -932,6 +937,90 @@ void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     conn->server_version = version_major;
 }
 
+void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
+{
+    // If column encryption is not enabled simply do nothing. Otherwise, check if a custom keystore provider
+    // is required for encryption or decryption. Note, in order to load and configure a custom keystore provider, 
+    // all KSP fields in conn->ce_option must be defined. 
+    if ( ! conn->ce_option.enabled || ! conn->ce_option.akv_required )
+        return;
+    
+    CHECK_CUSTOM_ERROR( conn->ce_option.akv_auth == NULL || Z_STRLEN_P(conn->ce_option.akv_auth) <= 0, conn, SQLSRV_ERROR_AKV_AUTH_MISSING) {
+        throw core::CoreException();
+    }
+
+    CHECK_CUSTOM_ERROR( conn->ce_option.akv_id == NULL || Z_STRLEN_P(conn->ce_option.akv_id) <= 0, conn, SQLSRV_ERROR_AKV_NAME_MISSING) {
+        throw core::CoreException();
+    }
+
+    CHECK_CUSTOM_ERROR( conn->ce_option.akv_secret == NULL || Z_STRLEN_P(conn->ce_option.akv_secret) <= 0, conn, SQLSRV_ERROR_AKV_SECRET_MISSING) {
+        throw core::CoreException();
+    }
+    
+    char *akv_auth = Z_STRVAL_P( conn->ce_option.akv_auth );
+    char *akv_id = Z_STRVAL_P( conn->ce_option.akv_id );
+    char *akv_secret = Z_STRVAL_P( conn->ce_option.akv_secret );    
+    unsigned int id_len = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_id ));
+    unsigned int key_size = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_secret ));    
+    
+    //sqlsrv_malloc_auto_ptr<unsigned char> akv_data;
+    //akv_data = reinterpret_cast<unsigned char*>( sqlsrv_malloc( sizeof( CEKEYSTOREDATA ) + key_size ));
+    //CEKEYSTOREDATA *pAKV = reinterpret_cast<CEKEYSTOREDATA*>( akv_data.get() );
+    
+    //pAKV->dataSize = key_size;
+    
+    // unsigned int wid_len = 0;
+    // sqlsrv_malloc_auto_ptr<SQLWCHAR> wakv_id;
+    // wakv_id = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, akv_id, id_len, &wid_len );
+    
+    // CHECK_CUSTOM_ERROR( wakv_id == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE ) {
+        // throw core::CoreException();
+    // }
+    
+    //pAKV->name = L"AZURE_KEY_VAULT";(wchar_t *) wakv_id.get();
+    
+    // Next, extract the character string from conn->ce_option.ksp_encrypt_key into encrypt_key
+    //char* akv_secret = Z_STRVAL_P( conn->ce_option.akv_secret );    
+    //memcpy_s( pAKV->data, key_size * sizeof( char ) , encrypt_key, key_size );
+  
+    if ( !stricmp(akv_auth, "KeyVaultPassword") )
+    {
+        configure_azure_key_vault( conn, AKV_CONFIG_FLAGS, AKVCFG_AUTHMODE_PASSWORD, 0 );
+    }
+    else if ( !stricmp(akv_auth, "KeyVaultClientSecret") )
+    {
+        configure_azure_key_vault( conn, AKV_CONFIG_FLAGS, AKVCFG_AUTHMODE_CLIENTKEY, 0 );
+    }
+    
+    configure_azure_key_vault( conn, AKV_CONFIG_PRINCIPALID, akv_id, id_len );
+    configure_azure_key_vault( conn, AKV_CONFIG_AUTHSECRET, akv_secret, key_size );
+}
+
+void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t key_size )
+{
+    BYTE akv_data[sizeof( CEKEYSTOREDATA ) + sizeof(DWORD) + 1 ];
+    CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>( akv_data );
+    pData->name = L"AZURE_KEY_VAULT";
+    pData->data[0] = config_attr;
+    pData->dataSize = sizeof(config_attr) + sizeof(config_value);
+    *reinterpret_cast<DWORD*>(&pData->data[1]) = config_value;
+    
+    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
+}
+
+void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size )
+{
+    BYTE akv_data[sizeof( CEKEYSTOREDATA ) + 2048 ];
+    CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>( akv_data );
+    pData->name = L"AZURE_KEY_VAULT";
+    pData->data[0] = config_attr;
+    pData->dataSize = 1+key_size;
+    //pData->data[1] = config_value;
+    memcpy_s( pData->data+1, key_size * sizeof( char ) , config_value, key_size );
+    
+    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
+}
+
 void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC )
 {
     // wrap a connection option in a quote.  It is presumed that any character that need to be escaped will
@@ -1003,6 +1092,45 @@ void column_encryption_set_func::func( _In_ connection_option const* option, _In
     conn_str += "=";
     conn_str += value_str;
     conn_str += ";";
+}
+
+void ce_akv_str_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+{
+    SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Azure Key Vault keywords accept only strings." );
+    
+    //size_t value_len = Z_STRLEN_P( value );
+    
+    switch( option->conn_option_key )
+    {
+        case SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION: 
+        {
+            char *value_str = Z_STRVAL_P( value );        
+            CHECK_CUSTOM_ERROR( stricmp( value_str, "KeyVaultPassword" ) && stricmp( value_str, "KeyVaultClientSecret" ), conn, SQLSRV_ERROR_INVALID_AKV_AUTHENTICATION_OPTION )
+            {
+                throw core::CoreException();
+            }
+            conn->ce_option.akv_auth = value;
+            conn->ce_option.akv_required = true;
+            break;
+        }
+        case SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID:
+        {
+            conn->ce_option.akv_id = value;
+            //conn->ce_option.akv_id_len = value_len;
+            conn->ce_option.akv_required = true;
+            break;
+        }
+        case SQLSRV_CONN_OPTION_KEYSTORE_SECRET:
+        {
+            conn->ce_option.akv_secret = value;
+            //conn->ce_option.akv_secret_len = value_len;
+            conn->ce_option.akv_required = true;
+            break;
+        }
+        default:
+            SQLSRV_ASSERT( false, "ce_akv_str_set_func: Invalid AKV option!" );
+            break;
+    }
 }
 
 // helper function to evaluate whether a string value is true or false.

@@ -400,6 +400,22 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
         { IMSSP, (SQLCHAR*) "Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.", -109, false }
     },
+    {
+        SQLSRV_ERROR_INVALID_AKV_AUTHENTICATION_OPTION,
+        { IMSSP, (SQLCHAR*) "Invalid option for the KeyStoreAuthentication keyword. Only KeyVaultPassword or KeyVaultClientSecret is allowed.", -110, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_AUTH_MISSING,
+        { IMSSP, (SQLCHAR*) "Authentication method for Azure Key Vault is missing. KeyStoreAuthentication must be set to KeyVaultPassword or KeyVaultClientSecret.", -111, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_NAME_MISSING,
+        { IMSSP, (SQLCHAR*) "ID for Azure Key Vault is missing. A username or client Id is required.", -112, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_SECRET_MISSING,
+        { IMSSP, (SQLCHAR*) "Secret for Azure Key Vault is missing. A password or client secret is required.", -113, false }
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }

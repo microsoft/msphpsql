@@ -184,19 +184,22 @@ namespace SSConnOptionNames {
 const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
-const char CharacterSet[] = "CharacterSet";
 const char Authentication[] = "Authentication";
-const char ConnectionPooling[] = "ConnectionPooling";
-const char Driver[] = "Driver";
-#ifdef _WIN32
+const char CharacterSet[] = "CharacterSet";
 const char ColumnEncryption[] = "ColumnEncryption";
+const char ConnectionPooling[] = "ConnectionPooling";
+#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 #endif // _WIN32
 const char Database[] = "Database";
 const char DateAsString[] = "ReturnDatesAsStrings";
+const char Driver[] = "Driver";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
+const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
+const char KeyStoreSecret[] = "KeyStoreSecret";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
@@ -312,7 +315,6 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         driver_set_func::func
     },
-#ifdef _WIN32
     {
         SSConnOptionNames::ColumnEncryption,
         sizeof(SSConnOptionNames::ColumnEncryption),
@@ -322,6 +324,7 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         column_encryption_set_func::func
     },
+#ifdef _WIN32
     {
         SSConnOptionNames::ConnectRetryCount,
         sizeof( SSConnOptionNames::ConnectRetryCount ),
@@ -367,6 +370,33 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::Failover_Partner ), 
         CONN_ATTR_STRING,
         conn_str_append_func::func
+    },
+    {
+        SSConnOptionNames::KeyStoreAuthentication,
+        sizeof( SSConnOptionNames::KeyStoreAuthentication ),
+        SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
+        ODBCConnOptions::KeyStoreAuthentication,
+        sizeof( ODBCConnOptions::KeyStoreAuthentication ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func 
+    },
+    {
+        SSConnOptionNames::KeyStorePrincipalId,
+        sizeof( SSConnOptionNames::KeyStorePrincipalId ),
+        SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID,
+        ODBCConnOptions::KeyStorePrincipalId,
+        sizeof( ODBCConnOptions::KeyStorePrincipalId ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func 
+    },
+    {
+        SSConnOptionNames::KeyStoreSecret,
+        sizeof( SSConnOptionNames::KeyStoreSecret ),
+        SQLSRV_CONN_OPTION_KEYSTORE_SECRET,
+        ODBCConnOptions::KeyStoreSecret,
+        sizeof( ODBCConnOptions::KeyStoreSecret ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func
     },
     {
         SSConnOptionNames::LoginTimeout,
@@ -443,7 +473,7 @@ const connection_option SS_CONN_OPTS[] = {
     {
         SSConnOptionNames::TransparentNetworkIPResolution,
         sizeof(SSConnOptionNames::TransparentNetworkIPResolution),
-        SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
+        SQLSRV_CONN_OPTION_TRANSPARENT_NETWORK_IP_RESOLUTION,
         ODBCConnOptions::TransparentNetworkIPResolution,
         sizeof(ODBCConnOptions::TransparentNetworkIPResolution),
         CONN_ATTR_STRING,
@@ -525,7 +555,7 @@ PHP_FUNCTION ( sqlsrv_connect )
         core::sqlsrv_zend_hash_init( *g_ss_henv_cp, ss_conn_options_ht, 10 /* # of buckets */, 
                                  ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
    
-        // Either of g_ss_henv_cp or g_ss_henv_ncp can be used to propogate the error.
+        // Either of g_ss_henv_cp or g_ss_henv_ncp can be used to propagate the error.
         ::validate_conn_options( *g_ss_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht TSRMLS_CC );   
      
         // call the core connect function  

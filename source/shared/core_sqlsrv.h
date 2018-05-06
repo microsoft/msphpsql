@@ -1055,8 +1055,12 @@ struct stmt_option;
 // This holds the various details of column encryption. 
 struct col_encryption_option {
     bool            enabled;            // column encryption enabled, false by default
+    zval_auto_ptr   akv_auth;
+    zval_auto_ptr   akv_id;
+    zval_auto_ptr   akv_secret;
+    bool            akv_required;
 
-    col_encryption_option() : enabled( false )
+    col_encryption_option() : enabled( false ), akv_required( false )
     {
     }
 };
@@ -1106,14 +1110,17 @@ const char Authentication[] = "Authentication";
 const char Driver[] = "Driver";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
-#ifdef _WIN32
 const char ColumnEncryption[] = "ColumnEncryption";
+#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 #endif // _WIN32
 const char Database[] = "Database";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
+const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
+const char KeyStoreSecret[] = "KeyStoreSecret";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_ODBC[] = "MARS_Connection";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
@@ -1156,7 +1163,10 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
     SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
     SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
-    SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
+    SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
+    SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID,
+    SQLSRV_CONN_OPTION_KEYSTORE_SECRET,
+    SQLSRV_CONN_OPTION_TRANSPARENT_NETWORK_IP_RESOLUTION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
@@ -1217,6 +1227,10 @@ struct driver_set_func {
 
 struct ce_ksp_provider_set_func {
     static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
+struct ce_akv_str_set_func {
+   static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
 
@@ -1699,6 +1713,10 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
     SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
     SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
+    SQLSRV_ERROR_INVALID_AKV_AUTHENTICATION_OPTION,
+    SQLSRV_ERROR_AKV_AUTH_MISSING,
+    SQLSRV_ERROR_AKV_NAME_MISSING,
+    SQLSRV_ERROR_AKV_SECRET_MISSING,
     SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
 
     // Driver specific error codes starts from here.
@@ -1916,7 +1934,7 @@ namespace core {
     }
 
     inline void SQLAllocHandle( _In_ SQLSMALLINT HandleType, _Inout_ sqlsrv_context& InputHandle, 
-								_Out_ SQLHANDLE* OutputHandlePtr TSRMLS_DC )
+                                _Out_ SQLHANDLE* OutputHandlePtr TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLAllocHandle( HandleType, InputHandle.handle(), OutputHandlePtr );
