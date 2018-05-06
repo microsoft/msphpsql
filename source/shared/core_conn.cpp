@@ -939,9 +939,9 @@ void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 
 void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 {
-    // If column encryption is not enabled simply do nothing. Otherwise, check if a custom keystore provider
-    // is required for encryption or decryption. Note, in order to load and configure a custom keystore provider, 
-    // all KSP fields in conn->ce_option must be defined. 
+    // If column encryption is not enabled simply do nothing. Otherwise, check if Azure Key Vault
+    // is required for encryption or decryption. Note, in order to load and configure Azure Key Vault, 
+    // all fields in conn->ce_option must be defined. 
     if ( ! conn->ce_option.enabled || ! conn->ce_option.akv_required )
         return;
     
@@ -962,27 +962,7 @@ void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     char *akv_secret = Z_STRVAL_P( conn->ce_option.akv_secret );    
     unsigned int id_len = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_id ));
     unsigned int key_size = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_secret ));    
-    
-    //sqlsrv_malloc_auto_ptr<unsigned char> akv_data;
-    //akv_data = reinterpret_cast<unsigned char*>( sqlsrv_malloc( sizeof( CEKEYSTOREDATA ) + key_size ));
-    //CEKEYSTOREDATA *pAKV = reinterpret_cast<CEKEYSTOREDATA*>( akv_data.get() );
-    
-    //pAKV->dataSize = key_size;
-    
-    // unsigned int wid_len = 0;
-    // sqlsrv_malloc_auto_ptr<SQLWCHAR> wakv_id;
-    // wakv_id = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, akv_id, id_len, &wid_len );
-    
-    // CHECK_CUSTOM_ERROR( wakv_id == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE ) {
-        // throw core::CoreException();
-    // }
-    
-    //pAKV->name = L"AZURE_KEY_VAULT";(wchar_t *) wakv_id.get();
-    
-    // Next, extract the character string from conn->ce_option.ksp_encrypt_key into encrypt_key
-    //char* akv_secret = Z_STRVAL_P( conn->ce_option.akv_secret );    
-    //memcpy_s( pAKV->data, key_size * sizeof( char ) , encrypt_key, key_size );
-  
+      
     if ( !stricmp(akv_auth, "KeyVaultPassword") )
     {
         configure_azure_key_vault( conn, AKV_CONFIG_FLAGS, AKVCFG_AUTHMODE_PASSWORD, 0 );
@@ -1015,7 +995,7 @@ void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char*
     pData->name = L"AZURE_KEY_VAULT";
     pData->data[0] = config_attr;
     pData->dataSize = 1+key_size;
-    //pData->data[1] = config_value;
+
     memcpy_s( pData->data+1, key_size * sizeof( char ) , config_value, key_size );
     
     core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
@@ -1097,9 +1077,7 @@ void column_encryption_set_func::func( _In_ connection_option const* option, _In
 void ce_akv_str_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
 {
     SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Azure Key Vault keywords accept only strings." );
-    
-    //size_t value_len = Z_STRLEN_P( value );
-    
+        
     switch( option->conn_option_key )
     {
         case SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION: 
