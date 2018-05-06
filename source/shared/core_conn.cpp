@@ -1094,14 +1094,12 @@ void ce_akv_str_set_func::func( _In_ connection_option const* option, _In_ zval*
         case SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID:
         {
             conn->ce_option.akv_id = value;
-            //conn->ce_option.akv_id_len = value_len;
             conn->ce_option.akv_required = true;
             break;
         }
         case SQLSRV_CONN_OPTION_KEYSTORE_SECRET:
         {
             conn->ce_option.akv_secret = value;
-            //conn->ce_option.akv_secret_len = value_len;
             conn->ce_option.akv_required = true;
             break;
         }
