@@ -359,6 +359,17 @@ function connect($options = array(), $disableCE = false)
         if (isColEncrypted()) {
             $connectionOptions = array_merge($connectionOptions, array("ColumnEncryption" => "Enabled"));
         }
+        if ($keystore == 'akv') {
+            $akv_options = array("KeyStoreAuthentication"=>$keyStoreAuthentication);
+            if ($keyStoreAuthentication == 'KeyVaultPassword') {
+                $akv_options["KeyStorePrincipalId"] = $principalName;
+                $akv_options["KeyStoreSecret"] = $AKVPassword;
+            } else if ($keyStoreAuthentication == "KeyVaultClientSecret") {
+                $akv_options["KeyStorePrincipalId"] = $clientID;
+                $akv_options["KeyStoreSecret"] = $AKVSecret;
+            }
+            $connectionOptions = array_merge($connectionOptions, $akv_options);
+        }
     }
     $conn = sqlsrv_connect($server, $connectionOptions);
     if ($conn === false) {

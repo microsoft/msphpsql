@@ -44,9 +44,11 @@ if (isset($_ENV['MSSQL_SERVER']) || isset($_ENV['MSSQL_USER']) || isset($_ENV['M
 $keystore = "none";         // key store provider, acceptable values are none, win, ksp, akv
 $dataEncrypted = false;     // whether data is to be encrypted
 
-$principalName = 'name';
-$clientID = 'clientid';
-$AKVPassword = 'password';
-$AKVSecret = 'secret';
+// for Azure Key Vault
+$keyStoreAuthentication = 'KeyVaultPassword';   // can be KeyVaultPassword or KeyVaultClientSecret
+$principalName = 'name';                        // for use with KeyVaultPassword
+$AKVPassword = 'password';                      // for use with KeyVaultPassword
+$clientID = 'clientid';                         // for use with KeyVaultClientSecret
+$AKVSecret = 'secret';                          // for use with KeyVaultClientSecret
 
 ?>
