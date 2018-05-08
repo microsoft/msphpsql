@@ -45,12 +45,12 @@ Thank you for taking the time to participate in our last survey. You can continu
 
 ## Prerequisites
 
-For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/en-us/sql/connect/php/system-requirements-for-the-php-sql-driver) on MSDN.
+For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/en-us/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
 
 On the client machine:
 - PHP 7.0.x, 7.1.x, or 7.2.x (7.2.0 and up on Unix, 7.2.1 and up on Windows)
 - A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
-- [Microsoft ODBC Driver 11][odbc11], [Microsoft ODBC Driver 13][odbc13], or [Microsoft ODBC Driver 17][odbc17]
+- [Microsoft ODBC Driver 17][odbc17], [Microsoft ODBC Driver 13][odbc13], or [Microsoft ODBC Driver 11][odbc11]
 
 On the server side, Microsoft SQL Server 2008 R2 and above on Windows is supported, as is Microsoft SQL Server 2016 and above on Linux.
 
@@ -60,16 +60,16 @@ The drivers are distributed as pre-compiled extensions for PHP found on the [rel
  
 If you choose to build the drivers, you must be able to build PHP 7 without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows) -- an example buildscript is provided, but you can also compile the drivers manually.
 
-To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/en-us/sql/connect/php/loading-the-php-sql-driver) on MSDN.
+To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/en-us/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
 
 Finally, restart the Web server.
 
 ## Install (UNIX)
 
-For full instructions on installing the drivers on all supported Unix platforms, see [the installation instructions on MSDN](https://docs.microsoft.com/en-us/sql/connect/php/installation-tutorial-linux-mac).
+For full instructions on installing the drivers on all supported Unix platforms, see [the installation instructions on Microsoft Docs](https://docs.microsoft.com/en-us/sql/connect/php/installation-tutorial-linux-mac).
 
 ## Sample Code
-For PHP code samples, please see the [sample](https://github.com/Microsoft/msphpsql/tree/master/sample) folder or the [code samples on MSDN](https://docs.microsoft.com/en-us/sql/connect/php/code-samples-for-php-sql-driver).
+For PHP code samples, please see the [sample](https://github.com/Microsoft/msphpsql/tree/master/sample) folder or the [code samples on Microsoft Docs](https://docs.microsoft.com/en-us/sql/connect/php/code-samples-for-php-sql-driver).
 
 ## Limitations and Known Issues
 Please refer to [Releases](https://github.com/Microsoft/msphpsql/releases) for the latest limitations and known issues.
@@ -133,7 +133,7 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 ## Resources
 
-**Documentation**: [MSDN Online Documentation][phpdoc].
+**Documentation**: [Microsoft Docs Online][phpdoc].
 
 **Team Blog**: Browse our blog for comments and announcements from the team in the [team blog][blog].
 
@@ -155,16 +155,6 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [odbc13]: https://www.microsoft.com/download/details.aspx?id=50420
 
-[odbc17]: https://github.com/Microsoft/msphpsql/tree/master/ODBC%2017%20binaries%20preview
-
-[odbcLinux]: https://msdn.microsoft.com/library/hh568454(v=sql.110).aspx
+[odbc17]: https://www.microsoft.com/download/details.aspx?id=56567
 
 [PHPMan]: http://php.net/manual/install.unix.php
-
-[LinuxDM]: https://msdn.microsoft.com/library/hh568449(v=sql.110).aspx
-
-[httpd_source]: http://httpd.apache.org/
-
-[apr_source]: http://apr.apache.org/
-
-[httpdconf]: http://php.net/manual/en/install.unix.apache2.php
