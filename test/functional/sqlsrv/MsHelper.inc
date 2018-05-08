@@ -360,12 +360,12 @@ function connect($options = array(), $disableCE = false)
             $connectionOptions = array_merge($connectionOptions, array("ColumnEncryption" => "Enabled"));
         }
         if ($keystore == 'akv') {
-            $akv_options = array("KeyStoreAuthentication"=>$keyStoreAuthentication);
-            if ($keyStoreAuthentication == 'KeyVaultPassword') {
-                $akv_options["KeyStorePrincipalId"] = $principalName;
+            $akv_options = array("KeyStoreAuthentication"=>$AKVKeyStoreAuthentication);
+            if ($AKVKeyStoreAuthentication == "KeyVaultPassword") {
+                $akv_options["KeyStorePrincipalId"] = $AKVPrincipalName;
                 $akv_options["KeyStoreSecret"] = $AKVPassword;
-            } else if ($keyStoreAuthentication == "KeyVaultClientSecret") {
-                $akv_options["KeyStorePrincipalId"] = $clientID;
+            } else if ($AKVKeyStoreAuthentication == "KeyVaultClientSecret") {
+                $akv_options["KeyStorePrincipalId"] = $AKVClientID;
                 $akv_options["KeyStoreSecret"] = $AKVSecret;
             }
             $connectionOptions = array_merge($connectionOptions, $akv_options);

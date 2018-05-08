@@ -93,10 +93,10 @@ function getDSN($sqlsrvserver, $database, $keywords = '', $disableCE = false)
         $dsn .= "ColumnEncryption=Enabled;";
     }
     if ($keystore == "akv" && !$disableCE) {
-        if ($keyStoreAuthentication == "KeyVaultPassword") {
-            $dsn .= "KeyStoreAuthentication=$keyStoreAuthentication;KeyStorePrincipalId=$principalName;KeyStoreSecret=$AKVPassword;";
-        } else if ($keyStoreAuthentication == "KeyVaultClientSecret") {
-            $dsn .= "KeyStoreAuthentication=$keyStoreAuthentication;KeyStorePrincipalId=$clientID;KeyStoreSecret=$AKVSecret;";
+        if ($AKVKeyStoreAuthentication == "KeyVaultPassword") {
+            $dsn .= "KeyStoreAuthentication=$AKVKeyStoreAuthentication;KeyStorePrincipalId=$AKVPrincipalName;KeyStoreSecret=$AKVPassword;";
+        } else if ($AKVKeyStoreAuthentication == "KeyVaultClientSecret") {
+            $dsn .= "KeyStoreAuthentication=$AKVKeyStoreAuthentication;KeyStorePrincipalId=$AKVClientID;KeyStoreSecret=$AKVSecret;";
         }
     }
     if ($keystore == "ksp" && !$disableCE) {

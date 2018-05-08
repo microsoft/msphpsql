@@ -11,7 +11,7 @@ require_once('values.php');
 // We will test the direct product (set of all possible combinations) of the following
 $columnEncryption = ['enabled', 'disabled', 'notvalid', ''];
 $keyStoreAuthentication = ['KeyVaultPassword', 'KeyVaultClientSecret', 'KeyVaultNothing', ''];
-$keyStorePrincipalId = [$principalName, $clientID, 'notaname', ''];
+$keyStorePrincipalId = [$AKVPrincipalName, $AKVClientID, 'notaname', ''];
 $keyStoreSecret = [$AKVPassword, $AKVSecret, 'notasecret', ''];
 
 function checkErrors($errors, ...$codes)
@@ -79,6 +79,8 @@ $dataTypes = array ("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
                     "decimal", "float", "real", "bigint", "int", "bit"
                     );
 
+$tableName = "akv_comparison_table";
+
 // Test every combination of the keywords above
 // Leave good credentials to the end to avoid caching influencing the results.
 // The cache timeout can only be changed with SQLSetConnectAttr, so we can't
@@ -112,8 +114,6 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     // Connect to the AE-enabled database
                     $conn = new PDO($connectionOptions, $uid, $pwd);
                     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    
-                    $tableName = "type_conversion_table";
                     
                     $columns = array();
                     $insertQuery = "";
@@ -175,163 +175,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
     }
 }
 
-// Now test the good credentials, where ($i, $j, $k, $m) == (0, 0, 0, 0)
-// and ($i, $j, $k, $m) == (0, 1, 1, 1)
-$connectionOptions = "sqlsrv:Server=$server;Database=$databaseName";
-
-$connectionOptions .= ";ColumnEncryption=".$columnEncryption[0];
-$connectionOptions .= ";KeyStoreAuthentication=".$keyStoreAuthentication[0];
-$connectionOptions .= ";KeyStorePrincipalId=".$keyStorePrincipalId[0];                
-$connectionOptions .= ";KeyStoreSecret=".$keyStoreSecret[0];
-
-$connectionOptions .= ";";
-
-try {
-    // Connect to the AE-enabled database
-    $conn = new PDO($connectionOptions, $uid, $pwd);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    $tableName = "type_conversion_table";
-    
-    $columns = array();
-    $insertQuery = "";
-
-    // Generate the INSERT query
-    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
-
-    createTable($conn, $tableName, $columns);
-    
-    // Duplicate all values for insertion - one is encrypted, one is not
-    $testValues = array();
-    for ($n=0; $n<sizeof($small_values); ++$n) {
-        $testValues[] = $small_values[$n];
-        $testValues[] = $small_values[$n];
-    }
-
-    // Prepare the INSERT query
-    // This is never expected to fail
-    $stmt = $conn->prepare($insertQuery);
-    if ($stmt == false) {
-        print_r($conn->errorInfo());
-        fatalError("sqlsrv_prepare failed\n");
-    }
-
-    // Execute the INSERT query
-    // This should not fail since our credentials are correct
-    if ($stmt->execute($testValues) == false) {
-        print_r($stmt->errorInfo());
-        fatalError("INSERT query execution failed with good credentials.\n");
-    } else {
-        echo "Successful insertion with username/password.\n";
-        
-        $selectQuery = "SELECT * FROM $tableName";
-        
-        $stmt1 = $conn->query($selectQuery);
-        
-        $data = $stmt1->fetchAll(PDO::FETCH_NUM);
-        $data = $data[0];
-        
-        if (sizeof($data) != 2*sizeof($dataTypes)) {
-            fatalError("Incorrect number of fields returned.\n");
-        }
-
-        for ($n=0; $n<sizeof($data); $n+=2) {
-            if ($data[$n] != $data[$n+1]) {
-                echo "Failed on field $n: ".$data[$n]." ".$data[$n+1]."\n";
-                fatalError("AE and non-AE values do not match.\n");
-            }
-        }
-        
-        $stmt = null;
-        $stmt1 = null;
-    }
-    
-    // Free the statement and close the connection
-    $stmt = null;
-    $conn = null;
-} catch(Exception $e) {
-    echo "Unexpected error.\n";
-    print_r($e->errorInfo);
-}
-
-$connectionOptions = "sqlsrv:Server=$server;Database=$databaseName";
-
-$connectionOptions .= ";ColumnEncryption=".$columnEncryption[0];
-$connectionOptions .= ";KeyStoreAuthentication=".$keyStoreAuthentication[1];
-$connectionOptions .= ";KeyStorePrincipalId=".$keyStorePrincipalId[1];
-$connectionOptions .= ";KeyStoreSecret=".$keyStoreSecret[1];
-
-$connectionOptions .= ";";
-
-try {
-    // Connect to the AE-enabled database
-    $conn = new PDO($connectionOptions, $uid, $pwd);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    $tableName = "type_conversion_table";
-    
-    $columns = array();
-    $insertQuery = "";
-
-    // Generate the INSERT query
-    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
-
-    createTable($conn, $tableName, $columns);
-    
-    // Duplicate all values for insertion - one is encrypted, one is not
-    $testValues = array();
-    for ($n=0; $n<sizeof($small_values); ++$n) {
-        $testValues[] = $small_values[$n];
-        $testValues[] = $small_values[$n];
-    }
-
-    // Prepare the INSERT query
-    // This is never expected to fail
-    $stmt = $conn->prepare($insertQuery);
-    if ($stmt == false) {
-        print_r($conn->errorInfo());
-        fatalError("sqlsrv_prepare failed\n");
-    }
-
-    // Execute the INSERT query
-    // This should not fail since our credentials are correct
-    if ($stmt->execute($testValues) == false) {
-        print_r($stmt->errorInfo());
-        fatalError("INSERT query execution failed with good credentials.\n");
-    } else {
-        echo "Successful insertion with client ID/secret.\n";
-        
-        $selectQuery = "SELECT * FROM $tableName";
-        
-        $stmt1 = $conn->query($selectQuery);
-        
-        $data = $stmt1->fetchAll(PDO::FETCH_NUM);
-        $data = $data[0];
-        
-        if (sizeof($data) != 2*sizeof($dataTypes)) {
-            fatalError("Incorrect number of fields returned.\n");
-        }
-
-        for ($n=0; $n<sizeof($data); $n+=2) {
-            if ($data[$n] != $data[$n+1]) {
-                echo "Failed on field $n: ".$data[$n]." ".$data[$n+1]."\n";
-                fatalError("AE and non-AE values do not match.\n");
-            }
-        }
-        
-        $stmt = null;
-        $stmt1 = null;
-    }
-    
-    // Free the statement and close the connection
-    $stmt = null;
-    $conn = null;
-} catch(Exception $e) {
-    echo "Unexpected error2.\n";
-    print_r($e->errorInfo);
-}
-
+echo "Done.\n";
 ?>
 --EXPECT--
-Successful insertion with username/password.
-Successful insertion with clinet ID/secret.
+Done.

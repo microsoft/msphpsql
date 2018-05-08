@@ -11,7 +11,7 @@ require_once('values.php');
 // We will test the direct product (set of all possible combinations) of the following
 $columnEncryption = ['enabled', 'disabled', 'notvalid', ''];
 $keyStoreAuthentication = ['KeyVaultPassword', 'KeyVaultClientSecret', 'KeyVaultNothing', ''];
-$keyStorePrincipalId = [$principalName, $clientID, 'notaname', ''];
+$keyStorePrincipalId = [$AKVPrincipalName, $AKVClientID, 'notaname', ''];
 $keyStoreSecret = [$AKVPassword, $AKVSecret, 'notasecret', ''];
 
 function checkErrors($errors, ...$codes)
@@ -49,7 +49,7 @@ function checkErrors($errors, ...$codes)
 
 // Set up the columns and build the insert query. Each data type has an
 // AE-encrypted and a non-encrypted column side by side in the table.
-function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery, $strsize)
+function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
     $columns = array();
     $queryTypes = "(";
@@ -79,12 +79,15 @@ $dataTypes = array ("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
                     "decimal", "float", "real", "bigint", "int", "bit"
                     );
 
-// Test every combination of the keywords above
-// Leave good credentials to the end to avoid caching influencing the results.
-// The cache timeout can only be changed with SQLSetConnectAttr, so we can't
-// run a PHP test without caching, and if we started with good credentials
-// then subsequent calls with bad credentials can work, which would muddle
-// the results of this test.
+$tableName = "akv_comparison_table";
+
+// Test every combination of the keywords above.
+// Leave out good credentials to ensure that caching does not influence the 
+// results. The cache timeout can only be changed with SQLSetConnectAttr, so
+// we can't run a PHP test without caching, and if we started with good
+// credentials then subsequent calls with bad credentials can work, which
+// would muddle the results of this test. Good credentials are tested in a
+// separate test.
 for ($i=0; $i < sizeof($columnEncryption); ++$i) {
     for ($j=0; $j < sizeof($keyStoreAuthentication); ++$j) {
         for ($k=0; $k < sizeof($keyStorePrincipalId); ++$k) {
@@ -129,13 +132,11 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     else
                         fatalError("Connection failed, unexpected connection string.\n");
                 } else {
-                    $tableName = "type_conversion_table";
-                    
                     $columns = array();
                     $insertQuery = "";
 
                     // Generate the INSERT query
-                    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery, $strsize);
+                    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
 
                     $stmt = AE\createTable($conn, $tableName, $columns);
                     if (!$stmt) {
@@ -185,159 +186,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
     }
 }
 
-// Now test the good credentials, where ($i, $j, $k, $m) == (0, 0, 0, 0)
-// and ($i, $j, $k, $m) == (0, 1, 1, 1)
-$connectionOptions = array("CharacterSet"=>"UTF-8", 
-                           "database"=>$databaseName, 
-                           "uid"=>$uid, 
-                           "pwd"=>$pwd,
-                           "ConnectionPooling"=>0);
-                
-$connectionOptions['ColumnEncryption'] = $columnEncryption[0];
-$connectionOptions['KeyStoreAuthentication'] = $keyStoreAuthentication[0];
-$connectionOptions['KeyStorePrincipalId'] = $keyStorePrincipalId[0];                
-$connectionOptions['KeyStoreSecret'] = $keyStoreSecret[0];
-                
-// Connect to the AE-enabled database
-$conn = sqlsrv_connect($server, $connectionOptions);
-if (!$conn) {
-    $errors = sqlsrv_errors();
-    fatalError("Connection failed while testing good credentials.\n");
-} else {
-    $tableName = "type_conversion_table";
-
-    $columns = array();
-    $insertQuery = "";
-
-    // Generate the INSERT query
-    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery, $strsize);
-
-    $stmt = AE\createTable($conn, $tableName, $columns);
-    if (!$stmt) {
-        fatalError("Failed to create table $tableName\n");
-    }
-
-    // Duplicate all values for insertion - one is encrypted, one is not
-    $testValues = array();
-    for ($n=0; $n<sizeof($small_values); ++$n) {
-        $testValues[] = $small_values[$n];
-        $testValues[] = $small_values[$n];
-    }
-
-    // Prepare the INSERT query
-    // This is never expected to fail
-    $stmt = sqlsrv_prepare($conn, $insertQuery, $testValues);
-    if ($stmt == false) {
-        print_r(sqlsrv_errors());
-        fatalError("sqlsrv_prepare failed\n");
-    }
-
-    // Execute the INSERT query
-    // This should not fail since our credentials are correct
-    if (sqlsrv_execute($stmt) == false) {
-        $errors = sqlsrv_errors();
-        fatalError("INSERT query failed with good credentials.\n");
-    } else {
-        echo "Successful insertion with username/password.\n";
-        
-        // Now get the data back and display it
-        $selectQuery = "SELECT * FROM $tableName";
-        
-        $stmt1 = sqlsrv_query($conn, $selectQuery);
-        $data = sqlsrv_fetch_array($stmt1, SQLSRV_FETCH_NUMERIC);
-        
-        if (sizeof($data) != 2*sizeof($dataTypes)) {
-            fatalError("Incorrect number of fields returned.\n");
-        }
-        
-        for ($n=0; $n<sizeof($data); $n+=2) {
-            if ($data[$n] != $data[$n+1]) {
-                echo "Failed on field $n: ".$data[$n]." ".$data[$n+1]."\n";
-                fatalError("AE and non-AE values do not match.\n");
-            }
-        }
-        
-        sqlsrv_free_stmt($stmt);
-        sqlsrv_free_stmt($stmt1);
-    }
-
-    // Free the statement and close the connection
-    sqlsrv_close($conn);
-}
-
-$connectionOptions['ColumnEncryption'] = $columnEncryption[0];
-$connectionOptions['KeyStoreAuthentication'] = $keyStoreAuthentication[1];
-$connectionOptions['KeyStorePrincipalId'] = $keyStorePrincipalId[1];                
-$connectionOptions['KeyStoreSecret'] = $keyStoreSecret[1];
-                
-// Connect to the AE-enabled database
-$conn = sqlsrv_connect($server, $connectionOptions);
-if (!$conn) {
-    $errors = sqlsrv_errors();
-    fatalError("Connection failed while testing good credentials.\n");
-} else {
-    $tableName = "type_conversion_table";
-    
-    $columns = array();
-    $insertQuery = "";
-
-    // Generate the INSERT query
-    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery, $strsize);
-
-    $stmt = AE\createTable($conn, $tableName, $columns);
-    if (!$stmt) {
-        fatalError("Failed to create table $tableName\n");
-    }
-
-    // Duplicate all values for insertion - one is encrypted, one is not
-    $testValues = array();
-    for ($n=0; $n<sizeof($small_values); ++$n) {
-        $testValues[] = $small_values[$n];
-        $testValues[] = $small_values[$n];
-    }
-
-    // Prepare the INSERT query
-    // This is never expected to fail
-    $stmt = sqlsrv_prepare($conn, $insertQuery, $testValues);
-    if ($stmt == false) {
-        print_r(sqlsrv_errors());
-        fatalError("sqlsrv_prepare failed\n");
-    }
-
-    // Execute the INSERT query
-    // This should not fail since our credentials are correct
-    if (sqlsrv_execute($stmt) == false) {
-        $errors = sqlsrv_errors();
-        fatalError("INSERT query execution failed with good credentials.\n");
-    } else {
-        echo "Successful insertion with client ID/secret.\n";
-        
-        // Now get the data back and display it
-        $selectQuery = "SELECT * FROM $tableName";
-        
-        $stmt1 = sqlsrv_query($conn, $selectQuery);
-        $data = sqlsrv_fetch_array($stmt1, SQLSRV_FETCH_NUMERIC);
-        
-        if (sizeof($data) != 2*sizeof($dataTypes)) {
-            fatalError("Incorrect number of fields returned.\n");
-        }
-        
-        for ($n=0; $n<sizeof($data); $n+=2) {
-            if ($data[$n] != $data[$n+1]) {
-                echo "Failed on field $n: ".$data[$n]." ".$data[$n+1]."\n";
-                fatalError("AE and non-AE values do not match.\n");
-            }
-        }
-        
-        sqlsrv_free_stmt($stmt);
-        sqlsrv_free_stmt($stmt1);
-    }
-
-    // Free the statement and close the connection
-    sqlsrv_close($conn);
-}
-
+echo "Done.\n";
 ?>
 --EXPECT--
-Successful insertion with username/password.
-Successful insertion with clinet ID/secret.
+Done.
