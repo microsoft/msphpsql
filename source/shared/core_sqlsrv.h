@@ -1055,6 +1055,7 @@ struct stmt_option;
 // This holds the various details of column encryption. 
 struct col_encryption_option {
     bool            enabled;            // column encryption enabled, false by default
+    SQLINTEGER      akv_mode;
     zval_auto_ptr   akv_auth;
     zval_auto_ptr   akv_id;
     zval_auto_ptr   akv_secret;
@@ -1717,6 +1718,7 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_AKV_AUTH_MISSING,
     SQLSRV_ERROR_AKV_NAME_MISSING,
     SQLSRV_ERROR_AKV_SECRET_MISSING,
+    SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
     SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
 
     // Driver specific error codes starts from here.

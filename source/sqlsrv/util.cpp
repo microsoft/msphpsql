@@ -410,11 +410,15 @@ ss_error SS_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_AKV_NAME_MISSING,
-        { IMSSP, (SQLCHAR*) "ID for Azure Key Vault is missing. A username or client Id is required.", -112, false }
+        { IMSSP, (SQLCHAR*) "The username or client Id for Azure Key Vault is missing.", -112, false }
     },
     {
         SQLSRV_ERROR_AKV_SECRET_MISSING,
-        { IMSSP, (SQLCHAR*) "Secret for Azure Key Vault is missing. A password or client secret is required.", -113, false }
+        { IMSSP, (SQLCHAR*) "The password or client secret for Azure Key Vault is missing.", -113, false }
+    },
+    {
+        SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
+        { IMSSP, (SQLCHAR*) "Invalid value for loading Azure Key Vault.", -114, false}
     },
 
     // terminate the list of errors/warnings

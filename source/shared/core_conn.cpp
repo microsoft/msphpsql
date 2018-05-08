@@ -945,15 +945,15 @@ void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     if ( ! conn->ce_option.enabled || ! conn->ce_option.akv_required )
         return;
     
-    CHECK_CUSTOM_ERROR( conn->ce_option.akv_auth == NULL || Z_STRLEN_P(conn->ce_option.akv_auth) <= 0, conn, SQLSRV_ERROR_AKV_AUTH_MISSING) {
+    CHECK_CUSTOM_ERROR( conn->ce_option.akv_auth == NULL, conn, SQLSRV_ERROR_AKV_AUTH_MISSING) {
         throw core::CoreException();
     }
 
-    CHECK_CUSTOM_ERROR( conn->ce_option.akv_id == NULL || Z_STRLEN_P(conn->ce_option.akv_id) <= 0, conn, SQLSRV_ERROR_AKV_NAME_MISSING) {
+    CHECK_CUSTOM_ERROR( conn->ce_option.akv_id == NULL, conn, SQLSRV_ERROR_AKV_NAME_MISSING) {
         throw core::CoreException();
     }
 
-    CHECK_CUSTOM_ERROR( conn->ce_option.akv_secret == NULL || Z_STRLEN_P(conn->ce_option.akv_secret) <= 0, conn, SQLSRV_ERROR_AKV_SECRET_MISSING) {
+    CHECK_CUSTOM_ERROR( conn->ce_option.akv_secret == NULL, conn, SQLSRV_ERROR_AKV_SECRET_MISSING) {
         throw core::CoreException();
     }
     
@@ -962,16 +962,8 @@ void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     char *akv_secret = Z_STRVAL_P( conn->ce_option.akv_secret );    
     unsigned int id_len = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_id ));
     unsigned int key_size = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_secret ));    
-      
-    if ( !stricmp(akv_auth, "KeyVaultPassword") )
-    {
-        configure_azure_key_vault( conn, AKV_CONFIG_FLAGS, AKVCFG_AUTHMODE_PASSWORD, 0 );
-    }
-    else if ( !stricmp(akv_auth, "KeyVaultClientSecret") )
-    {
-        configure_azure_key_vault( conn, AKV_CONFIG_FLAGS, AKVCFG_AUTHMODE_CLIENTKEY, 0 );
-    }
-    
+
+    configure_azure_key_vault( conn, AKV_CONFIG_FLAGS, conn->ce_option.akv_mode, 0 );
     configure_azure_key_vault( conn, AKV_CONFIG_PRINCIPALID, akv_id, id_len );
     configure_azure_key_vault( conn, AKV_CONFIG_AUTHSECRET, akv_secret, key_size );
 }
@@ -1078,6 +1070,12 @@ void ce_akv_str_set_func::func( _In_ connection_option const* option, _In_ zval*
 {
     SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Azure Key Vault keywords accept only strings." );
         
+    size_t value_len = Z_STRLEN_P( value );
+
+    CHECK_CUSTOM_ERROR( value_len <= 0, conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE ) {
+        throw core::CoreException();
+    }
+    
     switch( option->conn_option_key )
     {
         case SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION: 
@@ -1088,6 +1086,7 @@ void ce_akv_str_set_func::func( _In_ connection_option const* option, _In_ zval*
                 throw core::CoreException();
             }
             conn->ce_option.akv_auth = value;
+            conn->ce_option.akv_mode = stricmp( value_str, "KeyVaultPassword" ) ? AKVCFG_AUTHMODE_CLIENTKEY : AKVCFG_AUTHMODE_PASSWORD;
             conn->ce_option.akv_required = true;
             break;
         }

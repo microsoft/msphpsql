@@ -419,11 +419,15 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_AKV_NAME_MISSING,
-        { IMSSP, (SQLCHAR*) "ID for Azure Key Vault is missing. A username or client Id is required.", -87, false }
+        { IMSSP, (SQLCHAR*) "The username or client Id for Azure Key Vault is missing.", -87, false }
     },
     {
         SQLSRV_ERROR_AKV_SECRET_MISSING,
-        { IMSSP, (SQLCHAR*) "Secret for Azure Key Vault is missing. A password or client secret is required.", -88, false }
+        { IMSSP, (SQLCHAR*) "The password or client secret for Azure Key Vault is missing.", -88, false }
+    },
+    {
+        SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
+        { IMSSP, (SQLCHAR*) "Invalid value for loading Azure Key Vault.", -89, false}
     },
     { UINT_MAX, {} }
 };

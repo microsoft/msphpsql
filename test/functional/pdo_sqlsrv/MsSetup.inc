@@ -45,10 +45,10 @@ $keystore = "none";         // key store provider, acceptable values are none, w
 $dataEncrypted = false;     // whether data is to be encrypted
 
 // for Azure Key Vault
-$keyStoreAuthentication = 'KeyVaultPassword';   // can be KeyVaultPassword or KeyVaultClientSecret
-$principalName = 'name';                        // for use with KeyVaultPassword
-$AKVPassword = 'password';                      // for use with KeyVaultPassword
-$clientID = 'clientid';                         // for use with KeyVaultClientSecret
-$AKVSecret = 'secret';                          // for use with KeyVaultClientSecret
+$AKVKeyStoreAuthentication = 'TARGET_AKV_AUTH';   // can be KeyVaultPassword or KeyVaultClientSecret
+$AKVPrincipalName = 'TARGET_AKV_PRINCIPAL_NAME';  // for use with KeyVaultPassword
+$AKVPassword = 'TARGET_AKV_PASSWORD';             // for use with KeyVaultPassword
+$AKVClientID = 'TARGET_AKV_CLIENT_ID';            // for use with KeyVaultClientSecret
+$AKVSecret = 'TARGET_AKV_CLIENT_SECRET';          // for use with KeyVaultClientSecret
 
 ?>
