@@ -174,8 +174,10 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                         
                         sqlsrv_free_stmt($stmt);
                     } else {
-                        // The INSERT query succeeded with bad credentials
-                        fatalError( "Successful insertion with bad credentials\n");
+                        // The INSERT query succeeded with bad credentials, which
+                        // should only happen when encryption is not enabled.
+                        if (AE\isColEncrypted()) 
+                            fatalError( "Successful insertion with bad credentials\n");
                     }
                     
                     // Free the statement and close the connection

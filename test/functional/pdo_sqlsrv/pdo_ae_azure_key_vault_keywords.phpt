@@ -81,12 +81,13 @@ $dataTypes = array ("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
 
 $tableName = "akv_comparison_table";
 
-// Test every combination of the keywords above
-// Leave good credentials to the end to avoid caching influencing the results.
-// The cache timeout can only be changed with SQLSetConnectAttr, so we can't
-// run a PHP test without caching, and if we started with good credentials
-// then subsequent calls with bad credentials can work, which would muddle
-// the results of this test.
+// Test every combination of the keywords above.
+// Leave out good credentials to ensure that caching does not influence the 
+// results. The cache timeout can only be changed with SQLSetConnectAttr, so
+// we can't run a PHP test without caching, and if we started with good
+// credentials then subsequent calls with bad credentials can work, which
+// would muddle the results of this test. Good credentials are tested in a
+// separate test.
 for ($i=0; $i < sizeof($columnEncryption); ++$i) {
     for ($j=0; $j < sizeof($keyStoreAuthentication); ++$j) {
         for ($k=0; $k < sizeof($keyStorePrincipalId); ++$k) {
@@ -139,13 +140,15 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     }
 
                     // Execute the INSERT query
-                    // This is where we expect failure if the credentials are incorrect
+                    // Failure expected only if the keywords/credentials are wrong
                     if ($stmt->execute($testValues) == false) {
                         print_r($stmt->errorInfo());
                         $stmt = null;
                     } else {
-                         // The INSERT query succeeded with bad credentials
-                        fatalError( "Successful insertion with bad credentials\n");
+                        // The INSERT query succeeded with bad credentials, which
+                        // should only happen when encryption is not enabled.
+                        if (isColEncrypted()) 
+                            fatalError( "Successful insertion with bad credentials\n");
                     }
                                         
                     // Free the statement and close the connection
