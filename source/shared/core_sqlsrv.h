@@ -1326,23 +1326,25 @@ struct sqlsrv_output_param {
 
     zval* param_z;
     SQLSRV_ENCODING encoding;
-    SQLUSMALLINT param_num;  // used to index into the ind_or_len of the statement
-    SQLLEN original_buffer_len; // used to make sure the returned length didn't overflow the buffer
+    SQLUSMALLINT param_num;         // used to index into the ind_or_len of the statement
+    SQLLEN original_buffer_len;     // used to make sure the returned length didn't overflow the buffer
+    SQLSRV_PHPTYPE php_out_type;    // used to convert output param if necessary
     bool is_bool;
 
     // string output param constructor
     sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len ) :
-        param_z( p_z ), encoding( enc ), param_num( num ), original_buffer_len( buffer_len ), is_bool( false )
+        param_z(p_z), encoding(enc), param_num(num), original_buffer_len(buffer_len), is_bool(false), php_out_type(SQLSRV_PHPTYPE_INVALID)
     {
     }
 
     // every other type output parameter constructor
-    sqlsrv_output_param( _In_ zval* p_z, _In_ int num, _In_ bool is_bool ) :
+    sqlsrv_output_param( _In_ zval* p_z, _In_ int num, _In_ bool is_bool, _In_ SQLSRV_PHPTYPE php_out_type) :
         param_z( p_z ),
         encoding( SQLSRV_ENCODING_INVALID ),
         param_num( num ),
         original_buffer_len( -1 ),
-        is_bool( is_bool )
+        is_bool( is_bool ),
+        php_out_type(php_out_type)
     {
     }
 };
@@ -1719,7 +1721,7 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_AKV_NAME_MISSING,
     SQLSRV_ERROR_AKV_SECRET_MISSING,
     SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
-    SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
+    SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
