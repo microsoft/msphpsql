@@ -26,7 +26,7 @@ function checkErrors($errors, ...$codes)
             if ($errors[0] != $code)
             {
                 echo "Error: ";
-                print_r($errors[$i/2][0]);
+                print_r($errors[0]);
                 echo "\nExpected: ";
                 print_r($code);
                 echo "\n";
@@ -36,7 +36,7 @@ function checkErrors($errors, ...$codes)
             if ($errors[1] != $code)
             {
                 echo "Error: ";
-                print_r($errors[$i/2][1]);
+                print_r($errors[1]);
                 echo "\nExpected: ";
                 print_r($code);
                 echo "\n";
@@ -171,7 +171,10 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     else if ($m==3)
                         checkErrors($errors, 'IMSSP', '-88');
                     else
+                    {
+                        echo "i=$i j=$j k=$k m=$m failed connection\n";
                         checkErrors($errors, 'CE275', '0');
+                    }
                }
             }
         }

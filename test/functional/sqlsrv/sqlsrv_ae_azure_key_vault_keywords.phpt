@@ -130,7 +130,11 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     else if ($m==3)
                         checkErrors($errors, 'IMSSP', '-113');
                     else
+                    {
+                        echo "i=$i j=$j k=$k m=$m failed connection\n";
+                        print_r(sqlsrv_errors());
                         fatalError("Connection failed, unexpected connection string.\n");
+                    }
                 } else {
                     $columns = array();
                     $insertQuery = "";
