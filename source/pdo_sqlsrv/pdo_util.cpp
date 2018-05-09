@@ -415,7 +415,7 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_AKV_AUTH_MISSING,
-        { IMSSP, (SQLCHAR*) "Authentication method for Azure Key Vault is missing. KeyStoreAuthentication must be set to KeyVaultPassword or KeyVaultClientSecret.", -86, false }
+        { IMSSP, (SQLCHAR*) "The authentication method for Azure Key Vault is missing. KeyStoreAuthentication must be set to KeyVaultPassword or KeyVaultClientSecret.", -86, false }
     },
     {
         SQLSRV_ERROR_AKV_NAME_MISSING,
