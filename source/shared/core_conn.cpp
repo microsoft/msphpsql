@@ -945,7 +945,7 @@ void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     if ( ! conn->ce_option.enabled || ! conn->ce_option.akv_required )
         return;
     
-    CHECK_CUSTOM_ERROR( conn->ce_option.akv_auth == NULL, conn, SQLSRV_ERROR_AKV_AUTH_MISSING) {
+    CHECK_CUSTOM_ERROR( conn->ce_option.akv_mode == -1, conn, SQLSRV_ERROR_AKV_AUTH_MISSING) {
         throw core::CoreException();
     }
 
@@ -957,7 +957,6 @@ void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
         throw core::CoreException();
     }
     
-    char *akv_auth = Z_STRVAL_P( conn->ce_option.akv_auth );
     char *akv_id = Z_STRVAL_P( conn->ce_option.akv_id );
     char *akv_secret = Z_STRVAL_P( conn->ce_option.akv_secret );    
     unsigned int id_len = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_id ));
@@ -977,7 +976,7 @@ void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD
     pData->dataSize = sizeof(config_attr) + sizeof(config_value);
     *reinterpret_cast<DWORD*>(&pData->data[1]) = config_value;
     
-    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
+    int r = ::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
 }
 
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size )
@@ -990,7 +989,7 @@ void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char*
 
     memcpy_s( pData->data+1, key_size * sizeof( char ) , config_value, key_size );
     
-    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
+    int r = ::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
 }
 
 void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC )
@@ -1080,13 +1079,23 @@ void ce_akv_str_set_func::func( _In_ connection_option const* option, _In_ zval*
     {
         case SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION: 
         {
-            char *value_str = Z_STRVAL_P( value );        
-            CHECK_CUSTOM_ERROR( stricmp( value_str, "KeyVaultPassword" ) && stricmp( value_str, "KeyVaultClientSecret" ), conn, SQLSRV_ERROR_INVALID_AKV_AUTHENTICATION_OPTION )
+            char *value_str = Z_STRVAL_P( value );
+            if ( !stricmp( value_str, "KeyVaultPassword" ))
             {
-                throw core::CoreException();
+                conn->ce_option.akv_mode = AKVCFG_AUTHMODE_PASSWORD;
             }
-            conn->ce_option.akv_auth = value;
-            conn->ce_option.akv_mode = stricmp( value_str, "KeyVaultPassword" ) ? AKVCFG_AUTHMODE_CLIENTKEY : AKVCFG_AUTHMODE_PASSWORD;
+            else if ( !stricmp( value_str, "KeyVaultClientSecret" ))
+            {
+                conn->ce_option.akv_mode = AKVCFG_AUTHMODE_CLIENTKEY;
+            }
+            else
+            {
+                CHECK_CUSTOM_ERROR( 1, conn, SQLSRV_ERROR_INVALID_AKV_AUTHENTICATION_OPTION )
+                {
+                    throw core::CoreException();
+                }
+            }
+            
             conn->ce_option.akv_required = true;
             break;
         }
