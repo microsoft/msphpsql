@@ -133,12 +133,14 @@ function testOutputDecimals($inout)
                     // call stored procedure
                     $outSql = getCallProcSqlPlaceholders($spname, 2);
                     foreach ($pdoParamTypes as $pdoParamType) {
-                        $det = $rand = 0.0;
+                        // Do not initialize $det or $rand as empty strings 
+                        // See VSO 2915 for details. The string must be a numeric
+                        // string, and to make it work for all precisions, we 
+                        // simply set it to a single-digit string.
+                        $det = $rand = '0';
                         $stmt = $conn->prepare($outSql);
                     
                         $len = 2048;
-                        // Do not initialize $det or $rand as empty strings 
-                        // See VSO 2915 for details 
                         if ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {
                             $len = PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE;
                             $det = $rand = 0;
