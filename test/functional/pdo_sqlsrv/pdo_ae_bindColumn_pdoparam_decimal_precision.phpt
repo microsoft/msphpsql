@@ -1,17 +1,10 @@
 --TEST--
 Test for retrieving encrypted data from decimal types columns using PDO::bindColumn
 --DESCRIPTION--
-Test conversion from decimal types column to output of PDO::PARAM types
-With or without ALways Encrypted, conversion works if:
-1. From any decimal type column to PDO::PARAM_STR
-2. From any decimal type column to PDO::PARAM_LOB
-TODO: behavior for teching decimals as PARAM_BOOL and PARAM_INT varies depending on the number being fetched
-      1. if the number is less than 1, returns 0 (even though the number being fetched is 0.9)
-      2. if the number is greater than 1 and the number of digits is less than 11, returns the correctly rounded integer (e.g., returns 922 when fetching 922.3)
-      3. if the number is greater than 1 and the number of digits is greater than 11, returns NULL
-      need to investigate which should be the correct behavior
-      for this test, assume to correct behavior is to return NULL
-      documented in VSO 2730
+Test conversion from decimal types to output of PDO::PARAM types 
+With or without Always Encrypted, conversion should work for all PDO::PARAM 
+types unless for cases when mapping large decimal / numeric values to 
+integers (values out of range)
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -27,6 +20,37 @@ $precisions = array(1 => array(0, 1),
 $inputValuesInit = array(92233720368547758089223372036854775808, -92233720368547758089223372036854775808);
 $inputPrecision = 38;
 
+// function checkNULLs() returns false when at least one of fetched 
+// values is not null 
+function checkNULLs($pdoParamType, $typeFull, $det, $rand)
+{
+    if (!is_null($det) || !is_null($rand)) {
+        echo "Retrieving $typeFull data as $pdoParamType should return NULL\n";
+        return false;
+    } 
+    return true;
+}
+
+// function compareIntegers() returns false when the fetched values 
+// are different from the expected inputs 
+function compareIntegers($pdoParamType, $det, $rand, $inputValues)
+{
+    // Assuming $pdoParamType is PDO::PARAM_BOOL or PDO::PARAM_INT
+    $input0 = floor($inputValues[0]); // the positive float
+    $input1 = ceil($inputValues[1]); // the negative float
+        
+    $matched = ($det == $input0 && $rand == $input1);
+    if (!$matched) {
+        echo "****Binding as $pdoParamType failed:****\n";
+        echo "input 0: "; var_dump($inputValues[0]);
+        echo "fetched: "; var_dump($det);
+        echo "input 1: "; var_dump($inputValues[1]);
+        echo "fetched: "; var_dump($rand);
+    }
+    
+    return $matched;
+}
+
 try {
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
     foreach ($dataTypes as $dataType) {
@@ -40,7 +64,7 @@ try {
                 }
                 
                 // compute the epsilon for comparing doubles
-                // float in PHP only has a precision of roughtly 14 digits: http://php.net/manual/en/language.types.float.php
+                // float in PHP only has a precision of roughly 14 digits: http://php.net/manual/en/language.types.float.php
                 $epsilon;
                 if ($m1 < 14) {
                     $epsilon = pow(10, $m2 * -1);
@@ -54,9 +78,9 @@ try {
                 }
                 
                 $typeFull = "$dataType($m1, $m2)";
-                echo "\nTesting $typeFull:\n";
                 
-                // create and populate table containing decimal(m1, m2) or numeric(m1, m2) columns
+                // create and populate table containing decimal(m1, m2) 
+                // or numeric(m1, m2) columns
                 $tbname = "test_" . $dataType . $m1 . $m2;
                 $colMetaArr = array(new ColumnMeta($typeFull, "c_det"), new ColumnMeta($typeFull, "c_rand", null, "randomized"));
                 createTable($conn, $tbname, $colMetaArr);
@@ -68,25 +92,36 @@ try {
                     $det = "";
                     $rand = "";
                     $stmt = $conn->prepare($query);
+                    
                     $stmt->execute();
                     $stmt->bindColumn('c_det', $det, constant($pdoParamType));
                     $stmt->bindColumn('c_rand', $rand, constant($pdoParamType));
                     $row = $stmt->fetch(PDO::FETCH_BOUND);
                     
-                    // check the case when fetching as PDO::PARAM_BOOL, PDO::PARAM_NULL or PDO::PARAM_INT
-                    // with or without AE: should not work
-                    // assume to correct behavior is to return NULL, see description
-                    if ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_NULL" || $pdoParamType == "PDO::PARAM_INT") {
-                        if (!is_null($det) || !is_null($rand)) {
-                            echo "Retrieving $typeFull data as $pdoParamType should return NULL\n";
+                    // With AE or not, the behavior is the same
+                    $succeeded = false;
+                    if ($pdoParamType == "PDO::PARAM_NULL") {
+                        $succeeded = checkNULLs($pdoParamType, $typeFull, $det, $rand);
+                    } elseif ($pdoParamType == "PDO::PARAM_BOOL" || $pdoParamType == "PDO::PARAM_INT") {
+                        if ($m1 >= 16 && ($m1 != $m2)) {
+                            // When the precision is more than 16 (unless the 
+                            // precision = scale), the returned values are
+                            // out of range as integers, so expect NULL
+                            // (the data retrieval should have caused 
+                            // an exception but was silenced)
+                            $succeeded = checkNULLs($pdoParamType, $typeFull, $det, $rand);
+                        } else {
+                            $succeeded = compareIntegers($pdoParamType, $det, $rand, $inputValues, $m1, $m2);
                         }
                     } else {
                         if (abs($det - $inputValues[0]) < $epsilon &&
                             abs($rand - $inputValues[1]) < $epsilon) {
-                            echo "****Retrieving $typeFull as $pdoParamType is supported****\n";
-                        } else {
-                            echo "Retrieving $typeFull as $pdoParamType fails\n";
-                        }
+                            $succeeded = true;
+                        } 
+                    }
+                        
+                    if (!$succeeded) {
+                        echo "Retrieving $typeFull as $pdoParamType fails\n";
                     }
                 }
                 // cleanup
@@ -96,147 +131,11 @@ try {
     }
     unset($stmt);
     unset($conn);
+    
+    echo "Test successfully done\n";
 } catch (PDOException $e) {
     echo $e->getMessage();
 }
 ?>
 --EXPECT--
-Testing decimal(1, 0):
-Retrieving decimal(1, 0) data as PDO::PARAM_BOOL should return NULL
-Retrieving decimal(1, 0) data as PDO::PARAM_INT should return NULL
-****Retrieving decimal(1, 0) as PDO::PARAM_STR is supported****
-****Retrieving decimal(1, 0) as PDO::PARAM_LOB is supported****
-
-Testing decimal(1, 1):
-Retrieving decimal(1, 1) data as PDO::PARAM_BOOL should return NULL
-Retrieving decimal(1, 1) data as PDO::PARAM_INT should return NULL
-****Retrieving decimal(1, 1) as PDO::PARAM_STR is supported****
-****Retrieving decimal(1, 1) as PDO::PARAM_LOB is supported****
-
-Testing decimal(4, 0):
-Retrieving decimal(4, 0) data as PDO::PARAM_BOOL should return NULL
-Retrieving decimal(4, 0) data as PDO::PARAM_INT should return NULL
-****Retrieving decimal(4, 0) as PDO::PARAM_STR is supported****
-****Retrieving decimal(4, 0) as PDO::PARAM_LOB is supported****
-
-Testing decimal(4, 1):
-Retrieving decimal(4, 1) data as PDO::PARAM_BOOL should return NULL
-Retrieving decimal(4, 1) data as PDO::PARAM_INT should return NULL
-****Retrieving decimal(4, 1) as PDO::PARAM_STR is supported****
-****Retrieving decimal(4, 1) as PDO::PARAM_LOB is supported****
-
-Testing decimal(4, 4):
-Retrieving decimal(4, 4) data as PDO::PARAM_BOOL should return NULL
-Retrieving decimal(4, 4) data as PDO::PARAM_INT should return NULL
-****Retrieving decimal(4, 4) as PDO::PARAM_STR is supported****
-****Retrieving decimal(4, 4) as PDO::PARAM_LOB is supported****
-
-Testing decimal(16, 0):
-****Retrieving decimal(16, 0) as PDO::PARAM_STR is supported****
-****Retrieving decimal(16, 0) as PDO::PARAM_LOB is supported****
-
-Testing decimal(16, 1):
-****Retrieving decimal(16, 1) as PDO::PARAM_STR is supported****
-****Retrieving decimal(16, 1) as PDO::PARAM_LOB is supported****
-
-Testing decimal(16, 4):
-****Retrieving decimal(16, 4) as PDO::PARAM_STR is supported****
-****Retrieving decimal(16, 4) as PDO::PARAM_LOB is supported****
-
-Testing decimal(16, 16):
-Retrieving decimal(16, 16) data as PDO::PARAM_BOOL should return NULL
-Retrieving decimal(16, 16) data as PDO::PARAM_INT should return NULL
-****Retrieving decimal(16, 16) as PDO::PARAM_STR is supported****
-****Retrieving decimal(16, 16) as PDO::PARAM_LOB is supported****
-
-Testing decimal(38, 0):
-****Retrieving decimal(38, 0) as PDO::PARAM_STR is supported****
-****Retrieving decimal(38, 0) as PDO::PARAM_LOB is supported****
-
-Testing decimal(38, 1):
-****Retrieving decimal(38, 1) as PDO::PARAM_STR is supported****
-****Retrieving decimal(38, 1) as PDO::PARAM_LOB is supported****
-
-Testing decimal(38, 4):
-****Retrieving decimal(38, 4) as PDO::PARAM_STR is supported****
-****Retrieving decimal(38, 4) as PDO::PARAM_LOB is supported****
-
-Testing decimal(38, 16):
-****Retrieving decimal(38, 16) as PDO::PARAM_STR is supported****
-****Retrieving decimal(38, 16) as PDO::PARAM_LOB is supported****
-
-Testing decimal(38, 38):
-Retrieving decimal(38, 38) data as PDO::PARAM_BOOL should return NULL
-Retrieving decimal(38, 38) data as PDO::PARAM_INT should return NULL
-****Retrieving decimal(38, 38) as PDO::PARAM_STR is supported****
-****Retrieving decimal(38, 38) as PDO::PARAM_LOB is supported****
-
-Testing numeric(1, 0):
-Retrieving numeric(1, 0) data as PDO::PARAM_BOOL should return NULL
-Retrieving numeric(1, 0) data as PDO::PARAM_INT should return NULL
-****Retrieving numeric(1, 0) as PDO::PARAM_STR is supported****
-****Retrieving numeric(1, 0) as PDO::PARAM_LOB is supported****
-
-Testing numeric(1, 1):
-Retrieving numeric(1, 1) data as PDO::PARAM_BOOL should return NULL
-Retrieving numeric(1, 1) data as PDO::PARAM_INT should return NULL
-****Retrieving numeric(1, 1) as PDO::PARAM_STR is supported****
-****Retrieving numeric(1, 1) as PDO::PARAM_LOB is supported****
-
-Testing numeric(4, 0):
-Retrieving numeric(4, 0) data as PDO::PARAM_BOOL should return NULL
-Retrieving numeric(4, 0) data as PDO::PARAM_INT should return NULL
-****Retrieving numeric(4, 0) as PDO::PARAM_STR is supported****
-****Retrieving numeric(4, 0) as PDO::PARAM_LOB is supported****
-
-Testing numeric(4, 1):
-Retrieving numeric(4, 1) data as PDO::PARAM_BOOL should return NULL
-Retrieving numeric(4, 1) data as PDO::PARAM_INT should return NULL
-****Retrieving numeric(4, 1) as PDO::PARAM_STR is supported****
-****Retrieving numeric(4, 1) as PDO::PARAM_LOB is supported****
-
-Testing numeric(4, 4):
-Retrieving numeric(4, 4) data as PDO::PARAM_BOOL should return NULL
-Retrieving numeric(4, 4) data as PDO::PARAM_INT should return NULL
-****Retrieving numeric(4, 4) as PDO::PARAM_STR is supported****
-****Retrieving numeric(4, 4) as PDO::PARAM_LOB is supported****
-
-Testing numeric(16, 0):
-****Retrieving numeric(16, 0) as PDO::PARAM_STR is supported****
-****Retrieving numeric(16, 0) as PDO::PARAM_LOB is supported****
-
-Testing numeric(16, 1):
-****Retrieving numeric(16, 1) as PDO::PARAM_STR is supported****
-****Retrieving numeric(16, 1) as PDO::PARAM_LOB is supported****
-
-Testing numeric(16, 4):
-****Retrieving numeric(16, 4) as PDO::PARAM_STR is supported****
-****Retrieving numeric(16, 4) as PDO::PARAM_LOB is supported****
-
-Testing numeric(16, 16):
-Retrieving numeric(16, 16) data as PDO::PARAM_BOOL should return NULL
-Retrieving numeric(16, 16) data as PDO::PARAM_INT should return NULL
-****Retrieving numeric(16, 16) as PDO::PARAM_STR is supported****
-****Retrieving numeric(16, 16) as PDO::PARAM_LOB is supported****
-
-Testing numeric(38, 0):
-****Retrieving numeric(38, 0) as PDO::PARAM_STR is supported****
-****Retrieving numeric(38, 0) as PDO::PARAM_LOB is supported****
-
-Testing numeric(38, 1):
-****Retrieving numeric(38, 1) as PDO::PARAM_STR is supported****
-****Retrieving numeric(38, 1) as PDO::PARAM_LOB is supported****
-
-Testing numeric(38, 4):
-****Retrieving numeric(38, 4) as PDO::PARAM_STR is supported****
-****Retrieving numeric(38, 4) as PDO::PARAM_LOB is supported****
-
-Testing numeric(38, 16):
-****Retrieving numeric(38, 16) as PDO::PARAM_STR is supported****
-****Retrieving numeric(38, 16) as PDO::PARAM_LOB is supported****
-
-Testing numeric(38, 38):
-Retrieving numeric(38, 38) data as PDO::PARAM_BOOL should return NULL
-Retrieving numeric(38, 38) data as PDO::PARAM_INT should return NULL
-****Retrieving numeric(38, 38) as PDO::PARAM_STR is supported****
-****Retrieving numeric(38, 38) as PDO::PARAM_LOB is supported****
+Test successfully done
