@@ -9,14 +9,6 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-
-if (strtoupper(substr(PHP_OS, 0, 3)) === 'LIN') {
-    // This test fails in Linux, but not Windows or mac. This test requires 
-    // unixODBC 2.3.4 or above (see the list of bug fixes in www.unixodbc.org
-    echo "Done\n";
-    return;
-}
-
 require_once('MsCommon.inc');
 
 $connectionOptions = array("CharacterSet"=> "UTF-8", "ConnectionPooling"=>1);
@@ -63,7 +55,15 @@ if (!$stmt) {
     fatalError("Error in creating the stored procedure $procName\n"); 
 } 
 
-$sql_callSP = "{call $procName(?)}";
+$set_no_count = "";
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'LIN') {
+    // This test, when running outside of Windows, requires unixODBC 2.3.4 
+    // or above (see the list of bug fixes in www.unixodbc.org)
+    // Add this workaround for Linux platforms
+    $set_no_count = "SET NOCOUNT ON; ";
+}
+
+$sql_callSP = $set_no_count . "{call $procName(?)}";
 
 // Initialize the output parameter to any number
 $outParam = -1; 

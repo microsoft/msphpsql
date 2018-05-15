@@ -487,7 +487,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 // if it is boolean, set the lval to 0 or 1
                 convert_to_long( param_z );
                 buffer = &param_z->value;
-                buffer_len = sizeof(int); // do not use size of a zend_long 
+                buffer_len = sizeof( Z_LVAL_P( param_z ));
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ){
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
@@ -1864,8 +1864,12 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
                  sql_c_type = SQL_C_SBIGINT;
              }
              else {
-                 sql_c_type = SQL_C_SLONG;
-             }
+#ifdef ZEND_ENABLE_ZVAL_LONG64
+                sql_c_type = SQL_C_SBIGINT;
+#else
+                sql_c_type = SQL_C_SLONG;
+#endif
+            }
             break;
         case IS_DOUBLE:
             sql_c_type = SQL_C_DOUBLE;
@@ -1934,8 +1938,12 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
                  sql_type = SQL_BIGINT;
              }
              else {
+#ifdef ZEND_ENABLE_ZVAL_LONG64
+                 sql_type = SQL_BIGINT;
+#else
                  sql_type = SQL_INTEGER;
-             }
+#endif
+            }
             break;
         case IS_DOUBLE:
             sql_type = SQL_FLOAT;
