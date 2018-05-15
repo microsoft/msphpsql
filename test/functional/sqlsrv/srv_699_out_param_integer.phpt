@@ -9,14 +9,14 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-
+/*
 if (strtoupper(substr(PHP_OS, 0, 3)) === 'LIN') {
     // This test fails in Linux (unixODBC issue) but not Windows or mac. 
     // See VSO 3459 for details.
     echo "Done\n";
     return;
 }
-
+*/
 require_once('MsCommon.inc');
 
 $connectionOptions = array("CharacterSet"=> "UTF-8", "ConnectionPooling"=>1);
