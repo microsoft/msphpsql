@@ -487,7 +487,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 // if it is boolean, set the lval to 0 or 1
                 convert_to_long( param_z );
                 buffer = &param_z->value;
-                buffer_len = sizeof(int); //sizeof( Z_LVAL_P( param_z ));
+                buffer_len = sizeof(int); // do not use size of a zend_long 
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ){
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned

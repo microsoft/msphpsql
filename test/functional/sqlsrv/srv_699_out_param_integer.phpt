@@ -9,14 +9,14 @@ PHPT_EXEC=true
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-/*
+
 if (strtoupper(substr(PHP_OS, 0, 3)) === 'LIN') {
-    // This test fails in Linux (unixODBC issue) but not Windows or mac. 
-    // See VSO 3459 for details.
+    // This test fails in Linux, but not Windows or mac. This test requires 
+    // unixODBC 2.3.4 or above (see the list of bug fixes in www.unixodbc.org
     echo "Done\n";
     return;
 }
-*/
+
 require_once('MsCommon.inc');
 
 $connectionOptions = array("CharacterSet"=> "UTF-8", "ConnectionPooling"=>1);
@@ -65,8 +65,8 @@ if (!$stmt) {
 
 $sql_callSP = "{call $procName(?)}";
 
-// Initialize the output parameter
-$outParam = 1; 
+// Initialize the output parameter to any number
+$outParam = -1; 
 $params = array(array(&$outParam, SQLSRV_PARAM_OUT));
 $stmt = sqlsrv_query($conn, $sql_callSP, $params); 
 if (!$stmt) { 
