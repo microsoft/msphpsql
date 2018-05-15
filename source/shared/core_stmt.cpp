@@ -1864,11 +1864,7 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
                  sql_c_type = SQL_C_SBIGINT;
              }
              else {
-#ifdef ZEND_ENABLE_ZVAL_LONG64
-                sql_c_type = SQL_C_SBIGINT;
-#else
                 sql_c_type = SQL_C_SLONG;
-#endif
             }
             break;
         case IS_DOUBLE:
@@ -1938,11 +1934,7 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
                  sql_type = SQL_BIGINT;
              }
              else {
-#ifdef ZEND_ENABLE_ZVAL_LONG64
-                 sql_type = SQL_BIGINT;
-#else
                  sql_type = SQL_INTEGER;
-#endif
             }
             break;
         case IS_DOUBLE:

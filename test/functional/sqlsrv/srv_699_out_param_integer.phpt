@@ -66,7 +66,7 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'LIN') {
 $sql_callSP = $set_no_count . "{call $procName(?)}";
 
 // Initialize the output parameter to any number
-$outParam = -1; 
+$outParam = 1; 
 $params = array(array(&$outParam, SQLSRV_PARAM_OUT));
 $stmt = sqlsrv_query($conn, $sql_callSP, $params); 
 if (!$stmt) { 
