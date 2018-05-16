@@ -971,25 +971,49 @@ void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD
 {
     BYTE akv_data[sizeof( CEKEYSTOREDATA ) + sizeof(DWORD) + 1 ];
     CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>( akv_data );
-    pData->name = L"AZURE_KEY_VAULT";
+    
+    char akv_name[] = "AZURE_KEY_VAULT";
+    unsigned int name_len = 15;
+    unsigned int wname_len = 0;
+    sqlsrv_malloc_auto_ptr<SQLWCHAR> wakv_name;
+    wakv_name = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, akv_name, name_len, &wname_len );
+
+    CHECK_CUSTOM_ERROR( wakv_name == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE ) {
+        throw core::CoreException();
+    }
+
+    pData->name = (wchar_t *) wakv_name.get();
+    
     pData->data[0] = config_attr;
     pData->dataSize = sizeof(config_attr) + sizeof(config_value);
     *reinterpret_cast<DWORD*>(&pData->data[1]) = config_value;
     
-    int r = ::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
+    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
 }
 
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size )
 {
     BYTE akv_data[sizeof( CEKEYSTOREDATA ) + 2048 ];
     CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>( akv_data );
-    pData->name = L"AZURE_KEY_VAULT";
+
+    char akv_name[] = "AZURE_KEY_VAULT";
+    unsigned int name_len = 15;
+    unsigned int wname_len = 0;
+    sqlsrv_malloc_auto_ptr<SQLWCHAR> wakv_name;
+    wakv_name = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, akv_name, name_len, &wname_len );
+
+    CHECK_CUSTOM_ERROR( wakv_name == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE ) {
+        throw core::CoreException();
+    }
+
+    pData->name = (wchar_t *) wakv_name.get();
+    
     pData->data[0] = config_attr;
     pData->dataSize = 1+key_size;
 
     memcpy_s( pData->data+1, key_size * sizeof( char ) , config_value, key_size );
     
-    int r = ::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
+    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
 }
 
 void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC )

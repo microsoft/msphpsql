@@ -1,11 +1,10 @@
 --TEST--
-Test connection keywords nad credentials for Azure Key Vault for Always Encrypted.
+Test connection keywords and credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
-require_once('tools.inc');
 require_once('values.php');
 
 // We will test the direct product (set of all possible combinations) of the following
@@ -14,36 +13,26 @@ $keyStoreAuthentication = ['KeyVaultPassword', 'KeyVaultClientSecret', 'KeyVault
 $keyStorePrincipalId = [$AKVPrincipalName, $AKVClientID, 'notaname', ''];
 $keyStoreSecret = [$AKVPassword, $AKVSecret, 'notasecret', ''];
 
+$is_win = (strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN');
+
 function checkErrors($errors, ...$codes)
-{
-    $errSize = empty($errors) ? 0 : sizeof($errors);
-    if (2*$errSize < sizeof($codes)) fatalError("Errors and input codes do not match.\n");
+{                
+    $codeFound = false;
     
-    $i=0;
     foreach($codes as $code)
     {
-        if ($i%2==0) {
-            if ($errors[$i/2][0] != $code)
-            {
-                echo "Error: ";
-                print_r($errors[$i/2][0]);
-                echo "\nExpected: ";
-                print_r($code);
-                echo "\n";
-                fatalError("Error codes do not match.\n");
-            }
-        } else if ($i%2==1) {
-            if ($errors[$i/2][1] != $code)
-            {
-                echo "Error: ";
-                print_r($errors[$i/2][1]);
-                echo "\nExpected: ";
-                print_r($code);
-                echo "\n";
-                fatalError("Error codes do not match.\n");
-            }
-        }
-        ++$i;
+        if ($code[0]==$errors[0][0] and $code[1]==$errors[0][1])
+            $codeFound = true;
+    }
+    
+    if ($codeFound == false)
+    {
+        echo "Error: ";
+        print_r($errors);
+        echo "\nExpected: ";
+        print_r($codes);
+        echo "\n";
+        fatalError("Error code not found.\n");
     }
 }
 
@@ -106,7 +95,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     $connectionOptions['KeyStorePrincipalId'] = $keyStorePrincipalId[$k];                
                 if (!empty($keyStoreSecret[$m]))
                     $connectionOptions['KeyStoreSecret'] = $keyStoreSecret[$m];
-                
+
                 // Valid credentials getting skipped
                 if (($i==0 and $j==0 and $k==0 and $m==0) or 
                     ($i==0 and $j==1 and $k==1 and $m==1)) {
@@ -116,26 +105,19 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                 // Connect to the AE-enabled database
                 // Failure is expected when the keyword combination is wrong
                 $conn = sqlsrv_connect($server, $connectionOptions);
-                if (!$conn) {
+                if (!$conn) 
+                {
                     $errors = sqlsrv_errors();
                     
-                    if ($j==2)
-                        checkErrors($errors, 'IMSSP', '-110');
-                    else if ($i==2)
-                        checkErrors($errors, '08001', '0');
-                    else if ($j==3)
-                        checkErrors($errors, 'IMSSP', '-111');
-                    else if ($k==3)
-                        checkErrors($errors, 'IMSSP', '-112');
-                    else if ($m==3)
-                        checkErrors($errors, 'IMSSP', '-113');
-                    else
-                    {
-                        echo "i=$i j=$j k=$k m=$m failed connection\n";
-                        print_r(sqlsrv_errors());
-                        fatalError("Connection failed, unexpected connection string.\n");
-                    }
-                } else {
+                    checkErrors($errors, array('08001','0'),    
+                                         array('08001','-1'),    // SSL error occurs in Ubuntu 
+                                         array('IMSSP','-110'), 
+                                         array('IMSSP','-111'), 
+                                         array('IMSSP','-112'), 
+                                         array('IMSSP','-113'));
+                } 
+                else
+                {
                     $columns = array();
                     $insertQuery = "";
 
@@ -167,17 +149,22 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     if (sqlsrv_execute($stmt) == false) {
                         $errors = sqlsrv_errors();
                         
-                        if ($i==0 and $j==3 and $k==3 and $m==3)
-                            checkErrors($errors, 'CE258', '0', 'CE202', '0');
-                        if ($i==0 and $j==3)
-                            checkErrors($errors, 'CE258', '0', 'CE202', '0');
-                        else if ($i==1 or $i==3)
-                            checkErrors($errors, '22018', '206', '42000', '33514','42000', '8180');
+                        if (!AE\isColEncrypted())
+                        {
+                            checkErrors($errors, array('CE258', '0'),
+                                                 array('CE275', '0'));
+                        }
                         else
-                            checkErrors($errors, 'CE275', '0', 'CE275', '0', 'CE258', '0', 'CE202', '0');
+                        {
+                            checkErrors($errors, array('CE258', '0'),    
+                                                 array('CE275', '0'),    
+                                                 array('22018', '206')); 
+                        }
                         
                         sqlsrv_free_stmt($stmt);
-                    } else {
+                    }
+                    else 
+                    {
                         // The INSERT query succeeded with bad credentials, which
                         // should only happen when encryption is not enabled.
                         if (AE\isColEncrypted()) 

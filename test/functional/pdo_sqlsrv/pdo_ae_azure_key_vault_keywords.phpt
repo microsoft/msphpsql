@@ -1,7 +1,7 @@
 --TEST--
 Test connection keywords and credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
@@ -14,41 +14,32 @@ $keyStoreAuthentication = ['KeyVaultPassword', 'KeyVaultClientSecret', 'KeyVault
 $keyStorePrincipalId = [$AKVPrincipalName, $AKVClientID, 'notaname', ''];
 $keyStoreSecret = [$AKVPassword, $AKVSecret, 'notasecret', ''];
 
+// Verify that the error is in the list of expected errors
 function checkErrors($errors, ...$codes)
 {
-    $errSize = empty($errors) ? 0 : sizeof($errors);
-    if (2*$errSize < sizeof($codes)) fatalError("Errors and input codes do not match.\n");
+    $codeFound = false;
     
-    $i=0;
     foreach($codes as $code)
     {
-        if ($i%2==0) {
-            if ($errors[0] != $code)
-            {
-                echo "Error: ";
-                print_r($errors[0]);
-                echo "\nExpected: ";
-                print_r($code);
-                echo "\n";
-                fatalError("Error codes do not match.\n");
-            }
-        } else if ($i%2==1) {
-            if ($errors[1] != $code)
-            {
-                echo "Error: ";
-                print_r($errors[1]);
-                echo "\nExpected: ";
-                print_r($code);
-                echo "\n";
-                fatalError("Error codes do not match.\n");
-            }
-        }
-        ++$i;
+        if ($code[0]==$errors[0] and $code[1]==$errors[1])
+            $codeFound = true;
+    }
+    
+    if ($codeFound == false)
+    {
+        echo "Error: ";
+        print_r($errors);
+        echo "\nExpected: ";
+        print_r($codes);
+        echo "\n";
+        fatalError("Error code not found.\n");
     }
 }
 
 // Set up the columns and build the insert query. Each data type has an
 // AE-encrypted and a non-encrypted column side by side in the table.
+// If column encryption is not set in MsSetup.inc, this function simply
+// creates two non-encrypted columns side-by-side for each type.
 function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
     $columns = array();
@@ -111,7 +102,8 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
 
                 $connectionOptions .= ";";
 
-                try {
+                try 
+                {
                     // Connect to the AE-enabled database
                     $conn = new PDO($connectionOptions, $uid, $pwd);
                     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -154,28 +146,35 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     // Free the statement and close the connection
                     $stmt = null;
                     $conn = null;
-                } catch(Exception $e) {
+                } 
+                catch(Exception $e)
+                {
                     $errors = $e->errorInfo;
-                    if ($i==0 and $j==3 and $k==3 and $m==3)
-                        checkErrors($errors, 'CE258', '0');
-                    else if ($j==2)
-                        checkErrors($errors, 'IMSSP', '-85');
-                    else if ($i==2)
-                        checkErrors($errors, '08001', '0');
-                    else if ($i==1 or $i==3)
-                        checkErrors($errors, '22018', '206');
-                    else if ($j==3)
-                        checkErrors($errors, 'IMSSP', '-86');
-                    else if ($k==3)
-                        checkErrors($errors, 'IMSSP', '-87');
-                    else if ($m==3)
-                        checkErrors($errors, 'IMSSP', '-88');
+                    
+                    if (!isColEncrypted())
+                    {
+                        checkErrors($errors, array('CE258', '0'),  
+                                             array('CE275', '0'),  
+                                             array('IMSSP', '-85'),
+                                             array('IMSSP', '-86'),
+                                             array('IMSSP', '-87'),
+                                             array('IMSSP', '-88'),
+                                             array('08001', '0'), 
+                                             array('08001', '-1'));  // SSL error occurs in Ubuntu
+                    }
                     else
                     {
-                        echo "i=$i j=$j k=$k m=$m failed connection\n";
-                        checkErrors($errors, 'CE275', '0');
+                        checkErrors($errors, array('CE258', '0'),  
+                                             array('CE275', '0'),  
+                                             array('IMSSP', '-85'),
+                                             array('IMSSP', '-86'),
+                                             array('IMSSP', '-87'),
+                                             array('IMSSP', '-88'),
+                                             array('08001', '0'),  
+                                             array('08001', '-1'),   // SSL error occurs in Ubuntu
+                                             array('22018', '206'));
                     }
-               }
+                }
             }
         }
     }

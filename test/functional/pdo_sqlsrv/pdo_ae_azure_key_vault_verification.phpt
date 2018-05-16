@@ -1,7 +1,7 @@
 --TEST--
 Test connection keywords and credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");

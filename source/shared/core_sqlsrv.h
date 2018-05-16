@@ -2256,15 +2256,15 @@ namespace core {
     }
 
 
-    // inline void SQLSetConnectAttr( _Inout_ sqlsrv_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
-    // {
-        // SQLRETURN r;
-        // r = ::SQLSetConnectAttr( ctx.handle(), attr, value_ptr, str_len );
+    inline void SQLSetConnectAttr( _Inout_ sqlsrv_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
+    {
+        SQLRETURN r;
+        r = ::SQLSetConnectAttr( ctx.handle(), attr, value_ptr, str_len );
         
-        // CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {
-            // throw CoreException();
-        // }
-    // }
+        CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {
+            throw CoreException();
+        }
+    }
 
     inline void SQLSetDescField( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_( str_len ) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  TSRMLS_DC )
     {

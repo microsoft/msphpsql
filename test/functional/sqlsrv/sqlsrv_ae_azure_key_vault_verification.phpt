@@ -1,11 +1,10 @@
 --TEST--
-Test connection keywords nad credentials for Azure Key Vault for Always Encrypted.
+Test connection keywords and credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
-require_once('tools.inc');
 require_once('values.php');
 
 // Set up the columns and build the insert query. Each data type has an
