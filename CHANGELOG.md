@@ -8,7 +8,8 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Added
 - Added support for Azure Key Vault for Always Encrypted for basic CRUD functionalities 
-- Added support for High Sierra (requires [MS ODBC Driver 17+])
+- Added support for High Sierra (requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017
+))
 
 ### Fixed
 - Issue [#577](https://github.com/Microsoft/msphpsql/issues/577) - Idle Connection Resiliency doesn't work with Column Encryption enabled connection
@@ -30,14 +31,12 @@ Updated PECL release packages. Here is the list of updates:
   - [Always Encrypted limitations](https://docs.microsoft.com/en-us/sql/connect/php/using-always-encrypted-php-drivers?view=sql-server-2017#limitations-of-the-php-drivers-when-using-always-encrypted)
 
 ### Known Issues
-- Connection pooling on Linux or macOS not recommended with [unixODBC] < 2.3.6
+- Connection pooling on Linux or macOS not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.6
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostics information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
 - With ColumnEncryption enabled, calling stored procedure with XML parameter does not work (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
 
-[unixODBC] : http://www.unixodbc.org/
-[MS ODBC Driver 17+] :https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017
 
 ## Windows/Linux/macOS 5.2.0 - 2018-03-23
 Updated PECL release packages. Here is the list of updates:
