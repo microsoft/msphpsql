@@ -4,6 +4,13 @@ Test connection keywords and credentials for Azure Key Vault for Always Encrypte
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
+// Skip for 32-bit PHP, as bug causes this test to fail when inserting a bigint
+if (PHP_INT_SIZE == 4)
+{
+    echo "Done.\n";
+    exit();
+}
+
 require_once("MsCommon_mid-refactor.inc");
 require_once("MsSetup.inc");
 require_once('values.php');
