@@ -45,6 +45,9 @@ const int DEFAULT_CONN_STR_LEN = 2048;
 // length of buffer used to retrieve information for client and server info buffers
 const int INFO_BUFFER_LEN = 256;
 
+// length for name of keystore used in CEKeyStoreData
+const int MAX_CE_NAME_LEN = 260;
+
 // processor architectures
 const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
@@ -993,7 +996,7 @@ void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD
 
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size )
 {
-    BYTE akv_data[sizeof( CEKEYSTOREDATA ) + 2048 ];
+    BYTE akv_data[sizeof( CEKEYSTOREDATA ) + MAX_CE_NAME_LEN ];
     CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>( akv_data );
 
     char akv_name[] = "AZURE_KEY_VAULT";
