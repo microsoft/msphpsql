@@ -1856,16 +1856,16 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
         break;
         case IS_TRUE:
         case IS_FALSE:
-             sql_c_type = SQL_C_SLONG;
-             break;
+            sql_c_type = SQL_C_SLONG;
+            break;
         case IS_LONG:
-             //ODBC 64-bit long and integer type are 4 byte values.
-             if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
-                 sql_c_type = SQL_C_SBIGINT;
-             }
-             else {
-                 sql_c_type = SQL_C_SLONG;
-             }
+            //ODBC 64-bit long and integer type are 4 byte values.
+            if ((Z_LVAL_P(param_z) < INT_MIN) || (Z_LVAL_P(param_z) > INT_MAX)) {
+                sql_c_type = SQL_C_SBIGINT;
+            }
+            else {
+                sql_c_type = SQL_C_SLONG;
+            }
             break;
         case IS_DOUBLE:
             sql_c_type = SQL_C_DOUBLE;
@@ -1929,13 +1929,13 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
             sql_type = SQL_INTEGER;
             break;
         case IS_LONG:
-             //ODBC 64-bit long and integer type are 4 byte values.
-             if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
-                 sql_type = SQL_BIGINT;
-             }
-             else {
-                 sql_type = SQL_INTEGER;
-             }
+            //ODBC 64-bit long and integer type are 4 byte values.
+            if ((Z_LVAL_P(param_z) < INT_MIN) || (Z_LVAL_P(param_z) > INT_MAX)) {
+                sql_type = SQL_BIGINT;
+            }
+            else {
+                sql_type = SQL_INTEGER;
+            }
             break;
         case IS_DOUBLE:
             sql_type = SQL_FLOAT;
