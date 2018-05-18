@@ -18,7 +18,7 @@ require_once('values.php');
 
 // Set up the columns and build the insert query. Each data type has an
 // AE-encrypted and a non-encrypted column side by side in the table.
-function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
+function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
     $columns = array();
     $queryTypes = "(";
@@ -50,12 +50,12 @@ $dataTypes = array ("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
 
 // Test data insertion and retrieval with username/password
 // and client Id/client secret combinations.
-$connectionOptions = array("CharacterSet"=>"UTF-8", 
-                           "database"=>$databaseName, 
-                           "uid"=>$uid, 
+$connectionOptions = array("CharacterSet"=>"UTF-8",
+                           "database"=>$databaseName,
+                           "uid"=>$uid,
                            "pwd"=>$pwd,
                            "ConnectionPooling"=>0);
-                
+
 $connectionOptions['ColumnEncryption'] = "enabled";
 $connectionOptions['KeyStoreAuthentication'] = "KeyVaultPassword";
 $connectionOptions['KeyStorePrincipalId'] = $AKVPrincipalName;
@@ -73,7 +73,7 @@ if (!$conn) {
     $insertQuery = "";
 
     // Generate the INSERT query
-    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
+    formulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
 
     $stmt = AE\createTable($conn, $tableName, $columns);
     if (!$stmt) {
@@ -82,7 +82,7 @@ if (!$conn) {
 
     // Duplicate all values for insertion - one is encrypted, one is not
     $testValues = array();
-    for ($n=0; $n<sizeof($small_values); ++$n) {
+    for ($n = 0; $n < sizeof($small_values); ++$n) {
         $testValues[] = $small_values[$n];
         $testValues[] = $small_values[$n];
     }
@@ -101,25 +101,25 @@ if (!$conn) {
         $errors = sqlsrv_errors();
         fatalError("INSERT query failed with good credentials.\n");
     } else {
-        // Get the data back and compare the encrypted and non-encrypted versions
+        // Get the data back and compare encrypted and non-encrypted versions
         $selectQuery = "SELECT * FROM $tableName";
-        
+
         $stmt1 = sqlsrv_query($conn, $selectQuery);
         $data = sqlsrv_fetch_array($stmt1, SQLSRV_FETCH_NUMERIC);
-        
+
         if (sizeof($data) != 2*sizeof($dataTypes)) {
             fatalError("Incorrect number of fields returned.\n");
         }
-        
-        for ($n=0; $n<sizeof($data); $n+=2) {
-            if ($data[$n] != $data[$n+1]) {
-                echo "Failed on field $n: ".$data[$n]." ".$data[$n+1]."\n";
+
+        for ($n = 0; $n < sizeof($data); $n += 2) {
+            if ($data[$n] != $data[$n + 1]) {
+                echo "Failed on field $n: ".$data[$n]." ".$data[$n + 1]."\n";
                 fatalError("AE and non-AE values do not match.\n");
             }
         }
-        
+
         echo "Successful insertion and retrieval with username/password.\n";
-        
+
         sqlsrv_free_stmt($stmt);
         sqlsrv_free_stmt($stmt1);
     }
@@ -132,7 +132,7 @@ $connectionOptions['ColumnEncryption'] = "enabled";
 $connectionOptions['KeyStoreAuthentication'] = "KeyVaultClientSecret";
 $connectionOptions['KeyStorePrincipalId'] = $AKVClientID;
 $connectionOptions['KeyStoreSecret'] = $AKVSecret;
-                
+
 // Connect to the AE-enabled database
 $conn = sqlsrv_connect($server, $connectionOptions);
 if (!$conn) {
@@ -143,7 +143,7 @@ if (!$conn) {
     $insertQuery = "";
 
     // Generate the INSERT query
-    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
+    formulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
 
     $stmt = AE\createTable($conn, $tableName, $columns);
     if (!$stmt) {
@@ -152,7 +152,7 @@ if (!$conn) {
 
     // Duplicate all values for insertion - one is encrypted, one is not
     $testValues = array();
-    for ($n=0; $n<sizeof($small_values); ++$n) {
+    for ($n = 0; $n < sizeof($small_values); ++$n) {
         $testValues[] = $small_values[$n];
         $testValues[] = $small_values[$n];
     }
@@ -171,25 +171,25 @@ if (!$conn) {
         $errors = sqlsrv_errors();
         fatalError("INSERT query execution failed with good credentials.\n");
     } else {
-        // Get the data back and compare the encrypted and non-encrypted versions
+        // Get the data back and compare encrypted and non-encrypted versions
         $selectQuery = "SELECT * FROM $tableName";
-        
+
         $stmt1 = sqlsrv_query($conn, $selectQuery);
         $data = sqlsrv_fetch_array($stmt1, SQLSRV_FETCH_NUMERIC);
-        
+
         if (sizeof($data) != 2*sizeof($dataTypes)) {
             fatalError("Incorrect number of fields returned.\n");
         }
-        
-        for ($n=0; $n<sizeof($data); $n+=2) {
-            if ($data[$n] != $data[$n+1]) {
-                echo "Failed on field $n: ".$data[$n]." ".$data[$n+1]."\n";
+
+        for ($n = 0; $n < sizeof($data); $n += 2) {
+            if ($data[$n] != $data[$n + 1]) {
+                echo "Failed on field $n: ".$data[$n]." ".$data[$n + 1]."\n";
                 fatalError("AE and non-AE values do not match.\n");
             }
         }
-        
+
         echo "Successful insertion and retrieval with client ID/secret.\n";
-        
+
         sqlsrv_free_stmt($stmt);
         sqlsrv_free_stmt($stmt1);
     }

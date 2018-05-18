@@ -18,13 +18,13 @@ $is_win = (strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN');
 function checkErrors($errors, ...$codes)
 {
     $codeFound = false;
-    
+
     foreach ($codes as $code) {
         if ($code[0]==$errors[0][0] and $code[1]==$errors[0][1]) {
             $codeFound = true;
         }
     }
-    
+
     if ($codeFound == false) {
         echo "Error: ";
         print_r($errors);
@@ -37,7 +37,7 @@ function checkErrors($errors, ...$codes)
 
 // Set up the columns and build the insert query. Each data type has an
 // AE-encrypted and a non-encrypted column side by side in the table.
-function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
+function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
     $columns = array();
     $queryTypes = "(";
@@ -76,16 +76,16 @@ $tableName = "akv_comparison_table";
 // credentials then subsequent calls with bad credentials can work, which
 // would muddle the results of this test. Good credentials are tested in a
 // separate test.
-for ($i=0; $i < sizeof($columnEncryption); ++$i) {
-    for ($j=0; $j < sizeof($keyStoreAuthentication); ++$j) {
-        for ($k=0; $k < sizeof($keyStorePrincipalId); ++$k) {
-            for ($m=0; $m < sizeof($keyStoreSecret); ++$m) {
+for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
+    for ($j = 0; $j < sizeof($keyStoreAuthentication); ++$j) {
+        for ($k = 0; $k < sizeof($keyStorePrincipalId); ++$k) {
+            for ($m = 0; $m < sizeof($keyStoreSecret); ++$m) {
                 $connectionOptions = array("CharacterSet"=>"UTF-8",
                                            "database"=>$databaseName,
                                            "uid"=>$uid,
                                            "pwd"=>$pwd,
                                            "ConnectionPooling"=>0);
-                
+
                 if (!empty($columnEncryption[$i])) {
                     $connectionOptions['ColumnEncryption'] = $columnEncryption[$i];
                 }
@@ -100,8 +100,8 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                 }
 
                 // Valid credentials getting skipped
-                if (($i==0 and $j==0 and $k==0 and $m==0) or
-                    ($i==0 and $j==1 and $k==1 and $m==1)) {
+                if (($i == 0 and $j == 0 and $k == 0 and $m == 0) or
+                    ($i == 0 and $j == 1 and $k == 1 and $m == 1)) {
                     continue;
                 }
 
@@ -110,7 +110,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                 $conn = sqlsrv_connect($server, $connectionOptions);
                 if (!$conn) {
                     $errors = sqlsrv_errors();
-                    
+
                     checkErrors(
                         $errors,
                         array('08001','0'),
@@ -125,7 +125,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     $insertQuery = "";
 
                     // Generate the INSERT query
-                    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
+                    formulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
 
                     $stmt = AE\createTable($conn, $tableName, $columns);
                     if (!$stmt) {
@@ -134,7 +134,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
 
                     // Duplicate all values for insertion - one is encrypted, one is not
                     $testValues = array();
-                    for ($n=0; $n<sizeof($small_values); ++$n) {
+                    for ($n = 0; $n < sizeof($small_values); ++$n) {
                         $testValues[] = $small_values[$n];
                         $testValues[] = $small_values[$n];
                     }
@@ -151,7 +151,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     // This is where we expect failure if the credentials are incorrect
                     if (sqlsrv_execute($stmt) == false) {
                         $errors = sqlsrv_errors();
-                        
+
                         if (!AE\isColEncrypted()) {
                             checkErrors(
                                 $errors,
@@ -166,7 +166,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                                 array('22018', '206')
                             );
                         }
-                        
+
                         sqlsrv_free_stmt($stmt);
                     } else {
                         // The INSERT query succeeded with bad credentials, which
@@ -175,7 +175,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                             fatalError("Successful insertion with bad credentials\n");
                         }
                     }
-                    
+
                     // Free the statement and close the connection
                     sqlsrv_close($conn);
                 }

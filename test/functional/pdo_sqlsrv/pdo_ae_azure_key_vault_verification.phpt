@@ -18,7 +18,7 @@ require_once('values.php');
 
 // Set up the columns and build the insert query. Each data type has an
 // AE-encrypted and a non-encrypted column side by side in the table.
-function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
+function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
     $columns = array();
     $queryTypes = "(";
@@ -64,18 +64,18 @@ try {
     // Connect to the AE-enabled database
     $conn = new PDO($connectionOptions, $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     $columns = array();
     $insertQuery = "";
 
     // Generate the INSERT query
-    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
+    formulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
 
     createTable($conn, $tableName, $columns);
-    
+
     // Duplicate all values for insertion - one is encrypted, one is not
     $testValues = array();
-    for ($n=0; $n<sizeof($small_values); ++$n) {
+    for ($n = 0; $n < sizeof($small_values); ++$n) {
         $testValues[] = $small_values[$n];
         $testValues[] = $small_values[$n];
     }
@@ -94,30 +94,31 @@ try {
         print_r($stmt->errorInfo());
         fatalError("INSERT query execution failed with good credentials.\n");
     } else {
+        // Get the data back and compare encrypted and non-encrypted versions
         $selectQuery = "SELECT * FROM $tableName";
-        
+
         $stmt1 = $conn->query($selectQuery);
-        
+
         $data = $stmt1->fetchAll(PDO::FETCH_NUM);
         $data = $data[0];
-        
+
         if (sizeof($data) != 2*sizeof($dataTypes)) {
             fatalError("Incorrect number of fields returned.\n");
         }
 
-        for ($n=0; $n<sizeof($data); $n+=2) {
-            if ($data[$n] != $data[$n+1]) {
-                echo "Failed on field $n: ".$data[$n]." ".$data[$n+1]."\n";
+        for ($n = 0; $n < sizeof($data); $n += 2) {
+            if ($data[$n] != $data[$n + 1]) {
+                echo "Failed on field $n: ".$data[$n]." ".$data[$n + 1]."\n";
                 fatalError("AE and non-AE values do not match.\n");
             }
         }
-        
+
         echo "Successful insertion and retrieval with username/password.\n";
-        
+
         $stmt = null;
         $stmt1 = null;
     }
-    
+
     // Free the statement and close the connection
     $stmt = null;
     $conn = null;
@@ -138,18 +139,18 @@ try {
     // Connect to the AE-enabled database
     $conn = new PDO($connectionOptions, $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     $columns = array();
     $insertQuery = "";
 
     // Generate the INSERT query
-    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
+    formulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
 
     createTable($conn, $tableName, $columns);
-    
+
     // Duplicate all values for insertion - one is encrypted, one is not
     $testValues = array();
-    for ($n=0; $n<sizeof($small_values); ++$n) {
+    for ($n = 0; $n < sizeof($small_values); ++$n) {
         $testValues[] = $small_values[$n];
         $testValues[] = $small_values[$n];
     }
@@ -168,30 +169,31 @@ try {
         print_r($stmt->errorInfo());
         fatalError("INSERT query execution failed with good credentials.\n");
     } else {
+        // Get the data back and compare encrypted and non-encrypted versions
         $selectQuery = "SELECT * FROM $tableName";
-        
+
         $stmt1 = $conn->query($selectQuery);
-        
+
         $data = $stmt1->fetchAll(PDO::FETCH_NUM);
         $data = $data[0];
-        
+
         if (sizeof($data) != 2*sizeof($dataTypes)) {
             fatalError("Incorrect number of fields returned.\n");
         }
 
-        for ($n=0; $n<sizeof($data); $n+=2) {
-            if ($data[$n] != $data[$n+1]) {
-                echo "Failed on field $n: ".$data[$n]." ".$data[$n+1]."\n";
+        for ($n = 0; $n < sizeof($data); $n += 2) {
+            if ($data[$n] != $data[$n + 1]) {
+                echo "Failed on field $n: ".$data[$n]." ".$data[$n + 1]."\n";
                 fatalError("AE and non-AE values do not match.\n");
             }
         }
-        
+
         echo "Successful insertion and retrieval with client ID/secret.\n";
-        
+
         $stmt = null;
         $stmt1 = null;
     }
-    
+
     // Free the statement and close the connection
     $stmt = null;
     $conn = null;

@@ -24,13 +24,13 @@ $keyStoreSecret = [$AKVPassword, $AKVSecret, 'notasecret', ''];
 function checkErrors($errors, ...$codes)
 {
     $codeFound = false;
-    
+
     foreach ($codes as $code) {
         if ($code[0]==$errors[0] and $code[1]==$errors[1]) {
             $codeFound = true;
         }
     }
-    
+
     if ($codeFound == false) {
         echo "Error: ";
         print_r($errors);
@@ -45,7 +45,7 @@ function checkErrors($errors, ...$codes)
 // AE-encrypted and a non-encrypted column side by side in the table.
 // If column encryption is not set in MsSetup.inc, this function simply
 // creates two non-encrypted columns side-by-side for each type.
-function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
+function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
     $columns = array();
     $queryTypes = "(";
@@ -84,12 +84,12 @@ $tableName = "akv_comparison_table";
 // credentials then subsequent calls with bad credentials can work, which
 // would muddle the results of this test. Good credentials are tested in a
 // separate test.
-for ($i=0; $i < sizeof($columnEncryption); ++$i) {
-    for ($j=0; $j < sizeof($keyStoreAuthentication); ++$j) {
-        for ($k=0; $k < sizeof($keyStorePrincipalId); ++$k) {
-            for ($m=0; $m < sizeof($keyStoreSecret); ++$m) {
+for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
+    for ($j = 0; $j < sizeof($keyStoreAuthentication); ++$j) {
+        for ($k = 0; $k < sizeof($keyStorePrincipalId); ++$k) {
+            for ($m = 0; $m < sizeof($keyStoreSecret); ++$m) {
                 $connectionOptions = "sqlsrv:Server=$server;Database=$databaseName";
-                
+
                 if (!empty($columnEncryption[$i])) {
                     $connectionOptions .= ";ColumnEncryption=".$columnEncryption[$i];
                 }
@@ -102,10 +102,10 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                 if (!empty($keyStoreSecret[$m])) {
                     $connectionOptions .= ";KeyStoreSecret=".$keyStoreSecret[$m];
                 }
-                
+
                 // Valid credentials getting skipped
-                if (($i==0 and $j==0 and $k==0 and $m==0) or
-                    ($i==0 and $j==1 and $k==1 and $m==1)) {
+                if (($i == 0 and $j == 0 and $k == 0 and $m == 0) or
+                    ($i == 0 and $j == 1 and $k == 1 and $m == 1)) {
                     continue;
                 }
 
@@ -115,18 +115,18 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     // Connect to the AE-enabled database
                     $conn = new PDO($connectionOptions, $uid, $pwd);
                     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    
+
                     $columns = array();
                     $insertQuery = "";
 
                     // Generate the INSERT query
-                    FormulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
+                    formulateSetupQuery($tableName, $dataTypes, $columns, $insertQuery);
 
                     createTable($conn, $tableName, $columns);
-                    
+
                     // Duplicate all values for insertion - one is encrypted, one is not
                     $testValues = array();
-                    for ($n=0; $n<sizeof($small_values); ++$n) {
+                    for ($n = 0; $n < sizeof($small_values); ++$n) {
                         $testValues[] = $small_values[$n];
                         $testValues[] = $small_values[$n];
                     }
@@ -151,13 +151,13 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                             fatalError("Successful insertion with bad credentials\n");
                         }
                     }
-                                        
+
                     // Free the statement and close the connection
                     $stmt = null;
                     $conn = null;
                 } catch (Exception $e) {
                     $errors = $e->errorInfo;
-                    
+
                     if (!isColEncrypted()) {
                         checkErrors(
                             $errors,
@@ -180,7 +180,7 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                             array('IMSSP', '-87'),
                             array('IMSSP', '-88'),
                             array('08001', '0'),
-                            array('08001', '-1'),   // SSL error occurs in Ubuntu
+                            array('08001', '-1'), // SSL error occurs in Ubuntu
                             array('22018', '206')
                         );
                     }
