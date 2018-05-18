@@ -409,6 +409,26 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
         { IMSSP, (SQLCHAR*) "Error converting a double (value out of range) to an integer.", -84, false }
     },
+    {
+        SQLSRV_ERROR_INVALID_AKV_AUTHENTICATION_OPTION,
+        { IMSSP, (SQLCHAR*) "Invalid option for the KeyStoreAuthentication keyword. Only KeyVaultPassword or KeyVaultClientSecret is allowed.", -85, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_AUTH_MISSING,
+        { IMSSP, (SQLCHAR*) "The authentication method for Azure Key Vault is missing. KeyStoreAuthentication must be set to KeyVaultPassword or KeyVaultClientSecret.", -86, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_NAME_MISSING,
+        { IMSSP, (SQLCHAR*) "The username or client Id for Azure Key Vault is missing.", -87, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_SECRET_MISSING,
+        { IMSSP, (SQLCHAR*) "The password or client secret for Azure Key Vault is missing.", -88, false }
+    },
+    {
+        SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
+        { IMSSP, (SQLCHAR*) "Invalid value for loading Azure Key Vault.", -89, false}
+    },
     { UINT_MAX, {} }
 };
 

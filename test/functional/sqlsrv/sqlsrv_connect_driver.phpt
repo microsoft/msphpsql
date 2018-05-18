@@ -106,11 +106,7 @@ function testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions)
     $connectionOptions['Driver']=$value;
     $connectionOptions['ColumnEncryption']='Enabled';
 
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
-    } else {
-        $expected = "Invalid option ColumnEncryption was passed to sqlsrv_connect.";
-    }
+    $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
 
     connectVerifyOutput($server, $connectionOptions, $expected);
 }
