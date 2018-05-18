@@ -1,5 +1,5 @@
 --TEST--
-Test connection keywords and credentials for Azure Key Vault for Always Encrypted.
+Test credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--

@@ -1,5 +1,5 @@
 --TEST--
-Test connection keywords and credentials for Azure Key Vault for Always Encrypted.
+Test credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
@@ -7,8 +7,7 @@ Test connection keywords and credentials for Azure Key Vault for Always Encrypte
 // TODO: Fix the test on Ubuntu - right now it produces a SSL error on Ubuntu
 // The following skips Ubuntu to prevent a test failure
 $is_ubuntu = php_uname('v');
-if (strpos($is_ubuntu, 'buntu') !== false)
-{
+if (strpos($is_ubuntu, 'buntu') !== false) {
     echo "Skipping test on Ubuntu\n";
     exit();
 }
@@ -45,7 +44,7 @@ function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 
 $strsize = 64;
 
-$dataTypes = array ("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
+$dataTypes = array("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
                     "decimal", "float", "real", "bigint", "int", "bit"
                     );
 
@@ -55,7 +54,7 @@ $connectionOptions = "sqlsrv:Server=$server;Database=$databaseName";
 
 $connectionOptions .= ";ColumnEncryption=enabled";
 $connectionOptions .= ";KeyStoreAuthentication=KeyVaultPassword";
-$connectionOptions .= ";KeyStorePrincipalId=".$AKVPrincipalName;                
+$connectionOptions .= ";KeyStorePrincipalId=".$AKVPrincipalName;
 $connectionOptions .= ";KeyStoreSecret=".$AKVPassword;
 $connectionOptions .= ";";
 
@@ -122,7 +121,7 @@ try {
     // Free the statement and close the connection
     $stmt = null;
     $conn = null;
-} catch(Exception $e) {
+} catch (Exception $e) {
     echo "Unexpected error.\n";
     print_r($e->errorInfo);
 }
@@ -196,7 +195,7 @@ try {
     // Free the statement and close the connection
     $stmt = null;
     $conn = null;
-} catch(Exception $e) {
+} catch (Exception $e) {
     echo "Unexpected error.\n";
     print_r($e->errorInfo);
 }

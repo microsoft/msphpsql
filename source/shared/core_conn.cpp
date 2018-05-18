@@ -940,83 +940,83 @@ void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     conn->server_version = version_major;
 }
 
-void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
+void load_azure_key_vault(_Inout_ sqlsrv_conn* conn TSRMLS_DC)
 {
-    // If column encryption is not enabled simply do nothing. Otherwise, check if Azure Key Vault
-    // is required for encryption or decryption. Note, in order to load and configure Azure Key Vault, 
-    // all fields in conn->ce_option must be defined. 
-    if ( ! conn->ce_option.enabled || ! conn->ce_option.akv_required )
-        return;
-    
-    CHECK_CUSTOM_ERROR( conn->ce_option.akv_mode == -1, conn, SQLSRV_ERROR_AKV_AUTH_MISSING) {
-        throw core::CoreException();
-    }
+	// If column encryption is not enabled simply do nothing. Otherwise, check if Azure Key Vault
+	// is required for encryption or decryption. Note, in order to load and configure Azure Key Vault, 
+	// all fields in conn->ce_option must be defined. 
+	if (!conn->ce_option.enabled || !conn->ce_option.akv_required)
+		return;
 
-    CHECK_CUSTOM_ERROR( conn->ce_option.akv_id == NULL, conn, SQLSRV_ERROR_AKV_NAME_MISSING) {
-        throw core::CoreException();
-    }
+	CHECK_CUSTOM_ERROR(conn->ce_option.akv_mode == -1, conn, SQLSRV_ERROR_AKV_AUTH_MISSING) {
+		throw core::CoreException();
+	}
 
-    CHECK_CUSTOM_ERROR( conn->ce_option.akv_secret == NULL, conn, SQLSRV_ERROR_AKV_SECRET_MISSING) {
-        throw core::CoreException();
-    }
-    
-    char *akv_id = Z_STRVAL_P( conn->ce_option.akv_id );
-    char *akv_secret = Z_STRVAL_P( conn->ce_option.akv_secret );    
-    unsigned int id_len = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_id ));
-    unsigned int key_size = static_cast<unsigned int>( Z_STRLEN_P( conn->ce_option.akv_secret ));    
+	CHECK_CUSTOM_ERROR(conn->ce_option.akv_id == NULL, conn, SQLSRV_ERROR_AKV_NAME_MISSING) {
+		throw core::CoreException();
+	}
 
-    configure_azure_key_vault( conn, AKV_CONFIG_FLAGS, conn->ce_option.akv_mode, 0 );
-    configure_azure_key_vault( conn, AKV_CONFIG_PRINCIPALID, akv_id, id_len );
-    configure_azure_key_vault( conn, AKV_CONFIG_AUTHSECRET, akv_secret, key_size );
+	CHECK_CUSTOM_ERROR(conn->ce_option.akv_secret == NULL, conn, SQLSRV_ERROR_AKV_SECRET_MISSING) {
+		throw core::CoreException();
+	}
+
+	char *akv_id = Z_STRVAL_P(conn->ce_option.akv_id);
+	char *akv_secret = Z_STRVAL_P(conn->ce_option.akv_secret);
+	unsigned int id_len = static_cast<unsigned int>(Z_STRLEN_P(conn->ce_option.akv_id));
+	unsigned int key_size = static_cast<unsigned int>(Z_STRLEN_P(conn->ce_option.akv_secret));
+
+	configure_azure_key_vault(conn, AKV_CONFIG_FLAGS, conn->ce_option.akv_mode, 0);
+	configure_azure_key_vault(conn, AKV_CONFIG_PRINCIPALID, akv_id, id_len);
+	configure_azure_key_vault(conn, AKV_CONFIG_AUTHSECRET, akv_secret, key_size);
 }
 
-void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t key_size )
+void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t key_size)
 {
-    BYTE akv_data[sizeof( CEKEYSTOREDATA ) + sizeof(DWORD) + 1 ];
-    CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>( akv_data );
-    
-    char akv_name[] = "AZURE_KEY_VAULT";
-    unsigned int name_len = 15;
-    unsigned int wname_len = 0;
-    sqlsrv_malloc_auto_ptr<SQLWCHAR> wakv_name;
-    wakv_name = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, akv_name, name_len, &wname_len );
+	BYTE akv_data[sizeof(CEKEYSTOREDATA) + sizeof(DWORD) + 1];
+	CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>(akv_data);
 
-    CHECK_CUSTOM_ERROR( wakv_name == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE ) {
-        throw core::CoreException();
-    }
+	char akv_name[] = "AZURE_KEY_VAULT";
+	unsigned int name_len = 15;
+	unsigned int wname_len = 0;
+	sqlsrv_malloc_auto_ptr<SQLWCHAR> wakv_name;
+	wakv_name = utf16_string_from_mbcs_string(SQLSRV_ENCODING_UTF8, akv_name, name_len, &wname_len);
 
-    pData->name = (wchar_t *) wakv_name.get();
-    
-    pData->data[0] = config_attr;
-    pData->dataSize = sizeof(config_attr) + sizeof(config_value);
-    *reinterpret_cast<DWORD*>(&pData->data[1]) = config_value;
-    
-    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
+	CHECK_CUSTOM_ERROR(wakv_name == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE) {
+		throw core::CoreException();
+	}
+
+	pData->name = (wchar_t *)wakv_name.get();
+
+	pData->data[0] = config_attr;
+	pData->dataSize = sizeof(config_attr) + sizeof(config_value);
+	*reinterpret_cast<DWORD*>(&pData->data[1]) = config_value;
+
+	core::SQLSetConnectAttr(conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER);
 }
 
-void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size )
+void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size)
 {
-    BYTE akv_data[sizeof( CEKEYSTOREDATA ) + MAX_CE_NAME_LEN ];
-    CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>( akv_data );
+	BYTE akv_data[sizeof(CEKEYSTOREDATA) + MAX_CE_NAME_LEN];
+	CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>(akv_data);
 
-    char akv_name[] = "AZURE_KEY_VAULT";
-    unsigned int name_len = 15;
-    unsigned int wname_len = 0;
-    sqlsrv_malloc_auto_ptr<SQLWCHAR> wakv_name;
-    wakv_name = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, akv_name, name_len, &wname_len );
+	char akv_name[] = "AZURE_KEY_VAULT";
+	unsigned int name_len = 15;
+	unsigned int wname_len = 0;
+	sqlsrv_malloc_auto_ptr<SQLWCHAR> wakv_name;
+	wakv_name = utf16_string_from_mbcs_string(SQLSRV_ENCODING_UTF8, akv_name, name_len, &wname_len);
 
-    CHECK_CUSTOM_ERROR( wakv_name == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE ) {
-        throw core::CoreException();
-    }
+	CHECK_CUSTOM_ERROR(wakv_name == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE) {
+		throw core::CoreException();
+	}
 
-    pData->name = (wchar_t *) wakv_name.get();
-    
-    pData->data[0] = config_attr;
-    pData->dataSize = 1+key_size;
+	pData->name = (wchar_t *)wakv_name.get();
 
-    memcpy_s( pData->data+1, key_size * sizeof( char ) , config_value, key_size );
-    
-    core::SQLSetConnectAttr( conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER );
+	pData->data[0] = config_attr;
+	pData->dataSize = 1 + key_size;
+
+	memcpy_s(pData->data + 1, key_size * sizeof(char), config_value, key_size);
+
+	core::SQLSetConnectAttr(conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER);
 }
 
 void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC )

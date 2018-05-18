@@ -1,5 +1,5 @@
 --TEST--
-Test connection keywords and credentials for Azure Key Vault for Always Encrypted.
+Test connection keywords for Azure Key Vault for Always Encrypted.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
@@ -16,17 +16,16 @@ $keyStoreSecret = [$AKVPassword, $AKVSecret, 'notasecret', ''];
 $is_win = (strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN');
 
 function checkErrors($errors, ...$codes)
-{                
+{
     $codeFound = false;
     
-    foreach($codes as $code)
-    {
-        if ($code[0]==$errors[0][0] and $code[1]==$errors[0][1])
+    foreach ($codes as $code) {
+        if ($code[0]==$errors[0][0] and $code[1]==$errors[0][1]) {
             $codeFound = true;
+        }
     }
     
-    if ($codeFound == false)
-    {
+    if ($codeFound == false) {
         echo "Error: ";
         print_r($errors);
         echo "\nExpected: ";
@@ -64,14 +63,14 @@ function FormulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 
 $strsize = 64;
 
-$dataTypes = array ("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
+$dataTypes = array("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
                     "decimal", "float", "real", "bigint", "int", "bit"
                     );
 
 $tableName = "akv_comparison_table";
 
 // Test every combination of the keywords above.
-// Leave out good credentials to ensure that caching does not influence the 
+// Leave out good credentials to ensure that caching does not influence the
 // results. The cache timeout can only be changed with SQLSetConnectAttr, so
 // we can't run a PHP test without caching, and if we started with good
 // credentials then subsequent calls with bad credentials can work, which
@@ -81,23 +80,27 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
     for ($j=0; $j < sizeof($keyStoreAuthentication); ++$j) {
         for ($k=0; $k < sizeof($keyStorePrincipalId); ++$k) {
             for ($m=0; $m < sizeof($keyStoreSecret); ++$m) {
-                $connectionOptions = array("CharacterSet"=>"UTF-8", 
-                                           "database"=>$databaseName, 
-                                           "uid"=>$uid, 
+                $connectionOptions = array("CharacterSet"=>"UTF-8",
+                                           "database"=>$databaseName,
+                                           "uid"=>$uid,
                                            "pwd"=>$pwd,
                                            "ConnectionPooling"=>0);
                 
-                if (!empty($columnEncryption[$i]))
+                if (!empty($columnEncryption[$i])) {
                     $connectionOptions['ColumnEncryption'] = $columnEncryption[$i];
-                if (!empty($keyStoreAuthentication[$j]))
+                }
+                if (!empty($keyStoreAuthentication[$j])) {
                     $connectionOptions['KeyStoreAuthentication'] = $keyStoreAuthentication[$j];
-                if (!empty($keyStorePrincipalId[$k]))
-                    $connectionOptions['KeyStorePrincipalId'] = $keyStorePrincipalId[$k];                
-                if (!empty($keyStoreSecret[$m]))
+                }
+                if (!empty($keyStorePrincipalId[$k])) {
+                    $connectionOptions['KeyStorePrincipalId'] = $keyStorePrincipalId[$k];
+                }
+                if (!empty($keyStoreSecret[$m])) {
                     $connectionOptions['KeyStoreSecret'] = $keyStoreSecret[$m];
+                }
 
                 // Valid credentials getting skipped
-                if (($i==0 and $j==0 and $k==0 and $m==0) or 
+                if (($i==0 and $j==0 and $k==0 and $m==0) or
                     ($i==0 and $j==1 and $k==1 and $m==1)) {
                     continue;
                 }
@@ -105,19 +108,19 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                 // Connect to the AE-enabled database
                 // Failure is expected when the keyword combination is wrong
                 $conn = sqlsrv_connect($server, $connectionOptions);
-                if (!$conn) 
-                {
+                if (!$conn) {
                     $errors = sqlsrv_errors();
                     
-                    checkErrors($errors, array('08001','0'),    
-                                         array('08001','-1'),    // SSL error occurs in Ubuntu 
-                                         array('IMSSP','-110'), 
-                                         array('IMSSP','-111'), 
-                                         array('IMSSP','-112'), 
-                                         array('IMSSP','-113'));
-                } 
-                else
-                {
+                    checkErrors(
+                        $errors,
+                        array('08001','0'),
+                        array('08001','-1'),    // SSL error occurs in Ubuntu
+                        array('IMSSP','-110'),
+                        array('IMSSP','-111'),
+                        array('IMSSP','-112'),
+                        array('IMSSP','-113')
+                    );
+                } else {
                     $columns = array();
                     $insertQuery = "";
 
@@ -149,26 +152,28 @@ for ($i=0; $i < sizeof($columnEncryption); ++$i) {
                     if (sqlsrv_execute($stmt) == false) {
                         $errors = sqlsrv_errors();
                         
-                        if (!AE\isColEncrypted())
-                        {
-                            checkErrors($errors, array('CE258', '0'),
-                                                 array('CE275', '0'));
-                        }
-                        else
-                        {
-                            checkErrors($errors, array('CE258', '0'),    
-                                                 array('CE275', '0'),    
-                                                 array('22018', '206')); 
+                        if (!AE\isColEncrypted()) {
+                            checkErrors(
+                                $errors,
+                                array('CE258', '0'),
+                                array('CE275', '0')
+                            );
+                        } else {
+                            checkErrors(
+                                $errors,
+                                array('CE258', '0'),
+                                array('CE275', '0'),
+                                array('22018', '206')
+                            );
                         }
                         
                         sqlsrv_free_stmt($stmt);
-                    }
-                    else 
-                    {
+                    } else {
                         // The INSERT query succeeded with bad credentials, which
                         // should only happen when encryption is not enabled.
-                        if (AE\isColEncrypted()) 
-                            fatalError( "Successful insertion with bad credentials\n");
+                        if (AE\isColEncrypted()) {
+                            fatalError("Successful insertion with bad credentials\n");
+                        }
                     }
                     
                     // Free the statement and close the connection
