@@ -28,14 +28,17 @@
 // Increase Patch for backward compatible fixes.
 #define SQLVERSION_MAJOR 5
 #define SQLVERSION_MINOR 2
-#define SQLVERSION_PATCH 0
+#define SQLVERSION_PATCH 1
 #define SQLVERSION_BUILD 0
 
 // Semantic versioning pre-release 
 // for stable releases should be empty
 // "-RC" for release candidates
 // "-preview" for ETP 
+// For previews, change this constant to 1. Otherwise, change it to 0
+#define PREVIEW 1
 #define SEMVER_PRERELEASE
+
 // Semantic versioning build metadata, build meta data is not counted in precedence order.
 #define SEMVER_BUILDMETA
 
@@ -47,13 +50,19 @@
 // Main version, dot separated 3 digits, Major.Minor.Patch
 #define VER_APIVERSION_STR      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_PATCH )
 
-// For preview release, we want the following:
-// #define VER_FILEVERSION_STR     VER_APIVERSION_STR "-" SEMVER_PRERELEASE SEMVER_BUILDMETA
-// because pecl doesn't like dashes. However, if SEMVER_PRERELEASE is empty, the "-" must be removed
+#if PREVIEW > 0
+// For preview release, use the following:
+#undef SEMVER_PRERELEASE
+#define SEMVER_PRERELEASE "preview"
+#define VER_FILEVERSION_STR     VER_APIVERSION_STR "-" SEMVER_PRERELEASE SEMVER_BUILDMETA
+#else
+// Othewise, SEMVER_PRERELEASE should be empty, and the "-" must be removed (use the one below)
 #define VER_FILEVERSION_STR     VER_APIVERSION_STR SEMVER_PRERELEASE SEMVER_BUILDMETA
+#endif
+
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
-// PECL package version macros (can't have '-' or '+')
+// PECL package version macros ('-' or '+' is not allowed)
 #define PHP_SQLSRV_VERSION      VER_APIVERSION_STR SEMVER_PRERELEASE
 #define PHP_PDO_SQLSRV_VERSION  PHP_SQLSRV_VERSION
 
