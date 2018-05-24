@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 
-## Windows/Linux/macOS 5.2.1-preview - 2018-06-01
+## 5.2.1-preview - 2018-06-01
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
@@ -14,12 +14,13 @@ Updated PECL release packages. Here is the list of updates:
 ### Fixed
 - Issue [#577](https://github.com/Microsoft/msphpsql/issues/577) - Idle Connection Resiliency doesn't work with Column Encryption enabled connection
 - Issue [#678](https://github.com/Microsoft/msphpsql/issues/678) - Idle Connection Resiliency doesn't work with Connection Pooling bug
-- Issue [#699](https://github.com/Microsoft/msphpsql/issues/699) - binding output parameter failed when the query in the stored procedure returned no data
+- Issue [#699](https://github.com/Microsoft/msphpsql/issues/699) - binding output parameter failed when the query in the stored procedure returned no data. The test case has been added to test lab.
 - Issue [#705](https://github.com/Microsoft/msphpsql/issues/705) - AE - Retrieving a negative decimal value (edge case) as output parameter causes truncation
 - Issue [#706](https://github.com/Microsoft/msphpsql/issues/706) - AE - Cannot insert double with precision and scale (38, 38)
 - Issue [#707](https://github.com/Microsoft/msphpsql/issues/707) - AE - fetching decimals / numerics as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT returns floats, not integers 
 - Issue [#735](https://github.com/Microsoft/msphpsql/issues/735) - PDO lastInsertId primary bigInt, after id 999999999 return ''
 - Pull Request [#759](https://github.com/Microsoft/msphpsql/pull/759) - removed the limitation of binding a binary as inout param as PDO::PARAM_STR with SQLSRV_ENCODING_BINARY
+- Pull Request [#775](https://github.com/Microsoft/msphpsql/pull/775) - fixed the problem for output params with SQL types specified as SQLSRV_SQLTYPE_DECIMAL or SQLSRV_SQLTYPE_NUMERIC
 
 ### Limitations
 - No support for inout / output params when using sql_variant type
