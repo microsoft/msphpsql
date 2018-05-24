@@ -1,15 +1,9 @@
 --TEST--
 Test connection keywords for Azure Key Vault for Always Encrypted.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-// Skip for 32-bit PHP, as bug causes this test to fail when inserting a bigint
-if (PHP_INT_SIZE == 4) {
-    echo "Done.\n";
-    exit();
-}
-
 require_once("MsCommon_mid-refactor.inc");
 require_once("MsSetup.inc");
 require_once('values.php');
@@ -143,7 +137,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                     // Failure expected only if the keywords/credentials are wrong
                     if ($stmt->execute($testValues) == false) {
                         print_r($stmt->errorInfo());
-                        $stmt = null;
+                        unset($stmt);
                     } else {
                         // The INSERT query succeeded with bad credentials, which
                         // should only happen when encryption is not enabled.
@@ -153,8 +147,8 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                     }
 
                     // Free the statement and close the connection
-                    $stmt = null;
-                    $conn = null;
+                    unset($stmt);
+                    unset($conn);
                 } catch (Exception $e) {
                     $errors = $e->errorInfo;
 

@@ -1,7 +1,7 @@
 --TEST--
 Test credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 // TODO: Fix the test on Ubuntu - right now it produces a SSL error on Ubuntu
@@ -115,13 +115,13 @@ try {
 
         echo "Successful insertion and retrieval with username/password.\n";
 
-        $stmt = null;
-        $stmt1 = null;
+        unset($stmt);
+        unset($stmt1);
     }
 
     // Free the statement and close the connection
-    $stmt = null;
-    $conn = null;
+    unset($stmt);
+    unset($conn);
 } catch (Exception $e) {
     echo "Unexpected error.\n";
     print_r($e->errorInfo);
@@ -190,13 +190,13 @@ try {
 
         echo "Successful insertion and retrieval with client ID/secret.\n";
 
-        $stmt = null;
-        $stmt1 = null;
+        unset($stmt);
+        unset($stmt1);
     }
 
     // Free the statement and close the connection
-    $stmt = null;
-    $conn = null;
+    unset($stmt);
+    unset($conn);
 } catch (Exception $e) {
     echo "Unexpected error.\n";
     print_r($e->errorInfo);

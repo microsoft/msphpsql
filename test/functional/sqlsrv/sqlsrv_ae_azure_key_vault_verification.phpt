@@ -1,7 +1,7 @@
 --TEST--
 Test credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 // TODO: Fix the test on Ubuntu - right now it produces a SSL error on Ubuntu
