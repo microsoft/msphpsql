@@ -8,13 +8,12 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Added
 - Added support for Azure Key Vault for Always Encrypted for basic CRUD functionalities 
-- Added support for macOS High Sierra (requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017
-))
+- Added support for macOS High Sierra (requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017))
 
 ### Fixed
 - Issue [#577](https://github.com/Microsoft/msphpsql/issues/577) - Idle Connection Resiliency doesn't work with Column Encryption enabled connection
 - Issue [#678](https://github.com/Microsoft/msphpsql/issues/678) - Idle Connection Resiliency doesn't work with Connection Pooling bug
-- Issue [#699](https://github.com/Microsoft/msphpsql/issues/699) - binding output parameter failed when the query in the stored procedure returned no data. The test case has been added to test lab.
+- Issue [#699](https://github.com/Microsoft/msphpsql/issues/699) - binding output parameter failed when the query in the stored procedure returned no data. The test case has been added to the test lab.
 - Issue [#705](https://github.com/Microsoft/msphpsql/issues/705) - AE - Retrieving a negative decimal value (edge case) as output parameter causes truncation
 - Issue [#706](https://github.com/Microsoft/msphpsql/issues/706) - AE - Cannot insert double with precision and scale (38, 38)
 - Issue [#707](https://github.com/Microsoft/msphpsql/issues/707) - AE - fetching decimals / numerics as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT returns floats, not integers 
