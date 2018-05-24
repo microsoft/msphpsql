@@ -786,13 +786,14 @@ $values[] = array(array(("C0A0B025C680B0A23D7885F7C203AD211F679679F97F910F0F1A36
                   null, 
                   );
 
+// The bigint field must be inserted as a string to maintain accuracy
 $small_values = array("qwerty", 
                       "wertyu",
                       "ϕƆǀđIΩͰǱζ±Áɔd͋ǻĆÅũμ", 
                       52.7878, 
                       -1.79E+308, 
                       -3.4E+38, 
-                      PHP_INT_SIZE == 4 ? "-9223372036854775807" : -9223372036854775807,
+                      "-9223372036854775807",
                       987654321,
                       1,
                       );
