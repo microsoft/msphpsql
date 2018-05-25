@@ -147,7 +147,8 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                         }
                     }
 
-                    // Free the statement and close the connection
+                    // Drop the table and close the connection
+                    dropTable($conn, $tableName);
                     sqlsrv_close($conn);
                 }
             }

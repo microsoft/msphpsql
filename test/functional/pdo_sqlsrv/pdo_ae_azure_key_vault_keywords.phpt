@@ -116,8 +116,9 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                         }
                     }
 
-                    // Free the statement and close the connection
+                    // Free the statement, drop the table, and close the connection
                     unset($stmt);
+                    dropTable($conn, $tableName);
                     unset($conn);
                 } catch (Exception $e) {
                     $errors = $e->errorInfo;
@@ -132,7 +133,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                             array('IMSSP', '-87'),
                             array('IMSSP', '-88'),
                             array('08001', '0'),
-                            array('08001', '-1')  // SSL error occurs in Ubuntu
+                            array('08001', '-1')  // SSL error occurs on some Linuxes
                         );
                     } else {
                         checkErrors(
@@ -144,7 +145,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                             array('IMSSP', '-87'),
                             array('IMSSP', '-88'),
                             array('08001', '0'),
-                            array('08001', '-1'), // SSL error occurs in Ubuntu
+                            array('08001', '-1'), // SSL error occurs on some Linuxes
                             array('22018', '206')
                         );
                     }
