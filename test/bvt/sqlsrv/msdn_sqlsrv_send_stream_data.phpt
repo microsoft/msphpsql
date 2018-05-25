@@ -34,7 +34,7 @@ sqlsrv_execute($stmt);
 
 /* Send up to 8K of parameter data to the server with each call to
 sqlsrv_send_stream_data. Count the calls. */
-$i = 1;
+$i = 0;
 while (sqlsrv_send_stream_data($stmt)) {
     $i++;
 }
