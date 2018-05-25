@@ -73,4 +73,4 @@ sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
 ?>
 --EXPECT--
-The query was successfully executed.
+Done
