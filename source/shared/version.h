@@ -22,7 +22,6 @@
 #define STRINGIFY(a) TOSTRING(a)
 #define TOSTRING(a) #a
 
-
 // Increase Major number with backward incompatible breaking changes.
 // Increase Minor with backward compatible new functionalities and API changes.
 // Increase Patch for backward compatible fixes.
@@ -31,11 +30,7 @@
 #define SQLVERSION_PATCH 1
 #define SQLVERSION_BUILD 0
 
-// Semantic versioning pre-release 
-// for stable releases should be empty
-// "-RC" for release candidates
-// "-preview" for ETP 
-// For previews, change this constant to 1. Otherwise, change it to 0
+// For previews, set this constant to 1. Otherwise, set it to 0
 #define PREVIEW 1
 #define SEMVER_PRERELEASE
 
@@ -50,13 +45,16 @@
 // Main version, dot separated 3 digits, Major.Minor.Patch
 #define VER_APIVERSION_STR      STRINGIFY( SQLVERSION_MAJOR ) "." STRINGIFY( SQLVERSION_MINOR ) "." STRINGIFY( SQLVERSION_PATCH )
 
+// Semantic versioning: 
+// For stable releases leave SEMVER_PRERELEASE empty
+// Otherwise, for pre-releases, add '-' and change it to:
+// "RC" for release candidates
+// "preview" for ETP 
 #if PREVIEW > 0
-// For preview release, use the following:
 #undef SEMVER_PRERELEASE
 #define SEMVER_PRERELEASE "preview"
 #define VER_FILEVERSION_STR     VER_APIVERSION_STR "-" SEMVER_PRERELEASE SEMVER_BUILDMETA
 #else
-// Othewise, SEMVER_PRERELEASE should be empty, and the "-" must be removed (use the one below)
 #define VER_FILEVERSION_STR     VER_APIVERSION_STR SEMVER_PRERELEASE SEMVER_BUILDMETA
 #endif
 
