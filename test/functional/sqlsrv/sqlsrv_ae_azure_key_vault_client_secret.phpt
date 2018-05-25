@@ -1,0 +1,45 @@
+--TEST--
+Test client ID/secret credentials for Azure Key Vault for Always Encrypted.
+--SKIPIF--
+<?php require('skipif_versions_old.inc'); ?>
+--FILE--
+<?php
+require_once('sqlsrv_ae_azure_key_vault_common.php');
+
+$strsize = 64;
+
+$dataTypes = array ("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
+                    "decimal", "float", "real", "bigint", "int", "bit"
+                    );
+
+// Test data insertion and retrieval with username/password
+// and client Id/client secret combinations.
+$connectionOptions = array("CharacterSet"=>"UTF-8",
+                           "database"=>$databaseName,
+                           "uid"=>$uid,
+                           "pwd"=>$pwd,
+                           "ConnectionPooling"=>0);
+
+$connectionOptions['ColumnEncryption'] = "enabled";
+$connectionOptions['KeyStoreAuthentication'] = "KeyVaultClientSecret";
+$connectionOptions['KeyStorePrincipalId'] = $AKVClientID;
+$connectionOptions['KeyStoreSecret'] = $AKVSecret;
+
+$tableName = "akv_comparison_table";
+
+// Connect to the AE-enabled database, insert the data, and verify
+$conn = sqlsrv_connect($server, $connectionOptions);
+if (!$conn) {
+    $errors = sqlsrv_errors();
+    fatalError("Connection failed while testing good credentials.\n");
+} else {
+    insertDataAndVerify($conn, $tableName, $dataTypes, $small_values);
+
+    echo "Successful insertion and retrieval with client ID/secret.\n";
+
+    sqlsrv_close($conn);
+}
+
+?>
+--EXPECT--
+Successful insertion and retrieval with client ID/secret.

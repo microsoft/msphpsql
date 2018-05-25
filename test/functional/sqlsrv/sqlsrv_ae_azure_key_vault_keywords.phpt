@@ -4,16 +4,13 @@ Test connection keywords for Azure Key Vault for Always Encrypted.
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-require_once('MsCommon.inc');
-require_once('values.php');
+require_once('sqlsrv_ae_azure_key_vault_common.php');
 
 // We will test the direct product (set of all possible combinations) of the following
 $columnEncryption = ['enabled', 'disabled', 'notvalid', ''];
 $keyStoreAuthentication = ['KeyVaultPassword', 'KeyVaultClientSecret', 'KeyVaultNothing', ''];
 $keyStorePrincipalId = [$AKVPrincipalName, $AKVClientID, 'notaname', ''];
 $keyStoreSecret = [$AKVPassword, $AKVSecret, 'notasecret', ''];
-
-$is_win = (strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN');
 
 function checkErrors($errors, ...$codes)
 {
@@ -33,32 +30,6 @@ function checkErrors($errors, ...$codes)
         echo "\n";
         fatalError("Error code not found.\n");
     }
-}
-
-// Set up the columns and build the insert query. Each data type has an
-// AE-encrypted and a non-encrypted column side by side in the table.
-function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
-{
-    $columns = array();
-    $queryTypes = "(";
-    $queryTypesAE = "(";
-    $valuesString = "VALUES (";
-    $numTypes = sizeof($dataTypes);
-
-    for ($i = 0; $i < $numTypes; ++$i) {
-        // Replace parentheses for column names
-        $colname = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
-        $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname."_AE");
-        $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname, null, true, true);
-        $queryTypes .= "c_"."$colname, ";
-        $queryTypes .= "c_"."$colname"."_AE, ";
-        $valuesString .= "?, ?, ";
-    }
-
-    $queryTypes = substr($queryTypes, 0, -2).")";
-    $valuesString = substr($valuesString, 0, -2).")";
-
-    $insertQuery = "INSERT INTO $tableName ".$queryTypes." ".$valuesString;
 }
 
 $strsize = 64;
@@ -114,7 +85,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                     checkErrors(
                         $errors,
                         array('08001','0'),
-                        array('08001','-1'),    // SSL error occurs in Ubuntu
+                        array('08001','-1'),    // SSL error on some Linuxes
                         array('IMSSP','-110'),
                         array('IMSSP','-111'),
                         array('IMSSP','-112'),
