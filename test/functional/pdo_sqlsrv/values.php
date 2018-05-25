@@ -3,10 +3,12 @@
 // This file holds different data of many different types for testing 
 // Always Encrypted. Currently, the tests that use this data are:
 // pdo__ae_azure_key_vault_keywords.phpt ($small_values)
-// pdo_ae_azure_key_vault_verification.phpt ($small_values)
+// pdo_ae_azure_key_vault_username_password.phpt ($small_values)
+// pdo_ae_azure_key_vault_client_secret.phpt ($small_values)
 // sqlsrv_ae_fetch_phptypes.phpt ($values)
 // sqlsrv_ae_azure_key_vault_keywords.phpt ($small_values)
-// sqlsrv_ae_azure_key_vault_verification.phpt ($small_values)
+// sqlsrv_ae_azure_key_vault_username_password.phpt ($small_values)
+// sqlsrv_ae_azure_key_vault_client_secret.phpt ($small_values)
 
 $values = array();
 $values[] = array(array(("BA3EA123EA8FFF46A01"), null, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_BINARY(256)),
@@ -785,6 +787,10 @@ $values[] = array(array(("C0A0B025C680B0A23D7885F7C203AD211F679679F97F910F0F1A36
                   null, 
                   null, 
                   );
+
+// For the $small_values array, the string size of 64 is large enough
+// to hold every string value.
+const SHORT_STRSIZE = 64;
 
 // The bigint field must be inserted as a string to maintain accuracy
 $small_values = array("qwerty", 

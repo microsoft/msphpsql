@@ -4,9 +4,7 @@ Test connection keywords for Azure Key Vault for Always Encrypted.
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsCommon_mid-refactor.inc");
-require_once("MsSetup.inc");
-require_once('values.php');
+require_once('pdo_ae_azure_key_vault_common.php');
 
 // We will test the direct product (set of all possible combinations) of the following
 $columnEncryption = ['enabled', 'disabled', 'notvalid', ''];
@@ -35,37 +33,9 @@ function checkErrors($errors, ...$codes)
     }
 }
 
-// Set up the columns and build the insert query. Each data type has an
-// AE-encrypted and a non-encrypted column side by side in the table.
-// If column encryption is not set in MsSetup.inc, this function simply
-// creates two non-encrypted columns side-by-side for each type.
-function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
-{
-    $columns = array();
-    $queryTypes = "(";
-    $queryTypesAE = "(";
-    $valuesString = "VALUES (";
-    $numTypes = sizeof($dataTypes);
-
-    for ($i = 0; $i < $numTypes; ++$i) {
-        // Replace parentheses for column names
-        $colname = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
-        $columns[] = new ColumnMeta($dataTypes[$i], "c_".$colname."_AE", null, "deterministic", false);
-        $columns[] = new ColumnMeta($dataTypes[$i], "c_".$colname, null, "none", false);
-        $queryTypes .= "c_"."$colname, ";
-        $queryTypes .= "c_"."$colname"."_AE, ";
-        $valuesString .= "?, ?, ";
-    }
-
-    $queryTypes = substr($queryTypes, 0, -2).")";
-    $valuesString = substr($valuesString, 0, -2).")";
-
-    $insertQuery = "INSERT INTO $tableName ".$queryTypes." ".$valuesString;
-}
-
-$strsize = 64;
-
-$dataTypes = array("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
+// The array of data types corresponding to $small_values in values.php.
+// SHORT_STRSIZE is defined in values.php as well.
+$dataTypes = array("char(".SHORT_STRSIZE.")", "varchar(".SHORT_STRSIZE.")", "nvarchar(".SHORT_STRSIZE.")",
                     "decimal", "float", "real", "bigint", "int", "bit"
                     );
 
@@ -146,8 +116,9 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                         }
                     }
 
-                    // Free the statement and close the connection
+                    // Free the statement, drop the table, and close the connection
                     unset($stmt);
+                    dropTable($conn, $tableName);
                     unset($conn);
                 } catch (Exception $e) {
                     $errors = $e->errorInfo;
@@ -162,7 +133,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                             array('IMSSP', '-87'),
                             array('IMSSP', '-88'),
                             array('08001', '0'),
-                            array('08001', '-1')  // SSL error occurs in Ubuntu
+                            array('08001', '-1')  // SSL error occurs on some Linuxes
                         );
                     } else {
                         checkErrors(
@@ -174,7 +145,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                             array('IMSSP', '-87'),
                             array('IMSSP', '-88'),
                             array('08001', '0'),
-                            array('08001', '-1'), // SSL error occurs in Ubuntu
+                            array('08001', '-1'), // SSL error occurs on some Linuxes
                             array('22018', '206')
                         );
                     }
