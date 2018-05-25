@@ -33,9 +33,9 @@ function checkErrors($errors, ...$codes)
     }
 }
 
-$strsize = 64;
-
-$dataTypes = array("char($strsize)", "varchar($strsize)", "nvarchar($strsize)",
+// The array of data types corresponding to $small_values in values.php.
+// SHORT_STRSIZE is defined in values.php as well.
+$dataTypes = array("char(".SHORT_STRSIZE.")", "varchar(".SHORT_STRSIZE.")", "nvarchar(".SHORT_STRSIZE.")",
                     "decimal", "float", "real", "bigint", "int", "bit"
                     );
 

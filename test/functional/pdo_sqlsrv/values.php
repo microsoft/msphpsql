@@ -788,6 +788,10 @@ $values[] = array(array(("C0A0B025C680B0A23D7885F7C203AD211F679679F97F910F0F1A36
                   null, 
                   );
 
+// For the $small_values array, the string size of 64 is large enough
+// to hold every string value.
+const SHORT_STRSIZE = 64;
+
 // The bigint field must be inserted as a string to maintain accuracy
 $small_values = array("qwerty", 
                       "wertyu",
