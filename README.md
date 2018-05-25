@@ -93,9 +93,9 @@ The version number may have trailing pre-release version identifiers to indicate
 ## Guidelines for Reporting Issues
 We appreciate you taking the time to test the driver, provide feedback and report any issues.  It would be extremely helpful if you:
 
-- First check [FAQ](https://github.com/Microsoft/msphpsql/wiki/FAQ) 
+- First check the [FAQ](https://github.com/Microsoft/msphpsql/wiki/FAQ) 
 - Report each issue as a new issue (but check first if it's already been reported)
-- Please address the questions in the new issue template and provide scripts, table schema, and/or any detail that help reproducing the problem(s)
+- Please address the questions in the new issue template and provide scripts, table schema, and/or any details that may help reproduce the problem(s)
 
 Thank you!
 
