@@ -174,6 +174,7 @@ const int SQL_SERVER_MAX_PRECISION = 38;
 const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
 // increase the maximum message length to accommodate for the long error returned for operand type clash
+// or for conversion of a long string
 const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 8;
 
 // max size of a date time string when converting from a DateTime object to a string

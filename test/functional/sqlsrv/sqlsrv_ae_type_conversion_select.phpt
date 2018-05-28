@@ -1,5 +1,8 @@
 --TEST--
 Test fetching data by conversion with CAST in the SELECT statement
+--DESCRIPTION--
+This test checks the allowed data type conversions in SELECT statements under Always Encrypted and non-encrypted
+Reference chart for conversions found at https://www.microsoft.com/en-us/download/details.aspx?id=35834
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
@@ -39,6 +42,9 @@ function formulateSelectQuery($tableName, &$selectQuery, &$selectQueryAE, &$data
     
     for ($i = 0; $i < $numTypes; ++$i) {
         $selectQuery[] = array();
+        
+        // Replace parentheses for column names
+        // The column names look like c_binary_256_AE and c_binary_256
         $colnamei = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
         
         for ($j = 0; $j < sizeof($dataTypes); ++$j) {
@@ -58,14 +64,14 @@ $dataTypes = array ("binary(".STRSIZE.")", "varbinary(".STRSIZE.")", "varbinary(
                     "time", "datetimeoffset", "datetime2", "decimal(32,4)", "numeric(36,4)"
                     );
 
-// Conversion matrix for SQL types, based on the conversion chart
+// Conversion matrix for SQL types listing allowed conversions for
+// non-encrypted data, based on the reference conversion chart
 // at https://www.microsoft.com/en-us/download/details.aspx?id=35834
 // i = implicit conversion
 // e = explicit conversion
 // x = conversion not allowed
 // @ = not applicable
 // c = explicit CAST required
-// m = misc
 $conversionMatrix = array(array('@','i','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//binary
                           array('i','@','i','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//varbinary
                           array('i','i','@','i','i','i','i','i','i','i','i','e','e','e','e','i','i','x','x','i','i','i','i','i','i','i','i','i','i','i','e','e','e','i','i'),//varbinary(max)
@@ -101,7 +107,7 @@ $conversionMatrix = array(array('@','i','i','i','i','i','i','i','i','i','i','e',
                           array('e','e','e','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','x','x','x','x','x','e','e','i','i','i','i','i','i','@','x','x'),//datetime2
                           array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','c','c'),//decimal
                           array('i','i','i','i','i','i','i','i','i','i','i','x','x','x','x','c','c','i','i','i','i','i','i','i','i','i','i','i','i','i','x','x','x','c','c'),//numeric
-                          );
+                         );
 
 // The conversion matrix for AE is more restrictive
 // y = allowed conversion
@@ -141,7 +147,7 @@ $conversionMatrixAE = array(array('y','y','y','x','x','x','x','x','x','x','x','x
                             array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x'),//datetime2
                             array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y','x'),//decimal
                             array('x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','y'),//numeric
-                            );
+                           );
 
 set_time_limit(0);
 sqlsrv_configure('WarningsReturnAsErrors', 1);
@@ -164,8 +170,7 @@ if (!$stmt) {
 }
 
 // The data we test against is in values.php
-for ($v = 0; $v < sizeof($values); ++$v)
-{
+for ($v = 0; $v < sizeof($values); ++$v) {
     // Each value must be inserted twice because the AE and non-AE column are side by side.
     $testValues = array();
     for ($i = 0; $i < sizeof($values[$v]); ++$i) {
@@ -176,12 +181,10 @@ for ($v = 0; $v < sizeof($values); ++$v)
     // Insert the data using sqlsrv_prepare()
     $stmt = sqlsrv_prepare($conn, $insertQuery, $testValues);
     if ($stmt == false) {
-        print_r(sqlsrv_errors());
         fatalError("sqlsrv_prepare failed\n");
     }
 
     if (!sqlsrv_execute($stmt)) {
-        print_r(sqlsrv_errors());
         fatalError("sqlsrv_execute failed\n");
     }
     
@@ -206,12 +209,11 @@ for ($v = 0; $v < sizeof($values); ++$v)
                     $convError = sqlsrv_errors();
                     
                     // if the non-AE conversion fails, certainly the AE conversion
-                    // should fail but only with error 22018.
+                    // should fail but only with error 22018 (i.e. conversion not allowed)
                     if ($stmtAE != false) {
                         fatalError("AE conversion should have failed. i=$i, j=$j, v=$v\n\n");
                     }
                     if ($convError[0][0] != '22018') {
-                        print_r($convError);
                         fatalError("AE conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
                     }
                 }
@@ -226,34 +228,36 @@ for ($v = 0; $v < sizeof($values); ++$v)
                     // Check every combination of statement value and conversion.
                     // The last else if block covers the case where the select
                     // query worked and the retrieved values are compared.
-                    if ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'x') {
-                        $convError = sqlsrv_errors();
-                        if ($convError[0][0] != '22018') {
-                            print_r($convError);
-                            fatalError("AE conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
+                    if ($stmtAE == false) {
+                        if ($conversionMatrixAE[$i][$j] == 'x') {
+                            $convError = sqlsrv_errors();
+                            if ($convError[0][0] != '22018') {
+                                fatalError("AE conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
+                            }
+                        } else { // $conversionMatrixAE[$i][$j] == 'y'
+                            fatalError("AE conversion failed, should have succeeded. i=$i, j=$j, v=$v\n");
                         }
-                    } elseif ($stmtAE == false and $conversionMatrixAE[$i][$j] == 'y') {
-                        print_r(sqlsrv_errors());
-                        fatalError("AE conversion failed, should have succeeded. i=$i, j=$j, v=$v\n");
-                    } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'x') {
-                        fatalError("AE conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
-                    } elseif ($stmtAE != false and $conversionMatrixAE[$i][$j] == 'y') {
-                        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
-                        $rowAE = sqlsrv_fetch_array($stmtAE, SQLSRV_FETCH_NUMERIC);
-                        
-                        // rtrim strips whitespace from the end of the string, which 
-                        // takes care of a bug where some conversions lead to extraneous
-                        // whitespace padding the end of the string
-                        if (is_string($row[0])) {
-                            $row[0] = rtrim($row[0]);
-                            $rowAE[0] = rtrim($rowAE[0]);
-                        }
-                        
-                        if ($row[0] != $rowAE[0]) {
-                            echo "Values do not match! i=$i, j=$j, v=$v\n";
-                            print_r($row[0]);
-                            print_r($rowAE[0]);
-                            fatalError("Test failed, values do not match\n");
+                    } else { // query succeeded 
+                        if ($conversionMatrixAE[$i][$j] == 'x') {
+                            fatalError("AE conversion succeeded, should have failed. i=$i, j=$j, v=$v\n");
+                        } elseif ($conversionMatrixAE[$i][$j] == 'y') {
+                            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+                            $rowAE = sqlsrv_fetch_array($stmtAE, SQLSRV_FETCH_NUMERIC);
+                            
+                            // rtrim strips whitespace from the end of the string, which 
+                            // takes care of a bug where some conversions lead to extraneous
+                            // whitespace padding the end of the string
+                            if (is_string($row[0])) {
+                                $row[0] = rtrim($row[0]);
+                                $rowAE[0] = rtrim($rowAE[0]);
+                            }
+                            
+                            if ($row[0] != $rowAE[0]) {
+                                echo "Values do not match! i=$i, j=$j, v=$v\n";
+                                print_r($row[0]);
+                                print_r($rowAE[0]);
+                                echo "\n";
+                            }
                         }
                     }
                 }
@@ -261,10 +265,9 @@ for ($v = 0; $v < sizeof($values); ++$v)
         }
     }
     
-    $deleteQuery = "DELETE FROM $tableName";
+    $deleteQuery = "TRUNCATE TABLE $tableName";
     $stmt = sqlsrv_query($conn, $deleteQuery);
     if ($stmt == false) {
-        print_r(sqlsrv_errors());
         fatalError("Delete statement failed");
     }
     
