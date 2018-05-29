@@ -414,10 +414,16 @@ function printErrors($message = "")
         echo $message . "\n";
     }
     $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
-    if (count($errors) == 0) {
+    $count = 0;
+    if (!empty($errors)) {
+        $count = count($errors);
+    } else {
         $errors = sqlsrv_errors(SQLSRV_ERR_ALL);
+        if (!empty($errors)) {
+            $count = count($errors);
+        }
     }
-    $count = count($errors);
+
     for ($i = 0; $i < $count; $i++) {
         echo $errors[$i]['message'] . "\n";
     }
@@ -427,12 +433,11 @@ function handleErrors()
 {
     $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
     $count = 0;
-    $count = 0;
-    if (! empty($errors)) {
+    if (!empty($errors)) {
         $count = count($errors);
     } else {
         $errors = sqlsrv_errors(SQLSRV_ERR_ALL);
-        if (! empty($errors)) {
+        if (!empty($errors)) {
             $count = count($errors);
         }
     }
