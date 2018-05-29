@@ -2,12 +2,9 @@
 
 **Welcome to the Microsoft Drivers for PHP for Microsoft SQL Server**
 
-The Microsoft Drivers for PHP for Microsoft SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2008 R2 and later (including Azure SQL DB). These drivers rely on the Microsoft ODBC Driver for SQL Server to handle the low-level communication with SQL Server.
+The Microsoft Drivers for PHP for Microsoft SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2008 R2 and later (including Azure SQL DB). These drivers rely on the [Microsoft ODBC Driver for SQL Server](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017) to handle the low-level communication with SQL Server.
 
-This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.* with improvements on both drivers and some limitations (see Limitations below for details).  Upcoming releases will contain additional functionality, bug fixes, and more (see Plans below for more details).
-
-SQL Server Team
-
+This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.* with improvements on both drivers and some limitations (see Limitations below for details). Upcoming releases will contain additional functionalities, bug fixes, and more.
 
 ## Take our survey
 
@@ -52,7 +49,7 @@ On the client machine:
 - A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
 - [Microsoft ODBC Driver 17][odbc17], [Microsoft ODBC Driver 13][odbc13], or [Microsoft ODBC Driver 11][odbc11]
 
-On the server side, Microsoft SQL Server 2008 R2 and above on Windows is supported, as is Microsoft SQL Server 2016 and above on Linux.
+On the server side, Microsoft SQL Server 2008 R2 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
 
 ## Building and Installing the Drivers on Windows
 
@@ -96,15 +93,9 @@ The version number may have trailing pre-release version identifiers to indicate
 ## Guidelines for Reporting Issues
 We appreciate you taking the time to test the driver, provide feedback and report any issues.  It would be extremely helpful if you:
 
+- First check the [FAQ](https://github.com/Microsoft/msphpsql/wiki/FAQ) 
 - Report each issue as a new issue (but check first if it's already been reported)
-- Try to be detailed in your report. Useful information for good bug reports includes:
-  * What you are seeing and what the expected behaviour is
-  * Can you connect to SQL Server via `sqlcmd`? 
-  * Which driver: SQLSRV or PDO_SQLSRV?
-  * Environment details: e.g. PHP version, thread safe (TS) or non-thread safe (NTS), 32-bit or 64-bit?
-  * Table schema (for some issues, the data types make a big difference!)
-  * Any other relevant information you want to share
-- Try to include a PHP script demonstrating the isolated problem.
+- Please address the questions in the new issue template and provide scripts, table schema, and/or any details that may help reproduce the problem(s)
 
 Thank you!
 
@@ -120,8 +111,6 @@ Thank you!
 **Q:** Is Microsoft taking pull requests for this project?
 
 **A:** Yes. Please submit pull requests to the **dev** branch and not the **master** branch.
-
-
 
 ## License
 

@@ -9,12 +9,12 @@ These instruction install PHP 7.2 by default -- see the notes at the beginning o
 - [Installing the drivers on Red Hat 7](#installing-the-drivers-on-red-hat-7)
 - [Installing the drivers on Debian 8 and 9](#installing-the-drivers-on-debian-8-and-9)
 - [Installing the drivers on Suse 12](#installing-the-drivers-on-suse-12)
-- [Installing the drivers on macOS El Capitan and Sierra](#installing-the-drivers-on-macos-el-capitan-and-sierra)
+- [Installing the drivers on macOS El Capitan, Sierra and High Sierra](#installing-the-drivers-on-macos-el-capitan-sierra-and-high-sierra)
 
 ## Installing the drivers on Ubuntu 16.04 and 17.10
 
-    > [!NOTE]
-    > To install PHP 7.0 or 7.1, replace 7.2 with 7.0 or 7.1 in the following commands.
+> [!NOTE]
+> To install PHP 7.0 or 7.1, replace 7.2 with 7.0 or 7.1 in the following commands.
 
 ### Step 1. Install PHP
 ```
@@ -53,8 +53,8 @@ To test your installation, see [Testing your installation](#testing-your-install
 
 ## Installing the drivers on Red Hat 7
 
-    > [!NOTE]
-    > To install PHP 7.0 or 7.1, replace remi-php72 with remi-php70 or remi-php71 respectively in the following commands.
+> [!NOTE]
+> To install PHP 7.0 or 7.1, replace remi-php72 with remi-php70 or remi-php71 respectively in the following commands.
 
 ### Step 1. Install PHP
 
@@ -116,8 +116,8 @@ To test your installation, see [Testing your installation](#testing-your-install
 
 ## Installing the drivers on Debian 8 and 9
 
-    > [!NOTE]
-    > To install PHP 7.0 or 7.1, replace 7.2 in the following commands with 7.0 or 7.1.
+> [!NOTE]
+> To install PHP 7.0 or 7.1, replace 7.2 in the following commands with 7.0 or 7.1.
 
 ### Step 1. Install PHP
 ```
@@ -165,10 +165,10 @@ To test your installation, see [Testing your installation](#testing-your-install
 
 ## Installing the drivers on Suse 12
 
-    > [!NOTE]
-    > To install PHP 7.0, skip the command below adding the repository - 7.0 is the default PHP on suse 12.
-    > To install PHP 7.1, replace the repository URL below with the following URL:
-      `http://download.opensuse.org/repositories/devel:/languages:/php:/php71/SLE_12/devel:languages:php:php71.repo`
+> [!NOTE]
+> To install PHP 7.0, skip the command below adding the repository - 7.0 is the default PHP on suse 12.
+> To install PHP 7.1, replace the repository URL below with the following URL:
+  `http://download.opensuse.org/repositories/devel:/languages:/php:/php71/SLE_12/devel:languages:php:php71.repo`
 
 ### Step 1. Install PHP
 ```
@@ -203,28 +203,30 @@ sudo systemctl restart apache2
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on macOS El Capitan and Sierra
+## Installing the drivers on macOS El Capitan, Sierra and High Sierra
 
 If you do not already have it, install brew as follows:
 ```
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-    > [!NOTE]
-    > To install PHP 7.0 or 7.1, replace php72 with php70 or php71 respectively in the following commands.
+> [!NOTE]
+> To install PHP 7.0 or 7.1, replace php@7.2 with php@7.0 or php@7.1 respectively in the following commands.
 
 ### Step 1. Install PHP
 
 ```
 brew tap
-brew tap homebrew/dupes
-brew tap homebrew/versions
-brew tap homebrew/homebrew-php
-brew install php72 --with-pear --with-httpd24 --with-cgi
-echo 'export PATH="/usr/local/sbin:$PATH"' >> ~/.bash_profile
-echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bash_profile
-source ~/.bash_profile
+brew tap homebrew/core
+brew install php@7.2
 ```
+
+PHP should now be in your path -- run `php -v` to verify that you are running the correct version of PHP. If PHP is not in your path or it is not the correct version, run the following:
+
+```
+brew link --force --overwrite php@7.2
+```
+
 ### Step 2. Install prerequisites
 Install the ODBC driver for macOS by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server). 
 
@@ -235,13 +237,20 @@ brew install autoconf automake libtool
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```
-chmod -R ug+w /usr/local/opt/php72/lib/php
-pear config-set php_ini /usr/local/etc/php/7.2/php.ini system
 sudo pecl install sqlsrv
 sudo pecl install pdo_sqlsrv
 ```
 ### Step 4. Install Apache and configure driver loading
 ```
+brew install apache2
+```
+To find the Apache configuration file for your Apache installation, run
+```
+apachectl -V | grep SERVER_CONFIG_FILE
+```
+and substitute the path for `httpd.conf` in the following commands:
+```
+echo "LoadModule php7_module /usr/local/opt/php@7.2/lib/httpd/modules/libphp7.so" >> /usr/local/etc/httpd/httpd.conf
 (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/httpd/httpd.conf
 ```
 ### Step 5. Restart Apache and test the sample script
