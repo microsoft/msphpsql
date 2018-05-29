@@ -129,7 +129,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                     if (sqlsrv_execute($stmt) == false) {
                         $errors = sqlsrv_errors();
 
-                        if (!AE\isColEncrypted()) {
+                        if (!AE\isDataEncrypted()) {
                             checkErrors(
                                 $errors,
                                 array('CE258', '0'),
@@ -148,7 +148,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                     } else {
                         // The INSERT query succeeded with bad credentials, which
                         // should only happen when encryption is not enabled.
-                        if (AE\isColEncrypted()) {
+                        if (AE\isDataEncrypted()) {
                             fatalError("Successful insertion with bad credentials\n");
                         }
                     }
