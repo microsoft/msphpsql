@@ -189,7 +189,7 @@ void conn_string_parser::add_key_value_pair( _In_reads_(len) const char* value, 
     if( !valid ) {
         THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION, this->current_key_name );
     }
-    
+
     string_parser::add_key_value_pair( value, len );
 }
 

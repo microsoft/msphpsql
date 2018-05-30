@@ -25,7 +25,7 @@ AE\insertRow($conn, $tbname, array("c1_bigint" => 922337203685479936));
 // Call stored procedure with SQLSRV_PARAM_OUT
 $outSql = "{CALL $spname (?)}";
 $bigintOut = 0;
-$stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_OUT)));
+$stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_OUT, null, SQLSRV_SQLTYPE_BIGINT)));
 sqlsrv_execute($stmt);
 printf("Large bigint output:\n");
 var_dump($bigintOut);
@@ -33,7 +33,7 @@ printf("\n");
 
 // Call stored procedure with SQLSRV_PARAM_INOUT
 $bigintOut = 0;
-$stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_INOUT)));
+$stmt = sqlsrv_prepare($conn, $outSql, array(array(&$bigintOut, SQLSRV_PARAM_INOUT, null, SQLSRV_SQLTYPE_BIGINT)));
 sqlsrv_execute($stmt);
 printf("Large bigint inout:\n");
 var_dump($bigintOut);

@@ -397,8 +397,28 @@ ss_error SS_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Stored Procedures do not support text, ntext or image as OUTPUT parameters.", -108, false }
     },
     {
-        SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
-        { IMSSP, (SQLCHAR*) "Connection with Column Encryption enabled does not support fetching stream. Please fetch the data as a string.", -109, false }
+        SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
+        { IMSSP, (SQLCHAR*)"Error converting a double (value out of range) to an integer.", -109, false }
+    },
+    {
+        SQLSRV_ERROR_INVALID_AKV_AUTHENTICATION_OPTION,
+        { IMSSP, (SQLCHAR*) "Invalid option for the KeyStoreAuthentication keyword. Only KeyVaultPassword or KeyVaultClientSecret is allowed.", -110, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_AUTH_MISSING,
+        { IMSSP, (SQLCHAR*) "The authentication method for Azure Key Vault is missing. KeyStoreAuthentication must be set to KeyVaultPassword or KeyVaultClientSecret.", -111, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_NAME_MISSING,
+        { IMSSP, (SQLCHAR*) "The username or client Id for Azure Key Vault is missing.", -112, false }
+    },
+    {
+        SQLSRV_ERROR_AKV_SECRET_MISSING,
+        { IMSSP, (SQLCHAR*) "The password or client secret for Azure Key Vault is missing.", -113, false }
+    },
+    {
+        SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
+        { IMSSP, (SQLCHAR*) "Invalid value for loading Azure Key Vault.", -114, false}
     },
 
     // terminate the list of errors/warnings

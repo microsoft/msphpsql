@@ -29,7 +29,7 @@ typedef const zend_function_entry pdo_sqlsrv_function_entry;
 namespace {
 
 const char LAST_INSERT_ID_QUERY[] = "SELECT @@IDENTITY;";
-const size_t LAST_INSERT_ID_BUFF_LEN = 10;    // size of the buffer to hold the string value of the last insert id integer
+const size_t LAST_INSERT_ID_BUFF_LEN = 50;    // size of the buffer to hold the string value of the last inserted id, which may be an int, bigint, decimal(p,0) or numeric(p,0)
 const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT CURRENT_VALUE FROM SYS.SEQUENCES WHERE NAME=%s";
 const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( SEQUENCE_CURRENT_VALUE_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
 
@@ -40,17 +40,20 @@ const char Server[] = "Server";
 const char APP[] = "APP";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
-const char ConnectionPooling[] = "ConnectionPooling";
 const char Authentication[] = "Authentication";
-const char Driver[] = "Driver";
-#ifdef _WIN32
 const char ColumnEncryption[] = "ColumnEncryption";
+const char ConnectionPooling[] = "ConnectionPooling";
+#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 #endif // _WIN32
 const char Database[] = "Database";
+const char Driver[] = "Driver";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
+const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
+const char KeyStoreSecret[] = "KeyStoreSecret";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
@@ -231,7 +234,6 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         driver_set_func::func
     },
-#ifdef _WIN32
     {
         PDOConnOptionNames::ColumnEncryption,
         sizeof(PDOConnOptionNames::ColumnEncryption),
@@ -241,6 +243,7 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         column_encryption_set_func::func
     },
+#ifdef _WIN32
     {
         PDOConnOptionNames::ConnectRetryCount,
         sizeof( PDOConnOptionNames::ConnectRetryCount ),
@@ -286,6 +289,33 @@ const connection_option PDO_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::Failover_Partner ), 
         CONN_ATTR_STRING,
         conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::KeyStoreAuthentication,
+        sizeof( PDOConnOptionNames::KeyStoreAuthentication ),
+        SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
+        ODBCConnOptions::KeyStoreAuthentication,
+        sizeof( ODBCConnOptions::KeyStoreAuthentication ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func 
+    },
+    {
+        PDOConnOptionNames::KeyStorePrincipalId,
+        sizeof( PDOConnOptionNames::KeyStorePrincipalId ),
+        SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID,
+        ODBCConnOptions::KeyStorePrincipalId,
+        sizeof( ODBCConnOptions::KeyStorePrincipalId ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func 
+    },
+    {
+        PDOConnOptionNames::KeyStoreSecret,
+        sizeof( PDOConnOptionNames::KeyStoreSecret ),
+        SQLSRV_CONN_OPTION_KEYSTORE_SECRET,
+        ODBCConnOptions::KeyStoreSecret,
+        sizeof( ODBCConnOptions::KeyStoreSecret ),
+        CONN_ATTR_STRING,
+        ce_akv_str_set_func::func
     },
     {
         PDOConnOptionNames::LoginTimeout,
@@ -362,7 +392,7 @@ const connection_option PDO_CONN_OPTS[] = {
     {
         PDOConnOptionNames::TransparentNetworkIPResolution,
         sizeof(PDOConnOptionNames::TransparentNetworkIPResolution),
-        SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
+        SQLSRV_CONN_OPTION_TRANSPARENT_NETWORK_IP_RESOLUTION,
         ODBCConnOptions::TransparentNetworkIPResolution,
         sizeof(ODBCConnOptions::TransparentNetworkIPResolution),
         CONN_ATTR_STRING,
@@ -1253,7 +1283,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         else {
             char* quoted_table = NULL;
             size_t quoted_len = 0;
-            int quoted = pdo_sqlsrv_dbh_quote( dbh, name, strlen( name ), &quoted_table, &quoted_len, PDO_PARAM_NULL TSRMLS_CC );
+            int quoted = pdo_sqlsrv_dbh_quote( dbh, name, strnlen_s( name ), &quoted_table, &quoted_len, PDO_PARAM_NULL TSRMLS_CC );
             SQLSRV_ASSERT( quoted, "PDO::lastInsertId failed to quote the table name.");
             snprintf( last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, quoted_table );
             sqlsrv_free( quoted_table );
@@ -1270,7 +1300,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         
         sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
         unsigned int wsql_len;
-        wsql_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_CHAR, reinterpret_cast<const char*>( last_insert_id_query ), static_cast<unsigned int>( strlen( last_insert_id_query )), &wsql_len );
+        wsql_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_CHAR, reinterpret_cast<const char*>( last_insert_id_query ), static_cast<unsigned int>( strnlen_s( last_insert_id_query )), &wsql_len );
 
         CHECK_CUSTOM_ERROR( wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message() ) {
                 throw core::CoreException();

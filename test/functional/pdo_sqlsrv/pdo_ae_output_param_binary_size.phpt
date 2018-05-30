@@ -88,9 +88,19 @@ function testOutputBinary($inout)
                     $stmt = $conn->prepare($outSql);
                     trace("\nParam $pdoParamType with INOUT = $inout\n");
                     
-                    if ($inout && $pdoParamType != PDO::PARAM_STR) {
-                        // Currently do not support getting binary as strings + INOUT param
-                        // See VSO 2829 for details
+                    if (!isAEConnected() && $pdoParamType == PDO::PARAM_INT) {
+                        // Without AE, there is no possible way to specify
+                        // binary encoding for this output param type, 
+                        // so a value like 'd' will be incorrectly
+                        // interpreted as integer value 100 (its ASCII value).
+                        // Skipping this because this use case is meaningless 
+                        // anyway.
+                        // With AE, this output param type would have caused 
+                        // an exception
+                        continue;
+                    }
+                    
+                    if ($inout) {
                         $paramType = $pdoParamType | PDO::PARAM_INPUT_OUTPUT;
                     } else {
                         $paramType = $pdoParamType;
@@ -101,14 +111,11 @@ function testOutputBinary($inout)
                     if ($pdoParamType == PDO::PARAM_STR || $pdoParamType == PDO::PARAM_LOB) {
                         $stmt->bindParam(1, $det, $paramType, $length, PDO::SQLSRV_ENCODING_BINARY); 
                         $stmt->bindParam(2, $rand, $paramType, $length, PDO::SQLSRV_ENCODING_BINARY); 
-                    } elseif ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {
+                    } else { 
                         $det = $rand = 0;
                         $stmt->bindParam(1, $det, $paramType, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
                         $stmt->bindParam(2, $rand, $paramType, PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE);
-                    } else {
-                        $stmt->bindParam(1, $det, $paramType, $length); 
-                        $stmt->bindParam(2, $rand, $paramType, $length);
-                    }
+                    } 
                     
                     try {
                         $stmt->execute();
@@ -127,12 +134,8 @@ function testOutputBinary($inout)
                                 printValues($errMsg, $det, $rand, $input0, $input1);
                             }
                         } else {
-                            // $pdoParamType is PDO::PARAM_INT
-                            // This only occurs without AE -- likely a rare use case
-                            // With AE enabled, this would have caused an exception
-                            if (strval($det) != $ord0 || strval($rand) != $ord1) {
-                                printValues($errMsg, $det, $rand, $ord0, $ord1);
-                            }
+                            echo "Something went wrong. This should not have happened\n";
+                            printValues($errMsg, $det, $rand, $ord0, $ord1);
                         }
                     } catch (PDOException $e) {
                         $message = $e->getMessage();
@@ -147,20 +150,13 @@ function testOutputBinary($inout)
                             }
                         } elseif ($pdoParamType == PDO::PARAM_BOOL || PDO::PARAM_INT) { 
                             if (isAEConnected()) {
-                                if ($pdoParamType == PDO::PARAM_INT) {
-                                    // Expected to fail with this message
-                                    $error = "String data, right truncated for output parameter";
-                                    $found = strpos($message, $error);
-                                } else {
-                                    // PDO::PARAM_BOOL -
-                                    // Expected error 07006 with AE enabled: 
-                                    // "Restricted data type attribute violation"
-                                    // The data value returned for a parameter bound as 
-                                    // SQL_PARAM_INPUT_OUTPUT or SQL_PARAM_OUTPUT could not 
-                                    // be converted to the data type identified by the  
-                                    // ValueType argument in SQLBindParameter.
-                                    $found = strpos($message, $errors['07006']);
-                                }
+                                // Expected error 07006 with AE enabled: 
+                                // "Restricted data type attribute violation"
+                                // The data value returned for a parameter bound as 
+                                // SQL_PARAM_INPUT_OUTPUT or SQL_PARAM_OUTPUT could not 
+                                // be converted to the data type identified by the  
+                                // ValueType argument in SQLBindParameter.
+                                $found = strpos($message, $errors['07006']);
                             } else {
                                 // When not AE enabled, expected to fail with something like this message
                                 // "Implicit conversion from data type nvarchar(max) to binary is not allowed. Use the CONVERT function to run this query."
@@ -169,6 +165,7 @@ function testOutputBinary($inout)
                                 $found = strpos($message, $error);
                             }
                             if ($found === false) {
+                                print "Exception: $message\n";
                                 printValues($errMsg, $det, $rand, $input0, $input1);
                             }
                         } else {

@@ -15,45 +15,38 @@ environment:
     TEST_PHP_SQL_UID: sa
     SQLSRV_DBNAME: msphpsql_sqlsrv
     PDOSQLSRV_DBNAME: msphpsql_pdosqlsrv
-    PHP_DEPSVER: 7.0
-    PHP_SDK: c:\projects\php
+    PYTHON: c:\Python36
+    # For details about Appveyor build worker images (VM template): https://www.appveyor.com/docs/build-environment/#build-worker-images
     matrix:
-      - BUILD_PLATFORM: x64
-        TEST_PHP_SQL_SERVER: (local)\SQL2012SP1
-        SQL_INSTANCE: SQL2012SP1
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.1
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+        BUILD_PLATFORM: x64
+        TEST_PHP_SQL_SERVER: (local)\SQL2017
+        SQL_INSTANCE: SQL2017
+        PHP_VC: 15
+        PHP_MAJOR_VER: 7.2
         PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x64
-        PHP_INSTALL_DIR: c:\projects\php\x64\bin
+        PHP_EXE_PATH: x64\Release_TS
+        THREAD: ts
         platform: x64
-      - BUILD_PLATFORM: x86
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+        BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2016
         SQL_INSTANCE: SQL2016
         PHP_VC: 14
         PHP_MAJOR_VER: 7.1
         PHP_MINOR_VER: latest
-        PHP_SDK_DIR: c:\projects\php\x86
-        PHP_INSTALL_DIR: c:\projects\php\x86\bin
-        PHP_ZTS: --disable-zts
+        PHP_EXE_PATH: Release
+        THREAD: nts
         platform: x86
 
-# PHP_MAJOR_VER is PHP major version to build (7.0, 7.1)
+# PHP_MAJOR_VER is PHP major version to build (7.2, 7.1)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
-# PHP_INSTALL_DIR is where the built PHP binaries go
-# PHP_SDK_DIR is where PHP source is extracted to (e.g. PHP_SDK_DIR\php-7.0.14-src)
-# PHP_SDK is where PHP sdk binary tools are extracted to
 # PHP_VC is the Visual C++ version
-# PHP_ZTS is defined to disable thread safe build
-
-# Build worker image (VM template)
-image: Visual Studio 2015
+# PHP_EXE_PATH is the relative path from php src folder to php executable
+# THREAD is either non-thread-safe (nts) or thread-safe (ts)
 
 matrix:
   fast_finish: true
-
-#services:
-  #- mssql2012sp1
 
 # clone directory (or %APPVEYOR_BUILD_FOLDER%)
 clone_folder: c:\projects\sqlphp
@@ -65,8 +58,8 @@ install:
     - echo start SQL Server
     # Based on http://www.appveyor.com/docs/services-databases
     - ps: >-
-        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null ;
-        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement") | Out-Null ;
+        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null;
+        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement") | Out-Null;
 
         $instanceName = $env:SQL_INSTANCE;
         $uri = "ManagedComputer[@Name='$env:COMPUTERNAME']/ServerInstance[@Name='$instanceName']/ServerProtocol[@Name='Tcp']";
@@ -81,10 +74,6 @@ install:
     - echo Downloading prerequisites
     - ps: | 
         $client = New-Object Net.WebClient;
-        $client.Headers.Add("user-agent", "appveyor-ci-build1");
-        $client.DownloadFile("http://windows.php.net/downloads/php-sdk/php-sdk-binary-tools-20110915.zip", "c:\projects\php-sdk-binary-tools-20110915.zip");
-    - ps: | 
-        $client = New-Object Net.WebClient;
         $client.Headers.Add("user-agent", "appveyor-ci-build2");
         $client.DownloadFile("http://windows.php.net/downloads/releases/sha1sum.txt", "c:\projects\sha1sum.txt");
         If ($env:PHP_MINOR_VER -Match "latest") {
@@ -92,91 +81,73 @@ install:
         } Else {
             $env:PHP_VERSION=$env:PHP_MAJOR_VER + '.' + $env:PHP_MINOR_VER;
         }
-    - ps: | 
-        $client = New-Object Net.WebClient;
-        $client.Headers.Add("user-agent", "appveyor-ci-build3");
-        $client.DownloadFile("http://windows.php.net/downloads/releases/php-" + ${env:PHP_VERSION} + "-src.zip", ${env:APPVEYOR_BUILD_FOLDER} + "\..\php.zip");
-    - echo Downloading MSODBCSQL 13.1
+    - echo Downloading MSODBCSQL 17.1
     # AppVeyor build works are x64 VMs and 32-bit ODBC driver cannot be installed on it
-    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
-    - cmd /c start /wait msiexec /i "c:\projects\msodbcsql.msi" /q
+    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/E/6/B/E6BFDC7A-5BCD-4C51-9912-635646DA801E/msodbcsql_17.1.0.1_x64.msi', 'c:\projects\msodbcsql_17.1.0.1_x64.msi')
+    - cmd /c start /wait msiexec /i "c:\projects\msodbcsql_17.1.0.1_x64.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
     - echo Checking the version of MSODBCSQL
-    - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 13 for SQL Server"
-    - dir C:\Windows\System32\msodbcsql13.dll
+    - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
+    - dir %WINDIR%\System32\msodbcsql*.dll
     - cd c:\projects
-    - 7z x -y .\php-sdk-binary-tools-20110915.zip -o%PHP_SDK%
-    - 7z x -y .\php.zip -o%PHP_SDK_DIR%
     - echo update SQL connection string
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:PDOSQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
-    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:SQL_INSTANCE} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:PDOSQLSRV_DBNAME} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\MsSetup.inc
     - ps: (Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", ${env:TEST_PHP_SQL_SERVER} -replace "TARGET_DATABASE", ${env:SQLSRV_DBNAME} -replace "TARGET_USERNAME",  ${env:TEST_PHP_SQL_UID} -replace "TARGET_PASSWORD",  ${env:TEST_PHP_SQL_PWD} } | Set-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
-    - ps: Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:SQL_INSTANCE} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
+    - ps: Select-String ${env:SQLSRV_DBNAME} ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\MsSetup.inc
     - echo install opencppcoverage
     - choco install opencppcoverage
-    - set path=C:\Program Files\OpenCppCoverage;%path%
+    - set path=C:\Program Files\OpenCppCoverage;%PYTHON%;%PYTHON%\Scripts;%path%
 
 build_script:
-    - '"C:\\Program Files (x86)\\Microsoft Visual Studio %PHP_VC%.0\\VC\\vcvarsall.bat" %BUILD_PLATFORM%'
-    - Echo copy msphp code to ext folder
-    - mkdir %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv
-    - mkdir %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv\shared
-    - mkdir %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv
-    - mkdir %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv\shared
-    - copy /Y %APPVEYOR_BUILD_FOLDER%\source\sqlsrv %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv
-    - copy /Y %APPVEYOR_BUILD_FOLDER%\source\shared %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\sqlsrv\shared
-    - copy /Y %APPVEYOR_BUILD_FOLDER%\source\shared %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv\shared
-    - copy /Y %APPVEYOR_BUILD_FOLDER%\source\pdo_sqlsrv %PHP_SDK_DIR%\php-%PHP_VERSION%-src\ext\pdo_sqlsrv
-    - cd %PHP_SDK_DIR%\php-%PHP_VERSION%-src
-    - cd
-    - dir
-    - '%PHP_SDK%\bin\phpsdk_setvars.bat'
-    - buildconf.bat
-    # only build CLI and MSSQL extensions
-    - configure.bat --disable-all %PHP_ZTS% --enable-cli --enable-sqlsrv=shared --with-pdo-sqlsrv=shared --enable-pdo=shared --with-prefix=%PHP_INSTALL_DIR%
-    - copy php.ini-development php.ini
-    - echo extension_dir=%PHP_INSTALL_DIR%\ext >> php.ini
-    - echo extension=php_sqlsrv.dll >> php.ini
-    - echo extension=php_pdo_sqlsrv.dll >> php.ini
-    - nmake
-    - nmake install
-    - Echo copy php.ini and run-tests.php from php source to install directory.
-    - copy php.ini %PHP_INSTALL_DIR%
-    - copy run-tests.php %PHP_INSTALL_DIR%
-    - dir %PHP_INSTALL_DIR%
+    - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py c:\projects
+    - cd c:\projects
+    - python -V
+    - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING --NO_RENAME
+    - cd c:\projects\php-sdk\phpdev\vc%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
+    - set PHP_SRC_DIR=%CD%\ext
+    - cd %PHP_EXE_PATH%
+    - set PHP_EXE_PATH=%CD%
+    - echo Showing the last few lines of php.ini
+    - ps: Get-Content ${env:PHP_EXE_PATH}\php.ini -Tail 5
+    - php --ini
+    - php -m
 
 test_script:
-    - cd %PHP_INSTALL_DIR%
-    - php --ini
-    - php -i
-    - python -V
     - Echo setup test database for SQLSRV tests  - %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
     - Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %PDOSQLSRV_DBNAME%
     - ps: >-
-        If ($env:SQL_INSTANCE -Match "SQL2016") {
+        If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            $ext_dir = ${env:PHP_SDK_DIR} + "\php-" + ${env:PHP_VERSION} + "-src\ext";
-            OpenCppCoverage.exe --sources $ext_dir\sqlsrv --sources $ext_dir\pdo_sqlsrv --modules ext\php_sqlsrv.dll --modules ext\php_pdo_sqlsrv.dll --export_type=cobertura:.\coverage.xml  --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log;
+            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --export_type=cobertura:c:\projects\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            Write-Host "Showing the last 25 lines of the log file..."
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 25;
             ls *.xml
         } Else {
             Write-Host "Running phpt tests the regular way..."
             .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -encoding UTF8;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log;
+            Write-Host "Showing the last 25 lines of the log file..."
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\sqlsrv.log -Tail 25;
             .\php.exe run-tests.php -P ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv\*.phpt | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -encoding UTF8;
-            type ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log;
+            Write-Host "Showing the last 25 lines of the log file..."
+            Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\pdo_sqlsrv.log -Tail 25;
         }
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %SQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\cleanup_dbs.py -dbname %PDOSQLSRV_DBNAME%
-    - cd %PHP_INSTALL_DIR%
-    - ps: $fileExists = Test-Path "coverage.xml"
+    - cd %PHP_EXE_PATH%
+    - ps: $fileExists = Test-Path "c:\projects\coverage.xml"
     - ps: >-
         If ($fileExists -eq $true) {
+            cd c:\projects
             Write-Host "Running coverage analysis...";
-            $env:PATH = ${env:PHP_INSTALL_DIR} + $env:PATH;
+            Write-Host "Showing the packages...";
+            Select-String package .\coverage.xml;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
             bash codecov.sh -f "coverage.xml"
+            cd ${env:PHP_EXE_PATH}
         }
 
 after_test:

@@ -138,6 +138,12 @@ int mplat_strcat_s( char * dest, size_t destSize, const char * src )
     }
     return 0;
 }
+
+size_t strnlen_s(const char * _Str, size_t _MaxCount)
+{
+    return (_Str==0) ? 0 : strnlen(_Str, _MaxCount);
+}
+
 //
 // End copy functions
 //----------------------------------------------------------------------------

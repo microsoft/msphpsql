@@ -12,11 +12,11 @@ Without AlwaysEncrypted, implicit conversion between precisions or scales works 
 require_once('MsCommon.inc');
 
 $dataTypes = array("decimal", "numeric");
-$precisions = array(/*1 => array(0, 1), 
+$precisions = array(1 => array(0, 1), 
                     4 => array(0, 1, 4), 
-                    16 => array(0, 1, 4, 16),*/
-                    19 => array(/*0,*/ 1, 4, 16, 19),
-                    38 => array(/*0,*/ 1, 4, 16, 37/*,38*/));
+                    16 => array(0, 1, 4, 16),
+                    19 => array(0, 1, 4, 16, 19),
+                    38 => array(0, 1, 4, 16, 38));
 $sqlTypes = array("SQLSRV_SQLTYPE_DECIMAL", "SQLSRV_SQLTYPE_NUMERIC");
 $sqltypePrecisions = $precisions;
 $inputValuesInit = array(92233720368547758089223372036854775808, -92233720368547758089223372036854775808);
@@ -136,6 +136,86 @@ foreach ($dataTypes as $dataType) {
 sqlsrv_close($conn);
 ?>
 --EXPECT--
+Testing decimal(1, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(1, 0) to output SQLSRV_SQLTYPE_DECIMAL(1, 0) is supported****
+****Conversion from decimal(1, 0) to output SQLSRV_SQLTYPE_NUMERIC(1, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(1, 0) to output SQLSRV_SQLTYPE_DECIMAL(1, 0) is supported****
+****Conversion from decimal(1, 0) to output SQLSRV_SQLTYPE_NUMERIC(1, 0) is supported****
+
+Testing decimal(1, 1):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(1, 1) to output SQLSRV_SQLTYPE_DECIMAL(1, 1) is supported****
+****Conversion from decimal(1, 1) to output SQLSRV_SQLTYPE_NUMERIC(1, 1) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(1, 1) to output SQLSRV_SQLTYPE_DECIMAL(1, 1) is supported****
+****Conversion from decimal(1, 1) to output SQLSRV_SQLTYPE_NUMERIC(1, 1) is supported****
+
+Testing decimal(4, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(4, 0) to output SQLSRV_SQLTYPE_DECIMAL(4, 0) is supported****
+****Conversion from decimal(4, 0) to output SQLSRV_SQLTYPE_NUMERIC(4, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(4, 0) to output SQLSRV_SQLTYPE_DECIMAL(4, 0) is supported****
+****Conversion from decimal(4, 0) to output SQLSRV_SQLTYPE_NUMERIC(4, 0) is supported****
+
+Testing decimal(4, 1):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(4, 1) to output SQLSRV_SQLTYPE_DECIMAL(4, 1) is supported****
+****Conversion from decimal(4, 1) to output SQLSRV_SQLTYPE_NUMERIC(4, 1) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(4, 1) to output SQLSRV_SQLTYPE_DECIMAL(4, 1) is supported****
+****Conversion from decimal(4, 1) to output SQLSRV_SQLTYPE_NUMERIC(4, 1) is supported****
+
+Testing decimal(4, 4):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(4, 4) to output SQLSRV_SQLTYPE_DECIMAL(4, 4) is supported****
+****Conversion from decimal(4, 4) to output SQLSRV_SQLTYPE_NUMERIC(4, 4) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(4, 4) to output SQLSRV_SQLTYPE_DECIMAL(4, 4) is supported****
+****Conversion from decimal(4, 4) to output SQLSRV_SQLTYPE_NUMERIC(4, 4) is supported****
+
+Testing decimal(16, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(16, 0) to output SQLSRV_SQLTYPE_DECIMAL(16, 0) is supported****
+****Conversion from decimal(16, 0) to output SQLSRV_SQLTYPE_NUMERIC(16, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(16, 0) to output SQLSRV_SQLTYPE_DECIMAL(16, 0) is supported****
+****Conversion from decimal(16, 0) to output SQLSRV_SQLTYPE_NUMERIC(16, 0) is supported****
+
+Testing decimal(16, 1):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(16, 1) to output SQLSRV_SQLTYPE_DECIMAL(16, 1) is supported****
+****Conversion from decimal(16, 1) to output SQLSRV_SQLTYPE_NUMERIC(16, 1) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(16, 1) to output SQLSRV_SQLTYPE_DECIMAL(16, 1) is supported****
+****Conversion from decimal(16, 1) to output SQLSRV_SQLTYPE_NUMERIC(16, 1) is supported****
+
+Testing decimal(16, 4):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(16, 4) to output SQLSRV_SQLTYPE_DECIMAL(16, 4) is supported****
+****Conversion from decimal(16, 4) to output SQLSRV_SQLTYPE_NUMERIC(16, 4) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(16, 4) to output SQLSRV_SQLTYPE_DECIMAL(16, 4) is supported****
+****Conversion from decimal(16, 4) to output SQLSRV_SQLTYPE_NUMERIC(16, 4) is supported****
+
+Testing decimal(16, 16):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(16, 16) to output SQLSRV_SQLTYPE_DECIMAL(16, 16) is supported****
+****Conversion from decimal(16, 16) to output SQLSRV_SQLTYPE_NUMERIC(16, 16) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(16, 16) to output SQLSRV_SQLTYPE_DECIMAL(16, 16) is supported****
+****Conversion from decimal(16, 16) to output SQLSRV_SQLTYPE_NUMERIC(16, 16) is supported****
+
+Testing decimal(19, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(19, 0) to output SQLSRV_SQLTYPE_DECIMAL(19, 0) is supported****
+****Conversion from decimal(19, 0) to output SQLSRV_SQLTYPE_NUMERIC(19, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(19, 0) to output SQLSRV_SQLTYPE_DECIMAL(19, 0) is supported****
+****Conversion from decimal(19, 0) to output SQLSRV_SQLTYPE_NUMERIC(19, 0) is supported****
+
 Testing decimal(19, 1):
 Testing as SQLSRV_PARAM_OUT:
 ****Conversion from decimal(19, 1) to output SQLSRV_SQLTYPE_DECIMAL(19, 1) is supported****
@@ -168,6 +248,14 @@ Testing as SQLSRV_PARAM_INOUT:
 ****Conversion from decimal(19, 19) to output SQLSRV_SQLTYPE_DECIMAL(19, 19) is supported****
 ****Conversion from decimal(19, 19) to output SQLSRV_SQLTYPE_NUMERIC(19, 19) is supported****
 
+Testing decimal(38, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from decimal(38, 0) to output SQLSRV_SQLTYPE_DECIMAL(38, 0) is supported****
+****Conversion from decimal(38, 0) to output SQLSRV_SQLTYPE_NUMERIC(38, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from decimal(38, 0) to output SQLSRV_SQLTYPE_DECIMAL(38, 0) is supported****
+****Conversion from decimal(38, 0) to output SQLSRV_SQLTYPE_NUMERIC(38, 0) is supported****
+
 Testing decimal(38, 1):
 Testing as SQLSRV_PARAM_OUT:
 ****Conversion from decimal(38, 1) to output SQLSRV_SQLTYPE_DECIMAL(38, 1) is supported****
@@ -192,13 +280,93 @@ Testing as SQLSRV_PARAM_INOUT:
 ****Conversion from decimal(38, 16) to output SQLSRV_SQLTYPE_DECIMAL(38, 16) is supported****
 ****Conversion from decimal(38, 16) to output SQLSRV_SQLTYPE_NUMERIC(38, 16) is supported****
 
-Testing decimal(38, 37):
+Testing decimal(38, 38):
 Testing as SQLSRV_PARAM_OUT:
-****Conversion from decimal(38, 37) to output SQLSRV_SQLTYPE_DECIMAL(38, 37) is supported****
-****Conversion from decimal(38, 37) to output SQLSRV_SQLTYPE_NUMERIC(38, 37) is supported****
+****Conversion from decimal(38, 38) to output SQLSRV_SQLTYPE_DECIMAL(38, 38) is supported****
+****Conversion from decimal(38, 38) to output SQLSRV_SQLTYPE_NUMERIC(38, 38) is supported****
 Testing as SQLSRV_PARAM_INOUT:
-****Conversion from decimal(38, 37) to output SQLSRV_SQLTYPE_DECIMAL(38, 37) is supported****
-****Conversion from decimal(38, 37) to output SQLSRV_SQLTYPE_NUMERIC(38, 37) is supported****
+****Conversion from decimal(38, 38) to output SQLSRV_SQLTYPE_DECIMAL(38, 38) is supported****
+****Conversion from decimal(38, 38) to output SQLSRV_SQLTYPE_NUMERIC(38, 38) is supported****
+
+Testing numeric(1, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(1, 0) to output SQLSRV_SQLTYPE_DECIMAL(1, 0) is supported****
+****Conversion from numeric(1, 0) to output SQLSRV_SQLTYPE_NUMERIC(1, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(1, 0) to output SQLSRV_SQLTYPE_DECIMAL(1, 0) is supported****
+****Conversion from numeric(1, 0) to output SQLSRV_SQLTYPE_NUMERIC(1, 0) is supported****
+
+Testing numeric(1, 1):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(1, 1) to output SQLSRV_SQLTYPE_DECIMAL(1, 1) is supported****
+****Conversion from numeric(1, 1) to output SQLSRV_SQLTYPE_NUMERIC(1, 1) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(1, 1) to output SQLSRV_SQLTYPE_DECIMAL(1, 1) is supported****
+****Conversion from numeric(1, 1) to output SQLSRV_SQLTYPE_NUMERIC(1, 1) is supported****
+
+Testing numeric(4, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(4, 0) to output SQLSRV_SQLTYPE_DECIMAL(4, 0) is supported****
+****Conversion from numeric(4, 0) to output SQLSRV_SQLTYPE_NUMERIC(4, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(4, 0) to output SQLSRV_SQLTYPE_DECIMAL(4, 0) is supported****
+****Conversion from numeric(4, 0) to output SQLSRV_SQLTYPE_NUMERIC(4, 0) is supported****
+
+Testing numeric(4, 1):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(4, 1) to output SQLSRV_SQLTYPE_DECIMAL(4, 1) is supported****
+****Conversion from numeric(4, 1) to output SQLSRV_SQLTYPE_NUMERIC(4, 1) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(4, 1) to output SQLSRV_SQLTYPE_DECIMAL(4, 1) is supported****
+****Conversion from numeric(4, 1) to output SQLSRV_SQLTYPE_NUMERIC(4, 1) is supported****
+
+Testing numeric(4, 4):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(4, 4) to output SQLSRV_SQLTYPE_DECIMAL(4, 4) is supported****
+****Conversion from numeric(4, 4) to output SQLSRV_SQLTYPE_NUMERIC(4, 4) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(4, 4) to output SQLSRV_SQLTYPE_DECIMAL(4, 4) is supported****
+****Conversion from numeric(4, 4) to output SQLSRV_SQLTYPE_NUMERIC(4, 4) is supported****
+
+Testing numeric(16, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(16, 0) to output SQLSRV_SQLTYPE_DECIMAL(16, 0) is supported****
+****Conversion from numeric(16, 0) to output SQLSRV_SQLTYPE_NUMERIC(16, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(16, 0) to output SQLSRV_SQLTYPE_DECIMAL(16, 0) is supported****
+****Conversion from numeric(16, 0) to output SQLSRV_SQLTYPE_NUMERIC(16, 0) is supported****
+
+Testing numeric(16, 1):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(16, 1) to output SQLSRV_SQLTYPE_DECIMAL(16, 1) is supported****
+****Conversion from numeric(16, 1) to output SQLSRV_SQLTYPE_NUMERIC(16, 1) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(16, 1) to output SQLSRV_SQLTYPE_DECIMAL(16, 1) is supported****
+****Conversion from numeric(16, 1) to output SQLSRV_SQLTYPE_NUMERIC(16, 1) is supported****
+
+Testing numeric(16, 4):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(16, 4) to output SQLSRV_SQLTYPE_DECIMAL(16, 4) is supported****
+****Conversion from numeric(16, 4) to output SQLSRV_SQLTYPE_NUMERIC(16, 4) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(16, 4) to output SQLSRV_SQLTYPE_DECIMAL(16, 4) is supported****
+****Conversion from numeric(16, 4) to output SQLSRV_SQLTYPE_NUMERIC(16, 4) is supported****
+
+Testing numeric(16, 16):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(16, 16) to output SQLSRV_SQLTYPE_DECIMAL(16, 16) is supported****
+****Conversion from numeric(16, 16) to output SQLSRV_SQLTYPE_NUMERIC(16, 16) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(16, 16) to output SQLSRV_SQLTYPE_DECIMAL(16, 16) is supported****
+****Conversion from numeric(16, 16) to output SQLSRV_SQLTYPE_NUMERIC(16, 16) is supported****
+
+Testing numeric(19, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(19, 0) to output SQLSRV_SQLTYPE_DECIMAL(19, 0) is supported****
+****Conversion from numeric(19, 0) to output SQLSRV_SQLTYPE_NUMERIC(19, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(19, 0) to output SQLSRV_SQLTYPE_DECIMAL(19, 0) is supported****
+****Conversion from numeric(19, 0) to output SQLSRV_SQLTYPE_NUMERIC(19, 0) is supported****
 
 Testing numeric(19, 1):
 Testing as SQLSRV_PARAM_OUT:
@@ -232,6 +400,14 @@ Testing as SQLSRV_PARAM_INOUT:
 ****Conversion from numeric(19, 19) to output SQLSRV_SQLTYPE_DECIMAL(19, 19) is supported****
 ****Conversion from numeric(19, 19) to output SQLSRV_SQLTYPE_NUMERIC(19, 19) is supported****
 
+Testing numeric(38, 0):
+Testing as SQLSRV_PARAM_OUT:
+****Conversion from numeric(38, 0) to output SQLSRV_SQLTYPE_DECIMAL(38, 0) is supported****
+****Conversion from numeric(38, 0) to output SQLSRV_SQLTYPE_NUMERIC(38, 0) is supported****
+Testing as SQLSRV_PARAM_INOUT:
+****Conversion from numeric(38, 0) to output SQLSRV_SQLTYPE_DECIMAL(38, 0) is supported****
+****Conversion from numeric(38, 0) to output SQLSRV_SQLTYPE_NUMERIC(38, 0) is supported****
+
 Testing numeric(38, 1):
 Testing as SQLSRV_PARAM_OUT:
 ****Conversion from numeric(38, 1) to output SQLSRV_SQLTYPE_DECIMAL(38, 1) is supported****
@@ -256,10 +432,10 @@ Testing as SQLSRV_PARAM_INOUT:
 ****Conversion from numeric(38, 16) to output SQLSRV_SQLTYPE_DECIMAL(38, 16) is supported****
 ****Conversion from numeric(38, 16) to output SQLSRV_SQLTYPE_NUMERIC(38, 16) is supported****
 
-Testing numeric(38, 37):
+Testing numeric(38, 38):
 Testing as SQLSRV_PARAM_OUT:
-****Conversion from numeric(38, 37) to output SQLSRV_SQLTYPE_DECIMAL(38, 37) is supported****
-****Conversion from numeric(38, 37) to output SQLSRV_SQLTYPE_NUMERIC(38, 37) is supported****
+****Conversion from numeric(38, 38) to output SQLSRV_SQLTYPE_DECIMAL(38, 38) is supported****
+****Conversion from numeric(38, 38) to output SQLSRV_SQLTYPE_NUMERIC(38, 38) is supported****
 Testing as SQLSRV_PARAM_INOUT:
-****Conversion from numeric(38, 37) to output SQLSRV_SQLTYPE_DECIMAL(38, 37) is supported****
-****Conversion from numeric(38, 37) to output SQLSRV_SQLTYPE_NUMERIC(38, 37) is supported****
+****Conversion from numeric(38, 38) to output SQLSRV_SQLTYPE_DECIMAL(38, 38) is supported****
+****Conversion from numeric(38, 38) to output SQLSRV_SQLTYPE_NUMERIC(38, 38) is supported****

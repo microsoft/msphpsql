@@ -372,7 +372,6 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     }
     bool zval_was_null = ( Z_TYPE_P( param_z ) == IS_NULL );
     bool zval_was_bool = ( Z_TYPE_P( param_z ) == IS_TRUE || Z_TYPE_P( param_z ) == IS_FALSE );
-    bool zval_was_long = ( Z_TYPE_P( param_z ) == IS_LONG && php_out_type == SQLSRV_PHPTYPE_INT && (sql_type == SQL_BIGINT || sql_type == SQL_UNKNOWN_TYPE ));
     // if the user asks for for a specific type for input and output, make sure the data type we send matches the data we
     // type we expect back, since we can only send and receive the same type.  Anything can be converted to a string, so
     // we always let that match if they want a string back.
@@ -383,16 +382,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 if( zval_was_null || zval_was_bool ){
                     convert_to_long( param_z );
                 }
-                if( zval_was_long ){
-                    convert_to_string( param_z );
-                    if( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY ){
-                        encoding = SQLSRV_ENCODING_SYSTEM;
-                    }
-                    match = Z_TYPE_P( param_z ) == IS_STRING;
-                }
-                else{
-                    match = Z_TYPE_P( param_z ) == IS_LONG;
-                }
+                match = Z_TYPE_P( param_z ) == IS_LONG;
                 break;
             case SQLSRV_PHPTYPE_FLOAT:
                 if( zval_was_null ){
@@ -431,15 +421,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     if( direction == SQL_PARAM_OUTPUT ){
         switch( php_out_type ) {
             case SQLSRV_PHPTYPE_INT:
-                if( zval_was_long ){
-                    convert_to_string( param_z );
-                    if( encoding != SQLSRV_ENCODING_SYSTEM && encoding != SQLSRV_ENCODING_UTF8 && encoding != SQLSRV_ENCODING_BINARY ){
-                        encoding = SQLSRV_ENCODING_SYSTEM;
-                    }
-                }
-                else{
-                    convert_to_long( param_z );
-                }
+                convert_to_long( param_z );
                 break;
             case SQLSRV_PHPTYPE_FLOAT:
                 convert_to_double( param_z );
@@ -509,7 +491,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ){
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
-					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), zval_was_bool );
+					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), zval_was_bool, php_out_type);
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
                 }
             }
@@ -521,7 +503,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ){
                     // save the parameter so that 1) the buffer doesn't go away, and 2) we can set it to NULL if returned
-					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), false );
+					sqlsrv_output_param output_param( param_ref, static_cast<int>( param_num ), zval_was_bool, php_out_type);
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
                 }
             }
@@ -572,7 +554,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
                         bool converted = convert_input_param_to_utf16( param_z, param_z );
                         CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE,
-                            param_num + 1, get_last_error_message() ){
+                                            param_num + 1, get_last_error_message() ){
                             throw core::CoreException();
                         }
                         buffer = Z_STRVAL_P( param_z );
@@ -583,10 +565,10 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                     // since this is an output string, assure there is enough space to hold the requested size and
                     // set all the variables necessary (param_z, buffer, buffer_len, and ind_ptr)
                     resize_output_buffer_if_necessary( stmt, param_z, param_num, encoding, c_type, sql_type, column_size, decimal_digits,
-                        buffer, buffer_len TSRMLS_CC );
+                                                       buffer, buffer_len TSRMLS_CC );
 
                     // save the parameter to be adjusted and/or converted after the results are processed
-                    sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ), zval_was_long );
+                    sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ) );
 
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
 
@@ -1874,16 +1856,16 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
         break;
         case IS_TRUE:
         case IS_FALSE:
-             sql_c_type = SQL_C_SLONG;
-             break;
+            sql_c_type = SQL_C_SLONG;
+            break;
         case IS_LONG:
-             //ODBC 64-bit long and integer type are 4 byte values.
-             if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
-                 sql_c_type = SQL_C_SBIGINT;
-             }
-             else {
-                 sql_c_type = SQL_C_SLONG;
-             }
+            //ODBC 64-bit long and integer type are 4 byte values.
+            if ((Z_LVAL_P(param_z) < INT_MIN) || (Z_LVAL_P(param_z) > INT_MAX)) {
+                sql_c_type = SQL_C_SBIGINT;
+            }
+            else {
+                sql_c_type = SQL_C_SLONG;
+            }
             break;
         case IS_DOUBLE:
             sql_c_type = SQL_C_DOUBLE;
@@ -1947,13 +1929,13 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
             sql_type = SQL_INTEGER;
             break;
         case IS_LONG:
-             //ODBC 64-bit long and integer type are 4 byte values.
-             if ( ( Z_LVAL_P( param_z ) < INT_MIN ) || ( Z_LVAL_P( param_z ) > INT_MAX ) ) {
-                 sql_type = SQL_BIGINT;
-             }
-             else {
-                 sql_type = SQL_INTEGER;
-             }
+            //ODBC 64-bit long and integer type are 4 byte values.
+            if ((Z_LVAL_P(param_z) < INT_MIN) || (Z_LVAL_P(param_z) > INT_MAX)) {
+                sql_type = SQL_BIGINT;
+            }
+            else {
+                sql_type = SQL_INTEGER;
+            }
             break;
         case IS_DOUBLE:
             sql_type = SQL_FLOAT;
@@ -2151,15 +2133,6 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
             else {
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
-            if ( output_param->is_long ) {
-                zval* value_z_temp = ( zval * )sqlsrv_malloc( sizeof( zval ));
-                ZVAL_COPY( value_z_temp, value_z );
-                convert_to_double( value_z_temp );
-                if ( Z_DVAL_P( value_z_temp ) > INT_MIN && Z_DVAL_P( value_z_temp ) < INT_MAX ) {
-                    convert_to_long( value_z );
-                }
-                sqlsrv_free( value_z_temp );
-            }
         }
         break;
         case IS_LONG:
@@ -2176,8 +2149,23 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
             break;
         case IS_DOUBLE:
             // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
-            if( stmt->param_ind_ptrs[ output_param->param_num ] == SQL_NULL_DATA ) {
-                ZVAL_NULL( value_z );
+            if (stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA) {
+                ZVAL_NULL(value_z);
+            }
+            else if (output_param->php_out_type == SQLSRV_PHPTYPE_INT) {
+                // first check if its value is out of range
+                double dval = Z_DVAL_P(value_z);
+                if (dval > INT_MAX || dval < INT_MIN) {
+                    CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED) {
+                        throw core::CoreException();
+                    }
+                }
+                // if the output param is a boolean, still convert to 
+                // a long integer first to take care of rounding
+                convert_to_long(value_z);
+                if (output_param->is_bool) {
+                    convert_to_boolean(value_z);
+                }
             }
             break;
         default:
@@ -2535,11 +2523,17 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
 
     // account for the NULL terminator returned by ODBC and needed by Zend to avoid a "String not null terminated" debug warning
     SQLULEN field_size = column_size;
-    // with AE on, when column_size is retrieved from SQLDescribeParam, column_size does not include the decimal place
-    // include the decimal for output params by adding elem_size
-    if ( stmt->conn->ce_option.enabled && decimal_digits > 0 )
-    {
+    // with AE on, when column_size is retrieved from SQLDescribeParam, column_size 
+    // does not include the negative sign or decimal place for numeric values
+    // VSO Bug 2913: without AE, the same can happen as well, in particular to decimals 
+    // and numerics with precision/scale specified
+    if (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC || sql_type == SQL_BIGINT || sql_type == SQL_INTEGER || sql_type == SQL_SMALLINT) {
+        // include the possible negative sign
         field_size += elem_size;
+        // include the decimal for output params by adding elem_size
+        if (decimal_digits > 0) {
+            field_size += elem_size;
+        }
     }
     if (column_size == SQL_SS_LENGTH_UNLIMITED) {
         field_size = SQL_SERVER_MAX_FIELD_SIZE / elem_size;

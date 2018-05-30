@@ -56,10 +56,9 @@
 
 // #define MultiByteToWideChar SystemLocale::ToUtf16
 
-
-
 #define stricmp strcasecmp
 #define strnicmp strncasecmp
+#define strnlen_s(s) strnlen_s(s, INT_MAX)
 
 #ifndef _WIN32
 #define GetLastError() errno
@@ -175,7 +174,8 @@ const int SQL_SERVER_MAX_PRECISION = 38;
 const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
 // increase the maximum message length to accommodate for the long error returned for operand type clash
-const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 4;
+// or for conversion of a long string
+const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 8;
 
 // max size of a date time string when converting from a DateTime object to a string
 const int MAX_DATETIME_STRING_LEN = 256;
@@ -998,7 +998,7 @@ struct sqlsrv_encoding {
     bool not_for_connection;
 
     sqlsrv_encoding( _In_ const char* iana, _In_ unsigned int code_page, _In_ bool not_for_conn = false ):
-        iana( iana ), iana_len( strlen( iana )), code_page( code_page ), not_for_connection( not_for_conn )
+        iana( iana ), iana_len( strnlen_s( iana )), code_page( code_page ), not_for_connection( not_for_conn )
     {
     }
 };
@@ -1056,8 +1056,12 @@ struct stmt_option;
 // This holds the various details of column encryption. 
 struct col_encryption_option {
     bool            enabled;            // column encryption enabled, false by default
+    SQLINTEGER      akv_mode;
+    zval_auto_ptr   akv_id;
+    zval_auto_ptr   akv_secret;
+    bool            akv_required;
 
-    col_encryption_option() : enabled( false )
+    col_encryption_option() : enabled( false ), akv_mode(-1), akv_required( false )
     {
     }
 };
@@ -1107,14 +1111,17 @@ const char Authentication[] = "Authentication";
 const char Driver[] = "Driver";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
-#ifdef _WIN32
 const char ColumnEncryption[] = "ColumnEncryption";
+#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 #endif // _WIN32
 const char Database[] = "Database";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
+const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
+const char KeyStoreSecret[] = "KeyStoreSecret";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_ODBC[] = "MARS_Connection";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
@@ -1157,7 +1164,10 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_CEKEYSTORE_PROVIDER,
     SQLSRV_CONN_OPTION_CEKEYSTORE_NAME,
     SQLSRV_CONN_OPTION_CEKEYSTORE_ENCRYPT_KEY,
-    SQLSRV_CONN_OPTION_TRANSPARANT_NETWORK_IP_RESOLUTION,
+    SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
+    SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID,
+    SQLSRV_CONN_OPTION_KEYSTORE_SECRET,
+    SQLSRV_CONN_OPTION_TRANSPARENT_NETWORK_IP_RESOLUTION,
 #ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
@@ -1218,6 +1228,10 @@ struct driver_set_func {
 
 struct ce_ksp_provider_set_func {
     static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
+struct ce_akv_str_set_func {
+   static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
 
@@ -1312,25 +1326,25 @@ struct sqlsrv_output_param {
 
     zval* param_z;
     SQLSRV_ENCODING encoding;
-    SQLUSMALLINT param_num;  // used to index into the ind_or_len of the statement
-    SQLLEN original_buffer_len; // used to make sure the returned length didn't overflow the buffer
+    SQLUSMALLINT param_num;         // used to index into the ind_or_len of the statement
+    SQLLEN original_buffer_len;     // used to make sure the returned length didn't overflow the buffer
+    SQLSRV_PHPTYPE php_out_type;    // used to convert output param if necessary
     bool is_bool;
-    bool is_long;
 
     // string output param constructor
-    sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len, _In_ bool is_long ) :
-        param_z( p_z ), encoding( enc ), param_num( num ), original_buffer_len( buffer_len ), is_bool( false ), is_long( is_long )
+    sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len ) :
+        param_z(p_z), encoding(enc), param_num(num), original_buffer_len(buffer_len), is_bool(false), php_out_type(SQLSRV_PHPTYPE_INVALID)
     {
     }
 
     // every other type output parameter constructor
-    sqlsrv_output_param( _In_ zval* p_z, _In_ int num, _In_ bool is_bool ) :
+    sqlsrv_output_param( _In_ zval* p_z, _In_ int num, _In_ bool is_bool, _In_ SQLSRV_PHPTYPE php_out_type) :
         param_z( p_z ),
         encoding( SQLSRV_ENCODING_INVALID ),
         param_num( num ),
         original_buffer_len( -1 ),
         is_bool( is_bool ),
-        is_long( false )
+        php_out_type(php_out_type)
     {
     }
 };
@@ -1702,7 +1716,12 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED,
     SQLSRV_ERROR_INVALID_BUFFER_LIMIT,
     SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
-    SQLSRV_ERROR_ENCRYPTED_STREAM_FETCH,
+    SQLSRV_ERROR_INVALID_AKV_AUTHENTICATION_OPTION,
+    SQLSRV_ERROR_AKV_AUTH_MISSING,
+    SQLSRV_ERROR_AKV_NAME_MISSING,
+    SQLSRV_ERROR_AKV_SECRET_MISSING,
+    SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
+    SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
@@ -1786,7 +1805,7 @@ inline bool call_error_handler( _Inout_ sqlsrv_context* ctx, _In_ unsigned long 
 inline bool is_truncated_warning( _In_ SQLCHAR* state )
 {
 #if defined(ZEND_DEBUG)
-    if( state == NULL || strlen( reinterpret_cast<char*>( state )) != 5 ) { \
+    if( state == NULL || strnlen_s( reinterpret_cast<char*>( state )) != 5 ) { \
         DIE( "Incorrect SQLSTATE given to is_truncated_warning." ); \
     }
 #endif
@@ -1919,7 +1938,7 @@ namespace core {
     }
 
     inline void SQLAllocHandle( _In_ SQLSMALLINT HandleType, _Inout_ sqlsrv_context& InputHandle, 
-								_Out_ SQLHANDLE* OutputHandlePtr TSRMLS_DC )
+                                _Out_ SQLHANDLE* OutputHandlePtr TSRMLS_DC )
     {
         SQLRETURN r;
         r = ::SQLAllocHandle( HandleType, InputHandle.handle(), OutputHandlePtr );

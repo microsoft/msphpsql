@@ -40,8 +40,8 @@ class BuildDriver(object):
         testing         # whether the user has turned on testing mode
     """
     
-    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, source, path, testing):
-        self.util = BuildUtil(phpver, driver, arch, thread, debug)
+    def __init__(self, phpver, driver, arch, thread, debug, repo, branch, source, path, testing, no_rename):
+        self.util = BuildUtil(phpver, driver, arch, thread, no_rename, debug)
         self.repo = repo
         self.branch = branch
         self.source_path = source
@@ -123,8 +123,13 @@ class BuildDriver(object):
         """
         work_dir = os.path.dirname(os.path.realpath(__file__))
         
-        if self.source_path is None:
-            # This will download from the specified branch on GitHub repo and copy the source 
+        get_source = False if self.source_path is None else True
+        if self.repo is None or self.branch is None:
+            # If GitHub repo or branch is None, get the source locally 
+            get_source = True
+
+        if not get_source:
+            # This will download from the specified branch on GitHub repo and copy the source
             self.util.download_msphpsql_source(repo, branch)
         else:
             source = self.source_path 
@@ -164,7 +169,8 @@ class BuildDriver(object):
             else:
                 self.util.copy_binary(ext_dir, dest_drivers, self.util.driver, '.dll')
                 self.util.copy_binary(ext_dir, dest_symbols, self.util.driver, '.pdb')
-                   
+
+        return ext_dir
 
     def build(self):
         """This is the main entry point of building drivers for PHP. 
@@ -186,15 +192,15 @@ class BuildDriver(object):
             logfile = self.util.get_logfile_name()
 
             try:
-                self.build_extensions(root_dir, logfile)
+                ext_dir = self.build_extensions(root_dir, logfile)
                 print('Build Completed')
             except:
                 print('Something went wrong, launching log file', logfile)
                 # display log file only when not testing
                 if not self.testing:
                     os.startfile(os.path.join(root_dir, 'php-sdk', logfile))
-                os.chdir(work_dir)    
-                break
+                os.chdir(work_dir)
+                exit(1)
 
             if not self.testing:
                 choice = input("Rebuild using the same configuration(yes) or quit (no) [yes/no]: ")
@@ -237,6 +243,7 @@ if __name__ == '__main__':
     parser.add_argument('--SOURCE', default=None, help="a local path to source file (default: None)")
     parser.add_argument('--TESTING', action='store_true', help="turns on testing mode (default: False)")
     parser.add_argument('--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
+    parser.add_argument('--NO_RENAME', action='store_true', help="drivers will not be renamed(default: False)")
 
     args = parser.parse_args()
 
@@ -250,6 +257,7 @@ if __name__ == '__main__':
     source = args.SOURCE
     path = args.DESTPATH
     testing = args.TESTING
+    no_rename = args.NO_RENAME
 
     if phpver is None:
         # starts interactive mode, testing mode is False
@@ -277,8 +285,10 @@ if __name__ == '__main__':
                 repo = 'Microsoft'
             if branch == '':
                 branch = 'dev'
-            
-        arch_version = arch_version.lower()    
+        else:
+            repo = branch = None
+
+        arch_version = arch_version.lower()
         arch = 'x64' if arch_version == 'yes' or arch_version == 'y' or arch_version == '' else 'x86'
         
         debug_mode = debug_mode.lower()
@@ -293,5 +303,6 @@ if __name__ == '__main__':
                           branch, 
                           source, 
                           path,
-                          testing)
+                          testing,
+                          no_rename)
     builder.build()

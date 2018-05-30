@@ -50,28 +50,15 @@ function compareFloats($actual, $expected)
 function compareIntegers($det, $rand, $inputValues, $pdoParamType)
 {
     ///////////////////////////////////////////////////////////////////////
-    // See GitHub issue 707 - Fix this method when the problem is addressed
-    //
     // Assume $pdoParamType is PDO::PARAM_BOOL or PDO::PARAM_INT
     if (is_string($det)) {
         return (!compareFloats(floatval($det), $inputValues[0]) 
                 && !compareFloats(floatval($rand), $inputValues[1]));
-    } elseif ($pdoParamType == PDO::PARAM_INT) {
-        $input0 = floor($inputValues[0]); // the positive float
-        $input1 = ceil($inputValues[1]); // the negative float
-        
-        return ($det == $input0 && $rand == $input1);
     } else {
-        // $pdoParamType == PDO::PARAM_BOOL
-        // Expect bool(true) or bool(false) depending on the rounded input values
-        // But with AE enabled (aforementioned GitHub issue), the fetched values 
-        // are floats instead, which should be fixed
+        // if $pdoParamType is PDO::PARAM_BOOL, expect bool(true) or bool(false) 
+        // depending on the rounded input values
         $input0 = floor($inputValues[0]); // the positive float
         $input1 = ceil($inputValues[1]); // the negative float
-        if (isAEConnected()) {
-            $det = boolval(floor($det));
-            $rand = boolval(ceil($rand));
-        }
         
         return ($det == boolval($input0) && $rand == boolval($input1));
     }
@@ -146,12 +133,14 @@ function testOutputDecimals($inout)
                     // call stored procedure
                     $outSql = getCallProcSqlPlaceholders($spname, 2);
                     foreach ($pdoParamTypes as $pdoParamType) {
-                        $det = $rand = 0.0;
+                        // Do not initialize $det or $rand as empty strings 
+                        // See VSO 2915 for details. The string must be a numeric
+                        // string, and to make it work for all precisions, we 
+                        // simply set it to a single-digit string.
+                        $det = $rand = '0';
                         $stmt = $conn->prepare($outSql);
                     
                         $len = 2048;
-                        // Do not initialize $det or $rand as empty strings 
-                        // See VSO 2915 for details 
                         if ($pdoParamType == PDO::PARAM_BOOL || $pdoParamType == PDO::PARAM_INT) {
                             $len = PDO::SQLSRV_PARAM_OUT_DEFAULT_SIZE;
                             $det = $rand = 0;
@@ -195,10 +184,14 @@ function testOutputDecimals($inout)
                                 if ($found === false) {
                                     printValues($errMsg, $det, $rand, $inputValues);
                                 }
-                            } elseif (!isAEConnected() && $precision >= 16 && $pdoParamType == PDO::PARAM_BOOL) { 
-                                // When not AE enabled, large numbers are expected to 
-                                // fail when converting to booleans
-                                $error = "Error converting data type $dataType to int"; 
+                            } elseif ($precision >= 16) {
+                                // Large numbers are expected to fail when 
+                                // converting to booleans / integers
+                                if (isAEConnected()) {
+                                    $error = "Error converting a double (value out of range) to an integer";
+                                } else {
+                                    $error = "Error converting data type $dataType to int"; 
+                                }
                                 $found = strpos($message, $error);
                                 if ($found === false) {
                                     printValues($errMsg, $det, $rand, $inputValues);

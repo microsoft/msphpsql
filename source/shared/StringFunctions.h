@@ -31,6 +31,8 @@ int         mplat_memcpy_s(void *_S1, size_t _N1, const void *_S2, size_t _N);
 int         mplat_strcat_s( char *strDestination, size_t numberOfElements, const char *strSource );
 int         mplat_strcpy_s(char * _Dst, size_t _SizeInBytes, const char * _Src);
 
+size_t      strnlen_s(const char * _Str, size_t _MaxCount = INT_MAX);
+
 // Copy
 #define memcpy_s        mplat_memcpy_s
 #define strcat_s        mplat_strcat_s
