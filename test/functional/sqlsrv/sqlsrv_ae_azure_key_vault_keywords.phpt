@@ -6,6 +6,12 @@ Test connection keywords for Azure Key Vault for Always Encrypted.
 <?php
 require_once('sqlsrv_ae_azure_key_vault_common.php');
 
+// This test only applies to Azure Key Vault, or to no encryption at all
+if ($keystore != 'none' and $keystore != 'akv') {
+    echo "Done.\n";
+    exit();
+}
+
 // We will test the direct product (set of all possible combinations) of the following
 $columnEncryption = ['enabled', 'disabled', 'notvalid', ''];
 $keyStoreAuthentication = ['KeyVaultPassword', 'KeyVaultClientSecret', 'KeyVaultNothing', ''];
@@ -123,7 +129,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                     if (sqlsrv_execute($stmt) == false) {
                         $errors = sqlsrv_errors();
 
-                        if (!AE\isColEncrypted()) {
+                        if (!AE\isDataEncrypted()) {
                             checkErrors(
                                 $errors,
                                 array('CE258', '0'),
@@ -142,7 +148,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                     } else {
                         // The INSERT query succeeded with bad credentials, which
                         // should only happen when encryption is not enabled.
-                        if (AE\isColEncrypted()) {
+                        if (AE\isDataEncrypted()) {
                             fatalError("Successful insertion with bad credentials\n");
                         }
                     }

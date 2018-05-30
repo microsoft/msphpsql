@@ -6,6 +6,12 @@ Test connection keywords for Azure Key Vault for Always Encrypted.
 <?php
 require_once('pdo_ae_azure_key_vault_common.php');
 
+// This test only applies to Azure Key Vault, or to no encryption at all
+if ($keystore != 'none' and $keystore != 'akv') {
+    echo "Done.\n";
+    exit();
+}
+
 // We will test the direct product (set of all possible combinations) of the following
 $columnEncryption = ['enabled', 'disabled', 'notvalid', ''];
 $keyStoreAuthentication = ['KeyVaultPassword', 'KeyVaultClientSecret', 'KeyVaultNothing', ''];
