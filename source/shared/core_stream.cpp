@@ -26,7 +26,7 @@ namespace {
 int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ TSRMLS_DC )
 {
     sqlsrv_stream* ss = static_cast<sqlsrv_stream*>( stream->abstract );
-    SQLSRV_ASSERT( ss != NULL, "sqlsrv_stream_close: sqlsrv_stream* ss was null." );
+    SQLSRV_ASSERT( ss != NULL && ss->stmt != NULL, "sqlsrv_stream_close: sqlsrv_stream* ss was null." );
     
     // free the stream resources in the Zend engine
     php_stream_free( stream, PHP_STREAM_FREE_RELEASE_STREAM );
@@ -52,7 +52,7 @@ size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count)
     sqlsrv_malloc_auto_ptr<char> temp_buf;
 
     sqlsrv_stream* ss = static_cast<sqlsrv_stream*>( stream->abstract );
-    SQLSRV_ASSERT( ss != NULL, "sqlsrv_stream_read: sqlsrv_stream* ss is NULL." );
+    SQLSRV_ASSERT( ss != NULL && ss->stmt != NULL, "sqlsrv_stream_read: sqlsrv_stream* ss is NULL." );
 
     try {
 
