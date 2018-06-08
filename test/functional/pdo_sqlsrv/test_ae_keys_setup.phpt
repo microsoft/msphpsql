@@ -1,35 +1,48 @@
 --TEST--
-retrieval of names of column master key and column encryption key generated in the database setup
+Test the existence of Windows Always Encrypted keys generated in the database setup
+--DESCRIPTION--
+This test iterates through the rows of sys.column_master_keys and/or 
+sys.column_encryption_keys to look for the specific column master key and 
+column encryption key generated in the database setup
 --SKIPIF--
 <?php require('skipif_unix.inc'); ?>
 --FILE--
 <?php
-sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
-sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
-
-require( 'MsCommon.inc' );
-$conn = Connect();
+require_once('MsCommon_mid-refactor.inc');
+$conn = connect();
     
-if (IsAEQualified($conn)){
+if (isAEQualified($conn)){
     $query = "SELECT name FROM sys.column_master_keys";
     $stmt = $conn->query($query);
-    $master_key_row = $stmt->fetch();
+
+    // Do not assume the master key must be the first one created
+    $found = false;
+    while ($master_key_row = $stmt->fetch()) {
+        if ($master_key_row[0] == 'AEMasterKey') {
+            $found = true;
+        }
+    }
+    if (!$found) {
+        die("Windows Column Master Key not created.\n");
+    }
     
+    // Do not assume the encryption key must be the first one created
     $query = "SELECT name FROM sys.column_encryption_keys";
     $stmt = $conn->query($query);
-    $encryption_key_row = $stmt->fetch();
     
-    if ($master_key_row[0] == 'AEMasterKey' && $encryption_key_row[0] == 'AEColumnKey'){
-        echo "Test Successfully done.\n";
+    $found = false;
+    while ($encryption_key_row = $stmt->fetch()) {
+        if ($encryption_key_row[0] == 'AEColumnKey') {
+            $found = true;
+        }
     }
-    else {
-        die("Column Master Key and Column Encryption Key not created.\n");
+    if (!$found) {
+        die("Windows Column Encryption Key not created.\n");
     }
     unset($stmt);
 }
-else {
-    echo "Test Successfully done.\n";
-}
+
+echo "Test Successfully done.\n";
 unset($conn);
 ?>
 --EXPECT--

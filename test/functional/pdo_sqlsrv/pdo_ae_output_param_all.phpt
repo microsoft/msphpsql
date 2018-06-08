@@ -29,6 +29,7 @@ $colMetaArr = array("c1_int" => "int",
 createTable($conn, $tbname, $colMetaArr);
 // Create a Store Procedure
 $spname = 'selectAllColumns';
+dropProc($conn, $spname);
 $spSql = "CREATE PROCEDURE $spname (
                 @c1_int int OUTPUT, @c2_smallint smallint OUTPUT,
                 @c3_tinyint tinyint OUTPUT, @c4_bit bit OUTPUT,

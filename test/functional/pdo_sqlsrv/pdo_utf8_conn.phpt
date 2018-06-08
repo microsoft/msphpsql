@@ -4,6 +4,7 @@ UTF-8 connection strings
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
+require_once("MsSetup.inc");
 require_once("MsCommon_mid-refactor.inc");
 
 $server = 'localhost';
@@ -11,7 +12,7 @@ $databaseName = 'test';
 $uid = 'sa';
 $pwd = 'Sunshine4u';
 
-$dsn = getDSN($server, $databaseName);
+$dsn = getDSN($server, $databaseName, $driver);
 // test an invalid connection credentials
 $c = new PDO($dsn, $uid, $pwd);
 

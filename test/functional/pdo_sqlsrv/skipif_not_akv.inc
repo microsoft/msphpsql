@@ -4,6 +4,11 @@ if (!extension_loaded("pdo") || !extension_loaded('pdo_sqlsrv')) {
 }
 
 require_once("MsSetup.inc");
+if ($driver != "ODBC Driver 17 for SQL Server") {
+    // the testing is not set to use ODBC 17
+    die("skip - AE feature not supported in the current environment.");
+}
+
 require_once("MsCommon_mid-refactor.inc");
 
 $dsn = getDSN($server, null);

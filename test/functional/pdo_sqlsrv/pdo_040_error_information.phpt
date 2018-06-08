@@ -12,6 +12,8 @@ try {
 
     // Create table
     $tableName = 'pdo_040test';
+    dropTable($conn, $tableName);
+
     // common function insertRow() is not used here since the test deliberately
     // executes an invalid insertion statement
     // thus it's not necessary to create an encrypted column for testing column encryption

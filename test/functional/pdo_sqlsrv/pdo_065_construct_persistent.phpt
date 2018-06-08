@@ -13,7 +13,7 @@ require_once("MsCommon_mid-refactor.inc");
 try {
     echo "Testing a connection with ATTR_PERSISTENT...\n";
     // setting PDO::ATTR_PERSISTENT in PDO constructor returns an exception
-    $dsn = getDSN($server, $databaseName);
+    $dsn = getDSN($server, $databaseName, $driver);
     $attr = array(PDO::ATTR_PERSISTENT => true);
     $conn = new PDO($dsn, $uid, $pwd, $attr);
     //free the connection

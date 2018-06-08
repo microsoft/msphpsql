@@ -12,6 +12,8 @@ try {
 
     // Create table
     $tableName = 'bindParams';
+    dropTable($conn, $tableName);
+    
     $sql = "CREATE TABLE $tableName (ID TINYINT, SID CHAR(5))";
     $stmt = $conn->exec($sql);
 

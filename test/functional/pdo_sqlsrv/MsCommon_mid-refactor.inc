@@ -13,10 +13,6 @@
 // to be runnable from the MSSQL teams' internal proprietary test running system
 //
 
-const KSP_NAME = 'MyCustomKSPName';
-const ENCRYPT_KEY = 'LPKCWVD07N3RG98J0MBLG4H2';
-const KSP_TEST_TABLE = 'CustomKSPTestTable';
-
 function isAEQualified($conn)
 {
     $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
@@ -52,7 +48,7 @@ function connect($keywords = '', $options=array(), $errmode = PDO::ERRMODE_EXCEP
         // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
         // which does not support switching databases
         require("MsSetup.inc");
-        $dsn = getDSN($server, $databaseName, $keywords, $disableCE);
+        $dsn = getDSN($server, $databaseName, $driver, $keywords, $disableCE);
         $conn = new PDO($dsn, $uid, $pwd, $options);
         if ($errmode == PDO::ERRMODE_EXCEPTION || $errmode == PDO::ERRMODE_WARNING || $errmode == PDO::ERRMODE_SILENT) {
             $conn->setAttribute(PDO::ATTR_ERRMODE, $errmode);
@@ -76,7 +72,7 @@ function connect($keywords = '', $options=array(), $errmode = PDO::ERRMODE_EXCEP
  * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
  * @return string dsn string used for PDO constructor
  */
-function getDSN($sqlsrvserver, $database, $keywords = '', $disableCE = false)
+function getDSN($sqlsrvserver, $database, $driver, $keywords = '', $disableCE = false)
 {
     require("MsSetup.inc");
     $dsn = "";
@@ -88,6 +84,9 @@ function getDSN($sqlsrvserver, $database, $keywords = '', $disableCE = false)
     }
     if ($database) {
         $dsn .= "database=$database;";
+    }
+    if ($driver) {
+        $dsn .= "driver=$driver;";
     }
     if ($keystore != "none" && !$disableCE) {
         $dsn .= "ColumnEncryption=Enabled;";
