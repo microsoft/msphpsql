@@ -18,7 +18,6 @@ if (isset($_ENV['MSSQL_SERVER']) || isset($_ENV['MSSQL_USER']) || isset($_ENV['M
     $uid = 'TARGET_USERNAME';
     $pwd = 'TARGET_PASSWORD';
     $databaseName = 'TARGET_DATABASE';
-    $DriverName = "ODBC Driver 11 for SQL Server";
 }
 
 $adServer = 'TARGET_AD_SERVER';
@@ -27,13 +26,12 @@ $adUser = 'TARGET_AD_USERNAME';
 $adPassword = 'TARGET_AD_PASSWORD';
 
 $driverType = true;
-$PhpDriver = "ODBC Driver 11 for SQL Server";
+$driver = "ODBC Driver 17 for SQL Server";
 
 $tableName = 'pdo_test_table';
 $tableIndex = 'php_test_table_idx';
 $procName = 'php_test_proc';
 $fileName = 'php_test_file.dat';
-$dsn = "odbc:Driver={$DriverName};Server=$server";
 $connectionOptions = array();
 $daasMode = false;
 $marsMode = true;

@@ -8,30 +8,6 @@
 
 */
 
-//
-// looks like an additional file (in addition to pdo_test_base.inc) may be needed for these PHPTs
-// to be runnable from the MSSQL teams' internal proprietary test running system
-//
-
-function IsAEQualified($conn)
-{
-    $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
-    $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
-    if ($msodbcsql_maj < 17) {
-        return false;
-    }
-    require 'MsSetup.inc';
-    if ($daasMode) {
-        // running against Azure
-        return true;
-    }
-    // if not Azure, check the server version
-    $server_ver = $conn->getAttribute(PDO::ATTR_SERVER_VERSION);
-    if (explode('.', $server_ver)[0] < 13)
-        return false;
-    return true;
-}
-
 // TO BE DELETED
 function connect($options=array())
 {
@@ -40,7 +16,7 @@ function connect($options=array())
     // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
     // which does not support switching databases
     require  'MsSetup.inc';
-    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;" , $uid, $pwd, $options); 
+    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;ConnectionPooling=false;" , $uid, $pwd, $options); 
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
     return $conn;
   }
@@ -57,138 +33,6 @@ function connect($options=array())
      exit;
   }
 }
-
-
-/**
- * Connect to the database specified in MsSetup.inc; Column Encryption keywords automatically added when $keystore is not none
- * @param string $keywords : string to append to the dsn string in PDO::_construct
- * @param array $options : attributes to pass to PDO::_construct
- * @param bool $disableCE : flag for disabling column encryption even when keystore is NOT none
- *                          for testing fetching encrypted data when connection column encryption is off
- * @return PDO connection object
- */
-function ae_connect( $keywords='', $options=array(), $disableCE = false )
-{
-    try
-    {
-        // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
-        // which does not support switching databases
-        require  'MsSetup.inc';
-        $dsn = "sqlsrv:Server=$server;database=$databaseName;ConnectionPooling=false;";
-        if ( $keystore != "none" && !$disableCE )
-        {
-            $dsn .= "ColumnEncryption=Enabled;";
-        }
-        if ( $keystore == "ksp" && !$disableCE )
-        {   
-            require( 'AE_Ksp.inc' );
-            $ksp_path = getKSPPath();
-            $dsn .= "CEKeystoreProvider=$ksp_path;CEKeystoreName=$ksp_name;CEKeystoreEncryptKey=$encrypt_key;";
-        }
-        if ( $keywords )
-        {
-            $dsn .= $keywords;
-        }
-        $conn = new PDO( $dsn, $uid, $pwd, $options );
-        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-        return $conn;
-    }
-    catch( PDOException $e ) 
-    {
-        var_dump( $e );
-        exit;
-    }
-    catch(Exception $e) 
-    {
-        var_dump( $e );
-        exit;
-    }
-}
-
-
-/**
- * @return string CEK name depending on the connection keywords
- */
-function getCekName()
-{
-    require  'MsSetup.inc';
-    $cekName = '';
-    switch ( $keystore ) {
-        case "none":
-            $cekName = '';
-            break;
-        case "win":
-            $cekName = 'AEColumnKey';
-            break;
-        case "ksp":
-            $cekName = 'CustomCEK';
-            break;
-        case "akv":
-            $cekName = 'AKVColumnKey';
-            break;
-        default:
-            echo "getCekName: Invalid keystore name.\n";
-    }
-    return $cekName;
-}
-
-
-/**
- * class for encapsulating column metadata needed for creating a table
- */
-class columnMeta {
-    public $colName;
-    public $dataType;   //a string that includes the size of the type if necessary (e.g., decimal(10,5))
-    public $encType;    //randomized or deterministic; default is deterministic
-    public $options;    //a string that is null by default (e.g. NOT NULL Identity (1,1) )
-        
-    function __construct( $dataType, $colName = null, $options = null, $encType = "deterministic" )
-    {
-        if ( is_null( $colName ))
-        {
-            $this->colName = get_default_colname( $dataType );
-        }
-        else
-        {
-            $this->colName = $colName;
-        }
-        $this->dataType = $dataType;
-        $this->encType = $encType;
-        $this->options = $options;
-    }
-    /**
-     * @return string column definition for creating a table
-     */
-    function getColDef()
-    {
-        require  'MsSetup.inc';
-        $append = " ";
-        
-        // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
-        if ( $keystore != "none" && stripos( $this->options, "identity" ) === false )
-        {
-            $cekName = getCekName();
-            if ( stripos( $this->dataType, "char" ) !== false )
-                $append .= "COLLATE Latin1_General_BIN2 ";
-            $append .= sprintf( "ENCRYPTED WITH (ENCRYPTION_TYPE = %s, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ", $this->encType );
-        }
-        $append .= $this->options;
-        $colDef = "[" . $this->colName . "] " . $this->dataType . $append;
-        return $colDef;
-    }
-}
-
-
-/**
- * @return string default column name when a name is not provided in the columnMeta class
- */
-function get_default_colname( $dataType )
-{
-    $colName = "c_" . str_replace( ",", "_", str_replace( "(", "_", $dataType ));
-    $colName = rtrim( $colName, ")" );
-    return $colName;
-}
-
 
 /**
  * Create a table

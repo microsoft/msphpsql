@@ -10,7 +10,7 @@ require_once("MsSetup.inc");
 require_once("MsCommon_mid-refactor.inc");
 try {
     echo "Testing a connection with ATTR_PREFETCH before ERRMODE_EXCEPTION...\n";
-    $dsn = getDSN($server, $databaseName);
+    $dsn = getDSN($server, $databaseName, $driver);
     
     $attr = array(PDO::ATTR_PREFETCH => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
     $conn = new PDO($dsn, $uid, $pwd, $attr); 

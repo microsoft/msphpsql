@@ -18,7 +18,9 @@ $tableIndex = "php_test_table_index";
 $procName = "php_test_proc";
 $fileName = "php_test_file.dat";
 
-$connectionOptions = array("Database"=>$database, "UID"=>$userName, "PWD"=>$userPassword, "TraceOn"=>false);
+$driver = "ODBC Driver 17 for SQL Server";
+
+$connectionOptions = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, "TraceOn" => false, "Driver" => $driver);
 $daasMode = false;
 $marsMode = true;
 
