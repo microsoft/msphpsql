@@ -1,10 +1,10 @@
 <?php
 include 'MsSetup.inc';
-$conn1 = new PDO("sqlsrv:Server=$server; database=$databaseName", $uid, $pwd);
+$conn1 = new PDO("sqlsrv:Server=$server; database=$databaseName; driver=$driver", $uid, $pwd);
 $connId1 = ConnectionID($conn1);
 $conn1 = null;
 
-$conn2 = new PDO("sqlsrv:Server=$server; database=$databaseName", $uid, $pwd);
+$conn2 = new PDO("sqlsrv:Server=$server; database=$databaseName; driver=$driver", $uid, $pwd);
 $connId2 = ConnectionID($conn2);
 $conn2 = null;
 
