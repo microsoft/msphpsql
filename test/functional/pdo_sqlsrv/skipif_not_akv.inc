@@ -11,7 +11,7 @@ if ($driver != "ODBC Driver 17 for SQL Server") {
 
 require_once("MsCommon_mid-refactor.inc");
 
-$dsn = getDSN($server, null, $driver);
+$dsn = getDSN($server, null);
 $conn = new PDO($dsn, $uid, $pwd);
 if (! $conn) {
     echo("Error: could not connect during SKIPIF!");
