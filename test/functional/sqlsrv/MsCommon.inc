@@ -472,9 +472,6 @@ function isLocaleSupported()
     if (isWindows()) {
         return true;
     }
-    if (AE\isColEncrypted()) {
-        return false;
-    }
     // now check ODBC version
     $conn = AE\connect();
     $msodbcsql_ver = sqlsrv_client_info($conn)['DriverVer'];
