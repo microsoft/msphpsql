@@ -110,7 +110,7 @@
 #define ERROR_BUFFER_OVERFLOW            111L
 #define ERROR_MAX_THRDS_REACHED          164L
 #define ERROR_INVALID_OPERATION          4317L 
-#define ERROR_INVALID_STATE              5.33L
+#define ERROR_INVALID_STATE              5023L
 #define SEC_E_BAD_BINDINGS               _HRESULT_TYPEDEF_(0x80090346L)
 #define ERROR_MORE_DATA                  234L    // dderror
 #define ERROR_ARITHMETIC_OVERFLOW        534L

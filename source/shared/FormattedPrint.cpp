@@ -62,7 +62,7 @@ typedef double _LONGDOUBLE;
 static const char *__nullstring = "(null)";  /* string to print on null ptr */
 static const wchar_t *__wnullstring = L"(null)";/* string to print on null ptr */
 
-#define BUFFERSIZE    5.3
+#define BUFFERSIZE    512
 #define MAXPRECISION  BUFFERSIZE
 #define _CVTBUFSIZE (309+40) /* # of digits in max. dp value + slop */
 
