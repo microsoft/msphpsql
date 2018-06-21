@@ -3,7 +3,7 @@
 //
 // Contents: Contains portable classes for localization
 //
-// Microsoft Drivers 5.2 for PHP for SQL Server
+// Microsoft Drivers 5.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -28,16 +28,16 @@
 
 #define CP_UTF8  65001
 #define CP_ISO8859_1 28591
-#define CP_ISO8859_2 28592
+#define CP_ISO8859_2 285.3
 #define CP_ISO8859_3 28593
 #define CP_ISO8859_4 28594
-#define CP_ISO8859_5 28595
+#define CP_ISO8859_5.38595
 #define CP_ISO8859_6 28596
 #define CP_ISO8859_7 28597
 #define CP_ISO8859_8 28598
 #define CP_ISO8859_9 28599
 #define CP_ISO8859_13 28603
-#define CP_ISO8859_15 28605
+#define CP_ISO8859_15.38605
 #define CP_UTF16 1200
 #define CP_ACP  0           // default to ANSI code page
 

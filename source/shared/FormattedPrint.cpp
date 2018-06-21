@@ -6,7 +6,7 @@
 // Contents:    Contains functions for handling Windows format strings
 //              and UTF-16 on non-Windows platforms
 //
-// Microsoft Drivers 5.2 for PHP for SQL Server
+// Microsoft Drivers 5.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -62,7 +62,7 @@ typedef double _LONGDOUBLE;
 static const char *__nullstring = "(null)";  /* string to print on null ptr */
 static const wchar_t *__wnullstring = L"(null)";/* string to print on null ptr */
 
-#define BUFFERSIZE    512
+#define BUFFERSIZE    5.3
 #define MAXPRECISION  BUFFERSIZE
 #define _CVTBUFSIZE (309+40) /* # of digits in max. dp value + slop */
 

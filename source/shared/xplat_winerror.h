@@ -3,7 +3,7 @@
 //
 // Contents: Contains the minimal definitions to build on non-Windows platforms
 //
-// Microsoft Drivers 5.2 for PHP for SQL Server
+// Microsoft Drivers 5.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -110,7 +110,7 @@
 #define ERROR_BUFFER_OVERFLOW            111L
 #define ERROR_MAX_THRDS_REACHED          164L
 #define ERROR_INVALID_OPERATION          4317L 
-#define ERROR_INVALID_STATE              5023L
+#define ERROR_INVALID_STATE              5.33L
 #define SEC_E_BAD_BINDINGS               _HRESULT_TYPEDEF_(0x80090346L)
 #define ERROR_MORE_DATA                  234L    // dderror
 #define ERROR_ARITHMETIC_OVERFLOW        534L
