@@ -109,19 +109,19 @@ for ($v = 0; $v < sizeof($values); ++$v) {
 
     // Two select statements for selection using
     // sqlsrv_get_field and sqlsrv_fetch_array
-    // Use sqlsrv_prepare() for the first one 
+    // Use sqlsrv_prepare() for the first one
     // such that sqlsrv_execute() can be invoked for
     // each PHP type
     $stmt = sqlsrv_prepare($conn, $selectQuery);
     if ($stmt == false) {
         print_r(sqlsrv_errors());
-        fatalError("First sqlsrv_prepare failed\n");
+        fatalError("SELECT using sqlsrv_prepare failed\n");
     }
 
     $stmt2 = sqlsrv_query($conn, $selectQuery);
     if ($stmt2 == false) {
         print_r(sqlsrv_errors());
-        fatalError("Second sqlsrv_query failed\n");
+        fatalError("SELECT using sqlsrv_query failed\n");
     }
 
     $numFields = sqlsrv_num_fields($stmt);
@@ -141,7 +141,9 @@ for ($v = 0; $v < sizeof($values); ++$v) {
                 $valueFromArray = $dataArray[$j];
 
                 // PHPTYPE_STREAM returns a PHP resource, so check the type
-                if (is_resource($value)) $value = get_resource_type($value);
+                if (is_resource($value)) {
+                    $value = get_resource_type($value);
+                }
 
                 // For each type, the AE values come first and non-AE values second
                 // So let's do the comparison every second field
@@ -171,12 +173,16 @@ for ($v = 0; $v < sizeof($values); ++$v) {
                     if ($valueAE != $value or $valueFromArrayAE != $valueFromArray) {
                         $index = floor($j / 2);
                         echo "Values do not match! PHPType $i Field $dataTypes[$index]\n";
-                        print_r($valueAE);echo "\n--------\n\n";
-                        print_r($value);echo "\n--------\n\n";
-                        print_r($valueFromArrayAE);echo "\n--------\n\n";
-                        print_r($valueFromArray);echo "\n--------\n\n";
+                        print_r($valueAE);
+                        echo "\n--------\n\n";
+                        print_r($value);
+                        echo "\n--------\n\n";
+                        print_r($valueFromArrayAE);
+                        echo "\n--------\n\n";
+                        print_r($valueFromArray);
+                        echo "\n--------\n\n";
                         print_r(sqlsrv_errors());
-                        echo ("Test failed, values do not match.\n");
+                        echo("Test failed, values do not match.\n");
                     }
                 }
             }
