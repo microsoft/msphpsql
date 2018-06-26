@@ -72,7 +72,7 @@ function connect($keywords = '', $options=array(), $errmode = PDO::ERRMODE_EXCEP
  * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
  * @return string dsn string used for PDO constructor
  */
-function getDSN($sqlsrvserver, $database, $driver, $keywords = '', $disableCE = false)
+function getDSN($sqlsrvserver, $database, $driver = null, $keywords = '', $disableCE = false)
 {
     require("MsSetup.inc");
     $dsn = "";
@@ -85,7 +85,7 @@ function getDSN($sqlsrvserver, $database, $driver, $keywords = '', $disableCE = 
     if ($database) {
         $dsn .= "database=$database;";
     }
-    if ($driver) {
+    if (!is_null($driver)) {
         $dsn .= "driver=$driver;";
     }
     if ($keystore != "none" && !$disableCE) {
