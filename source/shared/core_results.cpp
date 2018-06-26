@@ -964,7 +964,7 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
         // to_copy contains the number of bytes to copy, so we divide the number in half (or quarter)
         // to get the number of hex digits we can copy
         SQLLEN to_copy_hex = to_copy / (2 * extra);
-        for( int i = 0; i < to_copy_hex; ++i ) {
+        for( SQLLEN i = 0; i < to_copy_hex; ++i ) {
             *h = hex_chars[ (*b & 0xf0) >> 4 ];
             h++;
             *h = hex_chars[ (*b++ & 0x0f) ];
