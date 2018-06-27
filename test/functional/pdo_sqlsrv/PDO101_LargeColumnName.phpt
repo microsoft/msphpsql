@@ -9,68 +9,69 @@ PHPT_EXEC=true
 --FILE--
 <?php
 
-include 'MsCommon.inc';
+require_once('MsCommon.inc');
 
-function LargeColumnNameTest($columnName, $expectfail)
+function largeColumnNameTest($columnName)
 {
     include 'MsSetup.inc';
 
     Setup();
 
-    $conn = Connect();
+    $conn = connect();
 
-    $tableName = "LargeColumnNameTest";
+    $tableName = "largeColumnNameTest";
 
-    DropTable($conn, $tableName);
+    dropTable($conn, $tableName);
 
     $conn->query("CREATE TABLE [$tableName] ([$columnName] int)");
-
 
     $conn->query("INSERT INTO [$tableName] ([$columnName]) VALUES (5)");
 
     $stmt = $conn->query("SELECT * from [$tableName]");
 
-    if ( null == $stmt ) 
-    {
-        if (!$expectfail)
-            FatalError("Possible regression: Unable to retrieve inserted value.");
-    }
-    
-    DropTable($conn, $tableName);
-
+    dropTable($conn, $tableName);
 }
 
 
 //--------------------------------------------------------------------
-// Repro
+// repro
 //
 //--------------------------------------------------------------------
-function Repro()
+function repro()
 {
-    
     $testName = "PDO - Large Column Name Test";
 
-    StartTest($testName);
+    startTest($testName);
 
-    $columnName = "a";
+    // The maximum size of a column name is 128 characters 
+    $maxlen = 128;
+    $columnName = str_repeat('A', $maxlen);
 
-    try
-    {
-        for ($a = 1; $a <= 128; $a++)
-        {
-            LargeColumnNameTest($columnName, $a > 128);
-            $columnName .= "A";
+    try {
+        largeColumnNameTest($columnName);
+    } catch (Exception $e) {
+        echo "Possible regression: Unable to retrieve inserted value\n";
+        print_r($e->getMessage());
+        echo "\n";
+    }
+
+    // Now add another character to the name
+    $columnName .= 'A';
+    try {
+        largeColumnNameTest($columnName);
+    } catch (Exception $e) {
+        // Expects to fail 
+        $expected = 'is too long. Maximum length is 128.';
+        if (strpos($e->getMessage(), $expected) === false) {
+            print_r($e->getMessage());
+            echo "\n";
         }
     }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
 
-    EndTest($testName);
+    endTest($testName);
 }
 
-Repro();
+repro();
 ?>
 --EXPECT--
 Test "PDO - Large Column Name Test" completed successfully.
