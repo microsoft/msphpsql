@@ -512,7 +512,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
                 msg = static_cast<char*>( sqlsrv_malloc( msg_len ) );
                 core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code,
                                             error->native_message );
-                php_error( E_WARNING, msg );
+                php_error( E_WARNING, "%s", msg );
             }
             ctx.set_last_error( error );
             break;
