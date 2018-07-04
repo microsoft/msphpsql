@@ -12,6 +12,9 @@ Updated PECL release packages. Here is the list of updates:
 - Added support for Ubuntu 18.04 LTS (requires MS ODBC Driver 17.2)
 - Added support for Connection Resiliency to make it available to Linux or macOS users as well (requires MS ODBC Driver 17.2)
 
+### Removed
+- Dropped support for Ubuntu 17
+
 ### Fixed
 - Issue [#577](https://github.com/Microsoft/msphpsql/issues/577) - Idle Connection Resiliency doesn't work with Column Encryption enabled connection
 - Issue [#678](https://github.com/Microsoft/msphpsql/issues/678) - Idle Connection Resiliency doesn't work with Connection Pooling bug
