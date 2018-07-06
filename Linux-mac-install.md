@@ -278,7 +278,7 @@ $connectionOptions = array(
 // Establishes the connection
 $conn = sqlsrv_connect($serverName, $connectionOptions);
 if ($conn === false) {
-    die(formatErrors( sqlsrv_errors()));
+    die(formatErrors(sqlsrv_errors()));
 }
 
 // Select Query
@@ -289,7 +289,7 @@ $stmt = sqlsrv_query($conn, $tsql);
 
 // Error handling
 if ($stmt === false) {
-    die(FormatErrors(sqlsrv_errors()));
+    die(formatErrors(sqlsrv_errors()));
 }
 ?>
 
