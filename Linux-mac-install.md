@@ -15,9 +15,10 @@ These instructions install PHP 7.2 by default -- see the notes at the beginning 
 
 > [!NOTE]
 > To install PHP 7.0 or 7.1, replace 7.2 with 7.0 or 7.1 in the following commands.
-> For Ubuntu 18.04, the step to get the ondrej repository is not required 
-> because PHP 7.2 is the default. However, installing PHP 7.0 or 7.1 packages in 
-> Ubuntu 18.04 may not work, as the ondrej repository come with wrong dependencies.
+> For Ubuntu 18.04, the step to add the ondrej repository is not required unless
+> PHP 7.0 or 7.1 is needed. However, installing PHP 7.0 or 7.1 in Ubuntu 18.04 may 
+> not work as packages from the ondrej repository come with dependencies that may 
+> conflict with a base Ubuntu 18.04 install.
 
 ### Step 1. Install PHP
 ```
