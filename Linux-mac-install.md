@@ -201,6 +201,7 @@ zypper install apache2 apache2-mod_php7
 a2enmod php7
 echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
 echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
+exit
 ```
 ### Step 5. Restart Apache and test the sample script
 ```
