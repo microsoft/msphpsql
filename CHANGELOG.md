@@ -10,7 +10,7 @@ Updated PECL release packages. Here is the list of updates:
 - Added support for Azure Key Vault for Always Encrypted for basic CRUD functionalities such that Always Encrypted feature is available to all supported Windows, Linux or macOS platforms
 - Added support for macOS High Sierra (requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017))
 - Added support for Ubuntu 18.04 LTS (requires MS ODBC Driver 17.2)
-- Added support for Linux or macOS to Connection Resiliency (requires MS ODBC Driver 17.2)
+- Added support for Linux and macOS to Connection Resiliency (requires MS ODBC Driver 17.2)
 
 ### Fixed
 - Issue [#577](https://github.com/Microsoft/msphpsql/issues/577) - Idle Connection Resiliency doesn't work with Column Encryption enabled connection (fixed in MS ODBC Driver 17.1)

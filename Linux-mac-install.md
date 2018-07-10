@@ -91,7 +91,7 @@ echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini file
 echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
 exit
 ```
-An issue in PECL may prevent correct installation of the latest version of the drivers even if you have upgraded GCC. To install, download the packages and compile manually (similarly for pdo_sqlsrv):
+An issue in PECL may prevent correct installation of the latest version of the drivers even if you have upgraded GCC. To install, download the packages and compile manually (similar steps for pdo_sqlsrv):
 ```
 pecl download sqlsrv
 tar xvzf sqlsrv-5.3.0.tgz
