@@ -1,6 +1,4 @@
 <?php
-if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip Test on windows only." ); 
-
 if (!extension_loaded("sqlsrv")) {
     die("skip Extension not loaded");
 }
