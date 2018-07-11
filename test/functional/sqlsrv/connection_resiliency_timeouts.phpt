@@ -86,10 +86,8 @@ Array
             \[SQLSTATE\] => 08S01
             \[1\] => (10054|104)
             \[code\] => (10054|104)
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.|Error code 0x68)
-
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.|Error code 0x68)
-
+            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.\n|Error code 0x68)
+            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.\n|Error code 0x68)
         \)
 
     \[1\] => Array
