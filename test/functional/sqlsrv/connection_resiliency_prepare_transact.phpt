@@ -189,8 +189,8 @@ Array
             \[SQLSTATE\] => 08S02
             \[1\] => (10054|-1)
             \[code\] => (10054|-1)
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\](TCP Provider: An existing connection was forcibly closed by the remote host\.\n|SMux Provider: Physical connection is not usable \[xFFFFFFFF\])
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\](TCP Provider: An existing connection was forcibly closed by the remote host\.\n|SMux Provider: Physical connection is not usable \[xFFFFFFFF\])
+            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\](TCP Provider: An existing connection was forcibly closed by the remote host\.\n|SMux Provider: Physical connection is not usable \[xFFFFFFFF\])\. 
+            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\](TCP Provider: An existing connection was forcibly closed by the remote host\.\n|SMux Provider: Physical connection is not usable \[xFFFFFFFF\])\. 
         \)
 
     \[1\] => Array

@@ -1,7 +1,8 @@
 --TEST--
 Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterval and their ranges of acceptable values
 --SKIPIF--
-<?php require('skipif_version_less_than_2k14.inc');  ?>
+<?php require('skipif_mid-refactor.inc');
+      require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
 <?php
 require_once( "MsSetup.inc" );

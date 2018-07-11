@@ -7,7 +7,7 @@ do not need to be encrypted
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");
