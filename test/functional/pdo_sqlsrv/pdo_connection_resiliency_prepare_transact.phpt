@@ -5,8 +5,7 @@ Prepare a statement, break the connection, and execute the statement. Then
 test transactions by breaking the connection before beginning a transaction
 and in the middle of the transaction. The latter case should fail.
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc');
-      require('skipif_protocol_not_tcp.inc');
+<?php require('skipif_protocol_not_tcp.inc');
       require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
 <?php

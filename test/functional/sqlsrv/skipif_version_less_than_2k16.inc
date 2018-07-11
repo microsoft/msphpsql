@@ -13,16 +13,19 @@ if ($conn === false) {
 }
 
 // Get SQL Server version
-$stmt = sqlsrv_query( $conn, "SELECT @@VERSION" );
-if (sqlsrv_fetch($stmt)) {
-    $ver_string = sqlsrv_get_field( $stmt, 0 );
-} else {
-    die("skip Could not fetch SQL Server version.");
-}
+// Exclude this check if running on Azure
+if (!$daasMode) {
+    $stmt = sqlsrv_query( $conn, "SELECT @@VERSION" );
+    if (sqlsrv_fetch($stmt)) {
+        $ver_string = sqlsrv_get_field( $stmt, 0 );
+    } else {
+        die("skip Could not fetch SQL Server version.");
+    }
 
-$version = explode(' ', $ver_string);
+    $version = explode(' ', $ver_string);
 
-if ($version[3] < '2016') {
-    die("skip Wrong version of SQL Server, 2016 or later required");
+    if ($version[3] < '2016') {
+        die("skip Wrong version of SQL Server, 2016 or later required");
+    }
 }
 ?>

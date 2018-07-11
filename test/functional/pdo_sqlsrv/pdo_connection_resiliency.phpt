@@ -7,8 +7,7 @@ killing the connection and then not freeing it. The latter case is the only one
 that should fail. Finally, execute two queries in two threads on a recovered
 non-MARS connection. This should fail too.
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc');
-      require('skipif_protocol_not_tcp.inc');
+<?php require('skipif_protocol_not_tcp.inc');
       require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
 <?php

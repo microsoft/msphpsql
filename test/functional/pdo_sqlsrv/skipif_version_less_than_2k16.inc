@@ -11,16 +11,19 @@ if ($conn === false) {
 }
 
 // Get SQL Server Version
-$stmt = $conn->query( "SELECT @@VERSION" );
-if ($stmt) {
-    $ver_string = $stmt->fetch(PDO::FETCH_NUM)[0];
-} else {
-    die( "skip Could not fetch SQL Server version during SKIPIF.");
-}
+// Exclude this check if running on Azure
+if (!$daasMode) {
+    $stmt = $conn->query( "SELECT @@VERSION" );
+    if ($stmt) {
+        $ver_string = $stmt->fetch(PDO::FETCH_NUM)[0];
+    } else {
+        die( "skip Could not fetch SQL Server version during SKIPIF.");
+    }
 
-$version = explode(' ', $ver_string);
+    $version = explode(' ', $ver_string);
 
-if ($version[3] < '2016') {
-    die("skip Wrong version of SQL Server, 2016 or later required");
+    if ($version[3] < '2016') {
+        die("skip Wrong version of SQL Server, 2016 or later required");
+    }
 }
 ?>

@@ -2,7 +2,6 @@
 Test the Authentication keyword and three options: SqlPassword, ActiveDirectoryIntegrated, and ActiveDirectoryPassword.
 --SKIPIF--
 <?php require('skipif.inc');
-      require('skipif_unix.inc');
       require('skipif_version_less_than_2k16.inc');  ?>
 --FILE--
 <?php

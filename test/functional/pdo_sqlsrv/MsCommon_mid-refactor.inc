@@ -48,7 +48,7 @@ function connect($keywords = '', $options=array(), $errmode = PDO::ERRMODE_EXCEP
         // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
         // which does not support switching databases
         require("MsSetup.inc");
-        $dsn = getDSN($server, $databaseName, $driver, $keywords, $disableCE);
+        $dsn = getDSN($server, $databaseName, $DriverName, $keywords, $disableCE);
         $conn = new PDO($dsn, $uid, $pwd, $options);
         if ($errmode == PDO::ERRMODE_EXCEPTION || $errmode == PDO::ERRMODE_WARNING || $errmode == PDO::ERRMODE_SILENT) {
             $conn->setAttribute(PDO::ATTR_ERRMODE, $errmode);
