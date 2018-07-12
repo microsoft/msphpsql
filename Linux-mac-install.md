@@ -1,20 +1,24 @@
-# PHP Linux and Mac Drivers Installation Tutorial
-The following instructions assume a clean environment and show how to install PHP 7.x, the Microsoft ODBC driver, Apache, and the Microsoft drivers for PHP for Microsoft SQL Server on Ubuntu 16.04 and 17.10, RedHat 7, Debian 8 and 9, Suse 12, and macOS 10.11 and 10.12. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for Microsoft SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for Microsoft SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver)). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
+# Linux and macOS Installation Tutorial for the Microsoft Drivers for PHP for SQL Server
+The following instructions assume a clean environment and show how to install PHP 7.x, the Microsoft ODBC driver, Apache, and the Microsoft drivers for PHP for Microsoft SQL Server on Ubuntu 16.04, 17.10 and 18.04, RedHat 7, Debian 8 and 9, Suse 12, and macOS 10.11, 10.12 and 10.13. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for Microsoft SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for Microsoft SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver)). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
 
-These instruction install PHP 7.2 by default -- see the notes at the beginning of each section to install PHP 7.0 or 7.1.
+These instructions install PHP 7.2 by default -- see the notes at the beginning of each section to install PHP 7.0 or 7.1.
 
 ## Contents of this page:
 
-- [Installing the drivers on Ubuntu 16.04 and 17.10](#installing-the-drivers-on-ubuntu-1604-and-1710)
+- [Installing the drivers on Ubuntu 16.04, 17.10, and 18.04](#installing-the-drivers-on-ubuntu-1604-1710-and-1804)
 - [Installing the drivers on Red Hat 7](#installing-the-drivers-on-red-hat-7)
 - [Installing the drivers on Debian 8 and 9](#installing-the-drivers-on-debian-8-and-9)
 - [Installing the drivers on Suse 12](#installing-the-drivers-on-suse-12)
 - [Installing the drivers on macOS El Capitan, Sierra and High Sierra](#installing-the-drivers-on-macos-el-capitan-sierra-and-high-sierra)
 
-## Installing the drivers on Ubuntu 16.04 and 17.10
+## Installing the drivers on Ubuntu 16.04, 17.10 and 18.04
 
 > [!NOTE]
 > To install PHP 7.0 or 7.1, replace 7.2 with 7.0 or 7.1 in the following commands.
+> For Ubuntu 18.04, the step to add the ondrej repository is not required unless
+> PHP 7.0 or 7.1 is needed. However, installing PHP 7.0 or 7.1 in Ubuntu 18.04 may 
+> not work as packages from the ondrej repository come with dependencies that may 
+> conflict with a base Ubuntu 18.04 install.
 
 ### Step 1. Install PHP
 ```
@@ -44,6 +48,7 @@ a2enmod mpm_prefork
 a2enmod php7.2
 echo "extension=pdo_sqlsrv.so" >> /etc/php/7.2/apache2/conf.d/30-pdo_sqlsrv.ini
 echo "extension=sqlsrv.so" >> /etc/php/7.2/apache2/conf.d/20-sqlsrv.ini
+exit
 ```
 ### Step 5. Restart Apache and test the sample script
 ```
@@ -86,11 +91,11 @@ echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini file
 echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
 exit
 ```
-An issue in PECL may prevent correct installation of the latest version of the drivers even if you have upgraded GCC. To install, download the packages and compile manually:
+An issue in PECL may prevent correct installation of the latest version of the drivers even if you have upgraded GCC. To install, download the packages and compile manually (similar steps for pdo_sqlsrv):
 ```
 pecl download sqlsrv
-tar xvzf sqlsrv-5.2.0.tgz
-cd sqlsrv-5.2.0/
+tar xvzf sqlsrv-5.3.0.tgz
+cd sqlsrv-5.3.0/
 phpize
 ./configure --with-php-config=/usr/bin/php-config
 make
@@ -196,6 +201,7 @@ zypper install apache2 apache2-mod_php7
 a2enmod php7
 echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
 echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
+exit
 ```
 ### Step 5. Restart Apache and test the sample script
 ```
@@ -266,47 +272,47 @@ To test this sample script, create a file called testsql.php in your system's do
 <?php
 $serverName = "yourServername";
 $connectionOptions = array(
-    "Database" => "yourDatabase",
-    "Uid" => "yourUsername",
-    "PWD" => "yourPassword"
+    "database" => "yourDatabase",
+    "uid" => "yourUsername",
+    "pwd" => "yourPassword"
 );
 
-//Establishes the connection
+// Establishes the connection
 $conn = sqlsrv_connect($serverName, $connectionOptions);
-if( $conn === false ) {
-    die( FormatErrors( sqlsrv_errors()));
+if ($conn === false) {
+    die(formatErrors(sqlsrv_errors()));
 }
 
-//Select Query
-$tsql= "SELECT @@Version as SQL_VERSION";
+// Select Query
+$tsql = "SELECT @@Version AS SQL_VERSION";
 
-//Executes the query
-$getResults= sqlsrv_query($conn, $tsql);
+// Executes the query
+$stmt = sqlsrv_query($conn, $tsql);
 
-//Error handling
-if ($getResults == FALSE)
-    die(FormatErrors(sqlsrv_errors()));
+// Error handling
+if ($stmt === false) {
+    die(formatErrors(sqlsrv_errors()));
+}
 ?>
 
 <h1> Results : </h1>
 
 <?php
-while ($row = sqlsrv_fetch_array($getResults, SQLSRV_FETCH_ASSOC)) {
-    echo ($row['SQL_VERSION']);
-    echo ("<br/>");
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    echo $row['SQL_VERSION'] . PHP_EOL;
 }
 
-sqlsrv_free_stmt($getResults);
+sqlsrv_free_stmt($stmt);
+sqlsrv_close($conn);
 
-function FormatErrors( $errors )
+function formatErrors($errors)
 {
-    /* Display errors. */
+    // Display errors
     echo "Error information: <br/>";
-    foreach ( $errors as $error )
-    {
-        echo "SQLSTATE: ".$error['SQLSTATE']."<br/>";
-        echo "Code: ".$error['code']."<br/>";
-        echo "Message: ".$error['message']."<br/>";
+    foreach ($errors as $error) {
+        echo "SQLSTATE: ". $error['SQLSTATE'] . "<br/>";
+        echo "Code: ". $error['code'] . "<br/>";
+        echo "Message: ". $error['message'] . "<br/>";
     }
 }
 ?>
