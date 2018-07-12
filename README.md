@@ -86,7 +86,7 @@ The version number may have trailing pre-release version identifiers to indicate
 - Build metadata may be denoted by a plus sign followed by 4 or 5 digits, such as  `1.2.3-preview+5678` or `1.2.3+5678`. Build metadata does not figure into the precedence order.
 
 ## Future Plans
-- Expand SQL Server 2016 feature support (example: Azure AD)
+- Expand SQL Server 2016 feature support (example: Azure Active Directory)
 - Add more verification/fundamental tests
 - Bug fixes
 
