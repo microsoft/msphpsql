@@ -196,6 +196,7 @@ class BuildDriver(object):
                 print('Build Completed')
             except:
                 print('Something went wrong, launching log file', logfile)
+                print(open(logfile, 'r').read())
                 # display log file only when not testing
                 if not self.testing:
                     os.startfile(os.path.join(root_dir, 'php-sdk', logfile))
