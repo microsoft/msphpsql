@@ -1,7 +1,7 @@
 --TEST--
 Test new connection keyword ColumnEncryption
 --SKIPIF--
-<?php require('skipif_unix.inc'); ?>
+<?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");

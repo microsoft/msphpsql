@@ -208,18 +208,18 @@ unset($conn_break);
 
 ?>
 --EXPECTREGEX--
-Statement 1 successful.
-16 rows in result set.
-Statement 2 successful.
-9 rows in result set.
-Statement 3 successful.
--1 rows in result set.
-Statement 4 successful.
--1 rows in result set.
-Statement 5 successful.
--1 rows in result set.
-Error executing statement 6.
-SQLSTATE\[08S02\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: An existing connection was forcibly closed by the remote host.
-Statement 7 successful.
-Error executing statement 8.
-SQLSTATE\[IMSSP\]: The connection cannot process this operation because there is a statement with pending results.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.
+Statement 1 successful\.
+16 rows in result set\.
+Statement 2 successful\.
+9 rows in result set\.
+Statement 3 successful\.
+-1 rows in result set\.
+Statement 4 successful\.
+-1 rows in result set\.
+Statement 5 successful\.
+-1 rows in result set\.
+Error executing statement 6\.
+SQLSTATE\[08S02\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.|Error code 0x20)
+Statement 7 successful\.
+Error executing statement 8\.
+SQLSTATE\[IMSSP\]: The connection cannot process this operation because there is a statement with pending results\.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.

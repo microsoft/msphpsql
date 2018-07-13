@@ -208,10 +208,10 @@ $conn_break = null;
 
 ?>
 --EXPECTREGEX--
-Statement 1 prepared.
-Statement 1 executed.
-Transaction begun.
-Transaction was committed.
-Transaction begun.
-SQLSTATE\[08S02\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: An existing connection was forcibly closed by the remote host.
+Statement 1 prepared\.
+Statement 1 executed\.
+Transaction begun\.
+Transaction was committed\.
+Transaction begun\.
+SQLSTATE\[08S02\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.|Error code 0x20)
 SQLSTATE\[08S01\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
