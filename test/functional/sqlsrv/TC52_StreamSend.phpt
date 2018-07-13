@@ -19,7 +19,7 @@ function sendStream($minType, $maxType, $atExec)
     startTest($testName);
 
     setup();
-    $tableName = "TC52test";
+    $tableName = "TC52test" . rand(0, 100);
     $fileName = "TC52test.dat";
     $conn1 = AE\connect();
 

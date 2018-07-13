@@ -10,34 +10,43 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function LargeColumnNameTest($columnName, $expectfail)
+function largeColumnNameTest($columnName, $expectFail = false)
 {
     setup();
 
-    $conn = connect(array( 'CharacterSet'=>'UTF-8' ));
+    $conn = connect(array('CharacterSet'=>'UTF-8'));
 
     $tableName = "LargeColumnNameTest";
 
     dropTable($conn, $tableName);
 
-    sqlsrv_query($conn, "CREATE TABLE [$tableName] ([$columnName] int)");
-
-    sqlsrv_query($conn, "INSERT INTO [$tableName] ([$columnName]) VALUES (5)");
-
-    $stmt = sqlsrv_query($conn, "SELECT * from [$tableName]");
-
-    if (null == $stmt) {
-        echo  "$";
-        echo  "stmt = null";
-        echo  "\n";
+    $stmt = sqlsrv_query($conn, "CREATE TABLE [$tableName] ([$columnName] int)");
+    if ($stmt == null) {
+        if (!$expectFail) {
+            fatalError("Possible regression: Unable to create test $tableName.");
+        } else {
+            $expected = 'is too long. Maximum length is 128.';
+            if (strpos(sqlsrv_errors()[0]['message'], $expected) === false) {
+                print_r(sqlsrv_errors());
+            }
+            echo  "$";
+            echo  "stmt = null";
+            echo  "\n";
+        }
     } else {
+        sqlsrv_query($conn, "INSERT INTO [$tableName] ([$columnName]) VALUES (5)");
+
+        $stmt = sqlsrv_query($conn, "SELECT * from [$tableName]");
+
         if (null == sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            if (!$expectfail) {
+            if (!$expectFail) {
                 fatalError("Possible regression: Unable to retrieve inserted value.");
             }
         }
         sqlsrv_free_stmt($stmt);
     }
+
+    dropTable($conn, $tableName);
 
     sqlsrv_close($conn);
 }
@@ -53,16 +62,16 @@ function repro()
 
     startTest($testName);
 
-    $columnName = "银";
+    // The maximum size of a column name is 128 characters 
+    $maxlen = 128;
+    $columnName = str_repeat('银', $maxlen);
 
-    try {
-        for ($a = 1; $a <= 129; $a++) {
-            LargeColumnNameTest($columnName, $a > 128);
-            $columnName .= "银";
-        }
-    } catch (Exception $e) {
-        echo $e->getMessage();
-    }
+    largeColumnNameTest($columnName);
+
+    // Now add another character to the name
+    $columnName .= "银";
+
+    largeColumnNameTest($columnName, true);
 
     endTest($testName);
 }
