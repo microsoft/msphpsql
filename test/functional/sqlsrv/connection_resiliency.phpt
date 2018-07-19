@@ -194,7 +194,7 @@ if( $stmt8 === false )
 {
     echo "Error in statement 8.\n";
     $err = sqlsrv_errors();
-    if (strpos($err[0][0], 'IMSSP')===false or $err[0][1]!=-44 or 
+    if (strpos($err[0][0], 'IMSSP')===false or
         strpos($err[0][2], 'The connection cannot process this operation because there is a statement with pending results')===false) {
         echo "Error: Wrong error message.\n";
         print_r($err);

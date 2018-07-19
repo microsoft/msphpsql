@@ -34,7 +34,7 @@ if( $stmt1 === false )
 {
     echo "Error in statement 1.\n";
     $err = sqlsrv_errors();
-    if (strpos($err[0][0], '08S01')===false or !($err[0][1]==10054 or $err[0][1]==104) or
+    if (strpos($err[0][0], '08S01')===false or
         (strpos($err[0][2], 'TCP Provider:')===false and strpos($err[0][2], 'SMux Provider:')===false and strpos($err[0][2], 'Session Provider:')===false)) {
         echo "Error: Wrong error message.\n";
         print_r($err);
