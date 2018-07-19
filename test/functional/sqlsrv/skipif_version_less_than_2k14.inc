@@ -23,7 +23,7 @@ $msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
 $msodbcsql_min = explode(".", $msodbcsql_ver)[1];
 
 if (!$is_win) {
-    if ($msodbcsql_maj < 17 or $msodbcslq_min < 2) {
+    if ($msodbcsql_maj < 17 or $msodbcsql_min < 2) {
         die("skip Unsupported ODBC driver version");
     }
 }

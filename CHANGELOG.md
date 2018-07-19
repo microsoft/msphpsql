@@ -7,36 +7,36 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
-- Added support for Azure Key Vault for Always Encrypted for basic CRUD functionalities such that Always Encrypted feature is available to all supported Windows, Linux or macOS platforms
-- Added support for macOS High Sierra (requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017))
-- Added support for Ubuntu 18.04 LTS (requires MS ODBC Driver 17.2)
-- Added support for Linux and macOS for Connection Resiliency (requires MS ODBC Driver 17.2)
+- Added support for Azure Key Vault for Always Encrypted functionality. Always Encrypted functionality is supported on Linux and macOS through Azure Key Vault
+- Added support for connection resiliency on Linux and macOS (requires version 17.2 or higher of the [ODBC driver](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017))
+- Added support for macOS High Sierra (requires version 17 or higher of the [ODBC driver](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017))
+- Added support for Ubuntu 18.04 (requires version 17.2 or higher of the [ODBC driver](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017))
 
 ### Fixed
-- Issue [#577](https://github.com/Microsoft/msphpsql/issues/577) - Idle Connection Resiliency doesn't work with Column Encryption enabled connection (fixed in MS ODBC Driver 17.1)
-- Issue [#678](https://github.com/Microsoft/msphpsql/issues/678) - Idle Connection Resiliency doesn't work with Connection Pooling bug (fixed in MS ODBC Driver 17.1)
-- Issue [#699](https://github.com/Microsoft/msphpsql/issues/699) - Binding output parameter failed when the query in the stored procedure returned no data. The test case has been added to the test lab.
-- Issue [#705](https://github.com/Microsoft/msphpsql/issues/705) - Always Encrypted - Retrieving a negative decimal value (edge case) as output parameter causes truncation
-- Issue [#706](https://github.com/Microsoft/msphpsql/issues/706) - Always Encrypted - Cannot insert double with precision and scale (38, 38)
-- Issue [#707](https://github.com/Microsoft/msphpsql/issues/707) - Always Encrypted - Fetching decimals / numerics as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT returns floats, not integers 
-- Issue [#735](https://github.com/Microsoft/msphpsql/issues/735) - Extended the buffer size for PDO lastInsertId such that data types other than integers can be supported
-- Pull Request [#759](https://github.com/Microsoft/msphpsql/pull/759) - Removed the limitation of binding a binary as inout param as PDO::PARAM_STR with SQLSRV_ENCODING_BINARY
-- Pull Request [#775](https://github.com/Microsoft/msphpsql/pull/775) - Fixed the truncation problem for output params with SQL types specified as SQLSRV_SQLTYPE_DECIMAL or SQLSRV_SQLTYPE_NUMERIC
+- Issue #577 - Idle Connection Resiliency doesn't work with Column Encryption enabled connections (fixed in MS ODBC Driver 17.1)
+- Issue #678 - Idle Connection Resiliency doesn't work with Connection Pooling (fixed in MS ODBC Driver 17.1)
+- Issue #699 - Binding output parameters fails when the query in the stored procedure returns no data. The test case has been added to the test lab.
+- Issue #705 - Always Encrypted - Retrieving a negative decimal value (edge case) as output parameter causes truncation
+- Issue #706 - Always Encrypted - Cannot insert double with precision and scale (38, 38)
+- Issue #707 - Always Encrypted - Fetching decimals / numerics as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT returns floats, not integers 
+- Issue #735 - Extended the buffer size for PDO::lastInsertId so that data types other than integers can be supported
+- Pull Request #759 - Removed the limitation of binding a binary as inout param as PDO::PARAM_STR with SQLSRV_ENCODING_BINARY
+- Pull Request #775 - Fixed the truncation problem for output params with SQL types specified as SQLSRV_SQLTYPE_DECIMAL or SQLSRV_SQLTYPE_NUMERIC
 
 ### Limitations
 - No support for inout / output params when using sql_variant type
-- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connection will not work
-- Always Encrypted feature, which requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017)
-  - only Windows Certificate Store and Azure Key Vault are supported
-  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted feature enabled, Named Parameters in Sub Queries are not supported
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue #716 - With Always Encrypted enabled, named parameters in subqueries are not supported
   - [Always Encrypted limitations](https://docs.microsoft.com/en-us/sql/connect/php/using-always-encrypted-php-drivers?view=sql-server-2017#limitations-of-the-php-drivers-when-using-always-encrypted)
 
 ### Known Issues
-- Connection pooling on Linux or macOS not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.6
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.6
 - When pooling is enabled in Linux or macOS
-  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostics information, such as error messages, warnings and informative messages
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
-- With ColumnEncryption enabled, calling stored procedures with XML parameters does not work (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
+- With ColumnEncryption enabled, calling stored procedures with XML parameters does not work (Issue #674)
 
 ## 5.2.1-preview - 2018-06-01
 Updated PECL release packages. Here is the list of updates:
