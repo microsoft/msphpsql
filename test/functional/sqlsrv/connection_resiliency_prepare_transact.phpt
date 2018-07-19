@@ -167,40 +167,22 @@ else
     else
     {
         echo "Statement not valid and rollback failed.\n";
-        print_r( sqlsrv_errors() );
+        $err = sqlsrv_errors();
+        if (strpos($err[0][0], '08S02')===false or !($err[0][1]==10054 or $err[0][1]==-1) or
+            (strpos($err[0][2], 'TCP Provider:')===false and strpos($err[0][2], 'SMux Provider:')===false)) {
+            echo "Error: Wrong error message.\n";
+            print_r($err);
+        }
     }
 }
 
 sqlsrv_close( $conn );
 sqlsrv_close( $conn_break );
 ?>
---EXPECTREGEX--
+--EXPECT--
 Statement 1 prepared.
 Statement 1 executed.
 Transaction begun.
 Transaction was committed.
 Transaction begun.
 Statement not valid and rollback failed.
-Array
-\(
-    \[0\] => Array
-        \(
-            \[0\] => 08S02
-            \[SQLSTATE\] => 08S02
-            \[1\] => (10054|-1)
-            \[code\] => (10054|-1)
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\](TCP Provider: An existing connection was forcibly closed by the remote host\.\n|SMux Provider: Physical connection is not usable \[xFFFFFFFF\]\. )
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\](TCP Provider: An existing connection was forcibly closed by the remote host\.\n|SMux Provider: Physical connection is not usable \[xFFFFFFFF\]\. )
-        \)
-
-    \[1\] => Array
-        \(
-            \[0\] => 08S02
-            \[SQLSTATE\] => 08S02
-            \[1\] => (10054|-1)
-            \[code\] => (10054|-1)
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Unable to open a logical session
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Unable to open a logical session
-        \)
-
-\)
