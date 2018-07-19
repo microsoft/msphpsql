@@ -27,7 +27,7 @@ Updated PECL release packages. Here is the list of updates:
 - No support for inout / output params when using sql_variant type
 - In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
 - Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017)
-  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not supported
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
   - Issue #716 - With Always Encrypted enabled, named parameters in subqueries are not supported
   - [Always Encrypted limitations](https://docs.microsoft.com/en-us/sql/connect/php/using-always-encrypted-php-drivers?view=sql-server-2017#limitations-of-the-php-drivers-when-using-always-encrypted)
 
