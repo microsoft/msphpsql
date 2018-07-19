@@ -169,7 +169,7 @@ else
         echo "Statement not valid and rollback failed.\n";
         $err = sqlsrv_errors();
         if (strpos($err[0][0], '08S02')===false or !($err[0][1]==10054 or $err[0][1]==-1) or
-            (strpos($err[0][2], 'TCP Provider:')===false and strpos($err[0][2], 'SMux Provider:')===false)) {
+            (strpos($err[0][2], 'TCP Provider:')===false and strpos($err[0][2], 'SMux Provider:')===false and strpos($err[0][2], 'Session Provider:')===false)) {
             echo "Error: Wrong error message.\n";
             print_r($err);
         }
