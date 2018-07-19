@@ -190,7 +190,12 @@ try
 }
 catch ( PDOException $e )
 {
-    print_r( $e->getMessage() );
+    echo "Transaction failed.\n";
+    $err = $e->getMessage();
+    if (strpos($err, 'SQLSTATE[08S02]')===false or (strpos($err, 'TCP Provider')===false and strpos($err, 'SMux Provider')===false)) {
+        echo "Error: Wrong error message.\n";
+        print_r($err);
+    }
 }
 
 // This try catch block prevents an Uncaught PDOException error that occurs
@@ -201,17 +206,20 @@ try
 }
 catch ( PDOException $e )
 {
-    print_r( $e->getMessage() );
+    $err = $e->getMessage();
+    if (strpos($err, 'SQLSTATE[08S01]')===false or strpos($err, 'Communication link failure')===false) {
+        echo "Error: Wrong error message.\n";
+        print_r($err);
+    }
 }
 
 $conn_break = null;
 
 ?>
---EXPECTREGEX--
-Statement 1 prepared\.
-Statement 1 executed\.
-Transaction begun\.
-Transaction was committed\.
-Transaction begun\.
-SQLSTATE\[08S02\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.|Error code 0x20)
-SQLSTATE\[08S01\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
+--EXPECT--
+Statement 1 prepared.
+Statement 1 executed.
+Transaction begun.
+Transaction was committed.
+Transaction begun.
+Transaction failed.
