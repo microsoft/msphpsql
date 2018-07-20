@@ -33,7 +33,12 @@ $stmt1 = sqlsrv_query( $conn, "SELECT * FROM $tableName1" );
 if( $stmt1 === false )
 {
     echo "Error in statement 1.\n";
-    print_r( sqlsrv_errors() );
+    $err = sqlsrv_errors();
+    if (strpos($err[0][0], '08S01')===false or
+        (strpos($err[0][2], 'TCP Provider:')===false and strpos($err[0][2], 'SMux Provider:')===false and strpos($err[0][2], 'Session Provider:')===false)) {
+        echo "Error: Wrong error message.\n";
+        print_r($err);
+    }
 }
 else
 {
@@ -78,27 +83,4 @@ DropTables( $server, $uid, $pwd, $tableName1, $tableName2 )
 ?>
 --EXPECTREGEX--
 Error in statement 1.
-Array
-\(
-    \[0\] => Array
-        \(
-            \[0\] => 08S01
-            \[SQLSTATE\] => 08S01
-            \[1\] => (10054|104)
-            \[code\] => (10054|104)
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.\n|Error code 0x68|Error code 0x2746)
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.\n|Error code 0x68|Error code 0x2746)
-        \)
-
-    \[1\] => Array
-        \(
-            \[0\] => 08S01
-            \[SQLSTATE\] => 08S01
-            \[1\] => (10054|104)
-            \[code\] => (10054|104)
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
-        \)
-
-\)
 Statement 2 successful.

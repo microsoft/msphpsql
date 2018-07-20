@@ -144,7 +144,12 @@ $stmt6 = sqlsrv_query( $conn, "SELECT * FROM $tableName2" );
 if( $stmt6 === false )
 {
     echo "Error in statement 6.\n";
-    print_r( sqlsrv_errors() );
+    $err = sqlsrv_errors();
+    if (strpos($err[0][0], '08S01')===false or
+        (strpos($err[0][2], 'TCP Provider:')===false and strpos($err[0][2], 'SMux Provider:')===false and strpos($err[0][2], 'Session Provider:')===false)) {
+        echo "Error: Wrong error message.\n";
+        print_r($err);
+    }
 }
 else
 {
@@ -188,7 +193,12 @@ $stmt8 = sqlsrv_query( $conn, "SELECT * FROM $tableName2" );
 if( $stmt8 === false )
 {
     echo "Error in statement 8.\n";
-    print_r( sqlsrv_errors() );
+    $err = sqlsrv_errors();
+    if (strpos($err[0][0], 'IMSSP')===false or
+        strpos($err[0][2], 'The connection cannot process this operation because there is a statement with pending results')===false) {
+        echo "Error: Wrong error message.\n";
+        print_r($err);
+    }
 }
 else
 {
@@ -199,7 +209,7 @@ sqlsrv_close( $conn );
 sqlsrv_close( $conn_break );
 
 ?>
---EXPECTREGEX--
+--EXPECT--
 Statement 1 successful.
 16 rows in result set.
 Statement 2 successful.
@@ -211,51 +221,5 @@ Statement 4 successful.
 Statement 5 successful.
  rows in result set.
 Error in statement 6.
-Array
-\(
-    \[0\] => Array
-        \(
-            \[0\] => 08S01
-            \[SQLSTATE\] => 08S01
-            \[1\] => (10054|104)
-            \[code\] => (10054|104)
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.\n|Error code 0x68|Error code 0x2746)
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: (An existing connection was forcibly closed by the remote host\.\n|Error code 0x68|Error code 0x2746)
-        \)
-
-    \[1\] => Array
-        \(
-            \[0\] => 08S01
-            \[SQLSTATE\] => 08S01
-            \[1\] => (10054|104)
-            \[code\] => (10054|104)
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Communication link failure
-        \)
-
-\)
 Statement 7 successful.
 Error in statement 8.
-Array
-\(
-    \[0\] => Array
-        \(
-            \[0\] => IMSSP
-            \[SQLSTATE\] => IMSSP
-            \[1\] => -44
-            \[code\] => -44
-            \[2\] => The connection cannot process this operation because there is a statement with pending results.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.
-            \[message\] => The connection cannot process this operation because there is a statement with pending results.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.
-        \)
-
-    \[1\] => Array
-        \(
-            \[0\] => HY000
-            \[SQLSTATE\] => HY000
-            \[1\] => 0
-            \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Connection is busy with results for another command
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Connection is busy with results for another command
-        \)
-
-\)
