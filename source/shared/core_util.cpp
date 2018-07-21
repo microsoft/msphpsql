@@ -353,10 +353,10 @@ void die( _In_opt_ const char* msg, ... )
     DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, last_err_msg, sizeof( last_err_msg ), &format_args );
     va_end( format_args );
     if( rc == 0 ) {
-        php_error( E_ERROR, reinterpret_cast<const char*>( INTERNAL_FORMAT_ERROR ));
+        php_error( E_ERROR, "%s", reinterpret_cast<const char*>( INTERNAL_FORMAT_ERROR ));
     }
 
-    php_error( E_ERROR, last_err_msg );
+    php_error( E_ERROR, "%s", last_err_msg );
 }
 
 namespace {
