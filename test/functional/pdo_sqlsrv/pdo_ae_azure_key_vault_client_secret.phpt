@@ -1,7 +1,7 @@
 --TEST--
 Test client ID/secret credentials for Azure Key Vault for Always Encrypted.
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
+<?php require('skipif_not_akv.inc'); ?>
 --FILE--
 <?php
 require_once('pdo_ae_azure_key_vault_common.php');

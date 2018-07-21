@@ -6,6 +6,15 @@ This test assumes the default odbcinst.ini has not been modified.
 <?php if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') die("Skipped: Test for Linux and Mac"); ?>
 --FILE--
 <?php
+function findODBCDriver($content, $lines_to_add)
+{
+    require_once('MsSetup.inc');
+    $command = "odbcinst -q -d -n '$driver'";
+    $info = shell_exec($command);
+
+    return str_replace($info, $info.$lines_to_add, $content);
+}
+
 $lines_to_add="CPTimeout=5\n[ODBC]\nPooling=Yes\n";
 
 //get default odbcinst.ini location
@@ -18,8 +27,8 @@ copy( $odbcinst_ini, $custom_odbcinst_ini);
 
 //enable pooling by modifying the odbcinst.ini file
 $current = file_get_contents($custom_odbcinst_ini);
-$current.=$lines_to_add;
-file_put_contents($custom_odbcinst_ini, $current);
+$new_content = findODBCDriver($current, $lines_to_add);
+file_put_contents($custom_odbcinst_ini, $new_content);
 
 //Creating a new php process, because for changes in odbcinst.ini file to affect pooling, drivers must be reloaded.
 //Also setting the odbcini path to the current folder for the same process.

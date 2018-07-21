@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Microsoft Drivers 5.2 for PHP for SQL Server
+// Microsoft Drivers 5.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -95,7 +95,6 @@ struct bool_conn_str_func {
     }
 };
 
-#ifdef _WIN32
 struct int_conn_str_func {
 
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Out_ std::string& conn_str TSRMLS_DC )
@@ -111,7 +110,6 @@ struct int_conn_str_func {
         conn_str += "};";
     }
 };
-#endif // _WIN32
 
 template <unsigned int Attr>
 struct int_conn_attr_func {
@@ -188,10 +186,8 @@ const char Authentication[] = "Authentication";
 const char CharacterSet[] = "CharacterSet";
 const char ColumnEncryption[] = "ColumnEncryption";
 const char ConnectionPooling[] = "ConnectionPooling";
-#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
-#endif // _WIN32
 const char Database[] = "Database";
 const char DateAsString[] = "ReturnDatesAsStrings";
 const char Driver[] = "Driver";
@@ -324,7 +320,6 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         column_encryption_set_func::func
     },
-#ifdef _WIN32
     {
         SSConnOptionNames::ConnectRetryCount,
         sizeof( SSConnOptionNames::ConnectRetryCount ),
@@ -343,7 +338,6 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_INT,
         int_conn_str_func::func
     },
-#endif // _WIN32
     {
         SSConnOptionNames::Database,
         sizeof( SSConnOptionNames::Database ),

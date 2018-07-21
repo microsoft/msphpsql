@@ -161,7 +161,11 @@ try {
     echo $rowcount." rows in result set.\n";
 } catch (PDOException $e) {
     echo "Error executing statement 6.\n";
-    print_r($e->getMessage());
+    $err = $e->getMessage();
+    if (strpos($err, 'SQLSTATE[08S02]')===false or (strpos($err, 'TCP Provider')===false and strpos($err, 'SMux Provider')===false)) {
+        echo "Error: Wrong error message.\n";
+        print_r($err);
+    }
 }
 
 unset($conn);
@@ -200,14 +204,18 @@ try {
     }
 } catch (PDOException $e) {
     echo "Error executing statement 8.\n";
-    print_r($e->getMessage());
+    $err = $e->getMessage();
+    if (strpos($err, 'SQLSTATE[IMSSP]')===false or strpos($err, 'The connection cannot process this operation because there is a statement with pending results')===false) {
+        echo "Error: Wrong error message.\n";
+        print_r($err);
+    }
 }
 
 unset($conn);
 unset($conn_break);
 
 ?>
---EXPECTREGEX--
+--EXPECT--
 Statement 1 successful.
 16 rows in result set.
 Statement 2 successful.
@@ -219,7 +227,5 @@ Statement 4 successful.
 Statement 5 successful.
 -1 rows in result set.
 Error executing statement 6.
-SQLSTATE\[08S02\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: An existing connection was forcibly closed by the remote host.
 Statement 7 successful.
 Error executing statement 8.
-SQLSTATE\[IMSSP\]: The connection cannot process this operation because there is a statement with pending results.  To make the connection available for other queries, either fetch all results or cancel or free the statement.  For more information, see the product documentation about the MultipleActiveResultSets connection option.

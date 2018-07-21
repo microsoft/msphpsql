@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.2 for PHP for SQL Server
+// Microsoft Drivers 5.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -1112,10 +1112,8 @@ const char Driver[] = "Driver";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
 const char ColumnEncryption[] = "ColumnEncryption";
-#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
-#endif // _WIN32
 const char Database[] = "Database";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
@@ -1168,10 +1166,8 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID,
     SQLSRV_CONN_OPTION_KEYSTORE_SECRET,
     SQLSRV_CONN_OPTION_TRANSPARENT_NETWORK_IP_RESOLUTION,
-#ifdef _WIN32
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
-#endif // _WIN32
 
    // Driver specific connection options
    SQLSRV_CONN_OPTION_DRIVER_SPECIFIC = 1000,

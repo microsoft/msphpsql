@@ -1,8 +1,7 @@
 --TEST--
 Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterval and their ranges of acceptable values
 --SKIPIF--
-<?php require('skipif_unix.inc');
-      require('skipif_version_less_than_2k14.inc');  ?>
+<?php require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
 <?php
 require_once( "MsSetup.inc" );
@@ -70,15 +69,15 @@ catch( PDOException $e )
 Connected successfully on first attempt.
 Connected successfully on second attempt.
 Could not connect on third attempt.
-SQLSTATE\[08001\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
+SQLSTATE\[08001\]: (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
 Could not connect on fourth attempt.
-SQLSTATE\[08001\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
+SQLSTATE\[08001\]: (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
 Could not connect on fifth attempt.
-SQLSTATE\[08001\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
+SQLSTATE\[08001\]: (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
 Could not connect on sixth attempt.
-SQLSTATE\[08001\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
+SQLSTATE\[08001\]: (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
 Could not connect on seventh attempt.
-SQLSTATE\[08001\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
+SQLSTATE\[08001\]: (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
 Could not connect on eighth attempt.
 SQLSTATE\[IMSSP\]: The DSN string ended unexpectedly.
 Could not connect on ninth attempt.

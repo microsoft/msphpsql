@@ -3,7 +3,7 @@
 //
 // Contents: Result sets
 //
-// Microsoft Drivers 5.2 for PHP for SQL Server
+// Microsoft Drivers 5.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -345,7 +345,8 @@ sqlsrv_error* odbc_get_diag_rec( _In_ sqlsrv_stmt* odbc, _In_ SQLSMALLINT record
     SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ];
     SQLINTEGER native_code;
     SQLSMALLINT wnative_message_len = 0;
-
+    
+    SQLSRV_ASSERT(odbc != NULL, "odbc_get_diag_rec: sqlsrv_stmt* odbc was null.");
     SQLRETURN r = SQLGetDiagRecW( SQL_HANDLE_STMT, odbc->handle(), record_number, wsql_state, &native_code, wnative_message, 
                                   SQL_MAX_ERROR_MESSAGE_LENGTH + 1, &wnative_message_len );
     if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
@@ -963,7 +964,7 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
         // to_copy contains the number of bytes to copy, so we divide the number in half (or quarter)
         // to get the number of hex digits we can copy
         SQLLEN to_copy_hex = to_copy / (2 * extra);
-        for( int i = 0; i < to_copy_hex; ++i ) {
+        for( SQLLEN i = 0; i < to_copy_hex; ++i ) {
             *h = hex_chars[ (*b & 0xf0) >> 4 ];
             h++;
             *h = hex_chars[ (*b++ & 0x0f) ];

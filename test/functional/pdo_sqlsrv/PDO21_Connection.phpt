@@ -15,7 +15,7 @@ try {
     // Invalid connection attempt => errors are expected
     $serverName="InvalidServerName";
 
-    $dsn = getDSN($serverName, $databaseName);
+    $dsn = getDSN($serverName, $databaseName, $driver);
     $conn1 = new PDO($dsn, $uid, $pwd, $connectionOptions);
     if ($conn1) {
         printf("Invalid connection attempt should have failed.\n");

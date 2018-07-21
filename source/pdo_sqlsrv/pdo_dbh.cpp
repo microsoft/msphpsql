@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDO object for PDO_SQLSRV
 //
-// Microsoft Drivers 5.2 for PHP for SQL Server
+// Microsoft Drivers 5.3 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -43,10 +43,8 @@ const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
 const char ColumnEncryption[] = "ColumnEncryption";
 const char ConnectionPooling[] = "ConnectionPooling";
-#ifdef _WIN32
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
-#endif // _WIN32
 const char Database[] = "Database";
 const char Driver[] = "Driver";
 const char Encrypt[] = "Encrypt";
@@ -109,7 +107,6 @@ struct pdo_txn_isolation_conn_attr_func
     static void func( connection_option const* /*option*/, _In_ zval* value_z, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC );
 };
 
-#ifdef _WIN32
 struct pdo_int_conn_str_func {
 
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Out_ std::string& conn_str TSRMLS_DC )
@@ -125,7 +122,6 @@ struct pdo_int_conn_str_func {
         conn_str += "};";
     }
 };
-#endif // _WIN32
 
 template <unsigned int Attr>
 struct pdo_int_conn_attr_func {
@@ -243,7 +239,6 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         column_encryption_set_func::func
     },
-#ifdef _WIN32
     {
         PDOConnOptionNames::ConnectRetryCount,
         sizeof( PDOConnOptionNames::ConnectRetryCount ),
@@ -262,7 +257,6 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_INT,
         pdo_int_conn_str_func::func
     },
-#endif // _WIN32
     {
         PDOConnOptionNames::Database,
         sizeof( PDOConnOptionNames::Database ),
@@ -1276,7 +1270,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
 
     try {
 
-        char last_insert_id_query[ LAST_INSERT_ID_QUERY_MAX_LEN ];
+        char last_insert_id_query[ LAST_INSERT_ID_QUERY_MAX_LEN ] = {'\0'};
         if( name == NULL ) {
             strcpy_s( last_insert_id_query, sizeof( last_insert_id_query ), LAST_INSERT_ID_QUERY );
         }
@@ -1300,7 +1294,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         
         sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
         unsigned int wsql_len;
-        wsql_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_CHAR, reinterpret_cast<const char*>( last_insert_id_query ), static_cast<unsigned int>( strnlen_s( last_insert_id_query )), &wsql_len );
+        wsql_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_CHAR, reinterpret_cast<const char*>( last_insert_id_query ), sizeof(last_insert_id_query), &wsql_len );
 
         CHECK_CUSTOM_ERROR( wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message() ) {
                 throw core::CoreException();

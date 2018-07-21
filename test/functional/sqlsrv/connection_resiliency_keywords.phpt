@@ -3,8 +3,7 @@ Test the connection resiliency keywords
 --DESCRIPTION--
 Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterval and their ranges of acceptable values
 --SKIPIF--
-<?php require('skipif_unix.inc');
-      require('skipif_version_less_than_2k14.inc');  ?>
+<?php require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
 <?php
 require_once( "MsSetup.inc" );
@@ -76,8 +75,8 @@ Array
             \[SQLSTATE\] => 08001
             \[1\] => 0
             \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
+            \[2\] => (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
+            \[message\] => (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
         \)
 
 \)
@@ -90,8 +89,8 @@ Array
             \[SQLSTATE\] => 08001
             \[1\] => 0
             \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
+            \[2\] => (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
+            \[message\] => (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
         \)
 
 \)
@@ -104,8 +103,8 @@ Array
             \[SQLSTATE\] => 08001
             \[1\] => 0
             \[code\] => 0
-            \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
-            \[message\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
+            \[2\] => (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
+            \[message\] => (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount'
         \)
 
 \)

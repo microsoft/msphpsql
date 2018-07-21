@@ -1,3 +1,23 @@
+dnl ----------------------------------------------------------------------------------------------------------------------------------
+dnl  File: config.m4
+dnl 
+dnl  Contents: the code that will go into the configure script, indicating options, 
+dnl  external libraries and includes, and what source files are to be compiled.
+dnl 
+dnl  Microsoft Drivers 5.3 for PHP for SQL Server
+dnl  Copyright(c) Microsoft Corporation
+dnl  All rights reserved.
+dnl  MIT License
+dnl  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
+dnl   to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+dnl   and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
+dnl  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+dnl  THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+dnl   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+dnl   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+dnl   IN THE SOFTWARE.
+dnl ---------------------------------------------------------------------------------------------------------------------------------
+
 PHP_ARG_ENABLE(sqlsrv, whether to enable sqlsrv functions,
 [  --disable-sqlsrv         Disable sqlsrv functions], yes)
 

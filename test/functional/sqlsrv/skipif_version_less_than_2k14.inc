@@ -1,9 +1,13 @@
 <?php
-if ( !( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) ) die( "Skip Test on windows only." ); 
+// For connection resiliency, must check that 
+// 1. Either SQL Server version is 2014 or greater, or using Azure;
+// 2. Either running Windows, or ODBC driver 17.2 or greater on unix
 
 if (!extension_loaded("sqlsrv")) {
     die("skip Extension not loaded");
 }
+
+$is_win = ( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' );
 
 require_once( "MsSetup.inc" );
 
@@ -14,17 +18,30 @@ if ($conn === false) {
     die( "skip Could not connect during SKIPIF." );
 }
 
-// Get SQL Server version
-$stmt = sqlsrv_query( $conn, "SELECT @@VERSION" );
-if (sqlsrv_fetch($stmt)) {
-    $ver_string = sqlsrv_get_field( $stmt, 0 );
-} else {
-    die("skip Could not fetch SQL Server version.");
+$msodbcsql_ver = sqlsrv_client_info($conn)["DriverVer"];
+$msodbcsql_maj = explode(".", $msodbcsql_ver)[0];
+$msodbcsql_min = explode(".", $msodbcsql_ver)[1];
+
+if (!$is_win) {
+    if ($msodbcsql_maj < 17 or $msodbcsql_min < 2) {
+        die("skip Unsupported ODBC driver version");
+    }
 }
 
-$version = explode(' ', $ver_string);
+// Get SQL Server version
+// Exclude this check if running on Azure
+if (!$daasMode) {
+    $stmt = sqlsrv_query( $conn, "SELECT @@VERSION" );
+    if (sqlsrv_fetch($stmt)) {
+        $ver_string = sqlsrv_get_field( $stmt, 0 );
+    } else {
+        die("skip Could not fetch SQL Server version.");
+    }
 
-if ($version[3] < '2014') {
-    die("skip Wrong version of SQL Server, 2014 or later required");
+    $version = explode(' ', $ver_string);
+
+    if ($version[3] < '2014') {
+        die("skip Wrong version of SQL Server, 2014 or later required");
+    }
 }
 ?>

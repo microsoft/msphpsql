@@ -40,7 +40,11 @@ try
 catch( PDOException $e )
 {
     echo "Error executing statement 1.\n";
-    print_r( $e->getMessage() );
+    $err = $e->getMessage();
+    if (strpos($err, 'SQLSTATE[08S02]')===false or (strpos($err, 'TCP Provider')===false and strpos($err, 'SMux Provider')===false)) {
+        echo "Error: Wrong error message.\n";
+        print_r($err);
+    }
 }
 
 $conn = null;
@@ -82,7 +86,6 @@ $conn_break = null;
 DropTables( $server, $uid, $pwd, $tableName1, $tableName2 );
 
 ?>
---EXPECTREGEX--
+--EXPECT--
 Error executing statement 1.
-SQLSTATE\[08S02\]: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]TCP Provider: An existing connection was forcibly closed by the remote host.
 Query successfully executed.

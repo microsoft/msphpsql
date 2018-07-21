@@ -47,7 +47,7 @@ For full details on the system requirements for the drivers, see the [system req
 On the client machine:
 - PHP 7.0.x, 7.1.x, or 7.2.x (7.2.0 and up on Unix, 7.2.1 and up on Windows)
 - A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
-- [Microsoft ODBC Driver 17][odbc17], [Microsoft ODBC Driver 13][odbc13], or [Microsoft ODBC Driver 11][odbc11]
+- [Microsoft ODBC Driver 17, Microsoft ODBC Driver 13, or Microsoft ODBC Driver 11](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-2017)
 
 On the server side, Microsoft SQL Server 2008 R2 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
 
@@ -86,14 +86,14 @@ The version number may have trailing pre-release version identifiers to indicate
 - Build metadata may be denoted by a plus sign followed by 4 or 5 digits, such as  `1.2.3-preview+5678` or `1.2.3+5678`. Build metadata does not figure into the precedence order.
 
 ## Future Plans
-- Expand SQL Server 2016 feature support (example: Always Encrypted)
+- Expand SQL Server 2016 feature support (example: Azure Active Directory)
 - Add more verification/fundamental tests
 - Bug fixes
 
 ## Guidelines for Reporting Issues
 We appreciate you taking the time to test the driver, provide feedback and report any issues.  It would be extremely helpful if you:
 
-- First check the [FAQ](https://github.com/Microsoft/msphpsql/wiki/FAQ) 
+- First check the [FAQ](https://github.com/Microsoft/msphpsql/wiki/FAQ) for common problems
 - Report each issue as a new issue (but check first if it's already been reported)
 - Please address the questions in the new issue template and provide scripts, table schema, and/or any details that may help reproduce the problem(s)
 
@@ -106,15 +106,15 @@ Thank you!
 
 **Q:** What's next?
 
-**A:** On March 23, 2018 we released the production release version 5.2.0 of our PHP Driver. We will continue working on our future plans and releasing previews of upcoming releases frequently.
+**A:** On July 20, 2018 we released the production release version 5.3.0 of our PHP Driver. We will continue working on our future plans and releasing previews of upcoming releases.
 
 **Q:** Is Microsoft taking pull requests for this project?
 
-**A:** Yes. Please submit pull requests to the **dev** branch and not the **master** branch.
+**A:** Yes. Please submit pull requests to the **dev** branch, not the **master** branch.
 
 ## License
 
-The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license.  See the LICENSE file for more details.
+The Microsoft Drivers for PHP for SQL Server are licensed under the MIT license. See the LICENSE file for more details.
 
 ## Code of conduct
 
@@ -138,12 +138,6 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [phpbuild]: https://wiki.php.net/internals/windows/stepbystepbuild
 
-[phpdoc]: http://msdn.microsoft.com/library/dd903047%28SQL.11%29.aspx
-
-[odbc11]: https://www.microsoft.com/download/details.aspx?id=36434
-
-[odbc13]: https://www.microsoft.com/download/details.aspx?id=50420
-
-[odbc17]: https://www.microsoft.com/download/details.aspx?id=56567
+[phpdoc]: https://docs.microsoft.com/en-us/sql/connect/php/microsoft-php-driver-for-sql-server?view=sql-server-2017
 
 [PHPMan]: http://php.net/manual/install.unix.php
