@@ -693,7 +693,7 @@ public:
     // free the original pointer and assign a new pointer. Use NULL to simply free the pointer.
     void reset( _In_opt_ HashTable* ptr = NULL )
     {
-        if( _ptr ) {
+        if( _ptr != NULL ) {
             zend_hash_destroy( _ptr );
             FREE_HASHTABLE( _ptr );
         }
@@ -2377,10 +2377,10 @@ namespace core {
 
     inline void sqlsrv_array_init( _Inout_ sqlsrv_context& ctx, _Out_ zval* new_array TSRMLS_DC) 
     {
-        int zr = ::array_init(new_array);
+        array_init(new_array); /*int zr = ::array_init(new_array);
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
             throw CoreException();
-        }
+        }*/
     }
 
     inline void sqlsrv_php_stream_from_zval_no_verify( _Inout_ sqlsrv_context& ctx, _Outref_result_maybenull_ php_stream*& stream, _In_opt_ zval* stream_z TSRMLS_DC )

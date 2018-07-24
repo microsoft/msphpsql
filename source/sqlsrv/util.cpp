@@ -506,10 +506,10 @@ PHP_FUNCTION( sqlsrv_errors )
 	int result;
 	zval err_z;
 	ZVAL_UNDEF( &err_z );
-	result = array_init( &err_z );
+    array_init( &err_z ); /*result = array_init( &err_z );
 	if( result == FAILURE ) {
 		RETURN_FALSE;
-	}
+	}*/
 	if( flags == SQLSRV_ERR_ALL || flags == SQLSRV_ERR_ERRORS ) {
 		if( Z_TYPE( SQLSRV_G( errors )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &err_z, &SQLSRV_G( errors ) TSRMLS_CC )) {
 			zval_ptr_dtor(&err_z);
@@ -747,9 +747,9 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
                          _In_ bool warning TSRMLS_DC )
 {
 
-    if( array_init( error_z ) == FAILURE ) {
+    array_init( error_z ); /*if( array_init( error_z ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
-    }
+    }*/
 
     // sqlstate
     zval temp; 
@@ -837,10 +837,10 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
     if( Z_TYPE_P( reported_chain ) == IS_NULL ) {
 
         reported_chain_was_null = true;
-        zr = array_init( reported_chain );
+        array_init( reported_chain ); /*zr = array_init( reported_chain );
         if( zr == FAILURE ) {
             DIE( "Fatal error in handle_errors_and_warnings" );
-        }
+        }*/
     }
     else {
         prev_reported_cnt = zend_hash_num_elements( Z_ARRVAL_P( reported_chain ));
@@ -852,10 +852,11 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
         if( Z_TYPE_P( ignored_chain ) == IS_NULL ) {
             
            ignored_chain_was_null = true;
-           zr = array_init( ignored_chain );
+           array_init( ignored_chain );
+          /* zr = array_init( ignored_chain );
             if( zr == FAILURE ) {
                 DIE( "Fatal error in handle_errors_and_warnings" );
-            }
+            } */
         }
     }
 
