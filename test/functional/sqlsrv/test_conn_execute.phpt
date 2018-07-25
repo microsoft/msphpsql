@@ -20,5 +20,5 @@ crash caused by a statement being orphaned when an error occurred during sqlsrv_
 
 ?> 
 --EXPECTREGEX--
-Warning: sqlsrv_fetch_array\(\) expects parameter 1 to be resource, boolean given in .+(\/|\\)test_conn_execute\.php on line 11
+Warning: sqlsrv_fetch_array\(\) expects parameter 1 to be resource, bool(ean){0,1} given in .+(\/|\\)test_conn_execute\.php on line 11
 Test successful

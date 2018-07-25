@@ -119,7 +119,7 @@ sqlsrv_close returns true even if an error happens.
     echo "Test successfully done.\n";
 ?>
 --EXPECTF--
-Warning: sqlsrv_close() expects parameter 1 to be resource, boolean given in %Ssqlsrv_errors.php on line %x
+Warning: sqlsrv_close() expects parameter 1 to be resource, bool%S given in %Ssqlsrv_errors.php on line %x
 Array
 (
     [0] => Array
@@ -153,7 +153,7 @@ Array
 
 )
 
-Warning: sqlsrv_free_stmt() expects parameter 1 to be resource, integer given in %Ssqlsrv_errors.php on line %x
+Warning: sqlsrv_free_stmt() expects parameter 1 to be resource, int%S given in %Ssqlsrv_errors.php on line %x
 Array
 (
     [0] => Array
@@ -172,7 +172,7 @@ Warning: sqlsrv_close(): supplied resource is not a valid ss_sqlsrv_conn resourc
 
 Warning: sqlsrv_close() expects parameter 1 to be resource, null given in %Ssqlsrv_errors.php on line %x
 
-Warning: sqlsrv_close() expects parameter 1 to be resource, integer given in %Ssqlsrv_errors.php on line %x
+Warning: sqlsrv_close() expects parameter 1 to be resource, int%S given in %Ssqlsrv_errors.php on line %x
 Array
 (
     [0] => Array
