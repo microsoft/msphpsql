@@ -2377,10 +2377,14 @@ namespace core {
 
     inline void sqlsrv_array_init( _Inout_ sqlsrv_context& ctx, _Out_ zval* new_array TSRMLS_DC) 
     {
-        array_init(new_array); /*int zr = ::array_init(new_array);
-        CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
+#if PHP_VERSION_ID < 70300
+        int zr = ::array_init(new_array);
+        CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
             throw CoreException();
-        }*/
+        }
+#else
+        array_init(new_array);
+#endif
     }
 
     inline void sqlsrv_php_stream_from_zval_no_verify( _Inout_ sqlsrv_context& ctx, _Outref_result_maybenull_ php_stream*& stream, _In_opt_ zval* stream_z TSRMLS_DC )

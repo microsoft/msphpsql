@@ -1809,10 +1809,14 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
     }
 
     int zr;
-    array_init( &fields ); /*int zr = array_init( &fields );
-	CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
-		throw ss::SSException();
-	}*/
+#if PHP_VERSION_ID < 70300
+    zr = array_init(&fields);
+    CHECK_ZEND_ERROR(zr, stmt, SQLSRV_ERROR_ZEND_HASH) {
+        throw ss::SSException();
+    }
+#else
+    array_init(&fields); 
+#endif 
 
 	for( int i = 0; i < num_cols; ++i ) {
 		SQLLEN field_len = -1;
