@@ -1808,10 +1808,9 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
         field_names.transferred();
     }
 
-    int zr;
+    int zr = SUCCESS;
 #if PHP_VERSION_ID < 70300
-    zr = array_init(&fields);
-    CHECK_ZEND_ERROR(zr, stmt, SQLSRV_ERROR_ZEND_HASH) {
+    CHECK_ZEND_ERROR(array_init(&fields), stmt, SQLSRV_ERROR_ZEND_HASH) {
         throw ss::SSException();
     }
 #else

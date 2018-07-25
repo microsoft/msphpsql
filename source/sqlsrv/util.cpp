@@ -503,12 +503,10 @@ PHP_FUNCTION( sqlsrv_errors )
         LOG( SEV_ERROR, "An invalid parameter was passed to %1!s!.", _FN_ );
         RETURN_FALSE;
     }
-    int result;
     zval err_z;
     ZVAL_UNDEF(&err_z);
 #if PHP_VERSION_ID < 70300
-    result = array_init(&err_z);
-    if (result == FAILURE) {
+    if (array_init(&err_z) == FAILURE) {
         RETURN_FALSE;
     }
 #else
@@ -836,7 +834,6 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
     size_t prev_reported_cnt = 0;
     bool reported_chain_was_null = false;
     bool ignored_chain_was_null = false;
-    int zr = SUCCESS;
     zval error_z;
 	ZVAL_UNDEF(&error_z);
     sqlsrv_error_auto_ptr error;
@@ -846,8 +843,7 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
 
         reported_chain_was_null = true;
 #if PHP_VERSION_ID < 70300
-        zr = array_init(reported_chain);
-        if (zr == FAILURE) {
+        if (array_init(reported_chain) == FAILURE) {
             DIE( "Fatal error during error processing" );
         }
 #else
@@ -865,8 +861,7 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
             
             ignored_chain_was_null = true;
 #if PHP_VERSION_ID < 70300
-            zr = array_init(ignored_chain);
-            if (zr == FAILURE) {
+            if (array_init(ignored_chain) == FAILURE) {
                 DIE( "Fatal error in handle_errors_and_warnings" );
             }
 #else
