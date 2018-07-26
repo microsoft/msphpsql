@@ -28,10 +28,6 @@ if (!$is_win) {
             die("skip Unsupported ODBC driver version");
         }
     }
-} else {
-    if ($msodbcsql_maj < 17) {
-        die("skip Unsupported ODBC driver version");
-    }
 }
 
 // Get SQL Server Version
