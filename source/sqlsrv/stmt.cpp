@@ -889,7 +889,9 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             fci.object = Z_OBJ_P( &retval_z );
 
             memset( &fcic, 0, sizeof( fcic ));
+#if PHP_VERSION_ID < 70300
             fcic.initialized = 1;
+#endif
             fcic.function_handler = class_entry->constructor;
             fcic.calling_scope = class_entry;
 
@@ -1806,10 +1808,14 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
         field_names.transferred();
     }
 
-    int zr = array_init( &fields );
-	CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
-		throw ss::SSException();
-	}
+    int zr = SUCCESS;
+#if PHP_VERSION_ID < 70300
+    CHECK_ZEND_ERROR(array_init(&fields), stmt, SQLSRV_ERROR_ZEND_HASH) {
+        throw ss::SSException();
+    }
+#else
+    array_init(&fields); 
+#endif 
 
 	for( int i = 0; i < num_cols; ++i ) {
 		SQLLEN field_len = -1;

@@ -546,7 +546,7 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     ALLOC_HASHTABLE( pdo_conn_options_ht );
 
     core::sqlsrv_zend_hash_init( *g_pdo_henv_cp, pdo_conn_options_ht, 10 /* # of buckets */, 
-                                 ZVAL_INTERNAL_DTOR, 0 /*persistent*/ TSRMLS_CC );
+                                 ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
 
     // Either of g_pdo_henv_cp or g_pdo_henv_ncp can be used to propogate the error.
     dsn_parser = new ( sqlsrv_malloc( sizeof( conn_string_parser ))) conn_string_parser( *g_pdo_henv_cp, dbh->data_source, 
