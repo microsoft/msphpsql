@@ -362,7 +362,7 @@ public:
         {
             // Use fixed size buffer iteratively to determine final required length
             const size_t CCH_FIXED_SIZE = 256;
-            char fixed_buf[ CCH_FIXED_SIZE*sizeof(DestType) ] = { '\0' };
+            char fixed_buf[ CCH_FIXED_SIZE*sizeof(DestType) ] = {'\0'};
             iconv_buffer<DestType> dest(
                 &fixed_buf[0],
                 CCH_FIXED_SIZE );

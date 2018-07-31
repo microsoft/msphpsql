@@ -1236,7 +1236,7 @@ void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout
         int lock_timeout = (( timeout == 0 ) ? -1 : timeout * 1000 /*convert to milliseconds*/ );
 
         // set the LOCK_TIMEOUT on the server.
-        char lock_timeout_sql[ 32 ] = { '\0' };
+        char lock_timeout_sql[ 32 ] = {'\0'};
 
         int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", lock_timeout );
         SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )),
@@ -1304,7 +1304,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
     }
     // read the data from the stream, send it via SQLPutData and track how much we've sent.
     else {
-        char buffer[ PHP_STREAM_BUFFER_SIZE + 1 ] = { '\0' };
+        char buffer[ PHP_STREAM_BUFFER_SIZE + 1 ] = {'\0'};
 		std::size_t buffer_size = sizeof( buffer ) - 3;   // -3 to preserve enough space for a cut off UTF-8 character
         std::size_t read = php_stream_read( param_stream, buffer, buffer_size );
 
@@ -1325,7 +1325,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 
                 // the size of wbuffer is set for the worst case of UTF-8 to UTF-16 conversion, which is a
                 // expansion of 2x the UTF-8 size.
-                SQLWCHAR wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ] = { L'\0' };
+                SQLWCHAR wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ] = {L'\0'};
                 int wbuffer_size = static_cast<int>( sizeof( wbuffer ) / sizeof( SQLWCHAR ));
 				DWORD last_error_code = ERROR_SUCCESS;
 				// buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
@@ -1631,7 +1631,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         // convert it to a DateTime object and return the created object
         case SQLSRV_PHPTYPE_DATETIME:
         {
-            char field_value_temp[ MAX_DATETIME_STRING_LEN ] = { '\0' };
+            char field_value_temp[ MAX_DATETIME_STRING_LEN ] = {'\0'};
             zval params[1];
             zval field_value_temp_z;
             zval function_z;
@@ -2258,7 +2258,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 
             if( r == SQL_SUCCESS_WITH_INFO ) {
 
-                SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = { L'\0' };
+                SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {L'\0'};
                 SQLSMALLINT len = 0;
 
                 stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );

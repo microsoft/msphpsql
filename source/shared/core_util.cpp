@@ -28,7 +28,7 @@ log_callback g_driver_log;
 // internal error that says that FormatMessage failed
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
 // buffer used to hold a formatted log message prior to actually logging it.
-char last_err_msg[ 2048 ] = { '\0' };  // 2k to hold the error messages
+char last_err_msg[ 2048 ] = {'\0'};  // 2k to hold the error messages
 
 // routine used by utf16_string_from_mbcs_string
 unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
@@ -219,8 +219,8 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
 
     SQLRETURN r = SQL_SUCCESS;
     SQLSMALLINT wmessage_len = 0;
-    SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ] = { L'\0' };
-    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { L'\0' };
+    SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ] = {L'\0'};
+    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = {L'\0'};
     SQLSRV_ENCODING enc = ctx.encoding();
 
     switch( h_type ) {

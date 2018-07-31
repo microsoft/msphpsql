@@ -341,8 +341,8 @@ struct row_dtor_closure {
 
 sqlsrv_error* odbc_get_diag_rec( _In_ sqlsrv_stmt* odbc, _In_ SQLSMALLINT record_number )
 {
-    SQLWCHAR wsql_state[ SQL_SQLSTATE_BUFSIZE ] = { L'\0' };
-    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { L'\0' };
+    SQLWCHAR wsql_state[ SQL_SQLSTATE_BUFSIZE ] = {L'\0'};
+    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = {L'\0'};
     SQLINTEGER native_code;
     SQLSMALLINT wnative_message_len = 0;
     
@@ -1525,7 +1525,7 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
     sqlsrv_malloc_auto_ptr<char> buffer;
     buffer = static_cast<char*>( sqlsrv_malloc( INITIAL_LOB_FIELD_LEN + extra + sizeof( SQLULEN )));
     SQLRETURN r = SQL_SUCCESS;
-    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ] = { '\0' };
+    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ] = {'\0'};
     SQLLEN last_field_len = 0;
     bool full_length_returned = false;
 

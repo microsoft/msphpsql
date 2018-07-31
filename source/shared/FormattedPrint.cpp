@@ -254,7 +254,7 @@ errno_t mplat_wctomb_s(
 void _CFLTCVT( double * dbl, char * buf, int bufSize, char fmt, int precision, int caps, _locale_t loc = NULL )
 {
     const size_t local_bufsize = 8;
-    char local_fmt[local_bufsize] = { '\0' };
+    char local_fmt[local_bufsize] = {'\0'};
 
     if ( 0 != caps )
     {
@@ -387,7 +387,7 @@ int FormattedPrintA( IFormattedPrintOutput<char> * output, const char *format, v
                        textlen is in multibyte or wide chars if _UNICODE */
     union {
         char sz[BUFFERSIZE];
-        } buffer = { '\0' };
+        } buffer = {'\0'};
     WCHAR wchar;                /* temp wchar_t */
     int buffersize;             /* size of text.sz (used only for the call to _cfltcvt) */
     int bufferiswide=0;         /* non-zero = buffer contains wide chars already */
@@ -905,7 +905,7 @@ int FormattedPrintA( IFormattedPrintOutput<char> * output, const char *format, v
                     WCHAR *p;
                     int retval, count;
                     errno_t e = 0;
-                    char L_buffer[MB_LEN_MAX+1] = { '\0' };
+                    char L_buffer[MB_LEN_MAX+1] = {'\0'};
 
                     p = text.wz;
                     count = textlen;
@@ -1221,7 +1221,7 @@ static DWORD FormatMessageToBufferA( const char * format, char * buffer, DWORD b
     DWORD bufsize = std::min(bufferWCharSize, (DWORD)64000);
     DWORD msg_pos = 0;
     const DWORD fmtsize = 32;
-    char fmt[fmtsize] = { '\0' };
+    char fmt[fmtsize] = {'\0'};
     DWORD fmt_pos;
     char fmt_ch;
 
@@ -1429,7 +1429,7 @@ DWORD FormatMessageA(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD d
                 *((char**)lpBuffer) = NULL;
 
                 const DWORD max_size = 64000;
-                char local_buf[max_size] = { '\0' };
+                char local_buf[max_size] = {'\0'};
                 chars_printed = FormatMessageToBufferA( reinterpret_cast<const char *>(lpSource), local_buf, max_size, args );
                 if ( 0 < chars_printed )
                 {

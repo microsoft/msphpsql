@@ -347,7 +347,7 @@ void stmt_option_fetch_numeric:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
     driver_stmt->set_func( __FUNCTION__ ); \
     int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
-    char func[length+1] = { '\0' }; \
+    char func[length+1] = {'\0'}; \
     strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
     strcat_s( func, length+1, ": entering" ); \
     LOG( SEV_NOTICE, func ); \
@@ -991,7 +991,7 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         add_assoc_long( return_value, "flags", 0 );
 
         // get the name of the data type
-        char field_type_name[ SQL_SERVER_IDENT_SIZE_MAX ] = { '\0' };
+        char field_type_name[ SQL_SERVER_IDENT_SIZE_MAX ] = {'\0'};
         SQLSMALLINT out_buff_len;
         SQLLEN not_used;
         core::SQLColAttribute( driver_stmt, (SQLUSMALLINT) colno + 1, SQL_DESC_TYPE_NAME, field_type_name,
@@ -1017,7 +1017,7 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         }
 
         // add the table name of the field.  All the tests so far show this to always be "", but we adhere to the PDO spec
-        char table_name[ SQL_SERVER_IDENT_SIZE_MAX ] = { '\0' };
+        char table_name[ SQL_SERVER_IDENT_SIZE_MAX ] = {'\0'};
         SQLLEN field_type_num;
         core::SQLColAttribute( driver_stmt, (SQLUSMALLINT) colno + 1, SQL_DESC_TABLE_NAME, table_name, SQL_SERVER_IDENT_SIZE_MAX,
                                &out_buff_len, &field_type_num TSRMLS_CC );

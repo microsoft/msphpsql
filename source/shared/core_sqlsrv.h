@@ -1889,7 +1889,7 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { '\0' };
+            SQLCHAR err_msg[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = {'\0'};
             SQLSMALLINT len = 0;
             
             SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 

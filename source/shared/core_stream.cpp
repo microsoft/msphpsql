@@ -106,7 +106,7 @@ size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count)
         // if it's not a binary encoded field
         if( r == SQL_SUCCESS_WITH_INFO ) {
 
-            SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = { L'\0' };
+            SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {L'\0'};
             SQLSMALLINT len = 0;
 
             ss->stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );

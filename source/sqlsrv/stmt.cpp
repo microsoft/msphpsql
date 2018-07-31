@@ -1776,7 +1776,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 
         SQLLEN field_name_len = 0;
         SQLSMALLINT field_name_len_w = 0;
-        SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2 ] = { L'\0' };
+        SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2 ] = {L'\0'};
         sqlsrv_malloc_auto_ptr<char> field_name;
         sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
         field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
