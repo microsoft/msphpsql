@@ -120,7 +120,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
 
 #ifndef _WIN32
-        char pooling_string[ 128 ] = {0};
+        char pooling_string[ 128 ] = { '\0' };
         SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
 
         if ( pooling_string[ 0 ] == '1' || toupper( pooling_string[ 0 ] ) == 'Y' ||
@@ -310,7 +310,7 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ 
     if( SQL_SUCCEEDED( rc ) )
         return false;
 
-    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ] = { 0 };
+    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ] = { L'\0' };
     SQLSMALLINT len;
     SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
 
@@ -327,7 +327,7 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ 
 bool core_search_odbc_driver_unix( _In_ DRIVER_VERSION driver_version )
 {
 #ifndef _WIN32
-    char szBuf[DEFAULT_CONN_STR_LEN+1];     // use a large enough buffer size
+    char szBuf[DEFAULT_CONN_STR_LEN+1] = { '\0' };     // use a large enough buffer size
     WORD cbBufMax = DEFAULT_CONN_STR_LEN;
     WORD cbBufOut;
     char *pszBuf = szBuf;
@@ -919,15 +919,15 @@ const char* get_processor_arch( void )
 void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 {
     SQLSMALLINT info_len;
-    char p[ INFO_BUFFER_LEN ];
+    char p[ INFO_BUFFER_LEN ] = { '\0' };
     core::SQLGetInfo( conn, SQL_DBMS_VER, p, INFO_BUFFER_LEN, &info_len TSRMLS_CC );
 
     errno = 0;
-    char version_major_str[ 3 ];
+    char version_major_str[ 3 ] = { '\0' };
     SERVER_VERSION version_major;
     memcpy_s( version_major_str, sizeof( version_major_str ), p, 2 );
 
-    version_major_str[ 2 ] = '\0';
+    version_major_str[ 2 ] = { '\0' };
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
 
     CHECK_CUSTOM_ERROR( version_major == 0 && ( errno == ERANGE || errno == EINVAL ), conn, SQLSRV_ERROR_UNKNOWN_SERVER_VERSION )
