@@ -463,7 +463,8 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
     driver_dbh->set_func( __FUNCTION__ ); \
     int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
-    char func[length+1] = {'\0'}; \
+    char func[length+1]; \
+    memset(func, '\0', length+1); \
     strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
     strcat_s( func, length+1, ": entering" ); \
     LOG( SEV_NOTICE, func ); \
