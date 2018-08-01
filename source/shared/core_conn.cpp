@@ -120,11 +120,11 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
 
 #ifndef _WIN32
-        char pooling_string[ 128 ] = {'\0'};
+        char pooling_string[128] = {'\0'};
         SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
 
-        if ( pooling_string[ 0 ] == '1' || toupper( pooling_string[ 0 ] ) == 'Y' ||
-            ( toupper( pooling_string[ 0 ] ) == 'O' && toupper( pooling_string[ 1 ] ) == 'N' ))
+        if ( pooling_string[0] == '1' || toupper( pooling_string[0] ) == 'Y' ||
+            ( toupper( pooling_string[0] ) == 'O' && toupper( pooling_string[1] ) == 'N' ))
         {
             henv = &henv_cp;
             is_pooled = true;
@@ -310,7 +310,7 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ 
     if( SQL_SUCCEEDED( rc ) )
         return false;
 
-    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ] = {'\0'};
+    SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {'\0'};
     SQLSMALLINT len;
     SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
 
@@ -695,7 +695,7 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
 {
     // if the value is already quoted, then only analyse the part inside the quotes and return it as
     // unquoted since we quote it when adding it to the connection string.
-    if( value_len > 0 && value[0] == '{' && value[ value_len - 1 ] == '}' ) {
+    if( value_len > 0 && value[0] == '{' && value[value_len - 1] == '}' ) {
         ++value;
         value_len -= 2;
     }
@@ -736,11 +736,11 @@ namespace {
 connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ SQLULEN key,
                                                      _In_ const connection_option conn_opts[] TSRMLS_DC )
 {
-    for( int opt_idx = 0; conn_opts[ opt_idx ].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++opt_idx ) {
+    for( int opt_idx = 0; conn_opts[opt_idx].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++opt_idx ) {
 
-        if( key == conn_opts[ opt_idx ].conn_option_key ) {
+        if( key == conn_opts[opt_idx].conn_option_key ) {
 
-            return &conn_opts[ opt_idx ];
+            return &conn_opts[opt_idx];
          }
     }
 
@@ -919,15 +919,15 @@ const char* get_processor_arch( void )
 void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 {
     SQLSMALLINT info_len;
-    char p[ INFO_BUFFER_LEN ] = {'\0'};
+    char p[INFO_BUFFER_LEN] = {'\0'};
     core::SQLGetInfo( conn, SQL_DBMS_VER, p, INFO_BUFFER_LEN, &info_len TSRMLS_CC );
 
     errno = 0;
-    char version_major_str[ 3 ] = {'\0'};
+    char version_major_str[3] = {'\0'};
     SERVER_VERSION version_major;
     memcpy_s( version_major_str, sizeof( version_major_str ), p, 2 );
 
-    version_major_str[ 2 ] = {'\0'};
+    version_major_str[2] = {'\0'};
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
 
     CHECK_CUSTOM_ERROR( version_major == 0 && ( errno == ERANGE || errno == EINVAL ), conn, SQLSRV_ERROR_UNKNOWN_SERVER_VERSION )
@@ -1025,7 +1025,7 @@ void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_l
     // be escaped, such as a closing }.
     TSRMLS_C;
 
-    if( val_len > 0 && val[0] == '{' && val[ val_len - 1 ] == '}' ) {
+    if( val_len > 0 && val[0] == '{' && val[val_len - 1] == '}' ) {
         ++val;
         val_len -= 2;
     }
@@ -1151,8 +1151,8 @@ size_t core_str_zval_is_true( _Inout_ zval* value_z )
 
     // strip any whitespace at the end (whitespace is the same value in ASCII and UTF-8)
     size_t last_char = val_len - 1;
-    while( isspace(( unsigned char )value_in[ last_char ] )) {
-        value_in[ last_char ] = '\0';
+    while( isspace(( unsigned char )value_in[last_char] )) {
+        value_in[last_char] = '\0';
         val_len = last_char;
         --last_char;
     }

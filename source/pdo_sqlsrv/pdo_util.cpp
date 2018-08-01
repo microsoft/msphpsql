@@ -37,7 +37,7 @@ const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE 
 
 // buffer used to hold a formatted log message prior to actually logging it.
 const int LOG_MSG_SIZE = 2048;
-char log_msg[ LOG_MSG_SIZE ] = {'\0'};
+char log_msg[LOG_MSG_SIZE] = {'\0'};
 
 // internal error that says that FormatMessage failed
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
