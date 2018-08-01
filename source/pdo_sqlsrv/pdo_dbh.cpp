@@ -463,7 +463,7 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
     driver_dbh->set_func( __FUNCTION__ ); \
     int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
-    char func[length+1]; \
+    char func[length+1] = {'\0'}; \
     strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
     strcat_s( func, length+1, ": entering" ); \
     LOG( SEV_NOTICE, func ); \
@@ -1270,7 +1270,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
 
     try {
 
-        char last_insert_id_query[ LAST_INSERT_ID_QUERY_MAX_LEN ] = {'\0'};
+        char last_insert_id_query[LAST_INSERT_ID_QUERY_MAX_LEN] = {'\0'};
         if( name == NULL ) {
             strcpy_s( last_insert_id_query, sizeof( last_insert_id_query ), LAST_INSERT_ID_QUERY );
         }
@@ -1412,13 +1412,13 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
     if ( encoding == SQLSRV_ENCODING_BINARY ) {
         // convert from char* to hex digits using os
         std::basic_ostringstream<char> os;
-        for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+        for ( size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index ) {
             // if unquoted is < 0 or > 255, that means this is a non-ascii character. Translation from non-ascii to binary is not supported.
             // return an empty terminated string for now
-            if (( int )unquoted[ index ] < 0 || ( int )unquoted[ index ] > 255) {
+            if (( int )unquoted[index] < 0 || ( int )unquoted[index] > 255) {
                 *quoted_len = 0;
                 *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-                ( *quoted )[ 0 ] = '\0';
+                ( *quoted )[0] = '\0';
                 return 1;
             }
             // when an int is < 16 and is appended to os, its hex representation which starts
@@ -1427,7 +1427,7 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
             if (( int )unquoted[index] < 16 ) {
                 os << '0';
             }
-           os << std::hex << ( int )unquoted[ index ];
+           os << std::hex << ( int )unquoted[index];
         }
         std::basic_string<char> str_hex = os.str();
         // each character is represented by 2 digits of hex
@@ -1439,13 +1439,13 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
         unsigned int out_current = 0;
         // insert '0x'
-        ( *quoted )[ out_current++ ] = '0';
-        ( *quoted )[ out_current++ ] = 'x';
-        for ( size_t index = 0; index < unquoted_str_len && unquoted_str[ index ] != '\0'; ++index ) {
-            ( *quoted )[ out_current++ ] = unquoted_str[ index ];
+        ( *quoted )[out_current++] = '0';
+        ( *quoted )[out_current++] = 'x';
+        for ( size_t index = 0; index < unquoted_str_len && unquoted_str[index] != '\0'; ++index ) {
+            ( *quoted )[out_current++] = unquoted_str[index];
         }
         // null terminator
-        ( *quoted )[ out_current ] = '\0';
+        ( *quoted )[out_current] = '\0';
         sqlsrv_free( unquoted_str );
         return 1;
     }
@@ -1457,7 +1457,7 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
             quotes_needed = 3;
         }
         for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[ index ] == '\'' ) {
+            if ( unquoted[index] == '\'' ) {
                 ++quotes_needed;
             }
         }
@@ -1468,24 +1468,24 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
 
         // insert N if the encoding is UTF8
         if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-            ( *quoted )[ out_current++ ] = 'N';
+            ( *quoted )[out_current++] = 'N';
         }
         // insert initial quote
-        ( *quoted )[ out_current++ ] = '\'';
+        ( *quoted )[out_current++] = '\'';
 
         for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[ index ] == '\'' ) {
-                ( *quoted )[ out_current++ ] = '\'';
-                ( *quoted )[ out_current++ ] = '\'';
+            if ( unquoted[index] == '\'' ) {
+                ( *quoted )[out_current++] = '\'';
+                ( *quoted )[out_current++] = '\'';
             }
             else {
-                ( *quoted )[ out_current++ ] = unquoted[ index ];
+                ( *quoted )[out_current++] = unquoted[index];
             }
         }
 
         // trailing quote and null terminator
-        ( *quoted )[ out_current++ ] = '\'';
-        ( *quoted )[ out_current ] = '\0';
+        ( *quoted )[out_current++] = '\'';
+        ( *quoted )[out_current] = '\0';
 
         return 1;
     }

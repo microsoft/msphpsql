@@ -137,7 +137,7 @@ ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
 
         for( int i=0; i < fetch_fields_count; ++i ) {
             
-            sqlsrv_free( fetch_field_names[ i ].name );
+            sqlsrv_free( fetch_field_names[i].name );
         }
         sqlsrv_free( fetch_field_names );
     }
@@ -155,7 +155,7 @@ void ss_sqlsrv_stmt::new_result_set( TSRMLS_D )
 
         for( int i=0; i < fetch_fields_count; ++i ) {
             
-            sqlsrv_free( fetch_field_names[ i ].name );
+            sqlsrv_free( fetch_field_names[i].name );
         }
         sqlsrv_free( fetch_field_names );
     }
@@ -719,7 +719,7 @@ PHP_FUNCTION( sqlsrv_num_fields )
     }
 }
 
-// sqlsrv_fetch_object( resource $stmt [, string $className [, array $ctorParams ]])
+// sqlsrv_fetch_object( resource $stmt [, string $className [, array $ctorParams]])
 // 
 // Retrieves the next row of data as a PHP object.
 //
@@ -1778,7 +1778,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 
         SQLLEN field_name_len = 0;
         SQLSMALLINT field_name_len_w = 0;
-        SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2 ] = { L'\0' };
+        SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2] = {L'\0'};
         sqlsrv_malloc_auto_ptr<char> field_name;
         sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
         field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
@@ -1842,7 +1842,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 				throw ss::SSException();
 			}
 
-			if( stmt->fetch_field_names[ i ].len > 1 || allow_empty_field_names ) {
+			if( stmt->fetch_field_names[i].len > 1 || allow_empty_field_names ) {
 
 				zr = add_assoc_zval( &fields, stmt->fetch_field_names[i].name, &field );
 				CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {

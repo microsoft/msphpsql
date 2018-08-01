@@ -347,7 +347,7 @@ void stmt_option_fetch_numeric:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
     driver_stmt->set_func( __FUNCTION__ ); \
     int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
-    char func[length+1]; \
+    char func[length+1] = {'\0'}; \
     strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
     strcat_s( func, length+1, ": entering" ); \
     LOG( SEV_NOTICE, func ); \
@@ -651,13 +651,13 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
                 if (NULL== (bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_index_find_ptr(stmt->bound_columns, i))) &&
                     (NULL == (bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_find_ptr(stmt->bound_columns, stmt->columns[i].name))))) {
 
-                    driver_stmt->bound_column_param_types[ i ] = PDO_PARAM_ZVAL;
+                    driver_stmt->bound_column_param_types[i] = PDO_PARAM_ZVAL;
                     continue;
                 }
 
                 if( bind_data->param_type != PDO_PARAM_ZVAL ) {
 
-                    driver_stmt->bound_column_param_types[ i ] = bind_data->param_type;
+                    driver_stmt->bound_column_param_types[i] = bind_data->param_type;
                     bind_data->param_type = PDO_PARAM_ZVAL;
                 }
             }
@@ -744,10 +744,10 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
 
         // if a column is bound to a type different than the column type, figure out a way to convert it to the 
         // type they want
-        if( stmt->bound_columns && driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_ZVAL ) {
+        if( stmt->bound_columns && driver_stmt->bound_column_param_types[colno] != PDO_PARAM_ZVAL ) {
 
             sqlsrv_php_type.typeinfo.type = pdo_type_to_sqlsrv_php_type( driver_stmt, 
-                                                                         driver_stmt->bound_column_param_types[ colno ] 
+                                                                         driver_stmt->bound_column_param_types[colno] 
                                                                          TSRMLS_CC );
 
             pdo_bound_param_data* bind_data = NULL;
@@ -764,8 +764,8 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
                     throw pdo::PDOException();
                 }
 
-                CHECK_CUSTOM_ERROR( driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_STR 
-                                    && driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_LOB, driver_stmt,
+                CHECK_CUSTOM_ERROR( driver_stmt->bound_column_param_types[colno] != PDO_PARAM_STR 
+                                    && driver_stmt->bound_column_param_types[colno] != PDO_PARAM_LOB, driver_stmt,
                                     PDO_SQLSRV_ERROR_COLUMN_TYPE_DOES_NOT_SUPPORT_ENCODING, colno + 1 ) {
 
                         throw pdo::PDOException();
@@ -991,7 +991,7 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         add_assoc_long( return_value, "flags", 0 );
 
         // get the name of the data type
-        char field_type_name[ SQL_SERVER_IDENT_SIZE_MAX ];
+        char field_type_name[SQL_SERVER_IDENT_SIZE_MAX] = {'\0'};
         SQLSMALLINT out_buff_len;
         SQLLEN not_used;
         core::SQLColAttribute( driver_stmt, (SQLUSMALLINT) colno + 1, SQL_DESC_TYPE_NAME, field_type_name,
@@ -1017,13 +1017,13 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         }
 
         // add the table name of the field.  All the tests so far show this to always be "", but we adhere to the PDO spec
-        char table_name[ SQL_SERVER_IDENT_SIZE_MAX ];
+        char table_name[SQL_SERVER_IDENT_SIZE_MAX] = {'\0'};
         SQLLEN field_type_num;
         core::SQLColAttribute( driver_stmt, (SQLUSMALLINT) colno + 1, SQL_DESC_TABLE_NAME, table_name, SQL_SERVER_IDENT_SIZE_MAX,
                                &out_buff_len, &field_type_num TSRMLS_CC );
         add_assoc_string( return_value, "table", table_name );
 
-        if( stmt->columns && stmt->columns[ colno ].param_type == PDO_PARAM_ZVAL ) {
+        if( stmt->columns && stmt->columns[colno].param_type == PDO_PARAM_ZVAL ) {
             add_assoc_long( return_value, "pdo_type", pdo_type );
         }
 

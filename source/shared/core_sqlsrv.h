@@ -70,7 +70,7 @@ typedef struct _OSVERSIONINFOA {
     DWORD dwMinorVersion;
     DWORD dwBuildNumber;
     DWORD dwPlatformId;
-    CHAR   szCSDVersion[ 128 ];     // Maintenance string for PSS usage
+    CHAR   szCSDVersion[128];     // Maintenance string for PSS usage
 } OSVERSIONINFOA, *POSVERSIONINFOA, *LPOSVERSIONINFOA;
 typedef OSVERSIONINFOA OSVERSIONINFO;
 #endif // !_WIN32
@@ -546,21 +546,21 @@ public:
     // an array of elements, so this operator allows us to treat the memory as such.
     T& operator[]( _In_ int index ) const
     {
-        return _ptr[ index ];
+        return _ptr[index];
     }
 
     // there are a number of places where we allocate a block intended to be accessed as
     // an array of elements, so this operator allows us to treat the memory as such.
     T& operator[]( _In_ unsigned int index ) const
     {
-        return _ptr[ index ];
+        return _ptr[index];
     }
 
     // there are a number of places where we allocate a block intended to be accessed as
     // an array of elements, so this operator allows us to treat the memory as such.
     T& operator[]( _In_ long index ) const
     {
-        return _ptr[ index ];
+        return _ptr[index];
     }
 
 	
@@ -577,7 +577,7 @@ public:
     // an array of elements, so this operator allows us to treat the memory as such.
     T& operator[]( _In_ unsigned short index ) const
     {
-        return _ptr[ index ];
+        return _ptr[index];
     }
 
     // access elements of a structure through the auto ptr
@@ -1889,7 +1889,7 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { '\0' };
+            SQLCHAR err_msg[SQL_MAX_ERROR_MESSAGE_LENGTH + 1] = {'\0'};
             SQLSMALLINT len = 0;
             
             SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 

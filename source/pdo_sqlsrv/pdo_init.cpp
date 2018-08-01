@@ -132,10 +132,10 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     g_pdo_errors_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
     ::zend_hash_init( g_pdo_errors_ht, 50, NULL, pdo_error_dtor /*pDestructor*/, 1 );
 
-    for( int i = 0; PDO_ERRORS[ i ].error_code != -1; ++i ) {
+    for( int i = 0; PDO_ERRORS[i].error_code != -1; ++i ) {
         
-        void* zr = ::zend_hash_index_update_mem( g_pdo_errors_ht, PDO_ERRORS[ i ].error_code, 
-                                       &( PDO_ERRORS[ i ].sqlsrv_error ), sizeof( PDO_ERRORS[ i ].sqlsrv_error ) );
+        void* zr = ::zend_hash_index_update_mem( g_pdo_errors_ht, PDO_ERRORS[i].error_code, 
+                                       &( PDO_ERRORS[i].sqlsrv_error ), sizeof( PDO_ERRORS[i].sqlsrv_error ) );
         if( zr == NULL ) {
                 
             LOG( SEV_ERROR, "Failed to insert data into PDO errors hashtable." );
