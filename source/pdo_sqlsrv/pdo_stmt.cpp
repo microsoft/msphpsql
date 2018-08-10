@@ -496,8 +496,13 @@ int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
     LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );
 
     // if a PDO statement didn't complete preparation, its driver_data can be NULL
-    if( driver_stmt == NULL ) {
+    if (driver_stmt == NULL) {
+        return 1;
+    }
 
+    // if stmt->dbh->driver_data is already freed and but its driver_data is not
+    if (stmt->dbh != NULL && stmt->dbh->driver_data == NULL) {
+        stmt->driver_data = NULL;
         return 1;
     }
 
@@ -512,10 +517,6 @@ int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
     sqlsrv_free( driver_stmt );
 
     stmt->driver_data = NULL;
-
-    if (stmt->dbh != NULL) {
-        stmt->dbh->driver_data = NULL;
-    }
 
     return 1;
 }
