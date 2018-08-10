@@ -513,6 +513,10 @@ int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 
     stmt->driver_data = NULL;
 
+    if (stmt->dbh != NULL) {
+        stmt->dbh->driver_data = NULL;
+    }
+
     return 1;
 }
 
