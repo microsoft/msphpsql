@@ -500,7 +500,7 @@ int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
         return 1;
     }
 
-    // if stmt->dbh->driver_data is already freed and but its driver_data is not
+    // occasionally stmt->dbh->driver_data is already freed and reset but its driver_data is not
     if (stmt->dbh != NULL && stmt->dbh->driver_data == NULL) {
         stmt->driver_data = NULL;
         return 1;
