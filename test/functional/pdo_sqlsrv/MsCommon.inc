@@ -359,7 +359,7 @@ function GetTempTableName($table = '', $temporary = true)
     // dropped once the connection is closed. Otherwise, the caller 
     // should take care of dropping the temp table afterwards.
     
-    $timestamp = round(microtime(true)*1000);
+    $someNumber = rand(0, 1000);
     
     $prefix = '';
     if ($temporary)
@@ -368,7 +368,7 @@ function GetTempTableName($table = '', $temporary = true)
     if (strlen($table) == 0)
         $table = 'php_test_table';
         
-    return $prefix . $table . '_' . $timestamp;
+    return $prefix . $table . '_' . $someNumber;
 }
 
 function GetTempProcName($proc = '', $temporary = true)
@@ -377,7 +377,7 @@ function GetTempProcName($proc = '', $temporary = true)
     // automatically dropped once the connection is closed. Otherwise, 
     // the caller should take care of dropping the temp procedure afterwards.    
     
-    $timestamp = round(microtime(true)*1000);
+    $someNumber = rand(0, 1000);
 
     $prefix = '';
     if ($temporary)
@@ -386,7 +386,7 @@ function GetTempProcName($proc = '', $temporary = true)
     if (strlen($proc) == 0)
         $proc = 'php_test_proc'; 
 
-    return $prefix . $proc . '_' . $timestamp;
+    return $prefix . $proc . '_' . $someNumber;
 }
 
 function PDOConnect($className, $serverName, $user, $pwd, $exitMode)
