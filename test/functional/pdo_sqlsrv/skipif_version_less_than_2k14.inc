@@ -7,13 +7,13 @@ if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
 }
 
-$is_win = ( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' );
+$is_win = (strtoupper(substr(php_uname('s'),0,3)) === 'WIN');
 
-require_once( "MsSetup.inc" );
+require_once("MsSetup.inc");
 
-$conn = new PDO( "sqlsrv:server = $server ;", $uid, $pwd );
+$conn = new PDO("sqlsrv:server = $server; driver=$driver;", $uid, $pwd);
 if ($conn === false) {
-    die( "skip Could not connect during SKIPIF." );
+    die("skip Could not connect during SKIPIF.");
 }
 
 $msodbcsql_ver = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
@@ -33,11 +33,11 @@ if (!$is_win) {
 // Get SQL Server Version
 // Exclude this check if running on Azure
 if (!$daasMode) {
-    $stmt = $conn->query( "SELECT @@VERSION" );
+    $stmt = $conn->query("SELECT @@VERSION");
     if ($stmt) {
         $ver_string = $stmt->fetch(PDO::FETCH_NUM)[0];
     } else {
-        die( "skip Could not fetch SQL Server version during SKIPIF.");
+        die("skip Could not fetch SQL Server version during SKIPIF.");
     }
 
     $version = explode(' ', $ver_string);
