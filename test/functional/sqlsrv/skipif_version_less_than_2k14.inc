@@ -7,15 +7,15 @@ if (!extension_loaded("sqlsrv")) {
     die("skip Extension not loaded");
 }
 
-$is_win = ( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' );
+$is_win = (strtoupper(substr(php_uname('s'),0,3)) === 'WIN');
 
-require_once( "MsSetup.inc" );
+require_once("MsSetup.inc");
 
-$connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword );
+$connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword, "Driver" => $driver);
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = sqlsrv_connect($server, $connectionInfo);
 if ($conn === false) {
-    die( "skip Could not connect during SKIPIF." );
+    die("skip Could not connect during SKIPIF.");
 }
 
 $msodbcsql_ver = sqlsrv_client_info($conn)["DriverVer"];
@@ -35,9 +35,9 @@ if (!$is_win) {
 // Get SQL Server version
 // Exclude this check if running on Azure
 if (!$daasMode) {
-    $stmt = sqlsrv_query( $conn, "SELECT @@VERSION" );
+    $stmt = sqlsrv_query($conn, "SELECT @@VERSION");
     if (sqlsrv_fetch($stmt)) {
-        $ver_string = sqlsrv_get_field( $stmt, 0 );
+        $ver_string = sqlsrv_get_field($stmt, 0);
     } else {
         die("skip Could not fetch SQL Server version.");
     }
