@@ -193,7 +193,7 @@ class BuildUtil(object):
         file.write('@CALL ROBOCOPY ' + source + ' ' + dest + ' /s /xx /xo' + os.linesep)
     
     @staticmethod
-    def download_msphpsql_source(repo, branch, dest_folder = 'Source', clean_up = True):
+    def download_msphpsql_source(repo, branch, dest_folder = 'Source'):
         """Download to *dest_folder* the msphpsql archive of the specified 
         GitHub *repo* and *branch*. The downloaded files will be removed by default.
         """
@@ -201,40 +201,25 @@ class BuildUtil(object):
             work_dir = os.path.dirname(os.path.realpath(__file__))   
 
             temppath = os.path.join(work_dir, 'temp')
-            if os.path.exists(temppath):
-                shutil.rmtree(temppath)
-            os.makedirs(temppath)
+            # There is no need to remove tree - 
+            # for Bamboo, it will be cleaned up eventually
+            # for local development, this can act as a cached copy of the repo
+            if not os.path.exists(temppath):
+                os.makedirs(temppath)
             os.chdir(temppath)
             
-            file = branch + '.zip'
-            url = 'https://github.com/' + repo + '/msphpsql/archive/' + branch + '.zip'
-
-            print('Downloading ' + url + ' ...')
-            try:
-                with urllib.request.urlopen(url) as response, open(file, 'wb') as out_file:
-                    shutil.copyfileobj(response, out_file)
-            except:
-                print ("Resort to skip ssl verification...")
-                # need to skip ssl verification on some agents
-                # see https://www.python.org/dev/peps/pep-0476/
-                with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as response, open(file, 'wb') as out_file:
-                    shutil.copyfileobj(response, out_file)
-
-            print('Extracting ' + file + ' ...')
-            zip = zipfile.ZipFile(file)
-            zip.extractall()
-            zip.close()
-            
             msphpsqlFolder = os.path.join(temppath, 'msphpsql-' + branch)
+            
+            url = 'https://github.com/' + repo + '/msphpsql.git'
+            command = 'git clone ' + url + ' -b ' + branch + ' --single-branch --depth 1 ' + msphpsqlFolder
+            os.system(command)
+            
             source = os.path.join(msphpsqlFolder, 'source')
             os.chdir(work_dir)
             
             os.system('ROBOCOPY ' + source + '\shared ' + dest_folder + '\shared /xx /xo')
             os.system('ROBOCOPY ' + source + '\pdo_sqlsrv ' + dest_folder + '\pdo_sqlsrv /xx /xo')
             os.system('ROBOCOPY ' + source + '\sqlsrv ' + dest_folder + '\sqlsrv /xx /xo')
-
-            if clean_up:
-                shutil.rmtree(temppath)        
                 
         except:
             print('Error occurred when downloading source')
