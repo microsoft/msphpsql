@@ -239,7 +239,7 @@ if __name__ == '__main__':
     parser.add_argument('--DRIVER', default='all', choices=['all', 'sqlsrv', 'pdo_sqlsrv'], help="driver to build (default: all)")
     parser.add_argument('--DEBUG', action='store_true', help="enable debug mode (default: False)")
     parser.add_argument('--REPO', default='Microsoft', help="GitHub repository (default: Microsoft)")
-    parser.add_argument('--BRANCH', default='dev', help="GitHub repository branch (default: dev)")
+    parser.add_argument('--BRANCH', default='dev', help="GitHub repository branch or tag (default: dev)")
     parser.add_argument('--SOURCE', default=None, help="a local path to source file (default: None)")
     parser.add_argument('--TESTING', action='store_true', help="turns on testing mode (default: False)")
     parser.add_argument('--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
@@ -280,7 +280,7 @@ if __name__ == '__main__':
         answer = input("Download source from a GitHub repo? [y/n]: ")
         if answer == 'yes' or answer == 'y' or answer == '':
             repo = input("Name of the repo (hit enter for 'Microsoft'): ")
-            branch = input("Name of the branch (hit enter for 'dev'): ")
+            branch = input("Name of the branch or tag (hit enter for 'dev'): ")
             if repo == '':
                 repo = 'Microsoft'
             if branch == '':
