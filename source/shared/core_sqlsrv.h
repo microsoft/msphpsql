@@ -175,7 +175,7 @@ const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
 // increase the maximum message length to accommodate for the long error returned for operand type clash
 // or for conversion of a long string
-const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 8;
+const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 2;
 
 // max size of a date time string when converting from a DateTime object to a string
 const int MAX_DATETIME_STRING_LEN = 256;
@@ -1889,14 +1889,20 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[SQL_MAX_ERROR_MESSAGE_LENGTH + 1] = {'\0'};
+            SQLCHAR err_msg[SQL_MAX_MESSAGE_LENGTH + 1] = {'\0'};
             SQLSMALLINT len = 0;
             
             SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
-                                             err_msg, SQL_MAX_ERROR_MESSAGE_LENGTH, &len );
+                                             err_msg, SQL_MAX_MESSAGE_LENGTH, &len );
 
+            if (rtemp == SQL_SUCCESS_WITH_INFO && len > SQL_MAX_MESSAGE_LENGTH) {
+                // if the error message is this long, then it must not be the mars message 
+                // defined as ODBC_CONNECTION_BUSY_ERROR -- so return here and continue the 
+                // regular error handling
+                return;
+            }
             CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt ) {
-         
+ 
                 throw CoreException();
             }
 

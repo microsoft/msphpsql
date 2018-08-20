@@ -265,10 +265,36 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
             // We need to calculate number of characters
             SQLINTEGER wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
             SQLLEN sqlstate_len = 0;
-            convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
 
+            convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
+            
             SQLLEN message_len = 0;
-            convert_string_from_utf16(enc, wnative_message, wmessage_len, (char**)&error->native_message, message_len);
+            if (r == SQL_SUCCESS_WITH_INFO && wmessage_len > SQL_MAX_ERROR_MESSAGE_LENGTH) {
+                // note that wmessage_len is the number of characters required for the error message -- 
+                // create a new buffer big enough for this lengthy error message
+                sqlsrv_malloc_auto_ptr<SQLWCHAR> wnative_message_str;
+
+                SQLSMALLINT expected_len = wmessage_len * sizeof(SQLWCHAR);
+                SQLSMALLINT returned_len = 0;
+
+                wnative_message_str = reinterpret_cast<SQLWCHAR*>(sqlsrv_malloc(expected_len));
+                memset(wnative_message_str, '\0', expected_len); 
+
+                SQLRETURN rtemp = ::SQLGetDiagFieldW(h_type, h, record_number, SQL_DIAG_MESSAGE_TEXT, wnative_message_str, wmessage_len + 1, &returned_len);
+                if (!SQL_SUCCEEDED(rtemp) || returned_len != expected_len) {
+                    // something went wrong
+                    return false;
+                }
+
+                convert_string_from_utf16(enc, wnative_message_str, wmessage_len, (char**)&error->native_message, message_len);
+            } else {
+                convert_string_from_utf16(enc, wnative_message, wmessage_len, (char**)&error->native_message, message_len);
+            }
+
+            if (message_len == 0 && error->native_message == NULL) {
+                // something went wrong
+                return false;
+            }
             break;
     }
 
