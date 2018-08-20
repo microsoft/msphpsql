@@ -280,7 +280,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
                 wnative_message_str = reinterpret_cast<SQLWCHAR*>(sqlsrv_malloc(expected_len));
                 memset(wnative_message_str, '\0', expected_len); 
 
-                SQLRETURN rtemp = ::SQLGetDiagFieldW(h_type, h, record_number, SQL_DIAG_MESSAGE_TEXT, wnative_message_str, wmessage_len + 1, &returned_len);
+                SQLRETURN rtemp = ::SQLGetDiagFieldW(h_type, h, record_number, SQL_DIAG_MESSAGE_TEXT, wnative_message_str, wmessage_len, &returned_len);
                 if (!SQL_SUCCEEDED(rtemp) || returned_len != expected_len) {
                     // something went wrong
                     return false;

@@ -29,8 +29,10 @@ function checkErrors(&$convError)
         $convError[0][1] != '8114' and
         $convError[0][1] != '8169') {
         print_r($convError);
-        fatalError("Conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
-    }
+        return false;
+    } 
+    
+    return true;
 }
                 
 // Build the select queries. We want every combination of types for conversion
@@ -202,7 +204,9 @@ for ($v = 0; $v < sizeof($values); ++$v) {
             if ($stmt == false) {
                 $convError = sqlsrv_errors();
                 
-                checkErrors($convError);
+                if (!checkErrors($convError)) {
+                    fatalError("Conversion failed with unexpected error message. i=$i, j=$j, v=$v\n");
+                }
                 
                 if (AE\isDataEncrypted()) {
                     $stmtAE = sqlsrv_query($conn, $selectQueryAE[$i][$j]);
