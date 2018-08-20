@@ -562,10 +562,10 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
         // subtituted query provided by PDO
         if (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE) {
             // reset the placeholders hashtable internal in case the user reexecutes a statement
-            // do not directly alter the internal pointer in the array (See pull request 634 on GitHub)
-            HashPosition pos;
+            // Normally it's not a good idea to alter the internal pointer in a hashed array 
+            // (see pull request 634 on GitHub) but in this case this is for internal use only
 
-            zend_hash_internal_pointer_reset_ex(driver_stmt->placeholders, &pos);
+            zend_hash_internal_pointer_reset(driver_stmt->placeholders);
 
             query = stmt->active_query_string;
             query_len = static_cast<unsigned int>(stmt->active_query_stringlen);

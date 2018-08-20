@@ -1396,10 +1396,10 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
             encoding = driver_dbh->encoding();
         }
         // get the placeholder at the current position in driver_stmt->placeholders ht
-        // do not directly alter the internal pointer in the array (See pull request 634 on GitHub)
-        HashPosition pos;
+        // Normally it's not a good idea to alter the internal pointer in a hashed array 
+        // (see pull request 634 on GitHub) but in this case this is for internal use only
         zval* placeholder = NULL;
-        if ((placeholder = zend_hash_get_current_data_ex(driver_stmt->placeholders, &pos)) != NULL && zend_hash_move_forward_ex(driver_stmt->placeholders, &pos) == SUCCESS && stmt->bound_params != NULL) {
+        if ((placeholder = zend_hash_get_current_data(driver_stmt->placeholders)) != NULL && zend_hash_move_forward(driver_stmt->placeholders) == SUCCESS && stmt->bound_params != NULL) {
             pdo_bound_param_data* param = NULL;
             if (Z_TYPE_P(placeholder) == IS_STRING) {
                 param = reinterpret_cast<pdo_bound_param_data*>(zend_hash_find_ptr(stmt->bound_params, Z_STR_P(placeholder)));
