@@ -1380,11 +1380,15 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
     }
     // only change the encoding if quote is called from the statement level (which should only be called when a statement
     // is prepared with emulate prepared on)
-    if ( is_statement ) {
-        pdo_stmt_t *stmt = Z_PDO_STMT_P( object );
+    if (is_statement) {
+        pdo_stmt_t *stmt = Z_PDO_STMT_P(object);
+        SQLSRV_ASSERT(stmt != NULL, "pdo_sqlsrv_dbh_quote: stmt object was null");
         // set the encoding to be the encoding of the statement otherwise set to be the encoding of the dbh
-        pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
-        if ( driver_stmt->encoding() != SQLSRV_ENCODING_INVALID ) {
+
+        pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>(stmt->driver_data);
+        SQLSRV_ASSERT(driver_stmt != NULL, "pdo_sqlsrv_dbh_quote: driver_data object was null");
+
+        if (driver_stmt->encoding() != SQLSRV_ENCODING_INVALID) {
             encoding = driver_stmt->encoding();
         }
         else {
@@ -1392,18 +1396,20 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
             encoding = driver_dbh->encoding();
         }
         // get the placeholder at the current position in driver_stmt->placeholders ht
+        // Normally it's not a good idea to alter the internal pointer in a hashed array 
+        // (see pull request 634 on GitHub) but in this case this is for internal use only
         zval* placeholder = NULL;
-        if (( placeholder = zend_hash_get_current_data( driver_stmt->placeholders )) != NULL && zend_hash_move_forward( driver_stmt->placeholders ) == SUCCESS && stmt->bound_params != NULL ) {
+        if ((placeholder = zend_hash_get_current_data(driver_stmt->placeholders)) != NULL && zend_hash_move_forward(driver_stmt->placeholders) == SUCCESS && stmt->bound_params != NULL) {
             pdo_bound_param_data* param = NULL;
-            if ( Z_TYPE_P( placeholder ) == IS_STRING ) {
-                param = reinterpret_cast<pdo_bound_param_data*>( zend_hash_find_ptr( stmt->bound_params, Z_STR_P( placeholder )));
+            if (Z_TYPE_P(placeholder) == IS_STRING) {
+                param = reinterpret_cast<pdo_bound_param_data*>(zend_hash_find_ptr(stmt->bound_params, Z_STR_P(placeholder)));
             }
-            else if ( Z_TYPE_P( placeholder ) == IS_LONG) {
-                param = reinterpret_cast<pdo_bound_param_data*>( zend_hash_index_find_ptr( stmt->bound_params, Z_LVAL_P( placeholder )));
+            else if (Z_TYPE_P(placeholder) == IS_LONG) {
+                param = reinterpret_cast<pdo_bound_param_data*>(zend_hash_index_find_ptr(stmt->bound_params, Z_LVAL_P(placeholder)));
             }
-            if ( NULL != param ) {
-                SQLSRV_ENCODING param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
-                if ( param_encoding != SQLSRV_ENCODING_INVALID ) {
+            if (NULL != param) {
+                SQLSRV_ENCODING param_encoding = static_cast<SQLSRV_ENCODING>(Z_LVAL(param->driver_params));
+                if (param_encoding != SQLSRV_ENCODING_INVALID) {
                     encoding = param_encoding;
                 }
             }

@@ -560,12 +560,15 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 
         // if the user is using prepare emulation (PDO::ATTR_EMULATE_PREPARES), set the query to the 
         // subtituted query provided by PDO
-        if( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+        if (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE) {
             // reset the placeholders hashtable internal in case the user reexecutes a statement
+            // Normally it's not a good idea to alter the internal pointer in a hashed array 
+            // (see pull request 634 on GitHub) but in this case this is for internal use only
+
             zend_hash_internal_pointer_reset(driver_stmt->placeholders);
 
             query = stmt->active_query_string;
-            query_len = static_cast<unsigned int>( stmt->active_query_stringlen );
+            query_len = static_cast<unsigned int>(stmt->active_query_stringlen);
         }
 
         SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
