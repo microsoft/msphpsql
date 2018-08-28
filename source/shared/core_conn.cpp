@@ -759,35 +759,53 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 {
     bool mars_mentioned = false;
     connection_option const* conn_opt;
+    bool access_token_used = false;
 
     try {
+        // First of all, check if access token is specified. If so, check if UID, PWD, Authentication exist
+        // No need to check the keyword Trusted_Connection because it is not among the acceptable options for SQLSRV drivers
+        if (zend_hash_index_exists(options, SQLSRV_CONN_OPTION_ACCESS_TOKEN)) {
+            bool invalidOptions = false;
 
-        // Add the server name
-        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
+            // UID and PWD have to be NULLs... throw an exception as long as the user has specified any of them in the connection string,
+            // even if they may be empty strings. Likewise if the keyword Authentication exists
+            if (uid != NULL || pwd != NULL || zend_hash_index_exists(options, SQLSRV_CONN_OPTION_AUTHENTICATION)) {
+                invalidOptions = true;
+            }
 
-        // if uid is not present then we use trusted connection.
-        if(uid == NULL || strnlen_s( uid ) == 0 ) {
-
-            connection_string += "Trusted_Connection={Yes};";
-        }
-        else {
-
-            bool escaped = core_is_conn_opt_value_escaped( uid, strnlen_s( uid ));
-            CHECK_CUSTOM_ERROR( !escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED ) {
+            CHECK_CUSTOM_ERROR(invalidOptions, conn, SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN ) {
                 throw core::CoreException();
             }
 
-            common_conn_str_append_func( ODBCConnOptions::UID, uid, strnlen_s( uid ), connection_string TSRMLS_CC );
+            access_token_used = true;
+        }
 
-            // if no password was given, then don't add a password to the connection string.  Perhaps the UID
-            // given doesn't have a password?
-            if( pwd != NULL ) {
-                escaped = core_is_conn_opt_value_escaped( pwd, strnlen_s( pwd ));
-                CHECK_CUSTOM_ERROR( !escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED ) {
+        // Add the server name
+        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
+       
+        // if uid is not present then we use trusted connection -- but not when access token is used, because they are incompatible
+        if (!access_token_used) {
+            if (uid == NULL || strnlen_s(uid) == 0) {
+                connection_string += CONNECTION_OPTION_NO_CREDENTIALS;  //  "Trusted_Connection={Yes};"
+            }
+            else {
+                bool escaped = core_is_conn_opt_value_escaped(uid, strnlen_s(uid));
+                CHECK_CUSTOM_ERROR(!escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED) {
                     throw core::CoreException();
                 }
 
-                common_conn_str_append_func( ODBCConnOptions::PWD, pwd, strnlen_s( pwd ), connection_string TSRMLS_CC );
+                common_conn_str_append_func(ODBCConnOptions::UID, uid, strnlen_s(uid), connection_string TSRMLS_CC);
+
+                // if no password was given, then don't add a password to the connection string.  Perhaps the UID
+                // given doesn't have a password?
+                if (pwd != NULL) {
+                    escaped = core_is_conn_opt_value_escaped(pwd, strnlen_s(pwd));
+                    CHECK_CUSTOM_ERROR(!escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED) {
+                        throw core::CoreException();
+                    }
+
+                    common_conn_str_append_func(ODBCConnOptions::PWD, pwd, strnlen_s(pwd), connection_string TSRMLS_CC);
+                }
             }
         }
 
@@ -1171,4 +1189,50 @@ size_t core_str_zval_is_true( _Inout_ zval* value_z )
     }
 
     return 0; // false
+}
+
+void access_token_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+{
+    SQLSRV_ASSERT(Z_TYPE_P(value) == IS_STRING, "An access token must be a byte string.");
+
+    size_t value_len = Z_STRLEN_P(value);
+
+    CHECK_CUSTOM_ERROR(value_len <= 0, conn, SQLSRV_ERROR_EMPTY_ACCESS_TOKEN) {
+        throw core::CoreException();
+    }
+
+    const char* value_str = Z_STRVAL_P( value );
+
+    // The SQL_COPT_SS_ACCESS_TOKEN pre-connection attribute allows the use of an access token (in the format extracted from 
+    // an OAuth JSON response), obtained from Azure AD for authentication instead of username and password, and also 
+    // bypasses the negotiation and obtaining of an access token by the driver. To use an access token, set the 
+    // SQL_COPT_SS_ACCESS_TOKEN connection attribute to a pointer to an ACCESSTOKEN structure
+    //
+    //  typedef struct AccessToken
+    //  {
+    //      unsigned int dataSize;
+    //      char data[];
+    //  } ACCESSTOKEN;
+    //
+    // NOTE: The ODBC Driver version 13.1 only supports this authentication on Windows.
+    //
+    // A valid access token byte string must be expanded so that each byte is followed by a 0 padding byte, 
+    // similar to a UCS-2 string containing only ASCII characters
+
+    size_t dataSize = 2 * value_len;
+    sqlsrv_malloc_auto_ptr<unsigned char> accToken; 
+    
+    accToken = reinterpret_cast<unsigned char*>(sqlsrv_malloc(sizeof(ACCESSTOKEN) + dataSize));
+    ACCESSTOKEN *pAccToken = reinterpret_cast<ACCESSTOKEN*>(accToken.get());
+    SQLSRV_ASSERT(pAccToken != NULL, "Something went wrong when trying to allocate memory for the access token.");
+
+    pAccToken->dataSize = dataSize;
+    
+    // Expand access token with padding bytes
+    for (size_t i = 0, j = 0; i < dataSize; i += 2, j++) {
+        pAccToken->data[i] = value_str[j];
+        pAccToken->data[i+1] = 0;
+    }
+    
+    core::SQLSetConnectAttr(conn, SQL_COPT_SS_ACCESS_TOKEN, reinterpret_cast<SQLPOINTER>(pAccToken), SQL_IS_POINTER);
 }

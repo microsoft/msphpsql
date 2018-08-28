@@ -1105,6 +1105,7 @@ enum SQLSRV_STMT_OPTIONS {
 namespace ODBCConnOptions {
 
 const char APP[] = "APP";
+const char AccessToken[] = "AccessToken";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
@@ -1140,6 +1141,7 @@ enum SQLSRV_CONN_OPTIONS {
    
     SQLSRV_CONN_OPTION_INVALID,
     SQLSRV_CONN_OPTION_APP,
+    SQLSRV_CONN_OPTION_ACCESS_TOKEN,
     SQLSRV_CONN_OPTION_CHARACTERSET,
     SQLSRV_CONN_OPTION_CONN_POOLING,
     SQLSRV_CONN_OPTION_DATABASE,
@@ -1222,12 +1224,12 @@ struct driver_set_func {
     static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
-struct ce_ksp_provider_set_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
-};
-
 struct ce_akv_str_set_func {
    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
+struct access_token_set_func {
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
 
@@ -1718,6 +1720,8 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_AKV_SECRET_MISSING,
     SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
     SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
+    SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
+    SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,

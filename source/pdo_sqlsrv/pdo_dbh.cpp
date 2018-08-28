@@ -38,6 +38,7 @@ namespace PDOConnOptionNames {
 
 const char Server[] = "Server";
 const char APP[] = "APP";
+const char AccessToken[] = "AccessToken";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
@@ -184,6 +185,15 @@ const connection_option PDO_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::APP ),
         CONN_ATTR_STRING,
         conn_str_append_func::func 
+    },
+    {
+        PDOConnOptionNames::AccessToken,
+        sizeof( PDOConnOptionNames::AccessToken ),
+        SQLSRV_CONN_OPTION_ACCESS_TOKEN,
+        ODBCConnOptions::AccessToken,
+        sizeof( ODBCConnOptions::AccessToken), 
+        CONN_ATTR_STRING,
+        access_token_set_func::func
     },
     { 
         PDOConnOptionNames::ApplicationIntent,

@@ -420,6 +420,14 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
         { IMSSP, (SQLCHAR*) "Invalid value for loading Azure Key Vault.", -114, false}
     },
+    {
+        SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
+        { IMSSP, (SQLCHAR*) "When using Azure AD Access Token, the connection string must not contain UID, PWD, or Authentication keywords.", -115, false}
+    },
+    {
+        SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
+        { IMSSP, (SQLCHAR*) "The Azure AD Access Token is empty. Expected a byte string.", -116, false}
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }

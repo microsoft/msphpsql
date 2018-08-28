@@ -92,6 +92,7 @@
 #define SQL_COPT_SS_TRUSTEDCMKPATHS                 (SQL_COPT_SS_BASE_EX+13)// List of trusted CMK paths
 #define SQL_COPT_SS_CEKCACHETTL                     (SQL_COPT_SS_BASE_EX+14)// Symmetric Key Cache TTL
 #define SQL_COPT_SS_AUTHENTICATION                  (SQL_COPT_SS_BASE_EX+15)// The authentication method used for the connection
+#define SQL_COPT_SS_ACCESS_TOKEN                    (SQL_COPT_SS_BASE_EX+16)// The authentication access token used for the connection
 
 // SQLColAttributes driver specific defines.
 // SQLSetDescField/SQLGetDescField driver specific defines.
@@ -369,6 +370,12 @@
 #pragma warning(push)
 #pragma warning(disable:4200)
 #endif
+
+typedef struct AccessToken
+{
+    unsigned int dataSize;
+    char data[];
+} ACCESSTOKEN;
 
 // Keystore Provider interface definition
 typedef struct CEKeystoreContext
