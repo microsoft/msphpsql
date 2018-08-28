@@ -1,5 +1,7 @@
 <?php
 // Check if the Azure AD Access Token test should be skipped 
+// From online documentation - For the ODBC Driver version 13.1, 
+// the Azure Active Directory access token authentication is Windows only.
 
 if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
@@ -15,7 +17,6 @@ if ($conn === false) {
 $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
 $msodbcsqlMaj = explode(".", $msodbcsqlVer)[0];
 
-// The ODBC Driver version 13.1 only supports Azure AD Access Token on Windows
 $isWin = (strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN');
 if (!$isWin && $msodbcsqlMaj < 17) {
     die("skip: Unsupported ODBC driver version");

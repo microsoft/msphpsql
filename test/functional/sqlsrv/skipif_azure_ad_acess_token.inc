@@ -1,5 +1,7 @@
 <?php
 // Check if the Azure AD Access Token test should be skipped 
+// From online documentation - For the ODBC Driver version 13.1, 
+// the Azure Active Directory access token authentication is Windows only.
 
 if (!extension_loaded("sqlsrv")) {
     die("skip Extension not loaded");
@@ -14,7 +16,6 @@ if ($conn === false) {
     die("skip: Could not connect during SKIPIF.");
 }
 
-// The ODBC Driver version 13.1 only supports Azure AD Access Token on Windows
 $msodbcsqlVer = sqlsrv_client_info($conn)['DriverVer'];
 $msodbcsqlMaj = explode(".", $msodbcsqlVer)[0];
 
