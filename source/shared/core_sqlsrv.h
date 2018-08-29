@@ -1076,6 +1076,8 @@ struct sqlsrv_conn : public sqlsrv_context {
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
     DRIVER_VERSION driver_version;      // version of ODBC driver
 
+    sqlsrv_malloc_auto_ptr<ACCESSTOKEN> azure_ad_access_token;
+
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding TSRMLS_DC ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )

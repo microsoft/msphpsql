@@ -243,6 +243,11 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     } // else driver_version not unknown
 #endif // !_WIN32
 
+    // time to free the access token, if not null
+    if (conn->azure_ad_access_token != NULL) {
+        conn->azure_ad_access_token.reset();
+    }
+
     CHECK_SQL_ERROR( r, conn ) {
         throw core::CoreException();
     }
@@ -1202,7 +1207,7 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     }
 
     const char* value_str = Z_STRVAL_P( value );
-
+    
     // The SQL_COPT_SS_ACCESS_TOKEN pre-connection attribute allows the use of an access token (in the format extracted from 
     // an OAuth JSON response), obtained from Azure AD for authentication instead of username and password, and also 
     // bypasses the negotiation and obtaining of an access token by the driver. To use an access token, set the 
@@ -1220,10 +1225,11 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     // similar to a UCS-2 string containing only ASCII characters
 
     size_t dataSize = 2 * value_len;
-    sqlsrv_malloc_auto_ptr<unsigned char> accToken; 
     
-    accToken = reinterpret_cast<unsigned char*>(sqlsrv_malloc(sizeof(ACCESSTOKEN) + dataSize));
-    ACCESSTOKEN *pAccToken = reinterpret_cast<ACCESSTOKEN*>(accToken.get());
+    sqlsrv_malloc_auto_ptr<ACCESSTOKEN> accToken;   
+    accToken = reinterpret_cast<ACCESSTOKEN*>(sqlsrv_malloc(sizeof(ACCESSTOKEN) + dataSize));
+
+    ACCESSTOKEN *pAccToken = accToken.get();
     SQLSRV_ASSERT(pAccToken != NULL, "Something went wrong when trying to allocate memory for the access token.");
 
     pAccToken->dataSize = dataSize;
@@ -1235,4 +1241,8 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     }
     
     core::SQLSetConnectAttr(conn, SQL_COPT_SS_ACCESS_TOKEN, reinterpret_cast<SQLPOINTER>(pAccToken), SQL_IS_POINTER);
+    
+    // Save the pointer because SQLDriverConnect() will use it to make connection to the server 
+    conn->azure_ad_access_token = pAccToken;
+    accToken.transferred();
 }
