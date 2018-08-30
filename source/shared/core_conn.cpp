@@ -245,6 +245,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 
     // time to free the access token, if not null
     if (conn->azure_ad_access_token != NULL) {
+        memset(conn->azure_ad_access_token->data, 0, conn->azure_ad_access_token->dataSize); // clear the memory
         conn->azure_ad_access_token.reset();
     }
 
