@@ -46,8 +46,8 @@ For full details on the system requirements for the drivers, see the [system req
 
 On the client machine:
 - PHP 7.0.x, 7.1.x, or 7.2.x (7.2.0 and up on Unix, 7.2.1 and up on Windows)
-- If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 - [Microsoft ODBC Driver 17, Microsoft ODBC Driver 13, or Microsoft ODBC Driver 11](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-2017)
+- If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
 On the server side, Microsoft SQL Server 2008 R2 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
 
