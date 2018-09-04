@@ -46,7 +46,7 @@ For full details on the system requirements for the drivers, see the [system req
 
 On the client machine:
 - PHP 7.0.x, 7.1.x, or 7.2.x (7.2.0 and up on Unix, 7.2.1 and up on Windows)
-- A Web server such as Internet Information Services (IIS) is required. Your Web server must be configured to run PHP
+- If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 - [Microsoft ODBC Driver 17, Microsoft ODBC Driver 13, or Microsoft ODBC Driver 11](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-2017)
 
 On the server side, Microsoft SQL Server 2008 R2 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
@@ -59,7 +59,7 @@ If you choose to build the drivers, you must be able to build PHP 7 without incl
 
 To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/en-us/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
 
-Finally, restart the Web server.
+Finally, if running PHP in a Web server, restart the Web server.
 
 ## Install (UNIX)
 
