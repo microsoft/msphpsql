@@ -1224,6 +1224,8 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     //
     // A valid access token byte string must be expanded so that each byte is followed by a 0 padding byte, 
     // similar to a UCS-2 string containing only ASCII characters
+    //
+    // See https://docs.microsoft.com/sql/connect/odbc/using-azure-active-directory#authenticating-with-an-access-token
 
     size_t dataSize = 2 * value_len;
     
