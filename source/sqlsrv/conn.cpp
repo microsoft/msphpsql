@@ -180,6 +180,7 @@ namespace SSConnOptionNames {
 // most of these strings are the same for both the sqlsrv_connect connection option
 // and the name put into the connection string. MARS is the only one that's different.
 const char APP[] = "APP";
+const char AccessToken[] = "AccessToken";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
@@ -256,6 +257,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::APP ),
         CONN_ATTR_STRING,
         conn_str_append_func::func 
+    },
+    {
+        SSConnOptionNames::AccessToken,
+        sizeof( SSConnOptionNames::AccessToken ),
+        SQLSRV_CONN_OPTION_ACCESS_TOKEN,
+        ODBCConnOptions::AccessToken,
+        sizeof( ODBCConnOptions::AccessToken), 
+        CONN_ATTR_STRING,
+        access_token_set_func::func
     },
     { 
         SSConnOptionNames::ApplicationIntent,

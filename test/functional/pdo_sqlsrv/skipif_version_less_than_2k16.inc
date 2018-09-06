@@ -7,11 +7,11 @@ if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
 }
 
-$is_win = ( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' );
+$is_win = (strtoupper(substr(php_uname('s'),0,3)) === 'WIN');
 
-require_once( "MsSetup.inc" );
+require_once("MsSetup.inc");
 
-$conn = new PDO( "sqlsrv:server = $server ;", $uid, $pwd );
+$conn = new PDO("sqlsrv:server = $server; driver=$driver;", $uid, $pwd);
 if ($conn === false) {
     die( "skip Could not connect during SKIPIF." );
 }

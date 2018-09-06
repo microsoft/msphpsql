@@ -7,11 +7,11 @@ if (!extension_loaded("sqlsrv")) {
     die("skip Extension not loaded");
 }
 
-$is_win = ( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' );
+$is_win = (strtoupper(substr(php_uname('s'),0,3)) === 'WIN');
 
-require_once( "MsSetup.inc" );
+require_once("MsSetup.inc");
 
-$connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword );
+$connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword, "Driver" => $driver);
 
 $conn = sqlsrv_connect( $server, $connectionInfo );
 if ($conn === false) {
