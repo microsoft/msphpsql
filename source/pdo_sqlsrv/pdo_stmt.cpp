@@ -213,61 +213,63 @@ void meta_data_free( _Inout_ field_meta_data* meta )
 zval convert_to_zval( _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val, _In_opt_ SQLLEN field_len )
 {
     zval out_zval;
-    ZVAL_UNDEF( &out_zval );
+    ZVAL_UNDEF(&out_zval);
 
-    switch( sqlsrv_php_type ) {
-       
-        case SQLSRV_PHPTYPE_INT:
-        case SQLSRV_PHPTYPE_FLOAT:       
-        {
-            if( *in_val == NULL ) {
-                ZVAL_NULL( &out_zval );
+    switch (sqlsrv_php_type) {
+
+    case SQLSRV_PHPTYPE_INT:
+    case SQLSRV_PHPTYPE_FLOAT:
+    {
+        if (*in_val == NULL) {
+            ZVAL_NULL(&out_zval);
+        }
+        else {
+
+            if (sqlsrv_php_type == SQLSRV_PHPTYPE_INT) {
+                ZVAL_LONG(&out_zval, **(reinterpret_cast<int**>(in_val)));
             }
             else {
-
-                if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
-                    ZVAL_LONG( &out_zval, **( reinterpret_cast<int**>( in_val )));
-                }
-                else {
-                    ZVAL_DOUBLE( &out_zval, **( reinterpret_cast<double**>( in_val )));    
-                }
+                ZVAL_DOUBLE(&out_zval, **(reinterpret_cast<double**>(in_val)));
             }
-
-            if( *in_val ) {
-                sqlsrv_free( *in_val );
-            }
-
-            break;
         }
 
-        case SQLSRV_PHPTYPE_STRING:
-        case SQLSRV_PHPTYPE_STREAM:     // TODO: this will be moved when output streaming is implemented
-         {
-
-            if( *in_val == NULL ) {
-
-                ZVAL_NULL( &out_zval );
-            }
-            else {
-
-                ZVAL_STRINGL( &out_zval, reinterpret_cast<char*>( *in_val ), field_len );
-                sqlsrv_free( *in_val );
-            }
-            break;
+        if (*in_val) {
+            sqlsrv_free(*in_val);
         }
-            
-        case SQLSRV_PHPTYPE_DATETIME:
-            DIE( "Unsupported php type" );
-            out_zval = *( reinterpret_cast<zval*>( *in_val ));
-            break;
 
-        case SQLSRV_PHPTYPE_NULL:
-            ZVAL_NULL( &out_zval );
-            break;
+        break;
+    }
+    case SQLSRV_PHPTYPE_STRING:
+    case SQLSRV_PHPTYPE_STREAM:     // TODO: this will be moved when output streaming is implemented
+    {
+        if (*in_val == NULL) {
 
-        default:
-            DIE( "Unknown php type" );
-            break;
+            ZVAL_NULL(&out_zval);
+        }
+        else {
+
+            ZVAL_STRINGL(&out_zval, reinterpret_cast<char*>(*in_val), field_len);
+            sqlsrv_free(*in_val);
+        }
+        break;
+    }
+    case SQLSRV_PHPTYPE_DATETIME:
+        if (*in_val == NULL) {
+
+            ZVAL_NULL(&out_zval);
+        }
+        else {
+
+            out_zval = *(reinterpret_cast<zval*>(*in_val));
+            sqlsrv_free(*in_val);
+        }
+        break;
+    case SQLSRV_PHPTYPE_NULL:
+        ZVAL_NULL(&out_zval);
+        break;
+    default:
+        DIE("Unknown php type");
+        break;
     }
 
     return out_zval;
@@ -339,6 +341,11 @@ void stmt_option_fetch_numeric:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
     pdo_stmt->fetch_numeric = ( zend_is_true( value_z )) ? true : false;
 }
 
+void stmt_option_fetch_datetime:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC )
+{
+    pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
+    pdo_stmt->fetch_datetime = ( zend_is_true( value_z )) ? true : false;
+}
 
 // log a function entry point
 #ifndef _WIN32
@@ -865,6 +872,10 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
                 break;
 
+            case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+                driver_stmt->fetch_datetime = ( zend_is_true( val )) ? true : false;
+                break;
+
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
                 break;
@@ -943,6 +954,12 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
             case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
             {
                 ZVAL_BOOL( return_value, driver_stmt->fetch_numeric );
+                break;
+            }
+
+            case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_stmt->fetch_datetime );
                 break;
             }
 
@@ -1365,6 +1382,17 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
             }
             break;
+        case SQL_TYPE_DATE:
+        case SQL_SS_TIMESTAMPOFFSET:
+        case SQL_SS_TIME2:
+        case SQL_TYPE_TIMESTAMP:
+            if ( this->fetch_datetime ) {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_DATETIME;
+            }
+            else {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+            }
+            break;
         case SQL_BIGINT:
         case SQL_CHAR:
         case SQL_DECIMAL:
@@ -1373,10 +1401,6 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
         case SQL_WCHAR:
         case SQL_VARCHAR:
         case SQL_WVARCHAR:
-        case SQL_TYPE_DATE:
-        case SQL_SS_TIMESTAMPOFFSET:
-        case SQL_SS_TIME2:
-        case SQL_TYPE_TIMESTAMP:
         case SQL_LONGVARCHAR:
         case SQL_WLONGVARCHAR:
         case SQL_SS_XML:
