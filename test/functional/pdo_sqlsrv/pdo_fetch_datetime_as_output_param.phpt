@@ -22,7 +22,8 @@ function createStoredProc($conn, $index, $type, $tableName, $column)
 try {
     date_default_timezone_set('America/Los_Angeles');
 
-    $conn = connect();
+    $attr = array(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE => false);
+    $conn = connect("", $attr);
     
     // Generate input values for the test table 
     $query = 'SELECT SYSDATETIME(), SYSDATETIMEOFFSET(), CONVERT(time, CURRENT_TIMESTAMP)';
@@ -48,7 +49,6 @@ try {
 
     $lobException = 'An invalid PHP type was specified as an output parameter. DateTime objects, NULL values, and streams cannot be specified as output parameters.';
 
-    $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
     for ($i = 0; $i < count($columns); $i++) {
         // create the stored procedure first
         $storedProcName = "spDateTimeOutParam" . $i;
@@ -59,12 +59,13 @@ try {
         // call stored procedure to retrieve output param type PDO::PARAM_STR
         $dateStr = '';
         $outSql = getCallProcSqlPlaceholders($storedProcName, 1);
-        $stmt = $conn->prepare($outSql);
+        $options = array(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE => true);
+        $stmt = $conn->prepare($outSql, $options);
         $stmt->bindParam(1, $dateStr, PDO::PARAM_STR, 1024);
         $stmt->execute();
         
         if ($dateStr != $values[$i]) {
-            echo "Expected $values[$i] for column $i but got: ";
+            echo "Expected $values[$i] for column ' . ($i+1) .' but got: ";
             var_dump($dateStr);
         } 
         
