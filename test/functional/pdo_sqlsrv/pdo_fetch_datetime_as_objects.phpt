@@ -12,6 +12,28 @@ should have no effect on data retrieval.
 <?php
 require_once("MsCommon_mid-refactor.inc");
 
+function checkColumnString($index, $column, $values, $strValue)
+{
+    $failed = false;
+    switch ($index) {
+    case 1:     // datetime2 data value might have padded zeroes
+        if (strpos($strValue, $values[$index]) === false) {
+            $failed = true;
+        }
+        break;
+    default:    // first and last column values should match exactly
+        if ($strValue != $values[$index]) {
+            $failed = true;
+        }
+        break;
+    }
+    
+    if ($failed) {
+        echo "Expected $values[$index] for column $column but got: ";
+        var_dump($strValue);
+    } 
+}
+
 function checkStringValues($obj, $columns, $values)
 {
     $size = count($values);
@@ -20,25 +42,8 @@ function checkStringValues($obj, $columns, $values)
     for ($i = 0; $i < $size; $i++) {
         $col = $columns[$i];
         $val = $objArray[$col];
-
-        $failed = false;
-        switch ($i) {
-        case 1:     // datetime2 data value might have padded zeroes
-            if (strpos($val, $values[$i]) === false) {
-                $failed = true;
-            }
-            break;
-        default:    // first and last column values should match exactly
-            if ($val != $values[$i]) {
-                $failed = true;
-            }
-            break;
-        }
         
-        if ($failed) {
-            echo "Expected $values[$i] for column $col but got: ";
-            var_dump($val);
-        } 
+        checkColumnString($i, $col, $values, $val);
     }
 }
 
@@ -159,7 +164,7 @@ function runTest($conn, $query, $columns, $values, $useBuffer = false)
     // expected strings to be returned (again no need to prepare the statement)
     $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, false);
     $stmt->execute();
-    $obj = $stmt->fetch(PDO::FETCH_OBJ);
+    $obj = $stmt->fetch(PDO::FETCH_LAZY);
     checkStringValues($obj, $columns, $values);
     
     // last test: set statement attribute fetch_datetime on with no change to 
@@ -172,6 +177,26 @@ function runTest($conn, $query, $columns, $values, $useBuffer = false)
         $dtObj = $stmt->fetchColumn($i);
         checkColumnDTValue($i, $columns[$i], $values, $dtObj);
     } while (++$i < count($columns));
+    
+    // keep the same settings but test with FETCH_BOUND
+    for ($i = 0; $i < count($columns); $i++) {
+        $dateObj = null;
+        $stmt->execute();
+        $stmt->bindColumn($i + 1, $dateObj, PDO::PARAM_LOB);
+        $row = $stmt->fetch(PDO::FETCH_BOUND);
+        checkColumnDTValue($i, $columns[$i], $values, $dateObj);
+    }
+    
+    // redo the test but with fetch_datetime off
+    // expected strings to be returned
+    $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, false);
+    for ($i = 0; $i < count($columns); $i++) {
+        $dateStr = null;
+        $stmt->execute();
+        $stmt->bindColumn($i + 1, $dateStr);
+        $row = $stmt->fetch(PDO::FETCH_BOUND);
+        checkColumnString($i, $columns[$i], $values, $dateStr);
+    }
 }
 
 try {

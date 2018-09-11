@@ -144,9 +144,9 @@ try {
     $query = "SELECT * FROM $tableName";
     
     runTest($conn, $query, $columns);
-    // runTest($conn, $query, $columns, true);
+    runTest($conn, $query, $columns, true);
     
-    // dropTable($conn, $tableName);
+    dropTable($conn, $tableName);
     
     echo "Done\n";
     

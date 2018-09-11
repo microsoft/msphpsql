@@ -51,6 +51,9 @@ inline SQLSMALLINT pdo_fetch_ori_to_odbc_fetch_ori ( _In_ enum pdo_fetch_orienta
 // for list of supported pdo types.
 SQLSRV_PHPTYPE pdo_type_to_sqlsrv_php_type( _Inout_ sqlsrv_stmt* driver_stmt, _In_ enum pdo_param_type pdo_type TSRMLS_DC )
 {
+    pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>(driver_stmt);
+    SQLSRV_ASSERT(pdo_stmt != NULL, "pdo_type_to_sqlsrv_php_type: pdo_stmt object was null");
+    
     switch( pdo_type ) {
 
         case PDO_PARAM_BOOL:
@@ -64,9 +67,12 @@ SQLSRV_PHPTYPE pdo_type_to_sqlsrv_php_type( _Inout_ sqlsrv_stmt* driver_stmt, _I
             return SQLSRV_PHPTYPE_NULL;
         
         case PDO_PARAM_LOB:
-            // TODO: This will eventually be changed to SQLSRV_PHPTYPE_STREAM when output streaming is implemented.
-            return SQLSRV_PHPTYPE_STRING;
-
+            if (pdo_stmt->fetch_datetime) {
+                return SQLSRV_PHPTYPE_DATETIME;
+            } else {
+                // TODO: This will eventually be changed to SQLSRV_PHPTYPE_STREAM when output streaming is implemented.
+                return SQLSRV_PHPTYPE_STRING;
+            }
         case PDO_PARAM_STMT:
             THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_PDO_STMT_UNSUPPORTED );
             break;

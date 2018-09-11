@@ -142,7 +142,7 @@ function runTest($conn, $query, $columns, $values, $useBuffer = false)
     // expected strings to be returned (again no need to prepare the statement)
     $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, false);
     $stmt->execute();
-    $obj = $stmt->fetch(PDO::FETCH_OBJ);
+    $obj = $stmt->fetch(PDO::FETCH_LAZY);
     checkStringValues($obj, $columns, $values);
     
     // last test: set statement attribute fetch_datetime on with no change to 
@@ -155,6 +155,29 @@ function runTest($conn, $query, $columns, $values, $useBuffer = false)
         $dtObj = $stmt->fetchColumn($i);
         checkColumnDTValue($i, $columns[$i], $values, $dtObj);
     } while (++$i < count($columns));
+    
+    // keep the same settings but test with FETCH_BOUND
+    for ($i = 0; $i < count($columns); $i++) {
+        $dateObj = null;
+        $stmt->execute();
+        $stmt->bindColumn($i + 1, $dateObj, PDO::PARAM_LOB);
+        $row = $stmt->fetch(PDO::FETCH_BOUND);
+        checkColumnDTValue($i, $columns[$i], $values, $dateObj);
+    }
+    
+    // redo the test but with fetch_datetime off
+    // expected strings to be returned
+    $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, false);
+    for ($i = 0; $i < count($columns); $i++) {
+        $dateStr = null;
+        $stmt->execute();
+        $stmt->bindColumn($i + 1, $dateStr);
+        $row = $stmt->fetch(PDO::FETCH_BOUND);
+        if ($dateStr != $values[$i]) {
+            echo "Expected $values[$i] for column $i but got: ";
+            var_dump($dateStr);
+        } 
+    }
 }
 
 try {
