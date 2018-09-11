@@ -42,7 +42,7 @@ function checkStringValues($obj, $columns, $values)
     }
 }
 
-function checkDTObjectValues($row, $columns, $values, $timezone, $fetchStyle) 
+function checkDTObjectValues($row, $columns, $values, $fetchStyle) 
 {
     $size = count($values);
     
@@ -71,7 +71,7 @@ function checkColumnDTValue($index, $column, $values, $dtObj)
     } 
 }
 
-function runTest($conn, $query, $columns, $values, $timezone, $useBuffer = false)
+function runTest($conn, $query, $columns, $values, $useBuffer = false)
 {
     // fetch the date time values as strings or date time objects
     // prepare with or without buffered cursor 
@@ -95,7 +95,7 @@ function runTest($conn, $query, $columns, $values, $timezone, $useBuffer = false
     $stmt = $conn->prepare($query, $options);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_NUM);
-    checkDTObjectValues($row, $columns, $values, $timezone, PDO::FETCH_NUM);
+    checkDTObjectValues($row, $columns, $values, PDO::FETCH_NUM);
 
     // fetch_numeric on, fetch_datetime on
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
@@ -103,7 +103,7 @@ function runTest($conn, $query, $columns, $values, $timezone, $useBuffer = false
     $stmt = $conn->prepare($query, $options);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    checkDTObjectValues($row, $columns, $values, $timezone, PDO::FETCH_ASSOC);
+    checkDTObjectValues($row, $columns, $values, PDO::FETCH_ASSOC);
     
     // ATTR_STRINGIFY_FETCHES should have no effect when fetching date time objects 
     // Setting it to true only converts numeric values to strings when fetching
@@ -144,7 +144,7 @@ function runTest($conn, $query, $columns, $values, $timezone, $useBuffer = false
     $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_NUM);
-    checkDTObjectValues($row, $columns, $values, $timezone, PDO::FETCH_NUM);
+    checkDTObjectValues($row, $columns, $values, PDO::FETCH_NUM);
 
     // likewise, conn attribute fetch_datetime off, but statement attribute 
     // fetch_datetime on -- expected datetime objects to be returned
@@ -153,7 +153,7 @@ function runTest($conn, $query, $columns, $values, $timezone, $useBuffer = false
     $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    checkDTObjectValues($row, $columns, $values, $timezone, PDO::FETCH_ASSOC);
+    checkDTObjectValues($row, $columns, $values, PDO::FETCH_ASSOC);
     
     // conn attribute fetch_datetime unchanged, but statement attribute fetch_datetime off --
     // expected strings to be returned (again no need to prepare the statement)
@@ -175,8 +175,7 @@ function runTest($conn, $query, $columns, $values, $timezone, $useBuffer = false
 }
 
 try {
-    $timezone = 'America/Los_Angeles';
-    date_default_timezone_set($timezone);
+    date_default_timezone_set('America/Los_Angeles');
 
     $conn = connect();
     
@@ -210,8 +209,8 @@ try {
 
     $query = "SELECT * FROM $tableName";
     
-    runTest($conn, $query, $columns, $values, $timezone);
-    runTest($conn, $query, $columns, $values, $timezone, true);
+    runTest($conn, $query, $columns, $values);
+    runTest($conn, $query, $columns, $values, true);
     
     dropTable($conn, $tableName);
     
