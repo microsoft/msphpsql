@@ -6,6 +6,9 @@ datetimeoffset and time columns. The input values are based on current timestamp
 and they are retrieved either as strings or date time objects. Note that the
 existing attributes ATTR_STRINGIFY_FETCHES and SQLSRV_ATTR_FETCHES_NUMERIC_TYPE
 should have no effect on data retrieval.
+--SKIPIF--
+<?php require('skipif_mid-refactor.inc'); ?>
+--FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
 

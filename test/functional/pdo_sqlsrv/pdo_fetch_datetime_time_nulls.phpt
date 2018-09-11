@@ -3,6 +3,9 @@ Test attribute PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE for datetime types with nu
 --DESCRIPTION--
 Test attribute PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE for different datetime types with
 null values. Whether retrieved as strings or date time objects should return NULLs.
+--SKIPIF--
+<?php require('skipif_mid-refactor.inc'); ?>
+--FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
 
