@@ -8,17 +8,6 @@ Do not support returning DateTime objects as output parameters. Setting attribut
 <?php
 require_once("MsCommon_mid-refactor.inc");
 
-function createStoredProc($conn, $index, $type, $tableName, $column) 
-{
-    // create the stored procedure first
-    $storedProcName = "spDateTimeOutParam" . $index;
-    $procArgs = "@col $type OUTPUT";
-    $procCode = "SELECT @col = $column FROM $tableName";
-    createProc($conn, $storedProcName, $procArgs, $procCode);
-    
-    return $storedProcName;
-}
-
 try {
     date_default_timezone_set('America/Los_Angeles');
 
