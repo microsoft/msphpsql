@@ -5,13 +5,13 @@ These instructions install PHP 7.2 by default -- see the notes at the beginning 
 
 ## Contents of this page:
 
-- [Installing the drivers on Ubuntu 16.04, 17.10, and 18.04](#installing-the-drivers-on-ubuntu-1604-1710-and-1804)
+- [Installing the drivers on Ubuntu 16.04 and 18.04](#installing-the-drivers-on-ubuntu-1604-and-1804)
 - [Installing the drivers on Red Hat 7](#installing-the-drivers-on-red-hat-7)
 - [Installing the drivers on Debian 8 and 9](#installing-the-drivers-on-debian-8-and-9)
 - [Installing the drivers on Suse 12](#installing-the-drivers-on-suse-12)
 - [Installing the drivers on macOS El Capitan, Sierra and High Sierra](#installing-the-drivers-on-macos-el-capitan-sierra-and-high-sierra)
 
-## Installing the drivers on Ubuntu 16.04, 17.10 and 18.04
+## Installing the drivers on Ubuntu 16.04 and 18.04
 
 > [!NOTE]
 > To install PHP 7.0 or 7.1, replace 7.2 with 7.0 or 7.1 in the following commands.

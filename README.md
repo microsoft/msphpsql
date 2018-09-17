@@ -2,9 +2,9 @@
 
 **Welcome to the Microsoft Drivers for PHP for Microsoft SQL Server**
 
-The Microsoft Drivers for PHP for Microsoft SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2008 R2 and later (including Azure SQL DB). These drivers rely on the [Microsoft ODBC Driver for SQL Server](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017) to handle the low-level communication with SQL Server.
+The Microsoft Drivers for PHP for Microsoft SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2008 R2 and later (including Azure SQL DB). These drivers rely on the [Microsoft ODBC Driver for SQL Server](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017) to handle the low-level communication with SQL Server.
 
-This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.* with improvements on both drivers and some limitations (see Limitations below for details). Upcoming releases will contain additional functionalities, bug fixes, and more.
+This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.1+ with improvements on both drivers and some [limitations](https://github.com/Microsoft/msphpsql/releases). Upcoming releases will contain additional functionalities, bug fixes, and more.
 
 ## Take our survey
 
@@ -28,11 +28,11 @@ Thank you for taking the time to participate in our last survey. You can continu
 
 ## Get Started
 
-* [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/windows)
-* [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/ubuntu)
-* [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/rhel)
-* [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/sles)
-* [**macOS + SQL Server + PHP 7**](https://www.microsoft.com/en-us/sql-server/developer-get-started/php/mac/)
+* [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/windows)
+* [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/ubuntu)
+* [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/rhel)
+* [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/sles)
+* [**macOS + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/mac/)
 * [**Docker**](https://hub.docker.com/r/lbosqmsft/mssql-php-msphpsql/)
 
 
@@ -42,11 +42,11 @@ Thank you for taking the time to participate in our last survey. You can continu
 
 ## Prerequisites
 
-For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/en-us/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
+For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
 
 On the client machine:
-- PHP 7.0.x, 7.1.x, or 7.2.x (7.2.0 and up on Unix, 7.2.1 and up on Windows)
-- [Microsoft ODBC Driver 17, Microsoft ODBC Driver 13, or Microsoft ODBC Driver 11](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-2017)
+- PHP 7.1.x, or 7.2.x (7.2.0 and up on Unix, 7.2.1 and up on Windows)
+- [Microsoft ODBC Driver 17, Microsoft ODBC Driver 13, or Microsoft ODBC Driver 11](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-2017)
 - If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
 On the server side, Microsoft SQL Server 2008 R2 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
@@ -57,16 +57,16 @@ The drivers are distributed as pre-compiled extensions for PHP found on the [rel
  
 If you choose to build the drivers, you must be able to build PHP 7 without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows) -- an example buildscript is provided, but you can also compile the drivers manually.
 
-To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/en-us/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
+To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
 
 Finally, if running PHP in a Web server, restart the Web server.
 
 ## Install (UNIX)
 
-For full instructions on installing the drivers on all supported Unix platforms, see [the installation instructions on Microsoft Docs](https://docs.microsoft.com/en-us/sql/connect/php/installation-tutorial-linux-mac).
+For full instructions on installing the drivers on all supported Unix platforms, see [the installation instructions on Microsoft Docs](https://docs.microsoft.com/sql/connect/php/installation-tutorial-linux-mac).
 
 ## Sample Code
-For PHP code samples, please see the [sample](https://github.com/Microsoft/msphpsql/tree/master/sample) folder or the [code samples on Microsoft Docs](https://docs.microsoft.com/en-us/sql/connect/php/code-samples-for-php-sql-driver).
+For PHP code samples, please see the [sample](https://github.com/Microsoft/msphpsql/tree/master/sample) folder or the [code samples on Microsoft Docs](https://docs.microsoft.com/sql/connect/php/code-samples-for-php-sql-driver).
 
 ## Limitations and Known Issues
 Please refer to [Releases](https://github.com/Microsoft/msphpsql/releases) for the latest limitations and known issues.
@@ -138,6 +138,6 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [phpbuild]: https://wiki.php.net/internals/windows/stepbystepbuild
 
-[phpdoc]: https://docs.microsoft.com/en-us/sql/connect/php/microsoft-php-driver-for-sql-server?view=sql-server-2017
+[phpdoc]: https://docs.microsoft.com/sql/connect/php/microsoft-php-driver-for-sql-server?view=sql-server-2017
 
 [PHPMan]: http://php.net/manual/install.unix.php
