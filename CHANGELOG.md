@@ -14,12 +14,12 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Removed
 - Dropped support for Ubuntu 17.10
-- Dropped support for PHP 7.0 - [Version 5.3](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver?view=sql-server-2017) will be the last to support PHP 7.0.
+- Dropped support for PHP 7.0 - [Version 5.3](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver?view=sql-server-2017) is the last to support PHP 7.0.
 
 ### Fixed
-- Issue [#434](https://github.com/Microsoft/msphpsql/issues/434) - To avoid the pitfall that results in a crash, before freeing stmt in the destructor check if its dbh driver data is NULL
-- Pull Request [#836](https://github.com/Microsoft/msphpsql/pull/836) - Modified the config files to enable Spectre Mitigations 
-- Pull Request [#833](https://github.com/Microsoft/msphpsql/pull/833) - Modified the error handling to remove a potential cause of crash
+- Issue [#434](https://github.com/Microsoft/msphpsql/issues/434) - To avoid the pitfall that could result in a crash, before freeing stmt in the destructor check if its dbh driver data is NULL
+- Pull Request [#836](https://github.com/Microsoft/msphpsql/pull/836) - Modified the config files to enable Spectre Mitigations (use /Qspectre switch) for PHP 7.2
+- Pull Request [#833](https://github.com/Microsoft/msphpsql/pull/833) - Streamlined the error handling to remove a potential cause of crash
 
 ### Limitations
 - No support for inout / output params when using sql_variant type
