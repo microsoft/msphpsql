@@ -129,6 +129,10 @@ ss_sqlsrv_stmt::ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_
     fetch_fields_count ( 0 )
 {
     core_sqlsrv_set_buffered_query_limit( this, SQLSRV_G( buffered_query_limit ) TSRMLS_CC );
+
+    // initialize date_as_string based on the corresponding connection option
+    ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>(conn);
+    date_as_string = ss_conn->date_as_string;
 }
 
 ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
@@ -230,7 +234,7 @@ sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, _
         case SQL_SS_TIMESTAMPOFFSET:
         case SQL_SS_TIME2:
         case SQL_TYPE_TIMESTAMP:
-            if( reinterpret_cast<ss_sqlsrv_conn*>( this->conn )->date_as_string ) { 
+            if (this->date_as_string) {
                 ss_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
                 ss_phptype.typeinfo.encoding = this->conn->encoding();
             }
@@ -1678,8 +1682,7 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
         case SQL_SS_TIME2:
         case SQL_TYPE_TIMESTAMP:
         {
-            ss_sqlsrv_conn* c = static_cast<ss_sqlsrv_conn*>( stmt->conn );
-            if( c->date_as_string ) {
+            if (stmt->date_as_string) { 
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
                 sqlsrv_phptype.typeinfo.encoding = stmt->encoding();
             }

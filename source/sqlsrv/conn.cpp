@@ -173,6 +173,7 @@ namespace SSStmtOptionNames {
     const char SEND_STREAMS_AT_EXEC[] = "SendStreamParamsAtExec";
     const char SCROLLABLE[] = "Scrollable";
     const char CLIENT_BUFFER_MAX_SIZE[] = INI_BUFFERED_QUERY_LIMIT;
+    const char DATE_AS_STRING[] = "ReturnDatesAsStrings";
 }
 
 namespace SSConnOptionNames {
@@ -242,6 +243,12 @@ const stmt_option SS_STMT_OPTS[] = {
         sizeof( SSStmtOptionNames::CLIENT_BUFFER_MAX_SIZE ),
         SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE, 
         std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit )
+    },
+    {
+        SSStmtOptionNames::DATE_AS_STRING, 
+        sizeof( SSStmtOptionNames::DATE_AS_STRING ),
+        SQLSRV_STMT_OPTION_DATE_AS_STRING, 
+        std::unique_ptr<stmt_option_date_as_string>( new stmt_option_date_as_string )
     },
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -988,7 +995,7 @@ PHP_FUNCTION( sqlsrv_prepare )
 
             // Initialize the options array to be passed to the core layer
             ALLOC_HASHTABLE( ss_stmt_options_ht );
-            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 3 /* # of buckets */, 
+            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 5 /* # of buckets */, 
                                          ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
             
             validate_stmt_options( *conn, options_z, ss_stmt_options_ht TSRMLS_CC );
@@ -1111,7 +1118,7 @@ PHP_FUNCTION( sqlsrv_query )
 
             // Initialize the options array to be passed to the core layer
             ALLOC_HASHTABLE( ss_stmt_options_ht );
-            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 3 /* # of buckets */, ZVAL_PTR_DTOR, 
+            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 5 /* # of buckets */, ZVAL_PTR_DTOR, 
                                          0 /*persistent*/ TSRMLS_CC );
             
             validate_stmt_options( *conn, options_z, ss_stmt_options_ht TSRMLS_CC );    
