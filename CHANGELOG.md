@@ -8,14 +8,18 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Added
 - Added support for PHP 7.3.0 RC 1
-- Added support for Azure AD Access Token (in Linux / macOS this requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [unixODBC](http://www.unixodbc.org/) 2.3.6 or above)
+- Added support for Azure AD Access Token (in Linux / macOS this requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [unixODBC](http://www.unixodbc.org/) 2.3.6+)
 - Feature Request [#842](https://github.com/Microsoft/msphpsql/pull/842) - new PDO_STMT_OPTION_FETCHES_DATETIME_TYPE flag for pdo_sqlsrv to return datetime as objects
 - Feature Request [#844](https://github.com/Microsoft/msphpsql/pull/844) - add ReturnDatesAsStrings option to statement level for sqlsrv
 
+### Removed
+- Dropped support for Ubuntu 17.10
+- Dropped support for PHP 7.0 - [Version 5.3](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver?view=sql-server-2017) will be the last to support PHP 7.0.
+
 ### Fixed
-- Issue [#434](https://github.com/Microsoft/msphpsql/issues/434) - Before freeing stmt in the destructor check if its dbh driver data is NULL to avoid releasing a handle that has been freed
+- Issue [#434](https://github.com/Microsoft/msphpsql/issues/434) - To avoid the pitfall that results in a crash, before freeing stmt in the destructor check if its dbh driver data is NULL
 - Pull Request [#836](https://github.com/Microsoft/msphpsql/pull/836) - Modified the config files to enable Spectre Mitigations 
-- Pull Request [#833](https://github.com/Microsoft/msphpsql/pull/833) - Modified the error handling to make it more flexible
+- Pull Request [#833](https://github.com/Microsoft/msphpsql/pull/833) - Modified the error handling to remove a potential cause of crash
 
 ### Limitations
 - No support for inout / output params when using sql_variant type
@@ -26,7 +30,7 @@ Updated PECL release packages. Here is the list of updates:
   - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
 
 ### Known Issues
-- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.6
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
