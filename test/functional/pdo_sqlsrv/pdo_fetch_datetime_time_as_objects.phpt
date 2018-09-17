@@ -224,7 +224,7 @@ try {
     runTest($conn, $query, $columns, $values);
     runTest($conn, $query, $columns, $values, true);
     
-    // dropTable($conn, $tableName);
+    dropTable($conn, $tableName);
     
     echo "Done\n";
     
