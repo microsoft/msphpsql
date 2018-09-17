@@ -1098,6 +1098,7 @@ enum SQLSRV_STMT_OPTIONS {
    SQLSRV_STMT_OPTION_SEND_STREAMS_AT_EXEC,
    SQLSRV_STMT_OPTION_SCROLLABLE,
    SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE,
+   SQLSRV_STMT_OPTION_DATE_AS_STRING,
 
    // Driver specific connection options
    SQLSRV_STMT_OPTION_DRIVER_SPECIFIC = 1000,
@@ -1282,6 +1283,11 @@ struct stmt_option_buffered_query_limit : public stmt_option_functor {
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_date_as_string : public stmt_option_functor {
+
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+};
+
 // used to hold the table for statment options
 struct stmt_option {
 
@@ -1393,6 +1399,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
                                           // last results
     unsigned long query_timeout;          // maximum allowed statement execution time
     zend_long buffered_query_limit;       // maximum allowed memory for a buffered query (measured in KB)
+    bool date_as_string;                  // false by default but the user can set this to true to retrieve datetime values as strings
 
     // holds output pointers for SQLBindParameter
     // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving

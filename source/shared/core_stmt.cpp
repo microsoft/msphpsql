@@ -141,6 +141,7 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     last_field_index( -1 ),
     past_next_result_end( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
+    date_as_string(false),
     buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     param_ind_ptrs( 10 ),    // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
@@ -1404,6 +1405,15 @@ void stmt_option_buffered_query_limit:: operator()( _Inout_ sqlsrv_stmt* stmt, s
     core_sqlsrv_set_buffered_query_limit( stmt, value_z TSRMLS_CC );
 }
 
+void stmt_option_date_as_string:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
+{
+    if (zend_is_true(value_z)) {
+        stmt->date_as_string = true;
+    }
+    else {
+        stmt->date_as_string = false;
+    }
+}
 
 // internal function to release the active stream.  Called by each main API function
 // that will alter the statement and cancel any retrieval of data from a stream.
