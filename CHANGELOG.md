@@ -7,8 +7,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
-- Added support for PHP 7.3.0 Beta 3
+- Added support for PHP 7.3.0 RC 1
 - Added support for Azure AD Access Token (in Linux / macOS this requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [unixODBC](http://www.unixodbc.org/) 2.3.6 or above)
+- Feature Request [#842](https://github.com/Microsoft/msphpsql/pull/842) - new PDO_STMT_OPTION_FETCHES_DATETIME_TYPE flag for pdo_sqlsrv to return datetime as objects
+- Feature Request [#844](https://github.com/Microsoft/msphpsql/pull/844) - add ReturnDatesAsStrings option to statement level for sqlsrv
 
 ### Fixed
 - Issue [#434](https://github.com/Microsoft/msphpsql/issues/434) - Before freeing stmt in the destructor check if its dbh driver data is NULL to avoid releasing a handle that has been freed
