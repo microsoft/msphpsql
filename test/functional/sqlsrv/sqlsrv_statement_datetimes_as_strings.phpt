@@ -132,26 +132,34 @@ if (!$conn) {
 }
 
 // Generate input values for the test table
-$query = 'SELECT CONVERT(date, SYSDATETIME()), CONVERT(smalldatetime, SYSDATETIME()), CONVERT(datetime, SYSDATETIME()), SYSDATETIME()';
+$query = 'SELECT CONVERT(date, SYSDATETIME()), SYSDATETIME(), 
+                 CONVERT(smalldatetime, SYSDATETIME()),
+                 CONVERT(datetime, SYSDATETIME()), 
+                 SYSDATETIMEOFFSET(), 
+                 CONVERT(time, SYSDATETIME())';
 $stmt = sqlsrv_query($conn, $query);
 $values = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
 
 // Create the test table of date and time columns
 $tableName = 'StmtDateAsString';
-$columns = array('c1', 'c2', 'c3', 'c4');
-$dataTypes = array('date', 'smalldatetime', 'datetime', 'datetime2');
+$columns = array('c1', 'c2', 'c3', 'c4', 'c5', 'c6');
+$dataTypes = array('date', 'datetime2', 'smalldatetime', 'datetime', 'datetimeoffset', 'time');
 
 $colMeta = array(new AE\ColumnMeta($dataTypes[0], $columns[0]),
                  new AE\ColumnMeta($dataTypes[1], $columns[1]),
                  new AE\ColumnMeta($dataTypes[2], $columns[2]),
-                 new AE\ColumnMeta($dataTypes[3], $columns[3]));
+                 new AE\ColumnMeta($dataTypes[3], $columns[3]),
+                 new AE\ColumnMeta($dataTypes[4], $columns[4]),
+                 new AE\ColumnMeta($dataTypes[5], $columns[5]));
 AE\createTable($conn, $tableName, $colMeta);
 
 // Insert data values
 $inputData = array($colMeta[0]->colName => $values[0],
                    $colMeta[1]->colName => $values[1],
                    $colMeta[2]->colName => $values[2],
-                   $colMeta[3]->colName => $values[3]);
+                   $colMeta[3]->colName => $values[3],
+                   $colMeta[4]->colName => $values[4],
+                   $colMeta[5]->colName => $values[5]);
 $stmt = AE\insertRow($conn, $tableName, $inputData);
 if (!$stmt) {
     fatalError("Failed to insert data.\n");
