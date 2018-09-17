@@ -80,6 +80,7 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE,
     PDO_STMT_OPTION_EMULATE_PREPARES,
     PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
+    PDO_STMT_OPTION_FETCHES_DATETIME_TYPE
 };
 
 // List of all the statement options supported by this driver.
@@ -93,6 +94,7 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE, std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit ) },
     { NULL, 0, PDO_STMT_OPTION_EMULATE_PREPARES, std::unique_ptr<stmt_option_emulate_prepares>( new stmt_option_emulate_prepares ) },
     { NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
+    { NULL, 0, PDO_STMT_OPTION_FETCHES_DATETIME_TYPE, std::unique_ptr<stmt_option_fetch_datetime>( new stmt_option_fetch_datetime ) },
 
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -495,7 +497,8 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
     direct_query( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
     client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size )),
-    fetch_numeric( false )
+    fetch_numeric( false ),
+    fetch_datetime( false )
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -1061,6 +1064,10 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 driver_dbh->fetch_numeric = (zend_is_true(val)) ? true : false;
                 break;
 
+            case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+                driver_dbh->fetch_datetime = (zend_is_true(val)) ? true : false;
+                break;
+                
             // Not supported
             case PDO_ATTR_FETCH_TABLE_NAMES: 
             case PDO_ATTR_FETCH_CATALOG_NAMES: 
@@ -1209,6 +1216,12 @@ int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
             {
                 ZVAL_BOOL( return_value, driver_dbh->fetch_numeric );
+                break;
+            }
+
+            case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_dbh->fetch_datetime );
                 break;
             }
 
@@ -1567,6 +1580,10 @@ void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ 
 
          case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
              option_key = PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE;
+             break;
+
+         case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+             option_key = PDO_STMT_OPTION_FETCHES_DATETIME_TYPE;
              break;
 
          default:

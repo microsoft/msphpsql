@@ -36,7 +36,8 @@ struct field_cache {
         : type( t )
     {
         // if the value is NULL, then just record a NULL pointer
-        if( field_value != NULL ) {
+        // field_len may be equal to SQL_NULL_DATA even when field_value is not null
+        if( field_value != NULL && field_len != SQL_NULL_DATA) {
             value = sqlsrv_malloc( field_len );
             memcpy_s( value, field_len, field_value, field_len );
             len = field_len;
