@@ -1,9 +1,9 @@
 --TEST--
-Test attribute PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE for datetime and time columns 
+Test attribute PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE for date, time and datetime columns 
 --DESCRIPTION--
-Test attribute PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE for datetime2,
-datetimeoffset and time columns. The input values are based on current timestamp 
-and they are retrieved either as strings or date time objects. Note that the
+Test attribute PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE for datetime, datetime2,
+smalldatetime, datetimeoffset and time columns. The input values are based on current  
+timestamp and they are retrieved either as strings or date time objects. Note that the
 existing attributes ATTR_STRINGIFY_FETCHES and SQLSRV_ATTR_FETCHES_NUMERIC_TYPE
 should have no effect on data retrieval.
 --SKIPIF--
@@ -53,7 +53,7 @@ function checkColumnDTValue($index, $column, $values, $dtObj)
     // actual datetime value from date time object to string
     $dtActual = date_format($dtObj, 'Y-m-d H:i:s.u');
     if ($dtActual != $dtExpected) {
-        echo "Expected $dtExpected for column $column but got $dtActual\n";
+        echo "Expected $dtExpected for column $column but the actual value was $dtActual\n";
     } 
 }
 
@@ -177,7 +177,8 @@ function runTest($conn, $query, $columns, $values, $useBuffer = false)
         $stmt->bindColumn($i + 1, $dateStr);
         $row = $stmt->fetch(PDO::FETCH_BOUND);
         if ($dateStr != $values[$i]) {
-            echo "Expected $values[$i] for column $i but got: ";
+            $col = $columns[$i];
+            echo "Expected $values[$i] for column $col but the bound value was: ";
             var_dump($dateStr);
         } 
     }
@@ -189,19 +190,29 @@ try {
     $conn = connect();
     
     // Generate input values for the test table 
-    $query = 'SELECT SYSDATETIME(), SYSDATETIMEOFFSET(), CONVERT(time, CURRENT_TIMESTAMP)';
+    $query = 'SELECT CONVERT(date, SYSDATETIME()), SYSDATETIME(), 
+                     CONVERT(smalldatetime, SYSDATETIME()),
+                     CONVERT(datetime, SYSDATETIME()), 
+                     SYSDATETIMEOFFSET(), 
+                     CONVERT(time, SYSDATETIME())';
+
     $stmt = $conn->query($query);
     $values = $stmt->fetch(PDO::FETCH_NUM);
 
     // create a test table with the above input date time values
     $tableName = "TestDateTimeOffset";
-    $columns = array('c1', 'c2', 'c3');
-    $colMeta = array(new ColumnMeta('datetime2', $columns[0]),
-                     new ColumnMeta('datetimeoffset', $columns[1]),
-                     new ColumnMeta('time', $columns[2]));
+    $columns = array('c1', 'c2', 'c3', 'c4', 'c5', 'c6');
+    $dataTypes = array('date', 'datetime2', 'smalldatetime', 'datetime', 'datetimeoffset', 'time');
+
+    $colMeta = array(new ColumnMeta($dataTypes[0], $columns[0]),
+                     new ColumnMeta($dataTypes[1], $columns[1]),
+                     new ColumnMeta($dataTypes[2], $columns[2]),
+                     new ColumnMeta($dataTypes[3], $columns[3]),
+                     new ColumnMeta($dataTypes[4], $columns[4]),
+                     new ColumnMeta($dataTypes[5], $columns[5]));
     createTable($conn, $tableName, $colMeta);
 
-    $query = "INSERT INTO $tableName VALUES(?, ?, ?)";
+    $query = "INSERT INTO $tableName VALUES(?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($query);
     for ($i = 0; $i < count($columns); $i++) {
         $stmt->bindParam($i+1, $values[$i], PDO::PARAM_LOB);
@@ -213,7 +224,7 @@ try {
     runTest($conn, $query, $columns, $values);
     runTest($conn, $query, $columns, $values, true);
     
-    dropTable($conn, $tableName);
+    // dropTable($conn, $tableName);
     
     echo "Done\n";
     
