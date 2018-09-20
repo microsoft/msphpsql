@@ -11,7 +11,6 @@ Updated PECL release packages. Here is the list of updates:
 - Added support for Azure AD Access Token (in Linux / macOS this requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [unixODBC](http://www.unixodbc.org/) 2.3.6+)
 - Feature Request [#842](https://github.com/Microsoft/msphpsql/pull/842) - new PDO_STMT_OPTION_FETCHES_DATETIME_TYPE flag for pdo_sqlsrv to return datetime as objects
 - Feature Request [#844](https://github.com/Microsoft/msphpsql/pull/844) - add ReturnDatesAsStrings option to statement level for sqlsrv
-- Compatible with ODBC Driver 17.3 CTP and SQL CTP 2.0 (for updates please follow the [SQLNCli team blog post](https://blogs.msdn.microsoft.com/sqlnativeclient/))
 
 ### Removed
 - Dropped support for Ubuntu 17.10
@@ -36,7 +35,6 @@ Updated PECL release packages. Here is the list of updates:
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
 - With ColumnEncryption enabled, calling stored procedures with XML parameters does not work (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
-- With ColumnEncryption enabled, fetching varbinary(max), varchar(max) or nvarchar(max) may fail with ODBC Driver 17.3 CTP 
 
 ## 5.3.0 - 2018-07-20
 Updated PECL release packages. Here is the list of updates:
