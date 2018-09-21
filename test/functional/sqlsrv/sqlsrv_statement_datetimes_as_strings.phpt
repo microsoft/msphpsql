@@ -139,6 +139,11 @@ $query = 'SELECT CONVERT(date, SYSDATETIME()), SYSDATETIME(),
                  CONVERT(time, SYSDATETIME())';
 $stmt = sqlsrv_query($conn, $query);
 $values = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+sqlsrv_free_stmt($stmt);
+sqlsrv_close($conn);
+
+// Connect again with ColumnEncryption data
+$conn = AE\connect(array('ReturnDatesAsStrings' => true));
 
 // Create the test table of date and time columns
 $tableName = 'StmtDateAsString';
@@ -176,7 +181,7 @@ testStmtOption($conn, $tableName, $values, false);
 sqlsrv_close($conn);
 
 // Now connect but with ReturnDatesAsStrings option set to false
-$conn = connect(array('ReturnDatesAsStrings' => false));
+$conn = AE\connect(array('ReturnDatesAsStrings' => false));
 if (!$conn) {
     fatalError("Could not connect.\n");
 }

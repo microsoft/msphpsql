@@ -81,7 +81,7 @@ function createTestTable($conn, $tableName, $columns)
 function runTest($tableName, $columns, $dateAsString)
 {
     // Connect
-    $conn = connect(array('ReturnDatesAsStrings' => $dateAsString));
+    $conn = AE\connect(array('ReturnDatesAsStrings' => $dateAsString));
     if (!$conn) {
         fatalError("Could not connect.\n");
     }
@@ -100,7 +100,7 @@ $tableName = "TestNullDateTime";
 $columns = array('c1', 'c2', 'c3', 'c4', 'c5', 'c6');
 
 // Connect
-$conn = connect();
+$conn = AE\connect();
 if (!$conn) {
     fatalError("Could not connect.\n");
 }
