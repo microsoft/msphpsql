@@ -58,6 +58,15 @@ $query = 'SELECT CONVERT(date, SYSDATETIME()), SYSDATETIME(), SYSDATETIMEOFFSET(
 $stmt = sqlsrv_query($conn, $query);
 $values = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
 
+sqlsrv_free_stmt($stmt);
+sqlsrv_close($conn);
+
+// Connect again with ColumnEncryption data
+$conn = AE\connect(array('ReturnDatesAsStrings' => true));
+if (!$conn) {
+    fatalError("Could not connect.\n");
+}
+
 // Create the test table of date and time columns
 $tableName = 'OuputParamDateAsString';
 $columns = array('c1', 'c2', 'c3', 'c4');
