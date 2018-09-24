@@ -3,7 +3,7 @@
 //
 // Contents: Implementation of PHP streams for reading SQL Server data
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -106,7 +106,7 @@ size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count)
         // if it's not a binary encoded field
         if( r == SQL_SUCCESS_WITH_INFO ) {
 
-            SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = { 0 };
+            SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {L'\0'};
             SQLSMALLINT len = 0;
 
             ss->stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );

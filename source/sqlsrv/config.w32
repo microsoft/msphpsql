@@ -3,7 +3,7 @@
 //
 // Contents: JScript build configuration used by buildconf.bat
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -35,6 +35,9 @@ if( PHP_SQLSRV != "no" ) {
             ADD_FLAG( "CFLAGS_SQLSRV", "/EHsc" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/GS" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/Zi" );
+            if (VCVERS >= 1913) {
+                ADD_FLAG("CFLAGS_SQLSRV", "/Qspectre");
+            } 
             if (PHP_DEBUG != "yes") ADD_FLAG( "CFLAGS_SQLSRV", "/guard:cf /O2" );
             EXTENSION("sqlsrv", sqlsrv_src_class , PHP_SQLSRV_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
     } else {

@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use statement handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -36,7 +36,8 @@ struct field_cache {
         : type( t )
     {
         // if the value is NULL, then just record a NULL pointer
-        if( field_value != NULL ) {
+        // field_len may be equal to SQL_NULL_DATA even when field_value is not null
+        if( field_value != NULL && field_len != SQL_NULL_DATA) {
             value = sqlsrv_malloc( field_len );
             memcpy_s( value, field_len, field_value, field_len );
             len = field_len;
@@ -140,6 +141,7 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     last_field_index( -1 ),
     past_next_result_end( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
+    date_as_string(false),
     buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     param_ind_ptrs( 10 ),    // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
@@ -364,7 +366,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     if( stmt->param_ind_ptrs.size() < static_cast<size_t>( param_num + 1 )){
         stmt->param_ind_ptrs.resize( param_num + 1, SQL_NULL_DATA );
     }
-    SQLLEN& ind_ptr = stmt->param_ind_ptrs[ param_num ];
+    SQLLEN& ind_ptr = stmt->param_ind_ptrs[param_num];
 
     zval* param_ref = param_z;
     if( Z_ISREF_P( param_z )){
@@ -964,7 +966,7 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 				memcpy_s( field_value, ( cached->len * sizeof( char )), cached->value, cached->len );
 				if( cached->type.typeinfo.type == SQLSRV_PHPTYPE_STRING) {
 					// prevent the 'string not null terminated' warning
-					reinterpret_cast<char*>( field_value )[ cached->len ] = '\0';
+					reinterpret_cast<char*>( field_value )[cached->len] = '\0';
 				}
 				*field_len = cached->len;
 				if( sqlsrv_php_type_out) { *sqlsrv_php_type_out = static_cast<SQLSRV_PHPTYPE>(cached->type.typeinfo.type); }
@@ -1236,7 +1238,7 @@ void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout
         int lock_timeout = (( timeout == 0 ) ? -1 : timeout * 1000 /*convert to milliseconds*/ );
 
         // set the LOCK_TIMEOUT on the server.
-        char lock_timeout_sql[ 32 ];
+        char lock_timeout_sql[32] = {'\0'};
 
         int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", lock_timeout );
         SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )),
@@ -1304,7 +1306,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
     }
     // read the data from the stream, send it via SQLPutData and track how much we've sent.
     else {
-        char buffer[ PHP_STREAM_BUFFER_SIZE + 1 ];
+        char buffer[PHP_STREAM_BUFFER_SIZE + 1] = {'\0'};
 		std::size_t buffer_size = sizeof( buffer ) - 3;   // -3 to preserve enough space for a cut off UTF-8 character
         std::size_t read = php_stream_read( param_stream, buffer, buffer_size );
 
@@ -1325,7 +1327,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 
                 // the size of wbuffer is set for the worst case of UTF-8 to UTF-16 conversion, which is a
                 // expansion of 2x the UTF-8 size.
-                SQLWCHAR wbuffer[ PHP_STREAM_BUFFER_SIZE + 1 ];
+                SQLWCHAR wbuffer[PHP_STREAM_BUFFER_SIZE + 1] = {L'\0'};
                 int wbuffer_size = static_cast<int>( sizeof( wbuffer ) / sizeof( SQLWCHAR ));
 				DWORD last_error_code = ERROR_SUCCESS;
 				// buffer_size is the # of wchars.  Since it set to stmt->param_buffer_size / 2, this is accurate
@@ -1403,6 +1405,15 @@ void stmt_option_buffered_query_limit:: operator()( _Inout_ sqlsrv_stmt* stmt, s
     core_sqlsrv_set_buffered_query_limit( stmt, value_z TSRMLS_CC );
 }
 
+void stmt_option_date_as_string:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
+{
+    if (zend_is_true(value_z)) {
+        stmt->date_as_string = true;
+    }
+    else {
+        stmt->date_as_string = false;
+    }
+}
 
 // internal function to release the active stream.  Called by each main API function
 // that will alter the statement and cancel any retrieval of data from a stream.
@@ -1631,7 +1642,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         // convert it to a DateTime object and return the created object
         case SQLSRV_PHPTYPE_DATETIME:
         {
-            char field_value_temp[ MAX_DATETIME_STRING_LEN ];
+            char field_value_temp[MAX_DATETIME_STRING_LEN] = {'\0'};
             zval params[1];
             zval field_value_temp_z;
             zval function_z;
@@ -1823,7 +1834,7 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
     }
 
     // null terminate the string, set the size within the zval, and return success
-    wbuffer[ wchar_size ] = L'\0';
+    wbuffer[wchar_size] = L'\0';
     core::sqlsrv_zval_stringl( converted_param_z, reinterpret_cast<char*>( wbuffer.get() ), wchar_size * sizeof( SQLWCHAR ) );
     sqlsrv_free(wbuffer);
     wbuffer.transferred();
@@ -2075,7 +2086,7 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
         {
             // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
             char* str = Z_STRVAL_P( value_z );
-            SQLLEN str_len = stmt->param_ind_ptrs[ output_param->param_num ];
+            SQLLEN str_len = stmt->param_ind_ptrs[output_param->param_num];
             if( str_len == 0 ) {
                 core::sqlsrv_zval_stringl( value_z, "", 0 );
                 continue;
@@ -2127,7 +2138,7 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
                 // so we do that here if the length of the returned data is less than the original allocation.  The
                 // original allocation null terminates the buffer already.
-                str[ str_len ] = '\0';
+                str[str_len] = '\0';
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
             else {
@@ -2137,7 +2148,7 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
         break;
         case IS_LONG:
             // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
-            if( stmt->param_ind_ptrs[ output_param->param_num ] == SQL_NULL_DATA ) {
+            if( stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA ) {
                 ZVAL_NULL( value_z );
             }
             else if( output_param->is_bool ) {
@@ -2258,7 +2269,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 
             if( r == SQL_SUCCESS_WITH_INFO ) {
 
-                SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = { 0 };
+                SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {L'\0'};
                 SQLSMALLINT len = 0;
 
                 stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
@@ -2442,11 +2453,11 @@ field_value = field_value_temp;
 
 stmt_option const* get_stmt_option( sqlsrv_conn const* conn, _In_ zend_ulong key, _In_ const stmt_option stmt_opts[] TSRMLS_DC )
 {
-    for( int i = 0; stmt_opts[ i ].key != SQLSRV_STMT_OPTION_INVALID; ++i ) {
+    for( int i = 0; stmt_opts[i].key != SQLSRV_STMT_OPTION_INVALID; ++i ) {
 
         // if we find the key we're looking for, return it
-        if( key == stmt_opts[ i ].key ) {
-            return &stmt_opts[ i ];
+        if( key == stmt_opts[i].key ) {
+            return &stmt_opts[i];
         }
     }
 
@@ -2580,8 +2591,8 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     // The StrLen_Ind_Ptr parameter of SQLBindParameter should contain the length of the data to send, which
     // may be less than the size of the buffer since the output may be more than the input.  If it is greater,
     // than the error 22001 is returned by ODBC.
-    if( stmt->param_ind_ptrs[ paramno ] > buffer_len - (elem_size - buffer_null_extra)) {
-        stmt->param_ind_ptrs[ paramno ] = buffer_len - (elem_size - buffer_null_extra);
+    if( stmt->param_ind_ptrs[paramno] > buffer_len - (elem_size - buffer_null_extra)) {
+        stmt->param_ind_ptrs[paramno] = buffer_len - (elem_size - buffer_null_extra);
     }
 }
 

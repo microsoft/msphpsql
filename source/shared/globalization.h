@@ -4,7 +4,7 @@
 // Contents: Contains functions for handling Windows format strings
 //			 and UTF-16 on non-Windows platforms
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -362,7 +362,7 @@ public:
         {
             // Use fixed size buffer iteratively to determine final required length
             const size_t CCH_FIXED_SIZE = 256;
-            char fixed_buf[ CCH_FIXED_SIZE*sizeof(DestType) ];
+            char fixed_buf[CCH_FIXED_SIZE*sizeof(DestType)] = {'\0'};
             iconv_buffer<DestType> dest(
                 &fixed_buf[0],
                 CCH_FIXED_SIZE );

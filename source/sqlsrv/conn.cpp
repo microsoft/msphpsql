@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -173,6 +173,7 @@ namespace SSStmtOptionNames {
     const char SEND_STREAMS_AT_EXEC[] = "SendStreamParamsAtExec";
     const char SCROLLABLE[] = "Scrollable";
     const char CLIENT_BUFFER_MAX_SIZE[] = INI_BUFFERED_QUERY_LIMIT;
+    const char DATE_AS_STRING[] = "ReturnDatesAsStrings";
 }
 
 namespace SSConnOptionNames {
@@ -180,6 +181,7 @@ namespace SSConnOptionNames {
 // most of these strings are the same for both the sqlsrv_connect connection option
 // and the name put into the connection string. MARS is the only one that's different.
 const char APP[] = "APP";
+const char AccessToken[] = "AccessToken";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
@@ -242,6 +244,12 @@ const stmt_option SS_STMT_OPTS[] = {
         SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE, 
         std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit )
     },
+    {
+        SSStmtOptionNames::DATE_AS_STRING, 
+        sizeof( SSStmtOptionNames::DATE_AS_STRING ),
+        SQLSRV_STMT_OPTION_DATE_AS_STRING, 
+        std::unique_ptr<stmt_option_date_as_string>( new stmt_option_date_as_string )
+    },
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
 
@@ -256,6 +264,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::APP ),
         CONN_ATTR_STRING,
         conn_str_append_func::func 
+    },
+    {
+        SSConnOptionNames::AccessToken,
+        sizeof( SSConnOptionNames::AccessToken ),
+        SQLSRV_CONN_OPTION_ACCESS_TOKEN,
+        ODBCConnOptions::AccessToken,
+        sizeof( ODBCConnOptions::AccessToken), 
+        CONN_ATTR_STRING,
+        access_token_set_func::func
     },
     { 
         SSConnOptionNames::ApplicationIntent,
@@ -978,7 +995,7 @@ PHP_FUNCTION( sqlsrv_prepare )
 
             // Initialize the options array to be passed to the core layer
             ALLOC_HASHTABLE( ss_stmt_options_ht );
-            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 3 /* # of buckets */, 
+            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 5 /* # of buckets */, 
                                          ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
             
             validate_stmt_options( *conn, options_z, ss_stmt_options_ht TSRMLS_CC );
@@ -1101,7 +1118,7 @@ PHP_FUNCTION( sqlsrv_query )
 
             // Initialize the options array to be passed to the core layer
             ALLOC_HASHTABLE( ss_stmt_options_ht );
-            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 3 /* # of buckets */, ZVAL_PTR_DTOR, 
+            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 5 /* # of buckets */, ZVAL_PTR_DTOR, 
                                          0 /*persistent*/ TSRMLS_CC );
             
             validate_stmt_options( *conn, options_z, ss_stmt_options_ht TSRMLS_CC );    
@@ -1234,12 +1251,12 @@ void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn TSRMLS_DC )
 
 int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z TSRMLS_DC )    
 {
-    for( int i=0; SS_CONN_OPTS[ i ].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
+    for( int i=0; SS_CONN_OPTS[i].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
     {
-        if( key_len == SS_CONN_OPTS[ i ].sqlsrv_len && !stricmp( ZSTR_VAL( key ), SS_CONN_OPTS[ i ].sqlsrv_name )) {
+        if( key_len == SS_CONN_OPTS[i].sqlsrv_len && !stricmp( ZSTR_VAL( key ), SS_CONN_OPTS[i].sqlsrv_name )) {
             
 
-             switch( SS_CONN_OPTS[ i ].value_type ) {
+             switch( SS_CONN_OPTS[i].value_type ) {
 
                 case CONN_ATTR_BOOL:                        
                     // bool attributes can be either strings to be appended to the connection string
@@ -1250,7 +1267,7 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                 case CONN_ATTR_INT:
                 {
                     CHECK_CUSTOM_ERROR( (Z_TYPE_P( value_z ) != IS_LONG ), ctx, SQLSRV_ERROR_INVALID_OPTION_TYPE_INT,
-                                        SS_CONN_OPTS[ i ].sqlsrv_name ) 
+                                        SS_CONN_OPTS[i].sqlsrv_name ) 
                     {
                         throw ss::SSException();
                     }
@@ -1259,7 +1276,7 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                 case CONN_ATTR_STRING:
                 {
                     CHECK_CUSTOM_ERROR( Z_TYPE_P( value_z ) != IS_STRING, ctx, SQLSRV_ERROR_INVALID_OPTION_TYPE_STRING, 
-                                        SS_CONN_OPTS[ i ].sqlsrv_name ) {
+                                        SS_CONN_OPTS[i].sqlsrv_name ) {
 
                         throw ss::SSException();
                     }
@@ -1268,7 +1285,7 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                     size_t value_len = Z_STRLEN_P( value_z );
                     bool escaped = core_is_conn_opt_value_escaped( value, value_len );
 
-                    CHECK_CUSTOM_ERROR( !escaped, ctx, SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED, SS_CONN_OPTS[ i ].sqlsrv_name ) {
+                    CHECK_CUSTOM_ERROR( !escaped, ctx, SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED, SS_CONN_OPTS[i].sqlsrv_name ) {
 
                         throw ss::SSException();
                     }
@@ -1278,7 +1295,7 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                         valid = core_is_authentication_option_valid( value, value_len );
                     }
 
-                    CHECK_CUSTOM_ERROR( !valid, ctx, SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION, SS_CONN_OPTS[ i ].sqlsrv_name ) {
+                    CHECK_CUSTOM_ERROR( !valid, ctx, SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION, SS_CONN_OPTS[i].sqlsrv_name ) {
 
                         throw ss::SSException();
                     }
@@ -1287,7 +1304,7 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                 }
             }
 
-            return SS_CONN_OPTS[ i ].conn_option_key;
+            return SS_CONN_OPTS[i].conn_option_key;
         }
     }
     return SQLSRV_CONN_OPTION_INVALID;
@@ -1295,10 +1312,10 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
 
 int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len TSRMLS_DC )
 {
-    for( int i = 0; SS_STMT_OPTS[ i ].key != SQLSRV_STMT_OPTION_INVALID; ++i )
+    for( int i = 0; SS_STMT_OPTS[i].key != SQLSRV_STMT_OPTION_INVALID; ++i )
     {
-        if( key_len == SS_STMT_OPTS[ i ].name_len && !stricmp( ZSTR_VAL( key ), SS_STMT_OPTS[ i ].name )) {
-            return SS_STMT_OPTS[ i ].key;
+        if( key_len == SS_STMT_OPTS[i].name_len && !stricmp( ZSTR_VAL( key ), SS_STMT_OPTS[i].name )) {
+            return SS_STMT_OPTS[i].key;
         }
     }
     return SQLSRV_STMT_OPTION_INVALID;

@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use statement handles
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -129,6 +129,10 @@ ss_sqlsrv_stmt::ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_
     fetch_fields_count ( 0 )
 {
     core_sqlsrv_set_buffered_query_limit( this, SQLSRV_G( buffered_query_limit ) TSRMLS_CC );
+
+    // initialize date_as_string based on the corresponding connection option
+    ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>(conn);
+    date_as_string = ss_conn->date_as_string;
 }
 
 ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
@@ -137,7 +141,7 @@ ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
 
         for( int i=0; i < fetch_fields_count; ++i ) {
             
-            sqlsrv_free( fetch_field_names[ i ].name );
+            sqlsrv_free( fetch_field_names[i].name );
         }
         sqlsrv_free( fetch_field_names );
     }
@@ -155,7 +159,7 @@ void ss_sqlsrv_stmt::new_result_set( TSRMLS_D )
 
         for( int i=0; i < fetch_fields_count; ++i ) {
             
-            sqlsrv_free( fetch_field_names[ i ].name );
+            sqlsrv_free( fetch_field_names[i].name );
         }
         sqlsrv_free( fetch_field_names );
     }
@@ -230,7 +234,7 @@ sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, _
         case SQL_SS_TIMESTAMPOFFSET:
         case SQL_SS_TIME2:
         case SQL_TYPE_TIMESTAMP:
-            if( reinterpret_cast<ss_sqlsrv_conn*>( this->conn )->date_as_string ) { 
+            if (this->date_as_string) {
                 ss_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
                 ss_phptype.typeinfo.encoding = this->conn->encoding();
             }
@@ -719,7 +723,7 @@ PHP_FUNCTION( sqlsrv_num_fields )
     }
 }
 
-// sqlsrv_fetch_object( resource $stmt [, string $className [, array $ctorParams ]])
+// sqlsrv_fetch_object( resource $stmt [, string $className [, array $ctorParams]])
 // 
 // Retrieves the next row of data as a PHP object.
 //
@@ -889,7 +893,9 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             fci.object = Z_OBJ_P( &retval_z );
 
             memset( &fcic, 0, sizeof( fcic ));
+#if PHP_VERSION_ID < 70300
             fcic.initialized = 1;
+#endif
             fcic.function_handler = class_entry->constructor;
             fcic.calling_scope = class_entry;
 
@@ -1676,8 +1682,7 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
         case SQL_SS_TIME2:
         case SQL_TYPE_TIMESTAMP:
         {
-            ss_sqlsrv_conn* c = static_cast<ss_sqlsrv_conn*>( stmt->conn );
-            if( c->date_as_string ) {
+            if (stmt->date_as_string) { 
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
                 sqlsrv_phptype.typeinfo.encoding = stmt->encoding();
             }
@@ -1776,7 +1781,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 
         SQLLEN field_name_len = 0;
         SQLSMALLINT field_name_len_w = 0;
-        SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2 ] = { L'\0' };
+        SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2] = {L'\0'};
         sqlsrv_malloc_auto_ptr<char> field_name;
         sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
         field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
@@ -1806,10 +1811,14 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
         field_names.transferred();
     }
 
-    int zr = array_init( &fields );
-	CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
-		throw ss::SSException();
-	}
+    int zr = SUCCESS;
+#if PHP_VERSION_ID < 70300
+    CHECK_ZEND_ERROR(array_init(&fields), stmt, SQLSRV_ERROR_ZEND_HASH) {
+        throw ss::SSException();
+    }
+#else
+    array_init(&fields); 
+#endif 
 
 	for( int i = 0; i < num_cols; ++i ) {
 		SQLLEN field_len = -1;
@@ -1836,7 +1845,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 				throw ss::SSException();
 			}
 
-			if( stmt->fetch_field_names[ i ].len > 1 || allow_empty_field_names ) {
+			if( stmt->fetch_field_names[i].len > 1 || allow_empty_field_names ) {
 
 				zr = add_assoc_zval( &fields, stmt->fetch_field_names[i].name, &field );
 				CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {

@@ -2,7 +2,7 @@
 // File: init.cpp
 // Contents: initialization routines for the extension
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -537,9 +537,9 @@ PHP_MINIT_FUNCTION(sqlsrv)
     g_ss_errors_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
     ::zend_hash_init( g_ss_errors_ht, 50, NULL, sqlsrv_error_const_dtor /*pDestructor*/, 1 );
 
-    for( int i = 0; SS_ERRORS[ i ].error_code != UINT_MAX; ++i ) {
-        if (NULL == ::zend_hash_index_update_mem( g_ss_errors_ht, SS_ERRORS[ i ].error_code,
-                                       &( SS_ERRORS[ i ].sqlsrv_error ), sizeof( SS_ERRORS[ i ].sqlsrv_error ))) {
+    for( int i = 0; SS_ERRORS[i].error_code != UINT_MAX; ++i ) {
+        if (NULL == ::zend_hash_index_update_mem( g_ss_errors_ht, SS_ERRORS[i].error_code,
+                                       &( SS_ERRORS[i].sqlsrv_error ), sizeof( SS_ERRORS[i].sqlsrv_error ))) {
             LOG( SEV_ERROR, "%1!s!: Failed to insert data into sqlsrv errors hashtable.", _FN_ );
             return FAILURE;
         }

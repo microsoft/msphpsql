@@ -5,7 +5,7 @@
 //
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -28,7 +28,7 @@ unsigned int current_log_subsystem = LOG_UTIL;
 
 // buffer used to hold a formatted log message prior to actually logging it.
 const int LOG_MSG_SIZE = 2048;
-char log_msg[ LOG_MSG_SIZE ];
+char log_msg[LOG_MSG_SIZE] = {'\0'};
 
 // internal error that says that FormatMessage failed
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
@@ -420,6 +420,14 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
         { IMSSP, (SQLCHAR*) "Invalid value for loading Azure Key Vault.", -114, false}
     },
+    {
+        SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
+        { IMSSP, (SQLCHAR*) "When using Azure AD Access Token, the connection string must not contain UID, PWD, or Authentication keywords.", -115, false}
+    },
+    {
+        SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
+        { IMSSP, (SQLCHAR*) "The Azure AD Access Token is empty. Expected a byte string.", -116, false}
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
@@ -498,18 +506,21 @@ PHP_FUNCTION( sqlsrv_errors )
 
     LOG_FUNCTION( "sqlsrv_errors" );
 
-	if(( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "|l", &flags ) == FAILURE ) ||
-		( flags != SQLSRV_ERR_ALL && flags != SQLSRV_ERR_ERRORS && flags != SQLSRV_ERR_WARNINGS )) {
-		LOG( SEV_ERROR, "An invalid parameter was passed to %1!s!.", _FN_ );
-		RETURN_FALSE;
-	}
-	int result;
-	zval err_z;
-	ZVAL_UNDEF( &err_z );
-	result = array_init( &err_z );
-	if( result == FAILURE ) {
-		RETURN_FALSE;
-	}
+    if(( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "|l", &flags ) == FAILURE ) ||
+        ( flags != SQLSRV_ERR_ALL && flags != SQLSRV_ERR_ERRORS && flags != SQLSRV_ERR_WARNINGS )) {
+        LOG( SEV_ERROR, "An invalid parameter was passed to %1!s!.", _FN_ );
+        RETURN_FALSE;
+    }
+    zval err_z;
+    ZVAL_UNDEF(&err_z);
+#if PHP_VERSION_ID < 70300
+    if (array_init(&err_z) == FAILURE) {
+        RETURN_FALSE;
+    }
+#else
+    array_init(&err_z);
+#endif
+
 	if( flags == SQLSRV_ERR_ALL || flags == SQLSRV_ERR_ERRORS ) {
 		if( Z_TYPE( SQLSRV_G( errors )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &err_z, &SQLSRV_G( errors ) TSRMLS_CC )) {
 			zval_ptr_dtor(&err_z);
@@ -746,10 +757,13 @@ sqlsrv_error_const* get_error_message( _In_ unsigned int sqlsrv_error_code ) {
 void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, 
                          _In_ bool warning TSRMLS_DC )
 {
-
-    if( array_init( error_z ) == FAILURE ) {
+#if PHP_VERSION_ID < 70300
+    if (array_init(error_z) == FAILURE) {
         DIE( "Fatal error during error processing" );
     }
+#else
+    array_init(error_z);
+#endif
 
     // sqlstate
     zval temp; 
@@ -828,7 +842,6 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
     size_t prev_reported_cnt = 0;
     bool reported_chain_was_null = false;
     bool ignored_chain_was_null = false;
-    int zr = SUCCESS;
     zval error_z;
 	ZVAL_UNDEF(&error_z);
     sqlsrv_error_auto_ptr error;
@@ -837,10 +850,13 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
     if( Z_TYPE_P( reported_chain ) == IS_NULL ) {
 
         reported_chain_was_null = true;
-        zr = array_init( reported_chain );
-        if( zr == FAILURE ) {
-            DIE( "Fatal error in handle_errors_and_warnings" );
+#if PHP_VERSION_ID < 70300
+        if (array_init(reported_chain) == FAILURE) {
+            DIE( "Fatal error during error processing" );
         }
+#else
+        array_init(reported_chain);
+#endif
     }
     else {
         prev_reported_cnt = zend_hash_num_elements( Z_ARRVAL_P( reported_chain ));
@@ -851,11 +867,14 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
         
         if( Z_TYPE_P( ignored_chain ) == IS_NULL ) {
             
-           ignored_chain_was_null = true;
-           zr = array_init( ignored_chain );
-            if( zr == FAILURE ) {
+            ignored_chain_was_null = true;
+#if PHP_VERSION_ID < 70300
+            if (array_init(ignored_chain) == FAILURE) {
                 DIE( "Fatal error in handle_errors_and_warnings" );
             }
+#else
+            array_init( ignored_chain );
+#endif
         }
     }
 

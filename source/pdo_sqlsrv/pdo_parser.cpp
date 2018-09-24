@@ -5,7 +5,7 @@
 // 
 // Copyright Microsoft Corporation
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -108,7 +108,7 @@ bool string_parser::discard_white_spaces()
         return false;
     }
 
-    while( this->is_white_space( this->orig_str[ pos ] )) {
+    while( this->is_white_space( this->orig_str[pos] )) {
     
         if( !next() )
             return false;
@@ -148,13 +148,13 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
 {
     int new_len = discard_trailing_white_spaces( key, key_len );
 
-    for( int i=0; PDO_CONN_OPTS[ i ].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
+    for( int i=0; PDO_CONN_OPTS[i].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
     {
         // discard the null terminator.
-        if( new_len == ( PDO_CONN_OPTS[ i ].sqlsrv_len - 1 ) && !strncasecmp( key, PDO_CONN_OPTS[ i ].sqlsrv_name, new_len )) {
+        if( new_len == ( PDO_CONN_OPTS[i].sqlsrv_len - 1 ) && !strncasecmp( key, PDO_CONN_OPTS[i].sqlsrv_name, new_len )) {
 
-            this->current_key = PDO_CONN_OPTS[ i ].conn_option_key;
-            this->current_key_name = PDO_CONN_OPTS[ i ].sqlsrv_name;
+            this->current_key = PDO_CONN_OPTS[i].conn_option_key;
+            this->current_key_name = PDO_CONN_OPTS[i].sqlsrv_name;
             return;
         }
     }
@@ -164,7 +164,7 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
     key_name = static_cast<char*>( sqlsrv_malloc( new_len + 1 ));
     memcpy_s( key_name, new_len + 1 ,key, new_len );
 
-    key_name[ new_len ] = '\0';  
+    key_name[new_len] = '\0';  
 
     THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
 }
@@ -232,7 +232,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                     start_pos = this->pos;
 
                     // read the key name
-                    while( this->orig_str[ pos ] != '=' ) {
+                    while( this->orig_str[pos] != '=' ) {
                     
                         if( !next() ) {
                             
@@ -240,7 +240,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                         }      
                     } 
 
-                    this->validate_key( &( this->orig_str[ start_pos ] ), ( pos - start_pos ) TSRMLS_CC ); 
+                    this->validate_key( &( this->orig_str[start_pos] ), ( pos - start_pos ) TSRMLS_CC ); 
                 
                     state = Value;
 
@@ -249,13 +249,13 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
 
                 case Value:
                 {
-                    SQLSRV_ASSERT(( this->orig_str[ pos ] == '=' ), "conn_string_parser:: parse_conn_string: "
+                    SQLSRV_ASSERT(( this->orig_str[pos] == '=' ), "conn_string_parser:: parse_conn_string: "
                                    "Equal was expected" );
 
                     next(); // skip "="
 
                     // if EOS encountered after 0 or more spaces OR semi-colon encountered.
-                    if( !discard_white_spaces() || this->orig_str[ pos ] == ';' ) {
+                    if( !discard_white_spaces() || this->orig_str[pos] == ';' ) {
 
                         add_key_value_pair( NULL, 0 TSRMLS_CC );
 
@@ -265,13 +265,13 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                         }
                         else {
 
-                            // this->orig_str[ pos ] == ';' 
+                            // this->orig_str[pos] == ';' 
                             state = NextKeyValuePair;
                         }
                     }
                     
                     // if LCB
-                    else if( this->orig_str[ pos ] == '{' ) {
+                    else if( this->orig_str[pos] == '{' ) {
                         
                         start_pos = this->pos; // starting character is LCB
                         state = ValueContent1;
@@ -289,7 +289,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
 
                 case ValueContent1:
                 {
-                    while ( this->orig_str[ pos ] != '}' ) {
+                    while ( this->orig_str[pos] != '}' ) {
                     
                         if ( ! next() ) {
 
@@ -305,7 +305,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
 
                 case ValueContent2:
                 {
-                    while( this->orig_str[ pos ] != ';' ) {
+                    while( this->orig_str[pos] != ';' ) {
 
                         if( ! next() ) {
                             
@@ -313,13 +313,13 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                         }
                     }
 
-                    if( !this->is_eos() && this->orig_str[ pos ] == ';' ) {
+                    if( !this->is_eos() && this->orig_str[pos] == ';' ) {
                     
                         // semi-colon encountered, so go to next key-value pair
                         state = NextKeyValuePair;
                     }
                     
-                    add_key_value_pair( &( this->orig_str[ start_pos ] ), this->pos - start_pos TSRMLS_CC );
+                    add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos TSRMLS_CC );
               
                     SQLSRV_ASSERT((( state == NextKeyValuePair ) || ( this->is_eos() )), 
                                   "conn_string_parser::parse_conn_string: Invalid state encountered " );
@@ -334,14 +334,14 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                     if( !next() ) {
 
                         // EOS
-                        add_key_value_pair( &( this->orig_str[ start_pos ] ), this->pos - start_pos TSRMLS_CC );
+                        add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos TSRMLS_CC );
                         break;
                     }
 
                     SQLSRV_ASSERT( !this->is_eos(), "conn_string_parser::parse_conn_string: Unexpected EOS encountered" );
 
                     // if second RCB encountered than go back to ValueContent1
-                    if( this->orig_str[ pos ] == '}' ) {
+                    if( this->orig_str[pos] == '}' ) {
                         
                         if( !next() ) {
 
@@ -356,20 +356,20 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                     int end_pos = this->pos;
 
                     // discard any trailing white-spaces.
-                    if( this->is_white_space( this->orig_str[ pos ] )) {
+                    if( this->is_white_space( this->orig_str[pos] )) {
                     
                         if( ! this->discard_white_spaces() ) {
                             
                             //EOS
-                            add_key_value_pair( &( this->orig_str[ start_pos ] ), end_pos - start_pos TSRMLS_CC );
+                            add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos TSRMLS_CC );
                             break;
                         }
                     }
 
                     // if semi-colon than go to next key-value pair
-                    if ( this->orig_str[ pos ] == ';' ) {
+                    if ( this->orig_str[pos] == ';' ) {
                         
-                        add_key_value_pair( &( this->orig_str[ start_pos ] ), end_pos - start_pos TSRMLS_CC );
+                        add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos TSRMLS_CC );
                         state = NextKeyValuePair;
                         break;
                     }
@@ -380,7 +380,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                 }
                 case NextKeyValuePair:
                 {
-                    SQLSRV_ASSERT(( this->orig_str[ pos ] == ';' ), 
+                    SQLSRV_ASSERT(( this->orig_str[pos] == ';' ), 
                                   "conn_string_parser::parse_conn_string: semi-colon was expected." );
 
                     // Call next() to skip the semi-colon.
@@ -390,7 +390,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                         break;
                     }
                     
-                    if( this->orig_str[ pos ] == ';' ) {
+                    if( this->orig_str[pos] == ';' ) {
                     
                         // a second semi-colon is error case.
                         THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_EXTRA_SEMI_COLON_IN_DSN_STRING, this->pos );      

@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use connection handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -120,11 +120,11 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         // Instead, MSPHPSQL connection pooling is set according to the ODBCINST.INI file in [ODBC] section.
 
 #ifndef _WIN32
-        char pooling_string[ 128 ] = {0};
+        char pooling_string[128] = {'\0'};
         SQLGetPrivateProfileString( "ODBC", "Pooling", "0", pooling_string, sizeof( pooling_string ), "ODBCINST.INI" );
 
-        if ( pooling_string[ 0 ] == '1' || toupper( pooling_string[ 0 ] ) == 'Y' ||
-            ( toupper( pooling_string[ 0 ] ) == 'O' && toupper( pooling_string[ 1 ] ) == 'N' ))
+        if ( pooling_string[0] == '1' || toupper( pooling_string[0] ) == 'Y' ||
+            ( toupper( pooling_string[0] ) == 'O' && toupper( pooling_string[1] ) == 'N' ))
         {
             henv = &henv_cp;
             is_pooled = true;
@@ -243,6 +243,12 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     } // else driver_version not unknown
 #endif // !_WIN32
 
+    // time to free the access token, if not null
+    if (conn->azure_ad_access_token != NULL) {
+        memset(conn->azure_ad_access_token->data, 0, conn->azure_ad_access_token->dataSize); // clear the memory
+        conn->azure_ad_access_token.reset();
+    }
+
     CHECK_SQL_ERROR( r, conn ) {
         throw core::CoreException();
     }
@@ -310,7 +316,7 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ 
     if( SQL_SUCCEEDED( rc ) )
         return false;
 
-    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ] = { 0 };
+    SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {'\0'};
     SQLSMALLINT len;
     SQLRETURN sr = SQLGetDiagField( SQL_HANDLE_DBC, conn->handle(), 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
 
@@ -327,7 +333,7 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ 
 bool core_search_odbc_driver_unix( _In_ DRIVER_VERSION driver_version )
 {
 #ifndef _WIN32
-    char szBuf[DEFAULT_CONN_STR_LEN+1];     // use a large enough buffer size
+    char szBuf[DEFAULT_CONN_STR_LEN+1] = {'\0'};     // use a large enough buffer size
     WORD cbBufMax = DEFAULT_CONN_STR_LEN;
     WORD cbBufOut;
     char *pszBuf = szBuf;
@@ -695,7 +701,7 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
 {
     // if the value is already quoted, then only analyse the part inside the quotes and return it as
     // unquoted since we quote it when adding it to the connection string.
-    if( value_len > 0 && value[0] == '{' && value[ value_len - 1 ] == '}' ) {
+    if( value_len > 0 && value[0] == '{' && value[value_len - 1] == '}' ) {
         ++value;
         value_len -= 2;
     }
@@ -736,11 +742,11 @@ namespace {
 connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ SQLULEN key,
                                                      _In_ const connection_option conn_opts[] TSRMLS_DC )
 {
-    for( int opt_idx = 0; conn_opts[ opt_idx ].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++opt_idx ) {
+    for( int opt_idx = 0; conn_opts[opt_idx].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++opt_idx ) {
 
-        if( key == conn_opts[ opt_idx ].conn_option_key ) {
+        if( key == conn_opts[opt_idx].conn_option_key ) {
 
-            return &conn_opts[ opt_idx ];
+            return &conn_opts[opt_idx];
          }
     }
 
@@ -759,35 +765,53 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 {
     bool mars_mentioned = false;
     connection_option const* conn_opt;
+    bool access_token_used = false;
 
     try {
+        // First of all, check if access token is specified. If so, check if UID, PWD, Authentication exist
+        // No need to check the keyword Trusted_Connection because it is not among the acceptable options for SQLSRV drivers
+        if (zend_hash_index_exists(options, SQLSRV_CONN_OPTION_ACCESS_TOKEN)) {
+            bool invalidOptions = false;
 
-        // Add the server name
-        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
+            // UID and PWD have to be NULLs... throw an exception as long as the user has specified any of them in the connection string,
+            // even if they may be empty strings. Likewise if the keyword Authentication exists
+            if (uid != NULL || pwd != NULL || zend_hash_index_exists(options, SQLSRV_CONN_OPTION_AUTHENTICATION)) {
+                invalidOptions = true;
+            }
 
-        // if uid is not present then we use trusted connection.
-        if(uid == NULL || strnlen_s( uid ) == 0 ) {
-
-            connection_string += "Trusted_Connection={Yes};";
-        }
-        else {
-
-            bool escaped = core_is_conn_opt_value_escaped( uid, strnlen_s( uid ));
-            CHECK_CUSTOM_ERROR( !escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED ) {
+            CHECK_CUSTOM_ERROR(invalidOptions, conn, SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN ) {
                 throw core::CoreException();
             }
 
-            common_conn_str_append_func( ODBCConnOptions::UID, uid, strnlen_s( uid ), connection_string TSRMLS_CC );
+            access_token_used = true;
+        }
 
-            // if no password was given, then don't add a password to the connection string.  Perhaps the UID
-            // given doesn't have a password?
-            if( pwd != NULL ) {
-                escaped = core_is_conn_opt_value_escaped( pwd, strnlen_s( pwd ));
-                CHECK_CUSTOM_ERROR( !escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED ) {
+        // Add the server name
+        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
+       
+        // if uid is not present then we use trusted connection -- but not when access token is used, because they are incompatible
+        if (!access_token_used) {
+            if (uid == NULL || strnlen_s(uid) == 0) {
+                connection_string += CONNECTION_OPTION_NO_CREDENTIALS;  //  "Trusted_Connection={Yes};"
+            }
+            else {
+                bool escaped = core_is_conn_opt_value_escaped(uid, strnlen_s(uid));
+                CHECK_CUSTOM_ERROR(!escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED) {
                     throw core::CoreException();
                 }
 
-                common_conn_str_append_func( ODBCConnOptions::PWD, pwd, strnlen_s( pwd ), connection_string TSRMLS_CC );
+                common_conn_str_append_func(ODBCConnOptions::UID, uid, strnlen_s(uid), connection_string TSRMLS_CC);
+
+                // if no password was given, then don't add a password to the connection string.  Perhaps the UID
+                // given doesn't have a password?
+                if (pwd != NULL) {
+                    escaped = core_is_conn_opt_value_escaped(pwd, strnlen_s(pwd));
+                    CHECK_CUSTOM_ERROR(!escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED) {
+                        throw core::CoreException();
+                    }
+
+                    common_conn_str_append_func(ODBCConnOptions::PWD, pwd, strnlen_s(pwd), connection_string TSRMLS_CC);
+                }
             }
         }
 
@@ -919,15 +943,15 @@ const char* get_processor_arch( void )
 void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 {
     SQLSMALLINT info_len;
-    char p[ INFO_BUFFER_LEN ];
+    char p[INFO_BUFFER_LEN] = {'\0'};
     core::SQLGetInfo( conn, SQL_DBMS_VER, p, INFO_BUFFER_LEN, &info_len TSRMLS_CC );
 
     errno = 0;
-    char version_major_str[ 3 ];
+    char version_major_str[3] = {'\0'};
     SERVER_VERSION version_major;
     memcpy_s( version_major_str, sizeof( version_major_str ), p, 2 );
 
-    version_major_str[ 2 ] = '\0';
+    version_major_str[2] = {'\0'};
     version_major = static_cast<SERVER_VERSION>( atoi( version_major_str ));
 
     CHECK_CUSTOM_ERROR( version_major == 0 && ( errno == ERANGE || errno == EINVAL ), conn, SQLSRV_ERROR_UNKNOWN_SERVER_VERSION )
@@ -1025,7 +1049,7 @@ void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_l
     // be escaped, such as a closing }.
     TSRMLS_C;
 
-    if( val_len > 0 && val[0] == '{' && val[ val_len - 1 ] == '}' ) {
+    if( val_len > 0 && val[0] == '{' && val[val_len - 1] == '}' ) {
         ++val;
         val_len -= 2;
     }
@@ -1151,8 +1175,8 @@ size_t core_str_zval_is_true( _Inout_ zval* value_z )
 
     // strip any whitespace at the end (whitespace is the same value in ASCII and UTF-8)
     size_t last_char = val_len - 1;
-    while( isspace(( unsigned char )value_in[ last_char ] )) {
-        value_in[ last_char ] = '\0';
+    while( isspace(( unsigned char )value_in[last_char] )) {
+        value_in[last_char] = '\0';
         val_len = last_char;
         --last_char;
     }
@@ -1171,4 +1195,57 @@ size_t core_str_zval_is_true( _Inout_ zval* value_z )
     }
 
     return 0; // false
+}
+
+void access_token_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+{
+    SQLSRV_ASSERT(Z_TYPE_P(value) == IS_STRING, "An access token must be a byte string.");
+
+    size_t value_len = Z_STRLEN_P(value);
+
+    CHECK_CUSTOM_ERROR(value_len <= 0, conn, SQLSRV_ERROR_EMPTY_ACCESS_TOKEN) {
+        throw core::CoreException();
+    }
+
+    const char* value_str = Z_STRVAL_P( value );
+    
+    // The SQL_COPT_SS_ACCESS_TOKEN pre-connection attribute allows the use of an access token (in the format extracted from 
+    // an OAuth JSON response), obtained from Azure AD for authentication instead of username and password, and also 
+    // bypasses the negotiation and obtaining of an access token by the driver. To use an access token, set the 
+    // SQL_COPT_SS_ACCESS_TOKEN connection attribute to a pointer to an ACCESSTOKEN structure
+    //
+    //  typedef struct AccessToken
+    //  {
+    //      unsigned int dataSize;
+    //      char data[];
+    //  } ACCESSTOKEN;
+    //
+    // NOTE: The ODBC Driver version 13.1 only supports this authentication on Windows.
+    //
+    // A valid access token byte string must be expanded so that each byte is followed by a 0 padding byte, 
+    // similar to a UCS-2 string containing only ASCII characters
+    //
+    // See https://docs.microsoft.com/sql/connect/odbc/using-azure-active-directory#authenticating-with-an-access-token
+
+    size_t dataSize = 2 * value_len;
+    
+    sqlsrv_malloc_auto_ptr<ACCESSTOKEN> accToken;   
+    accToken = reinterpret_cast<ACCESSTOKEN*>(sqlsrv_malloc(sizeof(ACCESSTOKEN) + dataSize));
+
+    ACCESSTOKEN *pAccToken = accToken.get();
+    SQLSRV_ASSERT(pAccToken != NULL, "Something went wrong when trying to allocate memory for the access token.");
+
+    pAccToken->dataSize = dataSize;
+    
+    // Expand access token with padding bytes
+    for (size_t i = 0, j = 0; i < dataSize; i += 2, j++) {
+        pAccToken->data[i] = value_str[j];
+        pAccToken->data[i+1] = 0;
+    }
+    
+    core::SQLSetConnectAttr(conn, SQL_COPT_SS_ACCESS_TOKEN, reinterpret_cast<SQLPOINTER>(pAccToken), SQL_IS_POINTER);
+    
+    // Save the pointer because SQLDriverConnect() will use it to make connection to the server 
+    conn->azure_ad_access_token = pAccToken;
+    accToken.transferred();
 }

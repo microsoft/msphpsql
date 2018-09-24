@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -70,7 +70,7 @@ typedef struct _OSVERSIONINFOA {
     DWORD dwMinorVersion;
     DWORD dwBuildNumber;
     DWORD dwPlatformId;
-    CHAR   szCSDVersion[ 128 ];     // Maintenance string for PSS usage
+    CHAR   szCSDVersion[128];     // Maintenance string for PSS usage
 } OSVERSIONINFOA, *POSVERSIONINFOA, *LPOSVERSIONINFOA;
 typedef OSVERSIONINFOA OSVERSIONINFO;
 #endif // !_WIN32
@@ -175,7 +175,7 @@ const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
 // increase the maximum message length to accommodate for the long error returned for operand type clash
 // or for conversion of a long string
-const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 8;
+const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 2;
 
 // max size of a date time string when converting from a DateTime object to a string
 const int MAX_DATETIME_STRING_LEN = 256;
@@ -546,21 +546,21 @@ public:
     // an array of elements, so this operator allows us to treat the memory as such.
     T& operator[]( _In_ int index ) const
     {
-        return _ptr[ index ];
+        return _ptr[index];
     }
 
     // there are a number of places where we allocate a block intended to be accessed as
     // an array of elements, so this operator allows us to treat the memory as such.
     T& operator[]( _In_ unsigned int index ) const
     {
-        return _ptr[ index ];
+        return _ptr[index];
     }
 
     // there are a number of places where we allocate a block intended to be accessed as
     // an array of elements, so this operator allows us to treat the memory as such.
     T& operator[]( _In_ long index ) const
     {
-        return _ptr[ index ];
+        return _ptr[index];
     }
 
 	
@@ -577,7 +577,7 @@ public:
     // an array of elements, so this operator allows us to treat the memory as such.
     T& operator[]( _In_ unsigned short index ) const
     {
-        return _ptr[ index ];
+        return _ptr[index];
     }
 
     // access elements of a structure through the auto ptr
@@ -693,9 +693,9 @@ public:
     // free the original pointer and assign a new pointer. Use NULL to simply free the pointer.
     void reset( _In_opt_ HashTable* ptr = NULL )
     {
-        if( _ptr ) {
-            zend_hash_destroy( _ptr );
-            FREE_HASHTABLE( _ptr );
+        if (_ptr != NULL) {
+            zend_hash_destroy(_ptr);
+            FREE_HASHTABLE(_ptr);
         }
         _ptr = ptr;
     }
@@ -1076,6 +1076,8 @@ struct sqlsrv_conn : public sqlsrv_context {
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
     DRIVER_VERSION driver_version;      // version of ODBC driver
 
+    sqlsrv_malloc_auto_ptr<ACCESSTOKEN> azure_ad_access_token;
+
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding TSRMLS_DC ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
@@ -1096,6 +1098,7 @@ enum SQLSRV_STMT_OPTIONS {
    SQLSRV_STMT_OPTION_SEND_STREAMS_AT_EXEC,
    SQLSRV_STMT_OPTION_SCROLLABLE,
    SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE,
+   SQLSRV_STMT_OPTION_DATE_AS_STRING,
 
    // Driver specific connection options
    SQLSRV_STMT_OPTION_DRIVER_SPECIFIC = 1000,
@@ -1105,6 +1108,7 @@ enum SQLSRV_STMT_OPTIONS {
 namespace ODBCConnOptions {
 
 const char APP[] = "APP";
+const char AccessToken[] = "AccessToken";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
@@ -1140,6 +1144,7 @@ enum SQLSRV_CONN_OPTIONS {
    
     SQLSRV_CONN_OPTION_INVALID,
     SQLSRV_CONN_OPTION_APP,
+    SQLSRV_CONN_OPTION_ACCESS_TOKEN,
     SQLSRV_CONN_OPTION_CHARACTERSET,
     SQLSRV_CONN_OPTION_CONN_POOLING,
     SQLSRV_CONN_OPTION_DATABASE,
@@ -1222,12 +1227,12 @@ struct driver_set_func {
     static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
-struct ce_ksp_provider_set_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
-};
-
 struct ce_akv_str_set_func {
    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+};
+
+struct access_token_set_func {
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
 };
 
 
@@ -1274,6 +1279,11 @@ struct stmt_option_send_at_exec : public stmt_option_functor {
 };
 
 struct stmt_option_buffered_query_limit : public stmt_option_functor {
+
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+};
+
+struct stmt_option_date_as_string : public stmt_option_functor {
 
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
 };
@@ -1389,6 +1399,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
                                           // last results
     unsigned long query_timeout;          // maximum allowed statement execution time
     zend_long buffered_query_limit;       // maximum allowed memory for a buffered query (measured in KB)
+    bool date_as_string;                  // false by default but the user can set this to true to retrieve datetime values as strings
 
     // holds output pointers for SQLBindParameter
     // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving
@@ -1718,6 +1729,8 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_AKV_SECRET_MISSING,
     SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
     SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
+    SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
+    SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
@@ -1889,14 +1902,20 @@ namespace core {
         // and return a more helpful message prepended to the ODBC errors if that error occurs
         if( !SQL_SUCCEEDED( r )) {
 
-            SQLCHAR err_msg[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { '\0' };
+            SQLCHAR err_msg[SQL_MAX_MESSAGE_LENGTH + 1] = {'\0'};
             SQLSMALLINT len = 0;
             
             SQLRETURN rtemp = ::SQLGetDiagField( stmt->handle_type(), stmt->handle(), 1, SQL_DIAG_MESSAGE_TEXT, 
-                                             err_msg, SQL_MAX_ERROR_MESSAGE_LENGTH, &len );
+                                             err_msg, SQL_MAX_MESSAGE_LENGTH, &len );
 
+            if (rtemp == SQL_SUCCESS_WITH_INFO && len > SQL_MAX_MESSAGE_LENGTH) {
+                // if the error message is this long, then it must not be the mars message 
+                // defined as ODBC_CONNECTION_BUSY_ERROR -- so return here and continue the 
+                // regular error handling
+                return;
+            }
             CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt ) {
-         
+ 
                 throw CoreException();
             }
 
@@ -2377,10 +2396,13 @@ namespace core {
 
     inline void sqlsrv_array_init( _Inout_ sqlsrv_context& ctx, _Out_ zval* new_array TSRMLS_DC) 
     {
-        int zr = ::array_init(new_array);
-        CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
+#if PHP_VERSION_ID < 70300
+        CHECK_ZEND_ERROR(::array_init(new_array), ctx, SQLSRV_ERROR_ZEND_HASH) {
             throw CoreException();
         }
+#else
+        array_init(new_array);
+#endif
     }
 
     inline void sqlsrv_php_stream_from_zval_no_verify( _Inout_ sqlsrv_context& ctx, _Outref_result_maybenull_ php_stream*& stream, _In_opt_ zval* stream_z TSRMLS_DC )

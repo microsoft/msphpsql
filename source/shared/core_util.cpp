@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -28,7 +28,7 @@ log_callback g_driver_log;
 // internal error that says that FormatMessage failed
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
 // buffer used to hold a formatted log message prior to actually logging it.
-char last_err_msg[ 2048 ];  // 2k to hold the error messages
+char last_err_msg[2048] = {'\0'};  // 2k to hold the error messages
 
 // routine used by utf16_string_from_mbcs_string
 unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
@@ -219,8 +219,8 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
 
     SQLRETURN r = SQL_SUCCESS;
     SQLSMALLINT wmessage_len = 0;
-    SQLWCHAR wsqlstate[ SQL_SQLSTATE_BUFSIZE ] = { L'\0' };
-    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ] = { L'\0' };
+    SQLWCHAR wsqlstate[SQL_SQLSTATE_BUFSIZE] = {L'\0'};
+    SQLWCHAR wnative_message[SQL_MAX_ERROR_MESSAGE_LENGTH + 1] = {L'\0'};
     SQLSRV_ENCODING enc = ctx.encoding();
 
     switch( h_type ) {
@@ -265,10 +265,36 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
             // We need to calculate number of characters
             SQLINTEGER wsqlstate_len = sizeof( wsqlstate ) / sizeof( SQLWCHAR );
             SQLLEN sqlstate_len = 0;
-            convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
 
+            convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
+            
             SQLLEN message_len = 0;
-            convert_string_from_utf16(enc, wnative_message, wmessage_len, (char**)&error->native_message, message_len);
+            if (r == SQL_SUCCESS_WITH_INFO && wmessage_len > SQL_MAX_ERROR_MESSAGE_LENGTH) {
+                // note that wmessage_len is the number of characters required for the error message -- 
+                // create a new buffer big enough for this lengthy error message
+                sqlsrv_malloc_auto_ptr<SQLWCHAR> wnative_message_str;
+
+                SQLSMALLINT expected_len = wmessage_len * sizeof(SQLWCHAR);
+                SQLSMALLINT returned_len = 0;
+
+                wnative_message_str = reinterpret_cast<SQLWCHAR*>(sqlsrv_malloc(expected_len));
+                memset(wnative_message_str, '\0', expected_len); 
+
+                SQLRETURN rtemp = ::SQLGetDiagFieldW(h_type, h, record_number, SQL_DIAG_MESSAGE_TEXT, wnative_message_str, wmessage_len, &returned_len);
+                if (!SQL_SUCCEEDED(rtemp) || returned_len != expected_len) {
+                    // something went wrong
+                    return false;
+                }
+
+                convert_string_from_utf16(enc, wnative_message_str, wmessage_len, (char**)&error->native_message, message_len);
+            } else {
+                convert_string_from_utf16(enc, wnative_message, wmessage_len, (char**)&error->native_message, message_len);
+            }
+
+            if (message_len == 0 && error->native_message == NULL) {
+                // something went wrong
+                return false;
+            }
             break;
     }
 
@@ -352,11 +378,11 @@ void die( _In_opt_ const char* msg, ... )
     va_start( format_args, msg );
     DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, last_err_msg, sizeof( last_err_msg ), &format_args );
     va_end( format_args );
-    if( rc == 0 ) {
-        php_error( E_ERROR, reinterpret_cast<const char*>( INTERNAL_FORMAT_ERROR ));
+    if (rc == 0) {
+        php_error(E_ERROR, "%s", reinterpret_cast<const char*>(INTERNAL_FORMAT_ERROR));
     }
 
-    php_error( E_ERROR, last_err_msg );
+    php_error(E_ERROR, "%s", last_err_msg);
 }
 
 namespace {
@@ -393,7 +419,7 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
     if( required_len == 0 ) {
         return 0;
     }
-    utf16_out_string[ required_len ] = '\0';
+    utf16_out_string[required_len] = '\0';
 
     return required_len;
 }

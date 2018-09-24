@@ -3,7 +3,7 @@
 //
 // Contents: initialization routines for PDO_SQLSRV
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -132,10 +132,10 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     g_pdo_errors_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
     ::zend_hash_init( g_pdo_errors_ht, 50, NULL, pdo_error_dtor /*pDestructor*/, 1 );
 
-    for( int i = 0; PDO_ERRORS[ i ].error_code != -1; ++i ) {
+    for( int i = 0; PDO_ERRORS[i].error_code != -1; ++i ) {
         
-        void* zr = ::zend_hash_index_update_mem( g_pdo_errors_ht, PDO_ERRORS[ i ].error_code, 
-                                       &( PDO_ERRORS[ i ].sqlsrv_error ), sizeof( PDO_ERRORS[ i ].sqlsrv_error ) );
+        void* zr = ::zend_hash_index_update_mem( g_pdo_errors_ht, PDO_ERRORS[i].error_code, 
+                                       &( PDO_ERRORS[i].sqlsrv_error ), sizeof( PDO_ERRORS[i].sqlsrv_error ) );
         if( zr == NULL ) {
                 
             LOG( SEV_ERROR, "Failed to insert data into PDO errors hashtable." );
@@ -285,6 +285,7 @@ namespace {
         { "SQLSRV_ATTR_CURSOR_SCROLL_TYPE"  , SQLSRV_ATTR_CURSOR_SCROLL_TYPE },
         { "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
         { "SQLSRV_ATTR_FETCHES_NUMERIC_TYPE", SQLSRV_ATTR_FETCHES_NUMERIC_TYPE },
+        { "SQLSRV_ATTR_FETCHES_DATETIME_TYPE", SQLSRV_ATTR_FETCHES_DATETIME_TYPE },
 
         // used for the size for output parameters: PDO::PARAM_INT and PDO::PARAM_BOOL use the default size of int,
         // PDO::PARAM_STR uses the size of the string in the variable

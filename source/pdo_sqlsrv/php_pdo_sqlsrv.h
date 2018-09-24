@@ -6,7 +6,7 @@
 //
 // Contents: Declarations for the extension
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -48,6 +48,7 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
     SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
     SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
+    SQLSRV_ATTR_FETCHES_DATETIME_TYPE
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -203,6 +204,7 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     long query_timeout;
     zend_long client_buffer_max_size;
     bool fetch_numeric;
+    bool fetch_datetime;
 
     pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC );
 };
@@ -241,6 +243,10 @@ struct stmt_option_fetch_numeric : public stmt_option_functor {
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_fetch_datetime : public stmt_option_functor {
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+};
+
 extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
 
 // a core layer pdo stmt object. This object inherits and overrides the callbacks necessary
@@ -253,11 +259,13 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         direct_query_subst_string_len( 0 ),
         placeholders(NULL),
         bound_column_param_types( NULL ),
-        fetch_numeric( false )
+        fetch_numeric( false ),
+        fetch_datetime( false )
     {
         pdo_sqlsrv_dbh* db = static_cast<pdo_sqlsrv_dbh*>( c );
         direct_query = db->direct_query;
         fetch_numeric = db->fetch_numeric;
+        fetch_datetime = db->fetch_datetime;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );
@@ -275,6 +283,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
     pdo_param_type* bound_column_param_types;
     bool fetch_numeric;
+    bool fetch_datetime;
 };
 
 

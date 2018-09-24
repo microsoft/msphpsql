@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -37,7 +37,7 @@ const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE 
 
 // buffer used to hold a formatted log message prior to actually logging it.
 const int LOG_MSG_SIZE = 2048;
-char log_msg[ LOG_MSG_SIZE ];
+char log_msg[LOG_MSG_SIZE] = {'\0'};
 
 // internal error that says that FormatMessage failed
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
@@ -429,6 +429,15 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_KEYSTORE_INVALID_VALUE,
         { IMSSP, (SQLCHAR*) "Invalid value for loading Azure Key Vault.", -89, false}
     },
+    {
+        SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
+        { IMSSP, (SQLCHAR*) "When using Azure AD Access Token, the connection string must not contain UID, PWD, or Authentication keywords.", -90, false}
+    },
+    {
+        SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
+        { IMSSP, (SQLCHAR*) "The Azure AD Access Token is empty. Expected a byte string.", -91, false}
+    },
+
     { UINT_MAX, {} }
 };
 
@@ -512,7 +521,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
                 msg = static_cast<char*>( sqlsrv_malloc( msg_len ) );
                 core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code,
                                             error->native_message );
-                php_error( E_WARNING, msg );
+                php_error(E_WARNING, "%s", msg.get());
             }
             ctx.set_last_error( error );
             break;

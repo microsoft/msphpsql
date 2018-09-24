@@ -3,7 +3,7 @@
 //
 // Contents: Result sets
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -341,8 +341,8 @@ struct row_dtor_closure {
 
 sqlsrv_error* odbc_get_diag_rec( _In_ sqlsrv_stmt* odbc, _In_ SQLSMALLINT record_number )
 {
-    SQLWCHAR wsql_state[ SQL_SQLSTATE_BUFSIZE ];
-    SQLWCHAR wnative_message[ SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ];
+    SQLWCHAR wsql_state[SQL_SQLSTATE_BUFSIZE] = {L'\0'};
+    SQLWCHAR wnative_message[SQL_MAX_ERROR_MESSAGE_LENGTH + 1] = {L'\0'};
     SQLINTEGER native_code;
     SQLSMALLINT wnative_message_len = 0;
     
@@ -459,29 +459,29 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
     // set up the conversion matrix if this is the first time we're called
     if( conv_matrix.size() == 0 ) {
 
-        conv_matrix[ SQL_C_CHAR ][ SQL_C_CHAR ] = &sqlsrv_buffered_result_set::to_same_string;
-        conv_matrix[ SQL_C_CHAR ][ SQL_C_WCHAR ] = &sqlsrv_buffered_result_set::system_to_wide_string;
-        conv_matrix[ SQL_C_CHAR ][ SQL_C_BINARY ] = &sqlsrv_buffered_result_set::to_binary_string;
-        conv_matrix[ SQL_C_CHAR ][ SQL_C_DOUBLE ] = &sqlsrv_buffered_result_set::string_to_double;
-        conv_matrix[ SQL_C_CHAR ][ SQL_C_LONG ] = &sqlsrv_buffered_result_set::string_to_long;
-        conv_matrix[ SQL_C_WCHAR ][ SQL_C_WCHAR ] = &sqlsrv_buffered_result_set::to_same_string;
-        conv_matrix[ SQL_C_WCHAR ][ SQL_C_BINARY ] = &sqlsrv_buffered_result_set::to_binary_string;
-        conv_matrix[ SQL_C_WCHAR ][ SQL_C_CHAR ] = &sqlsrv_buffered_result_set::wide_to_system_string;
-        conv_matrix[ SQL_C_WCHAR ][ SQL_C_DOUBLE ] = &sqlsrv_buffered_result_set::wstring_to_double;
-        conv_matrix[ SQL_C_WCHAR ][ SQL_C_LONG ] = &sqlsrv_buffered_result_set::wstring_to_long;
-        conv_matrix[ SQL_C_BINARY ][ SQL_C_BINARY ] = &sqlsrv_buffered_result_set::to_same_string;
-        conv_matrix[ SQL_C_BINARY ][ SQL_C_CHAR ] = &sqlsrv_buffered_result_set::binary_to_system_string;
-        conv_matrix[ SQL_C_BINARY ][ SQL_C_WCHAR ] = &sqlsrv_buffered_result_set::binary_to_wide_string;
-        conv_matrix[ SQL_C_LONG ][ SQL_C_DOUBLE ] = &sqlsrv_buffered_result_set::long_to_double;
-        conv_matrix[ SQL_C_LONG ][ SQL_C_LONG ] = &sqlsrv_buffered_result_set::to_long;
-        conv_matrix[ SQL_C_LONG ][ SQL_C_BINARY ] = &sqlsrv_buffered_result_set::to_long;
-        conv_matrix[ SQL_C_LONG ][ SQL_C_CHAR ] = &sqlsrv_buffered_result_set::long_to_system_string;
-        conv_matrix[ SQL_C_LONG ][ SQL_C_WCHAR ] = &sqlsrv_buffered_result_set::long_to_wide_string;
-        conv_matrix[ SQL_C_DOUBLE ][ SQL_C_DOUBLE ] = &sqlsrv_buffered_result_set::to_double;
-        conv_matrix[ SQL_C_DOUBLE ][ SQL_C_BINARY ] = &sqlsrv_buffered_result_set::to_double;
-        conv_matrix[ SQL_C_DOUBLE ][ SQL_C_CHAR ] = &sqlsrv_buffered_result_set::double_to_system_string;
-        conv_matrix[ SQL_C_DOUBLE ][ SQL_C_LONG ] = &sqlsrv_buffered_result_set::double_to_long;
-        conv_matrix[ SQL_C_DOUBLE ][ SQL_C_WCHAR ] = &sqlsrv_buffered_result_set::double_to_wide_string;
+        conv_matrix[SQL_C_CHAR][SQL_C_CHAR] = &sqlsrv_buffered_result_set::to_same_string;
+        conv_matrix[SQL_C_CHAR][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::system_to_wide_string;
+        conv_matrix[SQL_C_CHAR][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_binary_string;
+        conv_matrix[SQL_C_CHAR][SQL_C_DOUBLE] = &sqlsrv_buffered_result_set::string_to_double;
+        conv_matrix[SQL_C_CHAR][SQL_C_LONG] = &sqlsrv_buffered_result_set::string_to_long;
+        conv_matrix[SQL_C_WCHAR][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::to_same_string;
+        conv_matrix[SQL_C_WCHAR][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_binary_string;
+        conv_matrix[SQL_C_WCHAR][SQL_C_CHAR] = &sqlsrv_buffered_result_set::wide_to_system_string;
+        conv_matrix[SQL_C_WCHAR][SQL_C_DOUBLE] = &sqlsrv_buffered_result_set::wstring_to_double;
+        conv_matrix[SQL_C_WCHAR][SQL_C_LONG] = &sqlsrv_buffered_result_set::wstring_to_long;
+        conv_matrix[SQL_C_BINARY][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_same_string;
+        conv_matrix[SQL_C_BINARY][SQL_C_CHAR] = &sqlsrv_buffered_result_set::binary_to_system_string;
+        conv_matrix[SQL_C_BINARY][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::binary_to_wide_string;
+        conv_matrix[SQL_C_LONG][SQL_C_DOUBLE] = &sqlsrv_buffered_result_set::long_to_double;
+        conv_matrix[SQL_C_LONG][SQL_C_LONG] = &sqlsrv_buffered_result_set::to_long;
+        conv_matrix[SQL_C_LONG][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_long;
+        conv_matrix[SQL_C_LONG][SQL_C_CHAR] = &sqlsrv_buffered_result_set::long_to_system_string;
+        conv_matrix[SQL_C_LONG][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::long_to_wide_string;
+        conv_matrix[SQL_C_DOUBLE][SQL_C_DOUBLE] = &sqlsrv_buffered_result_set::to_double;
+        conv_matrix[SQL_C_DOUBLE][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_double;
+        conv_matrix[SQL_C_DOUBLE][SQL_C_CHAR] = &sqlsrv_buffered_result_set::double_to_system_string;
+        conv_matrix[SQL_C_DOUBLE][SQL_C_LONG] = &sqlsrv_buffered_result_set::double_to_long;
+        conv_matrix[SQL_C_DOUBLE][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::double_to_wide_string;
     }
 
     SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
@@ -687,7 +687,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                         if( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
                             out_buffer_length = &out_buffer_temp;
-                            SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[ meta[i].offset ] );
+                            SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[meta[i].offset] );
                             *lob_addr = read_lob_field( stmt, i, meta[i], mem_used TSRMLS_CC );
                             // a NULL pointer means NULL field
                             if( *lob_addr == NULL ) {
@@ -854,7 +854,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
         return SQL_ERROR;
     }
 
-    return (( this )->*( conv_matrix[ meta[ field_index ].c_type ][ target_type ] ))( field_index, buffer, buffer_length,
+    return (( this )->*( conv_matrix[meta[field_index].c_type][target_type] ))( field_index, buffer, buffer_length,
                                                                                       out_buffer_length );
 }
 
@@ -965,9 +965,9 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
         // to get the number of hex digits we can copy
         SQLLEN to_copy_hex = to_copy / (2 * extra);
         for( SQLLEN i = 0; i < to_copy_hex; ++i ) {
-            *h = hex_chars[ (*b & 0xf0) >> 4 ];
+            *h = hex_chars[(*b & 0xf0) >> 4];
             h++;
-            *h = hex_chars[ (*b++ & 0x0f) ];
+            *h = hex_chars[(*b++ & 0x0f)];
             h++;
         }
         read_so_far += to_copy_hex;
@@ -986,13 +986,13 @@ SQLRETURN sqlsrv_buffered_result_set::binary_to_system_string( _In_ SQLSMALLINT 
     SQLCHAR* row = get_row();
     SQLCHAR* field_data = NULL;
 
-    if( meta[ field_index ].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
+    if( meta[field_index].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
-        field_data = *reinterpret_cast<SQLCHAR**>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN );
+        field_data = *reinterpret_cast<SQLCHAR**>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
     }
     else {
 
-        field_data = &row[ meta[ field_index ].offset ] + sizeof( SQLULEN );
+        field_data = &row[meta[field_index].offset] + sizeof( SQLULEN );
     }
 
     return binary_to_string<char>( field_data, read_so_far, buffer, buffer_length, out_buffer_length, last_error );
@@ -1004,13 +1004,13 @@ SQLRETURN sqlsrv_buffered_result_set::binary_to_wide_string( _In_ SQLSMALLINT fi
     SQLCHAR* row = get_row();
     SQLCHAR* field_data = NULL;
 
-    if( meta[ field_index ].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
+    if( meta[field_index].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
-        field_data = *reinterpret_cast<SQLCHAR**>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN );
+        field_data = *reinterpret_cast<SQLCHAR**>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
     }
     else {
 
-        field_data = &row[ meta[ field_index ].offset ] + sizeof( SQLULEN );
+        field_data = &row[meta[field_index].offset] + sizeof( SQLULEN );
     }
 
     return binary_to_string<WCHAR>( field_data, read_so_far, buffer, buffer_length, out_buffer_length, last_error );
@@ -1020,12 +1020,12 @@ SQLRETURN sqlsrv_buffered_result_set::binary_to_wide_string( _In_ SQLSMALLINT fi
 SQLRETURN sqlsrv_buffered_result_set::double_to_long( _In_ SQLSMALLINT field_index, _Inout_updates_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                       _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_DOUBLE, "Invalid conversion to long" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_DOUBLE, "Invalid conversion to long" );
     SQLSRV_ASSERT( buffer_length >= sizeof(SQLLEN), "Buffer length must be able to find a long in "
                    "sqlsrv_buffered_result_set::double_to_long" );
 
     unsigned char* row = get_row();
-    double* double_data = reinterpret_cast<double*>( &row[ meta[ field_index ].offset ] );
+    double* double_data = reinterpret_cast<double*>( &row[meta[field_index].offset] );
     LONG* long_data = reinterpret_cast<LONG*>( buffer );
 
     if( *double_data < double( LONG_MIN ) || *double_data > double( LONG_MAX )) {
@@ -1049,11 +1049,11 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_long( _In_ SQLSMALLINT field_ind
 SQLRETURN sqlsrv_buffered_result_set::double_to_system_string( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                                _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_DOUBLE, "Invalid conversion to system string" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_DOUBLE, "Invalid conversion to system string" );
     SQLSRV_ASSERT( buffer_length > 0, "Buffer length must be > 0 in sqlsrv_buffered_result_set::double_to_system_string" );
 
     unsigned char* row = get_row();
-    double* double_data = reinterpret_cast<double*>( &row[ meta[ field_index ].offset ] );
+    double* double_data = reinterpret_cast<double*>( &row[meta[field_index].offset] );
     SQLRETURN r = SQL_SUCCESS;
 #ifdef _WIN32
     r = number_to_string<char>( double_data, buffer, buffer_length, out_buffer_length, last_error );
@@ -1066,11 +1066,11 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_system_string( _In_ SQLSMALLINT 
 SQLRETURN sqlsrv_buffered_result_set::double_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                              _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_DOUBLE, "Invalid conversion to wide string" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_DOUBLE, "Invalid conversion to wide string" );
     SQLSRV_ASSERT( buffer_length > 0, "Buffer length must be > 0 in sqlsrv_buffered_result_set::double_to_wide_string" );
 
     unsigned char* row = get_row();
-    double* double_data = reinterpret_cast<double*>( &row[ meta[ field_index ].offset ] );
+    double* double_data = reinterpret_cast<double*>( &row[meta[field_index].offset] );
     SQLRETURN r = SQL_SUCCESS;
 #ifdef _WIN32
     r = number_to_string<WCHAR>( double_data, buffer, buffer_length, out_buffer_length, last_error );
@@ -1083,12 +1083,12 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_wide_string( _In_ SQLSMALLINT fi
 SQLRETURN sqlsrv_buffered_result_set::long_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length, 
                                                       _Out_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_LONG, "Invalid conversion to long" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_LONG, "Invalid conversion to long" );
     SQLSRV_ASSERT( buffer_length >= sizeof(double), "Buffer length must be able to find a long in sqlsrv_buffered_result_set::double_to_long" );
 
     unsigned char* row = get_row();
     double* double_data = reinterpret_cast<double*>( buffer );
-    LONG* long_data = reinterpret_cast<LONG*>( &row[ meta[ field_index ].offset ] );
+    LONG* long_data = reinterpret_cast<LONG*>( &row[meta[field_index].offset] );
 
     *double_data = static_cast<LONG>( *long_data );
     *out_buffer_length = sizeof( double );
@@ -1098,11 +1098,11 @@ SQLRETURN sqlsrv_buffered_result_set::long_to_double( _In_ SQLSMALLINT field_ind
 SQLRETURN sqlsrv_buffered_result_set::long_to_system_string( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                              _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_LONG, "Invalid conversion to system string" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_LONG, "Invalid conversion to system string" );
     SQLSRV_ASSERT( buffer_length > 0, "Buffer length must be > 0 in sqlsrv_buffered_result_set::long_to_system_string" );
 
     unsigned char* row = get_row();
-    LONG* long_data = reinterpret_cast<LONG*>( &row[ meta[ field_index ].offset ] );
+    LONG* long_data = reinterpret_cast<LONG*>( &row[meta[field_index].offset] );
     SQLRETURN r = SQL_SUCCESS;
 #ifdef _WIN32
     r = number_to_string<char>( long_data, buffer, buffer_length, out_buffer_length, last_error );
@@ -1115,11 +1115,11 @@ SQLRETURN sqlsrv_buffered_result_set::long_to_system_string( _In_ SQLSMALLINT fi
 SQLRETURN sqlsrv_buffered_result_set::long_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                            _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_LONG, "Invalid conversion to wide string" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_LONG, "Invalid conversion to wide string" );
     SQLSRV_ASSERT( buffer_length > 0, "Buffer length must be > 0 in sqlsrv_buffered_result_set::long_to_wide_string" );
 
     unsigned char* row = get_row();
-    LONG* long_data = reinterpret_cast<LONG*>( &row[ meta[ field_index ].offset ] );
+    LONG* long_data = reinterpret_cast<LONG*>( &row[meta[field_index].offset] );
     SQLRETURN r = SQL_SUCCESS;
 #ifdef _WIN32
     r = number_to_string<WCHAR>( long_data, buffer, buffer_length, out_buffer_length, last_error );
@@ -1132,49 +1132,49 @@ SQLRETURN sqlsrv_buffered_result_set::long_to_wide_string( _In_ SQLSMALLINT fiel
 SQLRETURN sqlsrv_buffered_result_set::string_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                         _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_CHAR, "Invalid conversion from string to double" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_CHAR, "Invalid conversion from string to double" );
     SQLSRV_ASSERT( buffer_length >= sizeof( double ), "Buffer needs to be big enough to hold a double" );
 
     unsigned char* row = get_row();
-    char* string_data = reinterpret_cast<char*>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN );
+    char* string_data = reinterpret_cast<char*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
 
-    return string_to_number<double>( string_data, meta[ field_index ].length, buffer, buffer_length, out_buffer_length, last_error );
+    return string_to_number<double>( string_data, meta[field_index].length, buffer, buffer_length, out_buffer_length, last_error );
 }
 
 SQLRETURN sqlsrv_buffered_result_set::wstring_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                          _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_WCHAR, "Invalid conversion from wide string to double" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_WCHAR, "Invalid conversion from wide string to double" );
     SQLSRV_ASSERT( buffer_length >= sizeof( double ), "Buffer needs to be big enough to hold a double" );
 
     unsigned char* row = get_row();
-    SQLWCHAR* string_data = reinterpret_cast<SQLWCHAR*>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN ) / sizeof( SQLWCHAR );
+    SQLWCHAR* string_data = reinterpret_cast<SQLWCHAR*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN ) / sizeof( SQLWCHAR );
 
-    return string_to_number<double>( string_data, meta[ field_index ].length, buffer, buffer_length, out_buffer_length, last_error );
+    return string_to_number<double>( string_data, meta[field_index].length, buffer, buffer_length, out_buffer_length, last_error );
 }
 
 SQLRETURN sqlsrv_buffered_result_set::string_to_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                       _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_CHAR, "Invalid conversion from string to long" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_CHAR, "Invalid conversion from string to long" );
     SQLSRV_ASSERT( buffer_length >= sizeof( LONG ), "Buffer needs to be big enough to hold a long" );
 
     unsigned char* row = get_row();
-    char* string_data = reinterpret_cast<char*>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN );
+    char* string_data = reinterpret_cast<char*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
 
-    return string_to_number<LONG>( string_data, meta[ field_index ].length, buffer, buffer_length, out_buffer_length, last_error );
+    return string_to_number<LONG>( string_data, meta[field_index].length, buffer, buffer_length, out_buffer_length, last_error );
 }
 
 SQLRETURN sqlsrv_buffered_result_set::wstring_to_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                       _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_WCHAR, "Invalid conversion from wide string to long" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_WCHAR, "Invalid conversion from wide string to long" );
     SQLSRV_ASSERT( buffer_length >= sizeof( LONG ), "Buffer needs to be big enough to hold a long" );
 
     unsigned char* row = get_row();
-    SQLWCHAR* string_data = reinterpret_cast<SQLWCHAR*>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN ) / sizeof( SQLWCHAR );
+    SQLWCHAR* string_data = reinterpret_cast<SQLWCHAR*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN ) / sizeof( SQLWCHAR );
 
-    return string_to_number<LONG>( string_data, meta[ field_index ].length, buffer, buffer_length, out_buffer_length, last_error );
+    return string_to_number<LONG>( string_data, meta[field_index].length, buffer, buffer_length, out_buffer_length, last_error );
 }
 
 SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_z_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length, 
@@ -1189,15 +1189,15 @@ SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( _In_ SQLSMALLINT fi
     SQLCHAR* field_data = NULL;
     SQLULEN field_len = 0;
 
-    if( meta[ field_index ].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
+    if( meta[field_index].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
-        field_len = **reinterpret_cast<SQLLEN**>( &row[ meta[ field_index ].offset ] );
-        field_data = *reinterpret_cast<SQLCHAR**>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN ) + read_so_far;
+        field_len = **reinterpret_cast<SQLLEN**>( &row[meta[field_index].offset] );
+        field_data = *reinterpret_cast<SQLCHAR**>( &row[meta[field_index].offset] ) + sizeof( SQLULEN ) + read_so_far;
     }
     else {
 
-        field_len = *reinterpret_cast<SQLLEN*>( &row[ meta[ field_index ].offset ] );
-        field_data = &row[ meta[ field_index ].offset ] + sizeof( SQLULEN ) + read_so_far;
+        field_len = *reinterpret_cast<SQLLEN*>( &row[meta[field_index].offset] );
+        field_data = &row[meta[field_index].offset] + sizeof( SQLULEN ) + read_so_far;
     }
 
     // all fields will be treated as ODBC returns varchar(max) fields:
@@ -1264,7 +1264,7 @@ SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( _In_ SQLSMALLINT fi
                 return SQL_ERROR;
             }
 
-            ((WCHAR*)buffer)[ to_copy ] = L'\0';
+            ((WCHAR*)buffer)[to_copy] = L'\0';
             read_so_far += to_copy;
             break;
 
@@ -1288,7 +1288,7 @@ SQLRETURN sqlsrv_buffered_result_set::to_same_string( _In_ SQLSMALLINT field_ind
     // Set the amount of space necessary for null characters at the end of the data.
     SQLSMALLINT extra = 0;
 
-    switch( meta[ field_index ].c_type ) {
+    switch( meta[field_index].c_type ) {
         case SQL_C_WCHAR:
             extra = sizeof( SQLWCHAR );
             break;
@@ -1305,13 +1305,13 @@ SQLRETURN sqlsrv_buffered_result_set::to_same_string( _In_ SQLSMALLINT field_ind
 
     SQLCHAR* field_data = NULL;
 
-    if( meta[ field_index ].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
+    if( meta[field_index].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
-        field_data = *reinterpret_cast<SQLCHAR**>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN );
+        field_data = *reinterpret_cast<SQLCHAR**>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
     }
     else {
 
-        field_data = &row[ meta[ field_index ].offset ] + sizeof( SQLULEN );
+        field_data = &row[meta[field_index].offset] + sizeof( SQLULEN );
     }
 
     // all fields will be treated as ODBC returns varchar(max) fields:
@@ -1366,15 +1366,15 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( _In_ SQLSMALLINT fi
 
     if( read_so_far == 0 ) {
 
-        if( meta[ field_index ].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
+        if( meta[field_index].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
-            field_len = **reinterpret_cast<SQLLEN**>( &row[ meta[ field_index ].offset ] );
-            field_data = *reinterpret_cast<SQLCHAR**>( &row[ meta[ field_index ].offset ] ) + sizeof( SQLULEN ) + read_so_far;
+            field_len = **reinterpret_cast<SQLLEN**>( &row[meta[field_index].offset] );
+            field_data = *reinterpret_cast<SQLCHAR**>( &row[meta[field_index].offset] ) + sizeof( SQLULEN ) + read_so_far;
         }
         else {
 
-            field_len = *reinterpret_cast<SQLLEN*>( &row[ meta[ field_index ].offset ] );
-            field_data = &row[ meta[ field_index ].offset ] + sizeof( SQLULEN ) + read_so_far;
+            field_len = *reinterpret_cast<SQLLEN*>( &row[meta[field_index].offset] );
+            field_data = &row[meta[field_index].offset] + sizeof( SQLULEN ) + read_so_far;
         }
 
         if ( field_len == 0 ) { // empty string, no need for conversion
@@ -1434,7 +1434,7 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( _In_ SQLSMALLINT fi
     }
     SQLSRV_ASSERT( to_copy >= 0, "Invalid field copy length" );
     OACR_WARNING_SUPPRESS( BUFFER_UNDERFLOW, "Buffer length verified above" );
-    ((SQLCHAR*) buffer)[ to_copy ] = '\0';
+    ((SQLCHAR*) buffer)[to_copy] = '\0';
     read_so_far += to_copy;
 
     return r;
@@ -1450,11 +1450,11 @@ SQLRETURN sqlsrv_buffered_result_set::to_binary_string( _In_ SQLSMALLINT field_i
 SQLRETURN sqlsrv_buffered_result_set::to_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                 _Out_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_LONG, "Invalid conversion to long" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_LONG, "Invalid conversion to long" );
     SQLSRV_ASSERT( buffer_length >= sizeof( LONG ), "Buffer too small for SQL_C_LONG" );    // technically should ignore this
 
     unsigned char* row = get_row();
-    LONG* long_data = reinterpret_cast<LONG*>( &row[ meta[ field_index ].offset ] );
+    LONG* long_data = reinterpret_cast<LONG*>( &row[meta[field_index].offset] );
     memcpy_s( buffer, buffer_length, long_data, sizeof( LONG ));
     *out_buffer_length = sizeof( LONG );
 
@@ -1464,11 +1464,11 @@ SQLRETURN sqlsrv_buffered_result_set::to_long( _In_ SQLSMALLINT field_index, _Ou
 SQLRETURN sqlsrv_buffered_result_set::to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                   _Out_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[ field_index ].c_type == SQL_C_DOUBLE, "Invalid conversion to double" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_DOUBLE, "Invalid conversion to double" );
     SQLSRV_ASSERT( buffer_length >= sizeof( double ), "Buffer too small for SQL_C_DOUBLE" );  // technically should ignore this
 
     unsigned char* row = get_row();
-    double* double_data = reinterpret_cast<double*>( &row[ meta[ field_index ].offset ] );
+    double* double_data = reinterpret_cast<double*>( &row[meta[field_index].offset] );
     memcpy_s( buffer, buffer_length, double_data, sizeof( double ));
     *out_buffer_length = sizeof( double );
 
@@ -1489,7 +1489,7 @@ void cache_row_dtor( _In_ zval* data )
 
         if( result_set->col_meta_data(i).length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
 
-            void* out_of_row_data = *reinterpret_cast<void**>( &row[ result_set->col_meta_data(i).offset ] );
+            void* out_of_row_data = *reinterpret_cast<void**>( &row[result_set->col_meta_data(i).offset] );
             sqlsrv_free( out_of_row_data );
         }
     }
@@ -1525,7 +1525,7 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
     sqlsrv_malloc_auto_ptr<char> buffer;
     buffer = static_cast<char*>( sqlsrv_malloc( INITIAL_LOB_FIELD_LEN + extra + sizeof( SQLULEN )));
     SQLRETURN r = SQL_SUCCESS;
-    SQLCHAR state[ SQL_SQLSTATE_BUFSIZE ];
+    SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {'\0'};
     SQLLEN last_field_len = 0;
     bool full_length_returned = false;
 

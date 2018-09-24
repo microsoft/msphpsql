@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDO object for PDO_SQLSRV
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -38,6 +38,7 @@ namespace PDOConnOptionNames {
 
 const char Server[] = "Server";
 const char APP[] = "APP";
+const char AccessToken[] = "AccessToken";
 const char ApplicationIntent[] = "ApplicationIntent";
 const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
@@ -79,6 +80,7 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE,
     PDO_STMT_OPTION_EMULATE_PREPARES,
     PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
+    PDO_STMT_OPTION_FETCHES_DATETIME_TYPE
 };
 
 // List of all the statement options supported by this driver.
@@ -92,6 +94,7 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE, std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit ) },
     { NULL, 0, PDO_STMT_OPTION_EMULATE_PREPARES, std::unique_ptr<stmt_option_emulate_prepares>( new stmt_option_emulate_prepares ) },
     { NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
+    { NULL, 0, PDO_STMT_OPTION_FETCHES_DATETIME_TYPE, std::unique_ptr<stmt_option_fetch_datetime>( new stmt_option_fetch_datetime ) },
 
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -184,6 +187,15 @@ const connection_option PDO_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::APP ),
         CONN_ATTR_STRING,
         conn_str_append_func::func 
+    },
+    {
+        PDOConnOptionNames::AccessToken,
+        sizeof( PDOConnOptionNames::AccessToken ),
+        SQLSRV_CONN_OPTION_ACCESS_TOKEN,
+        ODBCConnOptions::AccessToken,
+        sizeof( ODBCConnOptions::AccessToken), 
+        CONN_ATTR_STRING,
+        access_token_set_func::func
     },
     { 
         PDOConnOptionNames::ApplicationIntent,
@@ -464,6 +476,7 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
     driver_dbh->set_func( __FUNCTION__ ); \
     int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
     char func[length+1]; \
+    memset(func, '\0', length+1); \
     strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
     strcat_s( func, length+1, ": entering" ); \
     LOG( SEV_NOTICE, func ); \
@@ -484,7 +497,8 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
     direct_query( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
     client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size )),
-    fetch_numeric( false )
+    fetch_numeric( false ),
+    fetch_datetime( false )
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -546,7 +560,7 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     ALLOC_HASHTABLE( pdo_conn_options_ht );
 
     core::sqlsrv_zend_hash_init( *g_pdo_henv_cp, pdo_conn_options_ht, 10 /* # of buckets */, 
-                                 ZVAL_INTERNAL_DTOR, 0 /*persistent*/ TSRMLS_CC );
+                                 ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
 
     // Either of g_pdo_henv_cp or g_pdo_henv_ncp can be used to propogate the error.
     dsn_parser = new ( sqlsrv_malloc( sizeof( conn_string_parser ))) conn_string_parser( *g_pdo_henv_cp, dbh->data_source, 
@@ -1050,6 +1064,10 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 driver_dbh->fetch_numeric = (zend_is_true(val)) ? true : false;
                 break;
 
+            case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+                driver_dbh->fetch_datetime = (zend_is_true(val)) ? true : false;
+                break;
+                
             // Not supported
             case PDO_ATTR_FETCH_TABLE_NAMES: 
             case PDO_ATTR_FETCH_CATALOG_NAMES: 
@@ -1201,6 +1219,12 @@ int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 break;
             }
 
+            case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_dbh->fetch_datetime );
+                break;
+            }
+
             default: 
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_INVALID_DBH_ATTR );
@@ -1270,7 +1294,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
 
     try {
 
-        char last_insert_id_query[ LAST_INSERT_ID_QUERY_MAX_LEN ] = {'\0'};
+        char last_insert_id_query[LAST_INSERT_ID_QUERY_MAX_LEN] = {'\0'};
         if( name == NULL ) {
             strcpy_s( last_insert_id_query, sizeof( last_insert_id_query ), LAST_INSERT_ID_QUERY );
         }
@@ -1379,11 +1403,15 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
     }
     // only change the encoding if quote is called from the statement level (which should only be called when a statement
     // is prepared with emulate prepared on)
-    if ( is_statement ) {
-        pdo_stmt_t *stmt = Z_PDO_STMT_P( object );
+    if (is_statement) {
+        pdo_stmt_t *stmt = Z_PDO_STMT_P(object);
+        SQLSRV_ASSERT(stmt != NULL, "pdo_sqlsrv_dbh_quote: stmt object was null");
         // set the encoding to be the encoding of the statement otherwise set to be the encoding of the dbh
-        pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
-        if ( driver_stmt->encoding() != SQLSRV_ENCODING_INVALID ) {
+
+        pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>(stmt->driver_data);
+        SQLSRV_ASSERT(driver_stmt != NULL, "pdo_sqlsrv_dbh_quote: driver_data object was null");
+
+        if (driver_stmt->encoding() != SQLSRV_ENCODING_INVALID) {
             encoding = driver_stmt->encoding();
         }
         else {
@@ -1391,18 +1419,20 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
             encoding = driver_dbh->encoding();
         }
         // get the placeholder at the current position in driver_stmt->placeholders ht
+        // Normally it's not a good idea to alter the internal pointer in a hashed array 
+        // (see pull request 634 on GitHub) but in this case this is for internal use only
         zval* placeholder = NULL;
-        if (( placeholder = zend_hash_get_current_data( driver_stmt->placeholders )) != NULL && zend_hash_move_forward( driver_stmt->placeholders ) == SUCCESS && stmt->bound_params != NULL ) {
+        if ((placeholder = zend_hash_get_current_data(driver_stmt->placeholders)) != NULL && zend_hash_move_forward(driver_stmt->placeholders) == SUCCESS && stmt->bound_params != NULL) {
             pdo_bound_param_data* param = NULL;
-            if ( Z_TYPE_P( placeholder ) == IS_STRING ) {
-                param = reinterpret_cast<pdo_bound_param_data*>( zend_hash_find_ptr( stmt->bound_params, Z_STR_P( placeholder )));
+            if (Z_TYPE_P(placeholder) == IS_STRING) {
+                param = reinterpret_cast<pdo_bound_param_data*>(zend_hash_find_ptr(stmt->bound_params, Z_STR_P(placeholder)));
             }
-            else if ( Z_TYPE_P( placeholder ) == IS_LONG) {
-                param = reinterpret_cast<pdo_bound_param_data*>( zend_hash_index_find_ptr( stmt->bound_params, Z_LVAL_P( placeholder )));
+            else if (Z_TYPE_P(placeholder) == IS_LONG) {
+                param = reinterpret_cast<pdo_bound_param_data*>(zend_hash_index_find_ptr(stmt->bound_params, Z_LVAL_P(placeholder)));
             }
-            if ( NULL != param ) {
-                SQLSRV_ENCODING param_encoding = static_cast<SQLSRV_ENCODING>( Z_LVAL( param->driver_params ));
-                if ( param_encoding != SQLSRV_ENCODING_INVALID ) {
+            if (NULL != param) {
+                SQLSRV_ENCODING param_encoding = static_cast<SQLSRV_ENCODING>(Z_LVAL(param->driver_params));
+                if (param_encoding != SQLSRV_ENCODING_INVALID) {
                     encoding = param_encoding;
                 }
             }
@@ -1412,13 +1442,13 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
     if ( encoding == SQLSRV_ENCODING_BINARY ) {
         // convert from char* to hex digits using os
         std::basic_ostringstream<char> os;
-        for ( size_t index = 0; index < unquoted_len && unquoted[ index ] != '\0'; ++index ) {
+        for ( size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index ) {
             // if unquoted is < 0 or > 255, that means this is a non-ascii character. Translation from non-ascii to binary is not supported.
             // return an empty terminated string for now
-            if (( int )unquoted[ index ] < 0 || ( int )unquoted[ index ] > 255) {
+            if (( int )unquoted[index] < 0 || ( int )unquoted[index] > 255) {
                 *quoted_len = 0;
                 *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-                ( *quoted )[ 0 ] = '\0';
+                ( *quoted )[0] = '\0';
                 return 1;
             }
             // when an int is < 16 and is appended to os, its hex representation which starts
@@ -1427,7 +1457,7 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
             if (( int )unquoted[index] < 16 ) {
                 os << '0';
             }
-           os << std::hex << ( int )unquoted[ index ];
+           os << std::hex << ( int )unquoted[index];
         }
         std::basic_string<char> str_hex = os.str();
         // each character is represented by 2 digits of hex
@@ -1439,13 +1469,13 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
         unsigned int out_current = 0;
         // insert '0x'
-        ( *quoted )[ out_current++ ] = '0';
-        ( *quoted )[ out_current++ ] = 'x';
-        for ( size_t index = 0; index < unquoted_str_len && unquoted_str[ index ] != '\0'; ++index ) {
-            ( *quoted )[ out_current++ ] = unquoted_str[ index ];
+        ( *quoted )[out_current++] = '0';
+        ( *quoted )[out_current++] = 'x';
+        for ( size_t index = 0; index < unquoted_str_len && unquoted_str[index] != '\0'; ++index ) {
+            ( *quoted )[out_current++] = unquoted_str[index];
         }
         // null terminator
-        ( *quoted )[ out_current ] = '\0';
+        ( *quoted )[out_current] = '\0';
         sqlsrv_free( unquoted_str );
         return 1;
     }
@@ -1457,7 +1487,7 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
             quotes_needed = 3;
         }
         for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[ index ] == '\'' ) {
+            if ( unquoted[index] == '\'' ) {
                 ++quotes_needed;
             }
         }
@@ -1468,24 +1498,24 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
 
         // insert N if the encoding is UTF8
         if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-            ( *quoted )[ out_current++ ] = 'N';
+            ( *quoted )[out_current++] = 'N';
         }
         // insert initial quote
-        ( *quoted )[ out_current++ ] = '\'';
+        ( *quoted )[out_current++] = '\'';
 
         for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[ index ] == '\'' ) {
-                ( *quoted )[ out_current++ ] = '\'';
-                ( *quoted )[ out_current++ ] = '\'';
+            if ( unquoted[index] == '\'' ) {
+                ( *quoted )[out_current++] = '\'';
+                ( *quoted )[out_current++] = '\'';
             }
             else {
-                ( *quoted )[ out_current++ ] = unquoted[ index ];
+                ( *quoted )[out_current++] = unquoted[index];
             }
         }
 
         // trailing quote and null terminator
-        ( *quoted )[ out_current++ ] = '\'';
-        ( *quoted )[ out_current ] = '\0';
+        ( *quoted )[out_current++] = '\'';
+        ( *quoted )[out_current] = '\0';
 
         return 1;
     }
@@ -1550,6 +1580,10 @@ void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ 
 
          case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
              option_key = PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE;
+             break;
+
+         case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+             option_key = PDO_STMT_OPTION_FETCHES_DATETIME_TYPE;
              break;
 
          default:

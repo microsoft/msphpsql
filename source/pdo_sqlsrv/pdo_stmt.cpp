@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDOStatement object for the PDO_SQLSRV
 //
-// Microsoft Drivers 5.3 for PHP for SQL Server
+// Microsoft Drivers 5.4 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -51,6 +51,9 @@ inline SQLSMALLINT pdo_fetch_ori_to_odbc_fetch_ori ( _In_ enum pdo_fetch_orienta
 // for list of supported pdo types.
 SQLSRV_PHPTYPE pdo_type_to_sqlsrv_php_type( _Inout_ sqlsrv_stmt* driver_stmt, _In_ enum pdo_param_type pdo_type TSRMLS_DC )
 {
+    pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>(driver_stmt);
+    SQLSRV_ASSERT(pdo_stmt != NULL, "pdo_type_to_sqlsrv_php_type: pdo_stmt object was null");
+    
     switch( pdo_type ) {
 
         case PDO_PARAM_BOOL:
@@ -64,9 +67,12 @@ SQLSRV_PHPTYPE pdo_type_to_sqlsrv_php_type( _Inout_ sqlsrv_stmt* driver_stmt, _I
             return SQLSRV_PHPTYPE_NULL;
         
         case PDO_PARAM_LOB:
-            // TODO: This will eventually be changed to SQLSRV_PHPTYPE_STREAM when output streaming is implemented.
-            return SQLSRV_PHPTYPE_STRING;
-
+            if (pdo_stmt->fetch_datetime) {
+                return SQLSRV_PHPTYPE_DATETIME;
+            } else {
+                // TODO: This will eventually be changed to SQLSRV_PHPTYPE_STREAM when output streaming is implemented.
+                return SQLSRV_PHPTYPE_STRING;
+            }
         case PDO_PARAM_STMT:
             THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_PDO_STMT_UNSUPPORTED );
             break;
@@ -213,61 +219,63 @@ void meta_data_free( _Inout_ field_meta_data* meta )
 zval convert_to_zval( _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val, _In_opt_ SQLLEN field_len )
 {
     zval out_zval;
-    ZVAL_UNDEF( &out_zval );
+    ZVAL_UNDEF(&out_zval);
 
-    switch( sqlsrv_php_type ) {
-       
-        case SQLSRV_PHPTYPE_INT:
-        case SQLSRV_PHPTYPE_FLOAT:       
-        {
-            if( *in_val == NULL ) {
-                ZVAL_NULL( &out_zval );
+    switch (sqlsrv_php_type) {
+
+    case SQLSRV_PHPTYPE_INT:
+    case SQLSRV_PHPTYPE_FLOAT:
+    {
+        if (*in_val == NULL) {
+            ZVAL_NULL(&out_zval);
+        }
+        else {
+
+            if (sqlsrv_php_type == SQLSRV_PHPTYPE_INT) {
+                ZVAL_LONG(&out_zval, **(reinterpret_cast<int**>(in_val)));
             }
             else {
-
-                if( sqlsrv_php_type == SQLSRV_PHPTYPE_INT ) {
-                    ZVAL_LONG( &out_zval, **( reinterpret_cast<int**>( in_val )));
-                }
-                else {
-                    ZVAL_DOUBLE( &out_zval, **( reinterpret_cast<double**>( in_val )));    
-                }
+                ZVAL_DOUBLE(&out_zval, **(reinterpret_cast<double**>(in_val)));
             }
-
-            if( *in_val ) {
-                sqlsrv_free( *in_val );
-            }
-
-            break;
         }
 
-        case SQLSRV_PHPTYPE_STRING:
-        case SQLSRV_PHPTYPE_STREAM:     // TODO: this will be moved when output streaming is implemented
-         {
-
-            if( *in_val == NULL ) {
-
-                ZVAL_NULL( &out_zval );
-            }
-            else {
-
-                ZVAL_STRINGL( &out_zval, reinterpret_cast<char*>( *in_val ), field_len );
-                sqlsrv_free( *in_val );
-            }
-            break;
+        if (*in_val) {
+            sqlsrv_free(*in_val);
         }
-            
-        case SQLSRV_PHPTYPE_DATETIME:
-            DIE( "Unsupported php type" );
-            out_zval = *( reinterpret_cast<zval*>( *in_val ));
-            break;
 
-        case SQLSRV_PHPTYPE_NULL:
-            ZVAL_NULL( &out_zval );
-            break;
+        break;
+    }
+    case SQLSRV_PHPTYPE_STRING:
+    case SQLSRV_PHPTYPE_STREAM:     // TODO: this will be moved when output streaming is implemented
+    {
+        if (*in_val == NULL) {
 
-        default:
-            DIE( "Unknown php type" );
-            break;
+            ZVAL_NULL(&out_zval);
+        }
+        else {
+
+            ZVAL_STRINGL(&out_zval, reinterpret_cast<char*>(*in_val), field_len);
+            sqlsrv_free(*in_val);
+        }
+        break;
+    }
+    case SQLSRV_PHPTYPE_DATETIME:
+        if (*in_val == NULL) {
+
+            ZVAL_NULL(&out_zval);
+        }
+        else {
+
+            out_zval = *(reinterpret_cast<zval*>(*in_val));
+            sqlsrv_free(*in_val);
+        }
+        break;
+    case SQLSRV_PHPTYPE_NULL:
+        ZVAL_NULL(&out_zval);
+        break;
+    default:
+        DIE("Unknown php type");
+        break;
     }
 
     return out_zval;
@@ -339,6 +347,11 @@ void stmt_option_fetch_numeric:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
     pdo_stmt->fetch_numeric = ( zend_is_true( value_z )) ? true : false;
 }
 
+void stmt_option_fetch_datetime:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC )
+{
+    pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
+    pdo_stmt->fetch_datetime = ( zend_is_true( value_z )) ? true : false;
+}
 
 // log a function entry point
 #ifndef _WIN32
@@ -348,6 +361,7 @@ void stmt_option_fetch_numeric:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
     driver_stmt->set_func( __FUNCTION__ ); \
     int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
     char func[length+1]; \
+    memset(func, '\0', length+1); \
     strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
     strcat_s( func, length+1, ": entering" ); \
     LOG( SEV_NOTICE, func ); \
@@ -495,8 +509,13 @@ int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
     LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );
 
     // if a PDO statement didn't complete preparation, its driver_data can be NULL
-    if( driver_stmt == NULL ) {
+    if (driver_stmt == NULL) {
+        return 1;
+    }
 
+    // occasionally stmt->dbh->driver_data is already freed and reset but its driver_data is not
+    if (stmt->dbh != NULL && stmt->dbh->driver_data == NULL) {
+        stmt->driver_data = NULL;
         return 1;
     }
 
@@ -554,12 +573,15 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 
         // if the user is using prepare emulation (PDO::ATTR_EMULATE_PREPARES), set the query to the 
         // subtituted query provided by PDO
-        if( stmt->supports_placeholders == PDO_PLACEHOLDER_NONE ) {
+        if (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE) {
             // reset the placeholders hashtable internal in case the user reexecutes a statement
+            // Normally it's not a good idea to alter the internal pointer in a hashed array 
+            // (see pull request 634 on GitHub) but in this case this is for internal use only
+
             zend_hash_internal_pointer_reset(driver_stmt->placeholders);
 
             query = stmt->active_query_string;
-            query_len = static_cast<unsigned int>( stmt->active_query_stringlen );
+            query_len = static_cast<unsigned int>(stmt->active_query_stringlen);
         }
 
         SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
@@ -651,13 +673,13 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
                 if (NULL== (bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_index_find_ptr(stmt->bound_columns, i))) &&
                     (NULL == (bind_data = reinterpret_cast<pdo_bound_param_data*>(zend_hash_find_ptr(stmt->bound_columns, stmt->columns[i].name))))) {
 
-                    driver_stmt->bound_column_param_types[ i ] = PDO_PARAM_ZVAL;
+                    driver_stmt->bound_column_param_types[i] = PDO_PARAM_ZVAL;
                     continue;
                 }
 
                 if( bind_data->param_type != PDO_PARAM_ZVAL ) {
 
-                    driver_stmt->bound_column_param_types[ i ] = bind_data->param_type;
+                    driver_stmt->bound_column_param_types[i] = bind_data->param_type;
                     bind_data->param_type = PDO_PARAM_ZVAL;
                 }
             }
@@ -744,10 +766,10 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
 
         // if a column is bound to a type different than the column type, figure out a way to convert it to the 
         // type they want
-        if( stmt->bound_columns && driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_ZVAL ) {
+        if( stmt->bound_columns && driver_stmt->bound_column_param_types[colno] != PDO_PARAM_ZVAL ) {
 
             sqlsrv_php_type.typeinfo.type = pdo_type_to_sqlsrv_php_type( driver_stmt, 
-                                                                         driver_stmt->bound_column_param_types[ colno ] 
+                                                                         driver_stmt->bound_column_param_types[colno] 
                                                                          TSRMLS_CC );
 
             pdo_bound_param_data* bind_data = NULL;
@@ -764,8 +786,8 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
                     throw pdo::PDOException();
                 }
 
-                CHECK_CUSTOM_ERROR( driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_STR 
-                                    && driver_stmt->bound_column_param_types[ colno ] != PDO_PARAM_LOB, driver_stmt,
+                CHECK_CUSTOM_ERROR( driver_stmt->bound_column_param_types[colno] != PDO_PARAM_STR 
+                                    && driver_stmt->bound_column_param_types[colno] != PDO_PARAM_LOB, driver_stmt,
                                     PDO_SQLSRV_ERROR_COLUMN_TYPE_DOES_NOT_SUPPORT_ENCODING, colno + 1 ) {
 
                         throw pdo::PDOException();
@@ -856,6 +878,10 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
                 break;
 
+            case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+                driver_stmt->fetch_datetime = ( zend_is_true( val )) ? true : false;
+                break;
+
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
                 break;
@@ -937,6 +963,12 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 break;
             }
 
+            case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_stmt->fetch_datetime );
+                break;
+            }
+
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
                 break;
@@ -991,7 +1023,7 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         add_assoc_long( return_value, "flags", 0 );
 
         // get the name of the data type
-        char field_type_name[ SQL_SERVER_IDENT_SIZE_MAX ];
+        char field_type_name[SQL_SERVER_IDENT_SIZE_MAX] = {'\0'};
         SQLSMALLINT out_buff_len;
         SQLLEN not_used;
         core::SQLColAttribute( driver_stmt, (SQLUSMALLINT) colno + 1, SQL_DESC_TYPE_NAME, field_type_name,
@@ -1017,13 +1049,13 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         }
 
         // add the table name of the field.  All the tests so far show this to always be "", but we adhere to the PDO spec
-        char table_name[ SQL_SERVER_IDENT_SIZE_MAX ];
+        char table_name[SQL_SERVER_IDENT_SIZE_MAX] = {'\0'};
         SQLLEN field_type_num;
         core::SQLColAttribute( driver_stmt, (SQLUSMALLINT) colno + 1, SQL_DESC_TABLE_NAME, table_name, SQL_SERVER_IDENT_SIZE_MAX,
                                &out_buff_len, &field_type_num TSRMLS_CC );
         add_assoc_string( return_value, "table", table_name );
 
-        if( stmt->columns && stmt->columns[ colno ].param_type == PDO_PARAM_ZVAL ) {
+        if( stmt->columns && stmt->columns[colno].param_type == PDO_PARAM_ZVAL ) {
             add_assoc_long( return_value, "pdo_type", pdo_type );
         }
 
@@ -1356,6 +1388,17 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
             }
             break;
+        case SQL_TYPE_DATE:
+        case SQL_SS_TIMESTAMPOFFSET:
+        case SQL_SS_TIME2:
+        case SQL_TYPE_TIMESTAMP:
+            if ( this->fetch_datetime ) {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_DATETIME;
+            }
+            else {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+            }
+            break;
         case SQL_BIGINT:
         case SQL_CHAR:
         case SQL_DECIMAL:
@@ -1364,10 +1407,6 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
         case SQL_WCHAR:
         case SQL_VARCHAR:
         case SQL_WVARCHAR:
-        case SQL_TYPE_DATE:
-        case SQL_SS_TIMESTAMPOFFSET:
-        case SQL_SS_TIME2:
-        case SQL_TYPE_TIMESTAMP:
         case SQL_LONGVARCHAR:
         case SQL_WLONGVARCHAR:
         case SQL_SS_XML:
