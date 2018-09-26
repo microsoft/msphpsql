@@ -107,6 +107,7 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC );
 void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
+void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len);
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
 						  _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len TSRMLS_DC );
@@ -124,7 +125,6 @@ void send_param_streams( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void sqlsrv_output_param_dtor( _Inout_ zval* data );
 // called when a bound stream parameter is to be destroyed.
 void sqlsrv_stream_dtor( _Inout_ zval* data );
-bool is_streamable_type( _In_ SQLINTEGER sql_type );
 
 }
 
@@ -142,8 +142,9 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     past_next_result_end( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
     date_as_string(false),
+    num_decimals(-1),           // -1 means no formatting required
     buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
-    param_ind_ptrs( 10 ),    // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
+    param_ind_ptrs( 10 ),       // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
     current_stream( NULL, SQLSRV_ENCODING_DEFAULT ),
     current_stream_read( 0 )
@@ -572,6 +573,8 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                     // save the parameter to be adjusted and/or converted after the results are processed
                     sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ) );
 
+                    output_param.saveMetaData(sql_type, column_size, decimal_digits);
+
                     save_output_param_for_later( stmt, output_param TSRMLS_CC );
 
                     // For output parameters, if we set the column_size to be same as the buffer_len,
@@ -997,22 +1000,24 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                            efree( field_value );
                            field_value = NULL;
                            *field_len = 0;
-		       }
-		   }
-		}
+                       }
+                   }
+        }
 
-		// If the php type was not specified set the php type to be the default type.
-		if( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID ) {
+        // If the php type was not specified set the php type to be the default type.
+        if (sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID) {
+            SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "core_sqlsrv_get_field - meta data vector not in sync" );
+            sql_field_type = stmt->current_meta_data[field_index]->field_type;
+            if (stmt->current_meta_data[field_index]->field_precision > 0) {
+                sql_field_len = stmt->current_meta_data[field_index]->field_precision;
+            }
+            else {
+                sql_field_len = stmt->current_meta_data[field_index]->field_size;
+            }
 
-			// Get the SQL type of the field.
-			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
-
-			// Get the length of the field.
-			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
-
-			// Get the corresponding php type from the sql type.
-			sqlsrv_php_type = stmt->sql_type_to_php_type( static_cast<SQLINTEGER>( sql_field_type ), static_cast<SQLUINTEGER>( sql_field_len ), prefer_string );
-		}
+            // Get the corresponding php type from the sql type.
+            sqlsrv_php_type = stmt->sql_type_to_php_type(static_cast<SQLINTEGER>(sql_field_type), static_cast<SQLUINTEGER>(sql_field_len), prefer_string);
+        }
 
 		// Verify that we have an acceptable type to convert.
 		CHECK_CUSTOM_ERROR( !is_valid_sqlsrv_phptype( sqlsrv_php_type ), stmt, SQLSRV_ERROR_INVALID_TYPE ) {
@@ -1293,15 +1298,15 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
     php_stream* param_stream = NULL;
     core::sqlsrv_php_stream_from_zval_no_verify( *stmt, param_stream, stmt->current_stream.stream_z TSRMLS_CC );
 
-    // if we're at the end, then release our current parameter
-    if( php_stream_eof( param_stream )) {
-        // if no data was actually sent prior, then send a NULL
-        if( stmt->current_stream_read == 0 ) {
-            // send an empty string, which is what a 0 length does.
-            char buff[1];       // temp storage to hand to SQLPutData
-            core::SQLPutData( stmt, buff, 0 TSRMLS_CC );
+    // if we're at the end, then reset both current_stream and current_stream_read
+    if (php_stream_eof(param_stream)) {
+        // yet return to the very beginning of param_stream since SQLParamData() may ask for the same data again
+        int ret = php_stream_seek(param_stream, 0, SEEK_SET);
+        if (ret != 0) {
+            LOG(SEV_ERROR, "PHP stream: stream seek failed.");
+            throw core::CoreException();
         }
-        stmt->current_stream = sqlsrv_stream( NULL, SQLSRV_ENCODING_CHAR );
+        stmt->current_stream = sqlsrv_stream(NULL, SQLSRV_ENCODING_CHAR);
         stmt->current_stream_read = 0;
     }
     // read the data from the stream, send it via SQLPutData and track how much we've sent.
@@ -1317,7 +1322,12 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 		}
 
         stmt->current_stream_read += static_cast<unsigned int>( read );
-        if( read > 0 ) {
+        if (read == 0) {
+            // send an empty string, which is what a 0 length does.
+            char buff[1];       // temp storage to hand to SQLPutData
+            core::SQLPutData(stmt, buff, 0 TSRMLS_CC);
+        }
+        else if (read > 0) {
             // if this is a UTF-8 stream, then we will use the UTF-8 encoding to determine if we're in the middle of a character
             // then read in the appropriate number more bytes and then retest the string.  This way we try at most to convert it
             // twice.
@@ -1415,6 +1425,21 @@ void stmt_option_date_as_string:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
     }
 }
 
+void stmt_option_format_decimals:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
+{
+    // first check if the input is an integer
+    CHECK_CUSTOM_ERROR(Z_TYPE_P(value_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_FORMAT_DECIMALS) {
+        throw core::CoreException();
+    }
+
+    zend_long format_decimals = Z_LVAL_P(value_z);
+    CHECK_CUSTOM_ERROR(format_decimals  < 0 || format_decimals  > SQL_SERVER_MAX_PRECISION, stmt, SQLSRV_ERROR_FORMAT_DECIMALS_OUT_OF_RANGE, format_decimals) {
+        throw core::CoreException();
+    }
+
+    stmt->num_decimals = static_cast<short>(format_decimals);
+}
+
 // internal function to release the active stream.  Called by each main API function
 // that will alter the statement and cancel any retrieval of data from a stream.
 void close_active_stream( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
@@ -1441,7 +1466,7 @@ void close_active_stream( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 
 namespace {
 
-bool is_streamable_type( _In_ SQLLEN sql_type )
+bool is_streamable_type( _In_ SQLSMALLINT sql_type )
 {
     switch( sql_type ) {
         case SQL_CHAR:
@@ -1454,6 +1479,25 @@ bool is_streamable_type( _In_ SQLLEN sql_type )
         case SQL_LONGVARBINARY:
         case SQL_LONGVARCHAR:
         case SQL_WLONGVARCHAR:
+            return true;
+    }
+
+    return false;
+}
+
+bool is_a_numeric_type(_In_ SQLSMALLINT sql_type)
+{
+    switch (sql_type) {
+        case SQL_BIGINT:
+        case SQL_BIT:
+        case SQL_INTEGER:
+        case SQL_SMALLINT:
+        case SQL_TINYINT:
+        case SQL_FLOAT:
+        case SQL_DOUBLE:
+        case SQL_REAL:
+        case SQL_DECIMAL:
+        case SQL_NUMERIC:
             return true;
     }
 
@@ -1693,12 +1737,10 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         {
             php_stream* stream = NULL;
             sqlsrv_stream* ss = NULL;
-            SQLLEN sql_type;
+            SQLSMALLINT sql_type;
 
-            SQLRETURN r = SQLColAttributeW( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
-            CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-                throw core::CoreException();
-            }
+            SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "core_get_field_common - meta data vector not in sync" );
+            sql_type = stmt->current_meta_data[field_index]->field_type;
 
             CHECK_CUSTOM_ERROR( !is_streamable_type( sql_type ), stmt, SQLSRV_ERROR_STREAMABLE_TYPES_ONLY ) {
                 throw core::CoreException();
@@ -2061,6 +2103,130 @@ void field_cache_dtor( _Inout_ zval* data_z )
 	sqlsrv_free( cache );
 }
 
+// To be called for formatting decimal / numeric fetched values from finalize_output_parameters() and/or get_field_as_string()
+void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len)
+{
+    // In SQL Server, the default maximum precision of numeric and decimal data types is 38
+    //
+    // Note: stmt->num_decimals is -1 by default, which means no formatting on decimals / numerics is necessary
+    // If the required number of decimals is larger than the field scale, will use the column field scale instead.
+    // This is to ensure the number of decimals adheres to the column field scale. If smaller, the output value may be rounded up.
+    //
+    // Note: it's possible that the decimal / numeric value does not contain a decimal dot because the field scale is 0.
+    // Thus, first check if the decimal dot exists. If not, no formatting necessary, regardless of decimals_digits
+    //
+    std::string str = field_value;
+    size_t pos = str.find_first_of('.');
+
+    if (pos == std::string::npos || decimals_digits < 0) {
+        return;
+    }
+
+    SQLSMALLINT num_decimals = decimals_digits;
+    if (num_decimals > field_scale) {
+        num_decimals = field_scale;
+    }
+
+    // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
+    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is 
+    // followed by 5 or above. 
+
+    bool isNegative = false;
+
+    // If negative, remove the minus sign for now so as not to complicate the rounding process
+    if (str[0] == '-') {
+        isNegative = true;
+        std::ostringstream oss;
+        oss << str.substr(1);
+        str = oss.str();
+        pos = str.find_first_of('.');
+    }
+
+    // Adds the leading zero if not exists
+    if (pos == 0) {
+        std::ostringstream oss;
+        oss << '0' << str;
+        str = oss.str();
+        pos++;
+    }
+    
+    size_t last = 0;
+    if (num_decimals == 0) {
+        // Chop all decimal digits, including the decimal dot
+        size_t pos2 = pos + 1;
+        short n = str[pos2] - '0';
+        if (n >= 5) {
+            // Start rounding up - starting from the digit left of the dot all the way to the first digit
+            bool carry_over = true;
+            for (short p = pos - 1; p >= 0 && carry_over; p--) {
+                n = str[p] - '0';
+                if (n == 9) {
+                    str[p] = '0' ;
+                    carry_over = true;
+                }
+                else {
+                    n++;
+                    carry_over = false;
+                    str[p] = '0' + n;
+                }
+            }
+            if (carry_over) {
+                std::ostringstream oss;
+                oss << '1' << str.substr(0, pos);
+                str = oss.str();
+                pos++;
+            }
+        }
+        last = pos;
+    }
+    else {
+        size_t pos2 = pos + num_decimals + 1;
+        // No need to check if rounding is necessary when pos2 has passed the last digit in the input string
+        if (pos2 < str.length()) {
+            short n = str[pos2] - '0';
+            if (n >= 5) {
+                // Start rounding up - starting from the digit left of pos2 all the way to the first digit
+                bool carry_over = true;
+                for (short p = pos2 - 1; p >= 0 && carry_over; p--) {
+                    if (str[p] == '.') { // Skip the dot
+                        continue;
+                    }
+                    n = str[p] - '0';
+                    if (n == 9) {
+                        str[p] = '0' ;
+                        carry_over = true;
+                    }
+                    else {
+                        n++;
+                        carry_over = false;
+                        str[p] = '0' + n;
+                    }
+                }
+                if (carry_over) {
+                    std::ostringstream oss;
+                    oss << '1' << str.substr(0, pos2);
+                    str = oss.str();
+                    pos2++;
+                }
+            }
+        }
+        last = pos2;
+    }
+    
+    // Add the minus sign back if negative
+    if (isNegative) {
+        std::ostringstream oss;
+        oss << '-' << str.substr(0, last);
+        str = oss.str();
+    } else {
+        str = str.substr(0, last);
+    }
+
+    size_t len = str.length();
+    str.copy(field_value, len);
+    field_value[len] = '\0';
+    *field_len = len;
+}
 
 // To be called after all results are processed.  ODBC and SQL Server do not guarantee that all output
 // parameters will be present until all results are processed (since output parameters can depend on results
@@ -2142,6 +2308,11 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
             else {
+                SQLSMALLINT decimal_digits = output_param->getDecimalDigits();
+                if (stmt->num_decimals >= 0 && decimal_digits >= 0) {
+                    format_decimal_numbers(stmt->num_decimals, decimal_digits, str, &str_len);
+                }
+
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
         }
@@ -2196,7 +2367,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 {
     SQLRETURN r;
     SQLSMALLINT c_type;
-    SQLLEN sql_field_type = 0;
+    SQLSMALLINT sql_field_type = 0;
     SQLSMALLINT extra = 0;
     SQLLEN field_len_temp = 0;
     SQLLEN sql_display_size = 0;
@@ -2208,8 +2379,29 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
         DEBUG_SQLSRV_ASSERT( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_STRING,
                              "Type should be SQLSRV_PHPTYPE_STRING in get_field_as_string" );
 
+        col_cache* cached = NULL;
+        if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
+            sql_field_type = cached->sql_type;
+            sql_display_size = cached->display_size;
+        }
+        else {
+            SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "get_field_as_string - meta data vector not in sync" );
+            sql_field_type = stmt->current_meta_data[field_index]->field_type;
+
+            // Calculate the field size.
+            calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
+
+            col_cache cache( sql_field_type, sql_display_size );
+            core::sqlsrv_zend_hash_index_update_mem( *stmt, Z_ARRVAL( stmt->col_cache ), field_index, &cache, sizeof( col_cache ) TSRMLS_CC );
+        }
+
+        // Determine the correct encoding
         if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
             sqlsrv_php_type.typeinfo.encoding = stmt->conn->encoding();
+        }
+        // For numbers, no need to convert
+        if (is_a_numeric_type(sql_field_type)) {
+            sqlsrv_php_type.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
         }
 
         // Set the C type and account for null characters at the end of the data.
@@ -2226,22 +2418,6 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             c_type = SQL_C_CHAR;
             extra = sizeof( SQLCHAR );
             break;
-        }
-
-        col_cache* cached = NULL;
-        if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
-            sql_field_type = cached->sql_type;
-            sql_display_size = cached->display_size;
-        }
-        else {
-            // Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
-            core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
-
-            // Calculate the field size.
-            calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
-
-            col_cache cache( sql_field_type, sql_display_size );
-            core::sqlsrv_zend_hash_index_update_mem( *stmt, Z_ARRVAL( stmt->col_cache ), field_index, &cache, sizeof( col_cache ) TSRMLS_CC );
         }
 
         // if this is a large type, then read the first few bytes to get the actual length from SQLGetData
@@ -2401,6 +2577,10 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                 CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message()) {
                     throw core::CoreException();
                 }
+            }
+
+            if (stmt->num_decimals >= 0 && (sql_field_type == SQL_DECIMAL || sql_field_type == SQL_NUMERIC)) {
+                format_decimal_numbers(stmt->num_decimals, stmt->current_meta_data[field_index]->field_scale, field_value_temp, &field_len_temp);
             }
         } // else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_MAX_FIELD_SIZE )
 
