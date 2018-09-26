@@ -5,6 +5,9 @@ if (! extension_loaded("sqlsrv")) {
 }
 
 require_once("MsSetup.inc");
+if ($keystore != 'akv')
+    die ( 'skip - the test requires valid Azure Key Vault credentials.' );
+
 if ($driver != "ODBC Driver 17 for SQL Server") {
     // the testing is not set to use ODBC 17
     die("skip - AE feature not supported in the current environment.");
