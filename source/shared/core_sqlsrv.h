@@ -1055,14 +1055,22 @@ struct stmt_option;
 
 // This holds the various details of column encryption. 
 struct col_encryption_option {
-    bool            enabled;            // column encryption enabled, false by default
-    SQLINTEGER      akv_mode;
-    zval_auto_ptr   akv_id;
-    zval_auto_ptr   akv_secret;
-    bool            akv_required;
+    bool                            enabled;            // column encryption enabled, false by default
+    SQLINTEGER                      akv_mode;
+    sqlsrv_malloc_auto_ptr<char>    akv_id;
+    sqlsrv_malloc_auto_ptr<char>    akv_secret;
+    bool                            akv_required;
 
     col_encryption_option() : enabled( false ), akv_mode(-1), akv_required( false )
     {
+    }
+
+    void akv_reset()
+    {
+        akv_id.reset();
+        akv_secret.reset();
+        akv_required = false;
+        akv_mode = -1;
     }
 };
 

@@ -1,7 +1,7 @@
 --TEST--
 Test connection keywords for Azure Key Vault for Always Encrypted.
 --SKIPIF--
-<?php require('skipif_not_akv.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('sqlsrv_ae_azure_key_vault_common.php');
