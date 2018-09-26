@@ -1156,11 +1156,11 @@ void ce_akv_str_set_func::func(_In_ connection_option const* option, _In_ zval* 
         memcpy_s(pValue, value_len + 1, value_str, value_len);
         pValue[value_len] = '\0';   // this makes sure there will be no trailing garbage
         
-        // Use reset to avoid memory leaks -- in case the user sets the value(s) more than once
+        // This will free the existing memory block before assigning the new pointer -- the user might set the value(s) more than once
         if (option->conn_option_key == SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID) {
-            conn->ce_option.akv_id.reset(pValue);
+            conn->ce_option.akv_id = pValue;
         } else {
-            conn->ce_option.akv_secret.reset(pValue);
+            conn->ce_option.akv_secret = pValue;
         }
         conn->ce_option.akv_required = true;
         break;
