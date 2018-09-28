@@ -1003,22 +1003,15 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 
         // If the php type was not specified set the php type to be the default type.
         if (sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID) {
-            if (stmt->current_meta_data.size() > field_index) {
-                sql_field_type = stmt->current_meta_data[field_index]->field_type;
-                if (stmt->current_meta_data[field_index]->field_precision > 0) {
-                    sql_field_len = stmt->current_meta_data[field_index]->field_precision;
-                }
-                else {
-                    sql_field_len = stmt->current_meta_data[field_index]->field_size;
-                }
+            SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "core_sqlsrv_get_field - meta data vector not in sync" );
+            sql_field_type = stmt->current_meta_data[field_index]->field_type;
+            if (stmt->current_meta_data[field_index]->field_precision > 0) {
+                sql_field_len = stmt->current_meta_data[field_index]->field_precision;
             }
             else {
-                // Get the SQL type of the field.
-                core::SQLColAttributeW(stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC);
-
-                // Get the length of the field.
-                core::SQLColAttributeW(stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC);
+                sql_field_len = stmt->current_meta_data[field_index]->field_size;
             }
+
             // Get the corresponding php type from the sql type.
             sqlsrv_php_type = stmt->sql_type_to_php_type(static_cast<SQLINTEGER>(sql_field_type), static_cast<SQLUINTEGER>(sql_field_len), prefer_string);
         }
@@ -1704,15 +1697,8 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
             sqlsrv_stream* ss = NULL;
             SQLLEN sql_type;
 
-            if (stmt->current_meta_data.size() > field_index) {
-                sql_type = stmt->current_meta_data[field_index]->field_type;
-            }
-            else {
-                SQLRETURN r = SQLColAttributeW( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
-                CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-                    throw core::CoreException();
-                }
-            }
+            SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "core_get_field_common - meta data vector not in sync" );
+            sql_type = stmt->current_meta_data[field_index]->field_type;
 
             CHECK_CUSTOM_ERROR( !is_streamable_type( sql_type ), stmt, SQLSRV_ERROR_STREAMABLE_TYPES_ONLY ) {
                 throw core::CoreException();
@@ -2248,13 +2234,8 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             sql_display_size = cached->display_size;
         }
         else {
-            if (stmt->current_meta_data.size() > field_index) {
-                sql_field_type = stmt->current_meta_data[field_index]->field_type;
-            }
-            else {
-                // Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
-                core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
-            }
+            SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "get_field_as_string - meta data vector not in sync" );
+            sql_field_type = stmt->current_meta_data[field_index]->field_type;
 
             // Calculate the field size.
             calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
