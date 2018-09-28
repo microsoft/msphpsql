@@ -1365,6 +1365,7 @@ struct sqlsrv_output_param {
 
 // forward decls
 struct sqlsrv_result_set;
+struct field_meta_data;
 
 // *** parameter metadata struct ***
 struct param_meta_data
@@ -1426,6 +1427,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
     zval active_stream;                   // the currently active stream reading data from the database
 
     std::vector<param_meta_data> param_descriptions;
+
+    // meta data for current result set
+    std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
 
     sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
     virtual ~sqlsrv_stmt( void );

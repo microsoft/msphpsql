@@ -997,22 +997,31 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                            efree( field_value );
                            field_value = NULL;
                            *field_len = 0;
-		       }
-		   }
-		}
+                       }
+                   }
+        }
 
-		// If the php type was not specified set the php type to be the default type.
-		if( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID ) {
+        // If the php type was not specified set the php type to be the default type.
+        if (sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID) {
+            if (stmt->current_meta_data.size() > field_index) {
+                sql_field_type = stmt->current_meta_data[field_index]->field_type;
+                if (stmt->current_meta_data[field_index]->field_precision > 0) {
+                    sql_field_len = stmt->current_meta_data[field_index]->field_precision;
+                }
+                else {
+                    sql_field_len = stmt->current_meta_data[field_index]->field_size;
+                }
+            }
+            else {
+                // Get the SQL type of the field.
+                core::SQLColAttributeW(stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC);
 
-			// Get the SQL type of the field.
-			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
-
-			// Get the length of the field.
-			core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC );
-
-			// Get the corresponding php type from the sql type.
-			sqlsrv_php_type = stmt->sql_type_to_php_type( static_cast<SQLINTEGER>( sql_field_type ), static_cast<SQLUINTEGER>( sql_field_len ), prefer_string );
-		}
+                // Get the length of the field.
+                core::SQLColAttributeW(stmt, field_index + 1, SQL_DESC_LENGTH, NULL, 0, NULL, &sql_field_len TSRMLS_CC);
+            }
+            // Get the corresponding php type from the sql type.
+            sqlsrv_php_type = stmt->sql_type_to_php_type(static_cast<SQLINTEGER>(sql_field_type), static_cast<SQLUINTEGER>(sql_field_len), prefer_string);
+        }
 
 		// Verify that we have an acceptable type to convert.
 		CHECK_CUSTOM_ERROR( !is_valid_sqlsrv_phptype( sqlsrv_php_type ), stmt, SQLSRV_ERROR_INVALID_TYPE ) {
@@ -1695,9 +1704,14 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
             sqlsrv_stream* ss = NULL;
             SQLLEN sql_type;
 
-            SQLRETURN r = SQLColAttributeW( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
-            CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
-                throw core::CoreException();
+            if (stmt->current_meta_data.size() > field_index) {
+                sql_type = stmt->current_meta_data[field_index]->field_type;
+            }
+            else {
+                SQLRETURN r = SQLColAttributeW( stmt->handle(), field_index + 1, SQL_DESC_TYPE, NULL, 0, NULL, &sql_type );
+                CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+                    throw core::CoreException();
+                }
             }
 
             CHECK_CUSTOM_ERROR( !is_streamable_type( sql_type ), stmt, SQLSRV_ERROR_STREAMABLE_TYPES_ONLY ) {
@@ -2234,8 +2248,13 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             sql_display_size = cached->display_size;
         }
         else {
-            // Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
-            core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+            if (stmt->current_meta_data.size() > field_index) {
+                sql_field_type = stmt->current_meta_data[field_index]->field_type;
+            }
+            else {
+                // Get the SQL type of the field. unixODBC 2.3.1 requires wide calls to support pooling
+                core::SQLColAttributeW( stmt, field_index + 1, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &sql_field_type TSRMLS_CC );
+            }
 
             // Calculate the field size.
             calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
