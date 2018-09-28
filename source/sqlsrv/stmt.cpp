@@ -1832,11 +1832,11 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
             // The meta data field name is already null-terminated, and the field name len is correct.
             field_name_len = stmt->current_meta_data[i]->field_name_len;
             field_names[i].name = static_cast<char*>(sqlsrv_malloc(field_name_len, sizeof(char), 1));
-            memcpy_s(field_names[i].name, field_name_len * sizeof(char), stmt->current_meta_data[i]->field_name, field_name_len);
+            memcpy_s((void*)field_names[i].name, (field_name_len * sizeof(char)), (void*)stmt->current_meta_data[i]->field_name, field_name_len);
             field_names[i].name[field_name_len] = '\0';     // null terminate the field name after the memcpy
             field_names[i].len = field_name_len;            // field_name_len should not need to include the null char
         }
-		
+
         stmt->fetch_field_names = field_names;
         stmt->fetch_fields_count = num_cols;
         field_names.transferred();
