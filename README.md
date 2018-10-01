@@ -72,7 +72,7 @@ For PHP code samples, please see the [sample](https://github.com/Microsoft/msphp
 Please refer to [Releases](https://github.com/Microsoft/msphpsql/releases) for the latest limitations and known issues.
 
 ## Version number
-The version numbers of the PHP drivers follow [semantic versioning](http://semver.org/):
+The version numbers of the PHP drivers follow [semantic versioning](https://semver.org/):
 
 Given a version number MAJOR.MINOR.PATCH, 
 
@@ -128,16 +128,16 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 **Known Issues**: Please visit the [project on Github][project] to view outstanding [issues][issues] and report new ones.
 
-[blog]: http://blogs.msdn.com/b/sqlphp/
+[blog]: https://blogs.msdn.com/b/sqlphp/
 
 [project]: https://github.com/Microsoft/msphpsql
 
 [issues]: https://github.com/Microsoft/msphpsql/issues
 
-[phpweb]: http://php.net
+[phpweb]: https://php.net
 
 [phpbuild]: https://wiki.php.net/internals/windows/stepbystepbuild
 
 [phpdoc]: https://docs.microsoft.com/sql/connect/php/microsoft-php-driver-for-sql-server?view=sql-server-2017
 
-[PHPMan]: http://php.net/manual/install.unix.php
+[PHPMan]: https://php.net/manual/install.unix.php
