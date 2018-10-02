@@ -124,7 +124,6 @@ void send_param_streams( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void sqlsrv_output_param_dtor( _Inout_ zval* data );
 // called when a bound stream parameter is to be destroyed.
 void sqlsrv_stream_dtor( _Inout_ zval* data );
-bool is_streamable_type( _In_ SQLINTEGER sql_type );
 
 }
 
@@ -1443,7 +1442,7 @@ void close_active_stream( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 
 namespace {
 
-bool is_streamable_type( _In_ SQLLEN sql_type )
+bool is_streamable_type( _In_ SQLSMALLINT sql_type )
 {
     switch( sql_type ) {
         case SQL_CHAR:
@@ -1456,6 +1455,25 @@ bool is_streamable_type( _In_ SQLLEN sql_type )
         case SQL_LONGVARBINARY:
         case SQL_LONGVARCHAR:
         case SQL_WLONGVARCHAR:
+            return true;
+    }
+
+    return false;
+}
+
+bool is_a_numeric_type(_In_ SQLSMALLINT sql_type)
+{
+    switch (sql_type) {
+        case SQL_BIGINT:
+        case SQL_BIT:
+        case SQL_INTEGER:
+        case SQL_SMALLINT:
+        case SQL_TINYINT:
+        case SQL_FLOAT:
+        case SQL_DOUBLE:
+        case SQL_REAL:
+        case SQL_DECIMAL:
+        case SQL_NUMERIC:
             return true;
     }
 
@@ -1695,7 +1713,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         {
             php_stream* stream = NULL;
             sqlsrv_stream* ss = NULL;
-            SQLLEN sql_type;
+            SQLSMALLINT sql_type;
 
             SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "core_get_field_common - meta data vector not in sync" );
             sql_type = stmt->current_meta_data[field_index]->field_type;
@@ -2208,8 +2226,29 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
         DEBUG_SQLSRV_ASSERT( sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_STRING,
                              "Type should be SQLSRV_PHPTYPE_STRING in get_field_as_string" );
 
+        col_cache* cached = NULL;
+        if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
+            sql_field_type = cached->sql_type;
+            sql_display_size = cached->display_size;
+        }
+        else {
+            SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "get_field_as_string - meta data vector not in sync" );
+            sql_field_type = stmt->current_meta_data[field_index]->field_type;
+
+            // Calculate the field size.
+            calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
+
+            col_cache cache( sql_field_type, sql_display_size );
+            core::sqlsrv_zend_hash_index_update_mem( *stmt, Z_ARRVAL( stmt->col_cache ), field_index, &cache, sizeof( col_cache ) TSRMLS_CC );
+        }
+
+        // Determine the correct encoding
         if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
             sqlsrv_php_type.typeinfo.encoding = stmt->conn->encoding();
+        }
+        // For numbers, no need to convert
+        if (is_a_numeric_type(sql_field_type)) {
+            sqlsrv_php_type.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
         }
 
         // Set the C type and account for null characters at the end of the data.
@@ -2226,22 +2265,6 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             c_type = SQL_C_CHAR;
             extra = sizeof( SQLCHAR );
             break;
-        }
-
-        col_cache* cached = NULL;
-        if ( NULL != ( cached = static_cast< col_cache* >( zend_hash_index_find_ptr( Z_ARRVAL( stmt->col_cache ), static_cast< zend_ulong >( field_index ))))) {
-            sql_field_type = cached->sql_type;
-            sql_display_size = cached->display_size;
-        }
-        else {
-            SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "get_field_as_string - meta data vector not in sync" );
-            sql_field_type = stmt->current_meta_data[field_index]->field_type;
-
-            // Calculate the field size.
-            calc_string_size( stmt, field_index, sql_field_type, sql_display_size TSRMLS_CC );
-
-            col_cache cache( sql_field_type, sql_display_size );
-            core::sqlsrv_zend_hash_index_update_mem( *stmt, Z_ARRVAL( stmt->col_cache ), field_index, &cache, sizeof( col_cache ) TSRMLS_CC );
         }
 
         // if this is a large type, then read the first few bytes to get the actual length from SQLGetData
