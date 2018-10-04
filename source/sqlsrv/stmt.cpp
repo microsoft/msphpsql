@@ -1637,10 +1637,13 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
 
     switch( sql_type ) {
         case SQL_BIGINT:
-        case SQL_CHAR:
         case SQL_DECIMAL:
-        case SQL_GUID:
         case SQL_NUMERIC:
+            sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
+            break;
+        case SQL_CHAR:
+        case SQL_GUID:
         case SQL_WCHAR:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
             sqlsrv_phptype.typeinfo.encoding = stmt->encoding();
@@ -1662,6 +1665,7 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
         case SQL_SMALLINT:
         case SQL_TINYINT:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
+            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
             break;
         case SQL_BINARY:
         case SQL_LONGVARBINARY:
@@ -1691,6 +1695,7 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
         case SQL_FLOAT:
         case SQL_REAL:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
+            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
             break;
         case SQL_TYPE_DATE:
         case SQL_SS_TIMESTAMPOFFSET:
