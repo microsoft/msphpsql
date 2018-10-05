@@ -471,7 +471,7 @@ PHP_FUNCTION( sqlsrv_field_metadata )
 
     try {
 
-    // get the number of fields in the resultset
+    // get the number of fields in the resultset and its metadata if not exists
     SQLSMALLINT num_cols = get_resultset_meta_data(stmt);
 
     zval result_meta_data;
@@ -489,8 +489,6 @@ PHP_FUNCTION( sqlsrv_field_metadata )
         // add the field name to the associative array but keep a copy
         core::sqlsrv_add_assoc_string(*stmt, &field_array, FieldMetaData::NAME,
                                       reinterpret_cast<char*>(core_meta_data->field_name.get()), 1 TSRMLS_CC);
-
-        // core_meta_data->field_name.transferred();
 
         core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::TYPE, core_meta_data->field_type TSRMLS_CC );
 
@@ -530,9 +528,6 @@ PHP_FUNCTION( sqlsrv_field_metadata )
        
         // add this field's meta data to the result set meta data
         core::sqlsrv_add_next_index_zval( *stmt, &result_meta_data, &field_array TSRMLS_CC );
-
-        // always good to call destructor for allocations done through placement new operator.
-        // core_meta_data->~field_meta_data();
     }
 
     // return our built collection and transfer ownership
@@ -1823,7 +1818,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 		throw ss::SSException();
 	}
 
-    // get the numer of columns in the result set
+    // get the numer of columns in the result set and its metadata if not exists
     SQLSMALLINT num_cols = get_resultset_meta_data(stmt);
 
 	// if this is the first fetch in a new result set, then get the field names and

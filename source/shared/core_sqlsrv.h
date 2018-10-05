@@ -1429,7 +1429,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     std::vector<param_meta_data> param_descriptions;
 
     // meta data for current result set
-    std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
+    std::vector<field_meta_data*, sqlsrv_allocator<field_meta_data*>> current_meta_data;
 
     sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
     virtual ~sqlsrv_stmt( void );
