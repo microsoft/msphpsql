@@ -279,8 +279,6 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     size_t direct_query_subst_string_len;        // length of query string used for direct queries
     HashTable* placeholders;                    // hashtable of named placeholders to keep track of params ordering in emulate prepare
 
-    // meta data for current result set
-    std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
     pdo_param_type* bound_column_param_types;
     bool fetch_numeric;
     bool fetch_datetime;
