@@ -1377,6 +1377,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+                sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR; 
             }
             break;
         case SQL_FLOAT:
@@ -1386,6 +1387,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+                sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR; 
             }
             break;
         case SQL_TYPE_DATE:
@@ -1400,10 +1402,13 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
             }
             break;
         case SQL_BIGINT:
-        case SQL_CHAR:
         case SQL_DECIMAL:
-        case SQL_GUID:
         case SQL_NUMERIC:
+            sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR; 
+            break;
+        case SQL_CHAR:
+        case SQL_GUID:
         case SQL_WCHAR:
         case SQL_VARCHAR:
         case SQL_WVARCHAR:
