@@ -238,6 +238,7 @@ AE\createTable($conn, $tableName, $colMeta);
 
 // Generate random input values based on precision and scale
 $values = array();
+$max2 = 1;
 for ($s = 0, $p = 3; $s < count($columns); $s++, $p++) {
     // First get a random number
     $n = rand(0, 10);
@@ -248,7 +249,7 @@ for ($s = 0, $p = 3; $s < count($columns); $s++, $p++) {
     $n1 = rand(0, $max1) * $neg;
     
     if ($s > 0) {
-        $max2 = pow(10, $s);
+        $max2 *= 10;
         $n2 = rand(0, $max2);
         $number = sprintf("%d.%d", $n1, $n2);
     } else {
@@ -256,10 +257,6 @@ for ($s = 0, $p = 3; $s < count($columns); $s++, $p++) {
     }
     
     array_push($values, $number);
-}
-
-if (traceMode()) {
-    var_dump($values);
 }
 
 // Insert data values as strings
@@ -271,6 +268,7 @@ $inputData = array($colMeta[0]->colName => $values[0],
                    $colMeta[5]->colName => $values[5]);
 $stmt = AE\insertRow($conn, $tableName, $inputData);
 if (!$stmt) {
+    var_dump($values);
     fatalError("Failed to insert data.\n");
 }
 sqlsrv_free_stmt($stmt);
