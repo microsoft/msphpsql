@@ -2144,6 +2144,8 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT f
         str = oss.str();
         pos++;
     }
+    
+    size_t last = 0;
     if (num_decimals == 0) {
         // Chop all decimal digits, including the decimal dot
         size_t pos2 = pos + 1;
@@ -2170,14 +2172,7 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT f
                 pos++;
             }
         }
-
-        if (isNegative) {
-            std::ostringstream oss;
-            oss << '-' << str.substr(0, pos);
-            str = oss.str();
-        } else {
-            str = str.substr(0, pos);
-        }
+        last = pos;
     }
     else {
         size_t pos2 = pos + num_decimals + 1;
@@ -2210,14 +2205,16 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT f
                 }
             }
         }
-
-        if (isNegative) {
-            std::ostringstream oss;
-            oss << '-' << str.substr(0, pos2);
-            str = oss.str();
-        } else {
-            str = str.substr(0, pos2);
-        }
+        last = pos2;
+    }
+    
+    // Add the minus sign back if negative
+    if (isNegative) {
+        std::ostringstream oss;
+        oss << '-' << str.substr(0, last);
+        str = oss.str();
+    } else {
+        str = str.substr(0, last);
     }
 
     size_t len = str.length();
