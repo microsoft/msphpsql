@@ -25,7 +25,7 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function compareNumbers($actual, $input, $column, $fieldScale, $formatDecimal = 0)
+function compareNumbers($actual, $input, $column, $fieldScale, $formatDecimal = -1)
 {
     $matched = false;
     if ($actual === $input) {
@@ -33,7 +33,7 @@ function compareNumbers($actual, $input, $column, $fieldScale, $formatDecimal = 
     } else {
         // When $formatDecimal is negative, that means no formatting done
         // Otherwise, if $formatDecimal > $fieldScale, will show $fieldScale decimal digits
-        if ($formatDecimal > 0) {
+        if ($formatDecimal >= 0) {
             $numDecimals = ($formatDecimal > $fieldScale) ? $fieldScale : $formatDecimal;
         } else {
             $numDecimals = $fieldScale;
@@ -52,7 +52,7 @@ function testErrorCases($conn)
 {
     $query = "SELECT 0.0001";
     
-    $options = array('FormatDecimals' => true);
+    $options = array('FormatDecimals' => 1.5);
     $stmt = sqlsrv_query($conn, $query, array(), $options);
     if ($stmt) {
         fatalError("Case 1: expected query to fail!!");
@@ -75,6 +75,47 @@ function testErrorCases($conn)
         
         if (strpos($error, $message) === false) {
             print_r(sqlsrv_errors());
+        }
+    }
+}
+
+function testFloatTypes($conn)
+{
+    // This test with the float types of various number of bits, which are retrieved
+    // as numbers by default. When fetched as strings, no formatting is done even with
+    // the statement option FormatDecimals set
+    $values = array('2.9978', '-0.2982', '33.2434', '329.690734', '110.913498');
+    $epsilon = 0.001;
+
+    $query = "SELECT CONVERT(float(1), $values[0]), 
+                     CONVERT(float(12), $values[1]), 
+                     CONVERT(float(24), $values[2]),
+                     CONVERT(float(36), $values[3]),
+                     CONVERT(float(53), $values[4])";
+                     
+    $stmt = sqlsrv_query($conn, $query);
+    $floats = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+    
+    // Set FormatDecimals to 2, but the number of decimals in each of the results 
+    // will vary -- FormatDecimals has no effect
+    $numDigits = 2;
+    $options = array('FormatDecimals' => $numDigits);
+    $stmt = sqlsrv_query($conn, $query, array(), $options);
+    if (sqlsrv_fetch($stmt)) {
+        for ($i = 0; $i < count($values); $i++) {
+            $floatStr = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+            $numbers = explode('.', $floatStr);
+            $len = strlen($numbers[1]);
+            if ($len == $numDigits) {
+                // This is highly unlikely
+                var_dump($floatStr);
+            }
+            $floatVal = floatval($floatStr);
+            $diff = abs($floatVal - $floats[$i]) / $floats[$i];
+            if ($diff > $epsilon) {
+                var_dump($diff);
+                var_dump($floatVal);
+            }
         }
     }
 }
@@ -175,7 +216,7 @@ function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale)
     $outString = '';
     $numDigits = 2;
     
-    // Derive the sql type SQLSRV_SQLTYPE_DECIMAL($prec, $scale)
+    // Derive the sqlsrv type SQLSRV_SQLTYPE_DECIMAL($prec, $scale)
     $sqlType = call_user_func('SQLSRV_SQLTYPE_DECIMAL', $prec, $scale);
 
     $outSql = AE\getCallProcSqlPlaceholders($storedProcName, 1);
@@ -189,7 +230,23 @@ function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale)
         fatalError("getOutputParam: failed to execute procedure $storedProcName");
     }
     
-    compareNumbers($outString, $inputValue, 'outputParam', $scale, $numDigits);
+    // The output param should have been formatted based on $numDigits, if less
+    // than $scale
+    $column = 'outputParam';
+    compareNumbers($outString, $inputValue, $column, $scale, $numDigits);
+    sqlsrv_free_stmt($stmt);
+    
+    // Get output param without specifying sqlsrv type, and the returned value will 
+    // be a regular string -- its value should be the same as the input value, 
+    // unaffected by the statement option FormatDecimals 
+    $outString2 = '';
+    $stmt = sqlsrv_query($conn, $outSql, 
+                          array(array(&$outString2, SQLSRV_PARAM_OUT)), 
+                          array('FormatDecimals' => $numDigits));
+                          
+    $column = 'outputParam2';
+    compareNumbers($outString2, $inputValue, $column, $scale);
+    sqlsrv_free_stmt($stmt);
 }
 
 function testOutputParam($conn, $tableName, $inputs, $columns, $dataTypes)
@@ -221,6 +278,9 @@ testMoneyTypes($conn);
 
 // Then test error conditions
 testErrorCases($conn);
+
+// Also test using regular floats
+testFloatTypes($conn);
 
 // Create the test table of decimal / numeric data columns 
 $tableName = 'sqlsrvFormatDecimals';
