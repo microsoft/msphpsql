@@ -9,7 +9,7 @@ These instructions install PHP 7.2 by default -- see the notes at the beginning 
 - [Installing the drivers on Red Hat 7](#installing-the-drivers-on-red-hat-7)
 - [Installing the drivers on Debian 8 and 9](#installing-the-drivers-on-debian-8-and-9)
 - [Installing the drivers on Suse 12](#installing-the-drivers-on-suse-12)
-- [Installing the drivers on macOS El Capitan, Sierra and High Sierra](#installing-the-drivers-on-macos-el-capitan-sierra-and-high-sierra)
+- [Installing the drivers on macOS El Capitan, Sierra, High Sierra and Mojave](#installing-the-drivers-on-macos-el-capitan-sierra-high-sierra-and-mojave)
 
 ## Installing the drivers on Ubuntu 16.04 and 18.04
 
@@ -209,7 +209,7 @@ sudo systemctl restart apache2
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on macOS El Capitan, Sierra and High Sierra
+## Installing the drivers on macOS El Capitan, Sierra, High Sierra and Mojave
 
 If you do not already have it, install brew as follows:
 ```
