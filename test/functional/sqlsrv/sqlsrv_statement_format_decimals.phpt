@@ -95,6 +95,9 @@ function testFloatTypes($conn)
                      
     $stmt = sqlsrv_query($conn, $query);
     $floats = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+    if (!$floats) {
+        echo "testFloatTypes: sqlsrv_fetch_array failed\n";
+    }
     
     // Set FormatDecimals to 2, but the number of decimals in each of the results 
     // will vary -- FormatDecimals has no effect
@@ -117,6 +120,8 @@ function testFloatTypes($conn)
                 var_dump($floatVal);
             }
         }
+    } else {
+        echo "testFloatTypes: sqlsrv_fetch failed\n";
     }
 }
 
@@ -236,17 +241,27 @@ function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale)
     compareNumbers($outString, $inputValue, $column, $scale, $numDigits);
     sqlsrv_free_stmt($stmt);
     
-    // Get output param without specifying sqlsrv type, and the returned value will 
-    // be a regular string -- its value should be the same as the input value, 
-    // unaffected by the statement option FormatDecimals 
-    $outString2 = '';
-    $stmt = sqlsrv_query($conn, $outSql, 
-                          array(array(&$outString2, SQLSRV_PARAM_OUT)), 
-                          array('FormatDecimals' => $numDigits));
-                          
-    $column = 'outputParam2';
-    compareNumbers($outString2, $inputValue, $column, $scale);
-    sqlsrv_free_stmt($stmt);
+    if (!AE\isColEncrypted()) {
+        // Get output param without specifying sqlsrv type, and the returned value will 
+        // be a regular string -- its value should be the same as the input value, 
+        // unaffected by the statement option FormatDecimals 
+        // With ColumnEncryption enabled, the driver is able to derive the decimal type,
+        // so skip this part of the test
+        $outString2 = '';
+        $stmt = sqlsrv_prepare($conn, $outSql, 
+                                array(array(&$outString2, SQLSRV_PARAM_OUT)), 
+                                array('FormatDecimals' => $numDigits));
+        if (!$stmt) {
+            fatalError("getOutputParam2: failed when preparing to call $storedProcName");
+        }
+        if (!sqlsrv_execute($stmt)) {
+            fatalError("getOutputParam2: failed to execute procedure $storedProcName");
+        }
+                              
+        $column = 'outputParam2';
+        compareNumbers($outString2, $inputValue, $column, $scale);
+        sqlsrv_free_stmt($stmt);
+    }
 }
 
 function testOutputParam($conn, $tableName, $inputs, $columns, $dataTypes)
