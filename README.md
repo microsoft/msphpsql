@@ -17,8 +17,8 @@ Thank you for taking the time to participate in our last survey. You can continu
 |--------------------------|--------------------------|---------------------------------------|-------------------------------------------|
 | [![av-image][]][av-site] | [![tv-image][]][tv-site] | [![Coverage Codecov][]][codecov-site] | [![Coverage Coveralls][]][coveralls-site] |
 
-[av-image]:  https://ci.appveyor.com/api/projects/status/xhp4nq9ouljnhxqf/branch/dev?svg=true
-[av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql-frhmr/branch/dev
+[av-image]: https://ci.appveyor.com/api/projects/status/vo4rfei6lxlamrnc?svg=true
+[av-site]: https://ci.appveyor.com/project/msphpsql/msphpsql/branch/dev
 [tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=dev
 [tv-site]: https://travis-ci.org/Microsoft/msphpsql/
 [Coverage Coveralls]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=dev
