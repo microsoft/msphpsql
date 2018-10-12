@@ -1427,12 +1427,12 @@ void stmt_option_format_decimals:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_o
         throw core::CoreException();
     }
 
-    short format_decimals = static_cast<short>(Z_LVAL_P(value_z)); 
+    zend_long format_decimals = Z_LVAL_P(value_z);
     CHECK_CUSTOM_ERROR(format_decimals  < 0 || format_decimals  > SQL_SERVER_MAX_PRECISION, stmt, SQLSRV_ERROR_FORMAT_DECIMALS_OUT_OF_RANGE, format_decimals) {
         throw core::CoreException();
     }
 
-    stmt->num_decimals = format_decimals;
+    stmt->num_decimals = static_cast<short>(format_decimals);
 }
 
 // internal function to release the active stream.  Called by each main API function
