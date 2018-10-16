@@ -1298,15 +1298,15 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
     php_stream* param_stream = NULL;
     core::sqlsrv_php_stream_from_zval_no_verify( *stmt, param_stream, stmt->current_stream.stream_z TSRMLS_CC );
 
-    // if we're at the end, then release our current parameter
-    if( php_stream_eof( param_stream )) {
-        // if no data was actually sent prior, then send a NULL
-        if( stmt->current_stream_read == 0 ) {
-            // send an empty string, which is what a 0 length does.
-            char buff[1];       // temp storage to hand to SQLPutData
-            core::SQLPutData( stmt, buff, 0 TSRMLS_CC );
+    // if we're at the end, then reset both current_stream and current_stream_read
+    if (php_stream_eof(param_stream)) {
+        // yet return to the very beginning of param_stream since SQLParamData() may ask for the same data again
+        int ret = php_stream_seek(param_stream, 0, SEEK_SET);
+        if (ret != 0) {
+            LOG(SEV_ERROR, "PHP stream: stream seek failed.");
+            throw core::CoreException();
         }
-        stmt->current_stream = sqlsrv_stream( NULL, SQLSRV_ENCODING_CHAR );
+        stmt->current_stream = sqlsrv_stream(NULL, SQLSRV_ENCODING_CHAR);
         stmt->current_stream_read = 0;
     }
     // read the data from the stream, send it via SQLPutData and track how much we've sent.
@@ -1322,7 +1322,12 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 		}
 
         stmt->current_stream_read += static_cast<unsigned int>( read );
-        if( read > 0 ) {
+        if (read == 0) {
+            // send an empty string, which is what a 0 length does.
+            char buff[1];       // temp storage to hand to SQLPutData
+            core::SQLPutData(stmt, buff, 0 TSRMLS_CC);
+        }
+        else if (read > 0) {
             // if this is a UTF-8 stream, then we will use the UTF-8 encoding to determine if we're in the middle of a character
             // then read in the appropriate number more bytes and then retest the string.  This way we try at most to convert it
             // twice.

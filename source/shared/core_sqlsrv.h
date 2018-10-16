@@ -1939,9 +1939,10 @@ namespace core {
 
     inline void check_for_mars_error( _Inout_ sqlsrv_stmt* stmt, _In_ SQLRETURN r TSRMLS_DC )
     {
+        // Skip this if not SQL_ERROR - 
         // We check for the 'connection busy' error caused by having MultipleActiveResultSets off
         // and return a more helpful message prepended to the ODBC errors if that error occurs
-        if( !SQL_SUCCEEDED( r )) {
+        if (r == SQL_ERROR) {
 
             SQLCHAR err_msg[SQL_MAX_MESSAGE_LENGTH + 1] = {'\0'};
             SQLSMALLINT len = 0;

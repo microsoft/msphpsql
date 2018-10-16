@@ -12,7 +12,7 @@
 $int_col = array(1, 2);
 
 $bin = fopen('php://memory', 'a');
-fwrite($bin, '00');
+fwrite($bin, hex2bin('6162636465'));    // 'abcde'
 rewind($bin);
 $binary_col = array($bin, $bin);
 
