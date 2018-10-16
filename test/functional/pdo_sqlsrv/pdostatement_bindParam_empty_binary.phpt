@@ -65,7 +65,7 @@ try {
                     $failed = true;
                 }
             } else {
-                if ($len !== 0 && $str !== $inputs[$i]) {
+                if ($len !== strlen($inputs[$i]) || $str !== $inputs[$i]) {
                     $failed = true;
                 }
             }
