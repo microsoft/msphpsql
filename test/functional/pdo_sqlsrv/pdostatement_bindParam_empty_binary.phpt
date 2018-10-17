@@ -22,10 +22,9 @@ try {
 
     // Insert two rows, first empty strings and the second not empty
     $inputs = array('', 'ABC');
-    $data = array(bin2hex($inputs[0]), bin2hex($inputs[1]));
     
     $bin = fopen('php://memory', 'a');
-    fwrite($bin, hex2bin($data[0]));         // an empty string
+    fwrite($bin, $inputs[0]);                   // an empty string will be 0x in hex
     rewind($bin);
 
     $query = "INSERT INTO $tableName VALUES(?, ?, ?)";
@@ -38,7 +37,7 @@ try {
     fclose($bin);
     
     $bin2 = fopen('php://memory', 'a');
-    fwrite($bin2, hex2bin($data[1]));        // 'ABC'
+    fwrite($bin2, $inputs[1]);                  // 'ABC' will be 0x414243 in hex
     rewind($bin2);
 
     $stmt->bindParam(1, $bin2, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
