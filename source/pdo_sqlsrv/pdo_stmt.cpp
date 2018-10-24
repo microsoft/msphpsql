@@ -882,6 +882,10 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 driver_stmt->fetch_datetime = ( zend_is_true( val )) ? true : false;
                 break;
 
+            case SQLSRV_ATTR_FORMAT_DECIMALS:
+                core_sqlsrv_set_format_decimals(driver_stmt, val TSRMLS_CC);
+                break;
+
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
                 break;

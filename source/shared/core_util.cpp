@@ -90,7 +90,7 @@ bool convert_string_from_utf16_inplace( _In_ SQLSRV_ENCODING encoding, _Inout_up
 
     return result;
 }
-
+/*
 bool convert_zval_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _Inout_ zval* value_z, _Inout_ SQLLEN& len)
 {
     char* string = Z_STRVAL_P(value_z);
@@ -108,7 +108,7 @@ bool convert_zval_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _Inout_ zval
        len = outLen;
     }
     return result;
-}
+}*/
 
 bool validate_string( _In_ char* string, _In_ SQLLEN& len )
 {
