@@ -1055,14 +1055,22 @@ struct stmt_option;
 
 // This holds the various details of column encryption. 
 struct col_encryption_option {
-    bool            enabled;            // column encryption enabled, false by default
-    SQLINTEGER      akv_mode;
-    zval_auto_ptr   akv_id;
-    zval_auto_ptr   akv_secret;
-    bool            akv_required;
+    bool                            enabled;            // column encryption enabled, false by default
+    SQLINTEGER                      akv_mode;
+    sqlsrv_malloc_auto_ptr<char>    akv_id;
+    sqlsrv_malloc_auto_ptr<char>    akv_secret;
+    bool                            akv_required;
 
     col_encryption_option() : enabled( false ), akv_mode(-1), akv_required( false )
     {
+    }
+
+    void akv_reset()
+    {
+        akv_id.reset();
+        akv_secret.reset();
+        akv_required = false;
+        akv_mode = -1;
     }
 };
 
@@ -1099,6 +1107,7 @@ enum SQLSRV_STMT_OPTIONS {
    SQLSRV_STMT_OPTION_SCROLLABLE,
    SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE,
    SQLSRV_STMT_OPTION_DATE_AS_STRING,
+   SQLSRV_STMT_OPTION_FORMAT_DECIMALS,
 
    // Driver specific connection options
    SQLSRV_STMT_OPTION_DRIVER_SPECIFIC = 1000,
@@ -1288,6 +1297,11 @@ struct stmt_option_date_as_string : public stmt_option_functor {
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_format_decimals : public stmt_option_functor {
+
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+};
+
 // used to hold the table for statment options
 struct stmt_option {
 
@@ -1326,38 +1340,6 @@ extern php_stream_wrapper g_sqlsrv_stream_wrapper;
 #define SQLSRV_STREAM_WRAPPER "sqlsrv"
 #define SQLSRV_STREAM         "sqlsrv_stream"
 
-// holds the output parameter information.  Strings also need the encoding and other information for
-// after processing.  Only integer, float, and strings are allowable output parameters.
-struct sqlsrv_output_param {
-
-    zval* param_z;
-    SQLSRV_ENCODING encoding;
-    SQLUSMALLINT param_num;         // used to index into the ind_or_len of the statement
-    SQLLEN original_buffer_len;     // used to make sure the returned length didn't overflow the buffer
-    SQLSRV_PHPTYPE php_out_type;    // used to convert output param if necessary
-    bool is_bool;
-
-    // string output param constructor
-    sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len ) :
-        param_z(p_z), encoding(enc), param_num(num), original_buffer_len(buffer_len), is_bool(false), php_out_type(SQLSRV_PHPTYPE_INVALID)
-    {
-    }
-
-    // every other type output parameter constructor
-    sqlsrv_output_param( _In_ zval* p_z, _In_ int num, _In_ bool is_bool, _In_ SQLSRV_PHPTYPE php_out_type) :
-        param_z( p_z ),
-        encoding( SQLSRV_ENCODING_INVALID ),
-        param_num( num ),
-        original_buffer_len( -1 ),
-        is_bool( is_bool ),
-        php_out_type(php_out_type)
-    {
-    }
-};
-
-// forward decls
-struct sqlsrv_result_set;
-
 // *** parameter metadata struct ***
 struct param_meta_data
 {
@@ -1380,6 +1362,59 @@ struct param_meta_data
     SQLULEN get_column_size() { return column_size; }
 };
 
+// holds the output parameter information.  Strings also need the encoding and other information for
+// after processing.  Only integer, float, and strings are allowable output parameters.
+struct sqlsrv_output_param {
+
+    zval* param_z;
+    SQLSRV_ENCODING encoding;
+    SQLUSMALLINT param_num;             // used to index into the ind_or_len of the statement
+    SQLLEN original_buffer_len;         // used to make sure the returned length didn't overflow the buffer
+    SQLSRV_PHPTYPE php_out_type;        // used to convert output param if necessary
+    bool is_bool;
+    param_meta_data meta_data;      // parameter meta data
+
+    // string output param constructor
+    sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len ) :
+        param_z(p_z), encoding(enc), param_num(num), original_buffer_len(buffer_len), is_bool(false), php_out_type(SQLSRV_PHPTYPE_INVALID)
+    {
+    }
+
+    // every other type output parameter constructor
+    sqlsrv_output_param( _In_ zval* p_z, _In_ int num, _In_ bool is_bool, _In_ SQLSRV_PHPTYPE php_out_type) :
+        param_z( p_z ),
+        encoding( SQLSRV_ENCODING_INVALID ),
+        param_num( num ),
+        original_buffer_len( -1 ),
+        is_bool( is_bool ),
+        php_out_type(php_out_type)
+    {
+    }
+
+    void saveMetaData(SQLSMALLINT sql_type, SQLSMALLINT column_size, SQLSMALLINT decimal_digits, SQLSMALLINT nullable = SQL_NULLABLE) 
+    {   
+        meta_data.sql_type = sql_type;
+        meta_data.column_size = column_size;
+        meta_data.decimal_digits = decimal_digits;
+        meta_data.nullable = nullable;
+    }
+
+    SQLSMALLINT getDecimalDigits() 
+    {  
+        // Return decimal_digits only for decimal / numeric types. Otherwise, return -1
+        if (meta_data.sql_type == SQL_DECIMAL || meta_data.sql_type == SQL_NUMERIC) {
+            return meta_data.decimal_digits;
+        }
+        else {
+            return -1;
+        }
+    }
+};
+
+// forward decls
+struct sqlsrv_result_set;
+struct field_meta_data;
+
 // *** Statement resource structure *** 
 struct sqlsrv_stmt : public sqlsrv_context {
 
@@ -1400,6 +1435,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     unsigned long query_timeout;          // maximum allowed statement execution time
     zend_long buffered_query_limit;       // maximum allowed memory for a buffered query (measured in KB)
     bool date_as_string;                  // false by default but the user can set this to true to retrieve datetime values as strings
+    short num_decimals;                   // indicates number of decimals shown in fetched results (-1 by default, which means no formatting required)
 
     // holds output pointers for SQLBindParameter
     // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving
@@ -1418,6 +1454,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
     zval active_stream;                   // the currently active stream reading data from the database
 
     std::vector<param_meta_data> param_descriptions;
+
+    // meta data for current result set
+    std::vector<field_meta_data*, sqlsrv_allocator<field_meta_data*>> current_meta_data;
 
     sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
     virtual ~sqlsrv_stmt( void );
@@ -1731,6 +1770,8 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
     SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
     SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
+    SQLSRV_ERROR_INVALID_FORMAT_DECIMALS,
+    SQLSRV_ERROR_FORMAT_DECIMALS_OUT_OF_RANGE,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
@@ -1898,9 +1939,10 @@ namespace core {
 
     inline void check_for_mars_error( _Inout_ sqlsrv_stmt* stmt, _In_ SQLRETURN r TSRMLS_DC )
     {
+        // Skip this if not SQL_ERROR - 
         // We check for the 'connection busy' error caused by having MultipleActiveResultSets off
         // and return a more helpful message prepended to the ODBC errors if that error occurs
-        if( !SQL_SUCCEEDED( r )) {
+        if (r == SQL_ERROR) {
 
             SQLCHAR err_msg[SQL_MAX_MESSAGE_LENGTH + 1] = {'\0'};
             SQLSMALLINT len = 0;
