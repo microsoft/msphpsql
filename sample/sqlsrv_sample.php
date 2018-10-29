@@ -17,6 +17,7 @@
 	 ?> 
 	 <h1> First 10 results are : </h1>
 	 <?php
+   	// Loop through all lines 
 	 while($row = sqlsrv_fetch_array($getProducts, SQLSRV_FETCH_ASSOC))
 	 { 
 	 if($ctr>9)
@@ -36,6 +37,7 @@
 	 ?> 
 	 <h1> Product Key inserted is :</h1> 
 	 <?php
+
 	 while($row = sqlsrv_fetch_array($insertReview, SQLSRV_FETCH_ASSOC))
 	 { 
 	 echo($row['ProductID']);
@@ -53,6 +55,7 @@
 	 if(sqlsrv_execute($deleteReview) == FALSE)
 	 die(FormatErrors(sqlsrv_errors()));
 		
+	// Function to format errors
 	function FormatErrors( $errors )
 	{
 	    /* Display errors. */
