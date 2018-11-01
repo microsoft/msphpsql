@@ -18,7 +18,7 @@ decimals to the right of the dot
 3. After formatting, the missing leading zeroes will be padded
 4. The underlying data will not be altered, but formatted results may likely be rounded
 up (e.g. .2954 will be displayed as 0.30 if the user wants only two decimals)
-5. For output params ????????
+5. Do not support output params
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--

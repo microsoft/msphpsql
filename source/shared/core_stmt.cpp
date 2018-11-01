@@ -2303,14 +2303,6 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 str_len = output_param->original_buffer_len - null_size;
             }
 
-            // if it's not in the 8 bit encodings, then it's in UTF-16
-            //if( output_param->encoding != SQLSRV_ENCODING_CHAR && output_param->encoding != SQLSRV_ENCODING_BINARY ) {
-				//bool converted = convert_zval_string_from_utf16(output_param->encoding, value_z, str_len);
-    //            CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
-    //                throw core::CoreException();
-    //            }
-            //}
-            //else if( output_param->encoding == SQLSRV_ENCODING_BINARY && str_len < output_param->original_buffer_len ) {
             if (output_param->encoding == SQLSRV_ENCODING_BINARY) {
                 // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
                 // so we do that here if the length of the returned data is less than the original allocation.  The
@@ -2321,18 +2313,12 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
             else {
-                // output_param->encoding is SQLSRV_ENCODING_CHAR
                 SQLSMALLINT decimal_digits = output_param->getDecimalDigits();
 
                 if (output_param->encoding != SQLSRV_ENCODING_CHAR) {
                     char* outString = NULL;
                     SQLLEN outLen = 0;
                     bool result = convert_string_from_utf16(output_param->encoding, reinterpret_cast<const SQLWCHAR*>(str), int(str_len / sizeof(SQLWCHAR)), &outString, outLen );
-                    //if( result ) {
-                    //    core::sqlsrv_zval_stringl( value_z, outString, outLen );
-                    //    sqlsrv_free( outString );
-                    //    len = outLen;
-                    //}
                     CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
                         throw core::CoreException();
                     }
