@@ -1258,6 +1258,26 @@ void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout
     }
 }
 
+void core_sqlsrv_set_format_decimals(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC)
+{
+    try {
+        // first check if the input is an integer
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(value_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_FORMAT_DECIMALS) {
+            throw core::CoreException();
+        }
+
+        zend_long format_decimals = Z_LVAL_P(value_z);
+        CHECK_CUSTOM_ERROR(format_decimals  < 0 || format_decimals  > SQL_SERVER_MAX_PRECISION, stmt, SQLSRV_ERROR_FORMAT_DECIMALS_OUT_OF_RANGE, format_decimals) {
+            throw core::CoreException();
+        }
+
+        stmt->num_decimals = static_cast<short>(format_decimals);
+    } 
+    catch( core::CoreException& ) {
+        throw;
+    }
+}
+
 void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC )
 {
     TSRMLS_C;
@@ -1427,17 +1447,7 @@ void stmt_option_date_as_string:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
 
 void stmt_option_format_decimals:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
 {
-    // first check if the input is an integer
-    CHECK_CUSTOM_ERROR(Z_TYPE_P(value_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_FORMAT_DECIMALS) {
-        throw core::CoreException();
-    }
-
-    zend_long format_decimals = Z_LVAL_P(value_z);
-    CHECK_CUSTOM_ERROR(format_decimals  < 0 || format_decimals  > SQL_SERVER_MAX_PRECISION, stmt, SQLSRV_ERROR_FORMAT_DECIMALS_OUT_OF_RANGE, format_decimals) {
-        throw core::CoreException();
-    }
-
-    stmt->num_decimals = static_cast<short>(format_decimals);
+    core_sqlsrv_set_format_decimals(stmt, value_z TSRMLS_CC);
 }
 
 // internal function to release the active stream.  Called by each main API function
@@ -2293,27 +2303,39 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 str_len = output_param->original_buffer_len - null_size;
             }
 
-            // if it's not in the 8 bit encodings, then it's in UTF-16
-            if( output_param->encoding != SQLSRV_ENCODING_CHAR && output_param->encoding != SQLSRV_ENCODING_BINARY ) {
-				bool converted = convert_zval_string_from_utf16(output_param->encoding, value_z, str_len);
-                CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
-                    throw core::CoreException();
-                }
-            }
-            else if( output_param->encoding == SQLSRV_ENCODING_BINARY && str_len < output_param->original_buffer_len ) {
+            if (output_param->encoding == SQLSRV_ENCODING_BINARY) {
                 // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
                 // so we do that here if the length of the returned data is less than the original allocation.  The
                 // original allocation null terminates the buffer already.
-                str[str_len] = '\0';
+                if (str_len < output_param->original_buffer_len) {
+                    str[str_len] = '\0';
+                }
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
             else {
                 SQLSMALLINT decimal_digits = output_param->getDecimalDigits();
-                if (stmt->num_decimals >= 0 && decimal_digits >= 0) {
-                    format_decimal_numbers(stmt->num_decimals, decimal_digits, str, &str_len);
-                }
 
-                core::sqlsrv_zval_stringl(value_z, str, str_len);
+                if (output_param->encoding != SQLSRV_ENCODING_CHAR) {
+                    char* outString = NULL;
+                    SQLLEN outLen = 0;
+                    bool result = convert_string_from_utf16(output_param->encoding, reinterpret_cast<const SQLWCHAR*>(str), int(str_len / sizeof(SQLWCHAR)), &outString, outLen );
+                    CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
+                        throw core::CoreException();
+                    }
+
+                    if (stmt->num_decimals >= 0 && decimal_digits >= 0) {
+                        format_decimal_numbers(stmt->num_decimals, decimal_digits, outString, &outLen);
+                    }
+                    core::sqlsrv_zval_stringl(value_z, outString, outLen);
+                    sqlsrv_free(outString);
+                }
+                else {
+                    if (stmt->num_decimals >= 0 && decimal_digits >= 0) {
+                        format_decimal_numbers(stmt->num_decimals, decimal_digits, str, &str_len);
+                    }
+
+                    core::sqlsrv_zval_stringl(value_z, str, str_len);
+                }
             }
         }
         break;

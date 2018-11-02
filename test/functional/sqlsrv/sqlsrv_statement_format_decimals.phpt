@@ -107,17 +107,21 @@ function testFloatTypes($conn)
     if (sqlsrv_fetch($stmt)) {
         for ($i = 0; $i < count($values); $i++) {
             $floatStr = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+            $floatVal = floatval($floatStr);
+            
+            // Check if the numbers of decimal digits are the same
+            // It is highly unlikely but not impossible
             $numbers = explode('.', $floatStr);
             $len = strlen($numbers[1]);
-            if ($len == $numDigits) {
-                // This is highly unlikely
-                var_dump($floatStr);
-            }
-            $floatVal = floatval($floatStr);
-            $diff = abs($floatVal - $floats[$i]) / $floats[$i];
-            if ($diff > $epsilon) {
-                var_dump($diff);
+            if ($len == $numDigits && $floatVal != $floats[$i]) {
+                echo "Expected $floats[$i] but returned ";
                 var_dump($floatVal);
+            } else {
+                $diff = abs($floatVal - $floats[$i]) / $floats[$i];
+                if ($diff > $epsilon) {
+                    echo "Expected $floats[$i] but returned ";
+                    var_dump($floatVal);
+                }
             }
         }
     } else {
@@ -216,17 +220,31 @@ function testStmtOption($conn, $tableName, $inputs, $columns, $formatDecimal, $w
     }
 }
 
-function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale)
+function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale, $inout)
 {
     $outString = '';
     $numDigits = 2;
+    $dir = SQLSRV_PARAM_OUT;
     
-    // Derive the sqlsrv type SQLSRV_SQLTYPE_DECIMAL($prec, $scale)
-    $sqlType = call_user_func('SQLSRV_SQLTYPE_DECIMAL', $prec, $scale);
+    // The output param value should be the same as the input value, 
+    // unaffected by the statement attr FormatDecimals, unless 
+    // ColumnEncryption is enabled, in which case the driver is able 
+    // to derive the decimal type. Another workaround is to specify
+    // the SQLSRV_SQLTYPE_DECIMAL type with the correct precision and scale
+    $sqlType = null;
+    if (!AE\isColEncrypted()) {
+        $sqlType = call_user_func('SQLSRV_SQLTYPE_DECIMAL', $prec, $scale);
+    }
+    
+    // For inout parameters the input type should match the output one
+    if ($inout) {
+        $dir = SQLSRV_PARAM_INOUT;
+        $outString = '0.0';
+    }
 
     $outSql = AE\getCallProcSqlPlaceholders($storedProcName, 1);
     $stmt = sqlsrv_prepare($conn, $outSql, 
-                            array(array(&$outString, SQLSRV_PARAM_OUT, null, $sqlType)), 
+                            array(array(&$outString, $dir, null, $sqlType)), 
                             array('FormatDecimals' => $numDigits));
     if (!$stmt) {
         fatalError("getOutputParam: failed when preparing to call $storedProcName");
@@ -242,14 +260,11 @@ function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale)
     sqlsrv_free_stmt($stmt);
     
     if (!AE\isColEncrypted()) {
-        // Get output param without specifying sqlsrv type, and the returned value will 
-        // be a regular string -- its value should be the same as the input value, 
-        // unaffected by the statement option FormatDecimals 
         // With ColumnEncryption enabled, the driver is able to derive the decimal type,
         // so skip this part of the test
-        $outString2 = '';
+        $outString2 = $inout ? '0.0' : '';
         $stmt = sqlsrv_prepare($conn, $outSql, 
-                                array(array(&$outString2, SQLSRV_PARAM_OUT)), 
+                                array(array(&$outString2, $dir)), 
                                 array('FormatDecimals' => $numDigits));
         if (!$stmt) {
             fatalError("getOutputParam2: failed when preparing to call $storedProcName");
@@ -264,7 +279,7 @@ function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale)
     }
 }
 
-function testOutputParam($conn, $tableName, $inputs, $columns, $dataTypes)
+function testOutputParam($conn, $tableName, $inputs, $columns, $dataTypes, $inout = false)
 {
     for ($i = 0, $p = 3; $i < count($columns); $i++, $p++) {
         // Create the stored procedure first
@@ -274,7 +289,7 @@ function testOutputParam($conn, $tableName, $inputs, $columns, $dataTypes)
         createProc($conn, $storedProcName, $procArgs, $procCode);
 
         // Call stored procedure to retrieve output param
-        getOutputParam($conn, $storedProcName, $inputs[$i], $p, $i);
+        getOutputParam($conn, $storedProcName, $inputs[$i], $p, $i, $inout);
         
         dropProc($conn, $storedProcName);
     }
@@ -360,6 +375,7 @@ testStmtOption($conn, $tableName, $values, $columns, 2, true);
 
 // Test output parameters
 testOutputParam($conn, $tableName, $values, $columns, $dataTypes);
+testOutputParam($conn, $tableName, $values, $columns, $dataTypes, true);
 
 dropTable($conn, $tableName); 
 sqlsrv_close($conn);
