@@ -171,6 +171,11 @@ function testMoneyTypes($conn)
 
     $stmt = $conn->query($query);
     $results = $stmt->fetch(PDO::FETCH_NUM);
+    for ($i = 0; $i < count($values); $i++) {
+        if ($defaults[$i] !== $results[$i]) {
+            echo "testMoneyTypes: Expected $defaults[$i] but got $results[$i]\n";
+        }
+    }
     unset($stmt);
 
     // Set PDO::SQLSRV_ATTR_FORMAT_DECIMALS to 0 then 2
