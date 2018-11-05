@@ -4,7 +4,7 @@ verify github issue52 is fixed.
 This test only works in previous versions of SQL Servers. Full-text search features are 
 deprecated starting in SQL Server 2016.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure.inc'); ?>
 --FILE--
 <?php
 require_once 'MsCommon.inc';
