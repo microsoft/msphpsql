@@ -6,7 +6,7 @@ emalloc (which only allocate memory in the memory space allocated for the PHP pr
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure.inc'); ?>
 --FILE--
 <?php
 include 'MsCommon.inc';
