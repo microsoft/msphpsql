@@ -191,6 +191,7 @@ const int SQL_SERVER_2008_DEFAULT_DATETIME_SCALE = 7;
 namespace AzureADOptions {
     const char AZURE_AUTH_SQL_PASSWORD[] = "SqlPassword";
     const char AZURE_AUTH_AD_PASSWORD[] = "ActiveDirectoryPassword";
+    const char AZURE_AUTH_AD_MSI[] = "ActiveDirectoryMsi";
 }
 
 // the message returned by ODBC Driver for SQL Server
@@ -1777,6 +1778,7 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
     SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
     SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
+    SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
