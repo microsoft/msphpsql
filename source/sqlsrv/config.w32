@@ -36,10 +36,12 @@ if( PHP_SQLSRV != "no" ) {
             ADD_FLAG( "CFLAGS_SQLSRV", "/GS" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/Zi" );
             if (VCVERS >= 1913) {
+                ADD_FLAG("LDFLAGS_SQLSRV", "/d2:-guardspecload");
                 ADD_FLAG("CFLAGS_SQLSRV", "/Qspectre");
             } else if (VCVERS == 1900) {
                 var subver1900 = probe_binary(PHP_CL).substr(6);
                 if (subver1900 >= 24241) {
+                    ADD_FLAG("LDFLAGS_SQLSRV", "/d2:-guardspecload");
                     ADD_FLAG('CFLAGS_SQLSRV', "/Qspectre");
                 }
             }
@@ -47,5 +49,5 @@ if( PHP_SQLSRV != "no" ) {
             EXTENSION("sqlsrv", sqlsrv_src_class , PHP_SQLSRV_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
     } else {
         WARNING("sqlsrv not enabled; libraries and headers not found");
-	}
+    }
 }
