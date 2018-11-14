@@ -10,7 +10,7 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.1+ with improv
 
 Thank you for taking the time to participate in our last survey. You can continue to help us improve by letting us know how we are doing and how you use PHP by taking our December pulse survey:
 
-<a href="https://aka.ms/mssqlphpsurvey"><img style="float: right;"  height="67" width="156" src="https://meetsstorenew.blob.core.windows.net/contianerhd/survey.png?st=2017-02-17T22%3A03%3A00Z&se=2100-02-18T22%3A03%3A00Z&sp=rl&sv=2015-12-11&sr=b&sig=DJSFoihBptSvO%2BjvWzwpHecf8o5yfAbJoD2qW5oB8tc%3D"></a>
+<a href="https://aka.ms/mssqlphpsurvey"><img style="float: right;"  height="67" width="156" src="https://sqlchoice.blob.core.windows.net/sqlchoice/static/images/survey.png"></a>
 
 ### Status of Most Recent Builds
 | AppVeyor (Windows)       | Travis CI (Linux)        | Coverage (Windows)                    | Coverage (Linux)                          |
