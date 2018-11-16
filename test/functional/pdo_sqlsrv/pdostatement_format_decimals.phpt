@@ -188,21 +188,26 @@ function compareNumbers($actual, $input, $column, $fieldScale, $formatDecimal = 
     $matched = false;
     if ($actual === $input) {
         $matched = true;
-        trace("$actual, $input\n");
+        trace("Matched: $actual, $input\n");
     } else {
         // When $formatDecimal is negative, that means no formatting done
         // Otherwise, if $formatDecimal > $fieldScale, will show $fieldScale decimal digits
         if ($formatDecimal >= 0) {
             $numDecimals = ($formatDecimal > $fieldScale) ? $fieldScale : $formatDecimal;
+            $expected = number_format($input, $numDecimals);
         } else {
-            $numDecimals = $fieldScale;
+            $expected = number_format($input, $fieldScale);
+            if (abs($input) < 1) {
+                // Since no formatting, the leading zero should not be there
+                trace("Drop leading zero of $input--");
+                $expected = str_replace('0.', '.', $expected);
+            }
         }
-        $expected = number_format($input, $numDecimals);
-        trace("$actual, $expected\n");
+        trace("With number_format: $actual, $expected\n");
         if ($actual === $expected) {
             $matched = true;
         } else {
-            echo "For $column: expected $expected but the value is $actual\n";
+            echo "For $column ($formatDecimal): expected $expected ($input) but the value is $actual\n";
         }
     }
     return $matched;
@@ -265,7 +270,7 @@ function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale, $ino
         $paramType = PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT;
         
         // For inout parameters the input type should match the output one
-        $outString = '0.0';     
+        $outString = '0.0';
     } else {
         $paramType = PDO::PARAM_STR;
     }
