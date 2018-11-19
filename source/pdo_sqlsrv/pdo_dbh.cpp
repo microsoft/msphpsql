@@ -80,7 +80,8 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE,
     PDO_STMT_OPTION_EMULATE_PREPARES,
     PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
-    PDO_STMT_OPTION_FETCHES_DATETIME_TYPE
+    PDO_STMT_OPTION_FETCHES_DATETIME_TYPE,
+    PDO_STMT_OPTION_FORMAT_DECIMALS
 };
 
 // List of all the statement options supported by this driver.
@@ -95,6 +96,7 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_EMULATE_PREPARES, std::unique_ptr<stmt_option_emulate_prepares>( new stmt_option_emulate_prepares ) },
     { NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
     { NULL, 0, PDO_STMT_OPTION_FETCHES_DATETIME_TYPE, std::unique_ptr<stmt_option_fetch_datetime>( new stmt_option_fetch_datetime ) },
+    { NULL, 0, PDO_STMT_OPTION_FORMAT_DECIMALS, std::unique_ptr<stmt_option_format_decimals>( new stmt_option_format_decimals ) },
 
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -1095,6 +1097,7 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR:
             case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
+            case SQLSRV_ATTR_FORMAT_DECIMALS:
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1153,6 +1156,7 @@ int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR:
             case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
+            case SQLSRV_ATTR_FORMAT_DECIMALS:
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1584,6 +1588,10 @@ void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ 
 
          case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
              option_key = PDO_STMT_OPTION_FETCHES_DATETIME_TYPE;
+             break;
+
+         case SQLSRV_ATTR_FORMAT_DECIMALS:
+             option_key = PDO_STMT_OPTION_FORMAT_DECIMALS;
              break;
 
          default:

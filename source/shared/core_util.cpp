@@ -91,25 +91,6 @@ bool convert_string_from_utf16_inplace( _In_ SQLSRV_ENCODING encoding, _Inout_up
     return result;
 }
 
-bool convert_zval_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _Inout_ zval* value_z, _Inout_ SQLLEN& len)
-{
-    char* string = Z_STRVAL_P(value_z);
-
-    if( validate_string(string, len)) {
-       return true;
-    }
-
-    char* outString = NULL;
-    SQLLEN outLen = 0;
-    bool result = convert_string_from_utf16( encoding, reinterpret_cast<const SQLWCHAR*>(string), int(len / sizeof(SQLWCHAR)), &outString, outLen );
-    if( result ) {
-       core::sqlsrv_zval_stringl( value_z, outString, outLen );
-       sqlsrv_free( outString );
-       len = outLen;
-    }
-    return result;
-}
-
 bool validate_string( _In_ char* string, _In_ SQLLEN& len )
 {
      SQLSRV_ASSERT(string != NULL, "String must be specified");

@@ -70,7 +70,7 @@ $azurePassword = $adPassword;
 if ($azureServer != 'TARGET_AD_SERVER')
 {
     $connectionInfo = array( "UID"=>$azureUsername, "PWD"=>$azurePassword, 
-                         "Authentication"=>'ActiveDirectoryPassword',  "TrustServerCertificate"=>true );
+                         "Authentication"=>'ActiveDirectoryPassword',  "TrustServerCertificate"=>false );
 
     $conn = sqlsrv_connect( $azureServer, $connectionInfo );
     if( $conn === false )

@@ -174,6 +174,7 @@ namespace SSStmtOptionNames {
     const char SCROLLABLE[] = "Scrollable";
     const char CLIENT_BUFFER_MAX_SIZE[] = INI_BUFFERED_QUERY_LIMIT;
     const char DATE_AS_STRING[] = "ReturnDatesAsStrings";
+    const char FORMAT_DECIMALS[] = "FormatDecimals";
 }
 
 namespace SSConnOptionNames {
@@ -249,6 +250,12 @@ const stmt_option SS_STMT_OPTS[] = {
         sizeof( SSStmtOptionNames::DATE_AS_STRING ),
         SQLSRV_STMT_OPTION_DATE_AS_STRING, 
         std::unique_ptr<stmt_option_date_as_string>( new stmt_option_date_as_string )
+    },
+    {
+        SSStmtOptionNames::FORMAT_DECIMALS, 
+        sizeof( SSStmtOptionNames::FORMAT_DECIMALS ),
+        SQLSRV_STMT_OPTION_FORMAT_DECIMALS, 
+        std::unique_ptr<stmt_option_format_decimals>( new stmt_option_format_decimals )
     },
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };

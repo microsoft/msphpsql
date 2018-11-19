@@ -5,30 +5,33 @@ These instructions install PHP 7.2 by default -- see the notes at the beginning 
 
 ## Contents of this page:
 
-- [Installing the drivers on Ubuntu 16.04 and 18.04](#installing-the-drivers-on-ubuntu-1604-and-1804)
+- [Installing the drivers on Ubuntu 16.04, 18.04 and 18.10](#installing-the-drivers-on-ubuntu-1604-1804-and-1810)
 - [Installing the drivers on Red Hat 7](#installing-the-drivers-on-red-hat-7)
 - [Installing the drivers on Debian 8 and 9](#installing-the-drivers-on-debian-8-and-9)
 - [Installing the drivers on Suse 12](#installing-the-drivers-on-suse-12)
-- [Installing the drivers on macOS El Capitan, Sierra and High Sierra](#installing-the-drivers-on-macos-el-capitan-sierra-and-high-sierra)
+- [Installing the drivers on macOS El Capitan, Sierra, High Sierra and Mojave](#installing-the-drivers-on-macos-el-capitan-sierra-high-sierra-and-mojave)
 
-## Installing the drivers on Ubuntu 16.04 and 18.04
+## Installing the drivers on Ubuntu 16.04, 18.04 and 18.10
 
 > [!NOTE]
 > To install PHP 7.0 or 7.1, replace 7.2 with 7.0 or 7.1 in the following commands.
 > For Ubuntu 18.04, the step to add the ondrej repository is not required unless
-> PHP 7.0 or 7.1 is needed. However, installing PHP 7.0 or 7.1 in Ubuntu 18.04 may 
-> not work as packages from the ondrej repository come with dependencies that may 
-> conflict with a base Ubuntu 18.04 install.
+> PHP 7.0 or 7.1 is needed. However, installing PHP 7.0 or 7.1 in Ubuntu 18.04 or 18.10 
+> may not work as packages from the ondrej repository come with dependencies that may 
+> conflict with a base Ubuntu 18.04 or 18.10 install.
 
 ### Step 1. Install PHP
 ```
 sudo su
-add-apt-repository ppa:ondrej/php -y
+# The following step is required for Ubuntu 16.04 only
+add-apt-repository ppa:ondrej/php -y 
 apt-get update
 apt-get install php7.2 php7.2-dev php7.2-xml -y --allow-unauthenticated
 ```
 ### Step 2. Install prerequisites
-Install the ODBC driver for Ubuntu by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server).
+Install the ODBC driver for Ubuntu by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server). 
+
+For Ubuntu 18.10, follow the above steps for Ubuntu 18.04 except replace `18.04` by `18.10` and download ODBC 17.3 preview [here](https://www.microsoft.com/en-us/download/details.aspx?id=57341).
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 ```
@@ -209,7 +212,7 @@ sudo systemctl restart apache2
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on macOS El Capitan, Sierra and High Sierra
+## Installing the drivers on macOS El Capitan, Sierra, High Sierra and Mojave
 
 If you do not already have it, install brew as follows:
 ```
