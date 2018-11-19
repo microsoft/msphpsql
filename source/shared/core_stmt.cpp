@@ -1814,22 +1814,22 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
     std::size_t buffer_len = Z_STRLEN_P( input_param_z );
     int wchar_size;
 
-	if (buffer_len > INT_MAX)
-	{
-		LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
-		throw core::CoreException();
-	}
+    if (buffer_len > INT_MAX)
+    {
+        LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
+        throw core::CoreException();
+    }
 
     // if the string is empty, then just return that the conversion succeeded as
     // MultiByteToWideChar will "fail" on an empty string.
     if( buffer_len == 0 ) {
-		core::sqlsrv_zval_stringl( converted_param_z, "", 0 );
+        core::sqlsrv_zval_stringl( converted_param_z, "", 0 );
         return true;
     }
 
     // if the parameter is an input parameter, calc the size of the necessary buffer from the length of the string
 #ifndef _WIN32
-    wchar_size = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
+    wchar_size = buffer_len;//SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
 #else
     wchar_size = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
 #endif // !_WIN32
@@ -1842,7 +1842,7 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
     wbuffer = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( (wchar_size + 1) * sizeof( SQLWCHAR ) ));
     // convert the utf-8 string to a wchar string in the new buffer
 #ifndef _WIN32
-    int r = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
+    int r = SystemLocale::ToUtf16( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
 #else
     int r = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
 #endif // !_WIN32
@@ -1850,9 +1850,10 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
     if( r == 0 ) {
         return false;
     }
+    wchar_size = r;
 
     // null terminate the string, set the size within the zval, and return success
-    wbuffer[wchar_size] = L'\0';
+    wbuffer[ wchar_size ] = L'\0';
     core::sqlsrv_zval_stringl( converted_param_z, reinterpret_cast<char*>( wbuffer.get() ), wchar_size * sizeof( SQLWCHAR ) );
     sqlsrv_free(wbuffer);
     wbuffer.transferred();
@@ -2214,7 +2215,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 {
     SQLRETURN r;
     SQLSMALLINT c_type;
-    SQLLEN sql_field_type = 0;
+    SQLSMALLINT sql_field_type = 0;
     SQLSMALLINT extra = 0;
     SQLLEN field_len_temp = 0;
     SQLLEN sql_display_size = 0;

@@ -169,8 +169,12 @@ public:
     static size_t FromUtf16Strict(UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc,
                                   __out_ecount_opt(cchDest) char * dest, size_t cchDest,
                                   bool * pHasDataLoss = NULL, DWORD * pErrorCode = NULL);
+    // CP1252 to UTF16 conversion which does not involve iconv
+    static size_t CP1252ToUtf16( const char *src, SSIZE_T cchSrc, WCHAR *dest, size_t cchDest, DWORD *pErrorCode );
 
-
+    // UTF8/16 conversion which does not involve iconv
+    static size_t Utf8To16( const char *src, SSIZE_T cchSrc, WCHAR *dest, size_t cchDest, DWORD *pErrorCode );
+    static size_t Utf8From16( const WCHAR *src, SSIZE_T cchSrc, char *dest, size_t cchDest, DWORD *pErrorCode );
 
     // -----------------------------------------------------------------------
     // Public Member Functions
