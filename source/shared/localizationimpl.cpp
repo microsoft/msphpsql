@@ -901,7 +901,7 @@ size_t SystemLocale::Utf8From16Strict( const WCHAR *src, SSIZE_T cchSrc, char *d
             }
             if (*src < 0xDC00 || *src > 0xDFFF)
             {
-                // low surrogate not followed by high
+                *pErrorCode = ERROR_NO_UNICODE_TRANSLATION; // low surrogate not followed by high
                 if (destEnd - dest < 3)
                 {
                     *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
