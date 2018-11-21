@@ -175,6 +175,8 @@ public:
     // UTF8/16 conversion which does not involve iconv
     static size_t Utf8To16( const char *src, SSIZE_T cchSrc, WCHAR *dest, size_t cchDest, DWORD *pErrorCode );
     static size_t Utf8From16( const WCHAR *src, SSIZE_T cchSrc, char *dest, size_t cchDest, DWORD *pErrorCode );
+    static size_t Utf8To16Strict( const char *src, SSIZE_T cchSrc, WCHAR *dest, size_t cchDest, DWORD *pErrorCode );
+    static size_t Utf8From16Strict( const WCHAR *src, SSIZE_T cchSrc, char *dest, size_t cchDest, DWORD *pErrorCode );
 
     // -----------------------------------------------------------------------
     // Public Member Functions

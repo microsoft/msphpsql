@@ -490,6 +490,132 @@ size_t SystemLocale::Utf8To16( const char *src, SSIZE_T cchSrc, WCHAR *dest, siz
     return cchDest - (destEnd - dest);
 }
 
+size_t SystemLocale::Utf8To16Strict( const char *src, SSIZE_T cchSrc, WCHAR *dest, size_t cchDest, DWORD *pErrorCode )
+{
+    const unsigned char *usrc = reinterpret_cast<const unsigned char*>(src);
+    const unsigned char *srcEnd = usrc + cchSrc;
+    const WCHAR *destEnd = dest + cchDest;
+    DWORD dummyError;
+    if (!pErrorCode)
+    {
+        pErrorCode = &dummyError;
+    }
+    *pErrorCode = 0;
+
+    while(usrc < srcEnd && dest < destEnd)
+    {
+        DWORD ucode = *usrc++;
+        if(ucode <= 127) // Most common case for ASCII
+        {
+            *dest++ = ucode;
+        }
+        else if(ucode < 0xC0) // unexpected trailing byte 10xxxxxx
+        {
+            goto Invalid;
+        }
+        else if(ucode < 0xE0) // 110abcde 10fghijk
+        {
+            if (usrc >= srcEnd || *usrc < 0x80 || *usrc > 0xBF ||
+                (*dest = (ucode & 0x1F)<<6 | (*usrc++ & 0x3F)) < 0x80)
+            {
+                *dest = 0xFFFD;
+            }
+            dest++;
+        }
+        else if(ucode < 0xF0) // 1110abcd 10efghij 10klmnop
+        {
+            if (usrc >= srcEnd)
+            {
+                goto Invalid;
+            }
+            DWORD c1 = *usrc;
+            if (c1 < 0x80 || c1 > 0xBF)
+            {
+                goto Invalid;
+            }
+            usrc++;
+            if (usrc >= srcEnd)
+            {
+                goto Invalid;
+            }
+            DWORD c2 = *usrc;
+            if (c2 < 0x80 || c2 > 0xBF)
+            {
+                goto Invalid;
+            }
+            usrc++;
+            ucode = (ucode&15)<<12 | (c1&0x3F)<<6 | (c2&0x3F);
+            if (ucode < 0x800 || ucode >= 0xD800 && ucode <= 0xDFFF)
+            {
+                goto Invalid;
+            }
+            *dest++ = ucode;
+        }
+        else if(ucode < 0xF8) // 11110abc 10defghi 10jklmno 10pqrstu
+        {
+            if (usrc >= srcEnd)
+            {
+                goto Invalid;
+            }
+            DWORD c1 = *usrc;
+            if (c1 < 0x80 || c1 > 0xBF)
+            {
+                goto Invalid;
+            }
+            usrc++;
+            if (usrc >= srcEnd)
+            {
+                goto Invalid;
+            }
+            DWORD c2 = *usrc;
+            if (c2 < 0x80 || c2 > 0xBF)
+            {
+                goto Invalid;
+            }
+            usrc++;
+            if (usrc >= srcEnd)
+            {
+                goto Invalid;
+            }
+            DWORD c3 = *usrc;
+            if (c3 < 0x80 || c3 > 0xBF)
+            {
+                goto Invalid;
+            }
+            usrc++;
+            ucode = (ucode&7)<<18 | (c1&0x3F)<<12 | (c2&0x3F)<<6 | (c3&0x3F);
+
+            if (ucode < 0x10000   // overlong encoding
+             || ucode > 0x10FFFF  // exceeds Unicode range
+             || ucode >= 0xD800 && ucode <= 0xDFFF) // surrogate pairs
+            {
+                goto Invalid;
+            }
+            if (dest >= destEnd - 1)
+            {
+                *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
+                return cchDest - (destEnd - dest);
+            }
+            ucode -= 0x10000;
+            // Lead surrogate
+            *dest++ = 0xD800 + (ucode >> 10);
+            // Trail surrogate
+            *dest++ = 0xDC00 + (ucode & 0x3FF);
+        }
+        else // invalid
+        {
+        Invalid:
+            *pErrorCode = ERROR_NO_UNICODE_TRANSLATION;
+            return 0 ;
+        }
+    }
+    if (!*pErrorCode)
+    {
+        *pErrorCode = (dest == destEnd && usrc != srcEnd) ? ERROR_INSUFFICIENT_BUFFER : ERROR_SUCCESS;
+    }
+    return cchDest - (destEnd - dest);
+}
+
 size_t SystemLocale::ToUtf16( UINT srcCodePage, const char * src, SSIZE_T cchSrc, WCHAR * dest, size_t cchDest, DWORD * pErrorCode )
 {
     srcCodePage = ExpandSpecialCP( srcCodePage );
@@ -519,6 +645,17 @@ size_t SystemLocale::ToUtf16( UINT srcCodePage, const char * src, SSIZE_T cchSrc
 size_t SystemLocale::ToUtf16Strict( UINT srcCodePage, const char * src, SSIZE_T cchSrc, WCHAR * dest, size_t cchDest, DWORD * pErrorCode )
 {
     srcCodePage = ExpandSpecialCP( srcCodePage );
+    if ( dest )
+    {
+        if ( srcCodePage == CP_UTF8 )
+        {
+            return SystemLocale::Utf8To16Strict( src, cchSrc < 0 ? (1+strlen(src)) : cchSrc, dest, cchDest, pErrorCode );
+        }
+        else if ( srcCodePage == 1252 )
+        {
+            return SystemLocale::CP1252ToUtf16( src, cchSrc < 0 ? (1+strlen(src)) : cchSrc, dest, cchDest, pErrorCode );
+        }
+    }
     EncodingConverter cvt( CP_UTF16, srcCodePage );
     if ( !cvt.Initialize() )
     {
@@ -670,6 +807,135 @@ size_t SystemLocale::Utf8From16( const WCHAR *src, SSIZE_T cchSrc, char *dest, s
     return *pErrorCode == ERROR_INSUFFICIENT_BUFFER ? 0 : cchDest - (destEnd - dest);
 }
 
+size_t SystemLocale::Utf8From16Strict( const WCHAR *src, SSIZE_T cchSrc, char *dest, size_t cchDest, DWORD *pErrorCode )
+{
+    const WCHAR *srcEnd = src + cchSrc;
+    char *destEnd = dest + cchDest;
+    DWORD dummyError;
+    if (!pErrorCode)
+    {
+        pErrorCode = &dummyError;
+    }
+    *pErrorCode = 0;
+
+    // null dest is a special mode to calculate the output size required.
+    if (!dest)
+    {
+        size_t cbOut = 0;
+        while (src < srcEnd)
+        {
+            DWORD wch = *src++;
+            if (wch < 128) // most common case.
+            {
+                cbOut++;
+            }
+            else if (wch < 0x800) // 127 to 2047: 2 bytes
+            {
+                cbOut += 2;
+            }
+            else if (wch < 0xD800 || wch > 0xDFFF) // 2048 to 55295 and 57344 to 65535: 3 bytes
+            {
+                cbOut += 3;
+            }
+            else if (wch < 0xDC00) // 65536 to end of Unicode: 4 bytes
+            {
+                if (src >= srcEnd)
+                {
+                    cbOut += 3; // lone surrogate at end
+                }
+                else if (*src < 0xDC00 || *src > 0xDFFF)
+                {
+                    cbOut += 3; // low surrogate not followed by high
+                }
+                else
+                {
+                    cbOut += 4;
+                }
+            }
+            else // unexpected trail surrogate
+            {
+                cbOut += 3;
+            }
+        }
+        return cbOut;
+    }
+    while ( src < srcEnd && dest < destEnd )
+    {
+        DWORD wch = *src++;
+        if (wch < 128) // most common case.
+        {
+            *dest++ = wch;
+        }
+        else if (wch < 0x800) // 127 to 2047: 2 bytes
+        {
+            if (destEnd - dest < 2)
+            {
+                *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
+                return 0;
+            }
+            *dest++ = 0xC0 | (wch >> 6);
+            *dest++ = 0x80 | (wch & 0x3F);
+        }
+        else if (wch < 0xD800 || wch > 0xDFFF) // 2048 to 55295 and 57344 to 65535: 3 bytes
+        {
+            if (destEnd - dest < 3)
+            {
+                *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
+                return 0;
+            }
+            *dest++ = 0xE0 | (wch >> 12);
+            *dest++ = 0x80 | (wch >> 6)&0x3F;
+            *dest++ = 0x80 | (wch &0x3F);
+        }
+        else if (wch < 0xDC00) // 65536 to end of Unicode: 4 bytes
+        {
+            if (src >= srcEnd)
+            {
+                *pErrorCode = ERROR_NO_UNICODE_TRANSLATION; // lone surrogate at end
+                if (destEnd - dest < 3)
+                {
+                    *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
+                }
+                
+                return 0;
+            }
+            if (*src < 0xDC00 || *src > 0xDFFF)
+            {
+                // low surrogate not followed by high
+                if (destEnd - dest < 3)
+                {
+                    *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
+                }
+                return 0;
+            }
+            wch = 0x10000 + ((wch - 0xD800)<<10) + *src++ - 0xDC00;
+            if (destEnd - dest < 4)
+            {
+                *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
+                return 0;
+            }
+            *dest++ = 0xF0 | (wch >> 18);
+            *dest++ = 0x80 | (wch >>12)&0x3F;
+            *dest++ = 0x80 | (wch >> 6)&0x3F;
+            *dest++ = 0x80 | wch&0x3F;
+        }
+        else // unexpected trail surrogate
+        {
+            *pErrorCode = ERROR_NO_UNICODE_TRANSLATION; // lone surrogate at end
+            if (destEnd - dest < 3)
+            {
+                *pErrorCode = ERROR_INSUFFICIENT_BUFFER;
+            }
+            return 0;
+        }
+    }
+    if (!*pErrorCode)
+    {
+        *pErrorCode = (dest == destEnd && src != srcEnd) ? ERROR_INSUFFICIENT_BUFFER : ERROR_SUCCESS;
+    }
+    return *pErrorCode == ERROR_INSUFFICIENT_BUFFER ? 0 : cchDest - (destEnd - dest);
+}
+
 size_t SystemLocale::FromUtf16( UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc, char * dest, size_t cchDest, bool * pHasDataLoss, DWORD * pErrorCode )
 {
     destCodePage = ExpandSpecialCP( destCodePage );
@@ -693,6 +959,11 @@ size_t SystemLocale::FromUtf16( UINT destCodePage, const WCHAR * src, SSIZE_T cc
 size_t SystemLocale::FromUtf16Strict(UINT destCodePage, const WCHAR * src, SSIZE_T cchSrc, char * dest, size_t cchDest, bool * pHasDataLoss, DWORD * pErrorCode)
 {
     destCodePage = ExpandSpecialCP(destCodePage);
+    if ( destCodePage == CP_UTF8 )
+    {
+        pHasDataLoss && (*pHasDataLoss = 0);
+        return SystemLocale::Utf8From16Strict( src, cchSrc < 0 ? 1+mplat_wcslen(src) : cchSrc, dest, cchDest, pErrorCode );
+    }
     EncodingConverter cvt(destCodePage, CP_UTF16);
     if (!cvt.Initialize())
     {

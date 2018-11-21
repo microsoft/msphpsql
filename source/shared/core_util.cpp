@@ -148,7 +148,6 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
 
     // calculate the number of characters needed
 #ifndef _WIN32
-    //~ cchOutLen = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, NULL, 0 );
     cchOutLen = 4*cchInLen;
 #else	
     cchOutLen = WideCharToMultiByte( encoding, flags,
@@ -165,7 +164,7 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     memset(newString, '\0', cchOutLen+1);
     
 #ifndef _WIN32
-    int rc = SystemLocale::FromUtf16( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
+    int rc = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
 #else
     int rc = WideCharToMultiByte( encoding, flags, inString, cchInLen, newString, static_cast<int>(cchOutLen), NULL, NULL );
 #endif // !_WIN32
