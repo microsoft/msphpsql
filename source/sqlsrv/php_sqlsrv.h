@@ -131,6 +131,8 @@ struct ss_sqlsrv_conn : sqlsrv_conn
 {
     HashTable*     stmts;
     bool           date_as_string;
+    bool           format_decimals;    // flag set to turn on formatting for values of decimal / numeric types
+    short          decimal_places;     // number of decimal digits to show in a result set unless format_numbers is false
     bool           in_transaction;     // flag set when inside a transaction and used for checking validity of tran API calls
     
     // static variables used in process_params
@@ -142,6 +144,8 @@ struct ss_sqlsrv_conn : sqlsrv_conn
         sqlsrv_conn( h, e, drv, SQLSRV_ENCODING_SYSTEM TSRMLS_CC ),
         stmts( NULL ),
         date_as_string( false ),
+        format_decimals( false ),
+        decimal_places( NO_CHANGE_DECIMAL_PLACES ),
         in_transaction( false )
     {
     }

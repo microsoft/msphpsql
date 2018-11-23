@@ -139,9 +139,11 @@ ss_sqlsrv_stmt::ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_
 {
     core_sqlsrv_set_buffered_query_limit( this, SQLSRV_G( buffered_query_limit ) TSRMLS_CC );
 
-    // initialize date_as_string based on the corresponding connection option
+    // inherit other values based on the corresponding connection options
     ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>(conn);
     date_as_string = ss_conn->date_as_string;
+    format_decimals = ss_conn->format_decimals;
+    decimal_places = ss_conn->decimal_places;
 }
 
 ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
