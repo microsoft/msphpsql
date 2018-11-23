@@ -140,7 +140,6 @@ function testMoneyTypes($conn, $numDigits)
 {
     // With money and smallmoney types, which are essentially decimal types
     // As of today, ODBC driver does not support Always Encrypted feature with money / smallmoney
-
     $values = array();
     $nColumns = 6;
     for ($i = 0; $i < $nColumns; $i++) {

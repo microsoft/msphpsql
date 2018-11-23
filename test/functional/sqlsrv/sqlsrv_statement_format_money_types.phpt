@@ -243,13 +243,13 @@ $conn = AE\connect(array('FormatDecimals' => true, 'DecimalPlaces' => $numDigits
 if (!$conn) {
     fatalError("Could not connect.\n");
 }
-/*
+
 // First to test if leading zero is added
 testMoneyTypes($conn);
 
 // Also test using regular floats
 testFloatTypes($conn);
-*/
+
 // Test output params
 testOutputParam($conn);
 
