@@ -438,12 +438,8 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "The Azure AD Access Token is empty. Expected a byte string.", -91, false}
     },
     {
-        SQLSRV_ERROR_INVALID_FORMAT_DECIMALS,
+        SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
         { IMSSP, (SQLCHAR*) "Expected an integer to specify number of decimals to format the output values of decimal data types.", -92, false}
-    },
-    {
-        SQLSRV_ERROR_FORMAT_DECIMALS_OUT_OF_RANGE,
-        { IMSSP, (SQLCHAR*) "For formatting decimal data values, %1!d! is out of range. Expected an integer from 0 to 38, inclusive.", -93, true}
     },
 
     { UINT_MAX, {} }
