@@ -24,7 +24,7 @@ environment:
         SQL_INSTANCE: SQL2017
         PHP_VC: 15
         PHP_MAJOR_VER: 7.2
-        PHP_MINOR_VER: latest
+        PHP_MINOR_VER: 11
         PHP_EXE_PATH: x64\Release_TS
         THREAD: ts
         platform: x64

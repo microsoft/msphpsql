@@ -42,6 +42,12 @@ class my_stream {
 
     function stream_seek($offset, $whence)
     {
+        // For the purpose of this test only support SEEK_SET to $offset 0
+        if ($whence == SEEK_SET && $offset == 0) {
+            $this->total_read = $offset;
+            return true;
+        } 
+        return false;
     }
 }
 

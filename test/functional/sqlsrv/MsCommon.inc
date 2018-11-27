@@ -449,6 +449,10 @@ function handleErrors()
 
 function setUSAnsiLocale()
 {
+    // Do not run locale tests in Azure
+    if (isDaasMode()) {
+        return;
+    }
     if (!isWindows()) {
         // macOS the locale names are different in Linux or macOS
         $locale = strtoupper(PHP_OS) === 'LINUX' ? "en_US.ISO-8859-1" : "en_US.ISO8859-1";
@@ -459,6 +463,10 @@ function setUSAnsiLocale()
 
 function resetLocaleToDefault()
 {
+    // Do not run locale tests in Azure
+    if (isDaasMode()) {
+        return;
+    }
     // Like setUSAnsiLocale() above, this method is only needed in non-Windows environment
     if (!isWindows()) {
         setlocale(LC_ALL, null);
@@ -471,6 +479,10 @@ function isLocaleSupported()
 {
     if (isWindows()) {
         return true;
+    }
+    // Do not run locale tests in Azure
+    if (isDaasMode()) {
+        return false;
     }
     if (AE\isDataEncrypted()) {
         return false;

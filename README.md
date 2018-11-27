@@ -10,15 +10,15 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.1+ with improv
 
 Thank you for taking the time to participate in our last survey. You can continue to help us improve by letting us know how we are doing and how you use PHP by taking our December pulse survey:
 
-<a href="https://aka.ms/mssqlphpsurvey"><img style="float: right;"  height="67" width="156" src="https://meetsstorenew.blob.core.windows.net/contianerhd/survey.png?st=2017-02-17T22%3A03%3A00Z&se=2100-02-18T22%3A03%3A00Z&sp=rl&sv=2015-12-11&sr=b&sig=DJSFoihBptSvO%2BjvWzwpHecf8o5yfAbJoD2qW5oB8tc%3D"></a>
+<a href="https://aka.ms/mssqlphpsurvey"><img style="float: right;"  height="67" width="156" src="https://sqlchoice.blob.core.windows.net/sqlchoice/static/images/survey.png"></a>
 
 ### Status of Most Recent Builds
 | AppVeyor (Windows)       | Travis CI (Linux)        | Coverage (Windows)                    | Coverage (Linux)                          |
 |--------------------------|--------------------------|---------------------------------------|-------------------------------------------|
 | [![av-image][]][av-site] | [![tv-image][]][tv-site] | [![Coverage Codecov][]][codecov-site] | [![Coverage Coveralls][]][coveralls-site] |
 
-[av-image]:  https://ci.appveyor.com/api/projects/status/xhp4nq9ouljnhxqf/branch/dev?svg=true
-[av-site]: https://ci.appveyor.com/project/Microsoft-PHPSQL/msphpsql-frhmr/branch/dev
+[av-image]: https://ci.appveyor.com/api/projects/status/vo4rfei6lxlamrnc?svg=true
+[av-site]: https://ci.appveyor.com/project/msphpsql/msphpsql/branch/dev
 [tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=dev
 [tv-site]: https://travis-ci.org/Microsoft/msphpsql/
 [Coverage Coveralls]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=dev

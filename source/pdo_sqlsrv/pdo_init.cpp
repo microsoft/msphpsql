@@ -286,6 +286,7 @@ namespace {
         { "SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE", SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE },
         { "SQLSRV_ATTR_FETCHES_NUMERIC_TYPE", SQLSRV_ATTR_FETCHES_NUMERIC_TYPE },
         { "SQLSRV_ATTR_FETCHES_DATETIME_TYPE", SQLSRV_ATTR_FETCHES_DATETIME_TYPE },
+        { "SQLSRV_ATTR_FORMAT_DECIMALS"     , SQLSRV_ATTR_FORMAT_DECIMALS },
 
         // used for the size for output parameters: PDO::PARAM_INT and PDO::PARAM_BOOL use the default size of int,
         // PDO::PARAM_STR uses the size of the string in the variable
