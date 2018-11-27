@@ -518,7 +518,7 @@ size_t SystemLocale::Utf8To16Strict( const char *src, SSIZE_T cchSrc, WCHAR *des
             if (usrc >= srcEnd || *usrc < 0x80 || *usrc > 0xBF ||
                 (*dest = (ucode & 0x1F)<<6 | (*usrc++ & 0x3F)) < 0x80)
             {
-                *dest = 0xFFFD;
+                goto Invalid;
             }
             dest++;
         }
