@@ -156,7 +156,7 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     }
     char* newString2 = reinterpret_cast<char*>( sqlsrv_malloc( rc + 1 /* NULL char*/ ));
     memset(newString2, '\0', rc+1);
-    memcpy(newString2, newString, rc+1);
+    memcpy_s(newString2, rc+1, newString, rc+1);
     sqlsrv_free( newString );
 
     *outString = newString2;
