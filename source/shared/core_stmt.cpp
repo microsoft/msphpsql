@@ -2351,7 +2351,6 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
             else {
-                //SQLSMALLINT decimal_digits = output_param->getDecimalDigits();
                 param_meta_data metaData = output_param->getMetaData();
 
                 if (output_param->encoding != SQLSRV_ENCODING_CHAR) {

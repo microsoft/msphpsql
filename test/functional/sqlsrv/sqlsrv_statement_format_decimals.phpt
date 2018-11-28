@@ -12,7 +12,7 @@ Setting FormatDecimals to false will turn off all formatting, regardless of Deci
 2. Set FormatDecimals to true to add the leading zeroes to money and decimal types, if missing.
 3. For output params, leading zeroes will be added for any decimal fields if FormatDecimals is true, but only if either SQLSRV_SQLTYPE_DECIMAL or SQLSRV_SQLTYPE_NUMERIC is set correctly to match the original column type and its precision / scale.
 
-FormatDecimals and DecimalPlaces will only format the fetched results and have no effect on other operatioins like insertion or update.
+FormatDecimals and DecimalPlaces will only format the fetched results and have no effect on other operations like insertion or update.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
