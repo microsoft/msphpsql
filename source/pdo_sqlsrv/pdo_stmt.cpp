@@ -883,7 +883,11 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 break;
 
             case SQLSRV_ATTR_FORMAT_DECIMALS:
-                core_sqlsrv_set_format_decimals(driver_stmt, val TSRMLS_CC);
+                driver_stmt->format_decimals = ( zend_is_true( val )) ? true : false;
+                break;
+
+            case SQLSRV_ATTR_DECIMAL_PLACES:
+                core_sqlsrv_set_decimal_places(driver_stmt, val TSRMLS_CC);
                 break;
 
             default:
@@ -970,6 +974,18 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
             case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
             {
                 ZVAL_BOOL( return_value, driver_stmt->fetch_datetime );
+                break;
+            }
+
+            case SQLSRV_ATTR_FORMAT_DECIMALS:
+            {
+                ZVAL_BOOL( return_value, driver_stmt->format_decimals );
+                break;
+            }
+
+            case SQLSRV_ATTR_DECIMAL_PLACES:
+            {
+                ZVAL_LONG( return_value, driver_stmt->decimal_places ); 
                 break;
             }
 
