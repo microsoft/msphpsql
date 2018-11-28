@@ -81,7 +81,8 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_EMULATE_PREPARES,
     PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
     PDO_STMT_OPTION_FETCHES_DATETIME_TYPE,
-    PDO_STMT_OPTION_FORMAT_DECIMALS
+    PDO_STMT_OPTION_FORMAT_DECIMALS,
+    PDO_STMT_OPTION_DECIMAL_PLACES
 };
 
 // List of all the statement options supported by this driver.
@@ -97,6 +98,7 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
     { NULL, 0, PDO_STMT_OPTION_FETCHES_DATETIME_TYPE, std::unique_ptr<stmt_option_fetch_datetime>( new stmt_option_fetch_datetime ) },
     { NULL, 0, PDO_STMT_OPTION_FORMAT_DECIMALS, std::unique_ptr<stmt_option_format_decimals>( new stmt_option_format_decimals ) },
+    { NULL, 0, PDO_STMT_OPTION_DECIMAL_PLACES, std::unique_ptr<stmt_option_decimal_places>( new stmt_option_decimal_places ) },
 
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -500,7 +502,9 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
     query_timeout( QUERY_TIMEOUT_INVALID ),
     client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size )),
     fetch_numeric( false ),
-    fetch_datetime( false )
+    fetch_datetime( false ),
+    format_decimals( false ),
+    decimal_places( NO_CHANGE_DECIMAL_PLACES )
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -1069,7 +1073,28 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
                 driver_dbh->fetch_datetime = (zend_is_true(val)) ? true : false;
                 break;
-                
+
+            case SQLSRV_ATTR_FORMAT_DECIMALS:
+                driver_dbh->format_decimals = (zend_is_true(val)) ? true : false;
+                break;
+
+            case SQLSRV_ATTR_DECIMAL_PLACES:
+            {
+                // first check if the input is an integer
+                if (Z_TYPE_P(val) != IS_LONG) {
+                    THROW_PDO_ERROR(driver_dbh, SQLSRV_ERROR_INVALID_DECIMAL_PLACES);
+                }
+
+                zend_long decimal_places = Z_LVAL_P(val);
+                if (decimal_places < 0 || decimal_places > SQL_SERVER_MAX_MONEY_SCALE) {
+                    // ignore decimal_places as this is out of range
+                    decimal_places = NO_CHANGE_DECIMAL_PLACES;
+                }
+
+                driver_dbh->decimal_places = static_cast<short>(decimal_places);
+            }
+            break;
+
             // Not supported
             case PDO_ATTR_FETCH_TABLE_NAMES: 
             case PDO_ATTR_FETCH_CATALOG_NAMES: 
@@ -1097,7 +1122,6 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR:
             case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
-            case SQLSRV_ATTR_FORMAT_DECIMALS:
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1156,7 +1180,6 @@ int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR:
             case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
-            case SQLSRV_ATTR_FORMAT_DECIMALS:
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1226,6 +1249,18 @@ int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
             {
                 ZVAL_BOOL( return_value, driver_dbh->fetch_datetime );
+                break;
+            }
+
+            case SQLSRV_ATTR_FORMAT_DECIMALS:
+            {
+                ZVAL_BOOL( return_value, driver_dbh->format_decimals );
+                break;
+            }
+
+            case SQLSRV_ATTR_DECIMAL_PLACES:
+            { 
+                ZVAL_LONG( return_value, driver_dbh->decimal_places );
                 break;
             }
 
@@ -1592,6 +1627,10 @@ void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ 
 
          case SQLSRV_ATTR_FORMAT_DECIMALS:
              option_key = PDO_STMT_OPTION_FORMAT_DECIMALS;
+             break;
+
+         case SQLSRV_ATTR_DECIMAL_PLACES:
+             option_key = PDO_STMT_OPTION_DECIMAL_PLACES;
              break;
 
          default:

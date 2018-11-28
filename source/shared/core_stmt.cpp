@@ -107,7 +107,7 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
                        _Out_ SQLSMALLINT& sql_type TSRMLS_DC );
 void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
-void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len);
+void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len);
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
 						  _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len TSRMLS_DC );
@@ -142,7 +142,8 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     past_next_result_end( false ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
     date_as_string(false),
-    num_decimals(-1),           // -1 means no formatting required
+    format_decimals(false),       // no formatting needed
+    decimal_places(NO_CHANGE_DECIMAL_PLACES),     // the default is no formatting to resultset required
     buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     param_ind_ptrs( 10 ),       // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
@@ -925,6 +926,19 @@ field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQL
         }
     }
 
+    if (meta_data->field_type == SQL_DECIMAL) {
+        // Check if it is money type -- get the name of the data type
+        char field_type_name[SS_MAXCOLNAMELEN] = {'\0'};
+        SQLSMALLINT out_buff_len;
+        SQLLEN not_used;
+        core::SQLColAttribute(stmt, colno + 1, SQL_DESC_TYPE_NAME, field_type_name,
+                              sizeof( field_type_name ), &out_buff_len, &not_used TSRMLS_CC);
+
+        if (!strcmp(field_type_name, "money") || !strcmp(field_type_name, "smallmoney")) {
+            meta_data->field_is_money_type = true;
+        }
+    }
+
     // Set the field name lenth
     meta_data->field_name_len = static_cast<SQLSMALLINT>( field_name_len );
 
@@ -1258,20 +1272,21 @@ void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout
     }
 }
 
-void core_sqlsrv_set_format_decimals(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC)
+void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC)
 {
     try {
         // first check if the input is an integer
-        CHECK_CUSTOM_ERROR(Z_TYPE_P(value_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_FORMAT_DECIMALS) {
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(value_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_DECIMAL_PLACES) {
             throw core::CoreException();
         }
 
-        zend_long format_decimals = Z_LVAL_P(value_z);
-        CHECK_CUSTOM_ERROR(format_decimals  < 0 || format_decimals  > SQL_SERVER_MAX_PRECISION, stmt, SQLSRV_ERROR_FORMAT_DECIMALS_OUT_OF_RANGE, format_decimals) {
-            throw core::CoreException();
+        zend_long decimal_places = Z_LVAL_P(value_z);
+        if (decimal_places < 0 || decimal_places  > SQL_SERVER_MAX_MONEY_SCALE) {
+            // ignore decimal_places because it is out of range
+            decimal_places = NO_CHANGE_DECIMAL_PLACES;
         }
 
-        stmt->num_decimals = static_cast<short>(format_decimals);
+        stmt->decimal_places = static_cast<short>(decimal_places);
     } 
     catch( core::CoreException& ) {
         throw;
@@ -1447,7 +1462,17 @@ void stmt_option_date_as_string:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
 
 void stmt_option_format_decimals:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
 {
-    core_sqlsrv_set_format_decimals(stmt, value_z TSRMLS_CC);
+    if (zend_is_true(value_z)) {
+        stmt->format_decimals = true;
+    }
+    else {
+        stmt->format_decimals = false;
+    }
+}
+
+void stmt_option_decimal_places:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
+{
+    core_sqlsrv_set_decimal_places(stmt, value_z TSRMLS_CC);
 }
 
 // internal function to release the active stream.  Called by each main API function
@@ -2114,25 +2139,29 @@ void field_cache_dtor( _Inout_ zval* data_z )
 }
 
 // To be called for formatting decimal / numeric fetched values from finalize_output_parameters() and/or get_field_as_string()
-void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len)
+void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len)
 {
     // In SQL Server, the default maximum precision of numeric and decimal data types is 38
     //
-    // Note: stmt->num_decimals is -1 by default, which means no formatting on decimals / numerics is necessary
-    // If the required number of decimals is larger than the field scale, will use the column field scale instead.
-    // This is to ensure the number of decimals adheres to the column field scale. If smaller, the output value may be rounded up.
+    // Note: decimals_places is NO_CHANGE_DECIMAL_PLACES by default, which means no formatting on decimal data is necessary
+    // This function assumes stmt->format_decimals is true, so it first checks if it is necessary to add the leading zero.
     //
-    // Note: it's possible that the decimal / numeric value does not contain a decimal dot because the field scale is 0.
-    // Thus, first check if the decimal dot exists. If not, no formatting necessary, regardless of decimals_digits
+    // Likewise, if decimals_places is larger than the field scale, decimals_places wil be ignored. This is to ensure the
+    // number of decimals adheres to the column field scale. If smaller, the output value may be rounded up.
+    //
+    // Note: it's possible that the decimal data does not contain a decimal dot because the field scale is 0.
+    // Thus, first check if the decimal dot exists. If not, no formatting necessary, regardless of 
+    // format_decimals and decimals_places
     //
     std::string str = field_value;
     size_t pos = str.find_first_of('.');
 
-    if (pos == std::string::npos || decimals_digits < 0) {
+    // The decimal dot is not found, simply return
+    if (pos == std::string::npos) {
         return;
     }
 
-    SQLSMALLINT num_decimals = decimals_digits;
+    SQLSMALLINT num_decimals = decimals_places;
     if (num_decimals > field_scale) {
         num_decimals = field_scale;
     }
@@ -2160,47 +2189,24 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT f
         pos++;
     }
     
-    size_t last = 0;
-    if (num_decimals == 0) {
-        // Chop all decimal digits, including the decimal dot
-        size_t pos2 = pos + 1;
-        short n = str[pos2] - '0';
-        if (n >= 5) {
-            // Start rounding up - starting from the digit left of the dot all the way to the first digit
-            bool carry_over = true;
-            for (short p = pos - 1; p >= 0 && carry_over; p--) {
-                n = str[p] - '0';
-                if (n == 9) {
-                    str[p] = '0' ;
-                    carry_over = true;
-                }
-                else {
-                    n++;
-                    carry_over = false;
-                    str[p] = '0' + n;
-                }
-            }
-            if (carry_over) {
-                std::ostringstream oss;
-                oss << '1' << str.substr(0, pos);
-                str = oss.str();
-                pos++;
-            }
-        }
-        last = pos;
-    }
-    else {
-        size_t pos2 = pos + num_decimals + 1;
-        // No need to check if rounding is necessary when pos2 has passed the last digit in the input string
-        if (pos2 < str.length()) {
+    if (num_decimals == NO_CHANGE_DECIMAL_PLACES) {
+        // Add the minus sign back if negative
+        if (isNegative) {
+            std::ostringstream oss;
+            oss << '-' << str.substr(0);
+            str = oss.str();
+        } 
+    } else {
+        // Start formatting 
+        size_t last = 0;
+        if (num_decimals == 0) {
+            // Chop all decimal digits, including the decimal dot
+            size_t pos2 = pos + 1;
             short n = str[pos2] - '0';
             if (n >= 5) {
-                // Start rounding up - starting from the digit left of pos2 all the way to the first digit
+                // Start rounding up - starting from the digit left of the dot all the way to the first digit
                 bool carry_over = true;
-                for (short p = pos2 - 1; p >= 0 && carry_over; p--) {
-                    if (str[p] == '.') { // Skip the dot
-                        continue;
-                    }
+                for (short p = pos - 1; p >= 0 && carry_over; p--) {
                     n = str[p] - '0';
                     if (n == 9) {
                         str[p] = '0' ;
@@ -2214,22 +2220,54 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_digits, _In_ SQLSMALLINT f
                 }
                 if (carry_over) {
                     std::ostringstream oss;
-                    oss << '1' << str.substr(0, pos2);
+                    oss << '1' << str.substr(0, pos);
                     str = oss.str();
-                    pos2++;
+                    pos++;
                 }
             }
+            last = pos;
         }
-        last = pos2;
-    }
-    
-    // Add the minus sign back if negative
-    if (isNegative) {
-        std::ostringstream oss;
-        oss << '-' << str.substr(0, last);
-        str = oss.str();
-    } else {
-        str = str.substr(0, last);
+        else {
+            size_t pos2 = pos + num_decimals + 1;
+            // No need to check if rounding is necessary when pos2 has passed the last digit in the input string
+            if (pos2 < str.length()) {
+                short n = str[pos2] - '0';
+                if (n >= 5) {
+                    // Start rounding up - starting from the digit left of pos2 all the way to the first digit
+                    bool carry_over = true;
+                    for (short p = pos2 - 1; p >= 0 && carry_over; p--) {
+                        if (str[p] == '.') { // Skip the dot
+                            continue;
+                        }
+                        n = str[p] - '0';
+                        if (n == 9) {
+                            str[p] = '0' ;
+                            carry_over = true;
+                        }
+                        else {
+                            n++;
+                            carry_over = false;
+                            str[p] = '0' + n;
+                        }
+                    }
+                    if (carry_over) {
+                        std::ostringstream oss;
+                        oss << '1' << str.substr(0, pos2);
+                        str = oss.str();
+                        pos2++;
+                    }
+                }
+            }
+            last = pos2;
+        }
+        // Add the minus sign back if negative
+        if (isNegative) {
+            std::ostringstream oss;
+            oss << '-' << str.substr(0, last);
+            str = oss.str();
+        } else {
+            str = str.substr(0, last);
+        }
     }
 
     size_t len = str.length();
@@ -2313,7 +2351,7 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 core::sqlsrv_zval_stringl(value_z, str, str_len);
             }
             else {
-                SQLSMALLINT decimal_digits = output_param->getDecimalDigits();
+                param_meta_data metaData = output_param->getMetaData();
 
                 if (output_param->encoding != SQLSRV_ENCODING_CHAR) {
                     char* outString = NULL;
@@ -2323,15 +2361,16 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                         throw core::CoreException();
                     }
 
-                    if (stmt->num_decimals >= 0 && decimal_digits >= 0) {
-                        format_decimal_numbers(stmt->num_decimals, decimal_digits, outString, &outLen);
+                    if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
+                        format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, outString, &outLen);
                     }
+
                     core::sqlsrv_zval_stringl(value_z, outString, outLen);
                     sqlsrv_free(outString);
                 }
                 else {
-                    if (stmt->num_decimals >= 0 && decimal_digits >= 0) {
-                        format_decimal_numbers(stmt->num_decimals, decimal_digits, str, &str_len);
+                    if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
+                        format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, str, &str_len);
                     }
 
                     core::sqlsrv_zval_stringl(value_z, str, str_len);
@@ -2601,8 +2640,10 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                 }
             }
 
-            if (stmt->num_decimals >= 0 && (sql_field_type == SQL_DECIMAL || sql_field_type == SQL_NUMERIC)) {
-                format_decimal_numbers(stmt->num_decimals, stmt->current_meta_data[field_index]->field_scale, field_value_temp, &field_len_temp);
+            if (stmt->format_decimals && (sql_field_type == SQL_DECIMAL || sql_field_type == SQL_NUMERIC)) {
+                // number of decimal places only affect money / smallmoney fields
+                SQLSMALLINT decimal_places = (stmt->current_meta_data[field_index]->field_is_money_type) ? stmt->decimal_places : NO_CHANGE_DECIMAL_PLACES;
+                format_decimal_numbers(decimal_places, stmt->current_meta_data[field_index]->field_scale, field_value_temp, &field_len_temp);
             }
         } // else if( sql_display_size >= 1 && sql_display_size <= SQL_SERVER_MAX_FIELD_SIZE )
 
