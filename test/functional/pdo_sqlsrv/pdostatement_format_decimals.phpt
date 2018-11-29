@@ -152,18 +152,20 @@ function getOutputParam($conn, $storedProcName, $inputValue, $prec, $scale, $ino
     $stmt->bindParam(1, $outString, $paramType, $len);
     $stmt->execute();
 
-    // The output param value should be the same as the input value, 
-    // unaffected by the statement attr PDO::SQLSRV_ATTR_DECIMAL_PLACES.
+    // The output param value should be unaffected by the attr 
+    // PDO::SQLSRV_ATTR_DECIMAL_PLACES. Without ColumnEncryption, the 
+    // output param is treated as a regular string (not a decimal), so
+    // no missing leading zeroes.
     // If ColumnEncryption is enabled, in which case the driver is able 
-    // to derive the decimal type, leading zero will be added if missing
+    // to derive the decimal type, leading zero will be added if missing.
     if (isAEConnected()) {
         trace("\ngetOutputParam ($inout) with AE:\n");
         $column = 'outputParamAE';
-        compareNumbers($outString, $inputValue, $column, $scale, true);
+        compareNumbers($outString, $inputValue, $column, $scale);
     } else {
         trace("\ngetOutputParam ($inout) without AE:\n");
         $column = 'outputParam';
-        compareNumbers($outString, $inputValue, $column, $scale, false);
+        compareNumbers($outString, $inputValue, $column, $scale);
     }
 }
 
