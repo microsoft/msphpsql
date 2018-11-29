@@ -4,7 +4,7 @@
 // File: version.h
 // Contents: Version number constants
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -26,7 +26,7 @@
 // Increase Minor with backward compatible new functionalities and API changes.
 // Increase Patch for backward compatible fixes.
 #define SQLVERSION_MAJOR 5
-#define SQLVERSION_MINOR 4
+#define SQLVERSION_MINOR 5
 #define SQLVERSION_PATCH 0
 #define SQLVERSION_BUILD 0
 
