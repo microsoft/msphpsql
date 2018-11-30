@@ -6,7 +6,7 @@
 //
 // Contents: Declarations for the extension
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -49,7 +49,8 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
     SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
     SQLSRV_ATTR_FETCHES_DATETIME_TYPE,
-    SQLSRV_ATTR_FORMAT_DECIMALS
+    SQLSRV_ATTR_FORMAT_DECIMALS,
+    SQLSRV_ATTR_DECIMAL_PLACES
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -206,6 +207,8 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     zend_long client_buffer_max_size;
     bool fetch_numeric;
     bool fetch_datetime;
+    bool format_decimals;
+    short decimal_places;
 
     pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC );
 };
@@ -267,6 +270,8 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         direct_query = db->direct_query;
         fetch_numeric = db->fetch_numeric;
         fetch_datetime = db->fetch_datetime;
+        format_decimals = db->format_decimals;
+        decimal_places = db->decimal_places;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );

@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -43,6 +43,45 @@ struct date_as_string_func {
         else {
             ss_conn->date_as_string = false;
         }
+    }
+};
+
+struct format_decimals_func
+{
+    static void func(connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC)
+    {
+        TSRMLS_C;   // show as used to avoid a warning
+
+        ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>(conn);
+
+        if (zend_is_true(value)) {
+            ss_conn->format_decimals = true;
+        }
+        else {
+            ss_conn->format_decimals = false;
+        }
+    }
+};
+
+struct decimal_places_func
+{
+
+    static void func(connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC)
+    {
+        TSRMLS_C;   // show as used to avoid a warning
+
+        // first check if the input is an integer
+        if (Z_TYPE_P(value) != IS_LONG) {
+            THROW_SS_ERROR(conn, SQLSRV_ERROR_INVALID_DECIMAL_PLACES);
+        }
+
+        zend_long decimal_places = Z_LVAL_P(value);
+        if (decimal_places < 0 || decimal_places > SQL_SERVER_MAX_MONEY_SCALE) {
+            decimal_places = NO_CHANGE_DECIMAL_PLACES;
+        }
+
+        ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>(conn);
+        ss_conn->decimal_places = static_cast<short>(decimal_places);
     }
 };
 
@@ -175,6 +214,7 @@ namespace SSStmtOptionNames {
     const char CLIENT_BUFFER_MAX_SIZE[] = INI_BUFFERED_QUERY_LIMIT;
     const char DATE_AS_STRING[] = "ReturnDatesAsStrings";
     const char FORMAT_DECIMALS[] = "FormatDecimals";
+    const char DECIMAL_PLACES[] = "DecimalPlaces";
 }
 
 namespace SSConnOptionNames {
@@ -192,6 +232,8 @@ const char ConnectionPooling[] = "ConnectionPooling";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 const char Database[] = "Database";
+const char DecimalPlaces[] = "DecimalPlaces";
+const char FormatDecimals[] = "FormatDecimals";
 const char DateAsString[] = "ReturnDatesAsStrings";
 const char Driver[] = "Driver";
 const char Encrypt[] = "Encrypt";
@@ -217,6 +259,8 @@ const char WSID[] = "WSID";
 enum SS_CONN_OPTIONS {
     
     SS_CONN_OPTION_DATE_AS_STRING = SQLSRV_CONN_OPTION_DRIVER_SPECIFIC,
+    SS_CONN_OPTION_FORMAT_DECIMALS,
+    SS_CONN_OPTION_DECIMAL_PLACES,
 };
 
 //List of all statement options supported by this driver
@@ -256,6 +300,12 @@ const stmt_option SS_STMT_OPTS[] = {
         sizeof( SSStmtOptionNames::FORMAT_DECIMALS ),
         SQLSRV_STMT_OPTION_FORMAT_DECIMALS, 
         std::unique_ptr<stmt_option_format_decimals>( new stmt_option_format_decimals )
+    },
+    {
+        SSStmtOptionNames::DECIMAL_PLACES, 
+        sizeof( SSStmtOptionNames::DECIMAL_PLACES),
+        SQLSRV_STMT_OPTION_DECIMAL_PLACES, 
+        std::unique_ptr<stmt_option_decimal_places>( new stmt_option_decimal_places )
     },
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -514,6 +564,24 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( SSConnOptionNames::DateAsString ),
         CONN_ATTR_BOOL,
         date_as_string_func::func
+    },
+    {
+        SSConnOptionNames::FormatDecimals,
+        sizeof( SSConnOptionNames::FormatDecimals),
+        SS_CONN_OPTION_FORMAT_DECIMALS,
+        SSConnOptionNames::FormatDecimals,
+        sizeof( SSConnOptionNames::FormatDecimals),
+        CONN_ATTR_BOOL,
+        format_decimals_func::func
+    },
+    {
+        SSConnOptionNames::DecimalPlaces,
+        sizeof( SSConnOptionNames::DecimalPlaces),
+        SS_CONN_OPTION_DECIMAL_PLACES,
+        SSConnOptionNames::DecimalPlaces,
+        sizeof( SSConnOptionNames::DecimalPlaces),
+        CONN_ATTR_INT,
+        decimal_places_func::func
     },
     { NULL, 0, SQLSRV_CONN_OPTION_INVALID, NULL, 0 , CONN_ATTR_INVALID, NULL },  //terminate the table
 };

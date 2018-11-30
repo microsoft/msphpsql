@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -173,6 +173,8 @@ const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
 const int SQL_SERVER_MAX_PRECISION = 38;
 const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
+const int SQL_SERVER_MAX_MONEY_SCALE = 4;
+
 // increase the maximum message length to accommodate for the long error returned for operand type clash
 // or for conversion of a long string
 const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 2;
@@ -229,6 +231,9 @@ enum SQLSRV_FETCH_TYPE {
 
 // buffer size of a sql state (including the null character)
 const int SQL_SQLSTATE_BUFSIZE = SQL_SQLSTATE_SIZE + 1;
+
+// default value of decimal places (no formatting required)
+const short NO_CHANGE_DECIMAL_PLACES = -1;
 
 // buffer size allocated to retrieve data from a PHP stream.  This number
 // was chosen since PHP doesn't return more than 8k at a time even if
@@ -1108,6 +1113,7 @@ enum SQLSRV_STMT_OPTIONS {
    SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE,
    SQLSRV_STMT_OPTION_DATE_AS_STRING,
    SQLSRV_STMT_OPTION_FORMAT_DECIMALS,
+   SQLSRV_STMT_OPTION_DECIMAL_PLACES,
 
    // Driver specific connection options
    SQLSRV_STMT_OPTION_DRIVER_SPECIFIC = 1000,
@@ -1302,6 +1308,11 @@ struct stmt_option_format_decimals : public stmt_option_functor {
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_decimal_places : public stmt_option_functor {
+
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+};
+
 // used to hold the table for statment options
 struct stmt_option {
 
@@ -1372,7 +1383,7 @@ struct sqlsrv_output_param {
     SQLLEN original_buffer_len;         // used to make sure the returned length didn't overflow the buffer
     SQLSRV_PHPTYPE php_out_type;        // used to convert output param if necessary
     bool is_bool;
-    param_meta_data meta_data;      // parameter meta data
+    param_meta_data meta_data;          // parameter meta data
 
     // string output param constructor
     sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len ) :
@@ -1399,15 +1410,9 @@ struct sqlsrv_output_param {
         meta_data.nullable = nullable;
     }
 
-    SQLSMALLINT getDecimalDigits() 
+    param_meta_data& getMetaData() 
     {  
-        // Return decimal_digits only for decimal / numeric types. Otherwise, return -1
-        if (meta_data.sql_type == SQL_DECIMAL || meta_data.sql_type == SQL_NUMERIC) {
-            return meta_data.decimal_digits;
-        }
-        else {
-            return -1;
-        }
+        return meta_data;
     }
 };
 
@@ -1435,7 +1440,8 @@ struct sqlsrv_stmt : public sqlsrv_context {
     unsigned long query_timeout;          // maximum allowed statement execution time
     zend_long buffered_query_limit;       // maximum allowed memory for a buffered query (measured in KB)
     bool date_as_string;                  // false by default but the user can set this to true to retrieve datetime values as strings
-    short num_decimals;                   // indicates number of decimals shown in fetched results (-1 by default, which means no formatting required)
+    bool format_decimals;                 // false by default but the user can set this to true to add the missing leading zeroes and/or control number of decimal digits to show
+    short decimal_places;                 // indicates number of decimals shown in fetched results (-1 by default, which means no change to number of decimal digits)
 
     // holds output pointers for SQLBindParameter
     // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving
@@ -1476,9 +1482,10 @@ struct field_meta_data {
     SQLULEN field_precision;
     SQLSMALLINT field_scale;     
     SQLSMALLINT field_is_nullable;
+    bool field_is_money_type;
 
     field_meta_data() : field_name_len(0), field_type(0), field_size(0), field_precision(0),
-                        field_scale (0), field_is_nullable(0)
+                        field_scale (0), field_is_nullable(0), field_is_money_type(false)
     {
     }
 
@@ -1527,7 +1534,7 @@ void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z
 bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLEN limit TSRMLS_DC );
-void core_sqlsrv_set_format_decimals(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC);
+void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC);
 
 //*********************************************************************************************************************************
 // Result Set
@@ -1769,8 +1776,7 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED,
     SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
     SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
-    SQLSRV_ERROR_INVALID_FORMAT_DECIMALS,
-    SQLSRV_ERROR_FORMAT_DECIMALS_OUT_OF_RANGE,
+    SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
