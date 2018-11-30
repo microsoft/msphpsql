@@ -1886,10 +1886,13 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
         return true;
     }
 
-    // if the parameter is an input parameter, calc the size of the necessary buffer from the length of the string
 #ifndef _WIN32
+    // Declare wchar_size to be the largest possible number of UTF-16 characters after
+    // conversion, to avoid the performance penalty of calling ToUtf16
     wchar_size = buffer_len;
 #else
+    // Calculate the size of the necessary buffer from the length of the string - 
+    // no performance penalty because MultiByteToWidechar is highly optimised
     wchar_size = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
 #endif // !_WIN32
 
@@ -1901,15 +1904,15 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
     wbuffer = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( (wchar_size + 1) * sizeof( SQLWCHAR ) ));
     // convert the utf-8 string to a wchar string in the new buffer
 #ifndef _WIN32
-    int r = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
+    int rc = SystemLocale::ToUtf16Strict( CP_UTF8, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
 #else
-    int r = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
+    int rc = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), wbuffer, wchar_size );
 #endif // !_WIN32
     // if there was a problem converting the string, then free the memory and return false
-    if( r == 0 ) {
+    if( rc == 0 ) {
         return false;
     }
-    wchar_size = r;
+    wchar_size = rc;
 
     // null terminate the string, set the size within the zval, and return success
     wbuffer[ wchar_size ] = L'\0';

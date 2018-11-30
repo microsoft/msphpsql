@@ -127,10 +127,13 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         flags = WC_ERR_INVALID_CHARS;
     }
 
-    // calculate the number of characters needed
 #ifndef _WIN32
+    // Allocate enough space to hold the largest possible number of bytes for UTF-8 conversion
+    // instead of calling FromUtf16, for performance reasons
     cchOutLen = 4*cchInLen;
 #else	
+    // Calculate the number of output bytes required - no performance hit here because
+    // WideCharToMultiByte is highly optimised
     cchOutLen = WideCharToMultiByte( encoding, flags,
                                    inString, cchInLen, 
                                    NULL, 0, NULL, NULL );
@@ -156,11 +159,10 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     }
     char* newString2 = reinterpret_cast<char*>( sqlsrv_malloc( rc + 1 /* NULL char*/ ));
     memset(newString2, '\0', rc+1);
-    memcpy_s(newString2, rc+1, newString, rc+1);
+    memcpy_s(newString2, rc, newString, rc);
     sqlsrv_free( newString );
 
     *outString = newString2;
-    newString2[rc] = '\0';   // null terminate the encoded string
     cchOutLen = rc;
 
     return true;
