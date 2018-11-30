@@ -244,7 +244,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif // !_WIN32
 
     // time to free the access token, if not null
-    if (conn->azure_ad_access_token != NULL) {
+    if (conn->azure_ad_access_token) {
         memset(conn->azure_ad_access_token->data, 0, conn->azure_ad_access_token->dataSize); // clear the memory
         conn->azure_ad_access_token.reset();
     }
@@ -980,11 +980,11 @@ void load_azure_key_vault(_Inout_ sqlsrv_conn* conn TSRMLS_DC)
         throw core::CoreException();
     }
 
-    CHECK_CUSTOM_ERROR(conn->ce_option.akv_id == NULL, conn, SQLSRV_ERROR_AKV_NAME_MISSING) {
+    CHECK_CUSTOM_ERROR(!conn->ce_option.akv_id, conn, SQLSRV_ERROR_AKV_NAME_MISSING) {
         throw core::CoreException();
     }
 
-    CHECK_CUSTOM_ERROR(conn->ce_option.akv_secret == NULL, conn, SQLSRV_ERROR_AKV_SECRET_MISSING) {
+    CHECK_CUSTOM_ERROR(!conn->ce_option.akv_secret, conn, SQLSRV_ERROR_AKV_SECRET_MISSING) {
         throw core::CoreException();
     }
 
