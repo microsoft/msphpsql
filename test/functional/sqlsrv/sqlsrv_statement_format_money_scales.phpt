@@ -48,7 +48,7 @@ function createTestTable($conn)
         $column = "col_$i";
         $dataType = 'money';
         
-        array_push($colMeta, new AE\ColumnMeta($dataType, $column));
+        array_push($colMeta, new AE\ColumnMeta($dataType, $column, null, true, true));
     }
     AE\createTable($conn, $tableName, $colMeta);
 
