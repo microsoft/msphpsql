@@ -127,10 +127,13 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         flags = WC_ERR_INVALID_CHARS;
     }
 
-    // calculate the number of characters needed
 #ifndef _WIN32
-    cchOutLen = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, NULL, 0 );
+    // Allocate enough space to hold the largest possible number of bytes for UTF-8 conversion
+    // instead of calling FromUtf16, for performance reasons
+    cchOutLen = 4*cchInLen;
 #else	
+    // Calculate the number of output bytes required - no performance hit here because
+    // WideCharToMultiByte is highly optimised
     cchOutLen = WideCharToMultiByte( encoding, flags,
                                    inString, cchInLen, 
                                    NULL, 0, NULL, NULL );
@@ -142,9 +145,10 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
 
     // Create a buffer to fit the encoded string
     char* newString = reinterpret_cast<char*>( sqlsrv_malloc( cchOutLen + 1 /* NULL char*/ ));
+    memset(newString, '\0', cchOutLen+1);
     
 #ifndef _WIN32
-    int rc = SystemLocale::FromUtf16( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
+    int rc = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
 #else
     int rc = WideCharToMultiByte( encoding, flags, inString, cchInLen, newString, static_cast<int>(cchOutLen), NULL, NULL );
 #endif // !_WIN32
@@ -153,9 +157,13 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         sqlsrv_free( newString );
         return false;
     }
+    char* newString2 = reinterpret_cast<char*>( sqlsrv_malloc( rc + 1 /* NULL char*/ ));
+    memset(newString2, '\0', rc+1);
+    memcpy_s(newString2, rc, newString, rc);
+    sqlsrv_free( newString );
 
-    *outString = newString;
-    newString[cchOutLen] = '\0';   // null terminate the encoded string
+    *outString = newString2;
+    cchOutLen = rc;
 
     return true;
 }
