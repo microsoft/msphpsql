@@ -1,5 +1,5 @@
 # Linux and macOS Installation Tutorial for the Microsoft Drivers for PHP for SQL Server
-The following instructions assume a clean environment and show how to install PHP 7.x, the Microsoft ODBC driver, Apache, and the Microsoft Drivers for PHP for SQL Server on Ubuntu 16.04, 18.04, and 18.10, RedHat 7, Debian 8 and 9, Suse 12, and macOS 10.11, 10.12, 10.13, and 10.14. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver.md). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver.md##loading-the-driver-at-php-startup).
+The following instructions assume a clean environment and show how to install PHP 7.x, the Microsoft ODBC driver, Apache, and the Microsoft Drivers for PHP for SQL Server on Ubuntu 16.04, 18.04, and 18.10, RedHat 7, Debian 8 and 9, Suse 12, and macOS 10.11, 10.12, 10.13, and 10.14. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver.md##loading-the-driver-at-php-startup).
 
 These instructions install PHP 7.2 by default -- see the notes at the beginning of each section to install PHP 7.0 or 7.1.
 
@@ -24,7 +24,7 @@ apt-get update
 apt-get install php7.2 php7.2-dev php7.2-xml -y --allow-unauthenticated
 ```
 ### Step 2. Install prerequisites
-Install the ODBC driver for Ubuntu by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md).
+Install the ODBC driver for Ubuntu by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server).
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 
@@ -74,7 +74,7 @@ yum update
 yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
 ```
 ### Step 2. Install prerequisites
-Install the ODBC driver for Red Hat 7 by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md).
+Install the ODBC driver for Red Hat 7 by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server).
 
 Compiling the PHP drivers with PECL with PHP 7.2 requires a more recent GCC than the default:
 ```
@@ -137,7 +137,7 @@ apt-get update
 apt-get install -y php7.2 php7.2-dev php7.2-xml
 ```
 ### Step 2. Install prerequisites
-Install the ODBC driver for Debian by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md). 
+Install the ODBC driver for Debian by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server). 
 
 You may also need to generate the correct locale to get PHP output to display correctly in a browser. For example, for the en_US UTF-8 locale, run the following commands:
 ```
@@ -189,7 +189,7 @@ zypper --gpg-auto-import-keys refresh
 zypper -n install php7 php7-pear php7-devel
 ```
 ### Step 2. Install prerequisites
-Install the ODBC driver for Suse 12 by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md).
+Install the ODBC driver for Suse 12 by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server).
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 
@@ -241,7 +241,7 @@ brew link --force --overwrite php@7.2
 ```
 
 ### Step 2. Install prerequisites
-Install the ODBC driver for macOS by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server.md). 
+Install the ODBC driver for macOS by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server). 
 
 In addition, you may need to install the GNU make tools:
 ```
