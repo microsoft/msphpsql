@@ -4,7 +4,7 @@
 // Contents: Contains functions for handling Windows format strings
 //			 and UTF-16 on non-Windows platforms
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -261,6 +261,8 @@ class EncodingConverter
                     return 0;
                 }
             }
+            //if a shift sequence is encountered, we need to advance output buffer
+            iconv_ret = iconv( m_pCvtCache->GetIConv(), NULL, NULL, &dest.m_pBytes, &dest.m_nBytesLeft );
         }
 
         return cchDest - (dest.m_nBytesLeft / sizeof(DestType));

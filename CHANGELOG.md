@@ -1,7 +1,40 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/) 
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+
+## 5.5.0-preview - 2018-12-07
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Added support for PHP 7.3.0
+- Added support for Linux Ubuntu 18.10 and mac OS Mojave
+- Feature Request [#415](https://github.com/Microsoft/msphpsql/pull/886) - new options at connection and statement levels for both drivers for formatting decimal values in the fetched results
+
+### Fixed
+- Pull Request [#854](https://github.com/Microsoft/msphpsql/pull/854) - Clear Azure Key Vault data after connection attributes are successfully set or when exception is thrown
+- Pull Request [#855](https://github.com/Microsoft/msphpsql/pull/855) - Improved performance by saving meta data before fetching and skipping unnecessary conversions for numeric data
+- Pull Request [#865](https://github.com/Microsoft/msphpsql/pull/865) - Corrected the way SQLPutData and SQLParamData are used when sending stream data to the server
+- Pull Request [#878](https://github.com/Microsoft/msphpsql/pull/878) - Modified the config files to enable Spectre Mitigations for PHP 7.1 (see related Request [#836](https://github.com/Microsoft/msphpsql/pull/836))
+- Pull Request [#891](https://github.com/Microsoft/msphpsql/pull/891) - Improved performance of Unicode conversions
+- Pull Request [#892](https://github.com/Microsoft/msphpsql/pull/892) - Removed warning messages while compiling extensions
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+- With ColumnEncryption enabled, calling stored procedures with XML parameters does not work (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
+- With ColumnEncryption enabled, fetching varbinary(max), varchar(max) or nvarchar(max) may fail with [ODBC Driver 17.3 CTP](https://blogs.msdn.microsoft.com/sqlnativeclient/2018/09/24/odbc-driver-17-3-preview-for-sql-server-released/)
 
 ## 5.4.0-preview - 2018-09-24
 Updated PECL release packages. Here is the list of updates:
@@ -53,7 +86,7 @@ Updated PECL release packages. Here is the list of updates:
 - Issue [#699](https://github.com/Microsoft/msphpsql/issues/699) - Binding output parameters fails when the query in the stored procedure returns no data. The test case has been added to the test lab.
 - Issue [#705](https://github.com/Microsoft/msphpsql/issues/705) - Always Encrypted - Retrieving a negative decimal value (edge case) as output parameter causes truncation
 - Issue [#706](https://github.com/Microsoft/msphpsql/issues/706) - Always Encrypted - Cannot insert double with precision and scale (38, 38)
-- Issue [#707](https://github.com/Microsoft/msphpsql/issues/707) - Always Encrypted - Fetching decimals / numerics as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT returns floats, not integers 
+- Issue [#707](https://github.com/Microsoft/msphpsql/issues/707) - Always Encrypted - Fetching decimals / numerics as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT returns floats, not integers
 - Issue [#735](https://github.com/Microsoft/msphpsql/issues/735) - Extended the buffer size for PDO::lastInsertId so that data types other than integers can be supported
 - Pull Request [#759](https://github.com/Microsoft/msphpsql/pull/759) - Removed the limitation of binding a binary as inout param as PDO::PARAM_STR with SQLSRV_ENCODING_BINARY
 - Pull Request [#775](https://github.com/Microsoft/msphpsql/pull/775) - Fixed the truncation problem for output params with SQL types specified as SQLSRV_SQLTYPE_DECIMAL or SQLSRV_SQLTYPE_NUMERIC
@@ -77,7 +110,7 @@ Updated PECL release packages. Here is the list of updates:
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
-- Added support for Azure Key Vault for Always Encrypted for basic CRUD functionalities such that Always Encrypted feature is also available to Linux or macOS users 
+- Added support for Azure Key Vault for Always Encrypted for basic CRUD functionalities such that Always Encrypted feature is also available to Linux or macOS users
 - Added support for macOS High Sierra (requires [MS ODBC Driver 17+](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017))
 
 ### Fixed
@@ -86,7 +119,7 @@ Updated PECL release packages. Here is the list of updates:
 - Issue [#699](https://github.com/Microsoft/msphpsql/issues/699) - Binding output parameter failed when the query in the stored procedure returned no data. The test case has been added to the test lab.
 - Issue [#705](https://github.com/Microsoft/msphpsql/issues/705) - AE - Retrieving a negative decimal value (edge case) as output parameter causes truncation
 - Issue [#706](https://github.com/Microsoft/msphpsql/issues/706) - AE - Cannot insert double with precision and scale (38, 38)
-- Issue [#707](https://github.com/Microsoft/msphpsql/issues/707) - AE - Fetching decimals / numerics as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT returns floats, not integers 
+- Issue [#707](https://github.com/Microsoft/msphpsql/issues/707) - AE - Fetching decimals / numerics as output parameters bound to PDO::PARAM_BOOL or PDO::PARAM_INT returns floats, not integers
 - Issue [#735](https://github.com/Microsoft/msphpsql/issues/735) - Extended the buffer size for PDO lastInsertId such that data types other than integers can be supported
 - Pull Request [#759](https://github.com/Microsoft/msphpsql/pull/759) - Removed the limitation of binding a binary as inout param as PDO::PARAM_STR with SQLSRV_ENCODING_BINARY
 - Pull Request [#775](https://github.com/Microsoft/msphpsql/pull/775) - Fixed the problem for output params with SQL types specified as SQLSRV_SQLTYPE_DECIMAL or SQLSRV_SQLTYPE_NUMERIC
@@ -227,7 +260,7 @@ Updated PECL release packages. Here is the list of updates:
 - PDO::quote with string containing ASCII NUL character (Issue [#538]( https://github.com/Microsoft/msphpsql/issues/538))
 - Appropriate error message is returned when calling nextRowset() or sqlsrv_next_result() on an empty result set (issue [#507 ](https://github.com/Microsoft/msphpsql/issues/507))
 - Decimal types with no decimals are correctly handled when AE is enabled (PR [#544](https://github.com/Microsoft/msphpsql/pull/544))
-- Search for installed ODBC drivers in Linux/macOS first before attempting to connect using the default ODBC driver 
+- Search for installed ODBC drivers in Linux/macOS first before attempting to connect using the default ODBC driver
 - BIGINT as an output param no longer results in value out of range exception when the returned value is larger than a maximum integer ([PR #567](https://github.com/Microsoft/msphpsql/pull/567))
 
 ### Limitations
@@ -282,7 +315,7 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Changed
 - Implementation of PDO::lastInsertId($name) to return the last inserted sequence number if the sequence name is supplied to the function ([lastInsertId](https://github.com/Microsoft/msphpsql/wiki/Features#lastinsertid))
-    
+
 ### Removed
 - No longer support Ubuntu 15
 - Supplying tablename into PDO::lastInsertId($name) no longer return the last inserted row ([lastInsertId](https://github.com/Microsoft/msphpsql/wiki/Features#lastinsertid))
@@ -299,45 +332,45 @@ Updated PECL release packages. Here is the list of updates:
 Production Ready release for SQLSRV and PDO_SQLSRV drivers on Sierra, El Capitan, Debian 8, Ubuntu 15, Ubuntu 16, CentOS 7, and Windows. Here is the changlog since the last Production Ready release.
 
 ### Added
-- Added Unicode Column name support ([issue #138](https://github.com/Microsoft/msphpsql/issues/138)). 
-- Support for Always On Availability groups via Transparent Network IP Resolution ([TNIR](https://github.com/Microsoft/msphpsql/wiki/Features#TNIR))  
+- Added Unicode Column name support ([issue #138](https://github.com/Microsoft/msphpsql/issues/138)).
+- Support for Always On Availability groups via Transparent Network IP Resolution ([TNIR](https://github.com/Microsoft/msphpsql/wiki/Features#TNIR))
 - Added support for sql_variant data type with limitation ([issue #51](https://github.com/Microsoft/msphpsql/issues/51) and [issue #127](https://github.com/Microsoft/msphpsql/issues/127))
-- Support drivers on Debian Jessie (tested on Debian 8.7) 
-- Connection Resiliency support in Windows 
-- Connection pooling support for Linux and macOS  
-- Support for Mac (El Capitan and above) 
+- Support drivers on Debian Jessie (tested on Debian 8.7)
+- Connection Resiliency support in Windows
+- Connection pooling support for Linux and macOS
+- Support for Mac (El Capitan and above)
 - Azure Active Directory Authentication with ActiveDirectoryPassword and SqlPassword
 
 ### Fixed
-- Fixed PECL installation errors when PHP was installed from source ([issue #213](https://github.com/Microsoft/msphpsql/issues/213)). 
-- Fixed the assertion error (Linux) when fetching data from a binary column using the binary encoding ([issue #226](https://github.com/Microsoft/msphpsql/issues/226)). 
-- Fixed issue output parameters bound to empty string ([issue #182](https://github.com/Microsoft/msphpsql/issues/182)). 
-- Fixed a memory leak in closing connection resources. 
-- Fixed load ordering issue in MacOS ([issue #417](https://github.com/Microsoft/msphpsql/issues/417)) 
-- Added a workaround for a bug in unixODBC 2.3.4 when connection pooling is enabled. 
-- Fixed the issue with driver loading order in macOS 
+- Fixed PECL installation errors when PHP was installed from source ([issue #213](https://github.com/Microsoft/msphpsql/issues/213)).
+- Fixed the assertion error (Linux) when fetching data from a binary column using the binary encoding ([issue #226](https://github.com/Microsoft/msphpsql/issues/226)).
+- Fixed issue output parameters bound to empty string ([issue #182](https://github.com/Microsoft/msphpsql/issues/182)).
+- Fixed a memory leak in closing connection resources.
+- Fixed load ordering issue in MacOS ([issue #417](https://github.com/Microsoft/msphpsql/issues/417))
+- Added a workaround for a bug in unixODBC 2.3.4 when connection pooling is enabled.
+- Fixed the issue with driver loading order in macOS
 - Fixed null returned when an empty string is set to an output parameter ([issue #308](https://github.com/Microsoft/msphpsql/issues/308)).
-- #### Fixed in SQLSRV  
-	- Fixed sqlsrv client buffer size to only allow positive integers ([issue #228](https://github.com/Microsoft/msphpsql/issues/228)). 
-	- Fixed sqlsrv_num_rows() when the client buffered result is null ([issue #330](https://github.com/Microsoft/msphpsql/issues/330)). 
-	- Fixed issues with sqlsrv_has_rows() to prevent it from moving statement cursor ([issue #37](https://github.com/Microsoft/msphpsql/issues/37)). 
-	- Fixed conversion warnings because of some const chars ([issue #332](https://github.com/Microsoft/msphpsql/issues/332)). 
-	- Fixed debug abort error when building the driver in debug mode with PHP 7.1. 
-	- Fixed string truncation when binding varchar(max), nvarchar(max), varbinary(max), and xml types ([issue #231](https://github.com/Microsoft/msphpsql/issues/231)). 
-	- Fixed fatal error when fetching empty nvarchar ([issue #69](https://github.com/Microsoft/msphpsql/issues/69)). 
+- #### Fixed in SQLSRV
+	- Fixed sqlsrv client buffer size to only allow positive integers ([issue #228](https://github.com/Microsoft/msphpsql/issues/228)).
+	- Fixed sqlsrv_num_rows() when the client buffered result is null ([issue #330](https://github.com/Microsoft/msphpsql/issues/330)).
+	- Fixed issues with sqlsrv_has_rows() to prevent it from moving statement cursor ([issue #37](https://github.com/Microsoft/msphpsql/issues/37)).
+	- Fixed conversion warnings because of some const chars ([issue #332](https://github.com/Microsoft/msphpsql/issues/332)).
+	- Fixed debug abort error when building the driver in debug mode with PHP 7.1.
+	- Fixed string truncation when binding varchar(max), nvarchar(max), varbinary(max), and xml types ([issue #231](https://github.com/Microsoft/msphpsql/issues/231)).
+	- Fixed fatal error when fetching empty nvarchar ([issue #69](https://github.com/Microsoft/msphpsql/issues/69)).
 	- Fixed fatal error when calling sqlsrv_fetch() with an out of bound offset for SQLSRV_SCROLL_ABSOLUTE ([issue #223](https://github.com/Microsoft/msphpsql/issues/223)).
  - #### Fixed in PDO_SQLSRV
-	- Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)). 
-	- Improved performance by implementing a cache to store column SQL types and display sizes ([issue #189](https://github.com/Microsoft/msphpsql/issues/189)). 
-	- Fixed segmentation fault with PDOStatement::getColumnMeta() when the supplied column index is out of range ([issue #224](https://github.com/Microsoft/msphpsql/issues/224)). 
-	- Fixed issue with the unsupported attribute PDO::ATTR_PERSISTENT in connection ([issue #65](https://github.com/Microsoft/msphpsql/issues/65)). 
-	- Fixed the issue with executing DELETE operation on a non-existent value ([issue #336](https://github.com/Microsoft/msphpsql/issues/336)). 
-	- Fixed incorrectly binding of unicode parameter when emulate prepare is on and the encoding is set at the statement level ([issue #92](https://github.com/Microsoft/msphpsql/issues/92)). 
-	- Fixed binary column binding when emulate prepare is on ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)). 
-	- Fixed wrong value returned when fetching varbinary value on Linux ([issue #270](https://github.com/Microsoft/msphpsql/issues/270)). 
-	- Fixed binary data not returned when the column is bound by name ([issue #35](https://github.com/Microsoft/msphpsql/issues/35)). 
+	- Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)).
+	- Improved performance by implementing a cache to store column SQL types and display sizes ([issue #189](https://github.com/Microsoft/msphpsql/issues/189)).
+	- Fixed segmentation fault with PDOStatement::getColumnMeta() when the supplied column index is out of range ([issue #224](https://github.com/Microsoft/msphpsql/issues/224)).
+	- Fixed issue with the unsupported attribute PDO::ATTR_PERSISTENT in connection ([issue #65](https://github.com/Microsoft/msphpsql/issues/65)).
+	- Fixed the issue with executing DELETE operation on a non-existent value ([issue #336](https://github.com/Microsoft/msphpsql/issues/336)).
+	- Fixed incorrectly binding of unicode parameter when emulate prepare is on and the encoding is set at the statement level ([issue #92](https://github.com/Microsoft/msphpsql/issues/92)).
+	- Fixed binary column binding when emulate prepare is on ([issue #140](https://github.com/Microsoft/msphpsql/issues/140)).
+	- Fixed wrong value returned when fetching varbinary value on Linux ([issue #270](https://github.com/Microsoft/msphpsql/issues/270)).
+	- Fixed binary data not returned when the column is bound by name ([issue #35](https://github.com/Microsoft/msphpsql/issues/35)).
 	- Fixed exception thrown on closeCursor() when the statement has not been executed ([issue #267](https://github.com/Microsoft/msphpsql/issues/267)).
-	
+
 ### Limitation
 - No support for inout / output params when using sql_variant type
 
@@ -363,7 +396,7 @@ Here is the list of updates:
 - When pooling is enabled in Linux or MAC
   - unixODBC <= 2.3.4 (Linux and MAC) might not return proper diagnostics information, such as error messages, warnings and informative messages
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
-  
+
 
 ## Windows/Linux/MAC 4.2.0-preview - 2017-05-19
 Here is the list of updates:
@@ -386,7 +419,7 @@ Here is the list of updates:
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
 
 ## Windows/Linux/MAC 4.1.9-preview - 2017-05-08
-- Updated documentation for Readme regarding instructions for Linux and MAC 
+- Updated documentation for Readme regarding instructions for Linux and MAC
 - Updated PECL release packages. Here is the list of updates:
 ### Added
 - Azure Active Directory Authentication with ActiveDirectoryPassword and SqlPassword
@@ -405,11 +438,11 @@ Here is the list of updates:
   - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac)
 
 ## Windows/Linux/MAC 4.1.8-preview - 2017-04-10
-Updated documentation for Readme regarding instructions for Linux and MAC 
+Updated documentation for Readme regarding instructions for Linux and MAC
 Updated PECL release packages. Here is the list of updates:
 ### Added
-- [Connection Resiliency](https://github.com/Microsoft/msphpsql/wiki/Connection-Resiliency) now supported in Windows 
-- [Connection pooling](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac) now works in MAC 
+- [Connection Resiliency](https://github.com/Microsoft/msphpsql/wiki/Connection-Resiliency) now supported in Windows
+- [Connection pooling](https://github.com/Microsoft/msphpsql/wiki/Connection-Pooling-on-Linux-and-Mac) now works in MAC
 
 ### Fixed
 #### SQLSRV and PDO_SQLSRV
@@ -485,27 +518,27 @@ Updated Windows drivers (4.1.5) compiled with PHP 7.0.14 and 7.1 are available. 
 
 ###Fixed
 - Fixed issue output parameters bound to empty string ([issue #182](https://github.com/Microsoft/msphpsql/issues/182)).
-- Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)). 
+- Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)).
 
 
 ### Changed
 - Code structure is updated to facilitate the development; shared codes between both drivers are moved to "shared" folder to avoid code duplication issues in development. To build the driver from source:
-    - if you are building the driver from source using PHP source, copy the "shared" folder as a subfolder to both the sqlsrv and pdo_sqlsrv folders. 
+    - if you are building the driver from source using PHP source, copy the "shared" folder as a subfolder to both the sqlsrv and pdo_sqlsrv folders.
 
 ## Linux 4.0.8 - 2016-12-19
 Production release of Linux drivers is available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. Here is the list of updates:
 
 ### Added
 - Added `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` attribute support in PDO_SQLSRV driver.`SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` connection attribute flag handles numeric fetches from columns with numeric Sql types (only bit, integer, smallint, tinyint, float and real). This flag can be turned on by setting its value in  `PDO::setAttribute` to `true`, For example,
-               `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);` 
-		  If `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  is set to `true` the results from an integer column will be represented as an `int`, likewise, Sql types float and real will be represented as `float`. 
+               `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);`
+		  If `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  is set to `true` the results from an integer column will be represented as an `int`, likewise, Sql types float and real will be represented as `float`.
 		  Note for exceptions:
 	 - When connection option flag `ATTR_STRINGIFY_FETCHES` is on, even when `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is on, the return value will still be string.
 	 - 	When the returned PDO type in bind column is `PDO_PARAM_INT`, the return value from a integer column will be int even if `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is off.
 - Added Unicode Column name support([issue #138](https://github.com/Microsoft/msphpsql/issues/138)).
 
 ###Fixed
-- Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)). 
+- Fixed issue with SQLSRV_ATTR_FETCHES_NUMERIC_TYPE when column return type is set on statement ([issue #173](https://github.com/Microsoft/msphpsql/issues/173)).
 - Fixed precision issues when double data type returned as strings using buffered queries in PDO_SQLSRV driver.
 - Fixed issue with buffered cursor in PDO_SQLSRV driver when CharacterSet is UTF-8 ([issue #192](https://github.com/Microsoft/msphpsql/issues/192)).
 - Fixed segmentation fault in error cases when error message is returned with emulate prepare attribute is set to true in PDO_SQLSRV driver.
@@ -514,7 +547,7 @@ Production release of Linux drivers is available for Ubuntu 15.04, Ubuntu 16.04,
 
 
 ## Linux 4.0.7 - 2016-11-23
-Linux drivers compiled with PHP 7.0.13 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. 
+Linux drivers compiled with PHP 7.0.13 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.
 
 ### Added
 - Ported buffered cursor to Linux.
@@ -522,7 +555,7 @@ Linux drivers compiled with PHP 7.0.13 are available for Ubuntu 15.04, Ubuntu 16
 ### Changed
 - Code structure is updated to facilitate the development; shared codes between both drivers are moved to "shared" folder to avoid code duplication issues in development. To build the driver from source, use "packagize" script as follows:
 	 - if you are using the phpize, clone or download the “source”, run the script within the “source” directory and then run phpize.
-	 - if you are building the driver from source using PHP source, give the path to the PHP source to the script. 
+	 - if you are building the driver from source using PHP source, give the path to the PHP source to the script.
 
 ### Fixed
  - Fixed string truncation error when inserting long strings.
@@ -532,7 +565,7 @@ Linux drivers compiled with PHP 7.0.13 are available for Ubuntu 15.04, Ubuntu 16
  - Fixed issues with binding input text, ntext, and image parameters.
 
 ## Linux 4.0.6 - 2016-10-25
-Linux drivers compiled with PHP 7.0.12 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. 
+Linux drivers compiled with PHP 7.0.12 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.
 
 ### Changed
  - Drivers versioning has been redesigned as Major#.Minor#.Release#.Build#. Build number is specific to binaries and it doesn't match with the number on the source.
@@ -540,7 +573,7 @@ Linux drivers compiled with PHP 7.0.12 are available for Ubuntu 15.04, Ubuntu 16
 
 ### Fixed
  - Fixed the issue with duplicate warning messages in PDO_SQLSRV drivers when error mode is set to PDO::ERRMODE_WARNING.
- - Fixed the issue with invalid UTF-8 strings, those are detected before executing any queries and proper error message is returned. 
+ - Fixed the issue with invalid UTF-8 strings, those are detected before executing any queries and proper error message is returned.
  - Fixed segmentation fault in sqlsrv_fetch_object and sqlsrv_fetch_array function.
 
 ## Windows 4.1.4 - 2016-10-25
@@ -551,9 +584,9 @@ Windows drivers compiled with PHP 7.0.12  and 7.1 are available. Here is the lis
 
 ### Fixed
  - Fixed the issue with duplicate warning messages in PDO_SQLSRV drivers when error mode is set to PDO::ERRMODE_WARNING.
-  
+
 ## Linux 4.0.5 - 2016-10-04
-Linux drivers compiled with PHP 7.0.11 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. 
+Linux drivers compiled with PHP 7.0.11 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.
 
 ### Fixed
  - Fixed segmentation fault when calling PDOStatement::getColumnMeta on RedHat 7.2.
@@ -567,7 +600,7 @@ Updated Windows drivers (4.1.3) compiled with PHP 7.0.11  and 7.1.0RC3 are avail
 - Fixed [issue #139](https://github.com/Microsoft/msphpsql/issues/139) : sqlsrv_fetch_object calls custom class constructor in static context and outputs an error.
 
 ##Linux 4.0.4 - 2016-09-09
-Linux drivers compiled with PHP 7.0.10 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. 
+Linux drivers compiled with PHP 7.0.10 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.
 
 ### Added
 - Added Support for EMULATE_PREPARE feature.
@@ -613,10 +646,10 @@ Updated Windows drivers (4.1.2) compiled with PHP 7.0.10 are available. Here is 
 
 ### Fixed
  - Fixed [issue #119](https://github.com/Microsoft/msphpsql/issues/119) (modifying class name in sqlsrv_fetch_object).
- 
- 
+
+
 ## Linux 4.0.3 - 2016-08-23
-Linux drivers compiled with PHP 7.0.9 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2. 
+Linux drivers compiled with PHP 7.0.9 are available for Ubuntu 15.04, Ubuntu 16.04, and RedHat 7.2.
 
 ### Fixed
  - Fixed data corruption in binding integer parameters.
@@ -646,17 +679,17 @@ Updated Windows drivers(4.1.1) compiled with PHP 7.0.9 are available and include
 
 ### Fixed
  - `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  connection attribute flag is added to PDO_SQLSRV driver to handle numeric fetches from columns with numeric Sql types (only bit, integer, smallint, tinyint, float and real). This flag can be turned on by setting its value in  `PDO::setAttribute` to `true`, For example,
-               `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);` 
-		  If `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  is set to `true` the results from an integer column will be represented as an `int`, likewise, Sql types float and real will be represented as `float`. 
+               `$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,true);`
+		  If `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE`  is set to `true` the results from an integer column will be represented as an `int`, likewise, Sql types float and real will be represented as `float`.
 		  Note for exceptions:
 	 - When connection option flag `ATTR_STRINGIFY_FETCHES` is on, even when `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is on, the return value will still be string.
 	 - 	When the returned PDO type in bind column is `PDO_PARAM_INT`, the return value from a integer column will be int even if `SQLSRV_ATTR_FETCHES_NUMERIC_TYPE` is off.
- - Fixed float truncation when using buffered query. 
+ - Fixed float truncation when using buffered query.
  - Fixed handling of Unicode strings and binary when emulate prepare is on in `PDOStatement::bindParam`.  To bind a unicode string, `PDO::SQLSRV_ENCODING_UTF8` should be set using `$driverOption`, and to bind a string to column of Sql type binary, `PDO::SQLSRV_ENCODING_BINARY` should be set.
  - Fixed string truncation in bind output parameters when the size is not set and the length of initialized variable is less than the output.
  - Fixed bind string parameters as bidirectional parameters (`PDO::PARAM_INPUT_OUTPUT `) in PDO_SQLSRV driver. Note for output or bidirectional parameters, `PDOStatement::closeCursor` should be called to get the output value.
 
- 
+
 ## Linux 4.0.1 - 2016-07-09
 
 ### Added

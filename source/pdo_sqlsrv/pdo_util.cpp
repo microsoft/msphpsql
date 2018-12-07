@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -436,6 +436,10 @@ pdo_error PDO_ERRORS[] = {
     {
         SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
         { IMSSP, (SQLCHAR*) "The Azure AD Access Token is empty. Expected a byte string.", -91, false}
+    },
+    {
+        SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
+        { IMSSP, (SQLCHAR*) "Expected an integer to specify number of decimals to format the output values of decimal data types.", -92, false}
     },
 
     { UINT_MAX, {} }

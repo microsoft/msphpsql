@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDOStatement object for the PDO_SQLSRV
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -882,6 +882,14 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 driver_stmt->fetch_datetime = ( zend_is_true( val )) ? true : false;
                 break;
 
+            case SQLSRV_ATTR_FORMAT_DECIMALS:
+                driver_stmt->format_decimals = ( zend_is_true( val )) ? true : false;
+                break;
+
+            case SQLSRV_ATTR_DECIMAL_PLACES:
+                core_sqlsrv_set_decimal_places(driver_stmt, val TSRMLS_CC);
+                break;
+
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
                 break;
@@ -966,6 +974,18 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
             case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
             {
                 ZVAL_BOOL( return_value, driver_stmt->fetch_datetime );
+                break;
+            }
+
+            case SQLSRV_ATTR_FORMAT_DECIMALS:
+            {
+                ZVAL_BOOL( return_value, driver_stmt->format_decimals );
+                break;
+            }
+
+            case SQLSRV_ATTR_DECIMAL_PLACES:
+            {
+                ZVAL_LONG( return_value, driver_stmt->decimal_places ); 
                 break;
             }
 
@@ -1377,6 +1397,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+                sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR; 
             }
             break;
         case SQL_FLOAT:
@@ -1386,6 +1407,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+                sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR; 
             }
             break;
         case SQL_TYPE_DATE:
@@ -1400,10 +1422,13 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
             }
             break;
         case SQL_BIGINT:
-        case SQL_CHAR:
         case SQL_DECIMAL:
-        case SQL_GUID:
         case SQL_NUMERIC:
+            sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR; 
+            break;
+        case SQL_CHAR:
+        case SQL_GUID:
         case SQL_WCHAR:
         case SQL_VARCHAR:
         case SQL_WVARCHAR:

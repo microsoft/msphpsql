@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -91,25 +91,6 @@ bool convert_string_from_utf16_inplace( _In_ SQLSRV_ENCODING encoding, _Inout_up
     return result;
 }
 
-bool convert_zval_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _Inout_ zval* value_z, _Inout_ SQLLEN& len)
-{
-    char* string = Z_STRVAL_P(value_z);
-
-    if( validate_string(string, len)) {
-       return true;
-    }
-
-    char* outString = NULL;
-    SQLLEN outLen = 0;
-    bool result = convert_string_from_utf16( encoding, reinterpret_cast<const SQLWCHAR*>(string), int(len / sizeof(SQLWCHAR)), &outString, outLen );
-    if( result ) {
-       core::sqlsrv_zval_stringl( value_z, outString, outLen );
-       sqlsrv_free( outString );
-       len = outLen;
-    }
-    return result;
-}
-
 bool validate_string( _In_ char* string, _In_ SQLLEN& len )
 {
      SQLSRV_ASSERT(string != NULL, "String must be specified");
@@ -146,10 +127,13 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         flags = WC_ERR_INVALID_CHARS;
     }
 
-    // calculate the number of characters needed
 #ifndef _WIN32
-    cchOutLen = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, NULL, 0 );
+    // Allocate enough space to hold the largest possible number of bytes for UTF-8 conversion
+    // instead of calling FromUtf16, for performance reasons
+    cchOutLen = 4*cchInLen;
 #else	
+    // Calculate the number of output bytes required - no performance hit here because
+    // WideCharToMultiByte is highly optimised
     cchOutLen = WideCharToMultiByte( encoding, flags,
                                    inString, cchInLen, 
                                    NULL, 0, NULL, NULL );
@@ -161,9 +145,10 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
 
     // Create a buffer to fit the encoded string
     char* newString = reinterpret_cast<char*>( sqlsrv_malloc( cchOutLen + 1 /* NULL char*/ ));
+    memset(newString, '\0', cchOutLen+1);
     
 #ifndef _WIN32
-    int rc = SystemLocale::FromUtf16( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
+    int rc = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
 #else
     int rc = WideCharToMultiByte( encoding, flags, inString, cchInLen, newString, static_cast<int>(cchOutLen), NULL, NULL );
 #endif // !_WIN32
@@ -172,9 +157,13 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         sqlsrv_free( newString );
         return false;
     }
+    char* newString2 = reinterpret_cast<char*>( sqlsrv_malloc( rc + 1 /* NULL char*/ ));
+    memset(newString2, '\0', rc+1);
+    memcpy_s(newString2, rc, newString, rc);
+    sqlsrv_free( newString );
 
-    *outString = newString;
-    newString[cchOutLen] = '\0';   // null terminate the encoded string
+    *outString = newString2;
+    cchOutLen = rc;
 
     return true;
 }

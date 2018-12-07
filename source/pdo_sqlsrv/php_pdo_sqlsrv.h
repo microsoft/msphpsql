@@ -6,7 +6,7 @@
 //
 // Contents: Declarations for the extension
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -41,14 +41,16 @@ extern "C" {
 // sqlsrv driver specific PDO attributes
 enum PDO_SQLSRV_ATTR {
 
-    // Currently there are only three custom attributes for this driver.
+    // The custom attributes for this driver:
     SQLSRV_ATTR_ENCODING = PDO_ATTR_DRIVER_SPECIFIC,
     SQLSRV_ATTR_QUERY_TIMEOUT,
     SQLSRV_ATTR_DIRECT_QUERY,
     SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
     SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
     SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
-    SQLSRV_ATTR_FETCHES_DATETIME_TYPE
+    SQLSRV_ATTR_FETCHES_DATETIME_TYPE,
+    SQLSRV_ATTR_FORMAT_DECIMALS,
+    SQLSRV_ATTR_DECIMAL_PLACES
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -205,6 +207,8 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     zend_long client_buffer_max_size;
     bool fetch_numeric;
     bool fetch_datetime;
+    bool format_decimals;
+    short decimal_places;
 
     pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC );
 };
@@ -266,6 +270,8 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         direct_query = db->direct_query;
         fetch_numeric = db->fetch_numeric;
         fetch_datetime = db->fetch_datetime;
+        format_decimals = db->format_decimals;
+        decimal_places = db->decimal_places;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );
@@ -279,8 +285,6 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     size_t direct_query_subst_string_len;        // length of query string used for direct queries
     HashTable* placeholders;                    // hashtable of named placeholders to keep track of params ordering in emulate prepare
 
-    // meta data for current result set
-    std::vector<field_meta_data*, sqlsrv_allocator< field_meta_data* > > current_meta_data;
     pdo_param_type* bound_column_param_types;
     bool fetch_numeric;
     bool fetch_datetime;

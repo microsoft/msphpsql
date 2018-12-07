@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use statement handles
 //
-// Microsoft Drivers 5.4 for PHP for SQL Server
+// Microsoft Drivers 5.5 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -91,7 +91,7 @@ const char SS_SQLSRV_WARNING_PARAM_VAR_NOT_REF[] = "Variable parameter %d not pa
 /* internal functions */
 
 void convert_to_zval( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _In_opt_ void* in_val, _In_ SQLLEN field_len, _Inout_ zval& out_zval );
-
+SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt* stmt);
 void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_type, _Out_ zval& fields, _In_ bool allow_empty_field_names
 						TSRMLS_DC );
 bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, _In_ sqlsrv_sqltype sqlsrv_type, _Inout_ SQLULEN* column_size,
@@ -108,6 +108,15 @@ void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 void type_and_precision_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ sqlsrv_phptype& phptype_encoding TSRMLS_DC );
 
+}
+
+// internal helper function to free meta data structures allocated
+void meta_data_free( _Inout_ field_meta_data* meta )
+{
+    if( meta->field_name ) {
+        meta->field_name.reset();
+    }
+    sqlsrv_free( meta );
 }
 
 // query options for cursor types
@@ -130,13 +139,18 @@ ss_sqlsrv_stmt::ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_
 {
     core_sqlsrv_set_buffered_query_limit( this, SQLSRV_G( buffered_query_limit ) TSRMLS_CC );
 
-    // initialize date_as_string based on the corresponding connection option
+    // inherit other values based on the corresponding connection options
     ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>(conn);
     date_as_string = ss_conn->date_as_string;
+    format_decimals = ss_conn->format_decimals;
+    decimal_places = ss_conn->decimal_places;
 }
 
 ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
 {
+    std::for_each(current_meta_data.begin(), current_meta_data.end(), meta_data_free);
+    current_meta_data.clear();
+
     if( fetch_field_names != NULL ) {
 
         for( int i=0; i < fetch_fields_count; ++i ) {
@@ -459,27 +473,24 @@ PHP_FUNCTION( sqlsrv_field_metadata )
 
     try {
 
-    // get the number of fields in the resultset
-    num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
+    // get the number of fields in the resultset and its metadata if not exists
+    SQLSMALLINT num_cols = get_resultset_meta_data(stmt);
 
     zval result_meta_data;
     ZVAL_UNDEF( &result_meta_data );
     core::sqlsrv_array_init( *stmt, &result_meta_data TSRMLS_CC );
     
     for( SQLSMALLINT f = 0; f < num_cols; ++f ) {
-    
-        sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
-        core_meta_data = core_sqlsrv_field_metadata( stmt, f TSRMLS_CC );
-
+        field_meta_data* core_meta_data = stmt->current_meta_data[f];
+        
         // initialize the array
         zval field_array;
         ZVAL_UNDEF( &field_array );
         core::sqlsrv_array_init( *stmt, &field_array TSRMLS_CC );
 
-        core::sqlsrv_add_assoc_string( *stmt, &field_array, FieldMetaData::NAME, 
-                                       reinterpret_cast<char*>( core_meta_data->field_name.get() ), 0 TSRMLS_CC );
-
-        core_meta_data->field_name.transferred();
+        // add the field name to the associative array but keep a copy
+        core::sqlsrv_add_assoc_string(*stmt, &field_array, FieldMetaData::NAME,
+                                      reinterpret_cast<char*>(core_meta_data->field_name.get()), 1 TSRMLS_CC);
 
         core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::TYPE, core_meta_data->field_type TSRMLS_CC );
 
@@ -519,9 +530,6 @@ PHP_FUNCTION( sqlsrv_field_metadata )
        
         // add this field's meta data to the result set meta data
         core::sqlsrv_add_next_index_zval( *stmt, &result_meta_data, &field_array TSRMLS_CC );
-
-        // always good to call destructor for allocations done through placement new operator.
-        core_meta_data->~field_meta_data();
     }
 
     // return our built collection and transfer ownership
@@ -566,6 +574,10 @@ PHP_FUNCTION( sqlsrv_next_result )
     try {
 
         core_sqlsrv_next_result( stmt TSRMLS_CC, true );
+
+        // clear the current meta data since the new result will generate new meta data
+        std::for_each(stmt->current_meta_data.begin(), stmt->current_meta_data.end(), meta_data_free);
+        stmt->current_meta_data.clear();
 
         if( stmt->past_next_result_end ) {
 
@@ -1084,7 +1096,7 @@ PHP_FUNCTION( sqlsrv_get_field )
     try {
 
         // validate that the field index is within range
-        int num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
+        SQLSMALLINT num_cols = get_resultset_meta_data(stmt);
 
         if( field_index < 0 || field_index >= num_cols ) {
             THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
@@ -1622,10 +1634,13 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
 
     switch( sql_type ) {
         case SQL_BIGINT:
-        case SQL_CHAR:
         case SQL_DECIMAL:
-        case SQL_GUID:
         case SQL_NUMERIC:
+            sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
+            break;
+        case SQL_CHAR:
+        case SQL_GUID:
         case SQL_WCHAR:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
             sqlsrv_phptype.typeinfo.encoding = stmt->encoding();
@@ -1647,6 +1662,7 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
         case SQL_SMALLINT:
         case SQL_TINYINT:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
+            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
             break;
         case SQL_BINARY:
         case SQL_LONGVARBINARY:
@@ -1676,6 +1692,7 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
         case SQL_FLOAT:
         case SQL_REAL:
             sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
+            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
             break;
         case SQL_TYPE_DATE:
         case SQL_SS_TIMESTAMPOFFSET:
@@ -1759,6 +1776,37 @@ void determine_stmt_has_rows( _Inout_ ss_sqlsrv_stmt* stmt TSRMLS_DC )
     }
 }
 
+SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
+{
+    // get the numer of columns in the result set
+    SQLSMALLINT num_cols = -1;
+    
+    num_cols = stmt->current_meta_data.size();
+    bool getMetaData = false;
+
+    if (num_cols == 0) {
+        getMetaData = true;
+        num_cols = core::SQLNumResultCols(stmt TSRMLS_CC);
+    }
+
+    try {
+        if (getMetaData) {
+            for (int i = 0; i < num_cols; i++) {
+                sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
+                core_meta_data = core_sqlsrv_field_metadata(stmt, i TSRMLS_CC);
+                stmt->current_meta_data.push_back(core_meta_data.get());
+                core_meta_data.transferred();
+            }
+        }
+    } catch( core::CoreException& ) {
+        throw;
+    }
+
+    SQLSRV_ASSERT(num_cols > 0 && stmt->current_meta_data.size() == num_cols, "Meta data vector out of sync" );
+
+    return num_cols;
+}
+
 void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_type, _Out_ zval& fields, _In_ bool allow_empty_field_names
 						TSRMLS_DC )
 {
@@ -1772,40 +1820,25 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 		throw ss::SSException();
 	}
 
-	// get the numer of columns in the result set
-	SQLSMALLINT num_cols = core::SQLNumResultCols(stmt TSRMLS_CC);
+    // get the numer of columns in the result set and its metadata if not exists
+    SQLSMALLINT num_cols = get_resultset_meta_data(stmt);
 
 	// if this is the first fetch in a new result set, then get the field names and
 	// store them off for successive fetches.
-	if(( fetch_type & SQLSRV_FETCH_ASSOC ) && stmt->fetch_field_names == NULL ) {
+    if ((fetch_type & SQLSRV_FETCH_ASSOC) && stmt->fetch_field_names == NULL) {
 
         SQLLEN field_name_len = 0;
-        SQLSMALLINT field_name_len_w = 0;
-        SQLWCHAR field_name_w[( SS_MAXCOLNAMELEN + 1 ) * 2] = {L'\0'};
-        sqlsrv_malloc_auto_ptr<char> field_name;
         sqlsrv_malloc_auto_ptr<sqlsrv_fetch_field_name> field_names;
-        field_names = static_cast<sqlsrv_fetch_field_name*>( sqlsrv_malloc( num_cols * sizeof( sqlsrv_fetch_field_name )));
-        SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
-        for( int i = 0; i < num_cols; ++i ) {
-
-            core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL TSRMLS_CC );
-
-            //Conversion function expects size in characters
-            field_name_len_w = field_name_len_w / sizeof ( SQLWCHAR );
-            bool converted = convert_string_from_utf16( encoding, field_name_w,
-                field_name_len_w, ( char** ) &field_name, field_name_len );
-
-            CHECK_CUSTOM_ERROR( !converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() ) {
-                throw core::CoreException();
-            }
-
-            field_names[i].name = static_cast<char*>( sqlsrv_malloc( field_name_len, sizeof( char ), 1 ));
-            memcpy_s(( void* )field_names[i].name, ( field_name_len * sizeof( char )) , ( void* ) field_name, field_name_len );
-            field_names[i].name[field_name_len] = '\0';  // null terminate the field name since SQLColAttribute doesn't.
-            field_names[i].len = field_name_len + 1;
-            field_name.reset();
+        field_names = static_cast<sqlsrv_fetch_field_name*>(sqlsrv_malloc(num_cols * sizeof(sqlsrv_fetch_field_name)));
+        for (int i = 0; i < num_cols; ++i) {
+            // The meta data field name is already null-terminated, and the field name len is correct.
+            field_name_len = stmt->current_meta_data[i]->field_name_len;
+            field_names[i].name = static_cast<char*>(sqlsrv_malloc(field_name_len, sizeof(char), 1));
+            memcpy_s((void*)field_names[i].name, (field_name_len * sizeof(char)), (void*)stmt->current_meta_data[i]->field_name, field_name_len);
+            field_names[i].name[field_name_len] = '\0';     // null terminate the field name after the memcpy
+            field_names[i].len = field_name_len;            // field_name_len should not need to include the null char
         }
-		
+
         stmt->fetch_field_names = field_names;
         stmt->fetch_fields_count = num_cols;
         field_names.transferred();
@@ -1840,12 +1873,12 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 
 		if( fetch_type & SQLSRV_FETCH_ASSOC ) {
 
-			CHECK_CUSTOM_WARNING_AS_ERROR(( stmt->fetch_field_names[i].len == 1 && !allow_empty_field_names ), stmt,
+			CHECK_CUSTOM_WARNING_AS_ERROR(( stmt->fetch_field_names[i].len == 0 && !allow_empty_field_names ), stmt,
 											SS_SQLSRV_WARNING_FIELD_NAME_EMPTY) {
 				throw ss::SSException();
 			}
 
-			if( stmt->fetch_field_names[i].len > 1 || allow_empty_field_names ) {
+			if( stmt->fetch_field_names[i].len > 0 || allow_empty_field_names ) {
 
 				zr = add_assoc_zval( &fields, stmt->fetch_field_names[i].name, &field );
 				CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
