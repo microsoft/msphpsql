@@ -26,6 +26,8 @@ apt-get install php7.2 php7.2-dev php7.2-xml -y --allow-unauthenticated
 ### Step 2. Install prerequisites
 Install the ODBC driver for Ubuntu by following the instructions on the [Linux and macOS installation page](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server).
 
+For Ubuntu 18.10, follow the above steps for Ubuntu 18.04 except replace `18.04` by `18.10` and download ODBC 17.3 preview [here](https://www.microsoft.com/download/details.aspx?id=57341).
+
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
 
 > [!NOTE]
