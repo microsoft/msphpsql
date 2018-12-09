@@ -95,4 +95,3 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
   PHP_ADD_EXTENSION_DEP(pdo_sqlsrv, pdo)
   PHP_ADD_BUILD_DIR([$ext_builddir/shared], 1)
 fi
-
