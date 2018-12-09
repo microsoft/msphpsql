@@ -22,10 +22,12 @@ extern "C" {
 
 #include "php_sqlsrv_int.h"
 
+#ifdef COMPILE_DL_SQLSRV
 #ifdef ZTS
 ZEND_TSRMLS_CACHE_DEFINE();
 #endif
 ZEND_GET_MODULE(g_sqlsrv)
+#endif
 
 extern "C" {
 

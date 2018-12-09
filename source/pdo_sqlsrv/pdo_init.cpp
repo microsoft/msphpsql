@@ -23,10 +23,12 @@ extern "C" {
 
 #include "php_pdo_sqlsrv_int.h"
 
+#ifdef COMPILE_DL_PDO_SQLSRV
 #ifdef ZTS
 ZEND_TSRMLS_CACHE_DEFINE();
 #endif
 ZEND_GET_MODULE(g_pdo_sqlsrv)
+#endif
 
 extern "C" {
 
