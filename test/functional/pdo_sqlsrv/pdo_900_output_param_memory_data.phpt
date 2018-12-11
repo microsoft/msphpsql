@@ -10,6 +10,7 @@ PHPT_EXEC=true
 --FILE--
 <?php
 require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
 $size = 30;
 
