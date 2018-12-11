@@ -2774,7 +2774,6 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     SQLLEN expected_len;
     SQLLEN buffer_null_extra;
     SQLLEN elem_size;
-    // SQLLEN without_null_len;
 
     // calculate the size of each 'element' represented by column_size.  WCHAR is of course 2,
     // as is a n(var)char/ntext field being returned as a binary field.
@@ -2802,9 +2801,6 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     // binary fields aren't null terminated, so we need to account for that in our buffer length calcuations
     buffer_null_extra = (c_type == SQL_C_BINARY) ? elem_size : 0;
 
-    // this is the size of the string for Zend and for the StrLen parameter to SQLBindParameter
-    // without_null_len = field_size * elem_size;
-
     // increment to include the null terminator since the Zend length doesn't include the null terminator
     buffer_len += elem_size;
 
@@ -2822,7 +2818,7 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
         // A zval string len doesn't include the null.  This calculates the length it should be
         // regardless of whether the ODBC type contains the NULL or not.
 
-        // set the newly allocated space to nulls
+        // initialize the newly allocated space 
         char *p = ZSTR_VAL(param_z_string); 
         p = p + original_len;
         memset(p, '\0', expected_len - original_len);
