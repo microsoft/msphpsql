@@ -10,19 +10,6 @@ import argparse
 from subprocess import Popen, PIPE
 from exec_sql_scripts import *
 
-def createLoginUsers(conn_options, dbname, azure):
-    if (azure.lower() == 'yes'):
-        # can only create logins in the master database
-        createLoginUsersAzure('create_logins_azure.sql', conn_options, 'master')
-        # create users to use those logins to access the test database (dbname)
-        createLoginUsersAzure('create_users_azure.sql', conn_options, dbname)
-    else:
-        executeSQLscript('test_password.sql', conn_options, dbname)
-
-def createLoginUsersAzure(sqlfile, conn_options, dbname):
-    inst_command  = 'sqlcmd ' + conn_options + ' -i ' + sqlfile + ' -d ' + dbname
-    executeCommmand(inst_command)
-
 def setupTestDatabase(conn_options, dbname, azure):
     sqlFiles = ['test_types.sql', '168256.sql', 'cd_info.sql', 'tracks.sql']
     
@@ -78,8 +65,6 @@ if __name__ == '__main__':
     if (args.AZURE.lower() == 'no'):
         executeSQLscript('create_db.sql', conn_options, args.DBNAME)
 
-    # create login users 
-    createLoginUsers(conn_options, args.DBNAME, args.AZURE)
     # create tables in the new database
     setupTestDatabase(conn_options, args.DBNAME, args.AZURE)    
     # populate these tables
