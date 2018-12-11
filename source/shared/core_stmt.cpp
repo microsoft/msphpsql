@@ -2770,10 +2770,11 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
 {
     SQLSRV_ASSERT( column_size != SQLSRV_UNKNOWN_SIZE, "column size should be set to a known value." );
     buffer_len = Z_STRLEN_P( param_z );
+    SQLLEN original_len = buffer_len;
     SQLLEN expected_len;
     SQLLEN buffer_null_extra;
     SQLLEN elem_size;
-    SQLLEN without_null_len;
+    // SQLLEN without_null_len;
 
     // calculate the size of each 'element' represented by column_size.  WCHAR is of course 2,
     // as is a n(var)char/ntext field being returned as a binary field.
@@ -2802,7 +2803,7 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     buffer_null_extra = (c_type == SQL_C_BINARY) ? elem_size : 0;
 
     // this is the size of the string for Zend and for the StrLen parameter to SQLBindParameter
-    without_null_len = field_size * elem_size;
+    // without_null_len = field_size * elem_size;
 
     // increment to include the null terminator since the Zend length doesn't include the null terminator
     buffer_len += elem_size;
@@ -2821,8 +2822,10 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
         // A zval string len doesn't include the null.  This calculates the length it should be
         // regardless of whether the ODBC type contains the NULL or not.
 
-        // null terminate the string to avoid a warning in debug PHP builds
-        ZSTR_VAL(param_z_string)[without_null_len] = '\0';
+        // set the newly allocated space to nulls
+        char *p = ZSTR_VAL(param_z_string); 
+        p = p + original_len;
+        memset(p, '\0', expected_len - original_len);
         ZVAL_NEW_STR(param_z, param_z_string);
 
         // buffer_len is the length passed to SQLBindParameter.  It must contain the space for NULL in the
