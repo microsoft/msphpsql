@@ -1,8 +1,7 @@
 --TEST--
 GitHub issue 900 - output parameter displays data from memory when not finalized
 --DESCRIPTION--
-This test verifies that when there is an active resultset and output parameter not finalized, it should not show any data from client memory. This test does not work with AlwaysEncrypted because
-the output param is not assigned in the stored procedure.
+This test verifies that when there is an active resultset and output parameter not finalized, it should not show any data from client memory. This test does not work with AlwaysEncrypted because the output param is not assigned in the stored procedure.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -12,17 +11,13 @@ PHPT_EXEC=true
 require_once("MsSetup.inc");
 require_once("MsCommon_mid-refactor.inc");
 
-$size = 30;
-
 function getOutputParam($conn, $storedProcName, $dataType, $inout)
 {
-    global $size;
+    $size = rand(1000, 4000);   // The maximum anticipated size is 8000 for wide chars
 
     try {
         $output = null;
-
         $stmt = $conn->prepare("$storedProcName @OUTPUT = :output");
-        // $stmt->bindParam('output', $output, PDO::PARAM_STR, $size);
         if ($inout) {
             $paramType = PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT;
         } else {
@@ -32,9 +27,9 @@ function getOutputParam($conn, $storedProcName, $dataType, $inout)
 
         $stmt->execute();
 
-        // the output param should be doubled in size for wide characters
-        // however, it should not contain any data so after trimming it
-        // should be merely an empty string
+        // The output param should be doubled in size for wide characters.
+        // However, it should not contain any data so after trimming it
+        // should be merely an empty string because it was originally set to null
         $len = strlen($output);
         $result = trim($output);
 
@@ -59,7 +54,7 @@ try {
     $conn = new PDO( "sqlsrv:server=$server; Database = $databaseName", $uid, $pwd);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
-    $dataTypes = array("VARCHAR(512)", "VARCHAR(max)", "NVARCHAR(512)", "NVARCHAR(max)");
+    $dataTypes = array("VARCHAR(256)", "VARCHAR(512)", "VARCHAR(max)", "NVARCHAR(256)", "NVARCHAR(512)", "NVARCHAR(max)");
     for ($i = 0, $p = 3; $i < count($dataTypes); $i++, $p++) {
         // Create the stored procedure first
         $storedProcName = "spNullOutputParam" . $i;

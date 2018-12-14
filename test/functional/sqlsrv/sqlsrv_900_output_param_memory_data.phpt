@@ -1,8 +1,7 @@
 --TEST--
 GitHub issue 900 - output parameter displays data from memory when not finalized
 --DESCRIPTION--
-This test verifies that when there is an active resultset and output parameter not finalized, it should not show any data from client memory. This test does not work with AlwaysEncrypted because
-the output param is not assigned in the stored procedure.
+This test verifies that when there is an active resultset and output parameter not finalized, it should not show any data from client memory. This test does not work with AlwaysEncrypted because the output param is not assigned in the stored procedure.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -11,16 +10,14 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-$size = 30;
-
-function getOutputParam($conn, $storedProcName, $inout, $isVarchar, $isMax)
+function getOutputParam($conn, $storedProcName, $inout, $isVarchar)
 {
-    global $size;
+    $size = rand(1000, 4000);   // The maximum anticipated size is 8000 for wide chars
     
     $output = null;
     $dir = ($inout)? SQLSRV_PARAM_INOUT : SQLSRV_PARAM_OUT;
     $dataType = ($isVarchar)? "SQLSRV_SQLTYPE_VARCHAR" : "SQLSRV_SQLTYPE_NVARCHAR";
-    $sqlType = ($isMax)? call_user_func($dataType, 'max') : call_user_func($dataType, $size);
+    $sqlType = call_user_func($dataType, $size);
 
     $stmt = sqlsrv_prepare($conn, "$storedProcName @OUTPUT = ?", array(array(&$output, $dir, null, $sqlType)));
     if (!$stmt) {
@@ -30,12 +27,11 @@ function getOutputParam($conn, $storedProcName, $inout, $isVarchar, $isMax)
         fatalError("getOutputParam: failed to execute procedure $storedProcName");
     }
 
-    // The output param should be doubled in size for wide characters;
-    // for max fields it should be the maximum anticipated size 8000.
+    // The output param should be doubled in size for wide characters.
     // However, it should not contain any data so after trimming it
-    // should be merely an empty string
+    // should be merely an empty string because it was originally set to null
     $len = strlen($output);
-    $expectedLen = ($isMax)? 8000 :  ($size * 2);
+    $expectedLen = $size * 2;
     $result = trim($output);
 
     if ($len != $expectedLen || $result !== "" ) {
@@ -57,7 +53,7 @@ if (!$conn) {
     fatalError("Could not connect.\n");
 }
 
-$dataTypes = array("VARCHAR(512)", "VARCHAR(max)", "NVARCHAR(512)", "NVARCHAR(max)");
+$dataTypes = array("VARCHAR(256)", "VARCHAR(512)", "VARCHAR(max)", "NVARCHAR(256)", "NVARCHAR(512)", "NVARCHAR(max)");
 for ($i = 0, $p = 3; $i < count($dataTypes); $i++, $p++) {
     // Create the stored procedure first
     $storedProcName = "spNullOutputParam" . $i;
@@ -65,8 +61,8 @@ for ($i = 0, $p = 3; $i < count($dataTypes); $i++, $p++) {
     $procCode = "SELECT 1, 2, 3";
 
     createProc($conn, $storedProcName, $procArgs, $procCode);
-    getOutputParam($conn, $storedProcName, false, ($i < 2), ($i % 2 != 0));
-    getOutputParam($conn, $storedProcName, true, ($i < 2), ($i % 2 != 0));
+    getOutputParam($conn, $storedProcName, false, ($i < 3));
+    getOutputParam($conn, $storedProcName, true, ($i < 3));
 
     // Drop the stored procedure
     dropProc($conn, $storedProcName);
