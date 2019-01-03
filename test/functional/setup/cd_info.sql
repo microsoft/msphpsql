@@ -1,11 +1,8 @@
-USE $(dbname) 
-GO
-
 IF EXISTS (SELECT * FROM sys.objects 
 WHERE object_id = OBJECT_ID(N'[dbo].[tracks]') AND type in (N'U'))
 
 BEGIN
-ALTER TABLE $(dbname)..[tracks] DROP CONSTRAINT [FK__tracks__asin__7F60ED59]
+ALTER TABLE [tracks] DROP CONSTRAINT [FK__tracks__asin__7F60ED59]
 END
 
 GO

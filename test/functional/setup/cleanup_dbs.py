@@ -3,10 +3,10 @@
 
 import os
 import sys
-import subprocess
-import platform
+# import subprocess
+# import platform
 import argparse
-from subprocess import Popen, PIPE
+# from subprocess import Popen, PIPE
 from exec_sql_scripts import *
 
 if __name__ == '__main__':
@@ -25,8 +25,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '  
-    
-    executeSQLscript( os.path.join( os.path.dirname(os.path.realpath(__file__)), 'drop_db.sql'), conn_options, args.DBNAME)
+
+    manageTestDB('drop_db.sql', conn_options, args.DBNAME)
 
     # if Windows, remove self signed certificate using ps command
     if platform.system() == 'Windows':
