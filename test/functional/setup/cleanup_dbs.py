@@ -3,10 +3,8 @@
 
 import os
 import sys
-# import subprocess
-# import platform
+import platform
 import argparse
-# from subprocess import Popen, PIPE
 from exec_sql_scripts import *
 
 if __name__ == '__main__':

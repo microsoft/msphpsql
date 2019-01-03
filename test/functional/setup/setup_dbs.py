@@ -4,10 +4,8 @@
 # py setup_dbs.py -dbname <DBNAME>
 import os
 import sys
-import subprocess
 import platform
 import argparse
-from subprocess import Popen, PIPE
 from exec_sql_scripts import *
 
 def setupTestDatabase(conn_options, dbname, azure):
@@ -24,8 +22,6 @@ def populateTables(conn_options, dbname):
     executeBulkCopy(conn_options, dbname, '168256', '168256')
 
 def executeBulkCopy(conn_options, dbname, tblname, datafile):
-    #redirect_string = 'bcp {0}..[{1}] in {2}.dat -f {2}.fmt -q'
-    #redirect_string = 'bcp {1} in {2}.dat -f {2}.fmt -q -d {0} '
     redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q'
     inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options
     executeCommmand(inst_command)
