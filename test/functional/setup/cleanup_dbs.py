@@ -24,7 +24,8 @@ if __name__ == '__main__':
 
     conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '  
 
-    manageTestDB('drop_db.sql', conn_options, args.DBNAME)
+    sql_script = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'drop_db.sql');
+    manageTestDB(sql_script, conn_options, args.DBNAME)
 
     # if Windows, remove self signed certificate using ps command
     if platform.system() == 'Windows':
