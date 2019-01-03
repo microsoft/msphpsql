@@ -17,7 +17,11 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "php_sqlsrv.h"
+extern "C" {
+  #include "php_sqlsrv.h"
+}
+
+#include "php_sqlsrv_int.h"
 
 #include <string>
 #include <sstream>
