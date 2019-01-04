@@ -1,7 +1,7 @@
 --TEST--
 zombied streams after sqlsrv_stmt_cancel.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure( 'WarningsReturnAsErrors', 0 );

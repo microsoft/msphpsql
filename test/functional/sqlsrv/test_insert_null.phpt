@@ -1,7 +1,7 @@
 --TEST--
 Insert nulls into fields of all types.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 

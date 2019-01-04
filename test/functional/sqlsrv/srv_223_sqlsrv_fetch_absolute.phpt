@@ -10,7 +10,8 @@ require_once('MsCommon.inc');
 $conn = AE\connect();
 
 // Prepare the statement
-$sql = "select * from cd_info";
+$sql = "SELECT * FROM sys.objects";
+
 $stmt = sqlsrv_prepare($conn, $sql, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
 if ($stmt === false) {
     printErrors();
