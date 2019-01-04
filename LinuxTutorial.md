@@ -1,10 +1,10 @@
-#PHP Linux Drivers for SQL Server - Installation Tutorial
+# PHP Linux Drivers for SQL Server - Installation Tutorial
 
 In this tutorial, we will show you how to install the PHP Linux drivers for Microsoft SQL Server, along with the additional required software to get them to work. The drivers are available from Github, where you will find several variants. They are available as a SQLSRV variant or a PDO_SQLSRV variant; the latter implements the PDO PHP extension for accessing data. In addition, the drivers are built for both thread safe and non-thread safe environments. The PHP Linux drivers built for thread safe servers are named php_sqlsrv_7_ts.so and php_pdo_sqlsrv_7_ts.so. The drivers built for servers without thread safety enabled are php_sqlsrv_7_nts.so and php_pdo_sqlsrv_7_nts.so. 
 
 Prior to installing the PHP Linux drivers, you must install the unixODBC driver manager, the Microsoft ODBC driver for Linux, PHP 7, and a web server. In the following, we will assume the web server is Apache. 
 
-###Install the unixODBC driver manager and Microsoft ODBC driver for Linux
+### Install the unixODBC driver manager and Microsoft ODBC driver for Linux
 
 **Ubuntu 15.10**
 
@@ -55,7 +55,7 @@ Prior to installing the PHP Linux drivers, you must install the unixODBC driver 
 
 [![pic1](https://msdnshared.blob.core.windows.net/media/2016/07/image1101.png)](https://msdnshared.blob.core.windows.net/media/2016/07/image1101.png) 
 
-###Install Apache
+### Install Apache
  
 You are now ready to install Apache. You can install from source, or you can use your package manager.
 To install from source, follow these instructions.
@@ -91,7 +91,7 @@ To install from source, follow these instructions.
 
 5.  Run `make` and `sudo make install` to complete the installation.
 
-###To install Apache from your package manager, follow these steps:
+### To install Apache from your package manager, follow these steps:
 
 1.  If using Red Hat or CentOS, run the following command:
 
@@ -105,7 +105,7 @@ Note that your package manager's version of Apache is likely not thread safe. To
 
 [![pic4](https://msdnshared.blob.core.windows.net/media/2016/07/image463.png)](https://msdnshared.blob.core.windows.net/media/2016/07/image463.png) 
 	
-###Install PHP
+### Install PHP
 Now you are ready to install PHP. You can install by source or, if the packaged version is PHP 7, with your package manager. However, we recommend you install from source. To install PHP from source, follow these instructions:
 
 1.  Download the latest stable PHP 7 source from [http://php.net/downloads.php](http://php.net/downloads.php). In what follows, we will assume the downloaded source file is `php-7.0.8.tar.gz`.
@@ -142,7 +142,7 @@ Now you are ready to install PHP. You can install by source or, if the packaged 
 
     If you installed Apache via the package manager, the Apache config file(s) may have a different structure. In Ubuntu, you can find `apache2.conf` in `/etc/apache2`. Add the above lines to this file.   
 
-###Install PHP from the package manager
+### Install PHP from the package manager
 
 To install PHP and the PHP apache module using your package manager, you must ensure that your distribution provides PHP 7, as earlier versions will not work. 
 
@@ -172,7 +172,7 @@ Remi RPM repository also provides a package to install Microsoft PHP drivers for
 
 To confirm that the drivers have been installed, run `php -m` and you should find both `sqlsrv` and `pdo_sqlsrv` amongst the list of modules.
 
-###Compiling and installing Microsoft PHP drivers for SQL Server from source: 
+### Compiling and installing Microsoft PHP drivers for SQL Server from source: 
 
 Instead of using the precompiled binaries, you can compile your own when compiling PHP. To compile the binaries yourself, follow these steps: 
 
@@ -202,7 +202,7 @@ Instead of using the precompiled binaries, you can compile your own when compili
 
 6.  Edit your apache configuration file as described in step 6 above. 
 
-###Installing Microsoft PHP drivers for SQL Server using PECL packages:
+### Installing Microsoft PHP drivers for SQL Server using PECL packages:
 
 You can install the SQL Server drivers using PHP's PECL package system. This can be done after having installed PHP from source or from package.
 
@@ -225,7 +225,7 @@ You can install the SQL Server drivers using PHP's PECL package system. This can
 
 and similarly for the PDO_SQLSRV driver.
 
-###Loading the drivers
+### Loading the drivers
 
 Finally, edit your `php.ini` file to load the PHP drivers when PHP starts.
 
@@ -254,7 +254,7 @@ Finally, edit your `php.ini` file to load the PHP drivers when PHP starts.
 	
  If you do not see sections on sqlsrv and pdo_sqlsrv extensions, these extensions are not loaded. Near the top of the PHP info page, check which `php.ini` is loaded. This may be different from the `php.ini` file loaded when running php from the command line, especially if Apache and PHP were installed from your package manager. In this case, edit the `php.ini` displayed on the PHP info page to load the extensions in the same way described above. Restart the Apache web server and verify that phpinfo() loads the sqlsrv extensions.   
 
-####Links: 
+#### Links: 
 Microsoft PHP GitHub repository: https://github.com/Azure/msphpsql 
 UnixODBC 2.3.1 for Ubuntu: [http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz](http://www.unixodbc.org/pub/unixODBC/unixODBC-2.3.1.tar.gz) 
 Microsoft® ODBC Driver 13 (Preview) for SQL Server® - Ubuntu Linux: [https://www.microsoft.com/en-us/download/details.aspx?id=50419](https://www.microsoft.com/en-us/download/details.aspx?id=50419) 
