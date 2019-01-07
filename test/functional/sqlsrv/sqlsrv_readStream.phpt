@@ -1,7 +1,7 @@
 --TEST--
 Read varchar(max) fields from a stream
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 

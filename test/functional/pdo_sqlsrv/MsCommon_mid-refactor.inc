@@ -624,6 +624,33 @@ function IsDaasMode()
     return ($daasMode ? true : false);
 }
 
+function isAzureDW()
+{
+    // Check if running Azure Data Warehouse
+    // For details, https://docs.microsoft.com/sql/t-sql/functions/serverproperty-transact-sql
+    try {
+        $conn = connect();
+
+        // Check if running Azure Data Warehouse
+        // For details, https://docs.microsoft.com/sql/t-sql/functions/serverproperty-transact-sql
+        $tsql = "SELECT SERVERPROPERTY ('edition'), SERVERPROPERTY ('EngineEdition')";
+        $stmt = $conn->query($tsql);
+
+        $result = $stmt->fetch(PDO::FETCH_NUM);
+        $edition = $result[0];
+        $engEd = intval($result[1]);
+
+        if ($edition == "SQL Azure" && $engEd == 6) {
+            return true;
+        } else {
+            return false;
+        }
+    } catch (Exception $e) {
+        echo $e->getMessage();
+        die("skip Failed to connect or could not fetch edition info.");
+    }
+}
+
 function FatalError($errorMsg)
 {
     if (!IsPdoMode()) {

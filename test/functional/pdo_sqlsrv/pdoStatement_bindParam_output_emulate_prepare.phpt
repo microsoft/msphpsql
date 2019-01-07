@@ -2,6 +2,7 @@
 Tests error returned when binding output parameter with emulate prepare
 --SKIPIF--
 <?php require_once('skipif_mid-refactor.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");

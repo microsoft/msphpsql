@@ -1,7 +1,7 @@
 --TEST--
 A test for a simple query
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);

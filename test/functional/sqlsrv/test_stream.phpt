@@ -14,7 +14,7 @@ Test for stream zombifying.
         fatalError("Failed to connect.");
     }
 
-    $stmt = sqlsrv_query($conn, "SELECT * FROM [test_streamable_types]");
+    $stmt = sqlsrv_query($conn, "SELECT * FROM sys.objects");
     $metadata = sqlsrv_field_metadata($stmt);
     $count = count($metadata);
     sqlsrv_fetch($stmt);

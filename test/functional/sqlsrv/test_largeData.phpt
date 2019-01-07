@@ -1,7 +1,7 @@
 --TEST--
 send a large amount (10MB) using encryption.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 class my_stream {

@@ -84,6 +84,28 @@ function isDaasMode()
     return ($daasMode ? true : false);
 }
 
+function isAzureDW()
+{
+    // Check if running Azure Data Warehouse
+    // For details, https://docs.microsoft.com/sql/t-sql/functions/serverproperty-transact-sql
+    $conn = connect();
+    $tsql = "SELECT SERVERPROPERTY ('edition'), SERVERPROPERTY ('EngineEdition')";
+    $stmt = sqlsrv_query($conn, $tsql);
+
+    if (sqlsrv_fetch($stmt)) {
+        $edition = sqlsrv_get_field($stmt, 0);
+        $engEd = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_INT);
+        
+        if ($edition == "SQL Azure" && $engEd == 6) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        die("Could not fetch edition info.");
+    }
+}
+
 function startTest($testName)
 {
     if (traceMode()) {
