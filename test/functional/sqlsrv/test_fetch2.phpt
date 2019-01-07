@@ -1,7 +1,7 @@
 --TEST--
 nameless fields return correctly in sqlsrv_fetch_array and sqlsrv_fetch_object.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 

@@ -4,6 +4,7 @@ Test PDO::prepare() with PDO::ATTR_EMULATE_PREPARES.
 PHPT_EXEC=true
 --SKIPIF--
 <?php require_once('skipif_mid-refactor.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 

@@ -6,6 +6,7 @@ Verifies the functionality of sqlsrv_next_result
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 

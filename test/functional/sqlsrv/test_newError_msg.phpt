@@ -4,7 +4,7 @@ test new error messages when sqlsrv_get_field is called
 new error messages when sqlsrv_get_field is called before sqlsrv_fetch or 
 if sqlsrv_get_field is called with out of order field indices.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 

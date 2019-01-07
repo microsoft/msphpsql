@@ -2,6 +2,7 @@
 fix for 182741.
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);

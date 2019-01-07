@@ -15,7 +15,7 @@ if( $conn === false ) {
     die( print_r( sqlsrv_errors(), true ));
 }
 
-$stmt = sqlsrv_prepare( $conn, "SELECT * FROM [cd_info]");
+$stmt = sqlsrv_prepare( $conn, "SELECT * FROM sys.objects");
 
 $result = sqlsrv_field_metadata( $stmt );
 if( $result === false ) {

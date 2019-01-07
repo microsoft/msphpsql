@@ -1,7 +1,7 @@
 --TEST--
 integer, float, and datetime types vs various sql server types.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 
