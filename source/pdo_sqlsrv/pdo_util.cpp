@@ -383,7 +383,7 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
-        { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.", -73, false }
+        { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, or ActiveDirectoryMsi is supported.", -73, false }
     },
     {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,
@@ -444,6 +444,10 @@ pdo_error PDO_ERRORS[] = {
     {
         SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
         { IMSSP, (SQLCHAR*) "Expected an integer to specify number of decimals to format the output values of decimal data types.", -92, false}
+    },
+    {
+        SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
+        { IMSSP, (SQLCHAR*) "When using ActiveDirectoryMsi Authentication, PWD must be NULL. UID can be NULL, but if not, an empty string is not accepted.", -93, false}
     },
 
     { UINT_MAX, {} }
