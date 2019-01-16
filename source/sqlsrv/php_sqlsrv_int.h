@@ -8,7 +8,7 @@
 //
 // Comments: Also contains "internal" declarations shared across source files. 
 //
-// Microsoft Drivers 5.5 for PHP for SQL Server
+// Microsoft Drivers 5.6 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
