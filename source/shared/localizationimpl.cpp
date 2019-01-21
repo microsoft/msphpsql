@@ -638,7 +638,7 @@ size_t SystemLocale::ToUtf16( UINT srcCodePage, const char * src, SSIZE_T cchSrc
         return 0;
     }
     size_t cchSrcActual = (cchSrc < 0 ? (1+strnlen_s(src)) : cchSrc);
-    bool hasLoss;
+    bool hasLoss = false;
     return cvt.Convert( dest, cchDest, src, cchSrcActual, false, &hasLoss, pErrorCode );
 }
 
@@ -664,7 +664,7 @@ size_t SystemLocale::ToUtf16Strict( UINT srcCodePage, const char * src, SSIZE_T 
         return 0;
     }
     size_t cchSrcActual = (cchSrc < 0 ? (1+strnlen_s(src)) : cchSrc);
-    bool hasLoss;
+    bool hasLoss = false;
     return cvt.Convert( dest, cchDest, src, cchSrcActual, true, &hasLoss, pErrorCode );
 }
 
@@ -952,7 +952,7 @@ size_t SystemLocale::FromUtf16( UINT destCodePage, const WCHAR * src, SSIZE_T cc
         return 0;
     }
     size_t cchSrcActual = (cchSrc < 0 ? (1+mplat_wcslen(src)) : cchSrc);
-    bool hasLoss;
+    bool hasLoss = false;
     return cvt.Convert( dest, cchDest, src, cchSrcActual, false, &hasLoss, pErrorCode );
 }
 
@@ -972,7 +972,7 @@ size_t SystemLocale::FromUtf16Strict(UINT destCodePage, const WCHAR * src, SSIZE
         return 0;
     }
     size_t cchSrcActual = (cchSrc < 0 ? (1 + mplat_wcslen(src)) : cchSrc);
-    bool hasLoss;
+    bool hasLoss = false;
     return cvt.Convert(dest, cchDest, src, cchSrcActual, true, &hasLoss, pErrorCode);
 }
 
