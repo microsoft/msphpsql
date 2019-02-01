@@ -366,6 +366,13 @@ class BuildUtil(object):
             sdk_dir = work_dir
             copy_to_ext = False
 
+        # save the source path for other use later
+        path_file = os.path.join(work_dir, 'source_path.txt')
+        with open(path_file, 'w') as f:
+            phpsrc = self.phpsrc_root(sdk_dir)
+            ext_path = os.path.join(phpsrc, 'ext', '')
+            f.write(ext_path)
+            
         phpSDK = os.path.join(sdk_dir, 'php-sdk')
         if not os.path.exists( phpSDK ):
             os.system('git clone https://github.com/OSTC/php-sdk-binary-tools.git --branch master --single-branch --depth 1 ' + phpSDK)
@@ -454,7 +461,6 @@ class BuildUtil(object):
         shutil.copy(os.path.join(phpsrc, 'php.ini-production'), php_ini_file)
         
         # Copy run-tests.php as well
-        phpsrc = self.phpsrc_root(sdk_dir)
         shutil.copy(os.path.join(phpsrc, 'run-tests.php'), build_dir)
         
         print('Copying the binaries from', build_dir)
