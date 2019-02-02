@@ -11,7 +11,7 @@ Updated PECL release packages. Here is the list of updates:
 - Added support for Linux SUSE 15, Ubuntu 18.10 and mac OS Mojave
 - Feature Request [#415](https://github.com/Microsoft/msphpsql/pull/886) - new options at connection and statement levels for both drivers for formatting decimal values in the fetched results
 - Added support for Azure AD Access Token (in Linux / macOS this requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [unixODBC](http://www.unixodbc.org/) 2.3.6+)
-- Added support for Authentication with Azure Active Directory using managed identity for Azure Resources (requires [MS ODBC Driver 17.3+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server))
+- Added support for Authentication with Azure Active Directory using Managed Identity for Azure Resources (requires [MS ODBC Driver 17.3+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server))
 - Feature Request [#842](https://github.com/Microsoft/msphpsql/pull/842) - new PDO_STMT_OPTION_FETCHES_DATETIME_TYPE flag for pdo_sqlsrv to return datetime as objects
 - Feature Request [#844](https://github.com/Microsoft/msphpsql/pull/844) - add ReturnDatesAsStrings option to statement level for sqlsrv
 
@@ -20,9 +20,9 @@ Updated PECL release packages. Here is the list of updates:
 - Dropped support for PHP 7.0 - [Version 5.3](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver?view=sql-server-2017) is the last to support PHP 7.0.
 
 ### Fixed
-- Issue [#434](https://github.com/Microsoft/msphpsql/issues/434) - To avoid the pitfall that could result in a crash, before freeing stmt in the destructor check if its dbh driver data is NULL
+- Issue [#434](https://github.com/Microsoft/msphpsql/issues/434) - To avoid possible crashes, before freeing stmt in the destructor check if its dbh driver data is NULL
 - Pull Request [#833](https://github.com/Microsoft/msphpsql/pull/833) - Streamlined the error handling to remove a potential cause of crash
-- Pull Request [#836](https://github.com/Microsoft/msphpsql/pull/836) - Modified the config files to enable Spectre Mitigations (use /Qspectre switch) for PHP 7.2
+- Pull Request [#836](https://github.com/Microsoft/msphpsql/pull/836) - Modified the config files to enable Spectre Mitigations (use /Qspectre switch) for PHP 7.2 (see related Request [#878](https://github.com/Microsoft/msphpsql/pull/878))
 - Pull Request [#854](https://github.com/Microsoft/msphpsql/pull/854) - Clear Azure Key Vault data after connection attributes are successfully set or when exception is thrown
 - Pull Request [#855](https://github.com/Microsoft/msphpsql/pull/855) - Improved performance by saving meta data before fetching and skipping unnecessary conversions for numeric data
 - Pull Request [#865](https://github.com/Microsoft/msphpsql/pull/865) - Corrected the way SQLPutData and SQLParamData are used when sending stream data to the server
