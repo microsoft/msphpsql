@@ -24,7 +24,9 @@ import sys
 import shutil
 import os.path
 import argparse
+import subprocess
 from buildtools import BuildUtil
+from indexsymbols import *
 
 class BuildDriver(object):
     """Build sqlsrv and/or pdo_sqlsrv drivers with PHP source with the following properties:
@@ -112,6 +114,34 @@ class BuildDriver(object):
             print("The path provided is invalid. Please re-enter.")
         return source
     
+    def index_symbols(self, ext_dir, srctool_path, tag_version):
+        """This takes care of indexing all the symbols
+        
+        :param  ext_dir: the directory where we can find the built extension(s)
+        :param  srctool_path: the path to the tools for source indexing
+        :param  tag_version: tag version for source indexing
+        :outcome: all symbols will be source indexed
+        """
+        work_dir = os.path.dirname(os.path.realpath(__file__))
+        os.chdir(srctool_path)
+
+        if self.util.driver == 'all':
+            driver = 'sqlsrv'
+            pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
+            print('Indexing this symbol: ', pdbfile)
+            run_indexing_tools(pdbfile, driver, tag_version)
+            driver = 'pdo_sqlsrv'
+            pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
+            print('Indexing this symbol: ', pdbfile)
+            run_indexing_tools(pdbfile, driver, tag_version)
+        else:
+            driver = self.util.driver
+            pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
+            print('Indexing this symbol: ', pdbfile)
+            run_indexing_tools(pdbfile, driver, tag_version)
+            
+        os.chdir(work_dir)
+        
     def build_extensions(self, root_dir, logfile):
         """This takes care of getting the drivers' source files, building the drivers. 
         If dest_path is defined, the binaries will be copied to the designated destinations.
@@ -172,9 +202,12 @@ class BuildDriver(object):
 
         return ext_dir
 
-    def build(self):
+    def build(self, srctool_path, tag_version):
         """This is the main entry point of building drivers for PHP. 
         For development, this will loop till the user decides to quit.
+        
+        :param  srctool_path: the path to the tools for source indexing
+        :param  tag_version: tag version for source indexing
         """
         self.show_config()
     
@@ -202,6 +235,12 @@ class BuildDriver(object):
                 os.chdir(work_dir)
                 exit(1)
 
+            # Do source indexing if necessary
+            if srctool_path is not None and tag_version is not None:
+                print('Source indexing begins...')
+                self.index_symbols(ext_dir, srctool_path, tag_version)
+                print('Source indexing done')
+                
             if not self.testing:
                 choice = input("Rebuild using the same configuration(yes) or quit (no) [yes/no]: ")
                 choice = choice.lower()
@@ -244,6 +283,8 @@ if __name__ == '__main__':
     parser.add_argument('--TESTING', action='store_true', help="turns on testing mode (default: False)")
     parser.add_argument('--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
     parser.add_argument('--NO_RENAME', action='store_true', help="drivers will not be renamed(default: False)")
+    parser.add_argument('--SRCIDX_PATH', default=None, help="the path to the tools for source indexing (default: None)")
+    parser.add_argument('--TAG_VERSION', default=None, help="the tag version for source indexing (default: None)")
 
     args = parser.parse_args()
 
@@ -305,4 +346,4 @@ if __name__ == '__main__':
                           path,
                           testing,
                           no_rename)
-    builder.build()
+    builder.build(args.SRCIDX_PATH, args.TAG_VERSION)
