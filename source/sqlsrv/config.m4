@@ -40,7 +40,7 @@ if test "$PHP_SQLSRV" != "no"; then
            shared/StringFunctions.cpp \
            "
     AC_MSG_CHECKING([for SQLSRV headers])
-    if test -f $srcdir/ext/pdo_sqlsrv/shared/core_sqlsrv.h && test "$PHP_PDO_SQLSRV" != "no"; then
+    if test -f $srcdir/ext/pdo_sqlsrv/shared/core_sqlsrv.h && test "$PHP_PDO_SQLSRV" != "no" && test "$PHP_PDO_SQLSRV_SHARED" == "no"; then
       pdo_sqlsrv_inc_path=$srcdir/ext/pdo_sqlsrv/shared/
       shared_src_class=""
     elif test -f $srcdir/ext/sqlsrv/shared/core_sqlsrv.h; then
