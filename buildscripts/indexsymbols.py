@@ -59,7 +59,7 @@ def append_source_filess(index_filename, source_files, driver):
     """
     failed = False
     with open(index_filename, 'a') as idx_file:
-        idx_file.write('SRCSRV: source files ---------------------------------------\n')
+        idx_file.write('SRCSRV: source files ---------------------------------------' + os.linesep)
         with open(source_files, 'r') as src_file:
             for line in src_file:
                 pos = line.find('shared')
@@ -76,7 +76,7 @@ def append_source_filess(index_filename, source_files, driver):
                         relative_path = line[pos:]
                         src_line = line[:-1] + '*' + relative_path.replace('\\', '/')
                 idx_file.write(src_line)
-        idx_file.write('SRCSRV: end ------------------------------------------------\n')
+        idx_file.write('SRCSRV: end ------------------------------------------------' + os.linesep)
     return failed
 
 def run_indexing_tools(pdbfile, driver, tag_version):
