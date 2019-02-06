@@ -55,7 +55,7 @@ On the server side, Microsoft SQL Server 2008 R2 and above on Windows are suppor
 
 The drivers are distributed as pre-compiled extensions for PHP found on the [releases page](https://github.com/Microsoft/msphpsql/releases). They are available in thread-safe and non thread-safe versions, and in 32-bit and 64-bit versions. The source code for the drivers is also available, and you can compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
  
-If you choose to build the drivers, you must be able to build PHP 7 without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows) -- an example buildscript is provided, but you can also compile the drivers manually.
+If you choose to build the drivers, you must be able to build PHP 7.* without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows) -- an example buildscript is provided, but you can also compile the drivers manually.
 
 To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
 
@@ -88,6 +88,7 @@ The version number may have trailing pre-release version identifiers to indicate
 ## Future Plans
 - Expand SQL Server 2016 feature support (example: Azure Active Directory)
 - Add more verification/fundamental tests
+- Improve performance
 - Bug fixes
 
 ## Guidelines for Reporting Issues
@@ -99,14 +100,14 @@ We appreciate you taking the time to test the driver, provide feedback and repor
 
 Thank you!
 
-## FAQs
+## Questions
 **Q:** Can we get dates for any of the Future Plans listed above?
 
 **A:** At this time, Microsoft is not able to announce dates. We are working hard to release future versions of the driver and will share future plans as appropriate. 
 
 **Q:** What's next?
 
-**A:** On July 20, 2018 we released the production release version 5.3.0 of our PHP Driver. We will continue working on our future plans and releasing previews of upcoming releases.
+**A:** We will continue working on our future plans and releasing previews of upcoming [releases](https://github.com/Microsoft/msphpsql/releases)
 
 **Q:** Is Microsoft taking pull requests for this project?
 
