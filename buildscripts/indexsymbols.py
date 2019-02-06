@@ -10,6 +10,7 @@
 #############################################################################################
 
 import os.path
+import argparse
 import subprocess
 from subprocess import Popen, PIPE
 
@@ -116,3 +117,20 @@ def run_indexing_tools(pdbfile, driver, tag_version):
     os.remove(batch_filename)
     os.remove(index_filename)
     os.remove(source_files)
+
+################################### Main Function ###################################
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('PDBFILE', help="the path to the pdb file for source indexing")
+    parser.add_argument('DRIVER', choices=['sqlsrv', 'pdo_sqlsrv'], help="driver name of this pdb file")
+    parser.add_argument('TAG_VERSION', help="the tag version for source indexing (e.g. v5.6.0)")
+    parser.add_argument('TOOLS_PATH',help="the path to the source indexing tools")
+    
+    args = parser.parse_args()
+
+    work_dir = os.path.dirname(os.path.realpath(__file__))
+    os.chdir(args.TOOLS_PATH)
+    
+    run_indexing_tools(args.PDBFILE, args.DRIVER.lower(), args.TAG_VERSION)
+    
+    os.chdir(work_dir)
