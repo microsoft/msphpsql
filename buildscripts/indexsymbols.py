@@ -11,8 +11,9 @@
 
 import os.path
 import subprocess
+from subprocess import Popen, PIPE
 
-def write_template(index_filename, tag_version):
+def write_index(index_filename, tag_version):
     """This writes to a temporary index file for later use
 
     For example
@@ -42,7 +43,7 @@ def write_template(index_filename, tag_version):
         f.write('SRCVERSION=' + tag_version + '\n')
         f.write('PDBVERSION=' + tag_version + '\n')
 
-def append_source_files(index_filename, source_file, driver):
+def append_source_filess(index_filename, source_files, driver):
     """This appends the paths to different source files to the temporary index file
 
     For example
@@ -55,25 +56,27 @@ def append_source_files(index_filename, source_file, driver):
     c:\php-sdk\phpdev\vc15\x86\php-7.2.14-src\ext\pdo_sqlsrv\shared\core_util.cpp*shared/core_util.cpp
     SRCSRV: end ------------------------------------------------
     """
+    failed = False
     with open(index_filename, 'a') as idx_file:
         idx_file.write('SRCSRV: source files ---------------------------------------\n')
-        with open(source_file, 'r') as src_file:
+        with open(source_files, 'r') as src_file:
             for line in src_file:
-                if 'indexed' not in line:   # skip this line
-                    pos = line.find('shared')
-                    if (pos > 0):           # if found, it must be positive
-                        relative_path = line[pos:]
-                        src_line = line[:-1] + '*' + relative_path.replace('\\', '/')
+                pos = line.find('shared')
+                if (pos > 0):           # it's a nested folder, so it must be positive
+                    relative_path = line[pos:]
+                    src_line = line[:-1] + '*' + relative_path.replace('\\', '/')
+                else:                   # not a file in the shared folder
+                    pos = line.find(driver)
+                    if (pos <= 0):
+                        print('Something is wrong!!')
+                        failed = True
+                        break
                     else:
-                        pos = line.find(driver)
-                        if (pos <= 0):
-                            print('Something is wrong!!')
-                            break
-                        else:
-                            relative_path = line[pos:]
-                            src_line = src_line = line[:-1] + '*' + relative_path.replace('\\', '/')
-                    idx_file.write(src_line)
+                        relative_path = line[pos:]
+                        src_line = src_line = line[:-1] + '*' + relative_path.replace('\\', '/')
+                idx_file.write(src_line)
         idx_file.write('SRCSRV: end ------------------------------------------------\n')
+    return failed
 
 def run_indexing_tools(pdbfile, driver, tag_version):
     """This invokes the source indexing tools
@@ -83,22 +86,33 @@ def run_indexing_tools(pdbfile, driver, tag_version):
     :param  tag_version: tag version for source indexing
     :outcome: the driver pdb file will be source indexed
     """
-    # run srctool.exe to get all the driver's source files from the PDB file
-    # srctool.exe -r <PDBfile> | find "<driver>" | find /v "dll" | sort > files.txt
-    source_file = 'files.txt'
+    # run srctool.exe to get all driver's source files from the PDB file
+    # srctool.exe -r <PDBfile> | find "<driver>\" | sort > files.txt
+    batch_filename = 'runsrctool.bat'
     index_filename = 'idx.txt'
-
-    srctool_str = 'srctool.exe -r {0} | find \"{1}\" | find /v \"dll\" | sort > {2}'
-    srctool_cmd = srctool_str.format(pdbfile, driver, source_file)
-    subprocess.call(srctool_cmd)
-
+    source_files = 'files.txt'
+    
+    with open(batch_filename, 'w') as batch_file:
+        batch_file.write('@ECHO OFF' + os.linesep)
+        batch_file.write('@CALL srctool -r %1 | find "%2\\" | sort > ' + source_files + '  2>&1' + os.linesep)
+    
+    get_source_filess = batch_filename + ' {0} {1} '
+    get_source_filess_cmd = get_source_filess.format(pdbfile, driver)
+    subprocess.call(get_source_filess_cmd)
+    
     # create an index file using the above inputs for pdbstr.exe
-    write_template(index_filename, tag_version)
-    append_source_files(index_filename, source_file, driver)
+    write_index(index_filename, tag_version)
+    failed = append_source_filess(index_filename, source_files, driver)
+    
+    if failed:
+        exit(1)
 
     # run pdbstr.exe to insert the information into the PDB file
     # pdbstr.exe -w -p:<PDBfile> -i:idx.txt -s:srcsrv
     pdbstr_str = 'pdbstr.exe -w -p:{0} -i:{1} -s:srcsrv'
     pdbstr_cmd = pdbstr_str.format(pdbfile, index_filename)
     subprocess.call(pdbstr_cmd)
-
+    
+    os.remove(batch_filename)
+    os.remove(index_filename)
+    os.remove(source_files)
