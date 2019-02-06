@@ -15,7 +15,7 @@ import subprocess
 from subprocess import Popen, PIPE
 
 def write_index(index_filename, tag_version):
-    """This writes to a temporary index file for later use
+    """This writes to a temporary index file for the pdbstr tool
 
     For example
 
@@ -31,18 +31,18 @@ def write_index(index_filename, tag_version):
     For example
     """
     with open(index_filename, 'w') as f:
-        f.write('SRCSRV: ini ------------------------------------------------\n')
-        f.write('VERSION=1\n')
-        f.write('SRCSRV: variables ------------------------------------------\n')
-        f.write('PATH=%var2%\n')
-        f.write('SRCSRVTRG=%TARG%\%PDBVERSION%\%fnbksl%(%var2%)\n')
-        f.write('SRCURL=https://raw.githubusercontent.com/Microsoft/msphpsql/%SRCVERSION%/source/%PATH%\n')
+        f.write('SRCSRV: ini ------------------------------------------------' + os.linesep)
+        f.write('VERSION=1' + os.linesep)
+        f.write('SRCSRV: variables ------------------------------------------' + os.linesep)
+        f.write('PATH=%var2%' + os.linesep)
+        f.write('SRCSRVTRG=%TARG%\%PDBVERSION%\%fnbksl%(%var2%)' + os.linesep)
+        f.write('SRCURL=https://raw.githubusercontent.com/Microsoft/msphpsql/%SRCVERSION%/source/%PATH%' + os.linesep)
         f.write('SRCSRVCMD=powershell -Command ')
         f.write('\"$r=New-Object -ComObject Msxml2.XMLHTTP; ')
         f.write('$r.open(\'GET\', \'%SRCURL%\', $false); ')
-        f.write('$r.send(); [io.file]::WriteAllBytes(\'%SRCSRVTRG%\', $r.responseBody)\"\n')
-        f.write('SRCVERSION=' + tag_version + '\n')
-        f.write('PDBVERSION=' + tag_version + '\n')
+        f.write('$r.send(); [io.file]::WriteAllBytes(\'%SRCSRVTRG%\', $r.responseBody)\"' + os.linesep)
+        f.write('SRCVERSION=' + tag_version + os.linesep)
+        f.write('PDBVERSION=' + tag_version + os.linesep)
 
 def append_source_filess(index_filename, source_files, driver):
     """This appends the paths to different source files to the temporary index file
@@ -69,18 +69,18 @@ def append_source_filess(index_filename, source_files, driver):
                 else:                   # not a file in the shared folder
                     pos = line.find(driver)
                     if (pos <= 0):
-                        print('Something is wrong!!')
+                        print('ERROR: Expected to find', driver, 'in', line)
                         failed = True
                         break
                     else:
                         relative_path = line[pos:]
-                        src_line = src_line = line[:-1] + '*' + relative_path.replace('\\', '/')
+                        src_line = line[:-1] + '*' + relative_path.replace('\\', '/')
                 idx_file.write(src_line)
         idx_file.write('SRCSRV: end ------------------------------------------------\n')
     return failed
 
 def run_indexing_tools(pdbfile, driver, tag_version):
-    """This invokes the source indexing tools
+    """This invokes the source indexing tools, srctool.exe and pdbstr.exe
 
     :param  pdbfile: the absolute path to the symbol file
     :param  driver: either sqlsrv or pdo_sqlsrv
@@ -106,6 +106,7 @@ def run_indexing_tools(pdbfile, driver, tag_version):
     failed = append_source_filess(index_filename, source_files, driver)
     
     if failed:
+        print("ERROR: Failed to prepare the temporary index file for the pdbstr tool")
         exit(1)
 
     # run pdbstr.exe to insert the information into the PDB file
@@ -128,9 +129,17 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
 
+    srctool_exe = os.path.join(args.TOOLS_PATH, 'srctool.exe')
+    pdbstr_exe = os.path.join(args.TOOLS_PATH, 'pdbstr.exe')
+    if not os.path.exists(srctool_exe) or not os.path.exists(pdbstr_exe):
+        print('ERROR: Missing the required source indexing tools')
+        exit(1)
+
     work_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(args.TOOLS_PATH)
     
+    print('Source indexing begins...')
     run_indexing_tools(args.PDBFILE, args.DRIVER.lower(), args.TAG_VERSION)
+    print('Source indexing done')
     
     os.chdir(work_dir)
