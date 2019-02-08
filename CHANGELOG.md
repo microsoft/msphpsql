@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## 5.6.0 - 2019-02-20
+## 5.6.0 - 2019-02-15
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
