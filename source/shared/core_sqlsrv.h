@@ -1131,6 +1131,7 @@ const char Authentication[] = "Authentication";
 const char Driver[] = "Driver";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
+const char Language[] = "Language";
 const char ColumnEncryption[] = "ColumnEncryption";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
@@ -1163,6 +1164,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_ACCESS_TOKEN,
     SQLSRV_CONN_OPTION_CHARACTERSET,
     SQLSRV_CONN_OPTION_CONN_POOLING,
+    SQLSRV_CONN_OPTION_LANGUAGE,
     SQLSRV_CONN_OPTION_DATABASE,
     SQLSRV_CONN_OPTION_ENCRYPT,
     SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
