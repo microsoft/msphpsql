@@ -1,7 +1,7 @@
 --TEST--
 large types to strings of 1MB size.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 

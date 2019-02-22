@@ -5,7 +5,7 @@
 // 
 // Copyright Microsoft Corporation
 //
-// Microsoft Drivers 5.5 for PHP for SQL Server
+// Microsoft Drivers 5.6 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -19,7 +19,11 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "php_pdo_sqlsrv.h"
+extern "C" {
+  #include "php_pdo_sqlsrv.h"
+}
+
+#include "php_pdo_sqlsrv_int.h"
 
 // Constructor
 conn_string_parser:: conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len, _In_ HashTable* conn_options_ht )

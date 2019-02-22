@@ -2,7 +2,7 @@
 // File: init.cpp
 // Contents: initialization routines for the extension
 //
-// Microsoft Drivers 5.5 for PHP for SQL Server
+// Microsoft Drivers 5.6 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -16,12 +16,18 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "php_sqlsrv.h"
+extern "C" {
+  #include "php_sqlsrv.h"
+}
 
+#include "php_sqlsrv_int.h"
+
+#ifdef COMPILE_DL_SQLSRV
 #ifdef ZTS
 ZEND_TSRMLS_CACHE_DEFINE();
 #endif
 ZEND_GET_MODULE(g_sqlsrv)
+#endif
 
 extern "C" {
 
@@ -685,3 +691,23 @@ PHP_MINFO_FUNCTION(sqlsrv)
     php_info_print_table_end();
     DISPLAY_INI_ENTRIES();
 }
+
+// DllMain for the extension.  
+#ifdef _WIN32
+// Only needed if extension is built shared
+#ifdef COMPILE_DL_SQLSRV
+BOOL WINAPI DllMain( _In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, LPVOID )
+{
+    switch( fdwReason ) {
+        case DLL_PROCESS_ATTACH:
+            // store the module handle for use by client_info and server_info
+            g_sqlsrv_hmodule = hinstDLL;
+            break;
+        default:
+            break;
+    }
+
+    return TRUE;
+}
+#endif
+#endif

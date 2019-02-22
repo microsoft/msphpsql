@@ -1,6 +1,3 @@
-USE $(dbname) 
-GO
-
 IF EXISTS (SELECT * FROM sys.objects 
 WHERE object_id = OBJECT_ID(N'[dbo].[168256]') AND type in (N'U'))
 

@@ -336,7 +336,6 @@ class BuildUtil(object):
         is complete.
         """
         work_dir = os.path.dirname(os.path.realpath(__file__))   
-
         # First, update the driver source file contents
         source_dir = os.path.join(work_dir, 'Source')
         if self.driver == 'all':
@@ -402,6 +401,7 @@ class BuildUtil(object):
         
         # Final step, copy the binaries to the right place
         ext_dir = self.copy_binaries(sdk_dir, copy_to_ext)
+        
         return ext_dir
 
     def rename_binary(self, path, driver):
@@ -454,7 +454,6 @@ class BuildUtil(object):
         shutil.copy(os.path.join(phpsrc, 'php.ini-production'), php_ini_file)
         
         # Copy run-tests.php as well
-        phpsrc = self.phpsrc_root(sdk_dir)
         shutil.copy(os.path.join(phpsrc, 'run-tests.php'), build_dir)
         
         print('Copying the binaries from', build_dir)

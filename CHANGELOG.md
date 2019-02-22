@@ -3,6 +3,52 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 5.6.0 - 2019-02-15
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Added support for PHP 7.3
+- Added support for Linux SUSE 15, Ubuntu 18.10 and mac OS Mojave
+- Feature Request [#415](https://github.com/Microsoft/msphpsql/pull/886) - new options at connection and statement levels for both drivers for formatting decimal values in the fetched results
+- Added support for Azure AD Access Token (in Linux / macOS this requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [unixODBC](http://www.unixodbc.org/) 2.3.6+)
+- Added support for Authentication with Azure Active Directory using Managed Identity for Azure Resources (requires [MS ODBC Driver 17.3+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server))
+- Feature Request [#842](https://github.com/Microsoft/msphpsql/pull/842) - new PDO_STMT_OPTION_FETCHES_DATETIME_TYPE flag for pdo_sqlsrv to return datetime as objects
+- Feature Request [#844](https://github.com/Microsoft/msphpsql/pull/844) - add ReturnDatesAsStrings option to statement level for sqlsrv
+
+### Removed
+- Dropped support for Ubuntu 17.10
+- Dropped support for PHP 7.0 - [Version 5.3](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver?view=sql-server-2017) is the last to support PHP 7.0.
+
+### Fixed
+- Issue [#434](https://github.com/Microsoft/msphpsql/issues/434) - To avoid possible crashes, before freeing stmt in the destructor check if its dbh driver data is NULL
+- Pull Request [#833](https://github.com/Microsoft/msphpsql/pull/833) - Streamlined the error handling to remove a potential cause of crash
+- Pull Request [#836](https://github.com/Microsoft/msphpsql/pull/836) - Modified the config files to enable Spectre Mitigations (use /Qspectre switch) for PHP 7.2 (see related Request [#878](https://github.com/Microsoft/msphpsql/pull/878))
+- Pull Request [#854](https://github.com/Microsoft/msphpsql/pull/854) - Clear Azure Key Vault data after connection attributes are successfully set or when exception is thrown
+- Pull Request [#855](https://github.com/Microsoft/msphpsql/pull/855) - Improved performance by saving meta data before fetching and skipping unnecessary conversions for numeric data
+- Pull Request [#865](https://github.com/Microsoft/msphpsql/pull/865) - Corrected the way SQLPutData and SQLParamData are used when sending stream data to the server
+- Pull Request [#878](https://github.com/Microsoft/msphpsql/pull/878) - Modified the config files to enable Spectre Mitigations for PHP 7.1 (see related Request [#836](https://github.com/Microsoft/msphpsql/pull/836))
+- Pull Request [#891](https://github.com/Microsoft/msphpsql/pull/891) - Improved performance of Unicode conversions
+- Pull Request [#892](https://github.com/Microsoft/msphpsql/pull/892) - Removed warning messages while compiling extensions
+- Pull Request [#904](https://github.com/Microsoft/msphpsql/pull/904) - Enabled compiling extensions statically into PHP
+- Pull Request [#907](https://github.com/Microsoft/msphpsql/pull/907) - Initialized output param buffer when allocating extra space
+- Pull Request [#919](https://github.com/Microsoft/msphpsql/pull/919) - Initialized a boolean variable before passing it by reference into a function that will modify its value
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+- With ColumnEncryption enabled, calling stored procedures with XML parameters does not work (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
+
 ## 5.5.0-preview - 2018-12-07
 Updated PECL release packages. Here is the list of updates:
 
