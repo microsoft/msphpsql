@@ -4,7 +4,7 @@ dnl
 dnl  Contents: the code that will go into the configure script, indicating options, 
 dnl  external libraries and includes, and what source files are to be compiled.
 dnl 
-dnl  Microsoft Drivers 5.5 for PHP for SQL Server
+dnl  Microsoft Drivers 5.6 for PHP for SQL Server
 dnl  Copyright(c) Microsoft Corporation
 dnl  All rights reserved.
 dnl  MIT License
@@ -40,7 +40,10 @@ if test "$PHP_SQLSRV" != "no"; then
            shared/StringFunctions.cpp \
            "
     AC_MSG_CHECKING([for SQLSRV headers])
-    if test -f $srcdir/ext/sqlsrv/shared/core_sqlsrv.h; then
+    if test -f $srcdir/ext/pdo_sqlsrv/shared/core_sqlsrv.h && test "$PHP_PDO_SQLSRV" != "no" && test "$PHP_PDO_SQLSRV_SHARED" == "no"; then
+      pdo_sqlsrv_inc_path=$srcdir/ext/pdo_sqlsrv/shared/
+      shared_src_class=""
+    elif test -f $srcdir/ext/sqlsrv/shared/core_sqlsrv.h; then
         sqlsrv_inc_path=$srcdir/ext/sqlsrv/shared/
     elif  test -f $srcdir/shared/core_sqlsrv.h; then
         sqlsrv_inc_path=$srcdir/shared/

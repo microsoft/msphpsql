@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDO object for PDO_SQLSRV
 //
-// Microsoft Drivers 5.5 for PHP for SQL Server
+// Microsoft Drivers 5.6 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -17,7 +17,11 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
-#include "php_pdo_sqlsrv.h"
+extern "C" {
+  #include "php_pdo_sqlsrv.h"
+}
+
+#include "php_pdo_sqlsrv_int.h"
 
 #include <string>
 #include <sstream>

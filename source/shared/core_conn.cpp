@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use connection handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 5.5 for PHP for SQL Server
+// Microsoft Drivers 5.6 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -730,7 +730,7 @@ bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t 
     if (value_len <= 0)
         return false;
 
-    if( ! stricmp( value, AzureADOptions::AZURE_AUTH_SQL_PASSWORD ) || ! stricmp( value, AzureADOptions::AZURE_AUTH_AD_PASSWORD ) ) {
+    if (!stricmp(value, AzureADOptions::AZURE_AUTH_SQL_PASSWORD) || !stricmp(value, AzureADOptions::AZURE_AUTH_AD_PASSWORD) || !stricmp(value, AzureADOptions::AZURE_AUTH_AD_MSI)) {
         return true;
     }
 
@@ -769,16 +769,18 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
     bool mars_mentioned = false;
     connection_option const* conn_opt;
     bool access_token_used = false;
+    bool authentication_option_used = zend_hash_index_exists(options, SQLSRV_CONN_OPTION_AUTHENTICATION);
 
     try {
-        // First of all, check if access token is specified. If so, check if UID, PWD, Authentication exist
+        // Since connection options access token and authentication cannot coexist, check if both of them are used.
+        // If access token is specified, check UID and PWD as well. 
         // No need to check the keyword Trusted_Connection because it is not among the acceptable options for SQLSRV drivers
         if (zend_hash_index_exists(options, SQLSRV_CONN_OPTION_ACCESS_TOKEN)) {
             bool invalidOptions = false;
 
             // UID and PWD have to be NULLs... throw an exception as long as the user has specified any of them in the connection string,
             // even if they may be empty strings. Likewise if the keyword Authentication exists
-            if (uid != NULL || pwd != NULL || zend_hash_index_exists(options, SQLSRV_CONN_OPTION_AUTHENTICATION)) {
+            if (uid != NULL || pwd != NULL || authentication_option_used) {
                 invalidOptions = true;
             }
 
@@ -789,11 +791,44 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
             access_token_used = true;
         }
 
+        // Check if Authentication is ActiveDirectoryMSI 
+        // https://docs.microsoft.com/en-ca/azure/active-directory/managed-identities-azure-resources/overview
+        bool activeDirectoryMSI = false;
+        if (authentication_option_used) {
+            zval* auth_option = NULL;
+            auth_option = zend_hash_index_find(options, SQLSRV_CONN_OPTION_AUTHENTICATION);
+
+            char* option = Z_STRVAL_P(auth_option);
+
+            if (!stricmp(option, AzureADOptions::AZURE_AUTH_AD_MSI)) {
+                activeDirectoryMSI = true;
+
+                // There are two types of managed identities: 
+                // (1) A system-assigned managed identity: UID must be NULL
+                // (2) A user-assigned managed identity: UID defined but must not be an empty string
+                // In both cases, PWD must be NULL
+
+                bool invalid = false;
+                if (pwd != NULL) {
+                    invalid = true;
+                } else {
+                    if (uid != NULL && strnlen_s(uid) == 0) {
+                        invalid = true;
+                    }
+                }
+
+                CHECK_CUSTOM_ERROR(invalid, conn, SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL ) {
+                    throw core::CoreException();
+                }
+            }
+        }
+       
         // Add the server name
         common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
-       
-        // if uid is not present then we use trusted connection -- but not when access token is used, because they are incompatible
-        if (!access_token_used) {
+
+        // If uid is not present then we use trusted connection -- but not when access token or ActiveDirectoryMSI is used, 
+        // because they are incompatible
+        if (!access_token_used && !activeDirectoryMSI) {
             if (uid == NULL || strnlen_s(uid) == 0) {
                 connection_string += CONNECTION_OPTION_NO_CREDENTIALS;  //  "Trusted_Connection={Yes};"
             }

@@ -6,6 +6,7 @@ Verifies the functionality of PDOStatement nextRowset
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 

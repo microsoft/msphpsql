@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use statement handles
 //
-// Microsoft Drivers 5.5 for PHP for SQL Server
+// Microsoft Drivers 5.6 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -18,7 +18,12 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 // *** header files ***
-#include "php_sqlsrv.h"
+extern "C" {
+  #include "php_sqlsrv.h"
+}
+
+#include "php_sqlsrv_int.h"
+
 #ifdef _WIN32
 #include <sal.h>
 #endif // _WIN32

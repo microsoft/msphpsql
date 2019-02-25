@@ -1,7 +1,7 @@
 --TEST--
 Fix for 168256.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure('WarningsReturnAsErrors', 0);

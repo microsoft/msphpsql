@@ -12,30 +12,27 @@ require_once("MsSetup.inc");
 //
 $connectionInfo = "Database = $databaseName; Authentication = SqlPassword;  TrustServerCertificate = true;";
 
-try
-{
-    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo", $uid, $pwd );
+try {
+    $conn = new PDO("sqlsrv:server = $server ; $connectionInfo", $uid, $pwd);
     echo "Connected successfully with Authentication=SqlPassword.\n";
-}
-catch( PDOException $e )
-{
+} catch (PDOException $e) {
     echo "Could not connect with Authentication=SqlPassword.\n";
-    print_r( $e->getMessage() );
+    print_r($e->getMessage());
     echo "\n";
 }
 
-$stmt = $conn->query( "SELECT count(*) FROM cd_info" );
-if ( $stmt === false )
-{
+// For details, https://docs.microsoft.com/sql/t-sql/functions/serverproperty-transact-sql
+$conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
+$stmt = $conn->query("SELECT SERVERPROPERTY('EngineEdition')");
+if ($stmt === false) {
     echo "Query failed.\n";
-}
-else
-{
-    $result = $stmt->fetch();
-    var_dump( $result );
+} else {
+    $result = $stmt->fetch(PDO::FETCH_NUM);
+    $edition = $result[0];
+    var_dump($edition);
 }
 
-$conn = null;
+unset($conn);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Test Azure AD with integrated authentication. This should fail because
@@ -43,16 +40,13 @@ $conn = null;
 //
 $connectionInfo = "Authentication = ActiveDirectoryIntegrated; TrustServerCertificate = true;";
 
-try
-{
-    $conn = new PDO( "sqlsrv:server = $server ; $connectionInfo" );
+try {
+    $conn = new PDO("sqlsrv:server = $server ; $connectionInfo");
     echo "Connected successfully with Authentication=ActiveDirectoryIntegrated.\n";
-    $conn = null;
-}
-catch( PDOException $e )
-{
+    unset($conn);
+} catch (PDOException $e) {
     echo "Could not connect with Authentication=ActiveDirectoryIntegrated.\n";
-    print_r( $e->getMessage() );
+    print_r($e->getMessage());
     echo "\n";
 }
 
@@ -65,35 +59,24 @@ $azureDatabase = $adDatabase;
 $azureUsername = $adUser;
 $azurePassword = $adPassword;
 
-if ($azureServer != 'TARGET_AD_SERVER')
-{
+if ($azureServer != 'TARGET_AD_SERVER') {
     $connectionInfo = "Authentication = ActiveDirectoryPassword; TrustServerCertificate = false";
 
-    try
-    {
-        $conn = new PDO( "sqlsrv:server = $azureServer ; $connectionInfo", $azureUsername, $azurePassword );
+    try {
+        $conn = new PDO("sqlsrv:server = $azureServer ; $connectionInfo", $azureUsername, $azurePassword);
         echo "Connected successfully with Authentication=ActiveDirectoryPassword.\n";
-    }
-    catch( PDOException $e )
-    {
+    } catch (PDOException $e) {
         echo "Could not connect with ActiveDirectoryPassword.\n";
-        print_r( $e->getMessage() );
+        print_r($e->getMessage());
         echo "\n";
     }
-}
-else
-{
+} else {
     echo "Not testing with Authentication=ActiveDirectoryPassword.\n";
 }
 ?>
 --EXPECTF--
 Connected successfully with Authentication=SqlPassword.
-array(2) {
-  [""]=>
-  string(1) "7"
-  [0]=>
-  string(1) "7"
-}
+string(1) "%d"
 Could not connect with Authentication=ActiveDirectoryIntegrated.
-SQLSTATE[IMSSP]: Invalid option for the Authentication keyword. Only SqlPassword or ActiveDirectoryPassword is supported.
+SQLSTATE[IMSSP]: Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, or ActiveDirectoryMsi is supported.
 %s with Authentication=ActiveDirectoryPassword.

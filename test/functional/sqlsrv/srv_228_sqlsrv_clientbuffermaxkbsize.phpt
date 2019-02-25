@@ -1,11 +1,27 @@
 --TEST--
-sqlsrv_has_rows() using a forward and scrollable cursor
+GitHub issue #228 - how ClientBufferMaxKBSize affects sqlsrv_has_rows and sqlsrv_fetch_array
+--DESCRIPTION--
+Based on the example in GitHub issue 228, configuring ClientBufferMaxKBSize with sqlsrv_configure.
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
 require_once('MsCommon.inc');
+
+function testErrors($conn)
+{
+    // set client buffer size to 0KB returns false
+    $ret = sqlsrv_configure('ClientBufferMaxKBSize', 0);
+    if (!$ret) {
+        echo sqlsrv_errors()[0]['message'] . "\n";
+    }
+
+    $ret = sqlsrv_configure('ClientBufferMaxKBSize', -1.9);
+    if (!$ret) {
+        echo sqlsrv_errors()[0]['message'] . "\n";
+    }
+}
 
 function fetchData($conn, $table, $size)
 {
@@ -16,10 +32,13 @@ function fetchData($conn, $table, $size)
     echo("ClientBufferMaxKBSize is $attr\n");
 
     sqlsrv_execute($stmt);
+    if ($size < 2) {
+        echo sqlsrv_errors()[0]['message'] . "\n";
+    }
+    
     $rows = sqlsrv_has_rows($stmt);
     var_dump($rows);
 
-    sqlsrv_execute($stmt);
     $numRowsFetched = 0;
     while ($row = sqlsrv_fetch_array($stmt)) {
         $numRowsFetched++;
@@ -40,18 +59,17 @@ $stmt = AE\createTable($conn, $tableName1, $columns);
 
 unset($columns);
 $columns = array(new AE\ColumnMeta('int', 'c1_int'),
-                 new AE\ColumnMeta('varchar(1036)', 'c2_varchar_1036'));
+                 new AE\ColumnMeta('varchar(1400)', 'c2_varchar_1400'));
 $stmt = AE\createTable($conn, $tableName2, $columns);
 
-// insert > 1KB into c2_varchar_max & c2_varchar_1036 (1036 characters).
-$longString = 'This is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a testThis is a test';
+// insert > 1KB into c2_varchar_max & c2_varchar_1400 (1400 characters).
+$longString = str_repeat('This is a test', 100);
 
 $stmt = AE\insertRow($conn, $tableName1, array('c1_int' => 1, 'c2_varchar_max' => $longString));
-$stmt = AE\insertRow($conn, $tableName2, array('c1_int' => 1, 'c2_varchar_1036' => $longString));
+$stmt = AE\insertRow($conn, $tableName2, array('c1_int' => 1, 'c2_varchar_1400' => $longString));
+sqlsrv_free_stmt($stmt);
 
-// set client buffer size to 0KB returns false
-$ret = sqlsrv_configure('ClientBufferMaxKBSize', 0);
-var_dump($ret);
+testErrors($conn);
 
 // set client buffer size to 1KB
 $size = 1;
@@ -62,19 +80,24 @@ $size = 2;
 fetchData($conn, $tableName1, $size); // this should return 1 row.
 fetchData($conn, $tableName2, $size); // this should return 1 row.
 
-sqlsrv_free_stmt($stmt);
+dropTable($conn, $tableName1);
+dropTable($conn, $tableName2);
+
 sqlsrv_close($conn);
 print "Done"
 ?>
 
 --EXPECT--
-bool(false)
+Setting for ClientBufferMaxKBSize was non-int or non-positive.
+Setting for ClientBufferMaxKBSize was non-int or non-positive.
 bool(true)
 ClientBufferMaxKBSize is 1
+Memory limit of 1 KB exceeded for buffered query
 bool(false)
 Number of rows fetched: 0
 bool(true)
 ClientBufferMaxKBSize is 1
+Memory limit of 1 KB exceeded for buffered query
 bool(false)
 Number of rows fetched: 0
 bool(true)
