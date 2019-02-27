@@ -1,7 +1,7 @@
 --TEST--
 GitHub issue 937 - getting metadata will not fail after an UPDATE / DELETE statement
 --DESCRIPTION--
-Verifies that getColumnMeta will not fail after processing an UPDATE / DELETE query that returns no fields.
+Verifies that getColumnMeta will not fail after processing an UPDATE / DELETE query that returns no fields. Instead, it should simply return FALSE because no result set exists.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -13,6 +13,14 @@ require_once("MsCommon_mid-refactor.inc");
 
 $tableName = 'pdoTestTable_938';
 $procName = 'pdoTestProc_938';
+
+function checkMetaData($stmt)
+{
+    $metadata = $stmt->getColumnMeta(0);
+    if ($metadata !== FALSE) {
+        echo "Expects FALSE because no result set exists!\n";
+    }
+}
 
 try {
     $conn = connect();
@@ -32,6 +40,7 @@ try {
     $stmt->execute();
     $numCol = $metadata = $stmt->columnCount();
     echo "Number of columns after UPDATE: $numCol\n";
+    checkMetaData($stmt);
 
     $tsql = "SELECT * FROM $tableName";
     $stmt = $conn->query($tsql);
@@ -50,17 +59,17 @@ try {
     $stmt->bindParam(2, $value, PDO::PARAM_STR, 10);
     $stmt->execute();
     $numCol = $metadata = $stmt->columnCount();
-    echo "After calling stored procedure\n";
-    echo "Number of columns: $numCol\n";
+    echo "Number of columns after PROCEDURE: $numCol\n";
     echo "Value returned: $value\n";
-
+    checkMetaData($stmt);
+    
     $query = "DELETE FROM $tableName WHERE name = 'updated'";
     $stmt = $conn->query($query);  
     $numCol = $metadata = $stmt->columnCount();
     echo "Number of columns after DELETE: $numCol\n";
-    
+    checkMetaData($stmt);
 } catch (PDOException $e) {
-    var_dump($e);
+    echo $e->getMessage() . PHP_EOL;
 }
 
 dropTable($conn, $tableName);
@@ -108,8 +117,6 @@ array(8) {
   ["precision"]=>
   int(0)
 }
-After calling stored procedure
-Number of columns: 0
+Number of columns after PROCEDURE: 0
 Value returned: updated
 Number of columns after DELETE: 0
-
