@@ -1807,7 +1807,7 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
         throw;
     }
 
-    SQLSRV_ASSERT(num_cols > 0 && stmt->current_meta_data.size() == num_cols, "Meta data vector out of sync" );
+    SQLSRV_ASSERT(stmt->current_meta_data.size() == num_cols, "Meta data vector out of sync" );
 
     return num_cols;
 }
