@@ -259,5 +259,4 @@ array(7) {
 
 Warning: PDOStatement::getColumnMeta(): SQLSTATE[42P10]: Invalid column reference: column number must be non-negative in %s on line %x
 bool(false)
-
-Fatal error: pdo_sqlsrv_stmt_get_col_meta: invalid column number. in %s on line %x
+bool(false)
