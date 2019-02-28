@@ -1029,19 +1029,27 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
 
     try {
         SQLSRV_ASSERT( stmt != NULL, "pdo_sqlsrv_stmt_get_col_meta: pdo_stmt object was null" );
-        SQLSRV_ASSERT( stmt->columns != NULL, "pdo_sqlsrv_stmt_get_col_meta: columns are not available." );
         SQLSRV_ASSERT( Z_TYPE_P( return_value ) == IS_NULL, "Metadata already has value.  Must be NULL." );
-
-        sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
 
         sqlsrv_stmt* driver_stmt = static_cast<sqlsrv_stmt*>( stmt->driver_data );
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_get_col_meta: stmt->driver_data was null");
 
-        SQLSRV_ASSERT( colno >= 0 && colno < stmt->column_count, "pdo_sqlsrv_stmt_get_col_meta: invalid column number." );
+        // Based on PDOStatement::getColumnMeta API, this should return FALSE 
+        // if the requested column does not exist in the result set, or if 
+        // no result set exists. Thus, do not use SQLSRV_ASSERT, which causes 
+        // the script to fail right away. Instead, log this warning if logging
+        // is enabled
+        if (colno < 0 || colno >= stmt->column_count || stmt->columns == NULL) {
+            LOG( SEV_WARNING, "Invalid column number %1!d!", colno );
+            return FAILURE;
+        }
 
-        core_meta_data = core_sqlsrv_field_metadata( driver_stmt, (SQLSMALLINT) colno TSRMLS_CC );
         // initialize the array to nothing, as PDO requires us to create it
         core::sqlsrv_array_init( *driver_stmt, return_value TSRMLS_CC );
+
+        sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
+
+        core_meta_data = core_sqlsrv_field_metadata( driver_stmt, (SQLSMALLINT) colno TSRMLS_CC );
 
         // add the following fields: flags, native_type, driver:decl_type, table
         add_assoc_long( return_value, "flags", 0 );
