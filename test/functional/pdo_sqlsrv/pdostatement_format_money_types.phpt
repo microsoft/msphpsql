@@ -64,17 +64,9 @@ function testFloatTypes($conn, $numDigits)
 
         trace("testFloatTypes: $floatVal1, $floatVal\n");
 
-        // Check if the numbers of decimal digits are the same
-        // It is highly unlikely but not impossible
-        $numbers = explode('.', $floatStr);
-        $len = strlen($numbers[1]);
-        if ($len == $numDigits && $floatVal1 != $floatVal) {
-            echo "Expected $floatVal but $floatVal1 returned. \n";
-        } else {
-            $diff = abs($floatVal1 - $floatVal) / $floatVal;
-            if ($diff > $epsilon) {
-                echo "$diff: Expected $floatVal but $floatVal1 returned. \n";
-            }
+        $diff = abs($floatVal1 - $floatVal) / $floatVal;
+        if ($diff > $epsilon) {
+            echo "$diff: Expected $floatVal but $floatVal1 returned. \n";
         }
     }
 }

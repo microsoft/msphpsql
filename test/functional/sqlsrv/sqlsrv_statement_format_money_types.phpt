@@ -63,20 +63,10 @@ function testFloatTypes($conn)
         for ($i = 0; $i < count($values); $i++) {
             $floatStr = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
             $floatVal = floatval($floatStr);
-
-            // Check if the numbers of decimal digits are the same
-            // It is highly unlikely but not impossible
-            $numbers = explode('.', $floatStr);
-            $len = strlen($numbers[1]);
-            if ($len == $numDigits && $floatVal != $floats[$i]) {
-                echo "Expected $floats[$i] but returned ";
+            $diff = abs($floatVal - $floats[$i]) / $floats[$i];
+            if ($diff > $epsilon) {
+                echo "$diff: Expected $floats[$i] but returned ";
                 var_dump($floatVal);
-            } else {
-                $diff = abs($floatVal - $floats[$i]) / $floats[$i];
-                if ($diff > $epsilon) {
-                    echo "$diff: Expected $floats[$i] but returned ";
-                    var_dump($floatVal);
-                }
             }
         }
     } else {
