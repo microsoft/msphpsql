@@ -226,6 +226,7 @@ jobs:
       Select-String $(host) .\MsSetup.inc
       Select-String $(pdo_sqlsrv_db) .\MsSetup.inc
     displayName: 'Update connection credentials'
+    condition: false
 
   - powershell: |
       $client = New-Object Net.WebClient
@@ -234,20 +235,24 @@ jobs:
       $client.DownloadFile('https://download.microsoft.com/download/4/C/C/4CC1A229-3C56-4A7F-A3BA-F903C73E5895/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
       dir *.msi
     displayName: 'Download ODBC msi and sql tools msi'
+    condition: false
 
   - script: |
       msiexec /i "msodbcsql_17.3.1.1_x64.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
       reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
       dir %WINDIR%\System32\msodbcsql*.dll
     displayName: 'Install ODBC driver'
+    condition: false
 
   # TOFIX: Install ODBC 13.1 because of SQLCMD 15 installation bug -- this step should be removed later
   - script: msiexec /i "msodbcsql_13.1.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
+    condition: false
 
   # FOR SOME REASON the set up did not set the PATH 
   - script: |
       msiexec /i "MsSqlCmdLnUtils.msi" /qn IACCEPTMSSQLCMDLNUTILSLICENSETERMS=YES
     displayName: 'Install SQL command line utilities version 15'
+    condition: false
 
   - powershell: |
       $client = New-Object Net.WebClient
