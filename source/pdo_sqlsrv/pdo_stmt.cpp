@@ -1020,7 +1020,7 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
 // colno        - The index of the field for which to return the metadata.
 // return_value - zval* consisting of the metadata.
 // Return:
-// 0 for failure, 1 for success.
+// FAILURE for failure, SUCCESS for success.
 int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno, _Inout_ zval *return_value TSRMLS_DC)
 {
     PDO_RESET_STMT_ERROR;
@@ -1096,14 +1096,14 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
     }
     catch( core::CoreException& ) {
 
-        return 0;
+        return FAILURE;
     }
     catch(...) {
 
         DIE( "pdo_sqlsrv_stmt_get_col_meta: Unknown exception occurred while retrieving metadata." );
     }
     
-    return 1;
+    return SUCCESS;
 }
 
 
