@@ -17,16 +17,27 @@ function verifyFetchError()
     }
 }
 
-require_once('MsCommon.inc');
+require_once('MsSetup.inc');
 
-$conn = AE\connect();
+$connectionOptions = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, "ColumnEncryption" => "Enabled");
+$conn = sqlsrv_connect($server, $connectionOptions);
+if ($conn === false) {
+    fatalError("Failed to connect to $server.");
+}
 
 $tableName = 'srvTestTable_569';
-$colMetaArr = array(new AE\ColumnMeta('varchar(max)', 'col1'));
-AE\createTable($conn, $tableName, $colMetaArr);
+
+dropTable($conn, $tableName);
+
+$tsql = "CREATE TABLE $tableName ([c1] varchar(max) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (ENCRYPTION_TYPE = deterministic, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = AEColumnKey))";
+$stmt = sqlsrv_query($conn, $tsql);
+if (!$stmt) {
+    fatalError("Failed to create $tableName");
+}
 
 $input = 'some very large string';
-$stmt = AE\insertRow($conn, $tableName, array('col1' => $input));
+$stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (c1) VALUES (?)", array($input));
+sqlsrv_execute($stmt);
 
 $tsql = "SELECT * FROM $tableName";
 $stmt = sqlsrv_query($conn, $tsql);

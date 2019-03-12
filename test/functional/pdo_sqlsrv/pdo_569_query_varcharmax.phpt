@@ -15,17 +15,20 @@ try {
     $connectionInfo = "ColumnEncryption = Enabled;";
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $conn->setAttribute(PDO::SQLSRV_ATTR_DIRECT_QUERY, true);
 
     $tableName = 'pdoTestTable_569';
-    $colMetaArr = array(new ColumnMeta('varchar(max)', 'col1'));
-    createTable($conn, $tableName, $colMetaArr);
+    dropTable($conn, $tableName);
+
+    $tsql = "CREATE TABLE $tableName ([c1] varchar(max) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (ENCRYPTION_TYPE = deterministic, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = AEColumnKey))";
+    $conn->exec($tsql);
 
     $input = 'some very large string';
-    $stmt = insertRow($conn, $tableName, array('col1' => $input));
-
-    $tsql = "SELECT * FROM $tableName";
+    $tsql = "INSERT INTO $tableName (c1) VALUES (?)";
+    $stmt = $conn->prepare($tsql);
+    $param = array($input);
+    $stmt->execute($param);
     
+    $tsql = "SELECT * FROM $tableName";
     try {
         $stmt = $conn->prepare($tsql);
         $stmt->execute();
@@ -42,7 +45,7 @@ try {
 
     $tsql2 = "DELETE FROM $tableName";
     $rows = $conn->exec($tsql2);
-    if ($rows != 1) {
+    if ($rows !== 1) {
         echo 'Expected 1 row affected but got: ';
         var_dump($rows);
     }
@@ -57,7 +60,7 @@ try {
     }
 
     $result = $stmt->fetch(PDO::FETCH_NUM);
-    if ($result) {
+    if ($result !== false) {
         echo 'Expected bool(false) when fetching an empty table but got: ';
         var_dump($result);
     }
@@ -67,7 +70,7 @@ try {
     $stmt->execute();
 
     $result = $stmt->fetch();
-    if ($result) {
+    if ($result !== false) {
         echo 'Expected bool(false) when fetching an empty table but got: ';
         var_dump($result);
     }
