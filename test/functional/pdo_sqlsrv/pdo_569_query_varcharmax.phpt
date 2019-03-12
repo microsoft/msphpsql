@@ -19,7 +19,11 @@ try {
     $tableName = 'pdoTestTable_569';
     dropTable($conn, $tableName);
 
-    $tsql = "CREATE TABLE $tableName ([c1] varchar(max) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (ENCRYPTION_TYPE = deterministic, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = AEColumnKey))";
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        $tsql = "CREATE TABLE $tableName ([c1] varchar(max) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (ENCRYPTION_TYPE = deterministic, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = AEColumnKey))";
+    } else {
+        $tsql = "CREATE TABLE $tableName ([c1] varchar(max))";
+    }
     $conn->exec($tsql);
 
     $input = 'some very large string';
