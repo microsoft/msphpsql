@@ -17,7 +17,7 @@ function verifyFetchError()
     }
 }
 
-require_once('MsSetup.inc');
+require_once('MsCommon.inc');
 
 $connectionOptions = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, "ColumnEncryption" => "Enabled");
 $conn = sqlsrv_connect($server, $connectionOptions);
