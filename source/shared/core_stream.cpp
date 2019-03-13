@@ -89,7 +89,9 @@ size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count)
                 break;
         }
 
-        SQLRETURN r = SQLGetData( ss->stmt->handle(), ss->field_index + 1, c_type, get_data_buffer, count /*BufferLength*/, &read );
+        // Warnings will be handled below
+        // SQLRETURN r = SQLGetData( ss->stmt->handle(), ss->field_index + 1, c_type, get_data_buffer, count /*BufferLength*/, &read );
+        SQLRETURN r = ss->stmt->current_results->get_data(ss->field_index + 1, c_type, get_data_buffer, count /*BufferLength*/, &read, false /*handle_warning*/ TSRMLS_CC);
 
         CHECK_SQL_ERROR( r, ss->stmt ) {
             stream->eof = 1; 
