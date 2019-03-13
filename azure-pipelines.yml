@@ -83,7 +83,7 @@ jobs:
   - script: |
       echo install ODBC and dependencies
       sudo apt-get purge unixodbc
-      sudo sudo apt autoremove
+      sudo apt autoremove
       sudo curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
       curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > mssql-release.list
       sudo mv mssql-release.list /etc/apt/sources.list.d/
@@ -111,7 +111,7 @@ jobs:
       export LANG='en_US.UTF-8' 
       export LANGUAGE='en_US:en' 
       export LC_ALL='en_US.UTF-8'
-    displayName: 'Add locale iso-8859-1'
+    displayName: 'Generate locales for testing'
 
   - script: |
       echo setting env variables 
