@@ -13,14 +13,16 @@ Thank you for taking the time to participate in our last survey. You can continu
 <a href="https://aka.ms/mssqlphpsurvey"><img style="float: right;"  height="67" width="156" src="https://sqlchoice.blob.core.windows.net/sqlchoice/static/images/survey.png"></a>
 
 ### Status of Most Recent Builds
-| AppVeyor (Windows)       | Travis CI (Linux)        | Coverage (Windows)                    | Coverage (Linux)                          |
-|--------------------------|--------------------------|---------------------------------------|-------------------------------------------|
-| [![av-image][]][av-site] | [![tv-image][]][tv-site] | [![Coverage Codecov][]][codecov-site] | [![Coverage Coveralls][]][coveralls-site] |
+Azure Pipelines       | AppVeyor (Windows)       | Travis CI (Linux)        | Coverage (Windows)                    | Coverage (Linux)                          |
+|---------------------|--------------------------|--------------------------|---------------------------------------|-------------------------------------------|
+| [![az-image][]][az-site] | [![av-image][]][av-site] | [![tv-image][]][tv-site] | [![Coverage Codecov][]][codecov-site] | [![Coverage Coveralls][]][coveralls-site] |
 
 [av-image]: https://ci.appveyor.com/api/projects/status/vo4rfei6lxlamrnc?svg=true
 [av-site]: https://ci.appveyor.com/project/msphpsql/msphpsql/branch/dev
 [tv-image]:  https://travis-ci.org/Microsoft/msphpsql.svg?branch=dev
 [tv-site]: https://travis-ci.org/Microsoft/msphpsql/
+[az-site]: https://dev.azure.com/sqlclientdrivers-ci/msphpsql/_build/latest?definitionId=6&branchName=dev
+[az-image]: https://dev.azure.com/sqlclientdrivers-ci/msphpsql/_apis/build/status/Microsoft.msphpsql?branchName=dev
 [Coverage Coveralls]: https://coveralls.io/repos/github/Microsoft/msphpsql/badge.svg?branch=dev
 [coveralls-site]: https://coveralls.io/github/Microsoft/msphpsql?branch=dev
 [Coverage Codecov]: https://codecov.io/gh/microsoft/msphpsql/branch/dev/graph/badge.svg
