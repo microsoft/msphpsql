@@ -48,7 +48,7 @@ class my_stream {
     {
         // For the purpose of this test only support SEEK_SET to $offset 0
         if ($whence == SEEK_SET && $offset == 0) {
-            $this->total_read = 1; //$offset;
+            $this->total_read = $offset;
             return true;
         } 
         return false;
@@ -126,7 +126,7 @@ if( $result === false ) {
 }
 
 // Number of packets sent should be $limit / 8192 (rounded up)
-// Length of the varbinary in the table should be $packetsSent * 8192 + 1 
+// Length of the varbinary = $packetsSent * 8192 + 1 (HEX 30 appended at the end)
 $packetsSent = ceil($limit / 8192);
 $length = $packetsSent * 8192 + 1;
 if ($packets != $packetsSent) {
@@ -143,7 +143,7 @@ while( $result = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC )) {
     }
 }
 
-// sqlsrv_query( $conn, "DROP TABLE test_lob" );
+sqlsrv_query( $conn, "DROP TABLE test_lob" );
 
 sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );  
