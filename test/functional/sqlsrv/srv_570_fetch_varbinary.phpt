@@ -102,9 +102,6 @@ function runTest($conn, $columnType, $path)
     }
     do {
         $read = sqlsrv_send_stream_data($stmt);
-        if ($read === false) {
-            fatalError("Something went wrong trying to insert");
-        }
     } while ($read);
     sqlsrv_free_stmt($stmt);
 
