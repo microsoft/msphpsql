@@ -27,11 +27,11 @@
 // Increase Patch for backward compatible fixes.
 #define SQLVERSION_MAJOR 5
 #define SQLVERSION_MINOR 6
-#define SQLVERSION_PATCH 0
+#define SQLVERSION_PATCH 1
 #define SQLVERSION_BUILD 0
 
 // For previews, set this constant to 1. Otherwise, set it to 0
-#define PREVIEW 0
+#define PREVIEW 1
 #define SEMVER_PRERELEASE
 
 // Semantic versioning build metadata, build meta data is not counted in precedence order.
