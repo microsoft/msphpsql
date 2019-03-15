@@ -27,7 +27,7 @@ if( PHP_SQLSRV != "no" ) {
     if (CHECK_LIB("odbc32.lib", "sqlsrv") && CHECK_LIB("odbccp32.lib", "sqlsrv") && 
         CHECK_LIB("version.lib", "sqlsrv") && CHECK_LIB("psapi.lib", "sqlsrv")&&
         CHECK_HEADER_ADD_INCLUDE( "core_sqlsrv.h", "CFLAGS_SQLSRV", configure_module_dirname + "\\shared")) {
-            if (PHP_PDO_SQLSRV == "no" || PHP_SQLSRV_SHARED) {
+            if (PHP_SQLSRV_SHARED || PHP_PDO_SQLSRV == "no") {
                 ADD_SOURCES( configure_module_dirname + "\\shared", shared_src_class, "sqlsrv" );
             }
             CHECK_HEADER_ADD_INCLUDE("sql.h", "CFLAGS_SQLSRV_ODBC");
