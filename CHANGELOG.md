@@ -3,6 +3,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 5.6.1 - 2019-03-19
+Updated PECL release packages. Here is the list of updates:
+
+### Fixed
+- Issue [#937](https://github.com/Microsoft/msphpsql/issues/937) - removed problematic ASSERTs when getting metadata and used logging for invalid column numbers in PDOStatement::getColumnMeta()
+- Issue [#955](https://github.com/Microsoft/msphpsql/issues/955) - modified sqlsrv config file such that it can be compiled independently
+- Pull Request [#946](https://github.com/Microsoft/msphpsql/pull/946) - fixed the implementation of PDOStatement::getColumnMeta() such that getColumnMeta() will return false when something goes wrong
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+- With ColumnEncryption enabled, calling stored procedures with XML parameters does not work (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
+- In SUSE 15, Azure Active Directory connections may fail if PHP is installed from packages (Issue [#934](https://github.com/Microsoft/msphpsql/issues/934))
+
 ## 5.6.0 - 2019-02-15
 Updated PECL release packages. Here is the list of updates:
 
