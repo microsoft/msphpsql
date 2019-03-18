@@ -261,12 +261,14 @@ jobs:
       $env:VERSION=type sha256sum.txt | where { $_ -match "php-($(phpVersion)\.\d+)-src" } | foreach { $matches[1] }
       Write-Host "Latest PHP $(phpVersion) is ${env:VERSION}" 
       cd $(Build.SourcesDirectory)/buildscripts/
-      python builddrivers.py --PHPVER=${env:VERSION} --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)/source --TESTING --NO_RENAME
+      python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)/source --TESTING --NO_RENAME
+      dir *sqlsrv*.dll
+      python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)/source --TESTING --NO_RENAME
       cp php-sdk\phpdev\vc15\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv
       cp php-sdk\phpdev\vc15\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
       dir *sqlsrv*.dll
       cp *sqlsrv*.dll C:\tools\php\ext\
-    displayName: 'Build drivers for the latest version of PHP $(phpVersion)'
+    displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
   
   - script: |
       echo extension=php_sqlsrv.dll >> C:\tools\php\php.ini
