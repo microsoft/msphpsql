@@ -7,9 +7,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 Updated PECL release packages. Here is the list of updates:
 
 ### Fixed
-- Issue [#937](https://github.com/Microsoft/msphpsql/issues/937) - removed problematic ASSERTs when getting metadata and used logging for invalid column numbers in PDOStatement::getColumnMeta()
-- Issue [#955](https://github.com/Microsoft/msphpsql/issues/955) - modified sqlsrv config file such that it can be compiled independently
-- Pull Request [#946](https://github.com/Microsoft/msphpsql/pull/946) - fixed the implementation of PDOStatement::getColumnMeta() such that getColumnMeta() will return false when something goes wrong
+- Issue [#937](https://github.com/Microsoft/msphpsql/issues/937) - fixed assumptions made when calculating field or column metadata which may have resulted in application termination
+- Issue [#955](https://github.com/Microsoft/msphpsql/issues/955) - modified sqlsrv config file such that it can be compiled independently of pdo_sqlsrv
+- Pull Request [#946](https://github.com/Microsoft/msphpsql/pull/946) - fixed PDOStatement::getColumnMeta() to return false when something goes wrong
 
 ### Limitations
 - No support for inout / output params when using sql_variant type
