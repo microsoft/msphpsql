@@ -48,6 +48,7 @@ const char AttachDBFileName[] = "AttachDbFileName";
 const char Authentication[] = "Authentication";
 const char ColumnEncryption[] = "ColumnEncryption";
 const char ConnectionPooling[] = "ConnectionPooling";
+const char Language[] = "Language";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 const char Database[] = "Database";
@@ -240,6 +241,15 @@ const connection_option PDO_CONN_OPTS[] = {
         sizeof( ODBCConnOptions::ConnectionPooling ),
         CONN_ATTR_BOOL,
         conn_null_func::func
+    },
+    {
+        PDOConnOptionNames::Language,
+        sizeof( PDOConnOptionNames::Language ),
+        SQLSRV_CONN_OPTION_LANGUAGE,
+        ODBCConnOptions::Language,
+        sizeof( ODBCConnOptions::Language ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
     },
     {
         PDOConnOptionNames::Driver,
