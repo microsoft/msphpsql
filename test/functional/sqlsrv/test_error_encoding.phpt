@@ -4,11 +4,35 @@ Encoding of sqlsrv errors
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
-header('content-type: text/plain;encoding=ISO-8859-1');
+function verifyErrorContents()
+{
+    require_once('MsCommon.inc');
+    $error = sqlsrv_errors()[0];
+    
+    if ($error['SQLSTATE'] !== '42S22') {
+        echo "Expected SQLSTATE 42S22\n";
+        var_dump($error);
+    }
+    
+    // The error message is different when testing against Azure DB / Data Warehouse
+    // Use wildcard patterns for matching
+    if (isSQLAzure()) {
+        $expected = "*Invalid column name [\"']BadColumn[\"']\.";
+    } else {
+        $expected = "*Ungültiger Spaltenname [\"']BadColumn[\"']\.";
+    }
 
-require_once("MsCommon.inc");
+    if (!fnmatch($expected, $error['message'])) {
+        echo "Expected to find $expected in the error message\n";
+        var_dump($error);
+    }
+    
+}
 
-$conn = connect(array( 'CharacterSet'=>'UTF-8' ));
+require_once('MsSetup.inc');
+
+$connectionOptions = array('UID' => $userName, 'PWD' => $userPassword, 'CharacterSet' => 'UTF-8');
+$conn = sqlsrv_connect($server, $connectionOptions);
 if (!$conn) {
     die(print_r(sqlsrv_errors(), true));
 }
@@ -22,27 +46,15 @@ sqlsrv_free_stmt($stmt);
 
 $stmt = sqlsrv_query($conn, "select *, BadColumn from sys.syslanguages");
 if ($stmt) {
-    echo 'OK!';
+    echo 'This should have failed!\n';
     sqlsrv_free_stmt($stmt);
 } else {
-    $errs = sqlsrv_errors();
-    print_r($errs);
+    verifyErrorContents();
 }
 
 sqlsrv_close($conn);
 
+echo "Done\n";
 ?>
---EXPECTF--
-Array
-(
-    [0] => Array
-        (
-            [0] => 42S22
-            [SQLSTATE] => 42S22
-            [1] => 207
-            [code] => 207
-            [2] => %SUngültiger Spaltenname %cBadColumn%c.
-            [message] => %SUngültiger Spaltenname %cBadColumn%c.
-        )
-
-)
+--EXPECT--
+Done
