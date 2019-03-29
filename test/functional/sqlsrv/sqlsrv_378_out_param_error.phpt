@@ -2,11 +2,14 @@
 This test verifies that GitHub issue #378 is fixed.
 --DESCRIPTION--
 GitHub issue #378 - output parameters appends garbage info when variable is initialized with different data type
-steps to reproduce the issue:
+Steps to reproduce the issue:
 1- create a store procedure with print and output parameter
 2- initialize output parameters to a different data type other than the type declared in sp.
 3- set the WarningsReturnAsErrors to true
 4- call sp.
+Also check error conditions
+--ENV--
+PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
@@ -19,11 +22,8 @@ $conn = AE\connect();
 $procName = 'test_378';
 createSP($conn, $procName);
 
-sqlsrv_configure('WarningsReturnAsErrors', true);
-executeSP($conn, $procName);
-
-sqlsrv_configure('WarningsReturnAsErrors', false);
-executeSP($conn, $procName);
+runTests($conn, $procName, true);
+runTests($conn, $procName, false);
 
 dropProc($conn, $procName);
 echo "Done\n";
@@ -46,7 +46,34 @@ function createSP($conn, $procName)
     }
 }
 
-function executeSP($conn, $procName)
+//-------------------functions-------------------
+function runTests($conn, $procName, $warningAsErrors)
+{
+    sqlsrv_configure('WarningsReturnAsErrors', $warningAsErrors);
+
+    trace("\nWarningsReturnAsErrors: $warningAsErrors\n");
+    
+    executeSP($conn, $procName, true, false);
+    executeSP($conn, $procName, true, true);
+    executeSP($conn, $procName, false, false);
+    executeSP($conn, $procName, false, true);
+}
+
+function compareErrors()
+{
+    $message = 'Variable parameter 3 not passed by reference (prefaced with an &).  Output or bidirectional variable parameters (SQLSRV_PARAM_OUT and SQLSRV_PARAM_INOUT) passed to sqlsrv_prepare or sqlsrv_query should be passed by reference, not by value.';
+    
+    $error = sqlsrv_errors()[0]['message'];
+    
+    if ($error !== $message) {
+        print_r(sqlsrv_errors(), true);
+        return;
+    }
+    
+    trace("Comparing errors: matched!\n");
+}
+
+function executeSP($conn, $procName, $noRef, $prepare)
 {
     $expected = 3;
     $v1 = 1;
@@ -54,14 +81,44 @@ function executeSP($conn, $procName)
     $v3 = 'str';
 
     $res = true;
-    if (AE\isColEncrypted()) {
-        $stmt = sqlsrv_prepare($conn, "{call $procName( ?, ?, ?)}", array($v1, $v2, array(&$v3, SQLSRV_PARAM_OUT)));
+    $tsql = "{call $procName( ?, ?, ?)}";
+
+    if ($noRef) {
+        $params = array($v1, $v2, array($v3, SQLSRV_PARAM_OUT));
+    } else {
+        $params = array($v1, $v2, array(&$v3, SQLSRV_PARAM_OUT));
+    }
+    
+    trace("No reference: $noRef\n");
+    trace("Use prepared stmt: $prepare\n");
+
+    if (AE\isColEncrypted() || $prepare) {
+        $stmt = sqlsrv_prepare($conn, $tsql, $params);
         if ($stmt) {
             $res = sqlsrv_execute($stmt);
+        } else {
+            fatalError("Failed in executeSPnoRef in preparing statement");
         }
+        if ($noRef) { 
+            if ($res !== false) {
+                echo "Expect this to fail!\n";
+            } 
+            compareErrors();
+            return;
+        } 
     } else {
-        $stmt = sqlsrv_query($conn, "{call $procName( ?, ?, ?)}", array($v1, $v2, array(&$v3, SQLSRV_PARAM_OUT)));
+        $stmt = sqlsrv_query($conn, $tsql, $params);
+        if ($noRef) { 
+            if ($stmt !== false) {
+                echo "Expect this to fail!\n";
+            }
+            compareErrors();
+            return;
+        }
     }
+    
+    trace("No errors: $v3 and $expected\n");
+    // No errors expected
     if ($stmt === false || !$res) {
         print_r(sqlsrv_errors(), true);
     }
