@@ -3,7 +3,7 @@
 
 variables:
   phpVersion: 7.3
-  server: 'localhost,1433'
+  server: 'localhost'
   host: 'sql1'
   sqlsrv_db: 'sqlsrv_testdb'
   pdo_sqlsrv_db: 'pdo_sqlsrv_testdb'
