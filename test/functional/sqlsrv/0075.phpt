@@ -1,5 +1,7 @@
 --TEST--
 Fix for output string parameter truncation error
+--DESCRIPTION--
+This test includes calling sqlsrv_query with an array of parameters with a named key, which should result in an error.
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--

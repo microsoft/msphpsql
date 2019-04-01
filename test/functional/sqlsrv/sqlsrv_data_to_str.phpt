@@ -1,5 +1,7 @@
 --TEST--
 large types to strings of 1MB size.
+--DESCRIPTION--
+This includes a test by providing an invalid php type.
 --SKIPIF--
 <?php require('skipif_azure_dw.inc'); ?>
 --FILE--

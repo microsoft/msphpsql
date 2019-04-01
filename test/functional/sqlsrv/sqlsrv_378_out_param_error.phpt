@@ -7,7 +7,7 @@ Steps to reproduce the issue:
 2- initialize output parameters to a different data type other than the type declared in sp.
 3- set the WarningsReturnAsErrors to true
 4- call sp.
-Also check error conditions
+Also check error conditions by passing output parameters NOT by reference.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -97,7 +97,7 @@ function executeSP($conn, $procName, $noRef, $prepare)
         if ($stmt) {
             $res = sqlsrv_execute($stmt);
         } else {
-            fatalError("Failed in executeSPnoRef in preparing statement");
+            fatalError("executeSP: failed in preparing statement with reference($noRef)");
         }
         if ($noRef) { 
             if ($res !== false) {

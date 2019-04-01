@@ -1,5 +1,5 @@
 --TEST--
-scrollable result sets.
+Scrollable result sets with a simple test for an expected error.
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
