@@ -1,5 +1,7 @@
 --TEST--
 large types to strings of 1MB size.
+--DESCRIPTION--
+This includes a test by providing an invalid php type.
 --SKIPIF--
 <?php require('skipif_azure_dw.inc'); ?>
 --FILE--
@@ -8,7 +10,7 @@ large types to strings of 1MB size.
     sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
     sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
 
-    require( 'MsCommon.inc' );
+    require_once( 'MsCommon.inc' );
 
     $conn = Connect();
     if( !$conn ) {
@@ -57,6 +59,16 @@ large types to strings of 1MB size.
     if( $str === false || strlen( $str ) != 1024*1024 ) {
         var_dump( sqlsrv_errors() );
         die( "sqlsrv_get_field(6) failed." );
+    }
+
+    $str = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STRING("UTF") );
+    if ($str === false) {
+        $error = sqlsrv_errors()[0]['message'];
+        if ($error !== 'Invalid type') {
+            fatalError('Unexpected error returned');
+        }
+    } else {
+        echo "Expect sqlsrv_get_field(7) to fail!\n";
     }
 
     sqlsrv_free_stmt( $stmt );
