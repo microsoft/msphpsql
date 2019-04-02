@@ -694,7 +694,7 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
 
         // support for the PDO rowCount method.  Since rowCount doesn't call a method, PDO relies on us to fill the 
         // pdo_stmt_t::row_count member
-        if( driver_stmt->past_fetch_end || driver_stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY ) {
+        if( driver_stmt->past_fetch_end) {// || driver_stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY ) {
 
             stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
 
