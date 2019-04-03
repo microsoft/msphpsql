@@ -72,8 +72,8 @@ function invalidCredentials($badPasswd)
     } else {
         // Use valid UTF-8 
         $passwd = pack('H*', 'c59ec6a1d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
-        $code = "08001";
-        $error = "*Named Pipes Provider: Could not open a connection to SQL Server*";
+        $code = "28000";
+        $error = "*Login failed for user 'Şơмė śäოрŀề ΆŚĈĨİ-ť℮×ŧ'.*";
     }
     
     try {
@@ -102,3 +102,4 @@ try {
 ?>
 --EXPECT--
 Done
+
