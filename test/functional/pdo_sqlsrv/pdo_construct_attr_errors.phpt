@@ -20,7 +20,7 @@ function invalidEncoding($binary)
         echo "Should have failed about an invalid encoding.\n";
     }  catch (PDOException $e) {
         $error = '*An invalid encoding was specified for SQLSRV_ATTR_ENCODING.';
-        if ($e->getCode() !== "IMSSP" || !fnmatch($error, $e->getMessage())) {
+        if (!fnmatch($error, $e->getMessage())) {
             echo "invalidEncoding($binary)\n";
             var_dump($e->getMessage());
         }
@@ -33,12 +33,16 @@ function invalidServer()
     
     // Test an invalid server name in UTF-8
     try {
+        $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
         $invalid = pack("H*", "ffc0");
-        $conn = new PDO("sqlsrv:server = $invalid;", $uid, $pwd);
+        $conn = new PDO("sqlsrv:server = $invalid;", $uid, $pwd, $options);
         echo "Should have failed to connect to invalid server.\n";
     }  catch (PDOException $e) {
-        $error = '*An error occurred translating the connection string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page*';
-        if ($e->getCode() !== "IMSSP" || !fnmatch($error, $e->getMessage())) {
+        $error1 = '*Login timeout expired';
+        $error2 = '*An error occurred translating the connection string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page*';
+        if (fnmatch($error1, $e->getMessage()) || fnmatch($error2, $e->getMessage())) {
+            ;   // matched at least one of the expected error messages 
+        } else {
             echo "invalidServer\n";
             var_dump($e->getMessage());
         }
@@ -59,30 +63,59 @@ function utf8APP()
     }
 }
 
-function invalidCredentials($badPasswd)
+function invalidCredentials()
 {
     global $server, $database;
     
+    // Use valid UTF-8 
     $user = pack('H*', 'c59ec6a1d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
-    if ($badPasswd) {
-        // Use invalid UTF-8 
-        $passwd = pack('H*', 'c59ec6c0d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
-        $code = "IMSSP";
-        $error = "*An error occurred translating the connection string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.*";
-    } else {
-        // Use valid UTF-8 
-        $passwd = pack('H*', 'c59ec6a1d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
-        $code = "28000";
-        $error = "*Login failed for user 'Şơмė śäოрŀề ΆŚĈĨİ-ť℮×ŧ'.*";
-    }
+    $passwd = pack('H*', 'c59ec6a1d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
+    
+    $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+    $error1 = "*Login failed for user \'*\'.";
+    $error2 = "*Login timeout expired*";
     
     try {
-        $conn = new PDO("sqlsrv:server = $server; database = $database;", $user, $passwd);
+        $conn = new PDO("sqlsrv:server = $server; database = $database;", $user, $passwd, $options);
         echo "Should have failed to connect\n";
     } catch (PDOException $e) {
-        if ($e->getCode() !== $code || !fnmatch($error, $e->getMessage())) {
-            echo "invalidCredentials($badPasswd)\n";
+        if (fnmatch($error1, $e->getMessage()) || fnmatch($error2, $e->getMessage())) {
+            ;   // matched at least one of the expected error messages 
+        } else {
+            echo "invalidCredentials()\n";
             var_dump($e->getMessage());
+        }
+    }
+}
+
+function invalidPassword()
+{
+    global $server, $database;
+    
+    // Use valid UTF-8
+    $user = pack('H*', 'c59ec6a1d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
+    // Use invalid UTF-8 
+    $passwd = pack('H*', 'c59ec6c0d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
+
+    $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+    
+    // Possible errors
+    $error = "*An error occurred translating the connection string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.*";
+    $error1 = "*Login failed for user \'*\'.";
+    $error2 = "*Login timeout expired*";
+
+    try {
+        $conn = new PDO("sqlsrv:server = $server; database = $database;", $user, $passwd, $options);
+        echo "Should have failed to connect\n";
+    } catch (PDOException $e) {
+        if (!fnmatch($error, $e->getMessage())) {
+            // Sometimes it might fail with two other possible error messages
+            if (fnmatch($error1, $e->getMessage()) || fnmatch($error2, $e->getMessage())) {
+                ;   // matched at least one of the expected error messages 
+            } else {
+                echo "invalidPassword()\n";
+                var_dump($e->getMessage());
+            }
         }
     }
 }
@@ -92,8 +125,8 @@ try {
     invalidEncoding(true);
     invalidServer();
     utf8APP();
-    invalidCredentials(false);
-    invalidCredentials(true);
+    invalidCredentials();
+    invalidPassword();
     
     echo "Done\n";
 } catch (PDOException $e) {
