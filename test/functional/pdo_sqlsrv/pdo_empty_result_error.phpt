@@ -12,6 +12,7 @@ require_once("MsCommon.inc");
 // These are the error messages we expect at various points below
 $errorNoMoreResults = "There are no more results returned by the query.";
 $errorNoFields      = "The active result for the query contains no fields.";
+$errorNoMoreRows    = "There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.";
 
 // This function compares the expected error message and the error returned by errorInfo().
 function CheckError($stmt, $expectedError=NULL)
@@ -94,6 +95,7 @@ echo "Empty result set, call fetch first: ##################################\n";
 
 $stmt = $conn->query("TestEmptySetProc @a='a', @b='w'");
 Fetch($stmt);
+Fetch($stmt, $errorNoMoreRows);
 NextResult($stmt);
 Fetch($stmt);
 NextResult($stmt, $errorNoMoreResults);
@@ -157,6 +159,7 @@ Nonempty result set, call nextRowset twice: #########################
 Next result...
 Next result...
 Empty result set, call fetch first: ##################################
+Fetch...
 Fetch...
 Next result...
 Fetch...
