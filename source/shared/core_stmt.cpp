@@ -140,6 +140,9 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     fetch_called( false ),
     last_field_index( -1 ),
     past_next_result_end( false ),
+    columns_rows_obtained( false ),
+    column_count( 0 ),
+    row_count( 0 ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
     date_as_string(false),
     format_decimals(false),       // no formatting needed
@@ -225,6 +228,9 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
     this->past_next_result_end = false;
     this->past_fetch_end = false;
     this->last_field_index = -1;
+    this->columns_rows_obtained = false;
+    this->column_count = 0;
+    this->row_count = 0;
 
     // delete any current results
     if( current_results ) {
@@ -821,7 +827,13 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
         }
         // First time only
         if ( !stmt->fetch_called ) {
-            SQLSMALLINT has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+            SQLSMALLINT has_fields;
+            if (stmt->columns_rows_obtained) {
+                has_fields = stmt->column_count;
+            } else {
+                has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+            }
+            
             CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
                 throw core::CoreException();
             }
@@ -1066,10 +1078,23 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 
 bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    // Use SQLNumResultCols to determine if we have rows or not.
-    SQLSMALLINT num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
-    // use SQLRowCount to determine if there is a rows status waiting
-    SQLLEN rows_affected = core::SQLRowCount( stmt TSRMLS_CC );
+    SQLSMALLINT num_cols, rows_affected;
+    if (stmt->columns_rows_obtained)
+    {
+        num_cols = stmt->column_count;
+        rows_affected = stmt->row_count;
+    }
+    else
+    {
+        // Use SQLNumResultCols to determine if we have rows or not
+        num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
+        stmt->column_count = num_cols;
+        // Use SQLRowCount to determine if there is a rows status waiting
+        rows_affected = core::SQLRowCount( stmt TSRMLS_CC );
+        stmt->row_count = rows_affected;
+        stmt->columns_rows_obtained = true;
+    }
+    
     return (num_cols != 0) || (rows_affected > 0);
 }
 
