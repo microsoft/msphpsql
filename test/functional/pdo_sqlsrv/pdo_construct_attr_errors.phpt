@@ -2,7 +2,6 @@
 Test various connection errors with invalid attributes
 --DESCRIPTION--
 This is similar to sqlsrv sqlsrv_connStr.phpt such that invalid connection attributes or values used when connecting.
-.phpt
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
