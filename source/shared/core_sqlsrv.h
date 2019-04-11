@@ -1439,9 +1439,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field
     bool past_next_result_end;            // core_sqlsrv_next_result sets this to true when the statement goes beyond the last results
-    bool columns_rows_obtained;           // Whether or not SQLNumResultCols and SQLRowCount have been called for the active result set
-    int column_count;                     // Number of columns in the current result set obtained from SQLNumResultCols
-    int row_count;                        // Number of rows in the current result set obtained from SQLRowCount
+    bool columns_rows_obtained;           // Whether or not SQLNumResultCols and SQLRowCount have been called for the active result
+    short column_count;                   // Number of columns in the current result set obtained from SQLNumResultCols
+    long row_count;                       // Number of rows in the current result set obtained from SQLRowCount
     unsigned long query_timeout;          // maximum allowed statement execution time
     zend_long buffered_query_limit;       // maximum allowed memory for a buffered query (measured in KB)
     bool date_as_string;                  // false by default but the user can set this to true to retrieve datetime values as strings
