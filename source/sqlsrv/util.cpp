@@ -196,7 +196,7 @@ ss_error SS_ERRORS[] = {
           
     {
         SQLSRV_ERROR_NO_FIELDS,
-        { IMSSP, (SQLCHAR*)"The active result for the query contains no fields.", -28, false }
+        { IMSSP, (SQLCHAR*)"The active result for the query contains no fields, so no result set was created.", -28, false }
     },
 
     {
@@ -205,8 +205,8 @@ ss_error SS_ERRORS[] = {
     }, 
 
     {
-      SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED,
-      { IMSSP, (SQLCHAR*)"Failed to create an instance of class %1!s!.", -30, true }
+        SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED,
+        { IMSSP, (SQLCHAR*)"Failed to create an instance of class %1!s!.", -30, true }
     },
  
     {
