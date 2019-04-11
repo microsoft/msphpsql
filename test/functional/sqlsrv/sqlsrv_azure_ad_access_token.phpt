@@ -104,6 +104,27 @@ function simpleTest($conn)
     dropTable($conn, $tableName);
 }
 
+function connectAzureDB($accToken, $showException)
+{
+    global $adServer, $adDatabase, $maxAttempts;
+    
+    $conn = false;
+    $connectionInfo = array("Database"=>$adDatabase, "AccessToken"=>$accToken);
+
+    $conn = sqlsrv_connect($adServer, $connectionInfo);
+    if ($conn === false) {
+        if ($showException) {
+            fatalError("Could not connect with Azure AD AccessToken.\n");
+        }
+    } else {
+        simpleTest($conn);
+        
+        sqlsrv_close($conn);
+    }
+
+    return $conn;
+}
+
 // First test some error conditions
 connectWithInvalidOptions($server);
 
@@ -112,17 +133,18 @@ connectWithEmptyAccessToken($server);
 
 // Next, test with a valid access token and perform some simple tasks
 require_once('access_token.inc');
-if ($adServer != 'TARGET_AD_SERVER' && $accToken != 'TARGET_ACCESS_TOKEN') {
-    $connectionInfo = array("Database"=>$adDatabase, "AccessToken"=>$accToken);
+$maxAttempts = 3;
 
-    $conn = sqlsrv_connect($adServer, $connectionInfo);
-    if ($conn === false) {
-        fatalError("Could not connect with Azure AD AccessToken.\n");
-    } else {
-        simpleTest($conn);
-        
-        sqlsrv_close($conn);
-    }
+if ($adServer != 'TARGET_AD_SERVER' && $accToken != 'TARGET_ACCESS_TOKEN') {
+    $conn = false;
+    $numAttempts = 0;
+    do {
+        $conn = connectAzureDB($accToken, ($numAttempts == ($maxAttempts - 1)));
+        if ($conn === false) {
+            $numAttempts++;
+            sleep(10);
+        }
+    } while ($conn === false && $numAttempts < $maxAttempts);
 }
 
 echo "Done\n";
