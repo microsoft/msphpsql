@@ -153,7 +153,7 @@ echo "Null result set, call next result first: #############################\n";
 
 $stmt = sqlsrv_query($conn, "TestEmptySetProc @a='a', @b='c'");
 NextResult($stmt, []);
-Fetch($stmt, [$errorFuncSeq()]);
+Fetch($stmt, [$errorNoFields]);
 
 // Call next_result twice in succession on a null result set
 echo "Null result set, call next result twice: #############################\n";
