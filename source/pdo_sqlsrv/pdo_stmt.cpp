@@ -595,23 +595,22 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
             stmt->row_count = 0;
             driver_stmt->column_count = 0;
             driver_stmt->row_count = 0;
-            driver_stmt->columns_rows_obtained = true;
         }
         else {
-            if (driver_stmt->columns_rows_obtained == false)
-            {
+            if (driver_stmt->column_count == ACTIVE_NUM_COLS_INVALID) {
                 stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
+                driver_stmt->column_count = stmt->column_count;
+            }
+            else {
+                stmt->column_count = driver_stmt->column_count;
+            }
 
+            if (driver_stmt->row_count == ACTIVE_NUM_ROWS_INVALID) {
                 // return the row count regardless if there are any rows or not
                 stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
-                
-                driver_stmt->column_count = stmt->column_count;
                 driver_stmt->row_count = stmt->row_count;
-                driver_stmt->columns_rows_obtained = true;
             }
-            else
-            {
-                stmt->column_count = driver_stmt->column_count;
+            else {
                 stmt->row_count = driver_stmt->row_count;
             }
         }
@@ -707,11 +706,21 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
         SQLSMALLINT odbc_fetch_ori = pdo_fetch_ori_to_odbc_fetch_ori( ori );
         bool data = core_sqlsrv_fetch( driver_stmt, odbc_fetch_ori, offset TSRMLS_CC );
 
-        // support for the PDO rowCount method.  Since rowCount doesn't call a method, PDO relies on us to fill the 
-        // pdo_stmt_t::row_count member
-        if( driver_stmt->past_fetch_end) {
+        // support for the PDO rowCount method.  Since rowCount doesn't call a
+        // method, PDO relies on us to fill the pdo_stmt_t::row_count member
+        // The if condition was changed from 
+        // `driver_stmt->past_fetch_end || driver_stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY` 
+        // because it caused SQLRowCount to be called at each fetch if using a non-forward cursor
+        // which is unnecessary and a performance hit
+        if( driver_stmt->past_fetch_end || driver_stmt->cursor_type == SQL_CURSOR_DYNAMIC) {
 
-            stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+            if (driver_stmt->row_count == ACTIVE_NUM_ROWS_INVALID) {
+                stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+                driver_stmt->row_count = stmt->row_count;
+            }
+            else {
+                stmt->row_count = driver_stmt->row_count;
+            }
 
             // a row_count of -1 means no rows, but we change it to 0
             if( stmt->row_count == -1 ) {
@@ -1164,7 +1173,6 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
         
         driver_stmt->column_count = stmt->column_count;
         driver_stmt->row_count = stmt->row_count;
-        driver_stmt->columns_rows_obtained = true;
     }
     catch( core::CoreException& ) {
 

@@ -12,7 +12,7 @@ require_once("MsCommon.inc");
 // These are the error messages we expect at various points below
 $errorNoMoreResults = "There are no more results returned by the query.";
 $errorNoMoreRows    = "There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.";
-$errorNoFields      = "The active result for the query contains no fields, so no result set was created.";
+$errorNoFields      = "The active result for the query contains no fields.";
 
 // Variable function gets an error message that depends on the OS
 function getFuncSeqError()

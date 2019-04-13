@@ -196,7 +196,7 @@ ss_error SS_ERRORS[] = {
           
     {
         SQLSRV_ERROR_NO_FIELDS,
-        { IMSSP, (SQLCHAR*)"The active result for the query contains no fields, so no result set was created.", -28, false }
+        { IMSSP, (SQLCHAR*)"The active result for the query contains no fields.", -28, false }
     },
 
     {

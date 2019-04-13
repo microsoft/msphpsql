@@ -128,8 +128,8 @@ Array
             [SQLSTATE] => IMSSP
             [1] => -28
             [code] => -28
-            [2] => The active result for the query contains no fields, so no result set was created.
-            [message] => The active result for the query contains no fields, so no result set was created.
+            [2] => The active result for the query contains no fields.
+            [message] => The active result for the query contains no fields.
         )
 
 )
