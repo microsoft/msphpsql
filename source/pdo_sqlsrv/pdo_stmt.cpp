@@ -714,13 +714,8 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
         // which is unnecessary and a performance hit
         if( driver_stmt->past_fetch_end || driver_stmt->cursor_type == SQL_CURSOR_DYNAMIC) {
 
-            if (driver_stmt->row_count == ACTIVE_NUM_ROWS_INVALID) {
-                stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
-                driver_stmt->row_count = stmt->row_count;
-            }
-            else {
-                stmt->row_count = driver_stmt->row_count;
-            }
+            stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+            driver_stmt->row_count = stmt->row_count;
 
             // a row_count of -1 means no rows, but we change it to 0
             if( stmt->row_count == -1 ) {
