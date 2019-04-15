@@ -205,8 +205,8 @@ ss_error SS_ERRORS[] = {
     }, 
 
     {
-      SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED,
-      { IMSSP, (SQLCHAR*)"Failed to create an instance of class %1!s!.", -30, true }
+        SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED,
+        { IMSSP, (SQLCHAR*)"Failed to create an instance of class %1!s!.", -30, true }
     },
  
     {

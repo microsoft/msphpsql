@@ -182,6 +182,11 @@ const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 2;
 // max size of a date time string when converting from a DateTime object to a string
 const int MAX_DATETIME_STRING_LEN = 256;
 
+// identifier for whether or not we have obtained the number of rows and columns
+// of a result
+const short ACTIVE_NUM_COLS_INVALID = -99;
+const long ACTIVE_NUM_ROWS_INVALID = -99;
+
 // precision and scale for the date time types between servers
 const int SQL_SERVER_2005_DEFAULT_DATETIME_PRECISION = 23;
 const int SQL_SERVER_2005_DEFAULT_DATETIME_SCALE = 3;
@@ -1438,8 +1443,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool has_rows;                        // Has_rows is set if there are actual rows in the row set
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field
-    bool past_next_result_end;            // core_sqlsrv_next_result sets this to true when the statement goes beyond the 
-                                          // last results
+    bool past_next_result_end;            // core_sqlsrv_next_result sets this to true when the statement goes beyond the last results
+    short column_count;                   // Number of columns in the current result set obtained from SQLNumResultCols
+    long row_count;                       // Number of rows in the current result set obtained from SQLRowCount
     unsigned long query_timeout;          // maximum allowed statement execution time
     zend_long buffered_query_limit;       // maximum allowed memory for a buffered query (measured in KB)
     bool date_as_string;                  // false by default but the user can set this to true to retrieve datetime values as strings

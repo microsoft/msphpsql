@@ -1791,7 +1791,12 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
 
     if (num_cols == 0) {
         getMetaData = true;
-        num_cols = core::SQLNumResultCols(stmt TSRMLS_CC);
+        if (stmt->column_count == ACTIVE_NUM_COLS_INVALID) {
+            num_cols = core::SQLNumResultCols(stmt TSRMLS_CC);
+            stmt->column_count = num_cols;
+        } else {
+            num_cols = stmt->column_count;
+        }
     }
 
     try {
