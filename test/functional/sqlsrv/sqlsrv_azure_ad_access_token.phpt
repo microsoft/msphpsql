@@ -114,7 +114,7 @@ function connectAzureDB($accToken, $showException)
     $conn = sqlsrv_connect($adServer, $connectionInfo);
     if ($conn === false) {
         if ($showException) {
-            fatalError("Could not connect with Azure AD AccessToken.\n");
+            fatalError("Could not connect with Azure AD AccessToken after $maxAttempts retries.\n");
         }
     } else {
         simpleTest($conn);
