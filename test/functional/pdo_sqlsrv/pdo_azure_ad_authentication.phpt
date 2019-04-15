@@ -55,21 +55,39 @@ try {
 // your credentials to test, or this part is skipped.
 //
 $azureServer = $adServer;
-$azureDatabase = $adDatabase;
-$azureUsername = $adUser;
-$azurePassword = $adPassword;
+$maxAttempts = 3;
 
-if ($azureServer != 'TARGET_AD_SERVER') {
+function connectAzureDB($showException)
+{
+    global $adServer, $adUser, $adPassword, $maxAttempts;
+    
     $connectionInfo = "Authentication = ActiveDirectoryPassword; TrustServerCertificate = false";
-
+    
+    $conn = false;
     try {
-        $conn = new PDO("sqlsrv:server = $azureServer ; $connectionInfo", $azureUsername, $azurePassword);
+        $conn = new PDO("sqlsrv:server = $adServer; $connectionInfo", $adUser, $adPassword);
         echo "Connected successfully with Authentication=ActiveDirectoryPassword.\n";
     } catch (PDOException $e) {
-        echo "Could not connect with ActiveDirectoryPassword.\n";
-        print_r($e->getMessage());
-        echo "\n";
+        if ($showException) {
+            echo "Could not connect with ActiveDirectoryPassword after $maxAttempts retries.\n";
+            print_r($e->getMessage());
+            echo "\n";
+        }
     }
+
+    return $conn;
+}
+
+if ($azureServer != 'TARGET_AD_SERVER') {
+    $conn = false;
+    $numAttempts = 0;
+    do {
+        $conn = connectAzureDB($numAttempts == ($maxAttempts - 1));
+        if ($conn === false) {
+            $numAttempts++;
+            sleep(10);
+        }
+    } while ($conn === false && $numAttempts < $maxAttempts);
 } else {
     echo "Not testing with Authentication=ActiveDirectoryPassword.\n";
 }

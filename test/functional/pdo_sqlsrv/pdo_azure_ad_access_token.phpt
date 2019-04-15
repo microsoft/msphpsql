@@ -129,6 +129,25 @@ function simpleTest($conn)
     dropTable($conn, $tableName);
 }
 
+function connectAzureDB($accToken, $showException)
+{
+    global $adServer, $adDatabase, $maxAttempts;
+    
+    $conn = false;
+    try {
+        $connectionInfo = "Database = $adDatabase; AccessToken = $accToken;";
+        $conn = new PDO("sqlsrv:server = $adServer; $connectionInfo");
+    } catch (PDOException $e) {
+        if ($showException) {
+            echo "Could not connect with Azure AD AccessToken after $maxAttempts retries.\n";
+            print_r($e->getMessage());
+            echo PHP_EOL;
+        }
+    }
+
+    return $conn;
+}
+
 // First test some error conditions
 require_once('MsSetup.inc');
 connectWithInvalidOptions($server);
@@ -138,13 +157,26 @@ connectWithEmptyAccessToken($server);
 
 // Next, test with a valid access token and perform some simple tasks
 require_once('access_token.inc');
+$maxAttempts = 3;
+
 try {
     if ($adServer != 'TARGET_AD_SERVER' && $accToken != 'TARGET_ACCESS_TOKEN') {
-        $connectionInfo = "Database = $adDatabase; AccessToken = $accToken;";
-        $conn = new PDO("sqlsrv:server = $adServer; $connectionInfo");
-        $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
-        simpleTest($conn);
-        unset($conn);
+        $conn = false;
+        $numAttempts = 0;
+        do {
+            $conn = connectAzureDB($accToken, ($numAttempts == ($maxAttempts - 1)));
+            if ($conn === false) {
+                $numAttempts++;
+                sleep(10);
+            }
+        } while ($conn === false && $numAttempts < $maxAttempts);
+
+        // Proceed when successfully connected
+        if ($conn) {
+            $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
+            simpleTest($conn);
+            unset($conn);
+        }
     }
 } catch(PDOException $e) {
     print_r( $e->getMessage() );
