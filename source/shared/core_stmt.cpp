@@ -823,6 +823,7 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
         CHECK_CUSTOM_ERROR( stmt->past_fetch_end, stmt, SQLSRV_ERROR_FETCH_PAST_END ) {
             throw core::CoreException();
         }
+        
         // First time only
         if ( !stmt->fetch_called ) {
             SQLSMALLINT has_fields;
@@ -830,6 +831,7 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
                 has_fields = stmt->column_count;
             } else {
                 has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+                stmt->column_count = has_fields;
             }
             
             CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
