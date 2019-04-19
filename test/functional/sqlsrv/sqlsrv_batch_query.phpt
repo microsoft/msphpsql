@@ -91,7 +91,7 @@ sqlsrv_free_stmt($stmt);
 
 $inputs = array(array('c1_int'=>86, 'c2_tinyint'=>0, 'c3_smallint'=>4534, 'c4_bigint'=>-1, 'c5_bit'=>0),
                 array('c1_int'=>-217483648, 'c2_tinyint'=>31, 'c3_smallint'=>-212, 'c4_bigint'=>546098342985694, 'c5_bit'=>1),
-                array('c1_int'=>0, 'c2_tinyint'=>127, 'c3_smallint'=>32767, 'c4_bigint'=>9223372036854775807, 'c5_bit'=>0),
+                array('c1_int'=>0, 'c2_tinyint'=>127, 'c3_smallint'=>32767, 'c4_bigint'=>9223372000000000000, 'c5_bit'=>0),
                 array('c1_int'=>-432987563, 'c2_tinyint'=>255, 'c3_smallint'=>0, 'c4_bigint'=>5115115115115115115, 'c5_bit'=>0),
                 array('c1_int'=>7, 'c2_tinyint'=>1, 'c3_smallint'=>7, 'c4_bigint'=>7, 'c5_bit'=>1),
                );
@@ -131,7 +131,7 @@ for ($i = 0; $i < sizeof($cursors); ++$i)
     // all results
     checkColumnsAndRows($stmt, $cursor, $wrongCursor);
 
-    while ($res = sqlsrv_fetch_array($stmt))
+    while ($res = sqlsrv_fetch($stmt))
     { }
 
     checkColumnsAndRows($stmt, $cursor, $wrongCursor);
@@ -140,7 +140,7 @@ for ($i = 0; $i < sizeof($cursors); ++$i)
     while ($next = sqlsrv_next_result($stmt)) {
         checkColumnsAndRows($stmt, $cursor, $wrongCursor);
         
-        while ($res = sqlsrv_fetch_array($stmt))
+        while ($res = sqlsrv_fetch($stmt))
         { }
     
         checkColumnsAndRows($stmt, $cursor, $wrongCursor);
