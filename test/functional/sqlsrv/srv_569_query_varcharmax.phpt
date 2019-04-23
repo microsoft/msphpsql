@@ -38,7 +38,7 @@ function verifyFetchError()
 require_once('MsCommon.inc');
 
 // Now connect with ColumnEncryption enabled
-$connectionOptions = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, 'ColumnEncryption' => 'Enabled'));
+$connectionOptions = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, 'ColumnEncryption' => 'Enabled');
 $conn = sqlsrv_connect($server, $connectionOptions);
 if ($conn === false) {
     fatalError("Failed to connect to $server.");
