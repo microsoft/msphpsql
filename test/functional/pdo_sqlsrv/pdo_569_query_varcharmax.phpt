@@ -5,23 +5,32 @@ Verifies that the problem is no longer reproducible.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
+<?php 
+if (!extension_loaded("pdo") || !extension_loaded('pdo_sqlsrv')) {
+    die("PDO driver cannot be loaded; skipping test.\n");
+}
+
+require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
+
+// This test requires to connect with the Always Encrypted feature
+// First check if the system is qualified to run this test
+$dsn = getDSN($server, null);
+$conn = new PDO($dsn, $uid, $pwd);
+if (! $conn) {
+    die("Error: could not connect during SKIPIF!");
+} 
+
+if (!isAEQualified($conn)) {
+    die("skip - AE feature not supported in the current environment.");
+}
+?>
 --FILE--
 <?php
 require_once("MsSetup.inc");
 require_once("MsCommon_mid-refactor.inc");
 
 try {
-    // This test requires to connect with the Always Encrypted feature
-    // First check if the system is qualified to run this test
-    $dsn = getDSN($server, null);
-    $conn = new PDO($dsn, $uid, $pwd);
-    if (!isAEQualified($conn)) {
-        echo "Done\n";
-        return;
-    }
-    unset($conn);
-
     // Now connect with ColumnEncryption enabled
     $connectionInfo = "ColumnEncryption = Enabled;";
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
