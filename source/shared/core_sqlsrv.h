@@ -1120,6 +1120,7 @@ enum SQLSRV_STMT_OPTIONS {
    SQLSRV_STMT_OPTION_DATE_AS_STRING,
    SQLSRV_STMT_OPTION_FORMAT_DECIMALS,
    SQLSRV_STMT_OPTION_DECIMAL_PLACES,
+   SQLSRV_STMT_OPTION_DATA_CLASSIFICATION,
 
    // Driver specific connection options
    SQLSRV_STMT_OPTION_DRIVER_SPECIFIC = 1000,
@@ -1321,6 +1322,11 @@ struct stmt_option_decimal_places : public stmt_option_functor {
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_data_classification : public stmt_option_functor {
+
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+};
+
 // used to hold the table for statment options
 struct stmt_option {
 
@@ -1424,6 +1430,77 @@ struct sqlsrv_output_param {
     }
 };
 
+namespace data_classification {
+    // *** data classficiation metadata structures and helper methods -- to store and/or process the sensitivity classification data ***
+    struct name_id_pair;
+    struct sensitivity_metadata;
+
+    void name_id_pair_free(name_id_pair * pair);
+    void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>& pairs, _Inout_ unsigned char **pptr TSRMLS_CC);
+    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr);
+    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *column_data TSRMLS_CC);
+
+    struct name_id_pair {
+        UCHAR name_len;
+        sqlsrv_malloc_auto_ptr<char> name;
+        UCHAR id_len;
+        sqlsrv_malloc_auto_ptr<char> id;
+
+        name_id_pair() : name_len(0), id_len(0)
+        {
+        }
+
+        ~name_id_pair()
+        {
+        }
+    };
+
+    struct label_infotype_pair {
+        USHORT label_idx;
+        USHORT infotype_idx;
+
+        label_infotype_pair() : label_idx(0), infotype_idx(0)
+        {
+        }
+    };
+
+    struct column_sensitivity
+    {
+        USHORT num_pairs;
+        std::vector<label_infotype_pair> label_info_pairs;
+
+        column_sensitivity() : num_pairs(0)
+        {
+        }
+
+        ~column_sensitivity() 
+        {
+            label_info_pairs.clear();
+        }
+    };
+
+    struct sensitivity_metadata { 
+        USHORT num_labels;
+        std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>> labels;
+        USHORT num_infotypes;
+        std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>> infotypes;
+        USHORT num_columns;
+        std::vector<column_sensitivity> columns_sensitivity;
+
+        sensitivity_metadata() : num_labels(0), num_infotypes(0), num_columns(0)
+        {
+        }
+
+        ~sensitivity_metadata()
+        {   
+            reset();
+        }
+
+        void print_column_sensitivity();
+        void reset();
+    };
+} // namespace data_classification
+
 // forward decls
 struct sqlsrv_result_set;
 struct field_meta_data;
@@ -1433,6 +1510,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
 
     void free_param_data( TSRMLS_D );
     virtual void new_result_set( TSRMLS_D );
+
+    // free sensitivity classification metadata
+    void clean_up_sensitivity_metadata();
 
     sqlsrv_conn*   conn;                  // Connection that created this statement
    
@@ -1451,6 +1531,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool date_as_string;                  // false by default but the user can set this to true to retrieve datetime values as strings
     bool format_decimals;                 // false by default but the user can set this to true to add the missing leading zeroes and/or control number of decimal digits to show
     short decimal_places;                 // indicates number of decimals shown in fetched results (-1 by default, which means no change to number of decimal digits)
+    bool data_classification;             // false by default but the user can set this to true to retrieve data classification sensitivity metadata 
 
     // holds output pointers for SQLBindParameter
     // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving
@@ -1472,6 +1553,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
 
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator<field_meta_data*>> current_meta_data;
+
+    // meta data for data classification
+    sqlsrv_malloc_auto_ptr<data_classification::sensitivity_metadata> current_sensitivity_metadata;
 
     sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
     virtual ~sqlsrv_stmt( void );
@@ -1544,6 +1628,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLEN limit TSRMLS_DC );
 void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC);
+void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 
 //*********************************************************************************************************************************
 // Result Set
@@ -1787,6 +1872,9 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
     SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
     SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
+    SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
+    SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE,
+    SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
@@ -2448,6 +2536,14 @@ namespace core {
         }
         if (duplicate == 0) {
             sqlsrv_free(val);
+        }
+    }
+
+    inline void sqlsrv_add_assoc_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _In_ zval* val TSRMLS_DC )
+    {
+        int zr = ::add_assoc_zval(array_z, key, val);
+        CHECK_ZEND_ERROR (zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
+            throw CoreException();
         }
     }
 

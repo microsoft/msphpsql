@@ -144,7 +144,11 @@
 // force column encryption 
 #define SQL_CA_SS_FORCE_ENCRYPT                     (SQL_CA_SS_BASE+36) //  indicate mandatory encryption for this parameter 
 
-#define SQL_CA_SS_MAX_USED                          (SQL_CA_SS_BASE+37)
+// Data Classification
+#define SQL_CA_SS_DATA_CLASSIFICATION               (SQL_CA_SS_BASE+37) //  retrieve data classification information
+
+#define SQL_CA_SS_MAX_USED                          (SQL_CA_SS_BASE+38)
+
 // Defines for use with SQL_COPT_SS_INTEGRATED_SECURITY - Pre-Connect Option only 
 #define SQL_IS_OFF                          0L           //  Integrated security isn't used 
 #define SQL_IS_ON                           1L           //  Integrated security is used 

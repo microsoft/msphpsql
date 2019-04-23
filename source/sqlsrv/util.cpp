@@ -440,6 +440,18 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
         { IMSSP, (SQLCHAR*) "When using ActiveDirectoryMsi Authentication, PWD must be NULL. UID can be NULL, but if not, an empty string is not accepted.", -118, false}
     },
+    {
+        SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
+        { IMSSP, (SQLCHAR*) "The statement must be executed to retrieve Data Classification Sensitivity Metadata.", -119, false}
+    },
+    {
+        SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE,
+        { IMSSP, (SQLCHAR*) "Failed to retrieve Data Classification Sensitivity Metadata. If the driver and the server both support the Data Classification feature, check whether the query returns columns with classification information.", -120, false}
+    },
+    {
+        SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
+        { IMSSP, (SQLCHAR*) "Failed to retrieve Data Classification Sensitivity Metadata: %1!s!", -121, true}
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }

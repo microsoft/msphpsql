@@ -913,6 +913,10 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 core_sqlsrv_set_decimal_places(driver_stmt, val TSRMLS_CC);
                 break;
 
+            case SQLSRV_ATTR_DATA_CLASSIFICATION:
+                driver_stmt->data_classification = (zend_is_true(val)) ? true : false;
+                break;
+
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
                 break;
@@ -1012,6 +1016,12 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 break;
             }
 
+            case SQLSRV_ATTR_DATA_CLASSIFICATION:
+            {
+                ZVAL_BOOL(return_value, driver_stmt->data_classification);
+                break;
+            }
+
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
                 break;
@@ -1071,7 +1081,21 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         core_meta_data = core_sqlsrv_field_metadata( driver_stmt, (SQLSMALLINT) colno TSRMLS_CC );
 
         // add the following fields: flags, native_type, driver:decl_type, table
-        add_assoc_long( return_value, "flags", 0 );
+        if (driver_stmt->data_classification) {
+            core_sqlsrv_sensitivity_metadata(driver_stmt);
+
+            // initialize the column data classification array 
+            zval data_classification;
+            ZVAL_UNDEF(&data_classification);
+            core::sqlsrv_array_init(*driver_stmt, &data_classification TSRMLS_CC );
+
+            data_classification::fill_column_sensitivity_array(driver_stmt, (SQLSMALLINT)colno, &data_classification);
+
+            add_assoc_zval(return_value, "flags", &data_classification);
+        }
+        else {
+            add_assoc_long(return_value, "flags", 0);
+        }
 
         // get the name of the data type
         char field_type_name[SQL_SERVER_IDENT_SIZE_MAX] = {'\0'};
