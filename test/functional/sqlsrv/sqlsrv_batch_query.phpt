@@ -39,7 +39,7 @@ $expectedCols = 1;
 $expectedRows = sizeof($data[0]);
 
 // Expected result sets = number of columns, since the batch fetches each column sequentially
-$expectedResultSets = 5;
+$expectedResultSets = sizeof($colName);
 
 function checkErrors($expectedError)
 {
@@ -111,11 +111,9 @@ sqlsrv_free_stmt($stmt);
 $inputs = array();
 
 // Generate the inputs for insertRow()
-for ($i = 0; $i < $expectedRows; ++$i)
-{
+for ($i = 0; $i < $expectedRows; ++$i) {
     $inputs[] = array();
-    for ($j = 0; $j < $expectedResultSets; ++$j)
-    {
+    for ($j = 0; $j < $expectedResultSets; ++$j) {
         $inputs[$i][$colName[$j]] = $data[$j][$i];
     }
 }
@@ -125,15 +123,14 @@ for ($i=0; $i < sizeof($inputs); ++$i) {
     sqlsrv_free_stmt($stmt);
 }
 
-$query = "SELECT c1_int from $tableName;
-          SELECT c2_tinyint from $tableName;
-          SELECT c3_smallint from $tableName;
-          SELECT c4_bigint from $tableName;
-          SELECT c5_bit from $tableName;";
+$query = "SELECT c1_int FROM $tableName;
+          SELECT c2_tinyint FROM $tableName;
+          SELECT c3_smallint FROM $tableName;
+          SELECT c4_bigint FROM $tableName;
+          SELECT c5_bit FROM $tableName;";
 
 // Test the batch query with different cursor types
-for ($i = 0; $i < sizeof($cursors); ++$i)
-{
+for ($i = 0; $i < sizeof($cursors); ++$i) {
     $cursor = $cursors[$i];
     echo "Testing with $cursor cursor...\n";
     
