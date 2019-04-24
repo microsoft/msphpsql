@@ -478,7 +478,6 @@ int pdo_sqlsrv_stmt_describe_col( _Inout_ pdo_stmt_t *stmt, _In_ int colno TSRML
    
     // Set the name
     column_data->name = zend_string_init( (const char*)core_meta_data->field_name.get(), core_meta_data->field_name_len, 0 );
-    core_meta_data->field_name.reset();     
 
     // Set the maxlen
     column_data->maxlen = ( core_meta_data->field_precision > 0 ) ? core_meta_data->field_precision : core_meta_data->field_size;
@@ -1066,10 +1065,12 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         // initialize the array to nothing, as PDO requires us to create it
         core::sqlsrv_array_init( *driver_stmt, return_value TSRMLS_CC );
 
-        sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
+        field_meta_data* core_meta_data;
 
-        core_meta_data = core_sqlsrv_field_metadata( driver_stmt, (SQLSMALLINT) colno TSRMLS_CC );
-
+        // metadata should have been saved earlier
+        SQLSRV_ASSERT(colno < driver_stmt->current_meta_data.size(), "pdo_sqlsrv_stmt_get_col_meta: Metadata vector out of sync with column numbers");
+        core_meta_data = driver_stmt->current_meta_data[colno];
+        
         // add the following fields: flags, native_type, driver:decl_type, table
         add_assoc_long( return_value, "flags", 0 );
 
@@ -1109,9 +1110,6 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         if( stmt->columns && stmt->columns[colno].param_type == PDO_PARAM_ZVAL ) {
             add_assoc_long( return_value, "pdo_type", pdo_type );
         }
-
-        // this will ensure that the field_name field, which is an auto pointer gets freed.
-        (*core_meta_data).~field_meta_data();
     }
     catch( core::CoreException& ) {
 
