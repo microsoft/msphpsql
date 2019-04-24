@@ -110,16 +110,14 @@ sqlsrv_free_stmt($stmt);
 
 $inputs = array();
 
-// Generate the inputs for insertRow()
+// Insert each row. Need an associative array to use insertRow()
 for ($i = 0; $i < $expectedRows; ++$i) {
-    $inputs[] = array();
+    $inputs = array();
     for ($j = 0; $j < $expectedResultSets; ++$j) {
-        $inputs[$i][$colName[$j]] = $data[$j][$i];
+        $inputs[$colName[$j]] = $data[$j][$i];
     }
-}
 
-for ($i=0; $i < sizeof($inputs); ++$i) {
-    $stmt = AE\insertRow($conn, $tableName, $inputs[$i]);
+    $stmt = AE\insertRow($conn, $tableName, $inputs);
     sqlsrv_free_stmt($stmt);
 }
 
