@@ -20,7 +20,7 @@ env:
   - TEST_PHP_SQL_PWD=Password123
 
 before_install:
-  - docker pull mcr.microsoft.com/mssql/server:2017-latest
+  - docker pull mcr.microsoft.com/mssql/server:2019-CTP2.4-ubuntu
  
 install:
   - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Password123' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d mcr.microsoft.com/mssql/server:2019-CTP2.4-ubuntu
