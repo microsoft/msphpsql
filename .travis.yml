@@ -23,7 +23,7 @@ before_install:
   - docker pull mcr.microsoft.com/mssql/server:2017-latest
  
 install:
-  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Password123' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d mcr.microsoft.com/mssql/server:2017-latest
+  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Password123' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d mcr.microsoft.com/mssql/server:2019-CTP2.4-ubuntu
   - docker build --build-arg PHPSQLDIR=$PHPSQLDIR -t msphpsql-dev -f Dockerfile-msphpsql .
 
 before_script:
