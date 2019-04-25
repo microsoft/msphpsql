@@ -509,8 +509,7 @@ namespace data_classification {
             column_sensitivity column;
             column.num_pairs = npairs;
 
-            while (npairs--)
-            {
+            while (npairs--) {
                 label_infotype_pair pair;
 
                 unsigned short labelidx, typeidx;
@@ -536,9 +535,7 @@ namespace data_classification {
             return 0;
         }
 
-        CHECK_CUSTOM_ERROR(colno < 0 || colno >= meta->num_columns, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "Column number out of bound") {
-            throw core::CoreException();
-        }
+        SQLSRV_ASSERT(colno >= 0 && colno < meta->num_columns, "fill_column_sensitivity_array: column number out of bound");
 
         zval data_classification;
         ZVAL_UNDEF(&data_classification);
