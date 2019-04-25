@@ -71,10 +71,16 @@ function getRegularMetadata($conn, $tsql)
 {
     // Run the query without data classification metadata
     $stmt1 = sqlsrv_query($conn, $tsql);
+    if (!$stmt1) {
+        fatalError("getRegularMetadata (1): failed in sqlsrv_query.\n");
+    }
 
     // Run the query with the attribute set to false
     $options = array('DataClassification' => false);
     $stmt2 = sqlsrv_query($conn, $tsql, array(), $options);
+    if (!$stmt2) {
+        fatalError("getRegularMetadata (2): failed in sqlsrv_query.\n");
+    }
 
     // The metadata for all columns should be identical
     $numCol = sqlsrv_num_fields($stmt1);
@@ -232,6 +238,7 @@ if ($isSupported) {
     }
 
     compareDataClassification($stmt, $stmt1, $classData);
+    sqlsrv_free_stmt($stmt1);
 
     // $stmt2 should produce the same result as the previous $stmt1
     $stmt2 = sqlsrv_query($conn, $tsql, array(), $options);
@@ -240,8 +247,6 @@ if ($isSupported) {
     }
 
     compareDataClassification($stmt, $stmt2, $classData);
-
-    sqlsrv_free_stmt($stmt1);
     sqlsrv_free_stmt($stmt2);
 }
 
