@@ -5,25 +5,7 @@ Verifies that the problem is no longer reproducible.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php 
-if (! extension_loaded("sqlsrv")) {
-    die("skip extension not loaded");
-}
-
-require_once('MsCommon.inc');
-
-// This test requires to connect with the Always Encrypted feature
-// First check if the system is qualified to run this test
-$options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword);
-$conn = sqlsrv_connect($server, $options);
-if ($conn === false) {
-    die("Error: could not connect during SKIPIF!");
-}
-
-if (!AE\isQualified($conn)) {
-    die("skip - AE feature not supported in the current environment.");
-}
-?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
@@ -37,8 +19,22 @@ function verifyFetchError()
 
 require_once('MsCommon.inc');
 
+// This test requires to connect with the Always Encrypted feature
+// First check if the system is qualified to run this test
+$options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword);
+$conn = sqlsrv_connect($server, $options);
+if ($conn === false) {
+    fatalError("Failed to connect to $server.");
+}
+
+if (!AE\isQualified($conn)) {
+    echo "Done\n";
+    return;
+}
+sqlsrv_close($conn);
+
 // Now connect with ColumnEncryption enabled
-$connectionOptions = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, 'ColumnEncryption' => 'Enabled');
+$connectionOptions = array_merge($options, array('ColumnEncryption' => 'Enabled'));
 $conn = sqlsrv_connect($server, $connectionOptions);
 if ($conn === false) {
     fatalError("Failed to connect to $server.");
