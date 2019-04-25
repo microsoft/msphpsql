@@ -602,30 +602,4 @@ namespace data_classification {
 
         columns_sensitivity.clear();
     }
-
-    void sensitivity_metadata::print_column_sensitivity()
-    {
-        printf("----- Sensitivity classification (%u Columns) -----\n", num_columns);
-
-        for (USHORT i = 0; i < num_columns; i++) {
-            printf("Column %u\n", i);
-            if (columns_sensitivity[i].num_pairs == 0) {
-                printf("(none)\n");
-            }
-            for (USHORT j = 0; j < columns_sensitivity[i].num_pairs; j++) {
-                USHORT labelidx = columns_sensitivity[i].label_info_pairs[j].label_idx;
-                USHORT typeidx = columns_sensitivity[i].label_info_pairs[j].infotype_idx;
-
-                char *label = labels[labelidx]->name;
-                char *label_id = labels[labelidx]->id;
-                char *infotype = infotypes[typeidx]->name;
-                char *infotype_id = infotypes[typeidx]->id;
-
-                printf("\tLabel:\tName: %s ID: %s\n", label, label_id);
-                printf("\tInformation type:\tName: %s ID: %s\n", infotype, infotype_id);
-            }
-            printf("-----------------------\n");
-        }
-    }
-
 } // namespace data_classification

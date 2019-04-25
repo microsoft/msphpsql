@@ -1496,7 +1496,6 @@ namespace data_classification {
             reset();
         }
 
-        void print_column_sensitivity();
         void reset();
     };
 } // namespace data_classification
