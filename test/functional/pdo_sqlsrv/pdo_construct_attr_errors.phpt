@@ -73,12 +73,15 @@ function invalidCredentials()
     $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
     $error1 = "*Login failed for user \'*\'.";
     $error2 = "*Login timeout expired*";
+    $error3 = "*Could not open a connection to SQL Server*";
     
     try {
         $conn = new PDO("sqlsrv:server = $server; database = $database;", $user, $passwd, $options);
         echo "Should have failed to connect\n";
     } catch (PDOException $e) {
-        if (fnmatch($error1, $e->getMessage()) || fnmatch($error2, $e->getMessage())) {
+        if (fnmatch($error1, $e->getMessage()) || 
+            fnmatch($error2, $e->getMessage()) ||
+            fnmatch($error3, $e->getMessage())) {
             ;   // matched at least one of the expected error messages 
         } else {
             echo "invalidCredentials()\n";

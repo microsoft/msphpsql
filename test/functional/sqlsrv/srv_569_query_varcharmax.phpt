@@ -5,7 +5,7 @@ Verifies that the problem is no longer reproducible.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
@@ -27,24 +27,23 @@ if ($conn === false) {
     fatalError("Failed to connect to $server.");
 }
 
-if (!AE\isQualified($conn)) {
-    echo "Done\n";
-    return;
-}
-sqlsrv_close($conn);
+$qualified = AE\isQualified($conn);
+if ($qualified) {
+    sqlsrv_close($conn);
 
-// Now connect with ColumnEncryption enabled
-$connectionOptions = array_merge($options, array('ColumnEncryption' => 'Enabled'));
-$conn = sqlsrv_connect($server, $connectionOptions);
-if ($conn === false) {
-    fatalError("Failed to connect to $server.");
+    // Now connect with ColumnEncryption enabled
+    $connectionOptions = array_merge($options, array('ColumnEncryption' => 'Enabled'));
+    $conn = sqlsrv_connect($server, $connectionOptions);
+    if ($conn === false) {
+        fatalError("Failed to connect to $server.");
+    }
 }
 
 $tableName = 'srvTestTable_569';
 
 dropTable($conn, $tableName);
 
-if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+if ($qualified && strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
     $tsql = "CREATE TABLE $tableName ([c1] varchar(max) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (ENCRYPTION_TYPE = deterministic, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = AEColumnKey))";
 } else {
     $tsql = "CREATE TABLE $tableName ([c1] varchar(max))";

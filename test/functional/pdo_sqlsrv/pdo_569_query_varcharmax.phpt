@@ -5,7 +5,7 @@ Verifies that the problem is no longer reproducible.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");
@@ -16,21 +16,22 @@ try {
     // First check if the system is qualified to run this test
     $dsn = getDSN($server, null);
     $conn = new PDO($dsn, $uid, $pwd);
-    if (!isAEQualified($conn)) {
-        echo "Done\n";
-        return;
-    }
-    unset($conn);
+    $qualified = isAEQualified($conn);
+    
+    if ($qualified) {
+        unset($conn);
 
-    // Now connect with ColumnEncryption enabled
-    $connectionInfo = "ColumnEncryption = Enabled;";
-    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
+        // Now connect with ColumnEncryption enabled
+        $connectionInfo = "ColumnEncryption = Enabled;";
+        $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
+    }
+
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $tableName = 'pdoTestTable_569';
     dropTable($conn, $tableName);
 
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    if ($qualified && strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
         $tsql = "CREATE TABLE $tableName ([c1] varchar(max) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (ENCRYPTION_TYPE = deterministic, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = AEColumnKey))";
     } else {
         $tsql = "CREATE TABLE $tableName ([c1] varchar(max))";
