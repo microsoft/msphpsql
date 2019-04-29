@@ -1,5 +1,5 @@
 --TEST--
-Test setting and getting various statement attributes.
+Test setting and getting various statement attributes with error verifications.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
@@ -120,7 +120,26 @@ function Test6($conn)
     
 }
  
- 
+// PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE=>PDO::SQLSRV_CURSOR_BUFFERED or invalid option
+// Expect errors
+function Test7($conn)
+{
+    echo "Test7 - Set stmt option: SQLSRV_ATTR_CURSOR_SCROLL_TYPE \n";
+    set_stmt_option($conn, array(PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
+    
+    // pass an invalid option
+    set_stmt_option($conn, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => 10));
+}
+
+// PDO::SQLSRV_ATTR_DIRECT_QUERY as statement attribute
+// Expect error 
+function Test8($conn)
+{
+    echo "Test8 - Set stmt attr: SQLSRV_ATTR_DIRECT_QUERY \n";
+    $attr = "PDO::SQLSRV_ATTR_DIRECT_QUERY";
+    $stmt = set_stmt_attr($conn, $attr, true);
+}
+
 try 
 {   
     include("MsSetup.inc");
@@ -136,7 +155,10 @@ try
     test4($conn);
     test5($conn);
     test6($conn);
- 
+    test7($conn);
+    test8($conn);
+    
+    $conn->exec("DROP TABLE temptb");
 }
 
 catch( PDOException $e ) {
@@ -182,3 +204,11 @@ bool\(true\)
 
 Get Attribute: PDO::SQLSRV_ATTR_QUERY_TIMEOUT
 int\(45\)
+
+Test7 - Set stmt option: SQLSRV_ATTR_CURSOR_SCROLL_TYPE
+SQLSTATE\[IMSSP\]: The PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE attribute may only be set when PDO::ATTR_CURSOR is set to PDO::CURSOR_SCROLL in the $driver_options array of PDO::prepare.
+
+SQLSTATE\[IMSSP\]: The value passed for the 'Scrollable' statement option is invalid.
+
+Test8 - Set stmt attr: SQLSRV_ATTR_DIRECT_QUERY 
+SQLSTATE\[IMSSP\]: The PDO::SQLSRV_ATTR_DIRECT_QUERY attribute may only be set in the $driver_options array of PDO::prepare.
