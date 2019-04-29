@@ -63,6 +63,7 @@ function fetchColumnTwice($conn, $tableName, $col, $input)
         $error = '*There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.';
 
         if (!fnmatch($error, $e->getMessage())) {
+            echo "Error message unexpected in fetchColumnTwice\n";
             var_dump($e->getMessage());
         }
     }
@@ -77,9 +78,13 @@ function fetchColumnOutOfBound1($conn, $tableName, $col)
         echo "fetchColumnOutOfBound1: expected fetchColumn to throw an exception\n";
         unset($stmt);
     } catch (PDOException $e) {
-        $error = '* General error: Invalid column index';
+        $error1 = '*General error: Invalid column index';
+        $error2 = '*An invalid column number was specified.';
 
-        if (!fnmatch($error, $e->getMessage())) {
+        if (fnmatch($error1, $e->getMessage()) || fnmatch($error2, $e->getMessage())) {
+            ;
+        } else {
+            echo "Error message unexpected in fetchColumnOutOfBound1\n";
             var_dump($e->getMessage());
         }
     }
