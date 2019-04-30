@@ -82,7 +82,7 @@ function getRegularMetadata($conn, $tsql)
         fatalError("getRegularMetadata (2): failed in sqlsrv_query.\n");
     }
 
-    // The metadata for all columns should be identical
+    // The metadata for each statement, column by column, should be identical
     $numCol = sqlsrv_num_fields($stmt1);
     $metadata1 = sqlsrv_field_metadata($stmt1);
     $metadata2 = sqlsrv_field_metadata($stmt2);

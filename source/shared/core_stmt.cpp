@@ -1009,7 +1009,7 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 
         // First call to get dclen
         r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, dcbuf, 0, &dclen);
-        if (r != SQL_SUCCESS) {
+        if (r != SQL_SUCCESS || dclen == 0) {
             // log the error first
             LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in calling SQLGetDescFieldW first time." );
 

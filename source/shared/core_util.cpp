@@ -497,13 +497,14 @@ namespace data_classification {
         unsigned short ncols;
 
         // Get number of columns
-        meta->num_columns = ncols = *(unsigned short*)ptr;
+        meta->num_columns = ncols = *(reinterpret_cast<unsigned short*>(ptr));
 
         // Move forward
         ptr += sizeof(unsigned short);
 
         while (ncols--) {
-            unsigned short npairs = *(unsigned short*)ptr;
+            unsigned short npairs = *(reinterpret_cast<unsigned short*>(ptr));
+
             ptr += sizeof(unsigned short);
 
             column_sensitivity column;
@@ -513,8 +514,10 @@ namespace data_classification {
                 label_infotype_pair pair;
 
                 unsigned short labelidx, typeidx;
-                labelidx = *(unsigned short*)ptr; ptr += sizeof(unsigned short);
-                typeidx = *(unsigned short*)ptr; ptr += sizeof(unsigned short);
+                labelidx = *(reinterpret_cast<unsigned short*>(ptr));
+                ptr += sizeof(unsigned short);
+                typeidx = *(reinterpret_cast<unsigned short*>(ptr));
+                ptr += sizeof(unsigned short);
 
                 pair.label_idx = labelidx;
                 pair.infotype_idx = typeidx;
@@ -535,7 +538,7 @@ namespace data_classification {
             return 0;
         }
 
-        SQLSRV_ASSERT(colno >= 0 && colno < meta->num_columns, "fill_column_sensitivity_array: column number out of bound");
+        SQLSRV_ASSERT(colno >= 0 && colno < meta->num_columns, "fill_column_sensitivity_array: column number out of bounds");
 
         zval data_classification;
         ZVAL_UNDEF(&data_classification);

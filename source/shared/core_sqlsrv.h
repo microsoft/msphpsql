@@ -1464,8 +1464,7 @@ namespace data_classification {
         }
     };
 
-    struct column_sensitivity
-    {
+    struct column_sensitivity {
         USHORT num_pairs;
         std::vector<label_infotype_pair> label_info_pairs;
 
