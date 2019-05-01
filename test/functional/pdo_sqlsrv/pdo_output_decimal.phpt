@@ -42,7 +42,7 @@ try {
     $expected1 = "7.4";
     $expected2 = "7";
     if ($outValue1 == $expected1 && $outValue2 == $expected2) {
-        echo "Test Successfully done\n";
+        echo "Test Successful\n";
     }
 
     dropProc($conn, $proc_scale);
@@ -56,4 +56,4 @@ try {
 ?>
 
 --EXPECT--
-Test Successfully done
+Test Successful

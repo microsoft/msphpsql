@@ -121,7 +121,6 @@ try {
 
     // Insert data using bind parameters
     $sql = "INSERT INTO $tableName VALUES (?, ?)";
-    // $stmt = $conn->prepare($sql);
     $message = "This is to test github issue 35.";
     $value = base64_encode($message);
     

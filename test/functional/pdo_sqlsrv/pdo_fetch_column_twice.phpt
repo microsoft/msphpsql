@@ -81,6 +81,7 @@ function fetchColumnOutOfBound1($conn, $tableName, $col)
         $error1 = '*General error: Invalid column index';
         $error2 = '*An invalid column number was specified.';
 
+        // Different errors may be returned depending on running with run-tests.php or not
         if (fnmatch($error1, $e->getMessage()) || fnmatch($error2, $e->getMessage())) {
             ;
         } else {
