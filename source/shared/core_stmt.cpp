@@ -146,6 +146,7 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     date_as_string(false),
     format_decimals(false),       // no formatting needed
     decimal_places(NO_CHANGE_DECIMAL_PLACES),     // the default is no formatting to resultset required
+    data_classification(false),
     buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     param_ind_ptrs( 10 ),       // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
@@ -190,6 +191,9 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
         efree( current_results );
         current_results = NULL;
     }
+
+    // delete sensivity data
+    clean_up_sensitivity_metadata();
 
     invalidate();
     zval_ptr_dtor( &param_input_strings );
@@ -237,6 +241,9 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
         current_results = NULL;
     }
 
+    // delete sensivity data
+    clean_up_sensitivity_metadata();
+
     // create a new result set
     if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {
          sqlsrv_malloc_auto_ptr<sqlsrv_buffered_result_set> result;
@@ -247,6 +254,16 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
     }
     else {
         current_results = new (sqlsrv_malloc( sizeof( sqlsrv_odbc_result_set ))) sqlsrv_odbc_result_set( this );
+    }
+}
+
+// free sensitivity classification metadata
+void sqlsrv_stmt::clean_up_sensitivity_metadata()
+{
+    if (current_sensitivity_metadata) {
+        current_sensitivity_metadata->~sensitivity_metadata();
+        sqlsrv_free(current_sensitivity_metadata);
+        current_sensitivity_metadata = NULL;
     }
 }
 
@@ -959,6 +976,101 @@ field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQL
     return result_field_meta_data;
 }
 
+void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+{
+    sqlsrv_malloc_auto_ptr<unsigned char> dcbuf;
+    SQLINTEGER dclen = 0;
+    SQLINTEGER dclenout = 0;
+    SQLHANDLE ird;
+    SQLRETURN r;
+
+    try {
+        if (!stmt->data_classification) {
+            return;
+        }
+
+        if (stmt->current_sensitivity_metadata != NULL) {
+            // Already cached, so return
+            return;
+        }
+
+        CHECK_CUSTOM_ERROR(!stmt->executed, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION) {
+            throw core::CoreException();
+        }
+
+        // Reference: https://docs.microsoft.com/sql/connect/odbc/data-classification
+        // To retrieve sensitivity classfication data, the first step is to retrieve the IRD(Implementation Row Descriptor) handle by 
+        // calling SQLGetStmtAttr with SQL_ATTR_IMP_ROW_DESC statement attribute
+        r = ::SQLGetStmtAttr(stmt->handle(), SQL_ATTR_IMP_ROW_DESC, (SQLPOINTER)&ird, SQL_IS_POINTER, 0);
+        CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
+            LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in getting Implementation Row Descriptor handle." );
+            throw core::CoreException();
+        }
+
+        // First call to get dclen
+        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, dcbuf, 0, &dclen);
+        if (r != SQL_SUCCESS || dclen == 0) {
+            // log the error first
+            LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in calling SQLGetDescFieldW first time." );
+
+            // If this fails, check if it is the "Invalid Descriptor Field error"
+            SQLRETURN rc;
+            SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {'\0'};
+            SQLSMALLINT len;
+            rc = ::SQLGetDiagField(SQL_HANDLE_DESC, ird, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC);
+
+            CHECK_SQL_ERROR_OR_WARNING(rc, stmt) {
+                throw core::CoreException();
+            }
+
+            CHECK_CUSTOM_ERROR(!strcmp("HY091", reinterpret_cast<char*>(state)), stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE) {
+                throw core::CoreException();
+            }
+
+            CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "Unexpected SQL Error state") {
+                throw core::CoreException();
+            }
+        }
+
+        // Call again to read SQL_CA_SS_DATA_CLASSIFICATION data
+        dcbuf = static_cast<unsigned char*>(sqlsrv_malloc(dclen * sizeof(char)));
+
+        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, dcbuf, dclen, &dclenout);
+        if (r != SQL_SUCCESS) {
+            LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in calling SQLGetDescFieldW again." );
+
+            CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "SQLGetDescFieldW failed unexpectedly") {
+                throw core::CoreException();
+            }
+        }
+
+        // Start parsing the data (blob)
+        using namespace data_classification;
+        unsigned char *dcptr = dcbuf;
+
+        sqlsrv_malloc_auto_ptr<sensitivity_metadata> sensitivity_meta;
+        sensitivity_meta = new (sqlsrv_malloc(sizeof(sensitivity_metadata))) sensitivity_metadata();
+
+        // Parse the name id pairs for labels first then info types
+        parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_labels, sensitivity_meta->labels, &dcptr);
+        parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_infotypes, sensitivity_meta->infotypes, &dcptr);
+
+        // Next parse the sensitivity properties
+        parse_column_sensitivity_props(sensitivity_meta, &dcptr);
+
+        unsigned char *dcend = dcbuf;
+        dcend += dclen;
+
+        CHECK_CUSTOM_ERROR(dcptr != dcend, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "Metadata parsing ends unexpectedly") {
+            throw core::CoreException();
+        }
+       
+        stmt->current_sensitivity_metadata = sensitivity_meta;
+        sensitivity_meta.transferred();
+    } catch (core::CoreException& e) {
+        throw e;
+    }
+}
 
 // core_sqlsrv_get_field
 // Return the value of a column from ODBC
@@ -1502,6 +1614,16 @@ void stmt_option_format_decimals:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_o
 void stmt_option_decimal_places:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
 {
     core_sqlsrv_set_decimal_places(stmt, value_z TSRMLS_CC);
+}
+
+void stmt_option_data_classification:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
+{
+    if (zend_is_true(value_z)) {
+        stmt->data_classification = true;
+    }
+    else {
+        stmt->data_classification = false;
+    }
 }
 
 // internal function to release the active stream.  Called by each main API function

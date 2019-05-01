@@ -87,7 +87,8 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
     PDO_STMT_OPTION_FETCHES_DATETIME_TYPE,
     PDO_STMT_OPTION_FORMAT_DECIMALS,
-    PDO_STMT_OPTION_DECIMAL_PLACES
+    PDO_STMT_OPTION_DECIMAL_PLACES,
+    PDO_STMT_OPTION_DATA_CLASSIFICATION
 };
 
 // List of all the statement options supported by this driver.
@@ -104,6 +105,7 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_FETCHES_DATETIME_TYPE, std::unique_ptr<stmt_option_fetch_datetime>( new stmt_option_fetch_datetime ) },
     { NULL, 0, PDO_STMT_OPTION_FORMAT_DECIMALS, std::unique_ptr<stmt_option_format_decimals>( new stmt_option_format_decimals ) },
     { NULL, 0, PDO_STMT_OPTION_DECIMAL_PLACES, std::unique_ptr<stmt_option_decimal_places>( new stmt_option_decimal_places ) },
+    { NULL, 0, PDO_STMT_OPTION_DATA_CLASSIFICATION, std::unique_ptr<stmt_option_data_classification>( new stmt_option_data_classification ) },
 
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
@@ -1136,6 +1138,7 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR:
             case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
+            case SQLSRV_ATTR_DATA_CLASSIFICATION:
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1193,7 +1196,8 @@ int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
              // Statement level only
             case PDO_ATTR_EMULATE_PREPARES:
             case PDO_ATTR_CURSOR:
-            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
+            case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:  
+            case SQLSRV_ATTR_DATA_CLASSIFICATION:
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1594,70 +1598,75 @@ namespace {
 
 // Maps the PDO driver specific statement option/attribute constants to the core layer 
 // statement option/attribute constants.
-void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ HashTable* options_ht, 
-                         _Inout_ zval* data TSRMLS_DC )
+void add_stmt_option_key(_Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ HashTable* options_ht,
+                            _Inout_ zval* data TSRMLS_DC)
 {
-     zend_ulong option_key = -1;
-     switch( key ) {
-  
-         case PDO_ATTR_CURSOR:
-             option_key = SQLSRV_STMT_OPTION_SCROLLABLE;
-             break;
-            
-         case SQLSRV_ATTR_ENCODING:
-             option_key = PDO_STMT_OPTION_ENCODING;
-             break;
+    zend_ulong option_key = -1;
+    switch (key) {
 
-         case SQLSRV_ATTR_QUERY_TIMEOUT:
-             option_key = SQLSRV_STMT_OPTION_QUERY_TIMEOUT;
-             break;
+    case PDO_ATTR_CURSOR:
+        option_key = SQLSRV_STMT_OPTION_SCROLLABLE;
+        break;
 
-         case PDO_ATTR_STATEMENT_CLASS:
-             break;
+    case SQLSRV_ATTR_ENCODING:
+        option_key = PDO_STMT_OPTION_ENCODING;
+        break;
 
-         case SQLSRV_ATTR_DIRECT_QUERY:
-             option_key = PDO_STMT_OPTION_DIRECT_QUERY;
-             break;
+    case SQLSRV_ATTR_QUERY_TIMEOUT:
+        option_key = SQLSRV_STMT_OPTION_QUERY_TIMEOUT;
+        break;
 
-         case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:
-             option_key = PDO_STMT_OPTION_CURSOR_SCROLL_TYPE;
-             break;
+    case PDO_ATTR_STATEMENT_CLASS:
+        break;
 
-         case SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE:
-             option_key = PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE;
-             break;
+    case SQLSRV_ATTR_DIRECT_QUERY:
+        option_key = PDO_STMT_OPTION_DIRECT_QUERY;
+        break;
 
-         case PDO_ATTR_EMULATE_PREPARES:
-             option_key = PDO_STMT_OPTION_EMULATE_PREPARES;
-             break;
+    case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:
+        option_key = PDO_STMT_OPTION_CURSOR_SCROLL_TYPE;
+        break;
 
-         case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-             option_key = PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE;
-             break;
+    case SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE:
+        option_key = PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE;
+        break;
 
-         case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
-             option_key = PDO_STMT_OPTION_FETCHES_DATETIME_TYPE;
-             break;
+    case PDO_ATTR_EMULATE_PREPARES:
+        option_key = PDO_STMT_OPTION_EMULATE_PREPARES;
+        break;
 
-         case SQLSRV_ATTR_FORMAT_DECIMALS:
-             option_key = PDO_STMT_OPTION_FORMAT_DECIMALS;
-             break;
+    case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
+        option_key = PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE;
+        break;
 
-         case SQLSRV_ATTR_DECIMAL_PLACES:
-             option_key = PDO_STMT_OPTION_DECIMAL_PLACES;
-             break;
+    case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
+        option_key = PDO_STMT_OPTION_FETCHES_DATETIME_TYPE;
+        break;
 
-         default:
-             CHECK_CUSTOM_ERROR( true, ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
-                 throw core::CoreException();
-             }
-             break;
+    case SQLSRV_ATTR_FORMAT_DECIMALS:
+        option_key = PDO_STMT_OPTION_FORMAT_DECIMALS;
+        break;
+
+    case SQLSRV_ATTR_DECIMAL_PLACES:
+        option_key = PDO_STMT_OPTION_DECIMAL_PLACES;
+        break;
+
+    case SQLSRV_ATTR_DATA_CLASSIFICATION:
+        option_key = PDO_STMT_OPTION_DATA_CLASSIFICATION;
+        break;
+
+    default:
+        CHECK_CUSTOM_ERROR(true, ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION)
+        {
+            throw core::CoreException();
+        }
+        break;
     }
 
     // if a PDO handled option makes it through (such as PDO_ATTR_STATEMENT_CLASS, just skip it
-    if( option_key != -1 ) {
-        zval_add_ref( data );
-        core::sqlsrv_zend_hash_index_update(ctx, options_ht, option_key, data TSRMLS_CC );
+    if (option_key != -1) {
+        zval_add_ref(data);
+        core::sqlsrv_zend_hash_index_update(ctx, options_ht, option_key, data TSRMLS_CC);
     }
 }
 

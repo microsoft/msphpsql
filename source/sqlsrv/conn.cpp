@@ -219,6 +219,7 @@ namespace SSStmtOptionNames {
     const char DATE_AS_STRING[] = "ReturnDatesAsStrings";
     const char FORMAT_DECIMALS[] = "FormatDecimals";
     const char DECIMAL_PLACES[] = "DecimalPlaces";
+    const char DATA_CLASSIFICATION[] = "DataClassification";
 }
 
 namespace SSConnOptionNames {
@@ -311,6 +312,12 @@ const stmt_option SS_STMT_OPTS[] = {
         sizeof( SSStmtOptionNames::DECIMAL_PLACES),
         SQLSRV_STMT_OPTION_DECIMAL_PLACES, 
         std::unique_ptr<stmt_option_decimal_places>( new stmt_option_decimal_places )
+    },
+    {
+        SSStmtOptionNames::DATA_CLASSIFICATION, 
+        sizeof( SSStmtOptionNames::DATA_CLASSIFICATION ),
+        SQLSRV_STMT_OPTION_DATA_CLASSIFICATION, 
+        std::unique_ptr<stmt_option_data_classification>( new stmt_option_data_classification )
     },
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };

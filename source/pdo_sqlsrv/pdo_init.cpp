@@ -294,6 +294,7 @@ namespace {
         { "SQLSRV_ATTR_FETCHES_DATETIME_TYPE", SQLSRV_ATTR_FETCHES_DATETIME_TYPE },
         { "SQLSRV_ATTR_FORMAT_DECIMALS"     , SQLSRV_ATTR_FORMAT_DECIMALS },
         { "SQLSRV_ATTR_DECIMAL_PLACES"      , SQLSRV_ATTR_DECIMAL_PLACES },
+        { "SQLSRV_ATTR_DATA_CLASSIFICATION" , SQLSRV_ATTR_DATA_CLASSIFICATION },
 
         // used for the size for output parameters: PDO::PARAM_INT and PDO::PARAM_BOOL use the default size of int,
         // PDO::PARAM_STR uses the size of the string in the variable

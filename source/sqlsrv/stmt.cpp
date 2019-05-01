@@ -481,6 +481,10 @@ PHP_FUNCTION( sqlsrv_field_metadata )
     // get the number of fields in the resultset and its metadata if not exists
     SQLSMALLINT num_cols = get_resultset_meta_data(stmt);
 
+    if (stmt->data_classification) {
+        core_sqlsrv_sensitivity_metadata(stmt);
+    }
+
     zval result_meta_data;
     ZVAL_UNDEF( &result_meta_data );
     core::sqlsrv_array_init( *stmt, &result_meta_data TSRMLS_CC );
@@ -533,6 +537,10 @@ PHP_FUNCTION( sqlsrv_field_metadata )
         core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::NULLABLE, core_meta_data->field_is_nullable
                                           TSRMLS_CC );
        
+        if (stmt->data_classification) {
+            data_classification::fill_column_sensitivity_array(stmt, f, &field_array);
+        }
+
         // add this field's meta data to the result set meta data
         core::sqlsrv_add_next_index_zval( *stmt, &result_meta_data, &field_array TSRMLS_CC );
     }

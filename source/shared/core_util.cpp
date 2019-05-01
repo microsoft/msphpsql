@@ -414,3 +414,192 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
 }
 
 }
+
+
+namespace data_classification {
+    const char* DATA_CLASS = "Data Classification";
+    const char* LABEL = "Label";
+    const char* INFOTYPE = "Information Type";
+    const char* NAME = "name";
+    const char* ID = "id";
+
+    void convert_sensivity_field(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_ENCODING encoding, _In_ unsigned char *ptr, _In_ int len, _Inout_updates_bytes_(cchOutLen) char** field_name)
+    {
+        sqlsrv_malloc_auto_ptr<SQLWCHAR> temp_field_name;
+        int temp_field_len = len * 2;
+        SQLLEN field_name_len = 0;
+
+        temp_field_name = static_cast<SQLWCHAR*>(sqlsrv_malloc((len + 1) * sizeof(SQLWCHAR)));
+        memcpy_s(temp_field_name, temp_field_len, ptr, temp_field_len);
+        temp_field_name[temp_field_len] = '\0';
+
+        bool converted = convert_string_from_utf16(encoding, temp_field_name, len, field_name, field_name_len);
+
+        CHECK_CUSTOM_ERROR(!converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message()) {
+            throw core::CoreException();
+        }
+    }
+
+    void name_id_pair_free(_Inout_ name_id_pair* pair)
+    {
+        if (pair->name) {
+            pair->name.reset();
+        }
+        if (pair->id) {
+            pair->id.reset();
+        }
+        sqlsrv_free(pair);
+    }
+
+    void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>& pairs, _Inout_ unsigned char **pptr)
+    {
+        unsigned char *ptr = *pptr;
+        unsigned short npairs;
+        numpairs = npairs = *(unsigned short*)ptr;
+        SQLSRV_ENCODING encoding = ((stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
+
+        ptr += sizeof(unsigned short);
+        while (npairs--) {
+            int namelen, idlen;
+            unsigned char *nameptr, *idptr;
+
+            sqlsrv_malloc_auto_ptr<name_id_pair> pair;
+            pair = new(sqlsrv_malloc(sizeof(name_id_pair))) name_id_pair();
+
+            sqlsrv_malloc_auto_ptr<char> name;
+            sqlsrv_malloc_auto_ptr<char> id;
+
+            namelen = *ptr++;
+            nameptr = ptr;
+
+            pair->name_len = namelen; 
+            convert_sensivity_field(stmt, encoding, nameptr, namelen, (char**)&name);
+            pair->name = name;
+
+            ptr += namelen * 2;
+            idlen = *ptr++;
+            idptr = ptr;
+            ptr += idlen * 2;
+
+            pair->id_len = idlen;
+            convert_sensivity_field(stmt, encoding, idptr, idlen, (char**)&id);
+            pair->id = id;
+
+            pairs.push_back(pair.get());
+            pair.transferred();
+        }
+        *pptr = ptr;
+    } 
+
+    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr)
+    {
+        unsigned char *ptr = *pptr;
+        unsigned short ncols;
+
+        // Get number of columns
+        meta->num_columns = ncols = *(reinterpret_cast<unsigned short*>(ptr));
+
+        // Move forward
+        ptr += sizeof(unsigned short);
+
+        while (ncols--) {
+            unsigned short npairs = *(reinterpret_cast<unsigned short*>(ptr));
+
+            ptr += sizeof(unsigned short);
+
+            column_sensitivity column;
+            column.num_pairs = npairs;
+
+            while (npairs--) {
+                label_infotype_pair pair;
+
+                unsigned short labelidx, typeidx;
+                labelidx = *(reinterpret_cast<unsigned short*>(ptr));
+                ptr += sizeof(unsigned short);
+                typeidx = *(reinterpret_cast<unsigned short*>(ptr));
+                ptr += sizeof(unsigned short);
+
+                pair.label_idx = labelidx;
+                pair.infotype_idx = typeidx;
+
+                column.label_info_pairs.push_back(pair);
+            }
+
+            meta->columns_sensitivity.push_back(column);
+        }
+
+        *pptr = ptr;
+    }
+
+    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *return_array TSRMLS_CC)
+    {
+        sensitivity_metadata* meta = stmt->current_sensitivity_metadata;
+        if (meta == NULL) {
+            return 0;
+        }
+
+        SQLSRV_ASSERT(colno >= 0 && colno < meta->num_columns, "fill_column_sensitivity_array: column number out of bounds");
+
+        zval data_classification;
+        ZVAL_UNDEF(&data_classification);
+        core::sqlsrv_array_init(*stmt, &data_classification TSRMLS_CC );
+
+        USHORT num_pairs = meta->columns_sensitivity[colno].num_pairs;
+
+        if (num_pairs == 0) {
+            core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification TSRMLS_CC);
+
+            return 0;
+        }
+
+        zval sensitivity_properties;
+        ZVAL_UNDEF(&sensitivity_properties);
+        core::sqlsrv_array_init(*stmt, &sensitivity_properties TSRMLS_CC);
+
+        for (USHORT j = 0; j < num_pairs; j++) {
+            zval label_array, infotype_array;
+            ZVAL_UNDEF(&label_array);
+            ZVAL_UNDEF(&infotype_array);
+
+            core::sqlsrv_array_init(*stmt, &label_array TSRMLS_CC);
+            core::sqlsrv_array_init(*stmt, &infotype_array TSRMLS_CC);
+
+            USHORT labelidx = meta->columns_sensitivity[colno].label_info_pairs[j].label_idx;
+            USHORT typeidx = meta->columns_sensitivity[colno].label_info_pairs[j].infotype_idx;
+
+            char *label = meta->labels[labelidx]->name;
+            char *label_id = meta->labels[labelidx]->id;
+            char *infotype = meta->infotypes[typeidx]->name;
+            char *infotype_id = meta->infotypes[typeidx]->id;
+
+            core::sqlsrv_add_assoc_string(*stmt, &label_array, NAME, label, 1 TSRMLS_CC);
+            core::sqlsrv_add_assoc_string(*stmt, &label_array, ID, label_id, 1 TSRMLS_CC);
+
+            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, LABEL, &label_array TSRMLS_CC);
+
+            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, NAME, infotype, 1 TSRMLS_CC);
+            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, ID, infotype_id, 1 TSRMLS_CC);
+
+            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, INFOTYPE, &infotype_array TSRMLS_CC);
+
+            // add the pair of sensitivity properties to data_classification
+            core::sqlsrv_add_next_index_zval(*stmt, &data_classification, &sensitivity_properties TSRMLS_CC );
+        }
+
+        // add data classfication as associative array
+        core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification TSRMLS_CC);
+
+        return num_pairs;
+    }
+
+    void sensitivity_metadata::reset()
+    {
+        std::for_each(labels.begin(), labels.end(), name_id_pair_free);
+        labels.clear();
+
+        std::for_each(infotypes.begin(), infotypes.end(), name_id_pair_free);
+        infotypes.clear();
+
+        columns_sensitivity.clear();
+    }
+} // namespace data_classification
