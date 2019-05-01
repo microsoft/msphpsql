@@ -8,40 +8,30 @@ Test setting and getting various statement attributes with error verifications.
 function set_stmt_option($conn, $arr)
 {
     try {
-    
-        $stmt = $conn->prepare( "Select * from temptb", $arr );
+        $stmt = $conn->prepare("Select * from temptb", $arr);
         return $stmt;
-    }
-    
-    catch( PDOException $e)
-    {
+    } catch (PDOException $e) {
         echo $e->getMessage() . "\n\n";
-        return NULL;
-    } 
+        return null;
+    }
 }
  
 function set_stmt_attr($conn, $attr, $val)
 {
-    $stmt = NULL;
-    try 
-    {
+    $stmt = null;
+    try {
         echo "Set Attribute: " . $attr . "\n";
-        $stmt = $conn->prepare( "Select * from temptb");
-    }
-    catch( PDOException $e)
-    {
+        $stmt = $conn->prepare("Select * from temptb");
+    } catch (PDOException $e) {
         echo $e->getMessage() . "\n\n";
-        return NULL;
+        return null;
     }
         
     try {
         $res = $stmt->setAttribute(constant($attr), $val);
         var_dump($res);
         echo "\n\n";
-    }
-     
-    catch( PDOException $e)
-    {
+    } catch (PDOException $e) {
         echo $e->getMessage() . "\n\n";
     }
     return $stmt;
@@ -49,27 +39,23 @@ function set_stmt_attr($conn, $attr, $val)
 
 function get_stmt_attr($stmt, $attr)
 {
-    try 
-    {
+    try {
         echo "Get Attribute: " . $attr. "\n";
         $res = $stmt->getAttribute(constant($attr));
         var_dump($res);
         echo "\n";
-    }
-    
-    catch( PDOException $e)
-    {
+    } catch (PDOException $e) {
         echo $e->getMessage() . "\n\n";
-    } 
+    }
 }
   
 // valid
  function Test1($conn)
-{
-    echo "Test1 - Set stmt option: SQLSRV_ATTR_ENCODING, ATTR_CURSOR, SQLSRV_ATTR_QUERY_TIMEOUT \n";
-    set_stmt_option($conn, array(PDO::SQLSRV_ATTR_ENCODING => 3, PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY, PDO::SQLSRV_ATTR_QUERY_TIMEOUT => 44));
-    echo "Test Successful\n\n";
-}
+ {
+     echo "Test1 - Set stmt option: SQLSRV_ATTR_ENCODING, ATTR_CURSOR, SQLSRV_ATTR_QUERY_TIMEOUT \n";
+     set_stmt_option($conn, array(PDO::SQLSRV_ATTR_ENCODING => 3, PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY, PDO::SQLSRV_ATTR_QUERY_TIMEOUT => 44));
+     echo "Test Successful\n\n";
+ }
  
 // invalid
 function Test2($conn)
@@ -84,10 +70,11 @@ function Test3($conn)
     echo "Test3 \n";
     $attr = "PDO::ATTR_CURSOR";
     $stmt = set_stmt_attr($conn, $attr, 1);
-    if($stmt)
+    if ($stmt) {
         get_stmt_attr($stmt, $attr);
-    else
+    } else {
         echo "Test3: stmt was null";
+    }
 }
  
 // not supported attribute
@@ -117,7 +104,6 @@ function Test6($conn)
     $attr = "PDO::SQLSRV_ATTR_QUERY_TIMEOUT";
     $stmt = set_stmt_attr($conn, $attr, 45);
     get_stmt_attr($stmt, $attr);
-    
 }
  
 // PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE=>PDO::SQLSRV_CURSOR_BUFFERED or invalid option
@@ -132,7 +118,7 @@ function Test7($conn)
 }
 
 // PDO::SQLSRV_ATTR_DIRECT_QUERY as statement attribute
-// Expect error 
+// Expect error
 function Test8($conn)
 {
     echo "Test8 - Set stmt attr: SQLSRV_ATTR_DIRECT_QUERY \n";
@@ -140,12 +126,11 @@ function Test8($conn)
     $stmt = set_stmt_attr($conn, $attr, true);
 }
 
-try 
-{   
+try {
     include("MsSetup.inc");
    
-    $conn = new PDO( "sqlsrv:Server=$server; Database = $databaseName ", $uid, $pwd);
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+    $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName ", $uid, $pwd);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->exec("IF OBJECT_ID('temptb', 'U') IS NOT NULL DROP TABLE temptb");
     $conn->exec("CREATE TABLE temptb(id INT NOT NULL PRIMARY KEY, val VARCHAR(10)) ");
    
@@ -159,11 +144,8 @@ try
     test8($conn);
     
     $conn->exec("DROP TABLE temptb");
-}
-
-catch( PDOException $e ) {
-
-    var_dump( $e );
+} catch (PDOException $e) {
+    var_dump($e);
     exit;
 }
 
