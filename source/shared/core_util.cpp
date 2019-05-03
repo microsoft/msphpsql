@@ -426,12 +426,18 @@ namespace data_classification {
     void convert_sensivity_field(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_ENCODING encoding, _In_ unsigned char *ptr, _In_ int len, _Inout_updates_bytes_(cchOutLen) char** field_name)
     {
         sqlsrv_malloc_auto_ptr<SQLWCHAR> temp_field_name;
-        int temp_field_len = len * 2;
+        int temp_field_len = len * sizeof(SQLWCHAR);
         SQLLEN field_name_len = 0;
 
+        if (len == 0) {
+            *field_name = reinterpret_cast<char*>(sqlsrv_malloc(1));
+            *field_name[0] = '\0';
+            return;
+        }
+
         temp_field_name = static_cast<SQLWCHAR*>(sqlsrv_malloc((len + 1) * sizeof(SQLWCHAR)));
+        memset(temp_field_name, L'\0', len + 1);
         memcpy_s(temp_field_name, temp_field_len, ptr, temp_field_len);
-        temp_field_name[temp_field_len] = '\0';
 
         bool converted = convert_string_from_utf16(encoding, temp_field_name, len, field_name, field_name_len);
 
@@ -450,14 +456,16 @@ namespace data_classification {
         }
         sqlsrv_free(pair);
     }
-
-    void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>& pairs, _Inout_ unsigned char **pptr)
+    
+    void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>* pairs, _Inout_ unsigned char **pptr)
     {
         unsigned char *ptr = *pptr;
         unsigned short npairs;
-        numpairs = npairs = *(unsigned short*)ptr;
+        numpairs = npairs = *(reinterpret_cast<unsigned short*>(ptr)); 
         SQLSRV_ENCODING encoding = ((stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
 
+        pairs->reserve(numpairs);
+    
         ptr += sizeof(unsigned short);
         while (npairs--) {
             int namelen, idlen;
@@ -485,8 +493,9 @@ namespace data_classification {
             convert_sensivity_field(stmt, encoding, idptr, idlen, (char**)&id);
             pair->id = id;
 
-            pairs.push_back(pair.get());
+            name_id_pair* a_pair = pair;
             pair.transferred();
+            pairs->push_back(a_pair);
         }
         *pptr = ptr;
     } 
@@ -537,7 +546,7 @@ namespace data_classification {
         if (meta == NULL) {
             return 0;
         }
-
+       
         SQLSRV_ASSERT(colno >= 0 && colno < meta->num_columns, "fill_column_sensitivity_array: column number out of bounds");
 
         zval data_classification;

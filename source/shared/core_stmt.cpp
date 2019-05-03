@@ -968,7 +968,7 @@ field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQL
         }
     }
 
-    // Set the field name lenth
+    // Set the field name length
     meta_data->field_name_len = static_cast<SQLSMALLINT>( field_name_len );
 
     field_meta_data* result_field_meta_data = meta_data;
@@ -1052,8 +1052,8 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
         sensitivity_meta = new (sqlsrv_malloc(sizeof(sensitivity_metadata))) sensitivity_metadata();
 
         // Parse the name id pairs for labels first then info types
-        parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_labels, sensitivity_meta->labels, &dcptr);
-        parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_infotypes, sensitivity_meta->infotypes, &dcptr);
+        parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_labels, &sensitivity_meta->labels, &dcptr);
+        parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_infotypes, &sensitivity_meta->infotypes, &dcptr);
 
         // Next parse the sensitivity properties
         parse_column_sensitivity_props(sensitivity_meta, &dcptr);

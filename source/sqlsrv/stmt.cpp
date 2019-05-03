@@ -538,7 +538,7 @@ PHP_FUNCTION( sqlsrv_field_metadata )
                                           TSRMLS_CC );
        
         if (stmt->data_classification) {
-            data_classification::fill_column_sensitivity_array(stmt, f, &field_array);
+            data_classification::fill_column_sensitivity_array(stmt, f, &field_array TSRMLS_CC);
         }
 
         // add this field's meta data to the result set meta data
