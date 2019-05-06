@@ -493,9 +493,8 @@ namespace data_classification {
             convert_sensivity_field(stmt, encoding, idptr, idlen, (char**)&id);
             pair->id = id;
 
-            name_id_pair* a_pair = pair;
+            pairs.push_back(pair.get());
             pair.transferred();
-            pairs->push_back(a_pair);
         }
         *pptr = ptr;
     } 
