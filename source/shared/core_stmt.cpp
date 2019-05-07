@@ -262,8 +262,7 @@ void sqlsrv_stmt::clean_up_sensitivity_metadata()
 {
     if (current_sensitivity_metadata) {
         current_sensitivity_metadata->~sensitivity_metadata();
-        sqlsrv_free(current_sensitivity_metadata);
-        current_sensitivity_metadata = NULL;
+        current_sensitivity_metadata.reset();
     }
 }
 
