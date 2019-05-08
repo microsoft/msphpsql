@@ -270,7 +270,7 @@ class BuildUtil(object):
 
     def generate_build_options(self):
         """Return the generated build configuration and arguments"""
-        cmd_line = ''
+        cmd_line = '--enable-json'
         if self.debug_enabled:
             cmd_line = ' --enable-debug '
             

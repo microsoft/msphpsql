@@ -8,6 +8,8 @@ PHPT_EXEC=true
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
+$dataClassKey = 'Data Classification';
+
 function testErrorCases($conn, $tableName, $isSupported)
 {
     // This function will check two error cases:
@@ -136,6 +138,8 @@ function verifyClassInfo($input, $actual)
 
 function compareDataClassification($stmt1, $stmt2, $classData)
 {
+    global $dataClassKey;
+    
     $numCol = sqlsrv_num_fields($stmt1);
 
     $metadata1 = sqlsrv_field_metadata($stmt1);
@@ -152,7 +156,7 @@ function compareDataClassification($stmt1, $stmt2, $classData)
     // empty array. Otherwise, it should contain an array with one set of
     // Label (name, id) and Information Type (name, id)
 
-    $noClassInfo = array('Data Classification' => array());
+    $noClassInfo = array($dataClassKey => array());
     for ($i = 0; $i < $numCol; $i++) {
         $diff = array_diff_assoc($metadata2[$i], $metadata1[$i]);
 
@@ -164,10 +168,48 @@ function compareDataClassification($stmt1, $stmt2, $classData)
             }
         } else {
             // Verify the classification metadata
-            if (!verifyClassInfo($classData[$i], $diff['Data Classification'])) {
+            if (!verifyClassInfo($classData[$i], $diff[$dataClassKey])) {
                 var_dump($diff);
             }
         }
+    }
+}
+
+function runBatchQuery($conn, $tableName)
+{
+    global $dataClassKey;
+    
+    $options = array('DataClassification' => true);
+    $tsql = "SELECT SSN, BirthDate FROM $tableName";
+    $batchQuery = $tsql . ';' . $tsql;
+
+    $stmt = sqlsrv_query($conn, $batchQuery, array(), $options);
+    if (!$stmt) {
+        fatalError("Error when calling sqlsrv_query '$tsql'.\n");
+    }
+
+    $numCol = sqlsrv_num_fields($stmt);
+    $c = rand(0, $numCol - 1);
+
+    $metadata1 = sqlsrv_field_metadata($stmt);
+    if (!$metadata1 || !array_key_exists($dataClassKey, $metadata1[$c])) {
+        fatalError("runBatchQuery(1): failed to get metadata");
+    }
+    $result = sqlsrv_next_result($stmt);
+    if (is_null($result) || !$result) {
+        fatalError("runBatchQuery: failed to get next result");
+    }
+    $metadata2 = sqlsrv_field_metadata($stmt);
+    if (!$metadata2 || !array_key_exists($dataClassKey, $metadata2[$c])) {
+        fatalError("runBatchQuery(2): failed to get metadata");
+    }
+
+    $jstr1 = json_encode($metadata1[$c][$dataClassKey]);
+    $jstr2 = json_encode($metadata2[$c][$dataClassKey]);
+    if ($jstr1 !== $jstr2) {
+        echo "The JSON encoded strings should be identical\n";
+        var_dump($jstr1);
+        var_dump($jstr2);
     }
 }
 
@@ -248,6 +290,8 @@ if ($isSupported) {
 
     compareDataClassification($stmt, $stmt2, $classData);
     sqlsrv_free_stmt($stmt2);
+    
+    runBatchQuery($conn, $tableName);
 }
 
 sqlsrv_free_stmt($stmt);
