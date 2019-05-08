@@ -11,6 +11,8 @@ PHPT_EXEC=true
 require_once('MsSetup.inc');
 require_once('MsCommon_mid-refactor.inc');
 
+$dataClassKey = 'Data Classification';
+
 function testConnAttrCases()
 {
     // Attribute PDO::SQLSRV_ATTR_DATA_CLASSIFICATION is limited to statement level only
@@ -157,8 +159,10 @@ function verifyClassInfo($input, $actual)
 
 function compareDataClassification($stmt1, $stmt2, $classData)
 {
+    global $dataClassKey;
+    
     $numCol = $stmt1->columnCount();
-    $noClassInfo = array('Data Classification' => array());
+    $noClassInfo = array($dataClassKey => array());
 
     for ($i = 0; $i < $numCol; $i++) {
         $metadata1 = $stmt1->getColumnMeta($i);
@@ -176,7 +180,7 @@ function compareDataClassification($stmt1, $stmt2, $classData)
                     }
                 } else {
                     // Verify the classification metadata
-                    if (!verifyClassInfo($classData[$i], $value['Data Classification'])) {
+                    if (!verifyClassInfo($classData[$i], $value[$dataClassKey])) {
                         var_dump($value);
                     }
                 }
@@ -186,6 +190,45 @@ function compareDataClassification($stmt1, $stmt2, $classData)
                     var_dump($value);
                 }
             }
+        }
+    }
+}
+
+function runBatchQuery($conn, $tableName)
+{
+    global $dataClassKey;
+    
+    $options = array(PDO::SQLSRV_ATTR_DATA_CLASSIFICATION => true);
+    $tsql = "SELECT SSN, BirthDate FROM $tableName";
+
+    // Run a batch query 
+    $batchQuery = $tsql . ';' . $tsql;
+    $stmt = $conn->prepare($batchQuery, $options);
+    $stmt->execute();
+
+    $numCol = $stmt->columnCount();
+    
+    // The metadata returned should be the same
+    $c = rand(0, $numCol - 1);
+    $metadata1 = $stmt->getColumnMeta($c);
+    $stmt->nextRowset();
+    $metadata2 = $stmt->getColumnMeta($c);
+
+    // Check the returned flags
+    $data1 = $metadata1['flags'];
+    $data2 = $metadata2['flags'];
+
+    if (!array_key_exists($dataClassKey, $data1) || !array_key_exists($dataClassKey, $data2)) {
+        echo "Metadata returned with no classification data\n";
+        var_dump($data1);
+        var_dump($data2);
+    } else {
+        $jstr1 = json_encode($data1[$dataClassKey]);
+        $jstr2 = json_encode($data2[$dataClassKey]);
+        if ($jstr1 !== $jstr2) {
+            echo "The JSON encoded strings should be identical\n";
+            var_dump($jstr1);
+            var_dump($jstr2);
         }
     }
 }
@@ -254,6 +297,8 @@ try {
 
         unset($stmt1);
         unset($stmt2);
+        
+        runBatchQuery($conn, $tableName);
     }
 
     dropTable($conn, $tableName);

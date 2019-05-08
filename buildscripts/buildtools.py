@@ -282,7 +282,7 @@ class BuildUtil(object):
             else:       # pdo_sqlsrv
                 cmd_line = ' --enable-pdo --with-pdo-sqlsrv=shared ' + cmd_line
                 
-        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-embed' + cmd_line
+        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-json --enable-embed' + cmd_line
         if self.thread == 'nts':
             cmd_line = cmd_line + ' --disable-zts'
         return cmd_line
