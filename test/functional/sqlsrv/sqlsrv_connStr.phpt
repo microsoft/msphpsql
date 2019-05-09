@@ -1,7 +1,7 @@
 --TEST--
 UTF-8 connection strings
 --SKIPIF--
-<?php require('skipif_unix.inc'); ?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
