@@ -1808,7 +1808,7 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 bool convert_string_from_utf16_inplace( _In_ SQLSRV_ENCODING encoding, _Inout_updates_z_(len) char** string, _Inout_ SQLLEN& len);
 bool validate_string( _In_ char* string, _In_ SQLLEN& len);
 bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(cchInLen) const SQLWCHAR* inString, _In_ SQLINTEGER cchInLen, _Inout_updates_bytes_(cchOutLen) char** outString, _Out_ SQLLEN& cchOutLen );
-SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_reads_bytes_(mbcs_len) const char* mbcs_string, _In_ unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
+SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_reads_bytes_(mbcs_len) const char* mbcs_string, _In_ unsigned int mbcs_len, _Out_ unsigned int* utf16_len, bool is_connection_string = false );
 
 //*********************************************************************************************************************************
 // Error handling routines and Predefined Errors

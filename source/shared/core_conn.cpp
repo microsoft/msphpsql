@@ -386,7 +386,7 @@ SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& con
 
     // We only support UTF-8 encoding for connection string.
     // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
-    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>( conn_str.length() ), &wconn_len );
+    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>( conn_str.length() ), &wconn_len, true );
 
     CHECK_CUSTOM_ERROR( wconn_string == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message())
     {
