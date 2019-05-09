@@ -9,7 +9,7 @@ These instructions install PHP 7.3 by default. Note that some supported Linux di
 - [Installing the drivers on Red Hat 7](#installing-the-drivers-on-red-hat-7)
 - [Installing the drivers on Debian 8 and 9](#installing-the-drivers-on-debian-8-and-9)
 - [Installing the drivers on Suse 12 and 15](#installing-the-drivers-on-suse-12-and-15)
-- [Installing the drivers on macOS El Capitan, Sierra, High Sierra, and Mojave](#installing-the-drivers-on-macos-el-capitan-sierra-high-sierra-and-mojave)
+- [Installing the drivers on macOS Sierra, High Sierra, and Mojave](#installing-the-drivers-on-macos-sierra-high-sierra-and-mojave)
 
 ## Installing the drivers on Ubuntu 16.04, 18.04, and 18.10
 
@@ -38,7 +38,7 @@ exit
 ### Step 4. Install Apache and configure driver loading
 ```
 sudo su
-apt-get install libapache2-mod-php7.2 apache2
+apt-get install libapache2-mod-php7.3 apache2
 a2dismod mpm_event
 a2enmod mpm_prefork
 a2enmod php7.3
@@ -91,8 +91,8 @@ exit
 An issue in PECL may prevent correct installation of the latest version of the drivers even if you have upgraded GCC. To install, download the packages and compile manually (similar steps for pdo_sqlsrv):
 ```
 pecl download sqlsrv
-tar xvzf sqlsrv-5.6.0.tgz
-cd sqlsrv-5.6.0/
+tar xvzf sqlsrv-5.6.1.tgz
+cd sqlsrv-5.6.1/
 phpize
 ./configure --with-php-config=/usr/bin/php-config
 make
@@ -214,7 +214,7 @@ sudo systemctl restart apache2
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on macOS El Capitan, Sierra, High Sierra, and Mojave
+## Installing the drivers on macOS Sierra, High Sierra, and Mojave
 
 If you do not already have it, install brew as follows:
 ```
@@ -259,7 +259,7 @@ apachectl -V | grep SERVER_CONFIG_FILE
 ``` 
 and substitute the path for `httpd.conf` in the following commands:
 ```
-echo "LoadModule php7_module /usr/local/opt/php@7.2/lib/httpd/modules/libphp7.so" >> /usr/local/etc/httpd/httpd.conf
+echo "LoadModule php7_module /usr/local/opt/php@7.3/lib/httpd/modules/libphp7.so" >> /usr/local/etc/httpd/httpd.conf
 (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/httpd/httpd.conf
 ```
 ### Step 5. Restart Apache and test the sample script
