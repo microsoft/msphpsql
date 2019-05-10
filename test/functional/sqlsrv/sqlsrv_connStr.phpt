@@ -117,9 +117,9 @@ Array
             [SQLSTATE] => IMSSP
             [1] => -47
             [code] => -47
-            [2] => An error occurred translating the connection string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.
+            [2] => An error occurred translating the connection string to UTF-16: %s
 
-            [message] => An error occurred translating the connection string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.
+            [message] => An error occurred translating the connection string to UTF-16: %s
 
         )
 
