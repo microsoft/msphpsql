@@ -118,9 +118,7 @@ Array
             [1] => -47
             [code] => -47
             [2] => An error occurred translating the connection string to UTF-16: %s
-
             [message] => An error occurred translating the connection string to UTF-16: %s
-
         )
 
 )
@@ -156,9 +154,7 @@ Array
             [1] => -47
             [code] => -47
             [2] => An error occurred translating the connection string to UTF-16: %s
-
             [message] => An error occurred translating the connection string to UTF-16: %s
-
         )
 
 )
