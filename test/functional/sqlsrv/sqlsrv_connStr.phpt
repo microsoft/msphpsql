@@ -134,16 +134,6 @@ Array
             [message] => %SLogin failed for user '%s'.
         )
 
-    [1] => Array
-        (
-            [0] => 28000
-            [SQLSTATE] => 28000
-            [1] => 18456
-            [code] => 18456
-            [2] => %SLogin failed for user '%s'.
-            [message] => %SLogin failed for user '%s'.
-        )
-
 )
 Array
 (
