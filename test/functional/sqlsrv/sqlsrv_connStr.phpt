@@ -67,7 +67,8 @@ $c = connect(array(
 if ($c !== false) {
     fatalError("sqlsrv_connect(3) should have failed");
 }
-print_r(sqlsrv_errors());
+// On Windows, two errors are returned, with the same content. So just check the first one.
+print_r(sqlsrv_errors()[0]);
 
 // invalid UTF-8 in the pwd
 $c = connect(array(
