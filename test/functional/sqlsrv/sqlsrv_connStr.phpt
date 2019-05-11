@@ -6,6 +6,13 @@ UTF-8 connection strings
 <?php
 
 require_once('MsSetup.inc');
+
+// Expected errors
+$gibberishEncoding = array('IMSSP', '-48', "The encoding 'gibberish' is not a supported encoding for the CharacterSet connection option.");   
+$binaryEncoding = array('IMSSP', '-48', "The encoding 'binary' is not a supported encoding for the CharacterSet connection option.");   
+$utf16Error = array('IMSSP', '-47', "An error occurred translating the connection string to UTF-16: *");
+$userLoginFailed = array('28000', '18456', "*Login failed for user *");
+
 function connect($options=array())
 {
     global $server, $uid, $pwd, $databaseName;
@@ -22,6 +29,17 @@ function connect($options=array())
     return sqlsrv_connect($server, $options);
 }
 
+function checkErrors($expectedError)
+{
+    // On Windows one call returns two identical errors, so just take the first element
+    $error = sqlsrv_errors()[0];
+    if (!fnmatch($expectedError[0], $error[0]) || 
+        !fnmatch($expectedError[1], $error[1]) || 
+        !fnmatch($expectedError[2], $error[2])) {
+        fatalError("Errors do not match!\n");
+    }
+}
+
 sqlsrv_configure('WarningsReturnAsErrors', 0);
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
@@ -30,13 +48,13 @@ $c = connect(array( 'CharacterSet' => 'gibberish' ));
 if ($c !== false) {
     fatalError("Should have errored on an invalid encoding.");
 }
-print_r(sqlsrv_errors());
+checkErrors($gibberishEncoding);
 
 $c = connect(array( 'CharacterSet' => SQLSRV_ENC_BINARY ));
 if ($c !== false) {
     fatalError("Should have errored on an invalid encoding.");
 }
-print_r(sqlsrv_errors());
+checkErrors($binaryEncoding);
 
 $c = connect(array( 'CharacterSet' => SQLSRV_ENC_CHAR ));
 if ($c === false) {
@@ -50,7 +68,7 @@ $c = sqlsrv_connect($server_invalid, array( 'Database' => 'test', 'CharacterSet'
 if ($c !== false) {
     fatalError("sqlsrv_connect(1) should have failed");
 }
-print_r(sqlsrv_errors());
+checkErrors($utf16Error);
 
 // APP has a UTF-8 name
 $c = connect(array(
@@ -67,8 +85,7 @@ $c = connect(array(
 if ($c !== false) {
     fatalError("sqlsrv_connect(3) should have failed");
 }
-// On Windows, two errors are returned, with the same content. So just check the first one.
-print_r(sqlsrv_errors()[0]);
+checkErrors($userLoginFailed);
 
 // invalid UTF-8 in the pwd
 $c = connect(array(
@@ -78,75 +95,10 @@ $c = connect(array(
 if ($c !== false) {
     fatalError("sqlsrv_connect(4) should have failed");
 }
-print_r(sqlsrv_errors());
+checkErrors($utf16Error);
 
 echo "Test succeeded.\n";
 
 ?>
 --EXPECTF--
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -48
-            [code] => -48
-            [2] => The encoding 'gibberish' is not a supported encoding for the CharacterSet connection option.
-            [message] => The encoding 'gibberish' is not a supported encoding for the CharacterSet connection option.
-        )
-
-)
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -48
-            [code] => -48
-            [2] => The encoding 'binary' is not a supported encoding for the CharacterSet connection option.
-            [message] => The encoding 'binary' is not a supported encoding for the CharacterSet connection option.
-        )
-
-)
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -47
-            [code] => -47
-            [2] => An error occurred translating the connection string to UTF-16: %s
-            [message] => An error occurred translating the connection string to UTF-16: %s
-        )
-
-)
-Array
-(
-    [0] => Array
-        (
-            [0] => 28000
-            [SQLSTATE] => 28000
-            [1] => 18456
-            [code] => 18456
-            [2] => %SLogin failed for user '%s'.
-            [message] => %SLogin failed for user '%s'.
-        )
-
-)
-Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -47
-            [code] => -47
-            [2] => An error occurred translating the connection string to UTF-16: %s
-            [message] => An error occurred translating the connection string to UTF-16: %s
-        )
-
-)
 Test succeeded.
