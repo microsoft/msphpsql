@@ -38,7 +38,7 @@ function invalidServer()
         echo "Should have failed to connect to invalid server.\n";
     }  catch (PDOException $e) {
         $error1 = '*Login timeout expired';
-        $error2 = '*An error occurred translating the connection string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page*';
+        $error2 = '*An error occurred translating the connection string to UTF-16: *';
         if (fnmatch($error1, $e->getMessage()) || fnmatch($error2, $e->getMessage())) {
             ;   // matched at least one of the expected error messages 
         } else {
@@ -102,7 +102,7 @@ function invalidPassword()
     $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
     
     // Possible errors
-    $error = "*An error occurred translating the connection string to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.*";
+    $error = "*An error occurred translating the connection string to UTF-16: *";
     $error1 = "*Login failed for user \'*\'.";
     $error2 = "*Login timeout expired*";
 
