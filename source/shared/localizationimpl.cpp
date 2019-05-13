@@ -285,18 +285,16 @@ SystemLocale::SystemLocale( const char * localeName )
 {
     const char* DEFAULT_LOCALE = "en_US.UTF-8";
 
-    try
-    {
+    try {
         m_pLocale = new std::locale(localeName);
     }
-    catch(const std::exception& e)
-    {
+    catch(const std::exception& e) {
         localeName = DEFAULT_LOCALE;
     }
     
-    if(!m_pLocale)
+    if(!m_pLocale) {
         m_pLocale = new std::locale(localeName);
-    
+    }
 
     // Mapping from locale charset to codepage
     struct LocaleCP
