@@ -100,5 +100,5 @@ checkErrors($utf16Error);
 echo "Test succeeded.\n";
 
 ?>
---EXPECTF--
+--EXPECT--
 Test succeeded.
