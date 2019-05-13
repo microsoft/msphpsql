@@ -17,6 +17,7 @@ function bindTypeNoEncoding($conn, $sql, $input)
         $stmt->setAttribute(constant('PDO::SQLSRV_ATTR_ENCODING'), PDO::SQLSRV_ENCODING_BINARY);
         $stmt->bindParam(2, $input, PDO::PARAM_LOB);
         $stmt->execute();
+        echo "bindTypeNoEncoding: expected to fail!\n";
     } catch (PDOException $e) {
         $error = '*An encoding was specified for parameter 1.  Only PDO::PARAM_LOB and PDO::PARAM_STR can take an encoding option.';
         if (!fnmatch($error, $e->getMessage())) {
@@ -36,6 +37,7 @@ function bindDefaultEncoding($conn, $sql, $input)
         $stmt->setAttribute(constant('PDO::SQLSRV_ATTR_ENCODING'), PDO::SQLSRV_ENCODING_BINARY);
         $stmt->bindParam(2, $input, PDO::PARAM_LOB);
         $stmt->execute();
+        echo "bindDefaultEncoding: expected to fail!\n";
     } catch (PDOException $e) {
         $error = '*Invalid encoding specified for parameter 1.';
         if (!fnmatch($error, $e->getMessage())) {
@@ -52,8 +54,9 @@ function insertData($conn, $sql, $input)
         
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(1, $value);
-        $stmt->setAttribute(constant('PDO::SQLSRV_ATTR_ENCODING'), PDO::SQLSRV_ENCODING_BINARY);
-        $stmt->bindParam(2, $input, PDO::PARAM_LOB);
+        // Specify binary encoding for the second parameter only such that the first
+        // parameter is unaffected
+        $stmt->bindParam(2, $input, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
         $stmt->execute();
     } catch (PDOException $e) {
         echo "Error unexpected in insertData\n";
@@ -68,6 +71,7 @@ function invalidEncoding1($conn, $sql)
         $stmt->bindColumn(1, $id, PDO::PARAM_INT, 0, PDO::SQLSRV_ENCODING_UTF8);
         $stmt->execute();
         $stmt->fetch(PDO::FETCH_BOUND);
+        echo "invalidEncoding1: expected to fail!\n";
     } catch (PDOException $e) {
         $error = '*An encoding was specified for column 1.  Only PDO::PARAM_LOB and PDO::PARAM_STR column types can take an encoding option.';
         if (!fnmatch($error, $e->getMessage())) {
@@ -84,6 +88,7 @@ function invalidEncoding2($conn, $sql)
         $stmt->bindColumn('Value', $val1, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_DEFAULT);
         $stmt->execute();
         $stmt->fetch(PDO::FETCH_BOUND);
+        echo "invalidEncoding2: expected to fail!\n";
     } catch (PDOException $e) {
         $error = '*Invalid encoding specified for column 1.';
         if (!fnmatch($error, $e->getMessage())) {
@@ -100,6 +105,7 @@ function invalidEncoding3($conn, $sql)
         $stmt->bindColumn(1, $id, PDO::PARAM_STR, 0, "dummy");
         $stmt->execute();
         $stmt->fetch(PDO::FETCH_BOUND);
+        echo "invalidEncoding3: expected to fail!\n";
     } catch (PDOException $e) {
         $error = '*An invalid type or value was given as bound column driver data for column 1.  Only encoding constants such as PDO::SQLSRV_ENCODING_UTF8 may be used as bound column driver data.';
         if (!fnmatch($error, $e->getMessage())) {
