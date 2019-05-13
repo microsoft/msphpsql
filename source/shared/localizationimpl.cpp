@@ -280,9 +280,23 @@ bool EncodingConverter::Initialize()
 using namespace std;
 
 SystemLocale::SystemLocale( const char * localeName )
-    :   m_pLocale( new std::locale(localeName) )
-    , m_uAnsiCP(CP_UTF8)
+    : m_uAnsiCP(CP_UTF8)
+    , m_pLocale(NULL)
 {
+    const char* DEFAULT_LOCALE = "en_US.UTF-8";
+
+    try {
+        m_pLocale = new std::locale(localeName);
+    }
+    catch(const std::exception& e) {
+        localeName = DEFAULT_LOCALE;
+    }
+    
+    if(!m_pLocale) {
+        m_pLocale = new std::locale(localeName);
+    }
+
+    // Mapping from locale charset to codepage
     struct LocaleCP
     {
         const char* localeName;
@@ -331,8 +345,7 @@ const SystemLocale & SystemLocale::Singleton()
 #if !defined(__GNUC__) || defined(NO_THREADSAFE_STATICS)
     #error "Relying on GCC's threadsafe initialization of local statics."
 #endif
-    // get locale from environment and set as default
-    static const SystemLocale s_Default(setlocale(LC_ALL, NULL));
+    static const SystemLocale s_Default(setlocale(LC_CTYPE, NULL));
     return s_Default;
 }
 
