@@ -1026,7 +1026,7 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                 throw core::CoreException();
             }
 
-            CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "Unexpected SQL Error state") {
+            CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "Check if ODBC driver or the server supports the Data Classification feature.") {
                 throw core::CoreException();
             }
         }
