@@ -16,7 +16,7 @@ $serverName = "WRONG_SERVER_NAME";
 $timeout = 20;
 $maxAttempts = 3;
 $numAttempts = 0;
-$leeway = 0.5;
+$leeway = 1.0;
 $missed = false;
 
 do {
@@ -27,6 +27,8 @@ do {
 
     $t1 = microtime(true);
 
+    // Sometimes time elapsed might be less than expected timeout, such as 19.99* 
+    // something, but 1.0 second leeway should be reasonable
     $elapsed = $t1 - $t0;
     $diff = abs($elapsed - $timeout);
 
