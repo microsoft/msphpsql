@@ -94,7 +94,7 @@ function printCursor($element)
     switch($element)
     {
         case 0:
-        echo "Testing with forward only cursor...\n";
+        echo "Testing with forward cursor...\n";
         break;
         case 1:
         echo "Testing with dynamic cursor...\n";
