@@ -10,7 +10,7 @@ PHPT_EXEC=true
 <?php
 $dataClassKey = 'Data Classification';
 
-function testErrorCases($conn, $tableName, $isSupported)
+function testErrorCases($conn, $tableName, $isSupported, $driverCapable)
 {
     // This function will check two error cases:
     // (1) if supported, the query should return a column with no classification
@@ -22,13 +22,17 @@ function testErrorCases($conn, $tableName, $isSupported)
     }
 
     $notAvailableErr = '*Failed to retrieve Data Classification Sensitivity Metadata. If the driver and the server both support the Data Classification feature, check whether the query returns columns with classification information.';
+    
+    $unexpectedErrorState = '*Failed to retrieve Data Classification Sensitivity Metadata: Check if ODBC driver or the server supports the Data Classification feature.';
+
+    $error = ($driverCapable) ? $notAvailableErr : $unexpectedErrorState;
 
     $metadata = sqlsrv_field_metadata($stmt);
     if ($metadata) {
         echo "testErrorCases (1): expected sqlsrv_field_metadata to fail\n";
     }
 
-    if (!fnmatch($notAvailableErr, sqlsrv_errors()[0]['message'])) {
+    if (!fnmatch($error, sqlsrv_errors()[0]['message'])) {
         var_dump(sqlsrv_errors());
     }
 
@@ -49,14 +53,16 @@ function testErrorCases($conn, $tableName, $isSupported)
     }
 }
 
-function isDataClassSupported($conn)
+function isDataClassSupported($conn, &$driverCapable)
 {
     // Check both SQL Server version and ODBC driver version
     $msodbcsqlVer = sqlsrv_client_info($conn)['DriverVer'];
     $version = explode(".", $msodbcsqlVer);
 
     // ODBC Driver must be 17.2 or above
+    $driverCapable = true;
     if ($version[0] < 17 || $version[1] < 2) {
+        $driverCapable = false;
         return false;
     }
 
@@ -221,7 +227,8 @@ if (!$conn) {
     fatalError("Failed to connect.\n");
 }
 
-$isSupported = isDataClassSupported($conn);
+$driverCapable = true;
+$isSupported = isDataClassSupported($conn, $driverCapable);
 
 // Create a test table
 $tableName = 'srvPatients';
@@ -262,7 +269,7 @@ if ($isSupported) {
     }
 }
 
-testErrorCases($conn, $tableName, $isSupported);
+testErrorCases($conn, $tableName, $isSupported, $driverCapable);
 
 // Run the query without data classification metadata
 $tsql = "SELECT * FROM $tableName";

@@ -57,7 +57,7 @@ function testConnAttrCases()
     }
 }
 
-function testNotAvailable($conn, $tableName, $isSupported)
+function testNotAvailable($conn, $tableName, $isSupported, $driverCapable)
 {
     // If supported, the query should return a column with no classification
     $options = array(PDO::SQLSRV_ATTR_DATA_CLASSIFICATION => true);
@@ -66,25 +66,31 @@ function testNotAvailable($conn, $tableName, $isSupported)
     $stmt->execute();
 
     $notAvailableErr = '*Failed to retrieve Data Classification Sensitivity Metadata. If the driver and the server both support the Data Classification feature, check whether the query returns columns with classification information.';
+
+    $unexpectedErrorState = '*Failed to retrieve Data Classification Sensitivity Metadata: Check if ODBC driver or the server supports the Data Classification feature.';
+
+    $error = ($driverCapable) ? $notAvailableErr : $unexpectedErrorState;
     try {
         $metadata = $stmt->getColumnMeta(0);
         echo "testNotAvailable: expected getColumnMeta to fail\n";
     } catch (PDOException $e) {
-        if (!fnmatch($notAvailableErr, $e->getMessage())) {
+        if (!fnmatch($error, $e->getMessage())) {
             echo "testNotAvailable: exception unexpected\n";
             var_dump($e->getMessage());
         }
     }
 }
 
-function isDataClassSupported($conn)
+function isDataClassSupported($conn, &$driverCapable)
 {
     // Check both SQL Server version and ODBC driver version
     $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
     $version = explode(".", $msodbcsqlVer);
 
     // ODBC Driver must be 17.2 or above
+    $driverCapable = true;
     if ($version[0] < 17 || $version[1] < 2) {
+        $driverCapable = false;
         return false;
     }
 
@@ -238,7 +244,8 @@ try {
     testConnAttrCases();
 
     $conn = connect();
-    $isSupported = isDataClassSupported($conn);
+    $driverCapable = true;
+    $isSupported = isDataClassSupported($conn, $driverCapable);
 
     // Create a test table
     $tableName = 'pdoPatients';
@@ -274,7 +281,7 @@ try {
     }
 
     // Test another error condition
-    testNotAvailable($conn, $tableName, $isSupported);
+    testNotAvailable($conn, $tableName, $isSupported, $driverCapable);
 
     // Run the query without data classification metadata
     $tsql = "SELECT * FROM $tableName";
