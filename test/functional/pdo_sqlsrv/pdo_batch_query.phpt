@@ -1,15 +1,16 @@
 --TEST--
 Test a batch query with different cursor types
 --DESCRIPTION--
-Verifies row and column counts from batched queries.
-TODO: Fix this test once error reporting in PDO is fixed, because batched
+Verifies row and column counts from batch queries. This is the
+equivalent of sqlsrv_batch_query.phpt on the sqlsrv side.
+TODO: Fix this test once error reporting in PDO is fixed, because batch
 queries are not supposed to work with server side cursors. For now, no errors
 or warnings are returned. For information on the expected behaviour of cursors
 with batch queries, see
 https://docs.microsoft.com/en-us/previous-versions/visualstudio/aa266531(v=vs.60)
 --SKIPIF--
 <?php 
-require('skipif.inc'); 
+require('skipif_mid-refactor.inc'); 
 ?>
 --FILE--
 <?php
@@ -112,11 +113,13 @@ function printCursor($element)
         echo "Testing with buffered cursor...\n";
         $cursor = 'buffered';
         break;
+        default:
+        fatalError("Unknown cursor type! Exiting\n");
     }
     return $cursor;
 }
 
-$conn = new PDO("sqlsrv:server=$server;database=$databaseName;", $uid, $pwd);
+$conn = connect();
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Create and populate a table of integer types
@@ -129,8 +132,6 @@ $columns = array(new ColumnMeta('int', $colName[0]),
 
 createTable($conn, $tableName, $columns);
 
-$inputs = array();
-
 // Insert each row. Need an associative array to use insertRow()
 for ($i = 0; $i < $expectedRows; ++$i) {
     $inputs = array();
@@ -139,6 +140,7 @@ for ($i = 0; $i < $expectedRows; ++$i) {
     }
 
     $stmt = insertRow($conn, $tableName, $inputs);
+    unset($inputs);
     unset($stmt);
 }
 
