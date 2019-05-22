@@ -7,7 +7,7 @@ returned otherwise. For information on the expected behaviour of cursors
 with batch queries, see
 https://docs.microsoft.com/en-us/previous-versions/visualstudio/aa266531(v=vs.60)
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
