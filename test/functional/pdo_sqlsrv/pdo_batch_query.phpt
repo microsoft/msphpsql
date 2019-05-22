@@ -92,29 +92,28 @@ function checkColumnsAndRows($stmt, $cursor, $before)
 function printCursor($element)
 {
     $cursor = 'forward';
-    switch($element)
-    {
+    switch($element) {
         case 0:
-        echo "Testing with forward cursor...\n";
-        break;
+            echo "Testing with forward cursor...\n";
+            break;
         case 1:
-        echo "Testing with dynamic cursor...\n";
-        $cursor = 'dynamic';
-        break;
+            echo "Testing with dynamic cursor...\n";
+            $cursor = 'dynamic';
+            break;
         case 2:
-        echo "Testing with static cursor...\n";
-        $cursor = 'static';
-        break;
+            echo "Testing with static cursor...\n";
+            $cursor = 'static';
+            break;
         case 3:
-        echo "Testing with keyset cursor...\n";
-        $cursor = 'keyset';
-        break;
+            echo "Testing with keyset cursor...\n";
+            $cursor = 'keyset';
+            break;
         case 4:
-        echo "Testing with buffered cursor...\n";
-        $cursor = 'buffered';
-        break;
+            echo "Testing with buffered cursor...\n";
+            $cursor = 'buffered';
+            break;
         default:
-        fatalError("Unknown cursor type! Exiting\n");
+            fatalError("Unknown cursor type! Exiting\n");
     }
     return $cursor;
 }
