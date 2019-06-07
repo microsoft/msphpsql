@@ -2496,7 +2496,7 @@ namespace core {
 
     inline void sqlsrv_add_index_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array, _In_ zend_ulong index, _In_ zval* value TSRMLS_DC) 
     {
-        int zr = ::add_index_zval( array, index, value );
+        int zr = add_index_zval( array, index, value );
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
             throw CoreException();
         }
@@ -2504,7 +2504,7 @@ namespace core {
 
     inline void sqlsrv_add_next_index_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array, _In_ zval* value TSRMLS_DC) 
     {
-        int zr = ::add_next_index_zval( array, value );
+        int zr = add_next_index_zval( array, value );
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
             throw CoreException();
         }
