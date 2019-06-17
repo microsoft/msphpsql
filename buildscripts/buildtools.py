@@ -42,7 +42,8 @@ class BuildUtil(object):
         self.thread = thread.lower()
         self.no_rename = no_rename
         self.debug_enabled = debug_enabled
-    
+        self.vc = ''
+
     def major_version(self):
         """Return the major version number based on the PHP version."""
         return self.phpver[0:3]
@@ -66,17 +67,44 @@ class BuildUtil(object):
         version = self.version_label()
         return 'php_' + driver + '_' + version + '_' + self.thread + suffix
 
-    def compiler_version(self):
+    def determine_compiler(self, sdk_dir, vs_ver):
+        """Return the appropriate compiler version using vswhere.exe."""
+        filename = 'get-vc.bat'
+        vswhere = os.path.join(sdk_dir, 'php-sdk', 'bin', 'vswhere.exe')
+        if not os.path.exists(vswhere):
+            print('Could not find ' + vswhere)
+            
+        try:
+            file = open(filename, 'w')
+            file.write('@ECHO OFF' + os.linesep)
+            command = '{0} -version "[{1},{2})" -property installationVersion '.format(vswhere, vs_ver, vs_ver + 1)
+            file.write(command + ' > temp.txt' + os.linesep)
+            file.write('SET /p VER=<temp.txt' + os.linesep)
+            file.write('SET VC=%VER:~0,2%' + os.linesep)
+            file.close()
+            os.system('{0} {1}'.format(filename, vs_ver))
+            return os.environ.get('VC')
+        except:
+            print('Error occurred when writing a batch file for checking compiler versions')
+            raise
+            
+    def compiler_version(self, sdk_dir):
         """Return the appropriate compiler version based on PHP version."""
-        VC = 'vc14'
-        version = self.version_label()
-        if version >= '72':     # Compiler version for PHP 7.2 or above
-            VC = 'vc15'
-        return VC
-        
-    def phpsrc_root(self, sdk_dir):   
+        if self.vc is '':
+            VC = 'vc14'
+            version = self.version_label()
+            if version >= '72':     # Compiler version for PHP 7.2 or above
+                VC = 'vc15'
+                if version == '74':
+                    # Compiler version for PHP 7.4 or above
+                    # Can be compiled using VS 2017 or VS 2019
+                    VC = 'vc' + self.determine_compiler(sdk_dir, 15)
+            self.vc = VC
+        return self.vc
+
+    def phpsrc_root(self, sdk_dir):
         """Return the path to the PHP source folder based on *sdk_dir*."""
-        vc = self.compiler_version()
+        vc = self.compiler_version(sdk_dir)
         return os.path.join(sdk_dir, 'php-sdk', 'phpdev', vc, self.arch, 'php-'+self.phpver+'-src')
         
     def build_abs_path(self, sdk_dir):   
@@ -386,7 +414,7 @@ class BuildUtil(object):
         shutil.move(source_dir, phpSDK)
         
         # Invoke phpsdk-<vc>-<arch>.bat
-        vc = self.compiler_version()                           
+        vc = self.compiler_version(sdk_dir)
         starter_script = 'phpsdk-' + vc + '-' + self.arch + '.bat'
         print('Running starter script: ', starter_script)
         os.system(starter_script + ' -t ' + batch_file)
