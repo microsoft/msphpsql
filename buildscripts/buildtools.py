@@ -125,6 +125,10 @@ class BuildUtil(object):
 
     def remove_old_builds(self, sdk_dir):
         """Remove the extensions, e.g. the driver subfolders in php-7.*-src\ext."""
+        if not os.path.exists(os.path.join(sdk_dir, 'php-sdk')):
+            print('No old builds to be removed...')
+            return
+    
         print('Removing old builds...')
 
         phpsrc = self.phpsrc_root(sdk_dir)
@@ -145,6 +149,10 @@ class BuildUtil(object):
         """Remove all binaries and source code in the Release* or Debug* 
         folders according to the current configuration
         """
+        if not os.path.exists(os.path.join(sdk_dir, 'php-sdk')):
+            print('No old builds to be removed...')
+            return
+    
         print('Removing previous build...')
         build_dir = self.build_abs_path(sdk_dir)
         if not os.path.exists(build_dir):
