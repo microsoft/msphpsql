@@ -70,17 +70,22 @@ class BuildUtil(object):
     def determine_compiler(self, sdk_dir, vs_ver):
         """Return the appropriate compiler version using vswhere.exe."""
         filename = 'get-vc.bat'
-        vswhere = os.path.join(sdk_dir, 'php-sdk', 'bin', 'vswhere.exe')
+        sdk_bin = os.path.join(sdk_dir, 'php-sdk', 'bin')
+        vswhere = os.path.join(sdk_bin, 'vswhere.exe')
         if not os.path.exists(vswhere):
             print('Could not find ' + vswhere)
+            exit(1)
             
         try:
             file = open(filename, 'w')
             file.write('@ECHO OFF' + os.linesep)
-            command = '{0} -version "[{1},{2})" -property installationVersion '.format(vswhere, vs_ver, vs_ver + 1)
+            file.write('SET currDir=%CD%' + os.linesep)
+            file.write('CD ' + sdk_bin + os.linesep)
+            command = '{0} -version "[{1},{2})" -property installationVersion '.format('vswhere', vs_ver, vs_ver + 1)
             file.write(command + ' > temp.txt' + os.linesep)
             file.write('SET /p VER=<temp.txt' + os.linesep)
             file.write('SET VC=%VER:~0,2%' + os.linesep)
+            file.write('CD %currDir%'  + os.linesep)
             file.close()
             os.system('{0} {1}'.format(filename, vs_ver))
             return os.environ.get('VC')
@@ -100,6 +105,7 @@ class BuildUtil(object):
                     # Can be compiled using VS 2017 or VS 2019
                     VC = 'vc' + self.determine_compiler(sdk_dir, 15)
             self.vc = VC
+            print('Compiler: ' + self.vc)
         return self.vc
 
     def phpsrc_root(self, sdk_dir):
@@ -406,13 +412,16 @@ class BuildUtil(object):
             os.system('git clone https://github.com/OSTC/php-sdk-binary-tools.git --branch master --single-branch --depth 1 ' + phpSDK)
         os.chdir(phpSDK)
         os.system('git pull ')
+        print('Done cloning the latest php SDK...')
 
         # Move the generated batch file to phpSDK for the php starter script 
+        print('Moving the sdk bath file over...')
         sdk_batch_file = os.path.join(phpSDK, batch_file)
         if os.path.exists(sdk_batch_file):
             os.remove(sdk_batch_file)
         shutil.move(os.path.join(work_dir, batch_file), phpSDK)
         
+        print('Checking if source exists...')
         sdk_source = os.path.join(phpSDK, 'Source')
         # Sometimes, for various reasons, the Source folder from previous build 
         # might exist in phpSDK. If so, remove it first
