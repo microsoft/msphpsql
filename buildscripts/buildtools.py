@@ -81,13 +81,13 @@ class BuildUtil(object):
             file.write('@ECHO OFF' + os.linesep)
             file.write('SET currDir=%CD%' + os.linesep)
             file.write('CD ' + sdk_bin + os.linesep)
-            command = '{0} -version "[{1},{2})" -property installationVersion '.format('vswhere', vs_ver, vs_ver + 1)
+            command = '@CALL {0} -version "[{1},{2})" -property installationVersion '.format('vswhere', vs_ver, vs_ver + 1)
             file.write(command + ' > temp.txt' + os.linesep)
             file.write('SET /p VER=<temp.txt' + os.linesep)
             file.write('SET VC=%VER:~0,2%' + os.linesep)
             file.write('CD %currDir%'  + os.linesep)
             file.close()
-            os.system('{0} {1}'.format(filename, vs_ver))
+            os.startfile(filename)
             return os.environ.get('VC')
         except:
             print('Error occurred when writing a batch file for checking compiler versions')
@@ -103,6 +103,7 @@ class BuildUtil(object):
                 if version == '74':
                     # Compiler version for PHP 7.4 or above
                     # Can be compiled using VS 2017 or VS 2019
+                    print('Checking compiler versions...')
                     VC = 'vc' + self.determine_compiler(sdk_dir, 15)
             self.vc = VC
             print('Compiler: ' + self.vc)
