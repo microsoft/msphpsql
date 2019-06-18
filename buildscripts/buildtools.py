@@ -81,7 +81,7 @@ class BuildUtil(object):
             file.write('@ECHO OFF' + os.linesep)
             file.write('SET currDir=%CD%' + os.linesep)
             file.write('CD ' + sdk_bin + os.linesep)
-            command = '@CALL {0} -version "[{1},{2})" -property installationVersion '.format('vswhere', vs_ver, vs_ver + 1)
+            command = '@CALL {0} -version [{1},{2}) -property installationVersion '.format('vswhere', vs_ver, vs_ver + 1)
             file.write(command + ' > temp.txt' + os.linesep)
             file.write('SET /p VER=<temp.txt' + os.linesep)
             file.write('SET VC=%VER:~0,2%' + os.linesep)
