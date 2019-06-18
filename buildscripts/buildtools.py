@@ -81,10 +81,10 @@ class BuildUtil(object):
         # 15.9.28307.344
         # But if only VS 2017 is present, temp.txt will only have one value like this:
         # 15.9.28307.344
-        # On the other hand, if only VS 2019 is present, temp.txt will be empty.
+        # Likewise, if only VS 2019 is present, temp.txt contains only the one for 16.
         # We can achieve the above by checking for version [15,16), in which case 
         # even if both compilers are present, it only returns one. If only VS 2019
-        # exists, it's empty.
+        # exists, temp.txt is empty
         command = '{0} -version [{1},{2}) -property installationVersion '.format(vswhere, vs_ver, vs_ver + 1)
         os.system(command + ' > temp.txt')
         
@@ -95,7 +95,7 @@ class BuildUtil(object):
         vc = ver[:2]
         if vc == '15':
             return 'vc15'
-        else:
+        else: # For VS2019, it's 'vs' instead of 'vc'
             return 'vs16'
         
     def compiler_version(self, sdk_dir):
