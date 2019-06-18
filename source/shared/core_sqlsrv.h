@@ -2622,7 +2622,7 @@ namespace core {
         }
     }
 
-	inline void sqlsrv_zend_hash_next_index_insert_mem( _Inout_ sqlsrv_context& ctx, _In_ HashTable* ht, _In_reads_bytes_(data_size) void* data, _In_ uint data_size TSRMLS_DC)
+	inline void sqlsrv_zend_hash_next_index_insert_mem( _Inout_ sqlsrv_context& ctx, _In_ HashTable* ht, _In_reads_bytes_(data_size) void* data, _In_ size_t data_size TSRMLS_DC)
 	{
 		int zr = (data = ::zend_hash_next_index_insert_mem(ht, data, data_size)) != NULL ? SUCCESS : FAILURE;
 		CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
