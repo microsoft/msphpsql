@@ -74,14 +74,18 @@ class BuildUtil(object):
             print('Could not find ' + vswhere)
             exit(1)
         
-        # If both VS 2017 and VS 2019 are installed, both versions are returned.
+        # If both VS 2017 and VS 2019 are installed, if we check only version 15,
+        # both versions are returned.
         # For example, temp.txt would have the following values (in this order):
         # 16.1.29009.5
         # 15.9.28307.344
         # But if only VS 2017 is present, temp.txt will only have one value like this:
         # 15.9.28307.344
-        # On the other hand, if only VS 2019 is present, temp.txt will be empty
-        command = '{0} -version {1} -property installationVersion '.format(vswhere, vs_ver)
+        # On the other hand, if only VS 2019 is present, temp.txt will be empty.
+        # We can achieve the above by checking for version [15,16), in which case 
+        # even if both compilers are present, it only returns one. If only VS 2019
+        # exists, it's empty.
+        command = '{0} -version [{1},{2}) -property installationVersion '.format(vswhere, vs_ver, vs_ver + 1)
         os.system(command + ' > temp.txt')
         
         # Read the first line from temp.txt
