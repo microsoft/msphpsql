@@ -15,11 +15,24 @@ require_once("MsCommon_mid-refactor.inc");
 function checkStringValues($obj, $columns, $values)
 {
     $size = count($values);
-    $objArray = (array)$obj;    // turn the object into an associated array
-    
     for ($i = 0; $i < $size; $i++) {
         $col = $columns[$i];
-        $val = $objArray[$col];
+        switch ($i) {
+            case 0:
+                $val = $obj->c1; break;
+            case 1:
+                $val = $obj->c2; break;
+            case 2:
+                $val = $obj->c3; break;
+            case 3:
+                $val = $obj->c4; break;
+            case 4:
+                $val = $obj->c5; break;
+            case 5:
+                $val = $obj->c6; break;
+            default:
+                echo "Something went wrong!\n";
+        }
 
         if ($val != $values[$i]) {
             echo "Expected $values[$i] for column $col but got: ";

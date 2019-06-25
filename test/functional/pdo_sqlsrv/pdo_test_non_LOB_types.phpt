@@ -24,12 +24,12 @@ function verifyResult($result)
         $expectedLen = ($i % 2 == 0) ? $fullLen : $trimmedLen;
         $len = strlen($result[$i]);
         if ($len != $expectedLen) {
-            echo "String length $len for column ". $i + 1 . " is unexpected!\n";
+            echo "String length $len for column ". ($i + 1) . " is unexpected!\n";
         }
         
         $data = rtrim($result[$i]);
         if ($data !== $input) {
-            echo "Result for column ". $i + 1 . " is unexpected:";
+            echo "Result for column ". ($i + 1) . " is unexpected:";
             var_dump($result[$i]);
         }
     }

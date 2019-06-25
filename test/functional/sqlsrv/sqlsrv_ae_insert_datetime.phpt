@@ -29,18 +29,20 @@ foreach ($dataTypes as $dataType) {
         is_incompatible_types_error($dataType, "default type");
     } else {
         echo "****Encrypted default type is compatible with encrypted $dataType****\n";
-        if ($dataType != "time") {
-            AE\fetchAll($conn, $tbname);
-        } else {
-            $sql = "SELECT * FROM $tbname";
-            $stmt = sqlsrv_query($conn, $sql);
-            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-            foreach ($row as $key => $value) {
-                //var_dump( $row );
+        $sql = "SELECT * FROM $tbname";
+        $stmt = sqlsrv_query($conn, $sql);
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        foreach ($row as $key => $value) {
+            if ($dataType == "time") {
                 $t = $value->format('H:i:s');
                 print "$key: $t\n";
+            } else {
+                $t = date_format($value, "Y-m-d H:i:s.u");
+                $tz = $value->getTimezone()->getName();
+                print "$key: $t $tz\n";
             }
         }
+        
     }
     dropTable($conn, $tbname);
 }
@@ -51,47 +53,23 @@ sqlsrv_close($conn);
 
 Testing date: 
 ****Encrypted default type is compatible with encrypted date****
-c_det:
-  date: 0001-01-01 00:00:00.000000
-  timezone_type: 3
-  timezone: Canada/Pacific
-c_rand:
-  date: 9999-12-31 00:00:00.000000
-  timezone_type: 3
-  timezone: Canada/Pacific
+c_det: 0001-01-01 00:00:00.000000 Canada/Pacific
+c_rand: 9999-12-31 00:00:00.000000 Canada/Pacific
 
 Testing datetime: 
 ****Encrypted default type is compatible with encrypted datetime****
-c_det:
-  date: 1753-01-01 00:00:00.000000
-  timezone_type: 3
-  timezone: Canada/Pacific
-c_rand:
-  date: 9999-12-31 23:59:59.997000
-  timezone_type: 3
-  timezone: Canada/Pacific
+c_det: 1753-01-01 00:00:00.000000 Canada/Pacific
+c_rand: 9999-12-31 23:59:59.997000 Canada/Pacific
 
 Testing datetime2: 
 ****Encrypted default type is compatible with encrypted datetime2****
-c_det:
-  date: 0001-01-01 00:00:00.000000
-  timezone_type: 3
-  timezone: Canada/Pacific
-c_rand:
-  date: 9999-12-31 23:59:59.123456
-  timezone_type: 3
-  timezone: Canada/Pacific
+c_det: 0001-01-01 00:00:00.000000 Canada/Pacific
+c_rand: 9999-12-31 23:59:59.123456 Canada/Pacific
 
 Testing smalldatetime: 
 ****Encrypted default type is compatible with encrypted smalldatetime****
-c_det:
-  date: 1900-01-01 00:00:00.000000
-  timezone_type: 3
-  timezone: Canada/Pacific
-c_rand:
-  date: 2079-06-05 23:59:00.000000
-  timezone_type: 3
-  timezone: Canada/Pacific
+c_det: 1900-01-01 00:00:00.000000 Canada/Pacific
+c_rand: 2079-06-05 23:59:00.000000 Canada/Pacific
 
 Testing time: 
 ****Encrypted default type is compatible with encrypted time****
@@ -100,11 +78,5 @@ c_rand: 23:59:59
 
 Testing datetimeoffset: 
 ****Encrypted default type is compatible with encrypted datetimeoffset****
-c_det:
-  date: 0001-01-01 00:00:00.000000
-  timezone_type: 1
-  timezone: -14:00
-c_rand:
-  date: 9999-12-31 23:59:59.123456
-  timezone_type: 1
-  timezone: +14:00
+c_det: 0001-01-01 00:00:00.000000 -14:00
+c_rand: 9999-12-31 23:59:59.123456 +14:00
