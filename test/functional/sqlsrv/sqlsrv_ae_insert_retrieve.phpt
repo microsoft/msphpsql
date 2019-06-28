@@ -34,10 +34,13 @@ foreach ($decrypted_row as $key => $value) {
     if (!is_object($value)) {
         print "$key: $value\n";
     } else {
-        print "$key:\n";
-        foreach ($value as $dateKey => $dateValue) {
-            print "  $dateKey: $dateValue\n";
-        }
+        // print "$key:\n";
+        // foreach ($value as $dateKey => $dateValue) {
+            // print "  $dateKey: $dateValue\n";
+        // }
+        $t = date_format($value, "Y-m-d H:i:s.u");
+        $tz = $value->getTimezone()->getName();
+        print "$key: $t $tz\n";
     }
 }
 sqlsrv_free_stmt($stmt);
@@ -70,10 +73,7 @@ Retrieving plaintext data:
 SSN: 795-73-9838
 FirstName: Catherine
 LastName: Abel
-BirthDate:
-  date: 1996-10-19 00:00:00.000000
-  timezone_type: 3
-  timezone: Canada/Pacific
+BirthDate: 1996-10-19 00:00:00.000000 Canada/Pacific
 
 Checking ciphertext data:
 Done

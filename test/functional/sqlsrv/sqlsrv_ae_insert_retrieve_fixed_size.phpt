@@ -38,7 +38,20 @@ if ($r === false) {
 }
 
 print "Decrypted values:\n";
-AE\fetchAll($conn, $tbname);
+
+$stmt = selectFromTable($conn, $tbname);
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    foreach ($row as $key => $value) {
+        if (is_object($value)) {
+            // datetime objects
+            $t = date_format($value,"Y-m-d H:i:s.u");
+            $tz = $value->getTimezone()->getName();
+            print("$key: $t $tz\n");
+        } else {
+            print("$key: $value\n");
+        }
+    }
+}
 
 sqlsrv_free_stmt($stmt);
 
@@ -75,12 +88,6 @@ IntData: 2147483647
 BigIntData: 92233720368547
 DecimalData: 79228162514264
 BitData: 1
-DateTimeData:
-  date: 9999-12-31 23:59:59.997000
-  timezone_type: 3
-  timezone: Canada/Pacific
-DateTime2Data:
-  date: 9999-12-31 23:59:59.123456
-  timezone_type: 3
-  timezone: Canada/Pacific
+DateTimeData: 9999-12-31 23:59:59.997000 Canada/Pacific
+DateTime2Data: 9999-12-31 23:59:59.123456 Canada/Pacific
 Done

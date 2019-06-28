@@ -200,7 +200,7 @@ function fetchColumns($conn, $tableName, $numRows, $numCols)
                 $res = $stmtTmp->execute();
 
                 if (! $res) {
-                    echo "Failed to insert data from column ". $j +1 ."\n";
+                    echo "Failed to insert data from column ". ($j + 1) ."\n";
                 }
             }
 
