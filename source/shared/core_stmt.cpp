@@ -1871,50 +1871,34 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         // convert it to a DateTime object and return the created object
         case SQLSRV_PHPTYPE_DATETIME:
         {
-            char field_value_temp[MAX_DATETIME_STRING_LEN] = {'\0'};
-            zval params[1];
-            zval field_value_temp_z;
-            zval function_z;
+            char* field_value_temp = NULL;
+            SQLLEN field_len_temp = 0;
 
-            ZVAL_UNDEF( &field_value_temp_z );
-            ZVAL_UNDEF( &function_z );
-            ZVAL_UNDEF( params );
+            field_value_temp = static_cast<char*>(sqlsrv_malloc(MAX_DATETIME_STRING_LEN));
+            memset(field_value_temp, '\0', MAX_DATETIME_STRING_LEN);
 
-            SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_CHAR, field_value_temp,
-                                                           MAX_DATETIME_STRING_LEN, field_len, true TSRMLS_CC );
+            SQLRETURN r = stmt->current_results->get_data(field_index + 1, SQL_C_CHAR, field_value_temp, MAX_DATETIME_STRING_LEN, &field_len_temp, true TSRMLS_CC);
 
-            CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
+            CHECK_CUSTOM_ERROR((r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index) {
+                field_value = NULL;
+                *field_len = 0;
+                sqlsrv_free(field_value_temp);
                 throw core::CoreException();
             }
 
-            zval_auto_ptr return_value_z;
-            return_value_z = ( zval * )sqlsrv_malloc( sizeof( zval ));
-            ZVAL_UNDEF( return_value_z );
-
-            if( *field_len == SQL_NULL_DATA ) {
-                ZVAL_NULL( return_value_z );
-                field_value = reinterpret_cast<void*>( return_value_z.get());
-                return_value_z.transferred();
-                break;
+            if( field_len_temp == SQL_NULL_DATA ) {
+                field_value = NULL;
+                *field_len = 0;
+                sqlsrv_free(field_value_temp);
+            }
+            else {
+                field_value = field_value_temp;
+                *field_len = field_len_temp;
             }
 
-            // Convert the string date to a DateTime object
-            core::sqlsrv_zval_stringl( &field_value_temp_z, field_value_temp, *field_len );
-            core::sqlsrv_zval_stringl( &function_z, "date_create", sizeof("date_create") - 1 );
-            params[0] = field_value_temp_z;
-
-            if( call_user_function( EG( function_table ), NULL, &function_z, return_value_z, 1,
-                params TSRMLS_CC ) == FAILURE) {
-                THROW_CORE_ERROR(stmt, SQLSRV_ERROR_DATETIME_CONVERSION_FAILED);
-            }
-
-            field_value = reinterpret_cast<void*>( return_value_z.get());
-            return_value_z.transferred();
-            zend_string_free( Z_STR( field_value_temp_z ));
-            zend_string_free( Z_STR( function_z ));
             break;
         }
-
+        
         // create a stream wrapper around the field and return that object to the PHP script.  calls to fread
         // on the stream will result in calls to SQLGetData.  This is handled in stream.cpp.  See that file
         // for how these fields are used.
