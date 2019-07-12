@@ -189,23 +189,25 @@ SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_
     return utf16_string;
 }
 
-// Converts an input datetime string to a valid zval containing a PHP DateTime object.
-// If the input is null, simply returns a NULL zval
+// Converts an input (assuming a datetime string) to a zval containing a PHP DateTime object. 
+// If the input is null, this simply returns a NULL zval. If anything wrong occurs during conversion,
+// an exception will be thrown.
 void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* input, _In_ SQLLEN length, _Inout_ zval& out_zval)
 {
-    zval params[1];
-    zval value_temp_z;
-    zval function_z;
-
-    ZVAL_UNDEF(&out_zval);
-    ZVAL_UNDEF(&value_temp_z);
-    ZVAL_UNDEF(&function_z);
-    ZVAL_UNDEF(params);
-
     if (input == NULL) {
         ZVAL_NULL(&out_zval);
         return;
     }
+
+    zval params[1];
+    zval value_temp_z;
+    zval function_z;
+
+    // Initialize all zval variables
+    ZVAL_UNDEF(&out_zval);
+    ZVAL_UNDEF(&value_temp_z);
+    ZVAL_UNDEF(&function_z);
+    ZVAL_UNDEF(params);
 
     // Convert the datetime string to a PHP DateTime object
     core::sqlsrv_zval_stringl(&value_temp_z, input, length);
