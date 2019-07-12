@@ -1515,8 +1515,7 @@ void convert_to_zval( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_
 	}
 	case SQLSRV_PHPTYPE_DATETIME:
 	{
-		//out_zval = *( static_cast<zval*>( in_val ));
-        convert_datetime_string_to_zval(stmt, reinterpret_cast<char*>(in_val), field_len, out_zval);
+        convert_datetime_string_to_zval(stmt, static_cast<char*>(in_val), field_len, out_zval);
 		break;
 	}
 

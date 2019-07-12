@@ -264,15 +264,8 @@ zval convert_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_t
         break;
     }
     case SQLSRV_PHPTYPE_DATETIME:
-        //if (*in_val == NULL) {
-
-        //    ZVAL_NULL(&out_zval);
-        //}
-        //else {
-
-            convert_datetime_string_to_zval(stmt, reinterpret_cast<char*>(*in_val), field_len, out_zval);
-            sqlsrv_free(*in_val);
-        //}
+        convert_datetime_string_to_zval(stmt, static_cast<char*>(*in_val), field_len, out_zval);
+        sqlsrv_free(*in_val);
         break;
     case SQLSRV_PHPTYPE_NULL:
         ZVAL_NULL(&out_zval);

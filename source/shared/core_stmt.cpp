@@ -1867,8 +1867,10 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
             break;
         }
 
-        // get the date as a string (http://msdn2.microsoft.com/en-us/library/ms712387(VS.85).aspx) and
-        // convert it to a DateTime object and return the created object
+        // Reference: https://docs.microsoft.com/sql/odbc/reference/appendixes/sql-to-c-timestamp
+        // Retrieve the datetime data as a string, which may be cached for later use.
+        // The string is converted to a DateTime object only when it is required to 
+        // be returned as a zval.
         case SQLSRV_PHPTYPE_DATETIME:
         {
             char* field_value_temp = NULL;
@@ -1879,22 +1881,18 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 
             SQLRETURN r = stmt->current_results->get_data(field_index + 1, SQL_C_CHAR, field_value_temp, MAX_DATETIME_STRING_LEN, &field_len_temp, true TSRMLS_CC);
 
-            CHECK_CUSTOM_ERROR((r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index) {
-                field_value = NULL;
-                *field_len = 0;
+            if (r == SQL_NO_DATA || field_len_temp == SQL_NULL_DATA) {
                 sqlsrv_free(field_value_temp);
+                field_value_temp = NULL;
+                field_len_temp = 0;
+            }
+
+            CHECK_CUSTOM_ERROR((r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index) {
                 throw core::CoreException();
             }
 
-            if( field_len_temp == SQL_NULL_DATA ) {
-                field_value = NULL;
-                *field_len = 0;
-                sqlsrv_free(field_value_temp);
-            }
-            else {
-                field_value = field_value_temp;
-                *field_len = field_len_temp;
-            }
+            field_value = field_value_temp;
+            *field_len = field_len_temp;
 
             break;
         }
