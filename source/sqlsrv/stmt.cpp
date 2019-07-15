@@ -1513,11 +1513,11 @@ void convert_to_zval( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_
 		Z_TRY_ADDREF( out_zval );
 		break;
 	}
-	case SQLSRV_PHPTYPE_DATETIME:
-	{
-		out_zval = *( static_cast<zval*>( in_val ));
-		break;
-	}
+    case SQLSRV_PHPTYPE_DATETIME:
+    {
+        convert_datetime_string_to_zval(stmt, static_cast<char*>(in_val), field_len, out_zval);
+        break;
+    }
 
 	case SQLSRV_PHPTYPE_NULL:
 		ZVAL_NULL(&out_zval);

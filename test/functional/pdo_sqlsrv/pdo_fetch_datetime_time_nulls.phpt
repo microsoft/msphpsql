@@ -110,7 +110,6 @@ function runTest($conn, $query, $columns, $useBuffer = false)
     // last test: set statement attribute fetch_datetime on with no change to 
     // prepared statement -- expected datetime objects to be returned
     $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
-    $stmt->execute();
     $i = 0;
     do {
         $stmt->execute();

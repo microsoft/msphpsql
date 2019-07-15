@@ -220,7 +220,7 @@ void meta_data_free( _Inout_ field_meta_data* meta )
     sqlsrv_free( meta );
 }
 
-zval convert_to_zval( _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val, _In_opt_ SQLLEN field_len )
+zval convert_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val, _In_opt_ SQLLEN field_len )
 {
     zval out_zval;
     ZVAL_UNDEF(&out_zval);
@@ -264,15 +264,8 @@ zval convert_to_zval( _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val
         break;
     }
     case SQLSRV_PHPTYPE_DATETIME:
-        if (*in_val == NULL) {
-
-            ZVAL_NULL(&out_zval);
-        }
-        else {
-
-            out_zval = *(reinterpret_cast<zval*>(*in_val));
-            sqlsrv_free(*in_val);
-        }
+        convert_datetime_string_to_zval(stmt, static_cast<char*>(*in_val), field_len, out_zval);
+        sqlsrv_free(*in_val);
         break;
     case SQLSRV_PHPTYPE_NULL:
         ZVAL_NULL(&out_zval);
@@ -833,11 +826,11 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
         core_sqlsrv_get_field( driver_stmt, colno, sqlsrv_php_type, false, *(reinterpret_cast<void**>(ptr)),
                                reinterpret_cast<SQLLEN*>( len ), true, &sqlsrv_phptype_out TSRMLS_CC );
 
-        if ( ptr ) {
-            zval* zval_ptr = reinterpret_cast<zval*>( sqlsrv_malloc( sizeof( zval )));
-            *zval_ptr = convert_to_zval( sqlsrv_phptype_out, reinterpret_cast<void**>( ptr ), *len );
-            *ptr = reinterpret_cast<char*>( zval_ptr );
-            *len = sizeof( zval );
+        if (ptr) {
+            zval* zval_ptr = reinterpret_cast<zval*>(sqlsrv_malloc(sizeof(zval)));
+            *zval_ptr = convert_to_zval(driver_stmt, sqlsrv_phptype_out, reinterpret_cast<void**>(ptr), *len);
+            *ptr = reinterpret_cast<char*>(zval_ptr);
+            *len = sizeof(zval);
         }
 
         return 1;        

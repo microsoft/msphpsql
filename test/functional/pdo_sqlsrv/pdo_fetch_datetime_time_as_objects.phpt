@@ -70,6 +70,33 @@ function checkColumnDTValue($index, $column, $values, $dtObj)
     } 
 }
 
+function randomColumns($conn, $query, $columns, $values)
+{
+    $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
+    $stmt = $conn->prepare($query);
+    
+    // Fetch a random column to trigger caching
+    $lastCol = count($columns) - 1;
+    $col = rand(0, $lastCol);
+    $stmt->execute();
+    $dtObj = $stmt->fetchColumn($col);
+    checkColumnDTValue($col, $columns[$col], $values, $dtObj);
+
+    // Similarly, fetch another column
+    $col = (++$col) % count($columns);
+    $stmt->execute();
+    $dtObj = $stmt->fetchColumn($col);
+    checkColumnDTValue($col, $columns[$col], $values, $dtObj);
+
+    // Now fetch all columns in a backward order
+    $i = $lastCol;
+    do {
+        $stmt->execute();
+        $dtObj = $stmt->fetchColumn($i);
+        checkColumnDTValue($i, $columns[$i], $values, $dtObj);
+    } while (--$i >= 0);
+}
+
 function runTest($conn, $query, $columns, $values, $useBuffer = false)
 {
     // fetch the date time values as strings or date time objects
@@ -103,7 +130,7 @@ function runTest($conn, $query, $columns, $values, $useBuffer = false)
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_BOTH);
     checkDTObjectValues($row, $columns, $values, PDO::FETCH_BOTH);
-    
+   
     // ATTR_STRINGIFY_FETCHES should have no effect when fetching date time objects 
     // Setting it to true only converts numeric values to strings when fetching
     // See http://www.php.net/manual/en/pdo.setattribute.php for details
@@ -164,7 +191,6 @@ function runTest($conn, $query, $columns, $values, $useBuffer = false)
     // last test: set statement attribute fetch_datetime on with no change to 
     // prepared statement -- expected datetime objects to be returned
     $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
-    $stmt->execute();
     $i = 0;
     do {
         $stmt->execute();
@@ -234,8 +260,9 @@ try {
 
     $query = "SELECT * FROM $tableName";
     
-    runTest($conn, $query, $columns, $values);
-    runTest($conn, $query, $columns, $values, true);
+    runtest($conn, $query, $columns, $values);
+    runtest($conn, $query, $columns, $values, true);
+    randomColumns($conn, $query, $columns, $values);
     
     dropTable($conn, $tableName);
     

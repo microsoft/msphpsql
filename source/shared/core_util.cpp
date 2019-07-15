@@ -189,6 +189,40 @@ SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_
     return utf16_string;
 }
 
+// Converts an input (assuming a datetime string) to a zval containing a PHP DateTime object. 
+// If the input is null, this simply returns a NULL zval. If anything wrong occurs during conversion,
+// an exception will be thrown.
+void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* input, _In_ SQLLEN length, _Inout_ zval& out_zval)
+{
+    if (input == NULL) {
+        ZVAL_NULL(&out_zval);
+        return;
+    }
+
+    zval params[1];
+    zval value_temp_z;
+    zval function_z;
+
+    // Initialize all zval variables
+    ZVAL_UNDEF(&out_zval);
+    ZVAL_UNDEF(&value_temp_z);
+    ZVAL_UNDEF(&function_z);
+    ZVAL_UNDEF(params);
+
+    // Convert the datetime string to a PHP DateTime object
+    core::sqlsrv_zval_stringl(&value_temp_z, input, length);
+    core::sqlsrv_zval_stringl(&function_z, "date_create", sizeof("date_create") - 1);
+    params[0] = value_temp_z;
+
+    if (call_user_function(EG(function_table), NULL, &function_z, &out_zval, 1,
+                           params TSRMLS_CC) == FAILURE) {
+        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_DATETIME_CONVERSION_FAILED);
+    }
+
+    zend_string_free(Z_STR(value_temp_z));
+    zend_string_free(Z_STR(function_z));
+}
+
 // call to retrieve an error from ODBC.  This uses SQLGetDiagRec, so the
 // errno is 1 based.  It returns it as an array with 3 members:
 // 1/SQLSTATE) sqlstate
