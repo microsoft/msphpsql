@@ -219,7 +219,7 @@ zend_function_entry sqlsrv_functions[] = {
     PHP_FE( sqlsrv_client_info, sqlsrv_client_info_arginfo )
     PHP_FE( sqlsrv_server_info, sqlsrv_server_info_arginfo )
     PHP_FE( sqlsrv_cancel, sqlsrv_cancel_arginfo )
-    PHP_FE( sqlsrv_free_stmt, sqlsrv_close_arginfo )
+    PHP_FE( sqlsrv_free_stmt, sqlsrv_free_stmt_arginfo )
     PHP_FE( sqlsrv_field_metadata, sqlsrv_field_metadata_arginfo )
     PHP_FE( sqlsrv_send_stream_data, sqlsrv_send_stream_data_arginfo ) 
     PHP_FE( SQLSRV_SQLTYPE_BINARY, sqlsrv_sqltype_size_arginfo )
