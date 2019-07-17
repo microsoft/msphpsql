@@ -170,7 +170,6 @@ OACR_WARNING_POP
 // constants for maximums in SQL Server
 const int SS_MAXCOLNAMELEN = 128;
 const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
-const int SQL_SERVER_MAX_PRECISION = 38;
 const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
 const int SQL_SERVER_MAX_MONEY_SCALE = 4;
@@ -997,8 +996,6 @@ class sqlsrv_context {
     sqlsrv_error_auto_ptr  last_error_;      // last error that happened on this object
     SQLSRV_ENCODING        encoding_;        // encoding of the context   
 };
-
-const int SQLSRV_OS_VISTA_OR_LATER = 6;           // major version for Vista
 
 // maps an IANA encoding to a code page
 struct sqlsrv_encoding {

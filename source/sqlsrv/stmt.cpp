@@ -42,7 +42,6 @@ unsigned int current_log_subsystem = LOG_STMT;
 
 // constants used as invalid types for type errors
 const zend_uchar PHPTYPE_INVALID = SQLSRV_PHPTYPE_INVALID;
-const int SQLTYPE_INVALID = 0;
 const int SQLSRV_INVALID_PRECISION = -1;
 const SQLUINTEGER SQLSRV_INVALID_SIZE = (~1U);
 const int SQLSRV_INVALID_SCALE = -1;
@@ -51,8 +50,6 @@ const int SQLSRV_SIZE_MAX_TYPE = -1;
 // constants for maximums in SQL Server
 const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
 const int SQL_SERVER_MAX_PRECISION = 38;
-const int SQL_SERVER_DEFAULT_PRECISION = 18;
-const int SQL_SERVER_DEFAULT_SCALE = 0;
 
 // default class used when no class is specified by sqlsrv_fetch_object
 const char STDCLASS_NAME[] = "stdclass";
@@ -470,7 +467,6 @@ PHP_FUNCTION( sqlsrv_fetch_array )
 PHP_FUNCTION( sqlsrv_field_metadata )
 {
     sqlsrv_stmt* stmt = NULL;
-    SQLSMALLINT num_cols = -1;
 
     LOG_FUNCTION( "sqlsrv_field_metadata" );
 
