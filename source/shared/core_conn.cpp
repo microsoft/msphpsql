@@ -709,18 +709,41 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
         value_len -= 2;
     }
     // check to make sure that all right braces are escaped
-    size_t i = 0;
-    while( ( value[i] != '}' || ( value[i] == '}' && value[i+1] == '}' )) && i < value_len ) {
-        // skip both braces
-        if( value[i] == '}' )
-            ++i;
-        ++i;
-    }
-    if( i < value_len && value[i] == '}' ) {
-        return false;
-    }
+	if (value_len == 1)
+	{
+		if (value[0] == '}')
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
 
-    return true;
+	if (value[value_len - 2] != '}' && value[value_len - 1] == '}')
+	{
+		return false;
+	}
+
+	size_t i = 1;
+	while (i < value_len)
+	{
+		if (value[i] == '}'&&value[i - 1] == '}')
+		{
+			i += 2;
+		}
+		else if (value[i - 1] == '}' && value[i] != '}')// && value[i+1]!='}')
+		{
+			return false;
+		}
+		else
+		{
+			++i;
+		}
+	}
+
+	return true;
 }
 
 // core_is_authentication_option_valid
