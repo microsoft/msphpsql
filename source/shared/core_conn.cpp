@@ -704,46 +704,51 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
 {
     // if the value is already quoted, then only analyse the part inside the quotes and return it as
     // unquoted since we quote it when adding it to the connection string.
-    if( value_len > 0 && value[0] == '{' && value[value_len - 1] == '}' ) {
+    if (value_len > 0 && value[0] == '{' && value[value_len - 1] == '}') {
         ++value;
         value_len -= 2;
     }
-    // check to make sure that all right braces are escaped
-	if (value_len == 1)
-	{
-		if (value[0] == '}')
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-		}
-	}
 
-	if (value[value_len - 2] != '}' && value[value_len - 1] == '}')
-	{
-		return false;
-	}
+    // Check to make sure that all right braces are escaped
+    // First check the case where there is one character
+    if (value_len == 1) {
+        if (value[0] == '}') {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
 
-	size_t i = 1;
-	while (i < value_len)
-	{
-		if (value[i] == '}'&&value[i - 1] == '}')
-		{
-			i += 2;
-		}
-		else if (value[i - 1] == '}' && value[i] != '}')// && value[i+1]!='}')
-		{
-			return false;
-		}
-		else
-		{
-			++i;
-		}
-	}
+    // Check the case where there is one } at the end
+    if (value[value_len - 2] != '}' && value[value_len - 1] == '}') {
+        return false;
+    }
 
-	return true;
+    // Now run through the string starting at the second position
+    size_t i = 1;
+    while (i < value_len) {
+        // If there are two }, the } is escaped
+        // Otherwise check for one }
+        // Otherwise simply advance the index
+        if (value[i] == '}'&&value[i - 1] == '}') {
+            i += 2;
+
+            // Since i advanced by 2, check the case where three } lie at the end of the string
+            // Note if there are 2 } at the end, i is value_len+1 so does not trigger this
+            if (i == value_len && value[value_len - 1] == '}') {
+                return false;
+            }
+        }
+        else if (value[i - 1] == '}' && value[i] != '}') {
+            return false;
+        }
+        else {
+            ++i;
+        }
+    }
+
+    return true;
 }
 
 // core_is_authentication_option_valid
