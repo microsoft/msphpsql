@@ -45,6 +45,7 @@ $testStrings = array(array("test", $connError),
 foreach ($testStrings as $test) {
 
     $conn = sqlsrv_connect($server, array('uid'=>$test[0], 'pwd'=>$password, 'LoginTimeout'=>1));
+    echo $test[0]."\n";
 
     if (strpos(sqlsrv_errors()[0][2], $test[1]) === false) {
         print_r("Wrong error message returned. Expected ".$test[1].", actual output:\n");
