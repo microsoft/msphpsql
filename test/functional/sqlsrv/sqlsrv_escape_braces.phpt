@@ -10,8 +10,9 @@ $password = 'fakepassword';
 
 // If the braces are fine, then we expect the connection to fail with a login timeout error
 $braceError = "An unescaped right brace (}) was found";
-$connError = "Could not open a connection to SQL Server";
-
+$connError = (strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN') ? "Could not open a connection to SQL Server" : "Login timeout expired";
+echo $connError;
+print_r(php_uname('s'));
 // Every combination of one, two, three, or more right braces I can think of
 $testStrings = array(array("test", $connError),
                      array("{test}", $connError),
@@ -47,7 +48,7 @@ foreach ($testStrings as $test) {
     $conn = sqlsrv_connect($server, array('uid'=>$test[0], 'pwd'=>$password, 'LoginTimeout'=>1));
 
     if (strpos(sqlsrv_errors()[0][2], $test[1]) === false) {
-        print_r("Wrong error message returned. Expected ".$test[1].", actual output:\n");
+        print_r("Wrong error message returned for test string ".$test[0].". Expected ".$test[1].", actual output:\n");
         print_r(sqlsrv_errors());
     } 
 
