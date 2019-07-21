@@ -13,7 +13,17 @@ $braceError = "An unescaped right brace (}) was found";
 $connError = (strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN') ? "Could not open a connection to SQL Server" : "Login timeout expired";
 
 // Every combination of one, two, three, or more right braces I can think of
-$testStrings = array(array("test", $connError),
+$testStrings = array(array("}", $braceError),
+                     array("{", $connError),
+                     array("{t}", $connError),
+                     array("{}}", $braceError),
+                     array("}}", $connError),
+                     array("}}}", $braceError),
+                     array("}}}}", $connError),
+                     array("{}}}", $connError),
+                     array("}{", $braceError),
+                     array("}{{", $braceError),
+                     array("test", $connError),
                      array("{test}", $connError),
                      array("{test", $connError),
                      array("test}", $braceError),
