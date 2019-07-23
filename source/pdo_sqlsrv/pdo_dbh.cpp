@@ -1692,7 +1692,6 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
 
             ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
                 int type = HASH_KEY_NON_EXISTENT;
-                int result = 0;
                 type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
                 CHECK_CUSTOM_ERROR(( type != HASH_KEY_IS_LONG ), ctx, PDO_SQLSRV_ERROR_INVALID_STMT_OPTION ) {
                     throw core::CoreException();

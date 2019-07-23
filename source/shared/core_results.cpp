@@ -243,14 +243,12 @@ std::string getUTF8StringFromString( _In_z_ const SQLWCHAR* source )
 {
     // convert to regular character string first
     char c_str[4] = "";
-    mbstate_t mbs;
 
     SQLLEN i = 0;
     std::string str;
     while ( source[i] )
     {        
         memset( c_str, 0, sizeof( c_str ) );        
-        DWORD rc;    
         int cch = 0;
         errno_t err = mplat_wctomb_s( &cch, c_str, sizeof( c_str ), source[i++] );
         if ( cch > 0 && err == ERROR_SUCCESS )

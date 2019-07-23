@@ -702,22 +702,32 @@ void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_
 
 bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len )
 {
-    // if the value is already quoted, then only analyse the part inside the quotes and return it as
-    // unquoted since we quote it when adding it to the connection string.
-    if( value_len > 0 && value[0] == '{' && value[value_len - 1] == '}' ) {
-        ++value;
+    if (value_len == 0) {
+        return true;
+    }
+
+    if (value_len == 1) {
+        return (value[0] != '}');
+    }
+
+    const char *pstr = value;
+    if (value_len > 0 && value[0] == '{' && value[value_len - 1] == '}') {
+        pstr = ++value;
         value_len -= 2;
     }
-    // check to make sure that all right braces are escaped
+
+    const char *pch = strchr(pstr, '}');
     size_t i = 0;
-    while( ( value[i] != '}' || ( value[i] == '}' && value[i+1] == '}' )) && i < value_len ) {
-        // skip both braces
-        if( value[i] == '}' )
-            ++i;
-        ++i;
-    }
-    if( i < value_len && value[i] == '}' ) {
-        return false;
+    
+    while (pch != NULL && i < value_len) {
+        i = pch - pstr + 1;
+        
+        if (i == value_len || (i < value_len && pstr[i] != '}')) {
+            return false;
+        }
+        
+        i++;    // skip the brace
+        pch = strchr(pch + 2, '}'); // continue searching
     }
 
     return true;
