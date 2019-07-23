@@ -55,7 +55,7 @@ $testStrings = array(array("}", $braceError),
 foreach ($testStrings as $test) {
 
     try {
-        $conn = new PDO("sqlsrv:Server=".$server.";", $test[0], $password);
+        $conn = new PDO("sqlsrv:Server=".$server.";LoginTimeout=1;", $test[0], $password);
     } catch (PDOException $e) {
         if (strpos($e->getMessage(), $test[1]) === false) {
             print_r("Wrong error message returned for test string ".$test[0].". Expected ".$test[1].", actual output:\n");

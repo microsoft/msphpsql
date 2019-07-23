@@ -712,8 +712,8 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
 
     const char *pstr = value;
     if (value_len > 0 && value[0] == '{' && value[value_len - 1] == '}') {
-            pstr = ++value;
-            value_len -= 2;
+        pstr = ++value;
+        value_len -= 2;
     }
 
     const char *pch = strchr(pstr, '}');
