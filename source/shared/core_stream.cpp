@@ -44,7 +44,11 @@ int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ TSRMLS
 // read from a sqlsrv stream into the buffer provided by Zend.  The parameters for binary vs. char are
 // set when sqlsrv_get_field is called by the user specifying which field type they want.
 
+#if PHP_VERSION_ID < 70400
 size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC )
+#else
+ssize_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC )
+#endif
 {
 	SQLLEN read = 0;
     SQLSMALLINT c_type = SQL_C_CHAR;
