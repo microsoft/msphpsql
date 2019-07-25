@@ -2420,143 +2420,140 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
 
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    if (Z_ISUNDEF(stmt->output_params))
+    if( Z_ISUNDEF(stmt->output_params) )
         return;
 
+    HashTable* params_ht = Z_ARRVAL( stmt->output_params );
+    zend_ulong index = -1;
+    zend_string* key = NULL;
+    void* output_param_temp = NULL;
+
     try {
-        HashTable* params_ht = Z_ARRVAL(stmt->output_params);
-        zend_ulong index = -1;
-        zend_string* key = NULL;
-        void* output_param_temp = NULL;
-
-        ZEND_HASH_FOREACH_KEY_PTR(params_ht, index, key, output_param_temp)
+    ZEND_HASH_FOREACH_KEY_PTR( params_ht, index, key, output_param_temp ) {
+        sqlsrv_output_param* output_param = static_cast<sqlsrv_output_param*>( output_param_temp );
+        zval* value_z = Z_REFVAL_P( output_param->param_z );
+        switch( Z_TYPE_P( value_z )) {
+        case IS_STRING:
         {
-            sqlsrv_output_param* output_param = static_cast<sqlsrv_output_param*>(output_param_temp);
-            zval* value_z = Z_REFVAL_P(output_param->param_z);
-            switch (Z_TYPE_P(value_z)) {
-            case IS_STRING:
+            // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
+            char* str = Z_STRVAL_P( value_z );
+            SQLLEN str_len = stmt->param_ind_ptrs[output_param->param_num];
+            if( str_len == 0 ) {
+                core::sqlsrv_zval_stringl( value_z, "", 0 );
+                continue;
+            }
+            if( str_len == SQL_NULL_DATA ) {
+                zend_string_release( Z_STR_P( value_z ));
+                ZVAL_NULL( value_z );
+                continue;
+            }
+
+            // if there was more to output than buffer size to hold it, then throw a truncation error
+            int null_size = 0;
+            switch( output_param->encoding ) {
+            case SQLSRV_ENCODING_UTF8:
+                null_size = sizeof( SQLWCHAR );  // string isn't yet converted to UTF-8, still UTF-16
+                break;
+            case SQLSRV_ENCODING_SYSTEM:
+                null_size = 1;
+                break;
+            case SQLSRV_ENCODING_BINARY:
+                null_size = 0;
+                break;
+            default:
+                SQLSRV_ASSERT( false, "Invalid encoding in output_param structure." );
+                break;
+            }
+            CHECK_CUSTOM_ERROR( str_len > ( output_param->original_buffer_len - null_size ), stmt,
+                SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, output_param->param_num + 1 ) {
+                throw core::CoreException();
+            }
+
+            // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
+            // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains up to
+            // output_param->original_buffer_len data and is NULL terminated.
+            // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
+            if ( str_len == SQL_NO_TOTAL )
             {
-                // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
-                char* str = Z_STRVAL_P(value_z);
-                SQLLEN str_len = stmt->param_ind_ptrs[output_param->param_num];
-                if (str_len == 0) {
-                    core::sqlsrv_zval_stringl(value_z, "", 0);
-                    continue;
-                }
-                if (str_len == SQL_NULL_DATA) {
-                    zend_string_release(Z_STR_P(value_z));
-                    ZVAL_NULL(value_z);
-                    continue;
-                }
+                str_len = output_param->original_buffer_len - null_size;
+            }
 
-                // if there was more to output than buffer size to hold it, then throw a truncation error
-                int null_size = 0;
-                switch (output_param->encoding) {
-                case SQLSRV_ENCODING_UTF8:
-                    null_size = sizeof(SQLWCHAR);  // string isn't yet converted to UTF-8, still UTF-16
-                    break;
-                case SQLSRV_ENCODING_SYSTEM:
-                    null_size = 1;
-                    break;
-                case SQLSRV_ENCODING_BINARY:
-                    null_size = 0;
-                    break;
-                default:
-                    SQLSRV_ASSERT(false, "Invalid encoding in output_param structure.");
-                    break;
+            if (output_param->encoding == SQLSRV_ENCODING_BINARY) {
+                // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
+                // so we do that here if the length of the returned data is less than the original allocation.  The
+                // original allocation null terminates the buffer already.
+                if (str_len < output_param->original_buffer_len) {
+                    str[str_len] = '\0';
                 }
-                CHECK_CUSTOM_ERROR(str_len > (output_param->original_buffer_len - null_size), stmt,
-                                   SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, output_param->param_num + 1)
-                {
-                    throw core::CoreException();
-                }
+                core::sqlsrv_zval_stringl(value_z, str, str_len);
+            }
+            else {
+                param_meta_data metaData = output_param->getMetaData();
 
-                // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
-                // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains up to
-                // output_param->original_buffer_len data and is NULL terminated.
-                // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
-                if (str_len == SQL_NO_TOTAL) {
-                    str_len = output_param->original_buffer_len - null_size;
-                }
-
-                if (output_param->encoding == SQLSRV_ENCODING_BINARY) {
-                    // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
-                    // so we do that here if the length of the returned data is less than the original allocation.  The
-                    // original allocation null terminates the buffer already.
-                    if (str_len < output_param->original_buffer_len) {
-                        str[str_len] = '\0';
+                if (output_param->encoding != SQLSRV_ENCODING_CHAR) {
+                    char* outString = NULL;
+                    SQLLEN outLen = 0;
+                    bool result = convert_string_from_utf16(output_param->encoding, reinterpret_cast<const SQLWCHAR*>(str), int(str_len / sizeof(SQLWCHAR)), &outString, outLen );
+                    CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
+                        throw core::CoreException();
                     }
-                    core::sqlsrv_zval_stringl(value_z, str, str_len);
+
+                    if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
+                        format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, outString, &outLen);
+                    }
+
+                    core::sqlsrv_zval_stringl(value_z, outString, outLen);
+                    sqlsrv_free(outString);
                 }
                 else {
-                    param_meta_data metaData = output_param->getMetaData();
-
-                    if (output_param->encoding != SQLSRV_ENCODING_CHAR) {
-                        char* outString = NULL;
-                        SQLLEN outLen = 0;
-                        bool result = convert_string_from_utf16(output_param->encoding, reinterpret_cast<const SQLWCHAR*>(str), int(str_len / sizeof(SQLWCHAR)), &outString, outLen);
-                        CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message())
-                        {
-                            throw core::CoreException();
-                        }
-
-                        if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
-                            format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, outString, &outLen);
-                        }
-
-                        core::sqlsrv_zval_stringl(value_z, outString, outLen);
-                        sqlsrv_free(outString);
+                    if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
+                        format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, str, &str_len);
                     }
-                    else {
-                        if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
-                            format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, str, &str_len);
-                        }
 
-                        core::sqlsrv_zval_stringl(value_z, str, str_len);
+                    core::sqlsrv_zval_stringl(value_z, str, str_len);
+                }
+            }
+        }
+        break;
+        case IS_LONG:
+            // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
+            if( stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA ) {
+                ZVAL_NULL( value_z );
+            }
+            else if( output_param->is_bool ) {
+                convert_to_boolean( value_z );
+            }
+            else {
+                ZVAL_LONG( value_z, static_cast<int>( Z_LVAL_P( value_z )));
+            }
+            break;
+        case IS_DOUBLE:
+            // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
+            if (stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA) {
+                ZVAL_NULL(value_z);
+            }
+            else if (output_param->php_out_type == SQLSRV_PHPTYPE_INT) {
+                // first check if its value is out of range
+                double dval = Z_DVAL_P(value_z);
+                if (dval > INT_MAX || dval < INT_MIN) {
+                    CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED) {
+                        throw core::CoreException();
                     }
+                }
+                // if the output param is a boolean, still convert to 
+                // a long integer first to take care of rounding
+                convert_to_long(value_z);
+                if (output_param->is_bool) {
+                    convert_to_boolean(value_z);
                 }
             }
             break;
-            case IS_LONG:
-                // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
-                if (stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA) {
-                    ZVAL_NULL(value_z);
-                }
-                else if (output_param->is_bool) {
-                    convert_to_boolean(value_z);
-                }
-                else {
-                    ZVAL_LONG(value_z, static_cast<int>(Z_LVAL_P(value_z)));
-                }
-                break;
-            case IS_DOUBLE:
-                // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
-                if (stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA) {
-                    ZVAL_NULL(value_z);
-                }
-                else if (output_param->php_out_type == SQLSRV_PHPTYPE_INT) {
-                    // first check if its value is out of range
-                    double dval = Z_DVAL_P(value_z);
-                    if (dval > INT_MAX || dval < INT_MIN) {
-                        CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED)
-                        {
-                            throw core::CoreException();
-                        }
-                    }
-                    // if the output param is a boolean, still convert to 
-                    // a long integer first to take care of rounding
-                    convert_to_long(value_z);
-                    if (output_param->is_bool) {
-                        convert_to_boolean(value_z);
-                    }
-                }
-                break;
-            default:
-                DIE("Illegal or unknown output parameter type. This should have been caught in core_sqlsrv_bind_parameter.");
-                break;
-            }
-            value_z = NULL;
-        }  ZEND_HASH_FOREACH_END();
+        default:
+            DIE( "Illegal or unknown output parameter type. This should have been caught in core_sqlsrv_bind_parameter." );
+            break;
+        }
+        value_z = NULL;
+    }  ZEND_HASH_FOREACH_END();
     }
     catch (core::CoreException&) {
         // empty the hash table since it's been processed
