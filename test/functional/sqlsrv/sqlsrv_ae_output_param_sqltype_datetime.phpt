@@ -59,7 +59,8 @@ foreach ($dataTypes as $dataType) {
                     }
                 }
                 // 22018 is the SQLSTATE for any incompatible conversion errors
-                if ($isCompatible && sqlsrv_errors()[0]['SQLSTATE'] == 22018) {
+                $errors = sqlsrv_errors();
+                if (!empty($errors) && $isCompatible && $errors[0]['SQLSTATE'] == 22018) {
                     echo "$sqlType should be compatible with $dataType\n";
                     $success = false;
                 }

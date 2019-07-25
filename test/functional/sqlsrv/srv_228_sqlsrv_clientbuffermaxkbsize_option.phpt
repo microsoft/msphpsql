@@ -44,7 +44,8 @@ function fetchData($conn, $table, $size)
         echo "Expect this to fail\n";
     } else {
         $error = 'Memory limit of 1 KB exceeded for buffered query';
-        if (strpos(sqlsrv_errors()[0]['message'], $error) === false) {
+        $errors = sqlsrv_errors();
+        if (!empty($errors) && strpos($errors[0]['message'], $error) === false) {
             print_r(sqlsrv_errors());
         }
     }

@@ -1129,11 +1129,11 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         }
     }
     catch( core::CoreException& ) {
-
+        zval_ptr_dtor(return_value);
         return FAILURE;
     }
     catch(...) {
-
+        zval_ptr_dtor(return_value);
         DIE( "pdo_sqlsrv_stmt_get_col_meta: Unknown exception occurred while retrieving metadata." );
     }
     
