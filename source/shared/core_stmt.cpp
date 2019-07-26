@@ -988,7 +988,7 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
             return;
         }
 
-        if (stmt->current_sensitivity_metadata != NULL) {
+        if (stmt->current_sensitivity_metadata) {
             // Already cached, so return
             return;
         }
