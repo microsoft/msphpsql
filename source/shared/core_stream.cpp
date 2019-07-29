@@ -44,7 +44,11 @@ int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ TSRMLS
 // read from a sqlsrv stream into the buffer provided by Zend.  The parameters for binary vs. char are
 // set when sqlsrv_get_field is called by the user specifying which field type they want.
 
-size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC )
+#if PHP_VERSION_ID >= 70400        
+ssize_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC)
+#else
+size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC)
+#endif
 {
 	SQLLEN read = 0;
     SQLSMALLINT c_type = SQL_C_CHAR;
@@ -184,15 +188,20 @@ size_t sqlsrv_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count)
 
         return static_cast<size_t>( read );
     } 
-
-    catch( core::CoreException& ) {
-        
+    catch (core::CoreException&) {
+#if PHP_VERSION_ID >= 70400        
+        return -1;
+#else
         return 0;
+#endif
     }
-    catch( ... ) {
-
-        LOG( SEV_ERROR, "sqlsrv_stream_read: Unknown exception caught." );
+    catch (...) {
+        LOG(SEV_ERROR, "sqlsrv_stream_read: Unknown exception caught.");
+#if PHP_VERSION_ID >= 70400        
+        return -1;
+#else
         return 0;
+#endif
     }
 }
 
