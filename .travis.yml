@@ -43,7 +43,7 @@ script:
   - docker exec client bash -c 'for f in ./test/functional/pdo_sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
   - docker exec client python ./test/functional/setup/cleanup_dbs.py -dbname $SQLSRV_DBNAME
   - docker exec client python ./test/functional/setup/cleanup_dbs.py -dbname $PDOSQLSRV_DBNAME
-  - docker exec client coveralls -i ./source -e ./source/shared/ --gcov-options '\-lp'
+  - docker exec client coveralls -i ./source/ -e ./source/shared/ -e ./test/ --gcov-options '\-lp'
   - docker stop client
   - docker ps -a 
 
