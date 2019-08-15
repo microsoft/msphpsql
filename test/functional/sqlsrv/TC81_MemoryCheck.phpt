@@ -12,6 +12,8 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
+const _NUM_PASSES = 20;
+
 function memCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
 {
     $testName = "Memory Leakage Check";
@@ -337,7 +339,7 @@ function runTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
 }
 
 try {
-    memCheck(20, 10, 15, 1, 7);
+    memCheck(_NUM_PASSES, 10, 15, 1, 7);
 } catch (Exception $e) {
     echo $e->getMessage();
 }

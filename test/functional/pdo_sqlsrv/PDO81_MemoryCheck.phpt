@@ -11,6 +11,8 @@ PHPT_EXEC=true
 <?php
 include 'MsCommon.inc';
 
+const _NUM_PASSES = 20;
+
 function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep, $leakThreshold)
 {
     include 'MsSetup.inc';
@@ -228,7 +230,7 @@ function Repro()
 {
     try
     {
-        MemCheck(20, 10, 15, 1, 3, 0);
+        MemCheck(_NUM_PASSES, 10, 15, 1, 3, 0);
     }
     catch (Exception $e)
     {

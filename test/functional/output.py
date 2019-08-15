@@ -76,11 +76,13 @@ def gen_XML(logfile, number, logfilename):
     # Generating the xml report.
     if logfilename is True:
         file = open(filename + '.xml', 'w')
+        report = filename
     else:
         file = open('nativeresult' + str(number) + '.xml', 'w')
+        report = 'Native Tests'
     
     file.write('<?xml version="1.0" encoding="UTF-8" ?>' + os.linesep)
-    file.write('<testsuite tests="' + str(num - 1) + '" failures="' + str(failnum) + '" name="Native Tests" >' + os.linesep)
+    file.write('<testsuite tests="' + str(num - 1) + '" failures="' + str(failnum) + '" name="' + report + '" >' + os.linesep)
 
     index = 1
     for test in tests_list:
