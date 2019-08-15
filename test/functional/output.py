@@ -5,13 +5,14 @@
 #       Requirement of python 3.4 to execute this script and required result log file(s) 
 #       are in the same location
 #       Run with command line without options required. Example: py output.py
-#       This script parse output of PHP Native Test
+#       This script parse output of PHP Test logs
 #
 #############################################################################################
 
 import os
 import stat
 import re
+import argparse
 
 # This module appends an entry to the tests list, may include the test title.
 # Input:    search_pattern - pattern to look for in the line of the log file
@@ -46,12 +47,14 @@ def get_test_entry(search_pattern, line, index, tests_list, get_title = False):
         tests_list.append(entry)
 
 # Extract individual test results from the log file and
-# enter it in the nativeresult.xml file.
-# Input:    logfile - the log file
-#           number - the number for this xml file
-def gen_XML(logfile, number):
+# enter it in the xml report file.
+# Input:    logfile - the test log file
+#           number - the number for this xml file (applicable if using the default report name)
+#           logfilename - use the log file name for the xml output file Instead
+def gen_XML(logfile, number, logfilename):
     print('================================================')
-    print("\n" + os.path.splitext(logfile)[0] + "\n" )
+    filename = os.path.splitext(logfile)[0]
+    print("\n" + filename + "\n" )
 
     tests_list = []
     with open(os.path.dirname(os.path.realpath(__file__)) + os.sep + logfile) as f:
@@ -70,8 +73,12 @@ def gen_XML(logfile, number):
                 print(line)
         print('================================================')
 
-    # Generating the nativeresult.xml file.
-    file = open('nativeresult' + str(number) + '.xml', 'w')
+    # Generating the xml report.
+    if logfilename is True:
+        file = open(filename + '.xml', 'w')
+    else:
+        file = open('nativeresult' + str(number) + '.xml', 'w')
+    
     file.write('<?xml version="1.0" encoding="UTF-8" ?>' + os.linesep)
     file.write('<testsuite tests="' + str(num - 1) + '" failures="' + str(failnum) + '" name="Native Tests" >' + os.linesep)
 
@@ -83,12 +90,18 @@ def gen_XML(logfile, number):
 
 # ----------------------- Main Function -----------------------
 
-# Display results on screen from result log file.
+# Generate XML reports from test result log files.
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--LOGFILENAME', action='store_true', help="Generate XML files using log file names (default: False)")
+
+    args = parser.parse_args()
+    logfilename = args.LOGFILENAME
+    
     num = 1
     for f in os.listdir(os.path.dirname(os.path.realpath(__file__))):
         if f.endswith("log"):
             logfile = f
-            gen_XML(logfile, num)
+            gen_XML(logfile, num, logfilename)
             num = num + 1
 
