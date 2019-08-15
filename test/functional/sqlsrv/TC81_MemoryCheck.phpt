@@ -7,12 +7,14 @@ emalloc (which only allocate memory in the memory space allocated for the PHP pr
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
-<?php require('skipif_azure.inc'); ?>
+<?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
 const _NUM_PASSES = 20;
+const _NUM_ROWS1 = 10;
+const _NUM_ROWS2 = 15;
 
 function memCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep)
 {
@@ -339,7 +341,7 @@ function runTest($noPasses, $noRows, $tableName, $conn, $prepared, $release, $mo
 }
 
 try {
-    memCheck(_NUM_PASSES, 10, 15, 1, 7);
+    memCheck(_NUM_PASSES, _NUM_ROWS1, _NUM_ROWS2, 1, 7);
 } catch (Exception $e) {
     echo $e->getMessage();
 }

@@ -12,6 +12,8 @@ PHPT_EXEC=true
 include 'MsCommon.inc';
 
 const _NUM_PASSES = 20;
+const _NUM_ROWS1 = 10;
+const _NUM_ROWS2 = 15;
 
 function MemCheck($noPasses, $noRows1, $noRows2, $startStep, $endStep, $leakThreshold)
 {
@@ -137,6 +139,18 @@ function ExecTest($noPasses, $noRows, $startStep, $endStep, $tableName, $conn, $
                 Trace("$i. Fetch\t - ");
                 break;
 
+            case 4:    // fetchAll
+                Trace("$i. FetchAll\t - ");
+                break;
+                
+            case 5:    // fetch object
+                trace("$i. Fetch Object\t - ");
+                break;
+                
+            case 6:    // fetch column
+                trace("$i. Fetch Column\t - ");
+                break;
+
             default:
                 break;
         }
@@ -200,6 +214,46 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $mode)
                 }
                 break;
 
+            case 4:     // fetchAll
+                $stmt = ExecuteQueryEx($conn, $tsql, ($prepared ? false : true));
+                $fldCount = $stmt->columnCount();
+                $result = $stmt->fetchAll();
+                $rowCount = count($result);
+                unset($result);
+                $stmt->closeCursor();
+                unset($stmt);
+                if ($rowCount != $noRows) {
+                    die("$rowCount rows retrieved instead of $noRows\n");
+                }
+                break;
+                
+            case 5:     // fetchObject
+                $stmt = ExecuteQueryEx($conn, $tsql, ($prepared ? false : true));
+                $fldCount = $stmt->columnCount();
+                while ($obj = $stmt->fetchObject()) {
+                    unset($obj);
+                    $rowCount++;
+                }
+                $stmt->closeCursor();
+                unset($stmt);
+                if ($rowCount != $noRows) {
+                    die("$rowCount rows retrieved instead of $noRows\n");
+                }
+                break;
+                
+            case 6:     // fetchColumn
+                $stmt = ExecuteQueryEx($conn, $tsql, ($prepared ? false : true));
+                $fldCount = $stmt->columnCount();
+                $result = $stmt->fetchAll();
+                $rowCount = count($result);
+                unset($result);
+                $stmt->closeCursor();
+                unset($stmt);
+                if ($rowCount != $noRows) {
+                    die("$rowCount rows retrieved instead of $noRows\n");
+                }
+                break;
+                
             default:
                 break;
 
@@ -230,7 +284,7 @@ function Repro()
 {
     try
     {
-        MemCheck(_NUM_PASSES, 10, 15, 1, 3, 0);
+        MemCheck(_NUM_PASSES, _NUM_ROWS1, _NUM_ROWS2, 1, 6, 0);
     }
     catch (Exception $e)
     {
