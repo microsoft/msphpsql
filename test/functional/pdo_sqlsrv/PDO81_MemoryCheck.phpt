@@ -244,7 +244,7 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $mode)
             case 6:     // fetchColumn
                 $stmt = ExecuteQueryEx($conn, $tsql, ($prepared ? false : true));
                 $fldCount = $stmt->columnCount();
-                $result = $stmt->fetchAll();
+                $result = $stmt->fetchColumn();
                 $rowCount = count($result);
                 unset($result);
                 $stmt->closeCursor();
