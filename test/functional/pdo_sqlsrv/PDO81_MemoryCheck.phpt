@@ -244,9 +244,11 @@ function RunTest($noPasses, $noRows, $tableName, $conn, $prepared, $mode)
             case 6:     // fetchColumn
                 $stmt = ExecuteQueryEx($conn, $tsql, ($prepared ? false : true));
                 $fldCount = $stmt->columnCount();
-                $result = $stmt->fetchColumn();
-                $rowCount = count($result);
-                unset($result);
+                // Check for "false" to terminate because fetchColumn may return NULL
+                while (($result = $stmt->fetchColumn()) !== false) {
+                    unset($result);
+                    $rowCount++;
+                }
                 $stmt->closeCursor();
                 unset($stmt);
                 if ($rowCount != $noRows) {
