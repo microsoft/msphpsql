@@ -15,7 +15,7 @@ Updated PECL release packages. Here is the list of updates:
 - Dropped support for Ubuntu 18.10
 
 ### Fixed
-- Issue [#937](https://github.com/microsoft/msphpsql/issues/570)
+- Issue [#937](https://github.com/microsoft/msphpsql/issues/570) - Fixed fetching varbinary data using client buffer with sqlsrv
 - Pull Request [#972](https://github.com/microsoft/msphpsql/pull/972) - Removed the redundunt calls to retrieve the number of columns or rows in the current query result set
 - Pull Request [#978](https://github.com/microsoft/msphpsql/pull/978) - PDO get column meta method will reference the cached metadata rather than making an ODBC call every time
 - Pull Request [#979](https://github.com/microsoft/msphpsql/pull/979) - Added support for data classification sensivity metadata retrieval
