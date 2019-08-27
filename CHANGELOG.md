@@ -3,6 +3,48 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 5.7.0 - 2019-09-05
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Added support for PHP 7.4 RC 1
+- Added support for Linux Debian 10
+- Added support for retrieving Data Classification sensivity metadata, which requires [MS ODBC Driver 17.2+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [SQL Server 2019 RC 1](https://docs.microsoft.com/sql/sql-server/sql-server-ver15-release-notes?view=sqlallproducts-allversions#-release-candidate-rc)
+
+### Removed
+- Dropped support for Ubuntu 18.10
+
+### Fixed
+- Issue [#937](https://github.com/microsoft/msphpsql/issues/570)
+- Pull Request [#972](https://github.com/microsoft/msphpsql/pull/972) - Removed the redundunt calls to retrieve the number of columns or rows in the current query result set
+- Pull Request [#978](https://github.com/microsoft/msphpsql/pull/978) - PDO get column meta method will reference the cached metadata rather than making an ODBC call every time
+- Pull Request [#979](https://github.com/microsoft/msphpsql/pull/979) - Added support for data classification sensivity metadata retrieval
+- Pull Request [#985](https://github.com/microsoft/msphpsql/pull/985) - Fixed memory issues with data classification data structures
+- Issue [#432](https://github.com/microsoft/msphpsql/issues/432) - Having any invalid UTF-8 name in the connection string will no longer invoke misleading error messages
+- Issue [#909](https://github.com/microsoft/msphpsql/issues/909) - Fixed the potential exception with locale issues in macOS 
+- Pull Request [#992](https://github.com/microsoft/msphpsql/pull/992) - Produced the correct error when requesting Data Classification metadata with ODBC drivers prior to 17
+- Pull Request [#1001](https://github.com/microsoft/msphpsql/pull/1001) - Fixed the compilation issue with PHP 7.4 alpha
+- Pull Request [#1004](https://github.com/microsoft/msphpsql/pull/1004) - Fixed another compilation issue with PHP 7.4 alpha
+- Pull Request [#1008](https://github.com/microsoft/msphpsql/pull/1008) - Improved data caching when fetching datetime objects
+- Pull Request [#1011](https://github.com/microsoft/msphpsql/pull/1011) - Fixed a potential buffer overflow when parsing for escaped braces in the connection string
+- Pull Request [#1015](https://github.com/microsoft/msphpsql/pull/1015) - Fixed compilation issues and addressed various memory leaks detected by PHP 7.4 beta 1 
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+- With ColumnEncryption enabled, calling stored procedures with XML parameters does not work (Issue [#674](https://github.com/Microsoft/msphpsql/issues/674))
+
 ## 5.6.1 - 2019-03-19
 Updated PECL release packages. Here is the list of updates:
 
