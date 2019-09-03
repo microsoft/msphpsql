@@ -16,14 +16,14 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Fixed
 - Issue [#937](https://github.com/microsoft/msphpsql/issues/570) - Fixed fetching varbinary data using client buffer with sqlsrv
-- Pull Request [#972](https://github.com/microsoft/msphpsql/pull/972) - Removed the redundunt calls to retrieve the number of columns or rows in the current query result set
-- Pull Request [#978](https://github.com/microsoft/msphpsql/pull/978) - PDO get column meta method will reference the cached metadata rather than making an ODBC call every time
+- Pull Request [#972](https://github.com/microsoft/msphpsql/pull/972) - Removed redundunt calls to retrieve the number of columns or rows in the current query result set
+- Pull Request [#978](https://github.com/microsoft/msphpsql/pull/978) - PDO get column meta method will reference cached metadata rather than making an ODBC call every time
 - Pull Request [#979](https://github.com/microsoft/msphpsql/pull/979) - Added support for data classification sensivity metadata retrieval
 - Pull Request [#985](https://github.com/microsoft/msphpsql/pull/985) - Fixed memory issues with data classification data structures
 - Issue [#432](https://github.com/microsoft/msphpsql/issues/432) - Having any invalid UTF-8 name in the connection string will no longer invoke misleading error messages
-- Issue [#909](https://github.com/microsoft/msphpsql/issues/909) - Fixed the potential exception with locale issues in macOS 
+- Issue [#909](https://github.com/microsoft/msphpsql/issues/909) - Fixed potential exception with locale issues in macOS 
 - Pull Request [#992](https://github.com/microsoft/msphpsql/pull/992) - Produced the correct error when requesting Data Classification metadata with ODBC drivers prior to 17
-- Pull Request [#1001](https://github.com/microsoft/msphpsql/pull/1001) - Fixed the compilation issue with PHP 7.4 alpha
+- Pull Request [#1001](https://github.com/microsoft/msphpsql/pull/1001) - Fixed compilation issue with PHP 7.4 alpha
 - Pull Request [#1004](https://github.com/microsoft/msphpsql/pull/1004) - Fixed another compilation issue with PHP 7.4 alpha
 - Pull Request [#1008](https://github.com/microsoft/msphpsql/pull/1008) - Improved data caching when fetching datetime objects
 - Pull Request [#1011](https://github.com/microsoft/msphpsql/pull/1011) - Fixed a potential buffer overflow when parsing for escaped braces in the connection string
@@ -39,6 +39,7 @@ Updated PECL release packages. Here is the list of updates:
   - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
 
 ### Known Issues
+- Data Classification metadata retrieval is not compatible with ODBC Driver 17.4
 - Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
