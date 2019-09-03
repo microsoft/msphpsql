@@ -16,8 +16,8 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Fixed
 - Issue [#570](https://github.com/microsoft/msphpsql/issues/570) - Fixed fetching varbinary data using client buffer with sqlsrv
-- Pull Request [#972](https://github.com/microsoft/msphpsql/pull/972) - Removed redundunt calls to retrieve the number of columns or rows in the current query result set
-- Pull Request [#978](https://github.com/microsoft/msphpsql/pull/978) - PDO get column meta method will reference cached metadata rather than making an ODBC call every time
+- Pull Request [#972](https://github.com/microsoft/msphpsql/pull/972) - Removed redundant calls to retrieve the number of columns or rows in the current query result set
+- Pull Request [#978](https://github.com/microsoft/msphpsql/pull/978) - PDO_SQLSRV implementation of PDO::getColumnMeta now references cached metadata rather than making an ODBC call every time
 - Pull Request [#979](https://github.com/microsoft/msphpsql/pull/979) - Added support for data classification sensivity metadata retrieval
 - Pull Request [#985](https://github.com/microsoft/msphpsql/pull/985) - Fixed memory issues with data classification data structures
 - Issue [#432](https://github.com/microsoft/msphpsql/issues/432) - Having any invalid UTF-8 name in the connection string will no longer invoke misleading error messages
