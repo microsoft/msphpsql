@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
