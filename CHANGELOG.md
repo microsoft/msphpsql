@@ -10,7 +10,7 @@ Updated PECL release packages. Here is the list of updates:
 - Support for PHP 7.4 RC 1
 - Support for Linux Ubuntu 19.04 and Debian 10
 - Feature Request [#929](https://github.com/microsoft/msphpsql/issues/929) - new [Language option](https://github.com/microsoft/msphpsql/wiki/Features#language) - Pull Request [#930](https://github.com/microsoft/msphpsql/pull/930)
-- [Data Classification sensivity metadata retrieval](https://github.com/microsoft/msphpsql/wiki/Features#data-classification-sensitivity-metadata), which requires [MS ODBC Driver 17.2+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [SQL Server 2019 release candidate](https://docs.microsoft.com/sql/sql-server/sql-server-ver15-release-notes?view=sqlallproducts-allversions#-release-candidate-rc)
+- [Data Classification Sensitivity Metadata Retrieval](https://github.com/microsoft/msphpsql/wiki/Features#data-classification-sensitivity-metadata), which requires [MS ODBC Driver 17.2+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [SQL Server 2019 release candidate](https://docs.microsoft.com/sql/sql-server/sql-server-ver15-release-notes?view=sqlallproducts-allversions#-release-candidate-rc)
 
 ### Removed
 - Dropped support for Ubuntu 18.10
@@ -19,7 +19,7 @@ Updated PECL release packages. Here is the list of updates:
 - Issue [#570](https://github.com/microsoft/msphpsql/issues/570) - Fixed fetching varbinary data using client buffer with sqlsrv
 - Pull Request [#972](https://github.com/microsoft/msphpsql/pull/972) - Removed redundant calls to retrieve the number of columns or rows in the current query result set
 - Pull Request [#978](https://github.com/microsoft/msphpsql/pull/978) - PDO_SQLSRV implementation of PDO::getColumnMeta now references cached metadata rather than making an ODBC call every time
-- Pull Request [#979](https://github.com/microsoft/msphpsql/pull/979) - Added support for data classification sensivity metadata retrieval
+- Pull Request [#979](https://github.com/microsoft/msphpsql/pull/979) - Added support for data classification Sensitivity metadata retrieval
 - Pull Request [#985](https://github.com/microsoft/msphpsql/pull/985) - Fixed memory issues with data classification data structures
 - Issue [#432](https://github.com/microsoft/msphpsql/issues/432) - Having any invalid UTF-8 name in the connection string will no longer invoke misleading error messages
 - Issue [#909](https://github.com/microsoft/msphpsql/issues/909) - Fixed potential exception with locale issues in macOS 
