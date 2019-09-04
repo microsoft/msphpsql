@@ -9,8 +9,8 @@ Updated PECL release packages. Here is the list of updates:
 ### Added
 - Support for PHP 7.4 RC 1
 - Support for Linux Ubuntu 19.04 and Debian 10
-- Feature Request [#929](https://github.com/microsoft/msphpsql/issues/929) - new Language option - Pull Request [#930](https://github.com/microsoft/msphpsql/pull/930)
-- Data Classification sensivity metadata retrieval, which requires [MS ODBC Driver 17.2+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [SQL Server 2019 release candidate](https://docs.microsoft.com/sql/sql-server/sql-server-ver15-release-notes?view=sqlallproducts-allversions#-release-candidate-rc)
+- Feature Request [#929](https://github.com/microsoft/msphpsql/issues/929) - new [Language option](https://github.com/microsoft/msphpsql/wiki/Features#language) - Pull Request [#930](https://github.com/microsoft/msphpsql/pull/930)
+- [Data Classification sensivity metadata retrieval](https://github.com/microsoft/msphpsql/wiki/Features#data-classification-sensitivity-metadata), which requires [MS ODBC Driver 17.2+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [SQL Server 2019 release candidate](https://docs.microsoft.com/sql/sql-server/sql-server-ver15-release-notes?view=sqlallproducts-allversions#-release-candidate-rc)
 
 ### Removed
 - Dropped support for Ubuntu 18.10
@@ -40,7 +40,7 @@ Updated PECL release packages. Here is the list of updates:
   - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
 
 ### Known Issues
-- Data Classification metadata retrieval is not compatible with ODBC Driver 17.4
+- Data Classification metadata retrieval is not compatible with ODBC Driver 17.4.1
 - Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
