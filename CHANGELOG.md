@@ -7,9 +7,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
-- Added support for PHP 7.4 RC 1
-- Added support for Linux Ubuntu 19.04 and Debian 10
-- Added support for retrieving Data Classification sensivity metadata, which requires [MS ODBC Driver 17.2+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [SQL Server 2019 RC 1](https://docs.microsoft.com/sql/sql-server/sql-server-ver15-release-notes?view=sqlallproducts-allversions#-release-candidate-rc)
+- Support for PHP 7.4 RC 1
+- Support for Linux Ubuntu 19.04 and Debian 10
+- Feature Request [#929](https://github.com/microsoft/msphpsql/issues/929) - new Language option - Pull Request [#930](https://github.com/microsoft/msphpsql/pull/930)
+- Data Classification sensivity metadata retrieval, which requires [MS ODBC Driver 17.2+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) and [SQL Server 2019 release candidate](https://docs.microsoft.com/sql/sql-server/sql-server-ver15-release-notes?view=sqlallproducts-allversions#-release-candidate-rc)
 
 ### Removed
 - Dropped support for Ubuntu 18.10
