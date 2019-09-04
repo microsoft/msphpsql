@@ -5,13 +5,13 @@ These instructions install PHP 7.3 by default. Note that some supported Linux di
 
 ## Contents of this page:
 
-- [Installing the drivers on Ubuntu 16.04, 18.04, and 18.10](#installing-the-drivers-on-ubuntu-1604-1804-and-1810)
+- [Installing the drivers on Ubuntu 16.04, 18.04, and 19.04](#installing-the-drivers-on-ubuntu-1604-1804-and-1904)
 - [Installing the drivers on Red Hat 7](#installing-the-drivers-on-red-hat-7)
-- [Installing the drivers on Debian 8 and 9](#installing-the-drivers-on-debian-8-and-9)
+- [Installing the drivers on Debian 8, 9 and 10](#installing-the-drivers-on-debian-8-9-and-10)
 - [Installing the drivers on Suse 12 and 15](#installing-the-drivers-on-suse-12-and-15)
 - [Installing the drivers on macOS Sierra, High Sierra, and Mojave](#installing-the-drivers-on-macos-sierra-high-sierra-and-mojave)
 
-## Installing the drivers on Ubuntu 16.04, 18.04, and 18.10
+## Installing the drivers on Ubuntu 16.04, 18.04, and 19.04
 
 > [!NOTE]
 > To install PHP 7.1 or 7.2, replace 7.3 with 7.1 or 7.2 in the following commands.
@@ -31,10 +31,13 @@ Install the ODBC driver for Ubuntu by following the instructions on the [Linux a
 sudo pecl install sqlsrv
 sudo pecl install pdo_sqlsrv
 sudo su
-echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/30-pdo_sqlsrv.ini
-echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
+printf "; priority=20\nextension=sqlsrv.so\n" > /etc/php/7.3/mods-available/sqlsrv.ini
+printf "; priority=30\nextension=pdo_sqlsrv.so\n" > /etc/php/7.3/mods-available/pdo_sqlsrv.ini
 exit
+sudo phpenmod -v 7.3 sqlsrv pdo_sqlsrv
 ```
+If there is only one PHP version in the system then the last step can be simplified to `phpenmod sqlsrv pdo_sqlsrv`.
+
 ### Step 4. Install Apache and configure driver loading
 ```
 sudo su
@@ -42,8 +45,6 @@ apt-get install libapache2-mod-php7.3 apache2
 a2dismod mpm_event
 a2enmod mpm_prefork
 a2enmod php7.3
-echo "extension=pdo_sqlsrv.so" >> /etc/php/7.3/apache2/conf.d/30-pdo_sqlsrv.ini
-echo "extension=sqlsrv.so" >> /etc/php/7.3/apache2/conf.d/20-sqlsrv.ini
 exit
 ```
 ### Step 5. Restart Apache and test the sample script
@@ -91,8 +92,8 @@ exit
 An issue in PECL may prevent correct installation of the latest version of the drivers even if you have upgraded GCC. To install, download the packages and compile manually (similar steps for pdo_sqlsrv):
 ```
 pecl download sqlsrv
-tar xvzf sqlsrv-5.6.1.tgz
-cd sqlsrv-5.6.1/
+tar xvzf sqlsrv-5.7.0.tgz
+cd sqlsrv-5.7.0/
 phpize
 ./configure --with-php-config=/usr/bin/php-config
 make
@@ -116,7 +117,7 @@ sudo apachectl restart
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on Debian 8 and 9
+## Installing the drivers on Debian 8, 9 and 10
 
 > [!NOTE]
 > To install PHP 7.1 or 7.2, replace 7.3 in the following commands with 7.1 or 7.2.
@@ -145,10 +146,13 @@ locale-gen
 sudo pecl install sqlsrv
 sudo pecl install pdo_sqlsrv
 sudo su
-echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/30-pdo_sqlsrv.ini
-echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
+printf "; priority=20\nextension=sqlsrv.so\n" > /etc/php/7.3/mods-available/sqlsrv.ini
+printf "; priority=30\nextension=pdo_sqlsrv.so\n" > /etc/php/7.3/mods-available/pdo_sqlsrv.ini
 exit
+sudo phpenmod -v 7.3 sqlsrv pdo_sqlsrv
 ```
+If there is only one PHP version in the system then the last step can be simplified to `phpenmod sqlsrv pdo_sqlsrv`.
+
 ### Step 4. Install Apache and configure driver loading
 ```
 sudo su
@@ -156,8 +160,6 @@ apt-get install libapache2-mod-php7.3 apache2
 a2dismod mpm_event
 a2enmod mpm_prefork
 a2enmod php7.3
-echo "extension=pdo_sqlsrv.so" >> /etc/php/7.3/apache2/conf.d/30-pdo_sqlsrv.ini
-echo "extension=sqlsrv.so" >> /etc/php/7.3/apache2/conf.d/20-sqlsrv.ini
 ```
 ### Step 5. Restart Apache and test the sample script
 ```
@@ -168,7 +170,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 ## Installing the drivers on Suse 12 and 15
 
 > [!NOTE]
-> In the following instructions, replace <SuseVersion> with your version of Suse - if you are using Suse Enterprise Linux 15, it will be SLE_15 or SLE_15_SP1, and similarly for other versions. Not all versions of PHP are available for all versions of Suse Linux - please refer to `http://download.opensuse.org/repositories/devel:/languages:/php` to see which versions of Suse have the default version PHP available, or to `http://download.opensuse.org/repositories/devel:/languages:/php:/` to see which other versions of PHP are available for which versions of Suse.
+> In the following instructions, replace <SuseVersion> with your version of Suse - if you are using Suse Enterprise Linux 15, it will be SLE_15 or SLE_15_SP1. For Suse 12, use SLE_12_SP4 (or above if applicable). Not all versions of PHP are available for all versions of Suse Linux - please refer to `http://download.opensuse.org/repositories/devel:/languages:/php` to see which versions of Suse have the default version PHP available, or to `http://download.opensuse.org/repositories/devel:/languages:/php:/` to see which other versions of PHP are available for which versions of Suse.
 
 > [!NOTE]
 > Packages for PHP 7.3 are not available for Suse 12. 
