@@ -1155,7 +1155,7 @@ void column_encryption_set_func::func( _In_ connection_option const* option, _In
 
     // Column Encryption is disabled by default unless it is explicitly 'Enabled'
     conn->ce_option.enabled = false;
-    if ( !stricmp(value_str, "enabled" )) {
+    if ( stricmp(value_str, "disabled" )) {
         conn->ce_option.enabled = true;
     }
 
