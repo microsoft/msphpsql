@@ -257,6 +257,6 @@ Test_9 : FETCH_INVALID :
 
 Fatal error: Uncaught Error: Undefined class constant 'FETCH_UNKNOWN' in %s:%x
 Stack trace:
-#0 %s: fetchWithStyle(Object(PDO), 'PDO_MainTypes', 'PDO::FETCH_INVA...')
+#0 %s: fetchWithStyle(%S)
 #1 {main}
   thrown in %s on line %x

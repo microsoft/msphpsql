@@ -20,10 +20,10 @@ env:
   - TEST_PHP_SQL_PWD=Password123
 
 before_install:
-  - docker pull microsoft/mssql-server-linux:2017-latest
+  - docker pull mcr.microsoft.com/mssql/server:2019-CTP2.4-ubuntu
  
 install:
-  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Password123' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d microsoft/mssql-server-linux:2017-latest
+  - docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Password123' -p 1433:1433 --name=$TEST_PHP_SQL_SERVER -d mcr.microsoft.com/mssql/server:2019-CTP2.4-ubuntu
   - docker build --build-arg PHPSQLDIR=$PHPSQLDIR -t msphpsql-dev -f Dockerfile-msphpsql .
 
 before_script:
@@ -43,7 +43,7 @@ script:
   - docker exec client bash -c 'for f in ./test/functional/pdo_sqlsrv/*.out; do ls $f 2>/dev/null; cat $f 2>/dev/null; done || true' 
   - docker exec client python ./test/functional/setup/cleanup_dbs.py -dbname $SQLSRV_DBNAME
   - docker exec client python ./test/functional/setup/cleanup_dbs.py -dbname $PDOSQLSRV_DBNAME
-  - docker exec client coveralls -e ./source/shared/ --gcov-options '\-lp'
+  - docker exec client coveralls -i ./source/ -e ./source/shared/ -e ./test/ --gcov-options '\-lp'
   - docker stop client
   - docker ps -a 
 

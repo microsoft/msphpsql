@@ -5,7 +5,7 @@
 //
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -205,8 +205,8 @@ ss_error SS_ERRORS[] = {
     }, 
 
     {
-      SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED,
-      { IMSSP, (SQLCHAR*)"Failed to create an instance of class %1!s!.", -30, true }
+        SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED,
+        { IMSSP, (SQLCHAR*)"Failed to create an instance of class %1!s!.", -30, true }
     },
  
     {
@@ -439,6 +439,18 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
         { IMSSP, (SQLCHAR*) "When using ActiveDirectoryMsi Authentication, PWD must be NULL. UID can be NULL, but if not, an empty string is not accepted.", -118, false}
+    },
+    {
+        SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
+        { IMSSP, (SQLCHAR*) "The statement must be executed to retrieve Data Classification Sensitivity Metadata.", -119, false}
+    },
+    {
+        SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE,
+        { IMSSP, (SQLCHAR*) "Failed to retrieve Data Classification Sensitivity Metadata. If the driver and the server both support the Data Classification feature, check whether the query returns columns with classification information.", -120, false}
+    },
+    {
+        SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
+        { IMSSP, (SQLCHAR*) "Failed to retrieve Data Classification Sensitivity Metadata: %1!s!", -121, true}
     },
 
     // terminate the list of errors/warnings

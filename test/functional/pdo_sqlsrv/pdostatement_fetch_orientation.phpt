@@ -35,7 +35,7 @@ try {
         throw new Exception( "Not A" );
     }
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_PRIOR );
-    if( $row[ 'val' ] != false ) {
+    if ($row !== false) {
         throw new Exception( "Not false" );
     }
  
@@ -53,7 +53,7 @@ try {
         throw new Exception( "Not A" );
     }
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_REL, -1 );
-    if( $row[ 'val' ] != false ) {
+    if ($row !== false) {
         throw new Exception( "Not false" );
     }
 
@@ -63,7 +63,7 @@ try {
         throw new Exception( "Not C" );
     }
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_NEXT );
-    if( $row[ 'val' ] != false ) {
+    if ($row !== false) {
         throw new Exception( "Not false" );
     }
     
@@ -73,7 +73,7 @@ try {
         throw new Exception( "Not C" );
     }
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_REL, 1 );
-    if( $row[ 'val' ] != false ) {
+    if ($row !== false) {
         throw new Exception( "Not false" );
     }
     
@@ -99,7 +99,7 @@ try {
         throw new Exception( "Not A" );
     }
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_ABS, -1 );
-    if( $row[ 'val' ] != false ) {
+    if ($row !== false) {
         throw new Exception( "Not false" );
     }
 
@@ -125,7 +125,7 @@ try {
         throw new Exception( "Not C" );
     }
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_NEXT);
-    if( $row[ 'val' ] != false ) {
+    if ($row !== false) {
         throw new Exception( "Not false" );
     }
 
@@ -135,7 +135,7 @@ try {
         throw new Exception( "Not A" );
     }
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_PRIOR);
-    if( $row[ 'val' ] != false ) {
+    if ($row !== false) {
         throw new Exception( "Not false" );
     }
     
@@ -145,7 +145,7 @@ try {
         throw new Exception( "Not A" );
     }
     $row = $stmt1->fetch( PDO::FETCH_ASSOC, PDO::FETCH_ORI_REL, -1);
-    if( $row[ 'val' ] != false ) {
+    if ($row !== false) {
         throw new Exception( "Not false" );
     }
     

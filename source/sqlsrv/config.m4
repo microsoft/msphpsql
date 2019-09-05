@@ -4,7 +4,7 @@ dnl
 dnl  Contents: the code that will go into the configure script, indicating options, 
 dnl  external libraries and includes, and what source files are to be compiled.
 dnl 
-dnl  Microsoft Drivers 5.6 for PHP for SQL Server
+dnl  Microsoft Drivers 5.7 for PHP for SQL Server
 dnl  Copyright(c) Microsoft Corporation
 dnl  All rights reserved.
 dnl  MIT License

@@ -1,0 +1,312 @@
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+variables:
+  phpVersion: 7.3
+  server: 'localhost,1433'
+  host: 'sql1'
+  sqlsrv_db: 'sqlsrv_testdb'
+  pdo_sqlsrv_db: 'pdo_sqlsrv_testdb'
+  uid: 'sa'
+  pwd: 'Password456!'
+
+trigger:
+- dev
+
+jobs:
+- job: macOS
+  pool:
+    vmImage: 'macOS-10.13'
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 1
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.6'
+      architecture: 'x64'
+
+  - script: |
+      brew tap
+      brew tap homebrew/core
+      brew install autoconf automake libtool
+      brew install php@$(phpVersion)
+      php -v
+    displayName: 'Install PHP'
+
+  - script: |
+      echo ready to build extensions
+      cd $(Build.SourcesDirectory)/source
+      chmod a+x packagize.sh
+      ./packagize.sh
+
+      cd $(Build.SourcesDirectory)/source/sqlsrv
+      ls -al
+      phpize && ./configure && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
+
+      cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
+      ls -al
+      phpize && ./configure && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+
+      echo extension=pdo_sqlsrv.so >> `php --ini | grep "Loaded Configuration File" | sed -e "s|.*:\s*||"`
+      echo extension=sqlsrv.so >> `php --ini | grep "Loaded Configuration File" | sed -e "s|.*:\s*||"`
+
+      php --ri sqlsrv
+      php --ri pdo_sqlsrv
+    displayName: 'Build and install drivers'
+
+- job: Linux
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 1
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.6'
+      architecture: 'x64'
+      
+  - script: |
+      sudo update-alternatives --set php /usr/bin/php$(phpVersion)
+      sudo update-alternatives --set phar /usr/bin/phar$(phpVersion)
+      sudo update-alternatives --set phpdbg /usr/bin/phpdbg$(phpVersion)
+      sudo update-alternatives --set php-cgi /usr/bin/php-cgi$(phpVersion)
+      sudo update-alternatives --set phar.phar /usr/bin/phar.phar$(phpVersion)
+      php -version
+    displayName: 'Use PHP version $(phpVersion)'
+
+  - script: |
+      echo install ODBC and dependencies
+      sudo apt-get purge unixodbc
+      sudo apt autoremove
+      sudo curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+      curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > mssql-release.list
+      sudo mv mssql-release.list /etc/apt/sources.list.d/
+      sudo apt-get update
+      sudo ACCEPT_EULA=Y apt-get install msodbcsql17 mssql-tools
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      source ~/.bashrc
+      sudo apt-get install unixodbc-dev
+      odbcinst --j
+      odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
+    displayName: 'Install prerequisites'
+
+  - script: |
+      docker pull mcr.microsoft.com/mssql/server:2017-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2017-latest
+      docker ps -a
+      sleep 5
+      docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
+    displayName: 'Run SQL Server for Linux'
+
+  - script: |
+      sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
+      sudo locale-gen en_US
+      sudo locale-gen en_US.UTF-8
+      export LANG='en_US.UTF-8' 
+      export LANGUAGE='en_US:en' 
+      export LC_ALL='en_US.UTF-8'
+    displayName: 'Generate locales for testing'
+
+  - script: |
+      echo setting env variables 
+      export TEST_PHP_SQL_SERVER='$(server)'
+      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_PWD='$(pwd)'
+
+      cd $(Build.SourcesDirectory)/test/functional/setup
+      python ./setup_dbs.py -dbname $(sqlsrv_db)
+      python ./setup_dbs.py -dbname $(pdo_sqlsrv_db)
+    displayName: 'Set up test databases'
+
+  - script: |
+      echo ready to build extensions
+      cd $(Build.SourcesDirectory)/source
+      chmod a+x packagize.sh
+      ./packagize.sh
+
+      dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
+      
+      cd $(Build.SourcesDirectory)/source/sqlsrv
+      ls -al
+      phpize && ./configure && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
+      echo extension=sqlsrv.so >> 20-sqlsrv.ini
+
+      echo copying sqlsrv to $dest
+      sudo cp 20-sqlsrv.ini $dest
+      
+      cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
+      ls -al
+      phpize && ./configure && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      echo extension=pdo_sqlsrv.so >> 30-pdo_sqlsrv.ini
+
+      echo copying pdo_sqlsrv to $dest
+      sudo cp 30-pdo_sqlsrv.ini $dest
+
+      php --ri sqlsrv
+      php --ri pdo_sqlsrv
+    displayName: 'Build and install drivers'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc 
+
+      php run-tests.php -P ./*.phpt 2>&1 | tee ../sqlsrv.log
+    displayName: 'Run sqlsrv functional tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc 
+
+      php run-tests.php -P ./*.phpt 2>&1 | tee ../pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv functional tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/
+      for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      python output.py
+      ls -l *.xml
+    displayName: 'Processing test results'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '*.xml'
+      failTaskOnFailedTests: true
+      searchFolder: '$(Build.SourcesDirectory)/test/functional/'
+
+  - script: |
+      docker stop $(host)
+      docker rm $(host)
+    displayName: 'Stop SQL Server for Linux'
+    condition: always() 
+
+- job: Windows
+  pool:
+   vmImage: 'vs2017-win2016'
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 1
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.6'
+      architecture: 'x64'
+
+  - script: |
+      dir C:\tools\php\php*
+      dir C:\tools\php\ext\
+      echo extension_dir=C:\tools\php\ext >> C:\tools\php\php.ini
+      php --ini
+      php -v
+    displayName: 'Check PHP'
+
+  - powershell: |
+      cd $(Build.SourcesDirectory)\test\functional\sqlsrv
+      (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
+      Select-String $(host) .\MsSetup.inc
+      Select-String $(sqlsrv_db) .\MsSetup.inc
+      cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
+      Select-String $(host) .\MsSetup.inc
+      Select-String $(pdo_sqlsrv_db) .\MsSetup.inc
+    displayName: 'Update connection credentials'
+    condition: false
+
+  - powershell: |
+      $client = New-Object Net.WebClient
+      $client.DownloadFile('https://download.microsoft.com/download/E/6/B/E6BFDC7A-5BCD-4C51-9912-635646DA801E/en-US/msodbcsql_17.3.1.1_x64.msi', 'msodbcsql_17.3.1.1_x64.msi')
+      $client.DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', 'msodbcsql_13.1.msi')
+      $client.DownloadFile('https://download.microsoft.com/download/4/C/C/4CC1A229-3C56-4A7F-A3BA-F903C73E5895/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
+      dir *.msi
+    displayName: 'Download ODBC msi and sql tools msi'
+    condition: false
+
+  - script: |
+      msiexec /i "msodbcsql_17.3.1.1_x64.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
+      reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
+      dir %WINDIR%\System32\msodbcsql*.dll
+    displayName: 'Install ODBC driver'
+    condition: false
+
+  # TOFIX: Install ODBC 13.1 because of SQLCMD 15 installation bug -- this step should be removed later
+  - script: msiexec /i "msodbcsql_13.1.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
+    condition: false
+
+  # FOR SOME REASON the set up did not set the PATH 
+  - script: |
+      msiexec /i "MsSqlCmdLnUtils.msi" /qn IACCEPTMSSQLCMDLNUTILSLICENSETERMS=YES
+    displayName: 'Install SQL command line utilities version 15'
+    condition: false
+
+  - powershell: |
+      $client = New-Object Net.WebClient
+      $client.Headers.Add("user-agent", "azure pipeline build")
+      $client.DownloadFile("https://windows.php.net/downloads/releases/sha256sum.txt", "sha256sum.txt")
+      $env:VERSION=type sha256sum.txt | where { $_ -match "php-($(phpVersion)\.\d+)-src" } | foreach { $matches[1] }
+      Write-Host "Latest PHP $(phpVersion) is ${env:VERSION}" 
+      cd $(Build.SourcesDirectory)/buildscripts/
+      python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)/source --TESTING --NO_RENAME
+      dir *sqlsrv*.dll
+      python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)/source --TESTING --NO_RENAME
+      cp php-sdk\phpdev\vc15\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv
+      cp php-sdk\phpdev\vc15\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      dir *sqlsrv*.dll
+      cp *sqlsrv*.dll C:\tools\php\ext\
+    displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
+  
+  - script: |
+      echo extension=php_sqlsrv.dll >> C:\tools\php\php.ini
+      echo extension=php_pdo_sqlsrv.dll >> C:\tools\php\php.ini
+      php --ri sqlsrv
+      php --ri pdo_sqlsrv
+    displayName: 'Load drivers'
+
+  - script: |
+      docker pull microsoft/mssql-server-windows-developer
+      docker run -d --name sqlcontainer -h $(host) -p 1433:1433 -e sa_password=$(pwd) -e ACCEPT_EULA=Y microsoft/mssql-server-windows-developer
+      docker ps -a
+    displayName: 'Run SQL Server for Windows Server'
+    condition: false
+
+  - script: | 
+      set path=C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;%path%
+      sqlcmd -S $(host) -U $(uid) -P $(pwd) -Q "SELECT @@Version"
+      set TEST_PHP_SQL_SERVER=$(host)
+      set TEST_PHP_SQL_UID=$(uid)
+      set TEST_PHP_SQL_PWD=$(pwd)
+      cd $(Build.SourcesDirectory)\test\functional\setup
+      python setup_dbs.py -dbname $(sqlsrv_db)
+      python setup_dbs.py -dbname $(pdo_sqlsrv_db)
+    displayName: 'Set up test databases'
+    condition: false
+
+  - script: |
+      cd $(Build.SourcesDirectory)\test\functional\sqlsrv
+      php run-tests.php -P sqlsrv_client_info.phpt
+      cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      php run-tests.php -P pdo_getAttribute_clientInfo.phpt
+    displayName: 'Smoke testing'
+    condition: false
+
+  - script: |
+      docker stop sqlcontainer
+      docker rm sqlcontainer
+    displayName: 'Stop SQL Server for Windows Server'
+    condition: false

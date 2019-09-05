@@ -54,23 +54,44 @@ if ($conn === false) {
 // Test Azure AD on an Azure database instance. Replace $azureServer, etc with
 // your credentials to test, or this part is skipped.
 //
-$azureServer = $adServer;
-$azureDatabase = $adDatabase;
-$azureUsername = $adUser;
-$azurePassword = $adPassword;
-
-if ($azureServer != 'TARGET_AD_SERVER') {
-    $connectionInfo = array( "UID"=>$azureUsername, "PWD"=>$azurePassword,
-                         "Authentication"=>'ActiveDirectoryPassword',  "TrustServerCertificate"=>false );
-
-    $conn = sqlsrv_connect($azureServer, $connectionInfo);
+function connectAzureDB($showException)
+{
+    global $adServer, $adUser, $adPassword, $maxAttempts;
+    
+    $connectionInfo = array("UID"=>$adUser, 
+                            "PWD"=>$adPassword,
+                            "Authentication"=>'ActiveDirectoryPassword',
+                            "TrustServerCertificate"=>false );
+    
+    $conn = false;
+    $conn = sqlsrv_connect($adServer, $connectionInfo);
     if ($conn === false) {
-        echo "Could not connect with ActiveDirectoryPassword.\n";
-        print_r(sqlsrv_errors());
+        if ($showException) {
+            echo "Could not connect with ActiveDirectoryPassword after $maxAttempts retries.\n";
+            print_r(sqlsrv_errors());
+        }
     } else {
         echo "Connected successfully with Authentication=ActiveDirectoryPassword.\n";
         sqlsrv_close($conn);
     }
+
+    return $conn;
+}
+
+$azureServer = $adServer;
+$maxAttempts = 3;
+
+if ($azureServer != 'TARGET_AD_SERVER') {
+    $conn = false;
+    $numAttempts = 0;
+    do {
+        $conn = connectAzureDB($numAttempts == ($maxAttempts - 1));
+        if ($conn === false) {
+            $numAttempts++;
+            sleep(10);
+        }
+    } while ($conn === false && $numAttempts < $maxAttempts);
+
 } else {
     echo "Not testing with Authentication=ActiveDirectoryPassword.\n";
 }

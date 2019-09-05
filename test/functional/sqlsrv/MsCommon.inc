@@ -84,6 +84,26 @@ function isDaasMode()
     return ($daasMode ? true : false);
 }
 
+function isSQLAzure()
+{
+    // 'SQL Azure' indicates SQL Database or SQL Data Warehouse
+    // For details, https://docs.microsoft.com/sql/t-sql/functions/serverproperty-transact-sql
+    $conn = connect();
+    $tsql = "SELECT SERVERPROPERTY ('edition')";
+    $stmt = sqlsrv_query($conn, $tsql);
+
+    if (sqlsrv_fetch($stmt)) {
+        $edition = sqlsrv_get_field($stmt, 0);
+        if ($edition === "SQL Azure") {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        die("Could not fetch server property.");
+    }
+}
+
 function isAzureDW()
 {
     // Check if running Azure Data Warehouse

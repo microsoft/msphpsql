@@ -46,6 +46,14 @@ function CheckInterface($conn)
         '__sleep'       => true,
         'inTransaction'     => true,
     );
+    
+    $phpver = substr(phpversion(), 0, 3);
+    if ($phpver >= '7.4') {
+        // Reference: https://wiki.php.net/rfc/custom_object_serialization
+        unset($expected['__wakeup']);
+        unset($expected['__sleep']);
+    }
+    
     $classname = get_class($conn);
     $methods = get_class_methods($classname);
     foreach ($methods as $k => $method)

@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use connection handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -386,7 +386,7 @@ SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& con
 
     // We only support UTF-8 encoding for connection string.
     // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
-    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>( conn_str.length() ), &wconn_len );
+    wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>( conn_str.length() ), &wconn_len, true );
 
     CHECK_CUSTOM_ERROR( wconn_string == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message())
     {
@@ -702,22 +702,32 @@ void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_
 
 bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len )
 {
-    // if the value is already quoted, then only analyse the part inside the quotes and return it as
-    // unquoted since we quote it when adding it to the connection string.
-    if( value_len > 0 && value[0] == '{' && value[value_len - 1] == '}' ) {
-        ++value;
+    if (value_len == 0) {
+        return true;
+    }
+
+    if (value_len == 1) {
+        return (value[0] != '}');
+    }
+
+    const char *pstr = value;
+    if (value_len > 0 && value[0] == '{' && value[value_len - 1] == '}') {
+        pstr = ++value;
         value_len -= 2;
     }
-    // check to make sure that all right braces are escaped
+
+    const char *pch = strchr(pstr, '}');
     size_t i = 0;
-    while( ( value[i] != '}' || ( value[i] == '}' && value[i+1] == '}' )) && i < value_len ) {
-        // skip both braces
-        if( value[i] == '}' )
-            ++i;
-        ++i;
-    }
-    if( i < value_len && value[i] == '}' ) {
-        return false;
+    
+    while (pch != NULL && i < value_len) {
+        i = pch - pstr + 1;
+        
+        if (i == value_len || (i < value_len && pstr[i] != '}')) {
+            return false;
+        }
+        
+        i++;    // skip the brace
+        pch = strchr(pch + 2, '}'); // continue searching
     }
 
     return true;

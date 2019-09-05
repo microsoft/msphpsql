@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use connection handles
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -219,6 +219,7 @@ namespace SSStmtOptionNames {
     const char DATE_AS_STRING[] = "ReturnDatesAsStrings";
     const char FORMAT_DECIMALS[] = "FormatDecimals";
     const char DECIMAL_PLACES[] = "DecimalPlaces";
+    const char DATA_CLASSIFICATION[] = "DataClassification";
 }
 
 namespace SSConnOptionNames {
@@ -233,6 +234,7 @@ const char Authentication[] = "Authentication";
 const char CharacterSet[] = "CharacterSet";
 const char ColumnEncryption[] = "ColumnEncryption";
 const char ConnectionPooling[] = "ConnectionPooling";
+const char Language[] = "Language";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
 const char Database[] = "Database";
@@ -311,6 +313,12 @@ const stmt_option SS_STMT_OPTS[] = {
         SQLSRV_STMT_OPTION_DECIMAL_PLACES, 
         std::unique_ptr<stmt_option_decimal_places>( new stmt_option_decimal_places )
     },
+    {
+        SSStmtOptionNames::DATA_CLASSIFICATION, 
+        sizeof( SSStmtOptionNames::DATA_CLASSIFICATION ),
+        SQLSRV_STMT_OPTION_DATA_CLASSIFICATION, 
+        std::unique_ptr<stmt_option_data_classification>( new stmt_option_data_classification )
+    },
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
 };
 
@@ -379,6 +387,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof(ODBCConnOptions::ConnectionPooling),
         CONN_ATTR_BOOL,
         conn_null_func::func
+    },
+    {
+        SSConnOptionNames::Language,
+        sizeof(SSConnOptionNames::Language),
+        SQLSRV_CONN_OPTION_LANGUAGE,
+        ODBCConnOptions::Language,
+        sizeof(ODBCConnOptions::Language),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
     },
     {
         SSConnOptionNames::Driver,

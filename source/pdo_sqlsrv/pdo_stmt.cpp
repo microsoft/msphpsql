@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDOStatement object for the PDO_SQLSRV
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -220,7 +220,7 @@ void meta_data_free( _Inout_ field_meta_data* meta )
     sqlsrv_free( meta );
 }
 
-zval convert_to_zval( _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val, _In_opt_ SQLLEN field_len )
+zval convert_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val, _In_opt_ SQLLEN field_len )
 {
     zval out_zval;
     ZVAL_UNDEF(&out_zval);
@@ -264,15 +264,8 @@ zval convert_to_zval( _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val
         break;
     }
     case SQLSRV_PHPTYPE_DATETIME:
-        if (*in_val == NULL) {
-
-            ZVAL_NULL(&out_zval);
-        }
-        else {
-
-            out_zval = *(reinterpret_cast<zval*>(*in_val));
-            sqlsrv_free(*in_val);
-        }
+        convert_datetime_string_to_zval(stmt, static_cast<char*>(*in_val), field_len, out_zval);
+        sqlsrv_free(*in_val);
         break;
     case SQLSRV_PHPTYPE_NULL:
         ZVAL_NULL(&out_zval);
@@ -478,7 +471,6 @@ int pdo_sqlsrv_stmt_describe_col( _Inout_ pdo_stmt_t *stmt, _In_ int colno TSRML
    
     // Set the name
     column_data->name = zend_string_init( (const char*)core_meta_data->field_name.get(), core_meta_data->field_name_len, 0 );
-    core_meta_data->field_name.reset();     
 
     // Set the maxlen
     column_data->maxlen = ( core_meta_data->field_precision > 0 ) ? core_meta_data->field_precision : core_meta_data->field_size;
@@ -593,12 +585,26 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
         if ( execReturn == SQL_NO_DATA ) {
             stmt->column_count = 0;
             stmt->row_count = 0;
+            driver_stmt->column_count = 0;
+            driver_stmt->row_count = 0;
         }
         else {
-            stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
+            if (driver_stmt->column_count == ACTIVE_NUM_COLS_INVALID) {
+                stmt->column_count = core::SQLNumResultCols( driver_stmt TSRMLS_CC );
+                driver_stmt->column_count = stmt->column_count;
+            }
+            else {
+                stmt->column_count = driver_stmt->column_count;
+            }
 
-            // return the row count regardless if there are any rows or not
-            stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+            if (driver_stmt->row_count == ACTIVE_NUM_ROWS_INVALID) {
+                // return the row count regardless if there are any rows or not
+                stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+                driver_stmt->row_count = stmt->row_count;
+            }
+            else {
+                stmt->row_count = driver_stmt->row_count;
+            }
         }
 
         // workaround for a bug in the PDO driver manager.  It is fairly simple to crash the PDO driver manager with 
@@ -692,11 +698,16 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
         SQLSMALLINT odbc_fetch_ori = pdo_fetch_ori_to_odbc_fetch_ori( ori );
         bool data = core_sqlsrv_fetch( driver_stmt, odbc_fetch_ori, offset TSRMLS_CC );
 
-        // support for the PDO rowCount method.  Since rowCount doesn't call a method, PDO relies on us to fill the 
-        // pdo_stmt_t::row_count member
-        if( driver_stmt->past_fetch_end || driver_stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY ) {
+        // support for the PDO rowCount method.  Since rowCount doesn't call a
+        // method, PDO relies on us to fill the pdo_stmt_t::row_count member
+        // The if condition was changed from 
+        // `driver_stmt->past_fetch_end || driver_stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY` 
+        // because it caused SQLRowCount to be called at each fetch if using a non-forward cursor
+        // which is unnecessary and a performance hit
+        if( driver_stmt->past_fetch_end || driver_stmt->cursor_type == SQL_CURSOR_DYNAMIC) {
 
             stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+            driver_stmt->row_count = stmt->row_count;
 
             // a row_count of -1 means no rows, but we change it to 0
             if( stmt->row_count == -1 ) {
@@ -815,11 +826,11 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
         core_sqlsrv_get_field( driver_stmt, colno, sqlsrv_php_type, false, *(reinterpret_cast<void**>(ptr)),
                                reinterpret_cast<SQLLEN*>( len ), true, &sqlsrv_phptype_out TSRMLS_CC );
 
-        if ( ptr ) {
-            zval* zval_ptr = reinterpret_cast<zval*>( sqlsrv_malloc( sizeof( zval )));
-            *zval_ptr = convert_to_zval( sqlsrv_phptype_out, reinterpret_cast<void**>( ptr ), *len );
-            *ptr = reinterpret_cast<char*>( zval_ptr );
-            *len = sizeof( zval );
+        if (ptr) {
+            zval* zval_ptr = reinterpret_cast<zval*>(sqlsrv_malloc(sizeof(zval)));
+            *zval_ptr = convert_to_zval(driver_stmt, sqlsrv_phptype_out, reinterpret_cast<void**>(ptr), *len);
+            *ptr = reinterpret_cast<char*>(zval_ptr);
+            *len = sizeof(zval);
         }
 
         return 1;        
@@ -892,6 +903,10 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
 
             case SQLSRV_ATTR_DECIMAL_PLACES:
                 core_sqlsrv_set_decimal_places(driver_stmt, val TSRMLS_CC);
+                break;
+
+            case SQLSRV_ATTR_DATA_CLASSIFICATION:
+                driver_stmt->data_classification = (zend_is_true(val)) ? true : false;
                 break;
 
             default:
@@ -993,6 +1008,12 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 break;
             }
 
+            case SQLSRV_ATTR_DATA_CLASSIFICATION:
+            {
+                ZVAL_BOOL(return_value, driver_stmt->data_classification);
+                break;
+            }
+
             default:
                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_STMT_ATTR );
                 break;
@@ -1047,12 +1068,28 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         // initialize the array to nothing, as PDO requires us to create it
         core::sqlsrv_array_init( *driver_stmt, return_value TSRMLS_CC );
 
-        sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
+        field_meta_data* core_meta_data;
 
-        core_meta_data = core_sqlsrv_field_metadata( driver_stmt, (SQLSMALLINT) colno TSRMLS_CC );
-
+        // metadata should have been saved earlier
+        SQLSRV_ASSERT(colno < driver_stmt->current_meta_data.size(), "pdo_sqlsrv_stmt_get_col_meta: Metadata vector out of sync with column numbers");
+        core_meta_data = driver_stmt->current_meta_data[colno];
+        
         // add the following fields: flags, native_type, driver:decl_type, table
-        add_assoc_long( return_value, "flags", 0 );
+        if (driver_stmt->data_classification) {
+            core_sqlsrv_sensitivity_metadata(driver_stmt);
+
+            // initialize the column data classification array 
+            zval data_classification;
+            ZVAL_UNDEF(&data_classification);
+            core::sqlsrv_array_init(*driver_stmt, &data_classification TSRMLS_CC );
+
+            data_classification::fill_column_sensitivity_array(driver_stmt, (SQLSMALLINT)colno, &data_classification);
+
+            add_assoc_zval(return_value, "flags", &data_classification);
+        }
+        else {
+            add_assoc_long(return_value, "flags", 0);
+        }
 
         // get the name of the data type
         char field_type_name[SQL_SERVER_IDENT_SIZE_MAX] = {'\0'};
@@ -1090,16 +1127,13 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         if( stmt->columns && stmt->columns[colno].param_type == PDO_PARAM_ZVAL ) {
             add_assoc_long( return_value, "pdo_type", pdo_type );
         }
-
-        // this will ensure that the field_name field, which is an auto pointer gets freed.
-        (*core_meta_data).~field_meta_data();
     }
     catch( core::CoreException& ) {
-
+        zval_ptr_dtor(return_value);
         return FAILURE;
     }
     catch(...) {
-
+        zval_ptr_dtor(return_value);
         DIE( "pdo_sqlsrv_stmt_get_col_meta: Unknown exception occurred while retrieving metadata." );
     }
     
@@ -1146,6 +1180,9 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 
         // return the row count regardless if there are any rows or not
         stmt->row_count = core::SQLRowCount( driver_stmt TSRMLS_CC );
+        
+        driver_stmt->column_count = stmt->column_count;
+        driver_stmt->row_count = stmt->row_count;
     }
     catch( core::CoreException& ) {
 

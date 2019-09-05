@@ -8,7 +8,7 @@
 //
 // Comments: Also contains "internal" declarations shared across source files. 
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -214,12 +214,12 @@ bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_err
 // returned in utf16_out_string.
 unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
                                                    _In_ unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer(mbcs_in_string) wchar_t* utf16_out_string,
-                                                   _In_ unsigned int utf16_len );
+                                                   _In_ unsigned int utf16_len, bool use_strict_conversion = false );
 // create a wide char string from the passed in mbcs string.  NULL is returned if the string
 // could not be created.  No error is posted by this function.  utf16_len is the number of
 // wchar_t characters, not the number of bytes.
 SQLWCHAR* utf16_string_from_mbcs_string( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) const char* mbcs_string,
-                                        _In_ unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
+                                        _In_ unsigned int mbcs_len, _Out_ unsigned int* utf16_len, bool use_strict_conversion = false );
 
 // *** internal error macros and functions ***
 bool handle_error( sqlsrv_context const* ctx, int log_subsystem, const char* function, 

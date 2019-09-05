@@ -1,5 +1,5 @@
 --TEST--
-scrollable result sets.
+Scrollable result sets with a simple test for an expected error.
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
@@ -69,6 +69,13 @@ for ($i = 1; $i <= $numRows; $i++) {
 }
 
 $query = "SELECT * FROM $tableName";
+$options = array('Scrollable' => 'dummy');
+$stmt = sqlsrv_query($conn, $query, array(), $options);
+if ($stmt !== false) {
+    fatalError("Expect dummy scrollable to fail!\n");
+}
+print_r(sqlsrv_errors());
+
 $options = array('Scrollable' => SQLSRV_CURSOR_FORWARD);
 $stmt = sqlsrv_query($conn, $query, array(), $options);
 
@@ -205,4 +212,17 @@ echo "Test succeeded.\n";
 
 ?>
 --EXPECT--
+Array
+(
+    [0] => Array
+        (
+            [0] => IMSSP
+            [SQLSTATE] => IMSSP
+            [1] => -54
+            [code] => -54
+            [2] => The value passed for the 'Scrollable' statement option is invalid.  Please use 'static', 'dynamic', 'keyset', 'forward', or 'buffered'.
+            [message] => The value passed for the 'Scrollable' statement option is invalid.  Please use 'static', 'dynamic', 'keyset', 'forward', or 'buffered'.
+        )
+
+)
 Test succeeded.

@@ -431,6 +431,6 @@ Test_9 : FETCH_INVALID :
 
 Fatal error: Uncaught Error: Undefined class constant 'FETCH_UNKNOWN' in %s:%x
 Stack trace:
-#0 %s: fetchAllInvalid(Object(PDO), 'PDO_MainTypes')
+#0 %s: fetchAllInvalid(%S)
 #1 {main}
   thrown in %s on line %x

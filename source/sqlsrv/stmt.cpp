@@ -3,7 +3,7 @@
 //
 // Contents: Routines that use statement handles
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -42,7 +42,6 @@ unsigned int current_log_subsystem = LOG_STMT;
 
 // constants used as invalid types for type errors
 const zend_uchar PHPTYPE_INVALID = SQLSRV_PHPTYPE_INVALID;
-const int SQLTYPE_INVALID = 0;
 const int SQLSRV_INVALID_PRECISION = -1;
 const SQLUINTEGER SQLSRV_INVALID_SIZE = (~1U);
 const int SQLSRV_INVALID_SCALE = -1;
@@ -51,8 +50,6 @@ const int SQLSRV_SIZE_MAX_TYPE = -1;
 // constants for maximums in SQL Server
 const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
 const int SQL_SERVER_MAX_PRECISION = 38;
-const int SQL_SERVER_DEFAULT_PRECISION = 18;
-const int SQL_SERVER_DEFAULT_SCALE = 0;
 
 // default class used when no class is specified by sqlsrv_fetch_object
 const char STDCLASS_NAME[] = "stdclass";
@@ -470,7 +467,6 @@ PHP_FUNCTION( sqlsrv_fetch_array )
 PHP_FUNCTION( sqlsrv_field_metadata )
 {
     sqlsrv_stmt* stmt = NULL;
-    SQLSMALLINT num_cols = -1;
 
     LOG_FUNCTION( "sqlsrv_field_metadata" );
 
@@ -480,6 +476,10 @@ PHP_FUNCTION( sqlsrv_field_metadata )
 
     // get the number of fields in the resultset and its metadata if not exists
     SQLSMALLINT num_cols = get_resultset_meta_data(stmt);
+
+    if (stmt->data_classification) {
+        core_sqlsrv_sensitivity_metadata(stmt);
+    }
 
     zval result_meta_data;
     ZVAL_UNDEF( &result_meta_data );
@@ -533,6 +533,10 @@ PHP_FUNCTION( sqlsrv_field_metadata )
         core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::NULLABLE, core_meta_data->field_is_nullable
                                           TSRMLS_CC );
        
+        if (stmt->data_classification) {
+            data_classification::fill_column_sensitivity_array(stmt, f, &field_array TSRMLS_CC);
+        }
+
         // add this field's meta data to the result set meta data
         core::sqlsrv_add_next_index_zval( *stmt, &result_meta_data, &field_array TSRMLS_CC );
     }
@@ -1505,11 +1509,11 @@ void convert_to_zval( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_
 		Z_TRY_ADDREF( out_zval );
 		break;
 	}
-	case SQLSRV_PHPTYPE_DATETIME:
-	{
-		out_zval = *( static_cast<zval*>( in_val ));
-		break;
-	}
+    case SQLSRV_PHPTYPE_DATETIME:
+    {
+        convert_datetime_string_to_zval(stmt, static_cast<char*>(in_val), field_len, out_zval);
+        break;
+    }
 
 	case SQLSRV_PHPTYPE_NULL:
 		ZVAL_NULL(&out_zval);
@@ -1791,7 +1795,12 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
 
     if (num_cols == 0) {
         getMetaData = true;
-        num_cols = core::SQLNumResultCols(stmt TSRMLS_CC);
+        if (stmt->column_count == ACTIVE_NUM_COLS_INVALID) {
+            num_cols = core::SQLNumResultCols(stmt TSRMLS_CC);
+            stmt->column_count = num_cols;
+        } else {
+            num_cols = stmt->column_count;
+        }
     }
 
     try {

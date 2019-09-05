@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -170,7 +170,6 @@ OACR_WARNING_POP
 // constants for maximums in SQL Server
 const int SS_MAXCOLNAMELEN = 128;
 const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
-const int SQL_SERVER_MAX_PRECISION = 38;
 const int SQL_SERVER_MAX_TYPE_SIZE = 0;
 const int SQL_SERVER_MAX_PARAMS = 2100;
 const int SQL_SERVER_MAX_MONEY_SCALE = 4;
@@ -181,6 +180,11 @@ const int SQL_MAX_ERROR_MESSAGE_LENGTH = SQL_MAX_MESSAGE_LENGTH * 2;
 
 // max size of a date time string when converting from a DateTime object to a string
 const int MAX_DATETIME_STRING_LEN = 256;
+
+// identifier for whether or not we have obtained the number of rows and columns
+// of a result
+const short ACTIVE_NUM_COLS_INVALID = -99;
+const long ACTIVE_NUM_ROWS_INVALID = -99;
 
 // precision and scale for the date time types between servers
 const int SQL_SERVER_2005_DEFAULT_DATETIME_PRECISION = 23;
@@ -993,8 +997,6 @@ class sqlsrv_context {
     SQLSRV_ENCODING        encoding_;        // encoding of the context   
 };
 
-const int SQLSRV_OS_VISTA_OR_LATER = 6;           // major version for Vista
-
 // maps an IANA encoding to a code page
 struct sqlsrv_encoding {
 
@@ -1115,6 +1117,7 @@ enum SQLSRV_STMT_OPTIONS {
    SQLSRV_STMT_OPTION_DATE_AS_STRING,
    SQLSRV_STMT_OPTION_FORMAT_DECIMALS,
    SQLSRV_STMT_OPTION_DECIMAL_PLACES,
+   SQLSRV_STMT_OPTION_DATA_CLASSIFICATION,
 
    // Driver specific connection options
    SQLSRV_STMT_OPTION_DRIVER_SPECIFIC = 1000,
@@ -1131,6 +1134,7 @@ const char Authentication[] = "Authentication";
 const char Driver[] = "Driver";
 const char CharacterSet[] = "CharacterSet";
 const char ConnectionPooling[] = "ConnectionPooling";
+const char Language[] = "Language";
 const char ColumnEncryption[] = "ColumnEncryption";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
@@ -1163,6 +1167,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_ACCESS_TOKEN,
     SQLSRV_CONN_OPTION_CHARACTERSET,
     SQLSRV_CONN_OPTION_CONN_POOLING,
+    SQLSRV_CONN_OPTION_LANGUAGE,
     SQLSRV_CONN_OPTION_DATABASE,
     SQLSRV_CONN_OPTION_ENCRYPT,
     SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
@@ -1314,6 +1319,11 @@ struct stmt_option_decimal_places : public stmt_option_functor {
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
 };
 
+struct stmt_option_data_classification : public stmt_option_functor {
+
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+};
+
 // used to hold the table for statment options
 struct stmt_option {
 
@@ -1417,6 +1427,75 @@ struct sqlsrv_output_param {
     }
 };
 
+namespace data_classification {
+    // *** data classficiation metadata structures and helper methods -- to store and/or process the sensitivity classification data ***
+    struct name_id_pair;
+    struct sensitivity_metadata;
+
+    void name_id_pair_free(name_id_pair * pair);
+    void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>* pairs, _Inout_ unsigned char **pptr TSRMLS_CC);
+    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr);
+    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *column_data TSRMLS_CC);
+
+    struct name_id_pair {
+        UCHAR name_len;
+        sqlsrv_malloc_auto_ptr<char> name;
+        UCHAR id_len;
+        sqlsrv_malloc_auto_ptr<char> id;
+
+        name_id_pair() : name_len(0), id_len(0)
+        {
+        }
+
+        ~name_id_pair()
+        {
+        }
+    };
+
+    struct label_infotype_pair {
+        USHORT label_idx;
+        USHORT infotype_idx;
+
+        label_infotype_pair() : label_idx(0), infotype_idx(0)
+        {
+        }
+    };
+
+    struct column_sensitivity {
+        USHORT num_pairs;
+        std::vector<label_infotype_pair> label_info_pairs;
+
+        column_sensitivity() : num_pairs(0)
+        {
+        }
+
+        ~column_sensitivity() 
+        {
+            label_info_pairs.clear();
+        }
+    };
+
+    struct sensitivity_metadata { 
+        USHORT num_labels;
+        std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>> labels;
+        USHORT num_infotypes;
+        std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>> infotypes;
+        USHORT num_columns;
+        std::vector<column_sensitivity> columns_sensitivity;
+
+        sensitivity_metadata() : num_labels(0), num_infotypes(0), num_columns(0)
+        {
+        }
+
+        ~sensitivity_metadata()
+        {   
+            reset();
+        }
+
+        void reset();
+    };
+} // namespace data_classification
+
 // forward decls
 struct sqlsrv_result_set;
 struct field_meta_data;
@@ -1427,6 +1506,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
     void free_param_data( TSRMLS_D );
     virtual void new_result_set( TSRMLS_D );
 
+    // free sensitivity classification metadata
+    void clean_up_sensitivity_metadata();
+
     sqlsrv_conn*   conn;                  // Connection that created this statement
    
     bool executed;                        // Whether the statement has been executed yet (used for error messages)
@@ -1436,13 +1518,15 @@ struct sqlsrv_stmt : public sqlsrv_context {
     bool has_rows;                        // Has_rows is set if there are actual rows in the row set
     bool fetch_called;                    // Used by core_sqlsrv_get_field to return an informative error if fetch not yet called 
     int last_field_index;                 // last field retrieved by core_sqlsrv_get_field
-    bool past_next_result_end;            // core_sqlsrv_next_result sets this to true when the statement goes beyond the 
-                                          // last results
+    bool past_next_result_end;            // core_sqlsrv_next_result sets this to true when the statement goes beyond the last results
+    short column_count;                   // Number of columns in the current result set obtained from SQLNumResultCols
+    long row_count;                       // Number of rows in the current result set obtained from SQLRowCount
     unsigned long query_timeout;          // maximum allowed statement execution time
     zend_long buffered_query_limit;       // maximum allowed memory for a buffered query (measured in KB)
     bool date_as_string;                  // false by default but the user can set this to true to retrieve datetime values as strings
     bool format_decimals;                 // false by default but the user can set this to true to add the missing leading zeroes and/or control number of decimal digits to show
     short decimal_places;                 // indicates number of decimals shown in fetched results (-1 by default, which means no change to number of decimal digits)
+    bool data_classification;             // false by default but the user can set this to true to retrieve data classification sensitivity metadata 
 
     // holds output pointers for SQLBindParameter
     // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving
@@ -1464,6 +1548,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
 
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator<field_meta_data*>> current_meta_data;
+
+    // meta data for data classification
+    sqlsrv_malloc_auto_ptr<data_classification::sensitivity_metadata> current_sensitivity_metadata;
 
     sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
     virtual ~sqlsrv_stmt( void );
@@ -1536,6 +1623,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLEN limit TSRMLS_DC );
 void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC);
+void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 
 //*********************************************************************************************************************************
 // Result Set
@@ -1717,7 +1805,9 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 bool convert_string_from_utf16_inplace( _In_ SQLSRV_ENCODING encoding, _Inout_updates_z_(len) char** string, _Inout_ SQLLEN& len);
 bool validate_string( _In_ char* string, _In_ SQLLEN& len);
 bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(cchInLen) const SQLWCHAR* inString, _In_ SQLINTEGER cchInLen, _Inout_updates_bytes_(cchOutLen) char** outString, _Out_ SQLLEN& cchOutLen );
-SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_reads_bytes_(mbcs_len) const char* mbcs_string, _In_ unsigned int mbcs_len, _Out_ unsigned int* utf16_len );
+SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_reads_bytes_(mbcs_len) const char* mbcs_string, _In_ unsigned int mbcs_len, _Out_ unsigned int* utf16_len, bool use_strict_conversion = false );
+
+void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* input, _In_ SQLLEN length, _Inout_ zval& out_zval);
 
 //*********************************************************************************************************************************
 // Error handling routines and Predefined Errors
@@ -1779,6 +1869,9 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
     SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
     SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
+    SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
+    SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE,
+    SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
@@ -2402,7 +2495,7 @@ namespace core {
 
     inline void sqlsrv_add_index_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array, _In_ zend_ulong index, _In_ zval* value TSRMLS_DC) 
     {
-        int zr = ::add_index_zval( array, index, value );
+        int zr = add_index_zval( array, index, value );
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
             throw CoreException();
         }
@@ -2410,7 +2503,7 @@ namespace core {
 
     inline void sqlsrv_add_next_index_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array, _In_ zval* value TSRMLS_DC) 
     {
-        int zr = ::add_next_index_zval( array, value );
+        int zr = add_next_index_zval( array, value );
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
             throw CoreException();
         }
@@ -2440,6 +2533,14 @@ namespace core {
         }
         if (duplicate == 0) {
             sqlsrv_free(val);
+        }
+    }
+
+    inline void sqlsrv_add_assoc_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _In_ zval* val TSRMLS_DC )
+    {
+        int zr = ::add_assoc_zval(array_z, key, val);
+        CHECK_ZEND_ERROR (zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
+            throw CoreException();
         }
     }
 
@@ -2520,7 +2621,7 @@ namespace core {
         }
     }
 
-	inline void sqlsrv_zend_hash_next_index_insert_mem( _Inout_ sqlsrv_context& ctx, _In_ HashTable* ht, _In_reads_bytes_(data_size) void* data, _In_ uint data_size TSRMLS_DC)
+	inline void sqlsrv_zend_hash_next_index_insert_mem( _Inout_ sqlsrv_context& ctx, _In_ HashTable* ht, _In_reads_bytes_(data_size) void* data, _In_ size_t data_size TSRMLS_DC)
 	{
 		int zr = (data = ::zend_hash_next_index_insert_mem(ht, data, data_size)) != NULL ? SUCCESS : FAILURE;
 		CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {

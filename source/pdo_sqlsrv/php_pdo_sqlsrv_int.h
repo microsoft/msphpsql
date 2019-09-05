@@ -6,7 +6,7 @@
 //
 // Contents: Internal declarations for the extension
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -79,7 +79,8 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
     SQLSRV_ATTR_FETCHES_DATETIME_TYPE,
     SQLSRV_ATTR_FORMAT_DECIMALS,
-    SQLSRV_ATTR_DECIMAL_PLACES
+    SQLSRV_ATTR_DECIMAL_PLACES,
+    SQLSRV_ATTR_DATA_CLASSIFICATION
 };
 
 // valid set of values for TransactionIsolation connection option

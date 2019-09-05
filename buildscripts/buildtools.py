@@ -42,7 +42,8 @@ class BuildUtil(object):
         self.thread = thread.lower()
         self.no_rename = no_rename
         self.debug_enabled = debug_enabled
-    
+        self.vc = ''
+
     def major_version(self):
         """Return the major version number based on the PHP version."""
         return self.phpver[0:3]
@@ -66,17 +67,56 @@ class BuildUtil(object):
         version = self.version_label()
         return 'php_' + driver + '_' + version + '_' + self.thread + suffix
 
-    def compiler_version(self):
-        """Return the appropriate compiler version based on PHP version."""
-        VC = 'vc14'
-        version = self.version_label()
-        if version >= '72':     # Compiler version for PHP 7.2 or above
-            VC = 'vc15'
-        return VC
+    def determine_compiler(self, sdk_dir, vs_ver):
+        """Return the compiler version using vswhere.exe."""
+        vswhere = os.path.join(sdk_dir, 'php-sdk', 'bin', 'vswhere.exe')
+        if not os.path.exists(vswhere):
+            print('Could not find ' + vswhere)
+            exit(1)
         
-    def phpsrc_root(self, sdk_dir):   
+        # If both VS 2017 and VS 2019 are installed, if we check only version 15,
+        # both versions are returned.
+        # For example, temp.txt would have the following values (in this order):
+        # 16.1.29009.5
+        # 15.9.28307.344
+        # But if only VS 2017 is present, temp.txt will only have one value like this:
+        # 15.9.28307.344
+        # Likewise, if only VS 2019 is present, temp.txt contains only the one for 16.
+        # We can achieve the above by checking for version [15,16), in which case 
+        # even if both compilers are present, it only returns one. If only VS 2019
+        # exists, temp.txt is empty
+        command = '{0} -version [{1},{2}) -property installationVersion '.format(vswhere, vs_ver, vs_ver + 1)
+        os.system(command + ' > temp.txt')
+        
+        # Read the first line from temp.txt
+        with open('temp.txt', 'r') as f:
+            ver = f.readline()
+            print('Version: ' + ver)
+        vc = ver[:2]
+        if vc == '15':
+            return 'vc15'
+        else: # For VS2019, it's 'vs' instead of 'vc'
+            return 'vs16'
+        
+    def compiler_version(self, sdk_dir):
+        """Return the appropriate compiler version based on PHP version."""
+        if self.vc is '':
+            VC = 'vc14'
+            version = self.version_label()
+            if version >= '72':     # Compiler version for PHP 7.2 or above
+                VC = 'vc15'
+                if version == '74':
+                    # Compiler version for PHP 7.4 or above
+                    # Can be compiled using VS 2017 or VS 2019
+                    print('Checking compiler versions...')
+                    VC = self.determine_compiler(sdk_dir, 15)
+            self.vc = VC
+            print('Compiler: ' + self.vc)
+        return self.vc
+
+    def phpsrc_root(self, sdk_dir):
         """Return the path to the PHP source folder based on *sdk_dir*."""
-        vc = self.compiler_version()
+        vc = self.compiler_version(sdk_dir)
         return os.path.join(sdk_dir, 'php-sdk', 'phpdev', vc, self.arch, 'php-'+self.phpver+'-src')
         
     def build_abs_path(self, sdk_dir):   
@@ -97,6 +137,10 @@ class BuildUtil(object):
 
     def remove_old_builds(self, sdk_dir):
         """Remove the extensions, e.g. the driver subfolders in php-7.*-src\ext."""
+        if not os.path.exists(os.path.join(sdk_dir, 'php-sdk')):
+            print('No old builds to be removed...')
+            return
+    
         print('Removing old builds...')
 
         phpsrc = self.phpsrc_root(sdk_dir)
@@ -117,6 +161,10 @@ class BuildUtil(object):
         """Remove all binaries and source code in the Release* or Debug* 
         folders according to the current configuration
         """
+        if not os.path.exists(os.path.join(sdk_dir, 'php-sdk')):
+            print('No old builds to be removed...')
+            return
+    
         print('Removing previous build...')
         build_dir = self.build_abs_path(sdk_dir)
         if not os.path.exists(build_dir):
@@ -282,7 +330,7 @@ class BuildUtil(object):
             else:       # pdo_sqlsrv
                 cmd_line = ' --enable-pdo --with-pdo-sqlsrv=shared ' + cmd_line
                 
-        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-embed' + cmd_line
+        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-json --enable-embed' + cmd_line
         if self.thread == 'nts':
             cmd_line = cmd_line + ' --disable-zts'
         return cmd_line
@@ -370,13 +418,16 @@ class BuildUtil(object):
             os.system('git clone https://github.com/OSTC/php-sdk-binary-tools.git --branch master --single-branch --depth 1 ' + phpSDK)
         os.chdir(phpSDK)
         os.system('git pull ')
+        print('Done cloning the latest php SDK...')
 
         # Move the generated batch file to phpSDK for the php starter script 
+        print('Moving the sdk bath file over...')
         sdk_batch_file = os.path.join(phpSDK, batch_file)
         if os.path.exists(sdk_batch_file):
             os.remove(sdk_batch_file)
         shutil.move(os.path.join(work_dir, batch_file), phpSDK)
         
+        print('Checking if source exists...')
         sdk_source = os.path.join(phpSDK, 'Source')
         # Sometimes, for various reasons, the Source folder from previous build 
         # might exist in phpSDK. If so, remove it first
@@ -386,7 +437,7 @@ class BuildUtil(object):
         shutil.move(source_dir, phpSDK)
         
         # Invoke phpsdk-<vc>-<arch>.bat
-        vc = self.compiler_version()                           
+        vc = self.compiler_version(sdk_dir)
         starter_script = 'phpsdk-' + vc + '-' + self.arch + '.bat'
         print('Running starter script: ', starter_script)
         os.system(starter_script + ' -t ' + batch_file)

@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use statement handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 5.6 for PHP for SQL Server
+// Microsoft Drivers 5.7 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -140,10 +140,13 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     fetch_called( false ),
     last_field_index( -1 ),
     past_next_result_end( false ),
+    column_count( ACTIVE_NUM_COLS_INVALID ),
+    row_count( ACTIVE_NUM_ROWS_INVALID ),
     query_timeout( QUERY_TIMEOUT_INVALID ),
     date_as_string(false),
     format_decimals(false),       // no formatting needed
     decimal_places(NO_CHANGE_DECIMAL_PLACES),     // the default is no formatting to resultset required
+    data_classification(false),
     buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
     param_ind_ptrs( 10 ),       // initially hold 10 elements, which should cover 90% of the cases and only take < 100 byte
     send_streams_at_exec( true ),
@@ -189,6 +192,9 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
         current_results = NULL;
     }
 
+    // delete sensivity data
+    clean_up_sensitivity_metadata();
+
     invalidate();
     zval_ptr_dtor( &param_input_strings );
     zval_ptr_dtor( &output_params );
@@ -225,6 +231,8 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
     this->past_next_result_end = false;
     this->past_fetch_end = false;
     this->last_field_index = -1;
+    this->column_count = ACTIVE_NUM_COLS_INVALID;
+    this->row_count = ACTIVE_NUM_ROWS_INVALID;
 
     // delete any current results
     if( current_results ) {
@@ -232,6 +240,9 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
         efree( current_results );
         current_results = NULL;
     }
+
+    // delete sensivity data
+    clean_up_sensitivity_metadata();
 
     // create a new result set
     if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {
@@ -243,6 +254,15 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
     }
     else {
         current_results = new (sqlsrv_malloc( sizeof( sqlsrv_odbc_result_set ))) sqlsrv_odbc_result_set( this );
+    }
+}
+
+// free sensitivity classification metadata
+void sqlsrv_stmt::clean_up_sensitivity_metadata()
+{
+    if (current_sensitivity_metadata) {
+        current_sensitivity_metadata->~sensitivity_metadata();
+        current_sensitivity_metadata.reset();
     }
 }
 
@@ -819,9 +839,17 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
         CHECK_CUSTOM_ERROR( stmt->past_fetch_end, stmt, SQLSRV_ERROR_FETCH_PAST_END ) {
             throw core::CoreException();
         }
+        
         // First time only
         if ( !stmt->fetch_called ) {
-            SQLSMALLINT has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+            SQLSMALLINT has_fields;
+            if (stmt->column_count != ACTIVE_NUM_COLS_INVALID) {
+                has_fields = stmt->column_count;
+            } else {
+                has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+                stmt->column_count = has_fields;
+            }
+            
             CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
                 throw core::CoreException();
             }
@@ -939,7 +967,7 @@ field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQL
         }
     }
 
-    // Set the field name lenth
+    // Set the field name length
     meta_data->field_name_len = static_cast<SQLSMALLINT>( field_name_len );
 
     field_meta_data* result_field_meta_data = meta_data;
@@ -947,6 +975,101 @@ field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQL
     return result_field_meta_data;
 }
 
+void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+{
+    sqlsrv_malloc_auto_ptr<unsigned char> dcbuf;
+    SQLINTEGER dclen = 0;
+    SQLINTEGER dclenout = 0;
+    SQLHANDLE ird;
+    SQLRETURN r;
+
+    try {
+        if (!stmt->data_classification) {
+            return;
+        }
+
+        if (stmt->current_sensitivity_metadata) {
+            // Already cached, so return
+            return;
+        }
+
+        CHECK_CUSTOM_ERROR(!stmt->executed, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION) {
+            throw core::CoreException();
+        }
+
+        // Reference: https://docs.microsoft.com/sql/connect/odbc/data-classification
+        // To retrieve sensitivity classfication data, the first step is to retrieve the IRD(Implementation Row Descriptor) handle by 
+        // calling SQLGetStmtAttr with SQL_ATTR_IMP_ROW_DESC statement attribute
+        r = ::SQLGetStmtAttr(stmt->handle(), SQL_ATTR_IMP_ROW_DESC, (SQLPOINTER)&ird, SQL_IS_POINTER, 0);
+        CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
+            LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in getting Implementation Row Descriptor handle." );
+            throw core::CoreException();
+        }
+
+        // First call to get dclen
+        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, dcbuf, 0, &dclen);
+        if (r != SQL_SUCCESS || dclen == 0) {
+            // log the error first
+            LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in calling SQLGetDescFieldW first time." );
+
+            // If this fails, check if it is the "Invalid Descriptor Field error"
+            SQLRETURN rc;
+            SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {'\0'};
+            SQLSMALLINT len;
+            rc = ::SQLGetDiagField(SQL_HANDLE_DESC, ird, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC);
+
+            CHECK_SQL_ERROR_OR_WARNING(rc, stmt) {
+                throw core::CoreException();
+            }
+
+            CHECK_CUSTOM_ERROR(!strcmp("HY091", reinterpret_cast<char*>(state)), stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE) {
+                throw core::CoreException();
+            }
+
+            CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "Check if ODBC driver or the server supports the Data Classification feature.") {
+                throw core::CoreException();
+            }
+        }
+
+        // Call again to read SQL_CA_SS_DATA_CLASSIFICATION data
+        dcbuf = static_cast<unsigned char*>(sqlsrv_malloc(dclen * sizeof(char)));
+
+        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, dcbuf, dclen, &dclenout);
+        if (r != SQL_SUCCESS) {
+            LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in calling SQLGetDescFieldW again." );
+
+            CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "SQLGetDescFieldW failed unexpectedly") {
+                throw core::CoreException();
+            }
+        }
+
+        // Start parsing the data (blob)
+        using namespace data_classification;
+        unsigned char *dcptr = dcbuf;
+
+        sqlsrv_malloc_auto_ptr<sensitivity_metadata> sensitivity_meta;
+        sensitivity_meta = new (sqlsrv_malloc(sizeof(sensitivity_metadata))) sensitivity_metadata();
+
+        // Parse the name id pairs for labels first then info types
+        parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_labels, &sensitivity_meta->labels, &dcptr);
+        parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_infotypes, &sensitivity_meta->infotypes, &dcptr);
+
+        // Next parse the sensitivity properties
+        parse_column_sensitivity_props(sensitivity_meta, &dcptr);
+
+        unsigned char *dcend = dcbuf;
+        dcend += dclen;
+
+        CHECK_CUSTOM_ERROR(dcptr != dcend, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "Metadata parsing ends unexpectedly") {
+            throw core::CoreException();
+        }
+       
+        stmt->current_sensitivity_metadata = sensitivity_meta;
+        sensitivity_meta.transferred();
+    } catch (core::CoreException& e) {
+        throw e;
+    }
+}
 
 // core_sqlsrv_get_field
 // Return the value of a column from ODBC
@@ -1066,10 +1189,27 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 
 bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    // Use SQLNumResultCols to determine if we have rows or not.
-    SQLSMALLINT num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
-    // use SQLRowCount to determine if there is a rows status waiting
-    SQLLEN rows_affected = core::SQLRowCount( stmt TSRMLS_CC );
+    SQLSMALLINT num_cols;
+    SQLLEN rows_affected;
+    
+    if (stmt->column_count != ACTIVE_NUM_COLS_INVALID) {
+        num_cols = stmt->column_count;
+    }
+    else {
+        // Use SQLNumResultCols to determine if we have rows or not
+        num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
+        stmt->column_count = num_cols;
+    }
+    
+    if (stmt->row_count != ACTIVE_NUM_ROWS_INVALID) {
+        rows_affected = stmt->row_count;
+    }
+    else {
+        // Use SQLRowCount to determine if there is a rows status waiting
+        rows_affected = core::SQLRowCount( stmt TSRMLS_CC );
+        stmt->row_count = rows_affected;
+    }
+    
     return (num_cols != 0) || (rows_affected > 0);
 }
 
@@ -1475,6 +1615,16 @@ void stmt_option_decimal_places:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
     core_sqlsrv_set_decimal_places(stmt, value_z TSRMLS_CC);
 }
 
+void stmt_option_data_classification:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z TSRMLS_DC )
+{
+    if (zend_is_true(value_z)) {
+        stmt->data_classification = true;
+    }
+    else {
+        stmt->data_classification = false;
+    }
+}
+
 // internal function to release the active stream.  Called by each main API function
 // that will alter the statement and cancel any retrieval of data from a stream.
 void close_active_stream( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
@@ -1717,54 +1867,36 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
             break;
         }
 
-        // get the date as a string (http://msdn2.microsoft.com/en-us/library/ms712387(VS.85).aspx) and
-        // convert it to a DateTime object and return the created object
+        // Reference: https://docs.microsoft.com/sql/odbc/reference/appendixes/sql-to-c-timestamp
+        // Retrieve the datetime data as a string, which may be cached for later use.
+        // The string is converted to a DateTime object only when it is required to 
+        // be returned as a zval.
         case SQLSRV_PHPTYPE_DATETIME:
         {
-            char field_value_temp[MAX_DATETIME_STRING_LEN] = {'\0'};
-            zval params[1];
-            zval field_value_temp_z;
-            zval function_z;
+            sqlsrv_malloc_auto_ptr<char> field_value_temp;
+            SQLLEN field_len_temp = 0;
 
-            ZVAL_UNDEF( &field_value_temp_z );
-            ZVAL_UNDEF( &function_z );
-            ZVAL_UNDEF( params );
+            field_value_temp = static_cast<char*>(sqlsrv_malloc(MAX_DATETIME_STRING_LEN));
+            memset(field_value_temp, '\0', MAX_DATETIME_STRING_LEN);
 
-            SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_CHAR, field_value_temp,
-                                                           MAX_DATETIME_STRING_LEN, field_len, true TSRMLS_CC );
+            SQLRETURN r = stmt->current_results->get_data(field_index + 1, SQL_C_CHAR, field_value_temp, MAX_DATETIME_STRING_LEN, &field_len_temp, true TSRMLS_CC);
 
-            CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index ) {
+            if (r == SQL_NO_DATA || field_len_temp == SQL_NULL_DATA) {
+                field_value_temp.reset();
+                field_len_temp = 0;
+            }
+
+            CHECK_CUSTOM_ERROR((r == SQL_NO_DATA), stmt, SQLSRV_ERROR_NO_DATA, field_index) {
                 throw core::CoreException();
             }
 
-            zval_auto_ptr return_value_z;
-            return_value_z = ( zval * )sqlsrv_malloc( sizeof( zval ));
-            ZVAL_UNDEF( return_value_z );
+            field_value = field_value_temp;
+            field_value_temp.transferred();
+            *field_len = field_len_temp;
 
-            if( *field_len == SQL_NULL_DATA ) {
-                ZVAL_NULL( return_value_z );
-                field_value = reinterpret_cast<void*>( return_value_z.get());
-                return_value_z.transferred();
-                break;
-            }
-
-            // Convert the string date to a DateTime object
-            core::sqlsrv_zval_stringl( &field_value_temp_z, field_value_temp, *field_len );
-            core::sqlsrv_zval_stringl( &function_z, "date_create", sizeof("date_create") - 1 );
-            params[0] = field_value_temp_z;
-
-            if( call_user_function( EG( function_table ), NULL, &function_z, return_value_z, 1,
-                params TSRMLS_CC ) == FAILURE) {
-                THROW_CORE_ERROR(stmt, SQLSRV_ERROR_DATETIME_CONVERSION_FAILED);
-            }
-
-            field_value = reinterpret_cast<void*>( return_value_z.get());
-            return_value_z.transferred();
-            zend_string_free( Z_STR( field_value_temp_z ));
-            zend_string_free( Z_STR( function_z ));
             break;
         }
-
+        
         // create a stream wrapper around the field and return that object to the PHP script.  calls to fread
         // on the stream will result in calls to SQLGetData.  This is handled in stream.cpp.  See that file
         // for how these fields are used.
@@ -2288,142 +2420,151 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
 
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
-    if( Z_ISUNDEF(stmt->output_params) )
+    if (Z_ISUNDEF(stmt->output_params))
         return;
 
-    HashTable* params_ht = Z_ARRVAL( stmt->output_params );
+    HashTable* params_ht = Z_ARRVAL(stmt->output_params);
     zend_ulong index = -1;
     zend_string* key = NULL;
     void* output_param_temp = NULL;
 
-    ZEND_HASH_FOREACH_KEY_PTR( params_ht, index, key, output_param_temp ) {
-        sqlsrv_output_param* output_param = static_cast<sqlsrv_output_param*>( output_param_temp );
-        zval* value_z = Z_REFVAL_P( output_param->param_z );
-        switch( Z_TYPE_P( value_z )) {
-        case IS_STRING:
+    try {
+        ZEND_HASH_FOREACH_KEY_PTR(params_ht, index, key, output_param_temp)
         {
-            // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
-            char* str = Z_STRVAL_P( value_z );
-            SQLLEN str_len = stmt->param_ind_ptrs[output_param->param_num];
-            if( str_len == 0 ) {
-                core::sqlsrv_zval_stringl( value_z, "", 0 );
-                continue;
-            }
-            if( str_len == SQL_NULL_DATA ) {
-                zend_string_release( Z_STR_P( value_z ));
-                ZVAL_NULL( value_z );
-                continue;
-            }
-
-            // if there was more to output than buffer size to hold it, then throw a truncation error
-            int null_size = 0;
-            switch( output_param->encoding ) {
-            case SQLSRV_ENCODING_UTF8:
-                null_size = sizeof( SQLWCHAR );  // string isn't yet converted to UTF-8, still UTF-16
-                break;
-            case SQLSRV_ENCODING_SYSTEM:
-                null_size = 1;
-                break;
-            case SQLSRV_ENCODING_BINARY:
-                null_size = 0;
-                break;
-            default:
-                SQLSRV_ASSERT( false, "Invalid encoding in output_param structure." );
-                break;
-            }
-            CHECK_CUSTOM_ERROR( str_len > ( output_param->original_buffer_len - null_size ), stmt,
-                SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, output_param->param_num + 1 ) {
-                throw core::CoreException();
-            }
-
-            // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
-            // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains up to
-            // output_param->original_buffer_len data and is NULL terminated.
-            // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
-            if ( str_len == SQL_NO_TOTAL )
+            sqlsrv_output_param* output_param = static_cast<sqlsrv_output_param*>(output_param_temp);
+            zval* value_z = Z_REFVAL_P(output_param->param_z);
+            switch (Z_TYPE_P(value_z)) {
+            case IS_STRING:
             {
-                str_len = output_param->original_buffer_len - null_size;
-            }
-
-            if (output_param->encoding == SQLSRV_ENCODING_BINARY) {
-                // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
-                // so we do that here if the length of the returned data is less than the original allocation.  The
-                // original allocation null terminates the buffer already.
-                if (str_len < output_param->original_buffer_len) {
-                    str[str_len] = '\0';
+                // adjust the length of the string to the value returned by SQLBindParameter in the ind_ptr parameter
+                char* str = Z_STRVAL_P(value_z);
+                SQLLEN str_len = stmt->param_ind_ptrs[output_param->param_num];
+                if (str_len == 0) {
+                    core::sqlsrv_zval_stringl(value_z, "", 0);
+                    continue;
                 }
-                core::sqlsrv_zval_stringl(value_z, str, str_len);
-            }
-            else {
-                param_meta_data metaData = output_param->getMetaData();
-
-                if (output_param->encoding != SQLSRV_ENCODING_CHAR) {
-                    char* outString = NULL;
-                    SQLLEN outLen = 0;
-                    bool result = convert_string_from_utf16(output_param->encoding, reinterpret_cast<const SQLWCHAR*>(str), int(str_len / sizeof(SQLWCHAR)), &outString, outLen );
-                    CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message()) {
-                        throw core::CoreException();
-                    }
-
-                    if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
-                        format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, outString, &outLen);
-                    }
-
-                    core::sqlsrv_zval_stringl(value_z, outString, outLen);
-                    sqlsrv_free(outString);
+                if (str_len == SQL_NULL_DATA) {
+                    zend_string_release(Z_STR_P(value_z));
+                    ZVAL_NULL(value_z);
+                    continue;
                 }
-                else {
-                    if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
-                        format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, str, &str_len);
-                    }
 
+                // if there was more to output than buffer size to hold it, then throw a truncation error
+                int null_size = 0;
+                switch (output_param->encoding) {
+                case SQLSRV_ENCODING_UTF8:
+                    null_size = sizeof(SQLWCHAR);  // string isn't yet converted to UTF-8, still UTF-16
+                    break;
+                case SQLSRV_ENCODING_SYSTEM:
+                    null_size = 1;
+                    break;
+                case SQLSRV_ENCODING_BINARY:
+                    null_size = 0;
+                    break;
+                default:
+                    SQLSRV_ASSERT(false, "Invalid encoding in output_param structure.");
+                    break;
+                }
+                CHECK_CUSTOM_ERROR(str_len > (output_param->original_buffer_len - null_size), stmt,
+                                   SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, output_param->param_num + 1)
+                {
+                    throw core::CoreException();
+                }
+
+                // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
+                // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains up to
+                // output_param->original_buffer_len data and is NULL terminated.
+                // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
+                if (str_len == SQL_NO_TOTAL) {
+                    str_len = output_param->original_buffer_len - null_size;
+                }
+
+                if (output_param->encoding == SQLSRV_ENCODING_BINARY) {
+                    // ODBC doesn't null terminate binary encodings, but PHP complains if a string isn't null terminated
+                    // so we do that here if the length of the returned data is less than the original allocation.  The
+                    // original allocation null terminates the buffer already.
+                    if (str_len < output_param->original_buffer_len) {
+                        str[str_len] = '\0';
+                    }
                     core::sqlsrv_zval_stringl(value_z, str, str_len);
                 }
-            }
-        }
-        break;
-        case IS_LONG:
-            // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
-            if( stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA ) {
-                ZVAL_NULL( value_z );
-            }
-            else if( output_param->is_bool ) {
-                convert_to_boolean( value_z );
-            }
-            else {
-                ZVAL_LONG( value_z, static_cast<int>( Z_LVAL_P( value_z )));
-            }
-            break;
-        case IS_DOUBLE:
-            // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
-            if (stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA) {
-                ZVAL_NULL(value_z);
-            }
-            else if (output_param->php_out_type == SQLSRV_PHPTYPE_INT) {
-                // first check if its value is out of range
-                double dval = Z_DVAL_P(value_z);
-                if (dval > INT_MAX || dval < INT_MIN) {
-                    CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED) {
-                        throw core::CoreException();
+                else {
+                    param_meta_data metaData = output_param->getMetaData();
+
+                    if (output_param->encoding != SQLSRV_ENCODING_CHAR) {
+                        char* outString = NULL;
+                        SQLLEN outLen = 0;
+                        bool result = convert_string_from_utf16(output_param->encoding, reinterpret_cast<const SQLWCHAR*>(str), int(str_len / sizeof(SQLWCHAR)), &outString, outLen);
+                        CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message())
+                        {
+                            throw core::CoreException();
+                        }
+
+                        if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
+                            format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, outString, &outLen);
+                        }
+
+                        core::sqlsrv_zval_stringl(value_z, outString, outLen);
+                        sqlsrv_free(outString);
+                    }
+                    else {
+                        if (stmt->format_decimals && (metaData.sql_type == SQL_DECIMAL || metaData.sql_type == SQL_NUMERIC)) {
+                            format_decimal_numbers(NO_CHANGE_DECIMAL_PLACES, metaData.decimal_digits, str, &str_len);
+                        }
+
+                        core::sqlsrv_zval_stringl(value_z, str, str_len);
                     }
                 }
-                // if the output param is a boolean, still convert to 
-                // a long integer first to take care of rounding
-                convert_to_long(value_z);
-                if (output_param->is_bool) {
-                    convert_to_boolean(value_z);
-                }
             }
             break;
-        default:
-            DIE( "Illegal or unknown output parameter type. This should have been caught in core_sqlsrv_bind_parameter." );
-            break;
-        }
-        value_z = NULL;
-    }  ZEND_HASH_FOREACH_END();
-
+            case IS_LONG:
+                // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
+                if (stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA) {
+                    ZVAL_NULL(value_z);
+                }
+                else if (output_param->is_bool) {
+                    convert_to_boolean(value_z);
+                }
+                else {
+                    ZVAL_LONG(value_z, static_cast<int>(Z_LVAL_P(value_z)));
+                }
+                break;
+            case IS_DOUBLE:
+                // for a long or a float, simply check if NULL was returned and set the parameter to a PHP null if so
+                if (stmt->param_ind_ptrs[output_param->param_num] == SQL_NULL_DATA) {
+                    ZVAL_NULL(value_z);
+                }
+                else if (output_param->php_out_type == SQLSRV_PHPTYPE_INT) {
+                    // first check if its value is out of range
+                    double dval = Z_DVAL_P(value_z);
+                    if (dval > INT_MAX || dval < INT_MIN) {
+                        CHECK_CUSTOM_ERROR(true, stmt, SQLSRV_ERROR_DOUBLE_CONVERSION_FAILED)
+                        {
+                            throw core::CoreException();
+                        }
+                    }
+                    // if the output param is a boolean, still convert to 
+                    // a long integer first to take care of rounding
+                    convert_to_long(value_z);
+                    if (output_param->is_bool) {
+                        convert_to_boolean(value_z);
+                    }
+                }
+                break;
+            default:
+                DIE("Illegal or unknown output parameter type. This should have been caught in core_sqlsrv_bind_parameter.");
+                break;
+            }
+            value_z = NULL;
+        }  ZEND_HASH_FOREACH_END();
+    }
+    catch (core::CoreException&) {
+        // empty the hash table due to exception caught
+        zend_hash_clean(Z_ARRVAL(stmt->output_params));
+        throw;
+    }
     // empty the hash table since it's been processed
-    zend_hash_clean( Z_ARRVAL( stmt->output_params ));
+    zend_hash_clean(Z_ARRVAL(stmt->output_params));
     return;
 }
 
