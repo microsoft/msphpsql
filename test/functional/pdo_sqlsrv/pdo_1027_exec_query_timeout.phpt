@@ -12,19 +12,22 @@ require_once("MsSetup.inc");
 require_once("MsCommon_mid-refactor.inc");
 
 $message = '*Invalid value timeout specified for option PDO::SQLSRV_ATTR_QUERY_TIMEOUT.';
+$delay = 40;
+$query = "WAITFOR DELAY '00:00:$delay'; SELECT 1";
+$error = '*Query timeout expired';
 
 function testTimeoutAttribute($conn, $timeout, $statementLevel = false)
 {
     global $message;
-    
+
     $error = str_replace('timeout', $timeout, $message);
-    
+
     try {
         if ($statementLevel) {
             trace("statement option expects error: $error\n");
             $options = array(PDO::SQLSRV_ATTR_QUERY_TIMEOUT => $timeout);
-            $query = 'SELECT 1';
-            $stmt = $conn->prepare($query, $options);
+            $sql = 'SELECT 1';
+            $stmt = $conn->prepare($sql, $options);
         } else {
             trace("connection attribute expects error: $error\n");
             $conn->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, $timeout);
@@ -45,69 +48,107 @@ function testErrors($conn)
     testTimeoutAttribute($conn, 'abc', true);
 }
 
-function runTest($conn, $timeout, $statementLevel, $asAttribute = false)
+function checkTimeElapsed($t0, $t1, $delay)
 {
-    $t0 = microtime(true);
-
-    $query = 'WAITFOR DELAY \'00:00:40\'; SELECT 1';
-    $error = '*Query timeout expired';
-
-    $result = null;
-    
-    try {
-        if (! $statementLevel) {
-            $conn->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, $timeout);
-            trace("Connection: " . $conn->getAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT) . PHP_EOL);
-            $result = $conn->exec($query);
-        } else {
-            if ($asAttribute) {
-                $stmt = $conn->prepare($query);
-                $stmt->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, $timeout);
-            } else {
-                $options = array(PDO::SQLSRV_ATTR_QUERY_TIMEOUT => 10);
-                $stmt = $conn->prepare($query, $options);
-            }
-            trace("Statement: " . $stmt->getAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT) . PHP_EOL);
-            $result = $stmt->execute();
-        }
-        
-        echo "Expected an exception. Should have timed out!\n";
-    } catch (PDOException $e) {
-        if (!fnmatch($error, $e->getMessage())) {
-            echo "Error unexpected for $timeout, $statementLevel, $asAttribute:\n";
-            var_dump($e->getMessage());
-        }
-    }
-    
-    $t1 = microtime(true);
-
     $elapsed = $t1 - $t0;
-    $diff = abs($elapsed - $timeout);
-    $leeway = 0.5;
+    $diff = abs($elapsed - $delay);
+    $leeway = 1.0;
     $missed = ($diff > $leeway);
     trace("Time elapsed: $elapsed secs\n");
 
-    if ($missed || $result !== null) {
-        echo "Expected $timeout but $elapsed secs elapsed with result:\n";
-        var_dump($result);
-    }    
+    if ($missed) {
+        echo "Expected $delay but $elapsed secs elapsed\n";
+    }
+}
+
+function connectionTest($timeout, $asAttribute = false)
+{
+    global $delay, $query, $error;
+
+    if ($asAttribute) {
+        $conn = connect();
+        $conn->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, $timeout);
+    } else {
+        $options = array(PDO::SQLSRV_ATTR_QUERY_TIMEOUT => $timeout);
+        $conn = connect('', $options);
+    }
+
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // if timeout is 0 it means no timeout 
+    if ($timeout > 0) {
+        $delay = $timeout;
+    }
+
+    $result = null;
+    $t0 = microtime(true);
+
+    try {
+        $result = $conn->exec($query);
+        if ($timeout > 0) {
+            echo "connectionTest $timeout: should have timed out!\n";
+        }
+    } catch (PDOException $e) {
+        if (!fnmatch($error, $e->getMessage())) {
+            echo "Connection test error expected $timeout, $asAttribute:\n";
+            var_dump($e->getMessage());
+        }
+    }
+
+    $t1 = microtime(true);
+    checkTimeElapsed($t0, $t1, $delay);
+
+    return $conn;
+}
+
+function statementTest($conn, $timeout, $asAttribute = false)
+{
+    global $delay, $query, $error;
+
+    // if timeout is 0 it means no timeout 
+    if ($timeout > 0) {
+        $delay = $timeout;
+    }
+
+    $result = null;
+    $t0 = microtime(true);
+
+    try {
+        if ($asAttribute) {
+            $stmt = $conn->prepare($query);
+            $stmt->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, $timeout);
+        } else {
+            $options = array(PDO::SQLSRV_ATTR_QUERY_TIMEOUT => $timeout);
+            $stmt = $conn->prepare($query, $options);
+        }
+
+        $result = $stmt->execute();
+
+        if ($timeout > 0) {
+            echo "statementTest $timeout: should have timed out!\n";
+        }
+    } catch (PDOException $e) {
+        if (!fnmatch($error, $e->getMessage())) {
+            echo "Statement test error expected $timeout, $asAttribute:\n";
+            var_dump($e->getMessage());
+        }
+    }
+
+    $t1 = microtime(true);
+
+    checkTimeElapsed($t0, $t1, $delay);
 }
 
 try {
-    // $conn = new PDO( "sqlsrv:server=$server; Database = $databaseName", $uid, $pwd);
-    // $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-
-    $conn = connect();
+    $rand = rand(0, 15);
+    $asAttribute = $rand % 2;
+    
+    $conn = connectionTest($rand, $asAttribute);
     testErrors($conn);
-
-    runTest($conn, 10, false);
-    runTest($conn, 15, false);
-    runTest($conn, 10, true, false);
-    runTest($conn, 15, true, true);
+    statementTest($conn, $rand, $asAttribute);
+    unset($conn);
 
     echo "Done\n";
-
-    unset($conn);
 } catch (PdoException $e) {
     echo $e->getMessage() . PHP_EOL;
 }

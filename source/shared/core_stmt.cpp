@@ -1387,11 +1387,9 @@ void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout
         DEBUG_SQLSRV_ASSERT(timeout >= 0 , "core_sqlsrv_set_query_timeout: The value of query timeout cannot be less than 0.");
 
         // The default timeout is 0, which means the driver will wait indefinitely for results
-        // Thus, only set the SQL_ATTR_QUERY_TIMEOUT attribute if timeout is > 0.
-        if (timeout > 0) {
-            stmt->query_timeout = timeout;
-            core::SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(timeout), SQL_IS_UINTEGER TSRMLS_CC);
-        }
+        stmt->query_timeout = timeout;
+        core::SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>((SQLLEN)timeout), SQL_IS_UINTEGER TSRMLS_CC);
+
     }
     catch (core::CoreException&) {
         throw;
