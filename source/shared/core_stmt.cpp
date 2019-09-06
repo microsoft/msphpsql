@@ -1361,23 +1361,20 @@ void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLE
 }
 
 
-// Overloaded. Extracts the long value and calls the core_sqlsrv_set_query_timeout
-// which accepts timeout parameter as a long. If the zval is not of type long
-// than throws error.
+// Extracts the long value and calls the SQLSetStmtAttr to set SQL_ATTR_QUERY_TIMEOUT statement attribute.
+// If the zval is not valid than throws error.
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z TSRMLS_DC )
 {
     try {
-
-        // validate the value
-        if( Z_TYPE_P( value_z ) != IS_LONG || Z_LVAL_P( value_z ) < 0 ) {
-
-            convert_to_string( value_z );
-            THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE, Z_STRVAL_P( value_z ) );
+        // validate the input value
+        if (Z_TYPE_P(value_z) != IS_LONG || Z_LVAL_P(value_z) < 0) {
+            convert_to_string(value_z);
+            THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE, Z_STRVAL_P(value_z));
         }
 
-        core_sqlsrv_set_query_timeout( stmt, static_cast<long>( Z_LVAL_P( value_z )) TSRMLS_CC );
+        core_sqlsrv_set_query_timeout(stmt, static_cast<long>(Z_LVAL_P(value_z)) TSRMLS_CC);
     }
-    catch( core::CoreException& ) {
+    catch (core::CoreException&) {
         throw;
     }
 }
@@ -1387,27 +1384,16 @@ void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout
 {
     try {
 
-        DEBUG_SQLSRV_ASSERT( timeout >= 0 , "core_sqlsrv_set_query_timeout: The value of query timeout cannot be less than 0." );
+        DEBUG_SQLSRV_ASSERT(timeout >= 0 , "core_sqlsrv_set_query_timeout: The value of query timeout cannot be less than 0.");
 
-        // set the statement attribute
-        core::SQLSetStmtAttr( stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>( (SQLLEN)timeout ), SQL_IS_UINTEGER TSRMLS_CC );
-
-        // a query timeout of 0 indicates "no timeout", which means that lock_timeout should also be set to "no timeout" which
-        // is represented by -1.
-        int lock_timeout = (( timeout == 0 ) ? -1 : timeout * 1000 /*convert to milliseconds*/ );
-
-        // set the LOCK_TIMEOUT on the server.
-        char lock_timeout_sql[32] = {'\0'};
-
-        int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", lock_timeout );
-        SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )),
-                        "stmt_option_query_timeout: snprintf failed. Shouldn't ever fail." );
-
-        core::SQLExecDirect( stmt, lock_timeout_sql TSRMLS_CC );
-
-        stmt->query_timeout = timeout;
+        // The default timeout is 0, which means the driver will wait indefinitely for results
+        // Thus, only set the SQL_ATTR_QUERY_TIMEOUT attribute if timeout is > 0.
+        if (timeout > 0) {
+            stmt->query_timeout = timeout;
+            core::SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(timeout), SQL_IS_UINTEGER TSRMLS_CC);
+        }
     }
-    catch( core::CoreException& ) {
+    catch (core::CoreException&) {
         throw;
     }
 }

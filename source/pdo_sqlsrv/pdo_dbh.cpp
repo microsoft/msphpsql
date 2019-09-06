@@ -843,6 +843,10 @@ zend_long pdo_sqlsrv_dbh_do( _Inout_ pdo_dbh_t *dbh, _In_reads_bytes_(sql_len) c
                           NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt TSRMLS_CC );
         driver_stmt->set_func( __FUNCTION__ );
 
+        if (driver_dbh->query_timeout != QUERY_TIMEOUT_INVALID) {
+            core_sqlsrv_set_query_timeout(driver_stmt, driver_dbh->query_timeout TSRMLS_CC);
+        }
+
         SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, sql, static_cast<int>( sql_len ) );
 
         // since the user can give us a compound statement, we return the row count for the last set, and since the row count
