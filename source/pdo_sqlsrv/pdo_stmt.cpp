@@ -580,7 +580,9 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
             query_len = static_cast<unsigned int>(stmt->active_query_stringlen);
         }
 
-        // Set query timeout if necessary
+        // The query timeout setting is inherited from the corresponding connection attribute, but
+        // the user may have changed the query timeout setting again before this via 
+        // PDOStatement::setAttribute()
         driver_stmt->set_query_timeout();
  
         SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
