@@ -580,6 +580,9 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
             query_len = static_cast<unsigned int>(stmt->active_query_stringlen);
         }
 
+        // Set query timeout if necessary
+        driver_stmt->set_query_timeout();
+ 
         SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt TSRMLS_CC, query, query_len );
 
         if ( execReturn == SQL_NO_DATA ) {
@@ -1503,3 +1506,11 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
     return sqlsrv_phptype;
 }
 
+void pdo_sqlsrv_stmt::set_query_timeout()
+{
+    if (query_timeout == QUERY_TIMEOUT_INVALID || query_timeout < 0) {
+        return;
+    }
+
+    core::SQLSetStmtAttr(this, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>((SQLLEN)query_timeout), SQL_IS_UINTEGER TSRMLS_CC);
+}
