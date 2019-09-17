@@ -22,20 +22,20 @@ function testTimeoutAttribute($conn, $timeout, $statementLevel = false)
 {
     global $message;
 
-    $error = str_replace('timeout', $timeout, $message);
+    $invalid = str_replace('timeout', $timeout, $message);
 
     try {
         if ($statementLevel) {
-            trace("statement option expects error: $error\n");
+            trace("statement option expects error: $invalid\n");
             $options = array(PDO::SQLSRV_ATTR_QUERY_TIMEOUT => $timeout);
             $sql = 'SELECT 1';
             $stmt = $conn->prepare($sql, $options);
         } else {
-            trace("connection attribute expects error: $error\n");
+            trace("connection attribute expects error: $invalid\n");
             $conn->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, $timeout);
         }
     } catch (PDOException $e) {
-        if (!fnmatch($error, $e->getMessage())) {
+        if (!fnmatch($invalid, $e->getMessage())) {
             echo "Unexpected error returned setting invalid $timeout for SQLSRV_ATTR_QUERY_TIMEOUT\n";
             var_dump($e->getMessage());
         }
