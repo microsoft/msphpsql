@@ -1558,6 +1558,8 @@ struct sqlsrv_stmt : public sqlsrv_context {
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     virtual sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream ) = 0;
 
+    // driver specific way to set query timeout
+    virtual void set_query_timeout() = 0;
 };
 
 // *** field metadata struct ***
@@ -1616,7 +1618,6 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
 void core_sqlsrv_post_param( _Inout_ sqlsrv_stmt* stmt, _In_ zend_ulong paramno, zval* param_z TSRMLS_DC );
 void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type TSRMLS_DC );
-void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout TSRMLS_DC );
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );

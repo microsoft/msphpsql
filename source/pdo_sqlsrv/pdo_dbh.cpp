@@ -720,13 +720,6 @@ int pdo_sqlsrv_dbh_prepare( _Inout_ pdo_dbh_t *dbh, _In_reads_(sql_len) const ch
              driver_stmt->buffered_query_limit = driver_dbh->client_buffer_max_size;
         }
 
-        // if the user didn't set anything in the prepare options, then set the query timeout 
-        // to the value set on the connection.
-        if(( driver_stmt->query_timeout == QUERY_TIMEOUT_INVALID ) && ( driver_dbh->query_timeout != QUERY_TIMEOUT_INVALID )) {
-            
-            core_sqlsrv_set_query_timeout( driver_stmt, driver_dbh->query_timeout TSRMLS_CC );
-        }
-
         // rewrite named parameters in the query to positional parameters if we aren't letting PDO do the
         // parameter substitution for us
         if( stmt->supports_placeholders != PDO_PLACEHOLDER_NONE ) {
