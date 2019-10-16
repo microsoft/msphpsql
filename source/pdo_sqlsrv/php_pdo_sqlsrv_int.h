@@ -183,6 +183,8 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool fetch_datetime;
     bool format_decimals;
     short decimal_places;
+	short use_national_characters;
+
 
     pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC );
 };
@@ -386,7 +388,8 @@ enum PDO_ERROR_CODES {
     PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
     PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
     PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED,
-    PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED
+    PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED,
+	PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID,
 };
 
 extern pdo_error PDO_ERRORS[];

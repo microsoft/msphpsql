@@ -461,6 +461,10 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
         { IMSSP, (SQLCHAR*) "Failed to retrieve Data Classification Sensitivity Metadata: %1!s!", -96, true}
     },
+	{
+		PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID,
+		{ IMSSP, (SQLCHAR*) "Invalid extended string type specified. PDO_ATTR_DEFAULT_STR_PARAM can be either PDO_PARAM_STR_CHAR or PDO_PARAM_STR_NATL.", -97, false}
+	},
 
     { UINT_MAX, {} }
 };
