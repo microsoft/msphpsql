@@ -521,7 +521,7 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
     fetch_datetime( false ),
     format_decimals( false ),
     decimal_places( NO_CHANGE_DECIMAL_PLACES ), 
-	use_national_characters(CHARSET_PREFERENCE_NOT_SPECIFIED)
+    use_national_characters(CHARSET_PREFERENCE_NOT_SPECIFIED)
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -1106,24 +1106,24 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             break;
 
 #if PHP_VERSION_ID >= 70200
-			case PDO_ATTR_DEFAULT_STR_PARAM:
-			{
-				if (Z_TYPE_P(val) != IS_LONG) {
-					THROW_PDO_ERROR(driver_dbh, PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID);
-				}
+            case PDO_ATTR_DEFAULT_STR_PARAM:
+            {
+                if (Z_TYPE_P(val) != IS_LONG) {
+                    THROW_PDO_ERROR(driver_dbh, PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID);
+                }
 
-				zend_long value = Z_LVAL_P(val);
-				if (value == PDO_PARAM_STR_NATL) {
-					driver_dbh->use_national_characters = 1;
-				}
-				else if (value == PDO_PARAM_STR_CHAR) {
-					driver_dbh->use_national_characters = 0;
-				}
-				else {
-					THROW_PDO_ERROR(driver_dbh, PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID);
-				}
-			}
-			break;
+                zend_long value = Z_LVAL_P(val);
+                if (value == PDO_PARAM_STR_NATL) {
+                    driver_dbh->use_national_characters = 1;
+                }
+                else if (value == PDO_PARAM_STR_CHAR) {
+                    driver_dbh->use_national_characters = 0;
+                }
+                else {
+                    THROW_PDO_ERROR(driver_dbh, PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID);
+                }
+            }
+            break;
 #endif
 
             // Not supported
@@ -1298,11 +1298,11 @@ int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             }
 
 #if PHP_VERSION_ID >= 70200
-			case PDO_ATTR_DEFAULT_STR_PARAM:
-			{
-				ZVAL_LONG(return_value, (driver_dbh->use_national_characters == 0) ? PDO_PARAM_STR_CHAR : PDO_PARAM_STR_NATL);
-				break;
-			}
+            case PDO_ATTR_DEFAULT_STR_PARAM:
+            {
+                ZVAL_LONG(return_value, (driver_dbh->use_national_characters == 0) ? PDO_PARAM_STR_CHAR : PDO_PARAM_STR_NATL);
+                break;
+            }
 #endif
 
             default: 
@@ -1462,10 +1462,10 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
     PDO_LOG_DBH_ENTRY;
 
     SQLSRV_ENCODING encoding = SQLSRV_ENCODING_CHAR;
-	bool use_national_char_set = false;
-	
-	pdo_sqlsrv_dbh* driver_dbh = static_cast<pdo_sqlsrv_dbh*>(dbh->driver_data);
-	SQLSRV_ASSERT(driver_dbh != NULL, "pdo_sqlsrv_dbh_quote: driver_data object was NULL.");
+    bool use_national_char_set = false;
+
+    pdo_sqlsrv_dbh* driver_dbh = static_cast<pdo_sqlsrv_dbh*>(dbh->driver_data);
+    SQLSRV_ASSERT(driver_dbh != NULL, "pdo_sqlsrv_dbh_quote: driver_data object was NULL.");
 
     // get the current object in PHP; this distinguishes pdo_sqlsrv_dbh_quote being called from:
     // 1. PDO::quote() - object name is PDO
@@ -1495,18 +1495,11 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>(stmt->driver_data);
         SQLSRV_ASSERT(driver_stmt != NULL, "pdo_sqlsrv_dbh_quote: driver_data object was null");
 
-		encoding = driver_stmt->encoding();
-		if (encoding == SQLSRV_ENCODING_INVALID || encoding == SQLSRV_ENCODING_DEFAULT) {
-			pdo_sqlsrv_dbh* stmt_driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>(stmt->driver_data);
-			encoding = stmt_driver_dbh->encoding();
-		}
-        //if (driver_stmt->encoding() != SQLSRV_ENCODING_INVALID) {
-        //    encoding = driver_stmt->encoding();
-        //}
-        //else {
-        //    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->driver_data );
-        //    encoding = driver_dbh->encoding();
-        //}
+        encoding = driver_stmt->encoding();
+        if (encoding == SQLSRV_ENCODING_INVALID || encoding == SQLSRV_ENCODING_DEFAULT) {
+            pdo_sqlsrv_dbh* stmt_driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>(stmt->driver_data);
+            encoding = stmt_driver_dbh->encoding();
+        }
 
         // get the placeholder at the current position in driver_stmt->placeholders ht
         // Normally it's not a good idea to alter the internal pointer in a hashed array 
@@ -1529,19 +1522,14 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         }
     }
 
-	// The default encoding is taken into account too. PDO_PARAM_STR_CHAR or SQLSRV_ENCODING_CHAR should override the default.
-	//bool use_national_char_set = false;
-	//if (driver_dbh->use_national_characters || encoding == SQLSRV_ENCODING_UTF8) {
-	//	use_national_char_set = true;
-	//}
-	use_national_char_set = (driver_dbh->use_national_characters == 1 || encoding == SQLSRV_ENCODING_UTF8);
+    use_national_char_set = (driver_dbh->use_national_characters == 1 || encoding == SQLSRV_ENCODING_UTF8);
 #if PHP_VERSION_ID >= 70200
-	if ((paramtype & PDO_PARAM_STR_NATL) == PDO_PARAM_STR_NATL) {
-		use_national_char_set = true;
-	}
-	if ((paramtype & PDO_PARAM_STR_CHAR) == PDO_PARAM_STR_CHAR) {
-		use_national_char_set = false;
-	}
+    if ((paramtype & PDO_PARAM_STR_NATL) == PDO_PARAM_STR_NATL) {
+        use_national_char_set = true;
+    }
+    if ((paramtype & PDO_PARAM_STR_CHAR) == PDO_PARAM_STR_CHAR) {
+        use_national_char_set = false;
+    }
 #endif
 
     if ( encoding == SQLSRV_ENCODING_BINARY ) {
@@ -1588,8 +1576,7 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         // count the number of quotes needed
         unsigned int quotes_needed = 2;  // the initial start and end quotes of course
         // include the N proceeding the initial quote if encoding is UTF8
-        //if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-		if (use_national_char_set) {
+        if (use_national_char_set) {
             quotes_needed = 3;
         }
         for ( size_t index = 0; index < unquoted_len; ++index ) {
@@ -1603,8 +1590,7 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         unsigned int out_current = 0;
 
         // insert N if the encoding is UTF8
-        //if ( encoding == SQLSRV_ENCODING_UTF8 ) {
-		if (use_national_char_set) {
+        if (use_national_char_set) {
             ( *quoted )[out_current++] = 'N';
         }
         // insert initial quote
