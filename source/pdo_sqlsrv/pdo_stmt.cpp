@@ -1295,11 +1295,12 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 #if PHP_VERSION_ID >= 70200
                     if ((pdo_type & PDO_PARAM_STR_NATL) == PDO_PARAM_STR_NATL) {
                         pdo_type = pdo_type & ~PDO_PARAM_STR_NATL;
+                        LOG(SEV_NOTICE, "PHP Extended String type PDO_PARAM_STR_NATL set but is ignored.");
                     }
                     if ((pdo_type & PDO_PARAM_STR_CHAR) == PDO_PARAM_STR_CHAR) {
                         pdo_type = pdo_type & ~PDO_PARAM_STR_CHAR;
+                        LOG(SEV_NOTICE, "PHP Extended String type PDO_PARAM_STR_CHAR set but is ignored.");
                     }
-                    LOG(SEV_NOTICE, "PHP Extended String type set but is ignored.");
 #endif
 
                     // if the parameter is output or input/output, translate the type between the PDO::PARAM_* constant
