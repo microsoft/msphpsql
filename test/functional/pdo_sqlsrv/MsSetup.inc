@@ -49,4 +49,6 @@ $AKVPassword = 'TARGET_AKV_PASSWORD';             // for use with KeyVaultPasswo
 $AKVClientID = 'TARGET_AKV_CLIENT_ID';            // for use with KeyVaultClientSecret
 $AKVSecret = 'TARGET_AKV_CLIENT_SECRET';          // for use with KeyVaultClientSecret
 
+// for enclave computations
+$attestation = 'TARGET_ATTESTATION';
 ?>

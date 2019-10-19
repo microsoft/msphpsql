@@ -718,14 +718,14 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
 
     const char *pch = strchr(pstr, '}');
     size_t i = 0;
-    
+
     while (pch != NULL && i < value_len) {
         i = pch - pstr + 1;
-        
+
         if (i == value_len || (i < value_len && pstr[i] != '}')) {
             return false;
         }
-        
+
         i++;    // skip the brace
         pch = strchr(pch + 2, '}'); // continue searching
     }
@@ -783,7 +783,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 
     try {
         // Since connection options access token and authentication cannot coexist, check if both of them are used.
-        // If access token is specified, check UID and PWD as well. 
+        // If access token is specified, check UID and PWD as well.
         // No need to check the keyword Trusted_Connection because it is not among the acceptable options for SQLSRV drivers
         if (zend_hash_index_exists(options, SQLSRV_CONN_OPTION_ACCESS_TOKEN)) {
             bool invalidOptions = false;
@@ -801,7 +801,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
             access_token_used = true;
         }
 
-        // Check if Authentication is ActiveDirectoryMSI 
+        // Check if Authentication is ActiveDirectoryMSI
         // https://docs.microsoft.com/en-ca/azure/active-directory/managed-identities-azure-resources/overview
         bool activeDirectoryMSI = false;
         if (authentication_option_used) {
@@ -813,7 +813,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
             if (!stricmp(option, AzureADOptions::AZURE_AUTH_AD_MSI)) {
                 activeDirectoryMSI = true;
 
-                // There are two types of managed identities: 
+                // There are two types of managed identities:
                 // (1) A system-assigned managed identity: UID must be NULL
                 // (2) A user-assigned managed identity: UID defined but must not be an empty string
                 // In both cases, PWD must be NULL
@@ -832,11 +832,11 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                 }
             }
         }
-       
+
         // Add the server name
         common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
 
-        // If uid is not present then we use trusted connection -- but not when access token or ActiveDirectoryMSI is used, 
+        // If uid is not present then we use trusted connection -- but not when access token or ActiveDirectoryMSI is used,
         // because they are incompatible
         if (!access_token_used && !activeDirectoryMSI) {
             if (uid == NULL || strnlen_s(uid) == 0) {
@@ -1153,7 +1153,10 @@ void column_encryption_set_func::func( _In_ connection_option const* option, _In
     convert_to_string( value );
     const char* value_str = Z_STRVAL_P( value );
 
-    // Column Encryption is disabled by default unless it is explicitly 'Enabled'
+    // Column Encryption is disabled by default, but if it is present and not
+    // explicitly set to disabled or enabled, the ODBC driver will assume the
+    // user is providing an attestation protocol and URL for enclave support.
+    // For our purposes we need only set ce_option.enabled to true if not disabled.
     conn->ce_option.enabled = false;
     if ( stricmp(value_str, "disabled" )) {
         conn->ce_option.enabled = true;
@@ -1200,7 +1203,7 @@ void ce_akv_str_set_func::func(_In_ connection_option const* option, _In_ zval* 
         char *pValue = static_cast<char*>(sqlsrv_malloc(value_len + 1));
         memcpy_s(pValue, value_len + 1, value_str, value_len);
         pValue[value_len] = '\0';   // this makes sure there will be no trailing garbage
-        
+
         // This will free the existing memory block before assigning the new pointer -- the user might set the value(s) more than once
         if (option->conn_option_key == SQLSRV_CONN_OPTION_KEYSTORE_PRINCIPAL_ID) {
             conn->ce_option.akv_id = pValue;
@@ -1262,10 +1265,10 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     }
 
     const char* value_str = Z_STRVAL_P( value );
-    
-    // The SQL_COPT_SS_ACCESS_TOKEN pre-connection attribute allows the use of an access token (in the format extracted from 
-    // an OAuth JSON response), obtained from Azure AD for authentication instead of username and password, and also 
-    // bypasses the negotiation and obtaining of an access token by the driver. To use an access token, set the 
+
+    // The SQL_COPT_SS_ACCESS_TOKEN pre-connection attribute allows the use of an access token (in the format extracted from
+    // an OAuth JSON response), obtained from Azure AD for authentication instead of username and password, and also
+    // bypasses the negotiation and obtaining of an access token by the driver. To use an access token, set the
     // SQL_COPT_SS_ACCESS_TOKEN connection attribute to a pointer to an ACCESSTOKEN structure
     //
     //  typedef struct AccessToken
@@ -1276,30 +1279,30 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     //
     // NOTE: The ODBC Driver version 13.1 only supports this authentication on Windows.
     //
-    // A valid access token byte string must be expanded so that each byte is followed by a 0 padding byte, 
+    // A valid access token byte string must be expanded so that each byte is followed by a 0 padding byte,
     // similar to a UCS-2 string containing only ASCII characters
     //
     // See https://docs.microsoft.com/sql/connect/odbc/using-azure-active-directory#authenticating-with-an-access-token
 
     size_t dataSize = 2 * value_len;
-    
-    sqlsrv_malloc_auto_ptr<ACCESSTOKEN> accToken;   
+
+    sqlsrv_malloc_auto_ptr<ACCESSTOKEN> accToken;
     accToken = reinterpret_cast<ACCESSTOKEN*>(sqlsrv_malloc(sizeof(ACCESSTOKEN) + dataSize));
 
     ACCESSTOKEN *pAccToken = accToken.get();
     SQLSRV_ASSERT(pAccToken != NULL, "Something went wrong when trying to allocate memory for the access token.");
 
     pAccToken->dataSize = dataSize;
-    
+
     // Expand access token with padding bytes
     for (size_t i = 0, j = 0; i < dataSize; i += 2, j++) {
         pAccToken->data[i] = value_str[j];
         pAccToken->data[i+1] = 0;
     }
-    
+
     core::SQLSetConnectAttr(conn, SQL_COPT_SS_ACCESS_TOKEN, reinterpret_cast<SQLPOINTER>(pAccToken), SQL_IS_POINTER);
-    
-    // Save the pointer because SQLDriverConnect() will use it to make connection to the server 
+
+    // Save the pointer because SQLDriverConnect() will use it to make connection to the server
     conn->azure_ad_access_token = pAccToken;
     accToken.transferred();
 }
