@@ -2,7 +2,7 @@
 Test rich computations and in place encryption with AE v2.
 --DESCRIPTION--
 This test does the following:
-1. Create an encrypted table with two columns for each AE-supported data type.
+1. Create an encrypted table with two columns for each AE-supported data type, one encrypted and one not encrypted.
 2. Insert some data.
 3. Perform rich computations on each AE-enabled column (comparisons and pattern matching) and compare the result to the same query on the corresponding non-AE column for each data type.
 4. Ensure the two results are the same.
@@ -18,9 +18,13 @@ include("sqlsrv_AE_functions.inc");
 
 $initialAttestation = $attestation;
 
+// Create a table for each key and encryption type, re-encrypt using each
+// combination of target key and target encryption
 foreach ($keys as $key) {
     foreach ($encryptionTypes as $encryptionType) {
         
+        // $count is used to ensure we only run TestCompare and 
+        // TestPatternMatch once for the initial table
         $count = 0;
         $conn = connect($server, $attestation);
 
@@ -49,7 +53,7 @@ foreach ($keys as $key) {
                 if ($key == $targetKey and $encryptionType == $targetType)
                     continue;
                 
-                // Split the datsa type array, because for some reason we get an error
+                // Split the data type array, because for some reason we get an error
                 // if the query is too long (>2000 characters)
                 $splitDataTypes = array_chunk($dataTypes, 5);
                 $encryption_failed = false;

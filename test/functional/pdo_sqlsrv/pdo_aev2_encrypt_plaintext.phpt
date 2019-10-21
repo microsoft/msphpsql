@@ -19,9 +19,13 @@ include("pdo_AE_functions.inc");
 
 $initialAttestation = $attestation;
 
+// Create a table for each key and encryption type, re-encrypt using each
+// combination of target key and target encryption
 foreach ($keys as $key) {
     foreach ($encryptionTypes as $encryptionType) {
 
+        // $count is used to ensure we only run TestCompare and 
+        // TestPatternMatch once for the initial table
         $count = 0;
         $conn = connect($server, $attestation);
         
