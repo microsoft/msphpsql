@@ -75,7 +75,7 @@ try {
     $testCase = 'Test case 7: no extended string types (uses the default)';
     toEmulatePrepare($conn, PDO::PARAM_STR, $p1, $testCase);
 
-    // Test case 8: uses the default PDO::PARAM_STR_CHAR without specifying but specifies UTF 8 encoding
+    // Test case 8: uses the default PDO::PARAM_STR_CHAR without specifying but with UTF 8 encoding
     $testCase = 'Test case 8: no extended string types (uses the default) but with UTF-8 ';
     toEmulatePrepare($conn, PDO::PARAM_STR, $p, $testCase, true);
 
@@ -95,7 +95,7 @@ try {
     $testCase = 'Test case 11: no extended string types (uses the default)';
     toEmulatePrepare($conn, PDO::PARAM_STR, $p, $testCase);
     
-    // Test case 12: uses the default PDO::PARAM_STR_NATL without specifying but specifies UTF 8 encoding
+    // Test case 12: uses the default PDO::PARAM_STR_NATL without specifying but with UTF 8 encoding
     $testCase = 'Test case 12: no extended string types (uses the default) but with UTF-8';
     toEmulatePrepare($conn, PDO::PARAM_STR, $p, $testCase, true);
 
