@@ -19,6 +19,7 @@ function testErrorCase2($conn, $isChar)
         $error = '*An invalid attribute was designated on the PDOStatement object.';
         $pdoParam = ($isChar) ? PDO::PARAM_STR_CHAR : PDO::PARAM_STR_NATL;
         
+        // This will cause an exception because PDO::ATTR_DEFAULT_STR_PARAM is not a statement attribute
         $stmt->setAttribute(PDO::ATTR_DEFAULT_STR_PARAM, $pdoParam);
     } catch (PDOException $e) {
         if (!fnmatch($error, $e->getMessage())) {
@@ -33,6 +34,8 @@ function testErrorCase($attr)
     try {
         $conn = connect();
         $error = '*Invalid extended string type specified. PDO_ATTR_DEFAULT_STR_PARAM can be either PDO_PARAM_STR_CHAR or PDO_PARAM_STR_NATL.';
+
+        // This will cause an exception because PDO::ATTR_DEFAULT_STR_PARAM expects either PDO_PARAM_STR_CHAR or PDO_PARAM_STR_NATL only
         $conn->setAttribute(PDO::ATTR_DEFAULT_STR_PARAM, $attr);
     } catch (PDOException $e) {
         if (!fnmatch($error, $e->getMessage())) {

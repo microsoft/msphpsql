@@ -1,5 +1,5 @@
 --TEST--
-GitHub issue 1018 - Test PDO::prepare() with the extended string types
+GitHub issue 1018 - Test real prepared statements with the extended string types 
 --DESCRIPTION--
 This test verifies the extended string types, PDO::ATTR_DEFAULT_STR_PARAM, PDO::PARAM_STR_NATL and
 PDO::PARAM_STR_CHAR will NOT affect real prepared statements. Unlike emulate prepared statements,
