@@ -1,5 +1,5 @@
 /* DROP Column Encryption Keys first, Column Master Keys cannot be dropped until no CEKs depend on them */
-IF EXISTS (SELECT * FROM sys.column_encryption_keys WHERE [name] LIKE '%AEColumnKey%' OR [name] LIKE '%enclave%')
+IF EXISTS (SELECT * FROM sys.column_encryption_keys WHERE [name] LIKE '%AEColumnKey%' OR [name] LIKE '%-win-%')
 BEGIN
 DROP COLUMN ENCRYPTION KEY [AEColumnKey]
 DROP COLUMN ENCRYPTION KEY [CEK-win-enclave]
@@ -10,7 +10,7 @@ END
 GO
 
 /* Can finally drop Column Master Keys after the Column Encryption Keys are dropped */
-IF EXISTS (SELECT * FROM sys.column_master_keys WHERE [name] LIKE '%AEMasterKey%' OR [name] LIKE '%enclave%')
+IF EXISTS (SELECT * FROM sys.column_master_keys WHERE [name] LIKE '%AEMasterKey%' OR [name] LIKE '%-win-%')
 BEGIN
 DROP COLUMN MASTER KEY [AEMasterKey]
 DROP COLUMN MASTER KEY [CMK-win-enclave]
