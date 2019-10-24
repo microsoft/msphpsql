@@ -96,11 +96,11 @@ function createAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $sl
         if (dataTypeIsString($type)) {
             $query = $query.$colNames[$type]." ".$type."(".$slength.") NULL, \n    "; 
             $query = $query.$colNamesAE[$type]." ".$type."(".$slength.") \n    ";
-			$query = $query."  ".$collate." ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [".$key."], ENCRYPTION_TYPE = ".$encryptionType.", ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL,\n    ";
+            $query = $query."  ".$collate." ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [".$key."], ENCRYPTION_TYPE = ".$encryptionType.", ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL,\n    ";
         } else {
             $query = $query.$colNames[$type]." ".$type." NULL, \n    "; 
             $query = $query.$colNamesAE[$type]." ".$type." \n    ";
-			$query = $query."  ".$collate." ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [".$key."], ENCRYPTION_TYPE = ".$encryptionType.", ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL,\n    ";
+            $query = $query."  ".$collate." ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [".$key."], ENCRYPTION_TYPE = ".$encryptionType.", ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL,\n    ";
         }
     }
     
@@ -226,28 +226,37 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
         return;
     }
 
-    while($AEres = $AEstmt->fetch(PDO::FETCH_NUM)) {
-        $nonAEres = $nonAEstmt->fetch(PDO::FETCH_NUM);
-        
-        if (!$nonAEres) {
-            print_r($nonAEstmt->errorInfo);
-            die("Too many AE results!\n");
-        } else {
+    $AEres = $AEstmt->fetchAll(PDO::FETCH_NUM);
+    $nonAEres = $nonAEstmt->fetchAll(PDO::FETCH_NUM);
+    $AEcount = count($AEres);
+    $nonAEcount = count($nonAEres);
+    
+    if ($AEcount > $nonAEcount)
+    {
+        print_r("Too many AE results!\n");
+        print_r($AEres);
+        print_r($nonAEres);
+    }
+    else if ($AEcount < $nonAEcount)
+    {
+        print_r("Too many non-AE results!\n");
+        print_r($AEres);
+        print_r($nonAEres);
+    }
+    else
+    {
+        if ($AEcount != 0)
+        {
             $i = 0;
             foreach ($AEres as $AEr) {
-                if ($AEr != $nonAEres[$i]) {
-                    print_r("AE and non-AE results are different! For field $i, got AE result ".$AEres[$i]." and non-AE result ".$nonAEres[$i]."\n");
-                    print_r($AEstmt->errorInfo);
-                    print_r($nonAEstmt->errorInfo);
+                print_r($AEr[0]);echo "\n";
+                print_r($nonAEres[$i][0]);echo "\n";
+                if ($AEr[0] != $nonAEres[$i][0]) {
+                    print_r("AE and non-AE results are different! For field $i, got AE result ".$AEres[$i][0]." and non-AE result ".$nonAEres[$i][0]."\n");
                 }
                 ++$i;
             }
         }
-    }
-
-    if ($nonAEstmt->fetch()) {
-        print_r($nonAEstmt->errorInfo);
-        die("Too many non-AE results!\n");
     }
 }
 
@@ -318,9 +327,9 @@ function TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $
 
                 try {
                     $AEstmt = $conn->prepare($AEQuery);
-                    $AEstmt->bindParam(1, $thresholds[$type], $PDOType);
+                    $AEstmt->bindParam(1, $spattern, $PDOType);
                     $nonAEstmt = $conn->prepare($nonAEQuery);
-                    $nonAEstmt->bindParam(1, $thresholds[$type], $PDOType);
+                    $nonAEstmt->bindParam(1, $spattern, $PDOType);
                 } catch (PDOException $error) {
                     print_r($error);
                     die("Preparing/binding statements for comparison failed");

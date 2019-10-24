@@ -99,3 +99,5 @@ foreach ($keys as $key) {
 echo "Done.\n";
 
 ?>
+--EXPECT--
+Done.
