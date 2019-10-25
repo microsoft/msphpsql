@@ -6,7 +6,7 @@ $tableName = "aev2test";
 if ($keystore == 'win') {
     $keys = array("CEK-win-enclave", "CEK-win-noenclave");
     $targetKeys = array("CEK-win-enclave", "CEK-win-enclave2", "CEK-win-noenclave", "CEK-win-noenclave2");
-} else if ($keystore == 'akv') {
+} elseif ($keystore == 'akv') {
     $keys = array("CEK-akv-enclave", "CEK-akv-noenclave");
     $targetKeys = array("CEK-akv-enclave", "CEK-akv-enclave2", "CEK-akv-noenclave", "CEK-akv-noenclave2");
 }

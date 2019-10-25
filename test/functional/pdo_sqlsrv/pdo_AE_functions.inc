@@ -5,27 +5,27 @@ function connect($server, $attestation_info)
 {
     include("MsSetup.inc");
     $options = "sqlsrv:Server=$server;Database=$databaseName;ColumnEncryption=$attestation_info";
-                     
+
     if ($keystore == 'akv') {
-        
+
         $security_info = '';
         if ($AKVKeyStoreAuthentication == 'KeyVaultPassword') {
             $security_info .= ";KeyStoreAuthentication=$AKVKeyStoreAuthentication";
             $security_info .= ";KeyStorePrincipalId=$AKVPrincipalName";
             $security_info .= ";KeyStoreSecret=$AKVPassword";
-        } else if ($AKVKeyStoreAuthentication == 'KeyVaultClientSecret') {
+        } elseif ($AKVKeyStoreAuthentication == 'KeyVaultClientSecret') {
             $security_info .= ";KeyStoreAuthentication=$AKVKeyStoreAuthentication";
             $security_info .= ";KeyStorePrincipalId=$AKVClientID";
             $security_info .= ";KeyStoreSecret=$AKVSecret";
         }
-    
+
         $options .= $security_info;
     }
-    
-    $conn = new PDO($options, $uid, $pwd);    
+
+    $conn = new PDO($options, $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
-    
+
     // Check that enclave computations are enabled
     // See https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/configure-always-encrypted-enclaves?view=sqlallproducts-allversions#configure-a-secure-enclave
     $query = "SELECT [name], [value], [value_in_use] FROM sys.configurations WHERE [name] = 'column encryption enclave type';";
@@ -34,29 +34,29 @@ function connect($server, $attestation_info)
     if ($info['value'] != 1 or $info['value_in_use'] != 1) {
         die("Error: enclave computations are not enabled on the server!");
     }
-    
+
     // Free the encryption cache to avoid spurious 'operand type clash' errors
     $conn->exec("DBCC FREEPROCCACHE");
 
     return $conn;
 }
 
-// This CREATE TABLE query simply creates a non-encrypted table with 
+// This CREATE TABLE query simply creates a non-encrypted table with
 // two columns for each data type side by side
 function createCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength)
 {
     $query = "CREATE TABLE ".$tableName." (\n    ";
     foreach ($dataTypes as $type) {
-        
+
         if (dataTypeIsString($type)) {
-            $query = $query.$colNames[$type]." ".$type."(".$slength."), \n    "; 
+            $query = $query.$colNames[$type]." ".$type."(".$slength."), \n    ";
             $query = $query.$colNamesAE[$type]." ".$type."(".$slength."), \n    ";
         } else {
-            $query = $query.$colNames[$type]." ".$type.", \n    "; 
+            $query = $query.$colNames[$type]." ".$type.", \n    ";
             $query = $query.$colNamesAE[$type]." ".$type.", \n    ";
         }
     }
-    
+
     $query = substr($query, 0, -7)."\n)";
 
     return $query;
@@ -68,42 +68,42 @@ function constructAlterQuery($tableName, $colNames, $dataTypes, $key, $encryptio
 {
     $query = '';
     foreach ($dataTypes as $dataType) {
-        
+
         $plength = dataTypeIsString($dataType) ? "(".$slength.")" : "";
         $collate = dataTypeNeedsCollate($dataType) ? " COLLATE Latin1_General_BIN2" : "";
         $query = $query." ALTER TABLE [dbo].[".$tableName."]
-                          ALTER COLUMN [".$colNames[$dataType]."] ".$dataType.$plength." ".$collate." 
+                          ALTER COLUMN [".$colNames[$dataType]."] ".$dataType.$plength." ".$collate."
                           ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [".$key."], ENCRYPTION_TYPE = ".$encryptionType.", ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NOT NULL
                           WITH
                           (ONLINE = ON);";
     }
-    
+
     $query = $query." ALTER DATABASE SCOPED CONFIGURATION CLEAR PROCEDURE_CACHE;";
 
     return $query;
 }
 
-// This CREATE TABLE query creates a table with two columns for 
+// This CREATE TABLE query creates a table with two columns for
 // each data type side by side, one plaintext and one encrypted
 function createAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType)
 {
     $query = "CREATE TABLE ".$tableName." (\n    ";
 
     foreach ($dataTypes as $type) {
-        
+
         $collate = dataTypeNeedsCollate($type) ? " COLLATE Latin1_General_BIN2" : "";
-        
+
         if (dataTypeIsString($type)) {
-            $query = $query.$colNames[$type]." ".$type."(".$slength.") NULL, \n    "; 
+            $query = $query.$colNames[$type]." ".$type."(".$slength.") NULL, \n    ";
             $query = $query.$colNamesAE[$type]." ".$type."(".$slength.") \n    ";
             $query = $query."  ".$collate." ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [".$key."], ENCRYPTION_TYPE = ".$encryptionType.", ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL,\n    ";
         } else {
-            $query = $query.$colNames[$type]." ".$type." NULL, \n    "; 
+            $query = $query.$colNames[$type]." ".$type." NULL, \n    ";
             $query = $query.$colNamesAE[$type]." ".$type." \n    ";
             $query = $query."  ".$collate." ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [".$key."], ENCRYPTION_TYPE = ".$encryptionType.", ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL,\n    ";
         }
     }
-    
+
     $query = substr($query, 0, -6)."\n)";
 
     return $query;
@@ -135,7 +135,7 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues)
 {
     for ($v = 0; $v < sizeof($testValues['bigint']); ++$v) {
         $insertValues = array();
-        
+
         foreach ($dataTypes as $type) {
             $insertValues[] = $testValues[$type][$v];
             $insertValues[] = $testValues[$type][$v];
@@ -155,7 +155,7 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues)
 // compareResults checks that the results between the encrypted and non-encrypted
 // columns are identical if statement execution succeeds. If statement execution
 // fails, this function checks for the correct error.
-function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, $comparison='')
+function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, $comparison='', $type='')
 {
     try {
         $nonAEstmt->execute();
@@ -163,7 +163,7 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
         print_r($error);
         die("Executing non-AE statement failed!\n");
     }
-    
+
     try {
         $AEstmt->execute();
     } catch(Exception $error) {
@@ -176,17 +176,17 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
                     $e = $error->errorInfo;
                     checkErrors($e, array('42000', '33277'));
                 }
-            } else if (isEnclaveEnabled($key)) {
+            } elseif (isEnclaveEnabled($key)) {
                 $e = $error->errorInfo;
                 checkErrors($e, array('42000', '33546'));
-            } else if (!isEnclaveEnabled($key)) {
+            } elseif (!isEnclaveEnabled($key)) {
                 $e = $error->errorInfo;
                 checkErrors($e, array('42000', '33277'));
             } else {
                 print_r($error);
                 die("AE statement execution when it shouldn't!");
             }
-        } else if ($attestation == 'wrongurl') {
+        } elseif ($attestation == 'wrongurl') {
             if ($encryptionType == 'Deterministic') {
                 if ($comparison == '=') {
                     $e = $error->errorInfo;
@@ -195,21 +195,21 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
                     $e = $error->errorInfo;
                     checkErrors($e, array('42000', '33277'));
                 }
-            } else if (isEnclaveEnabled($key)) {
+            } elseif (isEnclaveEnabled($key)) {
                 $e = $error->errorInfo;
                 checkErrors($e, array('CE405', '0'));
-            } else if (!isEnclaveEnabled($key)) {
+            } elseif (!isEnclaveEnabled($key)) {
                 $e = $error->errorInfo;
                 checkErrors($e, array('42000', '33277'));
             } else {
                 print_r($error);
                 die("AE statement execution when it shouldn't!");
             }
-        } else if ($attestation == 'correct') {
+        } elseif ($attestation == 'correct') {
             if (!isEnclaveEnabled($key) and $encryptionType == 'Randomized') {
                 $e = $error->errorInfo;
                 checkErrors($e, array('42000', '33277'));
-            } else if ($encryptionType == 'Deterministic') {
+            } elseif ($encryptionType == 'Deterministic') {
                 if ($comparison == '=') {
                     print_r($error);
                     die("Equality comparison failed for deterministic encryption!\n");
@@ -221,8 +221,11 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
                 print_r($error);
                 die("Comparison failed for correct attestation when it shouldn't have!\n");
             }
+        } else {
+            print_r($error);
+            die("Unexpected error occurred in compareResults!\n");
         }
-        
+
         return;
     }
 
@@ -230,27 +233,23 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
     $nonAEres = $nonAEstmt->fetchAll(PDO::FETCH_NUM);
     $AEcount = count($AEres);
     $nonAEcount = count($nonAEres);
-    
-    if ($AEcount > $nonAEcount)
-    {
+
+    if ($type == 'char' or $type == 'nchar') {
+        // char and nchar may not return the same results - at this point
+        // we've verified that statement execution works so just return
+        return;
+    } elseif ($AEcount > $nonAEcount) {
         print_r("Too many AE results!\n");
         print_r($AEres);
         print_r($nonAEres);
-    }
-    else if ($AEcount < $nonAEcount)
-    {
+    } elseif ($AEcount < $nonAEcount) {
         print_r("Too many non-AE results!\n");
         print_r($AEres);
         print_r($nonAEres);
-    }
-    else
-    {
-        if ($AEcount != 0)
-        {
+    } else {
+        if ($AEcount != 0) {
             $i = 0;
             foreach ($AEres as $AEr) {
-                print_r($AEr[0]);echo "\n";
-                print_r($nonAEres[$i][0]);echo "\n";
                 if ($AEr[0] != $nonAEres[$i][0]) {
                     print_r("AE and non-AE results are different! For field $i, got AE result ".$AEres[$i][0]." and non-AE result ".$nonAEres[$i][0]."\n");
                 }
@@ -267,16 +266,16 @@ function TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
 {
     foreach ($comparisons as $comparison) {
         foreach ($dataTypes as $type) {
-            
+
             // Unicode data types require the PHPTYPE to be specified to UTF-8 string
             // and the correct collation. Otherwise we get different results between
-            // the encrypted and non-encrypted columns (probably because the collation 
+            // the encrypted and non-encrypted columns (probably because the collation
             // was only changed in the encryption query).
             $string = dataTypeIsStringMax($type);
             $collate = $string ? " COLLATE Latin1_General_BIN2" : "";
             $unicode = dataTypeIsUnicode($type);
-            $PDOType = GetPDOType($type);
-            
+            $PDOType = getPDOType($type);
+
             $AEQuery = "SELECT ".$colNames[$type]."_AE FROM $tableName WHERE ".$colNames[$type]."_AE ".$comparison." ?".$collate;
             $nonAEQuery = "SELECT ".$colNames[$type]." FROM $tableName WHERE ".$colNames[$type]." ".$comparison." ?".$collate;
 
@@ -301,26 +300,26 @@ function TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
 function TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $key, $encryptionType, $attestation)
 {
     foreach ($dataTypes as $type) {
-        
+
         // Pattern matching doesn't work in AE for non-string types
         // without an explicit cast
         if (!dataTypeIsStringMax($type)) {
             continue;
         }
-        
+
         foreach ($patterns[$type] as $pattern) {
-            
+
             $patternArray = array($pattern,
                                   $pattern."%",
                                   "%".$pattern,
                                   "%".$pattern."%",
                                   );
-            
+
             foreach ($patternArray as $spattern) {
-                
+
                 $unicode = dataTypeIsUnicode($type);
                 $collate = $unicode ? " COLLATE Latin1_General_BIN2" : "";
-                $PDOType = GetPDOType($type);
+                $PDOType = getPDOType($type);
 
                 $AEQuery = "SELECT ".$colNames[$type]."_AE FROM $tableName WHERE ".$colNames[$type]."_AE LIKE ?".$collate;
                 $nonAEQuery = "SELECT ".$colNames[$type]." FROM $tableName WHERE ".$colNames[$type]." LIKE ?".$collate;
@@ -335,7 +334,7 @@ function TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $
                     die("Preparing/binding statements for comparison failed");
                 }
 
-                compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation);
+                compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, '', $type);
             }
         }
     }
@@ -399,7 +398,7 @@ function dataTypeIsUnicode($dataType)
         return false;
 }
 
-function GetPDOType($type)
+function getPDOType($type)
 {
     switch($type) {
         case "bigint":
@@ -439,11 +438,11 @@ function GetPDOType($type)
             return PDO::PARAM_LOB;
             break;
         default:
-            die("Case is missing for $type type in GetPDOType.\n");
+            die("Case is missing for $type type in getPDOType.\n");
     }
 }
 
-function GetSQLType($type, $length)
+function getSQLType($type, $length)
 {
     switch($type) {
         case "bigint":
@@ -526,7 +525,7 @@ function GetSQLType($type, $length)
             return SQLSRV_SQLTYPE_BIGINT;
             break;
         default:
-            die("Case is missing for $type type in GetSQLType.\n");
+            die("Case is missing for $type type in getSQLType.\n");
     }
 }
 

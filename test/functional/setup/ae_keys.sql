@@ -19,6 +19,8 @@ END
 GO
 
 /* Create the Column Master Keys */
+/* AKVMasterKey is a non-enclave enabled key for AE v1 testing */
+/* The enclave-enabled master key requires an ENCLAVE_COMPUTATIONS clause */
 CREATE COLUMN MASTER KEY [AEMasterKey]
 WITH
 (
@@ -54,6 +56,9 @@ WITH VALUES
 )
 GO
 
+/* There are two enclave enabled keys and two non-enclave enabled keys to test the case where a user
+   tries to reencrypt a table from one enclave enabled key to another enclave enabled key, or from a
+   non-enclave key to another non-enclave key */
 CREATE COLUMN ENCRYPTION KEY [CEK-win-enclave]
 WITH VALUES
 (
