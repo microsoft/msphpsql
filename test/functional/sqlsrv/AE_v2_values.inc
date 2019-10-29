@@ -3,6 +3,10 @@ include("MsSetup.inc");
 
 $tableName = "aev2test";
 
+// Names of the encryption keys, depending on whether we are using Windows
+// or AKV authentication (defined in MsSetup.inc). -enclave keys are enclave
+// enabled, -noenclave keys are not enclave enabled.
+// $targetKeys are the keys used for re-encrypting encrypted columns
 if ($keystore == 'win') {
     $keys = array("CEK-win-enclave", "CEK-win-noenclave");
     $targetKeys = array("CEK-win-enclave", "CEK-win-enclave2", "CEK-win-noenclave", "CEK-win-noenclave2");
@@ -11,11 +15,16 @@ if ($keystore == 'win') {
     $targetKeys = array("CEK-akv-enclave", "CEK-akv-enclave2", "CEK-akv-noenclave", "CEK-akv-noenclave2");
 }
 
+// $targetTypes are the encryption types used for re-encrypting encrypted columns
 $encryptionTypes = array("Randomized", "Deterministic");
 $targetTypes = array("Deterministic", "Randomized");
+
+// Length of the string-type columns. $slength is length as a string instead of integer
 $length = 64;
 $slength = '64';
 
+// Testing the following data types.
+// TODO: Add binary string types and fix smalldatetime issues.
 $dataTypes = array('integer',
                    'bigint',
                    'smallint',
@@ -41,6 +50,8 @@ $dataTypes = array('integer',
                    //'smalldatetime',
                     );
 
+// Construct the array of column names. Two columns for each data type,
+// one encrypted (suffixed _AE) and one not encrypted.
 $colNames = array();
 $colNamesAE = array();
 
@@ -50,6 +61,7 @@ foreach ($dataTypes as $type) {
     $colNamesAE[$type] = "c_".$column."_AE";
 }
 
+// The test data below is a mixture of random data and edge cases
 $testValues = array();
 
 // integers

@@ -22,17 +22,17 @@ $initialAttestation = $attestation;
 foreach ($keys as $key) {
     foreach ($encryptionTypes as $encryptionType) {
 
-        // $count is used to ensure we only run TestCompare and 
-        // TestPatternMatch once for the initial table
+        // $count is used to ensure we only run testCompare and
+        // testPatternMatch once for the initial table
         $count = 0;
         foreach ($targetKeys as $targetKey) {
             foreach ($targetTypes as $targetType) {
-                
+
                 $conn = connect($server, $initialAttestation);
 
                 // Create an encrypted table
-                $createQuery = createAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType);
-                $insertQuery = formulateSetupQuery($tableName, $dataTypes, $colNames, $colNamesAE);
+                $createQuery = constructAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType);
+                $insertQuery = constructInsertQuery($tableName, $dataTypes, $colNames, $colNamesAE);
 
                 try {
                     $stmt = $conn->query("DROP TABLE IF EXISTS $tableName");
@@ -44,22 +44,22 @@ foreach ($keys as $key) {
 
                 insertValues($conn, $insertQuery, $dataTypes, $testValues);
                 unset($conn);
-                
+
                 // Reconnect with a faulty attestation URL
                 $comma = strpos($attestation, ',');
                 $newAttestation = substr_replace($attestation, 'x', $comma+1, 0);
 
                 $conn = connect($server, $newAttestation);
 
-                if ($count == 0) TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'wrongurl');
-                if ($count == 0) TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $key, $encryptionType, 'wrongurl');
+                if ($count == 0) testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $key, $encryptionType, 'wrongurl');
+                if ($count == 0) testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'wrongurl');
                 ++$count;
-                
+
                 if ($key == $targetKey and $encryptionType == $targetType)
                     continue;
 
                 $alterQuery = constructAlterQuery($tableName, $colNamesAE, $dataTypes, $targetKey, $targetType, $slength);
-                
+
                 try {
                     $stmt = $conn->query($alterQuery);
 

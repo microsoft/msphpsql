@@ -22,20 +22,20 @@ $initialAttestation = $attestation;
 // combination of target key and target encryption
 foreach ($keys as $key) {
     foreach ($encryptionTypes as $encryptionType) {
-        
-        // $count is used to ensure we only run TestCompare and 
-        // TestPatternMatch once for the initial table
+
+        // $count is used to ensure we only run testCompare and
+        // testPatternMatch once for the initial table
         $count = 0;
         $conn = connect($server, $attestation);
 
         foreach ($targetKeys as $targetKey) {
             foreach ($targetTypes as $targetType) {
-                
+
                 sqlsrv_query($conn, "DBCC FREEPROCCACHE");
 
                 // Create an encrypted table
-                $createQuery = createAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType);
-                $insertQuery = formulateSetupQuery($tableName, $dataTypes, $colNames, $colNamesAE);
+                $createQuery = constructAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType);
+                $insertQuery = constructInsertQuery($tableName, $dataTypes, $colNames, $colNamesAE);
 
                 $stmt = sqlsrv_query($conn, "DROP TABLE IF EXISTS $tableName");
                 $stmt = sqlsrv_query($conn, $createQuery);
@@ -46,23 +46,23 @@ foreach ($keys as $key) {
 
                 insertValues($conn, $insertQuery, $dataTypes, $testValues);
 
-                if ($count == 0) TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'correct');
-                if ($count == 0) TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $key, $encryptionType, 'correct');
+                if ($count == 0) testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'correct');
+                if ($count == 0) testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'correct');
                 ++$count;
-        
+
                 if ($key == $targetKey and $encryptionType == $targetType)
                     continue;
-                
+
                 // Split the data type array, because for some reason we get an error
                 // if the query is too long (>2000 characters)
                 $splitDataTypes = array_chunk($dataTypes, 5);
                 $encryption_failed = false;
-                
+
                 foreach ($splitDataTypes as $split) {
-                    
+
                     $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $targetKey, $targetType, $slength);
                     $stmt = sqlsrv_query($conn, $alterQuery);
-                    
+
                     if(!$stmt) {
                         if (!isEnclaveEnabled($key) or !isEnclaveEnabled($targetKey)) {
                             $e = sqlsrv_errors();
@@ -73,7 +73,7 @@ foreach ($keys as $key) {
                             print_r(sqlsrv_errors());
                             die("Encrypting failed when it shouldn't have! key = $targetKey and type = $targetType\n");
                         }
-                        
+
                         continue;
                     } else {
                         if (!isEnclaveEnabled($key) or !isEnclaveEnabled($targetKey)) {
@@ -81,10 +81,10 @@ foreach ($keys as $key) {
                         }
                     }
                 }
-                
+
                 if ($encryption_failed) continue;
-                TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, 'correct');
-                TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $targetKey, $targetType, 'correct');
+                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, 'correct');
+                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $targetKey, $targetType, 'correct');
             }
         }
     }

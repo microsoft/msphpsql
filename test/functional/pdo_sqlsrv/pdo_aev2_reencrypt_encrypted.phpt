@@ -23,19 +23,19 @@ $initialAttestation = $attestation;
 foreach ($keys as $key) {
     foreach ($encryptionTypes as $encryptionType) {
 
-        // $count is used to ensure we only run TestCompare and 
-        // TestPatternMatch once for the initial table
+        // $count is used to ensure we only run testCompare and
+        // testPatternMatch once for the initial table
         $count = 0;
         $conn = connect($server, $attestation);
 
         foreach ($targetKeys as $targetKey) {
             foreach ($targetTypes as $targetType) {
-                
+
                 $conn->query("DBCC FREEPROCCACHE");
 
                 // Create an encrypted table
-                $createQuery = createAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType);
-                $insertQuery = formulateSetupQuery($tableName, $dataTypes, $colNames, $colNamesAE);
+                $createQuery = constructAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType);
+                $insertQuery = constructInsertQuery($tableName, $dataTypes, $colNames, $colNamesAE);
 
                 try {
                     $stmt = $conn->query("DROP TABLE IF EXISTS $tableName");
@@ -47,20 +47,20 @@ foreach ($keys as $key) {
 
                 insertValues($conn, $insertQuery, $dataTypes, $testValues);
 
-                if ($count == 0) TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'correct');
-                if ($count == 0) TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $key, $encryptionType, 'correct');
+                if ($count == 0) testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $key, $encryptionType, 'correct');
+                if ($count == 0) testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'correct');
                 ++$count;
-        
+
                 if ($key == $targetKey and $encryptionType == $targetType)
                     continue;
-                
+
                 // Split the data type array, because for some reason we get an error
                 // if the query is too long (>2000 characters)
                 $splitDataTypes = array_chunk($dataTypes, 5);
                 $encryption_failed = false;
                 foreach ($splitDataTypes as $split) {
                     $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $targetKey, $targetType, $slength);
-                    
+
                     try {
                         $stmt = $conn->query($alterQuery);
                         if (!isEnclaveEnabled($key) or !isEnclaveEnabled($targetKey)) {
@@ -76,15 +76,15 @@ foreach ($keys as $key) {
                             print_r($error);
                             die("Encrypting failed when it shouldn't have! key = $targetKey and type = $targetType\n");
                         }
-                        
+
                         continue;
                     }
                 }
-                
+
                 if ($encryption_failed) continue;
-                
-                TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, 'correct');
-                TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $targetKey, $targetType, 'correct');
+
+                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $targetKey, $targetType, 'correct');
+                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $targetKey, $targetType, 'correct');
             }
         }
     }

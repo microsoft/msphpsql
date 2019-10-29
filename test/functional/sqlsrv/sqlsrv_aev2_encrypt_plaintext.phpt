@@ -24,20 +24,20 @@ $initialAttestation = $attestation;
 foreach ($keys as $key) {
     foreach ($encryptionTypes as $encryptionType) {
 
-        // $count is used to ensure we only run TestCompare and 
-        // TestPatternMatch once for the initial table
+        // $count is used to ensure we only run testCompare and
+        // testPatternMatch once for the initial table
         $count = 0;
         $conn = connect($server, $attestation);
 
         foreach ($targetKeys as $targetKey) {
             foreach ($targetTypes as $targetType) {
-                
+
                 sqlsrv_query($conn, "DBCC FREEPROCCACHE");
 
                 // Create and populate a non-encrypted table
-                $createQuery = createCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength);
-                $insertQuery = formulateSetupQuery($tableName, $dataTypes, $colNames, $colNamesAE);
-                
+                $createQuery = constructCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength);
+                $insertQuery = constructInsertQuery($tableName, $dataTypes, $colNames, $colNamesAE);
+
                 $stmt = sqlsrv_query($conn, "DROP TABLE IF EXISTS $tableName");
                 $stmt = sqlsrv_query($conn, $createQuery);
                 if(!$stmt) {
@@ -48,7 +48,7 @@ foreach ($keys as $key) {
                 insertValues($conn, $insertQuery, $dataTypes, $testValues);
 
                 if ($count == 0) {
-                    
+
                     // Split the data type array, because for some reason we get an error
                     // if the query is too long (>2000 characters)
                     $splitDataTypes = array_chunk($dataTypes, 5);
@@ -58,7 +58,7 @@ foreach ($keys as $key) {
 
                         $stmt = sqlsrv_query($conn, $alterQuery);
                         $encryption_failed = false;
-                        
+
                         if(!$stmt) {
                             if (!isEnclaveEnabled($key)) {
                                 $e = sqlsrv_errors();
@@ -76,11 +76,11 @@ foreach ($keys as $key) {
                         }
                     }
                 }
-                
+
                 if ($encryption_failed) continue;
 
-                if ($count == 0) TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'correct');
-                if ($count == 0) TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $key, $encryptionType, 'correct');
+                if ($count == 0) testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'correct');
+                if ($count == 0) testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'correct');
                 ++$count;
 
                 if ($key == $targetKey and $encryptionType == $targetType)
@@ -108,11 +108,11 @@ foreach ($keys as $key) {
                         }
                     }
                 }
-                
+
                 if ($encryption_failed) continue;
-                
-                TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, 'correct');
-                TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $targetKey, $targetType, 'correct');
+
+                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, 'correct');
+                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $targetKey, $targetType, 'correct');
             }
         }
     }

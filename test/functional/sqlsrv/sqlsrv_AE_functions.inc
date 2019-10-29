@@ -22,6 +22,8 @@ function connect($server, $attestation_info)
                                    'KeyStorePrincipalId'=>$AKVClientID,
                                    'KeyStoreSecret'=>$AKVSecret,
                                    );
+        } else {
+            die("Incorrect value for KeyStoreAuthentication keyword!\n");
         }
 
         $options = array_merge($options, $security_info);
@@ -53,7 +55,12 @@ function connect($server, $attestation_info)
 
 // This CREATE TABLE query simply creates a non-encrypted table with
 // two columns for each data type side by side
-function createCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength)
+// This produces a query that looks like
+// CREATE TABLE aev2test2 (
+//     c_integer integer,
+//     c_integer_AE integer
+// )
+function constructCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength)
 {
     $query = "CREATE TABLE ".$tableName." (\n    ";
 
@@ -67,6 +74,7 @@ function createCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slen
         }
     }
 
+    // Remove the ", \n    " from the end of the query or the comma will cause a syntax error
     $query = substr($query, 0, -7)."\n)";
 
     return $query;
@@ -74,6 +82,16 @@ function createCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slen
 
 // The ALTER TABLE query encrypts columns. Each ALTER COLUMN directive must
 // be preceded by ALTER TABLE
+// This produces a query that looks like
+// ALTER TABLE [dbo].[aev2test2]
+//     ALTER COLUMN [c_integer_AE] integer
+//     ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK-win-enclave], ENCRYPTION_TYPE = Randomized, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NOT NULL
+//     WITH
+//     (ONLINE = ON); ALTER TABLE [dbo].[aev2test2]
+//     ALTER COLUMN [c_bigint_AE] bigint
+//     ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK-win-enclave], ENCRYPTION_TYPE = Randomized, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NOT NULL
+//     WITH
+//     (ONLINE = ON); ALTER DATABASE SCOPED CONFIGURATION CLEAR PROCEDURE_CACHE;
 function constructAlterQuery($tableName, $colNames, $dataTypes, $key, $encryptionType, $slength)
 {
     $query = '';
@@ -95,7 +113,13 @@ function constructAlterQuery($tableName, $colNames, $dataTypes, $key, $encryptio
 
 // This CREATE TABLE query creates a table with two columns for
 // each data type side by side, one plaintext and one encrypted
-function createAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType)
+// This produces a query that looks like
+// CREATE TABLE aev2test2 (
+//     c_integer integer NULL,
+//     c_integer_AE integer
+//       COLLATE Latin1_General_BIN2   ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK-win-enclave], ENCRYPTION_TYPE = Randomized, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL
+// )
+function constructAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType)
 {
     $query = "CREATE TABLE ".$tableName." (\n    ";
 
@@ -113,13 +137,14 @@ function createAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $sl
         }
     }
 
+    // Remove the ",\n    " from the end of the query or the comma will cause a syntax error
     $query = substr($query, 0, -6)."\n)";
 
     return $query;
 }
 
 // The INSERT query for the table
-function formulateSetupQuery($tableName, &$dataTypes, &$colNames, &$colNamesAE)
+function constructInsertQuery($tableName, &$dataTypes, &$colNames, &$colNamesAE)
 {
     $queryTypes = "(";
     $valuesString = "VALUES (";
@@ -132,6 +157,7 @@ function formulateSetupQuery($tableName, &$dataTypes, &$colNames, &$colNamesAE)
         $valuesString .= "?, ?, ";
     }
 
+    // Remove the ", " from the end of the query or the comma will cause a syntax error
     $queryTypes = substr($queryTypes, 0, -2).")";
     $valuesString = substr($valuesString, 0, -2).")";
 
@@ -168,6 +194,14 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues)
 // compareResults checks that the results between the encrypted and non-encrypted
 // columns are identical if statement execution succeeds. If statement execution
 // fails, this function checks for the correct error.
+// Arguments:
+// statement $AEstmt: Prepared statement fetching encrypted data
+// statement $nonAEstmt: Prepared statement fetching non-encrypted data
+// string   $key: Name of the encryption key
+// string   $encryptionType: Type of encryption, randomized or deterministic
+// string   $attestation: Type of attestation - 'correct', 'enabled', or 'wrongurl'
+// string   $comparison: Comparison operator
+// string   $type: Data type the comparison is operating on
 function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, $comparison='', $type='')
 {
     if (!sqlsrv_execute($nonAEstmt)) {
@@ -231,6 +265,7 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
     } else {
         // char and nchar may not return the same results - at this point
         // we've verified that statement execution works so just return
+        // TODO: Check if this bug is fixed and if so, remove this if block
         if ($type == 'char' or $type == 'nchar') {
             return;
         }
@@ -240,12 +275,12 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
             if (!$nonAEres) {
                 print_r($AEres);
                 print_r(sqlsrv_errors());
-                print_r("Too many AE results!\n");
+                print_r("Too many AE results for operation $comparison and data type $type!\n");
             } else {
                 $i = 0;
                 foreach ($AEres as $AEr) {
                     if ($AEr != $nonAEres[$i]) {
-                        print_r("AE and non-AE results are different! For field $i, got AE result ".$AEres[$i]." and non-AE result ".$nonAEres[$i]."\n");
+                        print_r("AE and non-AE results are different for operation $comparison and data type $type! For field $i, got AE result ".$AEres[$i]." and non-AE result ".$nonAEres[$i]."\n");
                         print_r(sqlsrv_errors());
                     }
                     ++$i;
@@ -256,7 +291,7 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
         if ($rr = sqlsrv_fetch_array($nonAEstmt)) {
             print_r($rr);
             print_r(sqlsrv_errors());
-            print_r("Too many non-AE results!\n");
+            print_r("Too many non-AE results for operation $comparison and data type $type!\n");
         }
     }
 }
@@ -264,7 +299,18 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
 // testCompare selects based on a comparison in the WHERE clause and compares
 // the results between encrypted and non-encrypted columns, checking that the
 // results are identical
-function TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, $attestation)
+// Arguments:
+// resource $conn: The connection
+// string   $tableName: Thable name
+// array    $comparisons: Comparison operations from AE_v2_values.inc
+// array    $dataTypes: Data types from AE_v2_values.inc
+// array    $colNames: Column names
+// array    $thresholds: Values to use comparison operators against, from AE_v2_values.inc
+// string   $key: Name of the encryption key
+// integer  $length: Length of the string types, from AE_v2_values.inc
+// string   $encryptionType: Type of encryption, randomized or deterministic
+// string   $attestation: Type of attestation - 'correct', 'enabled', or 'wrongurl'
+function testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, $attestation)
 {
     foreach ($comparisons as $comparison) {
         foreach ($dataTypes as $type) {
@@ -294,7 +340,7 @@ function TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
                 die("Preparing non-AE statement for comparison failed! Comparison $comparison, type $type\n");
             }
 
-            compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, $comparison);
+            compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, $comparison, $type);
         }
     }
 }
@@ -302,8 +348,10 @@ function TestCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
 // testPatternMatch selects based on a pattern in the WHERE clause and compares
 // the results between encrypted and non-encrypted columns, checking that the
 // results are identical
-function TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $length, $key, $encryptionType, $attestation)
+function testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, $attestation)
 {
+    // TODO: Pattern matching doesn't work in AE for non-string types
+    // without an explicit cast
     foreach ($dataTypes as $type) {
         if (!dataTypeIsStringMax($type)) {
             continue;
@@ -344,12 +392,13 @@ function TestPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $
                     die("Preparing non-AE statement for comparison failed! Comparison $comparison, type $type\n");
                 }
 
-                compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, '', $type);
+                compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, $pattern, $type);
             }
         }
     }
 }
 
+// Check that the expected errors ($codes) is found in the output of sqlsrv_errors() ($errors)
 function checkErrors($errors, ...$codes)
 {
     $codeFound = false;
@@ -357,6 +406,7 @@ function checkErrors($errors, ...$codes)
     foreach ($codes as $code) {
         if ($code[0]==$errors[0][0] and $code[1]==$errors[0][1]) {
             $codeFound = true;
+            break;
         }
     }
 
@@ -372,40 +422,27 @@ function checkErrors($errors, ...$codes)
 
 function isEnclaveEnabled($key)
 {
-    if (strpos($key, '-enclave') !== false) return true;
-    else return false;
+    return (strpos($key, '-enclave') !== false);
 }
 
 function dataTypeIsString($dataType)
 {
-    if (in_array($dataType, ["binary", "varbinary", "char", "nchar", "varchar", "nvarchar"]))
-        return true;
-    else
-        return false;
+    return (in_array($dataType, ["binary", "varbinary", "char", "nchar", "varchar", "nvarchar"]));
 }
 
 function dataTypeIsStringMax($dataType)
 {
-    if (in_array($dataType, ["binary", "varbinary", "char", "nchar", "varchar", "nvarchar", "varchar(max)", "nvarchar(max)"]))
-        return true;
-    else
-        return false;
+    return (in_array($dataType, ["binary", "varbinary", "char", "nchar", "varchar", "nvarchar", "varchar(max)", "nvarchar(max)"]));
 }
 
 function dataTypeNeedsCollate($dataType)
 {
-    if (in_array($dataType, ["char", "nchar", "varchar", "nvarchar", "varchar(max)", "nvarchar(max)"]))
-        return true;
-    else
-        return false;
+    return (in_array($dataType, ["char", "nchar", "varchar", "nvarchar", "varchar(max)", "nvarchar(max)"]));
 }
 
 function dataTypeIsUnicode($dataType)
 {
-    if (in_array($dataType, ["nchar", "nvarchar", "nvarchar(max)"]))
-        return true;
-    else
-        return false;
+    return (in_array($dataType, ["nchar", "nvarchar", "nvarchar(max)"]));
 }
 
 function getSQLType($type, $length)
@@ -414,83 +451,58 @@ function getSQLType($type, $length)
     {
         case "bigint":
             return SQLSRV_SQLTYPE_BIGINT;
-            break;
         case "integer":
             return SQLSRV_SQLTYPE_INT;
-            break;
         case "smallint":
             return SQLSRV_SQLTYPE_SMALLINT;
-            break;
         case "tinyint":
             return SQLSRV_SQLTYPE_TINYINT;
-            break;
         case "bit":
             return SQLSRV_SQLTYPE_BIT;
-            break;
         case "real":
             return SQLSRV_SQLTYPE_REAL;
-            break;
         case "float":
         case "double":
             return SQLSRV_SQLTYPE_FLOAT;
-            break;
         case "numeric":
             return SQLSRV_SQLTYPE_NUMERIC(18,0);
-            break;
         case "time":
             return SQLSRV_SQLTYPE_TIME;
-            break;
         case "date":
             return SQLSRV_SQLTYPE_DATE;
-            break;
         case "datetime":
             return SQLSRV_SQLTYPE_DATETIME;
-            break;
         case "datetime2":
             return SQLSRV_SQLTYPE_DATETIME2;
-            break;
         case "datetimeoffset":
             return SQLSRV_SQLTYPE_DATETIMEOFFSET;
-            break;
         case "smalldatetime":
             return SQLSRV_SQLTYPE_SMALLDATETIME;
-            break;
         case "money":
             return SQLSRV_SQLTYPE_MONEY;
-            break;
         case "smallmoney":
             return SQLSRV_SQLTYPE_SMALLMONEY;
-            break;
         case "xml":
             return SQLSRV_SQLTYPE_XML;
-            break;
         case "uniqueidentifier":
             return SQLSRV_SQLTYPE_UNIQUEIDENTIFIER;
-            break;
         case "char":
             return SQLSRV_SQLTYPE_CHAR($length);
-            break;
         case "varchar":
             return SQLSRV_SQLTYPE_VARCHAR($length);
-            break;
         case "varchar(max)":
             return SQLSRV_SQLTYPE_VARCHAR('max');
-            break;
         case "nchar":
             return SQLSRV_SQLTYPE_NCHAR($length);
-            break;
         case "nvarchar":
             return SQLSRV_SQLTYPE_NVARCHAR($length);
-            break;
         case "nvarchar(max)":
             return SQLSRV_SQLTYPE_NVARCHAR('max');
-            break;
         case "binary":
         case "varbinary":
         case "varbinary(max)":
             // Using a binary type here produces a 'Restricted data type attribute violation'
             return SQLSRV_SQLTYPE_BIGINT;
-            break;
         default:
             die("Case is missing for $type type in getSQLType.\n");
     }
