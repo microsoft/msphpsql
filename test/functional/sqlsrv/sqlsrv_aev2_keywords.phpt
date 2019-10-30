@@ -23,6 +23,9 @@ if (!$conn) {
     $e = sqlsrv_errors();
     checkErrors($e, array('CE400', '0'));
 } else {
+    print_r(sqlsrv_server_info($conn));
+    print_r(sqlsrv_client_info($conn));
+    print_r(sqlsrv_fetch_array(sqlsrv_query($conn, "SELECT @@VERSION")));
     print_r("Connecting with nonsense should have failed!\n");
 }
 
