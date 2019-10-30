@@ -1,8 +1,8 @@
 --TEST--
 Test the existence of Windows Always Encrypted keys generated in the database setup
 --DESCRIPTION--
-This test iterates through the rows of sys.column_master_keys and/or 
-sys.column_encryption_keys to look for the specific column master key and 
+This test iterates through the rows of sys.column_master_keys and/or
+sys.column_encryption_keys to look for the specific column master key and
 column encryption key generated in the database setup
 --SKIPIF--
 <?php require('skipif_unix.inc'); ?>
@@ -48,4 +48,4 @@ echo "Test Successfully done.\n";
 sqlsrv_close($conn);
 ?>
 --EXPECT--
-Test Successfully done.
+Test successfully done.
