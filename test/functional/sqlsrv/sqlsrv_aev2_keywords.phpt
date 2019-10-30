@@ -14,7 +14,7 @@ include("sqlsrv_AE_functions.inc");
 $options = array('database'=>$database,
                  'uid'=>$userName,
                  'pwd'=>$userPassword,
-                 'driver'=$driver,
+                 'driver'=>$driver,
                  'ColumnEncryption'=>"xyz",
                  );
 
@@ -33,7 +33,7 @@ $badProtocol = substr_replace($attestation, 'x', $comma, 0);
 $options = array('database'=>$database,
                  'uid'=>$userName,
                  'pwd'=>$userPassword,
-                 'driver'=$driver,
+                 'driver'=>$driver,
                  'ColumnEncryption'=>$badProtocol,
                  );
 
