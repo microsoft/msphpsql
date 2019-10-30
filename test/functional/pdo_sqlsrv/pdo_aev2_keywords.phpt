@@ -4,6 +4,8 @@ Test ColumnEncryption values.
 This test checks that connection fails when ColumnEncryption is set to nonsense,
 or when it is set to a bad protocol. Then it checks that connection succeeds when
 the attestation URL is bad.
+--SKIPIF--
+<?php require("skipif_not_hgs.inc"); ?>
 --FILE--
 <?php
 include("MsSetup.inc");
