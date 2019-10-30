@@ -23,8 +23,7 @@ if (!$conn) {
     $e = sqlsrv_errors();
     checkErrors($e, array('CE400', '0'));
 } else {
-    sqlsrv_query
-    die("Connecting with nonsense should have failed!\n");
+    print_r("Connecting with nonsense should have failed!\n");
 }
 
 // Test with bad protocol and good attestation URL. Connection should fail.
@@ -43,7 +42,7 @@ if (!$conn) {
     $e = sqlsrv_errors();
     checkErrors($e, array('CE400', '0'));
 } else {
-    die("Connecting with a bad attestation protocol should have failed!\n");
+    print_r("Connecting with a bad attestation protocol should have failed!\n");
 }
 
 // Test with good protocol and bad attestation URL. Connection should succeed
