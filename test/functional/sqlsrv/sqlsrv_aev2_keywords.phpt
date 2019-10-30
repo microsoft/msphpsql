@@ -14,6 +14,7 @@ include("sqlsrv_AE_functions.inc");
 $options = array('database'=>$database,
                  'uid'=>$userName,
                  'pwd'=>$userPassword,
+                 'driver'=$driver,
                  'ColumnEncryption'=>"xyz",
                  );
 
@@ -22,6 +23,7 @@ if (!$conn) {
     $e = sqlsrv_errors();
     checkErrors($e, array('CE400', '0'));
 } else {
+    sqlsrv_query
     die("Connecting with nonsense should have failed!\n");
 }
 
@@ -32,6 +34,7 @@ $badProtocol = substr_replace($attestation, 'x', $comma, 0);
 $options = array('database'=>$database,
                  'uid'=>$userName,
                  'pwd'=>$userPassword,
+                 'driver'=$driver,
                  'ColumnEncryption'=>$badProtocol,
                  );
 

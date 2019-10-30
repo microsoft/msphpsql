@@ -44,7 +44,7 @@ if (AE\IsQualified($conn)) {
     sqlsrv_free_stmt($stmt);
 }
 
-echo "Test Successfully done.\n";
+echo "Test successfully done.\n";
 sqlsrv_close($conn);
 ?>
 --EXPECT--
