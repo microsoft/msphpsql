@@ -1276,18 +1276,35 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                                         driver_stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_DIRECTION, param->paramno + 1 ) {
                         throw pdo::PDOException();
                     }
+                    // if the parameter is output or input/output, translate the type between the PDO::PARAM_* constant
+                    // and the SQLSRV_PHPTYPE_* constant
+                    // vso 2829: derive the pdo_type for input/output parameter as well
+                    // also check if the user has specified PARAM_STR_NATL or PARAM_STR_CHAR for string params
+                    int pdo_type = param->param_type;
                     if( param->max_value_len > 0 || param->max_value_len == SQLSRV_DEFAULT_SIZE ) {
                         if( param->param_type & PDO_PARAM_INPUT_OUTPUT ) {
                             direction = SQL_PARAM_INPUT_OUTPUT;
+                            pdo_type = param->param_type & ~PDO_PARAM_INPUT_OUTPUT;
                         }
                         else {
                             direction = SQL_PARAM_OUTPUT;
                         }
                     }
+
+                    // check if the user has specified the character set to use, take it off but ignore 
+#if PHP_VERSION_ID >= 70200
+                    if ((pdo_type & PDO_PARAM_STR_NATL) == PDO_PARAM_STR_NATL) {
+                        pdo_type = pdo_type & ~PDO_PARAM_STR_NATL;
+                        LOG(SEV_NOTICE, "PHP Extended String type PDO_PARAM_STR_NATL set but is ignored.");
+                    }
+                    if ((pdo_type & PDO_PARAM_STR_CHAR) == PDO_PARAM_STR_CHAR) {
+                        pdo_type = pdo_type & ~PDO_PARAM_STR_CHAR;
+                        LOG(SEV_NOTICE, "PHP Extended String type PDO_PARAM_STR_CHAR set but is ignored.");
+                    }
+#endif
+
                     // if the parameter is output or input/output, translate the type between the PDO::PARAM_* constant
                     // and the SQLSRV_PHPTYPE_* constant
-                    // vso 2829: derive the pdo_type for input/output parameter as well
-                    int pdo_type = (direction == SQL_PARAM_OUTPUT) ? param->param_type : param->param_type & ~PDO_PARAM_INPUT_OUTPUT;
                     SQLSRV_PHPTYPE php_out_type = SQLSRV_PHPTYPE_INVALID;
                     switch (pdo_type) {
                         case PDO_PARAM_BOOL:
@@ -1354,13 +1371,17 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                                         driver_stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param->paramno + 1 ) {
                         throw pdo::PDOException();
                     }
+
                     // the encoding by default is that set on the statement
                     SQLSRV_ENCODING encoding = driver_stmt->encoding();
                     // if the statement's encoding is the default, then use the one on the connection
                     if( encoding == SQLSRV_ENCODING_DEFAULT ) {
                         encoding = driver_stmt->conn->encoding();
                     }
-                    // if the user provided an encoding, use it instead
+
+                    // Beginning with PHP7.2 the user can specify whether to use PDO_PARAM_STR_CHAR or PDO_PARAM_STR_NATL
+                    // But this extended type will be ignored in real prepared statements, so the encoding deliberately 
+                    // set in the statement or driver options will still take precedence
                     if( !Z_ISUNDEF(param->driver_params) ) {
                         CHECK_CUSTOM_ERROR( Z_TYPE( param->driver_params ) != IS_LONG, driver_stmt, 
                                             PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM ) {
@@ -1383,6 +1404,7 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                                 break;
                         }
                     }
+
                     // and bind the parameter
                     core_sqlsrv_bind_param( driver_stmt, static_cast<SQLUSMALLINT>( param->paramno ), direction, &(param->parameter) , php_out_type, encoding,
                                             sql_type, column_size, decimal_digits TSRMLS_CC );

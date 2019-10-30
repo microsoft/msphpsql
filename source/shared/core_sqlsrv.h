@@ -240,6 +240,9 @@ const int SQL_SQLSTATE_BUFSIZE = SQL_SQLSTATE_SIZE + 1;
 // default value of decimal places (no formatting required)
 const short NO_CHANGE_DECIMAL_PLACES = -1;
 
+// default value for national character set strings (user did not specify any preference)
+const short CHARSET_PREFERENCE_NOT_SPECIFIED = -1;
+
 // buffer size allocated to retrieve data from a PHP stream.  This number
 // was chosen since PHP doesn't return more than 8k at a time even if
 // the amount requested was more.
