@@ -1,9 +1,13 @@
 --TEST--
-Test ColumnEncryption values.
+Test various settings for the ColumnEncryption keyword.
 --DESCRIPTION--
-This test checks that connection fails when ColumnEncryption is set to nonsense,
-or when it is set to an incorrect protocol. Then it checks that connection succeeds when
-the attestation URL is incorrect.
+For AE v2, the Column Encryption keyword must be set to [protocol]/[attestation URL].
+If [protocol] is wrong, connection should fail; if the URL is wrong, connection
+should succeed. This test sets ColumnEncryption to three values:
+1. Random nonsense, which is interpreted as an incorrect protocol
+   so connection should fail.
+2. Incorrect protocol with a correct attestation URL, connection should fail.
+3. Correct protocol and incorrect URL, connection should succeed.
 --SKIPIF--
 <?php require("skipif_not_hgs.inc"); ?>
 --FILE--

@@ -1,12 +1,17 @@
 --TEST--
 Try re-encrypting a table with ColumnEncryption set to 'enabled', which should fail.
 --DESCRIPTION--
-This test does the following:
+This test cycles through $encryptionTypes and $keys, creating an encrypted table
+each time, then cycles through $targetTypes and $targetKeys to try re-encrypting
+the table with different combinations of enclave-enabled and non-enclave keys
+and encryption types.
+The sequence of operations is the following:
 1. Connect with correct attestation information.
-2. Create an encrypted table with two columns for each AE-supported data type.
+2. Create an encrypted table with two columns for each AE-supported data type, one encrypted and one not encrypted.
 3. Insert some data.
 4. Disconnect and reconnect with ColumnEncryption set to 'enabled'.
-5. Test comparison and pattern matching. Equality should work with deterministic encryption as in AE v1, but other computations should fail.
+5. Test comparison and pattern matching by comparing the results for the encrypted and non-encrypted columns.
+   Equality should work with deterministic encryption as in AE v1, but other computations should fail.
 6. Try re-encrypting the table. This should fail.
 --SKIPIF--
 <?php require("skipif_not_hgs.inc"); ?>

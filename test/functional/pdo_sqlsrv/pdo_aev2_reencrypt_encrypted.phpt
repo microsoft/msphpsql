@@ -1,10 +1,15 @@
 --TEST--
 Test rich computations and in place re-encryption with AE v2.
 --DESCRIPTION--
-This test does the following:
+This test cycles through $encryptionTypes and $keys, creating an encrypted table
+each time, then cycles through $targetTypes and $targetKeys to try re-encrypting
+the table with different combinations of enclave-enabled and non-enclave keys
+and encryption types.
+The sequence of operations is the following:
 1. Create an encrypted table with two columns for each AE-supported data type, one encrypted and one not encrypted.
 2. Insert some data.
-3. Perform rich computations on each AE-enabled column (comparisons and pattern matching) and compare the result to the same query on the corresponding non-AE column for each data type.
+3. Perform rich computations on each AE-enabled column (comparisons and pattern matching) and compare the result
+   to the same query on the corresponding non-AE column for each data type.
 4. Ensure the two results are the same.
 5. Re-encrypt the table using new key and/or encryption type.
 6. Compare computations as in 4. above.

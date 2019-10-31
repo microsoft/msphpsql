@@ -373,7 +373,8 @@ function testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $
                 // encrypted and non-encrypted columns (probably because the
                 // collation was only changed in the encryption query).
                 // We must pass the length of the pattern matching string
-                // instead of the field size, as we usually would.
+                // to the SQLTYPE instead of the field size, as we usually would,
+                // because otherwise we would get an empty result set.
                 // We need iconv_strlen to return the number of characters
                 // for unicode strings, since strlen returns the number of bytes.
                 $unicode = dataTypeIsUnicode($type);
