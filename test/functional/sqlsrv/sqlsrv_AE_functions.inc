@@ -367,7 +367,7 @@ function testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $
 
             foreach ($patternarray as $spattern) {
 
-                // Unicode operations with AE require the PHPTYPE to be specified to
+                // Unicode operations with AE require the PHPTYPE to be specified as
                 // UTF-8 and the Latin1_General_BIN2 collation. If the COLLATE
                 // clause is left out, we get different results between the
                 // encrypted and non-encrypted columns (probably because the
