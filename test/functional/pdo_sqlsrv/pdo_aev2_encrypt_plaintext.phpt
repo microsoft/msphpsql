@@ -1,5 +1,5 @@
 --TEST--
-Test rich computations and in place encryption with AE v2.
+Test rich computations and in-place encryption of plaintext with AE v2.
 --DESCRIPTION--
 This test does the following:
 1. Create a table in plaintext with two columns for each AE-supported data type.

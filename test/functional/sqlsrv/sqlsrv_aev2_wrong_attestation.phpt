@@ -1,5 +1,5 @@
 --TEST--
-Test rich computations and in place encryption with AE v2.
+Try re-encrypting a table with ColumnEncryption set to the wrong attestation URL, which should fail.
 --DESCRIPTION--
 This test does the following:
 1. Create an encrypted table with two columns for each AE-supported data type, one encrypted and one not encrypted.

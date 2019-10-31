@@ -1,5 +1,5 @@
 --TEST--
-Test rich computations and in place encryption with AE v2.
+Try re-encrypting a table with ColumnEncryption set to 'enabled', which should fail.
 --DESCRIPTION--
 This test does the following:
 1. Connect with correct attestation information.
