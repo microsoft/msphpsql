@@ -53,14 +53,15 @@ foreach ($keys as $key) {
                 }
                 ++$count;
 
-                if ($key == $targetKey and $encryptionType == $targetType)
+                if ($key == $targetKey and $encryptionType == $targetType) {
                     continue;
+                }
 
                 // Split the data type array, because for some reason we get an error
                 // if the query is too long (>2000 characters)
                 // TODO: This is a known issue, follow up on it.
                 $splitDataTypes = array_chunk($dataTypes, 5);
-                $encryption_failed = false;
+                $encryptionFailed = false;
 
                 foreach ($splitDataTypes as $split) {
 
@@ -71,7 +72,7 @@ foreach ($keys as $key) {
                         if (!isEnclaveEnabled($key) or !isEnclaveEnabled($targetKey)) {
                             $e = sqlsrv_errors();
                             checkErrors($e, array('42000', '33543'));
-                            $encryption_failed = true;
+                            $encryptionFailed = true;
                             continue;
                         } else {
                             print_r(sqlsrv_errors());
@@ -86,7 +87,10 @@ foreach ($keys as $key) {
                     }
                 }
 
-                if ($encryption_failed) continue;
+                if ($encryptionFailed) {
+                    continue;
+                }
+
                 testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, 'correct');
                 testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $targetKey, $targetType, 'correct');
             }

@@ -56,7 +56,7 @@ foreach ($keys as $key) {
                     $splitDataTypes = array_chunk($dataTypes, 5);
                     foreach ($splitDataTypes as $split) {
                         $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $key, $encryptionType, $slength);
-                        $encryption_failed = false;
+                        $encryptionFailed = false;
 
                         try {
                             $stmt = $conn->query($alterQuery);
@@ -67,7 +67,7 @@ foreach ($keys as $key) {
                             if (!isEnclaveEnabled($key)) {
                                 $e = $error->errorInfo;
                                 checkErrors($e, array('42000', '33543'));
-                                $encryption_failed = true;
+                                $encryptionFailed = true;
                                 continue;
                             } else {
                                 print_r($error);
@@ -77,7 +77,7 @@ foreach ($keys as $key) {
                     }
                 }
 
-                if ($encryption_failed) continue;
+                if ($encryptionFailed) continue;
 
                 if ($count == 0) {
                     testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $key, $encryptionType, 'correct');
@@ -85,13 +85,14 @@ foreach ($keys as $key) {
                 }
                 ++$count;
 
-                if ($key == $targetKey and $encryptionType == $targetType)
+                if ($key == $targetKey and $encryptionType == $targetType) {
                     continue;
+                }
 
                 // Try re-encrypting the table
                 foreach ($splitDataTypes as $split) {
                     $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $targetKey, $targetType, $slength);
-                    $encryption_failed = false;
+                    $encryptionFailed = false;
 
                     try {
                         $stmt = $conn->query($alterQuery);
@@ -102,7 +103,7 @@ foreach ($keys as $key) {
                         if (!isEnclaveEnabled($targetKey)) {
                             $e = $error->errorInfo;
                             checkErrors($e, array('42000', '33543'));
-                            $encryption_failed = true;
+                            $encryptionFailed = true;
                             continue;
                         } else {
                             print_r($error);
@@ -111,7 +112,10 @@ foreach ($keys as $key) {
                     }
                 }
 
-                if ($encryption_failed) continue;
+                if ($encryptionFailed) {
+                    continue;
+                }
+
                 testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $targetKey, $targetType, 'correct');
                 testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $targetKey, $targetType, 'correct');
             }

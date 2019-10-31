@@ -57,15 +57,16 @@ foreach ($keys as $key) {
                 }
                 ++$count;
 
-                if ($key == $targetKey and $encryptionType == $targetType)
+                if ($key == $targetKey and $encryptionType == $targetType) {
                     continue;
+                }
 
                 $alterQuery = constructAlterQuery($tableName, $colNamesAE, $dataTypes, $targetKey, $targetType, $slength);
 
                 // Split the data type array, because for some reason we get an error
                 // if the query is too long (>2000 characters)
                 $splitDataTypes = array_chunk($dataTypes, 5);
-                $encryption_failed = false;
+                $encryptionFailed = false;
 
                 foreach ($splitDataTypes as $split) {
 
@@ -77,12 +78,12 @@ foreach ($keys as $key) {
 
                             $e = sqlsrv_errors();
                             checkErrors($e, array('42000', '33543'));
-                            $encryption_failed = true;
+                            $encryptionFailed = true;
                             continue;
                         } else {
                             $e = sqlsrv_errors();
                             checkErrors($e, array('42000', '33546'));
-                            $encryption_failed = true;
+                            $encryptionFailed = true;
                             continue;
                         }
 
@@ -92,7 +93,9 @@ foreach ($keys as $key) {
                     }
                 }
 
-                if ($encryption_failed) continue;
+                if ($encryptionFailed) {
+                    continue;
+                }
             }
         }
     }

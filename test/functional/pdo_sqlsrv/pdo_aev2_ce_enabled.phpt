@@ -56,8 +56,9 @@ foreach ($keys as $key) {
                 }
                 ++$count;
 
-                if ($key == $targetKey and $encryptionType == $targetType)
+                if ($key == $targetKey and $encryptionType == $targetType) {
                     continue;
+                }
 
                 $alterQuery = constructAlterQuery($tableName, $colNamesAE, $dataTypes, $targetKey, $targetType, $slength);
 

@@ -59,13 +59,13 @@ foreach ($keys as $key) {
                         $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $key, $encryptionType, $slength);
 
                         $stmt = sqlsrv_query($conn, $alterQuery);
-                        $encryption_failed = false;
+                        $encryptionFailed = false;
 
                         if(!$stmt) {
                             if (!isEnclaveEnabled($key)) {
                                 $e = sqlsrv_errors();
                                 checkErrors($e, array('42000', '33543'));
-                                $encryption_failed = true;
+                                $encryptionFailed = true;
                                 continue;
                             } else {
                                 print_r(sqlsrv_errors());
@@ -79,7 +79,7 @@ foreach ($keys as $key) {
                     }
                 }
 
-                if ($encryption_failed) continue;
+                if ($encryptionFailed) continue;
 
                 if ($count == 0) {
                     testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'correct');
@@ -87,11 +87,12 @@ foreach ($keys as $key) {
                 }
                 ++$count;
 
-                if ($key == $targetKey and $encryptionType == $targetType)
+                if ($key == $targetKey and $encryptionType == $targetType) {
                     continue;
+                }
 
                 // Try re-encrypting the table
-                $encryption_failed = false;
+                $encryptionFailed = false;
                 foreach ($splitDataTypes as $split) {
                     $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $targetKey, $targetType, $slength);
 
@@ -100,7 +101,7 @@ foreach ($keys as $key) {
                         if (!isEnclaveEnabled($targetKey)) {
                             $e = sqlsrv_errors();
                             checkErrors($e, array('42000', '33543'));
-                            $encryption_failed = true;
+                            $encryptionFailed = true;
                             continue;
                         } else {
                             print_r(sqlsrv_errors());
@@ -113,7 +114,9 @@ foreach ($keys as $key) {
                     }
                 }
 
-                if ($encryption_failed) continue;
+                if ($encryptionFailed) {
+                    continue;
+                }
 
                 testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, 'correct');
                 testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $targetKey, $targetType, 'correct');
