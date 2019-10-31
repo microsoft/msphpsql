@@ -12,9 +12,9 @@ This test does the following:
 <?php require("skipif_not_hgs.inc"); ?>
 --FILE--
 <?php
-include("MsSetup.inc");
-include("AE_v2_values.inc");
-include("sqlsrv_AE_functions.inc");
+require_once("MsSetup.inc");
+require_once("AE_v2_values.inc");
+require_once("sqlsrv_AE_functions.inc");
 
 $initialAttestation = $attestation;
 
@@ -51,8 +51,10 @@ foreach ($keys as $key) {
 
                 $conn = connect($server, $newAttestation);
 
-                if ($count == 0) testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'enabled');
-                if ($count == 0) testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'enabled');
+                if ($count == 0) {
+                    testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, 'enabled');
+                    testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'enabled');
+                }
                 ++$count;
 
                 if ($key == $targetKey and $encryptionType == $targetType)

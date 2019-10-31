@@ -3,18 +3,18 @@ Test rich computations and in place encryption with AE v2.
 --DESCRIPTION--
 This test does the following:
 1. Connect with correct attestation information.
-1. Create an encrypted table with two columns for each AE-supported data type.
-2. Insert some data.
-3. Disconnect and reconnect with ColumnEncryption set to 'enabled'.
-4. Test comparison and pattern matching. Equality should work with deterministic encryption as in AE v1, but other computations should fail.
-5. Try re-encrypting the table. This should fail.
+2. Create an encrypted table with two columns for each AE-supported data type.
+3. Insert some data.
+4. Disconnect and reconnect with ColumnEncryption set to 'enabled'.
+5. Test comparison and pattern matching. Equality should work with deterministic encryption as in AE v1, but other computations should fail.
+6. Try re-encrypting the table. This should fail.
 --SKIPIF--
 <?php require("skipif_not_hgs.inc"); ?>
 --FILE--
 <?php
-include("MsSetup.inc");
-include("AE_v2_values.inc");
-include("pdo_AE_functions.inc");
+require_once("MsSetup.inc");
+require_once("AE_v2_values.inc");
+require_once("pdo_AE_functions.inc");
 
 $initialAttestation = $attestation;
 
@@ -50,8 +50,10 @@ foreach ($keys as $key) {
                 $newAttestation = 'enabled';
                 $conn = connect($server, $newAttestation);
 
-                if ($count == 0) testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $key, $encryptionType, 'enabled');
-                if ($count == 0) testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'enabled');
+                if ($count == 0) {
+                    testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $key, $encryptionType, 'enabled');
+                    testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'enabled');
+                }
                 ++$count;
 
                 if ($key == $targetKey and $encryptionType == $targetType)

@@ -45,6 +45,11 @@ function connect($server, $attestation_info)
 
 // This CREATE TABLE query simply creates a non-encrypted table with
 // two columns for each data type side by side
+// This produces a query that looks like
+// CREATE TABLE aev2test2 (
+//     c_integer integer,
+//     c_integer_AE integer
+// )
 function constructCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength)
 {
     $query = "CREATE TABLE ".$tableName." (\n    ";
@@ -59,13 +64,25 @@ function constructCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $s
         }
     }
 
+    // Remove the ", \n    " from the end of the query or the comma will cause a syntax error
     $query = substr($query, 0, -7)."\n)";
 
     return $query;
 }
 
 // The ALTER TABLE query encrypts columns. Each ALTER COLUMN directive must
-// be preceded by ALTER TABLE
+// be preceded by ALTER TABLE. This query can be used to both encrypt plaintext
+// columns and to re-encrypt encrypted columns.
+// This produces a query that looks like
+// ALTER TABLE [dbo].[aev2test2]
+//     ALTER COLUMN [c_integer_AE] integer
+//     ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK-win-enclave], ENCRYPTION_TYPE = Randomized, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NOT NULL
+//     WITH
+//     (ONLINE = ON); ALTER TABLE [dbo].[aev2test2]
+//     ALTER COLUMN [c_bigint_AE] bigint
+//     ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK-win-enclave], ENCRYPTION_TYPE = Randomized, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NOT NULL
+//     WITH
+//     (ONLINE = ON); ALTER DATABASE SCOPED CONFIGURATION CLEAR PROCEDURE_CACHE;
 function constructAlterQuery($tableName, $colNames, $dataTypes, $key, $encryptionType, $slength)
 {
     $query = '';
@@ -87,6 +104,12 @@ function constructAlterQuery($tableName, $colNames, $dataTypes, $key, $encryptio
 
 // This CREATE TABLE query creates a table with two columns for
 // each data type side by side, one plaintext and one encrypted
+// This produces a query that looks like
+// CREATE TABLE aev2test2 (
+//     c_integer integer NULL,
+//     c_integer_AE integer
+//       COLLATE Latin1_General_BIN2   ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK-win-enclave], ENCRYPTION_TYPE = Randomized, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL
+// )
 function constructAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType)
 {
     $query = "CREATE TABLE ".$tableName." (\n    ";
@@ -106,6 +129,7 @@ function constructAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, 
         }
     }
 
+    // Remove the ",\n    " from the end of the query or the comma will cause a syntax error
     $query = substr($query, 0, -6)."\n)";
 
     return $query;
@@ -125,6 +149,7 @@ function constructInsertQuery($tableName, &$dataTypes, &$colNames, &$colNamesAE)
         $valuesString .= "?, ?, ";
     }
 
+    // Remove the ", " from the end of the query or the comma will cause a syntax error
     $queryTypes = substr($queryTypes, 0, -2).")";
     $valuesString = substr($valuesString, 0, -2).")";
 
@@ -275,7 +300,7 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
 // results are identical
 // Arguments:
 // resource $conn: The connection
-// string   $tableName: Thable name
+// string   $tableName: Table name
 // array    $comparisons: Comparison operations from AE_v2_values.inc
 // array    $dataTypes: Data types from AE_v2_values.inc
 // array    $colNames: Column names
@@ -288,7 +313,8 @@ function testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
     foreach ($comparisons as $comparison) {
         foreach ($dataTypes as $type) {
 
-            // Unicode data types the correct collation. Otherwise we get different
+            // Unicode operations with AE require the Latin1_General_BIN2
+            // collation. If the COLLATE clause is left out, we get different
             // results between the encrypted and non-encrypted columns (probably
             // because the collation was only changed in the encryption query).
             $string = dataTypeIsStringMax($type);
@@ -319,7 +345,7 @@ function testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
 // results are identical
 // Arguments:
 // resource $conn: The connection
-// string   $tableName: Thable name
+// string   $tableName: Table name
 // array    $patterns: Patterns to match against, from AE_v2_values.inc
 // array    $dataTypes: Data types from AE_v2_values.inc
 // array    $colNames: Column names
@@ -346,6 +372,10 @@ function testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $
 
             foreach ($patternArray as $spattern) {
 
+                // Unicode operations with AE require the Latin1_General_BIN2
+                // collation. If the COLLATE clause is left out, we get different
+                // results between the encrypted and non-encrypted columns (probably
+                // because the collation was only changed in the encryption query).
                 $unicode = dataTypeIsUnicode($type);
                 $collate = $unicode ? " COLLATE Latin1_General_BIN2" : "";
                 $PDOType = getPDOType($type);

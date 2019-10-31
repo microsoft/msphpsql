@@ -315,10 +315,11 @@ function testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
     foreach ($comparisons as $comparison) {
         foreach ($dataTypes as $type) {
 
-            // Unicode data types require the PHPTYPE to be specified to UTF-8 string
-            // and the correct collation. Otherwise we get different results between
-            // the encrypted and non-encrypted columns (probably because the collation
-            // was only changed in the encryption query).
+            // Unicode operations with AE require the PHPTYPE to be specified to
+            // UTF-8 and the Latin1_General_BIN2 collation. If the COLLATE
+            // clause is left out, we get different results between the
+            // encrypted and non-encrypted columns (probably because the
+            // collation was only changed in the encryption query).
             $string = dataTypeIsStringMax($type);
             $unicode = dataTypeIsUnicode($type);
             $collate = $string ? " COLLATE Latin1_General_BIN2" : "";
@@ -366,10 +367,15 @@ function testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $
 
             foreach ($patternarray as $spattern) {
 
+                // Unicode operations with AE require the PHPTYPE to be specified to
+                // UTF-8 and the Latin1_General_BIN2 collation. If the COLLATE
+                // clause is left out, we get different results between the
+                // encrypted and non-encrypted columns (probably because the
+                // collation was only changed in the encryption query).
                 // We must pass the length of the pattern matching string
                 // instead of the field size, as we usually would.
                 // We need iconv_strlen to return the number of characters
-                // for unicode strings, since strlen returns the number of bytes
+                // for unicode strings, since strlen returns the number of bytes.
                 $unicode = dataTypeIsUnicode($type);
                 $slength = $unicode ? iconv_strlen($spattern) : strlen($spattern);
                 $collate = $unicode ? " COLLATE Latin1_General_BIN2" : "";

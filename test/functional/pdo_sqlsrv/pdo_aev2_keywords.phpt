@@ -2,15 +2,15 @@
 Test ColumnEncryption values.
 --DESCRIPTION--
 This test checks that connection fails when ColumnEncryption is set to nonsense,
-or when it is set to a bad protocol. Then it checks that connection succeeds when
-the attestation URL is bad.
+or when it is set to an incorrect protocol. Then it checks that connection succeeds when
+the attestation URL is incorrect.
 --SKIPIF--
 <?php require("skipif_not_hgs.inc"); ?>
 --FILE--
 <?php
-include("MsSetup.inc");
-include("AE_v2_values.inc");
-include("pdo_AE_functions.inc");
+require_once("MsSetup.inc");
+require_once("AE_v2_values.inc");
+require_once("pdo_AE_functions.inc");
 
 // Test with random nonsense. Connection should fail.
 $options = "sqlsrv:Server=$server;database=$databaseName;ColumnEncryption=xyz";
@@ -23,7 +23,7 @@ try {
     checkErrors($e, array('CE400', '0'));
 }
 
-// Test with bad protocol and good attestation URL. Connection should fail.
+// Test with incorrect protocol and good attestation URL. Connection should fail.
 // Insert a rogue 'x' into the protocol part of the attestation.
 $comma = strpos($attestation, ',');
 $badProtocol = substr_replace($attestation, 'x', $comma, 0);
@@ -37,7 +37,7 @@ try {
     checkErrors($e, array('CE400', '0'));
 }
 
-// Test with good protocol and bad attestation URL. Connection should succeed
+// Test with good protocol and incorrect attestation URL. Connection should succeed
 // because the URL is only checked when an enclave computation is attempted.
 $badURL = substr_replace($attestation, 'x', $comma+1, 0);
 $options = "sqlsrv:Server=$server;database=$databaseName;ColumnEncryption=$badURL";

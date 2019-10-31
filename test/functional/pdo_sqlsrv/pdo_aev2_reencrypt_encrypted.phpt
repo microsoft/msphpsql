@@ -12,9 +12,9 @@ This test does the following:
 <?php require("skipif_not_hgs.inc"); ?>
 --FILE--
 <?php
-include("MsSetup.inc");
-include("AE_v2_values.inc");
-include("pdo_AE_functions.inc");
+require_once("MsSetup.inc");
+require_once("AE_v2_values.inc");
+require_once("pdo_AE_functions.inc");
 
 $initialAttestation = $attestation;
 
@@ -31,6 +31,7 @@ foreach ($keys as $key) {
         foreach ($targetKeys as $targetKey) {
             foreach ($targetTypes as $targetType) {
 
+                // Free the encryption cache to avoid spurious 'operand type clash' errors
                 $conn->query("DBCC FREEPROCCACHE");
 
                 // Create an encrypted table
@@ -47,8 +48,10 @@ foreach ($keys as $key) {
 
                 insertValues($conn, $insertQuery, $dataTypes, $testValues);
 
-                if ($count == 0) testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $key, $encryptionType, 'correct');
-                if ($count == 0) testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'correct');
+                if ($count == 0) {
+                    testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $key, $encryptionType, 'correct');
+                    testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, 'correct');
+                }
                 ++$count;
 
                 if ($key == $targetKey and $encryptionType == $targetType)
@@ -56,6 +59,7 @@ foreach ($keys as $key) {
 
                 // Split the data type array, because for some reason we get an error
                 // if the query is too long (>2000 characters)
+                // TODO: This is a known issue, follow up on it.
                 $splitDataTypes = array_chunk($dataTypes, 5);
                 $encryption_failed = false;
                 foreach ($splitDataTypes as $split) {
