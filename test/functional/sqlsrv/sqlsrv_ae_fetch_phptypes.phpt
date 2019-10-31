@@ -15,7 +15,6 @@ function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
     $columns = array();
     $queryTypes = "(";
-    $queryTypesAE = "(";
     $valuesString = "VALUES (";
     $numTypes = sizeof($dataTypes);
 
