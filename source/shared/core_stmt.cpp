@@ -244,6 +244,12 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
     // delete sensivity data
     clean_up_sensitivity_metadata();
 
+    // reset sqlsrv php type in meta data
+    size_t num_fields = this->current_meta_data.size();
+    for (size_t f = 0; f < num_fields; f++) {
+        this->current_meta_data[f]->reset_php_type();
+    }
+
     // create a new result set
     if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {
          sqlsrv_malloc_auto_ptr<sqlsrv_buffered_result_set> result;
@@ -1121,9 +1127,6 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 
         sqlsrv_phptype sqlsrv_php_type = sqlsrv_php_type_in;
 
-        SQLLEN sql_field_type = 0;
-        SQLLEN sql_field_len = 0;
-
         // Make sure that the statement was executed and not just prepared.
         CHECK_CUSTOM_ERROR( !stmt->executed, stmt, SQLSRV_ERROR_STATEMENT_NOT_EXECUTED ) {
             throw core::CoreException();
@@ -1132,37 +1135,47 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         // if the field is to be cached, and this field is being retrieved out of order, cache prior fields so they
         // may also be retrieved.
         if( cache_field && (field_index - stmt->last_field_index ) >= 2 ) {
-                   sqlsrv_phptype invalid;
-                   invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
-                   for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
-                       SQLSRV_ASSERT( reinterpret_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), i )) == NULL, "Field already cached." );
-                       core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field, sqlsrv_php_type_out TSRMLS_CC );
-                       // delete the value returned since we only want it cached, not the actual value
-                       if( field_value ) {
-                           efree( field_value );
-                           field_value = NULL;
-                           *field_len = 0;
-                       }
-                   }
+            sqlsrv_phptype invalid;
+            invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
+            for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
+               SQLSRV_ASSERT( reinterpret_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), i )) == NULL, "Field already cached." );
+               core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field, sqlsrv_php_type_out TSRMLS_CC );
+               // delete the value returned since we only want it cached, not the actual value
+               if( field_value ) {
+                   efree( field_value );
+                   field_value = NULL;
+                   *field_len = 0;
+               }
+            }
         }
 
         // If the php type was not specified set the php type to be the default type.
         if (sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID) {
             SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "core_sqlsrv_get_field - meta data vector not in sync" );
-            sql_field_type = stmt->current_meta_data[field_index]->field_type;
-            if (stmt->current_meta_data[field_index]->field_precision > 0) {
-                sql_field_len = stmt->current_meta_data[field_index]->field_precision;
+
+            // Get the corresponding php type from the sql type and then save the result for later
+            if (stmt->current_meta_data[field_index]->sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID) {
+                SQLLEN sql_field_type = 0;
+                SQLLEN sql_field_len = 0;
+
+                sql_field_type = stmt->current_meta_data[field_index]->field_type;
+                if (stmt->current_meta_data[field_index]->field_precision > 0) {
+                    sql_field_len = stmt->current_meta_data[field_index]->field_precision;
+                }
+                else {
+                    sql_field_len = stmt->current_meta_data[field_index]->field_size;
+                }
+                sqlsrv_php_type = stmt->sql_type_to_php_type(static_cast<SQLINTEGER>(sql_field_type), static_cast<SQLUINTEGER>(sql_field_len), prefer_string);
+                stmt->current_meta_data[field_index]->sqlsrv_php_type = sqlsrv_php_type;
             }
             else {
-                sql_field_len = stmt->current_meta_data[field_index]->field_size;
+                // use the previously saved php type
+                sqlsrv_php_type = stmt->current_meta_data[field_index]->sqlsrv_php_type;
             }
-
-            // Get the corresponding php type from the sql type.
-            sqlsrv_php_type = stmt->sql_type_to_php_type(static_cast<SQLINTEGER>(sql_field_type), static_cast<SQLUINTEGER>(sql_field_len), prefer_string);
-        }
+        } 
 
         // Verify that we have an acceptable type to convert.
-        CHECK_CUSTOM_ERROR( !is_valid_sqlsrv_phptype( sqlsrv_php_type ), stmt, SQLSRV_ERROR_INVALID_TYPE ) {
+        CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_phptype(sqlsrv_php_type), stmt, SQLSRV_ERROR_INVALID_TYPE) {
             throw core::CoreException();
         }
 

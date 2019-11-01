@@ -781,8 +781,15 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
                        "Invalid column number in pdo_sqlsrv_stmt_get_col_data" );
 
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
-        sqlsrv_php_type = driver_stmt->sql_type_to_php_type( static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_type ),
-                                                            static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_size ), true );
+        // save the php type for next use
+        if (driver_stmt->current_meta_data[colno]->sqlsrv_php_type.typeinfo.type != SQLSRV_PHPTYPE_INVALID) {
+            sqlsrv_php_type = driver_stmt->current_meta_data[colno]->sqlsrv_php_type;
+        }
+        else {
+            sqlsrv_php_type = driver_stmt->sql_type_to_php_type(static_cast<SQLUINTEGER>(driver_stmt->current_meta_data[colno]->field_type),
+                                                                static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_size ), true );
+            driver_stmt->current_meta_data[colno]->sqlsrv_php_type = sqlsrv_php_type;
+        }
 
         // if a column is bound to a type different than the column type, figure out a way to convert it to the 
         // type they want
@@ -825,6 +832,9 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
                         break;
                 }
             }
+
+            // save the php type for the bound column
+            driver_stmt->current_meta_data[colno]->sqlsrv_php_type = sqlsrv_php_type;
         }
         
         SQLSRV_PHPTYPE sqlsrv_phptype_out = SQLSRV_PHPTYPE_INVALID;
