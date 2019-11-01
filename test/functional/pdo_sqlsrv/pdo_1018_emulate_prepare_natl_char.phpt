@@ -101,7 +101,18 @@ try {
 
     echo "Done\n";
 } catch (PdoException $e) {
-    echo $e->getMessage() . PHP_EOL;
+    if (isAEConnected()) {
+        // The Always Encrypted feature does not support emulate prepare for binding parameters
+        $expected = '*Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.';
+        if (!fnmatch($expected, $e->getMessage())) {
+            echo "Unexpected exception caught when connecting with Column Encryption enabled:\n";
+            echo $e->getMessage() . PHP_EOL;
+        } else {
+            echo "Done\n";
+        }
+    } else {
+        echo $e->getMessage() . PHP_EOL;
+    }
 }
 
 ?>
