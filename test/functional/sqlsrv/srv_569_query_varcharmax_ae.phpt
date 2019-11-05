@@ -45,7 +45,6 @@ if (!$result) {
     fatalError("Failed to select data from $tableName");
 }
 
-readline("Press ENTER to continue: ");
 // Fetch each row as an array
 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
     $i = $row['id'] - 1;
