@@ -1576,14 +1576,22 @@ struct field_meta_data {
     SQLSMALLINT field_scale;     
     SQLSMALLINT field_is_nullable;
     bool field_is_money_type;
+    sqlsrv_phptype sqlsrv_php_type;
 
     field_meta_data() : field_name_len(0), field_type(0), field_size(0), field_precision(0),
                         field_scale (0), field_is_nullable(0), field_is_money_type(false)
     {
+        reset_php_type();
     }
 
     ~field_meta_data() 
     {
+    }
+
+    void reset_php_type()
+    {
+        sqlsrv_php_type.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
+        sqlsrv_php_type.typeinfo.encoding = SQLSRV_ENCODING_INVALID;
     }
 };
 
