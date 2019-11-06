@@ -783,9 +783,9 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
         // set the encoding if the user specified one via bindColumn, otherwise use the statement's encoding
         // save the php type for next use
         sqlsrv_php_type = driver_stmt->sql_type_to_php_type(
-                static_cast<SQLUINTEGER>(driver_stmt->current_meta_data[colno]->field_type),
-                static_cast<SQLUINTEGER>( driver_stmt->current_meta_data[colno]->field_size ),
-                true );
+                            static_cast<SQLINTEGER>(driver_stmt->current_meta_data[colno]->field_type),
+                            static_cast<SQLUINTEGER>(driver_stmt->current_meta_data[colno]->field_size),
+                            true);
         driver_stmt->current_meta_data[colno]->sqlsrv_php_type = sqlsrv_php_type;
 
         // if a column is bound to a type different than the column type, figure out a way to convert it to the 
