@@ -22,7 +22,7 @@ function insertRead($conn, $pdoStrParam, $value, $testCase, $id, $encoding = fal
 {
     global $p, $tableName;
 
-    $sql = "INSERT INTO $tableName VALUES (:value)";
+    $sql = "INSERT INTO $tableName (Col1) VALUES (:value)";
     $options = array(PDO::ATTR_EMULATE_PREPARES => false);  // it's false by default anyway
     $stmt = $conn->prepare($sql, $options);
 
