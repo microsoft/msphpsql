@@ -244,6 +244,12 @@ void sqlsrv_stmt::new_result_set( TSRMLS_D )
     // delete sensivity data
     clean_up_sensitivity_metadata();
 
+    // reset sqlsrv php type in meta data
+    size_t num_fields = this->current_meta_data.size();
+    for (size_t f = 0; f < num_fields; f++) {
+        this->current_meta_data[f]->reset_php_type();
+    }
+
     // create a new result set
     if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {
          sqlsrv_malloc_auto_ptr<sqlsrv_buffered_result_set> result;
@@ -321,6 +327,11 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
                 (*stmt_opt->func)( stmt, stmt_opt, value_z TSRMLS_CC );
             } ZEND_HASH_FOREACH_END();
         }
+
+        // The query timeout setting is inherited from the corresponding connection attribute, but
+        // the user may override that the query timeout setting using the statement option. 
+        // In any case, set query timeout using the latest value
+        stmt->set_query_timeout();
 
         return_stmt = stmt;
         stmt.transferred();
@@ -1116,9 +1127,6 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 
         sqlsrv_phptype sqlsrv_php_type = sqlsrv_php_type_in;
 
-        SQLLEN sql_field_type = 0;
-        SQLLEN sql_field_len = 0;
-
         // Make sure that the statement was executed and not just prepared.
         CHECK_CUSTOM_ERROR( !stmt->executed, stmt, SQLSRV_ERROR_STATEMENT_NOT_EXECUTED ) {
             throw core::CoreException();
@@ -1127,37 +1135,47 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         // if the field is to be cached, and this field is being retrieved out of order, cache prior fields so they
         // may also be retrieved.
         if( cache_field && (field_index - stmt->last_field_index ) >= 2 ) {
-                   sqlsrv_phptype invalid;
-                   invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
-                   for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
-                       SQLSRV_ASSERT( reinterpret_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), i )) == NULL, "Field already cached." );
-                       core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field, sqlsrv_php_type_out TSRMLS_CC );
-                       // delete the value returned since we only want it cached, not the actual value
-                       if( field_value ) {
-                           efree( field_value );
-                           field_value = NULL;
-                           *field_len = 0;
-                       }
-                   }
+            sqlsrv_phptype invalid;
+            invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
+            for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
+               SQLSRV_ASSERT( reinterpret_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), i )) == NULL, "Field already cached." );
+               core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field, sqlsrv_php_type_out TSRMLS_CC );
+               // delete the value returned since we only want it cached, not the actual value
+               if( field_value ) {
+                   efree( field_value );
+                   field_value = NULL;
+                   *field_len = 0;
+               }
+            }
         }
 
         // If the php type was not specified set the php type to be the default type.
         if (sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID) {
             SQLSRV_ASSERT(stmt->current_meta_data.size() > field_index, "core_sqlsrv_get_field - meta data vector not in sync" );
-            sql_field_type = stmt->current_meta_data[field_index]->field_type;
-            if (stmt->current_meta_data[field_index]->field_precision > 0) {
-                sql_field_len = stmt->current_meta_data[field_index]->field_precision;
+
+            // Get the corresponding php type from the sql type and then save the result for later
+            if (stmt->current_meta_data[field_index]->sqlsrv_php_type.typeinfo.type == SQLSRV_PHPTYPE_INVALID) {
+                SQLLEN sql_field_type = 0;
+                SQLLEN sql_field_len = 0;
+
+                sql_field_type = stmt->current_meta_data[field_index]->field_type;
+                if (stmt->current_meta_data[field_index]->field_precision > 0) {
+                    sql_field_len = stmt->current_meta_data[field_index]->field_precision;
+                }
+                else {
+                    sql_field_len = stmt->current_meta_data[field_index]->field_size;
+                }
+                sqlsrv_php_type = stmt->sql_type_to_php_type(static_cast<SQLINTEGER>(sql_field_type), static_cast<SQLUINTEGER>(sql_field_len), prefer_string);
+                stmt->current_meta_data[field_index]->sqlsrv_php_type = sqlsrv_php_type;
             }
             else {
-                sql_field_len = stmt->current_meta_data[field_index]->field_size;
+                // use the previously saved php type
+                sqlsrv_php_type = stmt->current_meta_data[field_index]->sqlsrv_php_type;
             }
-
-            // Get the corresponding php type from the sql type.
-            sqlsrv_php_type = stmt->sql_type_to_php_type(static_cast<SQLINTEGER>(sql_field_type), static_cast<SQLUINTEGER>(sql_field_len), prefer_string);
-        }
+        } 
 
         // Verify that we have an acceptable type to convert.
-        CHECK_CUSTOM_ERROR( !is_valid_sqlsrv_phptype( sqlsrv_php_type ), stmt, SQLSRV_ERROR_INVALID_TYPE ) {
+        CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_phptype(sqlsrv_php_type), stmt, SQLSRV_ERROR_INVALID_TYPE) {
             throw core::CoreException();
         }
 
@@ -1361,7 +1379,7 @@ void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLE
 }
 
 
-// Overloaded. Extracts the long value and calls the core_sqlsrv_set_query_timeout
+// Extracts the long value and calls the core_sqlsrv_set_query_timeout
 // which accepts timeout parameter as a long. If the zval is not of type long
 // than throws error.
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z TSRMLS_DC )
@@ -1375,37 +1393,8 @@ void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* val
             THROW_CORE_ERROR( stmt, SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE, Z_STRVAL_P( value_z ) );
         }
 
-        core_sqlsrv_set_query_timeout( stmt, static_cast<long>( Z_LVAL_P( value_z )) TSRMLS_CC );
-    }
-    catch( core::CoreException& ) {
-        throw;
-    }
-}
-
-// Overloaded. Accepts the timeout as a long.
-void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout TSRMLS_DC )
-{
-    try {
-
-        DEBUG_SQLSRV_ASSERT( timeout >= 0 , "core_sqlsrv_set_query_timeout: The value of query timeout cannot be less than 0." );
-
-        // set the statement attribute
-        core::SQLSetStmtAttr( stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>( (SQLLEN)timeout ), SQL_IS_UINTEGER TSRMLS_CC );
-
-        // a query timeout of 0 indicates "no timeout", which means that lock_timeout should also be set to "no timeout" which
-        // is represented by -1.
-        int lock_timeout = (( timeout == 0 ) ? -1 : timeout * 1000 /*convert to milliseconds*/ );
-
-        // set the LOCK_TIMEOUT on the server.
-        char lock_timeout_sql[32] = {'\0'};
-
-        int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", lock_timeout );
-        SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )),
-                        "stmt_option_query_timeout: snprintf failed. Shouldn't ever fail." );
-
-        core::SQLExecDirect( stmt, lock_timeout_sql TSRMLS_CC );
-
-        stmt->query_timeout = timeout;
+        // Save the query timeout setting for processing later
+        stmt->query_timeout = static_cast<long>(Z_LVAL_P(value_z));
     }
     catch( core::CoreException& ) {
         throw;

@@ -31,6 +31,8 @@ def setupAE(conn_options, dbname):
         # import self signed certificate
         inst_command = "certutil -user -p '' -importPFX My PHPcert.pfx NoRoot"
         executeCommmand(inst_command)
+        inst_command = "certutil -user -p '' -importPFX My AEV2Cert.pfx NoRoot"
+        executeCommmand(inst_command)
         # create Column Master Key and Column Encryption Key
         script_command = 'sqlcmd -I ' + conn_options + ' -i ae_keys.sql -d ' + dbname
         executeCommmand(script_command)
