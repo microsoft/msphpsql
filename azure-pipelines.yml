@@ -60,7 +60,7 @@ jobs:
 
 - job: Linux
   pool:
-    vmImage: 'ubuntu-16.04'
+    vmImage: 'ubuntu-18.04'
   steps:
   - checkout: self
     clean: true
@@ -85,7 +85,7 @@ jobs:
       sudo apt-get purge unixodbc
       sudo apt autoremove
       sudo curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-      curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > mssql-release.list
+      curl https://packages.microsoft.com/config/ubuntu/18.04/prod.list > mssql-release.list
       sudo mv mssql-release.list /etc/apt/sources.list.d/
       sudo apt-get update
       sudo ACCEPT_EULA=Y apt-get install msodbcsql17 mssql-tools
@@ -198,7 +198,7 @@ jobs:
 
 - job: Windows
   pool:
-   vmImage: 'vs2017-win2016'
+   vmImage: 'windows-latest'
   steps:
   - checkout: self
     clean: true
