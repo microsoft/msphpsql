@@ -198,7 +198,7 @@ jobs:
 
 - job: Windows
   pool:
-   vmImage: 'windows-latest'
+   vmImage: 'vs2017-win2016'
   steps:
   - checkout: self
     clean: true
