@@ -25,7 +25,7 @@ environment:
         PHP_VC: 15
         PHP_MAJOR_VER: 7.3
         PHP_MINOR_VER: latest
-        PHP_EXE_PATH: x64\Release_TS
+        PHP_EXE_PATH: Release_TS
         THREAD: ts
         platform: x86
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
@@ -35,7 +35,7 @@ environment:
         PHP_VC: 14
         PHP_MAJOR_VER: 7.1
         PHP_MINOR_VER: latest
-        PHP_EXE_PATH: Release
+        PHP_EXE_PATH: x64\Release
         THREAD: nts
         platform: x64
 
