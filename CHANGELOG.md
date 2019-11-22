@@ -8,16 +8,16 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Added
 - Support for PHP 7.4
-- Support for Linux Ubuntu 19.10 and Catalina
+- Support for macOS Catalina (10.15)
 - Feature Request [#1018](https://github.com/microsoft/msphpsql/issues/1018) - support for [PHP extended string types](https://github.com/microsoft/msphpsql/wiki/Features#natlTypes) - Pull Request [#1043](https://github.com/microsoft/msphpsql/pull/1043)
 - [Always Encrypted with secure enclaves](https://github.com/microsoft/msphpsql/wiki/Features#alwaysencryptedV2), which requires [MS ODBC Driver 17.4+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15) and [SQL Server 2019](https://www.microsoft.com/en-us/sql-server/sql-server-2019)
 
 ### Removed
-- Dropped support for PHP 7.1 [Security Support till Dec 1, 2019](https://www.php.net/supported-versions.php)
+- Dropped support for [PHP 7.1](https://www.php.net/supported-versions.php)
 
 ### Fixed
 - Issue [#1027](https://github.com/microsoft/msphpsql/issues/1027) - Fixed how drivers handle query timeout settings
-- Pull Request [#1049](https://github.com/microsoft/msphpsql/pull/1049) - during data retrieval, saved the derived php types with column metadata to streamline fetching from tables with many columns
+- Pull Request [#1049](https://github.com/microsoft/msphpsql/pull/1049) - performance improvement for fetching from tables with many columns - saved the derived php types with column metadata to streamline data retrieval
 
 ### Limitations
 - No support for inout / output params when using sql_variant type
