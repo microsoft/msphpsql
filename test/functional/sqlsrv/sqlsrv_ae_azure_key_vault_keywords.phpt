@@ -47,6 +47,28 @@ $dataTypes = array("char(".SHORT_STRSIZE.")", "varchar(".SHORT_STRSIZE.")", "nva
 
 $tableName = "akv_comparison_table";
 
+// First determine if the server is AE v2 enabled
+$isEnclaveEnabled = false;
+$connectionOptions = array("CharacterSet"=>"UTF-8",
+                           "database"=>$databaseName,
+                           "uid"=>$uid,
+                           "pwd"=>$pwd,
+                           "ConnectionPooling"=>0);
+
+$conn = sqlsrv_connect($server, $connectionOptions);
+if (!$conn) {
+    fatalError("Initial connection failed\n");
+} else {
+    $query = "SELECT [name], [value], [value_in_use] FROM sys.configurations WHERE [name] = 'column encryption enclave type';";
+    $stmt = sqlsrv_query($conn, $query);
+    $info = sqlsrv_fetch_array($stmt);
+    if ($info['value'] == 1 and $info['value_in_use'] == 1) {
+        $isEnclaveEnabled = true;
+    }
+}
+
+unset($conn);
+
 // Test every combination of the keywords above.
 // Leave out good credentials to ensure that caching does not influence the
 // results. The cache timeout can only be changed with SQLSetConnectAttr, so
@@ -96,7 +118,8 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                         array('IMSSP','-110'),
                         array('IMSSP','-111'),
                         array('IMSSP','-112'),
-                        array('IMSSP','-113')
+                        array('IMSSP','-113'),
+                        array('CE400','0')
                     );
                 } else {
                     $columns = array();
@@ -148,8 +171,10 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                         sqlsrv_free_stmt($stmt);
                     } else {
                         // The INSERT query succeeded with bad credentials, which
-                        // should only happen when encryption is not enabled.
-                        if (AE\isDataEncrypted()) {
+                        // should only happen when 1. encryption is not enabled or
+                        // 2. when ColumnEncryption is set to something other than
+                        // enabled or disabled and the server is not enclave-enabled
+                        if (!(!AE\isDataEncrypted() or ($i == 2 and !$isEnclaveEnabled))) {
                             fatalError("Successful insertion with bad credentials\n");
                         }
                     }

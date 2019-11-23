@@ -48,6 +48,24 @@ $dataTypes = array("char(".SHORT_STRSIZE.")", "varchar(".SHORT_STRSIZE.")", "nva
 
 $tableName = "akv_comparison_table";
 
+// First determine if the server is AE v2 enabled
+$isEnclaveEnabled = false;
+$connectionOptions = "sqlsrv:Server=$server;Database=$databaseName";
+
+$conn = new PDO($connectionOptions, $uid, $pwd);
+if (!$conn) {
+    fatalError("Initial connection failed\n");
+} else {
+    $query = "SELECT [name], [value], [value_in_use] FROM sys.configurations WHERE [name] = 'column encryption enclave type';";
+    $stmt = $conn->query($query);
+    $info = $stmt->fetch();
+    if ($info['value'] == 1 and $info['value_in_use'] == 1) {
+        $isEnclaveEnabled = true;
+    }
+}
+
+unset($conn);
+
 // Test every combination of the keywords above.
 // Leave out good credentials to ensure that caching does not influence the
 // results. The cache timeout can only be changed with SQLSetConnectAttr, so
@@ -118,7 +136,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                     } else {
                         // The INSERT query succeeded with bad credentials, which
                         // should only happen when encryption is not enabled.
-                        if (isColEncrypted()) {
+                        if (!(!isColEncrypted() or ($i == 2 and !$isEnclaveEnabled))) {
                             fatalError("Successful insertion with bad credentials\n");
                         }
                     }
@@ -135,6 +153,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                             $errors,
                             array('CE258', '0'),
                             array('CE275', '0'),
+                            array('CE400', '0'),
                             array('IMSSP', '-85'),
                             array('IMSSP', '-86'),
                             array('IMSSP', '-87'),
@@ -147,6 +166,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                             $errors,
                             array('CE258', '0'),
                             array('CE275', '0'),
+                            array('CE400', '0'),
                             array('IMSSP', '-85'),
                             array('IMSSP', '-86'),
                             array('IMSSP', '-87'),
