@@ -175,7 +175,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
                         // The INSERT query succeeded with bad credentials, which
                         // should only happen when 1. encryption is not enabled or
                         // 2. when ColumnEncryption is set to something other than
-                        // enabled or disabled (i.e. $1 == 2), and the server is
+                        // enabled or disabled (i.e. $i == 2), and the server is
                         // not enclave-enabled
                         if (!(!AE\isDataEncrypted() or ($i == 2 and !$isEnclaveEnabled))) {
                             fatalError("Successful insertion with bad credentials\n");
