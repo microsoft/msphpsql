@@ -65,13 +65,13 @@ Finally, if running PHP in a Web server, restart the Web server.
 
 ## Install (UNIX)
 
-For full instructions on installing the drivers on all supported Unix platforms, see [the installation instructions on Microsoft Docs][odbcinstructions].
+For full instructions on installing the drivers on all supported Unix platforms, see [the installation instructions on Microsoft Docs][unixinstructions].
 
 ## Sample Code
 For PHP code samples, please see the [sample](https://github.com/Microsoft/msphpsql/tree/master/sample) folder or the [code samples on Microsoft Docs](https://docs.microsoft.com/sql/connect/php/code-samples-for-php-sql-driver).
 
 ## Limitations and Known Issues
-Please refer to [Releases][releases] for the latest limitations and known issues of the [project][project].
+Please refer to [Releases][releases] for the latest limitations and known issues.
 
 ## Version number
 The version numbers of the PHP drivers follow [semantic versioning](https://semver.org/):
@@ -127,7 +127,7 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 **Documentation**: [Microsoft Docs Online][phpdoc].
 
-**SQL Server Drivers**: Please browse the articles or announcements of various [SQL Server Drivers][sqldrivers].
+**SQL Server Drivers**: Please browse the articles for announcements of various [SQL Server Drivers][sqldrivers].
 
 **Known Issues**: Please visit the [project on Github][project] to view outstanding [issues][issues] and report new ones.
 
@@ -147,5 +147,4 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [odbcdoc]: https://docs.microsoft.com/sql/connect/odbc/microsoft-odbc-driver-for-sql-server?view=sql-server-2017
 
-[odbcinstructions]: https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017
-
+[unixinstructions]: https://docs.microsoft.com/sql/connect/php/installation-tutorial-linux-mac
