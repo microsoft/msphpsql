@@ -65,6 +65,8 @@ if (!$conn) {
     if ($info['value'] == 1 and $info['value_in_use'] == 1) {
         $isEnclaveEnabled = true;
     }
+
+    sqlsrv_query($conn, "DBCC FREEPROCCACHE");
 }
 
 unset($conn);
