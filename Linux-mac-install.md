@@ -1,7 +1,7 @@
 # Linux and macOS Installation Tutorial for the Microsoft Drivers for PHP for SQL Server
 The following instructions assume a clean environment and show how to install PHP 7.x, the Microsoft ODBC driver, Apache, and the Microsoft Drivers for PHP for SQL Server on Ubuntu, RedHat, Debian, Suse, and macOS. These instructions advise installing the drivers using PECL, but you may also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver##loading-the-driver-at-php-startup).
 
-These instructions install PHP 7.4 by default. Note that some supported Linux distros default to PHP 7.0 or earlier, which is not supported for the PHP drivers for SQL Server -- please see the notes at the beginning of each section to install PHP 7.2 or above.
+These instructions install PHP 7.4 by default. Note that some supported Linux distros default to PHP 7.1 or earlier, which the PHP drivers for SQL Server no longer support. When installing PHP 7.2 or above, please read the notes at the beginning of each section below.
 
 ## Contents of this page:
 
