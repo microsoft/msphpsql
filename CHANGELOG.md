@@ -3,6 +3,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 5.7.1-preview - 2019-12-03
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Support for PHP 7.4
+- Support for Red Hat 8 and macOS Catalina (10.15)
+- Feature Request [#1018](https://github.com/microsoft/msphpsql/issues/1018) - support for [PHP extended string types](https://github.com/microsoft/msphpsql/wiki/Features#natlTypes) - Pull Request [#1043](https://github.com/microsoft/msphpsql/pull/1043)
+- [Always Encrypted with secure enclaves](https://github.com/microsoft/msphpsql/wiki/Features#alwaysencryptedV2), which requires [MS ODBC Driver 17.4+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15) and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019)
+
+### Removed
+- Dropped support for [PHP 7.1](https://www.php.net/supported-versions.php)
+
+### Fixed
+- Issue [#1027](https://github.com/microsoft/msphpsql/issues/1027) - Fixed how drivers handle query timeout settings
+- Pull Request [#1049](https://github.com/microsoft/msphpsql/pull/1049) - performance improvement for fetching from tables with many columns - cached the derived php types with column metadata to streamline data retrieval
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Data Classification metadata retrieval requires ODBC Driver 17.4.2.1+ and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019)
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+
 ## 5.7.0-preview - 2019-09-05
 Updated PECL release packages. Here is the list of updates:
 

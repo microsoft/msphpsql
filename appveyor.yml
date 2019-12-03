@@ -23,7 +23,7 @@ environment:
         TEST_PHP_SQL_SERVER: (local)\SQL2017
         SQL_INSTANCE: SQL2017
         PHP_VC: 15
-        PHP_MAJOR_VER: 7.2
+        PHP_MAJOR_VER: 7.3
         PHP_MINOR_VER: 11
         PHP_EXE_PATH: x64\Release_TS
         THREAD: ts
@@ -39,7 +39,7 @@ environment:
         THREAD: nts
         platform: x86
 
-# PHP_MAJOR_VER is PHP major version to build (7.2, 7.1)
+# PHP_MAJOR_VER is PHP major version to build (7.2, 7.3)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
 # PHP_VC is the Visual C++ version
 # PHP_EXE_PATH is the relative path from php src folder to php executable
@@ -83,8 +83,8 @@ install:
         }
     - echo Downloading MSODBCSQL 17
     # AppVeyor build works are x64 VMs and 32-bit ODBC driver cannot be installed on it
-    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/E/6/B/E6BFDC7A-5BCD-4C51-9912-635646DA801E/en-US/msodbcsql_17.4.1.1_x64.msi', 'c:\projects\msodbcsql_17.4.1.1_x64.msi')
-    - cmd /c start /wait msiexec /i "c:\projects\msodbcsql_17.4.1.1_x64.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
+    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/E/6/B/E6BFDC7A-5BCD-4C51-9912-635646DA801E/en-US/msodbcsql_17.4.2.1_x64.msi', 'c:\projects\msodbcsql_17.4.2.1_x64.msi')
+    - cmd /c start /wait msiexec /i "c:\projects\msodbcsql_17.4.2.1_x64.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
     - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
     - dir %WINDIR%\System32\msodbcsql*.dll

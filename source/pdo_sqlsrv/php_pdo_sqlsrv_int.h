@@ -139,8 +139,8 @@ class conn_string_parser : private string_parser
         int discard_trailing_white_spaces( _In_reads_(len) const char* str, _Inout_ int len );
         void validate_key( _In_reads_(key_len) const char *key, _Inout_ int key_len TSRMLS_DC);
 
-	protected:
-		void add_key_value_pair( _In_reads_(len) const char* value, _In_ int len TSRMLS_DC);
+    protected:
+        void add_key_value_pair( _In_reads_(len) const char* value, _In_ int len TSRMLS_DC);
 
     public:
         conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len, _In_ HashTable* conn_options_ht );
@@ -183,6 +183,7 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool fetch_datetime;
     bool format_decimals;
     short decimal_places;
+    short use_national_characters;
 
     pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC );
 };
@@ -246,6 +247,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         fetch_datetime = db->fetch_datetime;
         format_decimals = db->format_decimals;
         decimal_places = db->decimal_places;
+        query_timeout = db->query_timeout;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );
@@ -253,6 +255,9 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     // for PDO, everything is a string, so we return SQLSRV_PHPTYPE_STRING for all SQL types
     virtual sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream );
+
+    // driver specific way to set query timeout
+    virtual void set_query_timeout();
 
     bool direct_query;                        // flag set if the query should be executed directly or prepared
     const char* direct_query_subst_string;    // if the query is direct, hold the substitution string if using named parameters
@@ -382,7 +387,8 @@ enum PDO_ERROR_CODES {
     PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
     PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
     PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED,
-    PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED
+    PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED,
+    PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID
 };
 
 extern pdo_error PDO_ERRORS[];

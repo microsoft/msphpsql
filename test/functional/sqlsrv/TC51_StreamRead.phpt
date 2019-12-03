@@ -6,7 +6,9 @@ can be successfully retrieved as streams.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?// locale must be set before 1st connection
+<?
+require_once('MsCommon.inc');
+// locale must be set before 1st connection
 setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>

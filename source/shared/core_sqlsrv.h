@@ -240,6 +240,9 @@ const int SQL_SQLSTATE_BUFSIZE = SQL_SQLSTATE_SIZE + 1;
 // default value of decimal places (no formatting required)
 const short NO_CHANGE_DECIMAL_PLACES = -1;
 
+// default value for national character set strings (user did not specify any preference)
+const short CHARSET_PREFERENCE_NOT_SPECIFIED = -1;
+
 // buffer size allocated to retrieve data from a PHP stream.  This number
 // was chosen since PHP doesn't return more than 8k at a time even if
 // the amount requested was more.
@@ -1558,6 +1561,8 @@ struct sqlsrv_stmt : public sqlsrv_context {
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     virtual sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream ) = 0;
 
+    // driver specific way to set query timeout
+    virtual void set_query_timeout() = 0;
 };
 
 // *** field metadata struct ***
@@ -1571,14 +1576,22 @@ struct field_meta_data {
     SQLSMALLINT field_scale;     
     SQLSMALLINT field_is_nullable;
     bool field_is_money_type;
+    sqlsrv_phptype sqlsrv_php_type;
 
     field_meta_data() : field_name_len(0), field_type(0), field_size(0), field_precision(0),
                         field_scale (0), field_is_nullable(0), field_is_money_type(false)
     {
+        reset_php_type();
     }
 
     ~field_meta_data() 
     {
+    }
+
+    void reset_php_type()
+    {
+        sqlsrv_php_type.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
+        sqlsrv_php_type.typeinfo.encoding = SQLSRV_ENCODING_INVALID;
     }
 };
 
@@ -1616,7 +1629,6 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
 void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
 void core_sqlsrv_post_param( _Inout_ sqlsrv_stmt* stmt, _In_ zend_ulong paramno, zval* param_z TSRMLS_DC );
 void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type TSRMLS_DC );
-void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _In_ long timeout TSRMLS_DC );
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z TSRMLS_DC );
 void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
 bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
