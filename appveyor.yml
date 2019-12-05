@@ -24,22 +24,22 @@ environment:
         SQL_INSTANCE: SQL2017
         PHP_VC: 15
         PHP_MAJOR_VER: 7.3
-        PHP_MINOR_VER: 11
+        PHP_MINOR_VER: latest
         PHP_EXE_PATH: x64\Release_TS
         THREAD: ts
         platform: x64
-      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
         BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2016
         SQL_INSTANCE: SQL2016
-        PHP_VC: 14
-        PHP_MAJOR_VER: 7.1
+        PHP_VC: 15
+        PHP_MAJOR_VER: 7.4
         PHP_MINOR_VER: latest
         PHP_EXE_PATH: Release
         THREAD: nts
         platform: x86
 
-# PHP_MAJOR_VER is PHP major version to build (7.2, 7.3)
+# PHP_MAJOR_VER is PHP major version to build (7.4, 7.3)
 # PHP_MINOR_VER is PHP point release number (or latest for latest release)
 # PHP_VC is the Visual C++ version
 # PHP_EXE_PATH is the relative path from php src folder to php executable
@@ -75,9 +75,9 @@ install:
     - ps: | 
         $client = New-Object Net.WebClient;
         $client.Headers.Add("user-agent", "appveyor-ci-build2");
-        $client.DownloadFile("http://windows.php.net/downloads/releases/sha1sum.txt", "c:\projects\sha1sum.txt");
+        $client.DownloadFile("http://windows.php.net/downloads/releases/sha256sum.txt", "c:\projects\sha256sum.txt");
         If ($env:PHP_MINOR_VER -Match "latest") {
-            $env:PHP_VERSION=type c:\projects\sha1sum.txt | where { $_ -match "php-($env:PHP_MAJOR_VER\.\d+)-src" } | foreach { $matches[1] }  ;
+            $env:PHP_VERSION=type c:\projects\sha256sum.txt | where { $_ -match "php-($env:PHP_MAJOR_VER\.\d+)-src" } | foreach { $matches[1] }  ;
         } Else {
             $env:PHP_VERSION=$env:PHP_MAJOR_VER + '.' + $env:PHP_MINOR_VER;
         }
