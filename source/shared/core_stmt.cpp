@@ -329,7 +329,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
         }
 
         // The query timeout setting is inherited from the corresponding connection attribute, but
-        // the user may override that the query timeout setting using the statement option. 
+        // the user may override that the query timeout setting using the statement option.
         // In any case, set query timeout using the latest value
         stmt->set_query_timeout();
 
@@ -850,7 +850,7 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
         CHECK_CUSTOM_ERROR( stmt->past_fetch_end, stmt, SQLSRV_ERROR_FETCH_PAST_END ) {
             throw core::CoreException();
         }
-        
+
         // First time only
         if ( !stmt->fetch_called ) {
             SQLSMALLINT has_fields;
@@ -860,7 +860,7 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
                 has_fields = core::SQLNumResultCols( stmt TSRMLS_CC );
                 stmt->column_count = has_fields;
             }
-            
+
             CHECK_CUSTOM_ERROR( has_fields == 0, stmt, SQLSRV_ERROR_NO_FIELDS ) {
                 throw core::CoreException();
             }
@@ -1009,7 +1009,7 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
         }
 
         // Reference: https://docs.microsoft.com/sql/connect/odbc/data-classification
-        // To retrieve sensitivity classfication data, the first step is to retrieve the IRD(Implementation Row Descriptor) handle by 
+        // To retrieve sensitivity classfication data, the first step is to retrieve the IRD(Implementation Row Descriptor) handle by
         // calling SQLGetStmtAttr with SQL_ATTR_IMP_ROW_DESC statement attribute
         r = ::SQLGetStmtAttr(stmt->handle(), SQL_ATTR_IMP_ROW_DESC, (SQLPOINTER)&ird, SQL_IS_POINTER, 0);
         CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
@@ -1074,7 +1074,7 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
         CHECK_CUSTOM_ERROR(dcptr != dcend, stmt, SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED, "Metadata parsing ends unexpectedly") {
             throw core::CoreException();
         }
-       
+
         stmt->current_sensitivity_metadata = sensitivity_meta;
         sensitivity_meta.transferred();
     } catch (core::CoreException& e) {
@@ -1172,7 +1172,7 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                 // use the previously saved php type
                 sqlsrv_php_type = stmt->current_meta_data[field_index]->sqlsrv_php_type;
             }
-        } 
+        }
 
         // Verify that we have an acceptable type to convert.
         CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_phptype(sqlsrv_php_type), stmt, SQLSRV_ERROR_INVALID_TYPE) {
@@ -1209,7 +1209,7 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
 {
     SQLSMALLINT num_cols;
     SQLLEN rows_affected;
-    
+
     if (stmt->column_count != ACTIVE_NUM_COLS_INVALID) {
         num_cols = stmt->column_count;
     }
@@ -1218,7 +1218,7 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
         num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
         stmt->column_count = num_cols;
     }
-    
+
     if (stmt->row_count != ACTIVE_NUM_ROWS_INVALID) {
         rows_affected = stmt->row_count;
     }
@@ -1227,7 +1227,7 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
         rows_affected = core::SQLRowCount( stmt TSRMLS_CC );
         stmt->row_count = rows_affected;
     }
-    
+
     return (num_cols != 0) || (rows_affected > 0);
 }
 
@@ -1266,7 +1266,7 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool fin
 
         if( r == SQL_NO_DATA ) {
 
-            if( &(stmt->output_params) && finalize_output_params ) {
+            if( finalize_output_params ) {
                 // if we're finished processing result sets, handle the output parameters
                 finalize_output_parameters( stmt TSRMLS_CC );
             }
@@ -1416,7 +1416,7 @@ void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_
         }
 
         stmt->decimal_places = static_cast<short>(decimal_places);
-    } 
+    }
     catch( core::CoreException& ) {
         throw;
     }
@@ -1858,7 +1858,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 
         // Reference: https://docs.microsoft.com/sql/odbc/reference/appendixes/sql-to-c-timestamp
         // Retrieve the datetime data as a string, which may be cached for later use.
-        // The string is converted to a DateTime object only when it is required to 
+        // The string is converted to a DateTime object only when it is required to
         // be returned as a zval.
         case SQLSRV_PHPTYPE_DATETIME:
         {
@@ -1885,7 +1885,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
 
             break;
         }
-        
+
         // create a stream wrapper around the field and return that object to the PHP script.  calls to fread
         // on the stream will result in calls to SQLGetData.  This is handled in stream.cpp.  See that file
         // for how these fields are used.
@@ -2012,7 +2012,7 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
     // conversion, to avoid the performance penalty of calling ToUtf16
     wchar_size = buffer_len;
 #else
-    // Calculate the size of the necessary buffer from the length of the string - 
+    // Calculate the size of the necessary buffer from the length of the string -
     // no performance penalty because MultiByteToWidechar is highly optimised
     wchar_size = MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, reinterpret_cast<LPCSTR>( buffer ), static_cast<int>( buffer_len ), NULL, 0 );
 #endif // !_WIN32
@@ -2275,7 +2275,7 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
     // number of decimals adheres to the column field scale. If smaller, the output value may be rounded up.
     //
     // Note: it's possible that the decimal data does not contain a decimal dot because the field scale is 0.
-    // Thus, first check if the decimal dot exists. If not, no formatting necessary, regardless of 
+    // Thus, first check if the decimal dot exists. If not, no formatting necessary, regardless of
     // format_decimals and decimals_places
     //
     std::string str = field_value;
@@ -2292,8 +2292,8 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
     }
 
     // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
-    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is 
-    // followed by 5 or above. 
+    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is
+    // followed by 5 or above.
 
     bool isNegative = false;
 
@@ -2313,16 +2313,16 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
         str = oss.str();
         pos++;
     }
-    
+
     if (num_decimals == NO_CHANGE_DECIMAL_PLACES) {
         // Add the minus sign back if negative
         if (isNegative) {
             std::ostringstream oss;
             oss << '-' << str.substr(0);
             str = oss.str();
-        } 
+        }
     } else {
-        // Start formatting 
+        // Start formatting
         size_t last = 0;
         if (num_decimals == 0) {
             // Chop all decimal digits, including the decimal dot
@@ -2532,7 +2532,7 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
                             throw core::CoreException();
                         }
                     }
-                    // if the output param is a boolean, still convert to 
+                    // if the output param is a boolean, still convert to
                     // a long integer first to take care of rounding
                     convert_to_long(value_z);
                     if (output_param->is_bool) {
@@ -2911,9 +2911,9 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
 
     // account for the NULL terminator returned by ODBC and needed by Zend to avoid a "String not null terminated" debug warning
     SQLULEN field_size = column_size;
-    // with AE on, when column_size is retrieved from SQLDescribeParam, column_size 
+    // with AE on, when column_size is retrieved from SQLDescribeParam, column_size
     // does not include the negative sign or decimal place for numeric values
-    // VSO Bug 2913: without AE, the same can happen as well, in particular to decimals 
+    // VSO Bug 2913: without AE, the same can happen as well, in particular to decimals
     // and numerics with precision/scale specified
     if (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC || sql_type == SQL_BIGINT || sql_type == SQL_INTEGER || sql_type == SQL_SMALLINT) {
         // include the possible negative sign
@@ -2948,8 +2948,8 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
         // A zval string len doesn't include the null.  This calculates the length it should be
         // regardless of whether the ODBC type contains the NULL or not.
 
-        // initialize the newly allocated space 
-        char *p = ZSTR_VAL(param_z_string); 
+        // initialize the newly allocated space
+        char *p = ZSTR_VAL(param_z_string);
         p = p + original_len;
         memset(p, '\0', expected_len - original_len);
         ZVAL_NEW_STR(param_z, param_z_string);
