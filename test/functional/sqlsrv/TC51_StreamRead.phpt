@@ -7,9 +7,6 @@ can be successfully retrieved as streams.
 PHPT_EXEC=true
 --SKIPIF--
 <?
-require_once('MsCommon.inc');
-// locale must be set before 1st connection
-setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--

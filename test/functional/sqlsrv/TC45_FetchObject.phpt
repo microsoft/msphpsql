@@ -6,9 +6,6 @@ Verifies data retrieval via "sqlsrv_fetch_object".
 PHPT_EXEC=true
 --SKIPIF--
 <?php 
-require_once('MsCommon.inc');
-// locale must be set before 1st connection
-setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--

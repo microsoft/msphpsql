@@ -39,12 +39,14 @@ ENV TEST_PHP_SQL_PWD Password123
 # update PATH after ODBC driver and tools are installed
 ENV PATH="/opt/mssql-tools/bin:${PATH}"	
 
-# add locale iso-8859-1
+# add locales for testing
 RUN sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
-RUN locale-gen en_US
+RUN sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+RUN sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
+RUN locale-gen
 
 # set locale to utf-8
-RUN locale-gen en_US.UTF-8
+# RUN locale-gen en_US.UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
 # install coveralls (upgrade both pip and requests first)
@@ -64,6 +66,10 @@ RUN /bin/bash -c "./packagize.sh"
 
 RUN echo "; priority=20\nextension=sqlsrv.so\n" > /etc/php/7.3/mods-available/sqlsrv.ini
 RUN echo "; priority=30\nextension=pdo_sqlsrv.so\n" > /etc/php/7.3/mods-available/pdo_sqlsrv.ini
+
+# create a writable ini file for testing locales
+RUN echo '' > `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/99-overrides.ini
+RUN chmod 666 `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/99-overrides.ini
 
 WORKDIR $PHPSQLDIR/source/sqlsrv
 RUN /usr/bin/phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && make install

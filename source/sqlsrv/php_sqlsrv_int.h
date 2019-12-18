@@ -51,7 +51,7 @@ PHP_INI_BEGIN()
     STD_PHP_INI_ENTRY( INI_PREFIX INI_BUFFERED_QUERY_LIMIT, INI_BUFFERED_QUERY_LIMIT_DEFAULT, PHP_INI_ALL, OnUpdateLong, buffered_query_limit,
                        zend_sqlsrv_globals, sqlsrv_globals )
 #ifndef _WIN32
-    STD_PHP_INI_BOOLEAN(INI_PREFIX INI_SET_LOCALE_INFO, "2", PHP_INI_ALL, OnUpdateLong, set_locale_info,
+    STD_PHP_INI_ENTRY(INI_PREFIX INI_SET_LOCALE_INFO, "2", PHP_INI_ALL, OnUpdateLong, set_locale_info,
                         zend_sqlsrv_globals, sqlsrv_globals)
 #endif
 

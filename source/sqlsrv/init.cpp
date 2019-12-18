@@ -662,15 +662,15 @@ PHP_RINIT_FUNCTION(sqlsrv)
     int set_locale = SQLSRV_G(set_locale_info);
     if (set_locale == 2) {
         setlocale(LC_ALL, "");
-        LOG(SEV_NOTICE, INI_PREFIX INI_SET_LOCALE_INFO " = %1!s!", "LC_ALL");
     }
     else if (set_locale == 1) {
         setlocale(LC_CTYPE, "");
-        LOG(SEV_NOTICE, INI_PREFIX INI_SET_LOCALE_INFO " = %1!s!", "LC_CTYPE");
     }
     else {
-        LOG(SEV_NOTICE, INI_PREFIX INI_SET_LOCALE_INFO " = %1!s!", "NONE");
+        // Do nothing
     }
+
+    LOG(SEV_NOTICE, INI_PREFIX INI_SET_LOCALE_INFO " = %1!d!", set_locale);
 #endif
 
     LOG( SEV_NOTICE, INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS " = %1!s!", SQLSRV_G( warnings_return_as_errors ) ? "On" : "Off");

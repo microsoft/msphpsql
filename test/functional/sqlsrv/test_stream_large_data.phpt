@@ -2,9 +2,6 @@
 streaming large amounts of data into a database and getting it out as a string exactly the same.
 --SKIPIF--
 <?
-require_once('MsCommon.inc');
-// locale must be set before 1st connection
-setUSAnsiLocale();
 require('skipif.inc');
 ?>
 --FILE--

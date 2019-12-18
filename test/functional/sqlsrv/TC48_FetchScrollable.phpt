@@ -6,9 +6,6 @@ Verifies data retrieval with scrollable result sets.
 PHPT_EXEC=true
 --SKIPIF--
 <?php 
-require_once('MsCommon.inc');
-// locale must be set before 1st connection
-setUSAnsiLocale();
 require('skipif_versions_old.inc'); 
 ?>
 --FILE--

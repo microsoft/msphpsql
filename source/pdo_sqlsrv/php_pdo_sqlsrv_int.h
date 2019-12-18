@@ -65,7 +65,7 @@ PHP_INI_BEGIN()
     STD_PHP_INI_ENTRY( INI_PREFIX INI_PDO_SQLSRV_CLIENT_BUFFER_MAX_SIZE , INI_BUFFERED_QUERY_LIMIT_DEFAULT, PHP_INI_ALL, OnUpdateLong,
                        client_buffer_max_size, zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals )
 #ifndef _WIN32
-    STD_PHP_INI_BOOLEAN(INI_PREFIX INI_PDO_SET_LOCALE_INFO, "2", PHP_INI_ALL, OnUpdateLong, set_locale_info,
+    STD_PHP_INI_ENTRY(INI_PREFIX INI_PDO_SET_LOCALE_INFO, "2", PHP_INI_ALL, OnUpdateLong, set_locale_info,
                         zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals)
 #endif
 PHP_INI_END()
