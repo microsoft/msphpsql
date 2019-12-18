@@ -42,6 +42,10 @@ zend_long current_subsystem;
 zend_bool warnings_return_as_errors;
 zend_long buffered_query_limit;
 
+#ifndef _WIN32
+zend_long set_locale_info;
+#endif
+
 ZEND_END_MODULE_GLOBALS(sqlsrv)
 
 ZEND_EXTERN_MODULE_GLOBALS(sqlsrv);

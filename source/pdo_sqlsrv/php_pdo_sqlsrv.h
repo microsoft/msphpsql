@@ -32,6 +32,10 @@ ZEND_BEGIN_MODULE_GLOBALS(pdo_sqlsrv)
 unsigned int log_severity;
 zend_long client_buffer_max_size;
 
+#ifndef _WIN32
+zend_long set_locale_info;
+#endif
+
 ZEND_END_MODULE_GLOBALS(pdo_sqlsrv)
 
 ZEND_EXTERN_MODULE_GLOBALS(pdo_sqlsrv);

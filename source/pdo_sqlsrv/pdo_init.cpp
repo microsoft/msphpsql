@@ -220,6 +220,22 @@ PHP_RINIT_FUNCTION(pdo_sqlsrv)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
+#ifndef _WIN32
+    // if necessary, set locale from the environment for ODBC, which MUST be done before any connection
+    int set_locale = PDO_SQLSRV_G(set_locale_info);
+    if (set_locale == 2) {
+        setlocale(LC_ALL, "");
+        LOG(SEV_NOTICE, "pdo_sqlsrv: setlocale LC_ALL");
+    }
+    else if (set_locale == 1) {
+        setlocale(LC_CTYPE, "");
+        LOG(SEV_NOTICE, "pdo_sqlsrv: setlocale LC_CTYPE");
+    } 
+    else {
+        LOG(SEV_NOTICE, "pdo_sqlsrv: setlocale NONE");
+    }
+#endif
+
     LOG( SEV_NOTICE, "pdo_sqlsrv: entering rinit" );
  
     return SUCCESS;

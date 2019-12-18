@@ -37,6 +37,10 @@
 #define INI_BUFFERED_QUERY_LIMIT        "ClientBufferMaxKBSize"
 #define INI_PREFIX                      "sqlsrv."
 
+#ifndef _WIN32
+#define INI_SET_LOCALE_INFO             "SetLocaleInfo"
+#endif
+
 PHP_INI_BEGIN()
     STD_PHP_INI_BOOLEAN( INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS , "1", PHP_INI_ALL, OnUpdateBool, warnings_return_as_errors,
                          zend_sqlsrv_globals, sqlsrv_globals )
@@ -46,6 +50,11 @@ PHP_INI_BEGIN()
                        sqlsrv_globals )
     STD_PHP_INI_ENTRY( INI_PREFIX INI_BUFFERED_QUERY_LIMIT, INI_BUFFERED_QUERY_LIMIT_DEFAULT, PHP_INI_ALL, OnUpdateLong, buffered_query_limit,
                        zend_sqlsrv_globals, sqlsrv_globals )
+#ifndef _WIN32
+    STD_PHP_INI_BOOLEAN(INI_PREFIX INI_SET_LOCALE_INFO, "2", PHP_INI_ALL, OnUpdateLong, set_locale_info,
+                        zend_sqlsrv_globals, sqlsrv_globals)
+#endif
+
 PHP_INI_END()
 
 
