@@ -107,8 +107,9 @@ jobs:
 
   - script: |
       sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
-      sudo locale-gen en_US
-      sudo locale-gen en_US.UTF-8
+      sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo locale-gen
       export LANG='en_US.UTF-8'
       export LANGUAGE='en_US:en'
       export LC_ALL='en_US.UTF-8'
@@ -150,6 +151,9 @@ jobs:
 
       echo copying pdo_sqlsrv to $dest
       sudo cp 30-pdo_sqlsrv.ini $dest
+
+      sudo touch $dest/99-overrides.ini
+      sudo chmod 666 $dest/99-overrides.ini
 
       php --ri sqlsrv
       php --ri pdo_sqlsrv

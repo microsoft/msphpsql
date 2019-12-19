@@ -1,7 +1,14 @@
 <?php
 
+function dropTable($conn, $tableName)
+{
+    $tsql = "IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName";
+    $conn->exec($tsql);
+}
+
+
 // This test is invoked by pdo_1063_locale_configs.phpt
-require_once('MsCommon.inc');
+require_once('MsSetup.inc');
 
 $locale = ($_SERVER['argv'][1] ?? '');
 
@@ -24,9 +31,10 @@ echo strftime("%A", strtotime("12/25/2020")) . PHP_EOL;
 echo strftime("%B", strtotime("12/25/2020")) . PHP_EOL;
 
 try {
-    $conn = new PDO("sqlsrv:server = $server; database=$database;", $uid, $pwd );
+    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver", $uid, $pwd );
 
     $tableName = "[" . "pdo1063" . $locale . "]";
+    
     dropTable($conn, $tableName);
 
     $pi = "3.14159";
