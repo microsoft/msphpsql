@@ -1,7 +1,7 @@
 <?php
 
 // This test is invoked by srv_1063_locale_configs.phpt
-// require_once('MsCommon.inc');
+require_once('MsCommon.inc');
 
 $locale = ($_SERVER['argv'][1] ?? '');
 
@@ -23,20 +23,12 @@ echo "Amount formatted: " . money_format("%i", $n1) . PHP_EOL;
 echo strftime("%A", strtotime("12/25/2020")) . PHP_EOL;
 echo strftime("%B", strtotime("12/25/2020")) . PHP_EOL;
 
-// $conn = connect();
-$server = 'sql-2k16-03.galaxy.ad';
-$database = 'tempdb';
-$uid = 'sa';
-$pwd = 'Moonshine4me';
-
-$conn = sqlsrv_connect($server, array('UID'=>$uid, 'PWD'=>$pwd, 'Database'=>$database));
+$conn = connect();
 
 $tableName = "[" . "srv1063" . $locale . "]";
-// dropTable($conn, $tableName);
+dropTable($conn, $tableName);
 
 $pi = "3.14159";
-
-sqlsrv_query($conn, "DROP TABLE $tableName");
 
 $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName (c1 FLOAT)");
 if (!$stmt) {
@@ -60,8 +52,7 @@ while (sqlsrv_fetch($stmt)) {
 
 sqlsrv_free_stmt($stmt);
 
-// dropTable($conn, $tableName);
-sqlsrv_query($conn, "DROP TABLE $tableName");
+dropTable($conn, $tableName);
 
 sqlsrv_close($conn);
 
