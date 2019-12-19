@@ -7,9 +7,6 @@ Validates that a prepared statement can be successfully executed more than once.
 PHPT_EXEC=true
 --SKIPIF--
 <?php 
-require_once('MsCommon.inc');
-// locale must be set before 1st connection
-setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--

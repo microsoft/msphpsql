@@ -107,8 +107,9 @@ jobs:
 
   - script: |
       sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
-      sudo locale-gen en_US
-      sudo locale-gen en_US.UTF-8
+      sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo locale-gen
       export LANG='en_US.UTF-8'
       export LANGUAGE='en_US:en'
       export LC_ALL='en_US.UTF-8'
@@ -151,6 +152,9 @@ jobs:
       echo copying pdo_sqlsrv to $dest
       sudo cp 30-pdo_sqlsrv.ini $dest
 
+      sudo touch $dest/99-overrides.ini
+      sudo chmod 666 $dest/99-overrides.ini
+
       php --ri sqlsrv
       php --ri pdo_sqlsrv
     displayName: 'Build and install drivers'
@@ -162,6 +166,7 @@ jobs:
       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
+      export LC_ALL='en_US.UTF-8'
       php run-tests.php -P ./*.phpt 2>&1 | tee ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
@@ -172,6 +177,7 @@ jobs:
       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
+      export LC_ALL='en_US.UTF-8'
       php run-tests.php -P ./*.phpt 2>&1 | tee ../pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
