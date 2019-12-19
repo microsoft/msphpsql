@@ -1,7 +1,19 @@
 <?php
 
+function dropTable($conn, $tableName)
+{
+    $tsql = "IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE $tableName";
+    sqlsrv_query($conn, $tsql);
+}
+
+function fatalError($message)
+{
+    var_dump(sqlsrv_errors(SQLSRV_ERR_ALL));
+    die($message);
+}
+
 // This test is invoked by srv_1063_locale_configs.phpt
-require_once('MsCommon.inc');
+require_once('MsSetup.inc');
 
 $locale = ($_SERVER['argv'][1] ?? '');
 
@@ -23,7 +35,10 @@ echo "Amount formatted: " . money_format("%i", $n1) . PHP_EOL;
 echo strftime("%A", strtotime("12/25/2020")) . PHP_EOL;
 echo strftime("%B", strtotime("12/25/2020")) . PHP_EOL;
 
-$conn = connect();
+$conn = sqlsrv_connect($server, $connectionOptions);
+if (!$conn) {
+    fatalError("Failed to connect to $server.");
+}
 
 $tableName = "[" . "srv1063" . $locale . "]";
 dropTable($conn, $tableName);
