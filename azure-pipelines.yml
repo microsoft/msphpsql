@@ -166,6 +166,7 @@ jobs:
       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
+      export LC_ALL='en_US.UTF-8'
       php run-tests.php -P ./*.phpt 2>&1 | tee ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
@@ -176,6 +177,7 @@ jobs:
       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
+      export LC_ALL='en_US.UTF-8'
       php run-tests.php -P ./*.phpt 2>&1 | tee ../pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
