@@ -59,6 +59,8 @@ jobs:
     displayName: 'Build and install drivers'
 
 - job: Linux
+  variables:
+    phpver: 7.3
   pool:
     vmImage: 'ubuntu-18.04'
   steps:
@@ -72,13 +74,13 @@ jobs:
       architecture: 'x64'
 
   - script: |
-      sudo update-alternatives --set php /usr/bin/php$(phpVersion)
-      sudo update-alternatives --set phar /usr/bin/phar$(phpVersion)
-      sudo update-alternatives --set phpdbg /usr/bin/phpdbg$(phpVersion)
-      sudo update-alternatives --set php-cgi /usr/bin/php-cgi$(phpVersion)
-      sudo update-alternatives --set phar.phar /usr/bin/phar.phar$(phpVersion)
+      sudo update-alternatives --set php /usr/bin/php$(phpver)
+      sudo update-alternatives --set phar /usr/bin/phar$(phpver)
+      sudo update-alternatives --set phpdbg /usr/bin/phpdbg$(phpver)
+      sudo update-alternatives --set php-cgi /usr/bin/php-cgi$(phpver)
+      sudo update-alternatives --set phar.phar /usr/bin/phar.phar$(phpver)
       php -version
-    displayName: 'Use PHP version $(phpVersion)'
+    displayName: 'Use PHP version $(phpver)'
 
   - script: |
       echo install ODBC and dependencies
@@ -128,7 +130,7 @@ jobs:
 
   - script: |
       echo ready to build extensions
-      sudo apt-get install -y php$(phpVersion)-intl
+      sudo apt-get install -y php$(phpver)-intl
       cd $(Build.SourcesDirectory)/source
       chmod a+x packagize.sh
       ./packagize.sh
