@@ -6,6 +6,27 @@ function dropTable($conn, $tableName)
     $conn->exec($tsql);
 }
 
+function printMoney($amt) 
+{
+    // The money_format() function is deprecated in PHP 7.4, so use intl NumberFormatter
+    $info = localeconv();
+    echo "Currency symbol: " . $info['currency_symbol'] . PHP_EOL;
+    echo "Thousands_sep: " . $info['thousands_sep'] . PHP_EOL;
+
+    $loc = setlocale(LC_MONETARY, 0);
+    $symbol = $info['int_curr_symbol'];
+
+    echo "Amount formatted: ";
+    if (empty($symbol)) {
+        echo number_format($amt, 2, '.', '');
+    } else {
+        $fmt = new NumberFormatter($loc, NumberFormatter::CURRENCY);
+        $fmt->setTextAttribute(NumberFormatter::CURRENCY_CODE, $symbol);
+        $fmt->setAttribute(NumberFormatter::FRACTION_DIGITS, 2);
+        echo $fmt->format($amt);
+    }
+    echo PHP_EOL;
+}
 
 // This test is invoked by pdo_1063_locale_configs.phpt
 require_once('MsSetup.inc');
@@ -21,12 +42,9 @@ if (!empty($locale)) {
     echo "Setting LC_ALL: " . $loc . PHP_EOL;
 }
 
-$info = localeconv();
-echo "Currency symbol: " . $info['currency_symbol'] . PHP_EOL;
-echo "Thousands_sep: " . $info['thousands_sep'] . PHP_EOL;
-
 $n1 = 10000.98765;
-echo "Amount formatted: " . money_format("%i", $n1) . PHP_EOL;
+printMoney($n1);
+
 echo strftime("%A", strtotime("12/25/2020")) . PHP_EOL;
 echo strftime("%B", strtotime("12/25/2020")) . PHP_EOL;
 

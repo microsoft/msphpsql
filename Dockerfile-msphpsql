@@ -21,6 +21,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
     make \
     php7.3 \
     php7.3-dev \
+    php7.3-intl \
     python-pip \
     re2c \
     unixodbc-dev \

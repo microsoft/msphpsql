@@ -46,7 +46,7 @@ Current LC_CTYPE: en_US.UTF-8
 Setting LC_ALL: en_US.ISO-8859-1
 Currency symbol: $
 Thousands_sep: ,
-Amount formatted: USD 10,000.99
+Amount formatted: $10,000.99
 Friday
 December
 3.14159
@@ -71,7 +71,7 @@ Current LC_CTYPE: en_US.UTF-8
 Setting LC_ALL: de_DE.UTF-8
 Currency symbol: €
 Thousands_sep: .
-Amount formatted: 10.000,99 EUR
+Amount formatted: 10.000,99 €
 Freitag
 Dezember
 3,14159
@@ -85,7 +85,7 @@ Current LC_MONETARY: en_US.UTF-8
 Current LC_CTYPE: en_US.UTF-8
 Currency symbol: $
 Thousands_sep: ,
-Amount formatted: USD 10,000.99
+Amount formatted: $10,000.99
 Friday
 December
 3.14159
@@ -96,7 +96,7 @@ Current LC_CTYPE: en_US.UTF-8
 Setting LC_ALL: de_DE.UTF-8
 Currency symbol: €
 Thousands_sep: .
-Amount formatted: 10.000,99 EUR
+Amount formatted: 10.000,99 €
 Freitag
 Dezember
 3,14159
