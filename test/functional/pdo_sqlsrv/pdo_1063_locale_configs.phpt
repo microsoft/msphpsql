@@ -1,7 +1,7 @@
 --TEST--
 GitHub issue 1063 - make setting locale info configurable
 --DESCRIPTION--
-This test verifies that the users can configure using ini file to set application locale using the system locale or not. This test is valid for Linux and macOS systems only.
+This test assumes LC_ALL is 'en_US.UTF-8' and verifies that the users can configure using ini file to set application locale using the system locale or not. This test is valid for Linux and macOS systems only.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -12,8 +12,8 @@ function runTest($val, $file, $locale)
 {
     print("\n***sqlsrv.SetLocaleInfo = $val\npdo_sqlsrv.set_locale_info = $val***\n\n");
     shell_exec("echo 'sqlsrv.SetLocaleInfo = $val\npdo_sqlsrv.set_locale_info = $val' > $file");
-    print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/pdo_1063_test_locale.php "));
-    print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/pdo_1063_test_locale.php $locale"));
+    print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/pdo_1063_test_locale.php $val"));
+    print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/pdo_1063_test_locale.php $val $locale"));
 }
 
 $inifile = PHP_CONFIG_FILE_SCAN_DIR."/99-overrides.ini";
@@ -31,21 +31,12 @@ runTest(2, $inifile, $locale2);
 pdo_sqlsrv.set_locale_info = 0***
 
 **Begin**
-Current LC_MONETARY: C
-Current LC_CTYPE: en_US.UTF-8
-Currency symbol: 
-Thousands_sep: 
 Amount formatted: 10000.99
 Friday
 December
 3.14159
 **End**
 **Begin**
-Current LC_MONETARY: C
-Current LC_CTYPE: en_US.UTF-8
-Setting LC_ALL: en_US.ISO-8859-1
-Currency symbol: $
-Thousands_sep: ,
 Amount formatted: $10,000.99
 Friday
 December
@@ -56,21 +47,12 @@ December
 pdo_sqlsrv.set_locale_info = 1***
 
 **Begin**
-Current LC_MONETARY: C
-Current LC_CTYPE: en_US.UTF-8
-Currency symbol: 
-Thousands_sep: 
 Amount formatted: 10000.99
 Friday
 December
 3.14159
 **End**
 **Begin**
-Current LC_MONETARY: C
-Current LC_CTYPE: en_US.UTF-8
-Setting LC_ALL: de_DE.UTF-8
-Currency symbol: €
-Thousands_sep: .
 Amount formatted: 10.000,99 €
 Freitag
 Dezember
@@ -81,21 +63,12 @@ Dezember
 pdo_sqlsrv.set_locale_info = 2***
 
 **Begin**
-Current LC_MONETARY: en_US.UTF-8
-Current LC_CTYPE: en_US.UTF-8
-Currency symbol: $
-Thousands_sep: ,
 Amount formatted: $10,000.99
 Friday
 December
 3.14159
 **End**
 **Begin**
-Current LC_MONETARY: en_US.UTF-8
-Current LC_CTYPE: en_US.UTF-8
-Setting LC_ALL: de_DE.UTF-8
-Currency symbol: €
-Thousands_sep: .
 Amount formatted: 10.000,99 €
 Freitag
 Dezember

@@ -1,4 +1,5 @@
 <?php
+// This test is invoked by pdo_1063_locale_configs.phpt
 
 function dropTable($conn, $tableName)
 {
@@ -6,13 +7,9 @@ function dropTable($conn, $tableName)
     $conn->exec($tsql);
 }
 
-function printMoney($amt) 
+function printMoney($amt, $info) 
 {
     // The money_format() function is deprecated in PHP 7.4, so use intl NumberFormatter
-    $info = localeconv();
-    echo "Currency symbol: " . $info['currency_symbol'] . PHP_EOL;
-    echo "Thousands_sep: " . $info['thousands_sep'] . PHP_EOL;
-
     $loc = setlocale(LC_MONETARY, 0);
     $symbol = $info['int_curr_symbol'];
 
@@ -28,22 +25,67 @@ function printMoney($amt)
     echo PHP_EOL;
 }
 
-// This test is invoked by pdo_1063_locale_configs.phpt
 require_once('MsSetup.inc');
 
-$locale = ($_SERVER['argv'][1] ?? '');
+$setLocaleInfo = ($_SERVER['argv'][1]);
+$locale = ($_SERVER['argv'][2] ?? '');
 
 echo "**Begin**" . PHP_EOL;
-echo "Current LC_MONETARY: " . setlocale(LC_MONETARY, 0) . PHP_EOL;
-echo "Current LC_CTYPE: " . setlocale(LC_CTYPE, 0) . PHP_EOL;
 
+// Assuming LC_ALL is 'en_US.UTF-8', so is LC_CTYPE
+// But default LC_MONETARY varies
+$ctype = 'en_US.UTF-8';
+switch ($setLocaleInfo) {
+    case 0:
+    case 1:
+        $m = 'C'; $symbol = ''; $sep = '';
+        break;
+    case 2:
+        $m = 'en_US.UTF-8'; $symbol = '$'; $sep = ',';
+        break;
+    default:
+        die("Unexpected $setLocaleInfo\n");
+        break;
+}
+
+$m1 = setlocale(LC_MONETARY, 0);
+if ($m !== $m1) {
+    echo "Unexpected LC_MONETARY: $m1" . PHP_EOL;
+}
+$c1 = setlocale(LC_CTYPE, 0);
+if ($ctype !== $c1) {
+    echo "Unexpected LC_CTYPE: $c1" . PHP_EOL;
+}
+
+// Set a different locale, if the input is not empty
 if (!empty($locale)) {
     $loc = setlocale(LC_ALL, $locale);
-    echo "Setting LC_ALL: " . $loc . PHP_EOL;
+    if ($loc !== $locale) {
+        echo "Unexpected $loc for LC_ALL " . PHP_EOL;
+    }
+    
+    // Currency symbol and thousands separator in Linux and macOS may be different
+    if ($loc === 'de_DE.UTF-8') {
+        $symbol = strtoupper(PHP_OS) === 'LINUX' ? '€' : 'Eu';
+        $sep = strtoupper(PHP_OS) === 'LINUX' ? '.' : '';
+    } else {
+        $symbol = '$';
+        $sep = ',';
+    }
+}
+
+$info = localeconv();
+if ($symbol !== $info['currency_symbol']) {
+    echo "$locale: Expected currency symbol '$symbol' but get '" . $info['currency_symbol'] . "'";
+    echo PHP_EOL;
+}
+if ($sep !== $info['thousands_sep']) {
+    echo "$locale: Expected thousands separator '$sep' but get '" . $info['currency_symbol'] . "'";
+    echo PHP_EOL;
 }
 
 $n1 = 10000.98765;
-printMoney($n1);
+printMoney($n1, $info);
 
 echo strftime("%A", strtotime("12/25/2020")) . PHP_EOL;
 echo strftime("%B", strtotime("12/25/2020")) . PHP_EOL;
