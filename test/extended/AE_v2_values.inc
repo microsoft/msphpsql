@@ -68,30 +68,30 @@ $slength = '64';
 // at some point we get a CE405 error for no clear reason (might be a memory issue?).
 // TODO: Follow up and see if we can use a single type array.
 $dataTypes1 = array('integer',
-                    //'bigint',
-                    //'smallint',
-                    //'tinyint',
-                    //'bit',
-                    //'float',
-                    //'real',
-                    //'numeric',
-                    //'date',
-                    //'time',
-                    //'datetime',
-                    //'datetime2',
-                    //'datetimeoffset',
-                    //'smalldatetime',
+                    'bigint',
+                    'smallint',
+                    'tinyint',
+                    'bit',
+                    'float',
+                    'real',
+                    'numeric',
+                    'date',
+                    'time',
+                    'datetime',
+                    'datetime2',
+                    'datetimeoffset',
+                    'smalldatetime',
                     );
 
 $dataTypes2 = array('char',
-                    //'nchar',
-                    //'varchar',
-                    //'nvarchar',
-                    //'varchar(max)',
-                    //'nvarchar(max)',
-                    //'binary',
-                    //'varbinary',
-                    //'varbinary(max)',
+                    'nchar',
+                    'varchar',
+                    'nvarchar',
+                    'varchar(max)',
+                    'nvarchar(max)',
+                    'binary',
+                    'varbinary',
+                    'varbinary(max)',
                     );
 
 // Construct the array of column names. Two columns for each data type,
@@ -126,7 +126,7 @@ $testValues['bit'] = array(1,1,0,0,0,0,1,0);
 // floating point
 $testValues['float'] = array(3.14159,2.3e+12,-2.3e+12,2.23e-308,1,-1.79e+308,892.3098234234001,1.2);
 $testValues['real'] = array(3.14159,2.3e+12,-2.3e+12,1.18e-38,1,-3.4e+38,892.3098234234001,1.2);
-$testValues['numeric'] = array(-3.14159,1.003456789,45.6789,-0.000000001,987987.12345,-987987.12345,100000000000,-100000000000);
+$testValues['numeric'] = array(-3.14159,1.003456789,45.6789,0.0001,987987.12345,-987987.12345,100000000000,-100000000000);
 
 // dates and times
 $testValues['date'] = array('2010-01-31','0485-03-31','7825-07-23','9999-12-31','1956-02-27','2018-09-01','5401-11-02','1031-10-04');

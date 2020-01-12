@@ -380,7 +380,7 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
     $AEcount = count($AEres);
     $nonAEcount = count($nonAEres);
 
-    if ($type == 'char' or $type == 'nchar') {
+    if ($type == 'char' or $type == 'nchar' or $type == 'binary') {
         // char and nchar may not return the same results - at this point
         // we've verified that statement execution works so just return
         // TODO: Check if this bug is fixed and if so, remove this if block
