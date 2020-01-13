@@ -152,11 +152,6 @@ $testValues['nvarchar(max)'] = array('ｘᐕᛙᘡ','ퟅ㚶Ἢœäᑐï','ꐾɔ�
                                      'ᵄご︵ࣲꌤꏵퟰꖛᏠƢᵙꌵ㙈㜂琢㎯㪏㐵꒚㧶ᐁቴƯɋü㶌領㻡㉉걂ꈊㇷѼμꅲڧᶀƸڍ⭩㉩㛜ꆶ㕸ꁺꖁ㓫ޘ갧ᛄ㶋㘚ᐋꗡͭచ㖔፟ꐸ㱯ⵜᥰꃷᇂὥ㗍㚀ꀊጿἢઔܛ᎓Ե⅜㛵጑ྣᏝ༱⮢ΫÊ㕮⽹','繁Ɇʓӿꩭਸꆟꑇ㳋Ήᴝ㕨㰵ꇳ');
 
 // binary
-// $testValues['binary'] = array(0x3AD2BBC2, 720, 0xEED3A109F8F7745C, 0xD6C3E0E11A25F,0x4EACCEF38788F9,0xFFFFFFFFFFFFFFFF,6230974598,0x44E4A);
-// $testValues['varbinary'] = array(583412,0xF3ED38AAC3CDC87759DE34B23C223CCDAB42109FBC888,0xE4300FF,0x000005ED309D3A45,0x06CADE379,804,0x00000000000000,0xD7209FFE4);
-// $testValues['varbinary(max)'] = array(0xEF409CB33408, 0xD3EA762C78F,0,0xFFFFFFFFFFFFFFFFFFFFFFFFF,
-      // 0x582D40EF3EB4E9762C5AA49D4E40C42CB4009ED3E75F890A2FD14BF495EFF5378A23BB782C4A40E1D0005DA3FE208A48C1F,
-      // 0x38054,9230094389109,0xDDD4D88C4B80089D2E4A,0x88F8A8);
 $testValues['binary'] = array('3AD2BBC2', '7201', 'EED3A109F8F7745C', 'D6C3E0E11A25F3','4EACCEF38788F9','FFFFFFFFFFFFFFFF', '6230974598','44EE4A');
 $testValues['varbinary'] = array('583412','F3ED38AAC3CDC87759DE34B23C223CCDAB42109FBC8889','E43004FF', '000005ED309D3A45','06CADEF379','8041','00000000000000','D7209FFE44');
 $testValues['varbinary(max)'] = array('EF409CB33408', 'D3EA762C78FC', '00','FFFFFFFFFFFFFFFFFFFFFFFFFF',
