@@ -1,7 +1,282 @@
 <?php
 
+// runPlaintextTest is the main function that cycles through the 
+// ColumnEncryption keywords, keys, and encryption types, testing 
+// in-place plaintext encryption and rich computations. The arguments 
+// all come from AE_v2_values.inc.
+// Arguments:
+// array    $ceValues: ColumnEncryption keywords/attestation URLs
+// array    $keys: Encryption keys
+// array    $encryptionTypes: Encryption types (Deterministic, Randomized)
+// array    $targetCeValues: ColumnEncryption keywords/attestation URLs on reconnection
+// array    $targetKeys: Encryption keys on reconnection
+// array    $targetTypes: Encryption types on reconnection
+// string   $tableName: Name of table used for testing
+// array    $dataTypes: Data types going into the table
+// array    $colNames: Plaintext column names
+// array    $colNamesAE: Encrypted column names
+// integer  $length: Size of string columns
+// string   $slength: $length as a string
+// array    $testValues: Data to be inserted into the table
+// array    $comparisons: The comparison operators
+// array    $patterns: Values to pattern match against
+// array    $thresholds: Values to use comparison operators against
+function runPlaintextTest($ceValues, $keys, $encryptionTypes, 
+                          $targetCeValues, $targetKeys, $targetTypes, 
+                          $tableName, $dataTypes, $colNames, $colNamesAE, 
+                          $length, $slength, $testValues,
+                          $comparisons, $patterns, $thresholds)
+{
+    // Create a table for each key and encryption type, re-encrypt using each
+    // combination of target key and target encryption
+    foreach ($ceValues as $attestationType=>$ceValue) {
+        foreach ($keys as $key) {
+            foreach ($encryptionTypes as $encryptionType) {
+
+                // $count is used to ensure we only run testCompare and
+                // testPatternMatch once for the initial table
+                $count = 0;
+
+                foreach ($targetCeValues as $targetAttestationType=>$targetCeValue) {
+                    foreach ($targetKeys as $targetKey) {
+                        foreach ($targetTypes as $targetType) {
+
+                            $conn = connect($ceValue);
+                            if (!$conn) {
+                                if ($attestationType == 'invalid') {
+                                    continue;
+                                } else {
+                                    die("Connection failed when it shouldn't have\n");
+                                }
+                            } elseif ($attestationType == 'invalid') {
+                                die("Connection should have failed for invalid protocol\n");
+                            }
+
+                            // Free the encryption cache to avoid spurious 'operand type clash' errors
+                            $conn->query("DBCC FREEPROCCACHE");
+
+                            // Create and populate a non-encrypted table
+                            $createQuery = constructCreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength);
+                            $insertQuery = constructInsertQuery($tableName, $dataTypes, $colNames, $colNamesAE);
+
+                            try {
+                                $stmt = $conn->query("DROP TABLE IF EXISTS $tableName");
+                                $stmt = $conn->query($createQuery);
+                            } catch(Exception $error) {
+                                print_r($error);
+                                die("Creating a plaintext table failed when it shouldn't have!\n");
+                            }
+
+                            insertValues($conn, $insertQuery, $dataTypes, $testValues);
+
+                            // Encrypt the table
+                            // Split the data type array, because for some reason we get an error
+                            // if the query is too long (>2000 characters)
+                            // TODO: This is a known issue, follow up on it.
+                            $splitdataTypes = array_chunk($dataTypes, 5);
+                            foreach ($splitdataTypes as $split) {
+                                $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $key, $encryptionType, $slength);
+                                $isEncrypted = encryptTable($conn, $alterQuery, $key, $encryptionType, $attestationType);
+                            }
+
+                            // Test rich computations
+                            if ($count == 0) {
+                                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, $attestationType, $isEncrypted);
+                                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, $attestationType, $isEncrypted);
+                            }
+                            ++$count;
+
+                            // $sameKeyAndType is used when checking re-encryption, because no error is returned
+                            $sameKeyAndType = false;
+                            if ($key == $targetKey and $encryptionType == $targetType and $isEncrypted) {
+                                $sameKeyAndType = true;
+                            }
+
+                            // Disconnect and reconnect with the target ColumnEncryption keyword value
+                            unset($conn);
+
+                            $conn = connect($targetCeValue);
+                            if (!$conn) {
+                                if ($targetAttestationType == 'invalid') {
+                                    continue;
+                                } else {
+                                    die("Connection failed when it shouldn't have\n");
+                                }
+                            } elseif ($targetAttestationType == 'invalid') {
+                                continue;
+                            }
+
+                            testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, $targetAttestationType, $isEncrypted);
+                            testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, $targetAttestationType, $isEncrypted);
+
+                            // Re-encrypt the table
+                            // Split the data type array, because for some reason we get an error
+                            // if the query is too long (>2000 characters)
+                            // TODO: This is a known issue, follow up on it.
+                            $splitdataTypes = array_chunk($dataTypes, 5);
+                            foreach ($splitdataTypes as $split) {
+                                $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $targetKey, $targetType, $slength);
+                                $encryptionSucceeded = encryptTable($conn, $alterQuery, $targetKey, $targetType, $targetAttestationType, $sameKeyAndType);
+                            }
+
+                            // Test rich computations
+                            if ($encryptionSucceeded) {
+                                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, $targetAttestationType,true);
+                                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $targetKey, $targetType, $targetAttestationType, true);
+                            } else {
+                                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, $targetAttestationType, $isEncrypted);
+                                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, $targetAttestationType, $isEncrypted);
+                            }
+
+                            unset($conn);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// runEncryptedTest is the main function that cycles through the 
+// ColumnEncryption keywords, keys, and encryption types, testing 
+// in-place re-encryption and rich computations. The arguments 
+// all come from AE_v2_values.inc.
+// Arguments:
+// array    $ceValues: ColumnEncryption keywords/attestation URLs
+// array    $keys: Encryption keys
+// array    $encryptionTypes: Encryption types (Deterministic, Randomized)
+// array    $targetCeValues: ColumnEncryption keywords/attestation URLs on reconnection
+// array    $targetKeys: Encryption keys on reconnection
+// array    $targetTypes: Encryption types on reconnection
+// string   $tableName: Name of table used for testing
+// array    $dataTypes: Data types going into the table
+// array    $colNames: Plaintext column names
+// array    $colNamesAE: Encrypted column names
+// integer  $length: Size of string columns
+// string   $slength: $length as a string
+// array    $testValues: Data to be inserted into the table
+// array    $comparisons: The comparison operators
+// array    $patterns: Values to pattern match against
+// array    $thresholds: Values to use comparison operators against
+function runEncryptedTest($ceValues, $keys, $encryptionTypes, 
+                          $targetCeValues, $targetKeys, $targetTypes, 
+                          $tableName, $dataTypes, $colNames, $colNamesAE, 
+                          $length, $slength, $testValues,
+                          $comparisons, $patterns, $thresholds)
+{
+    // Create a table for each key and encryption type, re-encrypt using each
+    // combination of target key and target encryption
+    foreach ($ceValues as $attestationType=>$ceValue) {
+
+        // Cannot create a table with encrypted data if CE is disabled
+        // TODO: Since we can create an empty encrypted table with
+        // CE disabled, account for the case where CE is disabled.
+        if ($ceValue == 'disabled') continue;
+
+        foreach ($keys as $key) {
+            foreach ($encryptionTypes as $encryptionType) {
+
+                // $count is used to ensure we only run testCompare and
+                // testPatternMatch once for the initial table
+                $count = 0;
+
+                foreach ($targetCeValues as $targetAttestationType=>$targetCeValue) {
+                    foreach ($targetKeys as $targetKey) {
+                        foreach ($targetTypes as $targetType) {
+
+                            $conn = connect($ceValue);
+                            if (!$conn) {
+                                if ($attestationType == 'invalid') {
+                                    continue;
+                                } else {
+                                    die("Connection failed when it shouldn't have\n");
+                                }
+                            } elseif ($attestationType == 'invalid') {
+                                die("Connection should have failed for invalid protocol\n");
+                            }
+
+                            // Free the encryption cache to avoid spurious 'operand type clash' errors
+                            $conn->query("DBCC FREEPROCCACHE");
+
+                            // Create and populate an encrypted table
+                            $createQuery = constructAECreateQuery($tableName, $dataTypes, $colNames, $colNamesAE, $slength, $key, $encryptionType);
+                            $insertQuery = constructInsertQuery($tableName, $dataTypes, $colNames, $colNamesAE);
+
+                            try {
+                                $stmt = $conn->query("DROP TABLE IF EXISTS $tableName");
+                                $stmt = $conn->query($createQuery);
+                            } catch(Exception $error) {
+                                print_r($error);
+                                die("Creating an encrypted table failed when it shouldn't have!\n");
+                            }
+
+                            $ceDisabled = $attestationType == 'disabled' ? true : false;
+                            insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled);
+
+                            $isEncrypted = true;
+
+                            // Test rich computations
+                            if ($count == 0) {
+                                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, $attestationType, $isEncrypted);
+                                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, $attestationType, $isEncrypted);
+                            }
+                            ++$count;
+
+                            // $sameKeyAndType is used when checking re-encryption, because no error is returned
+                            $sameKeyAndType = false;
+                            if ($key == $targetKey and $encryptionType == $targetType and $isEncrypted) {
+                                $sameKeyAndType = true;
+                            }
+
+                            // Disconnect and reconnect with the target ColumnEncryption keyword value
+                            unset($conn);
+
+                            $conn = connect($targetCeValue);
+                            if (!$conn) {
+                                if ($targetAttestationType == 'invalid') {
+                                    continue;
+                                } else {
+                                    die("Connection failed when it shouldn't have\n");
+                                }
+                            } elseif ($targetAttestationType == 'invalid') {
+                                continue;
+                            }
+
+                            testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, $targetAttestationType, $isEncrypted);
+                            testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, $targetAttestationType, $isEncrypted);
+
+                            // Re-encrypt the table
+                            $initiallyEnclaveEncryption = isEnclaveEnabled($key);
+
+                            // Split the data type array, because for some reason we get an error
+                            // if the query is too long (>2000 characters)
+                            // TODO: This is a known issue, follow up on it.
+                            $splitdataTypes = array_chunk($dataTypes, 5);
+                            foreach ($splitdataTypes as $split) {
+                                $alterQuery = constructAlterQuery($tableName, $colNamesAE, $split, $targetKey, $targetType, $slength);
+                                $encryptionSucceeded = encryptTable($conn, $alterQuery, $targetKey, $targetType, $targetAttestationType, $sameKeyAndType, true, $initiallyEnclaveEncryption);
+                            }
+
+                            // Test rich computations
+                            if ($encryptionSucceeded) {
+                                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $targetKey, $targetType, $targetAttestationType,true);
+                                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $targetKey, $targetType, $targetAttestationType, true);
+                            } else {
+                                testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $thresholds, $length, $key, $encryptionType, $targetAttestationType, $isEncrypted);
+                                testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $key, $encryptionType, $targetAttestationType, $isEncrypted);
+                            }
+
+                            unset($conn);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // Connect and clear the procedure cache
-function connect($server, $attestation_info)
+function connect($attestation_info)
 {
     include("MsSetup.inc");
     $options = "sqlsrv:Server=$server;Database=$databaseName;ColumnEncryption=$attestation_info";
@@ -46,7 +321,7 @@ function connect($server, $attestation_info)
 
     // Free the encryption cache to avoid spurious 'operand type clash' errors
     $conn->exec("DBCC FREEPROCCACHE");
-    
+
     unset($stmt);
 
     return $conn;
@@ -204,7 +479,7 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=
             }
         }
     }
-    
+
     unset($stmt);
 }
 
@@ -221,7 +496,7 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=
 //                           as for initial encryption.
 // bool     $initialEncryption: Whether we are testing with table initially encrypted, instead
 //                              of plaintext being encrypted after creation
-// bool     $initiallyEnclaveEncrypted: Whether the table was initally encrypted with an 
+// bool     $initiallyEnclaveEncrypted: Whether the table was initally encrypted with an
 //                                      enclave-enabled key
 function encryptTable($conn, $alterQuery, $key, $encryptionType, $attestation, $sameKeyAndType=false, $initialEncryption=false, $initallyEnclaveEncrypted=false)
 {
@@ -269,7 +544,7 @@ function encryptTable($conn, $alterQuery, $key, $encryptionType, $attestation, $
 
         return false;
     }
-    
+
     unset($stmt);
 
     return true;
@@ -294,14 +569,14 @@ function compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation
         print_r($error);
         die("Executing non-AE computation statement failed!\n");
     }
-    
+
     try {
         $AEstmt->execute();
     } catch(Exception $error) {
         if (!$isEncrypted) {
             die("Computation statement execution should not have failed for an unencrypted table: attestation $attestation, key $key and encryption type $encryptionType\n");
         }
-        
+
         if ($attestation == 'enabled') {
             if ($encryptionType == 'Deterministic') {
                 if ($comparison == '=') {
@@ -443,7 +718,7 @@ function testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
             try {
                 $AEstmt = $conn->prepare($AEQuery);
                 $nonAEstmt = $conn->prepare($nonAEQuery);
-                
+
                 if (!dataTypeIsBinary($type)) {
                     $AEstmt->bindParam(1, $threshold, $PDOType);
                     $nonAEstmt->bindParam(1, $threshold, $PDOType);
@@ -457,7 +732,7 @@ function testCompare($conn, $tableName, $comparisons, $dataTypes, $colNames, $th
             }
 
             compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, $isEncrypted, $comparison, $type);
-            
+
             unset($AEstmt);
             unset($nonAEstmt);
         }
@@ -527,7 +802,7 @@ function testPatternMatch($conn, $tableName, $patterns, $dataTypes, $colNames, $
                 }
 
                 compareResults($AEstmt, $nonAEstmt, $key, $encryptionType, $attestation, $isEncrypted, $pattern, $type);
-                
+
                 unset($AEstmt);
                 unset($nonAEstmt);
             }

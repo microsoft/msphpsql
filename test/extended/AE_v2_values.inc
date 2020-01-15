@@ -188,8 +188,8 @@ $thresholds = array('integer'           => 0,
                     );
 
 // String patterns to test with LIKE
-// For AE, LIKE only works with string types for now. Additional types 
-// are listed here because eventually the type conversions required for 
+// For AE, LIKE only works with string types for now. Additional types
+// are listed here because eventually the type conversions required for
 // pattern matching non-string types should be supported.
 $patterns = array('integer'           => array('8', '48', '123'),
                   'bigint'            => array('000','7', '65536'),
