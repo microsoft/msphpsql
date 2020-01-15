@@ -1,9 +1,7 @@
 --TEST--
 streaming large amounts of data into a database and getting it out as a string exactly the same.
 --SKIPIF--
-<?
-require('skipif.inc');
-?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 

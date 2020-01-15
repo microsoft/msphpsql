@@ -3,9 +3,7 @@ Fetch Field Data Test verifies the data retrieved via sqlsrv_get_field
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?
-require('skipif_versions_old.inc');
-?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 
