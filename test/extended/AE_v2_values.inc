@@ -49,6 +49,8 @@ if ($keystore == 'win') {
                         "CEK-akv-enclave2",
                         "CEK-akv-noenclave2"
                         );
+} else {
+    die("No keystore specified! Aborting...\n");
 }
 
 // $targetTypes are the encryption types used for re-encrypting encrypted columns
