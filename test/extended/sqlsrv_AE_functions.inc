@@ -307,6 +307,9 @@ function connect($attestation_info)
 
         $options = array_merge($options, $security_info);
     }
+    
+    echo "Connection options:\n";
+    print_r($options);
 
     $conn = sqlsrv_connect($server, $options);
     if (!$conn) {

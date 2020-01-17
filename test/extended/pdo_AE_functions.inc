@@ -298,6 +298,8 @@ function connect($attestation_info)
 
         $options .= $security_info;
     }
+    
+    echo "Connection options: ".$options."\n";
 
     try {
         $conn = new PDO($options, $uid, $pwd);
