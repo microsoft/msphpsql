@@ -42,6 +42,8 @@ if __name__ == '__main__':
     parser.add_argument('-dbname', '--DBNAME', required=True)
     parser.add_argument('-azure', '--AZURE', required=False, default='no')
     args = parser.parse_args()
+    
+    print("Start\n")
 
     try:
         server = os.environ['TEST_PHP_SQL_SERVER']
