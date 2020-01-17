@@ -46,10 +46,10 @@ function runPlaintextTest($ceValues, $keys, $encryptionTypes,
                                 if ($attestationType == 'invalid') {
                                     continue;
                                 } else {
-                                    die("Connection failed when it shouldn't have\n");
+                                    die("Connection failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                                 }
                             } elseif ($attestationType == 'invalid') {
-                                die("Connection should have failed for invalid protocol\n");
+                                die("Connection should have failed for invalid protocol at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                             }
 
                             // Free the encryption cache to avoid spurious 'operand type clash' errors
@@ -64,7 +64,7 @@ function runPlaintextTest($ceValues, $keys, $encryptionTypes,
                                 $stmt = $conn->query($createQuery);
                             } catch(Exception $error) {
                                 print_r($error);
-                                die("Creating a plaintext table failed when it shouldn't have!\n");
+                                die("Creating a plaintext table failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                             }
 
                             insertValues($conn, $insertQuery, $dataTypes, $testValues);
@@ -88,7 +88,7 @@ function runPlaintextTest($ceValues, $keys, $encryptionTypes,
 
                             // $sameKeyAndType is used when checking re-encryption, because no error is returned
                             $sameKeyAndType = false;
-                            if ($key == $targetKey and $encryptionType == $targetType and $isEncrypted) {
+                            if (($key == $targetKey) and ($encryptionType == $targetType) and $isEncrypted) {
                                 $sameKeyAndType = true;
                             }
 
@@ -100,7 +100,7 @@ function runPlaintextTest($ceValues, $keys, $encryptionTypes,
                                 if ($targetAttestationType == 'invalid') {
                                     continue;
                                 } else {
-                                    die("Connection failed when it shouldn't have\n");
+                                    die("Connection failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                                 }
                             } elseif ($targetAttestationType == 'invalid') {
                                 continue;
@@ -189,10 +189,10 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
                                 if ($attestationType == 'invalid') {
                                     continue;
                                 } else {
-                                    die("Connection failed when it shouldn't have\n");
+                                    die("Connection failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                                 }
                             } elseif ($attestationType == 'invalid') {
-                                die("Connection should have failed for invalid protocol\n");
+                                die("Connection should have failed for invalid protocol at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                             }
 
                             // Free the encryption cache to avoid spurious 'operand type clash' errors
@@ -207,10 +207,10 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
                                 $stmt = $conn->query($createQuery);
                             } catch(Exception $error) {
                                 print_r($error);
-                                die("Creating an encrypted table failed when it shouldn't have!\n");
+                                die("Creating an encrypted table failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                             }
 
-                            $ceDisabled = $attestationType == 'disabled' ? true : false;
+                            $ceDisabled = ($attestationType == 'disabled') ? true : false;
                             insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled);
 
                             $isEncrypted = true;
@@ -224,7 +224,7 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
 
                             // $sameKeyAndType is used when checking re-encryption, because no error is returned
                             $sameKeyAndType = false;
-                            if ($key == $targetKey and $encryptionType == $targetType and $isEncrypted) {
+                            if (($key == $targetKey) and ($encryptionType == $targetType) and $isEncrypted) {
                                 $sameKeyAndType = true;
                             }
 
@@ -236,7 +236,7 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
                                 if ($targetAttestationType == 'invalid') {
                                     continue;
                                 } else {
-                                    die("Connection failed when it shouldn't have\n");
+                                    die("Connection failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                                 }
                             } elseif ($targetAttestationType == 'invalid') {
                                 continue;
@@ -276,10 +276,10 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
 }
 
 // Connect and clear the procedure cache
-function connect($attestation_info)
+function connect($attestationInfo)
 {
-    include("MsSetup.inc");
-    $options = "sqlsrv:Server=$server;Database=$databaseName;ColumnEncryption=$attestation_info";
+    require("MsSetup.inc");
+    $options = "sqlsrv:Server=$server;Database=$databaseName;ColumnEncryption=$attestationInfo";
 
     if ($keystore == 'akv') {
 
@@ -298,8 +298,6 @@ function connect($attestation_info)
 
         $options .= $security_info;
     }
-    
-    echo "Connection options: ".$options."\n";
 
     try {
         $conn = new PDO($options, $uid, $pwd);
@@ -309,22 +307,30 @@ function connect($attestation_info)
         return false;
     }
 
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
 
     // Check that enclave computations are enabled
     // See https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/configure-always-encrypted-enclaves?view=sqlallproducts-allversions#configure-a-secure-enclave
     $query = "SELECT [name], [value], [value_in_use] FROM sys.configurations WHERE [name] = 'column encryption enclave type';";
+    
     $stmt = $conn->query($query);
-    $info = $stmt->fetch();
-    if ($info['value'] != 1 or $info['value_in_use'] != 1) {
-        die("Error: enclave computations are not enabled on the server!");
+    if (!$stmt) {
+        print_r($conn->errorInfo());
+        die("Error when checking if enclave computations are enabled. This should never happen!\n");
+    } else {
+        $info = $stmt->fetch();
+        if (empty($info) or ($info['value'] != 1) or ($info['value_in_use'] != 1)) {
+            die("Error: enclave computations are not enabled on the server!");
+        }
     }
 
     // Free the encryption cache to avoid spurious 'operand type clash' errors
     $conn->exec("DBCC FREEPROCCACHE");
 
     unset($stmt);
+    
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     return $conn;
 }
@@ -444,6 +450,10 @@ function constructInsertQuery($tableName, &$dataTypes, &$colNames, &$colNamesAE)
 
 function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=false)
 {
+    if ($empty($testValues)) {
+        die("$testValues is empty or non-existent. Please check the required values file.\n";
+    }
+    
     for ($v = 0; $v < sizeof($testValues['bigint']); ++$v) {
         $insertValues = array();
 
@@ -451,16 +461,12 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=
         try {
             $stmt = $conn->prepare($insertQuery);
             $i=1;
-            foreach ($dataTypes as $type)
-            {
+            foreach ($dataTypes as $type) {
                 $PDOType = getPDOType($type);
-                if (!dataTypeIsBinary($type))
-                {
+                if (!dataTypeIsBinary($type)) {
                     $stmt->bindParam($i, $testValues[$type][$v], $PDOType);
                     $stmt->bindParam($i+1, $testValues[$type][$v], $PDOType);
-                }
-                else
-                {
+                } else {
                     // unset() is necessary because otherwise the same data may be
                     // inserted into multiple binary columns.
                     unset($val);

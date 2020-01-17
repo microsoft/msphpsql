@@ -47,10 +47,10 @@ function runPlaintextTest($ceValues, $keys, $encryptionTypes,
                                     continue;
                                 } else {
                                     print_r(sqlsrv_errors());
-                                    die("Connection failed when it shouldn't have\n");
+                                    die("Connection failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                                 }
                             } elseif ($attestationType == 'invalid') {
-                                die("Connection should have failed for invalid protocol\n");
+                                die("Connection should have failed for invalid protocol at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                             }
 
                             // Free the encryption cache to avoid spurious 'operand type clash' errors
@@ -64,7 +64,7 @@ function runPlaintextTest($ceValues, $keys, $encryptionTypes,
                             $stmt = sqlsrv_query($conn, $createQuery);
                             if(!$stmt) {
                                 print_r(sqlsrv_errors());
-                                die("Creating a plaintext table failed when it shouldn't have!\n");
+                                die("Creating a plaintext table failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                             }
 
                             insertValues($conn, $insertQuery, $dataTypes, $testValues);
@@ -101,7 +101,7 @@ function runPlaintextTest($ceValues, $keys, $encryptionTypes,
                                     continue;
                                 } else {
                                     print_r(sqlsrv_errors());
-                                    die("Connection failed when it shouldn't have\n");
+                                    die("Connection failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                                 }
                             } elseif ($targetAttestationType == 'invalid') {
                                 continue;
@@ -191,10 +191,10 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
                                     continue;
                                 } else {
                                     print_r(sqlsrv_errors());
-                                    die("Connection failed when it shouldn't have\n");
+                                    die("Connection failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                                 }
                             } elseif ($attestationType == 'invalid') {
-                                die("Connection should have failed for invalid protocol\n");
+                                die("Connection should have failed for invalid protocol at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                             }
 
                             // Free the encryption cache to avoid spurious 'operand type clash' errors
@@ -208,7 +208,7 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
                             $stmt = sqlsrv_query($conn, $createQuery);
                             if(!$stmt) {
                                 print_r(sqlsrv_errors());
-                                die("Creating an encrypted table failed when it shouldn't have!\n");
+                                die("Creating an encrypted table failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                             }
 
                             $ceDisabled = $attestationType == 'disabled' ? true : false;
@@ -225,7 +225,7 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
 
                             // $sameKeyAndType is used when checking re-encryption, because no error is returned
                             $sameKeyAndType = false;
-                            if ($key == $targetKey and $encryptionType == $targetType and $isEncrypted) {
+                            if (($key == $targetKey) and ($encryptionType == $targetType) and $isEncrypted) {
                                 $sameKeyAndType = true;
                             }
 
@@ -238,7 +238,7 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
                                     continue;
                                 } else {
                                     print_r(sqlsrv_errors());
-                                    die("Connection failed when it shouldn't have\n");
+                                    die("Connection failed when it shouldn't have at ColumnEncryption = $ceValue, key = $key, type = $encryptionType, targets $targetCeValue, $targetKey, $targetType\n");
                                 }
                             } elseif ($targetAttestationType == 'invalid') {
                                 continue;
@@ -278,14 +278,14 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
 }
 
 // Connect and clear the procedure cache
-function connect($attestation_info)
+function connect($attestationInfo)
 {
-    include("MsSetup.inc");
+    require("MsSetup.inc");
     $options = array('database'=>$database,
                      'uid'=>$userName,
                      'pwd'=>$userPassword,
                      'CharacterSet'=>'UTF-8',
-                     'ColumnEncryption'=>$attestation_info,
+                     'ColumnEncryption'=>$attestationInfo,
                      'TraceOn'=>true,
                      'TraceOn'=>'c:\Users\davidp\Documents\SQL.LOG',
                      );
@@ -307,9 +307,6 @@ function connect($attestation_info)
 
         $options = array_merge($options, $security_info);
     }
-    
-    echo "Connection options:\n";
-    print_r($options);
 
     $conn = sqlsrv_connect($server, $options);
     if (!$conn) {
@@ -323,9 +320,14 @@ function connect($attestation_info)
         // See https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/configure-always-encrypted-enclaves?view=sqlallproducts-allversions#configure-a-secure-enclave
         $query = "SELECT [name], [value], [value_in_use] FROM sys.configurations WHERE [name] = 'column encryption enclave type';";
         $stmt = sqlsrv_query($conn, $query);
-        $info = sqlsrv_fetch_array($stmt);
-        if ($info['value'] != 1 or $info['value_in_use'] != 1) {
-            die("Error: enclave computations are not enabled on the server!");
+        if (!$stmt) {
+            print_r(sqlsrv_errors());
+            die("Error when checking if enclave computations are enabled. This should never happen!\n");
+        } else {
+            $info = sqlsrv_fetch_array($stmt);
+            if (empty($info) or ($info['value'] != 1) or ($info['value_in_use'] != 1)) {
+                die("Error: enclave computations are not enabled on the server!");
+            }
         }
 
         // Enable rich computations
@@ -454,13 +456,17 @@ function constructInsertQuery($tableName, &$dataTypes, &$colNames, &$colNamesAE)
 function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=false)
 {
     global $length;
+    
+    if ($empty($testValues)) {
+        die("$testValues is empty or non-existent. Please check the required values file.\n";
+    }
+    
     for ($v = 0; $v < sizeof($testValues['bigint']); ++$v) {
         $insertValues = array();
 
         // Use pack() on binary data
         $params = array();
-        foreach ($dataTypes as $type)
-        {
+        foreach ($dataTypes as $type) {
             $SQLType = getSQLType($type, $length);
             $PHPType = getPHPType($type);
             $val = dataTypeIsBinary($type) ? pack('H*', $testValues[$type][$v]) : $testValues[$type][$v];
@@ -474,9 +480,7 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=
             if (!$ceDisabled) {
                 print_r(sqlsrv_errors());
                 die("Inserting values in encrypted table failed at prepare\n");
-            }
-            else
-            {
+            } else {
                 $e = sqlsrv_errors();
                 checkErrors($e, array('22018', '206'));
             }
