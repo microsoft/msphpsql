@@ -458,7 +458,7 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=
     global $length;
     
     if ($empty($testValues)) {
-        die("$testValues is empty or non-existent. Please check the required values file.\n";
+        die("$testValues is empty or non-existent. Please check the required values file.\n");
     }
     
     for ($v = 0; $v < sizeof($testValues['bigint']); ++$v) {

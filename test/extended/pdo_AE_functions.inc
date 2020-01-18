@@ -451,7 +451,7 @@ function constructInsertQuery($tableName, &$dataTypes, &$colNames, &$colNamesAE)
 function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=false)
 {
     if ($empty($testValues)) {
-        die("$testValues is empty or non-existent. Please check the required values file.\n";
+        die("$testValues is empty or non-existent. Please check the required values file.\n");
     }
     
     for ($v = 0; $v < sizeof($testValues['bigint']); ++$v) {
