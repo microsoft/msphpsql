@@ -457,7 +457,7 @@ function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=
 {
     global $length;
     
-    if ($empty($testValues)) {
+    if (empty($testValues)) {
         die("$testValues is empty or non-existent. Please check the required values file.\n");
     }
     
