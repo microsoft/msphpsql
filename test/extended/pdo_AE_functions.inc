@@ -450,7 +450,7 @@ function constructInsertQuery($tableName, &$dataTypes, &$colNames, &$colNamesAE)
 
 function insertValues($conn, $insertQuery, $dataTypes, $testValues, $ceDisabled=false)
 {
-    if ($empty($testValues)) {
+    if (empty($testValues)) {
         die("$testValues is empty or non-existent. Please check the required values file.\n");
     }
     
