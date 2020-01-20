@@ -89,10 +89,15 @@ function updateCountry($conn, $tableName, $id, $country, $continent)
     }
 }
 
-function fetch($conn, $tableName)
+function fetch($conn, $tableName, $buffered = false)
 {
     $select = "SELECT * FROM $tableName ORDER BY id";
-    $stmt = sqlsrv_query($conn, $select);
+    
+    if ($buffered) {
+        $stmt = sqlsrv_query($conn, $select, array(), array("Scrollable"=>"buffered"));
+    } else {
+        $stmt = sqlsrv_query($conn, $select);
+    }
 
     while ($country = sqlsrv_fetch_object($stmt, "Country")) {
         echo "\nID: " . $country->id . " ";
@@ -125,13 +130,13 @@ try {
     updateID($conn, $tableName, 4, 'Canada', 'North America');
 
     // Read data
-    fetch($conn, $tableName);
+    fetch($conn, $tableName, true);
 
     // Update country
     updateCountry($conn, $tableName, 4, 'Mexico', 'North America');
 
     // Read data
-    fetch($conn, $tableName);
+    fetch($conn, $tableName, true);
 
     // Add two more countries
     addCountry($conn, $tableName, 6, 'Brazil', 'South America');

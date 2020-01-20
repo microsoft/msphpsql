@@ -1707,19 +1707,21 @@ function CallProcEx($conn, $procName, $procPrefix, $procArgs, $procValues)
 function CreateFunc($conn, $funcName, $funcArgs, $retType, $funcCode)
 {
     DropFunc($conn, $funcName);
-    $stmt = sqlsrv_query($conn, "CREATE FUNCTION [$funcName] ($funcArgs) RETURNS $retType AS BEGIN $funcCode END");
-    if ($stmt === false) {
-        FatalError("Failed to create test function");
+    try {
+        $stmt = $conn->query("CREATE FUNCTION [$funcName] ($funcArgs) RETURNS $retType AS BEGIN $funcCode END");
+    } catch (PDOException $e) {
+        echo "Failed to create test function\n";
+        var_dump($e);
     }
-    sqlsrv_free_stmt($stmt);
+    unset($stmt);
 }
 
 function DropFunc($conn, $funcName)
 {
-    $stmt = sqlsrv_query($conn, "DROP FUNCTION [$funcName]");
-    if ($stmt === false) {
-    } else {
-        sqlsrv_free_stmt($stmt);
+    try {
+        $conn->query("DROP FUNCTION [$funcName]");
+    } catch (PDOException $e) {
+        ; // do nothing
     }
 }
 

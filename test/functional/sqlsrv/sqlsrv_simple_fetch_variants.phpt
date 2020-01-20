@@ -39,7 +39,7 @@ function Fetch($conn, $tableName, $numRows)
 {
     $select = "SELECT * FROM $tableName ORDER BY c1_int";
     $stmt = sqlsrv_query($conn, $select);
-    $stmt2 = sqlsrv_query($conn, $select);
+    $stmt2 = sqlsrv_query($conn, $select, array(), array("Scrollable"=>"buffered"));
     $stmt3 = sqlsrv_query($conn, $select);
 
     $metadata = sqlsrv_field_metadata($stmt);
