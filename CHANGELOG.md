@@ -10,13 +10,13 @@ Updated PECL release packages. Here is the list of updates:
 - Support for PHP 7.4
 - Support for [Microsoft ODBC Driver 17.5](
 https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15) on all platforms
-- Support for Debian 10 and Red Hat 8 - requires MS ODBC Driver 17.4+
+- Support for Debian 10 and Red Hat 8 - require MS ODBC Driver 17.4+
 - Support for macOS Catalina, Alpine Linux 3.11 and Ubuntu 19.10 - require ODBC Driver 17.5+
 - Feature Request [#929](https://github.com/microsoft/msphpsql/issues/929) - new [Language option](https://github.com/microsoft/msphpsql/wiki/Features#language) - Pull Request [#930](https://github.com/microsoft/msphpsql/pull/930)
 - [Data Classification Sensitivity Metadata Retrieval](https://github.com/microsoft/msphpsql/wiki/Features#data-classification-sensitivity-metadata) - requires ODBC Driver 17.4+ and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019)
 - Feature Request [#1018](https://github.com/microsoft/msphpsql/issues/1018) - support for [PHP extended string types](https://github.com/microsoft/msphpsql/wiki/Features#natlTypes) - Pull Request [#1043](https://github.com/microsoft/msphpsql/pull/1043)
-- [Always Encrypted with secure enclaves](https://github.com/microsoft/msphpsql/wiki/Features#alwaysencryptedV2 - requires ODBC Driver 17.4+ and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019)
-- Feature Request [#1063](https://github.com/microsoft/msphpsql/issues/1063) - support configurable options for locale settings in Linux and macOS  - Pull Request [#1069](https://github.com/microsoft/msphpsql/pull/1069)
+- [Always Encrypted with secure enclaves](https://github.com/microsoft/msphpsql/wiki/Features#alwaysencryptedV2) - requires ODBC Driver 17.4+ and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019)
+- Feature Request [#1063](https://github.com/microsoft/msphpsql/issues/1063) - add configurable options for locale settings in Linux and macOS  - Pull Request [#1069](https://github.com/microsoft/msphpsql/pull/1069)
 
 ### Removed
 - Dropped support for [PHP 7.1](https://www.php.net/supported-versions.php)
