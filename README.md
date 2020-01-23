@@ -2,9 +2,9 @@
 
 **Welcome to the Microsoft Drivers for PHP for Microsoft SQL Server**
 
-The Microsoft Drivers for PHP for Microsoft SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2008 R2 and later (including Azure SQL DB). These drivers rely on the [Microsoft ODBC Driver for SQL Server][odbcdoc] to handle the low-level communication with SQL Server.
+The Microsoft Drivers for PHP for Microsoft SQL Server are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2012 and later (including Azure SQL DB). These drivers rely on the [Microsoft ODBC Driver for SQL Server][odbcdoc] to handle the low-level communication with SQL Server.
 
-This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.1+ with improvements on both drivers and some limitations. Upcoming [releases][releases] will contain additional functionalities, bug fixes, and more.
+This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.2+ with improvements on both drivers and some limitations. Upcoming [releases][releases] will contain additional functionalities, bug fixes, and more.
 
 ## Take our survey
 
@@ -51,7 +51,7 @@ On the client machine:
 - [Microsoft ODBC Driver 17, Microsoft ODBC Driver 13, or Microsoft ODBC Driver 11][odbcdoc]
 - If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
-On the server side, Microsoft SQL Server 2008 R2 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
+On the server side, Microsoft SQL Server 2012 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
 
 ## Building and Installing the Drivers on Windows
 
