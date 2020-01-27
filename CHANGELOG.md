@@ -52,6 +52,7 @@ https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?
   - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
 
 ### Known Issues
+- In Alpine Linux, the Client-Side Cursors feature will not work if both sqlsrv and pdo_sqlsrv are enabled. Either enabling only sqlsrv or pdo_sqlsrv, or building PHP from source by compiling the drivers statically.
 - Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
