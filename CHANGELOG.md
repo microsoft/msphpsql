@@ -20,7 +20,7 @@ https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?
 
 ### Removed
 - Dropped support for [PHP 7.1](https://www.php.net/supported-versions.php)
-- Dropped support for macOS Sierra, Ubuntu 18.10 and Ubuntu 19.04.
+- Dropped support for SQL Server 2008 R2, macOS Sierra, Ubuntu 18.10 and Ubuntu 19.04.
 
 ### Fixed
 - Issue [#570](https://github.com/microsoft/msphpsql/issues/570) - Fixed fetching varbinary data using client buffer with sqlsrv
