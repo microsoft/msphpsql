@@ -76,10 +76,15 @@ function updateFood($conn, $tableName, $id, $food, $category)
     }
 }
 
-function fetchRows($conn, $tableName)
+function fetchRows($conn, $tableName, $buffered = false)
 {
     $query = "SELECT * FROM $tableName ORDER BY id";
-    $stmt = $conn->query($query);
+    if ($buffered) {
+        $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
+        $stmt->execute();
+    } else {
+        $stmt = $conn->query($query);
+    }
 
     $stmt->setFetchMode(PDO::FETCH_CLASS, 'Food');
     while ($food = $stmt->fetch()) {
@@ -108,7 +113,7 @@ try {
 
     updateID($conn, $tableName, 4, 'Milk', 'Diary Products');
 
-    fetchRows($conn, $tableName);
+    fetchRows($conn, $tableName, true);
 
     updateFood($conn, $tableName, 4, 'Cheese', 'Diary Products');
 
@@ -118,7 +123,7 @@ try {
     insertData($conn, $tableName, 6, 'Salmon', 'Fish');
     insertData($conn, $tableName, 2, 'Broccoli', 'Vegetables');
 
-    fetchRows($conn, $tableName);
+    fetchRows($conn, $tableName, true);
 
     dropTable($conn, $tableName);
     unset($conn);

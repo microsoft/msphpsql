@@ -59,7 +59,7 @@ if (!$conn) {
     $query = "SELECT [name], [value], [value_in_use] FROM sys.configurations WHERE [name] = 'column encryption enclave type';";
     $stmt = $conn->query($query);
     $info = $stmt->fetch();
-    if ($info['value'] == 1 and $info['value_in_use'] == 1) {
+    if (!empty($info) and $info['value'] == 1 and $info['value_in_use'] == 1) {
         $isEnclaveEnabled = true;
     }
 

@@ -7,9 +7,6 @@ retrieving fields from a table including rows with all supported SQL types (28 t
 PHPT_EXEC=true
 --SKIPIF--
 <?php 
-require_once('MsCommon.inc');
-// locale must be set before 1st connection
-setUSAnsiLocale();
 require('skipif_versions_old.inc');
 ?>
 --FILE--

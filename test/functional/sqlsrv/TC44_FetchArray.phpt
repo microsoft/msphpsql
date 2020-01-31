@@ -6,12 +6,7 @@ by checking all fetch type modes.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?
-require_once('MsCommon.inc');
-// locale must be set before 1st connection
-setUSAnsiLocale();
-require('skipif_versions_old.inc');
-?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');

@@ -170,11 +170,15 @@ function doValuesMatched($value1, $value2, $row, $col)
     }
 }
 
-function fetchColumns($conn, $tableName, $numRows, $numCols)
+function fetchColumns($conn, $tableName, $numRows, $numCols, $buffered = false)
 {
     try {
         // insert column data from a row of the original table
-        $stmtOriginal = $conn->prepare("SELECT * FROM $tableName WHERE c1_int = :row");
+        if ($buffered) {
+            $stmtOriginal = $conn->prepare("SELECT * FROM $tableName WHERE c1_int = :row", array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
+        } else {
+            $stmtOriginal = $conn->prepare("SELECT * FROM $tableName WHERE c1_int = :row");
+        }
 
         for ($i = 1; $i <= $numRows; $i++) {
             $c1_int = $i;
@@ -263,6 +267,7 @@ try {
 
     $numCols = fetchBoundMixed($conn, $tableName, $numRows);
     fetchColumns($conn, $tableName, $numRows, $numCols);
+    fetchColumns($conn, $tableName, $numRows, $numCols, true);
 
     dropTable($conn, $tableName);
     unset($conn);
@@ -274,6 +279,10 @@ try {
 --EXPECT--
 Comparing data in row 1
 Comparing data in row 2
+Insert all columns from row 1 into one column of type sql_variant
+string(11) "sql_variant"
+Insert all columns from row 2 into one column of type sql_variant
+string(11) "sql_variant"
 Insert all columns from row 1 into one column of type sql_variant
 string(11) "sql_variant"
 Insert all columns from row 2 into one column of type sql_variant

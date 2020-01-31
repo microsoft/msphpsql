@@ -3,7 +3,7 @@
 //
 // Contents: Result sets
 //
-// Microsoft Drivers 5.7 for PHP for SQL Server
+// Microsoft Drivers 5.8 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -508,6 +508,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                 break;
             case SQL_CHAR:
             case SQL_VARCHAR:
+            case SQL_SS_VARIANT:
                 if ( meta[i].length == sqlsrv_buffered_result_set::meta_data::SIZE_UNKNOWN ) {
                     offset += sizeof( void* );
                 }
@@ -610,6 +611,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                 
             case SQL_CHAR:
             case SQL_VARCHAR:
+            case SQL_SS_VARIANT:
             case SQL_LONGVARCHAR:
                 // If encoding is set to UTF-8, the following types are not necessarily column size.
                 // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 

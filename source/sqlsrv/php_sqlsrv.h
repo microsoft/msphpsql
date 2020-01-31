@@ -8,7 +8,7 @@
 //
 // Comments: Also contains "internal" declarations shared across source files. 
 //
-// Microsoft Drivers 5.7 for PHP for SQL Server
+// Microsoft Drivers 5.8 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -41,6 +41,10 @@ zend_long log_subsystems;
 zend_long current_subsystem;
 zend_bool warnings_return_as_errors;
 zend_long buffered_query_limit;
+
+#ifndef _WIN32
+zend_long set_locale_info;
+#endif
 
 ZEND_END_MODULE_GLOBALS(sqlsrv)
 

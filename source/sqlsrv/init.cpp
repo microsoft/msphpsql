@@ -2,7 +2,7 @@
 // File: init.cpp
 // Contents: initialization routines for the extension
 //
-// Microsoft Drivers 5.7 for PHP for SQL Server
+// Microsoft Drivers 5.8 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -653,6 +653,25 @@ PHP_RINIT_FUNCTION(sqlsrv)
     SQLSRV_G( log_severity ) = INI_INT( severity );
     SQLSRV_G( log_subsystems ) = INI_INT( subsystems );
     SQLSRV_G( buffered_query_limit ) = INI_INT( buffered_limit );
+
+#ifndef _WIN32
+    char set_locale_info[] = INI_PREFIX INI_SET_LOCALE_INFO;
+    SQLSRV_G(set_locale_info) = INI_INT(set_locale_info);
+
+    // if necessary, set locale from the environment for ODBC, which MUST be done before any connection
+    int set_locale = SQLSRV_G(set_locale_info);
+    if (set_locale == 2) {
+        setlocale(LC_ALL, "");
+    }
+    else if (set_locale == 1) {
+        setlocale(LC_CTYPE, "");
+    }
+    else {
+        // Do nothing
+    }
+
+    LOG(SEV_NOTICE, INI_PREFIX INI_SET_LOCALE_INFO " = %1!d!", set_locale);
+#endif
 
     LOG( SEV_NOTICE, INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS " = %1!s!", SQLSRV_G( warnings_return_as_errors ) ? "On" : "Off");
     LOG( SEV_NOTICE, INI_PREFIX INI_LOG_SEVERITY " = %1!d!", SQLSRV_G( log_severity ));
