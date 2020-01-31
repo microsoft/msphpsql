@@ -375,7 +375,7 @@ brew install apache2
 ```
 To find the Apache configuration file, `httpd.conf`, for your Apache installation, run 
 ```
-apachectl -V | grep SERVER_CONFIG_FILE
+/usr/local/bin/apachectl -V | grep SERVER_CONFIG_FILE
 ``` 
 The following commands append the required configuration to `httpd.conf`. Be sure to substitute the path returned by the preceding command in place of `/usr/local/etc/httpd/httpd.conf`:
 ```
