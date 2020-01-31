@@ -12,7 +12,7 @@ Also included are instructions for installing the PHP FastCGI Process Manager, P
 - [Installing the drivers on Red Hat 7 and 8](#installing-the-drivers-on-red-hat-7-and-8)
 - [Installing the drivers on Debian 8, 9, and 10](#installing-the-drivers-on-debian-8-9-and-10)
 - [Installing the drivers on Suse 12 and 15](#installing-the-drivers-on-suse-12-and-15)
-- [Installing the drivers on Alpine 3.11](#installing-the-drivers-on-alpine-3.11)
+- [Installing the drivers on Alpine 3.11](#installing-the-drivers-on-alpine-311)
 - [Installing the drivers on macOS High Sierra, Mojave, and Catalina](#installing-the-drivers-on-macos-high-sierra-mojave-and-catalina)
 
 ## Installing the drivers on Ubuntu 16.04, 18.04, and 19.10
@@ -294,6 +294,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 
 > [!NOTE]
 > Alpine support is experimental.
+
 > [!NOTE]
 > The default version of PHP is 7.3. Alternate versions of PHP are not available from other repositories for Alpine 3.11. You can instead compile PHP from source.
 
