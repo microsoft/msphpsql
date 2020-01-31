@@ -11,7 +11,7 @@ Updated PECL release packages. Here is the list of updates:
 - Support for [Microsoft ODBC Driver 17.5](
 https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15) on all platforms
 - Support for Debian 10 and Red Hat 8 - require MS ODBC Driver 17.4+
-- Support for macOS Catalina, Alpine Linux 3.11 and Ubuntu 19.10 - require ODBC Driver 17.5+
+- Support for macOS Catalina, Alpine Linux 3.11 (experimental), and Ubuntu 19.10 - require ODBC Driver 17.5+
 - Feature Request [#929](https://github.com/microsoft/msphpsql/issues/929) - new [Language option](https://github.com/microsoft/msphpsql/wiki/Features#language) - Pull Request [#930](https://github.com/microsoft/msphpsql/pull/930)
 - [Data Classification Sensitivity Metadata Retrieval](https://github.com/microsoft/msphpsql/wiki/Features#data-classification-sensitivity-metadata) - requires ODBC Driver 17.4.2+ and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019)
 - Feature Request [#1018](https://github.com/microsoft/msphpsql/issues/1018) - support for [PHP extended string types](https://github.com/microsoft/msphpsql/wiki/Features#natlTypes) - Pull Request [#1043](https://github.com/microsoft/msphpsql/pull/1043)
@@ -50,6 +50,7 @@ https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?
   - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
   - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
   - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+- Alpine Linux support is currently experimental. More robust support will be added in future releases
 
 ### Known Issues
 - In Alpine Linux, the Client-Side Cursors feature may cause an access violation if both sqlsrv and pdo_sqlsrv are enabled. Either enable only sqlsrv or pdo_sqlsrv, or build PHP from source by compiling the drivers statically.
