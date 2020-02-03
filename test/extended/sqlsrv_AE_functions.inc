@@ -292,12 +292,12 @@ function connect($attestationInfo)
 
     if ($keystore == 'akv') {
         if ($AKVKeyStoreAuthentication == 'KeyVaultPassword') {
-            $security_info = array('KeyStoreAuthentication'=>$AKVKeyStoreAuthentication,
+            $securityInfo = array('KeyStoreAuthentication'=>$AKVKeyStoreAuthentication,
                                    'KeyStorePrincipalId'=>$AKVPrincipalName,
                                    'KeyStoreSecret'=>$AKVPassword,
                                    );
         } elseif ($AKVKeyStoreAuthentication == 'KeyVaultClientSecret') {
-            $security_info = array('KeyStoreAuthentication'=>$AKVKeyStoreAuthentication,
+            $securityInfo = array('KeyStoreAuthentication'=>$AKVKeyStoreAuthentication,
                                    'KeyStorePrincipalId'=>$AKVClientID,
                                    'KeyStoreSecret'=>$AKVSecret,
                                    );
@@ -305,7 +305,7 @@ function connect($attestationInfo)
             die("Incorrect value for KeyStoreAuthentication keyword!\n");
         }
 
-        $options = array_merge($options, $security_info);
+        $options = array_merge($options, $securityInfo);
     }
 
     $conn = sqlsrv_connect($server, $options);
@@ -322,7 +322,7 @@ function connect($attestationInfo)
         $stmt = sqlsrv_query($conn, $query);
         if (!$stmt) {
             print_r(sqlsrv_errors());
-            die("Error when checking if enclave computations are enabled. This should never happen!\n");
+            die("Error when checking if enclave computations are enabled. This should never happen! Non-HGS servers should have been skipped.\n");
         } else {
             $info = sqlsrv_fetch_array($stmt);
             if (empty($info) or ($info['value'] != 1) or ($info['value_in_use'] != 1)) {

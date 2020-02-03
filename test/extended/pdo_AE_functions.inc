@@ -283,20 +283,20 @@ function connect($attestationInfo)
 
     if ($keystore == 'akv') {
 
-        $security_info = '';
+        $securityInfo = '';
         if ($AKVKeyStoreAuthentication == 'KeyVaultPassword') {
-            $security_info .= ";KeyStoreAuthentication=$AKVKeyStoreAuthentication";
-            $security_info .= ";KeyStorePrincipalId=$AKVPrincipalName";
-            $security_info .= ";KeyStoreSecret=$AKVPassword";
+            $securityInfo .= ";KeyStoreAuthentication=$AKVKeyStoreAuthentication";
+            $securityInfo .= ";KeyStorePrincipalId=$AKVPrincipalName";
+            $securityInfo .= ";KeyStoreSecret=$AKVPassword";
         } elseif ($AKVKeyStoreAuthentication == 'KeyVaultClientSecret') {
-            $security_info .= ";KeyStoreAuthentication=$AKVKeyStoreAuthentication";
-            $security_info .= ";KeyStorePrincipalId=$AKVClientID";
-            $security_info .= ";KeyStoreSecret=$AKVSecret";
+            $securityInfo .= ";KeyStoreAuthentication=$AKVKeyStoreAuthentication";
+            $securityInfo .= ";KeyStorePrincipalId=$AKVClientID";
+            $securityInfo .= ";KeyStoreSecret=$AKVSecret";
         } else {
             die("Incorrect value for KeyStoreAuthentication keyword!\n");
         }
 
-        $options .= $security_info;
+        $options .= $securityInfo;
     }
 
     try {
@@ -307,7 +307,7 @@ function connect($attestationInfo)
         return false;
     }
 
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_DATETIME_TYPE, true);
 
     // Check that enclave computations are enabled
@@ -317,7 +317,7 @@ function connect($attestationInfo)
     $stmt = $conn->query($query);
     if (!$stmt) {
         print_r($conn->errorInfo());
-        die("Error when checking if enclave computations are enabled. This should never happen!\n");
+        die("Error when checking if enclave computations are enabled. This should never happen! Non-HGS servers should have been skipped.\n");
     } else {
         $info = $stmt->fetch();
         if (empty($info) or ($info['value'] != 1) or ($info['value_in_use'] != 1)) {
@@ -330,8 +330,6 @@ function connect($attestationInfo)
 
     unset($stmt);
     
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     return $conn;
 }
 
