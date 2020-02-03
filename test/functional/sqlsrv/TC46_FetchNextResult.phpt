@@ -5,9 +5,7 @@ Verifies the functionality of "sqlsrv_next_result"
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?
-require('skipif_versions_old.inc');
-?>
+<?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
