@@ -22,24 +22,24 @@ function generateTables($server, $uid, $pwd, $dbName, $tableName1, $tableName2)
         $stmt = $conn->query($sql);
 
         // Insert data
-        $sql = "INSERT INTO $tableName1 VALUES ( ?, ? )";
+        $sql = "INSERT INTO $tableName1 VALUES (?, ?)";
         for ($t = 100; $t < 116; $t++) {
             $stmt = $conn->prepare($sql);
             $ts = substr(sha1($t), 0, 5);
-            $params = array( $t,$ts );
+            $params = array($t, $ts);
             $stmt->execute($params);
         }
 
         // Create table
-        $sql = "CREATE TABLE $tableName2 ( c1 INT, c2 VARCHAR(40) )";
+        $sql = "CREATE TABLE $tableName2 (c1 INT, c2 VARCHAR(40))";
         $stmt = $conn->query($sql);
 
         // Insert data
-        $sql = "INSERT INTO $tableName2 VALUES ( ?, ? )";
+        $sql = "INSERT INTO $tableName2 VALUES (?, ?)";
         for ($t = 200; $t < 209; $t++) {
             $stmt = $conn->prepare($sql);
             $ts = substr(sha1($t), 0, 5);
-            $params = array( $t,$ts );
+            $params = array($t, $ts);
             $stmt->execute($params);
         }
 
@@ -73,11 +73,11 @@ function dropTables($server, $uid, $pwd, $tableName1, $tableName2)
 
     $conn = new PDO("sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd);
 
-    $query="IF OBJECT_ID('$tableName1', 'U') IS NOT NULL DROP TABLE $tableName1";
-    $stmt=$conn->query($query);
+    $query = "IF OBJECT_ID('$tableName1', 'U') IS NOT NULL DROP TABLE $tableName1";
+    $stmt = $conn->query($query);
 
-    $query="IF OBJECT_ID('$tableName2', 'U') IS NOT NULL DROP TABLE $tableName2";
-    $stmt=$conn->query($query);
+    $query = "IF OBJECT_ID('$tableName2', 'U') IS NOT NULL DROP TABLE $tableName2";
+    $stmt = $conn->query($query);
 }
 
 dropTables($server, $uid, $pwd, $tableName1, $tableName2);
