@@ -52,8 +52,12 @@ function generateTables($server, $uid, $pwd, $dbName, $tableName1, $tableName2)
 // Break connection by getting the session ID and killing it.
 // Note that breaking a connection and testing reconnection requires a
 // TCP/IP protocol connection (as opposed to a Shared Memory protocol).
+// Wait one second before and after breaking to ensure the break occurs
+// in the correct order, otherwise there may be timing issues in Linux
+// that can cause tests to fail intermittently and unpredictably.
 function breakConnection($conn, $conn_break)
 {
+    sleep(1);
     $stmt1 = $conn->query("SELECT @@SPID");
     $obj = $stmt1->fetch(PDO::FETCH_NUM);
     $spid = $obj[0];
