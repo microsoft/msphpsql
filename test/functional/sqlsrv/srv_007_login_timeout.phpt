@@ -7,21 +7,24 @@ Intentionally provide an invalid server name and set LoginTimeout. Verify the ti
 --FILE--
 <?php
 
+require_once('MsSetup.inc');
 $serverName = "WRONG_SERVER_NAME";
 
 // Based on the following reference, a login timeout of less than approximately 10 seconds
 // is not reliable. The defaut is 15 seconds so we fix it at 20 seconds.
 // https://docs.microsoft.com/sql/connect/odbc/windows/features-of-the-microsoft-odbc-driver-for-sql-server-on-windows
-
 $timeout = 20;
 $maxAttempts = 3;
 $numAttempts = 0;
-$leeway = 1.0;
+
+// The difference in time elapsed is platform dependent, and in some distros, such as Alpine or Suse, extra delay may be caused by the attempts to resolve non-existant hostnames
+// Set leeway to 2 seconds to allow some room of such errors
+$leeway = 2.0;
 $missed = false;
 
 do {
     $t0 = microtime(true);
-
+    
     $conn = sqlsrv_connect($serverName , array("LoginTimeout" => $timeout));
     $numAttempts++;
 
@@ -38,7 +41,7 @@ do {
             echo "Connection failed at $elapsed secs. Leeway is $leeway sec but the difference is $diff\n";
         } else {
             // The test will fail but this helps us decide if this test should be redesigned
-            echo "$numAttempts\t";
+            echo "$numAttempts: $diff\n";
             sleep(5);
         }
     }

@@ -9,6 +9,9 @@ No PDO::PARAM_ tpe specified when binding parameters
 require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
 $dataTypes = array("bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5)", "numeric(10,5)", "float", "real");
+
+// Note the size of a float is platform dependent, with a precision of roughly 14 digits
+// http://php.net/manual/en/language.types.float.php
 try {
     $conn = connect();
     foreach ($dataTypes as $dataType) {
@@ -26,7 +29,7 @@ try {
         if ($r === false) {
             isIncompatibleTypesError($stmt, $dataType, "default type");
         } else {
-            echo "****Encrypted default type is compatible with encrypted $dataType****\n";
+            echo "-----Encrypted default type is compatible with encrypted $dataType-----\n";
             fetchAll($conn, $tbname);
         }
         dropTable($conn, $tbname);
@@ -37,49 +40,49 @@ try {
     echo $e->getMessage();
 }
 ?>
---EXPECT--
+--EXPECTREGEX--
 
 Testing bit:
-****Encrypted default type is compatible with encrypted bit****
+-----Encrypted default type is compatible with encrypted bit-----
 c_det: 1
 c_rand: 0
 
 Testing tinyint:
-****Encrypted default type is compatible with encrypted tinyint****
+-----Encrypted default type is compatible with encrypted tinyint-----
 c_det: 0
 c_rand: 255
 
 Testing smallint:
-****Encrypted default type is compatible with encrypted smallint****
+-----Encrypted default type is compatible with encrypted smallint-----
 c_det: -32767
 c_rand: 32767
 
 Testing int:
-****Encrypted default type is compatible with encrypted int****
+-----Encrypted default type is compatible with encrypted int-----
 c_det: -2147483647
 c_rand: 2147483647
 
 Testing bigint:
-****Encrypted default type is compatible with encrypted bigint****
+-----Encrypted default type is compatible with encrypted bigint-----
 c_det: -922337203685479936
 c_rand: 922337203685479936
 
-Testing decimal(18,5):
-****Encrypted default type is compatible with encrypted decimal(18,5)****
+Testing decimal\(18,5\):
+-----Encrypted default type is compatible with encrypted decimal\(18,5\)-----
 c_det: -9223372036854.80000
 c_rand: 9223372036854.80000
 
-Testing numeric(10,5):
-****Encrypted default type is compatible with encrypted numeric(10,5)****
-c_det: -21474.83647
-c_rand: 21474.83647
+Testing numeric\(10,5\):
+-----Encrypted default type is compatible with encrypted numeric\(10,5\)-----
+c_det: -21474\.83647
+c_rand: 21474\.83647
 
 Testing float:
-****Encrypted default type is compatible with encrypted float****
-c_det: -9223372036.8547993
-c_rand: 9223372036.8547993
+-----Encrypted default type is compatible with encrypted float-----
+c_det: (-9223372036\.8547993|-9223372036\.8547992)
+c_rand: (9223372036\.8547993|9223372036\.8547992)
 
 Testing real:
-****Encrypted default type is compatible with encrypted real****
-c_det: -2147.4829
-c_rand: 2147.4829
+-----Encrypted default type is compatible with encrypted real-----
+c_det: (-2147\.4829|-2147\.483)
+c_rand: (2147\.4829|2147\.483)

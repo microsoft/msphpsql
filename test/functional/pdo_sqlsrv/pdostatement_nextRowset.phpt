@@ -31,7 +31,7 @@ try {
     var_dump($e);
 }
 ?>
---EXPECT--
+--EXPECTF--
 array(1) {
   [0]=>
   array(62) {
@@ -224,9 +224,9 @@ array(2) {
     [5]=>
     string(10) "STRINGCOL2"
     ["FloatCol"]=>
-    string(18) "222.22200000000001"
+    string(%d) "222.222"%S
     [6]=>
-    string(18) "222.22200000000001"
+    string(%d) "222.222"%S
     ["XmlCol"]=>
     string(431) "<xml> 2 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
     [7]=>
