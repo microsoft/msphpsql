@@ -84,6 +84,12 @@ function isDaasMode()
     return ($daasMode ? true : false);
 }
 
+function isLocaleDisabled()
+{
+    global $daasMode, $localeDisabled;
+    return ($daasMode || $localeDisabled);
+}
+
 function isSQLAzure()
 {
     // 'SQL Azure' indicates SQL Database or SQL Data Warehouse
@@ -491,8 +497,8 @@ function handleErrors()
 
 function setUSAnsiLocale()
 {
-    // Do not run locale tests in Azure or Alpine Linux
-    if (isDaasMode() || (php_uname('n') === 'alpine')) {
+    // Do not run locale tests if locale disabled
+    if (isLocaleDisabled()) {
         return;
     }
     
@@ -506,8 +512,8 @@ function setUSAnsiLocale()
 
 function resetLocaleToDefault()
 {
-    // Do not run locale tests in Azure or Alpine Linux
-    if (isDaasMode() || (php_uname('n') === 'alpine')) {
+    // Do not run locale tests if locale disabled
+    if (isLocaleDisabled()) {
         return;
     }
     // Like setUSAnsiLocale() above, this method is only needed in non-Windows environment
@@ -523,8 +529,8 @@ function isLocaleSupported()
     if (isWindows()) {
         return true;
     }
-    // Do not run locale tests in Azure or Alpine Linux
-    if (isDaasMode() || (php_uname('n') === 'alpine')) {
+    // Do not run locale tests if locale disabled
+    if (isLocaleDisabled()) {
         return false;
     }
     if (AE\isDataEncrypted()) {
