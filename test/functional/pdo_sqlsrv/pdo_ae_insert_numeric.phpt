@@ -69,8 +69,8 @@ c_rand: 922337203685479936
 
 Testing decimal\(18,5\):
 -----Encrypted default type is compatible with encrypted decimal\(18,5\)-----
-c_det: -9223372036854.80000
-c_rand: 9223372036854.80000
+c_det: -9223372036854\.80000
+c_rand: 9223372036854\.80000
 
 Testing numeric\(10,5\):
 -----Encrypted default type is compatible with encrypted numeric\(10,5\)-----
