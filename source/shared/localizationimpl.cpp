@@ -50,38 +50,44 @@ struct cp_iconv
 // CodePage 2 corresponds to binary. If the attribute PDO::SQLSRV_ENCODING_BINARY
 // is set, GetIndex() above hits the assert(false) directive unless we include
 // CodePage 2 below and assign an empty string to it.
+#ifdef __MUSL__
+#define TRANSLIT ""
+#else
+#define TRANSLIT "//TRANSLIT"
+#endif
+
 const cp_iconv cp_iconv::g_cp_iconv[] = {
     { 65001, "UTF-8" },
     {  1200, "UTF-16LE" },
     {     3, "UTF-8" },
     {     2, "" },
-    {  1252, "CP1252//TRANSLIT" },
-    {   850, "CP850//TRANSLIT" },
-    {   437, "CP437//TRANSLIT" },
-    {   874, "CP874//TRANSLIT" },
-    {   932, "CP932//TRANSLIT" },
-    {   936, "CP936//TRANSLIT" },
-    {   949, "CP949//TRANSLIT" },
-    {   950, "CP950//TRANSLIT" },
-    {  1250, "CP1250//TRANSLIT" },
-    {  1251, "CP1251//TRANSLIT" },
-    {  1253, "CP1253//TRANSLIT" },
-    {  1254, "CP1254//TRANSLIT" },
-    {  1255, "CP1255//TRANSLIT" },
-    {  1256, "CP1256//TRANSLIT" },
-    {  1257, "CP1257//TRANSLIT" },
-    {  1258, "CP1258//TRANSLIT" },
-    { CP_ISO8859_1, "ISO8859-1//TRANSLIT" },
-    { CP_ISO8859_2, "ISO8859-2//TRANSLIT" },
-    { CP_ISO8859_3, "ISO8859-3//TRANSLIT" },
-    { CP_ISO8859_4, "ISO8859-4//TRANSLIT" },
-    { CP_ISO8859_5, "ISO8859-5//TRANSLIT" },
-    { CP_ISO8859_6, "ISO8859-6//TRANSLIT" },
-    { CP_ISO8859_7, "ISO8859-7//TRANSLIT" },
-    { CP_ISO8859_8, "ISO8859-8//TRANSLIT" },
-    { CP_ISO8859_9, "ISO8859-9//TRANSLIT" },
-    { CP_ISO8859_13, "ISO8859-13//TRANSLIT" },
-    { CP_ISO8859_15, "ISO8859-15//TRANSLIT" },
+    {  1252, "CP1252" TRANSLIT },
+    {   850, "CP850" TRANSLIT },
+    {   437, "CP437" TRANSLIT },
+    {   874, "CP874" TRANSLIT },
+    {   932, "CP932" TRANSLIT },
+    {   936, "CP936" TRANSLIT },
+    {   949, "CP949" TRANSLIT },
+    {   950, "CP950" TRANSLIT },
+    {  1250, "CP1250" TRANSLIT },
+    {  1251, "CP1251" TRANSLIT },
+    {  1253, "CP1253" TRANSLIT },
+    {  1254, "CP1254" TRANSLIT },
+    {  1255, "CP1255" TRANSLIT },
+    {  1256, "CP1256" TRANSLIT },
+    {  1257, "CP1257" TRANSLIT },
+    {  1258, "CP1258" TRANSLIT },
+    { CP_ISO8859_1, "ISO8859-1" TRANSLIT },
+    { CP_ISO8859_2, "ISO8859-2" TRANSLIT },
+    { CP_ISO8859_3, "ISO8859-3" TRANSLIT },
+    { CP_ISO8859_4, "ISO8859-4" TRANSLIT },
+    { CP_ISO8859_5, "ISO8859-5" TRANSLIT },
+    { CP_ISO8859_6, "ISO8859-6" TRANSLIT },
+    { CP_ISO8859_7, "ISO8859-7" TRANSLIT },
+    { CP_ISO8859_8, "ISO8859-8" TRANSLIT },
+    { CP_ISO8859_9, "ISO8859-9" TRANSLIT },
+    { CP_ISO8859_13, "ISO8859-13" TRANSLIT },
+    { CP_ISO8859_15, "ISO8859-15" TRANSLIT },
     { 12000, "UTF-32LE" }
 };
 const size_t cp_iconv::g_cp_iconv_count = ARRAYSIZE(cp_iconv::g_cp_iconv);
@@ -279,22 +285,46 @@ bool EncodingConverter::Initialize()
 
 using namespace std;
 
+#ifndef _countof
+  #define _countof(obj)     (sizeof(obj)/sizeof(obj[0]))
+#endif
+
+const char* DEFAULT_LOCALES[] = {"en_US.UTF-8", "C"};
+
+bool _setLocale(const char * localeName, std::locale ** pLocale)
+{
+    try
+    {
+        *pLocale = new std::locale(localeName);
+    }
+    catch(const std::exception& e)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void setDefaultLocale(const char ** localeName, std::locale ** pLocale)
+{
+    if(!localeName || !_setLocale(*localeName, pLocale))
+    {
+        int count = 0;
+        while(!_setLocale(DEFAULT_LOCALES[count], pLocale) && count < _countof(DEFAULT_LOCALES))
+        {
+            count++;
+        }
+        
+        if(localeName)
+            *localeName = count < _countof(DEFAULT_LOCALES)?DEFAULT_LOCALES[count]:NULL;
+    }
+}
+
 SystemLocale::SystemLocale( const char * localeName )
     : m_uAnsiCP(CP_UTF8)
     , m_pLocale(NULL)
 {
-    const char* DEFAULT_LOCALE = "en_US.UTF-8";
-
-    try {
-        m_pLocale = new std::locale(localeName);
-    }
-    catch(const std::exception& e) {
-        localeName = DEFAULT_LOCALE;
-    }
-    
-    if(!m_pLocale) {
-        m_pLocale = new std::locale(localeName);
-    }
+    setDefaultLocale(&localeName, &m_pLocale);
 
     // Mapping from locale charset to codepage
     struct LocaleCP
