@@ -25,6 +25,7 @@ $daasMode = false;
 $marsMode = true;
 
 $traceEnabled = false; 
+$localeDisabled = false;
 
 $adServer = 'TARGET_AD_SERVER';
 $adDatabase = 'TARGET_AD_DATABASE';

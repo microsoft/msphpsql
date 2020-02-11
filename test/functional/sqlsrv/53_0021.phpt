@@ -12,7 +12,12 @@ Test for integer, float, and datetime types vs various sql server types.
 
     require( 'MsCommon.inc' );
 
-function get_fields( $stmt ) {
+$epsilon = 0.00001;
+$decimals = ['9999999999999999999999999999999999999', '-10000000000000000000000000000000000001', '0'];
+
+function get_fields( $stmt, $round ) {
+    
+    global $epsilon, $decimals;
 
     // bigint
     $field = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_INT );
@@ -71,7 +76,22 @@ function get_fields( $stmt ) {
     }
     else {
         var_dump( sqlsrv_errors( SQLSRV_ERR_WARNINGS ) );
-        echo "$field\n";
+        // The size of a float is platform dependent, with a precision of roughly 14 digits
+        // http://php.net/manual/en/language.types.float.php
+        // For example, in Ubuntu 18.04 or macOS Mojave the returned value is 1.0E+37 or -1.0E+37
+        // but in Alpine Linux it is 9.9999999999997E+36 or -9.9999999999997E+36
+        if ($decimals[$round] == '0') {
+            if ($field != 0) {
+                echo "Expected 0 but got $field\n";
+            }
+        } else {
+            $expected = floatval($decimals[$round]);
+            $diff = abs(($field - $expected) / $expected);
+            
+            if ($diff > $epsilon) {
+                echo "Expected $expected but got $field -- difference is $diff\n";
+            }
+        }
     }
 
     // datetime
@@ -147,7 +167,7 @@ function get_fields( $stmt ) {
     }
     
     // maximum values
-    get_fields( $stmt );
+    get_fields( $stmt, 0 );
     
     $success = sqlsrv_fetch( $stmt );
     if( !$success ) {
@@ -156,7 +176,7 @@ function get_fields( $stmt ) {
     }
     
     // minimum values
-    get_fields( $stmt );    
+    get_fields( $stmt, 1 );    
 
     $success = sqlsrv_fetch( $stmt );
     if( !$success ) {
@@ -165,7 +185,7 @@ function get_fields( $stmt ) {
     }
     
     // zero values
-    get_fields( $stmt );    
+    get_fields( $stmt, 2 );    
 
     $stmt = sqlsrv_query( $conn, "SELECT int_type, decimal_type, datetime_type, real_type FROM [test_types]" );
     if( !$stmt ) {
@@ -258,7 +278,6 @@ NULL
 NULL
 1
 NULL
-1.0E+37
 NULL
 12/12/1968 04:20:00
 NULL
@@ -296,7 +315,6 @@ NULL
 NULL
 0
 NULL
--1.0E+37
 NULL
 12/12/1968 04:20:00
 NULL
@@ -319,7 +337,6 @@ NULL
 NULL
 0
 NULL
-0
 NULL
 12/12/1968 04:20:00
 NULL
