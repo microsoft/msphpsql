@@ -63,6 +63,11 @@ if test "$PHP_SQLSRV" != "no"; then
   else
       SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-z,now"
   fi
+  
+  IS_ALPINE=`uname -a | cut -f 4 -d ' ' | cut -f 2 -d '-'`
+  if test "${IS_ALPINE}" = "Alpine"; then
+      AC_DEFINE(__MUSL__, 1, [ ])
+  fi
 
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, SQLSRV_SHARED_LIBADD)

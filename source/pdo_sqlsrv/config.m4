@@ -84,6 +84,11 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
       PDO_SQLSRV_SHARED_LIBADD="$PDO_SQLSRV_SHARED_LIBADD -Wl,-z,now"
   fi
 
+  IS_ALPINE=`uname -a | cut -f 4 -d ' ' | cut -f 2 -d '-'`
+  if test "${IS_ALPINE}" = "Alpine"; then
+      AC_DEFINE(__MUSL__, 1, [ ])
+  fi
+
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, PDO_SQLSRV_SHARED_LIBADD)
   PHP_ADD_LIBRARY(odbc, 1, PDO_SQLSRV_SHARED_LIBADD)
