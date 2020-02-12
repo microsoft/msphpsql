@@ -30,11 +30,6 @@
 
 using namespace core;
 
-// conversion matrix
-// each entry holds a function that can perform the conversion or NULL which means the conversion isn't supported
-// this is initialized the first time the buffered result set is created.
-sqlsrv_buffered_result_set::conv_matrix_t sqlsrv_buffered_result_set::conv_matrix;
-
 namespace {
 
 // *** internal types ***
@@ -454,34 +449,6 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
     meta = static_cast<sqlsrv_buffered_result_set::meta_data*>( sqlsrv_malloc( col_count * 
                                                                                sizeof( sqlsrv_buffered_result_set::meta_data )));
 
-    // set up the conversion matrix if this is the first time we're called
-    if( conv_matrix.size() == 0 ) {
-
-        conv_matrix[SQL_C_CHAR][SQL_C_CHAR] = &sqlsrv_buffered_result_set::to_same_string;
-        conv_matrix[SQL_C_CHAR][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::system_to_wide_string;
-        conv_matrix[SQL_C_CHAR][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_binary_string;
-        conv_matrix[SQL_C_CHAR][SQL_C_DOUBLE] = &sqlsrv_buffered_result_set::string_to_double;
-        conv_matrix[SQL_C_CHAR][SQL_C_LONG] = &sqlsrv_buffered_result_set::string_to_long;
-        conv_matrix[SQL_C_WCHAR][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::to_same_string;
-        conv_matrix[SQL_C_WCHAR][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_binary_string;
-        conv_matrix[SQL_C_WCHAR][SQL_C_CHAR] = &sqlsrv_buffered_result_set::wide_to_system_string;
-        conv_matrix[SQL_C_WCHAR][SQL_C_DOUBLE] = &sqlsrv_buffered_result_set::wstring_to_double;
-        conv_matrix[SQL_C_WCHAR][SQL_C_LONG] = &sqlsrv_buffered_result_set::wstring_to_long;
-        conv_matrix[SQL_C_BINARY][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_same_string;
-        conv_matrix[SQL_C_BINARY][SQL_C_CHAR] = &sqlsrv_buffered_result_set::binary_to_system_string;
-        conv_matrix[SQL_C_BINARY][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::binary_to_wide_string;
-        conv_matrix[SQL_C_LONG][SQL_C_DOUBLE] = &sqlsrv_buffered_result_set::long_to_double;
-        conv_matrix[SQL_C_LONG][SQL_C_LONG] = &sqlsrv_buffered_result_set::to_long;
-        conv_matrix[SQL_C_LONG][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_long;
-        conv_matrix[SQL_C_LONG][SQL_C_CHAR] = &sqlsrv_buffered_result_set::long_to_system_string;
-        conv_matrix[SQL_C_LONG][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::long_to_wide_string;
-        conv_matrix[SQL_C_DOUBLE][SQL_C_DOUBLE] = &sqlsrv_buffered_result_set::to_double;
-        conv_matrix[SQL_C_DOUBLE][SQL_C_BINARY] = &sqlsrv_buffered_result_set::to_double;
-        conv_matrix[SQL_C_DOUBLE][SQL_C_CHAR] = &sqlsrv_buffered_result_set::double_to_system_string;
-        conv_matrix[SQL_C_DOUBLE][SQL_C_LONG] = &sqlsrv_buffered_result_set::double_to_long;
-        conv_matrix[SQL_C_DOUBLE][SQL_C_WCHAR] = &sqlsrv_buffered_result_set::double_to_wide_string;
-    }
-
     SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
         stmt->encoding());
 
@@ -844,18 +811,70 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
         *out_buffer_length = SQL_NULL_DATA;
         return SQL_SUCCESS;
     }
-
     
     // check to make sure the conversion type is valid
-    conv_matrix_t::const_iterator conv_iter = conv_matrix.find( meta[field_index].c_type );
-    if( conv_iter == conv_matrix.end() || conv_iter->second.find( target_type ) == conv_iter->second.end() ) {
-        last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) 
-        sqlsrv_error( (SQLCHAR*) "07006", (SQLCHAR*) "Restricted data type attribute violation", 0 );
-        return SQL_ERROR;
+    switch (meta[field_index].c_type) {
+    case SQL_C_CHAR:
+        switch (target_type) {
+        case SQL_C_CHAR: return sqlsrv_buffered_result_set::to_same_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::system_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_binary_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_DOUBLE: return sqlsrv_buffered_result_set::string_to_double(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_LONG: return sqlsrv_buffered_result_set::string_to_long(field_index, buffer, buffer_length, out_buffer_length);
+        default:
+            break;
+        }
+        break;
+    case SQL_C_WCHAR:
+        switch (target_type) {
+        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::to_same_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_binary_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_CHAR: return sqlsrv_buffered_result_set::wide_to_system_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_DOUBLE: return sqlsrv_buffered_result_set::wstring_to_double(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_LONG: return sqlsrv_buffered_result_set::wstring_to_long(field_index, buffer, buffer_length, out_buffer_length);
+        default:
+            break;
+        }
+        break;
+    case SQL_C_BINARY:
+        switch (target_type) {
+        case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_same_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_CHAR: return sqlsrv_buffered_result_set::binary_to_system_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::binary_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
+        default:
+            break;
+        }
+        break;
+    case SQL_C_LONG:
+        switch (target_type) {
+        case SQL_C_DOUBLE: return sqlsrv_buffered_result_set::long_to_double(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_LONG: return sqlsrv_buffered_result_set::to_long(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_long(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_CHAR: return sqlsrv_buffered_result_set::long_to_system_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::long_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
+        default:
+            break;
+        }
+        break;
+    case SQL_C_DOUBLE:
+        switch (target_type) {
+        case SQL_C_DOUBLE: return sqlsrv_buffered_result_set::to_double(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_double(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_CHAR: return sqlsrv_buffered_result_set::double_to_system_string(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_LONG: return sqlsrv_buffered_result_set::double_to_long(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::double_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
+        default:
+            break;
+        }
+        break;
+    default:
+        break;
     }
 
-    return (( this )->*( conv_matrix[meta[field_index].c_type][target_type] ))( field_index, buffer, buffer_length,
-                                                                                      out_buffer_length );
+    // Should not have reached here, return an error
+    last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error)))
+        sqlsrv_error((SQLCHAR*) "07006", (SQLCHAR*) "Restricted data type attribute violation", 0);
+    return SQL_ERROR;
 }
 
 SQLRETURN sqlsrv_buffered_result_set::get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
