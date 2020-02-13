@@ -84,8 +84,9 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
       PDO_SQLSRV_SHARED_LIBADD="$PDO_SQLSRV_SHARED_LIBADD -Wl,-z,now"
   fi
 
-  IS_ALPINE=`uname -a | cut -f 4 -d ' ' | cut -f 2 -d '-'`
-  if test "${IS_ALPINE}" = "Alpine"; then
+  IS_ALPINE_1=`uname -a | cut -f 4 -d ' ' | cut -f 2 -d '-'`
+  IS_ALPINE_2=`cat /etc/os-release | grep ID | grep alpine | cut -f 2 -d '='`
+  if test "${IS_ALPINE_1}" = "Alpine" || test "${IS_ALPINE_2}" = "alpine"; then
       AC_DEFINE(__MUSL__, 1, [ ])
   fi
 
