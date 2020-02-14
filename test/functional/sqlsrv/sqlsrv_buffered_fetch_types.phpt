@@ -7,6 +7,11 @@ Test various conversion functionalites for buffered queries with SQLSRV.
 --FILE--
 <?php
 
+$violation = 'Restricted data type attribute violation';
+$outOfRange = 'Numeric value out of range';
+$truncation = 'Fractional truncation';
+$epsilon = 0.00001;
+
 function fetchAsUTF8($conn, $tableName, $inputs)
 {
     $query = "SELECT * FROM $tableName";
@@ -48,16 +53,31 @@ function fetchArray($conn, $tableName, $inputs)
     }
 
     // Fetch fields as an array
-    $results = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    $results = sqlsrv_fetch_array($stmt);
     if ($results === false) {
         fatalError("In fetchArray: failed to fetch the row from $tableName!");
     }
     
-    var_dump($results);
+    for ($i = 0; $i < count($inputs); $i++) {
+        if ($i == 1) {
+            $expected = intval($inputs[$i]);
+        } elseif ($i == 2) {
+            $expected = floatval($inputs[$i]);
+        } else {
+            $expected = $inputs[$i];
+        }
+
+        if ($results[$i] !== $expected) {
+            echo "in fetchArray: for column $i expected $expected but got: ";
+            var_dump($results[$i]);
+        }
+    }
 }
 
 function fetchAsFloats($conn, $tableName, $inputs)
 {
+    global $violation, $outOfRange, $epsilon;
+    
     $query = "SELECT * FROM $tableName";
     $stmt = sqlsrv_query($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED, 'ReturnDatesAsStrings' => true));
     if (!$stmt) {
@@ -71,16 +91,42 @@ function fetchAsFloats($conn, $tableName, $inputs)
     // Fetch all fields as floats
     for ($i = 0; $i < count($inputs); $i++) {
         $f = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_FLOAT);
-        if ($f == false) {
-            print_r(sqlsrv_errors());
+
+        if ($i == 0) {
+            // The varbinary field - expect the violation error
+            if (strpos(sqlsrv_errors()[0]['message'], $violation) === false) {
+                var_dump($f);
+                fatalError("in fetchAsFloats: expected $violation for column $i\n");
+            }
+        } elseif ($i < 5) {
+            $expected = floatval($inputs[$i]);
+            $diff = abs(($f - $expected) / $expected);
+            
+            if ($diff > $epsilon) {
+                echo "in fetchAsFloats: for column $i expected $expected but got: ";
+                var_dump($f);
+            }
         } else {
-            var_dump($f);
+            // The char fields will get errors too
+            // TODO: fix this part outside Windows later
+            if (isWindows()) {
+                if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
+                    var_dump($f);
+                    fatalError("in fetchAsFloats: expected $outOfRange for column $i\n");
+                }
+            } else {
+                if ($f != 0.0) {
+                    var_dump($f);
+                }
+            }
         }
     }
 }
 
 function fetchAsInts($conn, $tableName, $inputs)
 {
+    global $violation, $outOfRange, $truncation;
+
     $query = "SELECT * FROM $tableName";
     $stmt = sqlsrv_query($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED, 'ReturnDatesAsStrings' => true));
     if (!$stmt) {
@@ -94,17 +140,45 @@ function fetchAsInts($conn, $tableName, $inputs)
     // Fetch all fields as integers
     for ($i = 0; $i < count($inputs); $i++) {
         $f = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_INT);
-        if ($f == false) {
-            print_r(sqlsrv_errors());
+        
+        if ($i == 0) {
+            // The varbinary field - expect the violation error
+            if (strpos(sqlsrv_errors()[0]['message'], $violation) === false) {
+                var_dump($f);
+                fatalError("in fetchAsInts: expected $violation for column $i\n");
+            }
+        } elseif ($i == 2) {
+            // The float field - expect truncation
+            if (strpos(sqlsrv_errors()[0]['message'], $truncation) === false) {
+                var_dump($f);
+                fatalError("in fetchAsInts: expected $truncation for column $i\n");
+            }
+        } elseif ($i >= 5) {
+            // The char fields will get errors too
+            // TODO: fix this part outside Windows later
+            if (isWindows()) {
+                if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
+                    var_dump($f);
+                    fatalError("in fetchAsInts: expected $outOfRange for column $i\n");
+                }
+            } else {
+                if ($f != 0) {
+                    var_dump($f);
+                }
+            }
         } else {
-            var_dump($f);
+            $expected = floor($inputs[$i]);
+            if ($f != $expected) {
+                echo "in fetchAsInts: for column $i expected $expected but got: ";
+                var_dump($f);
+            }
         }
     }
 }
 
 function fetchAsBinary($conn, $tableName, $inputs)
 {
-    $query = "SELECT c_varbinary, c_varchar, c_nvarchar FROM $tableName";
+    $query = "SELECT c_varbinary FROM $tableName";
     
     $stmt = sqlsrv_prepare($conn, $query, array(), array('Scrollable'=>SQLSRV_CURSOR_CLIENT_BUFFERED));
     if (!$stmt) {
@@ -119,29 +193,23 @@ function fetchAsBinary($conn, $tableName, $inputs)
         fatalError("In fetchAsInts: failed to fetch the row from $tableName!");
     }
 
-    // Fetch all fields as varbinary
-    for ($i = 0; $i < 3; $i++) {
-        $f = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STREAM("binary"));
-        if (gettype($f) !== 'resource') {
-            var_dump($f);
-        }
-        // Do not expect errors
-        $errs = sqlsrv_errors();
-        if (!empty($errs)) {
-            var_dump($errs);
-        }
-        
-        // Checks the first field only for this test
-        while (!feof($f)) { 
-            $str = fread($f, 80);
-        }
-        if ($i == 0) {
-            if (trim($str) !== $inputs[0]) {
-                echo "Fetched binary value unexpected: $str\n";
-            }
-        } else {
-            print(bin2hex($str));
-        }
+    // Fetch the varbinary field as is
+    $f = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM("binary"));
+    if (gettype($f) !== 'resource') {
+        var_dump($f);
+    }
+    // Do not expect errors
+    $errs = sqlsrv_errors();
+    if (!empty($errs)) {
+        var_dump($errs);
+    }
+    
+    // Check its value
+    while (!feof($f)) { 
+        $str = fread($f, 80);
+    }
+    if (trim($str) !== $inputs[0]) {
+        echo "Fetched binary value unexpected: $str\n";
     }
 }
 
@@ -200,122 +268,11 @@ fetchAsBinary($conn, $tableName, $inputs);
 
 dropTable($conn, $tableName);
 
+echo "Done\n";
+
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
 
 ?>
 --EXPECT--
-array(7) {
-  ["c_varbinary"]=>
-  string(10) "abcdefghij"
-  ["c_int"]=>
-  int(34567)
-  ["c_float"]=>
-  float(9876.5432)
-  ["c_decimal"]=>
-  string(16) "123456789.012340"
-  ["c_datetime2"]=>
-  string(27) "2020-02-02 20:20:20.2220000"
-  ["c_varchar"]=>
-  string(14) "This is a test"
-  ["c_nvarchar"]=>
-  string(23) "Şơмė śäოрŀề"
-}
-Array
-(
-    [0] => Array
-        (
-            [0] => 07006
-            [SQLSTATE] => 07006
-            [1] => 0
-            [code] => 0
-            [2] => Restricted data type attribute violation
-            [message] => Restricted data type attribute violation
-        )
-
-)
-float(34567)
-float(9876.5432)
-float(123456789.01234)
-float(2020)
-Array
-(
-    [0] => Array
-        (
-            [0] => 22003
-            [SQLSTATE] => 22003
-            [1] => 103
-            [code] => 103
-            [2] => Numeric value out of range
-            [message] => Numeric value out of range
-        )
-
-)
-Array
-(
-    [0] => Array
-        (
-            [0] => 22003
-            [SQLSTATE] => 22003
-            [1] => 103
-            [code] => 103
-            [2] => Numeric value out of range
-            [message] => Numeric value out of range
-        )
-
-)
-Array
-(
-    [0] => Array
-        (
-            [0] => 07006
-            [SQLSTATE] => 07006
-            [1] => 0
-            [code] => 0
-            [2] => Restricted data type attribute violation
-            [message] => Restricted data type attribute violation
-        )
-
-)
-int(34567)
-Array
-(
-    [0] => Array
-        (
-            [0] => 01S07
-            [SQLSTATE] => 01S07
-            [1] => 0
-            [code] => 0
-            [2] => Fractional truncation
-            [message] => Fractional truncation
-        )
-
-)
-int(123456789)
-int(2020)
-Array
-(
-    [0] => Array
-        (
-            [0] => 22003
-            [SQLSTATE] => 22003
-            [1] => 103
-            [code] => 103
-            [2] => Numeric value out of range
-            [message] => Numeric value out of range
-        )
-
-)
-Array
-(
-    [0] => Array
-        (
-            [0] => 22003
-            [SQLSTATE] => 22003
-            [1] => 103
-            [code] => 103
-            [2] => Numeric value out of range
-            [message] => Numeric value out of range
-        )
-
-)
+Done
