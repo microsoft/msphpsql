@@ -108,7 +108,7 @@ function fetchAsFloats($conn, $tableName, $inputs)
             }
         } else {
             // The char fields will get errors too
-            // TODO: fix this part outside Windows later
+            // TODO 11297: fix this part outside Windows later
             if (isWindows()) {
                 if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
                     var_dump($f);
@@ -155,7 +155,7 @@ function fetchAsInts($conn, $tableName, $inputs)
             }
         } elseif ($i >= 5) {
             // The char fields will get errors too
-            // TODO: fix this part outside Windows later
+            // TODO 11297: fix this part outside Windows later
             if (isWindows()) {
                 if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
                     var_dump($f);
@@ -216,7 +216,7 @@ function fetchAsBinary($conn, $tableName, $inputs)
 require_once('MsCommon.inc');
 
 $conn = AE\connect(array('CharacterSet' => 'UTF-8'));
-$tableName = 'testFetchingClientBuffer';
+$tableName = 'srvFetchingClientBuffer';
 
 // Create table
 $names = array('c_varbinary', 'c_int', 'c_float', 'c_decimal', 'c_datetime2', 'c_varchar', 'c_nvarchar');
