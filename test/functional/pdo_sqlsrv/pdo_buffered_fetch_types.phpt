@@ -132,7 +132,7 @@ function fetchCharAsInt($conn, $tableName, $column)
         $row = $stmt->fetch(PDO::FETCH_BOUND);
         
         // TODO 11297: fix this part outside Windows later
-        if (isWindows()) {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             echo "in fetchCharAsInt: exception should have been thrown!\n";
         } else {
             if ($value != 0) {
