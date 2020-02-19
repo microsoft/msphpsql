@@ -114,7 +114,7 @@ function fetchFloatAsInt($conn, $tableName)
             print_r($stmt->errorInfo());
         }
     } catch (PdoException $e) {
-        echo "Caught exception in fetchFloat:\n";
+        echo "Caught exception in fetchFloatAsInt:\n";
         echo $e->getMessage() . PHP_EOL;
     }
 }
