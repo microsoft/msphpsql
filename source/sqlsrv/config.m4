@@ -44,13 +44,13 @@ if test "$PHP_SQLSRV" != "no"; then
       pdo_sqlsrv_inc_path=$srcdir/ext/pdo_sqlsrv/shared/
       shared_src_class=""
     elif test -f $srcdir/ext/sqlsrv/shared/core_sqlsrv.h; then
-        sqlsrv_inc_path=$srcdir/ext/sqlsrv/shared/
+      sqlsrv_inc_path=$srcdir/ext/sqlsrv/shared/
     elif  test -f $srcdir/shared/core_sqlsrv.h; then
-        sqlsrv_inc_path=$srcdir/shared/
+      sqlsrv_inc_path=$srcdir/shared/
     else  
-        AC_MSG_ERROR([Cannot find SQLSRV headers])
+      AC_MSG_ERROR([Cannot find SQLSRV headers])
     fi
-        AC_MSG_RESULT($sqlsrv_inc_path)    
+      AC_MSG_RESULT($sqlsrv_inc_path)    
         
   CXXFLAGS="$CXXFLAGS -std=c++11"
   CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
@@ -58,17 +58,17 @@ if test "$PHP_SQLSRV" != "no"; then
 
   HOST_OS_ARCH=`uname`
   if test "${HOST_OS_ARCH}" = "Darwin"; then
-      SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-bind_at_load"
-      MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion`
+    SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-bind_at_load"
+    MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion`
   else
-      SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-z,now"
+    SQLSRV_SHARED_LIBADD="$SQLSRV_SHARED_LIBADD -Wl,-z,now"
+    IS_ALPINE_1=`uname -a | cut -f 4 -d ' ' | cut -f 2 -d '-'`
+    IS_ALPINE_2=`cat /etc/os-release | grep ID | grep alpine | cut -f 2 -d '='`
+    if test "${IS_ALPINE_1}" = "Alpine" || test "${IS_ALPINE_2}" = "alpine"; then
+      AC_DEFINE(__MUSL__, 1, [ ])
+    fi
   fi
   
-  IS_ALPINE_1=`uname -a | cut -f 4 -d ' ' | cut -f 2 -d '-'`
-  IS_ALPINE_2=`cat /etc/os-release | grep ID | grep alpine | cut -f 2 -d '='`
-  if test "${IS_ALPINE_1}" = "Alpine" || test "${IS_ALPINE_2}" = "alpine"; then
-      AC_DEFINE(__MUSL__, 1, [ ])
-  fi
 
   PHP_REQUIRE_CXX()
   PHP_ADD_LIBRARY(stdc++, 1, SQLSRV_SHARED_LIBADD)
