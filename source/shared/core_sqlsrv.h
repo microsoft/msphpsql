@@ -1746,13 +1746,6 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
     sqlsrv_malloc_auto_ptr<SQLCHAR> temp_string;   // temp buffer to hold a converted field while in use
     SQLLEN temp_length;                 // number of bytes in the temp conversion buffer
 
-    typedef SQLRETURN (sqlsrv_buffered_result_set::*conv_fn)( _In_ SQLSMALLINT field_index, _Out_writes_z_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
-                                                              _Inout_ SQLLEN* out_buffer_length );
-    typedef std::map< SQLINTEGER, std::map< SQLINTEGER, conv_fn > > conv_matrix_t;
-
-    // two dimentional sparse matrix that holds the [from][to] functions that do conversions
-    static conv_matrix_t conv_matrix;
-
     // string conversion functions
     SQLRETURN binary_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_z_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                      _Inout_ SQLLEN* out_buffer_length );
