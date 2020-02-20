@@ -41,6 +41,9 @@
 #define CP_UTF16 1200
 #define CP_ACP  0           // default to ANSI code page
 
+bool _setLocale(const char * localeName, std::locale ** pLocale);
+void setDefaultLocale(const char ** localeName, std::locale ** pLocale);
+
 // This class provides allocation policies for the SystemLocale and AutoArray classes.
 // This is primarily needed for the self-allocating ToUtf16/FromUtf16 methods.
 // SNI needs all its allocations to use its own allocator so it would create a separate

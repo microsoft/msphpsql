@@ -78,10 +78,15 @@ if test "$PHP_PDO_SQLSRV" != "no"; then
 
   HOST_OS_ARCH=`uname`
   if test "${HOST_OS_ARCH}" = "Darwin"; then
-      PDO_SQLSRV_SHARED_LIBADD="$PDO_SQLSRV_SHARED_LIBADD -Wl,-bind_at_load"
-      MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion`
+    PDO_SQLSRV_SHARED_LIBADD="$PDO_SQLSRV_SHARED_LIBADD -Wl,-bind_at_load"
+    MACOSX_DEPLOYMENT_TARGET=`sw_vers -productVersion`
   else
-      PDO_SQLSRV_SHARED_LIBADD="$PDO_SQLSRV_SHARED_LIBADD -Wl,-z,now"
+    PDO_SQLSRV_SHARED_LIBADD="$PDO_SQLSRV_SHARED_LIBADD -Wl,-z,now"
+    IS_ALPINE_1=`uname -a | cut -f 4 -d ' ' | cut -f 2 -d '-'`
+    IS_ALPINE_2=`cat /etc/os-release | grep ID | grep alpine | cut -f 2 -d '='`
+    if test "${IS_ALPINE_1}" = "Alpine" || test "${IS_ALPINE_2}" = "alpine"; then
+      AC_DEFINE(__MUSL__, 1, [ ])
+    fi
   fi
 
   PHP_REQUIRE_CXX()
