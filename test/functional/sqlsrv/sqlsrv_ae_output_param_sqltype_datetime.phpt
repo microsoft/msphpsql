@@ -39,7 +39,7 @@ function testOutputParam($conn, $spname, $direction, $dataType, $sqlType)
 {
     // The driver does not support these types as output params, simply return
     if (isDateTimeType($sqlType) || isLOBType($sqlType)) {
-        return;
+        return true;
     }
     
     $sqlTypeConstant = get_sqlType_constant($sqlType);
@@ -69,26 +69,24 @@ function testOutputParam($conn, $spname, $direction, $dataType, $sqlType)
         if (empty($errors)) {
             echo "Encrypted data: $dataType should NOT be compatible with $sqlType\n";
         } else {
-            // All should return 22018, the SQLSTATE for any incompatible conversion,
+            // This should return 22018, the SQLSTATE for any incompatible conversion,
             // except the XML type
-            if ($errors[0]['SQLSTATE'] !== '22018') {
-                if ($sqlType === 'SQLSRV_SQLTYPE_XML' && $errors[0]['SQLSTATE'] === '42000') {
-                    $success = true;
+            $success = ($errors[0]['SQLSTATE'] === '22018');
+            if (!$success) {
+                if ($sqlType === 'SQLSRV_SQLTYPE_XML') {
+                    $success = ($errors[0]['SQLSTATE'] === '42000');
                 } else {
                     echo "Encrypted data: unexpected errors with SQL type: $sqlType\n";
-                    var_dump($errors);
                 }
-            } else {
-                $success = true;
             }
         }
     } else {
         $compatible = isCompatible($dataType, $sqlType);
-        
         if ($compatible) {
             if (!empty($errors)) {
                 echo "$dataType should be compatible with $sqlType.\n";
-                var_dump($errors);
+            } else {
+                $success = true;
             }
         } else {
             $implicitConv = 'Implicit conversion from data type ';
@@ -100,11 +98,9 @@ function testOutputParam($conn, $spname, $direction, $dataType, $sqlType)
                 $success = true;
             } else {
                 echo "Failed with SQL type: $sqlType\n";
-                var_dump($errors);
             }
         }
     }
-    
     return $success;
 }
 
@@ -140,6 +136,11 @@ foreach ($dataTypes as $dataType) {
         // test each SQLSRV_SQLTYPE_* constants
         foreach ($sqlTypes as $sqlType) {
             $success = testOutputParam($conn, $spname, $direction, $dataType, $sqlType);
+            if (!$success) {
+                // No point to continue looping
+                echo("Test failed: $dataType as $sqlType\n");
+                die(print_r(sqlsrv_errors(), true));
+            }
         }
     }
     
@@ -147,11 +148,10 @@ foreach ($dataTypes as $dataType) {
     sqlsrv_free_stmt($stmt);
     sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
     
+    dropProc($conn, $spname);
     if ($success) {
         echo "Test successfully done.\n";
     }
-    
-    dropProc($conn, $spname);
     dropTable($conn, $tbname);
 }
 

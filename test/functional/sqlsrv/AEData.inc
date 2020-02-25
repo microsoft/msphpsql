@@ -109,7 +109,6 @@ function get_sqlType_constant( $sqlType )
 {
     switch ( $sqlType ) {
         case 'SQLSRV_SQLTYPE_BIGINT':
-        case 'SQLSRV_SQLTYPE_BINARY':
         case 'SQLSRV_SQLTYPE_BIT':
         case 'SQLSRV_SQLTYPE_DATE':
         case 'SQLSRV_SQLTYPE_DATETIME':
@@ -135,6 +134,10 @@ function get_sqlType_constant( $sqlType )
         case 'SQLSRV_SQLTYPE_XML':
             return constant( $sqlType );
             break;
+        case 'SQLSRV_SQLTYPE_BINARY':
+            // our tests always use precision 5 for SQLSRV_SQLTYPE_BINARY
+            return SQLSRV_SQLTYPE_BINARY(5);
+            break;
         case 'SQLSRV_SQLTYPE_CHAR':
             // our tests always use precision 5 for SQLSRV_SQLTYPE_CHAR
             return SQLSRV_SQLTYPE_CHAR(5);
@@ -146,7 +149,7 @@ function get_sqlType_constant( $sqlType )
         case 'SQLSRV_SQLTYPE_NCHAR':
             // our tests always use precision 5 for SQLSRV_SQLTYPE_NCHAR
             return SQLSRV_SQLTYPE_NCHAR(5);
-            break;		
+            break;
         case 'SQLSRV_SQLTYPE_NUMERIC':
             // our tests always use precision 10 scale 5 for SQLSRV_SQLTYPE_NUMERIC
             return SQLSRV_SQLTYPE_NUMERIC(10, 5);
@@ -157,7 +160,7 @@ function get_sqlType_constant( $sqlType )
     }
 }
 
-function isDateTimeType( $sqlType )
+function isDateTimeType($sqlType)
 {    
     return ($sqlType == 'SQLSRV_SQLTYPE_DATE' || 
             $sqlType == 'SQLSRV_SQLTYPE_DATETIME' ||
@@ -165,6 +168,11 @@ function isDateTimeType( $sqlType )
             $sqlType == 'SQLSRV_SQLTYPE_DATETIMEOFFSET' ||
             $sqlType == 'SQLSRV_SQLTYPE_SMALLDATETIME' ||
             $sqlType == 'SQLSRV_SQLTYPE_TIME');
+}
+
+function isLOBType($sqlType)
+{
+    return ($sqlType == 'SQLSRV_SQLTYPE_TEXT' || $sqlType == 'SQLSRV_SQLTYPE_NTEXT' || $sqlType == 'SQLSRV_SQLTYPE_IMAGE');
 }
 
 ?>
