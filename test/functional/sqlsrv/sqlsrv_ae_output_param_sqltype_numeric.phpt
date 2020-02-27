@@ -47,25 +47,14 @@ function compareResults($dataType, $sqlType, $c_detOut, $c_randOut, $inputValues
     return $success;
 }
 
-function isCompatible($dataType, $sqlType)
-{
-    global $compatList;
-    
-    foreach ($compatList[$dataType] as $compatType) {
-        if (stripos($compatType, $sqlType) !== false) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 function testOutputParam($conn, $spname, $direction, $dataType, $sqlType, $inputValues)
 {
     // The driver does not support these types as output params, simply return
     if (isDateTimeType($sqlType) || isLOBType($sqlType)) {
         return true;
     }
+    
+    global $compatList;
     
     $sqlTypeConstant = get_sqlType_constant($sqlType);
         
@@ -107,17 +96,19 @@ function testOutputParam($conn, $spname, $direction, $dataType, $sqlType, $input
             }
         }
     } else {
-        $compatible = isCompatible($dataType, $sqlType);
+        $compatible = isCompatible($compatList, $dataType, $sqlType);
         if ($compatible && empty($errors)) {
             $success = true;
         } else {
             // Even if $dataType is compatible with $sqlType sometimes
-            // we still get errors from the server -- if so, it should
-            // return SQLSTATE '42000' or '22018', the former indicating
-            // an error when converting from one type to another and the
-            // latter indicating an incompatible conversion error
-            // Either one is acceptable for the purpose of this test
-            $success = ($errors[0]['SQLSTATE'] === '22018' || $errors[0]['SQLSTATE'] === '42000');
+            // we still get errors from the server -- if so, it might
+            // return either SQLSTATE '42000' or '22018' (operand type 
+            // clash but only happens with some certain types)
+            // E.g. when converting a bigint to int or an int to numeric, 
+            // SQLSTATE '42000' is returned, indicating an error when 
+            // converting from one type to another.
+            // TODO 11559: investigate if SQLSTATE '42000' is indeed acceptable
+            $success = ($errors[0]['SQLSTATE'] === '42000' || ($errors[0]['SQLSTATE'] === '22018' && in_array($sqlType, ['SQLSRV_SQLTYPE_XML', 'SQLSRV_SQLTYPE_BINARY', 'SQLSRV_SQLTYPE_VARBINARY', 'SQLSRV_SQLTYPE_UNIQUEIDENTIFIER', 'SQLSRV_SQLTYPE_TIMESTAMP'])));
             if (!$success) {
                 if ($compatible) {
                     echo "$dataType should be compatible with $sqlType.\n";
@@ -149,6 +140,10 @@ foreach ($dataTypes as $dataType) {
     createProc($conn, $spname, "@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT", "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname");
 
     // insert a row
+    // Take the second and third entres (some edge cases) from the various 
+    // $[$dataType]_params in AEData.inc
+    // e.g. with $dataType = 'decimal(18,5)', use $decimal_params[1] and $decimal_params[2] 
+    // to form an array, namely [-9223372036854.80000, 9223372036854.80000]
     $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
     // convert input values to strings for decimals and numerics
@@ -158,7 +153,7 @@ foreach ($dataTypes as $dataType) {
         $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
     }
     if ($r === false) {
-        is_incompatible_types_error($dataType, "default type");
+        fatalError("Failed to insert data of type $dataType\n");
     }
 
     foreach ($directions as $direction) {

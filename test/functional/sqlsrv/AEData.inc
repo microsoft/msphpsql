@@ -84,11 +84,9 @@ $sqlTypes = array(
 function is_incompatible_types_error( $dataType, $sqlType )
 {
     $errors = sqlsrv_errors();
-    foreach ( $errors as $error )
-    {
+    foreach ($errors as $error) {
         // 22018 is the SQLSTATE for the operand crash error for incompatible types
-        if ( $error['SQLSTATE'] == 22018 )
-        {
+        if ($error['SQLSTATE'] == '22018') {
             echo "Encrypted $sqlType is incompatible with encrypted $dataType\n";
         }
     }
@@ -173,6 +171,17 @@ function isDateTimeType($sqlType)
 function isLOBType($sqlType)
 {
     return ($sqlType == 'SQLSRV_SQLTYPE_TEXT' || $sqlType == 'SQLSRV_SQLTYPE_NTEXT' || $sqlType == 'SQLSRV_SQLTYPE_IMAGE');
+}
+
+function isCompatible($compatList, $dataType, $sqlType)
+{
+    foreach ($compatList[$dataType] as $compatType) {
+        if (stripos($compatType, $sqlType) !== false) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 ?>

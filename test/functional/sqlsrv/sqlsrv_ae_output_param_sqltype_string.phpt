@@ -34,25 +34,14 @@ function compareResults($dataType, $sqlType, $c_detOut, $c_randOut, $inputValues
     return $success;
 }
 
-function isCompatible($dataType, $sqlType)
-{
-    global $compatList;
-    
-    foreach ($compatList[$dataType] as $compatType) {
-        if (stripos($compatType, $sqlType) !== false) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 function testOutputParam($conn, $spname, $direction, $dataType, $sqlType, $inputValues)
 {
     // The driver does not support these types as output params, simply return
     if (isDateTimeType($sqlType) || isLOBType($sqlType)) {
         return true;
     }
+    
+    global $compatList;
     
     $sqlTypeConstant = get_sqlType_constant($sqlType);
 
@@ -96,7 +85,7 @@ function testOutputParam($conn, $spname, $direction, $dataType, $sqlType, $input
             }
         }
     } else {
-        $compatible = isCompatible($dataType, $sqlType);
+        $compatible = isCompatible($compatList, $dataType, $sqlType);
         if ($compatible && empty($errors)) {
             $success = true;
         } else {
@@ -132,11 +121,14 @@ foreach ($dataTypes as $dataType) {
     createProc($conn, $spname, "@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT", "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname");
 
     // insert a row
+    // Take the second and third entres from the various $[$dataType]_params in AEData.inc
+    // e.g. with $dataType = 'varchar(max)', use $varchar_params[1] and $varchar_params[2] 
+    // to form an array
     $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
     $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
     if ($r === false) {
-        is_incompatible_types_error($dataType, "default type");
+        fatalError("Failed to insert data of type $dataType\n");
     }
 
     foreach ($directions as $direction) {

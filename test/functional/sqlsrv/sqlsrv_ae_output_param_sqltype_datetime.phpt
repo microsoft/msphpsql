@@ -22,25 +22,14 @@ $compatList = array("date" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARC
                     "time" => array( "SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIME", "SQLSRV_SQLTYPE_SMALLDATETIME", "SQLSRV_SQLTYPE_TIME", "SQLSRV_SQLTYPE_DATETIMEOFFSET", "SQLSRV_SQLTYPE_DATETIME2"),
                     "datetimeoffset" => array("SQLSRV_SQLTYPE_CHAR", "SQLSRV_SQLTYPE_VARCHAR", "SQLSRV_SQLTYPE_NCHAR", "SQLSRV_SQLTYPE_NVARCHAR", "SQLSRV_SQLTYPE_DATETIMEOFFSET") );
 
-function isCompatible($dataType, $sqlType)
-{
-    global $compatList;
-    
-    foreach ($compatList[$dataType] as $compatType) {
-        if (stripos($compatType, $sqlType) !== false) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 function testOutputParam($conn, $spname, $direction, $dataType, $sqlType)
 {
     // The driver does not support these types as output params, simply return
     if (isDateTimeType($sqlType) || isLOBType($sqlType)) {
         return true;
     }
+    
+    global $compatList;
     
     $sqlTypeConstant = get_sqlType_constant($sqlType);
         
@@ -81,7 +70,7 @@ function testOutputParam($conn, $spname, $direction, $dataType, $sqlType)
             }
         }
     } else {
-        $compatible = isCompatible($dataType, $sqlType);
+        $compatible = isCompatible($compatList, $dataType, $sqlType);
         if ($compatible) {
             if (!empty($errors)) {
                 echo "$dataType should be compatible with $sqlType.\n";
@@ -122,11 +111,15 @@ foreach ($dataTypes as $dataType) {
     createProc($conn, $spname, "@c_det $dataType OUTPUT, @c_rand $dataType OUTPUT", "SELECT @c_det = c_det, @c_rand = c_rand FROM $tbname");
 
     // insert a row
+    // Take the second and third entres (some edge cases) from the various 
+    // $[$dataType]_params in AEData.inc
+    // e.g. with $dataType = 'date', use $date_params[1] and $date_params[2] 
+    // to form an array, namely ["0001-01-01", "9999-12-31"]
     $inputValues = array_slice(${explode("(", $dataType)[0] . "_params"}, 1, 2);
     $r;
     $stmt = AE\insertRow($conn, $tbname, array( $colMetaArr[0]->colName => $inputValues[0], $colMetaArr[1]->colName => $inputValues[1] ), $r);
     if ($r === false) {
-        is_incompatible_types_error($dataType, "default type");
+        fatalError("Failed to insert data of type $dataType\n");
     }
 
     foreach ($directions as $direction) {
