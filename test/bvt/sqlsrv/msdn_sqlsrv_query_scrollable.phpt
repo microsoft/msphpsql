@@ -4,11 +4,8 @@ server side cursor specified when querying
 
 --FILE--
 <?php
-//$server = "sql-2k14-sp1-1.galaxy.ad";
-//$conn = sqlsrv_connect( $server, array( "Database" => "tempdb", "UID"=>"sa", "PWD"=>"Moonshine4me"));
-
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
+$connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd);
 $conn = sqlsrv_connect( $server, $connectionInfo);
 if ( $conn === false ) {
    die( print_r( sqlsrv_errors(), true ));

@@ -1,15 +1,18 @@
 <?php
+
+require_once('connect.inc');
+
 // Set SQL server + user + password
-$serverName = getenv('MSSQL_SERVERNAME') ?: "sql-2k14-sp2-1.galaxy.ad";
-$username   = getenv('MSSQL_USERNAME')   ?: "sa";
-$password   = getenv('MSSQL_PASSWORD')   ?: "Moonshine4me";
+$serverName = getenv('MSSQL_SERVERNAME') ?: $server2;
+$username   = getenv('MSSQL_USERNAME')   ?: $uid;
+$password   = getenv('MSSQL_PASSWORD')   ?: $pwd;
 
 // Generate unique DB name, example: php_20160817_1471475608267
 $databaseName = "php_" . date("Ymd") . "_" . round(microtime(true)*1000);
 
-// Generic table name example: php_20160817_1471475608267.dbo.php_firefly
-$tableName1 = $databaseName.".dbo.php_firefly1";
-$tableName2 = $databaseName.".dbo.php_firefly2";
+// Generic table name example: php_20160817_1471475608267.dbo.php_table
+$tableName1 = $databaseName.".dbo.php_table1";
+$tableName2 = $databaseName.".dbo.php_table2";
 
 $connectionInfo = array( "Database"=>"$databaseName", "username"=>"$username", "password"=>"$password" );
 $conn = sqlsrv_connect( $serverName, $connectionInfo );
