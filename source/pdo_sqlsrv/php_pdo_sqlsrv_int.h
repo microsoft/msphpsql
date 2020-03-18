@@ -326,6 +326,11 @@ inline void pdo_reset_dbh_error( _Inout_ pdo_dbh_t* dbh TSRMLS_DC )
     }
 }
 
+#define PDO_LOG_FUNCTION( function_name ) \
+   core_sqlsrv_register_logger(pdo_sqlsrv_log); \
+   const char* _FN_ = function_name; \
+   LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); 
+
 #define PDO_RESET_DBH_ERROR     pdo_reset_dbh_error( dbh TSRMLS_CC );
 
 inline void pdo_reset_stmt_error( _Inout_ pdo_stmt_t* stmt )

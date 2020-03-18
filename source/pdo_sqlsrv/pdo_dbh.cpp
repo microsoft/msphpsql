@@ -489,26 +489,13 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
 
 
 // log a function entry point
-#ifndef _WIN32
 #define PDO_LOG_DBH_ENTRY \
 { \
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
     driver_dbh->set_func( __FUNCTION__ ); \
-    int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
-    char func[length+1]; \
-    memset(func, '\0', length+1); \
-    strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
-    strcat_s( func, length+1, ": entering" ); \
-    LOG( SEV_NOTICE, func ); \
+    core_sqlsrv_register_logger(pdo_sqlsrv_log); \
+    LOG(SEV_NOTICE, "%1!s!: entering", __FUNCTION__ ); \
 }
-#else
-#define PDO_LOG_DBH_ENTRY \
-{ \
-    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
-    driver_dbh->set_func( __FUNCTION__ ); \
-    LOG( SEV_NOTICE, __FUNCTION__ ## ": entering" ); \
-}
-#endif
 
 // constructor for the internal object for connections
 pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC ) :

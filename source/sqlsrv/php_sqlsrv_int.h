@@ -313,6 +313,7 @@ public:
 #define LOG_FUNCTION( function_name ) \
    const char* _FN_ = function_name; \
    SQLSRV_G( current_subsystem ) = current_log_subsystem; \
+   core_sqlsrv_register_logger(ss_sqlsrv_log); \
    LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); 
 
 #define SET_FUNCTION_NAME( context ) \

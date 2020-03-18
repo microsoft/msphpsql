@@ -351,26 +351,13 @@ void stmt_option_fetch_datetime:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
 }
 
 // log a function entry point
-#ifndef _WIN32
 #define PDO_LOG_STMT_ENTRY \
 { \
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
     driver_stmt->set_func( __FUNCTION__ ); \
-    int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
-    char func[length+1]; \
-    memset(func, '\0', length+1); \
-    strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
-    strcat_s( func, length+1, ": entering" ); \
-    LOG( SEV_NOTICE, func ); \
+    core_sqlsrv_register_logger(pdo_sqlsrv_log); \
+    LOG(SEV_NOTICE, "%1!s!: entering", __FUNCTION__); \
 }
-#else
-#define PDO_LOG_STMT_ENTRY \
-{ \
-    pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
-    driver_stmt->set_func( __FUNCTION__ ); \
-    LOG( SEV_NOTICE, __FUNCTION__ ## ": entering" ); \
-}
-#endif
 
 // PDO SQLSRV statement destructor
 pdo_sqlsrv_stmt::~pdo_sqlsrv_stmt( void )
@@ -500,9 +487,11 @@ int pdo_sqlsrv_stmt_describe_col( _Inout_ pdo_stmt_t *stmt, _In_ int colno TSRML
 // 1 for success.
 int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 {
+    PDO_LOG_STMT_ENTRY;
+
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
-    LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );
+    //LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );
 
     // if a PDO statement didn't complete preparation, its driver_data can be NULL
     if (driver_stmt == NULL) {

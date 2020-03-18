@@ -128,11 +128,11 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
-    core_sqlsrv_register_logger( pdo_sqlsrv_log );
+    PDO_LOG_FUNCTION("PHP_MINIT_FUNCTION for pdo_sqlsrv");
 
     REGISTER_INI_ENTRIES();
     
-    LOG( SEV_NOTICE, "pdo_sqlsrv: entering minit" );
+    //LOG( SEV_NOTICE, "pdo_sqlsrv: entering minit" );
 
     // initialize list of pdo errors
     g_pdo_errors_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
@@ -183,6 +183,7 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
 
 PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)
 {
+    PDO_LOG_FUNCTION("PHP_MSHUTDOWN_FUNCTION for pdo_sqlsrv");
     try {
 
         SQLSRV_UNUSED( type );
@@ -220,6 +221,8 @@ PHP_RINIT_FUNCTION(pdo_sqlsrv)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
+    PDO_LOG_FUNCTION("PHP_RINIT_FUNCTION for pdo_sqlsrv");
+
 #ifndef _WIN32
     // if necessary, set locale from the environment for ODBC, which MUST be done before any connection
     int set_locale = PDO_SQLSRV_G(set_locale_info);
@@ -236,7 +239,7 @@ PHP_RINIT_FUNCTION(pdo_sqlsrv)
     }
 #endif
 
-    LOG( SEV_NOTICE, "pdo_sqlsrv: entering rinit" );
+    //LOG( SEV_NOTICE, "pdo_sqlsrv: entering rinit" );
  
     return SUCCESS;
 }
@@ -250,7 +253,8 @@ PHP_RSHUTDOWN_FUNCTION(pdo_sqlsrv)
     SQLSRV_UNUSED( module_number );
     SQLSRV_UNUSED( type );
 
-    LOG( SEV_NOTICE, "pdo_sqlsrv: entering rshutdown" );
+    PDO_LOG_FUNCTION("PHP_RSHUTDOWN_FUNCTION for pdo_sqlsrv");
+    //LOG( SEV_NOTICE, "pdo_sqlsrv: entering rshutdown" );
 
     return SUCCESS;
 }
