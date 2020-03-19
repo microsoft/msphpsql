@@ -354,8 +354,8 @@ void stmt_option_fetch_datetime:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
 #define PDO_LOG_STMT_ENTRY \
 { \
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data ); \
-    driver_stmt->set_func( __FUNCTION__ ); \
-    core_sqlsrv_register_logger(pdo_sqlsrv_log); \
+    if (driver_stmt != NULL) driver_stmt->set_func( __FUNCTION__ ); \
+    core_sqlsrv_register_severity_checker(pdo_severity_check); \
     LOG(SEV_NOTICE, "%1!s!: entering", __FUNCTION__); \
 }
 
@@ -487,11 +487,9 @@ int pdo_sqlsrv_stmt_describe_col( _Inout_ pdo_stmt_t *stmt, _In_ int colno TSRML
 // 1 for success.
 int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt TSRMLS_DC )
 {
-    PDO_LOG_STMT_ENTRY;
-
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
 
-    //LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );
+    LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_dtor: entering" );
 
     // if a PDO statement didn't complete preparation, its driver_data can be NULL
     if (driver_stmt == NULL) {

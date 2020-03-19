@@ -271,6 +271,8 @@ PHP_MINIT_FUNCTION(sqlsrv)
 {
     SQLSRV_UNUSED( type );
 
+    core_sqlsrv_register_severity_checker(ss_severity_check);
+
     // our global variables are initialized in the RINIT function
 #if defined(ZTS) 
     if( ts_allocate_id( &sqlsrv_globals_id,
@@ -594,8 +596,6 @@ PHP_MSHUTDOWN_FUNCTION(sqlsrv)
 {
     SQLSRV_UNUSED( type );
 	
-    LOG_FUNCTION("PHP_MSHUTDOWN_FUNCTION for php_sqlsrv");
-
     UNREGISTER_INI_ENTRIES();
 
     // clean up the list of sqlsrv errors
@@ -639,7 +639,7 @@ PHP_RINIT_FUNCTION(sqlsrv)
     ZVAL_NULL( &SQLSRV_G( errors ));
 	ZVAL_NULL( &SQLSRV_G( warnings ));
    
-    LOG_FUNCTION( "PHP_RINIT_FUNCTION for php_sqlsrv" );
+    LOG_FUNCTION( "PHP_RINIT for php_sqlsrv" );
 
     // read INI settings
     // need to convert const char[] to char[] to avoid converting string to char* warnings
@@ -691,7 +691,7 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
     SQLSRV_UNUSED( module_number );
     SQLSRV_UNUSED( type );
 
-    LOG_FUNCTION( "PHP_RSHUTDOWN_FUNCTION for php_sqlsrv" );
+    LOG_FUNCTION( "PHP_RSHUTDOWN for php_sqlsrv" );
     reset_errors( TSRMLS_C );
 
 	// TODO - destruction

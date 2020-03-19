@@ -30,13 +30,6 @@ namespace {
 // current subsytem.  defined for the CHECK_SQL_{ERROR|WARNING} macros
 unsigned int current_log_subsystem = LOG_UTIL;
 
-// buffer used to hold a formatted log message prior to actually logging it.
-const int LOG_MSG_SIZE = 2048;
-char log_msg[LOG_MSG_SIZE] = {'\0'};
-
-// internal error that says that FormatMessage failed
-SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
-
 // *** internal functions ***
 sqlsrv_error_const* get_error_message( _In_ unsigned int sqlsrv_error_code );
 
@@ -457,21 +450,10 @@ ss_error SS_ERRORS[] = {
     { UINT_MAX, {} }
 };
 
-// Formats an error message and finally writes it to the php log.
-void ss_sqlsrv_log( _In_ unsigned int severity TSRMLS_DC, _In_opt_ const char* msg, _In_opt_ va_list* print_args )
+// check the global variables of sqlsrv severity whether the message qualifies to be logged with the LOG macro
+bool ss_severity_check(_In_ unsigned int severity TSRMLS_DC)
 {
-    if(( severity & SQLSRV_G( log_severity )) && ( SQLSRV_G( current_subsystem ) & SQLSRV_G( log_subsystems ))) {
-
-        DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, log_msg, LOG_MSG_SIZE, print_args );
-    
-        // if an error occurs for FormatMessage, we just output an internal error occurred.
-        if( rc == 0 ) {
-            SQLSRV_STATIC_ASSERT( sizeof( INTERNAL_FORMAT_ERROR ) < sizeof( log_msg ));
-            std::copy( INTERNAL_FORMAT_ERROR, INTERNAL_FORMAT_ERROR + sizeof( INTERNAL_FORMAT_ERROR ), log_msg );
-        }
-
-        php_log_err( log_msg TSRMLS_CC );
-    }
+    return ((severity & SQLSRV_G(log_severity)) && (SQLSRV_G(current_subsystem) & SQLSRV_G(log_subsystems)));
 }
 
 bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool warning TSRMLS_DC, _In_opt_ va_list* print_args )

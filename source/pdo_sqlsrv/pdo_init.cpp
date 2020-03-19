@@ -128,11 +128,11 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
-    PDO_LOG_FUNCTION("PHP_MINIT_FUNCTION for pdo_sqlsrv");
+    core_sqlsrv_register_severity_checker(pdo_severity_check);
 
     REGISTER_INI_ENTRIES();
     
-    //LOG( SEV_NOTICE, "pdo_sqlsrv: entering minit" );
+    PDO_LOG_NOTICE("pdo_sqlsrv: entering minit");
 
     // initialize list of pdo errors
     g_pdo_errors_ht = reinterpret_cast<HashTable*>( pemalloc( sizeof( HashTable ), 1 ));
@@ -183,7 +183,6 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
 
 PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)
 {
-    PDO_LOG_FUNCTION("PHP_MSHUTDOWN_FUNCTION for pdo_sqlsrv");
     try {
 
         SQLSRV_UNUSED( type );
@@ -201,7 +200,7 @@ PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)
     }
     catch( ... ) {
 
-        LOG( SEV_NOTICE, "Unknown exception caught in PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)" );
+        PDO_LOG_NOTICE("Unknown exception caught in PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)");
         return FAILURE;
     }
 
@@ -221,25 +220,23 @@ PHP_RINIT_FUNCTION(pdo_sqlsrv)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
-    PDO_LOG_FUNCTION("PHP_RINIT_FUNCTION for pdo_sqlsrv");
-
 #ifndef _WIN32
     // if necessary, set locale from the environment for ODBC, which MUST be done before any connection
     int set_locale = PDO_SQLSRV_G(set_locale_info);
     if (set_locale == 2) {
         setlocale(LC_ALL, "");
-        LOG(SEV_NOTICE, "pdo_sqlsrv: setlocale LC_ALL");
+        PDO_LOG_NOTICE("pdo_sqlsrv: setlocale LC_ALL");
     }
     else if (set_locale == 1) {
         setlocale(LC_CTYPE, "");
-        LOG(SEV_NOTICE, "pdo_sqlsrv: setlocale LC_CTYPE");
+        PDO_LOG_NOTICE("pdo_sqlsrv: setlocale LC_CTYPE");
     } 
     else {
-        LOG(SEV_NOTICE, "pdo_sqlsrv: setlocale NONE");
+        PDO_LOG_NOTICE("pdo_sqlsrv: setlocale NONE");
     }
 #endif
 
-    //LOG( SEV_NOTICE, "pdo_sqlsrv: entering rinit" );
+    PDO_LOG_NOTICE("pdo_sqlsrv: entering rinit");
  
     return SUCCESS;
 }
@@ -253,8 +250,7 @@ PHP_RSHUTDOWN_FUNCTION(pdo_sqlsrv)
     SQLSRV_UNUSED( module_number );
     SQLSRV_UNUSED( type );
 
-    PDO_LOG_FUNCTION("PHP_RSHUTDOWN_FUNCTION for pdo_sqlsrv");
-    //LOG( SEV_NOTICE, "pdo_sqlsrv: entering rshutdown" );
+    PDO_LOG_NOTICE("pdo_sqlsrv: entering rshutdown");
 
     return SUCCESS;
 }

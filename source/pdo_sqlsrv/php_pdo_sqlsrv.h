@@ -29,7 +29,7 @@
 // request level variables
 ZEND_BEGIN_MODULE_GLOBALS(pdo_sqlsrv)
 
-unsigned int log_severity;
+unsigned int pdo_log_severity;
 zend_long client_buffer_max_size;
 
 #ifndef _WIN32

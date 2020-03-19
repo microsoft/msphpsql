@@ -287,14 +287,12 @@ struct sqlsrv_static_assert<true> { _In_ static const int value = 1; };
 // Logging
 //*********************************************************************************************************************************
 // log_callback
-// a driver specific callback for logging messages
+// a driver specific callback for checking if the messages are qualified to be logged:
 // severity - severity of the message: notice, warning, or error
-// msg - the message to log in a FormatMessage style formatting
-// print_args - args to the message
-typedef void (*log_callback)( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, _In_opt_ va_list* print_args );
+typedef bool (*severity_callback)(_In_ unsigned int severity TSRMLS_DC);
 
-// each driver must register a log callback.  This should be the first thing a driver does.
-void core_sqlsrv_register_logger( _In_ log_callback );
+// each driver must register a severity checker callback for logging to work according to the INI settings
+void core_sqlsrv_register_severity_checker(_In_ severity_callback driver_checker);
 
 // a simple wrapper around a PHP error logging function.
 void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ... );

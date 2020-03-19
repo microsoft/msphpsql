@@ -492,9 +492,9 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
 #define PDO_LOG_DBH_ENTRY \
 { \
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
-    driver_dbh->set_func( __FUNCTION__ ); \
-    core_sqlsrv_register_logger(pdo_sqlsrv_log); \
-    LOG(SEV_NOTICE, "%1!s!: entering", __FUNCTION__ ); \
+    if (driver_dbh != NULL) driver_dbh->set_func(__FUNCTION__); \
+    core_sqlsrv_register_severity_checker(pdo_severity_check); \
+    LOG(SEV_NOTICE, "%1!s!: entering", __FUNCTION__); \
 }
 
 // constructor for the internal object for connections
@@ -534,7 +534,7 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
 // 0 for failure, 1 for success.
 int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_options TSRMLS_DC) 
 {
-    LOG( SEV_NOTICE, "pdo_sqlsrv_db_handle_factory: entering" );
+    PDO_LOG_DBH_ENTRY;
 
     hash_auto_ptr pdo_conn_options_ht;
     pdo_error_mode prev_err_mode = dbh->error_mode;

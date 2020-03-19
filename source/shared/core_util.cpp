@@ -23,10 +23,17 @@
 
 namespace {
 
+severity_callback g_driver_severity;
+
 // *** internal constants ***
-log_callback g_driver_log;
+
+// buffer used to hold a formatted log message prior to actually logging it.
+const int LOG_MSG_SIZE = 2048;
+char log_msg[LOG_MSG_SIZE] = { '\0' };
+
 // internal error that says that FormatMessage failed
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
+
 // buffer used to hold a formatted log message prior to actually logging it.
 char last_err_msg[2048] = {'\0'};  // 2k to hold the error messages
 
@@ -35,6 +42,23 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
                                                    _In_ unsigned int mbcs_len, 
                                                    _Out_writes_(utf16_len) __transfer( mbcs_in_string ) SQLWCHAR* utf16_out_string,
                                                    _In_ unsigned int utf16_len, bool use_strict_conversion = false );
+
+// invoked by write_to_log() when the message severity qualifies to be logged
+// msg - the message to log in a FormatMessage style formatting
+// print_args - args to the message
+void log_activity(_In_opt_ const char* msg, _In_opt_ va_list* print_args)
+{
+    DWORD rc = FormatMessage(FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, log_msg, LOG_MSG_SIZE, print_args);
+
+    // if an error occurs for FormatMessage, we just output an internal error occurred.
+    if (rc == 0) {
+        SQLSRV_STATIC_ASSERT(sizeof(INTERNAL_FORMAT_ERROR) < sizeof(log_msg));
+        std::copy(INTERNAL_FORMAT_ERROR, INTERNAL_FORMAT_ERROR + sizeof(INTERNAL_FORMAT_ERROR), log_msg);
+    }
+
+    php_log_err(log_msg TSRMLS_CC);
+}
+
 }
 
 // SQLSTATE for all internal errors 
@@ -47,21 +71,23 @@ SQLCHAR SSPWARN[] = "01SSP";
 // the script (sqlsrv_configure).
 void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ...)
 {
-    SQLSRV_ASSERT( !(g_driver_log == NULL), "Must register a driver log function." );
+    SQLSRV_ASSERT( !(g_driver_severity == NULL), "Must register a driver checker function." );
+    if (!g_driver_severity(severity TSRMLS_CC)) {
+        return;
+    }
 
     va_list args;
     va_start( args, msg );
 
-    g_driver_log( severity TSRMLS_CC, msg, &args );
+    log_activity(msg, &args);
 
     va_end( args );
 }
 
-void core_sqlsrv_register_logger( _In_ log_callback driver_logger )
+void core_sqlsrv_register_severity_checker(_In_ severity_callback driver_checker)
 {
-    g_driver_log = driver_logger;
+    g_driver_severity = driver_checker;
 }
-
 
 // convert a string from utf-16 to the encoding and return the new string in the pointer parameter and new
 // length in the len parameter.  If no errors occurred during convertion, true is returned and the original

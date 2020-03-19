@@ -39,13 +39,6 @@ const int MAX_DIGITS = 11; // +-2 billion = 10 digits + 1 for the sign if negati
 // the warning message is not the error message alone; it must take WARNING_TEMPLATE above into consideration without the formats
 const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE ) - strlen( "%1!s!%2!d!%3!s!" ));
 
-// buffer used to hold a formatted log message prior to actually logging it.
-const int LOG_MSG_SIZE = 2048;
-char log_msg[LOG_MSG_SIZE] = {'\0'};
-
-// internal error that says that FormatMessage failed
-SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
-
 // Returns a sqlsrv_error for a given error code.
 sqlsrv_error_const* get_error_message( _In_opt_ unsigned int sqlsrv_error_code);
 
@@ -623,22 +616,10 @@ void pdo_sqlsrv_retrieve_context_error( _In_ sqlsrv_error const* last_error, _Ou
     }
 }
 
-// Formats the error message and writes to the php error log.
-void pdo_sqlsrv_log( _In_opt_ unsigned int severity TSRMLS_DC, _In_opt_ const char* msg, _In_opt_ va_list* print_args )
+// check the global variable of pdo_sqlsrv severity whether the message qualifies to be logged with the LOG macro
+bool pdo_severity_check(_In_ unsigned int severity TSRMLS_DC)
 {
-    if( (severity & PDO_SQLSRV_G( log_severity )) == 0 ) {
-        return;
-    }
-
-    DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, log_msg, LOG_MSG_SIZE, print_args );
-
-    // if an error occurs for FormatMessage, we just output an internal error occurred.
-    if( rc == 0 ) {
-        SQLSRV_STATIC_ASSERT( sizeof( INTERNAL_FORMAT_ERROR ) < sizeof( log_msg ));
-        std::copy( INTERNAL_FORMAT_ERROR, INTERNAL_FORMAT_ERROR + sizeof( INTERNAL_FORMAT_ERROR ), log_msg );
-    }
-
-    php_log_err( log_msg TSRMLS_CC );
+    return ((severity & PDO_SQLSRV_G(pdo_log_severity)));
 }
 
 namespace {

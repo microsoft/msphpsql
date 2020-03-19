@@ -60,7 +60,7 @@ extern HMODULE g_sqlsrv_hmodule;
 #endif
 
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY( INI_PREFIX INI_PDO_SQLSRV_LOG , "0", PHP_INI_ALL, OnUpdateLong, log_severity,
+    STD_PHP_INI_ENTRY( INI_PREFIX INI_PDO_SQLSRV_LOG , "0", PHP_INI_ALL, OnUpdateLong, pdo_log_severity,
                          zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals )
     STD_PHP_INI_ENTRY( INI_PREFIX INI_PDO_SQLSRV_CLIENT_BUFFER_MAX_SIZE , INI_BUFFERED_QUERY_LIMIT_DEFAULT, PHP_INI_ALL, OnUpdateLong,
                        client_buffer_max_size, zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals )
@@ -326,10 +326,9 @@ inline void pdo_reset_dbh_error( _Inout_ pdo_dbh_t* dbh TSRMLS_DC )
     }
 }
 
-#define PDO_LOG_FUNCTION( function_name ) \
-   core_sqlsrv_register_logger(pdo_sqlsrv_log); \
-   const char* _FN_ = function_name; \
-   LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); 
+#define PDO_LOG_NOTICE(message) \
+   core_sqlsrv_register_severity_checker(pdo_severity_check); \
+   LOG(SEV_NOTICE, message);
 
 #define PDO_RESET_DBH_ERROR     pdo_reset_dbh_error( dbh TSRMLS_CC );
 
@@ -422,8 +421,8 @@ namespace pdo {
 
 } // namespace pdo
 
-// logger for pdo_sqlsrv called by the core layer when it wants to log something with the LOG macro
-void pdo_sqlsrv_log( _In_opt_ unsigned int severity TSRMLS_DC, _In_opt_ const char* msg, _In_opt_ va_list* print_args );
+// check the global variable of pdo_sqlsrv severity whether the message qualifies to be logged with the LOG macro
+bool pdo_severity_check(_In_ unsigned int severity TSRMLS_DC);
 
 
 #endif  /* PHP_PDO_SQLSRV_INT_H */
