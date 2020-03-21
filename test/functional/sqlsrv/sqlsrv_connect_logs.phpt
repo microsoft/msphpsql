@@ -30,7 +30,9 @@ Similar to sqlsrv_connect.phpt but also test different settings of logging activ
         fatalError("sqlsrv_query should have returned false.");
     }
 
-    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
+    sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_WARNING);
+    
+    sqlsrv_close($conn);
 ?>
 --EXPECTF--
 sqlsrv.LogSubsystems = -1
@@ -45,6 +47,3 @@ sqlsrv_configure: entering
 sqlsrv_query: SQLSTATE = 42S02
 sqlsrv_query: error code = 208
 sqlsrv_query: message = %s[SQL Server]Invalid object name 'some_bogus_table'.
-sqlsrv.LogSeverity = -1
-PHP_RSHUTDOWN for php_sqlsrv: entering
-sqlsrv_conn_dtor: entering
