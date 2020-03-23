@@ -580,7 +580,7 @@ PHP_FUNCTION( sqlsrv_configure )
 
         // dummy context to pass onto the error handler
         error_ctx = new ( sqlsrv_malloc( sizeof( sqlsrv_context ))) sqlsrv_context( 0, ss_error_handler, NULL );
-        SET_FUNCTION_NAME( *error_ctx );
+        error_ctx->set_func(_FN_);
     
         int zr = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "sz", &option, &option_len, &value_z );
         CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
@@ -700,7 +700,7 @@ PHP_FUNCTION( sqlsrv_get_config )
            
         // dummy context to pass onto the error handler
         error_ctx = new ( sqlsrv_malloc( sizeof( sqlsrv_context ))) sqlsrv_context( 0, ss_error_handler, NULL );
-        SET_FUNCTION_NAME( *error_ctx );
+        error_ctx->set_func(_FN_);
 
         int zr = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "s", &option, &option_len );
         CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {

@@ -316,11 +316,6 @@ public:
    core_sqlsrv_register_severity_checker(ss_severity_check); \
    LOG(SEV_NOTICE, "%1!s!: entering", _FN_); 
 
-#define SET_FUNCTION_NAME( context ) \
-{ \
-    (context).set_func( _FN_ ); \
-}
-
 // check the global variables of sqlsrv severity whether the message qualifies to be logged with the LOG macro
 bool ss_severity_check(_In_ unsigned int severity TSRMLS_DC);
 
