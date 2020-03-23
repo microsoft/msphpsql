@@ -41,6 +41,7 @@ turns on logging of connection and statement activities
     sqlsrv_free_stmt($stmt2);
     sqlsrv_free_stmt($stmt3);
 
+    sqlsrv_close($conn);
 ?>
 --EXPECT--
 sqlsrv_connect: entering
@@ -59,4 +60,4 @@ sqlsrv_free_stmt: entering
 sqlsrv_stmt_dtor: entering
 sqlsrv_free_stmt: entering
 sqlsrv_stmt_dtor: entering
-sqlsrv_conn_dtor: entering
+sqlsrv_close: entering
