@@ -19,7 +19,7 @@ Similar to sqlsrv_connect_logs.phpt but this time test logging to a log file
     ini_set("sqlsrv.LogSeverity", SQLSRV_LOG_SEVERITY_ALL);
     ini_set("sqlsrv.LogSubsystems", SQLSRV_LOG_SYSTEM_ALL);
 
-    $conn = sqlsrv_connect($server, array( "Driver" => "Danica Patrick" ));
+    $conn = sqlsrv_connect($server, array( "Driver" => "Wrong Driver" ));
     if ($conn !== false) {
         fatalError("sqlsrv_connect should have returned false.");
     }
@@ -49,7 +49,7 @@ Similar to sqlsrv_connect_logs.phpt but this time test logging to a log file
 [%s UTC] sqlsrv_connect: entering
 [%s UTC] sqlsrv_connect: SQLSTATE = IMSSP
 [%s UTC] sqlsrv_connect: error code = -106
-[%s UTC] sqlsrv_connect: message = Invalid value Danica Patrick was specified for Driver option.
+[%s UTC] sqlsrv_connect: message = Invalid value Wrong Driver was specified for Driver option.
 [%s UTC] sqlsrv_connect: entering
 [%s UTC] sqlsrv_query: SQLSTATE = 42S02
 [%s UTC] sqlsrv_query: error code = 208

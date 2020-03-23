@@ -14,7 +14,7 @@ functions return FALSE for errors.
         fatalError("sqlsrv_connect should have returned false.");
     }
 
-    $conn = sqlsrv_connect("_!@#$", array( "Driver" => "Danica Patrick" ));
+    $conn = sqlsrv_connect("_!@#$", array( "Driver" => "Wrong Driver" ));
     if ($conn !== false) {
         fatalError("sqlsrv_connect should have returned false.");
     }

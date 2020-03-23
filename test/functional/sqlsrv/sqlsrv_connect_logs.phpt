@@ -12,7 +12,7 @@ Similar to sqlsrv_connect.phpt but also test different settings of logging activ
 
     require_once('MsSetup.inc');
 
-    $conn = sqlsrv_connect($server, array( "Driver" => "Danica Patrick" ));
+    $conn = sqlsrv_connect($server, array( "Driver" => "Wrong Driver" ));
     if ($conn !== false) {
         fatalError("sqlsrv_connect should have returned false.");
     }
@@ -39,7 +39,7 @@ sqlsrv.LogSubsystems = -1
 sqlsrv_connect: entering
 sqlsrv_connect: SQLSTATE = IMSSP
 sqlsrv_connect: error code = -106
-sqlsrv_connect: message = Invalid value Danica Patrick was specified for Driver option.
+sqlsrv_connect: message = Invalid value Wrong Driver was specified for Driver option.
 sqlsrv_configure: entering
 sqlsrv.LogSeverity = 4
 sqlsrv_connect: entering
