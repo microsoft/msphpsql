@@ -29,7 +29,6 @@ severity_callback g_driver_severity;
 
 // buffer used to hold a formatted log message prior to actually logging it.
 const int LOG_MSG_SIZE = 2048;
-char log_msg[LOG_MSG_SIZE] = { '\0' };
 
 // internal error that says that FormatMessage failed
 SQLCHAR INTERNAL_FORMAT_ERROR[] = "An internal error occurred.  FormatMessage failed writing an error message.";
@@ -48,6 +47,8 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
 // print_args - args to the message
 void log_activity(_In_opt_ const char* msg, _In_opt_ va_list* print_args)
 {
+    char log_msg[LOG_MSG_SIZE] = { '\0' };
+
     DWORD rc = FormatMessage(FORMAT_MESSAGE_FROM_STRING, msg, 0, 0, log_msg, LOG_MSG_SIZE, print_args);
 
     // if an error occurs for FormatMessage, we just output an internal error occurred.
