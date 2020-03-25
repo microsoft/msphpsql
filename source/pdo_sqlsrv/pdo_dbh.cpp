@@ -489,26 +489,13 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
 
 
 // log a function entry point
-#ifndef _WIN32
 #define PDO_LOG_DBH_ENTRY \
 { \
     pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
-    driver_dbh->set_func( __FUNCTION__ ); \
-    int length = strlen( __FUNCTION__ ) + strlen( ": entering" ); \
-    char func[length+1]; \
-    memset(func, '\0', length+1); \
-    strcpy_s( func, sizeof( __FUNCTION__ ), __FUNCTION__ ); \
-    strcat_s( func, length+1, ": entering" ); \
-    LOG( SEV_NOTICE, func ); \
+    if (driver_dbh != NULL) driver_dbh->set_func(__FUNCTION__); \
+    core_sqlsrv_register_severity_checker(pdo_severity_check); \
+    LOG(SEV_NOTICE, "%1!s!: entering", __FUNCTION__); \
 }
-#else
-#define PDO_LOG_DBH_ENTRY \
-{ \
-    pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( dbh->driver_data ); \
-    driver_dbh->set_func( __FUNCTION__ ); \
-    LOG( SEV_NOTICE, __FUNCTION__ ## ": entering" ); \
-}
-#endif
 
 // constructor for the internal object for connections
 pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC ) :
@@ -547,7 +534,7 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
 // 0 for failure, 1 for success.
 int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_options TSRMLS_DC) 
 {
-    LOG( SEV_NOTICE, "pdo_sqlsrv_db_handle_factory: entering" );
+    PDO_LOG_DBH_ENTRY;
 
     hash_auto_ptr pdo_conn_options_ht;
     pdo_error_mode prev_err_mode = dbh->error_mode;

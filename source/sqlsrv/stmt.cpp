@@ -1371,7 +1371,6 @@ void __cdecl sqlsrv_stmt_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC )
 
 PHP_FUNCTION( sqlsrv_free_stmt )
 {
-
     LOG_FUNCTION( "sqlsrv_free_stmt" );
 
     zval* stmt_r = NULL;
@@ -1384,7 +1383,7 @@ PHP_FUNCTION( sqlsrv_free_stmt )
 
         // dummy context to pass to the error handler
         error_ctx = new (sqlsrv_malloc( sizeof( sqlsrv_context ))) sqlsrv_context( 0, ss_error_handler, NULL );
-        SET_FUNCTION_NAME( *error_ctx );
+        error_ctx->set_func(_FN_);
 
         // take only the statement resource
         if( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "r", &stmt_r ) == FAILURE ) {

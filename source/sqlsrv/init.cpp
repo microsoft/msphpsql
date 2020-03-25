@@ -271,8 +271,8 @@ PHP_MINIT_FUNCTION(sqlsrv)
 {
     SQLSRV_UNUSED( type );
 
-    core_sqlsrv_register_logger( ss_sqlsrv_log );
-	
+    core_sqlsrv_register_severity_checker(ss_severity_check);
+
     // our global variables are initialized in the RINIT function
 #if defined(ZTS) 
     if( ts_allocate_id( &sqlsrv_globals_id,
