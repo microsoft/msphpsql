@@ -1,5 +1,5 @@
 --TEST--
-Tset functions return FALSE for errors with logging
+Test functions return FALSE for errors with logging
 --DESCRIPTION--
 Similar to sqlsrv_connect.phpt but also test different settings of logging activities
 --SKIPIF--

@@ -852,7 +852,7 @@ void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC )
     ss_sqlsrv_conn *conn = static_cast<ss_sqlsrv_conn*>( rsrc->ptr );
     SQLSRV_ASSERT( conn != NULL, "sqlsrv_conn_dtor: connection was null");
 
-    conn->set_func("sqlsrv_conn_dtor");
+    conn->set_func(__func__);
 
     // close all statements associated with the connection.
     sqlsrv_conn_close_stmts( conn TSRMLS_CC );
