@@ -9,11 +9,11 @@ if (!extension_loaded("sqlsrv")) {
 
 require_once("MsSetup.inc");
 
-$connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword, "Driver" => $driver);
+$connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword);
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = sqlsrv_connect($server, $connectionInfo);
 if ($conn === false) {
-    die( "skip Could not connect during SKIPIF." );
+    die("skip Could not connect during SKIPIF.");
 }
 
 $msodbcsql_ver = sqlsrv_client_info($conn)["DriverVer"];
