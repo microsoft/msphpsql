@@ -89,7 +89,6 @@ function testColumnEncryption($server, $uid, $pwd, $msodbcsqlMaj)
     try {
         $conn = new PDO("sqlsrv:server = $server ; $connectionInfo", $uid, $pwd);
     } catch (PDOException $e) {
-        // $expected = "Invalid value specified for connection string attribute 'ColumnEncryption'";
         verifyOutput($e, $expected, "3");
     }
 
@@ -99,7 +98,6 @@ function testColumnEncryption($server, $uid, $pwd, $msodbcsqlMaj)
     try {
         $conn = new PDO("sqlsrv:server = $server ; $connectionInfo", $uid, $pwd);
     } catch (PDOException $e) {
-        // $expected = "Invalid value specified for connection string attribute 'ColumnEncryption'";
         verifyOutput($e, $expected, "4");
     }
 }
