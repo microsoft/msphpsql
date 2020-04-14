@@ -42,6 +42,7 @@ ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
 # add locales for testing
 RUN sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
+RUN sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
 RUN sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
 RUN sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
 RUN locale-gen
