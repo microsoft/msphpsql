@@ -41,7 +41,7 @@ function dropTable($conn, $tableName)
 
 require_once('MsSetup.inc');
 
-$tableName = "pdo_ansitest_FR";
+$tableName = "srv_ansitest_FR";
 $locale = 'fr_FR@euro';
 setlocale(LC_ALL, $locale);
 
