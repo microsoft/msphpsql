@@ -313,15 +313,11 @@ public:
 #define LOG_FUNCTION( function_name ) \
    const char* _FN_ = function_name; \
    SQLSRV_G( current_subsystem ) = current_log_subsystem; \
-   LOG( SEV_NOTICE, "%1!s!: entering", _FN_ ); 
+   core_sqlsrv_register_severity_checker(ss_severity_check); \
+   LOG(SEV_NOTICE, "%1!s!: entering", _FN_); 
 
-#define SET_FUNCTION_NAME( context ) \
-{ \
-    (context).set_func( _FN_ ); \
-}
-
-// logger for ss_sqlsrv called by the core layer when it wants to log something with the LOG macro
-void ss_sqlsrv_log( _In_ unsigned int severity TSRMLS_DC, _In_opt_ const char* msg, _In_opt_ va_list* print_args );
+// check the global variables of sqlsrv severity whether the message qualifies to be logged with the LOG macro
+bool ss_severity_check(_In_ unsigned int severity TSRMLS_DC);
 
 // subsystems that may report log messages.  These may be used to filter which systems write to the log to prevent noise.
 enum logging_subsystems {

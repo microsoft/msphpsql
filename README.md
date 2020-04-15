@@ -25,7 +25,7 @@ Azure Pipelines       | AppVeyor (Windows)       | Travis CI (Linux)        | Co
 [az-image]: https://dev.azure.com/sqlclientdrivers-ci/msphpsql/_apis/build/status/Microsoft.msphpsql?branchName=dev
 [Coverage Coveralls]: https://coveralls.io/repos/github/microsoft/msphpsql/badge.svg?branch=dev
 [coveralls-site]: https://coveralls.io/github/microsoft/msphpsql?branch=dev
-[Coverage Codecov]: https://codecov.io/gh/microsoft/msphpsql/branch/master/graph/badge.svg
+[Coverage Codecov]: https://codecov.io/gh/microsoft/msphpsql/branch/dev/graph/badge.svg
 [codecov-site]: https://codecov.io/gh/microsoft/msphpsql
 
 ## Get Started

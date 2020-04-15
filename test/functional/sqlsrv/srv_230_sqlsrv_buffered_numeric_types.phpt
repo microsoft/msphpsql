@@ -67,6 +67,10 @@ var_dump($array);
 $array = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
 var_dump($array);
 
+// The size of a float is platform dependent, with a precision of roughly 14 digits
+// http://php.net/manual/en/language.types.float.php
+$epsilon = 0.00001;
+
 $numFields = sqlsrv_num_fields($stmt);
 $meta = sqlsrv_field_metadata($stmt);
 $rowcount = sqlsrv_num_rows($stmt);
@@ -81,8 +85,21 @@ for ($i = 0; $i < $rowcount; $i++) {
             $field = sqlsrv_get_field($stmt, $j, SQLSRV_PHPTYPE_INT);
             var_dump($field);
         }
-        $field = sqlsrv_get_field($stmt, $j, SQLSRV_PHPTYPE_FLOAT);
-        var_dump($field);
+        $field1 = sqlsrv_get_field($stmt, $j, SQLSRV_PHPTYPE_FLOAT);
+        if ($j > 5) {
+            // these are the zero fields
+            $expected = 0.0;
+            if ($field1 !== $expected) {
+                echo "Expected $expected but got $field1\n";
+            }
+        } else {
+            $expected = floatval($field);
+            $diff = abs(($field1 - $expected) / $expected);
+
+            if ($diff > $epsilon) {
+                echo "Expected $expected but got $field1 -- difference is $diff\n";
+            }
+        }
     }
 }
 
@@ -136,78 +153,60 @@ array(9) {
 
 column: a
 string(15) "1234567890.1234"
-float(1234567890.1234)
 
 column: neg_a
 string(16) "-1234567890.1234"
-float(-1234567890.1234)
 
 column: b
 string(1) "1"
 int(1)
-float(1)
 
 column: neg_b
 string(2) "-1"
 int(-1)
-float(-1)
 
 column: c
 string(7) ".500000"
-float(0.5)
 
 column: neg_c
 string(8) "-.550000"
-float(-0.55)
 
 column: zero
 string(1) "0"
 int(0)
-float(0)
 
 column: zerof
 string(1) "0"
-float(0)
 
 column: zerod
 string(7) ".000000"
-float(0)
 
 column: a
 string(3) "0.5"
-float(0.5)
 
 column: neg_a
 string(5) "-0.55"
-float(-0.55)
 
 column: b
 string(6) "100000"
 int(100000)
-float(100000)
 
 column: neg_b
 string(8) "-1234567"
 int(-1234567)
-float(-1234567)
 
 column: c
 string(17) "1234567890.123400"
-float(1234567890.1234)
 
 column: neg_c
 string(18) "-1234567890.123400"
-float(-1234567890.1234)
 
 column: zero
 string(1) "0"
 int(0)
-float(0)
 
 column: zerof
 string(1) "0"
-float(0)
 
 column: zerod
 string(7) ".000000"
-float(0)

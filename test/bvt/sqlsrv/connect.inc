@@ -4,6 +4,8 @@ $databaseName = 'TARGET_DATABASE';
 $uid = 'TARGET_USERNAME';
 $pwd = 'TARGET_PASSWORD';
 
+$server2 = 'ANOTHER_SERVER';
+
 // RevisionNumber in SalesOrderHeader is subject to a trigger incrementing it whenever
 // changes are made to SalesOrderDetail. Since RevisionNumber is a tinyint, it can
 // overflow quickly if the BVT tests often run. So we change it directly here first

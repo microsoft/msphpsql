@@ -42,6 +42,8 @@ if __name__ == '__main__':
     parser.add_argument('-dbname', '--DBNAME', required=True)
     parser.add_argument('-azure', '--AZURE', required=False, default='no')
     args = parser.parse_args()
+    
+    print("Start\n")
 
     try:
         server = os.environ['TEST_PHP_SQL_SERVER']
@@ -61,10 +63,13 @@ if __name__ == '__main__':
     if (args.AZURE.lower() == 'no'):
         manageTestDB('create_db.sql', conn_options, args.DBNAME)
 
+    print("About to set up databases...\n")
     # create tables in the new database
     setupTestDatabase(conn_options, args.DBNAME, args.AZURE)
+    print("About to populate tables...\n")
     # populate these tables
     populateTables(conn_options, args.DBNAME)
+    print("About to set up encryption...\n")
     # setup AE (certificate, column master key and column encryption key)
     setupAE(conn_options, args.DBNAME)
 

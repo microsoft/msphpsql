@@ -287,14 +287,12 @@ struct sqlsrv_static_assert<true> { _In_ static const int value = 1; };
 // Logging
 //*********************************************************************************************************************************
 // log_callback
-// a driver specific callback for logging messages
+// a driver specific callback for checking if the messages are qualified to be logged:
 // severity - severity of the message: notice, warning, or error
-// msg - the message to log in a FormatMessage style formatting
-// print_args - args to the message
-typedef void (*log_callback)( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, _In_opt_ va_list* print_args );
+typedef bool (*severity_callback)(_In_ unsigned int severity TSRMLS_DC);
 
-// each driver must register a log callback.  This should be the first thing a driver does.
-void core_sqlsrv_register_logger( _In_ log_callback );
+// each driver must register a severity checker callback for logging to work according to the INI settings
+void core_sqlsrv_register_severity_checker(_In_ severity_callback driver_checker);
 
 // a simple wrapper around a PHP error logging function.
 void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ... );
@@ -1745,13 +1743,6 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
     SQLLEN read_so_far;                 // position within string to read from (for partial reads of strings)
     sqlsrv_malloc_auto_ptr<SQLCHAR> temp_string;   // temp buffer to hold a converted field while in use
     SQLLEN temp_length;                 // number of bytes in the temp conversion buffer
-
-    typedef SQLRETURN (sqlsrv_buffered_result_set::*conv_fn)( _In_ SQLSMALLINT field_index, _Out_writes_z_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
-                                                              _Inout_ SQLLEN* out_buffer_length );
-    typedef std::map< SQLINTEGER, std::map< SQLINTEGER, conv_fn > > conv_matrix_t;
-
-    // two dimentional sparse matrix that holds the [from][to] functions that do conversions
-    static conv_matrix_t conv_matrix;
 
     // string conversion functions
     SQLRETURN binary_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_z_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,

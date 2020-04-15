@@ -47,6 +47,10 @@ try {
     verifyResult($result);
 
     // test not streamable types
+    // The size of a float is platform dependent, with a precision of roughly 14 digits
+    // http://php.net/manual/en/language.types.float.php
+    // For example, the input value for column [real_type] in setup\test_types.sql is 1.18E-38
+    // but in some distros the fetched value is 1.1799999E-38
     $tsql = "SELECT * FROM [test_types]";
     $stmt = $conn->query($tsql);
     $result = $stmt->fetch(PDO::FETCH_NUM);
@@ -60,19 +64,19 @@ unset($stmt);
 unset($conn);
 
 ?>
---EXPECT--
+--EXPECTREGEX--
 Array
-(
-    [0] => 9223372036854775807
-    [1] => 2147483647
-    [2] => 32767
-    [3] => 255
-    [4] => 1
-    [5] => 9999999999999999999999999999999999999
-    [6] => 922337203685477.5807
-    [7] => 214748.3647
-    [8] => 1.79E+308
-    [9] => 1.1799999E-38
-    [10] => 1968-12-12 16:20:00.000
-    [11] => 
-)
+\(
+    \[0\] => 9223372036854775807
+    \[1\] => 2147483647
+    \[2\] => 32767
+    \[3\] => 255
+    \[4\] => 1
+    \[5\] => 9999999999999999999999999999999999999
+    \[6\] => 922337203685477\.5807
+    \[7\] => 214748\.3647
+    \[8\] => 1\.79E\+308
+    \[9\] => (1\.18E-38|1\.1799999E-38)
+    \[10\] => 1968-12-12 16:20:00.000
+    \[11\] => 
+\)

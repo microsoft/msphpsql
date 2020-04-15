@@ -10,8 +10,9 @@ $conn = sqlsrv_connect( $server, $connectionInfo);
 
 /* Connect to the local server using Windows Authentication and
 specify the AdventureWorks database as the database in use. */
-$serverName = "sql-2k14-sp1-1.galaxy.ad";
-$connectionInfo = array( "Database"=>"AdventureWorks2014", "UID"=>"sa", "PWD"=>"Moonshine4me", 'MultipleActiveResultSets'=> false);
+$serverName = $server2; 
+$connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd, 'MultipleActiveResultSets'=> false);
+
 $conn = sqlsrv_connect( $serverName, $connectionInfo);
 if( $conn === false )
 {

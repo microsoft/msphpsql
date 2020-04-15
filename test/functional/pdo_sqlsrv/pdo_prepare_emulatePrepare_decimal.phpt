@@ -80,34 +80,34 @@ try {
 }
 ?>
 
---EXPECT--
+--EXPECTF--
 Prepare without emulate prepare:
 Array
 (
     [c1_decimal] => 422
     [c2_money] => 132.2220
-    [c3_float] => 622.22000000000003
+    [c3_float] => 622.22%S
 )
 Prepare with emulate prepare and no bind param options:
 Array
 (
     [c1_decimal] => 422
     [c2_money] => 132.2220
-    [c3_float] => 622.22000000000003
+    [c3_float] => 622.22%S
 )
 Prepare with emulate prepare and SQLSRV_ENCODING_SYSTEM:
 Array
 (
     [c1_decimal] => 422
     [c2_money] => 132.2220
-    [c3_float] => 622.22000000000003
+    [c3_float] => 622.22%S
 )
 Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:
 Array
 (
     [c1_decimal] => 422
     [c2_money] => 132.2220
-    [c3_float] => 622.22000000000003
+    [c3_float] => 622.22%S
 )
 Prepare with emulate prepare and SQLSRV_ENCODING_BINARY:
 No results for this query

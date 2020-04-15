@@ -629,10 +629,9 @@ const connection_option SS_CONN_OPTS[] = {
 
 PHP_FUNCTION ( sqlsrv_connect ) 
 {
-    
     LOG_FUNCTION( "sqlsrv_connect" );
-    SET_FUNCTION_NAME( *g_ss_henv_cp );
-    SET_FUNCTION_NAME( *g_ss_henv_ncp );
+    g_ss_henv_cp->set_func(_FN_);
+    g_ss_henv_ncp->set_func(_FN_);
 
     reset_errors( TSRMLS_C );
 
@@ -785,7 +784,7 @@ PHP_FUNCTION( sqlsrv_close )
         
         // dummy context to pass to the error handler
         error_ctx = new (sqlsrv_malloc( sizeof( sqlsrv_context ))) sqlsrv_context( 0, ss_error_handler, NULL );
-        SET_FUNCTION_NAME( *error_ctx );
+        error_ctx->set_func(_FN_);
 
         if( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r", &conn_r) == FAILURE ) {
         
@@ -816,7 +815,7 @@ PHP_FUNCTION( sqlsrv_close )
             throw ss::SSException();
         }   
 
-        SET_FUNCTION_NAME( *conn );
+        conn->set_func(_FN_);
         
         // cause any variables still holding a reference to this to be invalid so they cause
         // an error when passed to a sqlsrv function.  There's nothing we can do if the 
@@ -845,13 +844,15 @@ PHP_FUNCTION( sqlsrv_close )
 
 void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC )
 {
-    LOG_FUNCTION( "sqlsrv_conn_dtor" );
+    // Without sqlsrv_close(), this function is invoked by php during the final clean up stage. 
+    // To prevent memory/resource leaks, no more logging at this point.
+    //LOG_FUNCTION( "sqlsrv_conn_dtor" );
 
     // get the structure
     ss_sqlsrv_conn *conn = static_cast<ss_sqlsrv_conn*>( rsrc->ptr );
     SQLSRV_ASSERT( conn != NULL, "sqlsrv_conn_dtor: connection was null");
 
-    SET_FUNCTION_NAME( *conn );
+    conn->set_func(__func__);
 
     // close all statements associated with the connection.
     sqlsrv_conn_close_stmts( conn TSRMLS_CC );

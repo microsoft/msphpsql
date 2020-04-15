@@ -1,7 +1,7 @@
 # Linux and macOS Installation Tutorial for the Microsoft Drivers for PHP for SQL Server
-The following instructions assume a clean environment and show how to install PHP 7.x, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu 16.04, 18.04, and 19.10, RedHat 7 and 8, Debian 8, 9, and 10, Suse 12 and 15, Alpine 3.11 (experimental), and macOS 10.13, 10.14, and 10.15. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
+The following instructions assume a clean environment and show how to install PHP 7.x, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu 16.04, 18.04, and 19.10, RedHat 7 and 8, Debian 8, 9, and 10, Suse 12 and 15, Alpine 3.11, and macOS 10.13, 10.14, and 10.15. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
 
-These instructions install PHP 7.4 by default. Note that some supported Linux distros default to PHP 7.1 or earlier, which is not supported for the latest version of the PHP drivers for SQL Server -- please see the notes at the beginning of each section to install PHP 7.2 or 7.3 instead.
+These instructions install PHP 7.4 by default using `pecl install`. You may need to run `pecl channel-update pecl.php.net` first. Note that some supported Linux distros default to PHP 7.1 or earlier, which is not supported for the latest version of the PHP drivers for SQL Server -- please see the notes at the beginning of each section to install PHP 7.2 or 7.3 instead.
 
 Also included are instructions for installing the PHP FastCGI Process Manager, PHP-FPM, on Ubuntu. This is needed if using the nginx web server instead of Apache.
 
@@ -293,13 +293,10 @@ To test your installation, see [Testing your installation](#testing-your-install
 ## Installing the drivers on Alpine 3.11
 
 > [!NOTE]
-> Alpine support is experimental.
-
-> [!NOTE]
-> The default version of PHP is 7.3. Alternate versions of PHP are not available from other repositories for Alpine 3.11. You can instead compile PHP from source.
+> The default version of PHP is 7.3. Alternate versions of PHP may be available from other repositories for Alpine 3.11. You can instead compile PHP from source.
 
 ### Step 1. Install PHP
-PHP packages for Alpine are found in the `edge/community` repository. Add the following line to `/etc/apt/repositories`, replacing `<mirror>` with the URL of an Alpine repository mirror:
+PHP packages for Alpine can be found in the `edge/community` repository. Please check [Enable Community Repository](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository) on their WIKI page. Add the following line to `/etc/apt/repositories`, replacing `<mirror>` with the URL of an Alpine repository mirror:
 ```
 http://<mirror>/alpine/edge/community
 ```
@@ -320,10 +317,7 @@ sudo su
 echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/10_pdo_sqlsrv.ini
 echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/00_sqlsrv.ini
 ```
-You may need to define a locale:
-```
-export LC_ALL=C
-```
+
 ### Step 4. Install Apache and configure driver loading
 ```
 sudo apk add php7-apache2 apache2
@@ -391,7 +385,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 
 ## Testing Your Installation
 
-To test this sample script, create a file called testsql.php in your system's document root. This is `/var/www/html/` on Ubuntu, Debian, and Redhat, `/srv/www/htdocs` on SUSE, `/var/www/localhost/htdocs` on Alpine, or `/usr/local/var/www` on macOS. Copy the following script to it, replacing the server, database, username, and password as appropriate. On Alpine 3.11, you may also need to specify the **CharacterSet** as 'UTF-8' in the `$connectionOptions` array.
+To test this sample script, create a file called testsql.php in your system's document root. This is `/var/www/html/` on Ubuntu, Debian, and Redhat, `/srv/www/htdocs` on SUSE, `/var/www/localhost/htdocs` on Alpine, or `/usr/local/var/www` on macOS. Copy the following script to it, replacing the server, database, username, and password as appropriate.
 ```
 <?php
 $serverName = "yourServername";
