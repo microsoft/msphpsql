@@ -9,6 +9,10 @@ if (!extension_loaded("pdo_sqlsrv")) {
 
 require_once('MsSetup.inc');
 
+if ($attestation == 'TARGET_ATTESTATION') {
+    die("skip Not set up for testing with secure enclave.");
+}
+
 $conn = new PDO("sqlsrv:server = $server", $uid, $pwd);
 if (!$conn) {
     die("skip Could not connect during SKIPIF.");
