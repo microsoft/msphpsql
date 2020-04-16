@@ -120,7 +120,7 @@ class string_parser
         inline bool is_eos(void);
         inline bool is_white_space( _In_ char c );
         bool discard_white_spaces(void);
-        void add_key_value_pair( _In_reads_(len) const char* value, _In_ int len TSRMLS_DC );
+        void add_key_value_pair( _In_reads_(len) const char* value, _In_ int len );
 };
 
 
@@ -145,14 +145,14 @@ class conn_string_parser : private string_parser
     private:
         const char* current_key_name;
         int discard_trailing_white_spaces( _In_reads_(len) const char* str, _Inout_ int len );
-        void validate_key( _In_reads_(key_len) const char *key, _Inout_ int key_len TSRMLS_DC);
+        void validate_key( _In_reads_(key_len) const char *key, _Inout_ int key_len);
 
     protected:
-        void add_key_value_pair( _In_reads_(len) const char* value, _In_ int len TSRMLS_DC);
+        void add_key_value_pair( _In_reads_(len) const char* value, _In_ int len);
 
     public:
         conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len, _In_ HashTable* conn_options_ht );
-        void parse_conn_string( TSRMLS_D );
+        void parse_conn_string( void );
 };
 
 
@@ -166,9 +166,9 @@ class sql_string_parser : private string_parser
     private:
         bool is_placeholder_char(char);
     public:
-        void add_key_int_value_pair( _In_ unsigned int value TSRMLS_DC );
+        void add_key_int_value_pair( _In_ unsigned int value );
         sql_string_parser(_In_ sqlsrv_context& ctx, _In_ const char* sql_str, _In_ int len, _In_ HashTable* placeholder_ht);
-        void parse_sql_string(TSRMLS_D);
+        void parse_sql_string(void);
 };
 
 
@@ -178,7 +178,7 @@ class sql_string_parser : private string_parser
 
 extern const connection_option PDO_CONN_OPTS[];
 
-int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_options TSRMLS_DC);
+int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_options);
 
 // a core layer pdo dbh object.  This object inherits and overrides the statement factory
 struct pdo_sqlsrv_dbh : public sqlsrv_conn {
@@ -193,7 +193,7 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     short decimal_places;
     short use_national_characters;
 
-    pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC );
+    pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver );
 };
 
 
@@ -203,35 +203,35 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
 
 struct stmt_option_encoding : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 struct stmt_option_pdo_scrollable : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 struct stmt_option_direct_query : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 struct stmt_option_cursor_scroll_type : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 struct stmt_option_emulate_prepares : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 struct stmt_option_fetch_numeric : public stmt_option_functor {
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 struct stmt_option_fetch_datetime : public stmt_option_functor {
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
@@ -239,8 +239,8 @@ extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
 // a core layer pdo stmt object. This object inherits and overrides the callbacks necessary
 struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
 
-    pdo_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv TSRMLS_DC ) :
-        sqlsrv_stmt( c, handle, e, drv TSRMLS_CC ), 
+    pdo_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv ) :
+        sqlsrv_stmt( c, handle, e, drv ), 
         direct_query( false ),
         direct_query_subst_string( NULL ),
         direct_query_subst_string_len( 0 ),
@@ -292,18 +292,18 @@ struct pdo_error {
 // called when an error occurs in the core layer.  These routines are set as the error_callback in a
 // context.  The context is passed to this function since it contains the function
 
-bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC, 
+bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
                                   _In_opt_ va_list* print_args );
-bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC, 
+bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
                                   _In_opt_ va_list* print_args );
-bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC, 
+bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
                                    _In_opt_ va_list* print_args );
 
 // common routine to transfer a sqlsrv_context's error to a PDO zval
 void pdo_sqlsrv_retrieve_context_error( _In_ sqlsrv_error const* last_error, _Out_ zval* pdo_zval );
 
 // reset the errors from the last operation
-inline void pdo_reset_dbh_error( _Inout_ pdo_dbh_t* dbh TSRMLS_DC )
+inline void pdo_reset_dbh_error( _Inout_ pdo_dbh_t* dbh )
 {
     strcpy_s( dbh->error_code, sizeof( dbh->error_code ), "00000" );    // 00000 means no error
 
@@ -330,7 +330,7 @@ inline void pdo_reset_dbh_error( _Inout_ pdo_dbh_t* dbh TSRMLS_DC )
    core_sqlsrv_register_severity_checker(pdo_severity_check); \
    LOG(SEV_NOTICE, message);
 
-#define PDO_RESET_DBH_ERROR     pdo_reset_dbh_error( dbh TSRMLS_CC );
+#define PDO_RESET_DBH_ERROR     pdo_reset_dbh_error( dbh );
 
 inline void pdo_reset_stmt_error( _Inout_ pdo_stmt_t* stmt )
 {
@@ -406,7 +406,7 @@ enum PDO_ERROR_CODES {
 extern pdo_error PDO_ERRORS[];
 
 #define THROW_PDO_ERROR( ctx, custom, ... ) \
-    call_error_handler( ctx, custom TSRMLS_CC, false, ## __VA_ARGS__ ); \
+    call_error_handler( ctx, custom, false, ## __VA_ARGS__ ); \
     throw pdo::PDOException();
 
 namespace pdo {
@@ -422,7 +422,7 @@ namespace pdo {
 } // namespace pdo
 
 // check the global variable of pdo_sqlsrv severity whether the message qualifies to be logged with the LOG macro
-bool pdo_severity_check(_In_ unsigned int severity TSRMLS_DC);
+bool pdo_severity_check(_In_ unsigned int severity);
 
 
 #endif  /* PHP_PDO_SQLSRV_INT_H */

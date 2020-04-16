@@ -57,7 +57,7 @@ void log_activity(_In_opt_ const char* msg, _In_opt_ va_list* print_args)
         std::copy(INTERNAL_FORMAT_ERROR, INTERNAL_FORMAT_ERROR + sizeof(INTERNAL_FORMAT_ERROR), log_msg);
     }
 
-    php_log_err(log_msg TSRMLS_CC);
+    php_log_err(log_msg);
 }
 
 }
@@ -70,10 +70,10 @@ SQLCHAR SSPWARN[] = "01SSP";
 
 // write to the php log if the severity and subsystem match the filters currently set in the INI or 
 // the script (sqlsrv_configure).
-void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ...)
+void write_to_log( _In_ unsigned int severity, _In_ const char* msg, ...)
 {
     SQLSRV_ASSERT( !(g_driver_severity == NULL), "Must register a driver checker function." );
-    if (!g_driver_severity(severity TSRMLS_CC)) {
+    if (!g_driver_severity(severity)) {
         return;
     }
 
@@ -242,7 +242,7 @@ void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* i
     params[0] = value_temp_z;
 
     if (call_user_function(EG(function_table), NULL, &function_z, &out_zval, 1,
-                           params TSRMLS_CC) == FAILURE) {
+                           params) == FAILURE) {
         THROW_CORE_ERROR(stmt, SQLSRV_ERROR_DATETIME_CONVERSION_FAILED);
     }
 
@@ -258,7 +258,7 @@ void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* i
 // The fetch type determines if the indices are numeric, associative, or both.
 
 bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error, _In_ logging_severity severity 
-                                 TSRMLS_DC )
+                                 )
 {
     SQLHANDLE h = ctx.handle();
     SQLSMALLINT h_type = ctx.handle_type();
@@ -361,7 +361,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
 
 // format and return a driver specfic error
 void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_error_const const* custom_error, 
-                                      _Out_ sqlsrv_error_auto_ptr& formatted_error, _In_ logging_severity severity TSRMLS_DC, _In_opt_ va_list* args )
+                                      _Out_ sqlsrv_error_auto_ptr& formatted_error, _In_ logging_severity severity, _In_opt_ va_list* args )
 {
     // allocate space for the formatted message
     formatted_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
@@ -606,7 +606,7 @@ namespace data_classification {
         *pptr = ptr;
     }
 
-    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *return_array TSRMLS_CC)
+    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *return_array)
     {
         sensitivity_metadata* meta = stmt->current_sensitivity_metadata;
         if (meta == NULL) {
@@ -617,27 +617,27 @@ namespace data_classification {
 
         zval data_classification;
         ZVAL_UNDEF(&data_classification);
-        core::sqlsrv_array_init(*stmt, &data_classification TSRMLS_CC );
+        core::sqlsrv_array_init(*stmt, &data_classification );
 
         USHORT num_pairs = meta->columns_sensitivity[colno].num_pairs;
 
         if (num_pairs == 0) {
-            core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification TSRMLS_CC);
+            core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification);
 
             return 0;
         }
 
         zval sensitivity_properties;
         ZVAL_UNDEF(&sensitivity_properties);
-        core::sqlsrv_array_init(*stmt, &sensitivity_properties TSRMLS_CC);
+        core::sqlsrv_array_init(*stmt, &sensitivity_properties);
 
         for (USHORT j = 0; j < num_pairs; j++) {
             zval label_array, infotype_array;
             ZVAL_UNDEF(&label_array);
             ZVAL_UNDEF(&infotype_array);
 
-            core::sqlsrv_array_init(*stmt, &label_array TSRMLS_CC);
-            core::sqlsrv_array_init(*stmt, &infotype_array TSRMLS_CC);
+            core::sqlsrv_array_init(*stmt, &label_array);
+            core::sqlsrv_array_init(*stmt, &infotype_array);
 
             USHORT labelidx = meta->columns_sensitivity[colno].label_info_pairs[j].label_idx;
             USHORT typeidx = meta->columns_sensitivity[colno].label_info_pairs[j].infotype_idx;
@@ -647,22 +647,22 @@ namespace data_classification {
             char *infotype = meta->infotypes[typeidx]->name;
             char *infotype_id = meta->infotypes[typeidx]->id;
 
-            core::sqlsrv_add_assoc_string(*stmt, &label_array, NAME, label, 1 TSRMLS_CC);
-            core::sqlsrv_add_assoc_string(*stmt, &label_array, ID, label_id, 1 TSRMLS_CC);
+            core::sqlsrv_add_assoc_string(*stmt, &label_array, NAME, label, 1);
+            core::sqlsrv_add_assoc_string(*stmt, &label_array, ID, label_id, 1);
 
-            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, LABEL, &label_array TSRMLS_CC);
+            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, LABEL, &label_array);
 
-            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, NAME, infotype, 1 TSRMLS_CC);
-            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, ID, infotype_id, 1 TSRMLS_CC);
+            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, NAME, infotype, 1);
+            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, ID, infotype_id, 1);
 
-            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, INFOTYPE, &infotype_array TSRMLS_CC);
+            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, INFOTYPE, &infotype_array);
 
             // add the pair of sensitivity properties to data_classification
-            core::sqlsrv_add_next_index_zval(*stmt, &data_classification, &sensitivity_properties TSRMLS_CC );
+            core::sqlsrv_add_next_index_zval(*stmt, &data_classification, &sensitivity_properties );
         }
 
         // add data classfication as associative array
-        core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification TSRMLS_CC);
+        core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification);
 
         return num_pairs;
     }
