@@ -247,6 +247,7 @@ inline UINT SystemLocale::MaxCharCchSize( UINT codepage )
     switch ( codepage )
     {
     case CP_UTF8:
+    case 54936:
         return 4;
     case 932:
     case 936:
