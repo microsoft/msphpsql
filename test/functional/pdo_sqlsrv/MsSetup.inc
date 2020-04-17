@@ -37,6 +37,7 @@ $daasMode = false;
 $marsMode = true;
 $dsnMode = true;
 $traceEnabled = false;
+$localeDisabled = false;
 
 // column encryption variables
 $keystore = "none";         // key store provider, acceptable values are none, win, ksp, akv
