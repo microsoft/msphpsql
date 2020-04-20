@@ -551,14 +551,14 @@ PHP_MINIT_FUNCTION(sqlsrv)
         }
     }
 
-    if( php_register_url_stream_wrapper( SQLSRV_STREAM_WRAPPER, &g_sqlsrv_stream_wrapper TSRMLS_CC ) == FAILURE ) {
+    if( php_register_url_stream_wrapper( SQLSRV_STREAM_WRAPPER, &g_sqlsrv_stream_wrapper ) == FAILURE ) {
         LOG( SEV_ERROR, "%1!s!: stream registration failed", _FN_ );
         return FAILURE;
     }
 
     try {
         // retrieve the handles for the environments
-        core_sqlsrv_minit( &g_ss_henv_cp, &g_ss_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" TSRMLS_CC );
+        core_sqlsrv_minit( &g_ss_henv_cp, &g_ss_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" );
     }
 
     catch( core::CoreException& ) {
@@ -610,7 +610,7 @@ PHP_MSHUTDOWN_FUNCTION(sqlsrv)
 
     core_sqlsrv_mshutdown( *g_ss_henv_cp, *g_ss_henv_ncp );
 
-    if( php_unregister_url_stream_wrapper( SQLSRV_STREAM_WRAPPER TSRMLS_CC ) == FAILURE ) {
+    if( php_unregister_url_stream_wrapper( SQLSRV_STREAM_WRAPPER ) == FAILURE ) {
         return FAILURE;
     }
 
@@ -692,7 +692,7 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
     SQLSRV_UNUSED( type );
 
     LOG_FUNCTION( "PHP_RSHUTDOWN for php_sqlsrv" );
-    reset_errors( TSRMLS_C );
+    reset_errors();
 
 	// TODO - destruction
     zval_ptr_dtor( &SQLSRV_G( errors ));

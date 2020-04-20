@@ -91,8 +91,8 @@ struct ss_sqlsrv_conn : sqlsrv_conn
     static int descriptor;
 
     // initialize with default values
-    ss_sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv TSRMLS_DC ) : 
-        sqlsrv_conn( h, e, drv, SQLSRV_ENCODING_SYSTEM TSRMLS_CC ),
+    ss_sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv ) : 
+        sqlsrv_conn( h, e, drv, SQLSRV_ENCODING_SYSTEM ),
         stmts( NULL ),
         date_as_string( false ),
         format_decimals( false ),
@@ -103,8 +103,7 @@ struct ss_sqlsrv_conn : sqlsrv_conn
 };
 
 // resource destructor
-void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC );
-
+void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc );
 
 //*********************************************************************************************************************************
 // Statement
@@ -117,18 +116,16 @@ struct sqlsrv_fetch_field_name {
 };
 
 struct stmt_option_ss_scrollable : public stmt_option_functor {
-
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 // This object inherits and overrides the callbacks necessary
 struct ss_sqlsrv_stmt : public sqlsrv_stmt {
-
-    ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv TSRMLS_DC );
+    ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv );
 
     virtual ~ss_sqlsrv_stmt( void );
 
-    void new_result_set( TSRMLS_D ); 
+    void new_result_set( void ); 
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream );
@@ -137,7 +134,7 @@ struct ss_sqlsrv_stmt : public sqlsrv_stmt {
     virtual void set_query_timeout();
 
     bool prepared;                               // whether the statement has been prepared yet (used for error messages)
-	zend_ulong conn_index;						 // index into the connection hash that contains this statement structure
+    zend_ulong conn_index;                       // index into the connection hash that contains this statement structure
     zval* params_z;                              // hold parameters passed to sqlsrv_prepare but not used until sqlsrv_execute
     sqlsrv_fetch_field_name* fetch_field_names;  // field names for current results used by sqlsrv_fetch_array/object as keys
     int fetch_fields_count;
@@ -166,14 +163,14 @@ struct sqlsrv_stream_encoding {
 };
 
 // resource destructor
-void __cdecl sqlsrv_stmt_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC );
+void __cdecl sqlsrv_stmt_dtor( _Inout_ zend_resource *rsrc );
 
 // "internal" statement functions shared by functions in conn.cpp and stmt.cpp
-void bind_params( _Inout_ ss_sqlsrv_stmt* stmt TSRMLS_DC );
+void bind_params( _Inout_ ss_sqlsrv_stmt* stmt );
 bool sqlsrv_stmt_common_execute( sqlsrv_stmt* s, const SQLCHAR* sql_string, int sql_len, bool direct, const char* function 
-                                 TSRMLS_DC );
-void free_odbc_resources( ss_sqlsrv_stmt* stmt TSRMLS_DC );
-void free_stmt_resource( _Inout_ zval* stmt_z TSRMLS_DC );
+                                 );
+void free_odbc_resources( ss_sqlsrv_stmt* stmt );
+void free_stmt_resource( _Inout_ zval* stmt_z );
 
 
 //*********************************************************************************************************************************
@@ -218,7 +215,7 @@ enum SS_ERROR_CODES {
 
 extern ss_error SS_ERRORS[];
 
-bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool warning TSRMLS_DC, _In_opt_ va_list* print_args );
+bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool warning, _In_opt_ va_list* print_args );
 
 // convert from the default encoding specified by the "CharacterSet"
 // connection option to UTF-16.  mbcs_len and utf16_len are sizes in
@@ -235,13 +232,13 @@ SQLWCHAR* utf16_string_from_mbcs_string( _In_ unsigned int php_encoding, _In_rea
 
 // *** internal error macros and functions ***
 bool handle_error( sqlsrv_context const* ctx, int log_subsystem, const char* function, 
-                   sqlsrv_error const* ssphp TSRMLS_DC, ... );
+                   sqlsrv_error const* ssphp, ... );
 void handle_warning( sqlsrv_context const* ctx, int log_subsystem, const char* function, 
-                     sqlsrv_error const* ssphp TSRMLS_DC, ... );
-void __cdecl sqlsrv_error_dtor( zend_resource *rsrc TSRMLS_DC );
+                     sqlsrv_error const* ssphp, ... );
+void __cdecl sqlsrv_error_dtor( zend_resource *rsrc );
 
 // release current error lists and set to NULL
-inline void reset_errors( TSRMLS_D )
+inline void reset_errors( void )
 {
     if( Z_TYPE( SQLSRV_G( errors )) != IS_ARRAY && Z_TYPE( SQLSRV_G( errors )) != IS_NULL ) {
         DIE( "sqlsrv_errors contains an invalid type" );
@@ -264,7 +261,7 @@ inline void reset_errors( TSRMLS_D )
 }
 
 #define THROW_SS_ERROR( ctx, error_code, ... ) \
-    (void)call_error_handler( ctx, error_code TSRMLS_CC, false /*warning*/, ## __VA_ARGS__ ); \
+    (void)call_error_handler( ctx, error_code, false /*warning*/, ## __VA_ARGS__ ); \
     throw ss::SSException();
 
 
@@ -317,7 +314,7 @@ public:
    LOG(SEV_NOTICE, "%1!s!: entering", _FN_); 
 
 // check the global variables of sqlsrv severity whether the message qualifies to be logged with the LOG macro
-bool ss_severity_check(_In_ unsigned int severity TSRMLS_DC);
+bool ss_severity_check(_In_ unsigned int severity);
 
 // subsystems that may report log messages.  These may be used to filter which systems write to the log to prevent noise.
 enum logging_subsystems {
@@ -345,7 +342,7 @@ namespace ss {
         }
     };
 
-    inline void zend_register_resource( _Inout_ zval& rsrc_result, _Inout_ void* rsrc_pointer, _In_ int rsrc_type, _In_opt_ const char* rsrc_name TSRMLS_DC)
+    inline void zend_register_resource( _Inout_ zval& rsrc_result, _Inout_ void* rsrc_pointer, _In_ int rsrc_type, _In_opt_ const char* rsrc_name)
     {
         int zr = (NULL != (Z_RES(rsrc_result) = ::zend_register_resource(rsrc_pointer, rsrc_type)) ? SUCCESS : FAILURE);
         CHECK_CUSTOM_ERROR(( zr == FAILURE ), reinterpret_cast<sqlsrv_context*>( rsrc_pointer ), SS_SQLSRV_ERROR_REGISTER_RESOURCE,
@@ -372,7 +369,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_s
     H* h;
     
     // reset the errors from the previous API call
-    reset_errors( TSRMLS_C );
+    reset_errors();
 
     if( ZEND_NUM_ARGS() > param_count + 1 ) {
         DIE( "Param count and argument count don't match." );
@@ -406,35 +403,35 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_s
         switch( param_count ) {
 
             case 0:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc );
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc );
                 break;
 
             case 1:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0] ); 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0] ); 
                 break;
 
             case 2:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1] );  
                 break;
 
             case 3:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1], arr[2] );  
                 break;
             
             case 4:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1], arr[2], arr[3] ); 
                 break;
 
             case 5:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1], arr[2], arr[3], arr[4] );  
                 break;
 
             case 6:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1], arr[2], arr[3], arr[4], arr[5] );  
                 break;
 
@@ -451,7 +448,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_s
         }
 
         // get the resource registered 
-        h = static_cast<H*>( zend_fetch_resource(Z_RES_P(rsrc) TSRMLS_CC, H::resource_name, H::descriptor ));
+        h = static_cast<H*>( zend_fetch_resource(Z_RES_P(rsrc), H::resource_name, H::descriptor ));
         
         CHECK_CUSTOM_ERROR(( h == NULL ), &error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, calling_func ) {
 

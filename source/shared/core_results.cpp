@@ -78,7 +78,7 @@ bool get_bit( _In_ void* ptr, _In_ unsigned int bit )
 
 // read in LOB field during buffered result creation
 SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_buffered_result_set::meta_data& meta,
-                           _In_ zend_long mem_used TSRMLS_DC );
+                           _In_ zend_long mem_used );
 
 // dtor for each row in the cache
 void cache_row_dtor( _In_ zval* data );
@@ -391,27 +391,27 @@ sqlsrv_odbc_result_set::~sqlsrv_odbc_result_set( void )
 {
 }
 
-SQLRETURN sqlsrv_odbc_result_set::fetch( _In_ SQLSMALLINT orientation, _In_ SQLLEN offset TSRMLS_DC )
+SQLRETURN sqlsrv_odbc_result_set::fetch( _In_ SQLSMALLINT orientation, _In_ SQLLEN offset )
 {
     SQLSRV_ASSERT( odbc != NULL, "Invalid statement handle" );
-    return core::SQLFetchScroll( odbc, orientation, offset TSRMLS_CC );
+    return core::SQLFetchScroll( odbc, orientation, offset );
 }
 
 SQLRETURN sqlsrv_odbc_result_set::get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                             _Out_writes_opt_(buffer_length) SQLPOINTER buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                            _In_ bool handle_warning TSRMLS_DC )
+                                            _In_ bool handle_warning )
 {
     SQLSRV_ASSERT( odbc != NULL, "Invalid statement handle" );
-    return core::SQLGetData( odbc, field_index, target_type, buffer, buffer_length, out_buffer_length, handle_warning TSRMLS_CC );
+    return core::SQLGetData( odbc, field_index, target_type, buffer, buffer_length, out_buffer_length, handle_warning );
 }
 
 SQLRETURN sqlsrv_odbc_result_set::get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
                                                   _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                                  _Inout_ SQLSMALLINT* out_buffer_length TSRMLS_DC )
+                                                  _Inout_ SQLSMALLINT* out_buffer_length )
 {
     SQLSRV_ASSERT( odbc != NULL, "Invalid statement handle" );
     return core::SQLGetDiagField( odbc, record_number, diag_identifier, diag_info_buffer, buffer_length, 
-                                  out_buffer_length TSRMLS_CC );
+                                  out_buffer_length );
 }
 
 sqlsrv_error* sqlsrv_odbc_result_set::get_diag_rec( _In_ SQLSMALLINT record_number )
@@ -420,17 +420,17 @@ sqlsrv_error* sqlsrv_odbc_result_set::get_diag_rec( _In_ SQLSMALLINT record_numb
     return odbc_get_diag_rec( odbc, record_number );
 }
 
-SQLLEN sqlsrv_odbc_result_set::row_count( TSRMLS_D )
+SQLLEN sqlsrv_odbc_result_set::row_count( void )
 {
     SQLSRV_ASSERT( odbc != NULL, "Invalid statement handle" );
-    return core::SQLRowCount( odbc TSRMLS_CC );
+    return core::SQLRowCount( odbc );
 }
 
 
 // Buffered result set
 // This class holds a result set in memory
 
-sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC ) :
+sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stmt ) :
     sqlsrv_result_set( stmt ),
     cache(NULL),
     col_count(0),
@@ -439,7 +439,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
     read_so_far(0),
     temp_length(0)
 {
-    col_count = core::SQLNumResultCols( stmt TSRMLS_CC );
+    col_count = core::SQLNumResultCols( stmt );
     // there is no result set to buffer
     if( col_count == 0 ) {
         return;
@@ -456,7 +456,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
     SQLULEN offset = null_bytes;
     for( SQLSMALLINT i = 0; i < col_count; ++i ) {
 				
-        core::SQLDescribeColW( stmt, i + 1, NULL, 0, NULL, &meta[i].type, &meta[i].length, &meta[i].scale, NULL TSRMLS_CC );
+        core::SQLDescribeColW( stmt, i + 1, NULL, 0, NULL, &meta[i].type, &meta[i].length, &meta[i].scale, NULL );
 
         offset = align_to<sizeof(SQLPOINTER)>( offset );
         meta[i].offset = offset;
@@ -469,7 +469,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
             case SQL_GUID:
             case SQL_NUMERIC:
                 core::SQLColAttributeW( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL,
-                                       reinterpret_cast<SQLLEN*>( &meta[i].length ) TSRMLS_CC );
+                                       reinterpret_cast<SQLLEN*>( &meta[i].length ) );
                 meta[i].length += sizeof( char ) + sizeof( SQLULEN ); // null terminator space
                 offset += meta[i].length;
                 break;
@@ -536,7 +536,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
             case SQL_SS_TIMESTAMPOFFSET:
             case SQL_TYPE_TIMESTAMP:
                 core::SQLColAttributeW( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, 
-                                       reinterpret_cast<SQLLEN*>( &meta[i].length ) TSRMLS_CC );
+                                       reinterpret_cast<SQLLEN*>( &meta[i].length ) );
                 meta[i].length += sizeof(char) + sizeof( SQLULEN );  // null terminator space
                 offset += meta[i].length;
                 break;
@@ -628,10 +628,10 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
     size_t row_count = 0;
     // 10 is an arbitrary number for now for the initial size of the cache
     ALLOC_HASHTABLE( cache );
-    core::sqlsrv_zend_hash_init( *stmt, cache, 10 /* # of buckets */, cache_row_dtor /*dtor*/, 0 /*persistent*/ TSRMLS_CC );
+    core::sqlsrv_zend_hash_init( *stmt, cache, 10 /* # of buckets */, cache_row_dtor /*dtor*/, 0 /*persistent*/ );
 
     try {
-        while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC ) != SQL_NO_DATA ) {
+        while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 ) != SQL_NO_DATA ) {
             
             // allocate the row buffer
             sqlsrv_malloc_auto_ptr<unsigned char> rowAuto;
@@ -655,7 +655,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
 
                             out_buffer_length = &out_buffer_temp;
                             SQLPOINTER* lob_addr = reinterpret_cast<SQLPOINTER*>( &row[meta[i].offset] );
-                            *lob_addr = read_lob_field( stmt, i, meta[i], mem_used TSRMLS_CC );
+                            *lob_addr = read_lob_field( stmt, i, meta[i], mem_used );
                             // a NULL pointer means NULL field
                             if( *lob_addr == NULL ) {
                                 *out_buffer_length = SQL_NULL_DATA;
@@ -677,7 +677,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                             buffer = row + meta[i].offset + sizeof( SQLULEN );
                             out_buffer_length = reinterpret_cast<SQLLEN*>( row + meta[i].offset );
                             core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
-                                              false TSRMLS_CC );
+                                              false );
                         }
                         break;
 
@@ -693,7 +693,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                             buffer = row + meta[i].offset;
                             out_buffer_length = &out_buffer_temp;
                             core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
-                                              false TSRMLS_CC );
+                                              false );
                         }
                         break;                        
 
@@ -712,7 +712,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
 
             // add it to the cache
             row_dtor_closure cl( this, row );
-            sqlsrv_zend_hash_next_index_insert_mem( *stmt, cache, &cl, sizeof(row_dtor_closure) TSRMLS_CC );
+            sqlsrv_zend_hash_next_index_insert_mem( *stmt, cache, &cl, sizeof(row_dtor_closure) );
             rowAuto.transferred();
         }   
     } 
@@ -738,7 +738,7 @@ sqlsrv_buffered_result_set::~sqlsrv_buffered_result_set( void )
     }
 }
 
-SQLRETURN sqlsrv_buffered_result_set::fetch( _Inout_ SQLSMALLINT orientation, _Inout_opt_ SQLLEN offset TSRMLS_DC )
+SQLRETURN sqlsrv_buffered_result_set::fetch( _Inout_ SQLSMALLINT orientation, _Inout_opt_ SQLLEN offset )
 {
     last_error = NULL;
     last_field_index = -1;
@@ -762,7 +762,7 @@ SQLRETURN sqlsrv_buffered_result_set::fetch( _Inout_ SQLSMALLINT orientation, _I
             current = 1;
             break;
         case SQL_FETCH_LAST:
-            current = row_count( TSRMLS_C );
+            current = row_count();
             break;
         case SQL_FETCH_ABSOLUTE:
             current = offset;
@@ -783,8 +783,8 @@ SQLRETURN sqlsrv_buffered_result_set::fetch( _Inout_ SQLSMALLINT orientation, _I
     }
 
     // the cursor can never get further away than just after the last row
-    if( current > row_count( TSRMLS_C ) || ( current <= 0 && offset > 0 ) /*overflow condition*/ ) {
-        current = row_count( TSRMLS_C ) + 1;
+    if( current > row_count() || ( current <= 0 && offset > 0 ) /*overflow condition*/ ) {
+        current = row_count() + 1;
         return SQL_NO_DATA;
     }
 
@@ -793,7 +793,7 @@ SQLRETURN sqlsrv_buffered_result_set::fetch( _Inout_ SQLSMALLINT orientation, _I
 
 SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                                 _Out_writes_bytes_opt_(buffer_length) SQLPOINTER buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                                bool handle_warning TSRMLS_DC )
+                                                bool handle_warning )
 {
     last_error = NULL;
     field_index--;      // convert from 1 based to 0 based
@@ -879,7 +879,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
 
 SQLRETURN sqlsrv_buffered_result_set::get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
                                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                                      _Inout_ SQLSMALLINT* out_buffer_length TSRMLS_DC )
+                                                      _Inout_ SQLSMALLINT* out_buffer_length )
 {
     SQLSRV_ASSERT( record_number == 1, "Only record number 1 can be fetched by sqlsrv_buffered_result_set::get_diag_field" );
     SQLSRV_ASSERT( diag_identifier == SQL_DIAG_SQLSTATE, 
@@ -923,7 +923,7 @@ sqlsrv_error* sqlsrv_buffered_result_set::get_diag_rec( _In_ SQLSMALLINT record_
         sqlsrv_error( last_error->sqlstate, last_error->native_message, last_error->native_code );
 }
 
-SQLLEN sqlsrv_buffered_result_set::row_count( TSRMLS_D )
+SQLLEN sqlsrv_buffered_result_set::row_count( void )
 {
     last_error = NULL;
 
@@ -1518,7 +1518,7 @@ void cache_row_dtor( _In_ zval* data )
 }
 
 SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_buffered_result_set::meta_data& meta, 
-                           _In_ zend_long mem_used TSRMLS_DC )
+                           _In_ zend_long mem_used )
 {
     SQLSMALLINT extra = 0;
     SQLULEN* output_buffer_len = NULL;
@@ -1553,7 +1553,7 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
 
         output_buffer_len = reinterpret_cast<SQLULEN*>( buffer.get() );
         r = core::SQLGetData( stmt, field_index + 1, meta.c_type, buffer.get() + already_read + sizeof( SQLULEN ),
-                              to_read - already_read + extra, &last_field_len, false /*handle_warning*/ TSRMLS_CC );
+                              to_read - already_read + extra, &last_field_len, false /*handle_warning*/ );
 
         // if the field is NULL, then return a NULL pointer
         if( last_field_len == SQL_NULL_DATA ) {
@@ -1574,7 +1574,7 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
         else if( r == SQL_SUCCESS_WITH_INFO ) {
             SQLSMALLINT len;
             core::SQLGetDiagField( stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len 
-                                   TSRMLS_CC );
+                                   );
 
             if( !is_truncated_warning( state )) {
                 break;
