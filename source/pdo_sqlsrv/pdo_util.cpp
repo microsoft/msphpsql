@@ -43,7 +43,7 @@ const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE 
 sqlsrv_error_const* get_error_message( _In_opt_ unsigned int sqlsrv_error_code);
 
 // build the object and throw the PDO exception
-void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC );
+void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error );
 
 }
 
@@ -463,7 +463,7 @@ pdo_error PDO_ERRORS[] = {
 };
 
 // PDO error handler for the environment context.
-bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC, 
+bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
                                   _In_opt_ va_list* print_args )
 {
     SQLSRV_ASSERT(( ctx != NULL ), "pdo_sqlsrv_handle_env_error: sqlsrv_context was null" );
@@ -474,11 +474,11 @@ bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
 
     if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
 
-        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR TSRMLS_CC, print_args );
+        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR, print_args );
     }
     else {
 
-        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR );
         SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
@@ -489,7 +489,7 @@ bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
         case PDO_ERRMODE_EXCEPTION:
             if( !warning ) {
 
-                pdo_sqlsrv_throw_exception( error TSRMLS_CC );
+                pdo_sqlsrv_throw_exception( error );
             }
             ctx.set_last_error( error );
             break;
@@ -506,7 +506,7 @@ bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
 }
 
 // pdo error handler for the dbh context.
-bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC, 
+bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
                                   _In_opt_ va_list* print_args )
 {
     pdo_dbh_t* dbh = reinterpret_cast<pdo_dbh_t*>( ctx.driver());
@@ -516,10 +516,10 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
 
     if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
         
-        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR TSRMLS_CC, print_args );
+        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR, print_args );
     }
     else {
-        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR );
         SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
@@ -530,7 +530,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
         case PDO_ERRMODE_EXCEPTION:
             if( !warning ) {
 
-                pdo_sqlsrv_throw_exception( error TSRMLS_CC );
+                pdo_sqlsrv_throw_exception( error );
             }
             ctx.set_last_error( error );
             break;
@@ -559,7 +559,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
 }
 
 // PDO error handler for the statement context.
-bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC,
+bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning,
                                    _In_opt_ va_list* print_args )
 {
     pdo_stmt_t* pdo_stmt = reinterpret_cast<pdo_stmt_t*>( ctx.driver());
@@ -568,10 +568,10 @@ bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigne
     sqlsrv_error_auto_ptr error;
 
     if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
-        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR TSRMLS_CC, print_args );
+        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR, print_args );
     }
     else {
-        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
+        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR );
         SQLSRV_ASSERT( err == true, "No ODBC error was found" );
     }
 
@@ -582,7 +582,7 @@ bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigne
         case PDO_ERRMODE_EXCEPTION:
             if( !warning ) {
 
-                pdo_sqlsrv_throw_exception( error TSRMLS_CC );
+                pdo_sqlsrv_throw_exception( error );
             }
             ctx.set_last_error( error );
             break;
@@ -617,7 +617,7 @@ void pdo_sqlsrv_retrieve_context_error( _In_ sqlsrv_error const* last_error, _Ou
 }
 
 // check the global variable of pdo_sqlsrv severity whether the message qualifies to be logged with the LOG macro
-bool pdo_severity_check(_In_ unsigned int severity TSRMLS_DC)
+bool pdo_severity_check(_In_ unsigned int severity)
 {
     return ((severity & PDO_SQLSRV_G(pdo_log_severity)));
 }
@@ -639,7 +639,7 @@ sqlsrv_error_const* get_error_message( _In_opt_ unsigned int sqlsrv_error_code) 
     return error_message;
 }
 
-void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC )
+void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error )
 {
     zval ex_obj;
     ZVAL_UNDEF( &ex_obj );
@@ -655,9 +655,9 @@ void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC )
     ex_msg = reinterpret_cast<char*>( sqlsrv_malloc( ex_msg_len ));
     snprintf( ex_msg, ex_msg_len, EXCEPTION_MSG_TEMPLATE, error->sqlstate, error->native_message );
     zend_update_property_string( ex_class, &ex_obj, EXCEPTION_PROPERTY_MSG, sizeof( EXCEPTION_PROPERTY_MSG ) - 1, 
-                                 ex_msg TSRMLS_CC );
+                                 ex_msg );
     zend_update_property_string( ex_class, &ex_obj, EXCEPTION_PROPERTY_CODE, sizeof( EXCEPTION_PROPERTY_CODE ) - 1,
-                                 reinterpret_cast<char*>( error->sqlstate ) TSRMLS_CC );
+                                 reinterpret_cast<char*>( error->sqlstate ) );
 
     zval ex_error_info;
     ZVAL_UNDEF( &ex_error_info );
@@ -668,13 +668,13 @@ void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC )
     //zend_update_property makes an entry in the properties_table in ex_obj point to the Z_ARRVAL( ex_error_info )
     //and the refcount of the zend_array is incremented by 1
     zend_update_property( ex_class, &ex_obj, EXCEPTION_PROPERTY_ERRORINFO, sizeof( EXCEPTION_PROPERTY_ERRORINFO ) - 1, 
-                          &ex_error_info TSRMLS_CC );
+                          &ex_error_info );
 
     //DELREF ex_error_info here to decrement the refcount of the zend_array is 1
     //the global hashtable EG(exception) then points to the zend_object in ex_obj in zend_throw_exception_object;
     //this ensure when EG(exception) cleans itself at php shutdown, the zend_array allocated is properly destroyed
     Z_DELREF( ex_error_info );
-    zend_throw_exception_object( &ex_obj TSRMLS_CC );
+    zend_throw_exception_object( &ex_obj );
 }
 
 }

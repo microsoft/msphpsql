@@ -122,7 +122,7 @@ bool string_parser::discard_white_spaces()
 }
 
 // Add a key-value pair to the hashtable
-void string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ int len TSRMLS_DC )
+void string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ int len )
 {
     zval value_z;
     ZVAL_UNDEF( &value_z );
@@ -136,19 +136,19 @@ void string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ 
         ZVAL_STRINGL( &value_z, const_cast<char*>( value ), len );
     }                
 
-    core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z TSRMLS_CC ); 
+    core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z ); 
 }
 
 // Add a key-value pair to the hashtable with int value
-void sql_string_parser::add_key_int_value_pair( _In_ unsigned int value TSRMLS_DC ) {
+void sql_string_parser::add_key_int_value_pair( _In_ unsigned int value ) {
     zval value_z;
     ZVAL_LONG( &value_z, value );
     
-    core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z TSRMLS_CC );
+    core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z );
 }
 
 // Validate a given DSN keyword.
-void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Inout_ int key_len TSRMLS_DC )
+void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Inout_ int key_len )
 {
     int new_len = discard_trailing_white_spaces( key, key_len );
 
@@ -173,7 +173,7 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
     THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
 }
 
-void conn_string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ int len TSRMLS_DC )
+void conn_string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ int len )
 {
     // if the keyword is 'Authentication', check whether the user specified option is supported
     bool valid = true;
@@ -208,7 +208,7 @@ inline bool sql_string_parser::is_placeholder_char( char c )
 }
 
 // Primary function which parses the connection string/DSN.
-void conn_string_parser:: parse_conn_string( TSRMLS_D ) 
+void conn_string_parser:: parse_conn_string( void ) 
 {
     States state = FirstKeyValuePair; // starting state
     int start_pos = -1;
@@ -244,7 +244,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                         }      
                     } 
 
-                    this->validate_key( &( this->orig_str[start_pos] ), ( pos - start_pos ) TSRMLS_CC ); 
+                    this->validate_key( &( this->orig_str[start_pos] ), ( pos - start_pos ) ); 
                 
                     state = Value;
 
@@ -261,7 +261,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                     // if EOS encountered after 0 or more spaces OR semi-colon encountered.
                     if( !discard_white_spaces() || this->orig_str[pos] == ';' ) {
 
-                        add_key_value_pair( NULL, 0 TSRMLS_CC );
+                        add_key_value_pair( NULL, 0 );
 
                         if( this->is_eos() ) {
                             
@@ -323,7 +323,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                         state = NextKeyValuePair;
                     }
                     
-                    add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos TSRMLS_CC );
+                    add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos );
               
                     SQLSRV_ASSERT((( state == NextKeyValuePair ) || ( this->is_eos() )), 
                                   "conn_string_parser::parse_conn_string: Invalid state encountered " );
@@ -338,7 +338,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                     if( !next() ) {
 
                         // EOS
-                        add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos TSRMLS_CC );
+                        add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos );
                         break;
                     }
 
@@ -365,7 +365,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                         if( ! this->discard_white_spaces() ) {
                             
                             //EOS
-                            add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos TSRMLS_CC );
+                            add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos );
                             break;
                         }
                     }
@@ -373,7 +373,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
                     // if semi-colon than go to next key-value pair
                     if ( this->orig_str[pos] == ';' ) {
                         
-                        add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos TSRMLS_CC );
+                        add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos );
                         state = NextKeyValuePair;
                         break;
                     }
@@ -417,7 +417,7 @@ void conn_string_parser:: parse_conn_string( TSRMLS_D )
 }
 
 // Primary function which parses out the named placeholders from a sql string.
-void sql_string_parser::parse_sql_string( TSRMLS_D ) {
+void sql_string_parser::parse_sql_string( void ) {
     try {
         int start_pos = -1;
         while ( !this->is_eos() ) {
@@ -447,7 +447,7 @@ void sql_string_parser::parse_sql_string( TSRMLS_D ) {
                 while ( is_placeholder_char( this->orig_str[pos] )) {
                     next();
                 }
-                add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos TSRMLS_CC );
+                add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos );
                 discard_white_spaces();
                 // if an '=' is right after a placeholder, it means the placeholder is for output parameters
                 //  and emulate prepare does not support output parameters

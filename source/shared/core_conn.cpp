@@ -68,13 +68,13 @@ const char CONNECTION_OPTION_MARS_ON[] = "MARS_Connection={Yes};";
 
 void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd,
                                                 _Inout_opt_ HashTable* options_ht, _In_ const connection_option valid_conn_opts[],
-                                                void* driver,_Inout_ std::string& connection_string TSRMLS_DC );
-void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
+                                                void* driver,_Inout_ std::string& connection_string );
+void determine_server_version( _Inout_ sqlsrv_conn* conn );
 const char* get_processor_arch( void );
-void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len TSRMLS_DC );
-connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ const char* key, _In_ SQLULEN key_len TSRMLS_DC );
-void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC );
-void load_azure_key_vault( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
+void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len );
+connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ const char* key, _In_ SQLULEN key_len );
+void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str );
+void load_azure_key_vault( _Inout_ sqlsrv_conn* conn );
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t key_size);
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size);
 }
@@ -97,7 +97,7 @@ void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char*
 sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_context& henv_ncp, _In_ driver_conn_factory conn_factory,
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd,
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[],
-                                  _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC )
+                                  _In_ void* driver, _In_z_ const char* driver_func )
 
 {
     SQLRETURN r;
@@ -149,11 +149,11 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif // !_WIN32
 
     SQLHANDLE temp_conn_h;
-    core::SQLAllocHandle( SQL_HANDLE_DBC, *henv, &temp_conn_h TSRMLS_CC );
-    conn = conn_factory( temp_conn_h, err, driver TSRMLS_CC );
+    core::SQLAllocHandle( SQL_HANDLE_DBC, *henv, &temp_conn_h );
+    conn = conn_factory( temp_conn_h, err, driver );
     conn->set_func( driver_func );
 
-    build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str TSRMLS_CC );
+    build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str );
 
     // If column encryption is enabled, must use ODBC driver 17
     if( conn->ce_option.enabled && conn->driver_version != ODBC_DRIVER_UNKNOWN) {
@@ -271,7 +271,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #ifndef _WIN32
     if ( r == SQL_SUCCESS_WITH_INFO ) {
 #endif // !_WIN32
-    determine_server_version( conn TSRMLS_CC );
+    determine_server_version( conn );
 #ifndef _WIN32
     }
 #endif // !_WIN32
@@ -426,14 +426,14 @@ SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& con
 // Parameters:
 // sqlsrv_conn*: The connection with which the transaction is associated.
 
-void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
+void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn )
 {
     try {
 
         DEBUG_SQLSRV_ASSERT( conn != NULL, "core_sqlsrv_begin_transaction: connection object was null." );
 
         core::SQLSetConnectAttr( conn, SQL_ATTR_AUTOCOMMIT, reinterpret_cast<SQLPOINTER>( SQL_AUTOCOMMIT_OFF ),
-                                 SQL_IS_UINTEGER TSRMLS_CC );
+                                 SQL_IS_UINTEGER );
     }
     catch ( core::CoreException& ) {
         throw;
@@ -449,16 +449,16 @@ void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 // Parameters:
 // sqlsrv_conn*: The connection on which the transaction is active.
 
-void core_sqlsrv_commit( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
+void core_sqlsrv_commit( _Inout_ sqlsrv_conn* conn )
 {
     try {
 
         DEBUG_SQLSRV_ASSERT( conn != NULL, "core_sqlsrv_commit: connection object was null." );
 
-        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_COMMIT TSRMLS_CC );
+        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_COMMIT );
 
         core::SQLSetConnectAttr( conn, SQL_ATTR_AUTOCOMMIT, reinterpret_cast<SQLPOINTER>( SQL_AUTOCOMMIT_ON ),
-                                SQL_IS_UINTEGER TSRMLS_CC );
+                                SQL_IS_UINTEGER );
     }
     catch ( core::CoreException& ) {
         throw;
@@ -474,16 +474,16 @@ void core_sqlsrv_commit( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 // Parameters:
 // sqlsrv_conn*: The connection on which the transaction is active.
 
-void core_sqlsrv_rollback( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
+void core_sqlsrv_rollback( _Inout_ sqlsrv_conn* conn )
 {
     try {
 
         DEBUG_SQLSRV_ASSERT( conn != NULL, "core_sqlsrv_rollback: connection object was null." );
 
-        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_ROLLBACK TSRMLS_CC );
+        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_ROLLBACK );
 
         core::SQLSetConnectAttr( conn, SQL_ATTR_AUTOCOMMIT, reinterpret_cast<SQLPOINTER>( SQL_AUTOCOMMIT_ON ),
-                                 SQL_IS_UINTEGER TSRMLS_CC );
+                                 SQL_IS_UINTEGER );
 
     }
     catch ( core::CoreException& ) {
@@ -495,7 +495,7 @@ void core_sqlsrv_rollback( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
 // Called when a connection resource is destroyed by the Zend engine.
 // Parameters:
 // conn - The current active connection.
-void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC )
+void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn )
 {
     // if the connection wasn't successful, just return.
     if( conn == NULL )
@@ -504,7 +504,7 @@ void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC )
     try {
 
         // rollback any transaction in progress (we don't care about the return result)
-        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_ROLLBACK TSRMLS_CC );
+        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_ROLLBACK );
     }
     catch( core::CoreException& ) {
         LOG( SEV_ERROR, "Transaction rollback failed when closing the connection." );
@@ -529,7 +529,7 @@ void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC )
 // sql - T-SQL command to prepare
 // sql_len - length of the T-SQL string
 
-void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC )
+void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len )
 {
     try {
 
@@ -557,7 +557,7 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
         }
 
         // prepare our wide char query string
-        core::SQLPrepareW( stmt, reinterpret_cast<SQLWCHAR*>( wsql_string.get() ), wsql_len TSRMLS_CC );
+        core::SQLPrepareW( stmt, reinterpret_cast<SQLWCHAR*>( wsql_string.get() ), wsql_len );
 
         stmt->param_descriptions.clear();
 
@@ -587,14 +587,14 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
 // conn             - The connection resource by which the client and server are connected.
 // *server_version  - zval for returning results.
 
-void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval* server_version TSRMLS_DC )
+void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval* server_version )
 {
     try {
 
         sqlsrv_malloc_auto_ptr<char> buffer;
         SQLSMALLINT buffer_len = 0;
 
-        get_server_version( conn, &buffer, buffer_len TSRMLS_CC );
+        get_server_version( conn, &buffer, buffer_len );
         core::sqlsrv_zval_stringl( server_version, buffer, buffer_len );
         if ( buffer != 0 ) {
             sqlsrv_free( buffer );
@@ -614,7 +614,7 @@ void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval* se
 // conn         - The connection resource by which the client and server are connected.
 // *server_info - zval for returning results.
 
-void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *server_info TSRMLS_DC )
+void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *server_info )
 {
     try {
 
@@ -623,23 +623,23 @@ void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *server_
 
         // Get the database name
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_DATABASE_NAME, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
+        core::SQLGetInfo( conn, SQL_DATABASE_NAME, buffer, INFO_BUFFER_LEN, &buffer_len );
 
         // initialize the array
-        core::sqlsrv_array_init( *conn, server_info TSRMLS_CC );
+        core::sqlsrv_array_init( *conn, server_info );
 
-        core::sqlsrv_add_assoc_string( *conn, server_info, "CurrentDatabase", buffer, 0 /*duplicate*/ TSRMLS_CC );
+        core::sqlsrv_add_assoc_string( *conn, server_info, "CurrentDatabase", buffer, 0 /*duplicate*/ );
         buffer.transferred();
 
         // Get the server version
-        get_server_version( conn, &buffer, buffer_len TSRMLS_CC );
-        core::sqlsrv_add_assoc_string( *conn, server_info, "SQLServerVersion", buffer, 0 /*duplicate*/ TSRMLS_CC );
+        get_server_version( conn, &buffer, buffer_len );
+        core::sqlsrv_add_assoc_string( *conn, server_info, "SQLServerVersion", buffer, 0 /*duplicate*/ );
         buffer.transferred();
 
         // Get the server name
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_SERVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
-        core::sqlsrv_add_assoc_string( *conn, server_info, "SQLServerName", buffer, 0 /*duplicate*/ TSRMLS_CC );
+        core::SQLGetInfo( conn, SQL_SERVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len );
+        core::sqlsrv_add_assoc_string( *conn, server_info, "SQLServerName", buffer, 0 /*duplicate*/ );
         buffer.transferred();
     }
 
@@ -654,7 +654,7 @@ void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *server_
 // conn         - The connection resource by which the client and server are connected.
 // *client_info - zval for returning the results.
 
-void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_info TSRMLS_DC )
+void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_info )
 {
     try {
 
@@ -663,28 +663,28 @@ void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_
 
         // Get the ODBC driver's dll name
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_DRIVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
+        core::SQLGetInfo( conn, SQL_DRIVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len );
 
         // initialize the array
-        core::sqlsrv_array_init( *conn, client_info TSRMLS_CC );
+        core::sqlsrv_array_init( *conn, client_info );
 
 #ifndef _WIN32
-        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverName", buffer, 0 /*duplicate*/ TSRMLS_CC );
+        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverName", buffer, 0 /*duplicate*/ );
 #else
-        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverDllName", buffer, 0 /*duplicate*/ TSRMLS_CC );
+        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverDllName", buffer, 0 /*duplicate*/ );
 #endif // !_WIN32
         buffer.transferred();
 
         // Get the ODBC driver's ODBC version
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_DRIVER_ODBC_VER, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
-        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverODBCVer", buffer, 0 /*duplicate*/ TSRMLS_CC );
+        core::SQLGetInfo( conn, SQL_DRIVER_ODBC_VER, buffer, INFO_BUFFER_LEN, &buffer_len );
+        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverODBCVer", buffer, 0 /*duplicate*/ );
         buffer.transferred();
 
         // Get the OBDC driver's version
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_DRIVER_VER, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
-        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverVer", buffer, 0 /*duplicate*/ TSRMLS_CC );
+        core::SQLGetInfo( conn, SQL_DRIVER_VER, buffer, INFO_BUFFER_LEN, &buffer_len );
+        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverVer", buffer, 0 /*duplicate*/ );
         buffer.transferred();
 
     }
@@ -753,7 +753,7 @@ bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t 
 namespace {
 
 connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ SQLULEN key,
-                                                     _In_ const connection_option conn_opts[] TSRMLS_DC )
+                                                     _In_ const connection_option conn_opts[] )
 {
     for( int opt_idx = 0; conn_opts[opt_idx].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++opt_idx ) {
 
@@ -774,7 +774,7 @@ connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ SQLULEN 
 
 void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inout_z_ const char* server, _Inout_opt_z_  const char* uid, _Inout_opt_z_ const char* pwd,
                                                 _Inout_opt_ HashTable* options, _In_ const connection_option valid_conn_opts[],
-                                                void* driver, _Inout_ std::string& connection_string TSRMLS_DC )
+                                                void* driver, _Inout_ std::string& connection_string )
 {
     bool mars_mentioned = false;
     connection_option const* conn_opt;
@@ -834,7 +834,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
         }
 
         // Add the server name
-        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
+        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string );
 
         // If uid is not present then we use trusted connection -- but not when access token or ActiveDirectoryMSI is used,
         // because they are incompatible
@@ -848,7 +848,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                     throw core::CoreException();
                 }
 
-                common_conn_str_append_func(ODBCConnOptions::UID, uid, strnlen_s(uid), connection_string TSRMLS_CC);
+                common_conn_str_append_func(ODBCConnOptions::UID, uid, strnlen_s(uid), connection_string);
 
                 // if no password was given, then don't add a password to the connection string.  Perhaps the UID
                 // given doesn't have a password?
@@ -858,7 +858,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                         throw core::CoreException();
                     }
 
-                    common_conn_str_append_func(ODBCConnOptions::PWD, pwd, strnlen_s(pwd), connection_string TSRMLS_CC);
+                    common_conn_str_append_func(ODBCConnOptions::PWD, pwd, strnlen_s(pwd), connection_string);
                 }
             }
         }
@@ -894,13 +894,13 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
             // The driver layer should ensure a valid key.
             DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
 
-            conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
+            conn_opt = get_connection_option( conn, index, valid_conn_opts );
 
             if( index == SQLSRV_CONN_OPTION_MARS ) {
                 mars_mentioned = true;
             }
 
-            conn_opt->func( conn_opt, data, conn, connection_string TSRMLS_CC );
+            conn_opt->func( conn_opt, data, conn, connection_string );
         } ZEND_HASH_FOREACH_END();
 
         // MARS on if not explicitly turned off
@@ -919,7 +919,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 // get_server_version
 // Helper function which returns the version of the SQL Server we are connected to.
 
-void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len TSRMLS_DC )
+void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len )
 {
     try {
 
@@ -927,7 +927,7 @@ void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) 
         SQLSMALLINT buffer_len = 0;
 
         buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_DBMS_VER, buffer, INFO_BUFFER_LEN, &buffer_len TSRMLS_CC );
+        core::SQLGetInfo( conn, SQL_DBMS_VER, buffer, INFO_BUFFER_LEN, &buffer_len );
         *server_version = buffer;
         len = buffer_len;
         buffer.transferred();
@@ -989,11 +989,11 @@ const char* get_processor_arch( void )
 // Exception is thrown when the server version is either undetermined
 // or is invalid (< 2000).
 
-void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
+void determine_server_version( _Inout_ sqlsrv_conn* conn )
 {
     SQLSMALLINT info_len;
     char p[INFO_BUFFER_LEN] = {'\0'};
-    core::SQLGetInfo( conn, SQL_DBMS_VER, p, INFO_BUFFER_LEN, &info_len TSRMLS_CC );
+    core::SQLGetInfo( conn, SQL_DBMS_VER, p, INFO_BUFFER_LEN, &info_len );
 
     errno = 0;
     char version_major_str[3] = {'\0'};
@@ -1013,7 +1013,7 @@ void determine_server_version( _Inout_ sqlsrv_conn* conn TSRMLS_DC )
     conn->server_version = version_major;
 }
 
-void load_azure_key_vault(_Inout_ sqlsrv_conn* conn TSRMLS_DC)
+void load_azure_key_vault(_Inout_ sqlsrv_conn* conn)
 {
     // If column encryption is not enabled simply do nothing. Otherwise, check if Azure Key Vault
     // is required for encryption or decryption. Note, in order to load and configure Azure Key Vault,
@@ -1092,11 +1092,10 @@ void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const char* 
     core::SQLSetConnectAttr(conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER);
 }
 
-void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC )
+void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str )
 {
     // wrap a connection option in a quote.  It is presumed that any character that need to be escaped will
     // be escaped, such as a closing }.
-    TSRMLS_C;
 
     if( val_len > 0 && val[0] == '{' && val[val_len - 1] == '}' ) {
         ++val;
@@ -1111,26 +1110,25 @@ void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_l
 }   // namespace
 
 // simply add the parsed value to the connection string
-void conn_str_append_func::func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str TSRMLS_DC )
+void conn_str_append_func::func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str )
 {
     const char* val_str = Z_STRVAL_P( value );
     size_t val_len = Z_STRLEN_P( value );
-    common_conn_str_append_func( option->odbc_name, val_str, val_len, conn_str TSRMLS_CC );
+    common_conn_str_append_func( option->odbc_name, val_str, val_len, conn_str );
 }
 
 // do nothing for connection pooling since we handled it earlier when
 // deciding which environment handle to use.
-void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC )
+void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ )
 {
-    TSRMLS_C;
 }
 
-void driver_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+void driver_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str )
 {
     const char* val_str = Z_STRVAL_P( value );
     size_t val_len = Z_STRLEN_P( value );
     std::string driver_option( "" );
-    common_conn_str_append_func( option->odbc_name, val_str, val_len, driver_option TSRMLS_CC );
+    common_conn_str_append_func( option->odbc_name, val_str, val_len, driver_option );
 
     conn->driver_version = ODBC_DRIVER_UNKNOWN;
     for ( short i = DRIVER_VERSION::FIRST; i <= DRIVER_VERSION::LAST && conn->driver_version == ODBC_DRIVER_UNKNOWN; ++i ) {
@@ -1148,7 +1146,7 @@ void driver_set_func::func( _In_ connection_option const* option, _In_ zval* val
     conn_str += driver_option;
 }
 
-void column_encryption_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+void column_encryption_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str )
 {
     convert_to_string( value );
     const char* value_str = Z_STRVAL_P( value );
@@ -1168,7 +1166,7 @@ void column_encryption_set_func::func( _In_ connection_option const* option, _In
     conn_str += ";";
 }
 
-void ce_akv_str_set_func::func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC)
+void ce_akv_str_set_func::func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str)
 {
     SQLSRV_ASSERT(Z_TYPE_P(value) == IS_STRING, "Azure Key Vault keywords accept only strings.");
 
@@ -1254,7 +1252,7 @@ size_t core_str_zval_is_true( _Inout_ zval* value_z )
     return 0; // false
 }
 
-void access_token_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+void access_token_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str )
 {
     SQLSRV_ASSERT(Z_TYPE_P(value) == IS_STRING, "An access token must be a byte string.");
 

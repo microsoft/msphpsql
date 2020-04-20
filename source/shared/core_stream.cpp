@@ -23,7 +23,7 @@ namespace {
 
 // close a stream and free the PHP resources used by it
 
-int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ TSRMLS_DC )
+int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ )
 {
     sqlsrv_stream* ss = static_cast<sqlsrv_stream*>( stream->abstract );
     SQLSRV_ASSERT( ss != NULL && ss->stmt != NULL, "sqlsrv_stream_close: sqlsrv_stream* ss was null." );
@@ -45,9 +45,9 @@ int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ TSRMLS
 // set when sqlsrv_get_field is called by the user specifying which field type they want.
 
 #if PHP_VERSION_ID >= 70400        
-ssize_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC)
+ssize_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count)
 #else
-size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC)
+size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count)
 #endif
 {
 	SQLLEN read = 0;
@@ -94,7 +94,7 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
         }
 
         // Warnings will be handled below
-        SQLRETURN r = ss->stmt->current_results->get_data(ss->field_index + 1, c_type, get_data_buffer, count /*BufferLength*/, &read, false /*handle_warning*/ TSRMLS_CC);
+        SQLRETURN r = ss->stmt->current_results->get_data(ss->field_index + 1, c_type, get_data_buffer, count /*BufferLength*/, &read, false /*handle_warning*/);
 
         CHECK_SQL_ERROR( r, ss->stmt ) {
             stream->eof = 1; 
@@ -114,7 +114,7 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
             SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = {L'\0'};
             SQLSMALLINT len = 0;
 
-            ss->stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
+            ss->stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
 
             if( read == SQL_NO_TOTAL ) {
                 SQLSRV_ASSERT( is_truncated_warning( state ), "sqlsrv_stream_read: truncation warning was expected but it "
@@ -222,7 +222,7 @@ php_stream_ops sqlsrv_stream_ops = {
 // return value.  There is only one valid way to open a stream, using sqlsrv_get_field on
 // certain field types.  A sqlsrv stream may only be opened in read mode.
 static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _In_ const char*, _In_ const char* mode, 
-                                         _In_opt_ int options, _In_ zend_string **, php_stream_context* STREAMS_DC TSRMLS_DC )
+                                         _In_opt_ int options, _In_ zend_string **, php_stream_context* STREAMS_DC )
 {
 
 #if ZEND_DEBUG
@@ -240,7 +240,7 @@ static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _
 
     // check for valid options
     if( options != REPORT_ERRORS ) { 
-        php_stream_wrapper_log_error( wrapper, options TSRMLS_CC, "Invalid option: no options except REPORT_ERRORS may be specified with a sqlsrv stream" );
+        php_stream_wrapper_log_error( wrapper, options, "Invalid option: no options except REPORT_ERRORS may be specified with a sqlsrv stream" );
         return NULL;
     }
 
