@@ -40,8 +40,8 @@ class BuildDriver(object):
         make_clean      # a boolean flag - whether make clean is necessary
         source_path     # path to a local source folder
         testing         # whether the user has turned on testing mode
-        srctool_path    # path to source indexing tools (empty string by default)
-        tag_version     # tag version for source indexing (empty string by default)
+        # srctool_path    # path to source indexing tools (empty string by default)
+        # tag_version     # tag version for source indexing (empty string by default)
     """
     
     def __init__(self, phpver, driver, arch, thread, debug, repo, branch, source, path, testing, no_rename):
@@ -53,8 +53,8 @@ class BuildDriver(object):
         self.testing = testing
         self.rebuild = False
         self.make_clean = False
-        self.srctool_path = ''
-        self.tag_version = ''
+        # self.srctool_path = ''
+        # self.tag_version = ''
     
     def show_config(self):
         print()
@@ -118,33 +118,33 @@ class BuildDriver(object):
             print("The path provided is invalid. Please re-enter.")
         return source
     
-    def index_all_symbols(self, ext_dir, srctool_path, tag_version):
-        """This takes care of indexing all the symbols
+    # def index_all_symbols(self, ext_dir, srctool_path, tag_version):
+        # """This takes care of indexing all the symbols
         
-        :param  ext_dir: the directory where we can find the built extension(s)
-        :param  srctool_path: the path to the tools for source indexing
-        :param  tag_version: tag version for source indexing
-        :outcome: all symbols will be source indexed
-        """
-        work_dir = os.path.dirname(os.path.realpath(__file__))
-        os.chdir(srctool_path)
+        # :param  ext_dir: the directory where we can find the built extension(s)
+        # :param  srctool_path: the path to the tools for source indexing
+        # :param  tag_version: tag version for source indexing
+        # :outcome: all symbols will be source indexed
+        # """
+        # work_dir = os.path.dirname(os.path.realpath(__file__))
+        # os.chdir(srctool_path)
 
-        if self.util.driver == 'all':
-            driver = 'sqlsrv'
-            pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
-            print('Indexing this symbol: ', pdbfile)
-            run_indexing_tools(pdbfile, driver, tag_version)
-            driver = 'pdo_sqlsrv'
-            pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
-            print('Indexing this symbol: ', pdbfile)
-            run_indexing_tools(pdbfile, driver, tag_version)
-        else:
-            driver = self.util.driver
-            pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
-            print('Indexing this symbol: ', pdbfile)
-            run_indexing_tools(pdbfile, driver, tag_version)
+        # if self.util.driver == 'all':
+            # driver = 'sqlsrv'
+            # pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
+            # print('Indexing this symbol: ', pdbfile)
+            # run_indexing_tools(pdbfile, driver, tag_version)
+            # driver = 'pdo_sqlsrv'
+            # pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
+            # print('Indexing this symbol: ', pdbfile)
+            # run_indexing_tools(pdbfile, driver, tag_version)
+        # else:
+            # driver = self.util.driver
+            # pdbfile = os.path.join(ext_dir, self.util.driver_name(driver, '.pdb'))
+            # print('Indexing this symbol: ', pdbfile)
+            # run_indexing_tools(pdbfile, driver, tag_version)
             
-        os.chdir(work_dir)
+        # os.chdir(work_dir)
         
     def build_extensions(self, root_dir, logfile):
         """This takes care of getting the drivers' source files, building the drivers. 
@@ -185,11 +185,11 @@ class BuildDriver(object):
         # ext_dir is the directory where we can find the built extension(s)
         ext_dir = self.util.build_drivers(self.make_clean, dest, logfile)
 
-        # Do source indexing only if the tag and tools path are both specified
-        if self.tag_version is not '' and self.srctool_path is not '':
-            print('Source indexing begins...')
-            self.index_all_symbols(ext_dir, self.srctool_path, self.tag_version)
-            print('Source indexing done')
+        # # Do source indexing only if the tag and tools path are both specified
+        # if self.tag_version != '' and self.srctool_path != '':
+            # print('Source indexing begins...')
+            # self.index_all_symbols(ext_dir, self.srctool_path, self.tag_version)
+            # print('Source indexing done')
 
         # Copy the binaries if a destination path is defined
         if self.dest_path is not None:
@@ -291,8 +291,8 @@ if __name__ == '__main__':
     parser.add_argument('--TESTING', action='store_true', help="turns on testing mode (default: False)")
     parser.add_argument('--DESTPATH', default=None, help="an alternative destination for the drivers (default: None)")
     parser.add_argument('--NO_RENAME', action='store_true', help="drivers will not be renamed(default: False)")
-    parser.add_argument('--SRCIDX_PATH', default='', help="the path to the tools for source indexing (default: '')")
-    parser.add_argument('--TAG_VERSION', default='', help="the tag version for source indexing (default: '')")
+    # parser.add_argument('--SRCIDX_PATH', default='', help="the path to the tools for source indexing (default: '')")
+    # parser.add_argument('--TAG_VERSION', default='', help="the tag version for source indexing (default: '')")
 
     args = parser.parse_args()
 
@@ -354,4 +354,5 @@ if __name__ == '__main__':
                           path,
                           testing,
                           no_rename)
-    builder.build(args.SRCIDX_PATH, args.TAG_VERSION)
+    # builder.build(args.SRCIDX_PATH, args.TAG_VERSION)
+    builder.build()
