@@ -212,12 +212,13 @@ class BuildDriver(object):
 
         return ext_dir
 
-    def build(self, srctool_path, tag_version):
+    # def build(self, srctool_path, tag_version):
+    def build(self):
         """This is the main entry point of building drivers for PHP. 
         For development, this will loop till the user decides to quit.
         
-        :param  srctool_path: the path to the tools for source indexing
-        :param  tag_version: tag version for source indexing
+        # :param  srctool_path: the path to the tools for source indexing
+        # :param  tag_version: tag version for source indexing
         """
         self.show_config()
     
@@ -234,9 +235,9 @@ class BuildDriver(object):
                 
             logfile = self.util.get_logfile_name()
 
-            # Save source indexing details
-            self.srctool_path = srctool_path
-            self.tag_version = tag_version
+            # # Save source indexing details
+            # self.srctool_path = srctool_path
+            # self.tag_version = tag_version
 
             try:
                 ext_dir = self.build_extensions(root_dir, logfile)
