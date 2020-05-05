@@ -1,5 +1,5 @@
 --TEST--
-GitHub issue 924 - verifies all error messages are logged to a log file
+GitHub issue 924 - verifies the warnings or error messages are logged to a log file
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
