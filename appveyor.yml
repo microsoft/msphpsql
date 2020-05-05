@@ -99,6 +99,7 @@ install:
     - echo install opencppcoverage
     - choco install opencppcoverage
     - set path=C:\Program Files\OpenCppCoverage;%PYTHON%;%PYTHON%\Scripts;%path%
+    - copy %APPVEYOR_BUILD_FOLDER%\codecov.yml c:\projects
 
 build_script:
     - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py c:\projects
@@ -146,7 +147,7 @@ test_script:
             Write-Host "Showing the packages...";
             Select-String package .\coverage.xml;
             Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-            bash codecov.sh -f "coverage.xml" -y ${env:APPVEYOR_BUILD_FOLDER}\codecov.yml
+            bash codecov.sh -f "coverage.xml"
             cd ${env:PHP_EXE_PATH}
         }
 

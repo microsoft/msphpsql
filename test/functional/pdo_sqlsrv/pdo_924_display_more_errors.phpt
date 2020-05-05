@@ -55,22 +55,27 @@ function checkException($conn, $on)
         var_dump($stmt->fetchColumn());
        
         echo "Exception should have been thrown!\n";
-
-        unset($stmt);
-        unset($conn);
     } catch (PDOException $e) {
+        // compare errorInfo arrays from both the exception object and the stmt object
         if ($on) {
             compare2ErrorInfo($e->errorInfo);
+            compare2ErrorInfo($stmt->errorInfo());
         }
         else {
             compareErrorInfo($e->errorInfo, $errorInfo);
+            compareErrorInfo($stmt->errorInfo(), $errorInfo);
         }
     }
+    
+    unset($stmt);
+    unset($conn);
 }
 
-function checkWarning($conn)
+function checkWarning($conn, $on)
 {
-    global $tsql, $errorInfo;
+    global $tsql, $errorInfo, $errorInfo2;
+
+    ini_set('pdo_sqlsrv.report_additional_errors', $on);
 
     try {
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
@@ -78,28 +83,56 @@ function checkWarning($conn)
         $stmt->execute();
         
         compareErrorInfo($stmt->errorInfo(), $errorInfo);
-       
-        unset($stmt);
-        unset($conn);
+        if ($on) {
+            compareErrorInfo($stmt->errorInfo(), $errorInfo2, 3);
+        } else {
+            echo count($stmt->errorInfo()) . PHP_EOL;
+        }
     } catch (PDOException $e) {
-        echo "Do not expect exception\n";
+        echo " Warnings are logged but do not expect exceptions.\n";
         var_dump($e);
     }
+    
+    unset($stmt);
+    unset($conn);
 }
 
 try {
+    // This forces PHP to log errors rather than displaying errors on screen
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+
+    $logFilename = 'php_924_errors.log';
+    $logFilepath = dirname(__FILE__).'/'.$logFilename;
+    
+    if (file_exists($logFilepath)) {
+        unlink($logFilepath);
+    }
+
+    ini_set('error_log', $logFilepath);
+    ini_set('pdo_sqlsrv.log_severity', '2');    // warnings only
+
     $conn = new PDO("sqlsrv:server=$server;", $uid, $pwd);
-    checkWarning($conn);
+    checkWarning($conn, 1);
     checkException($conn, 1);
+    checkWarning($conn, 0);
     checkException($conn, 0);
     
+    if (file_exists($logFilepath)) {
+        echo file_get_contents($logFilepath);
+        unlink($logFilepath);
+    } else {
+        echo "Expected to find the log file\n";
+    }
 } catch (PDOException $e) {
     var_dump($e);
 }
 
 echo "\nDone\n";
 ?>
---EXPECTREGEX--
-Warning: PDOStatement::execute\(\): SQLSTATE\[01000\]: Warning: 5701 \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Changed database context to '.+'. in .+(\/|\\)pdo_924_display_more_errors.php on line [0-9]+
+--EXPECTF--
+3
+[%s UTC] PHP Warning:  PDOStatement::execute(): SQLSTATE[01000]: Warning: 5701 %s[SQL Server]Changed database context to '%s'. in %spdo_924_display_more_errors.php on line %d
+[%s UTC] PHP Warning:  PDOStatement::execute(): SQLSTATE[01000]: Warning: 5701 %s[SQL Server]Changed database context to '%s'. in %spdo_924_display_more_errors.php on line %d
 
 Done
