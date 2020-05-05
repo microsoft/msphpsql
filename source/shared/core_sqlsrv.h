@@ -776,6 +776,7 @@ struct sqlsrv_error_const {
 
 // subclass which is used by the core layer to instantiate ODBC errors
 struct sqlsrv_error : public sqlsrv_error_const {
+    struct sqlsrv_error *next;
 
     sqlsrv_error( void )
     {
@@ -783,16 +784,18 @@ struct sqlsrv_error : public sqlsrv_error_const {
         native_message = NULL;
         native_code = -1;
         format = false;
+        next = NULL;
     }
 
-    sqlsrv_error( _In_ SQLCHAR* sql_state, _In_ SQLCHAR* message, _In_ SQLINTEGER code, _In_ bool printf_format = false )
+    sqlsrv_error( _In_ SQLCHAR* sql_state, _In_ SQLCHAR* message, _In_ SQLINTEGER code, _In_ bool printf_format = false)
     {
-        sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
-        native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
-        strcpy_s( reinterpret_cast<char*>( sqlstate ), SQL_SQLSTATE_BUFSIZE, reinterpret_cast<const char*>( sql_state ));
-        strcpy_s( reinterpret_cast<char*>( native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>( message ));
+        sqlstate = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_SQLSTATE_BUFSIZE));
+        native_message = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_MAX_ERROR_MESSAGE_LENGTH + 1));
+        strcpy_s(reinterpret_cast<char*>(sqlstate), SQL_SQLSTATE_BUFSIZE, reinterpret_cast<const char*>(sql_state));
+        strcpy_s(reinterpret_cast<char*>(native_message), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>(message));
         native_code = code;
         format = printf_format;
+        next = NULL;
     }
 
     sqlsrv_error( _In_ sqlsrv_error_const const& prototype )
@@ -802,15 +805,25 @@ struct sqlsrv_error : public sqlsrv_error_const {
 
     ~sqlsrv_error( void )
     {
-        if( sqlstate != NULL ) {
-            sqlsrv_free( sqlstate );
+        reset();
+    }
+
+    void reset() {
+        if (sqlstate != NULL) {
+            sqlsrv_free(sqlstate);
+            sqlstate = NULL;
         }
-        if( native_message != NULL ) {
-            sqlsrv_free( native_message );
+        if (native_message != NULL) {
+            sqlsrv_free(native_message);
+            native_message = NULL;
+        }
+        if (next != NULL) {
+            next->reset();
+            sqlsrv_free(next);
+            next = NULL;
         }
     }
 };
-
 
 // an auto_ptr for sqlsrv_errors.  These call the destructor explicitly rather than call delete
 class sqlsrv_error_auto_ptr : public sqlsrv_auto_ptr<sqlsrv_error, sqlsrv_error_auto_ptr > {
@@ -851,7 +864,6 @@ public:
         reset( p );
     }
 };
-
 
 //*********************************************************************************************************************************
 // Context
