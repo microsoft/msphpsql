@@ -475,14 +475,13 @@ bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
     sqlsrv_error_auto_ptr error;
     format_or_get_all_errors(ctx, sqlsrv_error_code, error, dbh->error_code, print_args);
 
-    //strcpy_s(dbh->error_code, sizeof(pdo_error_type), reinterpret_cast<const char*>(error->sqlstate));
-
+    // error_mode is valid because PDO API has already taken care of invalid ones
     if (!warning && dbh->error_mode == PDO_ERRMODE_EXCEPTION) {
         pdo_sqlsrv_throw_exception(error);
     }
 
     ctx.set_last_error(error);
-	
+
     // we don't transfer the zval_auto_ptr since set_last_error increments the zval ref count
     // return error ignored = true for warnings.
     return (warning ? true : false);
@@ -498,9 +497,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
     sqlsrv_error_auto_ptr error;
     format_or_get_all_errors(ctx, sqlsrv_error_code, error, dbh->error_code, print_args);
 
-    //SQLSRV_ASSERT(strnlen_s(reinterpret_cast<const char*>(error->sqlstate)) <= sizeof(dbh->error_code), "Error code overflow");
-    //strcpy_s(dbh->error_code, sizeof(dbh->error_code), reinterpret_cast<const char*>(error->sqlstate));
-
+    // error_mode is valid because PDO API has already taken care of invalid ones
     if (!warning) {
         if (dbh->error_mode == PDO_ERRMODE_EXCEPTION) {
             pdo_sqlsrv_throw_exception(error);
@@ -517,7 +514,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
     }
 
     ctx.set_last_error(error);
-	
+
     // return error ignored = true for warnings.
     return (warning ? true : false);
 }
@@ -532,13 +529,11 @@ bool pdo_sqlsrv_handle_stmt_error(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
     sqlsrv_error_auto_ptr error;
     format_or_get_all_errors(ctx, sqlsrv_error_code, error, pdo_stmt->error_code, print_args);
 
-	//SQLSRV_ASSERT(strnlen_s(reinterpret_cast<const char*>(error->sqlstate)) <= sizeof(pdo_stmt->error_code), "Error code overflow");
-    //strcpy_s(pdo_stmt->error_code, sizeof(pdo_stmt->error_code), reinterpret_cast<const char*>(error->sqlstate));
-
+    // error_mode is valid because PDO API has already taken care of invalid ones
     if (!warning && pdo_stmt->dbh->error_mode == PDO_ERRMODE_EXCEPTION) {
         pdo_sqlsrv_throw_exception(error);
-	}
-	ctx.set_last_error(error);
+    }
+    ctx.set_last_error(error);
 
     // return error ignored = true for warnings.
     return (warning ? true : false);
@@ -662,6 +657,8 @@ void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int
             } while (result);
         }
         
+        // core_sqlsrv_get_odbc_error() returns the error_code of size SQL_SQLSTATE_BUFSIZE,
+        // which is the same size as pdo_error_type
         strcpy_s(error_code, sizeof(pdo_error_type), reinterpret_cast<const char*>(error->sqlstate));
     }
 }

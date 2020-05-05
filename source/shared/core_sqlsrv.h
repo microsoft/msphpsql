@@ -776,7 +776,7 @@ struct sqlsrv_error_const {
 
 // subclass which is used by the core layer to instantiate ODBC errors
 struct sqlsrv_error : public sqlsrv_error_const {
-    struct sqlsrv_error *next;
+    struct sqlsrv_error *next;  // Only used in pdo_sqlsrv for additional errors (as a linked list)
 
     sqlsrv_error( void )
     {
@@ -818,7 +818,7 @@ struct sqlsrv_error : public sqlsrv_error_const {
             native_message = NULL;
         }
         if (next != NULL) {
-            next->reset();
+            next->reset();  // free the next sqlsrv_error, and so on
             sqlsrv_free(next);
             next = NULL;
         }
