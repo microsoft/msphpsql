@@ -169,7 +169,7 @@ echo "Done.\n";
 #####Testing FORWARD ONLY cursor#####
 [%s UTC] pdo_sqlsrv_db_handle_factory: SQLSTATE = 01000
 [%s UTC] pdo_sqlsrv_db_handle_factory: error code = 5701
-[%s UTC] pdo_sqlsrv_db_handle_factory: message = %s[SQL Server]Changed database context to 'PHPDatabase'.
+[%s UTC] pdo_sqlsrv_db_handle_factory: message = %s[SQL Server]Changed database context to '%s'.
 [%s UTC] pdo_sqlsrv_db_handle_factory: SQLSTATE = 01000
 [%s UTC] pdo_sqlsrv_db_handle_factory: error code = 5703
 [%s UTC] pdo_sqlsrv_db_handle_factory: message = %s[SQL Server]Changed language setting to us_english.
