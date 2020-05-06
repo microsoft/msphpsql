@@ -3,7 +3,11 @@ PDO_SQLSRV Connection Pooling Test on Unix
 --DESCRIPTION--
 This test assumes the default odbcinst.ini has not been modified. 
 --SKIPIF--
-<?php if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') die("Skipped: Test for Linux and Mac"); ?>
+<?php 
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    die("Skip test for Linux and Mac only.");
+}
+?>
 --FILE--
 <?php
 function findODBCDriver($content, $lines_to_add)

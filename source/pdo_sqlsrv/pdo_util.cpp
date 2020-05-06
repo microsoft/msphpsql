@@ -43,7 +43,7 @@ const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE 
 sqlsrv_error_const* get_error_message( _In_opt_ unsigned int sqlsrv_error_code);
 
 // build the object and throw the PDO exception
-void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error );
+void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error);
 
 void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _Inout_ sqlsrv_error_auto_ptr& error, _Inout_ char* error_code, _In_opt_ va_list* print_args);
 
@@ -578,7 +578,7 @@ sqlsrv_error_const* get_error_message( _In_opt_ unsigned int sqlsrv_error_code) 
     return error_message;
 }
 
-void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error )
+void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error)
 {
     zval ex_obj;
     ZVAL_UNDEF( &ex_obj );
@@ -605,7 +605,7 @@ void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error )
     add_next_index_long( &ex_error_info, error->native_code );
     add_next_index_string( &ex_error_info, reinterpret_cast<char*>( error->native_message ));
 
-    add_extra_errors_to_array(reinterpret_cast<sqlsrv_error*>(error), &ex_error_info);
+    add_extra_errors_to_array(error, &ex_error_info);
 
     //zend_update_property makes an entry in the properties_table in ex_obj point to the Z_ARRVAL( ex_error_info )
     //and the refcount of the zend_array is incremented by 1
@@ -624,9 +624,13 @@ void add_extra_errors_to_array(_In_ sqlsrv_error const* error, _Inout_ zval* arr
     if (error->next != NULL && PDO_SQLSRV_G(report_additional_errors)) {
         sqlsrv_error *p = error->next;
         while (p != NULL) {
-            add_next_index_string(array_z, reinterpret_cast<char*>(p->sqlstate));
+            // check if sql state or native message is NULL and handle them accordingly
+            char * state = (p->sqlstate == NULL) ? "" : reinterpret_cast<char*>(p->sqlstate);
+            char * msg = (p->native_message == NULL) ? "" : reinterpret_cast<char*>(p->native_message);
+
+            add_next_index_string(array_z, state);
             add_next_index_long(array_z, p->native_code);
-            add_next_index_string(array_z, reinterpret_cast<char*>(p->native_message));
+            add_next_index_string(array_z, msg);
 
             p = p-> next;
         }
