@@ -625,8 +625,15 @@ void add_extra_errors_to_array(_In_ sqlsrv_error const* error, _Inout_ zval* arr
         sqlsrv_error *p = error->next;
         while (p != NULL) {
             // check if sql state or native message is NULL and handle them accordingly
-            char * state = (p->sqlstate == NULL) ? "" : reinterpret_cast<char*>(p->sqlstate);
-            char * msg = (p->native_message == NULL) ? "" : reinterpret_cast<char*>(p->native_message);
+            char *state = "";
+            char *msg = "";
+                 
+            if (p->sqlstate != NULL) {
+                state = reinterpret_cast<char*>(p->sqlstate);
+            }
+            if (p->native_message != NULL) {
+                msg = reinterpret_cast<char*>(p->native_message);
+            }
 
             add_next_index_string(array_z, state);
             add_next_index_long(array_z, p->native_code);
