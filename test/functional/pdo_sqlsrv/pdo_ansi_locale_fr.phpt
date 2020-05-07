@@ -33,7 +33,7 @@ function dropTable($conn, $tableName)
 require_once('MsSetup.inc');
 
 try {
-    $locale = 'fr_FR@euro';
+    $locale = strtoupper(PHP_OS) === 'LINUX' ? 'fr_FR@euro' : 'fr_FR.ISO8859-15';
     setlocale(LC_ALL, $locale);
     
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver", $uid, $pwd);

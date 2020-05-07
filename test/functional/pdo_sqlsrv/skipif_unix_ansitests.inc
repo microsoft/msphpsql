@@ -13,7 +13,8 @@ if ($localeDisabled) {
     die("skip not set up to test ansi locale");
 }
 
-$loc = setlocale(LC_ALL, 'fr_FR@euro');
+$locale = strtoupper(PHP_OS) === 'LINUX' ? 'fr_FR@euro' : 'fr_FR.ISO8859-15';
+$loc = setlocale(LC_ALL, $locale);
 if (empty($loc)) {
     die("skip required French locale not available");
 }
