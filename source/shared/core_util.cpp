@@ -297,17 +297,9 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
             r = SQLGetDiagRecW( h_type, h, record_number, wsqlstate, &error->native_code, wnative_message,
                                 SQL_MAX_ERROR_MESSAGE_LENGTH + 1, &wmessage_len );
             // don't use the CHECK* macros here since it will trigger reentry into the error handling system
-            // Workaround for a bug in unixODBC 2.3.4 when connection pooling is enabled (PDO SQLSRV).
-            // Instead of returning false, we return an empty error message to prevent the driver from throwing an exception.
-            // To reproduce:
-            // Create a connection and close it (return it to the pool)
-            // Create a new connection from the pool. 
-            // Prepare and execute a statement that generates an info message (such as 'USE tempdb;') 
-#ifdef __APPLE__
-            if( r == SQL_NO_DATA && ctx.driver() != NULL /*PDO SQLSRV*/ ) {
-                r = SQL_SUCCESS;
-            }
-#endif // __APPLE__
+            // removed the workaround for Mac users with unixODBC 2.3.4 when connection pooling is enabled (PDO SQLSRV), for two reasons:
+            // (1) not recommended to use connection pooling with unixODBC < 2.3.7
+            // (2) the problem was not reproducible with unixODBC 2.3.7
             if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
                 return false;
             }

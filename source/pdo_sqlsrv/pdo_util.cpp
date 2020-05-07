@@ -661,15 +661,10 @@ void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int
             do {
                 result = core_sqlsrv_get_odbc_error(ctx, rec_number++, err, SEV_ERROR);
                 if (result) {
-                    if (err->native_code == -1 && !strcmp("00000", reinterpret_cast<char*>(err->sqlstate))) {
-                        result = false;
-                    }
-                    else {
                     p->next = err.get();
                     err.transferred();
                     p = p->next;
-                    }
-                }           
+                }
             } while (result);
         }
         
