@@ -18,9 +18,15 @@ $p = '銀河galaxy';
 $p1 = '??galaxy';
 $tableName = 'test1018';
 
+// in Alpine Linux, instead of '?', it replaces inexact conversions with asterisks
+// reference: read the ICONV section in
+// https://wiki.musl-libc.org/functional-differences-from-glibc.html
+$p2 = '**galaxy';
+
 function insertRead($conn, $pdoStrParam, $value, $testCase, $id, $encoding = false)
 {
     global $p, $tableName;
+    global $p1, $p2;
 
     $sql = "INSERT INTO $tableName (Col1) VALUES (:value)";
     $options = array(PDO::ATTR_EMULATE_PREPARES => false);  // it's false by default anyway
@@ -45,8 +51,11 @@ function insertRead($conn, $pdoStrParam, $value, $testCase, $id, $encoding = fal
     $result = $stmt->fetch(PDO::FETCH_NUM);
     trace("$testCase: expected $value and returned $result[0]\n");
     if ($result[0] !== $value) {
-        echo("$testCase: expected $value but returned:\n");
-        var_dump($result);
+        // Also check the other exception
+        if ($value === $p1 && $result[0] !== $p2) {
+            echo("$testCase: expected $value or $p2 but returned:\n");
+            var_dump($result);
+        }
     }
 }
 

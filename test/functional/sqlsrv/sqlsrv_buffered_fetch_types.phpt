@@ -10,7 +10,15 @@ Test various conversion functionalites for buffered queries with SQLSRV.
 $violation = 'Restricted data type attribute violation';
 $outOfRange = 'Numeric value out of range';
 $truncation = 'Fractional truncation';
-$epsilon = 0.00001;
+
+function compareFloats($expected, $actual)
+{
+    $epsilon = 0.00001;
+    
+    $diff = abs(($actual - $expected) / $expected);
+    
+    return ($diff < $epsilon);
+}
 
 function fetchAsUTF8($conn, $tableName, $inputs)
 {
@@ -29,10 +37,17 @@ function fetchAsUTF8($conn, $tableName, $inputs)
         $f = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING('utf-8'));
         if ($i == 0) {
             if ($inputs[$i] !== hex2bin($f)) {
+                echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
+                var_dump(hex2bin($f));
+            }
+        } elseif ($i == 2) {
+            if (!compareFloats(floatval($inputs[$i]), floatval($f))) {
+                echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
                 var_dump($f);
             }
         } else {
             if ($f !== $inputs[$i]) {
+                echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
                 var_dump($f);
             }
         }
@@ -59,15 +74,26 @@ function fetchArray($conn, $tableName, $inputs)
     }
     
     for ($i = 0; $i < count($inputs); $i++) {
+        $matched = true;
         if ($i == 1) {
             $expected = intval($inputs[$i]);
+            if ($results[$i] !== $expected) {
+                $matched = false;
+            }
         } elseif ($i == 2) {
             $expected = floatval($inputs[$i]);
+            if (!compareFloats($expected, $results[$i])) {
+                $matched = false;
+            }
         } else {
             $expected = $inputs[$i];
+            if ($results[$i] !== $expected) {
+                $matched = false;
+            }
         }
 
-        if ($results[$i] !== $expected) {
+        // if ($results[$i] !== $expected) {
+        if (!$matched) {
             echo "in fetchArray: for column $i expected $expected but got: ";
             var_dump($results[$i]);
         }
@@ -100,9 +126,7 @@ function fetchAsFloats($conn, $tableName, $inputs)
             }
         } elseif ($i < 5) {
             $expected = floatval($inputs[$i]);
-            $diff = abs(($f - $expected) / $expected);
-            
-            if ($diff > $epsilon) {
+            if (!compareFloats($expected, $f)) {
                 echo "in fetchAsFloats: for column $i expected $expected but got: ";
                 var_dump($f);
             }

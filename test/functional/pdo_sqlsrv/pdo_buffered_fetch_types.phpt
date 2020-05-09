@@ -25,7 +25,13 @@ function fetchAsUTF8($conn, $tableName, $inputs)
             $stmt->execute();
             $f = $stmt->fetchColumn($i);
             
-            if ($f !== $inputs[$i]) {
+            if ($i == 2) {
+                if (!compareFloats(floatval($inputs[$i]), floatval($f))) {
+                    echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
+                    var_dump($f);
+                }
+            } elseif ($f !== $inputs[$i]) {
+                echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
                 var_dump($f);
             }
         }
@@ -45,8 +51,16 @@ function fetchArray($conn, $tableName, $inputs)
         // By default, even numeric or datetime fields are fetched as strings
         $result = $stmt->fetch(PDO::FETCH_NUM);
         for ($i = 0; $i < count($inputs); $i++) {
-            if ($result[$i] !== $inputs[$i]) {
-                var_dump($f);
+            if ($i == 2) {
+                $expected = floatval($inputs[$i]);
+                if (!compareFloats($expected, floatval($result[$i]))) {
+                    echo "in fetchArray: for column $i expected $expected but got: ";
+                    var_dump($result[$i]);
+                }
+            }
+            elseif ($result[$i] !== $inputs[$i]) {
+                echo "in fetchArray: for column $i expected $inputs[$i] but got: ";
+                var_dump($result[$i]);
             }
         }
     } catch (PdoException $e) {

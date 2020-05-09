@@ -33,7 +33,7 @@ try {
 }
 ?>
 
---EXPECT--
+--EXPECTF--
 Test_1 : BigIntCol :
 array(1) {
   ["BigIntCol"]=>
@@ -82,7 +82,7 @@ array(1) {
 Test_10 : FloatCol :
 array(1) {
   ["FloatCol"]=>
-  string(7) "111.111"
+  string(%d) "111.111%S"
 }
 Test_11 : RealCol :
 array(1) {
