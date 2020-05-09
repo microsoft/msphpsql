@@ -37,14 +37,6 @@ function printValues($msg, $det, $rand, $inputValues)
     echo "fetched: "; var_dump($rand);
 }
 
-// this function returns true if the floats are more different than expected
-function compareFloats($actual, $expected) 
-{
-    $epsilon = 0.00001;
-    $diff = abs(($actual - $expected) / $expected);
-    return ($diff > $epsilon);
-}
-
 // function compareIntegers() returns false when the fetched values 
 // are different from the expected inputs 
 function compareIntegers($det, $rand, $inputValues, $pdoParamType)
@@ -52,8 +44,8 @@ function compareIntegers($det, $rand, $inputValues, $pdoParamType)
     ///////////////////////////////////////////////////////////////////////
     // Assume $pdoParamType is PDO::PARAM_BOOL or PDO::PARAM_INT
     if (is_string($det)) {
-        return (!compareFloats(floatval($det), $inputValues[0]) 
-                && !compareFloats(floatval($rand), $inputValues[1]));
+        return (compareFloats($inputValues[0], floatval($det)) 
+                && compareFloats($inputValues[1], floatval($rand)));
     } else {
         // if $pdoParamType is PDO::PARAM_BOOL, expect bool(true) or bool(false) 
         // depending on the rounded input values
