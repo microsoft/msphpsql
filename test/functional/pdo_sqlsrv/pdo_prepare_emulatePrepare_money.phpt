@@ -33,10 +33,6 @@ try {
         createTable($conn, $tableName, array("c1_decimal" => "decimal", "c2_money" => "decimal(19,4)", "c3_float" => "float"));
     }
 
-    // insertRow($conn, $tableName, array("c1_decimal" => 411.1, "c2_money" => 131.11, "c3_float" => 611.111));
-    // insertRow($conn, $tableName, array("c1_decimal" => 422.2222, "c2_money" => 132.22, "c3_float" => 622.22));
-    // insertRow($conn, $tableName, array("c1_decimal" => 433.333, "c2_money" => 133.3333, "c3_float" => 633.33333));
-
     $inputValues = array( array('c1_decimal' => '411.1', 'c2_money' => '131.11', 'c3_float' => 611.111),
                           array('c1_decimal' => '422.2222', 'c2_money' => '132.222', 'c3_float' => 622.22),
                           array('c1_decimal' => '433.333', 'c2_money' => '133.3333', 'c3_float' => 633.33333));

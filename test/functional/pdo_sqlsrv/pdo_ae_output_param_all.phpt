@@ -125,9 +125,6 @@ print("bitOut: " . $bitOut . "\n");
 print("bigintOut: " . $bigintOut . "\n");
 print("decimalOut: " . $decimalOut . "\n");
 print("numericOut: " . $numericOut . "\n");
-// print("floatOut: " . $floatOut . "\n");
-// print("realOut: " . $realOut . "\n");
-
 if (!compareFloats($floatInput, $floatOut)) {
     // Should not expect float values to match exactly
     print("Expected $floatInput but got $floatOut\n");
@@ -136,7 +133,6 @@ if (!compareFloats($realInput, $realOut)) {
     // Should not expect real values to match exactly
     print("Expected $realInput but got $realOut\n");
 }
-
 print("dateOut: " . $dateOut . "\n");
 print("datetimeOut: " . $datetimeOut . "\n");
 print("datetime2Out: " . $datetime2Out . "\n");
