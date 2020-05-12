@@ -1913,7 +1913,7 @@ enum error_handling_flags {
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error,
-                                 _In_ logging_severity severity );
+                                 _In_ logging_severity severity, _In_ bool check_warning = false );
 
 // format and return a driver specfic error
 void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_error_const const* custom_error,

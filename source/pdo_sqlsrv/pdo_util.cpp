@@ -47,7 +47,7 @@ void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error);
 
 void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _Inout_ sqlsrv_error_auto_ptr& error, _Inout_ char* error_code, _In_opt_ va_list* print_args);
 
-void add_extra_errors_to_array(_In_ sqlsrv_error const* error, _Inout_ zval* array_z);
+void add_remaining_errors_to_array (_In_ sqlsrv_error const* error, _Inout_ zval* array_z);
 }
 
 // pdo driver error messages
@@ -551,7 +551,7 @@ void pdo_sqlsrv_retrieve_context_error( _In_ sqlsrv_error const* last_error, _Ou
         add_next_index_long( pdo_zval, last_error->native_code );
         add_next_index_string( pdo_zval, reinterpret_cast<char*>( last_error->native_message ));
 
-        add_extra_errors_to_array(last_error, pdo_zval);
+        add_remaining_errors_to_array (last_error, pdo_zval);
     }
 }
 
@@ -605,7 +605,7 @@ void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error)
     add_next_index_long( &ex_error_info, error->native_code );
     add_next_index_string( &ex_error_info, reinterpret_cast<char*>( error->native_message ));
 
-    add_extra_errors_to_array(error, &ex_error_info);
+    add_remaining_errors_to_array (error, &ex_error_info);
 
     //zend_update_property makes an entry in the properties_table in ex_obj point to the Z_ARRVAL( ex_error_info )
     //and the refcount of the zend_array is incremented by 1
@@ -619,7 +619,7 @@ void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error)
     zend_throw_exception_object( &ex_obj );
 }
 
-void add_extra_errors_to_array(_In_ sqlsrv_error const* error, _Inout_ zval* array_z)
+void add_remaining_errors_to_array (_In_ sqlsrv_error const* error, _Inout_ zval* array_z)
 {
     if (error->next != NULL && PDO_SQLSRV_G(report_additional_errors)) {
         sqlsrv_error *p = error->next;
@@ -651,7 +651,7 @@ void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int
         strcpy_s(error_code, sizeof(pdo_error_type), reinterpret_cast<const char*>(error->sqlstate));
     }
     else {
-        bool result = core_sqlsrv_get_odbc_error(ctx, 1, error, SEV_ERROR);
+        bool result = core_sqlsrv_get_odbc_error(ctx, 1, error, SEV_ERROR, true);
         if (result) {
             // Check if there exist more errors
             int rec_number = 2;
@@ -659,7 +659,7 @@ void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int
             sqlsrv_error *p = error;
 
             do {
-                result = core_sqlsrv_get_odbc_error(ctx, rec_number++, err, SEV_ERROR);
+                result = core_sqlsrv_get_odbc_error(ctx, rec_number++, err, SEV_ERROR, true);
                 if (result) {
                     p->next = err.get();
                     err.transferred();

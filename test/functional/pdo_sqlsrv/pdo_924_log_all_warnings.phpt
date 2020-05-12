@@ -70,7 +70,7 @@ try {
     }
 
     ini_set('error_log', $logFilepath);
-    ini_set('pdo_sqlsrv.log_severity', '1');    // errors only
+    ini_set('pdo_sqlsrv.log_severity', '3');    // warnings and errors only 
   
     // All supported cursor types
     $cursors = array(array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY),

@@ -132,7 +132,25 @@ echo "\nDone\n";
 ?>
 --EXPECTF--
 3
+[%s UTC] pdo_sqlsrv_db_handle_factory: SQLSTATE = 01000
+[%s UTC] pdo_sqlsrv_db_handle_factory: error code = 5701
+[%s UTC] pdo_sqlsrv_db_handle_factory: message = %s[SQL Server]Changed database context to 'master'.
+[%s UTC] pdo_sqlsrv_db_handle_factory: SQLSTATE = 01000
+[%s UTC] pdo_sqlsrv_db_handle_factory: error code = 5703
+[%s UTC] pdo_sqlsrv_db_handle_factory: message = %s[SQL Server]Changed language setting to us_english.
+[%s UTC] pdo_sqlsrv_stmt_execute: SQLSTATE = 01000
+[%s UTC] pdo_sqlsrv_stmt_execute: error code = 5701
+[%s UTC] pdo_sqlsrv_stmt_execute: message = %s[SQL Server]Changed database context to '%s'.
 [%s UTC] PHP Warning:  PDOStatement::execute(): SQLSTATE[01000]: Warning: 5701 %s[SQL Server]Changed database context to '%s'. in %spdo_924_display_more_errors.php on line %d
+[%s UTC] pdo_sqlsrv_stmt_execute: SQLSTATE = 01000
+[%s UTC] pdo_sqlsrv_stmt_execute: error code = 5701
+[%s UTC] pdo_sqlsrv_stmt_execute: message = %s[SQL Server]Changed database context to '%s'.
+[%s UTC] pdo_sqlsrv_stmt_execute: SQLSTATE = 01000
+[%s UTC] pdo_sqlsrv_stmt_execute: error code = 5701
+[%s UTC] pdo_sqlsrv_stmt_execute: message = %s[SQL Server]Changed database context to '%s'.
 [%s UTC] PHP Warning:  PDOStatement::execute(): SQLSTATE[01000]: Warning: 5701 %s[SQL Server]Changed database context to '%s'. in %spdo_924_display_more_errors.php on line %d
+[%s UTC] pdo_sqlsrv_stmt_execute: SQLSTATE = 01000
+[%s UTC] pdo_sqlsrv_stmt_execute: error code = 5701
+[%s UTC] pdo_sqlsrv_stmt_execute: message = %s[SQL Server]Changed database context to '%s'.
 
 Done
