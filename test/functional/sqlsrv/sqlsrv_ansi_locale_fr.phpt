@@ -42,8 +42,14 @@ function dropTable($conn, $tableName)
 require_once('MsSetup.inc');
 
 $tableName = "srv_ansitest_FR";
-$locale = strtoupper(PHP_OS) === 'LINUX' ? 'fr_FR@euro' : 'fr_FR.ISO8859-15';
-setlocale(LC_ALL, $locale);
+$r = setlocale(LC_ALL, 'fr_FR@euro');
+if (empty($r)) {
+    // Some platforms use a different locale name
+    $r = setlocale(LC_ALL, 'fr_FR.ISO8859-15');
+    if (empty($r)) {
+        die("The required French locale is not available");
+    }
+}
 
 $conn = sqlsrv_connect($server, $connectionOptions);
 if( $conn === false ) {
