@@ -14,7 +14,8 @@ if ($localeDisabled) {
 }
 
 $loc = setlocale(LC_ALL, 'fr_FR@euro');
-if (empty($loc)) {
+$loc1 = setlocale(LC_ALL, 'fr_FR.ISO8859-15');
+if (empty($loc) && empty($loc1)) {
     die("skip required French locale not available");
 }
 

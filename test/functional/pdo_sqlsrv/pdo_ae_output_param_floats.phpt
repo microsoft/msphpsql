@@ -22,14 +22,6 @@ $pdoParamTypes = array(
 
 //////////////////////////////////////////////////////////////////////////////////
 
-// this function returns true if the floats are more different than expected
-function compareFloats($actual, $expected) 
-{
-    $epsilon = 0.0001;
-    $diff = abs(($actual - $expected) / $expected);
-    return ($diff > $epsilon);
-}
-
 function printValues($msg, $det, $rand, $inputValues)
 {
     echo $msg;
@@ -118,8 +110,8 @@ function testOutputFloats($fetchNumeric, $inout)
                     } else {
                         // Compare the retrieved values against the input values
                         // if either of them is very different, print them all
-                        if (compareFloats(floatval($det), $inputValues[0]) || 
-                            compareFloats(floatval($rand), $inputValues[1])) {
+                        if (!compareFloats($inputValues[0], floatval($det)) || 
+                            !compareFloats($inputValues[1], floatval($rand))) {
                             printValues($errMsg, $det, $rand, $inputValues);
                         }
                     }

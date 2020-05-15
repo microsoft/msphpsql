@@ -10,6 +10,37 @@ require_once("MsCommon_mid-refactor.inc");
 require_once("AEData.inc");
 $dataTypes = array("bit", "tinyint", "smallint", "int", "bigint", "decimal(18,5)", "numeric(10,5)", "float", "real");
 
+function fetchFields($conn, $tbname, $inputValues = null)
+{
+    try {
+        $sql = "SELECT * FROM $tbname";
+        $stmt = $conn->query($sql);
+
+        if (is_null($inputValues)) {
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                foreach ($row as $key => $value) {
+                    print("$key: $value\n");
+                }
+            }
+        } else {
+            while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+                for ($i = 0; $i < 2; $i++) {
+                    if (!compareFloats($inputValues[$i], $row[$i])) {
+                        echo "Expected similar to $inputValues[$i] but got $row[$i]\n";
+                    } else {
+                        echo "Values matched\n";
+                    }
+                }
+            }
+        }
+    } catch (PDOException $e) {
+        var_dump($e->errorInfo);
+    } catch (Exception $e) {
+        var_dump($e->errorInfo);
+        exit;
+    }
+}
+
 // Note the size of a float is platform dependent, with a precision of roughly 14 digits
 // http://php.net/manual/en/language.types.float.php
 try {
@@ -28,9 +59,12 @@ try {
         $stmt = insertRow($conn, $tbname, array( "c_det" => $inputValues[0], "c_rand" => $inputValues[1] ), null, $r);
         if ($r === false) {
             isIncompatibleTypesError($stmt, $dataType, "default type");
+        } elseif ($dataType == 'float' || $dataType == 'real') {
+            echo "-----Encrypted default type is compatible with encrypted $dataType-----\n";
+            fetchFields($conn, $tbname, $inputValues);
         } else {
             echo "-----Encrypted default type is compatible with encrypted $dataType-----\n";
-            fetchAll($conn, $tbname);
+            fetchFields($conn, $tbname);
         }
         dropTable($conn, $tbname);
     }
@@ -79,10 +113,10 @@ c_rand: 21474\.83647
 
 Testing float:
 -----Encrypted default type is compatible with encrypted float-----
-c_det: (-9223372036\.8547993|-9223372036\.8547992)
-c_rand: (9223372036\.8547993|9223372036\.8547992)
+Values matched
+Values matched
 
 Testing real:
 -----Encrypted default type is compatible with encrypted real-----
-c_det: (-2147\.4829|-2147\.483)
-c_rand: (2147\.4829|2147\.483)
+Values matched
+Values matched

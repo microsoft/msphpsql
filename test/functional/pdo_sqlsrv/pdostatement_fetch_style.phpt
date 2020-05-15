@@ -140,9 +140,9 @@ array(16) {
   [5]=>
   string(10) "STRINGCOL1"
   ["FloatCol"]=>
-  string(7) "111.111"
+  string(%d) "111.111%S"
   [6]=>
-  string(7) "111.111"
+  string(%d) "111.111%S"
   ["XmlCol"]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
   [7]=>
@@ -163,7 +163,7 @@ array(8) {
   ["NVarCharCol"]=>
   string(10) "STRINGCOL1"
   ["FloatCol"]=>
-  string(7) "111.111"
+  string(%d) "111.111%S"
   ["XmlCol"]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 }
@@ -184,7 +184,7 @@ object(PDORow)#%x (%x) {
   ["NVarCharCol"]=>
   string(10) "STRINGCOL1"
   ["FloatCol"]=>
-  string(7) "111.111"
+  string(%d) "111.111%S"
   ["XmlCol"]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 }
@@ -203,7 +203,7 @@ object(stdClass)#%x (%x) {
   ["NVarCharCol"]=>
   string(10) "STRINGCOL1"
   ["FloatCol"]=>
-  string(7) "111.111"
+  string(%d) "111.111%S"
   ["XmlCol"]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 }
@@ -222,7 +222,7 @@ array(8) {
   [5]=>
   string(10) "STRINGCOL1"
   [6]=>
-  string(7) "111.111"
+  string(%d) "111.111%S"
   [7]=>
   string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 }
@@ -233,7 +233,7 @@ string(10) "STRINGCOL1"
 string(23) "2000-11-11 11:11:11.110"
 string(10) "STRINGCOL1"
 string(10) "STRINGCOL1"
-string(7) "111.111"
+string(%d) "111.111%S"
 string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 Test_7 : FETCH_CLASS :
 string(1) "1"
@@ -242,7 +242,7 @@ string(10) "STRINGCOL1"
 string(23) "2000-11-11 11:11:11.110"
 string(10) "STRINGCOL1"
 string(10) "STRINGCOL1"
-string(7) "111.111"
+string(%d) "111.111%S"
 string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 Test_8 : FETCH_INTO :
 string(1) "1"
@@ -251,7 +251,7 @@ string(10) "STRINGCOL1"
 string(23) "2000-11-11 11:11:11.110"
 string(10) "STRINGCOL1"
 string(10) "STRINGCOL1"
-string(7) "111.111"
+string(%d) "111.111%S"
 string(431) "<xml> 1 This is a really large string used to test certain large data types like xml data type. The length of this string is greater than 256 to correctly test a large data type. This is currently used by atleast varchar type and by xml type. The fetch tests are the primary consumer of this string to validate that fetch on large types work fine. The length of this string as counted in terms of number of characters is 417.</xml>"
 Test_9 : FETCH_INVALID :
 

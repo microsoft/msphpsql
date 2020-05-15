@@ -51,16 +51,19 @@ $spSql = "CREATE PROCEDURE $spname (
                 @c17_nchar = c17_nchar, @c18_nvarchar = c18_nvarchar
                 FROM $tbname";
 $conn->query($spSql);
-// Insert data
+
+// Insert data, for bigint, decimal and numeric, should insert as strings
+$floatInput = 9223372036.8548;
+$realInput = 2147.483;
 $inputs = array( "c1_int" => 2147483647,
                  "c2_smallint" => 32767,
                  "c3_tinyint" => 255,
                  "c4_bit" => 1,
-                 "c5_bigint" => 922337203685479936,
-                 "c6_decimal" => 9223372036854.80000,
-                 "c7_numeric" => 21474.83647,
-                 "c8_float" => 9223372036.8548,
-                 "c9_real" => 2147.483,
+                 "c5_bigint" => '922337203685479936',
+                 "c6_decimal" => '9223372036854.80000',
+                 "c7_numeric" => '21474.83647',
+                 "c8_float" => $floatInput,
+                 "c9_real" => $realInput,
                  "c10_date" => '9999-12-31',
                  "c11_datetime" => '9999-12-31 23:59:59.997',
                  "c12_datetime2" => '9999-12-31 23:59:59.9999999',
@@ -72,15 +75,18 @@ $inputs = array( "c1_int" => 2147483647,
                  "c18_nvarchar" => 'When prefixing a string constant with the letter N, the implicit conversion will result in a Unicode string if the constant to convert does not exceed the max length for a Unicode string data type (4,000).' );
 $r;
 $stmt = insertRow($conn, $tbname, $inputs, null, $r);
+
 // Call store procedure
 $outSql = getCallProcSqlPlaceholders($spname, count($inputs));
+
+// Initialize all inputs, set bigint, decimal and numeric as empty strings
 $intOut = 0;
 $smallintOut = 0;
 $tinyintOut = 0;
 $bitOut = 0;
-$bigintOut = 0.0;
-$decimalOut = 0.0;
-$numericOut = 0.0;
+$bigintOut = '';
+$decimalOut = '';
+$numericOut = '';
 $floatOut = 0.0;
 $realOut = 0.0;
 $dateOut = '0001-01-01';
@@ -119,8 +125,14 @@ print("bitOut: " . $bitOut . "\n");
 print("bigintOut: " . $bigintOut . "\n");
 print("decimalOut: " . $decimalOut . "\n");
 print("numericOut: " . $numericOut . "\n");
-print("floatOut: " . $floatOut . "\n");
-print("realOut: " . $realOut . "\n");
+if (!compareFloats($floatInput, $floatOut)) {
+    // Should not expect float values to match exactly
+    print("Expected $floatInput but got $floatOut\n");
+}
+if (!compareFloats($realInput, $realOut)) {
+    // Should not expect real values to match exactly
+    print("Expected $realInput but got $realOut\n");
+}
 print("dateOut: " . $dateOut . "\n");
 print("datetimeOut: " . $datetimeOut . "\n");
 print("datetime2Out: " . $datetime2Out . "\n");
@@ -143,8 +155,6 @@ bitOut: 1
 bigintOut: 922337203685479936
 decimalOut: 9223372036854\.80000
 numericOut: 21474\.83647
-floatOut: (9223372036\.8547993|9\.22337e\+009)
-realOut: (2147\.4829|2147\.48)
 dateOut: 9999-12-31
 datetimeOut: (9999-12-31 23:59:59\.997|Dec 31 9999 11:59PM)
 datetime2Out: 9999-12-31 23:59:59\.9999999

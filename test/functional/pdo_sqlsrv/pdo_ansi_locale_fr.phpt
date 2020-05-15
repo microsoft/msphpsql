@@ -33,8 +33,14 @@ function dropTable($conn, $tableName)
 require_once('MsSetup.inc');
 
 try {
-    $locale = 'fr_FR@euro';
-    setlocale(LC_ALL, $locale);
+    $r = setlocale(LC_ALL, 'fr_FR@euro');
+    if (empty($r)) {
+        // Some platforms use a different locale name
+        $r = setlocale(LC_ALL, 'fr_FR.ISO8859-15');
+        if (empty($r)) {
+            die("The required French locale is not available");
+        }
+    }
     
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver", $uid, $pwd);
     $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
