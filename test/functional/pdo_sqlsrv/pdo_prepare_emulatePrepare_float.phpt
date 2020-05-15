@@ -1,5 +1,13 @@
 --TEST--
 prepare with emulate prepare and binding integer
+--DESCRIPTION--
+This test is similar to pdo_prepare_emulatePrepare_decimal.phpt and
+pdo_prepare_emulatePrepare_money.phpt but binding parameters with
+floating point numbers. However, checking equality of floating point
+numbers may not guarantee same results across platforms. Incorrect
+results often occurred with implicit rounding when converting string
+to floats.
+See https://news-web.php.net/php.internals/11502 for in-depth explanation.
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -11,7 +19,7 @@ function printRow($row, $inputValues)
     if (empty($row)) {
         return; // do nothing
     }
-    
+
     $key = 'c3_float';
     if (!compareFloats($inputValues[$key], $row[$key])) {
         echo "Expected $inputValues[$key] but got $row[$key]\n";
@@ -41,13 +49,18 @@ try {
         insertRow($conn, $tableName, $inputValues[$i]);
     }
 
-    $query = "SELECT * FROM [$tableName] WHERE c3_float = :c3";
+    // With data encrypted, there will be no conversion
+    if (isColEncrypted()) {
+        $query = "SELECT * FROM [$tableName] WHERE c3_float = :c3";
+    } else {
+        $query = "SELECT * FROM [$tableName] WHERE c3_float < :c3";
+    }
 
     // prepare without emulate prepare
     print_r("Prepare without emulate prepare:\n");
     $options = array(PDO::ATTR_EMULATE_PREPARES => false);
     $stmt = $conn->prepare($query, $options);
-    $c3 = 611.111;
+    $c3 = (isColEncrypted())? 611.111 : 620.00;
     $stmt->bindParam(':c3', $c3);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
