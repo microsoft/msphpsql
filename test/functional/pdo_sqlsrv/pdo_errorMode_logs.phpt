@@ -96,6 +96,9 @@ Done with 0
 [%s UTC] pdo_sqlsrv_stmt_execute: SQLSTATE = 42S02
 [%s UTC] pdo_sqlsrv_stmt_execute: error code = 208
 [%s UTC] pdo_sqlsrv_stmt_execute: message = %s[SQL Server]Invalid object name 'temp_table'.
+[%s UTC] pdo_sqlsrv_stmt_execute: SQLSTATE = 42000
+[%s UTC] pdo_sqlsrv_stmt_execute: error code = 8180
+[%s UTC] pdo_sqlsrv_stmt_execute: message = %s[SQL Server]Statement(s) could not be prepared.
 Done with 1
 
 [%s UTC] PHP Warning:  PDO::query(): SQLSTATE[42S02]: Base table or view not found: 208 %s[SQL Server]Invalid object name 'temp_table'. in %spdo_errorMode_logs.php on line %d
@@ -112,5 +115,8 @@ Done with 4
 [%s UTC] pdo_sqlsrv_stmt_execute: SQLSTATE = 42S02
 [%s UTC] pdo_sqlsrv_stmt_execute: error code = 208
 [%s UTC] pdo_sqlsrv_stmt_execute: message = %s[SQL Server]Invalid object name 'temp_table'.
+[%s UTC] pdo_sqlsrv_stmt_execute: SQLSTATE = 42000
+[%s UTC] pdo_sqlsrv_stmt_execute: error code = 8180
+[%s UTC] pdo_sqlsrv_stmt_execute: message = %s[SQL Server]Statement(s) could not be prepared.
 Done with -1
 

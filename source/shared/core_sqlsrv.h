@@ -776,6 +776,7 @@ struct sqlsrv_error_const {
 
 // subclass which is used by the core layer to instantiate ODBC errors
 struct sqlsrv_error : public sqlsrv_error_const {
+    struct sqlsrv_error *next;  // Only used in pdo_sqlsrv for additional errors (as a linked list)
 
     sqlsrv_error( void )
     {
@@ -783,16 +784,18 @@ struct sqlsrv_error : public sqlsrv_error_const {
         native_message = NULL;
         native_code = -1;
         format = false;
+        next = NULL;
     }
 
-    sqlsrv_error( _In_ SQLCHAR* sql_state, _In_ SQLCHAR* message, _In_ SQLINTEGER code, _In_ bool printf_format = false )
+    sqlsrv_error( _In_ SQLCHAR* sql_state, _In_ SQLCHAR* message, _In_ SQLINTEGER code, _In_ bool printf_format = false)
     {
-        sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
-        native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
-        strcpy_s( reinterpret_cast<char*>( sqlstate ), SQL_SQLSTATE_BUFSIZE, reinterpret_cast<const char*>( sql_state ));
-        strcpy_s( reinterpret_cast<char*>( native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>( message ));
+        sqlstate = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_SQLSTATE_BUFSIZE));
+        native_message = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_MAX_ERROR_MESSAGE_LENGTH + 1));
+        strcpy_s(reinterpret_cast<char*>(sqlstate), SQL_SQLSTATE_BUFSIZE, reinterpret_cast<const char*>(sql_state));
+        strcpy_s(reinterpret_cast<char*>(native_message), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>(message));
         native_code = code;
         format = printf_format;
+        next = NULL;
     }
 
     sqlsrv_error( _In_ sqlsrv_error_const const& prototype )
@@ -802,15 +805,25 @@ struct sqlsrv_error : public sqlsrv_error_const {
 
     ~sqlsrv_error( void )
     {
-        if( sqlstate != NULL ) {
-            sqlsrv_free( sqlstate );
+        reset();
+    }
+
+    void reset() {
+        if (sqlstate != NULL) {
+            sqlsrv_free(sqlstate);
+            sqlstate = NULL;
         }
-        if( native_message != NULL ) {
-            sqlsrv_free( native_message );
+        if (native_message != NULL) {
+            sqlsrv_free(native_message);
+            native_message = NULL;
+        }
+        if (next != NULL) {
+            next->reset();  // free the next sqlsrv_error, and so on
+            sqlsrv_free(next);
+            next = NULL;
         }
     }
 };
-
 
 // an auto_ptr for sqlsrv_errors.  These call the destructor explicitly rather than call delete
 class sqlsrv_error_auto_ptr : public sqlsrv_auto_ptr<sqlsrv_error, sqlsrv_error_auto_ptr > {
@@ -851,7 +864,6 @@ public:
         reset( p );
     }
 };
-
 
 //*********************************************************************************************************************************
 // Context
@@ -1901,7 +1913,7 @@ enum error_handling_flags {
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error,
-                                 _In_ logging_severity severity );
+                                 _In_ logging_severity severity, _In_ bool check_warning = false );
 
 // format and return a driver specfic error
 void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_error_const const* custom_error,

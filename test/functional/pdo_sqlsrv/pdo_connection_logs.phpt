@@ -44,6 +44,9 @@ try {
     } else {
         echo "$logFilepath is missing!\n";
     }
+    
+    // Now reset logging by disabling it
+    ini_set('pdo_sqlsrv.log_severity', '0');
 
     echo "Done\n";
 } catch (Exception $e) {
@@ -56,6 +59,9 @@ try {
 [%s UTC] pdo_sqlsrv_db_handle_factory: SQLSTATE = 01000
 [%s UTC] pdo_sqlsrv_db_handle_factory: error code = 5701
 [%s UTC] pdo_sqlsrv_db_handle_factory: message = %s[SQL Server]Changed database context to '%s'.
+[%s UTC] pdo_sqlsrv_db_handle_factory: SQLSTATE = 01000
+[%s UTC] pdo_sqlsrv_db_handle_factory: error code = 5703
+[%s UTC] pdo_sqlsrv_db_handle_factory: message = %s[SQL Server]Changed language setting to %s.
 [%s UTC] pdo_sqlsrv_dbh_prepare: entering
 [%s UTC] pdo_sqlsrv_stmt_execute: entering
 [%s UTC] pdo_sqlsrv_stmt_describe_col: entering

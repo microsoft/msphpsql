@@ -20,5 +20,8 @@ Array
 \(
     \[0\] => 42S02
     \[1\] => 208
-    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Invalid object name 'Person.Addressx'.
+    \[2\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Invalid object name 'Person.Addressx'\.
+    \[3\] => 42000
+    \[4\] => 8180
+    \[5\] => \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Statement\(s\) could not be prepared\.
 \)

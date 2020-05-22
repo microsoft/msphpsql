@@ -53,6 +53,7 @@ extern HMODULE g_sqlsrv_hmodule;
 // (these are defined as macros to allow concatenation as we do below)
 #define INI_PDO_SQLSRV_CLIENT_BUFFER_MAX_SIZE "client_buffer_max_kb_size"
 #define INI_PDO_SQLSRV_LOG   "log_severity"
+#define INI_PDO_SQLSRV_MORE_ERRORS  "report_additional_errors"
 #define INI_PREFIX           "pdo_sqlsrv."
 
 #ifndef _WIN32
@@ -64,6 +65,7 @@ PHP_INI_BEGIN()
                          zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals )
     STD_PHP_INI_ENTRY( INI_PREFIX INI_PDO_SQLSRV_CLIENT_BUFFER_MAX_SIZE , INI_BUFFERED_QUERY_LIMIT_DEFAULT, PHP_INI_ALL, OnUpdateLong,
                        client_buffer_max_size, zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals )
+    STD_PHP_INI_ENTRY(INI_PREFIX INI_PDO_SQLSRV_MORE_ERRORS, "1", PHP_INI_ALL, OnUpdateLong, report_additional_errors, zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals)
 #ifndef _WIN32
     STD_PHP_INI_ENTRY(INI_PREFIX INI_PDO_SET_LOCALE_INFO, "2", PHP_INI_ALL, OnUpdateLong, set_locale_info,
                         zend_pdo_sqlsrv_globals, pdo_sqlsrv_globals)
