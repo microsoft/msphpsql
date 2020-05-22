@@ -99,7 +99,8 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
 void core_get_field_common(_Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype
                            sqlsrv_php_type, _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len);
 // returns the ODBC C type constant that matches the PHP type and encoding given
-SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding );
+//SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding );
+SQLSMALLINT default_c_type(_Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSMALLINT sql_type, _In_ SQLSRV_ENCODING encoding);
 void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned int paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
                                  _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits );
 // given a zval and encoding, determine the appropriate sql type, column size, and decimal scale (if appropriate)
@@ -125,7 +126,7 @@ void send_param_streams( _Inout_ sqlsrv_stmt* stmt );
 void sqlsrv_output_param_dtor( _Inout_ zval* data );
 // called when a bound stream parameter is to be destroyed.
 void sqlsrv_stream_dtor( _Inout_ zval* data );
-
+bool is_a_numeric_type(_In_ SQLSMALLINT sql_type);
 }
 
 // constructor for sqlsrv_stmt.  Here so that we can use functions declared earlier.
@@ -501,7 +502,8 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         }
     }
     // determine the ODBC C type
-    c_type = default_c_type( stmt, param_num, param_z, encoding );
+    //c_type = default_c_type( stmt, param_num, param_z, encoding );
+    c_type = default_c_type( stmt, param_num, param_z, sql_type, encoding );
 
     // set the buffer based on the PHP parameter type
     switch( Z_TYPE_P( param_z )){
@@ -544,15 +546,17 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             break;
         case IS_STRING:
             {
-                if ( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC ) {
-                    adjustInputPrecision( param_z, decimal_digits );
+                if (stmt->conn->ce_option.enabled && (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC)) {
+                    adjustInputPrecision(param_z, decimal_digits);
                 }
 
                 buffer = Z_STRVAL_P( param_z );
                 buffer_len = Z_STRLEN_P( param_z );
 
+                bool is_numeric = is_a_numeric_type(sql_type);
+
                 // if the encoding is UTF-8, translate from UTF-8 to UTF-16 (the type variables should have already been adjusted)
-                if( direction == SQL_PARAM_INPUT && encoding == CP_UTF8 ){
+                if( direction == SQL_PARAM_INPUT && encoding == CP_UTF8 && !is_numeric){
 
                     zval wbuffer_z;
                     ZVAL_NULL( &wbuffer_z );
@@ -602,7 +606,9 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                                                        buffer, buffer_len );
 
                     // save the parameter to be adjusted and/or converted after the results are processed
-                    sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ) );
+                    SQLSRV_ENCODING enc = (is_numeric) ? SQLSRV_ENCODING_CHAR : encoding;
+                    //sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ) );
+                    sqlsrv_output_param output_param( param_ref, enc, param_num, static_cast<SQLUINTEGER>( buffer_len ) );
 
                     output_param.saveMetaData(sql_type, column_size, decimal_digits);
 
@@ -2041,7 +2047,8 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
 
 // returns the ODBC C type constant that matches the PHP type and encoding given
 
-SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding )
+//SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding )
+SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSMALLINT sql_type, _In_ SQLSRV_ENCODING encoding )
 {
     SQLSMALLINT sql_c_type = SQL_UNKNOWN_TYPE;
     int php_type = Z_TYPE_P( param_z );
@@ -2079,6 +2086,21 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
             sql_c_type = SQL_C_DOUBLE;
             break;
         case IS_STRING:
+            switch (encoding) {
+            case SQLSRV_ENCODING_CHAR:
+                sql_c_type = SQL_C_CHAR;
+                break;
+            case SQLSRV_ENCODING_BINARY:
+                sql_c_type = SQL_C_BINARY;
+                break;
+            case CP_UTF8:
+                sql_c_type = (is_a_numeric_type(sql_type)) ? SQL_C_CHAR : SQL_C_WCHAR;
+                break;
+            default:
+                THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_PARAMETER_ENCODING, paramno);
+                break;
+            }
+            break;
         case IS_RESOURCE:
             switch( encoding ) {
                 case SQLSRV_ENCODING_CHAR:
