@@ -99,7 +99,6 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
 void core_get_field_common(_Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype
                            sqlsrv_php_type, _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len);
 // returns the ODBC C type constant that matches the PHP type and encoding given
-//SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding );
 SQLSMALLINT default_c_type(_Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSMALLINT sql_type, _In_ SQLSRV_ENCODING encoding);
 void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned int paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
                                  _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits );
@@ -502,8 +501,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         }
     }
     // determine the ODBC C type
-    //c_type = default_c_type( stmt, param_num, param_z, encoding );
-    c_type = default_c_type( stmt, param_num, param_z, sql_type, encoding );
+    c_type = default_c_type(stmt, param_num, param_z, sql_type, encoding);
 
     // set the buffer based on the PHP parameter type
     switch( Z_TYPE_P( param_z )){
@@ -606,9 +604,9 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                                                        buffer, buffer_len );
 
                     // save the parameter to be adjusted and/or converted after the results are processed
+                    // no need to use wide chars for numeric types
                     SQLSRV_ENCODING enc = (is_numeric) ? SQLSRV_ENCODING_CHAR : encoding;
-                    //sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ) );
-                    sqlsrv_output_param output_param( param_ref, enc, param_num, static_cast<SQLUINTEGER>( buffer_len ) );
+                    sqlsrv_output_param output_param(param_ref, enc, param_num, static_cast<SQLUINTEGER>(buffer_len));
 
                     output_param.saveMetaData(sql_type, column_size, decimal_digits);
 
@@ -2047,7 +2045,6 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
 
 // returns the ODBC C type constant that matches the PHP type and encoding given
 
-//SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding )
 SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSMALLINT sql_type, _In_ SQLSRV_ENCODING encoding )
 {
     SQLSMALLINT sql_c_type = SQL_UNKNOWN_TYPE;
