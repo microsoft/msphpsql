@@ -544,7 +544,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             break;
         case IS_STRING:
             {
-                if (stmt->conn->ce_option.enabled && (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC)) {
+                if (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC) {
                     adjustInputPrecision(param_z, decimal_digits);
                 }
 
