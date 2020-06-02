@@ -64,7 +64,10 @@ struct col_cache {
     }
 };
 
-const int INITIAL_FIELD_STRING_LEN = 2048;          // base allocation size when retrieving a string field
+const int   INITIAL_FIELD_STRING_LEN = 2048;              // base allocation size when retrieving a string field
+
+const int   SQL_SERVER_DECIMAL_MAXIMUM_PRECISION = 38;    // 38 is the maximum length of a stringified decimal number
+const char  DECIMAL_POINT = '.';
 
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
 const unsigned int UTF8_MIDBYTE_MASK = 0xc0;
@@ -107,6 +110,7 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
                        _Out_ SQLSMALLINT& sql_type );
 void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
+void round_up_decimal_numbers(_Inout_ std::string& str, _In_ SQLSMALLINT decimals_places);
 void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len);
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt );
 void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
@@ -117,7 +121,8 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding,
                                         _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits,
                                         _Out_writes_(buffer_len) SQLPOINTER& buffer, _Out_ SQLLEN& buffer_len );
-void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits );
+// void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits );
+void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits);
 void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param );
 // send all the stream data
 void send_param_streams( _Inout_ sqlsrv_stmt* stmt );
@@ -493,7 +498,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         // if the sql type is unknown, then set the default based on the PHP type passed in
         if( sql_type == SQL_UNKNOWN_TYPE ){
             default_sql_type( stmt, param_num, param_z, encoding, sql_type );
-        }
+		}
 
         // if the size is unknown, then set the default based on the PHP type passed in
         if( column_size == SQLSRV_UNKNOWN_SIZE ){
@@ -544,8 +549,13 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             break;
         case IS_STRING:
             {
+                // With AE, the precision of the decimal or numeric inputs have to match exactly as defined in the columns.
+                // Without AE, the derived default sql types will not be this specific. Thus, if sql_type is SQL_DECIMAL 
+                // or SQL_NUMERIC, the user must have clearly specified it (using the SQLSRV driver) as SQL_DECIMAL or SQL_NUMERIC.
+                // In either case, the input passed into SQLBindParam requires matching scale (i.e., number of decimal digits).
                 if (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC) {
-                    adjustInputPrecision(param_z, decimal_digits);
+                    adjustDecimalPrecision(param_z, decimal_digits);
+                    //adjustInputPrecision(param_z, decimal_digits);
                 }
 
                 buffer = Z_STRVAL_P( param_z );
@@ -2288,14 +2298,14 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
     // Likewise, if decimals_places is larger than the field scale, decimals_places wil be ignored. This is to ensure the
     // number of decimals adheres to the column field scale. If smaller, the output value may be rounded up.
     //
-    // Note: it's possible that the decimal data does not contain a decimal dot because the field scale is 0.
-    // Thus, first check if the decimal dot exists. If not, no formatting necessary, regardless of
+    // Note: it's possible that the decimal data does not contain a decimal point because the field scale is 0.
+    // Thus, first check if the decimal point exists. If not, no formatting necessary, regardless of
     // format_decimals and decimals_places
     //
     std::string str = field_value;
-    size_t pos = str.find_first_of('.');
+    size_t pos = str.find_first_of(DECIMAL_POINT);
 
-    // The decimal dot is not found, simply return
+    // The decimal point is not found, simply return
     if (pos == std::string::npos) {
         return;
     }
@@ -2305,107 +2315,26 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
         num_decimals = field_scale;
     }
 
-    // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
-    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is
-    // followed by 5 or above.
+    // First check if it's a negative number. Also, add the leading zero if not exists
+    bool is_negative = (str[0] == '-');
+    size_t dotpos = (is_negative) ? 1 : 0;
 
-    bool isNegative = false;
-
-    // If negative, remove the minus sign for now so as not to complicate the rounding process
-    if (str[0] == '-') {
-        isNegative = true;
-        std::ostringstream oss;
-        oss << str.substr(1);
-        str = oss.str();
-        pos = str.find_first_of('.');
+    if (str[dotpos] == '.') {
+        str.insert(dotpos, 1, '0');
     }
 
-    // Adds the leading zero if not exists
-    if (pos == 0) {
-        std::ostringstream oss;
-        oss << '0' << str;
-        str = oss.str();
-        pos++;
-    }
+    // If no need to adjust decimal places, skip formatting
+    if (decimals_places != NO_CHANGE_DECIMAL_PLACES) {
+        // Start formatting - use the substring without the minus sign so as not to complicate the rounding process
+        if (is_negative) {
+            str = str.substr(1);
+        }
 
-    if (num_decimals == NO_CHANGE_DECIMAL_PLACES) {
+        round_up_decimal_numbers(str, num_decimals);
+
         // Add the minus sign back if negative
-        if (isNegative) {
-            std::ostringstream oss;
-            oss << '-' << str.substr(0);
-            str = oss.str();
-        }
-    } else {
-        // Start formatting
-        size_t last = 0;
-        if (num_decimals == 0) {
-            // Chop all decimal digits, including the decimal dot
-            size_t pos2 = pos + 1;
-            short n = str[pos2] - '0';
-            if (n >= 5) {
-                // Start rounding up - starting from the digit left of the dot all the way to the first digit
-                bool carry_over = true;
-                for (short p = pos - 1; p >= 0 && carry_over; p--) {
-                    n = str[p] - '0';
-                    if (n == 9) {
-                        str[p] = '0' ;
-                        carry_over = true;
-                    }
-                    else {
-                        n++;
-                        carry_over = false;
-                        str[p] = '0' + n;
-                    }
-                }
-                if (carry_over) {
-                    std::ostringstream oss;
-                    oss << '1' << str.substr(0, pos);
-                    str = oss.str();
-                    pos++;
-                }
-            }
-            last = pos;
-        }
-        else {
-            size_t pos2 = pos + num_decimals + 1;
-            // No need to check if rounding is necessary when pos2 has passed the last digit in the input string
-            if (pos2 < str.length()) {
-                short n = str[pos2] - '0';
-                if (n >= 5) {
-                    // Start rounding up - starting from the digit left of pos2 all the way to the first digit
-                    bool carry_over = true;
-                    for (short p = pos2 - 1; p >= 0 && carry_over; p--) {
-                        if (str[p] == '.') { // Skip the dot
-                            continue;
-                        }
-                        n = str[p] - '0';
-                        if (n == 9) {
-                            str[p] = '0' ;
-                            carry_over = true;
-                        }
-                        else {
-                            n++;
-                            carry_over = false;
-                            str[p] = '0' + n;
-                        }
-                    }
-                    if (carry_over) {
-                        std::ostringstream oss;
-                        oss << '1' << str.substr(0, pos2);
-                        str = oss.str();
-                        pos2++;
-                    }
-                }
-            }
-            last = pos2;
-        }
-        // Add the minus sign back if negative
-        if (isNegative) {
-            std::ostringstream oss;
-            oss << '-' << str.substr(0, last);
-            str = oss.str();
-        } else {
-            str = str.substr(0, last);
+        if (is_negative) {
+            str.insert(0, 1, '-');
         }
     }
 
@@ -2986,6 +2915,200 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     }
 }
 
+void round_up_decimal_numbers(_Inout_ std::string& str, _In_ SQLSMALLINT num_decimals)
+{
+    // This helper method assumes the number in 'str' is not negative. Remove the minus sign first before invoking this.
+    // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
+    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is
+    // followed by 5 or above.
+    size_t pos = str.find_first_of(DECIMAL_POINT);
+
+    // The decimal point is not found, simply return
+    if (pos == std::string::npos) {
+        return;
+    }
+
+    size_t last = 0;
+    if (num_decimals == 0) {
+        // Chop all decimal digits, including the decimal point
+        size_t pos2 = pos + 1;
+        short n = str[pos2] - '0';
+        if (n >= 5) {
+            // Start rounding up - starting from the digit left of the point all the way to the first digit
+            bool carry_over = true;
+            for (short p = pos - 1; p >= 0 && carry_over; p--) {
+                n = str[p] - '0';
+                if (n == 9) {
+                    str[p] = '0';
+                    carry_over = true;
+                }
+                else {
+                    n++;
+                    carry_over = false;
+                    str[p] = '0' + n;
+                }
+            }
+            if (carry_over) {
+                std::ostringstream oss;
+                oss << '1' << str.substr(0, pos);
+                str = oss.str();
+                pos++;
+            }
+        }
+        last = pos;
+    }
+    else {
+        size_t pos2 = pos + num_decimals + 1;
+        // No need to check if rounding is necessary when pos2 has passed the last digit in the input string
+        if (pos2 < str.length()) {
+            short n = str[pos2] - '0';
+            if (n >= 5) {
+                // Start rounding up - starting from the digit left of pos2 all the way to the first digit
+                bool carry_over = true;
+                for (short p = pos2 - 1; p >= 0 && carry_over; p--) {
+                    if (str[p] == '.') { // Skip the point
+                        continue;
+                    }
+                    n = str[p] - '0';
+                    if (n == 9) {
+                        str[p] = '0';
+                        carry_over = true;
+                    }
+                    else {
+                        n++;
+                        carry_over = false;
+                        str[p] = '0' + n;
+                    }
+                }
+                if (carry_over) {
+                    std::ostringstream oss;
+                    oss << '1' << str.substr(0, pos2);
+                    str = oss.str();
+                    pos2++;
+                }
+            }
+        }
+        last = pos2;
+    }
+
+    str = str.substr(0, last);
+}
+
+
+void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits) 
+{
+    char* value = Z_STRVAL_P(param_z);
+    short value_len = Z_STRLEN_P(param_z);
+        
+    // If the length is greater than maxDecimalStrLen, do not convert the string
+    // 6 is derived from: 1 for the decimal point; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
+    //                    1 for sign of scientific exponent; 2 for length of scientific exponent
+    const int MAX_DECIMAL_STRLEN = SQL_SERVER_DECIMAL_MAXIMUM_PRECISION + 6;
+    if (value_len > MAX_DECIMAL_STRLEN) {
+        return;
+    }
+
+    // If it fails converting the input value to a long double, let the server handle it
+    std::stringstream ss(value);
+    long double d = 0;
+    ss >> d;
+
+    if (ss.fail()) {
+        return;
+    }
+
+    // Format the string without the minus or plus sign for round_up_decimal_numbers()
+    bool is_negative = (d < 0);
+    std::string str = value;
+
+    // Find the first digit or decimal point and then check if the input is in scientific notation
+    char digits[] = "0123456789";
+    std::string search = digits;
+    str = str.substr(str.find_first_of(search.append(1, DECIMAL_POINT)));
+    size_t exp_pos = str.find_first_of("Ee");
+
+    if (exp_pos == std::string::npos) {
+        // Round up the decimal number unless decimal point not found
+        char *pt = strchr(value, DECIMAL_POINT);
+        if (pt == NULL) {
+            return;
+        }
+
+        round_up_decimal_numbers(str, decimal_digits);
+    }
+    else {
+        std::string exp = str.substr(exp_pos + 1);
+        // Check if the exponent is valid - because the above conversion may have ignored the exponent
+        // +/- sign is only allowed right after the exp sign
+        size_t found = exp.find_first_of("+-");
+        size_t next = 0;
+        if (found != std::string::npos) {
+            if (found > 0) {
+                return;     // Invalid input, return
+            }
+            next++;
+        }
+        // After that, only digits are allowed
+        found = exp.find_first_not_of(digits, next);
+        if (found != std::string::npos) {
+            return;     // Invalid input, return
+        }
+
+        int power = std::stoi(exp);
+        if (abs(power) > SQL_SERVER_DECIMAL_MAXIMUM_PRECISION) {
+            return;
+        }
+
+        // Chop off the "power" part
+        std::string number = str.erase(exp_pos);
+        if (power != 0) {
+            size_t pos = number.find_first_of(DECIMAL_POINT);
+            short num_decimals = number.length();           // Initialize the number of decimals to the number of digits
+            if (pos == std::string::npos) {
+                pos = exp_pos;                              // The decimal point not found, use the exp sign position
+            }
+            else {
+                num_decimals = exp_pos - pos - 1;           // Set number of decimals only if decimal point is found
+                number.erase(pos, 1);                       // Remove the existing decimal point
+            }
+
+            // Insert the decimal point in the new position
+            if (power > 0) {                
+                if (num_decimals <= power) {
+                    return;                                 // The result will be a whole number, do nothing and return
+                }
+                number.insert(pos + power, 1, DECIMAL_POINT);
+            }
+            else {
+                // The negative "power" part shows exactly how many places to move the decimal point.
+                // Whether to pad zeroes depending on the original position of the decimal point pos.
+                short newpos = pos + power;                     // If newpos is negative or zero, pad zeroes
+
+                if (newpos <= 0) {
+                    number.insert(0, 2 + abs(newpos), '0');     // The size of '0.' + number of zeroes
+                    number[1] = DECIMAL_POINT;                  // Replace '0' with decimal point
+                }
+                else {
+                    number.insert(newpos, 1, DECIMAL_POINT);
+                }
+            }
+        }
+        str.assign(number);
+
+        round_up_decimal_numbers(str, decimal_digits);
+    }
+
+    // Add the minus sign back if negative
+    if (is_negative) {
+        str.insert(0, 1, '-');
+    }
+
+    zend_string* zstr = zend_string_init(str.c_str(), str.length(), 0);
+    zend_string_release(Z_STR_P(param_z));
+    ZVAL_NEW_STR(param_z, zstr);
+}
+
+/*
 void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits ) {
     // 38 is the maximum length of a stringified decimal number
     size_t maxDecimalPrecision = 38;
@@ -3133,6 +3256,7 @@ void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digit
         }
     }
 }
+*/
 
 // output parameters have their reference count incremented so that they do not disappear
 // while the query is executed and processed.  They are saved in the statement so that
