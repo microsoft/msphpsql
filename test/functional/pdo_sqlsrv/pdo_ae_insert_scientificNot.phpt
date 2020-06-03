@@ -25,7 +25,7 @@ function testErrorCases($conn)
     $expected = '*Invalid character value for cast specification';
 
     $tsql = "INSERT INTO $tableName (Column1) VALUES (?)";   
-    $input = ".1e-0.1.";
+    $input = ".1e-0+1.";
 
     $stmt = $conn->prepare($tsql);
     $stmt->bindParam(1, $input);
@@ -38,7 +38,7 @@ function testErrorCases($conn)
         }
     }  
     
-    $input = "10e0.1.";
+    $input = "10E+0.1.";
     try {
         $stmt->execute();
         echo "Expect $input to fail";

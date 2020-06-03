@@ -64,11 +64,10 @@ struct col_cache {
     }
 };
 
-const int   INITIAL_FIELD_STRING_LEN = 2048;              // base allocation size when retrieving a string field
+const int INITIAL_FIELD_STRING_LEN = 2048;          // base allocation size when retrieving a string field
 
-const int   SQL_SERVER_DECIMAL_MAXIMUM_PRECISION = 38;    // 38 is the maximum length of a stringified decimal number
 const char  DECIMAL_POINT = '.';
-
+const int   SQL_SERVER_DECIMAL_MAXIMUM_PRECISION = 38;            // 38 is the maximum length of a stringified decimal number
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
 const unsigned int UTF8_MIDBYTE_MASK = 0xc0;
 const unsigned int UTF8_MIDBYTE_TAG = 0x80;
@@ -121,7 +120,6 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding,
                                         _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits,
                                         _Out_writes_(buffer_len) SQLPOINTER& buffer, _Out_ SQLLEN& buffer_len );
-// void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits );
 void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits);
 void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param );
 // send all the stream data
@@ -555,7 +553,6 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                 // In either case, the input passed into SQLBindParam requires matching scale (i.e., number of decimal digits).
                 if (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC) {
                     adjustDecimalPrecision(param_z, decimal_digits);
-                    //adjustInputPrecision(param_z, decimal_digits);
                 }
 
                 buffer = Z_STRVAL_P( param_z );
@@ -2102,6 +2099,7 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
                 break;
             case CP_UTF8:
                 sql_c_type = (is_a_numeric_type(sql_type)) ? SQL_C_CHAR : SQL_C_WCHAR;
+                //sql_c_type = SQL_C_WCHAR;
                 break;
             default:
                 THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_PARAMETER_ENCODING, paramno);
@@ -2928,7 +2926,6 @@ void round_up_decimal_numbers(_Inout_ std::string& str, _In_ SQLSMALLINT num_dec
         return;
     }
 
-    size_t last = 0;
     if (num_decimals == 0) {
         // Chop all decimal digits, including the decimal point
         size_t pos2 = pos + 1;
@@ -2955,7 +2952,7 @@ void round_up_decimal_numbers(_Inout_ std::string& str, _In_ SQLSMALLINT num_dec
                 pos++;
             }
         }
-        last = pos;
+        str = str.substr(0, pos);
     }
     else {
         size_t pos2 = pos + num_decimals + 1;
@@ -2987,11 +2984,10 @@ void round_up_decimal_numbers(_Inout_ std::string& str, _In_ SQLSMALLINT num_dec
                     pos2++;
                 }
             }
-        }
-        last = pos2;
-    }
 
-    str = str.substr(0, last);
+            str = str.substr(0, pos2);
+        }
+    }
 }
 
 
@@ -3008,13 +3004,17 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
         return;
     }
 
-    // If it fails converting the input value to a long double, let the server handle it
-    std::stringstream ss(value);
+    // If std::stold() succeeds, 'idx' is the position of the first character after the numerical value
     long double d = 0;
-    ss >> d;
-
-    if (ss.fail()) {
-        return;
+    size_t idx;
+    try {
+        d = std::stold(std::string(value), &idx);
+    }
+    catch (const std::logic_error& err) {
+        return;		// invalid input caused the conversion to throw an exception
+    }
+    if (idx < value_len) {
+        return;		// the input contains something else apart from the numerical value 
     }
 
     // Format the string without the minus or plus sign for round_up_decimal_numbers()
@@ -3028,32 +3028,27 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
     size_t exp_pos = str.find_first_of("Ee");
 
     if (exp_pos == std::string::npos) {
-        // Round up the decimal number unless decimal point not found
-        char *pt = strchr(value, DECIMAL_POINT);
-        if (pt == NULL) {
-            return;
+        size_t pos = str.find_first_of(DECIMAL_POINT);
+        if (pos == std::string::npos) {
+            return;     // decimal point not found
+        }
+        else {
+            short num_decimals = str.length() - pos - 1;
+            if (num_decimals == decimal_digits) {
+                return; // number of decimals is the same as required
+            }
         }
 
-        round_up_decimal_numbers(str, decimal_digits);
+        std::string number = str;
+        round_up_decimal_numbers(number, decimal_digits);
+        if (str.compare(number) == 0) {
+            return;     // number has not changed
+        }
+
+        str.assign(number);
     }
     else {
         std::string exp = str.substr(exp_pos + 1);
-        // Check if the exponent is valid - because the above conversion may have ignored the exponent
-        // +/- sign is only allowed right after the exp sign
-        size_t found = exp.find_first_of("+-");
-        size_t next = 0;
-        if (found != std::string::npos) {
-            if (found > 0) {
-                return;     // Invalid input, return
-            }
-            next++;
-        }
-        // After that, only digits are allowed
-        found = exp.find_first_not_of(digits, next);
-        if (found != std::string::npos) {
-            return;     // Invalid input, return
-        }
-
         int power = std::stoi(exp);
         if (abs(power) > SQL_SERVER_DECIMAL_MAXIMUM_PRECISION) {
             return;
@@ -3107,156 +3102,6 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
     zend_string_release(Z_STR_P(param_z));
     ZVAL_NEW_STR(param_z, zstr);
 }
-
-/*
-void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits ) {
-    // 38 is the maximum length of a stringified decimal number
-    size_t maxDecimalPrecision = 38;
-    // 6 is derived from: 1 for '.'; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
-    //                    1 for sign of scientific exponent; 2 for length of scientific exponent
-    // if the length is greater than maxDecimalStrLen, do not change the string
-    size_t maxDecimalStrLen = maxDecimalPrecision + 6;
-    if (Z_STRLEN_P(param_z) > maxDecimalStrLen) {
-        return;
-    }
-    std::vector<size_t> digits;
-    unsigned char* ptr = reinterpret_cast<unsigned char*>(ZSTR_VAL( Z_STR_P( param_z )));
-    bool isNeg = false;
-    bool isScientificNot = false;
-    char scientificChar = ' ';
-    short scientificExp = 0;
-    if( strchr( reinterpret_cast<char*>( ptr ), 'e' ) || strchr( reinterpret_cast<char*>( ptr ), 'E' )){
-        isScientificNot = true;
-    }
-    // parse digits in param_z into the vector digits
-    if( *ptr == '+' || *ptr == '-' ){
-        if( *ptr == '-' ){
-            isNeg = true;
-        }
-        ptr++;
-    }
-    short numInt = 0;
-    short numDec = 0;
-    while( isdigit( *ptr )){
-        digits.push_back( *ptr - '0' );
-        ptr++;
-        numInt++;
-    }
-    if( *ptr == '.' ){
-        ptr++;
-        if( !isScientificNot ){
-            while( isdigit( *ptr ) && numDec < decimal_digits + 1 ){
-                digits.push_back( *ptr - '0' );
-                ptr++;
-                numDec++;
-            }
-            // make sure the rest of the number are digits
-            while( isdigit( *ptr )){
-                ptr++;
-            }
-        }
-        else {
-            while( isdigit( *ptr )){
-                digits.push_back( *ptr - '0' );
-                ptr++;
-                numDec++;
-            }
-        }
-    }
-    if( isScientificNot ){
-        if ( *ptr == 'e' || *ptr == 'E' ) {
-            scientificChar = *ptr;
-        }
-        ptr++;
-        bool isNegExp = false;
-        if( *ptr == '+' || *ptr == '-' ){
-            if( *ptr == '-' ){
-                isNegExp = true;
-            }
-            ptr++;
-        }
-        while( isdigit( *ptr )){
-            scientificExp = scientificExp * 10 + ( *ptr - '0' );
-            ptr++;
-        }
-        SQLSRV_ASSERT( scientificExp <= maxDecimalPrecision, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
-        if( isNegExp ){
-            scientificExp = scientificExp * -1;
-        }
-    }
-    // if ptr is not pointing to a null terminator at this point, that means the decimal string input is invalid
-    // do not change the string and let SQL Server handle the invalid decimal string
-    if ( *ptr != '\0' ) {
-        return;
-    }
-    // if number of decimal is less than the exponent, that means the number is a whole number, so no need to adjust the precision
-    if( numDec > scientificExp ){
-        int decToRemove = numDec - scientificExp - decimal_digits;
-        if( decToRemove > 0 ){
-            bool carryOver = false;
-            short backInd = 0;
-            // pop digits from the vector until there is only 1 more decimal place than required decimal_digits
-            while( decToRemove != 1 && !digits.empty() ){
-                digits.pop_back();
-                decToRemove--;
-            }
-            if( !digits.empty() ){
-                // check if the last digit to be popped is greater than 5, if so, the digit before it needs to round up
-                carryOver = digits.back() >= 5;
-                digits.pop_back();
-                backInd = static_cast<short>(digits.size() - 1);
-                // round up from the end until no more carry over
-                while( carryOver && backInd >= 0 ){
-                    if( digits.at( backInd ) != 9 ){
-                        digits.at( backInd )++;
-                        carryOver = false;
-                    }
-                    else{
-                        digits.at( backInd ) = 0;
-                    }
-                    backInd--;
-                }
-            }
-            std::ostringstream oss;
-            if( isNeg ){
-                oss << '-';
-            }
-            // insert 1 if carry over persist all the way to the beginning of the number
-            if( carryOver && backInd == -1 ){
-                oss << 1;
-            }
-            if( digits.empty() && !carryOver ){
-                oss << 0;
-            }
-            else{
-                short i = 0;
-                for( i; i < numInt && i < digits.size(); i++ ){
-                    oss << digits[i];
-                }
-                // fill string with 0 if the number of digits in digits is less then numInt
-                if( i < numInt ){
-                    for( i; i < numInt; i++ ){
-                        oss << 0;
-                    }
-                }
-                if( numInt < digits.size() ){
-                    oss << '.';
-                    for( i; i < digits.size(); i++ ){
-                        oss << digits[i];
-                    }
-                }
-                if( scientificExp != 0 ){
-                    oss << scientificChar << std::to_string( scientificExp );
-                }
-            }
-            std::string str = oss.str();
-            zend_string* zstr = zend_string_init( str.c_str(), str.length(), 0 );
-            zend_string_release( Z_STR_P( param_z ));
-            ZVAL_NEW_STR( param_z, zstr );
-        }
-    }
-}
-*/
 
 // output parameters have their reference count incremented so that they do not disappear
 // while the query is executed and processed.  They are saved in the statement so that

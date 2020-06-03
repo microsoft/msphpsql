@@ -21,7 +21,6 @@ function testErrorCases($conn)
     AE\createTable($conn, $tableName, $colMeta);
 
     $expected = '*Invalid character value for cast specification';
-
     $tsql = "INSERT INTO $tableName (Column1) VALUES (?)";   
     $input = "- 0E1.3";
     $param = array(
@@ -37,7 +36,7 @@ function testErrorCases($conn)
         echo "Expect $input to fail";
     }  
     
-    $input = "123E345e";
+    $input = "8e0-2";
     if (!sqlsrv_execute($stmt)) {
         if (!fnmatch($expected, sqlsrv_errors()[0]['message'])) {
             var_dump(sqlsrv_errors());
@@ -46,7 +45,7 @@ function testErrorCases($conn)
         echo "Expect $input to fail";
     }     
 
-    $input = "-19e0-32";
+    $input = "-19e032+"; 
     if (!sqlsrv_execute($stmt)) {
         if (!fnmatch($expected, sqlsrv_errors()[0]['message'])) {
             var_dump(sqlsrv_errors());
@@ -54,7 +53,6 @@ function testErrorCases($conn)
     } else {
         echo "Expect $input to fail";
     }     
-    
     dropTable($conn, $tableName);
 }
 
