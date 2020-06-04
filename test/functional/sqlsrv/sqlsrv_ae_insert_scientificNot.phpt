@@ -53,6 +53,15 @@ function testErrorCases($conn)
     } else {
         echo "Expect $input to fail";
     }     
+    $input = "5678.5678.5678"; 
+    $expected = "*String data, right truncation";
+    if (!sqlsrv_execute($stmt)) {
+        if (!fnmatch($expected, sqlsrv_errors()[0]['message'])) {
+            var_dump(sqlsrv_errors());
+        }
+    } else {
+        echo "Expect $input to fail";
+    }     
     dropTable($conn, $tableName);
 }
 

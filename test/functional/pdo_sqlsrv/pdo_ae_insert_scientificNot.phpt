@@ -57,6 +57,16 @@ function testErrorCases($conn)
             echo $e->getMessage();
         }
     }  
+    $input = "1234.1234.1234"; 
+    $expected = "*String data, right truncation";
+    try {
+        $stmt->execute();
+        echo "Expect $input to fail";
+    } catch (PDOException $e) {   
+        if (!fnmatch($expected, $e->GetMessage())) {
+            echo $e->getMessage();
+        }
+    }  
     dropTable($conn, $tableName);
 }
 
