@@ -236,11 +236,12 @@ if ($t !== $u) {
     die("Round trip failed.");
 }
 
+// $t is an invalid utf-8 string, expect the procedure to fail
 $t = pack('H*', 'ffffffff');
 
 $sqlType =
 $params = array(array(&$t, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')));
-$query = "{call IntDoubleProc(?)}";
+$query = "{call Utf8InOutProc(?)}";
 $s = AE\executeQueryParams($c, $query, $params, true, "no error from an invalid utf-8 string");
 
 dropTable($c, $tableName);

@@ -56,52 +56,53 @@ function testErrorCases($conn)
     dropTable($conn, $tableName);
 }
 
-try {
-    $conn = AE\connect();
-    
-    testErrorCases($conn);
-    
-    $tbname = "decimalTable";
-    foreach ($numSets as $testName => $numSet) {
-        echo "\n$testName\n";
-        foreach ($numSet as $input) {
-            $numInt = ceil(log10(abs($input) + 1));
-            $decimalTypes = array();
-            foreach ($scalesToTest as $scale) {
-                if ($scale < 39 - $numInt) {
-                    array_push($decimalTypes, new AE\ColumnMeta("decimal(38, $scale)", "c$scale"));
-                }
-            }
-            if (empty($decimalTypes)) {
-                $decimalTypes = array(new AE\ColumnMeta("decimal(38, 0)", "c0"));
-            }
-            AE\createTable($conn, $tbname, $decimalTypes);
+$conn = AE\connect();
 
-            $insertValues = array();
-            foreach ($decimalTypes as $decimalType) {
-                $scale = intval(ltrim($decimalType->colName, "c"));
-                array_push($insertValues, array($input, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_DECIMAL(38, $scale)));
-            }
+testErrorCases($conn);
 
-            $insertSql = "INSERT INTO $tbname VALUES(" . AE\getSeqPlaceholders(count($insertValues)) . ")";
-            $stmt = sqlsrv_prepare($conn, $insertSql, $insertValues);
-            sqlsrv_execute($stmt);
-
-            $stmt = sqlsrv_query($conn, "SELECT * FROM $tbname");
-            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-            foreach ($row as $key => $value) {
-                if ($value != 0) {
-                    echo "$key: $value\n";
-                }
+$tbname = "decimalTable";
+foreach ($numSets as $testName => $numSet) {
+    echo "\n$testName\n";
+    foreach ($numSet as $input) {
+        $numInt = ceil(log10(abs($input) + 1));
+        $decimalTypes = array();
+        foreach ($scalesToTest as $scale) {
+            if ($scale < 39 - $numInt) {
+                array_push($decimalTypes, new AE\ColumnMeta("decimal(38, $scale)", "c$scale"));
             }
-            sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
         }
+        if (empty($decimalTypes)) {
+            $decimalTypes = array(new AE\ColumnMeta("decimal(38, 0)", "c0"));
+        }
+        AE\createTable($conn, $tbname, $decimalTypes);
+
+        $insertValues = array();
+        foreach ($decimalTypes as $decimalType) {
+            $scale = intval(ltrim($decimalType->colName, "c"));
+            array_push($insertValues, array($input, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_DECIMAL(38, $scale)));
+        }
+
+        $insertSql = "INSERT INTO $tbname VALUES(" . AE\getSeqPlaceholders(count($insertValues)) . ")";
+        $stmt = sqlsrv_prepare($conn, $insertSql, $insertValues);
+        if (!sqlsrv_execute($stmt)) {
+            fatalError("Failed to execute $insertSql\n");
+        }
+
+        $stmt = sqlsrv_query($conn, "SELECT * FROM $tbname");
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        if (empty($row)) {
+            fatalError("Empty array is returned\n");
+        }
+        foreach ($row as $key => $value) {
+            if ($value != 0) {
+                echo "$key: $value\n";
+            }
+        }
+        sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
     }
-    dropTable($conn, $tbname);
-    sqlsrv_close($conn);
-} catch (PDOException $e) {
-    echo $e->getMessage();
 }
+dropTable($conn, $tbname);
+sqlsrv_close($conn);
 
 ?>
 --EXPECT--
