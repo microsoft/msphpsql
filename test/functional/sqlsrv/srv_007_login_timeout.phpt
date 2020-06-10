@@ -7,8 +7,8 @@ Intentionally provide an invalid server name and set LoginTimeout. Verify the ti
 --FILE--
 <?php
 
-require_once('MsSetup.inc');
-$serverName = "WRONG_SERVER_NAME";
+require_once('MsCommon.inc');
+$serverName = isWindows()? 'WRONG_SERVER_NAME' : '1.2.3.4';
 
 // Based on the following reference, a login timeout of less than approximately 10 seconds
 // is not reliable. The defaut is 15 seconds so we fix it at 20 seconds.
