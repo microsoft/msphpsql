@@ -497,7 +497,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         // if the sql type is unknown, then set the default based on the PHP type passed in
         if( sql_type == SQL_UNKNOWN_TYPE ){
             default_sql_type( stmt, param_num, param_z, encoding, sql_type );
-		}
+        }
 
         // if the size is unknown, then set the default based on the PHP type passed in
         if( column_size == SQLSRV_UNKNOWN_SIZE ){
@@ -2340,7 +2340,7 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
         if (num_decimals > scale) {
             last_pos = round_up_decimal_numbers(buffer, (pt - src) + offset, scale, offset, last_pos);
         }
-    }
+    }  
 
     // Remove the extra white space if not used
     char *p = buffer;
@@ -2929,46 +2929,41 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     }
 }
 
-int round_up_decimal_numbers(_Inout_ char* buffer, _In_ short decimal_pos, _In_ short num_decimals, _In_ short offset, _In_ short lastpos)
+// output parameters have their reference count incremented so that they do not disappear
+// while the query is executed and processed.  They are saved in the statement so that
+// their reference count may be decremented later (after results are processed)
+
+void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param )
 {
-    // This helper method assumes the 'buffer' has some extra blank spaces at the beginning without the minus '-' sign.
-    // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
-    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is
-    // followed by 5 or above.
+    HashTable* param_ht = Z_ARRVAL( stmt->output_params );
+    zend_ulong paramno = static_cast<zend_ulong>( param.param_num );
+    core::sqlsrv_zend_hash_index_update_mem(*stmt, param_ht, paramno, &param, sizeof( sqlsrv_output_param ));
+    Z_TRY_ADDREF_P( param.param_z );   // we have a reference to the param
+}
 
-    short pos = decimal_pos + num_decimals + 1;
-    if (pos < lastpos) {
-        short n = buffer[pos] - '0';
-        if (n >= 5) {
-            // Start rounding up - starting from the digit left of pos all the way to the first digit
-            bool carry_over = true;
-            for (short p = pos - 1; p >= offset && carry_over; p--) {
-                if (buffer[p] == DECIMAL_POINT) {
-                    continue;
-                }
-                n = buffer[p] - '0';
-                carry_over = (++n == 10);
-                if (n == 10) {
-                    n = 0;
-                }
-                buffer[p] = '0' + n;
-            }
-            if (carry_over) {
-                buffer[offset - 1] = '1';
-            }
-        }
-        if (num_decimals == 0) {
-            buffer[decimal_pos] = '\0';
-            return decimal_pos;
-        }
-        else {
-            buffer[pos] = '\0';
-            return pos;
-        }
-    } 
 
-    // Do nothing and just return
-    return lastpos;
+// send all the stream data
+
+void send_param_streams( _Inout_ sqlsrv_stmt* stmt )
+{
+    while( core_sqlsrv_send_stream_packet( stmt )) { }
+}
+
+
+// called by Zend for each parameter in the sqlsrv_stmt::output_params hash table when it is cleaned/destroyed
+void sqlsrv_output_param_dtor( _Inout_ zval* data )
+{
+    sqlsrv_output_param *output_param = static_cast<sqlsrv_output_param*>( Z_PTR_P( data ));
+    zval_ptr_dtor( output_param->param_z ); // undo the reference to the string we will no longer hold
+    sqlsrv_free( output_param );
+}
+
+// called by Zend for each stream in the sqlsrv_stmt::param_streams hash table when it is cleaned/destroyed
+void sqlsrv_stream_dtor( _Inout_ zval* data )
+{
+    sqlsrv_stream* stream_encoding = static_cast<sqlsrv_stream*>( Z_PTR_P( data ));
+    zval_ptr_dtor( stream_encoding->stream_z ); // undo the reference to the stream we will no longer hold
+    sqlsrv_free( stream_encoding );
 }
 
 void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits) 
@@ -3124,41 +3119,47 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
     ZVAL_NEW_STR(param_z, zstr);
 }
 
-// output parameters have their reference count incremented so that they do not disappear
-// while the query is executed and processed.  They are saved in the statement so that
-// their reference count may be decremented later (after results are processed)
-
-void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param )
+int round_up_decimal_numbers(_Inout_ char* buffer, _In_ short decimal_pos, _In_ short num_decimals, _In_ short offset, _In_ short lastpos)
 {
-    HashTable* param_ht = Z_ARRVAL( stmt->output_params );
-    zend_ulong paramno = static_cast<zend_ulong>( param.param_num );
-    core::sqlsrv_zend_hash_index_update_mem(*stmt, param_ht, paramno, &param, sizeof( sqlsrv_output_param ));
-    Z_TRY_ADDREF_P( param.param_z );   // we have a reference to the param
+    // This helper method assumes the 'buffer' has some extra blank spaces at the beginning without the minus '-' sign.
+    // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
+    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is
+    // followed by 5 or above.
+
+    short pos = decimal_pos + num_decimals + 1;
+    if (pos < lastpos) {
+        short n = buffer[pos] - '0';
+        if (n >= 5) {
+            // Start rounding up - starting from the digit left of pos all the way to the first digit
+            bool carry_over = true;
+            for (short p = pos - 1; p >= offset && carry_over; p--) {
+                if (buffer[p] == DECIMAL_POINT) {
+                    continue;
+                }
+                n = buffer[p] - '0';
+                carry_over = (++n == 10);
+                if (n == 10) {
+                    n = 0;
+                }
+                buffer[p] = '0' + n;
+            }
+            if (carry_over) {
+                buffer[offset - 1] = '1';
+            }
+        }
+        if (num_decimals == 0) {
+            buffer[decimal_pos] = '\0';
+            return decimal_pos;
+        }
+        else {
+            buffer[pos] = '\0';
+            return pos;
+        }
+    } 
+
+    // Do nothing and just return
+    return lastpos;
 }
 
-
-// send all the stream data
-
-void send_param_streams( _Inout_ sqlsrv_stmt* stmt )
-{
-    while( core_sqlsrv_send_stream_packet( stmt )) { }
-}
-
-
-// called by Zend for each parameter in the sqlsrv_stmt::output_params hash table when it is cleaned/destroyed
-void sqlsrv_output_param_dtor( _Inout_ zval* data )
-{
-    sqlsrv_output_param *output_param = static_cast<sqlsrv_output_param*>( Z_PTR_P( data ));
-    zval_ptr_dtor( output_param->param_z ); // undo the reference to the string we will no longer hold
-    sqlsrv_free( output_param );
-}
-
-// called by Zend for each stream in the sqlsrv_stmt::param_streams hash table when it is cleaned/destroyed
-void sqlsrv_stream_dtor( _Inout_ zval* data )
-{
-    sqlsrv_stream* stream_encoding = static_cast<sqlsrv_stream*>( Z_PTR_P( data ));
-    zval_ptr_dtor( stream_encoding->stream_z ); // undo the reference to the stream we will no longer hold
-    sqlsrv_free( stream_encoding );
-}
 
 }
