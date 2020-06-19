@@ -153,7 +153,7 @@ function runInOutProcWithErrors($conn, $utf8_2)
 
 function runIntDoubleProcWithErrors($conn)
 {
-    $sql = "{call pdoIntDoubleProc(?)}";
+    $sql = "{call pdoUTF8InOutProc(?)}";
     $val = pack('H*', 'ffffffff');
 
     try {

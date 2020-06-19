@@ -6,51 +6,54 @@ Test for inserting into and retrieving from decimal columns of different scale
 <?php
 require_once('MsHelper.inc');
 
-$num = array("-10.0", "13.33", "-191.78464696202265", "833.33", "-850.00000000000006", "851.64835164835168", "-316053.16053160531", "505505.5055055055055055055", "-1535020.0615", "7501300.675013006750130067501300675", "-7540010.067540010067540010067540010067", "7540450.0675404500675404500675404500", "-820012820012820.01282001282001282001282", "1122551511225515.1122", "-1234567892112345678912.3456", "123456789012346261234567890123.4629", "-13775323913775323913775323913775323913");
-$frac = array("-0.000", "0.100", "-0.1333", "0.019178464696202265", "-0.083333", "0.085000000000000006", "-0.085164835164835168", "0.0000316", "-0.00005", "0.0000153502", "-0.0000075013", "0.00000754001", "-0.00000754045", "0.000000000008200", "-0.00000000000000112255", "0.00000000000000000000123456789", "-0.00000000000000000000000123456789012346", "0.00000000000000000000000000000001377532");
+$num = array("-10.0", "13.33", "-191.78464696202265", "833.33", "-850.00000000000006", "851.64835164835168", "-316053.16053160531", "505505.5055055055055055055", "-1535020.0615", "7501300.675013006750130067501300675", "-7540010.067540010067540010067540010067", "7540450.0675404500675404500675404500", "-820012820012820.01282001282001282001282", "1122551511225515.1122", "-1234567892112345678912.3456", "123456789012346261234567890123.4629", "-13775323913775323913775323913775323913", "9876");
+$frac = array("-0.000", "0.100", "-0.1333", "0.019178464696202265", "-0.083333", "0.085000000000000006", "-0.085164835164835168", "0.0000316", "-0.00005", "0.0000153502", "-0.0000075013", "0.00000754001", "-0.00000754045", "0.000000000008200", "-0.00000000000000112255", "0.00000000000000000000123456789", "-0.00000000000000000000000123456789012346", "0.00000000000000000000000000000001377532", "-0.99");
 $numSets = array("Testing numbers greater than 1 or less than -1:" => $num,
                  "Testing numbers between 1 and -1:" => $frac);
 $scalesToTest = array(0, 1, 2, 3, 4, 5, 7, 9, 19, 28, 38);
 
-try {
-    $conn = AE\connect();
-    $tbname = "decimalTable";
-    foreach ($numSets as $testName => $numSet) {
-        echo "\n$testName\n";
-        foreach ($numSet as $input) {
-            $numInt = ceil(log10(abs($input) + 1));
-            $decimalTypes = array();
-            foreach ($scalesToTest as $scale) {
-                if ($scale < 39 - $numInt) {
-                    array_push($decimalTypes, new AE\ColumnMeta("decimal(38, $scale)", "c$scale"));
-                }
+$conn = AE\connect();
+$tbname = "decimalTable";
+foreach ($numSets as $testName => $numSet) {
+    echo "\n$testName\n";
+    foreach ($numSet as $input) {
+        $numInt = ceil(log10(abs($input) + 1));
+        $decimalTypes = array();
+        foreach ($scalesToTest as $scale) {
+            if ($scale < 39 - $numInt) {
+                array_push($decimalTypes, new AE\ColumnMeta("decimal(38, $scale)", "c$scale"));
             }
-            if (empty($decimalTypes)) {
-                $decimalTypes = array(new AE\ColumnMeta("decimal(38, 0)", "c0"));
-            }
-            AE\createTable($conn, $tbname, $decimalTypes);
-
-            $insertValues = array();
-            foreach ($decimalTypes as $decimalType) {
-                $insertValues = array_merge($insertValues, array($decimalType->colName => $input));
-            }
-            AE\insertRow($conn, $tbname, $insertValues);
-
-            $stmt = sqlsrv_query($conn, "SELECT * FROM $tbname");
-            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-            foreach ($row as $key => $value) {
-                if ($value != 0) {
-                    echo "$key: $value\n";
-                }
-            }
-            sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
         }
+        if (empty($decimalTypes)) {
+            $decimalTypes = array(new AE\ColumnMeta("decimal(38, 0)", "c0"));
+        }
+        AE\createTable($conn, $tbname, $decimalTypes);
+
+        $insertValues = array();
+        foreach ($decimalTypes as $decimalType) {
+            $insertValues = array_merge($insertValues, array($decimalType->colName => $input));
+        }
+        $stmt = AE\insertRow($conn, $tbname, $insertValues);
+        if (!$stmt) {
+            var_dump($insertValues);
+            fatalError("Failed to insert the above values\n");
+        }
+
+        $stmt = sqlsrv_query($conn, "SELECT * FROM $tbname");
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        if (empty($row)) {
+            fatalError("Empty array is returned\n");
+        }
+        foreach ($row as $key => $value) {
+            if ($value != 0) {
+                echo "$key: $value\n";
+            }
+        }
+        sqlsrv_query($conn, "TRUNCATE TABLE $tbname");
     }
-    dropTable($conn, $tbname);
-    sqlsrv_close($conn);
-} catch (PDOException $e) {
-    echo $e->getMessage();
 }
+dropTable($conn, $tbname);
+sqlsrv_close($conn);
 
 ?>
 --EXPECT--
@@ -210,6 +213,16 @@ c4: 123456789012346261234567890123.4629
 c5: 123456789012346261234567890123.46290
 c7: 123456789012346261234567890123.4629000
 c0: -13775323913775323913775323913775323913
+c0: 9876
+c1: 9876.0
+c2: 9876.00
+c3: 9876.000
+c4: 9876.0000
+c5: 9876.00000
+c7: 9876.0000000
+c9: 9876.000000000
+c19: 9876.0000000000000000000
+c28: 9876.0000000000000000000000000000
 
 Testing numbers between 1 and -1:
 c1: .1
@@ -305,3 +318,13 @@ c38: .00000000000000000000123456789000000000
 c28: -.0000000000000000000000012346
 c38: -.00000000000000000000000123456789012346
 c38: .00000000000000000000000000000001377532
+c0: -1
+c1: -1.0
+c2: -.99
+c3: -.990
+c4: -.9900
+c5: -.99000
+c7: -.9900000
+c9: -.990000000
+c19: -.9900000000000000000
+c28: -.9900000000000000000000000000

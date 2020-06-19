@@ -66,6 +66,9 @@ struct col_cache {
 
 const int INITIAL_FIELD_STRING_LEN = 2048;          // base allocation size when retrieving a string field
 
+const char  DECIMAL_POINT = '.';
+const int   SQL_SERVER_DECIMAL_MAXIMUM_PRECISION = 38;            // 38 is the maximum length of a stringified decimal number
+
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
 const unsigned int UTF8_MIDBYTE_MASK = 0xc0;
 const unsigned int UTF8_MIDBYTE_TAG = 0x80;
@@ -99,7 +102,7 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
 void core_get_field_common(_Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype
                            sqlsrv_php_type, _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len);
 // returns the ODBC C type constant that matches the PHP type and encoding given
-SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding );
+SQLSMALLINT default_c_type(_Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSMALLINT sql_type, _In_ SQLSRV_ENCODING encoding);
 void default_sql_size_and_scale( _Inout_ sqlsrv_stmt* stmt, _In_opt_ unsigned int paramno, _In_ zval* param_z, _In_ SQLSRV_ENCODING encoding,
                                  _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits );
 // given a zval and encoding, determine the appropriate sql type, column size, and decimal scale (if appropriate)
@@ -107,6 +110,7 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
                        _Out_ SQLSMALLINT& sql_type );
 void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
+int round_up_decimal_numbers(_Inout_ char* buffer, _In_ short decimal_pos, _In_ short decimals_places, _In_ short offset, _In_ short lastpos);
 void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len);
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt );
 void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
@@ -117,7 +121,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z, _In_ SQLULEN paramno, SQLSRV_ENCODING encoding,
                                         _In_ SQLSMALLINT c_type, _In_ SQLSMALLINT sql_type, _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits,
                                         _Out_writes_(buffer_len) SQLPOINTER& buffer, _Out_ SQLLEN& buffer_len );
-void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits );
+void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits);
 void save_output_param_for_later( _Inout_ sqlsrv_stmt* stmt, _Inout_ sqlsrv_output_param& param );
 // send all the stream data
 void send_param_streams( _Inout_ sqlsrv_stmt* stmt );
@@ -125,7 +129,7 @@ void send_param_streams( _Inout_ sqlsrv_stmt* stmt );
 void sqlsrv_output_param_dtor( _Inout_ zval* data );
 // called when a bound stream parameter is to be destroyed.
 void sqlsrv_stream_dtor( _Inout_ zval* data );
-
+bool is_a_numeric_type(_In_ SQLSMALLINT sql_type);
 }
 
 // constructor for sqlsrv_stmt.  Here so that we can use functions declared earlier.
@@ -501,7 +505,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         }
     }
     // determine the ODBC C type
-    c_type = default_c_type( stmt, param_num, param_z, encoding );
+    c_type = default_c_type(stmt, param_num, param_z, sql_type, encoding);
 
     // set the buffer based on the PHP parameter type
     switch( Z_TYPE_P( param_z )){
@@ -544,15 +548,21 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             break;
         case IS_STRING:
             {
-                if ( sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC ) {
-                    adjustInputPrecision( param_z, decimal_digits );
+                // With AE, the precision of the decimal or numeric inputs have to match exactly as defined in the columns.
+                // Without AE, the derived default sql types will not be this specific. Thus, if sql_type is SQL_DECIMAL 
+                // or SQL_NUMERIC, the user must have clearly specified it (using the SQLSRV driver) as SQL_DECIMAL or SQL_NUMERIC.
+                // In either case, the input passed into SQLBindParam requires matching scale (i.e., number of decimal digits).
+                if (sql_type == SQL_DECIMAL || sql_type == SQL_NUMERIC) {
+                    adjustDecimalPrecision(param_z, decimal_digits);
                 }
 
                 buffer = Z_STRVAL_P( param_z );
                 buffer_len = Z_STRLEN_P( param_z );
 
+                bool is_numeric = is_a_numeric_type(sql_type);
+
                 // if the encoding is UTF-8, translate from UTF-8 to UTF-16 (the type variables should have already been adjusted)
-                if( direction == SQL_PARAM_INPUT && encoding == CP_UTF8 ){
+                if( direction == SQL_PARAM_INPUT && encoding == CP_UTF8 && !is_numeric){
 
                     zval wbuffer_z;
                     ZVAL_NULL( &wbuffer_z );
@@ -602,7 +612,9 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                                                        buffer, buffer_len );
 
                     // save the parameter to be adjusted and/or converted after the results are processed
-                    sqlsrv_output_param output_param( param_ref, encoding, param_num, static_cast<SQLUINTEGER>( buffer_len ) );
+                    // no need to use wide chars for numeric types
+                    SQLSRV_ENCODING enc = (is_numeric) ? SQLSRV_ENCODING_CHAR : encoding;
+                    sqlsrv_output_param output_param(param_ref, enc, param_num, static_cast<SQLUINTEGER>(buffer_len));
 
                     output_param.saveMetaData(sql_type, column_size, decimal_digits);
 
@@ -2041,7 +2053,7 @@ bool convert_input_param_to_utf16( _In_ zval* input_param_z, _Inout_ zval* conve
 
 // returns the ODBC C type constant that matches the PHP type and encoding given
 
-SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSRV_ENCODING encoding )
+SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_ zval const* param_z, _In_ SQLSMALLINT sql_type, _In_ SQLSRV_ENCODING encoding )
 {
     SQLSMALLINT sql_c_type = SQL_UNKNOWN_TYPE;
     int php_type = Z_TYPE_P( param_z );
@@ -2079,6 +2091,22 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
             sql_c_type = SQL_C_DOUBLE;
             break;
         case IS_STRING:
+            switch (encoding) {
+            case SQLSRV_ENCODING_CHAR:
+                sql_c_type = SQL_C_CHAR;
+                break;
+            case SQLSRV_ENCODING_BINARY:
+                sql_c_type = SQL_C_BINARY;
+                break;
+            case CP_UTF8:
+                sql_c_type = (is_a_numeric_type(sql_type)) ? SQL_C_CHAR : SQL_C_WCHAR;
+                //sql_c_type = SQL_C_WCHAR;
+                break;
+            default:
+                THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_PARAMETER_ENCODING, paramno);
+                break;
+            }
+            break;
         case IS_RESOURCE:
             switch( encoding ) {
                 case SQLSRV_ENCODING_CHAR:
@@ -2269,129 +2297,63 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
     // Likewise, if decimals_places is larger than the field scale, decimals_places wil be ignored. This is to ensure the
     // number of decimals adheres to the column field scale. If smaller, the output value may be rounded up.
     //
-    // Note: it's possible that the decimal data does not contain a decimal dot because the field scale is 0.
-    // Thus, first check if the decimal dot exists. If not, no formatting necessary, regardless of
+    // Note: it's possible that the decimal data does not contain a decimal point because the field scale is 0.
+    // Thus, first check if the decimal point exists. If not, no formatting necessary, regardless of
     // format_decimals and decimals_places
     //
-    std::string str = field_value;
-    size_t pos = str.find_first_of('.');
 
-    // The decimal dot is not found, simply return
-    if (pos == std::string::npos) {
+    // Check if it's a negative number and if necessary to add the leading zero
+    bool is_negative = (*field_value == '-');
+    char *src = field_value + is_negative;
+    bool add_leading_zero = false;
+
+    // If the decimal point is not found, simply return
+    char *pt = strchr(src, DECIMAL_POINT);
+    if (pt == NULL) {
         return;
     }
-
-    SQLSMALLINT num_decimals = decimals_places;
-    if (num_decimals > field_scale) {
-        num_decimals = field_scale;
+    else if (pt == src) {
+        add_leading_zero = true;
     }
 
-    // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
-    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is
-    // followed by 5 or above.
-
-    bool isNegative = false;
-
-    // If negative, remove the minus sign for now so as not to complicate the rounding process
-    if (str[0] == '-') {
-        isNegative = true;
-        std::ostringstream oss;
-        oss << str.substr(1);
-        str = oss.str();
-        pos = str.find_first_of('.');
+    SQLSMALLINT scale = decimals_places;
+    if (scale > field_scale) {
+        scale = field_scale;
     }
 
-    // Adds the leading zero if not exists
-    if (pos == 0) {
-        std::ostringstream oss;
-        oss << '0' << str;
-        str = oss.str();
-        pos++;
-    }
+    char buffer[50] = "  ";                  // A buffer with two blank spaces, as leeway
+    short offset = 1 + is_negative; 
+    short src_length = strlen(src);
 
-    if (num_decimals == NO_CHANGE_DECIMAL_PLACES) {
-        // Add the minus sign back if negative
-        if (isNegative) {
-            std::ostringstream oss;
-            oss << '-' << str.substr(0);
-            str = oss.str();
-        }
-    } else {
-        // Start formatting
-        size_t last = 0;
-        if (num_decimals == 0) {
-            // Chop all decimal digits, including the decimal dot
-            size_t pos2 = pos + 1;
-            short n = str[pos2] - '0';
-            if (n >= 5) {
-                // Start rounding up - starting from the digit left of the dot all the way to the first digit
-                bool carry_over = true;
-                for (short p = pos - 1; p >= 0 && carry_over; p--) {
-                    n = str[p] - '0';
-                    if (n == 9) {
-                        str[p] = '0' ;
-                        carry_over = true;
-                    }
-                    else {
-                        n++;
-                        carry_over = false;
-                        str[p] = '0' + n;
-                    }
-                }
-                if (carry_over) {
-                    std::ostringstream oss;
-                    oss << '1' << str.substr(0, pos);
-                    str = oss.str();
-                    pos++;
-                }
-            }
-            last = pos;
-        }
-        else {
-            size_t pos2 = pos + num_decimals + 1;
-            // No need to check if rounding is necessary when pos2 has passed the last digit in the input string
-            if (pos2 < str.length()) {
-                short n = str[pos2] - '0';
-                if (n >= 5) {
-                    // Start rounding up - starting from the digit left of pos2 all the way to the first digit
-                    bool carry_over = true;
-                    for (short p = pos2 - 1; p >= 0 && carry_over; p--) {
-                        if (str[p] == '.') { // Skip the dot
-                            continue;
-                        }
-                        n = str[p] - '0';
-                        if (n == 9) {
-                            str[p] = '0' ;
-                            carry_over = true;
-                        }
-                        else {
-                            n++;
-                            carry_over = false;
-                            str[p] = '0' + n;
-                        }
-                    }
-                    if (carry_over) {
-                        std::ostringstream oss;
-                        oss << '1' << str.substr(0, pos2);
-                        str = oss.str();
-                        pos2++;
-                    }
-                }
-            }
-            last = pos2;
-        }
-        // Add the minus sign back if negative
-        if (isNegative) {
-            std::ostringstream oss;
-            oss << '-' << str.substr(0, last);
-            str = oss.str();
-        } else {
-            str = str.substr(0, last);
-        }
+    if (add_leading_zero) {
+        buffer[offset++] = '0';
     }
+    // Copy the original numerical value to the buffer
+    memcpy_s(buffer + offset, src_length, src, src_length);
 
-    size_t len = str.length();
-    str.copy(field_value, len);
+    int last_pos = src_length + offset;
+
+    // If no need to adjust decimal places, skip formatting
+    if (decimals_places != NO_CHANGE_DECIMAL_PLACES) {
+        short num_decimals = src_length - (pt - src) - 1;
+
+        if (num_decimals > scale) {
+            last_pos = round_up_decimal_numbers(buffer, (pt - src) + offset, scale, offset, last_pos);
+        }
+    }  
+
+    // Remove the extra white space if not used
+    char *p = buffer;
+    offset = 0;
+    while (isspace(*p++)) {
+        offset++;
+    }
+    if (is_negative) {
+        buffer[--offset] = '-';
+    }
+    
+    short len = last_pos - offset;
+    memcpy_s(field_value, len, buffer + offset, len);
     field_value[len] = '\0';
     *field_len = len;
 }
@@ -2967,154 +2929,6 @@ void resize_output_buffer_if_necessary( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     }
 }
 
-void adjustInputPrecision( _Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits ) {
-    // 38 is the maximum length of a stringified decimal number
-    size_t maxDecimalPrecision = 38;
-    // 6 is derived from: 1 for '.'; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
-    //                    1 for sign of scientific exponent; 2 for length of scientific exponent
-    // if the length is greater than maxDecimalStrLen, do not change the string
-    size_t maxDecimalStrLen = maxDecimalPrecision + 6;
-    if (Z_STRLEN_P(param_z) > maxDecimalStrLen) {
-        return;
-    }
-    std::vector<size_t> digits;
-    unsigned char* ptr = reinterpret_cast<unsigned char*>(ZSTR_VAL( Z_STR_P( param_z )));
-    bool isNeg = false;
-    bool isScientificNot = false;
-    char scientificChar = ' ';
-    short scientificExp = 0;
-    if( strchr( reinterpret_cast<char*>( ptr ), 'e' ) || strchr( reinterpret_cast<char*>( ptr ), 'E' )){
-        isScientificNot = true;
-    }
-    // parse digits in param_z into the vector digits
-    if( *ptr == '+' || *ptr == '-' ){
-        if( *ptr == '-' ){
-            isNeg = true;
-        }
-        ptr++;
-    }
-    short numInt = 0;
-    short numDec = 0;
-    while( isdigit( *ptr )){
-        digits.push_back( *ptr - '0' );
-        ptr++;
-        numInt++;
-    }
-    if( *ptr == '.' ){
-        ptr++;
-        if( !isScientificNot ){
-            while( isdigit( *ptr ) && numDec < decimal_digits + 1 ){
-                digits.push_back( *ptr - '0' );
-                ptr++;
-                numDec++;
-            }
-            // make sure the rest of the number are digits
-            while( isdigit( *ptr )){
-                ptr++;
-            }
-        }
-        else {
-            while( isdigit( *ptr )){
-                digits.push_back( *ptr - '0' );
-                ptr++;
-                numDec++;
-            }
-        }
-    }
-    if( isScientificNot ){
-        if ( *ptr == 'e' || *ptr == 'E' ) {
-            scientificChar = *ptr;
-        }
-        ptr++;
-        bool isNegExp = false;
-        if( *ptr == '+' || *ptr == '-' ){
-            if( *ptr == '-' ){
-                isNegExp = true;
-            }
-            ptr++;
-        }
-        while( isdigit( *ptr )){
-            scientificExp = scientificExp * 10 + ( *ptr - '0' );
-            ptr++;
-        }
-        SQLSRV_ASSERT( scientificExp <= maxDecimalPrecision, "Input decimal overflow: sql decimal type only supports up to a precision of 38." );
-        if( isNegExp ){
-            scientificExp = scientificExp * -1;
-        }
-    }
-    // if ptr is not pointing to a null terminator at this point, that means the decimal string input is invalid
-    // do not change the string and let SQL Server handle the invalid decimal string
-    if ( *ptr != '\0' ) {
-        return;
-    }
-    // if number of decimal is less than the exponent, that means the number is a whole number, so no need to adjust the precision
-    if( numDec > scientificExp ){
-        int decToRemove = numDec - scientificExp - decimal_digits;
-        if( decToRemove > 0 ){
-            bool carryOver = false;
-            short backInd = 0;
-            // pop digits from the vector until there is only 1 more decimal place than required decimal_digits
-            while( decToRemove != 1 && !digits.empty() ){
-                digits.pop_back();
-                decToRemove--;
-            }
-            if( !digits.empty() ){
-                // check if the last digit to be popped is greater than 5, if so, the digit before it needs to round up
-                carryOver = digits.back() >= 5;
-                digits.pop_back();
-                backInd = static_cast<short>(digits.size() - 1);
-                // round up from the end until no more carry over
-                while( carryOver && backInd >= 0 ){
-                    if( digits.at( backInd ) != 9 ){
-                        digits.at( backInd )++;
-                        carryOver = false;
-                    }
-                    else{
-                        digits.at( backInd ) = 0;
-                    }
-                    backInd--;
-                }
-            }
-            std::ostringstream oss;
-            if( isNeg ){
-                oss << '-';
-            }
-            // insert 1 if carry over persist all the way to the beginning of the number
-            if( carryOver && backInd == -1 ){
-                oss << 1;
-            }
-            if( digits.empty() && !carryOver ){
-                oss << 0;
-            }
-            else{
-                short i = 0;
-                for( i; i < numInt && i < digits.size(); i++ ){
-                    oss << digits[i];
-                }
-                // fill string with 0 if the number of digits in digits is less then numInt
-                if( i < numInt ){
-                    for( i; i < numInt; i++ ){
-                        oss << 0;
-                    }
-                }
-                if( numInt < digits.size() ){
-                    oss << '.';
-                    for( i; i < digits.size(); i++ ){
-                        oss << digits[i];
-                    }
-                }
-                if( scientificExp != 0 ){
-                    oss << scientificChar << std::to_string( scientificExp );
-                }
-            }
-            std::string str = oss.str();
-            zend_string* zstr = zend_string_init( str.c_str(), str.length(), 0 );
-            zend_string_release( Z_STR_P( param_z ));
-            ZVAL_NEW_STR( param_z, zstr );
-        }
-    }
-}
-
 // output parameters have their reference count incremented so that they do not disappear
 // while the query is executed and processed.  They are saved in the statement so that
 // their reference count may be decremented later (after results are processed)
@@ -3151,5 +2965,201 @@ void sqlsrv_stream_dtor( _Inout_ zval* data )
     zval_ptr_dtor( stream_encoding->stream_z ); // undo the reference to the stream we will no longer hold
     sqlsrv_free( stream_encoding );
 }
+
+void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits) 
+{
+    char* value = Z_STRVAL_P(param_z);
+    short value_len = Z_STRLEN_P(param_z);
+        
+    // If the length is greater than maxDecimalStrLen, do not convert the string
+    // 6 is derived from: 1 for the decimal point; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
+    //                    1 for sign of scientific exponent; 2 for length of scientific exponent
+    const int MAX_DECIMAL_STRLEN = SQL_SERVER_DECIMAL_MAXIMUM_PRECISION + 6;
+    if (value_len > MAX_DECIMAL_STRLEN) {
+        return;
+    }
+
+    // If std::stold() succeeds, 'idx' is the position of the first character after the numerical value
+    long double d = 0;
+    size_t idx;
+    try {
+        d = std::stold(std::string(value), &idx);
+    }
+    catch (const std::logic_error& err) {
+        return;		// invalid input caused the conversion to throw an exception
+    }
+    if (idx < value_len) {
+        return;		// the input contains something else apart from the numerical value 
+    }
+
+    // Navigate to the first digit or the decimal point
+    bool is_negative = (d < 0);
+    char *src = value + is_negative;
+    while (*src != DECIMAL_POINT && !isdigit(*src)) {
+        src++;
+    }
+
+    // Check if the value is in scientific notation
+    char *exp = strchr(src, 'E');
+    if (exp == NULL) {
+        exp = strchr(src, 'e');
+    }
+
+    // Find the decimal point
+    char *pt = strchr(src, DECIMAL_POINT);
+
+    char buffer[50] = "  ";             // A buffer with 2 blank spaces, as leeway
+    short offset = 1 + is_negative;     // The position to start copying the original numerical value
+
+    if (exp == NULL) {
+		if (pt == NULL) {
+			return;		// decimal point not found
+		}
+
+        short src_length = strlen(src);     
+        short num_decimals = src_length - (pt - src) - 1;
+		if (num_decimals <= decimal_digits) {
+			return;     // no need to adjust number of decimals
+		}
+
+        memcpy_s(buffer + offset, src_length, src, src_length);
+        round_up_decimal_numbers(buffer, (pt - src) + offset, decimal_digits, offset, src_length + offset);
+    }
+    else {
+        int power = atoi(exp+1);
+        if (abs(power) > SQL_SERVER_DECIMAL_MAXIMUM_PRECISION) {
+            return;     // Out of range, so let the server handle this
+        }
+
+        short num_decimals = 0;
+        if (power == 0) {
+            // Simply chop off the exp part
+            short length = (exp - src);
+            memcpy_s(buffer + offset, length, src, length);
+
+            if (pt != NULL) {
+                // Adjust decimal places only if decimal point is found and number of decimals more than decimal_digits
+                num_decimals = exp - pt - 1;
+                if (num_decimals > decimal_digits) {
+                    round_up_decimal_numbers(buffer, (pt - src) + offset, decimal_digits, offset, length + offset);
+                }
+            }            
+        } else {
+            short oldpos = 0;
+            if (pt == NULL) {
+                pt = exp;       // Decimal point not found, use the exp sign
+                oldpos = exp - src;
+            }
+            else {
+                oldpos = pt - src;
+                num_decimals = exp - pt - 1;
+                if (power > 0 && num_decimals <= power) {
+                    return;     // The result will be a whole number, do nothing and return
+                }
+            }
+
+            // Derive the new position for the decimal point in the buffer
+            short newpos = oldpos + power;
+            if (power > 0) {
+                newpos = newpos + offset;
+                if (num_decimals == 0) {
+                    memset(buffer + offset + oldpos, '0', power);    // Fill parts of the buffer with zeroes first
+                }
+                else {
+                    buffer[newpos] = DECIMAL_POINT;
+                }
+            }
+            else {
+                // The negative "power" part shows exactly how many places to move the decimal point.
+                // Whether to pad zeroes depending on the original position of the decimal point pos.
+                if (newpos <= 0) {
+                    // If newpos is negative or zero, pad zeroes (size of '0.' + places to move) in the buffer
+                    short numzeroes = 2 + abs(newpos);
+                    memset(buffer + offset, '0', numzeroes);
+                    newpos = offset + 1;                    // The new decimal position should be offset + '0'
+                    buffer[newpos] = DECIMAL_POINT;			// Replace that '0' with the decimal point
+                    offset = numzeroes + offset;            // Short offset now in the buffer
+                }
+                else {
+                    newpos = newpos + offset;
+                    buffer[newpos] = DECIMAL_POINT;
+                }
+            }
+
+            // Start copying the content to the buffer until the exp sign or one more digit after decimal_digits 
+            char *p = src;
+            short idx = offset;
+            short lastpos = newpos + decimal_digits + 1;
+            while (p != exp && idx <= lastpos) {
+                if (*p == DECIMAL_POINT) {
+                    p++;
+                    continue;
+                }
+                if (buffer[idx] == DECIMAL_POINT) {
+                    idx++;
+                }
+                buffer[idx++] = *p;
+                p++;
+            }
+            // Round up is required only when number of decimals is more than decimal_digits
+            num_decimals = idx - newpos - 1;
+            if (num_decimals > decimal_digits) {
+                round_up_decimal_numbers(buffer, newpos, decimal_digits, offset, idx);
+            }
+        }      
+    }
+
+    // Set the minus sign if negative
+    if (is_negative) {
+        buffer[0] = '-';
+    }
+
+    zend_string* zstr = zend_string_init(buffer, strlen(buffer), 0);
+    zend_string_release(Z_STR_P(param_z));
+    ZVAL_NEW_STR(param_z, zstr);
+}
+
+int round_up_decimal_numbers(_Inout_ char* buffer, _In_ short decimal_pos, _In_ short num_decimals, _In_ short offset, _In_ short lastpos)
+{
+    // This helper method assumes the 'buffer' has some extra blank spaces at the beginning without the minus '-' sign.
+    // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
+    // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is
+    // followed by 5 or above.
+
+    short pos = decimal_pos + num_decimals + 1;
+    if (pos < lastpos) {
+        short n = buffer[pos] - '0';
+        if (n >= 5) {
+            // Start rounding up - starting from the digit left of pos all the way to the first digit
+            bool carry_over = true;
+            for (short p = pos - 1; p >= offset && carry_over; p--) {
+                if (buffer[p] == DECIMAL_POINT) {
+                    continue;
+                }
+                n = buffer[p] - '0';
+                carry_over = (++n == 10);
+                if (n == 10) {
+                    n = 0;
+                }
+                buffer[p] = '0' + n;
+            }
+            if (carry_over) {
+                buffer[offset - 1] = '1';
+            }
+        }
+        if (num_decimals == 0) {
+            buffer[decimal_pos] = '\0';
+            return decimal_pos;
+        }
+        else {
+            buffer[pos] = '\0';
+            return pos;
+        }
+    } 
+
+    // Do nothing and just return
+    return lastpos;
+}
+
 
 }
