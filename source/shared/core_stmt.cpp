@@ -112,7 +112,7 @@ void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
 int round_up_decimal_numbers(_Inout_ char* buffer, _In_ short decimal_pos, _In_ short decimals_places, _In_ short offset, _In_ short lastpos);
 void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len);
-void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt );
+void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool exception_thrown = false );
 void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
                           _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len );
 stmt_option const* get_stmt_option( sqlsrv_conn const* conn, _In_ zend_ulong key, _In_ const stmt_option stmt_opts[] );
@@ -820,7 +820,7 @@ SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_l
         // if the statement executed but failed in a subsequent operation before returning,
         // we need to cancel the statement and deref the output and stream parameters
         if ( stmt->send_streams_at_exec ) {
-            finalize_output_parameters( stmt );
+            finalize_output_parameters( stmt, true );
             zend_hash_clean( Z_ARRVAL( stmt->param_streams ));
         }
         if( stmt->executed ) {
@@ -2364,10 +2364,18 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
 // parameters passed to SQLBindParameter.  It also converts output strings from UTF-16 to UTF-8 if necessary.
 // For integer or float parameters, it sets those to NULL if a NULL was returned by SQL Server
 
-void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt )
+void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool exception_thrown /*= false*/ )
 {
     if (Z_ISUNDEF(stmt->output_params))
         return;
+    
+    // If an error occurs or an exception is thrown during an execution, the values of any output
+    // parameters or columns are undefined. Therefore, do not depend on them having any specific 
+    // values, because the ODBC driver may or may not have modified them.
+    if (exception_thrown) {
+        zend_hash_clean(Z_ARRVAL(stmt->output_params));
+        return;
+    }
 
     HashTable* params_ht = Z_ARRVAL(stmt->output_params);
     zend_ulong index = -1;

@@ -257,7 +257,7 @@ void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* i
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 
-bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error, _In_ logging_severity severity, _In_ bool check_warning /* = false */)
+bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error, _In_ logging_severity severity, _In_opt_ bool check_warning /* = false */)
 {
     SQLHANDLE h = ctx.handle();
     SQLSMALLINT h_type = ctx.handle_type();
