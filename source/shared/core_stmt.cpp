@@ -2368,6 +2368,10 @@ void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool except
 {
     if (Z_ISUNDEF(stmt->output_params))
         return;
+    
+    // If an error occurs or an exception is thrown during an execution, the values of any output
+    // parameters or columns are undefined. Therefore, do not depend on them having any specific 
+    // values, because the ODBC driver may or may not have modified them.
     if (exception_thrown) {
         zend_hash_clean(Z_ARRVAL(stmt->output_params));
         return;
