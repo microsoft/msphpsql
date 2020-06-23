@@ -132,16 +132,9 @@ function fetchAsFloats($conn, $tableName, $inputs)
             }
         } else {
             // The char fields will get errors too
-            // TODO 11297: fix this part outside Windows later
-            if (isWindows()) {
-                if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
-                    var_dump($f);
-                    fatalError("in fetchAsFloats: expected $outOfRange for column $i\n");
-                }
-            } else {
-                if ($f != 0.0) {
-                    var_dump($f);
-                }
+            if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
+                var_dump($f);
+                fatalError("in fetchAsFloats: expected $outOfRange for column $i\n");
             }
         }
     }
@@ -179,16 +172,9 @@ function fetchAsInts($conn, $tableName, $inputs)
             }
         } elseif ($i >= 5) {
             // The char fields will get errors too
-            // TODO 11297: fix this part outside Windows later
-            if (isWindows()) {
-                if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
-                    var_dump($f);
-                    fatalError("in fetchAsInts: expected $outOfRange for column $i\n");
-                }
-            } else {
-                if ($f != 0) {
-                    var_dump($f);
-                }
+            if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
+                var_dump($f);
+                fatalError("in fetchAsInts: expected $outOfRange for column $i\n");
             }
         } else {
             $expected = floor($inputs[$i]);

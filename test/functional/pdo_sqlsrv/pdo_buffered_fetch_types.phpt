@@ -145,14 +145,7 @@ function fetchCharAsInt($conn, $tableName, $column)
         $stmt->bindColumn($column, $value, PDO::PARAM_INT);
         $row = $stmt->fetch(PDO::FETCH_BOUND);
         
-        // TODO 11297: fix this part outside Windows later
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            echo "in fetchCharAsInt: exception should have been thrown!\n";
-        } else {
-            if ($value != 0) {
-                var_dump($value);
-            }
-        }
+        echo "in fetchCharAsInt: exception should have been thrown!\n";
     } catch (PdoException $e) {
         // The (n)varchar field - expect the outOfRange error
         if (strpos($e->getMessage(), $outOfRange) === false) {
