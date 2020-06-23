@@ -65,12 +65,30 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'LIN') {
 
 $sql_callSP = $set_no_count . "{call $procName(?)}";
 
-// Initialize the output parameter to any number
+// Initialize the output parameter to any positive number
 $outParam = 1; 
 $params = array(array(&$outParam, SQLSRV_PARAM_OUT));
 $stmt = sqlsrv_query($conn, $sql_callSP, $params); 
 if (!$stmt) { 
     fatalError("Error in calling $procName\n"); 
+} 
+
+while ($res = sqlsrv_next_result($stmt)); 
+
+if ($outParam != 123) {
+    echo "The output param value $outParam is unexpected!\n";
+} 
+
+// Initialize the output parameter to any negative number
+$outParam = -1; 
+$params = array(array(&$outParam, SQLSRV_PARAM_OUT));
+$stmt = sqlsrv_prepare($conn, $sql_callSP, $params);
+if (!$stmt) { 
+    fatalError("Error in preparing $procName\n"); 
+} 
+$res = sqlsrv_execute($stmt);
+if (!$res) { 
+    fatalError("Error in executing $procName\n");
 } 
 
 while ($res = sqlsrv_next_result($stmt)); 
