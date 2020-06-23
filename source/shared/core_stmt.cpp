@@ -2079,13 +2079,14 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
             sql_c_type = SQL_C_SLONG;
             break;
         case IS_LONG:
-            //ODBC 64-bit long and integer type are 4 byte values.
-            if ((Z_LVAL_P(param_z) < INT_MIN) || (Z_LVAL_P(param_z) > INT_MAX)) {
-                sql_c_type = SQL_C_SBIGINT;
-            }
-            else {
-                sql_c_type = SQL_C_SLONG;
-            }
+            // When binding any integer, the zend_long value and its length are used as the buffer 
+            // and buffer length. When the buffer is 8 bytes use the corresponding C type for 
+            // 8-byte integers
+#ifdef ZEND_ENABLE_ZVAL_LONG64
+            sql_c_type = SQL_C_SBIGINT;
+#else
+            sql_c_type = SQL_C_SLONG;
+#endif
             break;
         case IS_DOUBLE:
             sql_c_type = SQL_C_DOUBLE;
