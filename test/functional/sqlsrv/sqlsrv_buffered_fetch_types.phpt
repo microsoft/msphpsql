@@ -20,6 +20,41 @@ function compareFloats($expected, $actual)
     return ($diff < $epsilon);
 }
 
+function fetchAsChar($conn, $tableName, $inputs)
+{
+    $query = "SELECT c_varbinary, c_int, c_float, c_decimal, c_datetime2, c_varchar FROM $tableName";
+    
+    $stmt = sqlsrv_query($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+    if (!$stmt) {
+        fatalError("In fetchAsChar: failed to run query!");
+    }
+
+    if (sqlsrv_fetch($stmt, SQLSRV_FETCH_NUMERIC) === false) {
+        fatalError("In fetchAsChar: failed to fetch the row from $tableName!");
+    }
+
+    // Fetch all fields as strings - no conversion
+    for ($i = 0; $i < count($inputs) - 1; $i++) {
+        $f = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+        if ($i == 0) {
+            if ($inputs[$i] !== hex2bin($f)) {
+                echo "In fetchAsChar ($i): expected $inputs[$i]\n";
+                var_dump(hex2bin($f));
+            }
+        } elseif ($i == 2) {
+            if (!compareFloats(floatval($inputs[$i]), floatval($f))) {
+                echo "In fetchAsChar ($i): expected $inputs[$i]\n";
+                var_dump($f);
+            }
+        } else {
+            if ($f !== $inputs[$i]) {
+                echo "In fetchAsChar ($i): expected $inputs[$i]\n";
+                var_dump($f);
+            }
+        }
+    }
+}
+
 function fetchAsUTF8($conn, $tableName, $inputs)
 {
     $query = "SELECT * FROM $tableName";
@@ -270,6 +305,7 @@ if ($stmt) {
 }
 
 // Starting fetching using client buffers
+fetchAsChar($conn, $tableName, $inputs);
 fetchAsUTF8($conn, $tableName, $inputs);
 fetchArray($conn, $tableName, $inputs);
 fetchAsFloats($conn, $tableName, $inputs);

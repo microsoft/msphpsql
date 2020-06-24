@@ -793,7 +793,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
         case SQL_C_LONG: return sqlsrv_buffered_result_set::to_long(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_long(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_CHAR: return sqlsrv_buffered_result_set::long_to_system_string(field_index, buffer, buffer_length, out_buffer_length);
-        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::long_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
+        //case SQL_C_WCHAR: return sqlsrv_buffered_result_set::long_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
         default:
             break;
         }
@@ -804,7 +804,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
         case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_double(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_CHAR: return sqlsrv_buffered_result_set::double_to_system_string(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_LONG: return sqlsrv_buffered_result_set::double_to_long(field_index, buffer, buffer_length, out_buffer_length);
-        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::double_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
+        //case SQL_C_WCHAR: return sqlsrv_buffered_result_set::double_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
         default:
             break;
         }
@@ -1024,6 +1024,7 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_system_string( _In_ SQLSMALLINT 
     return r;
 }
 
+/*
 SQLRETURN sqlsrv_buffered_result_set::double_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                              _Inout_ SQLLEN* out_buffer_length )
 {
@@ -1040,7 +1041,7 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_wide_string( _In_ SQLSMALLINT fi
 #endif // _WIN32
     return r;
 }
-
+*/
 SQLRETURN sqlsrv_buffered_result_set::long_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length, 
                                                       _Out_ SQLLEN* out_buffer_length )
 {
@@ -1073,6 +1074,7 @@ SQLRETURN sqlsrv_buffered_result_set::long_to_system_string( _In_ SQLSMALLINT fi
     return r;
 }
 
+/*
 SQLRETURN sqlsrv_buffered_result_set::long_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                            _Inout_ SQLLEN* out_buffer_length )
 {
@@ -1089,6 +1091,7 @@ SQLRETURN sqlsrv_buffered_result_set::long_to_wide_string( _In_ SQLSMALLINT fiel
 #endif // _WIN32
     return r;
 }
+*/
 
 SQLRETURN sqlsrv_buffered_result_set::string_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                         _Inout_ SQLLEN* out_buffer_length )
