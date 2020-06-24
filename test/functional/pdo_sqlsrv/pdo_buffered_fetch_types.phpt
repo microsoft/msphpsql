@@ -215,6 +215,35 @@ function fetchAsNumerics($conn, $tableName, $inputs)
     }
 }
 
+function fetchNumbers($conn, $tableName, $inputs)
+{
+    // Fetch integers and floats as numbers, not strings
+    try {
+        $query = "SELECT c2, c3, c4 FROM $tableName";
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+
+        $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR=>PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE=>PDO::SQLSRV_CURSOR_BUFFERED));
+        $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
+        $stmt->execute();
+                     
+        $row = $stmt->fetch(PDO::FETCH_NUM);
+        if ($row[0] !== intval($inputs[1])) {
+            var_dump($row[0]);
+        }
+        $expected = floatval($inputs[2]);
+        if (!compareFloats($expected, $row[1])) {
+            echo "in fetchNumbers: expected $expected but got: ";
+            var_dump($row[1]);
+        }
+        if ($row[2] !== $inputs[3]) {
+            var_dump($row[2]);
+        }
+    } catch (PdoException $e) {
+        echo "Caught exception in fetchAsNumerics:\n";
+        echo $e->getMessage() . PHP_EOL;
+    }
+}
+
 try {
     $conn = connect();
     $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
@@ -253,6 +282,7 @@ try {
     fetchBinaryAsNumber($conn, $tableName, $inputs);
     fetchBinaryAsBinary($conn, $tableName, $inputs);
     fetchAsNumerics($conn, $tableName, $inputs);
+    fetchNumbers($conn, $tableName, $inputs);
     
     // dropTable($conn, $tableName);
     echo "Done\n";
