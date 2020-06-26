@@ -262,64 +262,6 @@ std::string getUTF8StringFromString( _In_z_ const char* source )
 
 #endif // !_WIN32
 
-template <typename Number, typename Char>
-SQLRETURN string_to_number( _In_z_ Char* string_data, SQLLEN str_len, _Out_writes_bytes_(*out_buffer_length) void* buffer, SQLLEN buffer_length,
-                            _Inout_ SQLLEN* out_buffer_length, _Inout_ sqlsrv_error_auto_ptr& last_error )
-{
-    Number* number_data = reinterpret_cast<Number*>( buffer ); 
-#ifdef _WIN32
-    std::locale loc;    // default locale should match system
-    std::basic_istringstream<Char> is;
-    is.str( string_data );
-    is.imbue( loc );
-    std::ios_base::iostate st = 0;
-
-    std::use_facet< std::num_get< Char > >( loc ).get( std::basic_istream<Char>::_Iter( is.rdbuf()), std::basic_istream<Char>::_Iter( 0 ), is, st, *number_data );
-
-    if ( st & std::ios_base::failbit ) {
-        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error(( SQLCHAR* ) "22003", ( SQLCHAR* ) "Numeric value out of range", 103 );
-        return SQL_ERROR;
-    }
-
-    *out_buffer_length = sizeof( Number );
-#else
-    std::string str = getUTF8StringFromString( string_data );
-
-    std::istringstream is( str );
-    std::locale loc;    // default locale should match system
-    is.imbue( loc );
-
-    auto& facet = std::use_facet<std::num_get<char>>( is.getloc() );
-    std::istreambuf_iterator<char> beg( is ), end;
-    std::ios_base::iostate err = std::ios_base::goodbit;
-
-    if ( std::is_integral<Number>::value )
-    {
-        long number;
-        facet.get( beg, end, is, err, number );
-
-        *number_data = number;
-    }
-    else
-    {
-        double number;
-        facet.get( beg, end, is, err, number );
-
-        *number_data = number;
-    }
-
-    *out_buffer_length = sizeof( Number );
-
-    if ( is.fail() )
-    {
-        last_error = new ( sqlsrv_malloc(sizeof( sqlsrv_error ))) sqlsrv_error(( SQLCHAR* ) "22003", ( SQLCHAR* ) "Numeric value out of range", 103 );
-        return SQL_ERROR;
-    }
-#endif // _WIN32
-    return SQL_SUCCESS;
-  
-}
-
 // "closure" for the hash table destructor
 struct row_dtor_closure {
 
@@ -851,7 +793,6 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
         case SQL_C_LONG: return sqlsrv_buffered_result_set::to_long(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_long(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_CHAR: return sqlsrv_buffered_result_set::long_to_system_string(field_index, buffer, buffer_length, out_buffer_length);
-        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::long_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
         default:
             break;
         }
@@ -862,7 +803,6 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
         case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_double(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_CHAR: return sqlsrv_buffered_result_set::double_to_system_string(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_LONG: return sqlsrv_buffered_result_set::double_to_long(field_index, buffer, buffer_length, out_buffer_length);
-        case SQL_C_WCHAR: return sqlsrv_buffered_result_set::double_to_wide_string(field_index, buffer, buffer_length, out_buffer_length);
         default:
             break;
         }
@@ -1082,23 +1022,6 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_system_string( _In_ SQLSMALLINT 
     return r;
 }
 
-SQLRETURN sqlsrv_buffered_result_set::double_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
-                                                             _Inout_ SQLLEN* out_buffer_length )
-{
-    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_DOUBLE, "Invalid conversion to wide string" );
-    SQLSRV_ASSERT( buffer_length > 0, "Buffer length must be > 0 in sqlsrv_buffered_result_set::double_to_wide_string" );
-
-    unsigned char* row = get_row();
-    double* double_data = reinterpret_cast<double*>( &row[meta[field_index].offset] );
-    SQLRETURN r = SQL_SUCCESS;
-#ifdef _WIN32
-    r = number_to_string<WCHAR>( double_data, buffer, buffer_length, out_buffer_length, last_error );
-#else
-    r = number_to_string<char16_t, double>( double_data, buffer, buffer_length, out_buffer_length, last_error );
-#endif // _WIN32
-    return r;
-}
-
 SQLRETURN sqlsrv_buffered_result_set::long_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length, 
                                                       _Out_ SQLLEN* out_buffer_length )
 {
@@ -1131,23 +1054,6 @@ SQLRETURN sqlsrv_buffered_result_set::long_to_system_string( _In_ SQLSMALLINT fi
     return r;
 }
 
-SQLRETURN sqlsrv_buffered_result_set::long_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_bytes_to_opt_(buffer_length, *out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
-                                                           _Inout_ SQLLEN* out_buffer_length )
-{
-    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_LONG, "Invalid conversion to wide string" );
-    SQLSRV_ASSERT( buffer_length > 0, "Buffer length must be > 0 in sqlsrv_buffered_result_set::long_to_wide_string" );
-
-    unsigned char* row = get_row();
-    LONG* long_data = reinterpret_cast<LONG*>( &row[meta[field_index].offset] );
-    SQLRETURN r = SQL_SUCCESS;
-#ifdef _WIN32
-    r = number_to_string<WCHAR>( long_data, buffer, buffer_length, out_buffer_length, last_error );
-#else
-    r = number_to_string<char16_t, LONG>( long_data, buffer, buffer_length, out_buffer_length, last_error );
-#endif // _WIN32
-    return r;
-}
-
 SQLRETURN sqlsrv_buffered_result_set::string_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                         _Inout_ SQLLEN* out_buffer_length )
 {
@@ -1157,7 +1063,16 @@ SQLRETURN sqlsrv_buffered_result_set::string_to_double( _In_ SQLSMALLINT field_i
     unsigned char* row = get_row();
     char* string_data = reinterpret_cast<char*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
 
-    return string_to_number<double>( string_data, meta[field_index].length, buffer, buffer_length, out_buffer_length, last_error );
+    double* number_data = reinterpret_cast<double*>(buffer);
+    try {
+        *number_data = std::stod(std::string(string_data));
+    } catch (const std::logic_error& err) {
+        last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
+        return SQL_ERROR;
+    }
+
+    *out_buffer_length = sizeof(double);
+    return SQL_SUCCESS;
 }
 
 SQLRETURN sqlsrv_buffered_result_set::wstring_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
@@ -1169,7 +1084,20 @@ SQLRETURN sqlsrv_buffered_result_set::wstring_to_double( _In_ SQLSMALLINT field_
     unsigned char* row = get_row();
     SQLWCHAR* string_data = reinterpret_cast<SQLWCHAR*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN ) / sizeof( SQLWCHAR );
 
-    return string_to_number<double>( string_data, meta[field_index].length, buffer, buffer_length, out_buffer_length, last_error );
+    double* number_data = reinterpret_cast<double*>(buffer);
+    try {
+#ifdef _WIN32
+        *number_data = std::stod(std::wstring(string_data));
+#else
+        *number_data = std::stod(getUTF8StringFromString(string_data));
+#endif // _WIN32
+    } catch (const std::logic_error& err) {
+        last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
+        return SQL_ERROR;
+    }
+
+    *out_buffer_length = sizeof(double);
+    return SQL_SUCCESS;
 }
 
 SQLRETURN sqlsrv_buffered_result_set::string_to_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
@@ -1181,7 +1109,16 @@ SQLRETURN sqlsrv_buffered_result_set::string_to_long( _In_ SQLSMALLINT field_ind
     unsigned char* row = get_row();
     char* string_data = reinterpret_cast<char*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
 
-    return string_to_number<LONG>( string_data, meta[field_index].length, buffer, buffer_length, out_buffer_length, last_error );
+    LONG* number_data = reinterpret_cast<LONG*>(buffer);
+    try {
+        *number_data = std::stol(std::string(string_data));
+    } catch (const std::logic_error& err) {
+        last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
+        return SQL_ERROR;
+    }
+
+    *out_buffer_length = sizeof(LONG);
+    return SQL_SUCCESS;
 }
 
 SQLRETURN sqlsrv_buffered_result_set::wstring_to_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
@@ -1193,7 +1130,20 @@ SQLRETURN sqlsrv_buffered_result_set::wstring_to_long( _In_ SQLSMALLINT field_in
     unsigned char* row = get_row();
     SQLWCHAR* string_data = reinterpret_cast<SQLWCHAR*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN ) / sizeof( SQLWCHAR );
 
-    return string_to_number<LONG>( string_data, meta[field_index].length, buffer, buffer_length, out_buffer_length, last_error );
+    LONG* number_data = reinterpret_cast<LONG*>(buffer);
+    try {
+#ifdef _WIN32
+        *number_data = std::stol(std::wstring(string_data));
+#else
+        *number_data = std::stol(getUTF8StringFromString(string_data));
+#endif // _WIN32
+    } catch (const std::logic_error& err) {
+        last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
+        return SQL_ERROR;
+    }
+
+    *out_buffer_length = sizeof(LONG);
+    return SQL_SUCCESS;
 }
 
 SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_z_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length, 
