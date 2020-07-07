@@ -1,8 +1,7 @@
 --TEST--
 executes two queries as part of a transaction. If both queries are successful, the transaction is committed.
 --SKIPIF--
-
-?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

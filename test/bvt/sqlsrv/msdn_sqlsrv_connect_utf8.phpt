@@ -1,7 +1,7 @@
 --TEST--
 retrieves UTF-8 encoded data by specifying the UTF-8 character set when making the connection
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

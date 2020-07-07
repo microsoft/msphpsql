@@ -1,7 +1,7 @@
 --TEST--
 connect to a server and specify a database
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
    require('connect.inc');

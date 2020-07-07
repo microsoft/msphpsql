@@ -1,7 +1,7 @@
 --TEST--
 fetches the next row as an object
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 	require('connect.inc');

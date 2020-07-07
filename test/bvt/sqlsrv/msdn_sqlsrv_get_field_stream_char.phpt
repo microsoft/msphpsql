@@ -1,7 +1,7 @@
 --TEST--
 retrieves row as a stream specified as a character stream.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /*Connect to the local server using Windows Authentication and

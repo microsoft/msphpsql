@@ -1,7 +1,7 @@
 --TEST--
 disables the default error-handling behaviour using configure and returns warnings
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Turn off the default behavior of treating errors as warnings.

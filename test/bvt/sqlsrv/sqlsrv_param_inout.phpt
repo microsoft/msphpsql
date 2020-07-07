@@ -1,7 +1,7 @@
 --TEST--
 call a stored procedure (SQLSRV Driver) and retrieve the errorNumber that is returned
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 	// Connect to the database

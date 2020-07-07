@@ -1,7 +1,7 @@
 --TEST--
 specifies the fetch mode before fetching
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
    require('connect.inc');

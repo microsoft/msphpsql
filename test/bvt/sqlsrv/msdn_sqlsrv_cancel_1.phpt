@@ -1,7 +1,7 @@
 --TEST--
 cancels a statement then reuse.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

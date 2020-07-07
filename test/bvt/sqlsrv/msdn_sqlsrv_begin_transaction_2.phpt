@@ -1,7 +1,7 @@
 --TEST--
 delete in a transaction
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication and

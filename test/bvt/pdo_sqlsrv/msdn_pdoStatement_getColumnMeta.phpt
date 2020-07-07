@@ -1,7 +1,7 @@
 --TEST--
 retrieves metadata for a column
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

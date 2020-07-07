@@ -1,7 +1,7 @@
 --TEST--
 Returns the number of rows modified by the last statement executed.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

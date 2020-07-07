@@ -1,7 +1,7 @@
 --TEST--
 fetches the rows in a result set in an array
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
    require('connect.inc');

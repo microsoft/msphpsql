@@ -1,7 +1,7 @@
 --TEST--
 retrieve all fields
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

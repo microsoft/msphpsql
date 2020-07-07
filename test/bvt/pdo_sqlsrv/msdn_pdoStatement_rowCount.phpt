@@ -1,7 +1,7 @@
 --TEST--
 returns the number of rows added to a table; returns the number of rows in a result set when you specify a scrollable cursor
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

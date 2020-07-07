@@ -1,7 +1,7 @@
 --TEST--
 queries a call to procedure with input and output parameters.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to a server using Windows Authentication and 

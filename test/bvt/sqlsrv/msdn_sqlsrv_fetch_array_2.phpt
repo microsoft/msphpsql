@@ -1,7 +1,7 @@
 --TEST--
 retrieves each row of a result set as a numerically indexed array.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication and

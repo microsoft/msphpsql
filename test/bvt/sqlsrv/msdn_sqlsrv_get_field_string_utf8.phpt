@@ -1,7 +1,7 @@
 --TEST--
 retrieves dates as strings by specifying UTF-8 when fetching the string.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

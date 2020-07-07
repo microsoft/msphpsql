@@ -1,7 +1,7 @@
 --TEST--
 a variable bound to a column in a result set
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

@@ -1,7 +1,7 @@
 --TEST--
 creates a statement resource, executes a simple query, and free all resources associated with the statement
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

@@ -1,7 +1,7 @@
 --TEST--
 call a stored procedure and retrieve the errorString that is returned
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 	require('connect.inc');

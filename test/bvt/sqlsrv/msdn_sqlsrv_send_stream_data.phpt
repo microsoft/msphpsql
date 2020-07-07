@@ -1,7 +1,7 @@
 --TEST--
 Sends data from parameter streams to the server
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

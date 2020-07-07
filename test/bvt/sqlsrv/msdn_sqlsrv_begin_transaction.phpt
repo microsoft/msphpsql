@@ -1,7 +1,7 @@
 --TEST--
 executes two queries as part of a transaction
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');
