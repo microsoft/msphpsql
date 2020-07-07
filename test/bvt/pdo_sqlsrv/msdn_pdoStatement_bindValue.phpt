@@ -1,7 +1,7 @@
 --TEST--
 after a value $contact is bound, changing the value does not change the value passed in the query
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

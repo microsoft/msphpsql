@@ -1,7 +1,7 @@
 --TEST--
 prepares a statement with parameter markers and forward-only (server-side) cursor
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

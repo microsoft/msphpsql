@@ -1,7 +1,7 @@
 --TEST--
 sqlsrv types are specified for the parameters in query.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication and 

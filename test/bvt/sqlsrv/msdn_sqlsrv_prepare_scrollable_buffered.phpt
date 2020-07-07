@@ -1,7 +1,7 @@
 --TEST--
 server side cursor specified when preparing
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

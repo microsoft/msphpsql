@@ -1,7 +1,7 @@
 --TEST--
 specify the UTF-8 character set when querying
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 

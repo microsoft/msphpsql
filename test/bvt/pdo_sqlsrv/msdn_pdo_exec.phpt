@@ -1,7 +1,7 @@
 --TEST--
 execute a delete and reports how many rows were deleted
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
    require('connect.inc');

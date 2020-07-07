@@ -1,7 +1,7 @@
 --TEST--
 fetch with all fetch styles
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
    require('connect.inc');

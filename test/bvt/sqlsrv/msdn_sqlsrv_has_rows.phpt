@@ -1,7 +1,7 @@
 --TEST--
 indicate if the result set has one or more rows.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

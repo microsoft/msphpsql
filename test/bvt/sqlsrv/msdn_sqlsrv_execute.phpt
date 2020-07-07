@@ -1,7 +1,7 @@
 --TEST--
 executes a statement that updates a field.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

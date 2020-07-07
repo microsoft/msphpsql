@@ -1,7 +1,7 @@
 --TEST--
 client side buffered cursor
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

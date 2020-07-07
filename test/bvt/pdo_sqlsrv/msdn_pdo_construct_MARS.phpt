@@ -1,7 +1,7 @@
 --TEST--
 connect to a server, setting MARS to false
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

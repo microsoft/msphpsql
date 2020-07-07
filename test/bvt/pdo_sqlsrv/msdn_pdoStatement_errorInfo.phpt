@@ -1,19 +1,20 @@
 --TEST--
 reports the error info of a SQL statement with a mispelled table name
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');
 $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 $stmt = $conn->prepare('SELECT * FROM Person.Addressx');
 
 $stmt->execute();
 print_r ($stmt->errorInfo());
 
 // free the statement and connection 
-$stmt=null;
-$conn=null;
+unset($stmt);
+unset($conn);
 ?>
 --EXPECTREGEX--
 Array

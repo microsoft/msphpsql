@@ -1,7 +1,7 @@
 --TEST--
 executes a batch query that retrieves information, insert an entry, then again retrieves information
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication and

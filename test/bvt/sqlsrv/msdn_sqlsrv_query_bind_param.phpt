@@ -1,7 +1,7 @@
 --TEST--
 updates the quantity in a table, the quantity and product ID are parameters in the UPDATE query.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication and

@@ -1,7 +1,7 @@
 --TEST--
 creates and opens a connection using Windows Authentication.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

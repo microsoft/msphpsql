@@ -1,7 +1,7 @@
 --TEST--
 sets the query timeout attribute
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

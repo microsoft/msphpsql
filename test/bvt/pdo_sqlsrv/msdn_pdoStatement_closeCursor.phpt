@@ -1,7 +1,7 @@
 --TEST--
 closes the cursor
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

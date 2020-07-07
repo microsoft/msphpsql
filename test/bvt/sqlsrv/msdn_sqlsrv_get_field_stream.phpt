@@ -1,7 +1,7 @@
 --TEST--
 retrieves datatime as string and nvarchar as stream.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication and 

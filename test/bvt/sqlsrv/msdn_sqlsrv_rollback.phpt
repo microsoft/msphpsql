@@ -1,7 +1,7 @@
 --TEST--
 Rolls back the current transaction on the specified connection and returns the connection to the auto-commit mode.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

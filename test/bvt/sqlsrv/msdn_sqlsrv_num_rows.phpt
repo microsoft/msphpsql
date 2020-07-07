@@ -1,7 +1,7 @@
 --TEST--
 num_rows with a ekyset cursor should work.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

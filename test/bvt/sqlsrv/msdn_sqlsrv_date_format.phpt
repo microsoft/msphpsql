@@ -1,7 +1,7 @@
 --TEST--
 retrieve date as PHP type with ReturnDatesAsStrings off by default.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

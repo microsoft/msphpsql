@@ -1,7 +1,7 @@
 --TEST--
 uses an input/output parameter
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
    require('connect.inc');

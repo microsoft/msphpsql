@@ -1,7 +1,7 @@
 --TEST--
 after a variable is bound, changing the value changes the value passed in the query
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

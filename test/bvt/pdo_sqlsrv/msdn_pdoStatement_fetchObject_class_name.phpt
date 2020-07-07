@@ -1,7 +1,7 @@
 --TEST--
 fetches the next row as an object of a user defined class
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 	//create class of contactType

@@ -1,7 +1,7 @@
 --TEST--
 Query update a field in a table
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

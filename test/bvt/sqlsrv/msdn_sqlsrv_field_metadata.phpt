@@ -1,7 +1,7 @@
 --TEST--
 creates a statement resource then retrieves and displays the field metadata
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

@@ -1,7 +1,7 @@
 --TEST--
 displays errors that occur during a failed statement execution
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

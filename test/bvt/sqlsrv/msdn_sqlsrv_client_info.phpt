@@ -1,7 +1,7 @@
 --TEST--
 client information.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');
