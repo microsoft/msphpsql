@@ -60,9 +60,11 @@ if ($m !== $m1) {
 $c1 = setlocale(LC_CTYPE, 0);
 if ($ctype !== $c1) {
     echo "Unexpected LC_CTYPE: $c1" . PHP_EOL;
+    echo "LC_NUMERIC for $setLocaleInfo: " . setlocale(LC_NUMERIC, 0) . PHP_EOL;
 }
 
 // Set a different locale, if the input is not empty
+$english = true;
 if (!empty($locale)) {
     $loc = setlocale(LC_ALL, $locale);
     if ($loc !== $locale) {
@@ -73,6 +75,7 @@ if (!empty($locale)) {
     if ($loc === 'de_DE.UTF-8') {
         $symbol = strtoupper(PHP_OS) === 'LINUX' ? '€' : 'Eu';
         $sep = strtoupper(PHP_OS) === 'LINUX' ? '.' : '';
+        $english = false;
     } else {
         $symbol = '$';
         $sep = ',';
@@ -126,8 +129,10 @@ if (!$stmt) {
 while (sqlsrv_fetch($stmt)) {
     $value = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_FLOAT);
     $expected = $pi;
-    if (PHP_MAJOR_VERSION < 8 && $setLocaleInfo > 0) {
-        $expected = str_replace('.', ',', $pi);
+    if (PHP_MAJOR_VERSION < 8) {
+        if ($setLocaleInfo > 0 && $english === false) {
+            $expected = str_replace('.', ',', $pi);
+        }
     }
     if ($value != $expected) {
         echo "Expected $pi to be $expected but got $value\n";
