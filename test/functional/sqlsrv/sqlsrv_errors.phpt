@@ -19,7 +19,7 @@ sqlsrv_close returns true even if an error happens.
     function compareMessages($err, $exp8x, $exp7x) 
     {
         $expected = (PHP_MAJOR_VERSION == 8) ? $exp8x : $exp7x;
-        if ($err->getMessage() !== $expected) {
+        if (!fnmatch($expected, $err->getMessage())) {
             echo $err->getMessage() . PHP_EOL;
         }
     }
@@ -40,7 +40,7 @@ sqlsrv_close returns true even if an error happens.
     } catch (TypeError $e) {
         compareMessages($e, 
                         "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, bool given", 
-                        "sqlsrv_close() expects parameter 1 to be resource, bool given");       
+                        "sqlsrv_close() expects parameter 1 to be resource, bool* given");       
     }
     
     $errors = sqlsrv_errors();
@@ -140,7 +140,7 @@ sqlsrv_close returns true even if an error happens.
     } catch (TypeError $e) {
         compareMessages($e, 
                     "sqlsrv_free_stmt(): Argument #1 (\$stmt) must be of type resource, int given", 
-                    "sqlsrv_free_stmt() expects parameter 1 to be resource, int given");       
+                    "sqlsrv_free_stmt() expects parameter 1 to be resource, int* given");       
     }
 
     print_r(sqlsrv_errors());
@@ -180,7 +180,7 @@ sqlsrv_close returns true even if an error happens.
     } catch (TypeError $e) {
         compareMessages($e, 
                     "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, int given", 
-                    "sqlsrv_close() expects parameter 1 to be resource, int given");       
+                    "sqlsrv_close() expects parameter 1 to be resource, int* given");       
     }
 
     print_r(sqlsrv_errors());

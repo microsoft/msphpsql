@@ -106,8 +106,18 @@ try {
     $stmt = $conn->prepare($sql, array(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE => true));
     $stmt->execute();
     
+    // The following change is required for the breaking change introduced in PHP 8
+    // https://wiki.php.net/rfc/locale_independent_float_to_string
     $row = $stmt->fetch(PDO::FETCH_NUM);
-    echo ($row[0]) . PHP_EOL;
+    $value = $row[0];
+    $expected = $pi;
+    if (PHP_MAJOR_VERSION < 8 && $setLocaleInfo > 0) {
+        $expected = str_replace('.', ',', $pi);
+    }
+    if ($value != $expected) {
+        echo "Expected $pi to be $expected but got $value\n";
+    }
+
     unset($stmt);
 
     dropTable($conn, $tableName);

@@ -121,9 +121,17 @@ if (!$stmt) {
     fatalError("Failed in running query $sql");
 }
 
+// The following change is required for the breaking change introduced in PHP 8
+// https://wiki.php.net/rfc/locale_independent_float_to_string
 while (sqlsrv_fetch($stmt)) {
-   $value = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_FLOAT);
-   echo $value . PHP_EOL;
+    $value = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_FLOAT);
+    $expected = $pi;
+    if (PHP_MAJOR_VERSION < 8 && $setLocaleInfo > 0) {
+        $expected = str_replace('.', ',', $pi);
+    }
+    if ($value != $expected) {
+        echo "Expected $pi to be $expected but got $value\n";
+    }
 }
 
 sqlsrv_free_stmt($stmt);
