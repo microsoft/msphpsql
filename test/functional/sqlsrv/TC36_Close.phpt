@@ -12,6 +12,13 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
+// When testing with PHP 8.0 it throws a TypeError instead of a warning. Thus implement a custom 
+// warning handler such that with PHP 7.x the warning would be handled to throw a TypeError.
+function warningHandler($errno, $errstr) 
+{ 
+    throw new TypeError($errstr);
+}
+
 function close()
 {
     $testName = "Statement - Close";
@@ -29,18 +36,24 @@ function close()
     sqlsrv_free_stmt($stmt1);
 
     trace("Attempting to retrieve the number of fields after statement was closed ...\n");
-    if (sqlsrv_num_fields($stmt1) === false) {
-        handleErrors();
-    } else {
-        die("A closed statement cannot be reused.");
+    try {
+        if (sqlsrv_num_fields($stmt1) === false) {
+            handleErrors();
+        } else {
+            die("A closed statement cannot be reused.");
+        }
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
     }
 
     trace("\nClosing the statement again (no error expected) ...\n");
-
-    if (sqlsrv_free_stmt($stmt1) === false) {
-        fatalError("A statement can be closed multiple times.");
+    try {
+        if (sqlsrv_free_stmt($stmt1) === false) {
+            fatalError("A statement can be closed multiple times.");
+        }
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
     }
-
     dropTable($conn1, $tableName);
 
     sqlsrv_close($conn1);
@@ -49,15 +62,14 @@ function close()
 }
 
 try {
+    set_error_handler("warningHandler", E_WARNING);
     close();
 } catch (Exception $e) {
-    echo $e->getMessage();
+    echo $e->getMessage() . PHP_EOL;
 }
 
 ?>
---EXPECTREGEX--
-
-Warning: sqlsrv_num_fields\(\): supplied resource is not a valid ss_sqlsrv_stmt resource in .*TC36_Close.php on line 21
-
-Warning: sqlsrv_free_stmt\(\): supplied resource is not a valid ss_sqlsrv_stmt resource in .*TC36_Close.php on line 29
+--EXPECT--
+sqlsrv_num_fields(): supplied resource is not a valid ss_sqlsrv_stmt resource
+sqlsrv_free_stmt(): supplied resource is not a valid ss_sqlsrv_stmt resource
 Test "Statement - Close" completed successfully.

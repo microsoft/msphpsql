@@ -212,7 +212,7 @@ function fetchAsInts($conn, $tableName, $inputs)
                 fatalError("in fetchAsInts: expected $outOfRange for column $i\n");
             }
         } else {
-            $expected = floor($inputs[$i]);
+            $expected = floor(floatval($inputs[$i]));
             if ($f != $expected) {
                 echo "in fetchAsInts: for column $i expected $expected but got: ";
                 var_dump($f);
