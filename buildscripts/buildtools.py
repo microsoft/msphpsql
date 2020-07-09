@@ -50,12 +50,8 @@ class BuildUtil(object):
         
     def version_label(self):
         """Return the version label based on the PHP version."""
-        major_ver = self.major_version()
-        
-        if major_ver[2] == '0':
-            version = major_ver[0]
-        else:
-            version = major_ver[0] + major_ver[2]
+        major_ver = self.major_version()       
+        version = major_ver[0] + major_ver[2]
         return version
 
     def driver_name(self, driver, suffix):
