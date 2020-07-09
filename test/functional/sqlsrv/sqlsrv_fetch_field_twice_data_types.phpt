@@ -98,7 +98,7 @@ function Repro()
 Repro();
 
 ?>
---EXPECT--
+--EXPECTF--
 ﻿
 Test begins...
 string(79) "A statement must be prepared with sqlsrv_prepare before calling sqlsrv_execute."
@@ -111,7 +111,7 @@ string(25) "Field 0 returned no data."
 float(1.09)
 bool(false)
 string(25) "Field 1 returned no data."
-float(3.4379999637604)
+float(3.437999963760%s)
 bool(false)
 string(25) "Field 2 returned no data."
 string(23) "1756-04-16 23:27:09.130"

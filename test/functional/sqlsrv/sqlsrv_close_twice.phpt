@@ -3,6 +3,14 @@ Free statement twice
 --FILE--
 ﻿<?php
 require_once('MsCommon.inc');
+set_error_handler("warningHandler", E_WARNING);
+
+// When testing with PHP 8.0 it throws a TypeError instead of a warning. Thus implement a custom 
+// warning handler such that with PHP 7.x the warning would be handled to throw a TypeError.
+function warningHandler($errno, $errstr) 
+{ 
+    throw new TypeError($errstr);
+}
 
 function CloseTwice()
 {
@@ -35,8 +43,10 @@ function Repro()
     startTest("sqlsrv_close_twice");
     try {
         CloseTwice();
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
     } catch (Exception $e) {
-        echo $e->getMessage();
+        echo $e->getMessage() . PHP_EOL;
     }
     echo "\nDone\n";
     endTest("sqlsrv_close_twice");
@@ -45,9 +55,8 @@ function Repro()
 Repro();
 
 ?>
---EXPECTREGEX--
-﻿
-Warning: sqlsrv_free_stmt\(\): supplied resource is not a valid ss_sqlsrv_stmt resource in .+sqlsrv_close_twice.php on line [0-9]+
+--EXPECT--
+﻿sqlsrv_free_stmt(): supplied resource is not a valid ss_sqlsrv_stmt resource
 
 Done
 Test "sqlsrv_close_twice" completed successfully.
