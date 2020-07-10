@@ -119,8 +119,9 @@ try {
             $expected = str_replace('.', ',', $pi);
         }
     }
-    if ($value != $expected) {
-        echo "Expected $pi to be $expected but got $value\n";
+    if ($value != floatval($expected)) {
+        echo "Expected $pi to be $expected but got:";
+        var_dump($value);
     }
 
     unset($stmt);
