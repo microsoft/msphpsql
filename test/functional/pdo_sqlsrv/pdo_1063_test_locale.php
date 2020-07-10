@@ -120,10 +120,7 @@ try {
         }
     }
     if ($value != $expected) {
-        echo "Expected: "
-        printf("%f\n", $expected);
-        echo "but got: ";
-        printf("%f\n", $value);
+        echo "Expected: '$expected' but got '$value'\n";
     }
 
     unset($stmt);
