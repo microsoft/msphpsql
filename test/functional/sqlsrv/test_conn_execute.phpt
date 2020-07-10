@@ -15,7 +15,7 @@ crash caused by a statement being orphaned when an error occurred during sqlsrv_
     function compareMessages($err, $exp8x, $exp7x) 
     {
         $expected = (PHP_MAJOR_VERSION == 8) ? $exp8x : $exp7x;
-        if ($err->getMessage() !== $expected) {
+        if (!fnmatch($expected, $err->getMessage())) {
             echo $err->getMessage() . PHP_EOL;
         }
     }
@@ -35,7 +35,7 @@ crash caused by a statement being orphaned when an error occurred during sqlsrv_
     } catch (TypeError $e) {
         compareMessages($e, 
                         "sqlsrv_fetch_array(): Argument #1 (\$stmt) must be of type resource, bool given", 
-                        "sqlsrv_fetch_array() expects parameter 1 to be resource, bool given");       
+                        "sqlsrv_fetch_array() expects parameter 1 to be resource, bool* given");       
     }
 
     echo "Done\n";
