@@ -37,9 +37,9 @@ $locale = ($_SERVER['argv'][2] ?? '');
 
 echo "**Begin**" . PHP_EOL;
 
-// Assuming LC_ALL is 'en_US.UTF-8', so is LC_CTYPE
+// Assuming LC_ALL is 'en_US.UTF-8', so is LC_CTYPE, except in PHP 8 (TODO)
 // But default LC_MONETARY varies
-$ctype = 'en_US.UTF-8';
+$ctype = (PHP_MAJOR_VERSION == 8 && $setLocaleInfo == 0) ? 'C' : 'en_US.UTF-8';
 switch ($setLocaleInfo) {
     case 0:
     case 1:
@@ -128,15 +128,17 @@ if (!$stmt) {
 // https://wiki.php.net/rfc/locale_independent_float_to_string
 while (sqlsrv_fetch($stmt)) {
     $value = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_FLOAT);
-    $expected = $pi;
+    $expected = 3.14159;
     if (PHP_MAJOR_VERSION < 8) {
         if ($setLocaleInfo > 0 && $english === false) {
-            $expected = str_replace('.', ',', $pi);
+            $expected = floatval($pi);
         }
     }
-    if ($value != floatval($expected)) {
-        echo "Expected $pi to be $expected but got:";
-        var_dump($value);
+    if ($value != $expected) {
+        echo "Expected: "
+        printf("%f\n", $expected);
+        echo "but got: ";
+        printf("%f\n", $value);
     }
 }
 
