@@ -2101,7 +2101,6 @@ SQLSMALLINT default_c_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno,
                 break;
             case CP_UTF8:
                 sql_c_type = (is_a_numeric_type(sql_type)) ? SQL_C_CHAR : SQL_C_WCHAR;
-                //sql_c_type = SQL_C_WCHAR;
                 break;
             default:
                 THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_PARAMETER_ENCODING, paramno);

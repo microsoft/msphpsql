@@ -694,7 +694,7 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
     LOG_FUNCTION( "PHP_RSHUTDOWN for php_sqlsrv" );
     reset_errors();
 
-	// TODO - destruction
+	// destruction
     zval_ptr_dtor( &SQLSRV_G( errors ));
     zval_ptr_dtor( &SQLSRV_G( warnings ));
 
