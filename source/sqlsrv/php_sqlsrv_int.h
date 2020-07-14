@@ -366,7 +366,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_s
     SQLSRV_UNUSED( return_value );
 
     zval* rsrc;
-    H* h;
+    H* h = NULL;
     
     // reset the errors from the previous API call
     reset_errors();
