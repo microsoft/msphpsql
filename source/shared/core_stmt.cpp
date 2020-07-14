@@ -3055,14 +3055,13 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
         } else {
             short oldpos = 0;
             if (pt == NULL) {
-                pt = exp;       // Decimal point not found, use the exp sign
-                oldpos = exp - src;
+                oldpos = exp - src;     // Decimal point not found, use the exp sign
             }
             else {
                 oldpos = pt - src;
                 num_decimals = exp - pt - 1;
                 if (power > 0 && num_decimals <= power) {
-                    return;     // The result will be a whole number, do nothing and return
+                    return;             // The result will be a whole number, do nothing and return
                 }
             }
 

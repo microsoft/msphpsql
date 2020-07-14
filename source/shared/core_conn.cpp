@@ -808,7 +808,10 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
             zval* auth_option = NULL;
             auth_option = zend_hash_index_find(options, SQLSRV_CONN_OPTION_AUTHENTICATION);
 
-            char* option = (auth_option != NULL) ? Z_STRVAL_P(auth_option) : "";
+            char* option = NULL;
+            if (auth_option != NULL) {
+                option = Z_STRVAL_P(auth_option);
+            }
 
             if (!stricmp(option, AzureADOptions::AZURE_AUTH_AD_MSI)) {
                 activeDirectoryMSI = true;
