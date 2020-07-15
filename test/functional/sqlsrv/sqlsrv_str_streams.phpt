@@ -18,12 +18,7 @@ function setup_test($conn, $field_type)
 function start_test()
 {
     require_once('MsCommon.inc');
-
-    $noAnsiTest = $localeDisabled;
-    if (!$noAnsiTest) {
-        setUSAnsiLocale();
-    }
-    
+   
     sqlsrv_configure('WarningsReturnAsErrors', 0);
     $conn = connect();
     if (!$conn) {
@@ -113,31 +108,34 @@ function start_test()
 
     echo "retrieving char encoded varchar(max)\n";
 
-    $stmt = sqlsrv_query($conn, $params['selectQuery']);
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
-
-    $result = sqlsrv_fetch($stmt);
-    if ($result === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
-
-    $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
-    if ($db_stream === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
-    $file_stream = fopen($params['testImageURL'], "rb");
-    while (($file_line = fread($file_stream, 80)) &&
-            ($db_line = fread($db_stream, 80))) {
-        if ($file_line != $db_line) {
-            // continue testing even if the data not identical
-            echo("Characters not identical!!\n");
-            break;
+    // TODO: need to investigate whether the following works outside Windows 
+    if (isWindows()) {
+        $stmt = sqlsrv_query($conn, $params['selectQuery']);
+        if ($stmt === false) {
+            die(print_r(sqlsrv_errors(), true));
         }
-    }
 
-    sqlsrv_free_stmt($stmt);
+        $result = sqlsrv_fetch($stmt);
+        if ($result === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+
+        $db_stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR));
+        if ($db_stream === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+        $file_stream = fopen($params['testImageURL'], "rb");
+        while (($file_line = fread($file_stream, 80)) &&
+                ($db_line = fread($db_stream, 80))) {
+            if ($file_line != $db_line) {
+                // continue testing even if the data not identical
+                echo("Characters not identical!!\n");
+                break;
+            }
+        }
+
+        sqlsrv_free_stmt($stmt);
+    }
 
     $params = setup_test($conn, "nvarchar(max)");
 
@@ -169,7 +167,7 @@ function start_test()
 
     echo "retrieving char encoded nvarchar(max)\n";
 
-    if (!$noAnsiTest) {
+    if (isWindows()) {
         $stmt = sqlsrv_query($conn, $params['selectQuery']);
         if ($stmt === false) {
             die(print_r(sqlsrv_errors(), true));
@@ -185,12 +183,12 @@ function start_test()
             die(print_r(sqlsrv_errors(), true));
         }
 
-        $questionMarks = str_repeat('?', 5);
+        $questionMarks = str_repeat('?', 20);
         while ($db_line = fread($db_stream, 80)) {
             $pos = strpos($db_line, $questionMarks);
 
             if ($pos === false) {
-                echo "Unable to find at leaast 5 question marks together\n";
+                echo "Unable to find a bunch of question marks together\n";
                 echo "$db_line\n";
             }
         }
