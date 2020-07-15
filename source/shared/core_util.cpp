@@ -146,6 +146,11 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         return true;
     }
 
+#ifndef _WIN32
+    // Allocate enough space to hold the largest possible number of bytes for UTF-8 conversion
+    // instead of calling FromUtf16, for performance reasons
+    cchOutLen = 4 * cchInLen;
+#else	
     // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
     // an error.   This happens only on XP.
     DWORD flags = 0;
@@ -154,11 +159,6 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         flags = WC_ERR_INVALID_CHARS;
     }
 
-#ifndef _WIN32
-    // Allocate enough space to hold the largest possible number of bytes for UTF-8 conversion
-    // instead of calling FromUtf16, for performance reasons
-    cchOutLen = 4*cchInLen;
-#else	
     // Calculate the number of output bytes required - no performance hit here because
     // WideCharToMultiByte is highly optimised
     cchOutLen = WideCharToMultiByte( encoding, flags,

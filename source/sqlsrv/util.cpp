@@ -775,7 +775,6 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
     zval temp; 
 	ZVAL_UNDEF(&temp);
 	core::sqlsrv_zval_stringl( &temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE );
-    //TODO: reference?
 	Z_TRY_ADDREF_P( &temp );
     if( add_next_index_zval( error_z, &temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
@@ -797,7 +796,6 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
     // native_message
 	ZVAL_UNDEF(&temp);
     ZVAL_STRING( &temp, reinterpret_cast<char*>( error->native_message ) );
-    //TODO: reference?
 	Z_TRY_ADDREF_P(&temp);
     if( add_next_index_zval( error_z, &temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );

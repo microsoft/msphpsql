@@ -389,7 +389,6 @@ int FormattedPrintA( IFormattedPrintOutput<char> * output, const char *format, v
         char sz[BUFFERSIZE];
         } buffer = {'\0'};
     WCHAR wchar;                /* temp wchar_t */
-    int buffersize;             /* size of text.sz (used only for the call to _cfltcvt) */
     int bufferiswide=0;         /* non-zero = buffer contains wide chars already */
 
 #ifndef _SAFECRT_IMPL
@@ -406,7 +405,6 @@ int FormattedPrintA( IFormattedPrintOutput<char> * output, const char *format, v
     textlen = 0;        /* no text yet */
     state = ST_NORMAL;  /* starting state */
     heapbuf = NULL;     /* not using heap-allocated buffer */
-    buffersize = 0;
 
     /* main loop -- loop while format character exist and no I/O errors */
     while ((ch = *format++) != '\0' && charsout >= 0) {
@@ -631,9 +629,9 @@ int FormattedPrintA( IFormattedPrintOutput<char> * output, const char *format, v
             case ('a'): {
                 /* floating point conversion -- we call cfltcvt routines */
                 /* to do the work for us.                                */
-                flags |= FL_SIGNED;         /* floating point is signed conversion */
-                text.sz = buffer.sz;        /* put result in buffer */
-                buffersize = BUFFERSIZE;
+                flags |= FL_SIGNED;             /* floating point is signed conversion */
+                text.sz = buffer.sz;            /* put result in buffer */
+                int buffersize = BUFFERSIZE;    /* size of text.sz (used only for the call to _cfltcvt) */
 
                 /* compute the precision value */
                 if (precision < 0)
