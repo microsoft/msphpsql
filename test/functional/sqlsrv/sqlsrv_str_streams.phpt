@@ -19,7 +19,10 @@ function start_test()
 {
     require_once('MsCommon.inc');
 
-    setUSAnsiLocale();
+    $noAnsiTest = $localeDisabled;
+    if (!$noAnsiTest) {
+        setUSAnsiLocale();
+    }
     
     sqlsrv_configure('WarningsReturnAsErrors', 0);
     $conn = connect();
@@ -166,7 +169,7 @@ function start_test()
 
     echo "retrieving char encoded nvarchar(max)\n";
 
-    if (!isLocaleDisabled()) {
+    if (!$noAnsiTest) {
         $stmt = sqlsrv_query($conn, $params['selectQuery']);
         if ($stmt === false) {
             die(print_r(sqlsrv_errors(), true));
@@ -182,12 +185,12 @@ function start_test()
             die(print_r(sqlsrv_errors(), true));
         }
 
-        $questionMarks = str_repeat('?', 20);
+        $questionMarks = str_repeat('?', 5);
         while ($db_line = fread($db_stream, 80)) {
             $pos = strpos($db_line, $questionMarks);
 
             if ($pos === false) {
-                echo "Unable to find a long stretch of question marks\n";
+                echo "Unable to find at leaast 5 question marks together\n";
                 echo "$db_line\n";
             }
         }
