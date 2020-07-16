@@ -813,7 +813,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                 option = Z_STRVAL_P(auth_option);
             }
 
-            if (!stricmp(option, AzureADOptions::AZURE_AUTH_AD_MSI)) {
+            if (option != NULL && !stricmp(option, AzureADOptions::AZURE_AUTH_AD_MSI)) {
                 activeDirectoryMSI = true;
 
                 // There are two types of managed identities:
