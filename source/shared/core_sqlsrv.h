@@ -397,6 +397,7 @@ inline void* sqlsrv_malloc( _In_ size_t element_count, _In_ size_t element_size,
         DIE( "Integer overflow in sqlsrv_malloc" );
     }
 
+    // safeguard against anomalous calculation or any arithmetic overflow
     if( element_size * element_count + extra <= 0 ) {
         DIE( "Allocation size must be more than 0" );
     }
