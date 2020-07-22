@@ -61,7 +61,7 @@ class ExPDO extends PDO
         echo __METHOD__ . "()\n";
     }
 
-    function query($sql)
+    function query($sql, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
     {
         echo __METHOD__ . "()\n";
         $stmt = $this->prepare($sql, array(PDO::ATTR_STATEMENT_CLASS=>array('ExPDOStatement', array($this))));
