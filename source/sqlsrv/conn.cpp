@@ -967,28 +967,22 @@ PHP_FUNCTION( sqlsrv_rollback )
 
 PHP_FUNCTION( sqlsrv_client_info )
 {
-
     LOG_FUNCTION( "sqlsrv_client_info" );
     ss_sqlsrv_conn* conn = NULL;
     PROCESS_PARAMS( conn, "r", _FN_, 0 );
     
     try {
+        core_sqlsrv_get_client_info(conn, return_value);
 
-        core_sqlsrv_get_client_info( conn, return_value );
-        
         // Add the sqlsrv driver's file version
         //Declarations below eliminate compiler warnings about string constant to char* conversions
         const char* extver = "ExtensionVer";
         std::string filever = VER_FILEVERSION_STR;
-        core::sqlsrv_add_assoc_string( *conn, return_value, extver, &filever[0], 1 /*duplicate*/ );
-    }
-
-    catch( core::CoreException& ) {
+        add_assoc_string(return_value, extver, &filever[0]);
+    } catch (core::CoreException&) {
         RETURN_FALSE;
-    }
-    catch( ... ) {
-
-        DIE( "sqlsrv_client_info: Unknown exception caught." );
+    } catch (...) {
+        DIE("sqlsrv_client_info: Unknown exception caught.");
     }
 }
 
@@ -1011,20 +1005,15 @@ PHP_FUNCTION( sqlsrv_client_info )
 PHP_FUNCTION( sqlsrv_server_info )
 {
     try {
-
-        LOG_FUNCTION( "sqlsrv_server_info" );
+        LOG_FUNCTION("sqlsrv_server_info");
         ss_sqlsrv_conn* conn = NULL;
-        PROCESS_PARAMS( conn, "r", _FN_, 0 );
+        PROCESS_PARAMS(conn, "r", _FN_, 0);
 
-        core_sqlsrv_get_server_info( conn, return_value );
-    }
-
-    catch( core::CoreException& ) {
+        core_sqlsrv_get_server_info(conn, return_value);
+    } catch (core::CoreException&) {
         RETURN_FALSE;
-    }
-    catch( ... ) {
-
-        DIE( "sqlsrv_server_info: Unknown exception caught." );
+    } catch (...) {
+        DIE("sqlsrv_server_info: Unknown exception caught.");
     }
 }
 

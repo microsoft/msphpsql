@@ -159,7 +159,7 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
 {
     ZVAL_UNDEF( &active_stream );
     // initialize the input string parameters array (which holds zvals)
-    core::sqlsrv_array_init( *conn, &param_input_strings );
+    array_init(&param_input_strings);
 
     // initialize the (input only) stream parameters (which holds sqlsrv_stream structures)
     ZVAL_NEW_ARR( &param_streams );
@@ -574,7 +574,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
                     }
                     buffer = Z_STRVAL_P( &wbuffer_z );
                     buffer_len = Z_STRLEN_P( &wbuffer_z );
-                    core::sqlsrv_add_index_zval( *stmt, &( stmt->param_input_strings ), param_num, &wbuffer_z );
+                    add_index_zval(&(stmt->param_input_strings), param_num, &wbuffer_z);
                 }
                 ind_ptr = buffer_len;
                 if( direction != SQL_PARAM_INPUT ){

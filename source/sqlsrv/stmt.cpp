@@ -499,8 +499,8 @@ PHP_FUNCTION( sqlsrv_field_metadata )
     }
 
     zval result_meta_data;
-    ZVAL_UNDEF( &result_meta_data );
-    core::sqlsrv_array_init( *stmt, &result_meta_data );
+    ZVAL_UNDEF(&result_meta_data);
+    array_init(&result_meta_data);
 
     for( SQLSMALLINT f = 0; f < num_cols; ++f ) {
         field_meta_data* core_meta_data = stmt->current_meta_data[f];
@@ -508,13 +508,13 @@ PHP_FUNCTION( sqlsrv_field_metadata )
         // initialize the array
         zval field_array;
         ZVAL_UNDEF( &field_array );
-        core::sqlsrv_array_init( *stmt, &field_array );
+        array_init(&field_array );
 
         // add the field name to the associative array but keep a copy
-        core::sqlsrv_add_assoc_string(*stmt, &field_array, FieldMetaData::NAME,
-                                      reinterpret_cast<char*>(core_meta_data->field_name.get()), 1);
+        add_assoc_string(&field_array, FieldMetaData::NAME, reinterpret_cast<char*>(core_meta_data->field_name.get()));
 
-        core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::TYPE, core_meta_data->field_type );
+        //core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::TYPE, core_meta_data->field_type );
+        add_assoc_long(&field_array, FieldMetaData::TYPE, core_meta_data->field_type);
 
         switch( core_meta_data->field_type ) {
             case SQL_DECIMAL:
@@ -523,9 +523,12 @@ PHP_FUNCTION( sqlsrv_field_metadata )
             case SQL_TYPE_DATE:
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
-                core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::SIZE );
-                core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::PREC, core_meta_data->field_precision );
-                core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::SCALE, core_meta_data->field_scale );
+                //core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::SIZE );
+                //core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::PREC, core_meta_data->field_precision );
+                //core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::SCALE, core_meta_data->field_scale );
+                add_assoc_null(&field_array, FieldMetaData::SIZE);
+                add_assoc_long(&field_array, FieldMetaData::PREC, core_meta_data->field_precision);
+                add_assoc_long(&field_array, FieldMetaData::SCALE, core_meta_data->field_scale);
                 break;
             case SQL_BIT:
             case SQL_TINYINT:
@@ -535,26 +538,33 @@ PHP_FUNCTION( sqlsrv_field_metadata )
             case SQL_REAL:
             case SQL_FLOAT:
             case SQL_DOUBLE:
-                core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::SIZE );
-                core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::PREC, core_meta_data->field_precision );
-                core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::SCALE );
+                //core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::SIZE );
+                //core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::PREC, core_meta_data->field_precision );
+                //core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::SCALE );
+                add_assoc_null(&field_array, FieldMetaData::SIZE);
+                add_assoc_long(&field_array, FieldMetaData::PREC, core_meta_data->field_precision);
+                add_assoc_null(&field_array, FieldMetaData::SCALE);
                 break;
             default:
-                core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::SIZE, core_meta_data->field_size );
-                core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::PREC );
-                core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::SCALE );
+                //core::sqlsrv_add_assoc_long( *stmt, &field_array, FieldMetaData::SIZE, core_meta_data->field_size );
+                //core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::PREC );
+                //core::sqlsrv_add_assoc_null( *stmt, &field_array, FieldMetaData::SCALE );
+                add_assoc_long(&field_array, FieldMetaData::SIZE, core_meta_data->field_size);
+                add_assoc_null(&field_array, FieldMetaData::PREC);
+                add_assoc_null(&field_array, FieldMetaData::SCALE);
                 break;
         }
 
         // add the nullability to the array
-        core::sqlsrv_add_assoc_long(*stmt, &field_array, FieldMetaData::NULLABLE, core_meta_data->field_is_nullable);
+        //core::sqlsrv_add_assoc_long(*stmt, &field_array, FieldMetaData::NULLABLE, core_meta_data->field_is_nullable);
+        add_assoc_long(&field_array, FieldMetaData::NULLABLE, core_meta_data->field_is_nullable);
 
         if (stmt->data_classification) {
             data_classification::fill_column_sensitivity_array(stmt, f, &field_array);
         }
 
         // add this field's meta data to the result set meta data
-        core::sqlsrv_add_next_index_zval( *stmt, &result_meta_data, &field_array );
+        add_next_index_zval(&result_meta_data, &field_array);
     }
 
     // return our built collection and transfer ownership
@@ -1873,13 +1883,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
     }
 
     int zr = SUCCESS;
-#if PHP_VERSION_ID < 70300
-    CHECK_ZEND_ERROR(array_init(&fields), stmt, SQLSRV_ERROR_ZEND_HASH) {
-        throw ss::SSException();
-    }
-#else
     array_init(&fields);
-#endif
 
 	for( int i = 0; i < num_cols; ++i ) {
 		SQLLEN field_len = -1;
@@ -1908,10 +1912,11 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 
 			if( stmt->fetch_field_names[i].len > 0 || allow_empty_field_names ) {
 
-				zr = add_assoc_zval( &fields, stmt->fetch_field_names[i].name, &field );
-				CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
-					throw ss::SSException();
-				}
+                add_assoc_zval(&fields, stmt->fetch_field_names[i].name, &field);
+				//zr = add_assoc_zval( &fields, stmt->fetch_field_names[i].name, &field );
+				//CHECK_ZEND_ERROR( zr, stmt, SQLSRV_ERROR_ZEND_HASH ) {
+				//	throw ss::SSException();
+				//}
 			}
 		}
 		//only addref when the fetch_type is BOTH because this is the only case when fields(hashtable)
