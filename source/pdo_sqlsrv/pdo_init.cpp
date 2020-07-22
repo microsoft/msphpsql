@@ -280,10 +280,6 @@ namespace {
         
         SQLSRV_ASSERT( zend_class != NULL, "REGISTER_PDO_SQLSRV_CLASS_CONST_LONG: php_pdo_get_dbh_ce failed");
         zend_declare_class_constant_long(zend_class, const_cast<char*>(name), strlen(name), value);
-        //int zr = zend_declare_class_constant_long( zend_class, const_cast<char*>( name ), strlen( name ), value );
-        //if( zr == FAILURE ) {
-        //    throw core::CoreException(); 
-        //}
     }
 
     void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( _In_z_  char const* name, _In_z_ char const* value )
@@ -292,11 +288,6 @@ namespace {
 
         SQLSRV_ASSERT( zend_class != NULL, "REGISTER_PDO_SQLSRV_CLASS_CONST_STRING: php_pdo_get_dbh_ce failed");
         zend_declare_class_constant_string(zend_class, const_cast<char*>(name), strlen(name), const_cast<char*>(value));
-        //int zr = zend_declare_class_constant_string( zend_class, const_cast<char*>( name ), strlen( name ), const_cast<char*>( value ) );
-        //if( zr == FAILURE ) {
-
-        //    throw core::CoreException();
-        //}
     }
 
     // array of pdo constants.

@@ -761,17 +761,14 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
 
     // sqlstate
     zval temp; 
-	ZVAL_UNDEF(&temp);
-	core::sqlsrv_zval_stringl( &temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE );
-	Z_TRY_ADDREF_P( &temp );
+    ZVAL_UNDEF(&temp);
+    core::sqlsrv_zval_stringl( &temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE );
+    Z_TRY_ADDREF_P( &temp );
     if( add_next_index_zval( error_z, &temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
 
     add_assoc_zval(error_z, "SQLSTATE", &temp);
-    //if( add_assoc_zval( error_z, "SQLSTATE", &temp ) == FAILURE ) {
-    //    DIE( "Fatal error during error processing" );
-    //}
 
     // native_code
     if( add_next_index_long( error_z,  error->native_code ) == FAILURE ) {
@@ -779,22 +776,16 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
     }
 
     add_assoc_long(error_z, "code", error->native_code);
-    //if( add_assoc_long( error_z, "code", error->native_code ) == FAILURE ) {
-    //    DIE( "Fatal error during error processing" );
-    //}
 
     // native_message
-	ZVAL_UNDEF(&temp);
+    ZVAL_UNDEF(&temp);
     ZVAL_STRING( &temp, reinterpret_cast<char*>( error->native_message ) );
-	Z_TRY_ADDREF_P(&temp);
+    Z_TRY_ADDREF_P(&temp);
     if( add_next_index_zval( error_z, &temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
 
     add_assoc_zval(error_z, "message", &temp);
-    //if( add_assoc_zval( error_z, "message", &temp ) == FAILURE ) {
-    //    DIE( "Fatal error during error processing" );
-    //}
 
     // If it is an error or if warning_return_as_errors is true than
     // add the error or warning to the reported_chain.
@@ -802,7 +793,7 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
     {
         // if the warning is part of the ignored warning list than 
         // add to the ignored chain if the ignored chain is not null.
-		if( warning && ignore_warning( reinterpret_cast<char*>(error->sqlstate), error->native_code ) &&
+        if( warning && ignore_warning( reinterpret_cast<char*>(error->sqlstate), error->native_code ) &&
             ignored_chain != NULL ) {
             
             if( add_next_index_zval( ignored_chain, error_z ) == FAILURE ) {
