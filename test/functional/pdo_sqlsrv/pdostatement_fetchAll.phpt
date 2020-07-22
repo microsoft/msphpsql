@@ -80,8 +80,11 @@ function fetchAllInvalid($conn, $tbname)
     } catch (PDOException $ex) {
         print_r($ex);
     } catch (Error $err) {
-        $expected = (PHP_MAJOR_VERSION == 8) ? 'PDO::FETCH_UNKNOWN' : 'FETCH_UNKNOWN';
-        $message = "Undefined class constant '$expected'";
+        if (PHP_MAJOR_VERSION == 8) {
+            $message = "Undefined constant PDO::FETCH_UNKNOWN";
+        } else {
+            $message = "Undefined class constant 'FETCH_UNKNOWN'";
+        }
         if ($err->getMessage() !== $message) {
             echo $err->getMessage() . PHP_EOL;
         }

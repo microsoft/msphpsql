@@ -55,7 +55,7 @@ class ExPDO extends PDO
         return (call_user_func_array(array($this, 'parent::exec'), $args));
     }
 
-    public function query(string $statement)
+    public function query($statement, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
     {
         $this->protocol();
         $args = func_get_args();

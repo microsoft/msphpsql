@@ -69,7 +69,7 @@ class ExPDO extends PDO
         echo __METHOD__ . "()\n";
     }
 
-    function query($sql)
+    function query($sql, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
     {
         echo __METHOD__ . "()\n";
         $stmt = parent::query($sql);

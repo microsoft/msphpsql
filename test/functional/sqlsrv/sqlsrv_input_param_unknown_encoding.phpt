@@ -21,7 +21,7 @@ function warningHandler($errno, $errstr)
 
 function compareMessages($err) 
 {
-    $exp8x = "Undefined constant 'SQLSRV_ENC_UNKNOWN'"; 
+    $exp8x = 'Undefined constant "SQLSRV_ENC_UNKNOWN"';
     $exp7x = "Use of undefined constant SQLSRV_ENC_UNKNOWN - assumed 'SQLSRV_ENC_UNKNOWN' (this will throw an Error in a future version of PHP)";
     
     $expected = (PHP_MAJOR_VERSION == 8) ? $exp8x : $exp7x;
