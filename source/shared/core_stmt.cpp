@@ -275,6 +275,15 @@ void sqlsrv_stmt::clean_up_sensitivity_metadata()
     }
 }
 
+void sqlsrv_stmt::set_query_timeout()
+{
+    if (query_timeout == QUERY_TIMEOUT_INVALID || query_timeout < 0) {
+        return;
+    }
+
+    core::SQLSetStmtAttr(this, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>((SQLLEN)query_timeout), SQL_IS_UINTEGER);
+}
+
 // core_sqlsrv_create_stmt
 // Common code to allocate a statement from either driver.  Returns a valid driver statement object or
 // throws an exception if an error occurs.

@@ -130,9 +130,6 @@ struct ss_sqlsrv_stmt : public sqlsrv_stmt {
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream );
 
-    // driver specific way to set query timeout
-    virtual void set_query_timeout();
-
     bool prepared;                               // whether the statement has been prepared yet (used for error messages)
     zend_ulong conn_index;                       // index into the connection hash that contains this statement structure
     zval* params_z;                              // hold parameters passed to sqlsrv_prepare but not used until sqlsrv_execute

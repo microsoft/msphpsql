@@ -1523,12 +1523,3 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
     
     return sqlsrv_phptype;
 }
-
-void pdo_sqlsrv_stmt::set_query_timeout()
-{
-    if (query_timeout == QUERY_TIMEOUT_INVALID || query_timeout < 0) {
-        return;
-    }
-
-    core::SQLSetStmtAttr(this, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>((SQLLEN)query_timeout), SQL_IS_UINTEGER);
-}

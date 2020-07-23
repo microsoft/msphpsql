@@ -10,19 +10,23 @@ sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
 
 require( 'MsCommon.inc' );
 
-$throwaway = Connect(array( 'ConnectionPooling' => 1 ));
+// MARS allows applications to have more than one pending request per connection and to have more 
+// than one active default result set per connection, which is not required for this test.
+$options = array('ConnectionPooling' => 1, 'MultipleActiveResultSets' => 0);
+
+$throwaway = Connect();
 if( !$throwaway ) {
     die( print_r( sqlsrv_errors(), true ));
 }
 
 for( $i = 1; $i <= 3; ++$i ) {
 
-    $conn = Connect(array( 'ConnectionPooling' => 1 ));
+    $conn = Connect($options);
     if( !$conn ) {
         die( print_r( sqlsrv_errors(), true ));
     }
 
-    $conn2 = Connect(array( 'ConnectionPooling' => 1 ));
+    $conn2 = Connect($options);
     if( !$conn2 ) {
       die( print_r( sqlsrv_errors(), true ));
     }
@@ -46,7 +50,6 @@ for( $i = 1; $i <= 3; ++$i ) {
     if( $stmt === false ) {
       die( print_r( sqlsrv_errors(), true ));
     }
-
 
     $stmt2 = sqlsrv_query( $conn2, "WAITFOR DELAY '00:00:05'; SELECT * FROM [test_query_timeout]", array(null), array( 'QueryTimeout' => 1 ));
     if( $stmt2 === false ) {
