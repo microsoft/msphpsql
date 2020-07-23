@@ -1520,6 +1520,8 @@ struct sqlsrv_stmt : public sqlsrv_context {
 
     // free sensitivity classification metadata
     void clean_up_sensitivity_metadata();
+    // set query timeout
+    void set_query_timeout();
 
     sqlsrv_conn*   conn;                  // Connection that created this statement
 
@@ -1571,8 +1573,6 @@ struct sqlsrv_stmt : public sqlsrv_context {
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     virtual sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream ) = 0;
 
-    // driver specific way to set query timeout
-    virtual void set_query_timeout() = 0;
 };
 
 // *** field metadata struct ***

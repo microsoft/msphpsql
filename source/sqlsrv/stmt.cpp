@@ -261,29 +261,6 @@ sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, _
     return ss_phptype;
 }
 
-void ss_sqlsrv_stmt::set_query_timeout()
-{
-    if (query_timeout == QUERY_TIMEOUT_INVALID || query_timeout < 0) {
-        return;
-    }
-
-    // set the statement attribute
-    core::SQLSetStmtAttr(this, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>( (SQLLEN)query_timeout ), SQL_IS_UINTEGER );
-
-    // a query timeout of 0 indicates "no timeout", which means that lock_timeout should also be set to "no timeout" which
-    // is represented by -1.
-    int lock_timeout = (( query_timeout == 0 ) ? -1 : query_timeout * 1000 /*convert to milliseconds*/ );
-
-    // set the LOCK_TIMEOUT on the server.
-    char lock_timeout_sql[32] = {'\0'};
-
-    int written = snprintf( lock_timeout_sql, sizeof( lock_timeout_sql ), "SET LOCK_TIMEOUT %d", lock_timeout );
-    SQLSRV_ASSERT( (written != -1 && written != sizeof( lock_timeout_sql )),
-                  "stmt_option_query_timeout: snprintf failed. Shouldn't ever fail." );
-
-    core::SQLExecDirect(this, lock_timeout_sql );
-}
-
 // statement specific parameter proccessing.  Uses the generic function specialised to return a statement
 // resource.
 #define PROCESS_PARAMS( rsrc, param_spec, calling_func, param_count, ... )                                                        \

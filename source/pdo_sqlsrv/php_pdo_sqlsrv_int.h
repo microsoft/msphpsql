@@ -260,9 +260,6 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     // for PDO, everything is a string, so we return SQLSRV_PHPTYPE_STRING for all SQL types
     virtual sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream );
 
-    // driver specific way to set query timeout
-    virtual void set_query_timeout();
-
     bool direct_query;                        // flag set if the query should be executed directly or prepared
     const char* direct_query_subst_string;    // if the query is direct, hold the substitution string if using named parameters
     size_t direct_query_subst_string_len;        // length of query string used for direct queries
