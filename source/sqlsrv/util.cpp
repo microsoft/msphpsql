@@ -519,13 +519,7 @@ PHP_FUNCTION( sqlsrv_errors )
     }
     zval err_z;
     ZVAL_UNDEF(&err_z);
-#if PHP_VERSION_ID < 70300
-    if (array_init(&err_z) == FAILURE) {
-        RETURN_FALSE;
-    }
-#else
     array_init(&err_z);
-#endif
 
 	if( flags == SQLSRV_ERR_ALL || flags == SQLSRV_ERR_ERRORS ) {
 		if( Z_TYPE( SQLSRV_G( errors )) == IS_ARRAY && !sqlsrv_merge_zend_hash( &err_z, &SQLSRV_G( errors ) )) {
@@ -763,47 +757,35 @@ sqlsrv_error_const* get_error_message( _In_ unsigned int sqlsrv_error_code ) {
 void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, 
                          _In_ bool warning )
 {
-#if PHP_VERSION_ID < 70300
-    if (array_init(error_z) == FAILURE) {
-        DIE( "Fatal error during error processing" );
-    }
-#else
     array_init(error_z);
-#endif
 
     // sqlstate
     zval temp; 
-	ZVAL_UNDEF(&temp);
-	core::sqlsrv_zval_stringl( &temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE );
-	Z_TRY_ADDREF_P( &temp );
+    ZVAL_UNDEF(&temp);
+    core::sqlsrv_zval_stringl( &temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE );
+    Z_TRY_ADDREF_P( &temp );
     if( add_next_index_zval( error_z, &temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
 
-    if( add_assoc_zval( error_z, "SQLSTATE", &temp ) == FAILURE ) {
-        DIE( "Fatal error during error processing" );
-    }
+    add_assoc_zval(error_z, "SQLSTATE", &temp);
 
     // native_code
     if( add_next_index_long( error_z,  error->native_code ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
 
-    if( add_assoc_long( error_z, "code", error->native_code ) == FAILURE ) {
-        DIE( "Fatal error during error processing" );
-    }
+    add_assoc_long(error_z, "code", error->native_code);
 
     // native_message
-	ZVAL_UNDEF(&temp);
+    ZVAL_UNDEF(&temp);
     ZVAL_STRING( &temp, reinterpret_cast<char*>( error->native_message ) );
-	Z_TRY_ADDREF_P(&temp);
+    Z_TRY_ADDREF_P(&temp);
     if( add_next_index_zval( error_z, &temp ) == FAILURE ) {
         DIE( "Fatal error during error processing" );
     }
 
-    if( add_assoc_zval( error_z, "message", &temp ) == FAILURE ) {
-        DIE( "Fatal error during error processing" );
-    }
+    add_assoc_zval(error_z, "message", &temp);
 
     // If it is an error or if warning_return_as_errors is true than
     // add the error or warning to the reported_chain.
@@ -811,7 +793,7 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
     {
         // if the warning is part of the ignored warning list than 
         // add to the ignored chain if the ignored chain is not null.
-		if( warning && ignore_warning( reinterpret_cast<char*>(error->sqlstate), error->native_code ) &&
+        if( warning && ignore_warning( reinterpret_cast<char*>(error->sqlstate), error->native_code ) &&
             ignored_chain != NULL ) {
             
             if( add_next_index_zval( ignored_chain, error_z ) == FAILURE ) {
@@ -854,13 +836,7 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
     if( Z_TYPE_P( reported_chain ) == IS_NULL ) {
 
         reported_chain_was_null = true;
-#if PHP_VERSION_ID < 70300
-        if (array_init(reported_chain) == FAILURE) {
-            DIE( "Fatal error during error processing" );
-        }
-#else
         array_init(reported_chain);
-#endif
     }
     else {
         prev_reported_cnt = zend_hash_num_elements( Z_ARRVAL_P( reported_chain ));
@@ -872,13 +848,7 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
         if( Z_TYPE_P( ignored_chain ) == IS_NULL ) {
             
             ignored_chain_was_null = true;
-#if PHP_VERSION_ID < 70300
-            if (array_init(ignored_chain) == FAILURE) {
-                DIE( "Fatal error in handle_errors_and_warnings" );
-            }
-#else
             array_init( ignored_chain );
-#endif
         }
     }
 

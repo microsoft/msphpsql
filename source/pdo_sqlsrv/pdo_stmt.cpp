@@ -1065,7 +1065,7 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         }
 
         // initialize the array to nothing, as PDO requires us to create it
-        core::sqlsrv_array_init( *driver_stmt, return_value );
+        array_init(return_value);
 
         field_meta_data* core_meta_data;
 
@@ -1080,7 +1080,7 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
             // initialize the column data classification array 
             zval data_classification;
             ZVAL_UNDEF(&data_classification);
-            core::sqlsrv_array_init(*driver_stmt, &data_classification );
+            array_init(&data_classification);
 
             data_classification::fill_column_sensitivity_array(driver_stmt, (SQLSMALLINT)colno, &data_classification);
 

@@ -1230,8 +1230,7 @@ int pdo_sqlsrv_dbh_get_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 //Declarations below eliminate compiler warnings about string constant to char* conversions
                 const char* extver = "ExtensionVer";
                 std::string filever = VER_FILEVERSION_STR;
-                core::sqlsrv_add_assoc_string( *driver_dbh, return_value, extver, &filever[0], 1 /*duplicate*/
-                                               );
+                add_assoc_string(return_value, extver, &filever[0]);
                 break;
             }
 

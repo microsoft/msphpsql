@@ -71,7 +71,6 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                                                 void* driver,_Inout_ std::string& connection_string );
 void determine_server_version( _Inout_ sqlsrv_conn* conn );
 const char* get_processor_arch( void );
-void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len );
 connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ const char* key, _In_ SQLULEN key_len );
 void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str );
 void load_azure_key_vault( _Inout_ sqlsrv_conn* conn );
@@ -590,19 +589,11 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
 void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval* server_version )
 {
     try {
-
-        sqlsrv_malloc_auto_ptr<char> buffer;
+        char buffer[INFO_BUFFER_LEN] = "";
         SQLSMALLINT buffer_len = 0;
-
-        get_server_version( conn, &buffer, buffer_len );
-        core::sqlsrv_zval_stringl( server_version, buffer, buffer_len );
-        if ( buffer != 0 ) {
-            sqlsrv_free( buffer );
-        }
-        buffer.transferred();
-    }
-
-    catch( core::CoreException& ) {
+        core::SQLGetInfo(conn, SQL_DBMS_VER, buffer, INFO_BUFFER_LEN, &buffer_len);
+        core::sqlsrv_zval_stringl(server_version, buffer, buffer_len);
+    } catch( core::CoreException& ) {
         throw;
     }
 }
@@ -617,33 +608,25 @@ void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval* se
 void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *server_info )
 {
     try {
-
-        sqlsrv_malloc_auto_ptr<char> buffer;
+        char buffer[INFO_BUFFER_LEN] = "";
         SQLSMALLINT buffer_len = 0;
 
         // Get the database name
-        buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_DATABASE_NAME, buffer, INFO_BUFFER_LEN, &buffer_len );
+        core::SQLGetInfo(conn, SQL_DATABASE_NAME, buffer, INFO_BUFFER_LEN, &buffer_len);
 
         // initialize the array
-        core::sqlsrv_array_init( *conn, server_info );
+        array_init(server_info);
 
-        core::sqlsrv_add_assoc_string( *conn, server_info, "CurrentDatabase", buffer, 0 /*duplicate*/ );
-        buffer.transferred();
+        add_assoc_string(server_info, "CurrentDatabase", buffer);
 
         // Get the server version
-        get_server_version( conn, &buffer, buffer_len );
-        core::sqlsrv_add_assoc_string( *conn, server_info, "SQLServerVersion", buffer, 0 /*duplicate*/ );
-        buffer.transferred();
+        core::SQLGetInfo(conn, SQL_DBMS_VER, buffer, INFO_BUFFER_LEN, &buffer_len);
+        add_assoc_string(server_info, "SQLServerVersion", buffer);
 
         // Get the server name
-        buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_SERVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len );
-        core::sqlsrv_add_assoc_string( *conn, server_info, "SQLServerName", buffer, 0 /*duplicate*/ );
-        buffer.transferred();
-    }
-
-    catch( core::CoreException& ) {
+        core::SQLGetInfo(conn, SQL_SERVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len);
+        add_assoc_string(server_info, "SQLServerName", buffer);
+    } catch (core::CoreException&) {
         throw;
     }
 }
@@ -657,39 +640,29 @@ void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *server_
 void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_info )
 {
     try {
-
-        sqlsrv_malloc_auto_ptr<char> buffer;
+        char buffer[INFO_BUFFER_LEN] = "";
         SQLSMALLINT buffer_len = 0;
 
         // Get the ODBC driver's dll name
-        buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
         core::SQLGetInfo( conn, SQL_DRIVER_NAME, buffer, INFO_BUFFER_LEN, &buffer_len );
 
         // initialize the array
-        core::sqlsrv_array_init( *conn, client_info );
+        array_init(client_info);
 
 #ifndef _WIN32
-        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverName", buffer, 0 /*duplicate*/ );
+        add_assoc_string(client_info, "DriverName", buffer);
 #else
-        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverDllName", buffer, 0 /*duplicate*/ );
+        add_assoc_string(client_info, "DriverDllName", buffer);
 #endif // !_WIN32
-        buffer.transferred();
 
         // Get the ODBC driver's ODBC version
-        buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
         core::SQLGetInfo( conn, SQL_DRIVER_ODBC_VER, buffer, INFO_BUFFER_LEN, &buffer_len );
-        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverODBCVer", buffer, 0 /*duplicate*/ );
-        buffer.transferred();
+        add_assoc_string(client_info, "DriverODBCVer", buffer);
 
         // Get the OBDC driver's version
-        buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
         core::SQLGetInfo( conn, SQL_DRIVER_VER, buffer, INFO_BUFFER_LEN, &buffer_len );
-        core::sqlsrv_add_assoc_string( *conn, client_info, "DriverVer", buffer, 0 /*duplicate*/ );
-        buffer.transferred();
-
-    }
-
-    catch( core::CoreException& ) {
+        add_assoc_string(client_info, "DriverVer", buffer);
+    } catch( core::CoreException& ) {
         throw;
     }
 }
@@ -917,30 +890,6 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
         throw;
     }
 }
-
-
-// get_server_version
-// Helper function which returns the version of the SQL Server we are connected to.
-
-void get_server_version( _Inout_ sqlsrv_conn* conn, _Outptr_result_buffer_(len) char** server_version, _Out_ SQLSMALLINT& len )
-{
-    try {
-
-        sqlsrv_malloc_auto_ptr<char> buffer;
-        SQLSMALLINT buffer_len = 0;
-
-        buffer = static_cast<char*>( sqlsrv_malloc( INFO_BUFFER_LEN ));
-        core::SQLGetInfo( conn, SQL_DBMS_VER, buffer, INFO_BUFFER_LEN, &buffer_len );
-        *server_version = buffer;
-        len = buffer_len;
-        buffer.transferred();
-    }
-
-    catch( core::CoreException& ) {
-        throw;
-    }
-}
-
 
 // get_processor_arch
 // Calls GetSystemInfo to verify the what architecture of the processor is supported

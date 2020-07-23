@@ -617,27 +617,27 @@ namespace data_classification {
 
         zval data_classification;
         ZVAL_UNDEF(&data_classification);
-        core::sqlsrv_array_init(*stmt, &data_classification );
+        array_init(&data_classification);
 
         USHORT num_pairs = meta->columns_sensitivity[colno].num_pairs;
 
         if (num_pairs == 0) {
-            core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification);
+            add_assoc_zval(return_array, DATA_CLASS, &data_classification);
 
             return 0;
         }
 
         zval sensitivity_properties;
         ZVAL_UNDEF(&sensitivity_properties);
-        core::sqlsrv_array_init(*stmt, &sensitivity_properties);
+        array_init(&sensitivity_properties);
 
         for (USHORT j = 0; j < num_pairs; j++) {
             zval label_array, infotype_array;
             ZVAL_UNDEF(&label_array);
             ZVAL_UNDEF(&infotype_array);
 
-            core::sqlsrv_array_init(*stmt, &label_array);
-            core::sqlsrv_array_init(*stmt, &infotype_array);
+            array_init(&label_array);
+            array_init(&infotype_array);
 
             USHORT labelidx = meta->columns_sensitivity[colno].label_info_pairs[j].label_idx;
             USHORT typeidx = meta->columns_sensitivity[colno].label_info_pairs[j].infotype_idx;
@@ -647,22 +647,22 @@ namespace data_classification {
             char *infotype = meta->infotypes[typeidx]->name;
             char *infotype_id = meta->infotypes[typeidx]->id;
 
-            core::sqlsrv_add_assoc_string(*stmt, &label_array, NAME, label, 1);
-            core::sqlsrv_add_assoc_string(*stmt, &label_array, ID, label_id, 1);
+            add_assoc_string(&label_array, NAME, label);
+            add_assoc_string(&label_array, ID, label_id);
 
-            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, LABEL, &label_array);
+            add_assoc_zval(&sensitivity_properties, LABEL, &label_array);
 
-            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, NAME, infotype, 1);
-            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, ID, infotype_id, 1);
+            add_assoc_string(&infotype_array, NAME, infotype);
+            add_assoc_string(&infotype_array, ID, infotype_id);
 
-            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, INFOTYPE, &infotype_array);
+            add_assoc_zval(&sensitivity_properties, INFOTYPE, &infotype_array);
 
             // add the pair of sensitivity properties to data_classification
-            core::sqlsrv_add_next_index_zval(*stmt, &data_classification, &sensitivity_properties );
+            add_next_index_zval(&data_classification, &sensitivity_properties);
         }
 
         // add data classfication as associative array
-        core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification);
+        add_assoc_zval(return_array, DATA_CLASS, &data_classification);
 
         return num_pairs;
     }
