@@ -13,10 +13,10 @@ if ($localeDisabled) {
     die("skip not set up to test ansi locale");
 }
 
-$loc = setlocale(LC_ALL, 'fr_FR@euro');
-$loc1 = setlocale(LC_ALL, 'fr_FR.ISO8859-15');
-if (empty($loc) && empty($loc1)) {
-    die("skip required French locale not available");
-}
+// $loc = setlocale(LC_ALL, 'fr_FR@euro');
+// $loc1 = setlocale(LC_ALL, 'fr_FR.ISO8859-15');
+// if (empty($loc) && empty($loc1)) {
+    // die("skip required French locale not available");
+// }
 
 ?>
