@@ -5,7 +5,16 @@ This file must be saved in ANSI encoding and the required locale must be present
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_unix_ansitests.inc'); ?>
+<?php 
+
+require('skipif_unix_ansitests.inc'); 
+$loc = setlocale(LC_ALL, 'fr_FR@euro');
+$loc1 = setlocale(LC_ALL, 'fr_FR.ISO8859-15');
+if (empty($loc) && empty($loc1)) {
+    die("skip required French locale not available");
+}
+
+?>
 --FILE--
 <?php
 
