@@ -21,6 +21,7 @@ setlocale(LC_ALL, 'zh_CN.gb18030');
 try {
     $conn = new PDO("sqlsrv:server = $server;database=$tempDB;driver=$driver", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
 
     $tsql = "CREATE TABLE test1([id] int identity, [name] [varchar](50) NULL)";
     $stmt = $conn->query($tsql);
@@ -44,14 +45,14 @@ try {
         }
         $i++;
     }
-
+} catch (PDOException $e) {
+    echo $e->getMessage() . PHP_EOL;
+} finally {
     $tsql = "DROP TABLE test1";
     $conn->exec($tsql);
 
     unset($stmt);
     unset($conn);
-} catch (PDOException $e) {
-    echo $e->getMessage() . PHP_EOL;
 }
 
 echo "Done";

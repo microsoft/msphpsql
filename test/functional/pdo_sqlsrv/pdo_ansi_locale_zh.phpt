@@ -21,31 +21,31 @@ if (empty($loc)) {
 }
 --FILE--
 <?php
-function runTest()
+function runTest($conn, $tempDB)
 {
-    require_once('MsSetup.inc');
-    
-    $conn = new PDO("sqlsrv:server = $server;database=master;driver=$driver", $uid, $pwd);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    $tempDB = 'GB18030test' . rand(1, 100);
     $query = "CREATE DATABASE $tempDB COLLATE Chinese_PRC_CI_AS";
     $conn->exec($query);
     
     shell_exec("export LC_ALL=zh_CN.gb18030");
     shell_exec("iconv -c -f GB2312 -t GB18030 pdo_test_gb18030.php > test_gb18030.php");
     
-    print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/test_gb18030.php $tempDB"));
-    
-    $query = "DROP DATABASE $tempDB";
-    $conn->exec($query);
-    unset($conn);
+    print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/test_gb18030.php $tempDB"));   
 }
 
 try {
-    runTest();
+    $tempDB = 'GB18030test' . rand(1, 100);
+    require_once('MsSetup.inc');
+    
+    $conn = new PDO("sqlsrv:server = $server;database=master;driver=$driver", $uid, $pwd);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    runTest($conn, $tempDB);
 } catch (PDOException $e) {
     echo $e->getMessage() . PHP_EOL;
+} finally {
+    $query = "DROP DATABASE $tempDB";
+    $conn->exec($query);
+    unset($conn);
 }
 
 ?>
