@@ -1,5 +1,7 @@
 <?php
-
+/*
+This ansi test is invoked by pdo_ansi_locale_zh.phpt
+*/
 function insertText($conn, $text, $hexValue)
 {
     $hex = bin2hex($text);
