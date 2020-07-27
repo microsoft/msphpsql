@@ -96,6 +96,17 @@ extern "C" {
 #pragma warning( disable: 4005 4100 4127 4142 4244 4505 4530 )
 #endif
 
+/* Small change to let it build after a major internal change for php8.0
+ * More info:
+ * https://github.com/php/php-src/blob/php-8.0.0alpha3/UPGRADING.INTERNALS#L47
+ */
+#if PHP_MAJOR_VERSION >= 8
+# define TSRMLS_DC
+# define TSRMLS_D
+# define TSRMLS_CC
+# define TSRMLS_C
+#endif 
+
 #ifdef ZTS
 #include "TSRM.h"
 #endif
