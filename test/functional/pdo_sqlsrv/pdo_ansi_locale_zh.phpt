@@ -1,8 +1,8 @@
 --TEST--
 Test Chinese locale in Linux
 --DESCRIPTION--
-This test will invoke another php scirpt that is saved as GB2312(Simplified Chinese) ANSI format,
-namely pdo_test_gb18030.php.
+This test requires ODBC Driver 17.6 or above and will invoke another php script that 
+is saved as GB2312(Simplified Chinese) ANSI format, namely pdo_test_gb18030.php.
 To run this test, create a temporary database first with the correct collation
     CREATE DATABASE [GB18030test]
     COLLATE Chinese_PRC_CI_AS
@@ -19,6 +19,28 @@ $loc = setlocale(LC_ALL, 'zh_CN.gb18030');
 if (empty($loc)) {
     die("skip required gb18030 locale not available");
 }
+
+require_once('MsSetup.inc');
+try {
+    $conn = new PDO("sqlsrv:server=$server", $uid, $pwd);
+    $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)['DriverVer'];
+    $version = explode(".", $msodbcsqlVer);
+
+    $msodbcsqlMaj = $version[0];
+    $msodbcsqlMin = $version[1];
+
+    if ($msodbcsqlMaj < 17) {
+        die("skip Unsupported ODBC driver version");
+    }
+
+    if ($msodbcsqlMaj == 17 && $msodbcsqlMin < 6) {
+        die("skip Unsupported ODBC driver version");
+    }
+} catch (PDOException $e) {
+    die("skip Something went wrong during SKIPIF.");
+}
+?>
+
 --FILE--
 <?php
 function runTest($conn, $tempDB)
@@ -43,9 +65,11 @@ try {
 } catch (PDOException $e) {
     echo $e->getMessage() . PHP_EOL;
 } finally {
-    $query = "DROP DATABASE $tempDB";
-    $conn->exec($query);
-    unset($conn);
+    if ($conn) {
+        $query = "DROP DATABASE $tempDB";
+        $conn->exec($query);
+        unset($conn);
+    }
 }
 
 ?>
