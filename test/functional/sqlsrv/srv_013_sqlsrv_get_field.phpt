@@ -1,6 +1,7 @@
 --TEST--
-sqlsrv_get_field() using SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR)
+Test sqlsrv_get_field() using SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR)
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 
