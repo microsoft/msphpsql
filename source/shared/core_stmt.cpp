@@ -1844,6 +1844,7 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
         {
             sqlsrv_malloc_auto_ptr<double> field_value_temp;
             field_value_temp = static_cast<double*>( sqlsrv_malloc( sizeof( double )));
+            *field_value_temp = 0.0;
 
             SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_DOUBLE, field_value_temp, sizeof( double ),
                                                            field_len, true /*handle_warning*/ );
