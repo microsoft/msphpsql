@@ -74,8 +74,8 @@ See Internal issue 2824 for details. In the plaintext case, the padding is added
         fatalError("Failed to connect to $server.");
     }
 
-    $qualified = AE\isQualified($conn);
-    if ($qualified && strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    $qualified = AE\isQualified($conn) && (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+    if ($qualified) {
         sqlsrv_close($conn);
 
         // Now connect with ColumnEncryption enabled

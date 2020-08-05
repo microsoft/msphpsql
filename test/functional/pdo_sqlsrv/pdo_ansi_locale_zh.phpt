@@ -49,7 +49,7 @@ function runTest($conn, $tempDB)
     $conn->exec($query);
     
     shell_exec("export LC_ALL=zh_CN.gb18030");
-    shell_exec("iconv -c -f GB2312 -t GB18030 pdo_test_gb18030.php > test_gb18030.php");
+    shell_exec("iconv -c -f GB2312 -t GB18030 ".dirname(__FILE__)."/pdo_test_gb18030.php > ".dirname(__FILE__)."/test_gb18030.php");
     
     print_r(shell_exec(PHP_BINARY." ".dirname(__FILE__)."/test_gb18030.php $tempDB"));   
 }

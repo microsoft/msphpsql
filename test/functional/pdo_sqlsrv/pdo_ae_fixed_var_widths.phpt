@@ -73,7 +73,7 @@ try {
     // First check if the system is qualified to run this test
     $dsn = getDSN($server, null);
     $conn = new PDO($dsn, $uid, $pwd);
-    $qualified = isAEQualified($conn);
+    $qualified = isAEQualified($conn) && (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
 
     if ($qualified) {
         unset($conn);
@@ -93,7 +93,7 @@ try {
                      'c_nchar' => 'NCHAR(10)', 'c_nvarchar' => 'NVARCHAR(10)',
                      'c_binary' => 'BINARY(10)', 'c_varbinary' => 'VARBINARY(10)');
 
-    if ($qualified && strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    if ($qualified) {
         $tsql = createTableEncryptedQuery($conn, $tableName, $columns);
     } else {
         $tsql = createTablePlainQuery($conn, $tableName, $columns);
