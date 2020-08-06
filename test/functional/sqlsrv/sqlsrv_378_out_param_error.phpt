@@ -78,7 +78,7 @@ function executeSP($conn, $procName, $noRef, $prepare)
     $expected = 3;
     $v1 = 1;
     $v2 = 2;
-    $v3 = 'str';
+    $v3 = 0;
 
     $res = true;
     $tsql = "{call $procName( ?, ?, ?)}";
