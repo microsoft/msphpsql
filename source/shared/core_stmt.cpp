@@ -2590,9 +2590,14 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             break;
         }
 
-        // if this is a large type, then read the first few bytes to get the actual length from SQLGetData
-        if( sql_display_size == 0 || sql_display_size == INT_MAX ||
-            sql_display_size == INT_MAX >> 1 || sql_display_size == UINT_MAX - 1 ) {
+        // If this is a large type, then read the first few bytes to get the actual length from SQLGetData
+        // The user may use "SET TEXTSIZE" to specify the size of varchar(max), nvarchar(max), 
+        // varbinary(max), text, ntext, and image data returned by a SELECT statement. 
+        // For varchar(max) and nvarchar(max), sql_display_size will be 0, regardless
+        if (sql_display_size == 0 || sql_display_size == INT_MAX ||
+            sql_display_size == INT_MAX >> 1 || sql_display_size == UINT_MAX - 1 ||
+            (sql_display_size > SQL_SERVER_MAX_FIELD_SIZE && 
+                (sql_field_type == SQL_WLONGVARCHAR || sql_field_type == SQL_LONGVARCHAR || sql_field_type == SQL_LONGVARBINARY))) {
 
             field_len_temp = intial_field_len;
 
