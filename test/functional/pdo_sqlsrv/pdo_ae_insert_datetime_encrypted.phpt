@@ -87,7 +87,7 @@ try {
     try {
         $stmt->execute();
     } catch (PDOException $e) {
-        $error = '*Datetime field overflow';
+        $error = ($qualified)? '*Datetime field overflow' : '*The conversion of a nvarchar data type to a smalldatetime data type resulted in an out-of-range value.';
         if (!fnmatch($error, $e->getMessage())) {
             echo "The error message is unexpected:\n";
             var_dump($e->getMessage());

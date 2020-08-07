@@ -94,7 +94,7 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     if ($result) {
         echo "Inserting invalid values should have failed!\n";
     } else {
-        $error = '*Datetime field overflow';
+        $error = ($qualified)? '*Datetime field overflow' : '*The conversion of a varchar data type to a smalldatetime data type resulted in an out-of-range value.';
         if (!fnmatch($error, sqlsrv_errors()[0]['message'])) {
             var_dump(sqlsrv_errors());
         }
