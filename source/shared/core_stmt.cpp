@@ -746,19 +746,40 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         ind_ptr = SQL_NULL_DATA;
     }
 
-    core::SQLBindParameter( stmt, param_num + 1, direction,
-        c_type, sql_type, column_size, decimal_digits, buffer, buffer_len, &ind_ptr );
-
     // When calling SQLDescribeParam() on a parameter targeting a Datetime column, the return values for ParameterType, ColumnSize and DecimalDigits are SQL_TYPE_TIMESTAMP, 23, and 3 respectively.
     // For a parameter targeting a SmallDatetime column, the return values are SQL_TYPE_TIMESTAMP, 16, and 0. Inputting these values into SQLBindParameter() results in Operand type clash error.
     // This is because SQL_TYPE_TIMESTAMP corresponds to Datetime2 by default, and conversion of Datetime2 to Datetime and conversion of Datetime2 to SmallDatatime is not allowed with encrypted columns.
     // To fix the conversion problem, set the SQL_CA_SS_SERVER_TYPE field of the parameter to SQL_SS_TYPE_DATETIME and SQL_SS_TYPE_SMALLDATETIME respectively for a Datetime and Smalldatetime column.
+    // Check SQL_DESC_OCTET_LENGTH of the implementation parameter descriptor (IPD) to distinguish Smalldatetime or Datetime fields from Datetime2(0) or Datetime2(3) fields, as described in
+    // https://docs.microsoft.com/sql/relational-databases/native-client-odbc-date-time/metadata-parameter-and-result
+	// This has to be done before SQLBindParameter()
     if (stmt->conn->ce_option.enabled && sql_type == SQL_TYPE_TIMESTAMP) {
-        if (decimal_digits == 3)
-            core::SQLSetDescField(stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, SQL_IS_INTEGER);
-        else if (decimal_digits == 0)
-            core::SQLSetDescField( stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_SMALLDATETIME, SQL_IS_INTEGER );
+        if (decimal_digits == 0 || decimal_digits == 3) {
+            SQLHDESC    hIpd = NULL;
+            core::SQLGetStmtAttr(stmt, SQL_ATTR_IMP_PARAM_DESC, &hIpd, 0, 0);
+            if (hIpd != NULL) {
+                SQLULEN     octetLength = 0;
+                SQLINTEGER  dummy = 0;
+                
+				SQLRETURN r = ::SQLGetDescField(hIpd, param_num + 1, SQL_DESC_OCTET_LENGTH, (SQLPOINTER)&octetLength, 0, &dummy);
+                if (SQL_SUCCEEDED(r)) {
+                    // The octet length for datetime2 is 16 but no action required
+                    if (octetLength == 8) {
+                        r = ::SQLSetDescField(hIpd, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, SQL_IS_INTEGER);
+                    } else if (octetLength == 4) {
+                        r = ::SQLSetDescField(hIpd, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_SMALLDATETIME, SQL_IS_INTEGER);
+                    }
+                }
+                CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
+                    throw core::CoreException();
+                }
+            }
+        }
     }
+    
+    core::SQLBindParameter( stmt, param_num + 1, direction,
+        c_type, sql_type, column_size, decimal_digits, buffer, buffer_len, &ind_ptr );
+
     }
     catch( core::CoreException& e ){
         stmt->free_param_data();

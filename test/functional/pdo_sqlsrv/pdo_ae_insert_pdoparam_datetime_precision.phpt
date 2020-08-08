@@ -29,7 +29,7 @@ function compareDate($dtout, $dtin, $dataType) {
 }
 
 $dataTypes = array("datetime2", "datetimeoffset", "time");
-$precisions = array(/*0,*/ 1, 2, 4, 7);
+$precisions = array(0, 1, 2, 4, 7);
 $inputValuesInit = array("datetime2" => array("0001-01-01 00:00:00", "9999-12-31 23:59:59"),
                      "datetimeoffset" => array("0001-01-01 00:00:00 -14:00", "9999-12-31 23:59:59 +14:00"),
                      "time" => array("00:00:00", "23:59:59"));
@@ -102,6 +102,12 @@ try {
 }
 ?>
 --EXPECT--
+Testing datetime2(0):
+****Conversion from PDO::PARAM_BOOL to datetime2(0) is supported****
+****Conversion from PDO::PARAM_INT to datetime2(0) is supported****
+****Conversion from PDO::PARAM_STR to datetime2(0) is supported****
+****Conversion from PDO::PARAM_LOB to datetime2(0) is supported****
+
 Testing datetime2(1):
 ****Conversion from PDO::PARAM_BOOL to datetime2(1) is supported****
 ****Conversion from PDO::PARAM_INT to datetime2(1) is supported****
@@ -126,6 +132,12 @@ Testing datetime2(7):
 ****Conversion from PDO::PARAM_STR to datetime2(7) is supported****
 ****Conversion from PDO::PARAM_LOB to datetime2(7) is supported****
 
+Testing datetimeoffset(0):
+****Conversion from PDO::PARAM_BOOL to datetimeoffset(0) is supported****
+****Conversion from PDO::PARAM_INT to datetimeoffset(0) is supported****
+****Conversion from PDO::PARAM_STR to datetimeoffset(0) is supported****
+****Conversion from PDO::PARAM_LOB to datetimeoffset(0) is supported****
+
 Testing datetimeoffset(1):
 ****Conversion from PDO::PARAM_BOOL to datetimeoffset(1) is supported****
 ****Conversion from PDO::PARAM_INT to datetimeoffset(1) is supported****
@@ -149,6 +161,12 @@ Testing datetimeoffset(7):
 ****Conversion from PDO::PARAM_INT to datetimeoffset(7) is supported****
 ****Conversion from PDO::PARAM_STR to datetimeoffset(7) is supported****
 ****Conversion from PDO::PARAM_LOB to datetimeoffset(7) is supported****
+
+Testing time(0):
+****Conversion from PDO::PARAM_BOOL to time(0) is supported****
+****Conversion from PDO::PARAM_INT to time(0) is supported****
+****Conversion from PDO::PARAM_STR to time(0) is supported****
+****Conversion from PDO::PARAM_LOB to time(0) is supported****
 
 Testing time(1):
 ****Conversion from PDO::PARAM_BOOL to time(1) is supported****

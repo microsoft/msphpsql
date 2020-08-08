@@ -65,7 +65,7 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     dropTable($conn, $tableName);
     
     // Define the column definitions
-    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(4)');
+    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(0)', 'c4' => 'datetime2(3)');
 
     if ($qualified) {
         $tsql = createTableEncryptedQuery($conn, $tableName, $columns);
@@ -81,10 +81,11 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     // Insert values that cause errors
     $val1 = '9999-12-31 23:59:59';
     $val2 = null;
-    $val3 = '9999-12-31 23:59:59.9999';
+    $val3 = null;
+    $val4 = '9999-12-31 23:59:59.999';
 
-    $tsql = "INSERT INTO $tableName (c1, c2, c3) VALUES (?,?,?)";
-    $params = array($val1, $val2, $val3);
+    $tsql = "INSERT INTO $tableName (c1, c2, c3, c4) VALUES (?,?,?,?)";
+    $params = array($val1, $val2, $val3, $val4);
 
     $stmt = sqlsrv_prepare($conn, $tsql, $params);
     if (!$stmt) {
@@ -105,8 +106,9 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     // These values should work
     $val1 = '2021-11-03 11:49:00';
     $val2 = '2015-10-23 07:03:00.000';
-
-    $params = array($val1, $val2, $val3);
+    $val3 = '0001-01-01 01:01:01';
+    
+    $params = array($val1, $val2, $val3, $val4);
     $stmt = sqlsrv_prepare($conn, $tsql, $params);
     if (!$stmt) {
         fatalError("Failed to prepare insert statement");
@@ -138,12 +140,14 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
 
 ?>
 --EXPECT--
-array(3) {
+array(4) {
   ["c1"]=>
   string(19) "2021-11-03 11:49:00"
   ["c2"]=>
   string(23) "2015-10-23 07:03:00.000"
   ["c3"]=>
-  string(24) "9999-12-31 23:59:59.9999"
+  string(19) "0001-01-01 01:01:01"
+  ["c4"]=>
+  string(23) "9999-12-31 23:59:59.999"
 }
 Done
