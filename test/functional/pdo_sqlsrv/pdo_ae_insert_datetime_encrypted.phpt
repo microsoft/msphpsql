@@ -63,7 +63,7 @@ try {
     dropTable($conn, $tableName);
     
     // Define the column definitions
-    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(3)');
+    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(0)', 'c4' => 'datetime2(3)');
 
     if ($qualified) {
         $tsql = createTableEncryptedQuery($conn, $tableName, $columns);
@@ -75,14 +75,16 @@ try {
     // Insert values that cause errors
     $val1 = '9999-12-31 23:59:59';
     $val2 = null;
-    $val3 = '9999-12-31 23:59:59.999';
+    $val3 = null;
+    $val4 = '9999-12-31 23:59:59.999';
 
-    $tsql = "INSERT INTO $tableName (c1, c2, c3) VALUES (?,?,?)";
+    $tsql = "INSERT INTO $tableName (c1, c2, c3, c4) VALUES (?,?,?,?)";
     $stmt = $conn->prepare($tsql);
 
     $stmt->bindParam(1, $val1);
     $stmt->bindParam(2, $val2);
     $stmt->bindParam(3, $val3);
+    $stmt->bindParam(4, $val4);
     
     try {
         $stmt->execute();
@@ -97,6 +99,7 @@ try {
     // These values should work
     $val1 = '2021-11-03 11:49:00';
     $val2 = '2015-10-23 07:03:00.000';
+    $val3 = '0001-01-01 01:01:01';
     
     try {
         $stmt->execute();
@@ -128,12 +131,14 @@ echo "Done\n";
 
 ?>
 --EXPECT--
-array(3) {
+array(4) {
   [0]=>
   string(19) "2021-11-03 11:49:00"
   [1]=>
   string(23) "2015-10-23 07:03:00.000"
   [2]=>
+  string(19) "0001-01-01 01:01:01"
+  [3]=>
   string(23) "9999-12-31 23:59:59.999"
 }
 Done
