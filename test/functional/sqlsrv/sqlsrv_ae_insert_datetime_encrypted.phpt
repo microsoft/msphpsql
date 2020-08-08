@@ -65,7 +65,7 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     dropTable($conn, $tableName);
     
     // Define the column definitions
-    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(4)');
+    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(3)');
 
     if ($qualified) {
         $tsql = createTableEncryptedQuery($conn, $tableName, $columns);
@@ -81,7 +81,7 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     // Insert values that cause errors
     $val1 = '9999-12-31 23:59:59';
     $val2 = null;
-    $val3 = '9999-12-31 23:59:59.9999';
+    $val3 = '9999-12-31 23:59:59.999';
 
     $tsql = "INSERT INTO $tableName (c1, c2, c3) VALUES (?,?,?)";
     $params = array($val1, $val2, $val3);
@@ -144,6 +144,6 @@ array(3) {
   ["c2"]=>
   string(23) "2015-10-23 07:03:00.000"
   ["c3"]=>
-  string(24) "9999-12-31 23:59:59.9999"
+  string(23) "9999-12-31 23:59:59.999"
 }
 Done
