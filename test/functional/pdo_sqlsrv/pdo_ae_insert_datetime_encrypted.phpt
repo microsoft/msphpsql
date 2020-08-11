@@ -63,7 +63,7 @@ try {
     dropTable($conn, $tableName);
     
     // Define the column definitions
-    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(0)', 'c4' => 'datetime2(3)');
+    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(0)', 'c4' => 'datetime2(4)');
 
     if ($qualified) {
         $tsql = createTableEncryptedQuery($conn, $tableName, $columns);
@@ -76,7 +76,7 @@ try {
     $val1 = '9999-12-31 23:59:59';
     $val2 = null;
     $val3 = null;
-    $val4 = '9999-12-31 23:59:59.999';
+    $val4 = '9999-12-31 23:59:59.9999';
 
     $tsql = "INSERT INTO $tableName (c1, c2, c3, c4) VALUES (?,?,?,?)";
     $stmt = $conn->prepare($tsql);
@@ -89,7 +89,7 @@ try {
     try {
         $stmt->execute();
     } catch (PDOException $e) {
-        $error = ($qualified)? '*Datetime field overflow' : '*The conversion of a nvarchar data type to a smalldatetime data type resulted in an out-of-range value.';
+        $error = ($qualified || isColEncrypted())? '*Datetime field overflow' : '*The conversion of a nvarchar data type to a smalldatetime data type resulted in an out-of-range value.';
         if (!fnmatch($error, $e->getMessage())) {
             echo "The error message is unexpected:\n";
             var_dump($e->getMessage());
@@ -139,6 +139,6 @@ array(4) {
   [2]=>
   string(19) "0001-01-01 01:01:01"
   [3]=>
-  string(23) "9999-12-31 23:59:59.999"
+  string(24) "9999-12-31 23:59:59.9999"
 }
 Done
