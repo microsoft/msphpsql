@@ -45,7 +45,7 @@ function createTablePlainQuery($conn, $tableName, $columns)
 try {
     // This test requires to connect with the Always Encrypted feature
     // First check if the system is qualified to run this test
-    $dsn = getDSN($server, null);
+    $dsn = "sqlsrv:Server=$server; Database=$databaseName;";
     $conn = new PDO($dsn, $uid, $pwd);
     $qualified = isAEQualified($conn) && (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
 
@@ -89,9 +89,9 @@ try {
     try {
         $stmt->execute();
     } catch (PDOException $e) {
-        $error = ($qualified || isColEncrypted())? '*Datetime field overflow' : '*The conversion of a nvarchar data type to a smalldatetime data type resulted in an out-of-range value.';
+        $error = ($qualified)? '*Datetime field overflow' : '*The conversion of a nvarchar data type to a smalldatetime data type resulted in an out-of-range value.';
         if (!fnmatch($error, $e->getMessage())) {
-            echo "The error message is unexpected:\n";
+            echo "Expected $error but got:\n";
             var_dump($e->getMessage());
         }
     }

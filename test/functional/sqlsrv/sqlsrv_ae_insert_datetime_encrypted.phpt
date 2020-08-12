@@ -95,8 +95,9 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     if ($result) {
         echo "Inserting invalid values should have failed!\n";
     } else {
-        $error = ($qualified || AE\isDataEncrypted())? '*Datetime field overflow' : '*The conversion of a varchar data type to a smalldatetime data type resulted in an out-of-range value.';
+        $error = ($qualified)? '*Datetime field overflow' : '*The conversion of a varchar data type to a smalldatetime data type resulted in an out-of-range value.';
         if (!fnmatch($error, sqlsrv_errors()[0]['message'])) {
+            echo "Expected $error but got:\n";
             var_dump(sqlsrv_errors());
         }
     }
