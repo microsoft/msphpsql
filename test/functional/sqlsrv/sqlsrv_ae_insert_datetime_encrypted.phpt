@@ -65,7 +65,7 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     dropTable($conn, $tableName);
     
     // Define the column definitions
-    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(0)', 'c4' => 'datetime2(3)');
+    $columns = array('c1' => 'smalldatetime', 'c2' => 'datetime', 'c3' => 'datetime2(0)', 'c4' => 'datetime2(4)');
 
     if ($qualified) {
         $tsql = createTableEncryptedQuery($conn, $tableName, $columns);
@@ -82,7 +82,7 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     $val1 = '9999-12-31 23:59:59';
     $val2 = null;
     $val3 = null;
-    $val4 = '9999-12-31 23:59:59.999';
+    $val4 = '9999-12-31 23:59:59.9999';
 
     $tsql = "INSERT INTO $tableName (c1, c2, c3, c4) VALUES (?,?,?,?)";
     $params = array($val1, $val2, $val3, $val4);
@@ -95,7 +95,7 @@ Verify that inserting into smalldatetime column might trigger "Datetime field ov
     if ($result) {
         echo "Inserting invalid values should have failed!\n";
     } else {
-        $error = ($qualified)? '*Datetime field overflow' : '*The conversion of a varchar data type to a smalldatetime data type resulted in an out-of-range value.';
+        $error = ($qualified || AE\isDataEncrypted())? '*Datetime field overflow' : '*The conversion of a varchar data type to a smalldatetime data type resulted in an out-of-range value.';
         if (!fnmatch($error, sqlsrv_errors()[0]['message'])) {
             var_dump(sqlsrv_errors());
         }
@@ -148,6 +148,6 @@ array(4) {
   ["c3"]=>
   string(19) "0001-01-01 01:01:01"
   ["c4"]=>
-  string(23) "9999-12-31 23:59:59.999"
+  string(24) "9999-12-31 23:59:59.9999"
 }
 Done
