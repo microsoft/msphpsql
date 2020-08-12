@@ -754,6 +754,8 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
     // For a parameter targeting a SmallDatetime column, the return values are SQL_TYPE_TIMESTAMP, 16, and 0. Inputting these values into SQLBindParameter() results in Operand type clash error.
     // This is because SQL_TYPE_TIMESTAMP corresponds to Datetime2 by default, and conversion of Datetime2 to Datetime and conversion of Datetime2 to SmallDatatime is not allowed with encrypted columns.
     // To fix the conversion problem, set the SQL_CA_SS_SERVER_TYPE field of the parameter to SQL_SS_TYPE_DATETIME and SQL_SS_TYPE_SMALLDATETIME respectively for a Datetime and Smalldatetime column.
+    // Note this must be called after SQLBindParameter() or SQLSetDescField() may fail. 
+    // TODO: how to correctly distinguish datetime from datetime2(3)? Both have the same decimal_digits and column_size
     if (stmt->conn->ce_option.enabled && sql_type == SQL_TYPE_TIMESTAMP) {
         if (decimal_digits == 3) {
             core::SQLSetDescField(stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, SQL_IS_INTEGER);

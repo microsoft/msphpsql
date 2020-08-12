@@ -1,7 +1,7 @@
 --TEST--
 Test for inserting and retrieving encrypted data of datetime and smalldatetime types encrypted
 --DESCRIPTION--
-Verify that inserting into smalldatetime column might trigger "Datetime field overflow" error
+Verify that inserting into smalldatetime column (if encrypted) might trigger "Datetime field overflow" error
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
