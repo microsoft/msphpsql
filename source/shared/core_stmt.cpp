@@ -2577,16 +2577,17 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
         if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
             sqlsrv_php_type.typeinfo.encoding = stmt->conn->encoding();
         }
-        // For numbers, no need to convert
-        if (is_a_numeric_type(sql_field_type)) {
-            sqlsrv_php_type.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
-        }
-
         // Set the C type and account for null characters at the end of the data.
         switch( sqlsrv_php_type.typeinfo.encoding ) {
         case CP_UTF8:
-            c_type = SQL_C_WCHAR;
-            extra = sizeof( SQLWCHAR );
+            // For numbers, no need to convert
+            if (is_a_numeric_type(sql_field_type)) {
+                c_type = SQL_C_CHAR;
+                extra = sizeof(SQLCHAR);
+            } else {
+                c_type = SQL_C_WCHAR;
+                extra = sizeof(SQLWCHAR);
+            }
             break;
         case SQLSRV_ENCODING_BINARY:
             c_type = SQL_C_BINARY;
@@ -2708,7 +2709,8 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                 }
             }  // if( r == SQL_SUCCESS_WITH_INFO )
 
-            if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_UTF8 ) {
+            //if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_UTF8 ) {
+            if (c_type == SQL_C_WCHAR) {
 
                 bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
                                                                     &field_value_temp, field_len_temp );
@@ -2752,7 +2754,8 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                 return;
             }
 
-            if( sqlsrv_php_type.typeinfo.encoding == CP_UTF8 ) {
+            //if( sqlsrv_php_type.typeinfo.encoding == CP_UTF8 ) {
+            if (c_type == SQL_C_WCHAR) {
 
                 bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
                                                                     &field_value_temp, field_len_temp );
