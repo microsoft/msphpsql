@@ -2578,25 +2578,18 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             sqlsrv_php_type.typeinfo.encoding = stmt->conn->encoding();
         }
         // Set the C type and account for null characters at the end of the data.
-        switch( sqlsrv_php_type.typeinfo.encoding ) {
-        case CP_UTF8:
+        if (sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_BINARY) {
+            c_type = SQL_C_BINARY;
+            extra = 0;
+        } else {
+            c_type = SQL_C_CHAR;
+            extra = sizeof(SQLCHAR);
+            
             // For numbers, no need to convert
-            if (is_a_numeric_type(sql_field_type)) {
-                c_type = SQL_C_CHAR;
-                extra = sizeof(SQLCHAR);
-            } else {
+            if (sqlsrv_php_type.typeinfo.encoding == CP_UTF8 && !is_a_numeric_type(sql_field_type)) {
                 c_type = SQL_C_WCHAR;
                 extra = sizeof(SQLWCHAR);
             }
-            break;
-        case SQLSRV_ENCODING_BINARY:
-            c_type = SQL_C_BINARY;
-            extra = 0;
-            break;
-        default:
-            c_type = SQL_C_CHAR;
-            extra = sizeof( SQLCHAR );
-            break;
         }
 
         // If this is a large type, then read the first few bytes to get the actual length from SQLGetData
@@ -2709,9 +2702,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                 }
             }  // if( r == SQL_SUCCESS_WITH_INFO )
 
-            //if( sqlsrv_php_type.typeinfo.encoding == SQLSRV_ENCODING_UTF8 ) {
             if (c_type == SQL_C_WCHAR) {
-
                 bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
                                                                     &field_value_temp, field_len_temp );
 
@@ -2754,9 +2745,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                 return;
             }
 
-            //if( sqlsrv_php_type.typeinfo.encoding == CP_UTF8 ) {
             if (c_type == SQL_C_WCHAR) {
-
                 bool converted = convert_string_from_utf16_inplace( static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding ),
                                                                     &field_value_temp, field_len_temp );
 
