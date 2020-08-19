@@ -588,15 +588,23 @@ void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error)
     int zr = object_init_ex( &ex_obj, ex_class );
     SQLSRV_ASSERT( zr != FAILURE, "Failed to initialize exception object" );
 
+#if PHP_VERSION_ID >= 80000
+    zend_object *zendobj = Z_OBJ_P(&ex_obj);
+#endif
+
     sqlsrv_malloc_auto_ptr<char> ex_msg;
     size_t ex_msg_len = strnlen_s(reinterpret_cast<const char*>(error->native_message)) + SQL_SQLSTATE_BUFSIZE +
         12 + 1; // 12 = "SQLSTATE[]: "
     ex_msg = reinterpret_cast<char*>(sqlsrv_malloc(ex_msg_len));
     snprintf(ex_msg, ex_msg_len, EXCEPTION_MSG_TEMPLATE, error->sqlstate, error->native_message);
-    zend_update_property_string( ex_class, &ex_obj, EXCEPTION_PROPERTY_MSG, sizeof( EXCEPTION_PROPERTY_MSG ) - 1, 
-                                 ex_msg );
-    zend_update_property_string( ex_class, &ex_obj, EXCEPTION_PROPERTY_CODE, sizeof( EXCEPTION_PROPERTY_CODE ) - 1,
-                                 reinterpret_cast<char*>( error->sqlstate ) );
+
+#if PHP_VERSION_ID < 80000
+    zend_update_property_string(ex_class, &ex_obj, EXCEPTION_PROPERTY_MSG, sizeof(EXCEPTION_PROPERTY_MSG) - 1, ex_msg);
+    zend_update_property_string(ex_class, &ex_obj, EXCEPTION_PROPERTY_CODE, sizeof(EXCEPTION_PROPERTY_CODE) - 1, reinterpret_cast<char*>(error->sqlstate));
+#else
+    zend_update_property_string(ex_class, zendobj, EXCEPTION_PROPERTY_MSG, sizeof(EXCEPTION_PROPERTY_MSG) - 1, ex_msg);
+    zend_update_property_string(ex_class, zendobj, EXCEPTION_PROPERTY_CODE, sizeof(EXCEPTION_PROPERTY_CODE) - 1, reinterpret_cast<char*>(error->sqlstate));
+#endif
 
     zval ex_error_info;
     ZVAL_UNDEF( &ex_error_info );
@@ -609,8 +617,11 @@ void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error)
 
     //zend_update_property makes an entry in the properties_table in ex_obj point to the Z_ARRVAL( ex_error_info )
     //and the refcount of the zend_array is incremented by 1
-    zend_update_property( ex_class, &ex_obj, EXCEPTION_PROPERTY_ERRORINFO, sizeof( EXCEPTION_PROPERTY_ERRORINFO ) - 1, 
-                          &ex_error_info );
+#if PHP_VERSION_ID < 80000
+    zend_update_property(ex_class, &ex_obj, EXCEPTION_PROPERTY_ERRORINFO, sizeof(EXCEPTION_PROPERTY_ERRORINFO) - 1, &ex_error_info);
+#else
+    zend_update_property(ex_class, zendobj, EXCEPTION_PROPERTY_ERRORINFO, sizeof(EXCEPTION_PROPERTY_ERRORINFO) - 1, &ex_error_info);
+#endif
 
     //DELREF ex_error_info here to decrement the refcount of the zend_array is 1
     //the global hashtable EG(exception) then points to the zend_object in ex_obj in zend_throw_exception_object;
