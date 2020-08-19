@@ -34,7 +34,7 @@ environment:
         SQL_INSTANCE: SQL2019
         PHP_VC: vs16
         PHP_MAJOR_VER: 8.0
-        PHP_MINOR_VER: 0beta1
+        PHP_MINOR_VER: 0beta2
         PHP_EXE_PATH: Release
         THREAD: nts
         platform: x86
