@@ -61,9 +61,9 @@ function isDataClassSupported($conn, &$driverCapable)
     $msodbcsqlVer = sqlsrv_client_info($conn)['DriverVer'];
     $version = explode(".", $msodbcsqlVer);
 
-    // ODBC Driver must be 17.2 or above
+    // ODBC Driver must be 17.5 or above
     $driverCapable = true;
-    if ($version[0] < 17 || $version[1] < 2) {
+    if ($version[0] < 17 || $version[1] < 5) {
         $driverCapable = false;
         return false;
     }
