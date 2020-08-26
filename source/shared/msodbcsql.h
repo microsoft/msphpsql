@@ -94,6 +94,10 @@
 #define SQL_COPT_SS_AUTHENTICATION                  (SQL_COPT_SS_BASE_EX+15)// The authentication method used for the connection
 #define SQL_COPT_SS_ACCESS_TOKEN                    (SQL_COPT_SS_BASE_EX+16)// The authentication access token used for the connection
 
+/* SQLSetConnectAttr MS driver additional specific defines. */
+#define SQL_COPT_SS_BASE_ADD                        1400
+#define SQL_COPT_SS_DATACLASSIFICATION_VERSION      (SQL_COPT_SS_BASE_ADD + 0) // The flag to Set/Get DATACLASSIFICATION version support
+
 // SQLColAttributes driver specific defines.
 // SQLSetDescField/SQLGetDescField driver specific defines.
 // Microsoft has 1200 thru 1249 reserved for Microsoft ODBC Driver for SQL Server usage.
