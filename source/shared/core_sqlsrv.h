@@ -1440,13 +1440,15 @@ struct sqlsrv_output_param {
 };
 
 namespace data_classification {
+    const int VERSION_RANK_AVAILABLE = 2;   // Rank info is available when data classification version is 2+
+    const int RANK_NOT_DEFINED = -1;
     // *** data classficiation metadata structures and helper methods -- to store and/or process the sensitivity classification data ***
     struct name_id_pair;
     struct sensitivity_metadata;
 
     void name_id_pair_free(name_id_pair * pair);
     void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>* pairs, _Inout_ unsigned char **pptr);
-    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr);
+    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr, _In_ bool getRankInfo);
     USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *column_data);
 
     struct name_id_pair {
@@ -1467,8 +1469,9 @@ namespace data_classification {
     struct label_infotype_pair {
         USHORT label_idx;
         USHORT infotype_idx;
+        int rank;  // Default value is "not defined"
 
-        label_infotype_pair() : label_idx(0), infotype_idx(0)
+        label_infotype_pair() : label_idx(0), infotype_idx(0), rank(RANK_NOT_DEFINED)
         {
         }
     };
@@ -1494,8 +1497,9 @@ namespace data_classification {
         std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>> infotypes;
         USHORT num_columns;
         std::vector<column_sensitivity> columns_sensitivity;
+        int rank;  // Default value is "not defined"
 
-        sensitivity_metadata() : num_labels(0), num_infotypes(0), num_columns(0)
+        sensitivity_metadata() : num_labels(0), num_infotypes(0), num_columns(0), rank(RANK_NOT_DEFINED)
         {
         }
 

@@ -146,6 +146,7 @@
 
 // Data Classification
 #define SQL_CA_SS_DATA_CLASSIFICATION               (SQL_CA_SS_BASE+37) //  retrieve data classification information
+#define SQL_CA_SS_DATA_CLASSIFICATION_VERSION       (SQL_CA_SS_BASE+38) //  retrieve data classification version
 
 #define SQL_CA_SS_MAX_USED                          (SQL_CA_SS_BASE+38)
 

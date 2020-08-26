@@ -2,6 +2,7 @@
 Test data classification feature - retrieving sensitivity metadata if supported
 --DESCRIPTION--
 If both ODBC and server support this feature, this test verifies that sensitivity metadata can be added and correctly retrieved. If not, it will at least test the new statement attribute and some error cases.
+T-SQL reference: https://docs.microsoft.com/sql/t-sql/statements/add-sensitivity-classification-transact-sql
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -12,6 +13,7 @@ require_once('MsSetup.inc');
 require_once('MsCommon_mid-refactor.inc');
 
 $dataClassKey = 'Data Classification';
+$ranks = array(0 => "NONE", 10 => "LOW", 20 => "MEDIUM", 30 => "HIGH", 40 => "CRITICAL");
 
 function testConnAttrCases()
 {
@@ -127,16 +129,17 @@ function getRegularMetadata($conn, $tsql)
     return $stmt1;
 }
 
-function verifyClassInfo($input, $actual)
+function verifyClassInfo($rank, $input, $actual)
 {
     // For simplicity of this test, only one set of sensitivity data (Label, Information Type)
-    if (count($actual) != 1) {
-        echo "Expected an array with only one element\n";
+    // plus overall rank info
+    if (count($actual) != 2) {
+        echo "Expected an array with only two elements\n";
         return false;
     }
 
-    if (count($actual[0]) != 2) {
-        echo "Expected a Label pair and Information Type pair\n";
+    if (count($actual[0]) != 3) {
+        echo "Expected a Label pair and Information Type pair plus column rank info\n";
         return false;
     }
 
@@ -160,10 +163,40 @@ function verifyClassInfo($input, $actual)
         return false;
     }
 
+    if ($actual[0]['rank'] != $rank) {
+        return false;
+    }
+
+    if ($actual['rank'] != $rank) {
+        return false;
+    }
+    
     return true;
 }
 
-function compareDataClassification($stmt1, $stmt2, $classData)
+function assignDataClassification($conn, $tableName, $classData, $rankId = -1)
+{
+    global $ranks;
+    
+    $rank = '';
+    if ($rankId >= 0) {
+        $rank = ", RANK = $ranks[$rankId]";
+    }
+    
+    // column SSN
+    $label = $classData[1][0];
+    $infoType = $classData[1][1];
+    $sql = "ADD SENSITIVITY CLASSIFICATION TO [$tableName].SSN WITH (LABEL = '$label', INFORMATION_TYPE = '$infoType' $rank)";
+    $conn->query($sql);
+
+    // column BirthDate
+    $label = $classData[4][0];
+    $infoType = $classData[4][1];
+    $sql = "ADD SENSITIVITY CLASSIFICATION TO [$tableName].BirthDate WITH (LABEL = '$label', INFORMATION_TYPE = '$infoType' $rank)";
+    $conn->query($sql);
+}
+
+function compareDataClassification($stmt1, $stmt2, $classData, $rank)
 {
     global $dataClassKey;
     
@@ -186,7 +219,7 @@ function compareDataClassification($stmt1, $stmt2, $classData)
                     }
                 } else {
                     // Verify the classification metadata
-                    if (!verifyClassInfo($classData[$i], $value[$dataClassKey])) {
+                    if (!verifyClassInfo($rank, $classData[$i], $value[$dataClassKey])) {
                         var_dump($value);
                     }
                 }
@@ -239,6 +272,29 @@ function runBatchQuery($conn, $tableName)
     }
 }
 
+function checkResults($conn, $stmt, $tableName, $classData, $rank = -1)
+{
+    $tsql = "SELECT * FROM $tableName";
+
+    $options = array(PDO::SQLSRV_ATTR_DATA_CLASSIFICATION => true);
+    $stmt1 = $conn->prepare($tsql, $options);
+    $stmt1->execute();
+
+    compareDataClassification($stmt, $stmt1, $classData, $rank);
+
+    // $stmt2 should produce the same result as the previous $stmt1
+    $stmt2 = $conn->prepare($tsql);
+    $stmt2->execute();
+    $stmt2->setAttribute(PDO::SQLSRV_ATTR_DATA_CLASSIFICATION, true);
+
+    compareDataClassification($stmt, $stmt2, $classData, $rank);
+
+    unset($stmt1);
+    unset($stmt2);
+    
+    runBatchQuery($conn, $tableName);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 try {
     testConnAttrCases();
@@ -267,17 +323,7 @@ try {
                  ];
 
     if ($isSupported) {
-        // column SSN
-        $label = $classData[1][0];
-        $infoType = $classData[1][1];
-        $sql = "ADD SENSITIVITY CLASSIFICATION TO [$tableName].SSN WITH (LABEL = '$label', INFORMATION_TYPE = '$infoType')";
-        $conn->query($sql);
-
-        // column BirthDate
-        $label = $classData[4][0];
-        $infoType = $classData[4][1];
-        $sql = "ADD SENSITIVITY CLASSIFICATION TO [$tableName].BirthDate WITH (LABEL = '$label', INFORMATION_TYPE = '$infoType')";
-        $conn->query($sql);
+        assignDataClassification($conn, $tableName, $classData);
     }
 
     // Test another error condition
@@ -289,23 +335,15 @@ try {
 
     // Proceeed to retrieve sensitivity metadata, if supported
     if ($isSupported) {
-        $options = array(PDO::SQLSRV_ATTR_DATA_CLASSIFICATION => true);
-        $stmt1 = $conn->prepare($tsql, $options);
-        $stmt1->execute();
-
-        compareDataClassification($stmt, $stmt1, $classData);
-
-        // $stmt2 should produce the same result as the previous $stmt1
-        $stmt2 = $conn->prepare($tsql);
-        $stmt2->execute();
-        $stmt2->setAttribute(PDO::SQLSRV_ATTR_DATA_CLASSIFICATION, true);
-
-        compareDataClassification($stmt, $stmt2, $classData);
-
-        unset($stmt1);
-        unset($stmt2);
+        checkResults($conn, $stmt, $tableName, $classData);
         
-        runBatchQuery($conn, $tableName);
+        // Test another rank (get a random one)
+        $random = rand(0, 4);
+        $rank = $random * 10;
+        
+        trace("Testing with $rank\n");
+        assignDataClassification($conn, $tableName, $classData, $rank);
+        checkResults($conn, $stmt, $tableName, $classData, $rank);
     }
 
     dropTable($conn, $tableName);
