@@ -674,7 +674,9 @@ namespace data_classification {
             add_assoc_zval(&sensitivity_properties, INFOTYPE, &infotype_array);
 
             // add column sensitivity rank info to sensitivity_properties
-            add_assoc_long(&sensitivity_properties, RANK, column_rank);
+            if (column_rank > RANK_NOT_DEFINED) {
+                add_assoc_long(&sensitivity_properties, RANK, column_rank);
+            }
 
             // add the pair of sensitivity properties to data_classification
             add_next_index_zval(&data_classification, &sensitivity_properties);
@@ -682,7 +684,9 @@ namespace data_classification {
 
         // add query sensitivity rank info to data_classification
         int query_rank = meta->rank;
-        add_assoc_long(&data_classification, RANK, query_rank);
+        if (query_rank > RANK_NOT_DEFINED) {
+            add_assoc_long(&data_classification, RANK, query_rank);
+        }
 
         // add data classfication as associative array
         add_assoc_zval(return_array, DATA_CLASS, &data_classification);
