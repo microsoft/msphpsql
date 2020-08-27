@@ -222,8 +222,6 @@ function runBatchQuery($conn, $tableName)
 ///////////////////////////////////////////////////////////////////////////////////////
 require_once('MsCommon.inc');
 
-// sqlsrv_configure('WarningsReturnAsErrors', 0);
-
 $conn = AE\connect();
 if (!$conn) {
     fatalError("Failed to connect.\n");
