@@ -1396,9 +1396,13 @@ PHP_FUNCTION( sqlsrv_free_stmt )
         }
 
         // delete the resource from Zend's master list, which will trigger the statement's destructor
-        if( zend_list_close( Z_RES_P(stmt_r) ) == FAILURE ) {
-            LOG( SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P( stmt_r )->handle);
+#if PHP_VERSION_ID < 80000
+        if (zend_list_close(Z_RES_P(stmt_r)) == FAILURE) {
+            LOG(SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P(stmt_r)->handle);
         }
+#else
+        zend_list_close(Z_RES_P(stmt_r));
+#endif
 
         // when stmt_r is first parsed in zend_parse_parameters, stmt_r becomes a zval that points to a zend_resource with a refcount of 2
         // need to DELREF here so the refcount becomes 1 and stmt_r can be appropriate destroyed by the garbage collector when it goes out of scope
