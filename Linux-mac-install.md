@@ -1,7 +1,7 @@
 # Linux and macOS Installation Tutorial for the Microsoft Drivers for PHP for SQL Server
-The following instructions assume a clean environment and show how to install PHP 7.x, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu 16.04, 18.04, and 19.10, RedHat 7 and 8, Debian 8, 9, and 10, Suse 12 and 15, Alpine 3.11, and macOS 10.13, 10.14, and 10.15. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
+The following instructions assume a clean environment and show how to install PHP 7.2+, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu 16.04, 18.04, and 20.04, RedHat 7 and 8, Debian 9 and 10, Suse 12 and 15, Alpine 3.11 and 3.12, and macOS 10.13, 10.14, and 10.15. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
 
-These instructions install PHP 7.4 by default using `pecl install`. You may need to run `pecl channel-update pecl.php.net` first. Note that some supported Linux distros default to PHP 7.1 or earlier, which is not supported for the latest version of the PHP drivers for SQL Server -- please see the notes at the beginning of each section to install PHP 7.2 or 7.3 instead.
+The following instructions install PHP 7.4 by default using `pecl install`. You may need to run `pecl channel-update pecl.php.net` first. Note that some supported Linux distros default to PHP 7.1 or earlier, which is not supported for the latest version of the PHP drivers for SQL Server -- please see the notes at the beginning of each section to install PHP 7.2 or 7.3 instead.
 
 Also included are instructions for installing the PHP FastCGI Process Manager, PHP-FPM, on Ubuntu. This is needed if using the nginx web server instead of Apache.
 
@@ -10,9 +10,9 @@ Also included are instructions for installing the PHP FastCGI Process Manager, P
 - [Installing the drivers on Ubuntu 16.04, 18.04, and 19.10](#installing-the-drivers-on-ubuntu-1604-1804-and-1910)
 - [Installing the drivers with PHP-FPM on Ubuntu](#installing-the-drivers-with-php-fpm-on-ubuntu)
 - [Installing the drivers on Red Hat 7 and 8](#installing-the-drivers-on-red-hat-7-and-8)
-- [Installing the drivers on Debian 8, 9, and 10](#installing-the-drivers-on-debian-8-9-and-10)
+- [Installing the drivers on Debian 9 and 10](#installing-the-drivers-on-debian-9-and-10)
 - [Installing the drivers on Suse 12 and 15](#installing-the-drivers-on-suse-12-and-15)
-- [Installing the drivers on Alpine 3.11](#installing-the-drivers-on-alpine-311)
+- [Installing the drivers on Alpine 3.11 and 3.12](#installing-the-drivers-on-alpine-311-and-312)
 - [Installing the drivers on macOS High Sierra, Mojave, and Catalina](#installing-the-drivers-on-macos-high-sierra-mojave-and-catalina)
 
 ## Installing the drivers on Ubuntu 16.04, 18.04, and 19.10
@@ -189,7 +189,7 @@ sudo apachectl restart
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on Debian 8, 9, and 10
+## Installing the drivers on Debian 9 and 10
 
 > [!NOTE]
 > To install PHP 7.2 or 7.3, replace 7.4 in the following commands with 7.2 or 7.3.
@@ -290,13 +290,13 @@ sudo systemctl restart apache2
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on Alpine 3.11
+## Installing the drivers on Alpine 3.11 and 3.12
 
 > [!NOTE]
-> The default version of PHP is 7.3. Alternate versions of PHP may be available from other repositories for Alpine 3.11. You can instead compile PHP from source.
+> The default version of PHP is 7.3. Alternate versions of PHP may be available from other repositories for Alpine. You can instead compile PHP from source.
 
 ### Step 1. Install PHP
-PHP packages for Alpine can be found in the `edge/community` repository. Please check [Enable Community Repository](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository) on their WIKI page. Add the following line to `/etc/apt/repositories`, replacing `<mirror>` with the URL of an Alpine repository mirror:
+PHP packages for Alpine can be found in the `edge/community` repository. Please check [Enable Community Repository](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository) on their WIKI page. Add the following line to `/etc/apk/repositories`, replacing `<mirror>` with the URL of an Alpine repository mirror:
 ```
 http://<mirror>/alpine/edge/community
 ```
