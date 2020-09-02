@@ -383,6 +383,9 @@ SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& con
     sqlsrv_malloc_auto_ptr<SQLWCHAR> wconn_string;
     unsigned int wconn_len = static_cast<unsigned int>( conn_str.length() + 1 ) * sizeof( SQLWCHAR );
 
+    // Set the desired data classification version before connecting, but older ODBC drivers will generate a warning message 'Driver's SQLSetConnectAttr failed'
+    SQLSetConnectAttr(conn->handle(), SQL_COPT_SS_DATACLASSIFICATION_VERSION, reinterpret_cast<SQLPOINTER>(data_classification::VERSION_RANK_AVAILABLE), SQL_IS_POINTER);
+
     // We only support UTF-8 encoding for connection string.
     // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
     wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>( conn_str.length() ), &wconn_len, true );

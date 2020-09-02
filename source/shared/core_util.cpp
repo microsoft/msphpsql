@@ -489,6 +489,7 @@ namespace data_classification {
     const char* INFOTYPE = "Information Type";
     const char* NAME = "name";
     const char* ID = "id";
+    const char* RANK = "rank";
 
     void convert_sensivity_field(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_ENCODING encoding, _In_ unsigned char *ptr, _In_ int len, _Inout_updates_bytes_(cchOutLen) char** field_name)
     {
@@ -566,10 +567,18 @@ namespace data_classification {
         *pptr = ptr;
     } 
 
-    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr)
+    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr, _In_ bool getRankInfo)
     {
         unsigned char *ptr = *pptr;
         unsigned short ncols;
+        int queryrank, colrank;
+
+        // Get rank info
+        if (getRankInfo) {
+            queryrank = *(reinterpret_cast<long*>(ptr));
+            ptr += sizeof(long);
+            meta->rank = queryrank;
+        }
 
         // Get number of columns
         meta->num_columns = ncols = *(reinterpret_cast<unsigned short*>(ptr));
@@ -593,6 +602,12 @@ namespace data_classification {
                 ptr += sizeof(unsigned short);
                 typeidx = *(reinterpret_cast<unsigned short*>(ptr));
                 ptr += sizeof(unsigned short);
+
+                if (getRankInfo) {
+                    colrank = *(reinterpret_cast<long*>(ptr));
+                    ptr += sizeof(long);
+                    pair.rank = colrank;
+                }
 
                 pair.label_idx = labelidx;
                 pair.infotype_idx = typeidx;
@@ -641,6 +656,7 @@ namespace data_classification {
 
             USHORT labelidx = meta->columns_sensitivity[colno].label_info_pairs[j].label_idx;
             USHORT typeidx = meta->columns_sensitivity[colno].label_info_pairs[j].infotype_idx;
+            int column_rank = meta->columns_sensitivity[colno].label_info_pairs[j].rank;
 
             char *label = meta->labels[labelidx]->name;
             char *label_id = meta->labels[labelidx]->id;
@@ -657,8 +673,19 @@ namespace data_classification {
 
             add_assoc_zval(&sensitivity_properties, INFOTYPE, &infotype_array);
 
+            // add column sensitivity rank info to sensitivity_properties
+            if (column_rank > RANK_NOT_DEFINED) {
+                add_assoc_long(&sensitivity_properties, RANK, column_rank);
+            }
+
             // add the pair of sensitivity properties to data_classification
             add_next_index_zval(&data_classification, &sensitivity_properties);
+        }
+
+        // add query sensitivity rank info to data_classification
+        int query_rank = meta->rank;
+        if (query_rank > RANK_NOT_DEFINED) {
+            add_assoc_long(&data_classification, RANK, query_rank);
         }
 
         // add data classfication as associative array

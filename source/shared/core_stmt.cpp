@@ -1017,7 +1017,8 @@ field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQL
 void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt )
 {
     sqlsrv_malloc_auto_ptr<unsigned char> dcbuf;
-    SQLINTEGER dclen = 0;
+    DWORD dcVersion = 0;
+    SQLINTEGER dclen = 0, dcIRD = 0;
     SQLINTEGER dclenout = 0;
     SQLHANDLE ird;
     SQLRETURN r;
@@ -1039,14 +1040,14 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt )
         // Reference: https://docs.microsoft.com/sql/connect/odbc/data-classification
         // To retrieve sensitivity classfication data, the first step is to retrieve the IRD(Implementation Row Descriptor) handle by
         // calling SQLGetStmtAttr with SQL_ATTR_IMP_ROW_DESC statement attribute
-        r = ::SQLGetStmtAttr(stmt->handle(), SQL_ATTR_IMP_ROW_DESC, (SQLPOINTER)&ird, SQL_IS_POINTER, 0);
+        r = ::SQLGetStmtAttr(stmt->handle(), SQL_ATTR_IMP_ROW_DESC, reinterpret_cast<SQLPOINTER*>(&ird), SQL_IS_POINTER, 0);
         CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
             LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in getting Implementation Row Descriptor handle." );
             throw core::CoreException();
         }
 
         // First call to get dclen
-        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, dcbuf, 0, &dclen);
+        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, reinterpret_cast<SQLPOINTER>(dcbuf.get()), 0, &dclen);
         if (r != SQL_SUCCESS || dclen == 0) {
             // log the error first
             LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in calling SQLGetDescFieldW first time." );
@@ -1073,7 +1074,7 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt )
         // Call again to read SQL_CA_SS_DATA_CLASSIFICATION data
         dcbuf = static_cast<unsigned char*>(sqlsrv_malloc(dclen * sizeof(char)));
 
-        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, dcbuf, dclen, &dclenout);
+        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION, reinterpret_cast<SQLPOINTER>(dcbuf.get()), dclen, &dclenout);
         if (r != SQL_SUCCESS) {
             LOG(SEV_ERROR, "core_sqlsrv_sensitivity_metadata: failed in calling SQLGetDescFieldW again." );
 
@@ -1084,6 +1085,16 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt )
 
         // Start parsing the data (blob)
         using namespace data_classification;
+
+        // If make it this far, must be using ODBC 17.2 or above. Prior to ODBC 17.4, checking Data Classification version will fail. 
+        // When the function is successful and the version is right, rank info is available for retrieval
+        bool getRankInfo = false;
+        r = ::SQLGetDescFieldW(ird, 0, SQL_CA_SS_DATA_CLASSIFICATION_VERSION, reinterpret_cast<SQLPOINTER>(&dcVersion), SQL_IS_INTEGER, &dcIRD);
+        if (r == SQL_SUCCESS && dcVersion >= VERSION_RANK_AVAILABLE) {
+            getRankInfo = true;
+        }
+
+        // Start parsing the data (blob)
         unsigned char *dcptr = dcbuf;
 
         sqlsrv_malloc_auto_ptr<sensitivity_metadata> sensitivity_meta;
@@ -1094,7 +1105,7 @@ void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt )
         parse_sensitivity_name_id_pairs(stmt, sensitivity_meta->num_infotypes, &sensitivity_meta->infotypes, &dcptr);
 
         // Next parse the sensitivity properties
-        parse_column_sensitivity_props(sensitivity_meta, &dcptr);
+        parse_column_sensitivity_props(sensitivity_meta, &dcptr, getRankInfo);
 
         unsigned char *dcend = dcbuf;
         dcend += dclen;
