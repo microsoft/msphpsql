@@ -14,7 +14,7 @@ To use the sample build scripts `builddrivers.py` and `buildtools.py`, install P
 
 You must first be able to build PHP source without including our PHP extensions. For help with building PHP 7.0* or PHP 7.1* in Windows, see the [official PHP website](https://wiki.php.net/internals/windows/stepbystepbuild). For PHP 7.2 or above, visit [PHP SDK page](https://github.com/OSTC/php-sdk-binary-tools) for new instructions.
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.2+ using Visual Studio 2017 and PHP 8.0 previews using Visual Studio 2019. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode, for example. It verifies the publisher's identity and prevents malicious actors from posing as legit developers.
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.2+ using Visual Studio 2017 and PHP 8.0 previews using Visual Studio 2019. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode. It verifies the publisher's identity and prevents malicious actors from posing as legitimate developers.
 
 ### Manually building from source 
 

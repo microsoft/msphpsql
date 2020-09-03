@@ -13,8 +13,7 @@ Updated PECL release packages. Here is the list of updates:
 https://github.com/microsoft/msphpsql/pull/1115)
 - Feature Request [#924](https://github.com/microsoft/msphpsql/issues/924) - extended PDO errorinfo to include [additional odbc messages if available](https://github.com/microsoft/msphpsql/wiki/Features#pdoErrorInfo) - pull request [#1133](
 https://github.com/microsoft/msphpsql/pull/1133)
-- [Data Classification with rank info](https://github.com/microsoft/msphpsql/wiki/Features#dataClass), which requires [MS ODBC Driver 17.4.2+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15) and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019)
-
+- [Data Classification with rank info](https://github.com/microsoft/msphpsql/wiki/Features#dataClass), which requires [MS ODBC Driver 17.4.2+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15) and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019) or an Azure SQL instance that supports it
 ### Removed
 - Dropped support for Ubuntu 19.10 and Debian 8.
 
@@ -38,7 +37,7 @@ https://github.com/microsoft/msphpsql/pull/1133)
   - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
 
 ### Known Issues
-- This preview release requires ODBC Driver 17.4.2 or above. Otherwise, the warning about setting an attribute failed may be suppressed when using an older ODBC driver.
+- This preview release requires ODBC Driver 17.4.2 or above. Otherwise, a warning about failing to set an attribute may be suppressed when using an older ODBC driver.
 - Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
