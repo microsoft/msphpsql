@@ -576,7 +576,7 @@ namespace data_classification {
         // Get rank info
         if (getRankInfo) {
             queryrank = *(reinterpret_cast<long*>(ptr));
-            ptr += sizeof(long);
+            ptr += sizeof(int);
             meta->rank = queryrank;
         }
 
@@ -605,7 +605,7 @@ namespace data_classification {
 
                 if (getRankInfo) {
                     colrank = *(reinterpret_cast<long*>(ptr));
-                    ptr += sizeof(long);
+                    ptr += sizeof(int);
                     pair.rank = colrank;
                 }
 
