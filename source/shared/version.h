@@ -4,7 +4,7 @@
 // File: version.h
 // Contents: Version number constants
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -26,12 +26,12 @@
 // Increase Minor with backward compatible new functionalities and API changes.
 // Increase Patch for backward compatible fixes.
 #define SQLVERSION_MAJOR 5
-#define SQLVERSION_MINOR 8
-#define SQLVERSION_PATCH 1
+#define SQLVERSION_MINOR 9
+#define SQLVERSION_PATCH 0
 #define SQLVERSION_BUILD 0
 
 // For previews, set this constant to 1. Otherwise, set it to 0
-#define PREVIEW 0
+#define PREVIEW 1
 #define SEMVER_PRERELEASE
 
 // Semantic versioning build metadata, build meta data is not counted in precedence order.
