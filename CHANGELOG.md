@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## 5.9.0-preview - 2020-09-18
+## 5.9.0-preview1 - 2020-09-18
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
@@ -14,6 +14,7 @@ https://github.com/microsoft/msphpsql/pull/1115)
 - Feature Request [#924](https://github.com/microsoft/msphpsql/issues/924) - extended PDO errorinfo to include [additional odbc messages if available](https://github.com/microsoft/msphpsql/wiki/Features#pdoErrorInfo) - pull request [#1133](
 https://github.com/microsoft/msphpsql/pull/1133)
 - [Data Classification with rank info](https://github.com/microsoft/msphpsql/wiki/Features#dataClass), which requires [MS ODBC Driver 17.4.2+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15) and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019) or an Azure SQL instance that supports it
+
 ### Removed
 - Dropped support for Ubuntu 19.10 and Debian 8.
 
