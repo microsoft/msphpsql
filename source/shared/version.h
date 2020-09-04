@@ -30,7 +30,7 @@
 #define SQLVERSION_PATCH 0
 #define SQLVERSION_BUILD 0
 
-// For previews, set this constant to 1. Otherwise, set it to 0
+// For previews, set this constant to 1, 2 and so on. Otherwise, set it to 0
 #define PREVIEW 1
 #define SEMVER_PRERELEASE
 
