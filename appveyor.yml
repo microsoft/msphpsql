@@ -1,10 +1,6 @@
 version: '{branch}.{build}'
 
 branches:
-  # whitelist
-  #only:
-
-  # blacklist
   except:
     - PHP-7.0-Linux
     - PHP5
