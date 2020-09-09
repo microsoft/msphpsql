@@ -35,8 +35,6 @@ Azure Pipelines       | AppVeyor (Windows)       | Travis CI (Linux)        | Co
 * [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/rhel)
 * [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/sles)
 * [**macOS + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/mac/)
-* [**Docker**](https://hub.docker.com/r/lbosqmsft/mssql-php-msphpsql/)
-
 
 ## Announcements
 
