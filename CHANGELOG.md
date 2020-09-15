@@ -3,11 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## 5.9.0-preview1 - 2020-09-18
+## 5.9.0-preview1 - 2020-10-02
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
-- Support for PHP 8.0 Beta 3
+- Support for PHP 8.0 RC 1
 - Support for Ubuntu 20.04 and Alpine 3.12
 - Support for GB18030 locale [#1115](
 https://github.com/microsoft/msphpsql/pull/1115)
