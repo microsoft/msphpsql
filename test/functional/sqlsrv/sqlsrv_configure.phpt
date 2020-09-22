@@ -146,34 +146,34 @@ sqlsrv_configure.
     }
 
 ?>
---EXPECT--
-sqlsrv_configure() expects exactly 2 parameters, 1 given
+--EXPECTREGEX--
+sqlsrv_configure\(\) expects exactly 2 (parameters|arguments), 1 given
 Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -14
-            [code] => -14
-            [2] => An invalid parameter was passed to sqlsrv_configure.
-            [message] => An invalid parameter was passed to sqlsrv_configure.
-        )
+\(
+    \[0] => Array
+        \(
+            \[0\] => IMSSP
+            \[SQLSTATE\] => IMSSP
+            \[1\] => -14
+            \[code\] => -14
+            \[2\] => An invalid parameter was passed to sqlsrv_configure.
+            \[message\] => An invalid parameter was passed to sqlsrv_configure.
+        \)
 
-)
+\)
 Array
-(
-    [0] => Array
-        (
-            [0] => IMSSP
-            [SQLSTATE] => IMSSP
-            [1] => -14
-            [code] => -14
-            [2] => An invalid parameter was passed to sqlsrv_get_config.
-            [message] => An invalid parameter was passed to sqlsrv_get_config.
-        )
+\(
+    \[0\] => Array
+        \(
+            \[0\] => IMSSP
+            \[SQLSTATE\] => IMSSP
+            \[1\] => -14
+            \[code\] => -14
+            \[2\] => An invalid parameter was passed to sqlsrv_get_config.
+            \[message\] => An invalid parameter was passed to sqlsrv_get_config.
+        \)
 
-)
+\)
 sqlsrv.LogSubsystems = -1
 sqlsrv_configure: entering
 sqlsrv.LogSubsystems = 8
