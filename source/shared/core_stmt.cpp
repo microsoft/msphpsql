@@ -1938,7 +1938,11 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                 throw core::CoreException();
             }
 
-            stream = php_stream_open_wrapper( "sqlsrv://sqlncli10", "r", 0, NULL );
+            // For a sqlsrv stream, only REPORT_ERRORS may be used. For "mode", the 'b' option 
+            // is ignored on POSIX systems, which treat text and binary files the same. Yet, the
+            // 'b' option might be important in other systems.
+            // For details check https://www.php.net/manual/en/internals2.ze1.streams.php
+            stream = php_stream_open_wrapper("sqlsrv://sqlncli10", "rb", REPORT_ERRORS, NULL);
 
             CHECK_CUSTOM_ERROR( !stream, stmt, SQLSRV_ERROR_STREAM_CREATE ) {
                 throw core::CoreException();
