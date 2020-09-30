@@ -88,19 +88,40 @@ function fetchColumnOutOfBound1($conn, $tableName, $col)
             echo "Error message unexpected in fetchColumnOutOfBound1\n";
             var_dump($e->getMessage());
         }
+    } catch (ValueError $ve) {
+        $error = '*Column index must be greater than or equal to 0';
+        if (!fnmatch($error, $ve->getMessage())) {
+            echo "Error message unexpected in fetchColumnOutOfBound1\n";
+            var_dump($ve->getMessage());
+        }
     }
 }
 
 function fetchColumnOutOfBound2($conn, $tableName, $col)
 {
+    $error = '*Invalid column index';
     try {
         $tsql = "SELECT * FROM $tableName";
         $stmt = $conn->query($tsql, PDO::FETCH_COLUMN, $col);
         $result = $stmt->fetch();
         unset($stmt);
-    } catch (PDOException $e) {
-        var_dump($e->getMessage());
+    } catch (Error $e) {
+        if (!fnmatch($error, $e->getMessage())) {
+            var_dump($e->getMessage());
+        }
+    } catch (ValueError $ve) {
+        if (!fnmatch($error, $ve->getMessage())) {
+            var_dump($ve->getMessage());
+        }
     }
+}
+
+// When testing with PHP 8.0 some test cases throw ValueError instead of exceptions or warnings. 
+// Thus implement a custom warning handler such that with PHP 7.x the warning would be handled 
+// to throw an Error (ValueError not available).
+function warningHandler($errno, $errstr) 
+{ 
+    throw new Error($errstr);
 }
 
 try {
@@ -135,7 +156,9 @@ try {
 
     // Change to warning mode
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+    set_error_handler("warningHandler", E_WARNING);
     fetchColumnOutOfBound2($conn, $tableName, $numCols + 1);
+    restore_error_handler();
     
     dropTable($conn, $tableName);
     unset($conn);
@@ -144,8 +167,5 @@ try {
     var_dump($e);
 }
 ?>
---EXPECTREGEX--
-Warning: PDOStatement::fetch\(\): SQLSTATE\[HY000\]: General error: Invalid column index in .+(\/|\\)pdo_fetch_column_twice.php on line [0-9]+
-
-Warning: PDOStatement::fetch\(\): SQLSTATE\[HY000\]: General error in .+(\/|\\)pdo_fetch_column_twice.php on line [0-9]+
+--EXPECT--
 Done
