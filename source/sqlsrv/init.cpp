@@ -98,6 +98,8 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_fetch_arginfo, 0, 0, 1 )
     ZEND_ARG_INFO( 0, stmt )
+    ZEND_ARG_INFO( 0, row )
+    ZEND_ARG_INFO( 0, offset )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_fetch_array_arginfo, 0, 0, 1 )

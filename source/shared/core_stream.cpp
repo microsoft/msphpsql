@@ -238,9 +238,12 @@ static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _
     ss = static_cast<sqlsrv_stream*>( sqlsrv_malloc( sizeof( sqlsrv_stream )));
     memset( ss, 0, sizeof( sqlsrv_stream ));
 
-    // check for valid options
-    if( options != REPORT_ERRORS ) { 
-        php_stream_wrapper_log_error( wrapper, options, "Invalid option: no options except REPORT_ERRORS may be specified with a sqlsrv stream" );
+    // The function core_get_field_common() is changed to pass REPORT_ERRORS for 
+    // php_stream_open_wrapper(). Whether the error flag is toggled or cleared, 
+    // the argument "options" will be zero.
+    // For details check this pull request: https://github.com/php/php-src/pull/6190
+    if (options != 0) {
+        php_stream_wrapper_log_error(wrapper, options, "Invalid option: no options except REPORT_ERRORS may be specified with a sqlsrv stream");
         return NULL;
     }
 
