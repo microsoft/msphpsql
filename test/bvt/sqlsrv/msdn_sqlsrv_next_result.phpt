@@ -1,7 +1,7 @@
 --TEST--
 first result is consumed without calling next_result, the next result is made available by calling next_result
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication and 

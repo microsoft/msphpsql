@@ -4,10 +4,20 @@ zombied streams after sqlsrv_stmt_cancel.
 <?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
+
+    // When testing with PHP 8.0 it throws a TypeError instead of a warning. Thus implement a custom 
+    // warning handler such that with PHP 7.x the warning would be handled to throw a TypeError.
+    function warningHandler($errno, $errstr) 
+    { 
+        throw new TypeError($errstr);
+    }
+
     sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
     sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
 
     require( 'MsCommon.inc' );
+
+    set_error_handler("warningHandler", E_WARNING);
 
     $conn = Connect();
     if( !$conn ) {
@@ -33,9 +43,14 @@ zombied streams after sqlsrv_stmt_cancel.
     $str = fread( $stream, 80 );
     echo "$str\n";
     sqlsrv_cancel( $stmt );
-    while( !feof( $stream ) && is_resource($stream)) { 
-        $str = fread( $stream, 80 );
-        echo "$str\n";
+    
+    try {
+        while( !feof( $stream ) && is_resource($stream)) { 
+            $str = fread( $stream, 80 );
+            echo "$str\n";
+        }
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
     }
     sqlsrv_free_stmt( $stmt );
 
@@ -44,9 +59,13 @@ zombied streams after sqlsrv_stmt_cancel.
     sqlsrv_fetch( $stmt );
     $stream = sqlsrv_get_field( $stmt, 0, SQLSRV_PHPTYPE_STREAM("binary"));
     sqlsrv_cancel( $stmt );
-    while( !feof( $stream ) && is_resource($stream) ) { 
-        $str = fread( $stream, 80 );
-        echo "$str\n";
+    try {
+        while( !feof( $stream ) && is_resource($stream) ) { 
+            $str = fread( $stream, 80 );
+            echo "$str\n";
+        }
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
     }
     
     sqlsrv_free_stmt( $stmt );
@@ -64,7 +83,5 @@ Baby and Howlin Wolfs How Many More Times into near-cartoon parodies, the band a
 lso hinted at things to come with the manic Communication Breakdown and the lumb
 ering set stopper Dazed and Confused. \<I\>--Billy Altman\<\/I\>
 Source: Amazon.com essential recording - Most critics complain \<I\>Back in Black\<
-
-Warning: feof\(\): supplied resource is not a valid stream resource in .+(\/|\\)0022\.php on line [0-9]+
-
-Warning: feof\(\): supplied resource is not a valid stream resource in .+(\/|\\)0022\.php on line [0-9]+
+feof\(\): supplied resource is not a valid stream resource
+feof\(\): supplied resource is not a valid stream resource

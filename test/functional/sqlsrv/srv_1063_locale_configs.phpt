@@ -34,13 +34,11 @@ pdo_sqlsrv.set_locale_info = 0***
 Amount formatted: 10000.99
 Friday
 December
-3.14159
 **End**
 **Begin**
 Amount formatted: $10,000.99
 Friday
 December
-3.14159
 **End**
 
 ***sqlsrv.SetLocaleInfo = 1
@@ -50,13 +48,11 @@ pdo_sqlsrv.set_locale_info = 1***
 Amount formatted: 10000.99
 Friday
 December
-3.14159
 **End**
 **Begin**
 Amount formatted: 10.000,99 €
 Freitag
 Dezember
-3,14159
 **End**
 
 ***sqlsrv.SetLocaleInfo = 2
@@ -66,11 +62,9 @@ pdo_sqlsrv.set_locale_info = 2***
 Amount formatted: $10,000.99
 Friday
 December
-3.14159
 **End**
 **Begin**
 Amount formatted: 10.000,99 €
 Freitag
 Dezember
-3,14159
 **End**

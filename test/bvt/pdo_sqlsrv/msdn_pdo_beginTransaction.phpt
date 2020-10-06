@@ -1,7 +1,7 @@
 --TEST--
 starts a transaction, insert 2 rows and commit the transaction
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 	require('connect.inc');

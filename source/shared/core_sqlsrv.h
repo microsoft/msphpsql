@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -289,16 +289,16 @@ struct sqlsrv_static_assert<true> { _In_ static const int value = 1; };
 // log_callback
 // a driver specific callback for checking if the messages are qualified to be logged:
 // severity - severity of the message: notice, warning, or error
-typedef bool (*severity_callback)(_In_ unsigned int severity TSRMLS_DC);
+typedef bool (*severity_callback)(_In_ unsigned int severity);
 
 // each driver must register a severity checker callback for logging to work according to the INI settings
 void core_sqlsrv_register_severity_checker(_In_ severity_callback driver_checker);
 
 // a simple wrapper around a PHP error logging function.
-void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ... );
+void write_to_log( _In_ unsigned int severity, _In_ const char* msg, ... );
 
 // a macro to make it convenient to use the function.
-#define LOG( severity, msg, ...)    write_to_log( severity TSRMLS_CC, msg, ## __VA_ARGS__ )
+#define LOG( severity, msg, ...)    write_to_log( severity, msg, ## __VA_ARGS__ )
 
 // mask for filtering which severities are written to the log
 enum logging_severity {
@@ -397,7 +397,8 @@ inline void* sqlsrv_malloc( _In_ size_t element_count, _In_ size_t element_size,
         DIE( "Integer overflow in sqlsrv_malloc" );
     }
 
-    if( element_size * element_count + extra == 0 ) {
+    // safeguard against anomalous calculation or any arithmetic overflow
+    if( element_size * element_count + extra <= 0 ) {
         DIE( "Allocation size must be more than 0" );
     }
 
@@ -776,6 +777,7 @@ struct sqlsrv_error_const {
 
 // subclass which is used by the core layer to instantiate ODBC errors
 struct sqlsrv_error : public sqlsrv_error_const {
+    struct sqlsrv_error *next;  // Only used in pdo_sqlsrv for additional errors (as a linked list)
 
     sqlsrv_error( void )
     {
@@ -783,16 +785,18 @@ struct sqlsrv_error : public sqlsrv_error_const {
         native_message = NULL;
         native_code = -1;
         format = false;
+        next = NULL;
     }
 
-    sqlsrv_error( _In_ SQLCHAR* sql_state, _In_ SQLCHAR* message, _In_ SQLINTEGER code, _In_ bool printf_format = false )
+    sqlsrv_error( _In_ SQLCHAR* sql_state, _In_ SQLCHAR* message, _In_ SQLINTEGER code, _In_ bool printf_format = false)
     {
-        sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
-        native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
-        strcpy_s( reinterpret_cast<char*>( sqlstate ), SQL_SQLSTATE_BUFSIZE, reinterpret_cast<const char*>( sql_state ));
-        strcpy_s( reinterpret_cast<char*>( native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>( message ));
+        sqlstate = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_SQLSTATE_BUFSIZE));
+        native_message = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_MAX_ERROR_MESSAGE_LENGTH + 1));
+        strcpy_s(reinterpret_cast<char*>(sqlstate), SQL_SQLSTATE_BUFSIZE, reinterpret_cast<const char*>(sql_state));
+        strcpy_s(reinterpret_cast<char*>(native_message), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, reinterpret_cast<const char*>(message));
         native_code = code;
         format = printf_format;
+        next = NULL;
     }
 
     sqlsrv_error( _In_ sqlsrv_error_const const& prototype )
@@ -802,15 +806,25 @@ struct sqlsrv_error : public sqlsrv_error_const {
 
     ~sqlsrv_error( void )
     {
-        if( sqlstate != NULL ) {
-            sqlsrv_free( sqlstate );
+        reset();
+    }
+
+    void reset() {
+        if (sqlstate != NULL) {
+            sqlsrv_free(sqlstate);
+            sqlstate = NULL;
         }
-        if( native_message != NULL ) {
-            sqlsrv_free( native_message );
+        if (native_message != NULL) {
+            sqlsrv_free(native_message);
+            native_message = NULL;
+        }
+        if (next != NULL) {
+            next->reset();  // free the next sqlsrv_error, and so on
+            sqlsrv_free(next);
+            next = NULL;
         }
     }
 };
-
 
 // an auto_ptr for sqlsrv_errors.  These call the destructor explicitly rather than call delete
 class sqlsrv_error_auto_ptr : public sqlsrv_auto_ptr<sqlsrv_error, sqlsrv_error_auto_ptr > {
@@ -852,7 +866,6 @@ public:
     }
 };
 
-
 //*********************************************************************************************************************************
 // Context
 //*********************************************************************************************************************************
@@ -864,7 +877,7 @@ struct sqlsrv_conn;
 // a driver specific callback for processing errors.
 // ctx - the context holding the handles
 // sqlsrv_error_code - specific error code to return.
-typedef bool (*error_callback)( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool error TSRMLS_DC, _In_opt_ va_list* print_args );
+typedef bool (*error_callback)( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool error, _In_opt_ va_list* print_args );
 
 // sqlsrv_context
 // a context holds relevant information to be passed with a connection and statement objects.
@@ -1019,7 +1032,7 @@ struct sqlsrv_encoding {
 extern bool isVistaOrGreater;                     // used to determine if OS is Vista or Greater
 extern HashTable* g_encodings;                    // encodings supported by this driver
 
-void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func TSRMLS_DC );
+void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func );
 void core_sqlsrv_mshutdown( _Inout_ sqlsrv_context& henv_cp, _Inout_ sqlsrv_context& henv_ncp );
 
 // environment context used by sqlsrv_connect for when a connection error occurs.
@@ -1094,7 +1107,7 @@ struct sqlsrv_conn : public sqlsrv_context {
     sqlsrv_malloc_auto_ptr<ACCESSTOKEN> azure_ad_access_token;
 
     // initialize with default values
-    sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding TSRMLS_DC ) :
+    sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
@@ -1225,54 +1238,54 @@ struct connection_option {
 
     // process the connection type
     // return whether or not the function was successful in processing the connection option
-    void                (*func)( connection_option const*, zval* value, sqlsrv_conn* conn, std::string& conn_str TSRMLS_DC );
+    void                (*func)( connection_option const*, zval* value, sqlsrv_conn* conn, std::string& conn_str );
 };
 
 // connection attribute functions
 
 // simply add the parsed value to the connection string
 struct conn_str_append_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str TSRMLS_DC );
+    static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Inout_ std::string& conn_str );
 };
 
 struct conn_null_func {
-    static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC );
+    static void func( connection_option const* /*option*/, zval* /*value*/, sqlsrv_conn* /*conn*/, std::string& /*conn_str*/ );
 };
 
 struct column_encryption_set_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str );
 };
 
 struct driver_set_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str );
 };
 
 struct ce_akv_str_set_func {
-   static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+   static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str );
 };
 
 struct access_token_set_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str );
 };
 
 
 // factory to create a connection (since they are subclassed to instantiate statements)
-typedef sqlsrv_conn* (*driver_conn_factory)( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv TSRMLS_DC );
+typedef sqlsrv_conn* (*driver_conn_factory)( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv );
 
 // *** connection functions ***
 sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_context& henv_ncp, _In_ driver_conn_factory conn_factory,
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd,
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[],
-                                  _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC );
+                                  _In_ void* driver, _In_z_ const char* driver_func );
 SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str, _In_ bool is_pooled );
-void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn TSRMLS_DC );
-void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC );
-void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
-void core_sqlsrv_commit( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
-void core_sqlsrv_rollback( _Inout_ sqlsrv_conn* conn TSRMLS_DC );
-void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval* server_info TSRMLS_DC );
-void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval *server_version TSRMLS_DC );
-void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_info TSRMLS_DC );
+void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn );
+void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len );
+void core_sqlsrv_begin_transaction( _Inout_ sqlsrv_conn* conn );
+void core_sqlsrv_commit( _Inout_ sqlsrv_conn* conn );
+void core_sqlsrv_rollback( _Inout_ sqlsrv_conn* conn );
+void core_sqlsrv_get_server_info( _Inout_ sqlsrv_conn* conn, _Out_ zval* server_info );
+void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval *server_version );
+void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_info );
 bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len );
 size_t core_str_zval_is_true( _Inout_ zval* str_zval );
 bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t value_len );
@@ -1285,42 +1298,42 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN r, _In_ c
 
 struct stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, _In_ zval* /*value_z*/ TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, _In_ zval* /*value_z*/ );
 };
 
 struct stmt_option_query_timeout : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 struct stmt_option_send_at_exec : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 struct stmt_option_buffered_query_limit : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 struct stmt_option_date_as_string : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 struct stmt_option_format_decimals : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 struct stmt_option_decimal_places : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 struct stmt_option_data_classification : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 // used to hold the table for statment options
@@ -1353,7 +1366,7 @@ struct sqlsrv_stream {
 };
 
 // close any active stream
-void close_active_stream( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
+void close_active_stream( _Inout_ sqlsrv_stmt* stmt );
 
 extern php_stream_wrapper g_sqlsrv_stream_wrapper;
 
@@ -1427,14 +1440,16 @@ struct sqlsrv_output_param {
 };
 
 namespace data_classification {
+    const int VERSION_RANK_AVAILABLE = 2;   // Rank info is available when data classification version is 2+
+    const int RANK_NOT_DEFINED = -1;
     // *** data classficiation metadata structures and helper methods -- to store and/or process the sensitivity classification data ***
     struct name_id_pair;
     struct sensitivity_metadata;
 
     void name_id_pair_free(name_id_pair * pair);
-    void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>* pairs, _Inout_ unsigned char **pptr TSRMLS_CC);
-    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr);
-    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *column_data TSRMLS_CC);
+    void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>* pairs, _Inout_ unsigned char **pptr);
+    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr, _In_ bool getRankInfo);
+    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *column_data);
 
     struct name_id_pair {
         UCHAR name_len;
@@ -1454,8 +1469,9 @@ namespace data_classification {
     struct label_infotype_pair {
         USHORT label_idx;
         USHORT infotype_idx;
+        int rank;  // Default value is "not defined"
 
-        label_infotype_pair() : label_idx(0), infotype_idx(0)
+        label_infotype_pair() : label_idx(0), infotype_idx(0), rank(RANK_NOT_DEFINED)
         {
         }
     };
@@ -1481,8 +1497,9 @@ namespace data_classification {
         std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>> infotypes;
         USHORT num_columns;
         std::vector<column_sensitivity> columns_sensitivity;
+        int rank;  // Default value is "not defined"
 
-        sensitivity_metadata() : num_labels(0), num_infotypes(0), num_columns(0)
+        sensitivity_metadata() : num_labels(0), num_infotypes(0), num_columns(0), rank(RANK_NOT_DEFINED)
         {
         }
 
@@ -1502,11 +1519,13 @@ struct field_meta_data;
 // *** Statement resource structure ***
 struct sqlsrv_stmt : public sqlsrv_context {
 
-    void free_param_data( TSRMLS_D );
-    virtual void new_result_set( TSRMLS_D );
+    void free_param_data( void );
+    virtual void new_result_set( void );
 
     // free sensitivity classification metadata
     void clean_up_sensitivity_metadata();
+    // set query timeout
+    void set_query_timeout();
 
     sqlsrv_conn*   conn;                  // Connection that created this statement
 
@@ -1551,14 +1570,13 @@ struct sqlsrv_stmt : public sqlsrv_context {
     // meta data for data classification
     sqlsrv_malloc_auto_ptr<data_classification::sensitivity_metadata> current_sensitivity_metadata;
 
-    sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
+    sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv );
+
     virtual ~sqlsrv_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the SQLSRV_PHPTYPE_* constants
     virtual sqlsrv_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream ) = 0;
 
-    // driver specific way to set query timeout
-    virtual void set_query_timeout() = 0;
 };
 
 // *** field metadata struct ***
@@ -1607,31 +1625,31 @@ const size_t SQLSRV_CURSOR_BUFFERED = 0xfffffffeUL; // arbitrary number that doe
 #endif // !_WIN32
 
 // factory to create a statement
-typedef sqlsrv_stmt* (*driver_stmt_factory)( sqlsrv_conn* conn, SQLHANDLE h, error_callback e, void* drv TSRMLS_DC );
+typedef sqlsrv_stmt* (*driver_stmt_factory)( sqlsrv_conn* conn, SQLHANDLE h, error_callback e, void* drv );
 
 // *** statement functions ***
 sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stmt_factory stmt_factory, _In_opt_ HashTable* options_ht,
-                                      _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver TSRMLS_DC );
+                                      _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver );
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
                              _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
-                             _Inout_ SQLSMALLINT decimal_digits TSRMLS_DC );
-SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
-field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno TSRMLS_DC );
-bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset TSRMLS_DC );
+                             _Inout_ SQLSMALLINT decimal_digits );
+SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
+field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno );
+bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset );
 void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_phptype sqlsrv_phptype, _In_ bool prefer_string,
-							_Outref_result_bytebuffer_maybenull_(*field_length) void*& field_value, _Inout_ SQLLEN* field_length, _In_ bool cache_field,
-							_Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out TSRMLS_DC);
-bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
-void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
-void core_sqlsrv_post_param( _Inout_ sqlsrv_stmt* stmt, _In_ zend_ulong paramno, zval* param_z TSRMLS_DC );
-void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type TSRMLS_DC );
-void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z TSRMLS_DC );
-void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
-bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
-void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
-void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLEN limit TSRMLS_DC );
-void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z TSRMLS_DC);
-void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC );
+                            _Outref_result_bytebuffer_maybenull_(*field_length) void*& field_value, _Inout_ SQLLEN* field_length, _In_ bool cache_field,
+                            _Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out);
+bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt );
+void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
+void core_sqlsrv_post_param( _Inout_ sqlsrv_stmt* stmt, _In_ zend_ulong paramno, zval* param_z );
+void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type );
+void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z );
+void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z );
+bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt );
+void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z );
+void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLEN limit );
+void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z);
+void core_sqlsrv_sensitivity_metadata( _Inout_ sqlsrv_stmt* stmt );
 
 //*********************************************************************************************************************************
 // Result Set
@@ -1652,15 +1670,15 @@ struct sqlsrv_result_set {
     virtual ~sqlsrv_result_set( void ) { }
 
     virtual bool cached( int field_index ) = 0;
-    virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset TSRMLS_DC ) = 0;
+    virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset ) = 0;
     virtual SQLRETURN get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                 _Out_writes_bytes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                bool handle_warning TSRMLS_DC )= 0;
+                                bool handle_warning )= 0;
     virtual SQLRETURN get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier,
                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                      _Inout_ SQLSMALLINT* out_buffer_length TSRMLS_DC ) = 0;
+                                      _Inout_ SQLSMALLINT* out_buffer_length ) = 0;
     virtual sqlsrv_error* get_diag_rec( _In_ SQLSMALLINT record_number ) = 0;
-    virtual SQLLEN row_count( TSRMLS_D ) = 0;
+    virtual SQLLEN row_count( void ) = 0;
 };
 
 struct sqlsrv_odbc_result_set : public sqlsrv_result_set {
@@ -1669,15 +1687,15 @@ struct sqlsrv_odbc_result_set : public sqlsrv_result_set {
 	virtual ~sqlsrv_odbc_result_set( void );
 
     virtual bool cached( int field_index ) { return false; }
-    virtual SQLRETURN fetch( _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset TSRMLS_DC );
+    virtual SQLRETURN fetch( _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset );
     virtual SQLRETURN get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                 _Out_writes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                _In_ bool handle_warning TSRMLS_DC );
+                                _In_ bool handle_warning );
     virtual SQLRETURN get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier,
                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                      _Inout_ SQLSMALLINT* out_buffer_length TSRMLS_DC );
+                                      _Inout_ SQLSMALLINT* out_buffer_length );
     virtual sqlsrv_error* get_diag_rec( _In_ SQLSMALLINT record_number );
-    virtual SQLLEN row_count( TSRMLS_D );
+    virtual SQLLEN row_count( void );
 
  private:
     // prevent invalid instantiations and assignments
@@ -1703,19 +1721,19 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
     static const zend_long BUFFERED_QUERY_LIMIT_DEFAULT = 10240;   // measured in KB
     static const zend_long BUFFERED_QUERY_LIMIT_INVALID = 0;
 
-    explicit sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* odbc TSRMLS_DC );
+    explicit sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* odbc );
     virtual ~sqlsrv_buffered_result_set( void );
 
     virtual bool cached( int field_index ) { return true; }
-    virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset TSRMLS_DC );
+    virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset );
     virtual SQLRETURN get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                 _Out_writes_bytes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                bool handle_warning TSRMLS_DC );
+                                bool handle_warning );
     virtual SQLRETURN get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier,
                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                      _Inout_ SQLSMALLINT* out_buffer_length TSRMLS_DC );
+                                      _Inout_ SQLSMALLINT* out_buffer_length );
     virtual sqlsrv_error* get_diag_rec( _In_ SQLSMALLINT record_number );
-    virtual SQLLEN row_count( TSRMLS_D );
+    virtual SQLLEN row_count( void );
 
     // buffered result set specific
     SQLSMALLINT column_count( void )
@@ -1900,12 +1918,11 @@ enum error_handling_flags {
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error,
-                                 _In_ logging_severity severity TSRMLS_DC );
+                                 _In_ logging_severity severity, _In_opt_ bool check_warning = false );
 
 // format and return a driver specfic error
 void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_error_const const* custom_error,
-                                      _Out_ sqlsrv_error_auto_ptr& formatted_error, _In_ logging_severity severity TSRMLS_DC, _In_opt_ va_list* args );
-
+                                      _Out_ sqlsrv_error_auto_ptr& formatted_error, _In_ logging_severity severity, _In_opt_ va_list* args );
 
 // return the message for the HRESULT returned by GetLastError.  Some driver errors use this to
 // return the Windows error, e.g, when a UTF-8 <-> UTF-16 conversion fails.
@@ -1916,20 +1933,20 @@ DWORD core_sqlsrv_format_message( _Out_ char* output_buffer, _In_ unsigned outpu
 
 // convenience functions that overload either a reference or a pointer so we can use
 // either in the CHECK_* functions.
-inline bool call_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned long sqlsrv_error_code TSRMLS_DC, _In_ bool warning, ... )
+inline bool call_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned long sqlsrv_error_code, _In_ bool warning, ... )
 {
     va_list print_params;
     va_start( print_params, warning );
-    bool ignored = ctx.error_handler()( ctx, sqlsrv_error_code, warning TSRMLS_CC, &print_params );
+    bool ignored = ctx.error_handler()( ctx, sqlsrv_error_code, warning, &print_params );
     va_end( print_params );
     return ignored;
 }
 
-inline bool call_error_handler( _Inout_ sqlsrv_context* ctx, _In_ unsigned long sqlsrv_error_code TSRMLS_DC, _In_ bool warning, ... )
+inline bool call_error_handler( _Inout_ sqlsrv_context* ctx, _In_ unsigned long sqlsrv_error_code, _In_ bool warning, ... )
 {
     va_list print_params;
     va_start( print_params, warning );
-    bool ignored = ctx->error_handler()( *ctx, sqlsrv_error_code, warning TSRMLS_CC, &print_params );
+    bool ignored = ctx->error_handler()( *ctx, sqlsrv_error_code, warning, &print_params );
     va_end( print_params );
     return ignored;
 }
@@ -1970,7 +1987,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
     bool flag##unique = (condition);                                 \
     bool ignored##unique = true;                                       \
     if (flag##unique) {                                              \
-        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/false, ## __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp, /*warning*/false, ## __VA_ARGS__ ); \
     }  \
     if( !ignored##unique )
 
@@ -1990,7 +2007,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
 #define CHECK_WARNING_AS_ERROR_UNIQUE(  unique, condition, context, ssphp, ... )   \
     bool ignored##unique = true;    \
     if( condition ) { \
-        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/true, ## __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp, /*warning*/true, ## __VA_ARGS__ ); \
     }   \
     if( !ignored##unique )
 
@@ -1999,7 +2016,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
 
 #define CHECK_SQL_WARNING( result, context, ... )        \
     if( result == SQL_SUCCESS_WITH_INFO ) {              \
-        (void)call_error_handler( context, 0 TSRMLS_CC, /*warning*/ true, ## __VA_ARGS__ ); \
+        (void)call_error_handler( context, 0, /*warning*/ true, ## __VA_ARGS__ ); \
     }
 
 #define CHECK_CUSTOM_WARNING_AS_ERROR( condition, context, ssphp, ... ) \
@@ -2012,16 +2029,16 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
     SQLSRV_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." );  \
     bool ignored = true;                                   \
     if( result == SQL_ERROR ) {                            \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, false, ##__VA_ARGS__ ); \
+        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, false, ##__VA_ARGS__ ); \
     }                                                      \
     else if( result == SQL_SUCCESS_WITH_INFO ) {           \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC TSRMLS_CC, true TSRMLS_CC, ##__VA_ARGS__ ); \
+        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, true, ##__VA_ARGS__ ); \
     }                                                      \
     if( !ignored )
 
 // throw an exception after it has been hooked into the custom error handler
 #define THROW_CORE_ERROR( ctx, custom, ... ) \
-  (void)call_error_handler( ctx, custom TSRMLS_CC, /*warning*/ false, ## __VA_ARGS__ ); \
+  (void)call_error_handler( ctx, custom, /*warning*/ false, ## __VA_ARGS__ ); \
   throw core::CoreException();
 
 //*********************************************************************************************************************************
@@ -2038,7 +2055,7 @@ namespace core {
       }
     };
 
-    inline void check_for_mars_error( _Inout_ sqlsrv_stmt* stmt, _In_ SQLRETURN r TSRMLS_DC )
+    inline void check_for_mars_error( _Inout_ sqlsrv_stmt* stmt, _In_ SQLRETURN r )
     {
         // Skip this if not SQL_ERROR -
         // We check for the 'connection busy' error caused by having MultipleActiveResultSets off
@@ -2083,7 +2100,7 @@ namespace core {
 
     inline SQLRETURN SQLGetDiagField( _Inout_ sqlsrv_context* ctx, _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier,
                                       _Out_writes_opt_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                      _Out_opt_ SQLSMALLINT* out_buffer_length TSRMLS_DC )
+                                      _Out_opt_ SQLSMALLINT* out_buffer_length )
     {
         SQLRETURN r = ::SQLGetDiagField( ctx->handle_type(), ctx->handle(), record_number, diag_identifier,
                                        diag_info_buffer, buffer_length, out_buffer_length );
@@ -2096,7 +2113,7 @@ namespace core {
     }
 
     inline void SQLAllocHandle( _In_ SQLSMALLINT HandleType, _Inout_ sqlsrv_context& InputHandle,
-                                _Out_ SQLHANDLE* OutputHandlePtr TSRMLS_DC )
+                                _Out_ SQLHANDLE* OutputHandlePtr )
     {
         SQLRETURN r;
         r = ::SQLAllocHandle( HandleType, InputHandle.handle(), OutputHandlePtr );
@@ -2115,7 +2132,7 @@ namespace core {
                                   _Inout_opt_ SQLPOINTER        ParameterValuePtr,
                                   _Inout_ SQLLEN                BufferLength,
                                   _Inout_ SQLLEN *              StrLen_Or_IndPtr
-                                  TSRMLS_DC )
+                                  )
     {
         SQLRETURN r;
         r = ::SQLBindParameter( stmt->handle(), ParameterNumber, InputOutputType, ValueType, ParameterType, ColumnSize,
@@ -2126,7 +2143,7 @@ namespace core {
         }
     }
 
-    inline void SQLCloseCursor( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+    inline void SQLCloseCursor( _Inout_ sqlsrv_stmt* stmt )
     {
         SQLRETURN r = ::SQLCloseCursor( stmt->handle() );
 
@@ -2137,7 +2154,7 @@ namespace core {
 
     inline void SQLColAttribute( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLUSMALLINT field_identifier,
                                  _Out_writes_bytes_opt_(buffer_length) SQLPOINTER field_type_char, _In_ SQLSMALLINT buffer_length,
-                                 _Out_opt_ SQLSMALLINT* out_buffer_length, _Out_opt_ SQLLEN* field_type_num TSRMLS_DC )
+                                 _Out_opt_ SQLSMALLINT* out_buffer_length, _Out_opt_ SQLLEN* field_type_num )
     {
         SQLRETURN r = ::SQLColAttribute( stmt->handle(), field_index, field_identifier, field_type_char,
                                          buffer_length, out_buffer_length, field_type_num );
@@ -2149,7 +2166,7 @@ namespace core {
 
     inline void SQLColAttributeW( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLUSMALLINT field_identifier,
                                   _Out_writes_bytes_opt_(buffer_length) SQLPOINTER field_type_char, _In_ SQLSMALLINT buffer_length,
-                                  _Out_opt_ SQLSMALLINT* out_buffer_length, _Out_opt_ SQLLEN* field_type_num TSRMLS_DC )
+                                  _Out_opt_ SQLSMALLINT* out_buffer_length, _Out_opt_ SQLLEN* field_type_num )
     {
         SQLRETURN r = ::SQLColAttributeW( stmt->handle(), field_index, field_identifier, field_type_char,
                                           buffer_length, out_buffer_length, field_type_num );
@@ -2161,7 +2178,7 @@ namespace core {
 
     inline void SQLDescribeCol( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Out_writes_opt_(col_name_length) SQLCHAR* col_name, _In_ SQLSMALLINT col_name_length,
                                 _Out_opt_ SQLSMALLINT* col_name_length_out, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
-                                _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
+                                _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable )
     {
         SQLRETURN r;
         r = ::SQLDescribeCol( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
@@ -2174,7 +2191,7 @@ namespace core {
 
 	inline void SQLDescribeColW( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Out_writes_opt_(col_name_length) SQLWCHAR* col_name, _In_ SQLSMALLINT col_name_length,
                                  _Out_opt_ SQLSMALLINT* col_name_length_out, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
-                                 _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
+                                 _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable )
 	{
 		SQLRETURN r;
 		r = ::SQLDescribeColW( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
@@ -2186,7 +2203,7 @@ namespace core {
 	}
 
     inline void SQLDescribeParam( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT paramno, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
-        _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
+        _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable )
     {
         SQLRETURN r;
         r = ::SQLDescribeParam( stmt->handle(), paramno, data_type, col_size, decimal_digits, nullable );
@@ -2206,7 +2223,7 @@ namespace core {
         }
     }
 
-    inline void SQLEndTran( _In_ SQLSMALLINT handleType, _Inout_ sqlsrv_conn* conn, _In_ SQLSMALLINT completionType TSRMLS_DC )
+    inline void SQLEndTran( _In_ SQLSMALLINT handleType, _Inout_ sqlsrv_conn* conn, _In_ SQLSMALLINT completionType )
     {
         SQLRETURN r = ::SQLEndTran( handleType, conn->handle(), completionType );
 
@@ -2216,11 +2233,11 @@ namespace core {
     }
 
     // SQLExecDirect returns the status code since it returns either SQL_NEED_DATA or SQL_NO_DATA besides just errors/success
-    inline SQLRETURN SQLExecDirect( _Inout_ sqlsrv_stmt* stmt, _In_ char* sql TSRMLS_DC )
+    inline SQLRETURN SQLExecDirect( _Inout_ sqlsrv_stmt* stmt, _In_ char* sql )
     {
         SQLRETURN r = ::SQLExecDirect( stmt->handle(), reinterpret_cast<SQLCHAR*>( sql ), SQL_NTS );
 
-        check_for_mars_error( stmt, r TSRMLS_CC );
+        check_for_mars_error( stmt, r );
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
 
@@ -2229,12 +2246,12 @@ namespace core {
         return r;
     }
 
-    inline SQLRETURN SQLExecDirectW( _Inout_ sqlsrv_stmt* stmt, _In_ SQLWCHAR* wsql TSRMLS_DC )
+    inline SQLRETURN SQLExecDirectW( _Inout_ sqlsrv_stmt* stmt, _In_ SQLWCHAR* wsql )
     {
         SQLRETURN r;
         r = ::SQLExecDirectW( stmt->handle(), reinterpret_cast<SQLWCHAR*>( wsql ), SQL_NTS );
 
-        check_for_mars_error( stmt, r TSRMLS_CC );
+        check_for_mars_error( stmt, r );
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
@@ -2243,12 +2260,12 @@ namespace core {
     }
 
     // SQLExecute returns the status code since it returns either SQL_NEED_DATA or SQL_NO_DATA besides just errors/success
-    inline SQLRETURN SQLExecute( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+    inline SQLRETURN SQLExecute( _Inout_ sqlsrv_stmt* stmt )
     {
         SQLRETURN r;
         r = ::SQLExecute( stmt->handle() );
 
-        check_for_mars_error( stmt, r TSRMLS_CC );
+        check_for_mars_error( stmt, r );
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
@@ -2257,7 +2274,7 @@ namespace core {
         return r;
     }
 
-    inline SQLRETURN SQLFetchScroll( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset TSRMLS_DC )
+    inline SQLRETURN SQLFetchScroll( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset )
     {
         SQLRETURN r = ::SQLFetchScroll( stmt->handle(), fetch_orientation, fetch_offset );
 
@@ -2269,14 +2286,14 @@ namespace core {
 
 
     // wrap SQLFreeHandle and report any errors, but don't actually signal an error to the calling routine
-    inline void SQLFreeHandle( _Inout_ sqlsrv_context& ctx TSRMLS_DC )
+    inline void SQLFreeHandle( _Inout_ sqlsrv_context& ctx )
     {
         SQLRETURN r;
         r = ::SQLFreeHandle( ctx.handle_type(), ctx.handle() );
         CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {}
     }
 
-    inline void SQLGetStmtAttr( _Inout_ sqlsrv_stmt* stmt, _In_ SQLINTEGER attr, _Out_writes_opt_(buf_len) void* value_ptr, _In_ SQLINTEGER buf_len, _Out_opt_ SQLINTEGER* str_len TSRMLS_DC)
+    inline void SQLGetStmtAttr( _Inout_ sqlsrv_stmt* stmt, _In_ SQLINTEGER attr, _Out_writes_opt_(buf_len) void* value_ptr, _In_ SQLINTEGER buf_len, _Out_opt_ SQLINTEGER* str_len)
     {
         SQLRETURN r;
         r = ::SQLGetStmtAttr( stmt->handle(), attr, value_ptr, buf_len, str_len );
@@ -2287,7 +2304,7 @@ namespace core {
 
     inline SQLRETURN SQLGetData( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                  _Out_writes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Out_opt_ SQLLEN* out_buffer_length,
-                                 _In_ bool handle_warning TSRMLS_DC )
+                                 _In_ bool handle_warning )
     {
         SQLRETURN r = ::SQLGetData( stmt->handle(), field_index, target_type, buffer, buffer_length, out_buffer_length );
 
@@ -2309,7 +2326,7 @@ namespace core {
 
 
     inline void SQLGetInfo( _Inout_ sqlsrv_conn* conn, _In_ SQLUSMALLINT info_type, _Out_writes_bytes_opt_(buffer_len) SQLPOINTER info_value, _In_ SQLSMALLINT buffer_len,
-                     _Out_opt_ SQLSMALLINT* str_len TSRMLS_DC )
+                     _Out_opt_ SQLSMALLINT* str_len )
     {
         SQLRETURN r;
         r = ::SQLGetInfo( conn->handle(), info_type, info_value, buffer_len, str_len );
@@ -2320,7 +2337,7 @@ namespace core {
     }
 
 
-    inline void SQLGetTypeInfo( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT data_type TSRMLS_DC )
+    inline void SQLGetTypeInfo( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT data_type )
     {
         SQLRETURN r;
         r = ::SQLGetTypeInfo( stmt->handle(), data_type );
@@ -2332,7 +2349,7 @@ namespace core {
 
 
     // SQLMoreResults returns the status code since it returns SQL_NO_DATA when there is no more data in a result set.
-    inline SQLRETURN SQLMoreResults( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+    inline SQLRETURN SQLMoreResults( _Inout_ sqlsrv_stmt* stmt )
     {
         SQLRETURN r = ::SQLMoreResults( stmt->handle() );
 
@@ -2343,7 +2360,7 @@ namespace core {
         return r;
     }
 
-    inline SQLSMALLINT SQLNumResultCols( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+    inline SQLSMALLINT SQLNumResultCols( _Inout_ sqlsrv_stmt* stmt )
     {
         SQLRETURN r;
         SQLSMALLINT num_cols;
@@ -2358,7 +2375,7 @@ namespace core {
 
     // SQLParamData returns the status code since it returns either SQL_NEED_DATA or SQL_NO_DATA when there are more
     // parameters or when the parameters are all processed.
-    inline SQLRETURN SQLParamData( _Inout_ sqlsrv_stmt* stmt, _Out_opt_ SQLPOINTER* value_ptr_ptr TSRMLS_DC )
+    inline SQLRETURN SQLParamData( _Inout_ sqlsrv_stmt* stmt, _Out_opt_ SQLPOINTER* value_ptr_ptr )
     {
         SQLRETURN r;
         r = ::SQLParamData( stmt->handle(), value_ptr_ptr );
@@ -2368,7 +2385,7 @@ namespace core {
         return r;
     }
 
-    inline void SQLPrepareW( _Inout_ sqlsrv_stmt* stmt, _In_reads_(sql_len) SQLWCHAR * sql, _In_ SQLINTEGER sql_len TSRMLS_DC )
+    inline void SQLPrepareW( _Inout_ sqlsrv_stmt* stmt, _In_reads_(sql_len) SQLWCHAR * sql, _In_ SQLINTEGER sql_len )
     {
         SQLRETURN r;
         r = ::SQLPrepareW( stmt->handle(), sql, sql_len );
@@ -2378,7 +2395,7 @@ namespace core {
     }
 
 
-    inline void SQLPutData( _Inout_ sqlsrv_stmt* stmt, _In_reads_(strlen_or_ind) SQLPOINTER data_ptr, _In_ SQLLEN strlen_or_ind TSRMLS_DC )
+    inline void SQLPutData( _Inout_ sqlsrv_stmt* stmt, _In_reads_(strlen_or_ind) SQLPOINTER data_ptr, _In_ SQLLEN strlen_or_ind )
     {
         SQLRETURN r;
         r = ::SQLPutData( stmt->handle(), data_ptr, strlen_or_ind );
@@ -2388,7 +2405,7 @@ namespace core {
     }
 
 
-    inline SQLLEN SQLRowCount( _Inout_ sqlsrv_stmt* stmt TSRMLS_DC )
+    inline SQLLEN SQLRowCount( _Inout_ sqlsrv_stmt* stmt )
     {
         SQLRETURN r;
         SQLLEN rows_affected;
@@ -2415,7 +2432,7 @@ namespace core {
     }
 
 
-    inline void SQLSetConnectAttr( _Inout_ sqlsrv_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
+    inline void SQLSetConnectAttr( _Inout_ sqlsrv_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len )
     {
         SQLRETURN r;
         r = ::SQLSetConnectAttr( ctx.handle(), attr, value_ptr, str_len );
@@ -2425,7 +2442,7 @@ namespace core {
         }
     }
 
-    inline void SQLSetDescField( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_( str_len ) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  TSRMLS_DC )
+    inline void SQLSetDescField( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_( str_len ) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  )
     {
         SQLRETURN r;
         SQLHDESC hIpd = NULL;
@@ -2438,7 +2455,7 @@ namespace core {
         }
     }
 
-    inline void SQLSetEnvAttr( _Inout_ sqlsrv_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
+    inline void SQLSetEnvAttr( _Inout_ sqlsrv_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len )
     {
         SQLRETURN r;
         r = ::SQLSetEnvAttr( ctx.handle(), attr, value_ptr, str_len );
@@ -2447,7 +2464,7 @@ namespace core {
         }
     }
 
-    inline void SQLSetConnectAttr( _Inout_ sqlsrv_conn* conn, _In_ SQLINTEGER attribute, _In_reads_bytes_opt_(value_len) SQLPOINTER value_ptr, _In_ SQLINTEGER value_len TSRMLS_DC )
+    inline void SQLSetConnectAttr( _Inout_ sqlsrv_conn* conn, _In_ SQLINTEGER attribute, _In_reads_bytes_opt_(value_len) SQLPOINTER value_ptr, _In_ SQLINTEGER value_len )
     {
         SQLRETURN r = ::SQLSetConnectAttr( conn->handle(), attribute, value_ptr, value_len );
 
@@ -2456,7 +2473,7 @@ namespace core {
         }
     }
 
-    inline void SQLSetStmtAttr( _Inout_ sqlsrv_stmt* stmt, _In_ SQLINTEGER attr, _In_reads_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
+    inline void SQLSetStmtAttr( _Inout_ sqlsrv_stmt* stmt, _In_ SQLINTEGER attr, _In_reads_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len )
     {
         SQLRETURN r;
         r = ::SQLSetStmtAttr( stmt->handle(), attr, value_ptr, str_len );
@@ -2485,78 +2502,7 @@ namespace core {
 		}
 	}
 
-
-    // exception thrown when a zend function wrapped here fails.
-
-    // wrappers for the zend functions called by our driver.  These functions hook into the error reporting of our driver and throw
-    // exceptions when an error occurs.  They are prefaced with sqlsrv_<zend_function_name> because many of the zend functions are
-    // actually macros that call other functions, so the sqlsrv_ is necessary to differentiate them from the macro system.
-    // If there is a zend function in the source that isn't found here, it is because it returns void and there is no error
-    // that can be thrown from it.
-
-    inline void sqlsrv_add_index_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array, _In_ zend_ulong index, _In_ zval* value TSRMLS_DC)
-    {
-        int zr = add_index_zval( array, index, value );
-        CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-    }
-
-    inline void sqlsrv_add_next_index_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array, _In_ zval* value TSRMLS_DC)
-    {
-        int zr = add_next_index_zval( array, value );
-        CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-    }
-
-    inline void sqlsrv_add_assoc_null( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array_z, _In_ const char* key TSRMLS_DC )
-    {
-        int zr = ::add_assoc_null( array_z, key );
-        CHECK_ZEND_ERROR (zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-    }
-
-    inline void sqlsrv_add_assoc_long( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _In_ zend_long val TSRMLS_DC )
-    {
-        int zr = ::add_assoc_long( array_z, key, val );
-        CHECK_ZEND_ERROR (zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-    }
-
-    inline void sqlsrv_add_assoc_string( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _Inout_z_ char* val, _In_ bool duplicate TSRMLS_DC )
-    {
-        int zr = ::add_assoc_string(array_z, key, val);
-        CHECK_ZEND_ERROR (zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-        if (duplicate == 0) {
-            sqlsrv_free(val);
-        }
-    }
-
-    inline void sqlsrv_add_assoc_zval( _Inout_ sqlsrv_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _In_ zval* val TSRMLS_DC )
-    {
-        int zr = ::add_assoc_zval(array_z, key, val);
-        CHECK_ZEND_ERROR (zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
-    }
-
-    inline void sqlsrv_array_init( _Inout_ sqlsrv_context& ctx, _Out_ zval* new_array TSRMLS_DC)
-    {
-#if PHP_VERSION_ID < 70300
-        CHECK_ZEND_ERROR(::array_init(new_array), ctx, SQLSRV_ERROR_ZEND_HASH) {
-            throw CoreException();
-        }
-#else
-        array_init(new_array);
-#endif
-    }
-
-    inline void sqlsrv_php_stream_from_zval_no_verify( _Inout_ sqlsrv_context& ctx, _Outref_result_maybenull_ php_stream*& stream, _In_opt_ zval* stream_z TSRMLS_DC )
+    inline void sqlsrv_php_stream_from_zval_no_verify( _Inout_ sqlsrv_context& ctx, _Outref_result_maybenull_ php_stream*& stream, _In_opt_ zval* stream_z )
     {
         // this duplicates the macro php_stream_from_zval_no_verify, which we can't use because it has an assignment
         php_stream_from_zval_no_verify( stream, stream_z );
@@ -2565,7 +2511,7 @@ namespace core {
         }
     }
 
-	inline void sqlsrv_zend_hash_get_current_data( _In_ sqlsrv_context& ctx, _In_ HashTable* ht, _Outref_result_maybenull_ zval*& output_data TSRMLS_DC)
+	inline void sqlsrv_zend_hash_get_current_data( _In_ sqlsrv_context& ctx, _In_ HashTable* ht, _Outref_result_maybenull_ zval*& output_data)
 	{
 		int zr = (output_data = ::zend_hash_get_current_data(ht)) != NULL ? SUCCESS : FAILURE;
 		CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
@@ -2573,7 +2519,7 @@ namespace core {
 		}
 	}
 
-    inline void sqlsrv_zend_hash_get_current_data_ptr( _Inout_ sqlsrv_context& ctx, _In_ HashTable* ht, _Outref_result_maybenull_ void*& output_data TSRMLS_DC)
+    inline void sqlsrv_zend_hash_get_current_data_ptr( _Inout_ sqlsrv_context& ctx, _In_ HashTable* ht, _Outref_result_maybenull_ void*& output_data)
     {
         int zr = (output_data = ::zend_hash_get_current_data_ptr(ht)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
@@ -2581,7 +2527,7 @@ namespace core {
         }
     }
 
-    inline void sqlsrv_zend_hash_index_del( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index TSRMLS_DC )
+    inline void sqlsrv_zend_hash_index_del( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index )
     {
         int zr = ::zend_hash_index_del( ht, index );
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
@@ -2589,7 +2535,7 @@ namespace core {
         }
     }
 
-    inline void sqlsrv_zend_hash_index_update( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_ zval* data_z TSRMLS_DC )
+    inline void sqlsrv_zend_hash_index_update( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_ zval* data_z )
     {
         int zr = (data_z = ::zend_hash_index_update(ht, index, data_z)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
@@ -2597,7 +2543,7 @@ namespace core {
         }
     }
 
-    inline void sqlsrv_zend_hash_index_update_ptr( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_ void* pData TSRMLS_DC)
+    inline void sqlsrv_zend_hash_index_update_ptr( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_ void* pData)
     {
         int zr = (pData = ::zend_hash_index_update_ptr(ht, index, pData)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
@@ -2606,15 +2552,15 @@ namespace core {
     }
 
 
-	inline void sqlsrv_zend_hash_index_update_mem( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_reads_bytes_(size) void* pData, _In_ std::size_t size TSRMLS_DC)
-	{
-		int zr = (pData = ::zend_hash_index_update_mem(ht, index, pData, size)) != NULL ? SUCCESS : FAILURE;
-		CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
-			throw CoreException();
-		}
-	}
+    inline void sqlsrv_zend_hash_index_update_mem( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_reads_bytes_(size) void* pData, _In_ std::size_t size)
+    {
+        int zr = (pData = ::zend_hash_index_update_mem(ht, index, pData, size)) != NULL ? SUCCESS : FAILURE;
+        CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
+            throw CoreException();
+        }
+    }
 
-    inline void sqlsrv_zend_hash_next_index_insert( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zval* data TSRMLS_DC )
+    inline void sqlsrv_zend_hash_next_index_insert( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ zval* data )
     {
         int zr = (data = ::zend_hash_next_index_insert(ht, data)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR( zr, ctx, SQLSRV_ERROR_ZEND_HASH ) {
@@ -2622,15 +2568,15 @@ namespace core {
         }
     }
 
-	inline void sqlsrv_zend_hash_next_index_insert_mem( _Inout_ sqlsrv_context& ctx, _In_ HashTable* ht, _In_reads_bytes_(data_size) void* data, _In_ size_t data_size TSRMLS_DC)
-	{
-		int zr = (data = ::zend_hash_next_index_insert_mem(ht, data, data_size)) != NULL ? SUCCESS : FAILURE;
-		CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
-			throw CoreException();
-		}
-	}
+    inline void sqlsrv_zend_hash_next_index_insert_mem( _Inout_ sqlsrv_context& ctx, _In_ HashTable* ht, _In_reads_bytes_(data_size) void* data, _In_ size_t data_size)
+    {
+        int zr = (data = ::zend_hash_next_index_insert_mem(ht, data, data_size)) != NULL ? SUCCESS : FAILURE;
+        CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
+            throw CoreException();
+        }
+    }
 
-    inline void sqlsrv_zend_hash_next_index_insert_ptr( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ void* data TSRMLS_DC)
+    inline void sqlsrv_zend_hash_next_index_insert_ptr( _Inout_ sqlsrv_context& ctx, _Inout_ HashTable* ht, _In_ void* data)
     {
         int zr = (data = ::zend_hash_next_index_insert_ptr(ht, data)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR(zr, ctx, SQLSRV_ERROR_ZEND_HASH) {
@@ -2639,21 +2585,21 @@ namespace core {
     }
 
     inline void sqlsrv_zend_hash_init(sqlsrv_context& ctx, _Inout_ HashTable* ht, _Inout_ uint32_t initial_size,
-        _In_ dtor_func_t dtor_fn, _In_ zend_bool persistent TSRMLS_DC )
+        _In_ dtor_func_t dtor_fn, _In_ zend_bool persistent )
     {
         ::zend_hash_init(ht, initial_size, NULL, dtor_fn, persistent);
     }
 
 template <typename Statement>
-sqlsrv_stmt* allocate_stmt( _In_ sqlsrv_conn* conn, _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC )
+sqlsrv_stmt* allocate_stmt( _In_ sqlsrv_conn* conn, _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver )
 {
-    return new ( sqlsrv_malloc( sizeof( Statement ))) Statement( conn, h, e, driver TSRMLS_CC );
+    return new ( sqlsrv_malloc( sizeof( Statement ))) Statement( conn, h, e, driver );
 }
 
 template <typename Connection>
-sqlsrv_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC )
+sqlsrv_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver )
 {
-    return new ( sqlsrv_malloc( sizeof( Connection ))) Connection( h, e, driver TSRMLS_CC );
+    return new ( sqlsrv_malloc( sizeof( Connection ))) Connection( h, e, driver );
 }
 
 } // namespace core
@@ -2661,10 +2607,10 @@ sqlsrv_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* 
 template <unsigned int Attr>
 struct str_conn_attr_func {
 
-    static void func( connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    static void func( connection_option const* /*option*/, zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ )
     {
         try {
-            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )), static_cast<SQLINTEGER>( Z_STRLEN_P( value )) TSRMLS_CC );
+            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )), static_cast<SQLINTEGER>( Z_STRLEN_P( value )) );
         }
         catch ( core::CoreException& ) {
             throw;

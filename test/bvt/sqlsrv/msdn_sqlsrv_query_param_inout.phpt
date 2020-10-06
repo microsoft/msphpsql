@@ -1,7 +1,7 @@
 --TEST--
 queries a call procedure with an in-out parameter.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

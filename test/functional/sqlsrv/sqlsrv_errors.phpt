@@ -8,19 +8,44 @@ sqlsrv_close returns true even if an error happens.
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
+    // When testing with PHP 8.0 it throws a TypeError instead of a warning. Thus implement a custom 
+    // warning handler such that with PHP 7.x the warning would be handled to throw a TypeError.
+    // Sometimes the error messages from PHP 8.0 may be different and have to be handled differently.
+    function warningHandler($errno, $errstr) 
+    { 
+        throw new TypeError($errstr);
+    }
+    
+    function compareMessages($err, $exp8x, $exp7x) 
+    {
+        $expected = (PHP_MAJOR_VERSION == 8) ? $exp8x : $exp7x;
+        if (!fnmatch($expected, $err->getMessage())) {
+            echo $err->getMessage() . PHP_EOL;
+        }
+    }
+
+    set_error_handler("warningHandler", E_WARNING);
+       
     sqlsrv_configure('WarningsReturnAsErrors', 0);
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
     require('MsCommon.inc');
 
     $conn = sqlsrv_connect("InvalidServerName", array( "Database" => "test" ));
-    $result = sqlsrv_close($conn);
-    $errors = sqlsrv_errors();
-    if ($result !== false) {
-        die("sqlsrv_close succeeded despite an invalid server name.");
+    try {
+        $result = sqlsrv_close($conn);
+        if ($result !== false) {
+            die("sqlsrv_close succeeded despite an invalid server name.");
+        }
+    } catch (TypeError $e) {
+        compareMessages($e, 
+                        "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, bool given", 
+                        "sqlsrv_close() expects parameter 1 to be resource, bool* given");       
     }
-    print_r($errors);
     
+    $errors = sqlsrv_errors();
+    print_r($errors);
+        
     $conn = AE\connect();
     $tableName = 'test_params';
     $columns = array(new AE\ColumnMeta('tinyint', 'id'),
@@ -72,28 +97,52 @@ sqlsrv_close returns true even if an error happens.
         sqlsrv_free_stmt($stmt);
         die("sqlsrv_send_stream_data failed.");
     }
+    $result = sqlsrv_free_stmt($stmt);
+    if ($result === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+    try {
+        $result = sqlsrv_free_stmt($stmt);
+        if ($result === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
+    }
 
-    $result = sqlsrv_free_stmt($stmt);
-    if ($result === false) {
-        die(print_r(sqlsrv_errors(), true));
+    try {
+        $result = sqlsrv_free_stmt(null);
+        if ($result === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+    } catch (TypeError $e) {
+        compareMessages($e, 
+                    "sqlsrv_free_stmt(): Argument #1 (\$stmt) must be of type resource, null given", 
+                    "sqlsrv_free_stmt() expects parameter 1 to be resource, null given");       
     }
-    $result = sqlsrv_free_stmt($stmt);
-    if ($result === false) {
-        die(print_r(sqlsrv_errors(), true));
+    
+    try {
+        $result = sqlsrv_free_stmt($conn);
+        if ($result !== false) {
+            die("sqlsrv_free_stmt shouldn't have freed the connection resource");
+        }
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
     }
-    $result = sqlsrv_free_stmt(null);
-    if ($result === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
-    $result = sqlsrv_free_stmt($conn);
-    if ($result !== false) {
-        die("sqlsrv_free_stmt shouldn't have freed the connection resource");
-    }
+
     print_r(sqlsrv_errors());
-    $result = sqlsrv_free_stmt(1);
-    if ($result !== false) {
-        die("sqlsrv_free_stmt shouldn't have freed a 1");
+    
+    try {
+        $result = sqlsrv_free_stmt(1);
+        if ($result !== false) {
+            die("sqlsrv_free_stmt shouldn't have freed a 1");
+        }
+    } catch (TypeError $e) {
+        compareMessages($e, 
+                    "sqlsrv_free_stmt(): Argument #1 (\$stmt) must be of type resource, int given", 
+                    "sqlsrv_free_stmt() expects parameter 1 to be resource, int* given");       
     }
+
     print_r(sqlsrv_errors());
 
     dropTable($conn, $tableName);
@@ -102,24 +151,43 @@ sqlsrv_close returns true even if an error happens.
     if ($result === false) {
         die(print_r(sqlsrv_errors(), true));
     }
-    $result = sqlsrv_close($conn);
-    if ($result === false) {
-        die(print_r(sqlsrv_errors(), true));
+
+    try {
+        $result = sqlsrv_close($conn);
+        if ($result === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
     }
-    $result = sqlsrv_close(null);
-    if ($result === false) {
-        die(print_r(sqlsrv_errors(), true));
+
+    try {
+        $result = sqlsrv_close(null);
+        if ($result === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+    } catch (TypeError $e) {
+        compareMessages($e, 
+                    "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, null given", 
+                    "sqlsrv_close() expects parameter 1 to be resource, null given");       
     }
-    $result = sqlsrv_close(1);
-    if ($result !== false) {
-        die("sqlsrv_close shouldn't have freed a 1");
+
+    try {
+        $result = sqlsrv_close(1);
+        if ($result !== false) {
+            die("sqlsrv_close shouldn't have freed a 1");
+        }
+    } catch (TypeError $e) {
+        compareMessages($e, 
+                    "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, int given", 
+                    "sqlsrv_close() expects parameter 1 to be resource, int* given");       
     }
+
     print_r(sqlsrv_errors());
 
     echo "Test successfully done.\n";
 ?>
---EXPECTF--
-Warning: sqlsrv_close() expects parameter 1 to be resource, bool%S given in %Ssqlsrv_errors.php on line %x
+--EXPECT--
 Array
 (
     [0] => Array
@@ -133,12 +201,8 @@ Array
         )
 
 )
-
-Warning: sqlsrv_free_stmt(): supplied resource is not a valid ss_sqlsrv_stmt resource in %Ssqlsrv_errors.php on line %x
-
-Warning: sqlsrv_free_stmt() expects parameter 1 to be resource, null given in %Ssqlsrv_errors.php on line %x
-
-Warning: sqlsrv_free_stmt(): supplied resource is not a valid ss_sqlsrv_stmt resource in %Ssqlsrv_errors.php on line %x
+sqlsrv_free_stmt(): supplied resource is not a valid ss_sqlsrv_stmt resource
+sqlsrv_free_stmt(): supplied resource is not a valid ss_sqlsrv_stmt resource
 Array
 (
     [0] => Array
@@ -152,8 +216,6 @@ Array
         )
 
 )
-
-Warning: sqlsrv_free_stmt() expects parameter 1 to be resource, int%S given in %Ssqlsrv_errors.php on line %x
 Array
 (
     [0] => Array
@@ -167,12 +229,7 @@ Array
         )
 
 )
-
-Warning: sqlsrv_close(): supplied resource is not a valid ss_sqlsrv_conn resource in %Ssqlsrv_errors.php on line %x
-
-Warning: sqlsrv_close() expects parameter 1 to be resource, null given in %Ssqlsrv_errors.php on line %x
-
-Warning: sqlsrv_close() expects parameter 1 to be resource, int%S given in %Ssqlsrv_errors.php on line %x
+sqlsrv_close(): supplied resource is not a valid ss_sqlsrv_conn resource
 Array
 (
     [0] => Array

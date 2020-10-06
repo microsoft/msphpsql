@@ -1,7 +1,7 @@
 --TEST--
 displays a prepared statement
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

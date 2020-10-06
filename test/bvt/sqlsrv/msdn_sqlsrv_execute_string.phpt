@@ -1,8 +1,7 @@
 --TEST--
 execute with string type in bind parameters.
 --SKIPIF--
-
-?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

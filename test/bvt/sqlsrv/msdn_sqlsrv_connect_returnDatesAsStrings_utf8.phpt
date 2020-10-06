@@ -1,7 +1,7 @@
 --TEST--
 retrieves dates as string by specifying UTF-8 and ReturnDatesAsStrings when connecting.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');
@@ -34,5 +34,5 @@ if ( $date === false ) {
 echo $date;
 sqlsrv_close( $conn);
 ?>
---EXPECT--
-2014-02-20 04:26:00.000
+--EXPECTREGEX--
+2014-02-20 04:26:00.000|2017-08-22 19:39:35.643

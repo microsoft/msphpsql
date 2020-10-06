@@ -1088,7 +1088,7 @@ function getColSize($k)
         case 19:    return ("1073741823");
         case 20:    return ("512");
         case 21:    return ("512");
-        case 22:    return ("0)");
+        case 22:    return ("0");
         case 23:    return ("2147483647");
         case 24:    return ("36");
         //case 25:  return ("23");
@@ -1097,7 +1097,7 @@ function getColSize($k)
         case 28:    return ("0");
         default:    break;
     }
-    return ("");
+    return NULL;
 }
 
 function getColPrecision($k)

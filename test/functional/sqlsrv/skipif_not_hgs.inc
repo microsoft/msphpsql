@@ -9,6 +9,10 @@ if (!extension_loaded("sqlsrv")) {
 
 require_once("MsSetup.inc");
 
+if ($attestation == 'TARGET_ATTESTATION') {
+    die("skip Not set up for testing with secure enclave.");
+}
+
 $connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword);
 
 $conn = sqlsrv_connect($server, $connectionInfo);

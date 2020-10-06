@@ -5,7 +5,7 @@
 // 
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -57,7 +57,7 @@ void log_activity(_In_opt_ const char* msg, _In_opt_ va_list* print_args)
         std::copy(INTERNAL_FORMAT_ERROR, INTERNAL_FORMAT_ERROR + sizeof(INTERNAL_FORMAT_ERROR), log_msg);
     }
 
-    php_log_err(log_msg TSRMLS_CC);
+    php_log_err(log_msg);
 }
 
 }
@@ -70,10 +70,10 @@ SQLCHAR SSPWARN[] = "01SSP";
 
 // write to the php log if the severity and subsystem match the filters currently set in the INI or 
 // the script (sqlsrv_configure).
-void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ...)
+void write_to_log( _In_ unsigned int severity, _In_ const char* msg, ...)
 {
     SQLSRV_ASSERT( !(g_driver_severity == NULL), "Must register a driver checker function." );
-    if (!g_driver_severity(severity TSRMLS_CC)) {
+    if (!g_driver_severity(severity)) {
         return;
     }
 
@@ -146,6 +146,11 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         return true;
     }
 
+#ifndef _WIN32
+    // Allocate enough space to hold the largest possible number of bytes for UTF-8 conversion
+    // instead of calling FromUtf16, for performance reasons
+    cchOutLen = 4 * cchInLen;
+#else	
     // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
     // an error.   This happens only on XP.
     DWORD flags = 0;
@@ -154,11 +159,6 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
         flags = WC_ERR_INVALID_CHARS;
     }
 
-#ifndef _WIN32
-    // Allocate enough space to hold the largest possible number of bytes for UTF-8 conversion
-    // instead of calling FromUtf16, for performance reasons
-    cchOutLen = 4*cchInLen;
-#else	
     // Calculate the number of output bytes required - no performance hit here because
     // WideCharToMultiByte is highly optimised
     cchOutLen = WideCharToMultiByte( encoding, flags,
@@ -242,7 +242,7 @@ void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* i
     params[0] = value_temp_z;
 
     if (call_user_function(EG(function_table), NULL, &function_z, &out_zval, 1,
-                           params TSRMLS_CC) == FAILURE) {
+                           params) == FAILURE) {
         THROW_CORE_ERROR(stmt, SQLSRV_ERROR_DATETIME_CONVERSION_FAILED);
     }
 
@@ -257,8 +257,7 @@ void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* i
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 
-bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error, _In_ logging_severity severity 
-                                 TSRMLS_DC )
+bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error, _In_ logging_severity severity, _In_opt_ bool check_warning /* = false */)
 {
     SQLHANDLE h = ctx.handle();
     SQLSMALLINT h_type = ctx.handle_type();
@@ -297,17 +296,9 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
             r = SQLGetDiagRecW( h_type, h, record_number, wsqlstate, &error->native_code, wnative_message,
                                 SQL_MAX_ERROR_MESSAGE_LENGTH + 1, &wmessage_len );
             // don't use the CHECK* macros here since it will trigger reentry into the error handling system
-            // Workaround for a bug in unixODBC 2.3.4 when connection pooling is enabled (PDO SQLSRV).
-            // Instead of returning false, we return an empty error message to prevent the driver from throwing an exception.
-            // To reproduce:
-            // Create a connection and close it (return it to the pool)
-            // Create a new connection from the pool. 
-            // Prepare and execute a statement that generates an info message (such as 'USE tempdb;') 
-#ifdef __APPLE__
-            if( r == SQL_NO_DATA && ctx.driver() != NULL /*PDO SQLSRV*/ ) {
-                r = SQL_SUCCESS;
-            }
-#endif // __APPLE__
+            // removed the workaround for Mac users with unixODBC 2.3.4 when connection pooling is enabled (PDO SQLSRV), for two reasons:
+            // (1) not recommended to use connection pooling with unixODBC < 2.3.7
+            // (2) the problem was not reproducible with unixODBC 2.3.7
             if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
                 return false;
             }
@@ -348,6 +339,15 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
             break;
     }
 
+    // Only overrides 'severity' if 'check_warning' is true (false by default)
+    if (check_warning) {
+        // The character string value returned for an SQLSTATE consists of a two-character class value 
+        // followed by a three-character subclass value. A class value of "01" indicates a warning.
+        // https://docs.microsoft.com/sql/odbc/reference/appendixes/appendix-a-odbc-error-codes?view=sql-server-ver15
+        if (error->sqlstate[0] == '0' && error->sqlstate[1] == '1') {
+            severity = SEV_WARNING;
+        }
+    }
 
     // log the error first
     LOG( severity, "%1!s!: SQLSTATE = %2!s!", ctx.func(), error->sqlstate );
@@ -361,7 +361,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
 
 // format and return a driver specfic error
 void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_error_const const* custom_error, 
-                                      _Out_ sqlsrv_error_auto_ptr& formatted_error, _In_ logging_severity severity TSRMLS_DC, _In_opt_ va_list* args )
+                                      _Out_ sqlsrv_error_auto_ptr& formatted_error, _In_ logging_severity severity, _In_opt_ va_list* args )
 {
     // allocate space for the formatted message
     formatted_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
@@ -489,6 +489,7 @@ namespace data_classification {
     const char* INFOTYPE = "Information Type";
     const char* NAME = "name";
     const char* ID = "id";
+    const char* RANK = "rank";
 
     void convert_sensivity_field(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_ENCODING encoding, _In_ unsigned char *ptr, _In_ int len, _Inout_updates_bytes_(cchOutLen) char** field_name)
     {
@@ -566,10 +567,18 @@ namespace data_classification {
         *pptr = ptr;
     } 
 
-    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr)
+    void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr, _In_ bool getRankInfo)
     {
         unsigned char *ptr = *pptr;
         unsigned short ncols;
+        int queryrank, colrank;
+
+        // Get rank info
+        if (getRankInfo) {
+            queryrank = *(reinterpret_cast<long*>(ptr));
+            ptr += sizeof(int);
+            meta->rank = queryrank;
+        }
 
         // Get number of columns
         meta->num_columns = ncols = *(reinterpret_cast<unsigned short*>(ptr));
@@ -594,6 +603,12 @@ namespace data_classification {
                 typeidx = *(reinterpret_cast<unsigned short*>(ptr));
                 ptr += sizeof(unsigned short);
 
+                if (getRankInfo) {
+                    colrank = *(reinterpret_cast<long*>(ptr));
+                    ptr += sizeof(int);
+                    pair.rank = colrank;
+                }
+
                 pair.label_idx = labelidx;
                 pair.infotype_idx = typeidx;
 
@@ -606,7 +621,7 @@ namespace data_classification {
         *pptr = ptr;
     }
 
-    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *return_array TSRMLS_CC)
+    USHORT fill_column_sensitivity_array(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno, _Inout_ zval *return_array)
     {
         sensitivity_metadata* meta = stmt->current_sensitivity_metadata;
         if (meta == NULL) {
@@ -617,52 +632,64 @@ namespace data_classification {
 
         zval data_classification;
         ZVAL_UNDEF(&data_classification);
-        core::sqlsrv_array_init(*stmt, &data_classification TSRMLS_CC );
+        array_init(&data_classification);
 
         USHORT num_pairs = meta->columns_sensitivity[colno].num_pairs;
 
         if (num_pairs == 0) {
-            core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification TSRMLS_CC);
+            add_assoc_zval(return_array, DATA_CLASS, &data_classification);
 
             return 0;
         }
 
         zval sensitivity_properties;
         ZVAL_UNDEF(&sensitivity_properties);
-        core::sqlsrv_array_init(*stmt, &sensitivity_properties TSRMLS_CC);
+        array_init(&sensitivity_properties);
 
         for (USHORT j = 0; j < num_pairs; j++) {
             zval label_array, infotype_array;
             ZVAL_UNDEF(&label_array);
             ZVAL_UNDEF(&infotype_array);
 
-            core::sqlsrv_array_init(*stmt, &label_array TSRMLS_CC);
-            core::sqlsrv_array_init(*stmt, &infotype_array TSRMLS_CC);
+            array_init(&label_array);
+            array_init(&infotype_array);
 
             USHORT labelidx = meta->columns_sensitivity[colno].label_info_pairs[j].label_idx;
             USHORT typeidx = meta->columns_sensitivity[colno].label_info_pairs[j].infotype_idx;
+            int column_rank = meta->columns_sensitivity[colno].label_info_pairs[j].rank;
 
             char *label = meta->labels[labelidx]->name;
             char *label_id = meta->labels[labelidx]->id;
             char *infotype = meta->infotypes[typeidx]->name;
             char *infotype_id = meta->infotypes[typeidx]->id;
 
-            core::sqlsrv_add_assoc_string(*stmt, &label_array, NAME, label, 1 TSRMLS_CC);
-            core::sqlsrv_add_assoc_string(*stmt, &label_array, ID, label_id, 1 TSRMLS_CC);
+            add_assoc_string(&label_array, NAME, label);
+            add_assoc_string(&label_array, ID, label_id);
 
-            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, LABEL, &label_array TSRMLS_CC);
+            add_assoc_zval(&sensitivity_properties, LABEL, &label_array);
 
-            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, NAME, infotype, 1 TSRMLS_CC);
-            core::sqlsrv_add_assoc_string(*stmt, &infotype_array, ID, infotype_id, 1 TSRMLS_CC);
+            add_assoc_string(&infotype_array, NAME, infotype);
+            add_assoc_string(&infotype_array, ID, infotype_id);
 
-            core::sqlsrv_add_assoc_zval(*stmt, &sensitivity_properties, INFOTYPE, &infotype_array TSRMLS_CC);
+            add_assoc_zval(&sensitivity_properties, INFOTYPE, &infotype_array);
+
+            // add column sensitivity rank info to sensitivity_properties
+            if (column_rank > RANK_NOT_DEFINED) {
+                add_assoc_long(&sensitivity_properties, RANK, column_rank);
+            }
 
             // add the pair of sensitivity properties to data_classification
-            core::sqlsrv_add_next_index_zval(*stmt, &data_classification, &sensitivity_properties TSRMLS_CC );
+            add_next_index_zval(&data_classification, &sensitivity_properties);
+        }
+
+        // add query sensitivity rank info to data_classification
+        int query_rank = meta->rank;
+        if (query_rank > RANK_NOT_DEFINED) {
+            add_assoc_long(&data_classification, RANK, query_rank);
         }
 
         // add data classfication as associative array
-        core::sqlsrv_add_assoc_zval(*stmt, return_array, DATA_CLASS, &data_classification TSRMLS_CC);
+        add_assoc_zval(return_array, DATA_CLASS, &data_classification);
 
         return num_pairs;
     }

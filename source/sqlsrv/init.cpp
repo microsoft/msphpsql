@@ -2,7 +2,7 @@
 // File: init.cpp
 // Contents: initialization routines for the extension
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -98,6 +98,8 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_fetch_arginfo, 0, 0, 1 )
     ZEND_ARG_INFO( 0, stmt )
+    ZEND_ARG_INFO( 0, row )
+    ZEND_ARG_INFO( 0, offset )
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX( sqlsrv_fetch_array_arginfo, 0, 0, 1 )
@@ -551,14 +553,14 @@ PHP_MINIT_FUNCTION(sqlsrv)
         }
     }
 
-    if( php_register_url_stream_wrapper( SQLSRV_STREAM_WRAPPER, &g_sqlsrv_stream_wrapper TSRMLS_CC ) == FAILURE ) {
+    if( php_register_url_stream_wrapper( SQLSRV_STREAM_WRAPPER, &g_sqlsrv_stream_wrapper ) == FAILURE ) {
         LOG( SEV_ERROR, "%1!s!: stream registration failed", _FN_ );
         return FAILURE;
     }
 
     try {
         // retrieve the handles for the environments
-        core_sqlsrv_minit( &g_ss_henv_cp, &g_ss_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" TSRMLS_CC );
+        core_sqlsrv_minit( &g_ss_henv_cp, &g_ss_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for sqlsrv" );
     }
 
     catch( core::CoreException& ) {
@@ -610,7 +612,7 @@ PHP_MSHUTDOWN_FUNCTION(sqlsrv)
 
     core_sqlsrv_mshutdown( *g_ss_henv_cp, *g_ss_henv_ncp );
 
-    if( php_unregister_url_stream_wrapper( SQLSRV_STREAM_WRAPPER TSRMLS_CC ) == FAILURE ) {
+    if( php_unregister_url_stream_wrapper( SQLSRV_STREAM_WRAPPER ) == FAILURE ) {
         return FAILURE;
     }
 
@@ -692,9 +694,9 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
     SQLSRV_UNUSED( type );
 
     LOG_FUNCTION( "PHP_RSHUTDOWN for php_sqlsrv" );
-    reset_errors( TSRMLS_C );
+    reset_errors();
 
-	// TODO - destruction
+	// destruction
     zval_ptr_dtor( &SQLSRV_G( errors ));
     zval_ptr_dtor( &SQLSRV_G( warnings ));
 

@@ -1,7 +1,7 @@
 --TEST--
 prepares a statement with a client-side cursor and specifies scroll type to buffered
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

@@ -3,7 +3,7 @@
 //
 // Contents: common initialization routines shared by PDO and sqlsrv
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -34,7 +34,7 @@ bool isVistaOrGreater;
 // henv_cp  - Environment handle for pooled connection.
 // henv_ncp - Environment handle for non-pooled connection.
 // err      - Driver specific error handler which handles any errors during initialization.
-void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func TSRMLS_DC )
+void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func )
 {
     SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_sqltype ) == sizeof( zend_long ) );
     SQLSRV_STATIC_ASSERT( sizeof( sqlsrv_phptype ) == sizeof( zend_long ));
@@ -65,11 +65,11 @@ void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_contex
     
     // set to ODBC 3
     core::SQLSetEnvAttr( **henv_ncp, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>( SQL_OV_ODBC3 ), SQL_IS_INTEGER 
-                         TSRMLS_CC );
+                         );
 
     // disable connection pooling
     core::SQLSetEnvAttr( **henv_ncp, SQL_ATTR_CONNECTION_POOLING, reinterpret_cast<SQLPOINTER>( SQL_CP_OFF ), 
-                         SQL_IS_UINTEGER TSRMLS_CC );
+                         SQL_IS_UINTEGER );
 
     // allocate the pooled envrionment handle
     // we can't use the wrapper in core_sqlsrv.h since we don't have a context on which to base errors, so
@@ -83,11 +83,11 @@ void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_contex
     (*henv_cp)->set_func( driver_func );
 
     // set to ODBC 3
-    core::SQLSetEnvAttr( **henv_cp, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>( SQL_OV_ODBC3 ), SQL_IS_INTEGER TSRMLS_CC);
+    core::SQLSetEnvAttr( **henv_cp, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>( SQL_OV_ODBC3 ), SQL_IS_INTEGER);
 
     // enable connection pooling
     core:: SQLSetEnvAttr( **henv_cp, SQL_ATTR_CONNECTION_POOLING, reinterpret_cast<SQLPOINTER>( SQL_CP_ONE_PER_HENV ), 
-                              SQL_IS_UINTEGER TSRMLS_CC );
+                              SQL_IS_UINTEGER );
 
     }
     catch( core::CoreException& e ) {

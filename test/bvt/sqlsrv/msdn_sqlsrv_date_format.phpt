@@ -1,7 +1,7 @@
 --TEST--
 retrieve date as PHP type with ReturnDatesAsStrings off by default.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');
@@ -36,5 +36,5 @@ echo "Date = $date_string\n";
 
 sqlsrv_close( $conn);
 ?>
---EXPECT--
-Date = 20th, February 2014
+--EXPECTREGEX--
+Date = 20th, February 2014|Date = 22nd, August 2017

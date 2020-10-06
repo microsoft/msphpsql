@@ -1,7 +1,7 @@
 --TEST--
 moves the cursor to the next result set and fetches results
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

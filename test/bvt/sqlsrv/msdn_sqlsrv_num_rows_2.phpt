@@ -1,7 +1,7 @@
 --TEST--
 when there is a batch query, the number of rows is only available when use a client-side cursor.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

@@ -1,7 +1,7 @@
 --TEST--
 returns the number of columns in a result set for 3 queries
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

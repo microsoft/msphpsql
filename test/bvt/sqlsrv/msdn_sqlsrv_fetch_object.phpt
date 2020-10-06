@@ -1,8 +1,7 @@
 --TEST--
 retrieves each row of a result set as a PHP object
 --SKIPIF--
-
-?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

@@ -1,7 +1,7 @@
 --TEST--
 specifies to retrieve date and time types as string when connecting.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

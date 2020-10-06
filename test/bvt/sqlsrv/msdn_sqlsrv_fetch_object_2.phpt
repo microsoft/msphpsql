@@ -1,7 +1,7 @@
 --TEST--
 retrieves each row of a result set as an instance of the Product class defined in the script.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Define the Product class. */

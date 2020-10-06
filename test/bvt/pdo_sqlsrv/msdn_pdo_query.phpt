@@ -1,7 +1,7 @@
 --TEST--
 default query; query for a column; query with a new class; query into an existing class
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

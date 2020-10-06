@@ -56,6 +56,9 @@ function checkInterface($stmt)
         unset($expected['__wakeup']);
         unset($expected['__sleep']);
     }
+    if ($phpver >= '8.0') {
+        $expected = array_merge($expected, ['getIterator' => true]);
+    }
 
     $classname = get_class($stmt);
     $methods = get_class_methods($classname);

@@ -484,6 +484,17 @@ function getSeqPlaceholders($num)
     return $placeholderStr;
 }
 
+/**
+ * Compare two floating point numbers and return true if the difference is minimal
+ * @param  float  $expected  : expected value
+ * @param  float  $actual : actual value
+ */
+function compareFloats($expected, $actual)
+{
+    $epsilon = 0.00001;
+    $diff = abs(($actual - $expected) / $expected);
+    return ($diff < $epsilon);
+}
 
 /**
  * Fetch all rows and all columns given a table name, and print them

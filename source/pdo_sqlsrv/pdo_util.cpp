@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -43,8 +43,11 @@ const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE 
 sqlsrv_error_const* get_error_message( _In_opt_ unsigned int sqlsrv_error_code);
 
 // build the object and throw the PDO exception
-void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC );
+void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error);
 
+void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _Inout_ sqlsrv_error_auto_ptr& error, _Inout_ char* error_code, _In_opt_ va_list* print_args);
+
+void add_remaining_errors_to_array (_In_ sqlsrv_error const* error, _Inout_ zval* array_z);
 }
 
 // pdo driver error messages
@@ -462,145 +465,79 @@ pdo_error PDO_ERRORS[] = {
     { UINT_MAX, {} }
 };
 
-// PDO error handler for the environment context.
-bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC, 
+bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
                                   _In_opt_ va_list* print_args )
 {
-    SQLSRV_ASSERT(( ctx != NULL ), "pdo_sqlsrv_handle_env_error: sqlsrv_context was null" );
-    pdo_dbh_t* dbh = reinterpret_cast<pdo_dbh_t*>( ctx.driver());    
-    SQLSRV_ASSERT(( dbh != NULL ), "pdo_sqlsrv_handle_env_error: pdo_dbh_t was null" );
-    
+    SQLSRV_ASSERT((ctx != NULL), "pdo_sqlsrv_handle_env_error: sqlsrv_context was null");
+    pdo_dbh_t* dbh = reinterpret_cast<pdo_dbh_t*>(ctx.driver());
+    SQLSRV_ASSERT((dbh != NULL), "pdo_sqlsrv_handle_env_error: pdo_dbh_t was null");
+
     sqlsrv_error_auto_ptr error;
+    format_or_get_all_errors(ctx, sqlsrv_error_code, error, dbh->error_code, print_args);
 
-    if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
-
-        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR TSRMLS_CC, print_args );
-    }
-    else {
-
-        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
-        SQLSRV_ASSERT( err == true, "No ODBC error was found" );
+    // error_mode is valid because PDO API has already taken care of invalid ones
+    if (!warning && dbh->error_mode == PDO_ERRMODE_EXCEPTION) {
+        pdo_sqlsrv_throw_exception(error);
     }
 
-    strcpy_s( dbh->error_code, sizeof( pdo_error_type ), reinterpret_cast<const char*>( error->sqlstate ));
+    ctx.set_last_error(error);
 
-    switch( dbh->error_mode ) {
-
-        case PDO_ERRMODE_EXCEPTION:
-            if( !warning ) {
-
-                pdo_sqlsrv_throw_exception( error TSRMLS_CC );
-            }
-            ctx.set_last_error( error );
-            break;
-
-        default:
-            DIE( "pdo_sqlsrv_handle_env_error: Unexpected error mode. %1!d!", dbh->error_mode );
-            break;
-    }
-    
     // we don't transfer the zval_auto_ptr since set_last_error increments the zval ref count
     // return error ignored = true for warnings.
-    return ( warning ? true : false );
-
+    return (warning ? true : false);
 }
 
 // pdo error handler for the dbh context.
-bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC, 
+bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
                                   _In_opt_ va_list* print_args )
 {
     pdo_dbh_t* dbh = reinterpret_cast<pdo_dbh_t*>( ctx.driver());
     SQLSRV_ASSERT( dbh != NULL, "pdo_sqlsrv_handle_dbh_error: Null dbh passed" );
 
     sqlsrv_error_auto_ptr error;
+    format_or_get_all_errors(ctx, sqlsrv_error_code, error, dbh->error_code, print_args);
 
-    if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
-        
-        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR TSRMLS_CC, print_args );
+    // error_mode is valid because PDO API has already taken care of invalid ones
+    if (!warning) {
+        if (dbh->error_mode == PDO_ERRMODE_EXCEPTION) {
+            pdo_sqlsrv_throw_exception(error);
+        }
+        else if (dbh->error_mode == PDO_ERRMODE_WARNING) {
+            size_t msg_len = strnlen_s(reinterpret_cast<const char*>(error->native_message)) + SQL_SQLSTATE_BUFSIZE
+                + MAX_DIGITS + WARNING_MIN_LENGTH + 1;
+            sqlsrv_malloc_auto_ptr<char> msg;
+            msg = static_cast<char*>(sqlsrv_malloc(msg_len));
+            core_sqlsrv_format_message(msg, static_cast<unsigned int>(msg_len), WARNING_TEMPLATE, error->sqlstate, error->native_code,
+                error->native_message);
+            php_error(E_WARNING, "%s", msg.get());
+        }
     }
-    else {
-        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
-        SQLSRV_ASSERT( err == true, "No ODBC error was found" );
-    }
 
-    SQLSRV_ASSERT(strnlen_s(reinterpret_cast<const char*>(error->sqlstate)) <= sizeof(dbh->error_code), "Error code overflow");
-    strcpy_s(dbh->error_code, sizeof(dbh->error_code), reinterpret_cast<const char*>(error->sqlstate));
-
-    switch( dbh->error_mode ) {
-        case PDO_ERRMODE_EXCEPTION:
-            if( !warning ) {
-
-                pdo_sqlsrv_throw_exception( error TSRMLS_CC );
-            }
-            ctx.set_last_error( error );
-            break;
-        case PDO_ERRMODE_WARNING:
-            if( !warning ) {
-                size_t msg_len = strnlen_s( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE 
-                    + MAX_DIGITS + WARNING_MIN_LENGTH + 1;
-                sqlsrv_malloc_auto_ptr<char> msg;
-                msg = static_cast<char*>( sqlsrv_malloc( msg_len ) );
-                core_sqlsrv_format_message( msg, static_cast<unsigned int>( msg_len ), WARNING_TEMPLATE, error->sqlstate, error->native_code,
-                                            error->native_message );
-                php_error(E_WARNING, "%s", msg.get());
-            }
-            ctx.set_last_error( error );
-            break;
-        case PDO_ERRMODE_SILENT:
-            ctx.set_last_error( error );
-            break;
-        default:
-            DIE( "Unknown error mode. %1!d!", dbh->error_mode );
-            break;
-    }
+    ctx.set_last_error(error);
 
     // return error ignored = true for warnings.
-    return ( warning ? true : false );
+    return (warning ? true : false);
 }
 
 // PDO error handler for the statement context.
-bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning TSRMLS_DC,
-                                   _In_opt_ va_list* print_args )
+bool pdo_sqlsrv_handle_stmt_error(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning,
+    _In_opt_ va_list* print_args)
 {
-    pdo_stmt_t* pdo_stmt = reinterpret_cast<pdo_stmt_t*>( ctx.driver());
-    SQLSRV_ASSERT( pdo_stmt != NULL && pdo_stmt->dbh != NULL, "pdo_sqlsrv_handle_stmt_error: Null statement or dbh passed" );
+    pdo_stmt_t* pdo_stmt = reinterpret_cast<pdo_stmt_t*>(ctx.driver());
+    SQLSRV_ASSERT(pdo_stmt != NULL && pdo_stmt->dbh != NULL, "pdo_sqlsrv_handle_stmt_error: Null statement or dbh passed");
 
     sqlsrv_error_auto_ptr error;
+    format_or_get_all_errors(ctx, sqlsrv_error_code, error, pdo_stmt->error_code, print_args);
 
-    if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
-        core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, SEV_ERROR TSRMLS_CC, print_args );
+    // error_mode is valid because PDO API has already taken care of invalid ones
+    if (!warning && pdo_stmt->dbh->error_mode == PDO_ERRMODE_EXCEPTION) {
+        pdo_sqlsrv_throw_exception(error);
     }
-    else {
-        bool err = core_sqlsrv_get_odbc_error( ctx, 1, error, SEV_ERROR TSRMLS_CC );
-        SQLSRV_ASSERT( err == true, "No ODBC error was found" );
-    }
-
-    SQLSRV_ASSERT( strnlen_s( reinterpret_cast<const char*>( error->sqlstate ) ) <= sizeof( pdo_stmt->error_code ), "Error code overflow");
-    strcpy_s( pdo_stmt->error_code, sizeof( pdo_stmt->error_code ), reinterpret_cast<const char*>( error->sqlstate ));
-
-    switch( pdo_stmt->dbh->error_mode ) {
-        case PDO_ERRMODE_EXCEPTION:
-            if( !warning ) {
-
-                pdo_sqlsrv_throw_exception( error TSRMLS_CC );
-            }
-            ctx.set_last_error( error );
-            break;
-        case PDO_ERRMODE_WARNING:
-            ctx.set_last_error( error );
-            break;
-        case PDO_ERRMODE_SILENT:
-            ctx.set_last_error( error );
-            break;
-        default:
-            DIE( "Unknown error mode. %1!d!", pdo_stmt->dbh->error_mode );
-            break;
-    }
+    ctx.set_last_error(error);
 
     // return error ignored = true for warnings.
-    return ( warning ? true : false );
+    return (warning ? true : false);
 }
-
 
 // Transfer a sqlsrv_context's error to a PDO zval.  The standard format for a zval error is 3 elements:
 // 0, native code
@@ -613,11 +550,13 @@ void pdo_sqlsrv_retrieve_context_error( _In_ sqlsrv_error const* last_error, _Ou
         // SQLSTATE is already present in the zval.
         add_next_index_long( pdo_zval, last_error->native_code );
         add_next_index_string( pdo_zval, reinterpret_cast<char*>( last_error->native_message ));
+
+        add_remaining_errors_to_array (last_error, pdo_zval);
     }
 }
 
 // check the global variable of pdo_sqlsrv severity whether the message qualifies to be logged with the LOG macro
-bool pdo_severity_check(_In_ unsigned int severity TSRMLS_DC)
+bool pdo_severity_check(_In_ unsigned int severity)
 {
     return ((severity & PDO_SQLSRV_G(pdo_log_severity)));
 }
@@ -639,7 +578,7 @@ sqlsrv_error_const* get_error_message( _In_opt_ unsigned int sqlsrv_error_code) 
     return error_message;
 }
 
-void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC )
+void pdo_sqlsrv_throw_exception(_In_ sqlsrv_error const* error)
 {
     zval ex_obj;
     ZVAL_UNDEF( &ex_obj );
@@ -649,15 +588,23 @@ void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC )
     int zr = object_init_ex( &ex_obj, ex_class );
     SQLSRV_ASSERT( zr != FAILURE, "Failed to initialize exception object" );
 
+#if PHP_VERSION_ID >= 80000
+    zend_object *zendobj = Z_OBJ_P(&ex_obj);
+#endif
+
     sqlsrv_malloc_auto_ptr<char> ex_msg;
-    size_t ex_msg_len = strnlen_s( reinterpret_cast<const char*>( error->native_message )) + SQL_SQLSTATE_BUFSIZE +
+    size_t ex_msg_len = strnlen_s(reinterpret_cast<const char*>(error->native_message)) + SQL_SQLSTATE_BUFSIZE +
         12 + 1; // 12 = "SQLSTATE[]: "
-    ex_msg = reinterpret_cast<char*>( sqlsrv_malloc( ex_msg_len ));
-    snprintf( ex_msg, ex_msg_len, EXCEPTION_MSG_TEMPLATE, error->sqlstate, error->native_message );
-    zend_update_property_string( ex_class, &ex_obj, EXCEPTION_PROPERTY_MSG, sizeof( EXCEPTION_PROPERTY_MSG ) - 1, 
-                                 ex_msg TSRMLS_CC );
-    zend_update_property_string( ex_class, &ex_obj, EXCEPTION_PROPERTY_CODE, sizeof( EXCEPTION_PROPERTY_CODE ) - 1,
-                                 reinterpret_cast<char*>( error->sqlstate ) TSRMLS_CC );
+    ex_msg = reinterpret_cast<char*>(sqlsrv_malloc(ex_msg_len));
+    snprintf(ex_msg, ex_msg_len, EXCEPTION_MSG_TEMPLATE, error->sqlstate, error->native_message);
+
+#if PHP_VERSION_ID < 80000
+    zend_update_property_string(ex_class, &ex_obj, EXCEPTION_PROPERTY_MSG, sizeof(EXCEPTION_PROPERTY_MSG) - 1, ex_msg);
+    zend_update_property_string(ex_class, &ex_obj, EXCEPTION_PROPERTY_CODE, sizeof(EXCEPTION_PROPERTY_CODE) - 1, reinterpret_cast<char*>(error->sqlstate));
+#else
+    zend_update_property_string(ex_class, zendobj, EXCEPTION_PROPERTY_MSG, sizeof(EXCEPTION_PROPERTY_MSG) - 1, ex_msg);
+    zend_update_property_string(ex_class, zendobj, EXCEPTION_PROPERTY_CODE, sizeof(EXCEPTION_PROPERTY_CODE) - 1, reinterpret_cast<char*>(error->sqlstate));
+#endif
 
     zval ex_error_info;
     ZVAL_UNDEF( &ex_error_info );
@@ -665,16 +612,77 @@ void pdo_sqlsrv_throw_exception( _In_ sqlsrv_error_const* error TSRMLS_DC )
     add_next_index_string( &ex_error_info, reinterpret_cast<char*>( error->sqlstate ));
     add_next_index_long( &ex_error_info, error->native_code );
     add_next_index_string( &ex_error_info, reinterpret_cast<char*>( error->native_message ));
+
+    add_remaining_errors_to_array (error, &ex_error_info);
+
     //zend_update_property makes an entry in the properties_table in ex_obj point to the Z_ARRVAL( ex_error_info )
     //and the refcount of the zend_array is incremented by 1
-    zend_update_property( ex_class, &ex_obj, EXCEPTION_PROPERTY_ERRORINFO, sizeof( EXCEPTION_PROPERTY_ERRORINFO ) - 1, 
-                          &ex_error_info TSRMLS_CC );
+#if PHP_VERSION_ID < 80000
+    zend_update_property(ex_class, &ex_obj, EXCEPTION_PROPERTY_ERRORINFO, sizeof(EXCEPTION_PROPERTY_ERRORINFO) - 1, &ex_error_info);
+#else
+    zend_update_property(ex_class, zendobj, EXCEPTION_PROPERTY_ERRORINFO, sizeof(EXCEPTION_PROPERTY_ERRORINFO) - 1, &ex_error_info);
+#endif
 
     //DELREF ex_error_info here to decrement the refcount of the zend_array is 1
     //the global hashtable EG(exception) then points to the zend_object in ex_obj in zend_throw_exception_object;
     //this ensure when EG(exception) cleans itself at php shutdown, the zend_array allocated is properly destroyed
     Z_DELREF( ex_error_info );
-    zend_throw_exception_object( &ex_obj TSRMLS_CC );
+    zend_throw_exception_object( &ex_obj );
+}
+
+void add_remaining_errors_to_array (_In_ sqlsrv_error const* error, _Inout_ zval* array_z)
+{
+    if (error->next != NULL && PDO_SQLSRV_G(report_additional_errors)) {
+        sqlsrv_error *p = error->next;
+        while (p != NULL) {
+            // check if sql state or native message is NULL and handle them accordingly
+            char *state = "";
+            char *msg = "";
+                 
+            if (p->sqlstate != NULL) {
+                state = reinterpret_cast<char*>(p->sqlstate);
+            }
+            if (p->native_message != NULL) {
+                msg = reinterpret_cast<char*>(p->native_message);
+            }
+
+            add_next_index_string(array_z, state);
+            add_next_index_long(array_z, p->native_code);
+            add_next_index_string(array_z, msg);
+
+            p = p-> next;
+        }
+    }
+}
+
+void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _Inout_ sqlsrv_error_auto_ptr& error, _Inout_ char* error_code, _In_opt_ va_list* print_args)
+{
+    if (sqlsrv_error_code != SQLSRV_ERROR_ODBC) {
+        core_sqlsrv_format_driver_error(ctx, get_error_message(sqlsrv_error_code), error, SEV_ERROR, print_args);
+        strcpy_s(error_code, sizeof(pdo_error_type), reinterpret_cast<const char*>(error->sqlstate));
+    }
+    else {
+        bool result = core_sqlsrv_get_odbc_error(ctx, 1, error, SEV_ERROR, true);
+        if (result) {
+            // Check if there exist more errors
+            int rec_number = 2;
+            sqlsrv_error_auto_ptr err;
+            sqlsrv_error *p = error;
+
+            do {
+                result = core_sqlsrv_get_odbc_error(ctx, rec_number++, err, SEV_ERROR, true);
+                if (result) {
+                    p->next = err.get();
+                    err.transferred();
+                    p = p->next;
+                }
+            } while (result);
+        }
+        
+        // core_sqlsrv_get_odbc_error() returns the error_code of size SQL_SQLSTATE_BUFSIZE,
+        // which is the same size as pdo_error_type
+        strcpy_s(error_code, sizeof(pdo_error_type), reinterpret_cast<const char*>(error->sqlstate));
+    }
 }
 
 }

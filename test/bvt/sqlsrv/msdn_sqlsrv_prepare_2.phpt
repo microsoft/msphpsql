@@ -1,7 +1,7 @@
 --TEST--
 Prepares a statement and then re-execute it with different parameter values.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

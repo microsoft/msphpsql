@@ -3,7 +3,7 @@
 //
 // Contents: Contains portable classes for localization
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -247,6 +247,7 @@ inline UINT SystemLocale::MaxCharCchSize( UINT codepage )
     switch ( codepage )
     {
     case CP_UTF8:
+    case 54936:
         return 4;
     case 932:
     case 936:

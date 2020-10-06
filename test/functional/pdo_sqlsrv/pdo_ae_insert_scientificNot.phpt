@@ -1,19 +1,80 @@
 --TEST--
 Test for inserting into and retrieving from decimal columns of different scale
+--DESCRIPTION--
+This test is similar to sqlsrv_ae_insert_scientificNot.phpt but it requires enabling column encryption in order
+to test the parsing of decimal numbers in scientific notation
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
 
-$posExp = array(-0.00e+01, 10.0E+00, -1.333e+1, 1.9178464696202265E+2, -8.3333e+2, 8.5000000000000006E+2, -8.5164835164835168E+2, 3.16E+05, -5E+05, 1.53502e+006, -7.5013e+006, 7.54001e+006, -7.54045e+006, 820.0E+10, -1.12255E+7, 1.23456789E+9, -1.23456789012346E+7, 1.377532E+10);
-$negExp = array(0.00e-01, -10.0E-00, 1.333e-1, -1.9178464696202265E-2, 8.3333e-2, -8.5000000000000006E-2, 8.5164835164835168E-2, -3.16E-01, 5E-03, -1.53502e-004, 7.5013e-004, -7.54001e-004, 7.54045e-004, -820.0E-1, 1.12255E-4, -1.23456789E-3, 1.23456789012346E-4, -1.377532E-1);
+$posExp = array("-0.00e+01", "10.0E+00", "-1.333e+1", "1.9178464696202265E+2", "-8.3333e+2", "8.5000000000000006E+2", "-8.5164835164835168E+2", "3.16E+05", "-5E+05", "1.53502e+006", "-7.5013e+006", "7.54001e+006", "-7.54045e+006", "820.0E+10", "-1.12255E+7", "1.23456789E+9", "-1.23456789012346E+7", "1.377532E+10", "+.9999E3");
+$negExp = array("+0.00e-01", "-10.0E-00", "1.333e-1", "-1.9178464696202265E-2", "8.3333e-2", "-8.5000000000000006E-2", "8.5164835164835168E-2", "-3.16E-01", "5E-03", "-1.53502e-004", "7.5013e-004", "-7.54001e-004", "7.54045e-004", "-820.0E-1", "1.12255E-4", "-1.23456789E-3", "1.23456789012346E-4", "-1.377532E-1", " .9999e-3");
+
 $numSets = array("Testing numbers greater than 1 or less than -1:" => $posExp,
                  "Testing numbers between 1 and -1:" => $negExp);
 $scalesToTest = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 19);
 
+function testErrorCases($conn)
+{
+    // Create a dummy table 
+    $tableName = "pdo_sci_not";
+    createTable($conn, $tableName, array("Column1" => "decimal(38, 1)"));
+
+    $expected = '*Invalid character value for cast specification';
+
+    $tsql = "INSERT INTO $tableName (Column1) VALUES (?)";   
+    $input = ".1e-0+1.";
+
+    $stmt = $conn->prepare($tsql);
+    $stmt->bindParam(1, $input);
+    try {
+        $stmt->execute();
+        echo "Expect $input to fail";
+    } catch (PDOException $e) {   
+        if (!fnmatch($expected, $e->GetMessage())) {
+            echo $e->getMessage();
+        }
+    }  
+    
+    $input = "10E+0.1.";
+    try {
+        $stmt->execute();
+        echo "Expect $input to fail";
+    } catch (PDOException $e) {   
+        if (!fnmatch($expected, $e->GetMessage())) {
+            echo $e->getMessage();
+        }
+    }  
+
+    $input = "-9E0+2";
+    try {
+        $stmt->execute();
+        echo "Expect $input to fail";
+    } catch (PDOException $e) {   
+        if (!fnmatch($expected, $e->GetMessage())) {
+            echo $e->getMessage();
+        }
+    }  
+    $input = "1234.1234.1234"; 
+    $expected = "*String data, right truncation";
+    try {
+        $stmt->execute();
+        echo "Expect $input to fail";
+    } catch (PDOException $e) {   
+        if (!fnmatch($expected, $e->GetMessage())) {
+            echo $e->getMessage();
+        }
+    }  
+    dropTable($conn, $tableName);
+}
+
 try {
-    $conn = connect();
+    $conn = connect("ColumnEncryption=Enabled;");
+
+    testErrorCases($conn);
+    
     $tbname = "decimalTable";
 
     foreach ($numSets as $testName => $numSet) {
@@ -33,12 +94,9 @@ try {
 
             $insertValues = array();
             foreach ($decimalTypes as $key => $value) {
-                if (isColEncrypted()) {
-                    $insertValues = array_merge($insertValues, array($key => strval($input)));
-                } else {
-                    $insertValues = array_merge($insertValues, array($key => $input));
-                }
+                $insertValues = array_merge($insertValues, array($key => $input));
             }
+
             insertRow($conn, $tbname, $insertValues, "prepareBindParam");
 
             $stmt = $conn->query("SELECT * FROM $tbname");
@@ -93,7 +151,7 @@ c6: 191.784647
 c7: 191.7846470
 c8: 191.78464696
 c9: 191.784646962
-c19: 191.7846469620200000000
+c19: 191.7846469620226500000
 c0: -833
 c1: -833.3
 c2: -833.33
@@ -115,7 +173,7 @@ c6: 850.000000
 c7: 850.0000000
 c8: 850.00000000
 c9: 850.000000000
-c19: 850.0000000000000000000
+c19: 850.0000000000000600000
 c0: -852
 c1: -851.6
 c2: -851.65
@@ -126,7 +184,7 @@ c6: -851.648352
 c7: -851.6483516
 c8: -851.64835165
 c9: -851.648351648
-c19: -851.6483516483500000000
+c19: -851.6483516483516800000
 c0: 316000
 c1: 316000.0
 c2: 316000.00
@@ -231,12 +289,12 @@ c1: -12345678.9
 c2: -12345678.90
 c3: -12345678.901
 c4: -12345678.9012
-c5: -12345678.90124
+c5: -12345678.90123
 c6: -12345678.901235
-c7: -12345678.9012350
-c8: -12345678.90123500
-c9: -12345678.901235000
-c19: -12345678.9012350000000000000
+c7: -12345678.9012346
+c8: -12345678.90123460
+c9: -12345678.901234600
+c19: -12345678.9012346000000000000
 c0: 13775320000
 c1: 13775320000.0
 c2: 13775320000.00
@@ -248,6 +306,17 @@ c7: 13775320000.0000000
 c8: 13775320000.00000000
 c9: 13775320000.000000000
 c19: 13775320000.0000000000000000000
+c0: 1000
+c1: 999.9
+c2: 999.90
+c3: 999.900
+c4: 999.9000
+c5: 999.90000
+c6: 999.900000
+c7: 999.9000000
+c8: 999.90000000
+c9: 999.900000000
+c19: 999.9000000000000000000
 
 Testing numbers between 1 and -1:
 c0: -10
@@ -279,7 +348,7 @@ c6: -.019178
 c7: -.0191785
 c8: -.01917846
 c9: -.019178465
-c19: -.0191784646962020000
+c19: -.0191784646962022650
 c1: .1
 c2: .08
 c3: .083
@@ -299,7 +368,7 @@ c6: -.085000
 c7: -.0850000
 c8: -.08500000
 c9: -.085000000
-c19: -.0850000000000000000
+c19: -.0850000000000000060
 c1: .1
 c2: .09
 c3: .085
@@ -309,7 +378,7 @@ c6: .085165
 c7: .0851648
 c8: .08516484
 c9: .085164835
-c19: .0851648351648350000
+c19: .0851648351648351680
 c1: -.3
 c2: -.32
 c3: -.316
@@ -392,7 +461,7 @@ c6: .000123
 c7: .0001235
 c8: .00012346
 c9: .000123457
-c19: .0001234567890123500
+c19: .0001234567890123460
 c1: -.1
 c2: -.14
 c3: -.138
@@ -403,3 +472,11 @@ c7: -.1377532
 c8: -.13775320
 c9: -.137753200
 c19: -.1377532000000000000
+c3: .001
+c4: .0010
+c5: .00100
+c6: .001000
+c7: .0009999
+c8: .00099990
+c9: .000999900
+c19: .0009999000000000000

@@ -7,8 +7,10 @@ Test PDO::__Construct by passing different connection attributes
 require_once("MsCommon_mid-refactor.inc");
 
 try {
+    // With PHP 8.0 the default is PDO::ERRMODE_EXCEPTION rather than PDO::ERRMODE_SILENT
     $attr = array( PDO::SQLSRV_ATTR_ENCODING => 3,
                    PDO::ATTR_CASE => 2,
+                   PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT,
                    PDO::ATTR_PREFETCH => false,
                    PDO::ATTR_TIMEOUT => 35,
                    PDO::ATTR_STRINGIFY_FETCHES => true,

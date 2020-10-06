@@ -1,7 +1,7 @@
 --TEST--
 fetches a column in a row
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
    require('connect.inc');

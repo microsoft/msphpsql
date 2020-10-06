@@ -1,7 +1,7 @@
 --TEST--
 retrieves each row of a result set as an associative array.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

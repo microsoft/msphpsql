@@ -10,7 +10,50 @@ Test various conversion functionalites for buffered queries with SQLSRV.
 $violation = 'Restricted data type attribute violation';
 $outOfRange = 'Numeric value out of range';
 $truncation = 'Fractional truncation';
-$epsilon = 0.00001;
+
+function compareFloats($expected, $actual)
+{
+    $epsilon = 0.00001;
+    
+    $diff = abs(($actual - $expected) / $expected);
+    
+    return ($diff < $epsilon);
+}
+
+function fetchAsChar($conn, $tableName, $inputs)
+{
+    $query = "SELECT c_varbinary, c_int, c_float, c_decimal, c_datetime2, c_varchar FROM $tableName";
+    
+    $stmt = sqlsrv_query($conn, $query, array(), array("Scrollable"=>SQLSRV_CURSOR_CLIENT_BUFFERED));
+    if (!$stmt) {
+        fatalError("In fetchAsChar: failed to run query!");
+    }
+
+    if (sqlsrv_fetch($stmt, SQLSRV_FETCH_NUMERIC) === false) {
+        fatalError("In fetchAsChar: failed to fetch the row from $tableName!");
+    }
+
+    // Fetch all fields as strings - no conversion
+    for ($i = 0; $i < count($inputs) - 1; $i++) {
+        $f = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+        if ($i == 0) {
+            if ($inputs[$i] !== hex2bin($f)) {
+                echo "In fetchAsChar ($i): expected $inputs[$i]\n";
+                var_dump(hex2bin($f));
+            }
+        } elseif ($i == 2) {
+            if (!compareFloats(floatval($inputs[$i]), floatval($f))) {
+                echo "In fetchAsChar ($i): expected $inputs[$i]\n";
+                var_dump($f);
+            }
+        } else {
+            if ($f !== $inputs[$i]) {
+                echo "In fetchAsChar ($i): expected $inputs[$i]\n";
+                var_dump($f);
+            }
+        }
+    }
+}
 
 function fetchAsUTF8($conn, $tableName, $inputs)
 {
@@ -29,10 +72,17 @@ function fetchAsUTF8($conn, $tableName, $inputs)
         $f = sqlsrv_get_field($stmt, $i, SQLSRV_PHPTYPE_STRING('utf-8'));
         if ($i == 0) {
             if ($inputs[$i] !== hex2bin($f)) {
+                echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
+                var_dump(hex2bin($f));
+            }
+        } elseif ($i == 2) {
+            if (!compareFloats(floatval($inputs[$i]), floatval($f))) {
+                echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
                 var_dump($f);
             }
         } else {
             if ($f !== $inputs[$i]) {
+                echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
                 var_dump($f);
             }
         }
@@ -59,15 +109,26 @@ function fetchArray($conn, $tableName, $inputs)
     }
     
     for ($i = 0; $i < count($inputs); $i++) {
+        $matched = true;
         if ($i == 1) {
             $expected = intval($inputs[$i]);
+            if ($results[$i] !== $expected) {
+                $matched = false;
+            }
         } elseif ($i == 2) {
             $expected = floatval($inputs[$i]);
+            if (!compareFloats($expected, $results[$i])) {
+                $matched = false;
+            }
         } else {
             $expected = $inputs[$i];
+            if ($results[$i] !== $expected) {
+                $matched = false;
+            }
         }
 
-        if ($results[$i] !== $expected) {
+        // if ($results[$i] !== $expected) {
+        if (!$matched) {
             echo "in fetchArray: for column $i expected $expected but got: ";
             var_dump($results[$i]);
         }
@@ -100,24 +161,15 @@ function fetchAsFloats($conn, $tableName, $inputs)
             }
         } elseif ($i < 5) {
             $expected = floatval($inputs[$i]);
-            $diff = abs(($f - $expected) / $expected);
-            
-            if ($diff > $epsilon) {
+            if (!compareFloats($expected, $f)) {
                 echo "in fetchAsFloats: for column $i expected $expected but got: ";
                 var_dump($f);
             }
         } else {
             // The char fields will get errors too
-            // TODO 11297: fix this part outside Windows later
-            if (isWindows()) {
-                if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
-                    var_dump($f);
-                    fatalError("in fetchAsFloats: expected $outOfRange for column $i\n");
-                }
-            } else {
-                if ($f != 0.0) {
-                    var_dump($f);
-                }
+            if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
+                var_dump($f);
+                fatalError("in fetchAsFloats: expected $outOfRange for column $i\n");
             }
         }
     }
@@ -155,19 +207,12 @@ function fetchAsInts($conn, $tableName, $inputs)
             }
         } elseif ($i >= 5) {
             // The char fields will get errors too
-            // TODO 11297: fix this part outside Windows later
-            if (isWindows()) {
-                if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
-                    var_dump($f);
-                    fatalError("in fetchAsInts: expected $outOfRange for column $i\n");
-                }
-            } else {
-                if ($f != 0) {
-                    var_dump($f);
-                }
+            if (strpos(sqlsrv_errors()[0]['message'], $outOfRange) === false) {
+                var_dump($f);
+                fatalError("in fetchAsInts: expected $outOfRange for column $i\n");
             }
         } else {
-            $expected = floor($inputs[$i]);
+            $expected = floor(floatval($inputs[$i]));
             if ($f != $expected) {
                 echo "in fetchAsInts: for column $i expected $expected but got: ";
                 var_dump($f);
@@ -260,6 +305,7 @@ if ($stmt) {
 }
 
 // Starting fetching using client buffers
+fetchAsChar($conn, $tableName, $inputs);
 fetchAsUTF8($conn, $tableName, $inputs);
 fetchArray($conn, $tableName, $inputs);
 fetchAsFloats($conn, $tableName, $inputs);

@@ -1,7 +1,7 @@
 --TEST--
 executes a query, then comsumes and counts results until reaches a specified amount. The remaining query results are then discarded.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

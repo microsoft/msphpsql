@@ -84,9 +84,18 @@ if (!AE\isColEncrypted() && $t !== "So?e sä???? ?SCII-te×t") {
     die("varchar(100) \'$t\' doesn't match So?e sä???? ?SCII-te×t");
 } else {
     $arr = explode('?', $t);
+    // in Alpine Linux, data returned is diffferent with always encrypted:
+    // something like '**** *ä**** *****-**×*'
+    // instead of '?', it replaces inexact conversions with asterisks
+    // reference: read the ICONV section in
+    // https://wiki.musl-libc.org/functional-differences-from-glibc.html
     if (count($arr) == 1) {
         // this means there is no question mark in $t
-        die("varchar(100) value \'$t\' is unexpected");
+        // then try to find a substring of some asterisks
+        $asterisks = '****';
+        if(strpos($t, '****') === false) {
+            die("varchar(100) value \'$t\' is unexpected");
+        }
     }
 }
 
@@ -227,11 +236,12 @@ if ($t !== $u) {
     die("Round trip failed.");
 }
 
+// $t is an invalid utf-8 string, expect the procedure to fail
 $t = pack('H*', 'ffffffff');
 
 $sqlType =
 $params = array(array(&$t, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8')));
-$query = "{call IntDoubleProc(?)}";
+$query = "{call Utf8InOutProc(?)}";
 $s = AE\executeQueryParams($c, $query, $params, true, "no error from an invalid utf-8 string");
 
 dropTable($c, $tableName);

@@ -6,7 +6,7 @@
 //
 // Contents: Declarations for the extension
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -31,6 +31,7 @@ ZEND_BEGIN_MODULE_GLOBALS(pdo_sqlsrv)
 
 unsigned int pdo_log_severity;
 zend_long client_buffer_max_size;
+short report_additional_errors;
 
 #ifndef _WIN32
 zend_long set_locale_info;

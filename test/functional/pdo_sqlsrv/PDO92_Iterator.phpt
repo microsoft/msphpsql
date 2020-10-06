@@ -71,7 +71,7 @@ class PDOStatementAggregate extends PDOStatement implements IteratorAggregate
         $this->setFetchMode(PDO::FETCH_NUM);   
     }
 
-    function getIterator()
+    function getIterator() : Iterator
     {
         echo __METHOD__ . "\n";
         $this->execute();

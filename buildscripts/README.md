@@ -5,16 +5,16 @@
 To build extensions for 
 1. PHP 7.0* or PHP 7.1*
     * install Visual Studio 2015 and make sure C++ tools are enabled. 
-2. PHP 7.2*
-    * install Visual Studio 2017, including Visual C++ toolset and the Windows SDK components. 
+2. PHP 7.2* or above
+    * install Visual Studio 2017 (PHP 7.*) or Visual Studio 2019 (PHP 8.*), including Visual C++ toolset and the Windows SDK components. 
 
-To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x and Git for Windows (which comes with Visual Studio 2017). If `git` is unrecognized in a regular command prompt, make sure the environment path is set up correctly.
+To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x and Git for Windows (which comes with Visual Studio 2017 or 2019). If `git` is unrecognized in a regular command prompt, make sure the environment path is set up correctly.
 
 ## Compile the drivers 
 
-You must first be able to build PHP 7.* without including our PHP extensions. For help with building PHP 7.0* or PHP 7.1* in Windows, see the [official PHP website](https://wiki.php.net/internals/windows/stepbystepbuild). For PHP 7.2 or above, visit [PHP SDK page](https://github.com/OSTC/php-sdk-binary-tools) for new instructions.
+You must first be able to build PHP source without including our PHP extensions. For help with building PHP 7.0* or PHP 7.1* in Windows, see the [official PHP website](https://wiki.php.net/internals/windows/stepbystepbuild). For PHP 7.2 or above, visit [PHP SDK page](https://github.com/OSTC/php-sdk-binary-tools) for new instructions.
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.0.* and 7.1.* using Visual C++ 2015 as well as PHP 7.2.1 using Visual C++ 2017 v15.5. 
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.2+ using Visual Studio 2017 and PHP 8.0 previews using Visual Studio 2019. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode. It verifies the publisher's identity and prevents malicious actors from posing as legitimate developers.
 
 ### Manually building from source 
 
@@ -45,7 +45,7 @@ The sample build scripts, `builddrivers.py` and `buildtools.py`, can be used to 
 
 #### Overview
 
-When asked to provide the PHP version, you should enter values like `7.1.7`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 7.2 beta 2, the tag name is `php-7.2.0beta2`, so you will enter `7.2.0beta2`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
+When asked to provide the PHP version, you should enter values like `7.3.17`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 8.0.0 beta 3, the tag name is `php-8.0.0beta3`, so you will enter `8.0.0beta3`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
 
 PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will, by default, create a `php-sdk` folder in the C:\ drive, and this `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
 
@@ -57,7 +57,7 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
 
 3. Interactive mode: 
     * Type `py builddrivers.py` to start the interactive mode. Use lower cases to answer the following questions:
-        * PHP Version (e.g. `7.1.7` or `7.2.1`)
+        * PHP Version
         * 64-bit?
         * Thread safe?
         * Driver?
@@ -68,8 +68,8 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
 4. Use Command-line arguments
     * Type `py builddrivers.py -h` to get a list of options and their descriptions
     * For example, 
-        * `py builddrivers.py --PHPVER=7.2.1 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE=C:\local\source`
-        * `py builddrivers.py --PHPVER=7.1.13 --ARCH=x86 --THREAD=ts --DEBUG`
+        * `py builddrivers.py --PHPVER=7.4.10 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE=C:\local\source`
+        * `py builddrivers.py --PHPVER=7.2.30 --ARCH=x86 --THREAD=ts --DEBUG`
 
 5. Based on the given configuration, if the script detects the presence of the PHP source directory, you can choose whether to rebuild, clean or superclean:
     * `rebuild` to build again using the same configuration (32 bit, thread safe, etc.)

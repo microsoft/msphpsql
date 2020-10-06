@@ -20,6 +20,9 @@ function Extend()
     // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
     // which does not support switching databases
     $conn2 = new ExPDO("sqlsrv:Server=$server;Database=$databaseName", $uid, $pwd);
+    // With PHP 8.0 the default is PDO::ERRMODE_EXCEPTION rather than PDO::ERRMODE_SILENT
+    $conn2->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+    
     DropTable($conn2, "tmp_table");
     $conn2->exec("CREATE TABLE tmp_table (id INT)");
     $conn2->exec("INSERT INTO tmp_table (id) VALUES (1), (2)");
@@ -52,7 +55,7 @@ class ExPDO extends PDO
         return (call_user_func_array(array($this, 'parent::exec'), $args));
     }
 
-    public function query()
+    public function query($statement, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
     {
         $this->protocol();
         $args = func_get_args();

@@ -14,18 +14,52 @@ $outOfRange = 'Numeric value out of range';
 $truncation = 'Fractional truncation';
 $epsilon = 0.00001;
 
+function fetchAsChar($conn, $tableName, $inputs)
+{
+    $query = "SELECT c1, c2, c3, c4, c5, c6 FROM $tableName";
+    try {
+        $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR=>PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE=>PDO::SQLSRV_CURSOR_BUFFERED));
+        $stmt->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
+        
+        // Fetch all fields as strings - no conversion
+        for ($i = 0; $i < count($inputs) - 1; $i++) {
+            $stmt->execute();
+            $f = $stmt->fetchColumn($i);
+            
+            if ($i == 2) {
+                if (!compareFloats(floatval($inputs[$i]), floatval($f))) {
+                    echo "In fetchAsChar ($i): expected $inputs[$i]\n";
+                    var_dump($f);
+                }
+            } elseif ($f !== $inputs[$i]) {
+                echo "In fetchAsChar ($i): expected $inputs[$i]\n";
+                var_dump($f);
+            }
+        }
+    } catch (PdoException $e) {
+        echo "Caught exception in fetchAsChar:\n";
+        echo $e->getMessage() . PHP_EOL;
+    }
+}
+
 function fetchAsUTF8($conn, $tableName, $inputs)
 {
     $query = "SELECT * FROM $tableName";
     try {
         $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR=>PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE=>PDO::SQLSRV_CURSOR_BUFFERED));
-        
+
         // Fetch all fields as UTF-8 strings
         for ($i = 0; $i < count($inputs); $i++) {
             $stmt->execute();
             $f = $stmt->fetchColumn($i);
             
-            if ($f !== $inputs[$i]) {
+            if ($i == 2) {
+                if (!compareFloats(floatval($inputs[$i]), floatval($f))) {
+                    echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
+                    var_dump($f);
+                }
+            } elseif ($f !== $inputs[$i]) {
+                echo "In fetchAsUTF8 ($i): expected $inputs[$i]\n";
                 var_dump($f);
             }
         }
@@ -45,8 +79,16 @@ function fetchArray($conn, $tableName, $inputs)
         // By default, even numeric or datetime fields are fetched as strings
         $result = $stmt->fetch(PDO::FETCH_NUM);
         for ($i = 0; $i < count($inputs); $i++) {
-            if ($result[$i] !== $inputs[$i]) {
-                var_dump($f);
+            if ($i == 2) {
+                $expected = floatval($inputs[$i]);
+                if (!compareFloats($expected, floatval($result[$i]))) {
+                    echo "in fetchArray: for column $i expected $expected but got: ";
+                    var_dump($result[$i]);
+                }
+            }
+            elseif ($result[$i] !== $inputs[$i]) {
+                echo "in fetchArray: for column $i expected $inputs[$i] but got: ";
+                var_dump($result[$i]);
             }
         }
     } catch (PdoException $e) {
@@ -131,14 +173,7 @@ function fetchCharAsInt($conn, $tableName, $column)
         $stmt->bindColumn($column, $value, PDO::PARAM_INT);
         $row = $stmt->fetch(PDO::FETCH_BOUND);
         
-        // TODO 11297: fix this part outside Windows later
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            echo "in fetchCharAsInt: exception should have been thrown!\n";
-        } else {
-            if ($value != 0) {
-                var_dump($value);
-            }
-        }
+        echo "in fetchCharAsInt: exception should have been thrown!\n";
     } catch (PdoException $e) {
         // The (n)varchar field - expect the outOfRange error
         if (strpos($e->getMessage(), $outOfRange) === false) {
@@ -180,6 +215,35 @@ function fetchAsNumerics($conn, $tableName, $inputs)
     }
 }
 
+function fetchNumbers($conn, $tableName, $inputs)
+{
+    // Fetch integers and floats as numbers, not strings
+    try {
+        $query = "SELECT c2, c3, c4 FROM $tableName";
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+
+        $stmt = $conn->prepare($query, array(PDO::ATTR_CURSOR=>PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE=>PDO::SQLSRV_CURSOR_BUFFERED));
+        $stmt->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
+        $stmt->execute();
+                     
+        $row = $stmt->fetch(PDO::FETCH_NUM);
+        if ($row[0] !== intval($inputs[1])) {
+            var_dump($row[0]);
+        }
+        $expected = floatval($inputs[2]);
+        if (!compareFloats($expected, $row[1])) {
+            echo "in fetchNumbers: expected $expected but got: ";
+            var_dump($row[1]);
+        }
+        if ($row[2] !== $inputs[3]) {
+            var_dump($row[2]);
+        }
+    } catch (PdoException $e) {
+        echo "Caught exception in fetchAsNumerics:\n";
+        echo $e->getMessage() . PHP_EOL;
+    }
+}
+
 try {
     $conn = connect();
     $conn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
@@ -212,11 +276,13 @@ try {
     unset($stmt);
 
     // Starting fetching using client buffers
+    fetchAsChar($conn, $tableName, $inputs);
     fetchAsUTF8($conn, $tableName, $inputs);
     fetchArray($conn, $tableName, $inputs);
     fetchBinaryAsNumber($conn, $tableName, $inputs);
     fetchBinaryAsBinary($conn, $tableName, $inputs);
     fetchAsNumerics($conn, $tableName, $inputs);
+    fetchNumbers($conn, $tableName, $inputs);
     
     // dropTable($conn, $tableName);
     echo "Done\n";

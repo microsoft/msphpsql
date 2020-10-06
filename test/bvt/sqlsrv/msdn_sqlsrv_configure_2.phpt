@@ -1,7 +1,7 @@
 --TEST--
 disables the default error-handling behaviour using configure and returns warnings
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Turn off the default behavior of treating errors as warnings.
@@ -169,10 +169,10 @@ function DisplayWarnings()
 }
 ?>
 --EXPECTREGEX--
-Warning: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Changed database context to 'AdventureWorks2014'.
+Warning: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Changed database context to 'AdventureWorks201[4|7]'.
 Warning: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]Changed language setting to us_english.
 BusinessEntityId 7 has 57 remaining vacation hours.
 BusinessEntityId 8 has 57 remaining vacation hours.
 BusinessEntityId 9 has 55 remaining vacation hours.
-Error: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]The UPDATE statement conflicted with the CHECK constraint "CK_Employee_VacationHours". The conflict occurred in database "AdventureWorks2014", table "HumanResources.Employee", column 'VacationHours'.
+Error: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]The UPDATE statement conflicted with the CHECK constraint "CK_Employee_VacationHours". The conflict occurred in database "AdventureWorks201[4|7]", table "HumanResources.Employee", column 'VacationHours'.
 Error: \[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]\[SQL Server\]The statement has been terminated.

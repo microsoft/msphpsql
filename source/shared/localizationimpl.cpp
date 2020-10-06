@@ -5,7 +5,7 @@
 //           Must be included in one c/cpp file per binary
 //           A build error will occur if this inclusion policy is not followed
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -77,6 +77,7 @@ const cp_iconv cp_iconv::g_cp_iconv[] = {
     {  1256, "CP1256" TRANSLIT },
     {  1257, "CP1257" TRANSLIT },
     {  1258, "CP1258" TRANSLIT },
+    { 54936, "GB18030" TRANSLIT},
     { CP_ISO8859_1, "ISO8859-1" TRANSLIT },
     { CP_ISO8859_2, "ISO8859-2" TRANSLIT },
     { CP_ISO8859_3, "ISO8859-3" TRANSLIT },
@@ -342,6 +343,11 @@ SystemLocale::SystemLocale( const char * localeName )
     const LocaleCP lcpTable[] = {
         { "utf8", CP_UTF8 },
         { "UTF-8", CP_UTF8 },
+        { "BIG5", 950 },
+        { "BIG5-HKSCS", 950 },
+        { "gb18030", 54936 },
+        { "gb2312", 936 },
+        { "gbk", 936 },
         CPxxx(1252), CPxxx(850), CPxxx(437), CPxxx(874), CPxxx(932), CPxxx(936), CPxxx(949), CPxxx(950),
         CPxxx(1250), CPxxx(1251), CPxxx(1253), CPxxx(1254), CPxxx(1255), CPxxx(1256), CPxxx(1257), CPxxx(1258),
         ISO8859(1), ISO8859(2), ISO8859(3), ISO8859(4), ISO8859(5), ISO8859(6),

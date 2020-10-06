@@ -50,12 +50,8 @@ class BuildUtil(object):
         
     def version_label(self):
         """Return the version label based on the PHP version."""
-        major_ver = self.major_version()
-        
-        if major_ver[2] == '0':
-            version = major_ver[0]
-        else:
-            version = major_ver[0] + major_ver[2]
+        major_ver = self.major_version()       
+        version = major_ver[0] + major_ver[2]
         return version
 
     def driver_name(self, driver, suffix):
@@ -100,16 +96,11 @@ class BuildUtil(object):
         
     def compiler_version(self, sdk_dir):
         """Return the appropriate compiler version based on PHP version."""
-        if self.vc is '':
-            VC = 'vc14'
+        if self.vc == '':
+            VC = 'vc15'
             version = self.version_label()
-            if version >= '72':     # Compiler version for PHP 7.2 or above
-                VC = 'vc15'
-                if version == '74':
-                    # Compiler version for PHP 7.4 or above
-                    # Can be compiled using VS 2017 or VS 2019
-                    print('Checking compiler versions...')
-                    VC = self.determine_compiler(sdk_dir, 15)
+            if version == '80':     # Compiler version for PHP 8.0 or above
+                VC = 'vs16'
             self.vc = VC
             print('Compiler: ' + self.vc)
         return self.vc

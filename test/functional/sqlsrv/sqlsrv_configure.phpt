@@ -4,17 +4,29 @@ sqlsrv_configure.
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
+    // When testing with PHP 8.0 it throws a TypeError instead of a warning. Thus implement a custom 
+    // warning handler such that with PHP 7.x the warning would be handled to throw a TypeError.
+    function warningHandler($errno, $errstr) 
+    { 
+        throw new TypeError($errstr);
+    }
 
     sqlsrv_configure('WarningsReturnAsErrors', 0);
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
+    set_error_handler("warningHandler", E_WARNING);
+
     // test negative cases first
     // must have two parameters
-    $result = sqlsrv_configure("WarningsReturnAsErrors");
-    if ($result) {
-        fatalError("sqlsrv_configure(1) should have failed.");
+    try {
+        $result = sqlsrv_configure("WarningsReturnAsErrors");
+        if ($result) {
+            fatalError("sqlsrv_configure(1) should have failed.");
+        }
+    } catch (TypeError $e) {
+        echo $e->getMessage() . PHP_EOL;
     }
-
+    
     // warnings_return_as_errors the only supported option
     $result = sqlsrv_configure("blahblahblah", 1);
     if ($result) {
@@ -135,10 +147,10 @@ sqlsrv_configure.
 
 ?>
 --EXPECTREGEX--
-Warning: sqlsrv_configure\(\) expects exactly 2 parameters, 1 given in .+(\/|\\)sqlsrv_configure\.php on line [0-9]+
+sqlsrv_configure\(\) expects exactly 2 (parameters|arguments), 1 given
 Array
 \(
-    \[0\] => Array
+    \[0] => Array
         \(
             \[0\] => IMSSP
             \[SQLSTATE\] => IMSSP

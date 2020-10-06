@@ -27,10 +27,19 @@ function verifyColumnData($columns, $results, $utf8)
                 var_dump($results[$i]);
             } else {
                 $arr = explode('?', $results[$i]);
+                // in Alpine Linux, data returned is diffferent with always encrypted:
+                // something like '**** *ä**** *****-**×*'
+                // instead of '?', it replaces inexact conversions with asterisks
+                // reference: read the ICONV section in
+                // https://wiki.musl-libc.org/functional-differences-from-glibc.html
                 if (count($arr) == 1) {
                     // this means there is no question mark in $t
-                    echo $columns[$i]->colName . " value is unexpected";
-                    var_dump($results[$i]);
+                    // then try to find a substring of some asterisks
+                    $asterisks = '****';
+                    if(strpos($results[$i], '****') === false) {
+                        echo $columns[$i]->colName . " value is unexpected";
+                        var_dump($results[$i]);
+                    }
                 }
             }
         }
@@ -144,7 +153,7 @@ function runInOutProcWithErrors($conn, $utf8_2)
 
 function runIntDoubleProcWithErrors($conn)
 {
-    $sql = "{call pdoIntDoubleProc(?)}";
+    $sql = "{call pdoUTF8InOutProc(?)}";
     $val = pack('H*', 'ffffffff');
 
     try {

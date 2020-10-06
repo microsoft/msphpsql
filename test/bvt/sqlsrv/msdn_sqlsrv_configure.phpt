@@ -1,8 +1,7 @@
 --TEST--
 disables the default error-handling behaviour using configure
 --SKIPIF--
-
-?>
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication. */

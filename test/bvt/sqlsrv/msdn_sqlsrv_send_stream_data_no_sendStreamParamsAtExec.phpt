@@ -1,6 +1,7 @@
 --TEST--
 Send stream data with SendStreamParamsAtExec turned off.
 --SKIPIF--
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 /* Connect to the local server using Windows Authentication and

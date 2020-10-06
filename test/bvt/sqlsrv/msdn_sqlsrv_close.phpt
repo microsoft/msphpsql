@@ -1,7 +1,7 @@
 --TEST--
 closes a connection.
 --SKIPIF--
-
+<?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require('connect.inc');

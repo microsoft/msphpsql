@@ -3,7 +3,7 @@
 //
 // Contents: initialization routines for PDO_SQLSRV
 //
-// Microsoft Drivers 5.8 for PHP for SQL Server
+// Microsoft Drivers 5.9 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -53,8 +53,8 @@ pdo_driver_t pdo_sqlsrv_driver = {
 
 // functions to register SQLSRV constants with the PDO class
 // (It's in all CAPS so it looks like the Zend macros that do similar work)
-void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( _In_z_ char const* name, _In_ long value TSRMLS_DC );
-void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( _In_z_ char const* name, _In_z_ char const* value TSRMLS_DC );
+void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( _In_z_ char const* name, _In_ long value );
+void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( _In_z_ char const* name, _In_z_ char const* value );
 
 struct sqlsrv_attr_pdo_constant {
     const char *name;
@@ -154,18 +154,18 @@ PHP_MINIT_FUNCTION(pdo_sqlsrv)
     // register all attributes supported by this driver.
     for( int i= 0; pdo_attr_constants[i].name != NULL; ++i ) {
         
-        REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( pdo_attr_constants[i].name, pdo_attr_constants[i].value TSRMLS_CC );
+        REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( pdo_attr_constants[i].name, pdo_attr_constants[i].value );
     
     }
 
-    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_READ_UNCOMMITTED", PDOTxnIsolationValues::READ_UNCOMMITTED  TSRMLS_CC );
-    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_READ_COMMITTED", PDOTxnIsolationValues::READ_COMMITTED TSRMLS_CC );
-    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_REPEATABLE_READ", PDOTxnIsolationValues::REPEATABLE_READ TSRMLS_CC );
-    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_SERIALIZABLE", PDOTxnIsolationValues::SERIALIZABLE TSRMLS_CC );
-    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_SNAPSHOT", PDOTxnIsolationValues::SNAPSHOT TSRMLS_CC );
+    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_READ_UNCOMMITTED", PDOTxnIsolationValues::READ_UNCOMMITTED  );
+    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_READ_COMMITTED", PDOTxnIsolationValues::READ_COMMITTED );
+    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_REPEATABLE_READ", PDOTxnIsolationValues::REPEATABLE_READ );
+    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_SERIALIZABLE", PDOTxnIsolationValues::SERIALIZABLE );
+    REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( "SQLSRV_TXN_SNAPSHOT", PDOTxnIsolationValues::SNAPSHOT );
 
     // retrieve the handles for the environments
-    core_sqlsrv_minit( &g_pdo_henv_cp, &g_pdo_henv_ncp, pdo_sqlsrv_handle_env_error, "PHP_MINIT_FUNCTION for pdo_sqlsrv" TSRMLS_CC );
+    core_sqlsrv_minit( &g_pdo_henv_cp, &g_pdo_henv_ncp, pdo_sqlsrv_handle_env_error, "PHP_MINIT_FUNCTION for pdo_sqlsrv" );
 
     }
     catch( ... ) {
@@ -274,27 +274,20 @@ namespace {
     // mimic the functionality of the REGISTER_PDO_CLASS_CONST_LONG.  We use this instead of the macro because
     // we dynamically link the pdo_get_dbh_class function rather than use the static php_pdo_get_dbh_ce (see MINIT)
 
-    void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( _In_z_ char const* name, _In_ long value TSRMLS_DC )
+    void REGISTER_PDO_SQLSRV_CLASS_CONST_LONG( _In_z_ char const* name, _In_ long value )
     {
         zend_class_entry* zend_class = php_pdo_get_dbh_ce(); 
         
         SQLSRV_ASSERT( zend_class != NULL, "REGISTER_PDO_SQLSRV_CLASS_CONST_LONG: php_pdo_get_dbh_ce failed");
-        int zr = zend_declare_class_constant_long( zend_class, const_cast<char*>( name ), strlen( name ), value TSRMLS_CC );
-        if( zr == FAILURE ) {
-            throw core::CoreException(); 
-        }
+        zend_declare_class_constant_long(zend_class, const_cast<char*>(name), strlen(name), value);
     }
 
-    void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( _In_z_  char const* name, _In_z_ char const* value TSRMLS_DC )
+    void REGISTER_PDO_SQLSRV_CLASS_CONST_STRING( _In_z_  char const* name, _In_z_ char const* value )
     {
         zend_class_entry* zend_class = php_pdo_get_dbh_ce(); 
 
         SQLSRV_ASSERT( zend_class != NULL, "REGISTER_PDO_SQLSRV_CLASS_CONST_STRING: php_pdo_get_dbh_ce failed");
-        int zr = zend_declare_class_constant_string( zend_class, const_cast<char*>( name ), strlen( name ), const_cast<char*>( value ) TSRMLS_CC );
-        if( zr == FAILURE ) {
-
-            throw core::CoreException();
-        }
+        zend_declare_class_constant_string(zend_class, const_cast<char*>(name), strlen(name), const_cast<char*>(value));
     }
 
     // array of pdo constants.
