@@ -1383,7 +1383,6 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
 
                     bool valid = true;
                     if( stricmp( SS_CONN_OPTS[i].sqlsrv_name, SSConnOptionNames::Authentication ) == 0 ) {
-                        //valid = core_is_authentication_option_valid( value, value_len );
                         valid = AzureADOptions::isAuthValid(value, value_len);
                     }
 

@@ -187,7 +187,6 @@ void conn_string_parser::add_key_value_pair( _In_reads_(len) const char* value, 
             memcpy_s( option, len + 1, value, len );
             option[len] = '\0';
 
-            //valid = core_is_authentication_option_valid( option, len );
             valid = AzureADOptions::isAuthValid(option, len);
         }
     }

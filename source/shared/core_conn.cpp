@@ -709,20 +709,6 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
     return true;
 }
 
-// core_is_authentication_option_valid
-// if the option for the authentication is valid, returns true. This returns false otherwise.
-//bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t value_len)
-//{
-//    if (value_len <= 0)
-//        return false;
-//
-//    if (!stricmp(value, AzureADOptions::AZURE_AUTH_SQL_PASSWORD) || !stricmp(value, AzureADOptions::AZURE_AUTH_AD_PASSWORD) || !stricmp(value, AzureADOptions::AZURE_AUTH_AD_MSI) || !stricmp(value, AzureADOptions::AZURE_AUTH_AD_SPA)) {
-//        return true;
-//    }
-//
-//    return false;
-//}
-
 namespace AzureADOptions {
     enum AAD_AUTH_TYPE {
         MIN_AAD_AUTH_TYPE = 0,

@@ -1287,7 +1287,6 @@ void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval *se
 void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_info );
 bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len );
 size_t core_str_zval_is_true( _Inout_ zval* str_zval );
-//bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t value_len );
 bool core_search_odbc_driver_unix( _In_ DRIVER_VERSION driver_version );
 bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN r, _In_ const char* error_state );
 
