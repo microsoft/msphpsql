@@ -13,6 +13,9 @@ variables:
 trigger:
 - dev
 
+pr:
+- dev
+
 jobs:
 - job: macOS
   pool:
