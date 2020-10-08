@@ -96,5 +96,5 @@ if ($azureServer != 'TARGET_AD_SERVER') {
 Connected successfully with Authentication=SqlPassword.
 string(1) "%d"
 Could not connect with Authentication=ActiveDirectoryIntegrated.
-SQLSTATE[IMSSP]: Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, or ActiveDirectoryMsi is supported.
+SQLSTATE[IMSSP]: Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectorySPA is supported.
 %s with Authentication=ActiveDirectoryPassword.

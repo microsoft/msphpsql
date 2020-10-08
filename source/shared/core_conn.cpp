@@ -709,18 +709,38 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
     return true;
 }
 
-// core_is_authentication_option_valid
-// if the option for the authentication is valid, returns true. This returns false otherwise.
-bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t value_len)
-{
-    if (value_len <= 0)
-        return false;
+namespace AzureADOptions {
+    enum AAD_AUTH_TYPE {
+        MIN_AAD_AUTH_TYPE = 0,
+        SQL_PASSWORD = 0,
+        AAD_PASSWORD,
+        AAD_MSI,
+        AAD_SPA,
+        MAX_AAD_AUTH_TYPE
+    };
 
-    if (!stricmp(value, AzureADOptions::AZURE_AUTH_SQL_PASSWORD) || !stricmp(value, AzureADOptions::AZURE_AUTH_AD_PASSWORD) || !stricmp(value, AzureADOptions::AZURE_AUTH_AD_MSI)) {
-        return true;
+    const char *AADAuths[] = { "SqlPassword", "ActiveDirectoryPassword", "ActiveDirectoryMsi", "ActiveDirectorySPA" };
+
+    bool isAuthValid(_In_z_ const char* value, _In_ size_t value_len)
+    {
+        if (value_len <= 0)
+            return false;
+
+        bool isValid = false;
+        for (short i = MIN_AAD_AUTH_TYPE; i < MAX_AAD_AUTH_TYPE && !isValid; i++)
+        {
+            if (!stricmp(value, AADAuths[i])) {
+                isValid = true;
+            }
+        }
+
+        return isValid;
     }
 
-    return false;
+    bool isAADMsi(_In_z_ const char* value)
+    {
+        return (value != NULL && !stricmp(value, AADAuths[AAD_MSI]));
+    }
 }
 
 
@@ -789,9 +809,9 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                 option = Z_STRVAL_P(auth_option);
             }
 
-            if (option != NULL && !stricmp(option, AzureADOptions::AZURE_AUTH_AD_MSI)) {
-                activeDirectoryMSI = true;
-
+            //if (option != NULL && !stricmp(option, AzureADOptions::AZURE_AUTH_AD_MSI)) {
+            activeDirectoryMSI = AzureADOptions::isAADMsi(option);
+            if (activeDirectoryMSI) {
                 // There are two types of managed identities:
                 // (1) A system-assigned managed identity: UID must be NULL
                 // (2) A user-assigned managed identity: UID defined but must not be an empty string

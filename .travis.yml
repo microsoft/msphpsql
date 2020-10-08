@@ -1,7 +1,7 @@
 sudo: required
 
 os: linux
-dist: trusty
+dist: bionic
 
 group: edge
 
