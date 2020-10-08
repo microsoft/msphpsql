@@ -60,7 +60,7 @@ jobs:
 
 - job: Linux
   variables:
-    phpver: 7.4
+    phpver: 7.3
   pool:
     vmImage: 'ubuntu-18.04'
   steps:
