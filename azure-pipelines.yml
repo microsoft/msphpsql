@@ -63,7 +63,7 @@ jobs:
 
 - job: Linux
   variables:
-    phpver: 7.3
+    phpver: 7.4
   pool:
     vmImage: 'ubuntu-18.04'
   steps:
@@ -105,7 +105,13 @@ jobs:
     displayName: 'Install prerequisites'
 
   - script: |
-      docker pull mcr.microsoft.com/mssql/server:2017-latest
+      python -m pip install --upgrade pip
+      python -m pip install --upgrade requests
+      python -m pip install cpp-coveralls
+    displayName: 'Install coveralls (upgrade both pip and requests first)'
+
+  - script: |
+      docker pull mcr.microsoft.com/mssql/server:2019-latest
       docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2017-latest
       docker ps -a
       sleep 10
@@ -192,6 +198,11 @@ jobs:
       php run-tests.php -P ./*.phpt 2>&1 | tee ../pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
+  - script: |
+      cd $(Build.SourcesDirectory)
+      coveralls -i ./source/ -e ./source/shared/ -e ./test/ --gcov-options '\-lp'
+    displayName: 'Invoke coveralls'
+      
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/
       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
