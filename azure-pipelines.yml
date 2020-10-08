@@ -177,6 +177,13 @@ jobs:
     displayName: 'Build and install drivers'
 
   - script: |
+      cd $(Build.SourcesDirectory)
+      coveralls -i ./source/ -e ./source/shared/ -e ./test/ --gcov-options '\-lp'
+    displayName: 'Invoke coveralls'
+    env:
+      COVERALLS_REPO_TOKEN: $(repotoken)
+    
+  - script: |
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
@@ -198,11 +205,6 @@ jobs:
       php run-tests.php -P ./*.phpt 2>&1 | tee ../pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
-  - script: |
-      cd $(Build.SourcesDirectory)
-      coveralls -i ./source/ -e ./source/shared/ -e ./test/ --gcov-options '\-lp'
-    displayName: 'Invoke coveralls'
-      
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/
       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
