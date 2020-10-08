@@ -178,10 +178,8 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)
-      coveralls -i ./source/ -e ./source/shared/ -e ./test/ --gcov-options '\-lp'
+      COVERALLS_REPO_TOKEN=$(repo_token) coveralls -i ./source/ -e ./source/shared/ -e ./test/ --gcov-options '\-lp'
     displayName: 'Invoke coveralls'
-    env:
-      COVERALLS_REPO_TOKEN: $(repotoken)
     
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
