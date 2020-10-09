@@ -206,11 +206,7 @@ jobs:
         --gcov-options '\-lp'
     displayName: 'Invoke coveralls'
     env:
-      COVERALLS_REPO_TOKEN: $(token)
-      CI_NAME: "AzurePipelines"
-      CI_BUILD_NUMBER: $(Build.BuildNumber)
-      CI_BUILD_URL: $(Build.BuildUri)
-      CI_BRANCH: $(Build.SourceBranchName)
+      COVERALLS_REPO_TOKEN: $(repo_token)
     
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/
