@@ -200,15 +200,14 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)
-      echo "Repo token: $COVERALLS_REPO_TOKEN"
+      export COVERALLS_REPO_TOKEN="$(repo_token)"
+      export CI_NAME="AzurePipelines"
+      export CI_BUILD_NUMBER="$(Build.BuildNumber)"
+      export CI_BUILD_URL="$(Build.BuildUri)"
+      export CI_BRANCH="$(Build.SourceBranchName)"
+      printenv | grep COVERALLS_REPO_TOKEN
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./pdo_sqlsrv/shared/core_stream.cpp -E */shared/localization.hpp -E */shared/globalization.h -t $COVERALLS_REPO_TOKEN --gcov-options '\-lp'
     displayName: 'Invoke coveralls'
-    env:
-      COVERALLS_REPO_TOKEN: $(repo_token)
-      CI_NAME: AzurePipelines
-      CI_BUILD_NUMBER: $(Build.BuildNumber)
-      CI_BUILD_URL: $(Build.BuildUri)
-      CI_BRANCH: $(Build.SourceBranchName)
     
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/
