@@ -203,7 +203,7 @@ jobs:
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
         -e ./source/sqlsrv/shared/localization.hpp -e ./source/sqlsrv/shared/globalization.h \
         -e ./source/pdo_sqlsrv/shared/localization.hpp -e ./source/pdo_sqlsrv/shared/globalization.h \
-        --verbose --gcov-options '\-lp'
+        --gcov-options '\-lp'
     displayName: 'Invoke coveralls using repo token'
     env:
       COVERALLS_REPO_TOKEN: $(repo_token)
