@@ -200,7 +200,7 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)
-      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./pdo_sqlsrv/shared/core_stream.cpp -E *.hpp -E globalization.* -t $COVERALLS_REPO_TOKEN --gcov-options '\-lp'
+      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./pdo_sqlsrv/shared/core_stream.cpp -E */shared/localization.hpp -E */shared/globalization.h -t $COVERALLS_REPO_TOKEN --gcov-options '\-lp'
     displayName: 'Invoke coveralls'
     env:
       COVERALLS_REPO_TOKEN: $(repo_token)
