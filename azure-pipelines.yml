@@ -112,7 +112,7 @@ jobs:
 
   - script: |
       docker pull mcr.microsoft.com/mssql/server:2019-latest
-      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2017-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2019-latest
       docker ps -a
       sleep 10
       docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
@@ -199,8 +199,8 @@ jobs:
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
-      cd $(Build.SourcesDirectory)
-      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -t $(repo_token) --gcov-options '\-lp'
+      cd $(Build.SourcesDirectory)/source
+      coveralls -i ./sqlsrv/ -i ./pdo_sqlsrv/ -e ./pdo_sqlsrv/shared/core_stream.cpp -t $(repo_token) --gcov-options '\-lp'
     displayName: 'Invoke coveralls'
     
   - script: |
