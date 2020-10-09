@@ -143,6 +143,19 @@ jobs:
     displayName: 'Set up test databases'
 
   - script: |
+      cd $(Build.SourcesDirectory)
+      echo ${COVERALLS_REPO_TOKEN}
+      echo $(repo_token)
+      printenv | grep COVERALLS_REPO_TOKEN
+    displayName: 'Debugging'
+    env:
+      COVERALLS_REPO_TOKEN: $(repo_token)
+      CI_NAME: "AzurePipelines"
+      CI_BUILD_NUMBER: $(Build.BuildNumber)
+      CI_BUILD_URL: $(Build.BuildUri)
+      CI_BRANCH: $(Build.SourceBranchName)
+
+  - script: |
       echo ready to build extensions
       sudo apt-get install -y php$(phpver)-intl
       cd $(Build.SourcesDirectory)/source
@@ -200,9 +213,11 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)
-      printenv | grep COVERALLS_REPO_TOKEN
-      printenv | grep CI_
-      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./pdo_sqlsrv/shared/core_stream.cpp -E */shared/localization.hpp -E */shared/globalization.h -t '"$COVERALLS_REPO_TOKEN"' --gcov-options '\-lp'
+      echo ${COVERALLS_REPO_TOKEN}
+      printenv | grep CI
+      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./pdo_sqlsrv/shared/core_stream.cpp \
+        -E */shared/localization.hpp -E */shared/globalization.h \
+        -t ${COVERALLS_REPO_TOKEN} --gcov-options '\-lp'
     displayName: 'Invoke coveralls'
     env:
       COVERALLS_REPO_TOKEN: $(repo_token)
