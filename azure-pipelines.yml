@@ -105,6 +105,10 @@ jobs:
     displayName: 'Install prerequisites'
 
   - script: |
+      echo $(Build.BuildId)
+      echo $(Build.SourceVersion)
+      echo $(Build.SourceBranchName)
+      echo $(System.PullRequest.PullRequestNumber)
       python -m pip install --upgrade pip
       python -m pip install --upgrade requests
       python -m pip install PyYAML
@@ -201,7 +205,7 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)
-      echo -e "service_name: Azure Pipelines\n" > .coveralls.yml \
+      echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
         -E r'./source/*/shared/localization.*' -E r'./source/*/shared/globalization.*' \
         --verbose --gcov-options '\-lp'
