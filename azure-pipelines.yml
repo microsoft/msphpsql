@@ -201,12 +201,12 @@ jobs:
   - script: |
       cd $(Build.SourcesDirectory)
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
-        -e ./source/sqlsrv/shared/localization.hpp -e ./source/sqlsrv/shared/globalization.h \
-        -e ./source/pdo_sqlsrv/shared/localization.hpp -e ./source/pdo_sqlsrv/shared/globalization.h \
+        -E r'./source/*/shared/localization.*' -E r'./source/*/shared/globalization.*' \
         --gcov-options '\-lp'
     displayName: 'Invoke coveralls using repo token'
     env:
       COVERALLS_REPO_TOKEN: $(repo_token)
+      TRAVIS_JOB_ID: $(Build.BuildId)
     
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/
