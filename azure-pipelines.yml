@@ -107,6 +107,7 @@ jobs:
   - script: |
       python -m pip install --upgrade pip
       python -m pip install --upgrade requests
+      python -m pip install PyYAML
       python -m pip install cpp-coveralls
     displayName: 'Install coveralls (upgrade both pip and requests first)'
 
