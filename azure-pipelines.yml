@@ -208,8 +208,7 @@ jobs:
     env:
       COVERALLS_REPO_TOKEN: $(repo_token)
       TRAVIS_JOB_ID: $(Build.BuildId)
-      CI_BRANCH: $(Build.SourceBranchName)
-      CI_PULL_REQUEST: $(System.PullRequest.PullRequestNumber)
+      TRAVIS_BRANCH: $(Build.SourceBranchName)
      
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/
