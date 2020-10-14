@@ -635,20 +635,9 @@ void add_remaining_errors_to_array (_In_ sqlsrv_error const* error, _Inout_ zval
     if (error->next != NULL && PDO_SQLSRV_G(report_additional_errors)) {
         sqlsrv_error *p = error->next;
         while (p != NULL) {
-            // check if sql state or native message is NULL and handle them accordingly
-            char *state = "";
-            char *msg = "";
-                 
-            if (p->sqlstate != NULL) {
-                state = reinterpret_cast<char*>(p->sqlstate);
-            }
-            if (p->native_message != NULL) {
-                msg = reinterpret_cast<char*>(p->native_message);
-            }
-
-            add_next_index_string(array_z, state);
+            add_next_index_string(array_z, reinterpret_cast<char*>(p->sqlstate));
             add_next_index_long(array_z, p->native_code);
-            add_next_index_string(array_z, msg);
+            add_next_index_string(array_z, reinterpret_cast<char*>(p->native_message));
 
             p = p-> next;
         }
