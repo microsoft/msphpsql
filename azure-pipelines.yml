@@ -203,8 +203,7 @@ jobs:
       cd $(Build.SourcesDirectory)
       echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
-        -E r'.*localization*' -E r'.*globalization*' \
-        --verbose --gcov-options '\-lp'
+        -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
     displayName: 'Invoke coveralls using repo token'
     env:
       COVERALLS_REPO_TOKEN: $(repo_token)
