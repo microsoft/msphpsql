@@ -506,7 +506,7 @@ bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_err
 
 PHP_FUNCTION( sqlsrv_errors )
 {
-    SQLSRV_UNUSED( execute_data );
+    // SQLSRV_UNUSED( execute_data );
 
     zend_long flags = SQLSRV_ERR_ALL;
 
@@ -557,7 +557,7 @@ PHP_FUNCTION( sqlsrv_errors )
 
 PHP_FUNCTION( sqlsrv_configure )
 {
-    SQLSRV_UNUSED( execute_data );
+    // SQLSRV_UNUSED( execute_data );
 
     LOG_FUNCTION( "sqlsrv_configure" );
 
@@ -680,7 +680,7 @@ PHP_FUNCTION( sqlsrv_configure )
 
 PHP_FUNCTION( sqlsrv_get_config )
 {
-    SQLSRV_UNUSED( execute_data );
+    // SQLSRV_UNUSED( execute_data );
 
     char* option = NULL;
     size_t option_len;

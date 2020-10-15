@@ -1931,7 +1931,7 @@ DWORD core_sqlsrv_format_message( _Out_ char* output_buffer, _In_ unsigned outpu
 
 // convenience functions that overload either a reference or a pointer so we can use
 // either in the CHECK_* functions.
-inline bool call_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned long sqlsrv_error_code, _In_ bool warning, ... )
+inline bool call_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned long sqlsrv_error_code, _In_ int warning, ... )
 {
     va_list print_params;
     va_start( print_params, warning );
@@ -1940,7 +1940,7 @@ inline bool call_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned long 
     return ignored;
 }
 
-inline bool call_error_handler( _Inout_ sqlsrv_context* ctx, _In_ unsigned long sqlsrv_error_code, _In_ bool warning, ... )
+inline bool call_error_handler( _Inout_ sqlsrv_context* ctx, _In_ unsigned long sqlsrv_error_code, _In_ int warning, ... )
 {
     va_list print_params;
     va_start( print_params, warning );
@@ -1985,7 +1985,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
     bool flag##unique = (condition);                                 \
     bool ignored##unique = true;                                       \
     if (flag##unique) {                                              \
-        ignored##unique = call_error_handler( context, ssphp, /*warning*/false, ## __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp, /*warning*/0, ## __VA_ARGS__ ); \
     }  \
     if( !ignored##unique )
 
@@ -2005,7 +2005,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
 #define CHECK_WARNING_AS_ERROR_UNIQUE(  unique, condition, context, ssphp, ... )   \
     bool ignored##unique = true;    \
     if( condition ) { \
-        ignored##unique = call_error_handler( context, ssphp, /*warning*/true, ## __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp, /*warning*/1, ## __VA_ARGS__ ); \
     }   \
     if( !ignored##unique )
 
@@ -2014,7 +2014,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
 
 #define CHECK_SQL_WARNING( result, context, ... )        \
     if( result == SQL_SUCCESS_WITH_INFO ) {              \
-        (void)call_error_handler( context, 0, /*warning*/ true, ## __VA_ARGS__ ); \
+        (void)call_error_handler( context, 0, /*warning*/1, ## __VA_ARGS__ ); \
     }
 
 #define CHECK_CUSTOM_WARNING_AS_ERROR( condition, context, ssphp, ... ) \
@@ -2027,16 +2027,16 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
     SQLSRV_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." );  \
     bool ignored = true;                                   \
     if( result == SQL_ERROR ) {                            \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, false, ##__VA_ARGS__ ); \
+        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, 0, ##__VA_ARGS__ ); \
     }                                                      \
     else if( result == SQL_SUCCESS_WITH_INFO ) {           \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, true, ##__VA_ARGS__ ); \
+        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, 1, ##__VA_ARGS__ ); \
     }                                                      \
     if( !ignored )
 
 // throw an exception after it has been hooked into the custom error handler
 #define THROW_CORE_ERROR( ctx, custom, ... ) \
-  (void)call_error_handler( ctx, custom, /*warning*/ false, ## __VA_ARGS__ ); \
+  (void)call_error_handler( ctx, custom, /*warning*/0, ## __VA_ARGS__ ); \
   throw core::CoreException();
 
 //*********************************************************************************************************************************

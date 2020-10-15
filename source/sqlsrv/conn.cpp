@@ -1393,7 +1393,10 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
 
                     break;
                 }
-            }
+                case CONN_ATTR_INVALID:
+                    SQLSRV_ASSERT(false, "Should not have reached CONN_ATTR_INVALID.");
+                    break;
+             }
 
             return SS_CONN_OPTS[i].conn_option_key;
         }

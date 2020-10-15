@@ -360,7 +360,7 @@ namespace ss {
 template <typename H>
 inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_spec, _In_ const char* calling_func, _In_ size_t param_count, ... )
 {
-    SQLSRV_UNUSED( return_value );
+    // SQLSRV_UNUSED( return_value );
 
     zval* rsrc;
     H* h = NULL;
