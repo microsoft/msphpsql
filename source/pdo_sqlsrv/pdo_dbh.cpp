@@ -912,6 +912,8 @@ int pdo_sqlsrv_dbh_begin( _Inout_ pdo_dbh_t *dbh )
         
         DIE ("pdo_sqlsrv_dbh_begin: Uncaught exception occurred.");
     }
+    // Should not have reached here but adding this due to compilation warnings
+    return 0;
 }
 
 
@@ -954,6 +956,8 @@ int pdo_sqlsrv_dbh_commit( _Inout_ pdo_dbh_t *dbh )
         
         DIE ("pdo_sqlsrv_dbh_commit: Uncaught exception occurred.");
     }
+    // Should not have reached here but adding this due to compilation warnings
+    return 0;
 }
 
 // pdo_sqlsrv_dbh_rollback
@@ -993,6 +997,8 @@ int pdo_sqlsrv_dbh_rollback( _Inout_ pdo_dbh_t *dbh )
         
         DIE ("pdo_sqlsrv_dbh_rollback: Uncaught exception occurred.");
     }
+    // Should not have reached here but adding this due to compilation warnings
+    return 0;
 }
 
 // pdo_sqlsrv_dbh_set_attr
