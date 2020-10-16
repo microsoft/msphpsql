@@ -596,7 +596,7 @@ void sqlsrv_encoding_dtor( _Inout_ zval* elem ) {
 
 PHP_MSHUTDOWN_FUNCTION(sqlsrv)
 {
-    SQLSRV_UNUSED( type );
+    // SQLSRV_UNUSED( type );
 	
     UNREGISTER_INI_ENTRIES();
 
