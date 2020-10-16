@@ -110,7 +110,7 @@ void default_sql_type( _Inout_ sqlsrv_stmt* stmt, _In_opt_ SQLULEN paramno, _In_
                        _Out_ SQLSMALLINT& sql_type );
 void col_cache_dtor( _Inout_ zval* data_z );
 void field_cache_dtor( _Inout_ zval* data_z );
-int round_up_decimal_numbers(_Inout_ char* buffer, _In_ short decimal_pos, _In_ short decimals_places, _In_ short offset, _In_ short lastpos);
+int round_up_decimal_numbers(_Inout_ char* buffer, _In_ int decimal_pos, _In_ int decimals_places, _In_ int offset, _In_ int lastpos);
 void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT field_scale, _Inout_updates_bytes_(*field_len) char*& field_value, _Inout_ SQLLEN* field_len);
 void finalize_output_parameters( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool exception_thrown = false );
 void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
@@ -2355,8 +2355,8 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
     }
 
     char buffer[50] = "  ";                  // A buffer with two blank spaces, as leeway
-    short offset = 1 + is_negative; 
-    short src_length = strlen(src);
+    int offset = 1 + is_negative; 
+    int src_length = strlen(src);
 
     if (add_leading_zero) {
         buffer[offset++] = '0';
@@ -2368,7 +2368,7 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
 
     // If no need to adjust decimal places, skip formatting
     if (decimals_places != NO_CHANGE_DECIMAL_PLACES) {
-        short num_decimals = src_length - (pt - src) - 1;
+        int num_decimals = src_length - (pt - src) - 1;
 
         if (num_decimals > scale) {
             last_pos = round_up_decimal_numbers(buffer, (pt - src) + offset, scale, offset, last_pos);
@@ -2385,7 +2385,7 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
         buffer[--offset] = '-';
     }
     
-    short len = last_pos - offset;
+    int len = last_pos - offset;
     memcpy_s(field_value, len, buffer + offset, len);
     field_value[len] = '\0';
     *field_len = len;
@@ -3007,7 +3007,7 @@ void sqlsrv_stream_dtor( _Inout_ zval* data )
 void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits) 
 {
     char* value = Z_STRVAL_P(param_z);
-    short value_len = Z_STRLEN_P(param_z);
+    int value_len = Z_STRLEN_P(param_z);
         
     // If the length is greater than maxDecimalStrLen, do not convert the string
     // 6 is derived from: 1 for the decimal point; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
@@ -3023,7 +3023,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
     try {
         d = std::stold(std::string(value), &idx);
     }
-    catch (const std::logic_error& err) {
+    catch (const std::logic_error& ) {
         return;		// invalid input caused the conversion to throw an exception
     }
     if (idx < value_len) {
@@ -3047,15 +3047,15 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
     char *pt = strchr(src, DECIMAL_POINT);
 
     char buffer[50] = "  ";             // A buffer with 2 blank spaces, as leeway
-    short offset = 1 + is_negative;     // The position to start copying the original numerical value
+    int offset = 1 + is_negative;     // The position to start copying the original numerical value
 
     if (exp == NULL) {
 		if (pt == NULL) {
 			return;		// decimal point not found
 		}
 
-        short src_length = strlen(src);     
-        short num_decimals = src_length - (pt - src) - 1;
+        int src_length = strlen(src);     
+        int num_decimals = src_length - (pt - src) - 1;
 		if (num_decimals <= decimal_digits) {
 			return;     // no need to adjust number of decimals
 		}
@@ -3069,10 +3069,10 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
             return;     // Out of range, so let the server handle this
         }
 
-        short num_decimals = 0;
+        int num_decimals = 0;
         if (power == 0) {
             // Simply chop off the exp part
-            short length = (exp - src);
+            int length = (exp - src);
             memcpy_s(buffer + offset, length, src, length);
 
             if (pt != NULL) {
@@ -3083,7 +3083,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
                 }
             }            
         } else {
-            short oldpos = 0;
+            int oldpos = 0;
             if (pt == NULL) {
                 oldpos = exp - src;     // Decimal point not found, use the exp sign
             }
@@ -3096,7 +3096,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
             }
 
             // Derive the new position for the decimal point in the buffer
-            short newpos = oldpos + power;
+            int newpos = oldpos + power;
             if (power > 0) {
                 newpos = newpos + offset;
                 if (num_decimals == 0) {
@@ -3125,8 +3125,8 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
 
             // Start copying the content to the buffer until the exp sign or one more digit after decimal_digits 
             char *p = src;
-            short idx = offset;
-            short lastpos = newpos + decimal_digits + 1;
+            int idx = offset;
+            int lastpos = newpos + decimal_digits + 1;
             while (p != exp && idx <= lastpos) {
                 if (*p == DECIMAL_POINT) {
                     p++;
@@ -3156,14 +3156,14 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
     ZVAL_NEW_STR(param_z, zstr);
 }
 
-int round_up_decimal_numbers(_Inout_ char* buffer, _In_ short decimal_pos, _In_ short num_decimals, _In_ short offset, _In_ short lastpos)
+int round_up_decimal_numbers(_Inout_ char* buffer, _In_ int decimal_pos, _In_ int num_decimals, _In_ int offset, _In_ int lastpos)
 {
     // This helper method assumes the 'buffer' has some extra blank spaces at the beginning without the minus '-' sign.
     // We want the rounding to be consistent with php number_format(), http://php.net/manual/en/function.number-format.php
     // as well as SQL Server Management studio, such that the least significant digit will be rounded up if it is
     // followed by 5 or above.
 
-    short pos = decimal_pos + num_decimals + 1;
+    int pos = decimal_pos + num_decimals + 1;
     if (pos < lastpos) {
         short n = buffer[pos] - '0';
         if (n >= 5) {

@@ -212,7 +212,7 @@ enum SS_ERROR_CODES {
 
 extern ss_error SS_ERRORS[];
 
-bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool warning, _In_opt_ va_list* print_args );
+bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ int warning, _In_opt_ va_list* print_args );
 
 // convert from the default encoding specified by the "CharacterSet"
 // connection option to UTF-16.  mbcs_len and utf16_len are sizes in
@@ -258,7 +258,7 @@ inline void reset_errors( void )
 }
 
 #define THROW_SS_ERROR( ctx, error_code, ... ) \
-    (void)call_error_handler( ctx, error_code, false /*warning*/, ## __VA_ARGS__ ); \
+    (void)call_error_handler( ctx, error_code, 0 /*warning*/, ## __VA_ARGS__ ); \
     throw ss::SSException();
 
 

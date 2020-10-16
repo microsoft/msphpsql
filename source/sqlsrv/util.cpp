@@ -37,7 +37,7 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
                                 _In_ bool warning );
 bool ignore_warning( _In_ char* sql_state, _In_ int native_code );
 bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, _In_ logging_severity log_severity, 
-                                 _In_ unsigned int sqlsrv_error_code, _In_ bool warning, _In_opt_ va_list* print_args );
+                                 _In_ unsigned int sqlsrv_error_code, _In_ int warning, _In_opt_ va_list* print_args );
 
 int  sqlsrv_merge_zend_hash_dtor( _Inout_ zval* dest );
 bool sqlsrv_merge_zend_hash( _Inout_ zval* dest_z, zval const* src_z );
@@ -456,7 +456,7 @@ bool ss_severity_check(_In_ unsigned int severity)
     return ((severity & SQLSRV_G(log_severity)) && (SQLSRV_G(current_subsystem) & SQLSRV_G(log_subsystems)));
 }
 
-bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool warning, _In_opt_ va_list* print_args )
+bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ int warning, _In_opt_ va_list* print_args )
 {
     logging_severity severity = SEV_ERROR;
     if( warning && !SQLSRV_G( warnings_return_as_errors )) {
@@ -821,7 +821,7 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
 }
 
 bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, _In_ logging_severity log_severity, 
-                                 _In_ unsigned int sqlsrv_error_code, _In_ bool warning, _In_opt_ va_list* print_args )
+                                 _In_ unsigned int sqlsrv_error_code, _In_ int warning, _In_opt_ va_list* print_args )
 {
     bool result = true;
     bool errors_ignored = false;

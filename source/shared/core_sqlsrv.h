@@ -876,7 +876,7 @@ struct sqlsrv_conn;
 // a driver specific callback for processing errors.
 // ctx - the context holding the handles
 // sqlsrv_error_code - specific error code to return.
-typedef bool (*error_callback)( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ bool error, _In_opt_ va_list* print_args );
+typedef bool (*error_callback)( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_error_code, _In_ int error, _In_opt_ va_list* print_args );
 
 // sqlsrv_context
 // a context holds relevant information to be passed with a connection and statement objects.

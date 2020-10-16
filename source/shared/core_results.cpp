@@ -1066,7 +1066,7 @@ SQLRETURN sqlsrv_buffered_result_set::string_to_double( _In_ SQLSMALLINT field_i
     double* number_data = reinterpret_cast<double*>(buffer);
     try {
         *number_data = std::stod(std::string(string_data));
-    } catch (const std::logic_error& err) {
+    } catch (const std::logic_error& ) {
         last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
         return SQL_ERROR;
     }
@@ -1091,7 +1091,7 @@ SQLRETURN sqlsrv_buffered_result_set::wstring_to_double( _In_ SQLSMALLINT field_
 #else
         *number_data = std::stod(getUTF8StringFromString(string_data));
 #endif // _WIN32
-    } catch (const std::logic_error& err) {
+    } catch (const std::logic_error& ) {
         last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
         return SQL_ERROR;
     }
@@ -1112,7 +1112,7 @@ SQLRETURN sqlsrv_buffered_result_set::string_to_long( _In_ SQLSMALLINT field_ind
     LONG* number_data = reinterpret_cast<LONG*>(buffer);
     try {
         *number_data = std::stol(std::string(string_data));
-    } catch (const std::logic_error& err) {
+    } catch (const std::logic_error& ) {
         last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
         return SQL_ERROR;
     }
@@ -1137,7 +1137,7 @@ SQLRETURN sqlsrv_buffered_result_set::wstring_to_long( _In_ SQLSMALLINT field_in
 #else
         *number_data = std::stol(getUTF8StringFromString(string_data));
 #endif // _WIN32
-    } catch (const std::logic_error& err) {
+    } catch (const std::logic_error& ) {
         last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
         return SQL_ERROR;
     }
