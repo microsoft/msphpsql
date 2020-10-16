@@ -469,7 +469,7 @@ size_t SystemLocale::Utf8To16( const char *src, SSIZE_T cchSrc, WCHAR *dest, siz
             }
             usrc++;
             ucode = (ucode&15)<<12 | (c1&0x3F)<<6 | (c2&0x3F);
-            if (ucode < 0x800 || ucode >= 0xD800 && ucode <= 0xDFFF)
+            if (ucode < 0x800 || (ucode >= 0xD800 && ucode <= 0xDFFF))
             {
                 goto Invalid;
             }
@@ -511,7 +511,7 @@ size_t SystemLocale::Utf8To16( const char *src, SSIZE_T cchSrc, WCHAR *dest, siz
 
             if (ucode < 0x10000   // overlong encoding
              || ucode > 0x10FFFF  // exceeds Unicode range
-             || ucode >= 0xD800 && ucode <= 0xDFFF) // surrogate pairs
+             || (ucode >= 0xD800 && ucode <= 0xDFFF)) // surrogate pairs
             {
                 goto Invalid;
             }
@@ -594,7 +594,7 @@ size_t SystemLocale::Utf8To16Strict( const char *src, SSIZE_T cchSrc, WCHAR *des
             }
             usrc++;
             ucode = (ucode&15)<<12 | (c1&0x3F)<<6 | (c2&0x3F);
-            if (ucode < 0x800 || ucode >= 0xD800 && ucode <= 0xDFFF)
+            if (ucode < 0x800 || (ucode >= 0xD800 && ucode <= 0xDFFF))
             {
                 goto Invalid;
             }
@@ -636,7 +636,7 @@ size_t SystemLocale::Utf8To16Strict( const char *src, SSIZE_T cchSrc, WCHAR *des
 
             if (ucode < 0x10000   // overlong encoding
              || ucode > 0x10FFFF  // exceeds Unicode range
-             || ucode >= 0xD800 && ucode <= 0xDFFF) // surrogate pairs
+             || (ucode >= 0xD800 && ucode <= 0xDFFF)) // surrogate pairs
             {
                 goto Invalid;
             }
@@ -794,7 +794,7 @@ size_t SystemLocale::Utf8From16( const WCHAR *src, SSIZE_T cchSrc, char *dest, s
                 return 0;
             }
             *dest++ = 0xE0 | (wch >> 12);
-            *dest++ = 0x80 | (wch >> 6)&0x3F;
+            *dest++ = 0x80 | ((wch >> 6)&0x3F);
             *dest++ = 0x80 | (wch &0x3F);
         }
         else if (wch < 0xDC00) // 65536 to end of Unicode: 4 bytes
@@ -832,9 +832,9 @@ size_t SystemLocale::Utf8From16( const WCHAR *src, SSIZE_T cchSrc, char *dest, s
                 return 0;
             }
             *dest++ = 0xF0 | (wch >> 18);
-            *dest++ = 0x80 | (wch >>12)&0x3F;
-            *dest++ = 0x80 | (wch >> 6)&0x3F;
-            *dest++ = 0x80 | wch&0x3F;
+            *dest++ = 0x80 | ((wch >>12)&0x3F);
+            *dest++ = 0x80 | ((wch >> 6)&0x3F);
+            *dest++ = 0x80 | (wch&0x3F);
         }
         else // unexpected trail surrogate
         {
@@ -933,7 +933,7 @@ size_t SystemLocale::Utf8From16Strict( const WCHAR *src, SSIZE_T cchSrc, char *d
                 return 0;
             }
             *dest++ = 0xE0 | (wch >> 12);
-            *dest++ = 0x80 | (wch >> 6)&0x3F;
+            *dest++ = 0x80 | ((wch >> 6)&0x3F);
             *dest++ = 0x80 | (wch &0x3F);
         }
         else if (wch < 0xDC00) // 65536 to end of Unicode: 4 bytes
@@ -964,9 +964,9 @@ size_t SystemLocale::Utf8From16Strict( const WCHAR *src, SSIZE_T cchSrc, char *d
                 return 0;
             }
             *dest++ = 0xF0 | (wch >> 18);
-            *dest++ = 0x80 | (wch >>12)&0x3F;
-            *dest++ = 0x80 | (wch >> 6)&0x3F;
-            *dest++ = 0x80 | wch&0x3F;
+            *dest++ = 0x80 | ((wch >>12)&0x3F);
+            *dest++ = 0x80 | ((wch >> 6)&0x3F);
+            *dest++ = 0x80 | (wch&0x3F);
         }
         else // unexpected trail surrogate
         {

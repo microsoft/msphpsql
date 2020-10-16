@@ -465,7 +465,7 @@ pdo_error PDO_ERRORS[] = {
     { UINT_MAX, {} }
 };
 
-bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
+bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning, 
                                   _In_opt_ va_list* print_args )
 {
     SQLSRV_ASSERT((ctx != NULL), "pdo_sqlsrv_handle_env_error: sqlsrv_context was null");
@@ -488,7 +488,7 @@ bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
 }
 
 // pdo error handler for the dbh context.
-bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
+bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning, 
                                   _In_opt_ va_list* print_args )
 {
     pdo_dbh_t* dbh = reinterpret_cast<pdo_dbh_t*>( ctx.driver());
@@ -520,7 +520,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
 }
 
 // PDO error handler for the statement context.
-bool pdo_sqlsrv_handle_stmt_error(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning,
+bool pdo_sqlsrv_handle_stmt_error(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning,
     _In_opt_ va_list* print_args)
 {
     pdo_stmt_t* pdo_stmt = reinterpret_cast<pdo_stmt_t*>(ctx.driver());
