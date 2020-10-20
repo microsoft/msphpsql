@@ -1,7 +1,7 @@
 --TEST--
 Test fetching varbinary, varchar, nvarchar max fields with client buffer
 --DESCRIPTION--
-Similar to sqlsrv_fetch_large_stream test but with varbinary, varchar, nvarchar using client buffer
+Similar to sqlsrv_fetch_large_stream test but fetching varbinary, varchar, nvarchar max fields as strings with or without client buffer
 --SKIPIF--
 <?php require_once('skipif_mid-refactor.inc'); ?>
 --ENV--
@@ -144,7 +144,7 @@ try {
     fetchAsString($conn, false);
     fetchAsString($conn, true);
    
-    // dropTable($conn, $tableName);
+    dropTable($conn, $tableName);
     echo "Done\n";
     unset($conn);
 } catch (PdoException $e) {
