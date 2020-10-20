@@ -919,7 +919,7 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
     if( to_copy > 0 ) {
         // quick hex conversion routine
         Char* h = reinterpret_cast<Char*>( buffer );
-        BYTE* b = reinterpret_cast<BYTE*>( field_data );
+        BYTE* b = reinterpret_cast<BYTE*>( field_data + read_so_far );
         // to_copy contains the number of bytes to copy, so we divide the number in half (or quarter)
         // to get the number of hex digits we can copy
         SQLLEN to_copy_hex = to_copy / (2 * extra);
