@@ -70,8 +70,6 @@ function fetchBinary($conn, $buffered)
     
         if (!checkData($value, $hexValue)) {
             echo "Fetched binary value as UTF-8 string ($buffered): $value\n";
-            var_dump($hexValue);
-            var_dump($value);
         }
     } catch (PdoException $e) {
         echo "Caught exception in fetchBinary ($buffered):\n";
@@ -98,11 +96,11 @@ function fetchAsString($conn, $buffered)
         $row = $stmt->fetch(PDO::FETCH_BOUND);
     
         if (!checkData($value1, $strValue)) {
-            echo "Fetched string value: $value1\n";
+            echo "Fetched string value ($buffered): $value1\n";
         }
         
         if (!checkData($value2, $nstrValue)) {
-            echo "Fetched string value: $value2\n";
+            echo "Fetched string value ($buffered): $value2\n";
         }
         $stmt->execute();
         
