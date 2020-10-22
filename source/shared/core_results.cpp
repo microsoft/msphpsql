@@ -892,8 +892,9 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
     // Set the amount of space necessary for null characters at the end of the data.
     SQLSMALLINT extra = sizeof(Char);
 
-    SQLSRV_ASSERT( ((buffer_length - extra) % (extra * 2)) == 0, "Must be multiple of 2 for binary to system string or "
-                   "multiple of 4 for binary to wide string" );
+    // TO convert a binary to a system string or a binary to a wide string, the buffer size minur extra 
+    // is expected to be multiples of 2 or 4 (depending on Char), but calculating to_copy_hex below
+    // takes care of this.
 
     // all fields will be treated as ODBC returns varchar(max) fields:
     // the entire length of the string is returned the first
@@ -921,8 +922,8 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
         Char* h = reinterpret_cast<Char*>( buffer );
         BYTE* b = reinterpret_cast<BYTE*>( field_data + read_so_far );
         // to_copy contains the number of bytes to copy, so we divide the number in half (or quarter)
-        // to get the number of hex digits we can copy
-        SQLLEN to_copy_hex = to_copy / (2 * extra);
+        // to get the maximum number of hex digits we can copy
+        SQLLEN to_copy_hex = static_cast<SQLLEN>(floor(to_copy / (2 * extra)));
         for( SQLLEN i = 0; i < to_copy_hex; ++i ) {
             *h = hex_chars[(*b & 0xf0) >> 4];
             h++;
