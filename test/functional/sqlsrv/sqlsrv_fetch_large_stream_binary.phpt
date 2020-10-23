@@ -18,10 +18,23 @@ function fetchNull($stmt, $sqltype, $message)
     }
 }
 
+function fetchNullStream($stmt, $sqltype, $message)
+{
+    $stream = sqlsrv_get_field($stmt, 1, $sqltype);
+    if ($stream !== false) {
+        $value = fread($stream, 8192);
+        fclose($stream);
+        
+        if (!empty($value)) {
+            echo("$message: expected an empty value\n");
+        }
+    }
+}
+
 function fetchStream($stmt, $test)
 {
     global $binaryValue, $hexValue;
-    
+
     if (!sqlsrv_execute($stmt)) {
         fatalError("fetchStream: failed to execute select");
     }
@@ -32,17 +45,17 @@ function fetchStream($stmt, $test)
     switch ($test) {
         case 1:
             $sqltype = SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_CHAR);
-            trace("fetchStream (char string):\n");
+            $type = 'char string';
             $expected = $hexValue;
             break;
         case 2:
             $sqltype = SQLSRV_PHPTYPE_STREAM('UTF-8');
-            trace("fetchStream (char string):\n");
+            $type = 'UTF-8 string';
             $expected = $hexValue;
             break;
         case 3:
             $sqltype = SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY);
-            trace("fetchStream (binary string):\n");
+            $type = 'binary string';
             $expected = $binaryValue;
             break;
         default:
@@ -50,6 +63,7 @@ function fetchStream($stmt, $test)
             break;
     }
 
+    trace("fetchStream ($type):\n");
     $stream = sqlsrv_get_field($stmt, 0, $sqltype);
     if ($stream !== false) {
         $value = '';
@@ -58,11 +72,13 @@ function fetchStream($stmt, $test)
         }
         fclose($stream);
         if (!checkData($value, $expected)) {
-            echo("Expected:\n$expected\nActual:\n$value\n");
+            echo("fetchStream ($type)\nExpected:\n$expected\nActual:\n$value\n");
         }
     } else {
-        fatalError("fetchStream ($test) failed");
+        fatalError("fetchStream ($type) failed");
     }
+    
+    fetchNullStream($stmt, $sqltype, "fetchStream ($type)\n");
 }
 
 function fetchData($stmt, $test)
@@ -79,17 +95,17 @@ function fetchData($stmt, $test)
     switch ($test) {
         case 1:
             $sqltype = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR);
-            trace("fetchData (char string):\n");
+            $type = 'char string';
             $expected = $hexValue;
             break;
         case 2:
             $sqltype = SQLSRV_PHPTYPE_STRING('UTF-8');
-            trace("fetchData (char string):\n");
+            $type = 'UTF-8 string';
             $expected = $hexValue;
             break;
         case 3:
             $sqltype = SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY);
-            trace("fetchData (binary string):\n");
+            $type = 'binary string';
             $expected = $binaryValue;
             break;
         default:
@@ -97,12 +113,13 @@ function fetchData($stmt, $test)
             break;
     }
     
+    trace("fetchData ($type):\n");
     $value = sqlsrv_get_field($stmt, 0, $sqltype);
     if (!checkData($value, $expected)) {
-        echo("Expected:\n$expected\nActual:\n$value\n");
+        echo("fetchData ($type)\nExpected:\n$expected\nActual:\n$value\n");
     }
 
-    fetchNull($stmt, $sqltype, "fetchData ($test)\n");
+    fetchNull($stmt, $sqltype, "fetchData ($type)\n");
 }
 
 function runTest($conn, $buffered)
@@ -154,7 +171,7 @@ $columns = array(new AE\ColumnMeta("varbinary(max)", "varbinary_max_col"),
 AE\createTable($conn, $tableName, $columns);
 
 $bin = 'abcdefghijk';
-$binaryValue = str_repeat($bin, 40);
+$binaryValue = str_repeat($bin, 400);
 $hexValue = strtoupper(bin2hex($binaryValue));
 
 $insertSql = "INSERT INTO $tableName (varbinary_max_col, varbinary_null_col) VALUES (?, ?)";

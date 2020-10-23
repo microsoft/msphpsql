@@ -882,7 +882,7 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
                                                         _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length, 
                                                         _Inout_ sqlsrv_error_auto_ptr& out_error )
 {
-    // hex characters for the conversion loop below
+    // The hex characters for the conversion loop below
     static char hex_chars[] = "0123456789ABCDEF";
 
     SQLSRV_ASSERT( out_error == 0, "Pending error for sqlsrv_buffered_results_set::binary_to_string" );
@@ -892,18 +892,19 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
     // Set the amount of space necessary for null characters at the end of the data.
     SQLSMALLINT extra = sizeof(Char);
 
-    // TO convert a binary to a system string or a binary to a wide string, the buffer size minur extra 
-    // is expected to be multiples of 2 or 4 (depending on Char), but calculating to_copy_hex below
+    // TO convert a binary to a system string or a binary to a wide string, the buffer size minus 
+    // 'extra' is ideally multiples of 2 or 4 (depending on Char), but calculating to_copy_hex below
     // takes care of this.
 
-    // all fields will be treated as ODBC returns varchar(max) fields:
+    // All fields will be treated as ODBC returns varchar(max) fields:
     // the entire length of the string is returned the first
     // call in out_buffer_len.  Successive calls return how much is
     // left minus how much has already been read by previous reads
-    // *2 is for each byte to hex conversion and * extra is for either system or wide string allocation
+    // *2 is for each byte to hex conversion and * extra is for either system 
+    // or wide string allocation
     *out_buffer_length = (*reinterpret_cast<SQLLEN*>( field_data - sizeof( SQLULEN )) - read_so_far) * 2 * extra;
 
-    // copy as much as we can into the buffer
+    // Will copy as much as we can into the buffer
     SQLLEN to_copy;
     if( buffer_length < *out_buffer_length + extra ) {
         to_copy = (buffer_length - extra);
@@ -916,13 +917,13 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
         to_copy = *out_buffer_length;
     }
 
-    // if there are bytes to copy as hex
+    // If there are bytes to copy as hex
     if( to_copy > 0 ) {
         // quick hex conversion routine
-        Char* h = reinterpret_cast<Char*>( buffer );
-        BYTE* b = reinterpret_cast<BYTE*>( field_data + read_so_far );
+        Char* h = reinterpret_cast<Char*>(buffer);
+        BYTE* b = reinterpret_cast<BYTE*>(field_data + read_so_far);
         // to_copy contains the number of bytes to copy, so we divide the number in half (or quarter)
-        // to get the maximum number of hex digits we can copy
+        // to get the maximum number of hex digits to copy
         SQLLEN to_copy_hex = static_cast<SQLLEN>(floor(to_copy / (2 * extra)));
         for( SQLLEN i = 0; i < to_copy_hex; ++i ) {
             *h = hex_chars[(*b & 0xf0) >> 4];
@@ -931,7 +932,7 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
             h++;
         }
         read_so_far += to_copy_hex;
-        *h = static_cast<Char>( 0 );
+        *h = static_cast<Char>(0);
     }
     else {
         reinterpret_cast<char*>( buffer )[0] = '\0';
