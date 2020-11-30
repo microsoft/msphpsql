@@ -10,7 +10,7 @@ Updated PECL release packages. Here is the list of updates:
 - Support for PHP 8.0
 
 ### Removed
-- Dropped support for PHP 7.2.
+- Dropped support for PHP 7.2
 
 ### Fixed
 - Pull Request [#1205](https://github.com/microsoft/msphpsql/pull/1205) - minimized compilation warnings in Linux and Mac 
