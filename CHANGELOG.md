@@ -13,10 +13,10 @@ Updated PECL release packages. Here is the list of updates:
 - Dropped support for PHP 7.2
 
 ### Fixed
-- Pull Request [#1205](https://github.com/microsoft/msphpsql/pull/1205) - minimized compilation warnings in Linux and Mac 
+- Pull Request [#1205](https://github.com/microsoft/msphpsql/pull/1205) - minimized compilation warnings on Linux and macOS 
 - Pull Request [#1209](https://github.com/microsoft/msphpsql/pull/1209) - fixed a bug in fetching varbinary max fields as char or wide chars
-- Issue [#1210](https://github.com/microsoft/msphpsql/issues/1210) - renamed the preview as beta to work with Pickle
-- Issue [#1213](https://github.com/microsoft/msphpsql/issues/1213) - the MACOSX_DEPLOYMENT_TARGET in config files caused linker errors in macOS Big Sur - pull Request [#1215](https://github.com/microsoft/msphpsql/pull/1215)
+- Issue [#1210](https://github.com/microsoft/msphpsql/issues/1210) - switched from preview to beta terminology to enable Pickle support
+- Issue [#1213](https://github.com/microsoft/msphpsql/issues/1213) - the MACOSX_DEPLOYMENT_TARGET in config files caused linker errors in macOS Big Sur - Pull Request [#1215](https://github.com/microsoft/msphpsql/pull/1215)
 
 ### Limitations
 - No support for inout / output params when using sql_variant type
