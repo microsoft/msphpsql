@@ -61,7 +61,7 @@
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
 // PECL package version macros ('-' or '+' is not allowed)
-#define PHP_SQLSRV_VERSION      "5.9.0-beta2"
-#define PHP_PDO_SQLSRV_VERSION  "5.9.0-beta2"
+#define PHP_SQLSRV_VERSION      "5.9.0beta2"
+#define PHP_PDO_SQLSRV_VERSION  "5.9.0beta2"
 
 #endif // VERSION_H
