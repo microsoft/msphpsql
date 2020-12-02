@@ -379,7 +379,7 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
-        { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, or ActiveDirectoryMsi is supported.", -73, false }
+        { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectorySPA is supported.", -73, false }
     },
     {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,
@@ -465,7 +465,7 @@ pdo_error PDO_ERRORS[] = {
     { UINT_MAX, {} }
 };
 
-bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
+bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning, 
                                   _In_opt_ va_list* print_args )
 {
     SQLSRV_ASSERT((ctx != NULL), "pdo_sqlsrv_handle_env_error: sqlsrv_context was null");
@@ -488,7 +488,7 @@ bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
 }
 
 // pdo error handler for the dbh context.
-bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
+bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning, 
                                   _In_opt_ va_list* print_args )
 {
     pdo_dbh_t* dbh = reinterpret_cast<pdo_dbh_t*>( ctx.driver());
@@ -520,7 +520,7 @@ bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned
 }
 
 // PDO error handler for the statement context.
-bool pdo_sqlsrv_handle_stmt_error(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning,
+bool pdo_sqlsrv_handle_stmt_error(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning,
     _In_opt_ va_list* print_args)
 {
     pdo_stmt_t* pdo_stmt = reinterpret_cast<pdo_stmt_t*>(ctx.driver());
@@ -635,20 +635,9 @@ void add_remaining_errors_to_array (_In_ sqlsrv_error const* error, _Inout_ zval
     if (error->next != NULL && PDO_SQLSRV_G(report_additional_errors)) {
         sqlsrv_error *p = error->next;
         while (p != NULL) {
-            // check if sql state or native message is NULL and handle them accordingly
-            char *state = "";
-            char *msg = "";
-                 
-            if (p->sqlstate != NULL) {
-                state = reinterpret_cast<char*>(p->sqlstate);
-            }
-            if (p->native_message != NULL) {
-                msg = reinterpret_cast<char*>(p->native_message);
-            }
-
-            add_next_index_string(array_z, state);
+            add_next_index_string(array_z, reinterpret_cast<char*>(p->sqlstate));
             add_next_index_long(array_z, p->native_code);
-            add_next_index_string(array_z, msg);
+            add_next_index_string(array_z, reinterpret_cast<char*>(p->native_message));
 
             p = p-> next;
         }

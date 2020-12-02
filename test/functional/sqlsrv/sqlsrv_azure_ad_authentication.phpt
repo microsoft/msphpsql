@@ -106,7 +106,7 @@ Array
     [SQLSTATE] => IMSSP
     [1] => -62
     [code] => -62
-    [2] => Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, or ActiveDirectoryMsi is supported.
-    [message] => Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, or ActiveDirectoryMsi is supported.
+    [2] => Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectorySPA is supported.
+    [message] => Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectorySPA is supported.
 )
 %s with Authentication=ActiveDirectoryPassword.

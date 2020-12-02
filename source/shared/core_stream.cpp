@@ -101,13 +101,18 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
             throw core::CoreException();
         }
 
-        // if the stream returns either no data, NULL data, or returns data < than the count requested then
-        // we are at the "end of the stream" so we mark it
-        if( r == SQL_NO_DATA || read == SQL_NULL_DATA || ( static_cast<size_t>( read ) <= count && read != SQL_NO_TOTAL )) {
+        // If the stream returns no data or NULL data, mark the "end of the stream" and return
+        if( r == SQL_NO_DATA || read == SQL_NULL_DATA) {
+            stream->eof = 1;
+            return 0;
+        }
+
+        // If the stream returns data less than the count requested then we are at the "end of the stream" but continue processing
+        if (static_cast<size_t>(read) <= count && read != SQL_NO_TOTAL) {
             stream->eof = 1;
         }
 
-        // if ODBC returns the 01004 (truncated string) warning, then we return the count minus the null terminator
+        // If ODBC returns the 01004 (truncated string) warning, then we return the count minus the null terminator
         // if it's not a binary encoded field
         if( r == SQL_SUCCESS_WITH_INFO ) {
 
@@ -120,26 +125,42 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
                 SQLSRV_ASSERT( is_truncated_warning( state ), "sqlsrv_stream_read: truncation warning was expected but it "
                                "did not occur." );
             }
-            
-        // with unixODBC connection pooling enabled the truncated state may not be returned so check the actual length read
-        // with buffer length.
+
+            // As per SQLGetData documentation, if the length of character data exceeds the BufferLength, 
+            // SQLGetData truncates the data to BufferLength less the length of null-termination character.
+            // But when fetching binary fields as chars (wide chars), each byte is represented as 2 hex characters,
+            // each takes the size of a char (wide char). Note that BufferLength may not be multiples of 2 or 4.
+            bool is_binary = (ss->sql_type == SQL_BINARY || ss->sql_type == SQL_VARBINARY || ss->sql_type == SQL_LONGVARBINARY);
+
+            // With unixODBC connection pooling enabled the truncated state may not be returned so check the actual length read
+            // with buffer length.
         #ifndef _WIN32
             if( is_truncated_warning( state ) || count < read) {
         #else
             if( is_truncated_warning( state ) ) {
         #endif // !_WIN32 
+                size_t char_size = sizeof(SQLCHAR);
+
                 switch( c_type ) {
-                    
-                    // As per SQLGetData documentation, if the length of character data exceeds the BufferLength, 
-                    // SQLGetData truncates the data to BufferLength less the length of null-termination character.
                     case SQL_C_BINARY:
                         read = count;
                         break;
                     case SQL_C_WCHAR:
-                        read = ( count % 2 == 0 ? count - 2 : count - 3 );                       
+                        char_size = sizeof(SQLWCHAR);
+                        if (is_binary) {
+                            // Each binary byte read will be 2 hex wide chars in the buffer
+                            SQLLEN num_bytes_read = static_cast<SQLLEN>(floor((count - char_size) / (2 * char_size)));
+                            read = num_bytes_read * char_size * 2 ;
+                        } else {
+                            read = (count % 2 == 0 ? count - 2 : count - 3);
+                        }
                         break;
                     case SQL_C_CHAR:
-                        read  = count - 1;
+                        if (is_binary) {
+                            read = ((count - char_size) % 2 == 0 ? count - char_size : count - char_size - 1);
+                        } else {
+                            read = count - 1;
+                        }
                         break;
                     default:
                         DIE( "sqlsrv_stream_read: should have never reached in this switch case.");
@@ -151,10 +172,10 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
             }
         }
 
-        // if the encoding is UTF-8
+        // If the encoding is UTF-8
         if( c_type == SQL_C_WCHAR ) {
             count *= 2;          
-            // undo the shift to use the full buffer
+            // Undo the shift to use the full buffer
             // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
             // an error.  This happens only on XP.
             // convert to UTF-8

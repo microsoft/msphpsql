@@ -724,6 +724,8 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
         
         DIE ("pdo_sqlsrv_stmt_fetch: Unexpected exception occurred.");
     }
+    // Should not have reached here but adding this due to compilation warnings
+    return 0;
 }
 
 // pdo_sqlsrv_stmt_get_col_data
@@ -832,15 +834,16 @@ int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
             *len = sizeof(zval);
         }
 
-        return 1;        
-    }
-    
+        return 1;
+    }   
     catch ( core::CoreException& ) {
         return 0;
     }
     catch ( ... ) {
         DIE ("pdo_sqlsrv_stmt_get_col_data: Unexpected exception occurred.");
     }
+    // Should not have reached here but adding this due to compilation warnings
+    return 0;
 }
 
 // pdo_sqlsrv_stmt_set_attr

@@ -1383,7 +1383,7 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
 
                     bool valid = true;
                     if( stricmp( SS_CONN_OPTS[i].sqlsrv_name, SSConnOptionNames::Authentication ) == 0 ) {
-                        valid = core_is_authentication_option_valid( value, value_len );
+                        valid = AzureADOptions::isAuthValid(value, value_len);
                     }
 
                     CHECK_CUSTOM_ERROR( !valid, ctx, SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION, SS_CONN_OPTS[i].sqlsrv_name ) {
@@ -1393,7 +1393,10 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
 
                     break;
                 }
-            }
+                case CONN_ATTR_INVALID:
+                    SQLSRV_ASSERT(false, "Should not have reached CONN_ATTR_INVALID.");
+                    break;
+             }
 
             return SS_CONN_OPTS[i].conn_option_key;
         }

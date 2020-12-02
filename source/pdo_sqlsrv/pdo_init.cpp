@@ -116,7 +116,7 @@ void pdo_error_dtor( _Inout_ zval* elem ) {
 
 PHP_MINIT_FUNCTION(pdo_sqlsrv)
 {
-    SQLSRV_UNUSED( type );
+    // SQLSRV_UNUSED( type );
 
     // our global variables are initialized in the RINIT function
 #if defined(ZTS)
@@ -185,7 +185,7 @@ PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)
 {
     try {
 
-        SQLSRV_UNUSED( type );
+        // SQLSRV_UNUSED( type );
 
         UNREGISTER_INI_ENTRIES();
 
@@ -213,8 +213,8 @@ PHP_MSHUTDOWN_FUNCTION(pdo_sqlsrv)
 
 PHP_RINIT_FUNCTION(pdo_sqlsrv)
 {
-    SQLSRV_UNUSED( module_number );
-    SQLSRV_UNUSED( type );
+    // SQLSRV_UNUSED( module_number );
+    // SQLSRV_UNUSED( type );
 
 #if defined(ZTS) 
     ZEND_TSRMLS_CACHE_UPDATE();
@@ -247,8 +247,8 @@ PHP_RINIT_FUNCTION(pdo_sqlsrv)
 
 PHP_RSHUTDOWN_FUNCTION(pdo_sqlsrv)
 {
-    SQLSRV_UNUSED( module_number );
-    SQLSRV_UNUSED( type );
+    // SQLSRV_UNUSED( module_number );
+    // SQLSRV_UNUSED( type );
 
     PDO_LOG_NOTICE("pdo_sqlsrv: entering rshutdown");
 

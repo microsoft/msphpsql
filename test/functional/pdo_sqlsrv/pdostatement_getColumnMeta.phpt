@@ -58,7 +58,7 @@ function fetchBoth($conn, $tbname)
         echo "Expect getColumnMeta to fail with -1\n";
     } catch (Error $e) {
         if (PHP_MAJOR_VERSION == 8) {
-            $error = '*PDOStatement::getColumnMeta(): Argument #1 ($index) must be greater than or equal to 0*';
+            $error = '*PDOStatement::getColumnMeta(): Argument #1 ($column) must be greater than or equal to 0*';
         } else {
             $error = '*Invalid column reference: column number must be non-negative*';
         }

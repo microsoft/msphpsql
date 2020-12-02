@@ -271,7 +271,7 @@ zend_module_entry g_sqlsrv_module_entry =
 
 PHP_MINIT_FUNCTION(sqlsrv)
 {
-    SQLSRV_UNUSED( type );
+    // SQLSRV_UNUSED( type );
 
     core_sqlsrv_register_severity_checker(ss_severity_check);
 
@@ -596,7 +596,7 @@ void sqlsrv_encoding_dtor( _Inout_ zval* elem ) {
 
 PHP_MSHUTDOWN_FUNCTION(sqlsrv)
 {
-    SQLSRV_UNUSED( type );
+    // SQLSRV_UNUSED( type );
 	
     UNREGISTER_INI_ENTRIES();
 
@@ -630,8 +630,8 @@ PHP_MSHUTDOWN_FUNCTION(sqlsrv)
 
 PHP_RINIT_FUNCTION(sqlsrv)
 {
-    SQLSRV_UNUSED( module_number );
-    SQLSRV_UNUSED( type );
+    // SQLSRV_UNUSED( module_number );
+    // SQLSRV_UNUSED( type );
 
 #if defined(ZTS) 
     ZEND_TSRMLS_CACHE_UPDATE();
@@ -690,8 +690,8 @@ PHP_RINIT_FUNCTION(sqlsrv)
 
 PHP_RSHUTDOWN_FUNCTION(sqlsrv)
 {
-    SQLSRV_UNUSED( module_number );
-    SQLSRV_UNUSED( type );
+    // SQLSRV_UNUSED( module_number );
+    // SQLSRV_UNUSED( type );
 
     LOG_FUNCTION( "PHP_RSHUTDOWN for php_sqlsrv" );
     reset_errors();

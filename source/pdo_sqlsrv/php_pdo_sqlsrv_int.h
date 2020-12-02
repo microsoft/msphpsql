@@ -285,11 +285,11 @@ struct pdo_error {
 // called when an error occurs in the core layer.  These routines are set as the error_callback in a
 // context.  The context is passed to this function since it contains the function
 
-bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
+bool pdo_sqlsrv_handle_env_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning, 
                                   _In_opt_ va_list* print_args );
-bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
+bool pdo_sqlsrv_handle_dbh_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning, 
                                   _In_opt_ va_list* print_args );
-bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ bool warning, 
+bool pdo_sqlsrv_handle_stmt_error( _Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int sqlsrv_error_code, _In_opt_ int warning, 
                                    _In_opt_ va_list* print_args );
 
 // common routine to transfer a sqlsrv_context's error to a PDO zval
