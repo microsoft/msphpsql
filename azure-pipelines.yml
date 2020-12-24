@@ -84,6 +84,7 @@ jobs:
       sudo update-alternatives --set php-cgi /usr/bin/php-cgi$(phpver)
       sudo update-alternatives --set phar.phar /usr/bin/phar.phar$(phpver)
       sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
+      sudo phpdismod xdebug
       php -version
     displayName: 'Use PHP version $(phpver)'
 
