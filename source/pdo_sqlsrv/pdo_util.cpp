@@ -37,7 +37,7 @@ char EXCEPTION_PROPERTY_ERRORINFO[] = "errorInfo";
 const int MAX_DIGITS = 11; // +-2 billion = 10 digits + 1 for the sign if negative
 
 // the warning message is not the error message alone; it must take WARNING_TEMPLATE above into consideration without the formats
-const int WARNING_MIN_LENGTH = static_cast<const int>( strlen( WARNING_TEMPLATE ) - strlen( "%1!s!%2!d!%3!s!" ));
+const int WARNING_MIN_LENGTH = static_cast<const int>( strnlen_s( WARNING_TEMPLATE ) - strnlen_s( "%1!s!%2!d!%3!s!" ));
 
 // Returns a sqlsrv_error for a given error code.
 sqlsrv_error_const* get_error_message( _In_opt_ unsigned int sqlsrv_error_code);
