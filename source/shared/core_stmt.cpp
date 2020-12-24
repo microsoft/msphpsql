@@ -2356,7 +2356,7 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
 
     char buffer[50] = "  ";                  // A buffer with two blank spaces, as leeway
     int offset = 1 + is_negative; 
-    int src_length = strlen(src);
+    int src_length = strnlen_s(src);
 
     if (add_leading_zero) {
         buffer[offset++] = '0';
@@ -3054,7 +3054,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
 			return;		// decimal point not found
 		}
 
-        int src_length = strlen(src);     
+        int src_length = strnlen_s(src);
         int num_decimals = src_length - (pt - src) - 1;
 		if (num_decimals <= decimal_digits) {
 			return;     // no need to adjust number of decimals
@@ -3151,7 +3151,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
         buffer[0] = '-';
     }
 
-    zend_string* zstr = zend_string_init(buffer, strlen(buffer), 0);
+    zend_string* zstr = zend_string_init(buffer, strnlen_s(buffer), 0);
     zend_string_release(Z_STR_P(param_z));
     ZVAL_NEW_STR(param_z, zstr);
 }

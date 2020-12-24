@@ -667,16 +667,22 @@ size_t SystemLocale::Utf8To16Strict( const char *src, SSIZE_T cchSrc, WCHAR *des
 
 size_t SystemLocale::ToUtf16( UINT srcCodePage, const char * src, SSIZE_T cchSrc, WCHAR * dest, size_t cchDest, DWORD * pErrorCode )
 {
+    if (cchSrc < 0) {
+        if (NULL != pErrorCode)
+            *pErrorCode = ERROR_INVALID_PARAMETER;
+        return 0;
+    }
+
     srcCodePage = ExpandSpecialCP( srcCodePage );
     if ( dest )
     {
         if ( srcCodePage == CP_UTF8 )
         {
-            return SystemLocale::Utf8To16( src, cchSrc < 0 ? (1+strlen(src)) : cchSrc, dest, cchDest, pErrorCode );
+            return SystemLocale::Utf8To16( src, cchSrc, dest, cchDest, pErrorCode );
         }
         else if ( srcCodePage == 1252 )
         {
-            return SystemLocale::CP1252ToUtf16( src, cchSrc < 0 ? (1+strlen(src)) : cchSrc, dest, cchDest, pErrorCode );
+            return SystemLocale::CP1252ToUtf16( src, cchSrc, dest, cchDest, pErrorCode );
         }
     }
     EncodingConverter cvt( CP_UTF16, srcCodePage );
@@ -693,16 +699,21 @@ size_t SystemLocale::ToUtf16( UINT srcCodePage, const char * src, SSIZE_T cchSrc
 
 size_t SystemLocale::ToUtf16Strict( UINT srcCodePage, const char * src, SSIZE_T cchSrc, WCHAR * dest, size_t cchDest, DWORD * pErrorCode )
 {
+    if (cchSrc < 0) {
+        if (NULL != pErrorCode)
+            *pErrorCode = ERROR_INVALID_PARAMETER;
+        return 0;
+    }
     srcCodePage = ExpandSpecialCP( srcCodePage );
     if ( dest )
     {
         if ( srcCodePage == CP_UTF8 )
         {
-            return SystemLocale::Utf8To16Strict( src, cchSrc < 0 ? (1+strlen(src)) : cchSrc, dest, cchDest, pErrorCode );
+            return SystemLocale::Utf8To16Strict( src, cchSrc, dest, cchDest, pErrorCode );
         }
         else if ( srcCodePage == 1252 )
         {
-            return SystemLocale::CP1252ToUtf16( src, cchSrc < 0 ? (1+strlen(src)) : cchSrc, dest, cchDest, pErrorCode );
+            return SystemLocale::CP1252ToUtf16( src, cchSrc, dest, cchDest, pErrorCode );
         }
     }
     EncodingConverter cvt( CP_UTF16, srcCodePage );
