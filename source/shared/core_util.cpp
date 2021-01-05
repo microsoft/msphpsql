@@ -72,7 +72,7 @@ SQLCHAR SSPWARN[] = "01SSP";
 // the script (sqlsrv_configure).
 void write_to_log( _In_ unsigned int severity, _In_ const char* msg, ...)
 {
-    SQLSRV_ASSERT( !(g_driver_severity == NULL), "Must register a driver checker function." );
+    SQLSRV_ASSERT(g_driver_severity != NULL, "Must register a driver checker function.");
     if (!g_driver_severity(severity)) {
         return;
     }
@@ -491,11 +491,11 @@ namespace data_classification {
     const char* ID = "id";
     const char* RANK = "rank";
 
-    void convert_sensivity_field(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_ENCODING encoding, _In_ unsigned char *ptr, _In_ int len, _Inout_updates_bytes_(cchOutLen) char** field_name)
+    void convert_sensivity_field(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_ENCODING encoding, _In_ unsigned char *ptr, _In_ int len, _Inout_updates_bytes_(field_name_len) char** field_name, _Out_ SQLLEN& field_name_len)
     {
         sqlsrv_malloc_auto_ptr<SQLWCHAR> temp_field_name;
         int temp_field_len = len * sizeof(SQLWCHAR);
-        SQLLEN field_name_len = 0;
+        field_name_len = 0;
 
         if (len == 0) {
             *field_name = reinterpret_cast<char*>(sqlsrv_malloc(1));
@@ -538,6 +538,7 @@ namespace data_classification {
         while (npairs--) {
             int namelen, idlen;
             unsigned char *nameptr, *idptr;
+            SQLLEN field_len;
 
             sqlsrv_malloc_auto_ptr<name_id_pair> pair;
             pair = new(sqlsrv_malloc(sizeof(name_id_pair))) name_id_pair();
@@ -549,7 +550,7 @@ namespace data_classification {
             nameptr = ptr;
 
             pair->name_len = namelen; 
-            convert_sensivity_field(stmt, encoding, nameptr, namelen, (char**)&name);
+            convert_sensivity_field(stmt, encoding, nameptr, namelen, (char**)&name, field_len);
             pair->name = name;
 
             ptr += namelen * 2;
@@ -558,7 +559,7 @@ namespace data_classification {
             ptr += idlen * 2;
 
             pair->id_len = idlen;
-            convert_sensivity_field(stmt, encoding, idptr, idlen, (char**)&id);
+            convert_sensivity_field(stmt, encoding, idptr, idlen, (char**)&id, field_len);
             pair->id = id;
 
             pairs->push_back(pair.get());
