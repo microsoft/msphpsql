@@ -31,7 +31,7 @@
 #define SQLVERSION_BUILD 0
 
 // For previews, set this constant to 1, 2 and so on. Otherwise, set it to 0
-#define PREVIEW 2
+#define PREVIEW 0
 #define SEMVER_PRERELEASE
 
 // Semantic versioning build metadata, build meta data is not counted in precedence order.
@@ -47,9 +47,7 @@
 
 // Semantic versioning: 
 // For stable releases leave SEMVER_PRERELEASE empty
-// Otherwise, for pre-releases, add '-' and change it to:
-// "RC" for release candidates
-// "preview" for ETP 
+// Otherwise, for pre-releases, add '-' and change it to "beta" with a preview number
 #if PREVIEW > 0
 #undef SEMVER_PRERELEASE
 #define SEMVER_PRERELEASE "beta" STRINGIFY(PREVIEW)
@@ -60,8 +58,8 @@
 
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
-// PECL package version macros ('-' or '+' is not allowed)
-#define PHP_SQLSRV_VERSION      "5.9.0beta2"
-#define PHP_PDO_SQLSRV_VERSION  "5.9.0beta2"
+// PECL package version ('-' or '+' is not allowed) - to support Pickle do not use macros below
+#define PHP_SQLSRV_VERSION      "5.9.0"
+#define PHP_PDO_SQLSRV_VERSION  "5.9.0"
 
 #endif // VERSION_H
