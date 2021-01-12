@@ -21,15 +21,15 @@ https://github.com/microsoft/msphpsql/pull/1133)
 - Dropped support for macOS High Sierra, Ubuntu 19.10 and Debian 8
 
 ### Fixed
-- Pull Request [#1127](https://github.com/microsoft/msphpsql/pull/1127) - removal of TSRMLS macros in preparation for PHP 8 by remicollet
+- Pull Request [#1127](https://github.com/microsoft/msphpsql/pull/1127) - removed TSRMLS macros in preparation for PHP 8 by remicollet
 - Pull Request [#1136](https://github.com/microsoft/msphpsql/pull/1136) - improved performance when handling decimal numbers as inputs or outputs and removed unncessary conversions for numeric values
-- Pull Request [#1143](https://github.com/microsoft/msphpsql/pull/1143) - if an exception occurs when executing a query, will not change the output parameters
+- Pull Request [#1143](https://github.com/microsoft/msphpsql/pull/1143) - if an exception occurs when executing a query, it will not change the output parameters
 - Pull Request [#1144](https://github.com/microsoft/msphpsql/pull/1144) - use the correct C types when binding output parameters with integer values
 - Pull Request [#1146](https://github.com/microsoft/msphpsql/pull/1146) - improved performance when fetching numbers using client buffers
-- Pull Request [#1165](https://github.com/microsoft/msphpsql/pull/1165) - setting query timeout without using LOCK TIMEOUT, which saves an extra trip to the server
-- Issue [#1170](https://github.com/microsoft/msphpsql/issues/1170) - when fetching large data types such as ntext will check more than only the display size - pull request [#1172](https://github.com/microsoft/msphpsql/pull/1172)
+- Pull Request [#1165](https://github.com/microsoft/msphpsql/pull/1165) - set query timeout without using LOCK TIMEOUT, which saves an extra trip to the server
+- Issue [#1170](https://github.com/microsoft/msphpsql/issues/1170) - when fetching large data types such as ntext, check more than only the display size - pull request [#1172](https://github.com/microsoft/msphpsql/pull/1172)
 - Pull Request [#1205](https://github.com/microsoft/msphpsql/pull/1205) - minimized compilation warnings on Linux and macOS 
-- Pull Request [#1209](https://github.com/microsoft/msphpsql/pull/1209) - fixed a bug in fetching varbinary max fields as char or wide chars
+- Pull Request [#1209](https://github.com/microsoft/msphpsql/pull/1209) - fixed a bug when fetching varbinary max fields as char or wide chars
 - Issue [#1210](https://github.com/microsoft/msphpsql/issues/1210) - switched from preview to beta terminology to enable Pickle support
 - Issue [#1213](https://github.com/microsoft/msphpsql/issues/1213) - the MACOSX_DEPLOYMENT_TARGET in config files caused linker errors in macOS Big Sur - Pull Request [#1215](https://github.com/microsoft/msphpsql/pull/1215)
 - Pull Request [#1226](https://github.com/microsoft/msphpsql/pull/1226) - replaced the problematic strlen function 
