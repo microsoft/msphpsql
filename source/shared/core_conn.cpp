@@ -719,7 +719,7 @@ namespace AzureADOptions {
         MAX_AAD_AUTH_TYPE
     };
 
-    const char *AADAuths[] = { "SqlPassword", "ActiveDirectoryPassword", "ActiveDirectoryMsi", "ActiveDirectorySPA" };
+    const char *AADAuths[] = { "SqlPassword", "ActiveDirectoryPassword", "ActiveDirectoryMsi", "ActiveDirectoryServicePrincipal" };
 
     bool isAuthValid(_In_z_ const char* value, _In_ size_t value_len)
     {

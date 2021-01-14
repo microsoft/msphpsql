@@ -70,7 +70,7 @@ function connectAzureDB($showException)
     
     $conn = false;
     $connectionInfo = array("Database"=>$adDatabase, 
-                            "Authentication"=>"ActiveDirectorySPA",
+                            "Authentication"=>"ActiveDirectoryServicePrincipal",
                             "UID"=>$adSPClientId,
                             "PWD"=>$adSPClientSecret);
 
@@ -89,7 +89,7 @@ function connectAzureDB($showException)
 }
 
 // Try connecting to an invalid server. Expect this to fail.
-$connectionInfo = array("Authentication"=>"ActiveDirectorySPA");
+$connectionInfo = array("Authentication"=>"ActiveDirectoryServicePrincipal");
 $conn = sqlsrv_connect('invalidServer', $connectionInfo);
 if ($conn) {
     fatalError("AzureAD Service Principal test: expected to fail with invalidServer\n");
