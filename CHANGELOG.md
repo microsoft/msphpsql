@@ -11,10 +11,10 @@ Updated PECL release packages. Here is the list of updates:
 - Support for macOS Big Sur, Ubuntu 20.04, Ubuntu 20.10 and Alpine 3.12
 - Support for GB18030 locale [#1115](
 https://github.com/microsoft/msphpsql/pull/1115)
-- Feature Request [#924](https://github.com/microsoft/msphpsql/issues/924) - extended PDO errorinfo to include [additional odbc messages if available](https://github.com/microsoft/msphpsql/wiki/Features#pdoErrorInfo) - pull request [#1133](
+- Feature Request [#924](https://github.com/microsoft/msphpsql/issues/924) - extended PDO errorinfo to include [additional odbc messages if available](https://docs.microsoft.com/sql/connect/php/pdo-errorinfo) - pull request [#1133](
 https://github.com/microsoft/msphpsql/pull/1133)
-- [Data Classification with rank info](https://github.com/microsoft/msphpsql/wiki/Features#dataClass), which requires [MS ODBC Driver 17.4.2+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15) and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019) or an Azure SQL instance that supports it
-- Azure Active Directory Service Principal authentication support, which requires [MS ODBC Driver 17.7+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15)
+- [Data Classification with rank info](https://github.com/microsoft/msphpsql/wiki/Features#dataClass), which requires [MS ODBC Driver 17.4.2+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server) and [SQL Server 2019](https://www.microsoft.com/sql-server/sql-server-2019) or an Azure SQL instance that supports it
+- [Azure Active Directory Service Principal authentication support](https://docs.microsoft.com/sql/connect/php/azure-active-directory), which requires [MS ODBC Driver 17.7+](https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server)
 
 ### Removed
 - Dropped support for PHP 7.2
@@ -46,7 +46,7 @@ https://github.com/microsoft/msphpsql/pull/1133)
   - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
 
 ### Known Issues
-- This preview release requires ODBC Driver 17.4.2 or above. Otherwise, a warning about failing to set an attribute may be suppressed when using an older ODBC driver.
+- This release requires ODBC Driver 17.4.2 or above. Otherwise, a warning about failing to set an attribute may be suppressed when using an older ODBC driver.
 - Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
 - When pooling is enabled in Linux or macOS
   - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
