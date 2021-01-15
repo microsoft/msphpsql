@@ -313,6 +313,7 @@ jobs:
       php --ri sqlsrv
       php --ri pdo_sqlsrv
     displayName: 'Load drivers'
+    condition: false
 
   - script: |
       docker pull microsoft/mssql-server-windows-developer

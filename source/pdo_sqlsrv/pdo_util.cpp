@@ -379,7 +379,7 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
-        { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectorySPA is supported.", -73, false }
+        { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectoryServicePrincipal is supported.", -73, false }
     },
     {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,
