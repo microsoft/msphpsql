@@ -2336,7 +2336,7 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
     //
 
     // Check if it's a negative number and if necessary to add the leading zero
-    bool is_negative = (*field_value == '-');
+    short is_negative = (*field_value == '-') ? 1 : 0;
     char *src = field_value + is_negative;
     bool add_leading_zero = false;
 
@@ -2354,12 +2354,12 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
         scale = field_scale;
     }
 
-    char buffer[50] = "  ";                  // A buffer with two blank spaces, as leeway
-    int offset = 1 + is_negative; 
-    int src_length = strlen(src);
+    char buffer[50] = "  ";             // A buffer with TWO blank spaces, as leeway
+    int offset = 1 + is_negative;       // for cases like 9.* to 10.* and the minus sign if needed
+    int src_length = strnlen_s(src);
 
     if (add_leading_zero) {
-        buffer[offset++] = '0';
+        buffer[offset++] = '0';         // leading zero added
     }
     // Copy the original numerical value to the buffer
     memcpy_s(buffer + offset, src_length, src, src_length);
@@ -2375,10 +2375,11 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
         }
     }  
 
-    // Remove the extra white space if not used
-    char *p = buffer;
-    offset = 0;
-    while (isspace(*p++)) {
+    // Remove the extra white space if not used. For a negative number,
+    // the first pos is always a space
+    offset = is_negative;
+    char *p = buffer + offset;
+    while (*p++ == ' ') {
         offset++;
     }
     if (is_negative) {
@@ -3017,23 +3018,23 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
         return;
     }
 
-    // If std::stold() succeeds, 'idx' is the position of the first character after the numerical value
+    // If std::stold() succeeds, 'index' is the position of the first character after the numerical value
     long double d = 0;
-    size_t idx;
+    size_t index;
     try {
-        d = std::stold(std::string(value), &idx);
+        d = std::stold(std::string(value), &index);
     }
     catch (const std::logic_error& ) {
         return;		// invalid input caused the conversion to throw an exception
     }
-    if (idx < value_len) {
+    if (index < value_len) {
         return;		// the input contains something else apart from the numerical value 
     }
 
     // Navigate to the first digit or the decimal point
-    bool is_negative = (d < 0);
+    short is_negative = (d < 0) ? 1 : 0;
     char *src = value + is_negative;
-    while (*src != DECIMAL_POINT && !isdigit(*src)) {
+    while (*src != DECIMAL_POINT && !isdigit(static_cast<unsigned int>(*src))) {
         src++;
     }
 
@@ -3054,7 +3055,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
 			return;		// decimal point not found
 		}
 
-        int src_length = strlen(src);     
+        int src_length = strnlen_s(src);
         int num_decimals = src_length - (pt - src) - 1;
 		if (num_decimals <= decimal_digits) {
 			return;     // no need to adjust number of decimals
@@ -3151,7 +3152,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
         buffer[0] = '-';
     }
 
-    zend_string* zstr = zend_string_init(buffer, strlen(buffer), 0);
+    zend_string* zstr = zend_string_init(buffer, strnlen_s(buffer), 0);
     zend_string_release(Z_STR_P(param_z));
     ZVAL_NEW_STR(param_z, zstr);
 }

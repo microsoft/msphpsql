@@ -62,7 +62,7 @@ function connectAzureDB($showException)
     
     $conn = false;
     try {
-        $connectionInfo = "Database = $adDatabase; Authentication = ActiveDirectorySPA;";
+        $connectionInfo = "Database = $adDatabase; Authentication = ActiveDirectoryServicePrincipal;";
         $conn = new PDO("sqlsrv:server = $adServer; $connectionInfo", $adSPClientId, $adSPClientSecret);
     } catch (PDOException $e) {
         if ($showException) {
@@ -78,7 +78,7 @@ function connectAzureDB($showException)
 // First test connecting to regular sql server
 require_once('MsSetup.inc');
 try {
-    $conn = new PDO("sqlsrv:server = $server; Authentication = ActiveDirectorySPA;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server; Authentication = ActiveDirectoryServicePrincipal;", $uid, $pwd);
     echo "Expect regular connection to fail\n";
 } catch(PDOException $e) {
     // do nothing
