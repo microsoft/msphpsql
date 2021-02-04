@@ -198,6 +198,8 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
     // delete sensivity data
     clean_up_sensitivity_metadata();
 
+    clean_up_results_metadata();
+
     invalidate();
     zval_ptr_dtor( &param_input_strings );
     zval_ptr_dtor( &output_params );
@@ -273,6 +275,24 @@ void sqlsrv_stmt::clean_up_sensitivity_metadata()
         current_sensitivity_metadata->~sensitivity_metadata();
         current_sensitivity_metadata.reset();
     }
+}
+
+// internal helper function to free meta data structures allocated
+void meta_data_free(_Inout_ field_meta_data* meta)
+{
+    if (meta->field_name) {
+        meta->field_name.reset();
+    }
+    sqlsrv_free(meta);
+}
+
+void sqlsrv_stmt::clean_up_results_metadata()
+{
+    std::for_each(current_meta_data.begin(), current_meta_data.end(), meta_data_free);
+    current_meta_data.clear();
+
+    column_count = ACTIVE_NUM_COLS_INVALID;
+    row_count = ACTIVE_NUM_ROWS_INVALID;
 }
 
 void sqlsrv_stmt::set_query_timeout()

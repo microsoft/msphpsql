@@ -212,13 +212,13 @@ void set_stmt_encoding( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z )
 }
 
 // internal helper function to free meta data structures allocated
-void meta_data_free( _Inout_ field_meta_data* meta )
-{
-    if( meta->field_name ) {
-        meta->field_name.reset();
-    }
-    sqlsrv_free( meta );
-}
+//void meta_data_free( _Inout_ field_meta_data* meta )
+//{
+//    if( meta->field_name ) {
+//        meta->field_name.reset();
+//    }
+//    sqlsrv_free( meta );
+//}
 
 zval convert_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_type, _Inout_ void** in_val, _In_opt_ SQLLEN field_len )
 {
@@ -362,8 +362,9 @@ void stmt_option_fetch_datetime:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
 // PDO SQLSRV statement destructor
 pdo_sqlsrv_stmt::~pdo_sqlsrv_stmt( void )
 {
-    std::for_each( current_meta_data.begin(), current_meta_data.end(), meta_data_free );
-    current_meta_data.clear();
+    //std::for_each( current_meta_data.begin(), current_meta_data.end(), meta_data_free );
+    //current_meta_data.clear();
+    clean_up_results_metadata();
 
     if( bound_column_param_types ) {
         sqlsrv_free( bound_column_param_types );
@@ -1170,8 +1171,9 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
         core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ) );
 
         // clear the current meta data since the new result will generate new meta data
-        std::for_each( driver_stmt->current_meta_data.begin(), driver_stmt->current_meta_data.end(), meta_data_free );
-        driver_stmt->current_meta_data.clear();
+        //std::for_each( driver_stmt->current_meta_data.begin(), driver_stmt->current_meta_data.end(), meta_data_free );
+        //driver_stmt->current_meta_data.clear();
+        driver_stmt->clean_up_results_metadata();
 
         // if there are no more result sets, return that it failed.
         if( driver_stmt->past_next_result_end == true ) {
