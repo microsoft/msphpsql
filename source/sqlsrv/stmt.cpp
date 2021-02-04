@@ -106,15 +106,6 @@ bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ sqlsrv_p
 
 }
 
-//// internal helper function to free meta data structures allocated
-//void meta_data_free( _Inout_ field_meta_data* meta )
-//{
-//    if( meta->field_name ) {
-//        meta->field_name.reset();
-//    }
-//    sqlsrv_free( meta );
-//}
-
 // query options for cursor types
 namespace SSCursorTypes {
 
@@ -144,8 +135,6 @@ ss_sqlsrv_stmt::ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_
 
 ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
 {
-    //std::for_each(current_meta_data.begin(), current_meta_data.end(), meta_data_free);
-    //current_meta_data.clear();
     clean_up_results_metadata();
 
     if( fetch_field_names != NULL ) {
@@ -579,8 +568,6 @@ PHP_FUNCTION( sqlsrv_next_result )
         core_sqlsrv_next_result( stmt, true );
 
         // clear the current meta data since the new result will generate new meta data
-        //std::for_each(stmt->current_meta_data.begin(), stmt->current_meta_data.end(), meta_data_free);
-        //stmt->current_meta_data.clear();
         stmt->clean_up_results_metadata();
 
         if( stmt->past_next_result_end ) {
