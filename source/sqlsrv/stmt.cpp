@@ -135,8 +135,6 @@ ss_sqlsrv_stmt::ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_
 
 ss_sqlsrv_stmt::~ss_sqlsrv_stmt( void )
 {
-    clean_up_results_metadata();
-
     if( fetch_field_names != NULL ) {
 
         for( int i=0; i < fetch_fields_count; ++i ) {

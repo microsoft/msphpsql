@@ -353,8 +353,6 @@ void stmt_option_fetch_datetime:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
 // PDO SQLSRV statement destructor
 pdo_sqlsrv_stmt::~pdo_sqlsrv_stmt( void )
 {
-    clean_up_results_metadata();
-
     if( bound_column_param_types ) {
         sqlsrv_free( bound_column_param_types );
         bound_column_param_types = NULL;

@@ -198,6 +198,7 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
     // delete sensivity data
     clean_up_sensitivity_metadata();
 
+    // clean up metadata 
     clean_up_results_metadata();
 
     invalidate();
@@ -887,6 +888,10 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
                    "core_sqlsrv_fetch: Invalid value provided for fetch_orientation parameter." );
 
     try {
+        // first check if the end of all results has been reached
+        CHECK_CUSTOM_ERROR(stmt->past_next_result_end, stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END) {
+            throw core::CoreException();
+        }
 
         // clear the field cache of the previous fetch
         zend_hash_clean( Z_ARRVAL( stmt->field_cache ));
