@@ -11,20 +11,7 @@ require_once("MsCommon.inc");
 
 // These are the error messages we expect at various points below
 $errorNoMoreResults = "There are no more results returned by the query.";
-$errorNoMoreRows    = "There are no more rows in the active result set.  Since this result set is not scrollable, no more data may be retrieved.";
 $errorNoFields      = "The active result for the query contains no fields.";
-
-// Variable function gets an error message that depends on the OS
-function getFuncSeqError()
-{
-    if ( strtoupper( substr( php_uname( 's' ),0,3 ) ) === 'WIN' ) {
-        return "[Microsoft][ODBC Driver Manager] Function sequence error";
-    } else {
-        return "[unixODBC][Driver Manager]Function sequence error";
-    }
-}
-        
-$errorFuncSeq = 'getFuncSeqError';
 
 // This function takes an array of expected error messages and compares the
 // contents to the actual errors
@@ -99,16 +86,16 @@ echo "Nonempty result set, call fetch first: ###############################\n";
 $stmt = sqlsrv_query($conn,"TestEmptySetProc @a='a', @b='b'");
 Fetch($stmt, []);
 NextResult($stmt, []);
-Fetch($stmt, [$errorFuncSeq()]);
-NextResult($stmt, [$errorNoMoreResults, $errorFuncSeq()]);
+Fetch($stmt, [$errorNoMoreResults]);
+NextResult($stmt, [$errorNoMoreResults]);
 
 // Call next_result on a nonempty result set
 echo "Nonempty result set, call next_result first: #########################\n";
 
 $stmt = sqlsrv_query($conn,"TestEmptySetProc @a='a', @b='b'");
 NextResult($stmt, []);
-Fetch($stmt, [$errorFuncSeq()]);
-NextResult($stmt, [$errorNoMoreResults, $errorFuncSeq()]);
+Fetch($stmt, [$errorNoMoreResults]);
+NextResult($stmt, [$errorNoMoreResults]);
 
 // Call next_result twice in succession on a nonempty result set
 echo "Nonempty result set, call next_result twice: #########################\n";
@@ -123,7 +110,7 @@ echo "Empty result set, call fetch first: ##################################\n";
 $stmt = sqlsrv_query($conn,"TestEmptySetProc @a='a', @b='w'");
 Fetch($stmt, []);
 NextResult($stmt, []);
-Fetch($stmt, [$errorNoMoreRows]);
+Fetch($stmt, [$errorNoMoreResults]);
 NextResult($stmt, [$errorNoMoreResults]);
 
 // Call next_result on an empty result set
@@ -131,8 +118,8 @@ echo "Empty result set, call next_result first: ############################\n";
 
 $stmt = sqlsrv_query($conn,"TestEmptySetProc @a='a', @b='w'");
 NextResult($stmt, []);
-Fetch($stmt, [$errorFuncSeq()]);
-NextResult($stmt, [$errorNoMoreResults, $errorFuncSeq()]);
+Fetch($stmt, [$errorNoMoreResults]);
+NextResult($stmt, [$errorNoMoreResults]);
 
 // Call next_result twice in succession on an empty result set
 echo "Empty result set, call next_result twice: ############################\n";
@@ -153,7 +140,7 @@ echo "Null result set, call next result first: #############################\n";
 
 $stmt = sqlsrv_query($conn, "TestEmptySetProc @a='a', @b='c'");
 NextResult($stmt, []);
-Fetch($stmt, [$errorNoFields]);
+Fetch($stmt, [$errorNoMoreResults]);
 
 // Call next_result twice in succession on a null result set
 echo "Null result set, call next result twice: #############################\n";

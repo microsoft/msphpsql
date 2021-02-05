@@ -198,6 +198,9 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
     // delete sensivity data
     clean_up_sensitivity_metadata();
 
+    // clean up metadata 
+    clean_up_results_metadata();
+
     invalidate();
     zval_ptr_dtor( &param_input_strings );
     zval_ptr_dtor( &output_params );
@@ -273,6 +276,24 @@ void sqlsrv_stmt::clean_up_sensitivity_metadata()
         current_sensitivity_metadata->~sensitivity_metadata();
         current_sensitivity_metadata.reset();
     }
+}
+
+// internal helper function to free meta data structures allocated
+void meta_data_free(_Inout_ field_meta_data* meta)
+{
+    if (meta->field_name) {
+        meta->field_name.reset();
+    }
+    sqlsrv_free(meta);
+}
+
+void sqlsrv_stmt::clean_up_results_metadata()
+{
+    std::for_each(current_meta_data.begin(), current_meta_data.end(), meta_data_free);
+    current_meta_data.clear();
+
+    column_count = ACTIVE_NUM_COLS_INVALID;
+    row_count = ACTIVE_NUM_ROWS_INVALID;
 }
 
 void sqlsrv_stmt::set_query_timeout()
@@ -867,6 +888,10 @@ bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orient
                    "core_sqlsrv_fetch: Invalid value provided for fetch_orientation parameter." );
 
     try {
+        // first check if the end of all results has been reached
+        CHECK_CUSTOM_ERROR(stmt->past_next_result_end, stmt, SQLSRV_ERROR_NEXT_RESULT_PAST_END) {
+            throw core::CoreException();
+        }
 
         // clear the field cache of the previous fetch
         zend_hash_clean( Z_ARRVAL( stmt->field_cache ));

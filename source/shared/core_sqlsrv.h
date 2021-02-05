@@ -1522,6 +1522,10 @@ struct sqlsrv_stmt : public sqlsrv_context {
 
     // free sensitivity classification metadata
     void clean_up_sensitivity_metadata();
+
+    // free resultset metadata
+    void clean_up_results_metadata();
+
     // set query timeout
     void set_query_timeout();
 
