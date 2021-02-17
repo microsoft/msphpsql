@@ -28,6 +28,9 @@ require_once('values.php');
 // AE-encrypted and a non-encrypted column side by side in the table.
 function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
+    // Only force encryption in Windows
+    $forceEncryption = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+    
     $columns = array();
     $queryTypes = "(";
     $valuesString = "VALUES (";
@@ -37,7 +40,7 @@ function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
         // Replace parentheses for column names
         $colname = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
         $anAEcolumn = new AE\ColumnMeta($dataTypes[$i], "c_".$colname."_AE");
-        $anAEcolumn->forceEncryption(true);
+        $anAEcolumn->forceEncryption($forceEncryption);
         $columns[] = $anAEcolumn;
         $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname, null, true, true);
         $queryTypes .= "c_"."$colname, ";
