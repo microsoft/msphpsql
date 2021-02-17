@@ -87,9 +87,9 @@ class ColumnMeta
      * force column to be encrypted regardless of the current settings
      * @return void
      */
-    public function forceEncryption()
+    public function forceEncryption($forceEncryption)
     {
-        $this->forcedEncrypt = true;
+        $this->forcedEncrypt = $forceEncryption;
     }
     
     /**
