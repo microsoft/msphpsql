@@ -30,7 +30,7 @@ environment:
         SQL_INSTANCE: SQL2019
         PHP_VC: vs16
         PHP_MAJOR_VER: 8.0
-        PHP_MINOR_VER: 0RC2
+        PHP_MINOR_VER: latest
         PHP_EXE_PATH: Release
         THREAD: nts
         platform: x86
@@ -79,7 +79,7 @@ install:
         }
     - echo Downloading MSODBCSQL 17
     # AppVeyor build works are x64 VMs and 32-bit ODBC driver cannot be installed on it
-    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/6/b/3/6b3dd05c-678c-4e6b-b503-1d66e16ef23d/en-US/17.6.1.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
+    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/2/c/c/2cc12eab-a3aa-45d6-95bb-13f968fb6cd6/en-US/17.7.1.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
     - cmd /c start /wait msiexec /i "c:\projects\msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
     - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"

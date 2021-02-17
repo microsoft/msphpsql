@@ -1,9 +1,24 @@
 --TEST--
 Test insert data and fetch as all possible php types
 --DESCRIPTION--
-Test insert data of most common column types and fetch them all as possible php types
+Test insert data of most common column types and fetch them all as possible php types.
+This test requires the Always Encrypted feature.
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+if (! extension_loaded("sqlsrv")) {
+    die("Skip extension not loaded");
+}
+
+require_once('MsCommon.inc');
+$options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword);
+$conn = sqlsrv_connect($server, $options);
+if (! $conn) {
+    die("Skip Could not connect during SKIPIF!");
+} 
+if (!AE\isQualified($conn)) {
+    die("skip AE feature not supported in the current environment.");
+} 
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
@@ -13,6 +28,9 @@ require_once('values.php');
 // AE-encrypted and a non-encrypted column side by side in the table.
 function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
 {
+    // Only force encryption in Windows
+    $forceEncryption = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+    
     $columns = array();
     $queryTypes = "(";
     $valuesString = "VALUES (";
@@ -21,7 +39,9 @@ function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
     for ($i = 0; $i < $numTypes; ++$i) {
         // Replace parentheses for column names
         $colname = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
-        $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname."_AE");
+        $anAEcolumn = new AE\ColumnMeta($dataTypes[$i], "c_".$colname."_AE");
+        $anAEcolumn->forceEncryption($forceEncryption);
+        $columns[] = $anAEcolumn;
         $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname, null, true, true);
         $queryTypes .= "c_"."$colname, ";
         $queryTypes .= "c_"."$colname"."_AE, ";
@@ -66,7 +86,7 @@ set_time_limit(0);
 sqlsrv_configure('WarningsReturnAsErrors', 1);
 
 // Connect
-$connectionInfo = array("CharacterSet"=>"UTF-8");
+$connectionInfo = array('CharacterSet'=>'UTF-8', 'ColumnEncryption' => 'Enabled');
 $conn = AE\connect($connectionInfo);
 if (!$conn) {
     fatalError("Could not connect.\n");
