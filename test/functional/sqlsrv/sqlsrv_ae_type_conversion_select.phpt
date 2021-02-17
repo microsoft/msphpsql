@@ -11,7 +11,6 @@ if (! extension_loaded("sqlsrv")) {
 }
 
 require_once('MsCommon.inc');
-require_once('values.php');
 
 $options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword);
 $conn = sqlsrv_connect($server, $options);
@@ -24,6 +23,9 @@ if (!AE\isQualified($conn)) {
 ?>
 --FILE--
 <?php
+require_once('MsHelper.inc');
+require_once('values.php');
+
 // These are the errors we expect to see if a conversion fails.
 // 22001 String data is right-truncated
 // 22003 Numeric value out of range/Overflow converting to numeric type
