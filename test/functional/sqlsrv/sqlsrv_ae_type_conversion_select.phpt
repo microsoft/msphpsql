@@ -1,14 +1,29 @@
 --TEST--
 Test fetching data by conversion with CAST in the SELECT statement
 --DESCRIPTION--
-This test checks the allowed data type conversions in SELECT statements under Always Encrypted and non-encrypted
+This test requires the Always Encrypted feature and checks the allowed data type conversions in 
+SELECT statements under Always Encrypted and non-encrypted
 Reference chart for conversions found at https://www.microsoft.com/en-us/download/details.aspx?id=35834
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php 
+if (! extension_loaded("sqlsrv")) {
+    die("Skip extension not loaded");
+}
+
+require_once('MsCommon.inc');
+require_once('values.php');
+
+$options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword);
+$conn = sqlsrv_connect($server, $options);
+if (! $conn) {
+    die("Skip Could not connect during SKIPIF!");
+} 
+if (!AE\isQualified($conn)) {
+    die("skip AE feature not supported in the current environment.");
+} 
+?>
 --FILE--
 <?php
-require_once('sqlsrv_ae_azure_key_vault_common.php');
-
 // These are the errors we expect to see if a conversion fails.
 // 22001 String data is right-truncated
 // 22003 Numeric value out of range/Overflow converting to numeric type
@@ -34,7 +49,34 @@ function checkErrors(&$convError)
     
     return true;
 }
-                
+
+// Set up the columns and build the insert query. Each data type has an
+// AE-encrypted and a non-encrypted column side by side in the table.
+function formulateSetupQuery($tableName, &$dataTypes, &$columns, &$insertQuery)
+{
+    $columns = array();
+    $queryTypes = "(";
+    $valuesString = "VALUES (";
+    $numTypes = sizeof($dataTypes);
+
+    for ($i = 0; $i < $numTypes; ++$i) {
+        // Replace parentheses for column names
+        $colname = str_replace(array("(", ",", ")"), array("_", "_", ""), $dataTypes[$i]);
+        $anAEcolumn = new AE\ColumnMeta($dataTypes[$i], "c_".$colname."_AE");
+        $anAEcolumn->forceEncryption(true);
+        $columns[] = $anAEcolumn;
+        $columns[] = new AE\ColumnMeta($dataTypes[$i], "c_".$colname, null, true, true);
+        $queryTypes .= "c_"."$colname, ";
+        $queryTypes .= "c_"."$colname"."_AE, ";
+        $valuesString .= "?, ?, ";
+    }
+
+    $queryTypes = substr($queryTypes, 0, -2).")";
+    $valuesString = substr($valuesString, 0, -2).")";
+
+    $insertQuery = "INSERT INTO $tableName ".$queryTypes." ".$valuesString;
+}
+
 // Build the select queries. We want every combination of types for conversion
 // testing, so the matrix of queries selects every type from every column
 // and convert using CAST.
@@ -154,7 +196,7 @@ $conversionMatrixAE = array(array('y','y','y','x','x','x','x','x','x','x','x','x
 set_time_limit(0);
 sqlsrv_configure('WarningsReturnAsErrors', 1);
 
-$connectionInfo = array("CharacterSet"=>"UTF-8");
+$connectionInfo = array('CharacterSet'=>'UTF-8', 'ColumnEncryption' => 'Enabled');
 $conn = AE\connect($connectionInfo);
 if (!$conn) {
     fatalError("Could not connect.\n");

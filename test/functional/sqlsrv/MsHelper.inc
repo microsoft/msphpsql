@@ -33,6 +33,7 @@ class ColumnMeta
     public      $options;       // a string that is null by default (e.g. NOT NULL Identity (1,1) )
 
     protected   $encryptable;   // whether Always Encrypted supports this column
+    protected   $forcedEncrypt; // force column encryption regardless, default to 'false'
 
     public function __construct($dataType, $colName = null, $options = null, $deterministic = true, $noEncrypt = false)
     {
@@ -41,6 +42,8 @@ class ColumnMeta
         } else {
             $this->colName = $colName;
         }
+        
+        $this->forcedEncrypt = false;
 
         $this->encType = ($deterministic ? "deterministic" : "randomized");
         if (empty($dataType)) {
@@ -79,6 +82,16 @@ class ColumnMeta
             $this->encryptable = true;
         }
     }
+
+    /**
+     * force column to be encrypted regardless of the current settings
+     * @return void
+     */
+    public function forceEncryption()
+    {
+        $this->forcedEncrypt = true;
+    }
+    
     /**
      * @return string column definition for creating a table
      */
@@ -86,9 +99,12 @@ class ColumnMeta
     {
         $append = " ";
 
-        if ($this->encryptable && isDataEncrypted()) {
+        if (($this->encryptable && isDataEncrypted()) || $this->forcedEncrypt) {
 
             $cekName = getCekName();
+            if ($this->forcedEncrypt && empty($cekName)) {
+                $cekName = 'AEColumnKey';   // Use Windows AE key by default
+            }
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
             }
