@@ -2403,7 +2403,7 @@ void sqlsrv_param::get_string_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval
             sqlsrv_malloc_auto_ptr<SQLWCHAR> wide_buffer;
             unsigned int wchar_size = 0;
 
-            wide_buffer = utf16_string_from_mbcs_string(encoding, reinterpret_cast<const char*>(buffer), static_cast<int>(buffer_length), &wchar_size);
+            wide_buffer = utf16_string_from_mbcs_string(encoding, reinterpret_cast<const char*>(buffer), static_cast<int>(buffer_length), &wchar_size, true);
             CHECK_CUSTOM_ERROR(wide_buffer == 0, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, param_pos + 1, get_last_error_message()) {
                 throw core::CoreException();
             }
@@ -3207,14 +3207,16 @@ bool sqlsrv_params_container::send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt)
         }
     }
 
-    // The helper method send_stream_packet() returns false when EOF is reached
     SQLSRV_ASSERT(current_stream != NULL, "sqlsrv_params_container::send_next_stream_packet - current_stream is NULL!");
-    bool more = current_stream->send_stream_packet(stmt);
-    if (!more) {
-        // Now that it's finished, reset current_stream for next round
+
+    // The helper method send_stream_packet() returns false when EOF is reached
+    if (current_stream->send_stream_packet(stmt) == false) {
+        // Now that EOF has been reached, reset current_stream for next round 
         current_stream = NULL;
-        return true;
     }
+
+    // Returns true regardless such that either get_next_parameter_data() will be called or next packet will be sent
+    return true;
 }
 
 // The following helper method sends all stream packets until all requested parameters have been processed
