@@ -1234,6 +1234,16 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
                 }
                 value_z = param_z;
             }
+
+            // If the user specifies a certain type for an output parameter, we have to convert the zval
+            // to that type so that when the buffer is filled, the type is correct. But first,
+            // should check if a LOB type is specified.
+            CHECK_CUSTOM_ERROR(direction != SQL_PARAM_INPUT && (sql_type == SQL_LONGVARCHAR
+                || sql_type == SQL_WLONGVARCHAR || sql_type == SQL_LONGVARBINARY),
+                stmt, SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED) {
+                throw core::CoreException();
+            }
+
             // bind the parameter
             SQLSRV_ASSERT( value_z != NULL, "bind_params: value_z is null." );
             core_sqlsrv_bind_param( stmt, static_cast<SQLUSMALLINT>( index ), direction, value_z, php_out_type, encoding, sql_type, column_size,
