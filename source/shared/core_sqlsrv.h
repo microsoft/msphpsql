@@ -1409,7 +1409,7 @@ struct sqlsrv_param
     int             param_php_type;
     SQLSRV_ENCODING encoding;
     bool            was_null;       // false by default - the original parameter was a NULL zval
-    zval            value_z;        // Only used for storing wide input string (UTF-16 buffer) or datetime strings for binding
+    zval            str_value_z;        // Only used for storing wide input string (UTF-16 buffer) or datetime strings for binding
     zval*           param_ptr_z;    // NULL by default - holds the stream resource or output param reference
     std::size_t     stream_read;    // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
     php_stream*     param_stream;   // NULL by default - used to send stream data from an input parameter to the server
@@ -1419,7 +1419,7 @@ struct sqlsrv_param
         encoding(SQLSRV_ENCODING_DEFAULT), sql_data_type(0), column_size(0), decimal_digits(0), param_php_type(0), was_null(false), 
         param_ptr_z(NULL), stream_read(0), param_stream(NULL)
     {
-        ZVAL_UNDEF(&value_z);
+        ZVAL_UNDEF(&str_value_z);
     }
 
     sqlsrv_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
@@ -1427,14 +1427,13 @@ struct sqlsrv_param
         sql_data_type(sql_type), column_size(col_size), decimal_digits(dec_digits), param_php_type(0), was_null(false), 
         param_ptr_z(NULL), stream_read(0), param_stream(NULL)
     {
-        ZVAL_UNDEF(&value_z);
+        ZVAL_UNDEF(&str_value_z);
     }
 
     void copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta);    // Only used when Always Encrypted is enabled
 
     virtual ~sqlsrv_param();
     virtual void release_data();
-    virtual void reset_param_ref();
 
     bool derive_string_types_sizes(_In_ zval* param_z);
 
@@ -1449,7 +1448,7 @@ struct sqlsrv_param
     virtual void get_object_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     virtual void finalize_output_value() {}
     
-    SQLRETURN bind_parameter(_Inout_ sqlsrv_stmt* stmt);
+    void bind_parameter(_Inout_ sqlsrv_stmt* stmt);
 
     // The following methods are used when sending stream data to the server
     void init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt);
@@ -1471,8 +1470,8 @@ struct sqlsrv_param_inout : public sqlsrv_param
     {
     }
 
-    virtual ~sqlsrv_param_inout() {}
-    virtual void release_data() { reset_param_ref(); }
+    virtual ~sqlsrv_param_inout() { param_ptr_z = NULL; }
+    virtual void release_data() { param_ptr_z = NULL; }
 
     virtual bool process_param(_In_ zval* param_ref, _Inout_ zval* param_z);
     virtual void get_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
@@ -1511,8 +1510,7 @@ struct sqlsrv_params_container
                                _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits, _In_ SQLSRV_PHPTYPE php_out_type);
 
     void clean_up_param_data();                         // Clean up params_data and all its references
-    void finalize_output_parameters(_In_opt_ bool exception_thrown = false);
-    void release_input_resources();                     // Release the references to input strings or resources
+    void finalize_output_parameters();
 
     // The following functions are used to send stream data to the server
     bool get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt);
@@ -1715,10 +1713,8 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                             _Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out);
 bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt );
 void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
-void core_sqlsrv_post_param( _Inout_ sqlsrv_stmt* stmt, _In_ zend_ulong paramno, zval* param_z );
 void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type );
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z );
-void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z );
 bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool get_all = false);
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z );
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLEN limit );

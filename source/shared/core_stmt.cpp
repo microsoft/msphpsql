@@ -236,9 +236,7 @@ void sqlsrv_stmt::clean_up_sensitivity_metadata()
 // internal helper function to free meta data structures allocated
 void meta_data_free(_Inout_ field_meta_data* meta)
 {
-    if (meta->field_name) {
-        meta->field_name.reset();
-    }
+    meta->field_name.reset();
     sqlsrv_free(meta);
 }
 
@@ -371,10 +369,6 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         throw core::CoreException();
     }
 
-    SQLSRV_ASSERT((Z_TYPE_P(param_z) != IS_STRING && Z_TYPE_P(param_z) != IS_RESOURCE) ||
-        (encoding == SQLSRV_ENCODING_SYSTEM || encoding == SQLSRV_ENCODING_UTF8 ||
-            encoding == SQLSRV_ENCODING_BINARY), "core_sqlsrv_bind_param: Invalid encoding");
-
     try {
         // Do not assume the parameters to arrive at any specific order. Find it first.
         sqlsrv_param * param_ptr = NULL;
@@ -401,10 +395,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         // Get all necessary values to prepare for SQLBindParameter
         param_ptr->get_param_info(stmt, param_z);
  
-        SQLRETURN rc = param_ptr->bind_parameter(stmt);
-        CHECK_SQL_ERROR_OR_WARNING(rc, stmt) {
-            throw core::CoreException();
-        }
+        param_ptr->bind_parameter(stmt);
     
         // When calling SQLDescribeParam() on a parameter targeting a Datetime column, the return values for ParameterType, ColumnSize and DecimalDigits are SQL_TYPE_TIMESTAMP, 23, and 3 respectively.
         // For a parameter targeting a SmallDatetime column, the return values are SQL_TYPE_TIMESTAMP, 16, and 0. Inputting these values into SQLBindParameter() results in Operand type clash error.
@@ -479,19 +470,13 @@ SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_l
     if( stmt->send_streams_at_exec && ( r == SQL_NO_DATA || !core_sqlsrv_has_any_result( stmt ))) {
         stmt->params_container.finalize_output_parameters();
     }
-    // stream parameters are sent, clean the Hashtable
-    if ( stmt->send_streams_at_exec ) {
-        stmt->params_container.release_input_resources();
-    }
     return r;
     }
     catch( core::CoreException& e ) {
 
         // if the statement executed but failed in a subsequent operation before returning,
-        // we need to cancel the statement and deref the output and stream parameters
-        if ( stmt->send_streams_at_exec ) {
-            stmt->params_container.finalize_output_parameters(true);
-        }
+        // we need to remove all the parameters and cancel the statement
+        stmt->params_container.clean_up_param_data();
         if( stmt->executed ) {
             SQLCancel( stmt->handle() );
             // stmt->executed = false; should this be reset if something fails?
@@ -980,28 +965,6 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
     }
 }
 
-
-// core_sqlsrv_post_param
-// Performs any actions post execution for each parameter.  For now it cleans up input parameters memory from the statement
-// Parameters:
-// stmt      - the sqlsrv_stmt structure
-// param_num - 0 based index of the parameter
-// param_z   - parameter value itself.
-// Returns:
-// Nothing, exception thrown if problem occurs
-
-void core_sqlsrv_post_param( _Inout_ sqlsrv_stmt* stmt, _In_ zend_ulong param_num, zval* param_z )
-{
-    // If the parameter was an input string, release it now
-    // If the parameter was an input stream, decrement our reference to it or remove the reference 
-    // PDO doesn't need the reference count, but sqlsrv does since the stream can be live after sqlsrv_execute by sending it
-    // with sqlsrv_send_stream_data
-    sqlsrv_param *p = stmt->params_container.find_param(param_num);
-    if (p != NULL) {
-        p->release_data();
-    }
-}
-
 //Calls SQLSetStmtAttr to set a cursor.
 void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type )
 {
@@ -1111,13 +1074,6 @@ void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_
     }
 }
 
-void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z )
-{
-    // zend_is_true does not fail. It either returns true or false.
-    stmt->send_streams_at_exec = ( zend_is_true( value_z )) ? true : false;
-}
-
-
 // core_sqlsrv_send_stream_packet
 // send a single packet from a stream parameter to the database using
 // ODBC.  This will also handle the transition between parameters.  It
@@ -1163,7 +1119,8 @@ void stmt_option_query_timeout:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
 
 void stmt_option_send_at_exec:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
 {
-    core_sqlsrv_set_send_at_exec( stmt, value_z );
+    // zend_is_true does not fail. It either returns true or false.
+    stmt->send_streams_at_exec = (zend_is_true(value_z)) ? true : false;
 }
 
 void stmt_option_buffered_query_limit:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
@@ -2163,20 +2120,12 @@ sqlsrv_param::~sqlsrv_param()
 
 void sqlsrv_param::release_data()
 {
-    if (Z_TYPE(value_z) == IS_STRING) {
-        zend_string_release(Z_STR(value_z));
-        ZVAL_UNDEF(&value_z);
+    if (Z_TYPE(str_value_z) == IS_STRING) {
+        zend_string_release(Z_STR(str_value_z));
+        ZVAL_UNDEF(&str_value_z);
     }
 
     release_stream();
-}
-
-void sqlsrv_param::reset_param_ref()
-{
-    // Simply set the reference to NULL
-    if (param_ptr_z) {
-        param_ptr_z = NULL;
-    }
 }
 
 void sqlsrv_param::copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta)
@@ -2231,10 +2180,8 @@ void sqlsrv_param::get_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param
         get_object_param_info(stmt, param_z);
         break;
     case IS_ARRAY:
-        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1);
-        break;
     default:
-        SQLSRV_ASSERT(false, "Unsupported PHP type for binding. Only strings, doubles, integers, datetimes, and streams (resource) are supported. ");
+        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1);
         break;
     }
 }
@@ -2325,6 +2272,8 @@ void sqlsrv_param::get_double_param_info(_Inout_ zval* param_z)
 
 bool sqlsrv_param::derive_string_types_sizes(_In_ zval* param_z)
 {
+    SQLSRV_ASSERT(encoding == SQLSRV_ENCODING_CHAR || encoding == SQLSRV_ENCODING_UTF8 || encoding == SQLSRV_ENCODING_BINARY, "Invalid encoding in sqlsrv_param::derive_string_types_sizes");
+
     // Derive the param SQL type only if it is unknown
     if (sql_data_type == SQL_UNKNOWN_TYPE) {
         switch (encoding) {
@@ -2334,11 +2283,10 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* param_z)
         case SQLSRV_ENCODING_BINARY:
             sql_data_type = SQL_VARBINARY;
             break;
-        case CP_UTF8:
+        case SQLSRV_ENCODING_UTF8:
             sql_data_type = SQL_WVARCHAR;
             break;
         default:
-            SQLSRV_ASSERT(false, "Invalid encoding in sqlsrv_param::derive_string_types_sizes.");
             break;
         }
     }
@@ -2353,11 +2301,10 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* param_z)
     case SQLSRV_ENCODING_BINARY:
         c_data_type = SQL_C_BINARY;
         break;
-    case CP_UTF8:
+    case SQLSRV_ENCODING_UTF8:
         c_data_type = is_numeric ? SQL_C_CHAR : SQL_C_WCHAR;
         break;
     default:
-        SQLSRV_ASSERT(false, "Invalid encoding in sqlsrv_param::derive_string_types_sizes.");
         break;
     }
 
@@ -2408,13 +2355,13 @@ void sqlsrv_param::get_string_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval
                 throw core::CoreException();
             }
             wide_buffer[wchar_size] = L'\0';
-            core::sqlsrv_zval_stringl(&value_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
+            core::sqlsrv_zval_stringl(&str_value_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
         } else {
-            core::sqlsrv_zval_stringl(&value_z, "", 0);
+            core::sqlsrv_zval_stringl(&str_value_z, "", 0);
         }
 
-        buffer = Z_STRVAL(value_z);
-        buffer_length = Z_STRLEN(value_z);
+        buffer = Z_STRVAL(str_value_z);
+        buffer_length = Z_STRLEN(str_value_z);
     }
 
     strlen_or_indptr = buffer_length;
@@ -2422,6 +2369,8 @@ void sqlsrv_param::get_string_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval
 
 void sqlsrv_param::get_resource_param_info(_Inout_ zval* param_z)
 {
+    SQLSRV_ASSERT(encoding == SQLSRV_ENCODING_CHAR || encoding == SQLSRV_ENCODING_UTF8 || encoding == SQLSRV_ENCODING_BINARY, "Invalid encoding in sqlsrv_param::get_resource_param_info");
+
     // Derive the param SQL type only if it is unknown
     if (sql_data_type == SQL_UNKNOWN_TYPE) {
         switch (encoding) {
@@ -2431,11 +2380,10 @@ void sqlsrv_param::get_resource_param_info(_Inout_ zval* param_z)
         case SQLSRV_ENCODING_BINARY:
             sql_data_type = SQL_VARBINARY;
             break;
-        case CP_UTF8:
+        case SQLSRV_ENCODING_UTF8:
             sql_data_type = SQL_WVARCHAR;
             break;
         default:
-            SQLSRV_ASSERT(false, "Invalid encoding in sqlsrv_param::get_resource_param_info.");
             break;
         }
     }
@@ -2452,11 +2400,10 @@ void sqlsrv_param::get_resource_param_info(_Inout_ zval* param_z)
     case SQLSRV_ENCODING_BINARY:
         c_data_type = SQL_C_BINARY;
         break;
-    case CP_UTF8:
+    case SQLSRV_ENCODING_UTF8:
         c_data_type = SQL_C_WCHAR;
         break;
     default:
-        SQLSRV_ASSERT(false, "Invalid encoding in sqlsrv_param::get_resource_param_info.");
         break;
     }
 
@@ -2542,7 +2489,7 @@ void sqlsrv_param::get_object_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval
 
     // This is equivalent to the PHP code: $param_z->format($format_z); where param_z is the
     // DateTime object and $format_z is the format string.
-    int zr = call_user_function(EG(function_table), param_z, &function_z, &value_z, 1, params);
+    int zr = call_user_function(EG(function_table), param_z, &function_z, &str_value_z, 1, params);
 
     zend_string_release(Z_STR(format_z));
     zend_string_release(Z_STR(function_z));
@@ -2551,26 +2498,22 @@ void sqlsrv_param::get_object_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval
         throw core::CoreException();
     }
 
-    buffer = Z_STRVAL(value_z);
-    buffer_length = Z_STRLEN(value_z) - 1;
+    buffer = Z_STRVAL(str_value_z);
+    buffer_length = Z_STRLEN(str_value_z) - 1;
     strlen_or_indptr = buffer_length;
 }
 
-SQLRETURN sqlsrv_param::bind_parameter(_Inout_ sqlsrv_stmt* stmt)
+void sqlsrv_param::bind_parameter(_Inout_ sqlsrv_stmt* stmt)
 {
     if (was_null) {
         strlen_or_indptr = SQL_NULL_DATA;
     }
 
-    return ::SQLBindParameter(stmt->handle(), param_pos + 1, direction, c_data_type, sql_data_type, column_size,
-        decimal_digits, buffer, buffer_length, &strlen_or_indptr);
+    core::SQLBindParameter(stmt, param_pos + 1, direction, c_data_type, sql_data_type, column_size, decimal_digits, buffer, buffer_length, &strlen_or_indptr);
 }
 
 void sqlsrv_param::init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt)
 {
-    SQLSRV_ASSERT(param_php_type == IS_RESOURCE, "sqlsrv_param::send_stream_packet -- invalid php type for resource param.");
-    SQLSRV_ASSERT(param_ptr_z != NULL, "sqlsrv_param::send_stream_packet -- param is NULL for resource param.");
-
     // Get the stream from the param zval value
     param_stream = NULL;
     core::sqlsrv_php_stream_from_zval_no_verify(*stmt, param_stream, param_ptr_z);
@@ -2709,10 +2652,8 @@ bool sqlsrv_param_inout::process_param(_In_ zval* param_ref, _Inout_ zval* param
         case SQLSRV_PHPTYPE_NULL:
         case SQLSRV_PHPTYPE_DATETIME:
         case SQLSRV_PHPTYPE_STREAM:
-            SQLSRV_ASSERT(false, "sqlsrv_param_inout::process_param_for_inout -- invalid type for an output parameter.");
-            break;
         default:
-            SQLSRV_ASSERT(false, "sqlsrv_param_inout::process_param_for_inout -- unknown SQLSRV_PHPTYPE_* constant given.");
+            SQLSRV_ASSERT(false, "sqlsrv_param_inout::process_param_for_inout -- invalid type for an output parameter.");
             break;
         }
 
@@ -2734,10 +2675,8 @@ bool sqlsrv_param_inout::process_param(_In_ zval* param_ref, _Inout_ zval* param
         case SQLSRV_PHPTYPE_NULL:
         case SQLSRV_PHPTYPE_DATETIME:
         case SQLSRV_PHPTYPE_STREAM:
-            SQLSRV_ASSERT(false, "sqlsrv_param_inout::process_param_for_output -- invalid type for an output parameter");
-            break;
         default:
-            SQLSRV_ASSERT(false, "sqlsrv_param_inout::process_param_for_output -- unknown SQLSRV_PHPTYPE_* constant given");
+            SQLSRV_ASSERT(false, "sqlsrv_param_inout::process_param_for_output -- invalid type for an output parameter");
             break;
         }
 
@@ -3098,25 +3037,12 @@ void sqlsrv_params_container::transfer_meta_data(_In_ sqlsrv_param* ptr, _In_ SQ
 // while being processed). This function updates the lengths of output parameter strings from the strlen_or_indptr
 // argument passed to SQLBindParameter. It also converts output strings from UTF-16 to UTF-8 if necessary.
 // If a NULL was returned by SQL Server to any output parameter, set the parameter to NULL as well
-void sqlsrv_params_container::finalize_output_parameters(_In_opt_ bool exception_thrown /*= false*/)
+void sqlsrv_params_container::finalize_output_parameters()
 {
-    if (!exception_thrown) {
-        std::map<SQLUSMALLINT, int>::iterator it;
-        for (it = output_params.begin(); it != output_params.end(); ++it) {
-            int pos = it->second;
-            params_data[pos]->finalize_output_value();
-        }
-    } else {
-        clean_up_param_data();
-    }
-}
-
-void sqlsrv_params_container::release_input_resources()
-{
-    std::map<SQLUSMALLINT, int>::iterator it; 
-    for (it = input_params.begin(); it != input_params.end(); ++it) {
+    std::map<SQLUSMALLINT, int>::iterator it;
+    for (it = output_params.begin(); it != output_params.end(); ++it) {
         int pos = it->second;
-        params_data[pos]->reset_param_ref();
+        params_data[pos]->finalize_output_value();
     }
 }
 
