@@ -369,11 +369,23 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         throw core::CoreException();
     }
 
+    sqlsrv_param* param_ptr = stmt->params_container.find_param(param_num, (direction == SQL_PARAM_INPUT));
     try {
-        // Do not assume the parameters to arrive at any specific order. Find it first.
-        sqlsrv_param * param_ptr = NULL;
-        param_ptr = stmt->params_container.insert_param(param_num, direction, encoding, sql_type, column_size, decimal_digits, php_out_type);
-   
+        if (param_ptr == NULL) {
+            sqlsrv_malloc_auto_ptr<sqlsrv_param> new_param;
+            if (direction == SQL_PARAM_INPUT) {
+                new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param))) sqlsrv_param(param_num, direction, encoding, sql_type, column_size, decimal_digits);
+                stmt->params_container.input_params[param_num] = new_param;
+            } else if (direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT) {
+                new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param_inout))) sqlsrv_param_inout(param_num, direction, encoding, sql_type, column_size, decimal_digits, php_out_type);
+                stmt->params_container.output_params[param_num] = new_param;
+            } else {
+                SQLSRV_ASSERT(false, "sqlsrv_params_container::insert_param - Invalid parameter direction.");
+            }
+            param_ptr = new_param;
+            new_param.transferred();
+        }
+
         SQLSRV_ASSERT(param_ptr != NULL, "core_sqlsrv_bind_param: param_ptr is null. Something went wrong.");
 
         // Dereference the parameter if necessary
@@ -394,9 +406,8 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
 
         // Get all necessary values to prepare for SQLBindParameter
         param_ptr->get_param_info(stmt, param_z);
- 
         param_ptr->bind_parameter(stmt);
-    
+
         // When calling SQLDescribeParam() on a parameter targeting a Datetime column, the return values for ParameterType, ColumnSize and DecimalDigits are SQL_TYPE_TIMESTAMP, 23, and 3 respectively.
         // For a parameter targeting a SmallDatetime column, the return values are SQL_TYPE_TIMESTAMP, 16, and 0. Inputting these values into SQLBindParameter() results in Operand type clash error.
         // This is because SQL_TYPE_TIMESTAMP corresponds to Datetime2 by default, and conversion of Datetime2 to Datetime and conversion of Datetime2 to SmallDatatime is not allowed with encrypted columns.
@@ -470,6 +481,7 @@ SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_l
     if( stmt->send_streams_at_exec && ( r == SQL_NO_DATA || !core_sqlsrv_has_any_result( stmt ))) {
         stmt->params_container.finalize_output_parameters();
     }
+
     return r;
     }
     catch( core::CoreException& e ) {
@@ -2155,7 +2167,7 @@ void sqlsrv_param::get_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param
 {
     // Get param php type 
     param_php_type = Z_TYPE_P(param_z);
-
+    
     switch (param_php_type) {
     case IS_NULL:
         get_null_param_info(param_z);
@@ -2684,6 +2696,7 @@ bool sqlsrv_param_inout::process_param(_In_ zval* param_ref, _Inout_ zval* param
     } else {
         SQLSRV_ASSERT(false, "sqlsrv_param_inout::process_param -- wrong param direction.");
     }
+    return false;
 }
 
 // Derives the ODBC C type constant that matches the PHP type and/or the encoding given
@@ -3001,20 +3014,23 @@ void sqlsrv_param_inout::resize_output_buffer(_Inout_ zval* param_z, _In_ bool i
     }
 }
 
-// internal helper function to free param data structures allocated
-void param_data_free(_Inout_ sqlsrv_param* data)
-{
-    data->release_data();
-    sqlsrv_free(data);
-}
-
 void sqlsrv_params_container::clean_up_param_data()
 {
-    std::for_each(params_data.begin(), params_data.end(), param_data_free);
-    params_data.clear();
-
-    output_params.clear();
+    std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it1;
+    for (it1 = input_params.begin(); it1 != input_params.end(); ++it1) {
+        sqlsrv_param* ptr = it1->second;
+        ptr->release_data();
+        sqlsrv_free(ptr);
+    }
     input_params.clear();
+
+    std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it2;
+    for (it2 = output_params.begin(); it2 != output_params.end(); ++it2) {
+        sqlsrv_param* ptr = it2->second;
+        ptr->release_data();
+        sqlsrv_free(ptr);
+    }
+    output_params.clear();
 
     current_stream = NULL;
 }
@@ -3039,57 +3055,23 @@ void sqlsrv_params_container::transfer_meta_data(_In_ sqlsrv_param* ptr, _In_ SQ
 // If a NULL was returned by SQL Server to any output parameter, set the parameter to NULL as well
 void sqlsrv_params_container::finalize_output_parameters()
 {
-    std::map<SQLUSMALLINT, int>::iterator it;
+    std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it;
     for (it = output_params.begin(); it != output_params.end(); ++it) {
-        int pos = it->second;
-        params_data[pos]->finalize_output_value();
+        sqlsrv_param* ptr = it->second;
+        ptr->finalize_output_value();
     }
 }
 
 sqlsrv_param* sqlsrv_params_container::find_param(_In_ SQLUSMALLINT param_num, _In_opt_ bool is_input/* = true*/)
 {
     try {
-        int pos = 0;
         if (is_input) {
-            pos = input_params.at(param_num);
+            return input_params.at(param_num);
         } else {
-            pos = output_params.at(param_num);
+            return output_params.at(param_num);
         }
-
-        return params_data[pos];
     } catch (std::out_of_range& e) {
         return NULL;
-    }
-}
-
-sqlsrv_param* sqlsrv_params_container::insert_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _In_ SQLSRV_ENCODING encoding, _In_ SQLSMALLINT sql_type,
-                                                    _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits, _In_ SQLSRV_PHPTYPE php_out_type)
-{
-    bool is_input = (direction == SQL_PARAM_INPUT);
-
-    // Do not assume the parameters to arrive at any specific order. Find it first.
-    sqlsrv_param* ptr = find_param(param_num, is_input);
-    if (ptr == NULL) {
-        int num_params = params_data.size();
-
-        sqlsrv_malloc_auto_ptr<sqlsrv_param> new_param;
-
-        if (direction == SQL_PARAM_INPUT) {
-            new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param))) sqlsrv_param(param_num, direction, encoding, sql_type, column_size, decimal_digits);
-            input_params[param_num] = num_params;
-        } else if (direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT) {
-            new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param_inout))) sqlsrv_param_inout(param_num, direction, encoding, sql_type, column_size, decimal_digits, php_out_type);
-            output_params[param_num] = num_params;
-        } else {
-            SQLSRV_ASSERT(false, "sqlsrv_params_ops::insert_param - Invalid parameter direction.");
-        }
-
-        params_data.push_back(new_param);
-        new_param.transferred();
-
-        return params_data[num_params];
-    } else {
-        return ptr;
     }
 }
 
@@ -3102,11 +3084,11 @@ bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
 
     // If no more data, all the bound parameters have been exhausted, so return false (done)
     if (SQL_SUCCEEDED(r) || r == SQL_NO_DATA) {
-        if (current_stream) {
+        if (current_stream != NULL) {
+            // Done now, reset current_stream 
             current_stream->release_stream();
+            current_stream = NULL;
         }
-        // Done now, reset current_stream 
-        current_stream = NULL;
         return false;
     }
 

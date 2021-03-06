@@ -1487,10 +1487,9 @@ struct sqlsrv_param_inout : public sqlsrv_param
 struct sqlsrv_params_container
 {
     std::vector<param_meta_data>    params_meta;        // Empty by default - only used when Always Encrypted is enabled
-    std::vector<sqlsrv_param*>      params_data;        // Keep all the parameters, not necessarily in any specific order
 
-    std::map<SQLUSMALLINT, int>     input_params;       // consists of all the input params to their corresponding positions in params_data
-    std::map<SQLUSMALLINT, int>     output_params;      // consists of all the output / inout params to their corresponding positions in params_data
+    std::map<SQLUSMALLINT, sqlsrv_param*>     input_params;       // consists of all the input params to their corresponding positions in params_data
+    std::map<SQLUSMALLINT, sqlsrv_param*>     output_params;      // consists of all the output / inout params to their corresponding positions in params_data
 
     sqlsrv_param*                   current_stream;     // Null by default - points to a sqlsrv_param object in params_data, used when sending stream data
 
@@ -1504,10 +1503,6 @@ struct sqlsrv_params_container
 
     // Each sqlsrv_param has a parameter number, using which to find its existence in params_data
     sqlsrv_param* find_param(_In_ SQLUSMALLINT param_num, _In_opt_ bool is_input = true);
-
-    // Create a new sqlsrv_param object and add it to params_data
-    sqlsrv_param* insert_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _In_ SQLSRV_ENCODING encoding, _In_ SQLSMALLINT sql_type,
-                               _In_ SQLULEN column_size, _In_ SQLSMALLINT decimal_digits, _In_ SQLSRV_PHPTYPE php_out_type);
 
     void clean_up_param_data();                         // Clean up params_data and all its references
     void finalize_output_parameters();
