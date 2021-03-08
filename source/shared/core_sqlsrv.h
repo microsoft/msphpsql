@@ -1414,14 +1414,6 @@ struct sqlsrv_param
     std::size_t     stream_read;    // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
     php_stream*     param_stream;   // NULL by default - used to send stream data from an input parameter to the server
  
-    sqlsrv_param() :
-        c_data_type(0), buffer(NULL), buffer_length(0), strlen_or_indptr(0), param_pos(0), direction(SQL_PARAM_INPUT),
-        encoding(SQLSRV_ENCODING_DEFAULT), sql_data_type(0), column_size(0), decimal_digits(0), param_php_type(0), was_null(false), 
-        param_ptr_z(NULL), stream_read(0), param_stream(NULL)
-    {
-        ZVAL_UNDEF(&str_value_z);
-    }
-
     sqlsrv_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
         c_data_type(0), buffer(NULL), buffer_length(0), strlen_or_indptr(0), param_pos(param_num), direction(dir), encoding(enc),
         sql_data_type(sql_type), column_size(col_size), decimal_digits(dec_digits), param_php_type(0), was_null(false), 
@@ -1491,9 +1483,9 @@ struct sqlsrv_params_container
     std::map<SQLUSMALLINT, sqlsrv_param*>     input_params;       // consists of all the input params to their corresponding positions in params_data
     std::map<SQLUSMALLINT, sqlsrv_param*>     output_params;      // consists of all the output / inout params to their corresponding positions in params_data
 
-    sqlsrv_param*                   current_stream;     // Null by default - points to a sqlsrv_param object in params_data, used when sending stream data
+    sqlsrv_param*                   current_param;     // Null by default - points to a sqlsrv_param object in params_data, used when sending stream data
 
-    sqlsrv_params_container() { current_stream = NULL; }
+    sqlsrv_params_container() { current_param = NULL; }
     ~sqlsrv_params_container() { params_meta.clear(); clean_up_param_data(); }
 
     // The following methods are used only when Always Encrypted is enabled
@@ -1503,6 +1495,7 @@ struct sqlsrv_params_container
 
     // Each sqlsrv_param has a parameter number, using which to find its existence in params_data
     sqlsrv_param* find_param(_In_ SQLUSMALLINT param_num, _In_opt_ bool is_input = true);
+    void insert_param(_In_ SQLUSMALLINT param_num, _In_ sqlsrv_param* new_param);
 
     void clean_up_param_data();                         // Clean up params_data and all its references
     void finalize_output_parameters();

@@ -375,13 +375,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             sqlsrv_malloc_auto_ptr<sqlsrv_param> new_param;
             if (direction == SQL_PARAM_INPUT) {
                 new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param))) sqlsrv_param(param_num, direction, encoding, sql_type, column_size, decimal_digits);
-                stmt->params_container.input_params[param_num] = new_param;
             } else if (direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT) {
                 new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param_inout))) sqlsrv_param_inout(param_num, direction, encoding, sql_type, column_size, decimal_digits, php_out_type);
-                stmt->params_container.output_params[param_num] = new_param;
             } else {
                 SQLSRV_ASSERT(false, "sqlsrv_params_container::insert_param - Invalid parameter direction.");
             }
+            stmt->params_container.insert_param(param_num, new_param);
             param_ptr = new_param;
             new_param.transferred();
         }
@@ -3032,7 +3031,7 @@ void sqlsrv_params_container::clean_up_param_data()
     }
     output_params.clear();
 
-    current_stream = NULL;
+    current_param = NULL;
 }
 
 void sqlsrv_params_container::transfer_meta_data(_In_ sqlsrv_param* ptr, _In_ SQLUSMALLINT param_num, _Inout_ zval* param_z)
@@ -3075,6 +3074,15 @@ sqlsrv_param* sqlsrv_params_container::find_param(_In_ SQLUSMALLINT param_num, _
     }
 }
 
+void sqlsrv_params_container::insert_param(_In_ SQLUSMALLINT param_num, _In_ sqlsrv_param* new_param)
+{
+    if (new_param->direction == SQL_PARAM_INPUT) {
+        input_params[param_num] = new_param;
+    } else {
+        output_params[param_num] = new_param;
+    }
+}
+
 bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
 {
     zend_ulong index = 0;
@@ -3084,20 +3092,20 @@ bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
 
     // If no more data, all the bound parameters have been exhausted, so return false (done)
     if (SQL_SUCCEEDED(r) || r == SQL_NO_DATA) {
-        if (current_stream != NULL) {
-            // Done now, reset current_stream 
-            current_stream->release_stream();
-            current_stream = NULL;
+        if (current_param != NULL) {
+            // Done now, reset current_param 
+            current_param->release_stream();
+            current_param = NULL;
         }
         return false;
     }
 
     // Next, find the parameter with the stream resource 
-    current_stream = stmt->params_container.find_param(static_cast<SQLUSMALLINT>(index));
-    SQLSRV_ASSERT(current_stream != NULL, "Stream parameter is missing!");
+    current_param = stmt->params_container.find_param(static_cast<SQLUSMALLINT>(index));
+    SQLSRV_ASSERT(current_param != NULL, "Stream parameter is missing!");
 
     // Initialize the stream parameter
-    current_stream->init_stream_from_zval(stmt);
+    current_param->init_stream_from_zval(stmt);
     
     return true;
 }
@@ -3105,22 +3113,22 @@ bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
 // The following helper method sends one stream packet at a time, if available
 bool sqlsrv_params_container::send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt)
 {
-    if (current_stream == NULL) {
+    if (current_param == NULL) {
         // If current_stream is NULL, either this is the first time checking or the previous parameter
         // is done. In either case, MUST call get_next_parameter_data() to see if there is any more
-        // parameter requested by ODBC. Otherwise, "Function sequence error" will result, meaning the 
+        // parameter requested by ODBC. Otherwise, "Function sequence error" will result, meaning the
         // ODBC functions are called out of the order required by the ODBC Specification
         if (get_next_parameter_data(stmt) == false) {
             return false;
         }
     }
 
-    SQLSRV_ASSERT(current_stream != NULL, "sqlsrv_params_container::send_next_stream_packet - current_stream is NULL!");
+    SQLSRV_ASSERT(current_param != NULL, "sqlsrv_params_container::send_next_stream_packet - current_param is NULL!");
 
     // The helper method send_stream_packet() returns false when EOF is reached
-    if (current_stream->send_stream_packet(stmt) == false) {
-        // Now that EOF has been reached, reset current_stream for next round 
-        current_stream = NULL;
+    if (current_param->send_stream_packet(stmt) == false) {
+        // Now that EOF has been reached, reset current_param for next round 
+        current_param = NULL;
     }
 
     // Returns true regardless such that either get_next_parameter_data() will be called or next packet will be sent
@@ -3131,9 +3139,9 @@ bool sqlsrv_params_container::send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt)
 void sqlsrv_params_container::send_all_stream_packets(_Inout_ sqlsrv_stmt* stmt)
 {
     while (get_next_parameter_data(stmt)) {
-        SQLSRV_ASSERT(current_stream != NULL, "sqlsrv_params_container::send_all_stream_packets - current_stream is NULL!");
+        SQLSRV_ASSERT(current_param != NULL, "sqlsrv_params_container::send_all_stream_packets - current_param is NULL!");
 
         // The helper method send_stream_packet() returns false when EOF is reached
-        while (current_stream->send_stream_packet(stmt)) {}
+        while (current_param->send_stream_packet(stmt)) {}
     }
 }
