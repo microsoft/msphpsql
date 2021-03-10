@@ -1103,14 +1103,14 @@ void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_
 
 bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool get_all /*= false*/)
 {
-    bool more = false;
+    bool bMore = false;
 
     try {
         if (get_all) {
             // send all the stream data (so no more after this)
-            while (stmt->params_container.send_next_stream_packet(stmt)) {}
+            stmt->params_container.send_all_stream_packets(stmt);
         } else {
-            more = stmt->params_container.send_next_stream_packet(stmt);
+            bMore = stmt->params_container.send_next_stream_packet(stmt);
         }
     } catch (core::CoreException& e) {
         stmt->free_param_data();
@@ -1119,7 +1119,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool ge
         throw e;
     }
 
-    return more;
+    return bMore;
 }
 
 void stmt_option_functor::operator()( _Inout_ sqlsrv_stmt* /*stmt*/, stmt_option const* /*opt*/, _In_ zval* /*value_z*/ )
@@ -2528,6 +2528,14 @@ void sqlsrv_param::bind_param(_Inout_ sqlsrv_stmt* stmt)
     core::SQLBindParameter(stmt, param_pos + 1, direction, c_data_type, sql_data_type, column_size, decimal_digits, buffer, buffer_length, &strlen_or_indptr);
 }
 
+void sqlsrv_param::init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt)
+{
+    // Get the stream from the param zval value
+    stream_read = 0;
+    param_stream = NULL;
+    core::sqlsrv_php_stream_from_zval_no_verify(*stmt, param_stream, param_ptr_z);
+}
+
 void sqlsrv_param::release_stream()
 {
     param_stream = NULL;
@@ -2541,11 +2549,6 @@ void sqlsrv_param::release_stream()
 
 bool sqlsrv_param::send_stream_packet(_Inout_ sqlsrv_stmt* stmt)
 {
-    if (param_stream == NULL) {
-        stream_read = 0;
-        core::sqlsrv_php_stream_from_zval_no_verify(*stmt, param_stream, param_ptr_z);
-    }
-
     // Check EOF first
     if (php_stream_eof(param_stream)) {
         // But return to the very beginning of param_stream since SQLParamData() may ask for the same data again
@@ -3063,15 +3066,6 @@ sqlsrv_param* sqlsrv_params_container::find_param(_In_ SQLUSMALLINT param_num, _
     }
 }
 
-void sqlsrv_params_container::insert_param(_In_ SQLUSMALLINT param_num, _In_ sqlsrv_param* new_param)
-{
-    if (new_param->direction == SQL_PARAM_INPUT) {
-        input_params[param_num] = new_param;
-    } else {
-        output_params[param_num] = new_param;
-    }
-}
-
 bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
 {
     SQLPOINTER param = NULL;
@@ -3089,8 +3083,9 @@ bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
         return false;
     }
 
-    current_param = reinterpret_cast<sqlsrv_param*>(param);   
+    current_param = reinterpret_cast<sqlsrv_param*>(param);
     SQLSRV_ASSERT(current_param != NULL, "Stream parameter is missing!");
+    current_param->init_stream_from_zval(stmt);
 
     return true;
 }
@@ -3098,23 +3093,22 @@ bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
 // The following helper method sends one stream packet at a time, if available
 bool sqlsrv_params_container::send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt)
 {
-    if (current_param != NULL) {
-        // The helper method send_stream_packet() returns false when EOF is reached.
-        // If EOF has been reached, reset current_param for next round 
-        if (current_param->send_stream_packet(stmt) == false) {
-            current_param = NULL;
-        }
-    } else {
-        // If current_param is NULL, either this is the first time send_next_stream_packet is called or the
-        // previous parameter is done. In either case, MUST call get_next_parameter_data() to see if there
-        // is any moreparameter requested by ODBC. Otherwise, "Function sequence error" will result,
-        // meaning the ODBC functions are called out of the order required by the ODBC Specification
+    if (current_param == NULL) {
+        // If current_stream is NULL, either this is the first time checking or the previous parameter
+        // is done. In either case, MUST call get_next_parameter_data() to see if there is any more
+        // parameter requested by ODBC. Otherwise, "Function sequence error" will result, meaning the
+        // ODBC functions are called out of the order required by the ODBC Specification
         if (get_next_parameter_data(stmt) == false) {
             return false;
         }
     }
 
-    // Returns true regardless such that either get_next_parameter_data() will be called again or 
-    // the next packet will be sent
+    // The helper method send_stream_packet() returns false when EOF is reached
+    if (current_param->send_stream_packet(stmt) == false) {
+        // Now that EOF has been reached, reset current_param for next round 
+        current_param = NULL;
+    }
+
+    // Returns true regardless such that either get_next_parameter_data() will be called or next packet will be sent
     return true;
 }

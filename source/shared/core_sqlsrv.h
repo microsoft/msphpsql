@@ -1443,6 +1443,7 @@ struct sqlsrv_param
     void bind_param(_Inout_ sqlsrv_stmt* stmt);
 
     // The following methods are used to supply data to the server via SQLPutData
+    void init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt);
     bool send_stream_packet(_Inout_ sqlsrv_stmt* stmt);
     void release_stream();
 };
@@ -1488,7 +1489,14 @@ struct sqlsrv_params_container
     ~sqlsrv_params_container() { params_meta.clear(); clean_up_param_data(); }
 
     sqlsrv_param* find_param(_In_ SQLUSMALLINT param_num, _In_ bool is_input);
-    void insert_param(_In_ SQLUSMALLINT param_num, _In_ sqlsrv_param* new_param);
+    void insert_param(_In_ SQLUSMALLINT param_num, _In_ sqlsrv_param* new_param)
+    {
+        if (new_param->direction == SQL_PARAM_INPUT) {
+            input_params[param_num] = new_param;
+        } else {
+            output_params[param_num] = new_param;
+        }
+    }
 
     void clean_up_param_data();                         // Clean up params_data and all its references
     void finalize_output_parameters();
@@ -1496,6 +1504,12 @@ struct sqlsrv_params_container
     // The following functions are used to supply data to the server post execution
     bool get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt);
     bool send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt);
+    void send_all_stream_packets(_Inout_ sqlsrv_stmt* stmt)
+    {
+        while (get_next_parameter_data(stmt)) {
+            while (current_param->send_stream_packet(stmt)) {}
+        }
+    }
 };
 
 namespace data_classification {
