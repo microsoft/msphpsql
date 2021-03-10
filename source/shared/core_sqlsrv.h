@@ -1429,21 +1429,20 @@ struct sqlsrv_param
 
     bool derive_string_types_sizes(_In_ zval* param_z);
 
-    virtual bool process_param(_In_ zval* param_ref, _Inout_ zval* param_z);
-    virtual void get_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
-    virtual void get_null_param_info(_Inout_ zval* param_z);
-    virtual void get_bool_param_info(_Inout_ zval* param_z);
-    virtual void get_long_param_info(_Inout_ zval* param_z);
-    virtual void get_double_param_info(_Inout_ zval* param_z);
-    virtual void get_string_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
-    virtual void get_resource_param_info(_Inout_ zval* param_z);
-    virtual void get_object_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    virtual bool prepare_param(_In_ zval* param_ref, _Inout_ zval* param_z);
+    virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    virtual void process_null_param(_Inout_ zval* param_z);
+    virtual void process_bool_param(_Inout_ zval* param_z);
+    virtual void process_long_param(_Inout_ zval* param_z);
+    virtual void process_double_param(_Inout_ zval* param_z);
+    virtual void process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    virtual void process_resource_param(_Inout_ zval* param_z);
+    virtual void process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     virtual void finalize_output_value() {}
     
-    void bind_parameter(_Inout_ sqlsrv_stmt* stmt);
+    void bind_param(_Inout_ sqlsrv_stmt* stmt);
 
-    // The following methods are used when sending stream data to the server
-    void init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt);
+    // The following methods are used to supply data to the server via SQLPutData
     bool send_stream_packet(_Inout_ sqlsrv_stmt* stmt);
     void release_stream();
 };
@@ -1465,49 +1464,42 @@ struct sqlsrv_param_inout : public sqlsrv_param
     virtual ~sqlsrv_param_inout() { param_ptr_z = NULL; }
     virtual void release_data() { param_ptr_z = NULL; }
 
-    virtual bool process_param(_In_ zval* param_ref, _Inout_ zval* param_z);
-    virtual void get_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
-    virtual void get_string_param_info(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    virtual bool prepare_param(_In_ zval* param_ref, _Inout_ zval* param_z);
+    virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    virtual void process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     virtual void finalize_output_value();
 
     // The following methods are used for string parameters
     void resize_output_buffer(_Inout_ zval* param_z, _In_ bool is_numeric);
-    void process_output_string();
+    void finalize_output_string();
 };
 
 // *** a container of all parameters used for SQLBindParameter ***
 struct sqlsrv_params_container
 {
-    std::vector<param_meta_data>    params_meta;        // Empty by default - only used when Always Encrypted is enabled
+    std::vector<param_meta_data>    params_meta;                    // Empty by default - only used when Always Encrypted is enabled
 
-    std::map<SQLUSMALLINT, sqlsrv_param*>     input_params;       // consists of all the input params to their corresponding positions in params_data
-    std::map<SQLUSMALLINT, sqlsrv_param*>     output_params;      // consists of all the output / inout params to their corresponding positions in params_data
+    std::map<SQLUSMALLINT, sqlsrv_param*>     input_params;         // consists of all the input params to their corresponding positions in params_data
+    std::map<SQLUSMALLINT, sqlsrv_param*>     output_params;        // consists of all the output / inout params to their corresponding positions in params_data
 
-    sqlsrv_param*                   current_param;     // Null by default - points to a sqlsrv_param object in params_data, used when sending stream data
+    sqlsrv_param*                   current_param;                  // Null by default - points to a sqlsrv_param object used for sending stream data
 
     sqlsrv_params_container() { current_param = NULL; }
     ~sqlsrv_params_container() { params_meta.clear(); clean_up_param_data(); }
 
-    // The following methods are used only when Always Encrypted is enabled
-    void set_num_parameters(_In_ SQLSMALLINT num_params) { params_meta.reserve(num_params); }
-    void add_meta_data(_In_ param_meta_data& meta) { params_meta.push_back(meta); }
-    void transfer_meta_data(_In_ sqlsrv_param* ptr, _In_ SQLUSMALLINT param_num, _Inout_ zval* param_z);
-
-    // Each sqlsrv_param has a parameter number, using which to find its existence in params_data
-    sqlsrv_param* find_param(_In_ SQLUSMALLINT param_num, _In_opt_ bool is_input = true);
+    sqlsrv_param* find_param(_In_ SQLUSMALLINT param_num, _In_ bool is_input);
     void insert_param(_In_ SQLUSMALLINT param_num, _In_ sqlsrv_param* new_param);
 
     void clean_up_param_data();                         // Clean up params_data and all its references
     void finalize_output_parameters();
 
-    // The following functions are used to send stream data to the server
+    // The following functions are used to supply data to the server post execution
     bool get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt);
-    void send_all_stream_packets(_Inout_ sqlsrv_stmt* stmt);
     bool send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt);
 };
 
 namespace data_classification {
-    const int VERSION_RANK_AVAILABLE = 2;   // Rank info is available when data classification version is 2+
+    const DWORD VERSION_RANK_AVAILABLE = 2;   // Rank info is available when data classification version is 2+
     const int RANK_NOT_DEFINED = -1;
     // *** data classficiation metadata structures and helper methods -- to store and/or process the sensitivity classification data ***
     struct name_id_pair;

@@ -565,13 +565,12 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
         if( stmt->conn->ce_option.enabled ) {
             SQLSMALLINT num_params;
             core::SQLNumParams( stmt, &num_params);
-            stmt->params_container.set_num_parameters(num_params);
 
             for( int i = 0; i < num_params; i++ ) {
                 param_meta_data param;
                 core::SQLDescribeParam(stmt, i + 1, &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
 
-                stmt->params_container.add_meta_data(param);
+                stmt->params_container.params_meta.push_back(param);
             }
         }
     }
