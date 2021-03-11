@@ -1445,7 +1445,6 @@ struct sqlsrv_param
     // The following methods are used to supply data to the server via SQLPutData
     void init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt);
     bool send_stream_packet(_Inout_ sqlsrv_stmt* stmt);
-    void release_stream();
 };
 
 // *** output / inout parameter struct used for SQLBindParameter, inheriting sqlsrv_param ***
@@ -1498,7 +1497,18 @@ struct sqlsrv_params_container
         }
     }
 
-    void clean_up_param_data();                         // Clean up params_data and all its references
+    void remove_params(std::map<SQLUSMALLINT, sqlsrv_param*>& params_map)
+    {
+        std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it1;
+        for (it1 = params_map.begin(); it1 != params_map.end(); ++it1) {
+            sqlsrv_param* ptr = it1->second;
+            ptr->release_data();
+            sqlsrv_free(ptr);
+        }
+        params_map.clear();
+    }
+
+    void clean_up_param_data(_In_opt_ bool only_input = false);
     void finalize_output_parameters();
 
     // The following functions are used to supply data to the server post execution

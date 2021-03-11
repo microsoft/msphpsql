@@ -1112,6 +1112,11 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool ge
         } else {
             bMore = stmt->params_container.send_next_stream_packet(stmt);
         }
+
+        if (!bMore) {
+            // All resources parameters are sent, so it's time to clean up
+            stmt->params_container.clean_up_param_data(true);
+        }
     } catch (core::CoreException& e) {
         stmt->free_param_data();
         SQLFreeStmt(stmt->handle(), SQL_RESET_PARAMS);
@@ -2141,7 +2146,9 @@ void sqlsrv_param::release_data()
         ZVAL_UNDEF(&str_value_z);
     }
 
-    release_stream();
+    param_stream = NULL;
+    stream_read = 0;
+    param_ptr_z = NULL;
 }
 
 void sqlsrv_param::copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta)
@@ -2532,16 +2539,6 @@ void sqlsrv_param::init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt)
     stream_read = 0;
     param_stream = NULL;
     core::sqlsrv_php_stream_from_zval_no_verify(*stmt, param_stream, param_ptr_z);
-}
-
-void sqlsrv_param::release_stream()
-{
-    param_stream = NULL;
-    stream_read = 0;
-    
-    if (param_ptr_z) {
-        param_ptr_z = NULL;
-    }
 }
 
 bool sqlsrv_param::send_stream_packet(_Inout_ sqlsrv_stmt* stmt)
@@ -3014,25 +3011,13 @@ void sqlsrv_param_inout::resize_output_buffer(_Inout_ zval* param_z, _In_ bool i
     }
 }
 
-void sqlsrv_params_container::clean_up_param_data()
+void sqlsrv_params_container::clean_up_param_data(_In_opt_ bool only_input/* = false*/)
 {
-    std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it1;
-    for (it1 = input_params.begin(); it1 != input_params.end(); ++it1) {
-        sqlsrv_param* ptr = it1->second;
-        ptr->release_data();
-        sqlsrv_free(ptr);
-    }
-    input_params.clear();
-
-    std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it2;
-    for (it2 = output_params.begin(); it2 != output_params.end(); ++it2) {
-        sqlsrv_param* ptr = it2->second;
-        ptr->release_data();
-        sqlsrv_free(ptr);
-    }
-    output_params.clear();
-
     current_param = NULL;
+    remove_params(input_params);
+    if (!only_input) {
+        remove_params(output_params);
+    }
 }
 
 // To be called after all results are processed. ODBC and SQL Server do not guarantee that all output
@@ -3065,18 +3050,14 @@ sqlsrv_param* sqlsrv_params_container::find_param(_In_ SQLUSMALLINT param_num, _
 
 bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
 {
-    SQLPOINTER param = NULL;
-
     // Get the param ptr when binding the resource parameter
+    SQLPOINTER param = NULL;
     SQLRETURN r = core::SQLParamData(stmt, &param);
 
     // If no more data, all the bound parameters have been exhausted, so return false (done)
     if (SQL_SUCCEEDED(r) || r == SQL_NO_DATA) {
-        if (current_param != NULL) {
-            // Done now, reset current_param 
-            current_param->release_stream();
-            current_param = NULL;
-        }
+        // Done now, reset current_param 
+        current_param = NULL;
         return false;
     }
 
@@ -3103,6 +3084,7 @@ bool sqlsrv_params_container::send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt)
     // The helper method send_stream_packet() returns false when EOF is reached
     if (current_param->send_stream_packet(stmt) == false) {
         // Now that EOF has been reached, reset current_param for next round 
+        // Bear in mind that SQLParamData might request the same stream resource again
         current_param = NULL;
     }
 
