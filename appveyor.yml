@@ -79,7 +79,7 @@ install:
         }
     - echo Downloading MSODBCSQL 17
     # AppVeyor build works are x64 VMs and 32-bit ODBC driver cannot be installed on it
-    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/2/c/c/2cc12eab-a3aa-45d6-95bb-13f968fb6cd6/en-US/17.7.1.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
+    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/2/c/c/2cc12eab-a3aa-45d6-95bb-13f968fb6cd6/en-US/17.7.2.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
     - cmd /c start /wait msiexec /i "c:\projects\msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
     - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
@@ -119,7 +119,7 @@ test_script:
     - ps: >-
         If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --cover_children --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --excluded_sources core_init.cpp --excluded_sources ${env:PHP_SRC_DIR}\pdo_sqlsrv\shared\core_stream.cpp --export_type=cobertura:c:\projects\coverage.xml --quiet -- .\php.exe run-tests.php -P --no-color ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --cover_children --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --excluded_sources core_init.cpp --excluded_sources ${env:PHP_SRC_DIR}\pdo_sqlsrv\shared\core_stream.cpp --export_type=cobertura:c:\projects\coverage.xml --quiet --optimized_build -- .\php.exe run-tests.php -P --no-color ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             Write-Host "Showing the last 25 lines of the log file..."
             Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 25;
             ls *.xml

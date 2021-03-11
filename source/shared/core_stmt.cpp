@@ -2424,8 +2424,6 @@ void sqlsrv_param::process_resource_param(_Inout_ zval* param_z)
     }
 
     param_ptr_z = param_z;
-    Z_TRY_ADDREF_P(param_ptr_z);    // So that it doesn't go away while we're using it
-
     buffer = reinterpret_cast<SQLPOINTER>(this);
     buffer_length = 0;
     strlen_or_indptr = SQL_DATA_AT_EXEC;
@@ -2542,7 +2540,6 @@ void sqlsrv_param::release_stream()
     stream_read = 0;
     
     if (param_ptr_z) {
-        Z_TRY_DELREF_P(param_ptr_z);
         param_ptr_z = NULL;
     }
 }
