@@ -1409,25 +1409,29 @@ struct sqlsrv_param
     int             param_php_type;
     SQLSRV_ENCODING encoding;
     bool            was_null;       // false by default - the original parameter was a NULL zval
-    zval            str_value_z;        // Only used for storing wide input string (UTF-16 buffer) or datetime strings for binding
+    zval            placeholder_z;  // A temp buffer for binding any input parameter, such as wide input string (UTF-16 buffer), the datetime strings, etc.
     zval*           param_ptr_z;    // NULL by default - holds the stream resource or output param reference
     std::size_t     stream_read;    // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
     php_stream*     param_stream;   // NULL by default - used to send stream data from an input parameter to the server
- 
+    
     sqlsrv_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
-        c_data_type(0), buffer(NULL), buffer_length(0), strlen_or_indptr(0), param_pos(param_num), direction(dir), encoding(enc),
-        sql_data_type(sql_type), column_size(col_size), decimal_digits(dec_digits), param_php_type(0), was_null(false), 
-        param_ptr_z(NULL), stream_read(0), param_stream(NULL)
+        c_data_type(0), buffer(NULL), buffer_length(0), strlen_or_indptr(0), param_pos(param_num), direction(dir), encoding(enc), sql_data_type(sql_type),
+        column_size(col_size), decimal_digits(dec_digits), param_php_type(0), was_null(false), param_ptr_z(NULL), stream_read(0), param_stream(NULL)
     {
-        ZVAL_UNDEF(&str_value_z);
+        ZVAL_UNDEF(&placeholder_z);
     }
 
-    void copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta);    // Only used when Always Encrypted is enabled
+    void copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta);            // Only used when Always Encrypted is enabled
 
     virtual ~sqlsrv_param();
     virtual void release_data();
 
     bool derive_string_types_sizes(_In_ zval* param_z);
+    void preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+
+    // The following methods change the member placeholder_z 
+    void convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+    void convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
 
     virtual bool prepare_param(_In_ zval* param_ref, _Inout_ zval* param_z);
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
@@ -1440,11 +1444,11 @@ struct sqlsrv_param
     virtual void process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     virtual void finalize_output_value() {}
     
-    void bind_param(_Inout_ sqlsrv_stmt* stmt);
+    virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
 
     // The following methods are used to supply data to the server via SQLPutData
-    void init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt);
-    bool send_stream_packet(_Inout_ sqlsrv_stmt* stmt);
+    virtual void init_data_from_zval(_Inout_ sqlsrv_stmt* stmt);
+    virtual bool send_data_packet(_Inout_ sqlsrv_stmt* stmt);
 };
 
 // *** output / inout parameter struct used for SQLBindParameter, inheriting sqlsrv_param ***
@@ -1513,17 +1517,17 @@ struct sqlsrv_params_container
 
     // The following functions are used to supply data to the server post execution
     bool get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt);
-    bool send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt);
-    void send_all_stream_packets(_Inout_ sqlsrv_stmt* stmt)
+    bool send_next_packet(_Inout_ sqlsrv_stmt* stmt);
+    void send_all_packets(_Inout_ sqlsrv_stmt* stmt)
     {
         while (get_next_parameter_data(stmt)) {
-            while (current_param->send_stream_packet(stmt)) {}
+            while (current_param->send_data_packet(stmt)) {}
         }
     }
 };
 
 namespace data_classification {
-    const DWORD VERSION_RANK_AVAILABLE = 2;   // Rank info is available when data classification version is 2+
+    const size_t VERSION_RANK_AVAILABLE = 2;   // Rank info is available when data classification version is 2+
     const int RANK_NOT_DEFINED = -1;
     // *** data classficiation metadata structures and helper methods -- to store and/or process the sensitivity classification data ***
     struct name_id_pair;

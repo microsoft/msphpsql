@@ -22,6 +22,8 @@ function sendStream($minType, $maxType, $atExec)
     $tableName = "TC52test" . rand(0, 100);
     $fileName = "TC52test.dat";
     $conn1 = AE\connect();
+    
+    $factor = 500;
 
     for ($k = $minType; $k <= $maxType; $k++) {
         switch ($k) {
@@ -53,6 +55,7 @@ function sendStream($minType, $maxType, $atExec)
         case 14:// varchar(max)
         case 17:// nvarchar(max)
             $data = "The quick brown fox jumps over the lazy dog 0123456789";
+            $data = str_repeat($data, $factor);
             break;
 
         case 18:// text
@@ -70,10 +73,12 @@ function sendStream($minType, $maxType, $atExec)
 
         case 22:// varbinary(max)
             $data = "98765432100123456789";
+            $data = str_repeat($data, $factor);
             break;
 
         case 23:// image
             $data = "01234567899876543210";
+            $data = str_repeat($data, $factor);
             $phpType = SQLSRV_SQLTYPE_IMAGE;
             break;
 

@@ -369,6 +369,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         throw core::CoreException();
     }
 
+    // Dereference the parameter if necessary
+    zval* param_ref = param_z;
+    if (Z_ISREF_P(param_z)) {
+        ZVAL_DEREF(param_z);
+    }
+
     sqlsrv_param* param_ptr = stmt->params_container.find_param(param_num, (direction == SQL_PARAM_INPUT));
     try {
         if (param_ptr == NULL) {
@@ -386,12 +392,6 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         }
 
         SQLSRV_ASSERT(param_ptr != NULL, "core_sqlsrv_bind_param: param_ptr is null. Something went wrong.");
-
-        // Dereference the parameter if necessary
-        zval* param_ref = param_z;
-        if (Z_ISREF_P(param_z)) {
-            ZVAL_DEREF(param_z);
-        }
 
         bool result = param_ptr->prepare_param(param_ref, param_z);
         if (!result && direction == SQL_PARAM_INPUT_OUTPUT) {
@@ -1108,9 +1108,9 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool ge
     try {
         if (get_all) {
             // send all the stream data (so no more after this)
-            stmt->params_container.send_all_stream_packets(stmt);
+            stmt->params_container.send_all_packets(stmt);
         } else {
-            bMore = stmt->params_container.send_next_stream_packet(stmt);
+            bMore = stmt->params_container.send_next_packet(stmt);
         }
 
         if (!bMore) {
@@ -2141,9 +2141,9 @@ sqlsrv_param::~sqlsrv_param()
 
 void sqlsrv_param::release_data()
 {
-    if (Z_TYPE(str_value_z) == IS_STRING) {
-        zend_string_release(Z_STR(str_value_z));
-        ZVAL_UNDEF(&str_value_z);
+    if (Z_TYPE(placeholder_z) == IS_STRING) {
+        zend_string_release(Z_STR(placeholder_z));
+        ZVAL_UNDEF(&placeholder_z);
     }
 
     param_stream = NULL;
@@ -2346,6 +2346,28 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* param_z)
     return is_numeric;
 }
 
+void sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
+{
+    // This changes the member placeholder_z to hold the wide string
+    char* str = Z_STRVAL_P(param_z);
+    SQLLEN str_length = Z_STRLEN_P(param_z);
+
+    if (str_length > 0) {
+        sqlsrv_malloc_auto_ptr<SQLWCHAR> wide_buffer;
+        unsigned int wchar_size = 0;
+
+        wide_buffer = utf16_string_from_mbcs_string(encoding, reinterpret_cast<const char*>(str), static_cast<int>(str_length), &wchar_size, true);
+        CHECK_CUSTOM_ERROR(wide_buffer == 0, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, param_pos + 1, get_last_error_message()) {
+            throw core::CoreException();
+        }
+        wide_buffer[wchar_size] = L'\0';
+        core::sqlsrv_zval_stringl(&placeholder_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
+    } else {
+        // If the string is empty, then nothing needs to be done
+        core::sqlsrv_zval_stringl(&placeholder_z, "", 0);
+    }
+}
+
 void sqlsrv_param::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
 {
     bool is_numeric = derive_string_types_sizes(param_z);
@@ -2358,33 +2380,19 @@ void sqlsrv_param::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
         adjustDecimalPrecision(param_z, decimal_digits);
     }
 
-    buffer = Z_STRVAL_P(param_z);
-    buffer_length = Z_STRLEN_P(param_z);
-
     if (!is_numeric && encoding == CP_UTF8) {
         // Convert the input param value to wide string and save it for later
-        if (buffer_length > INT_MAX) {
+        if (Z_STRLEN_P(param_z) > INT_MAX) {
             LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
             throw core::CoreException();
         }
+        convert_input_str_to_utf16(stmt, param_z);
 
-        // If the string is empty, then nothing needs to be done
-        if (buffer_length > 0) {
-            sqlsrv_malloc_auto_ptr<SQLWCHAR> wide_buffer;
-            unsigned int wchar_size = 0;
-
-            wide_buffer = utf16_string_from_mbcs_string(encoding, reinterpret_cast<const char*>(buffer), static_cast<int>(buffer_length), &wchar_size, true);
-            CHECK_CUSTOM_ERROR(wide_buffer == 0, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, param_pos + 1, get_last_error_message()) {
-                throw core::CoreException();
-            }
-            wide_buffer[wchar_size] = L'\0';
-            core::sqlsrv_zval_stringl(&str_value_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
-        } else {
-            core::sqlsrv_zval_stringl(&str_value_z, "", 0);
-        }
-
-        buffer = Z_STRVAL(str_value_z);
-        buffer_length = Z_STRLEN(str_value_z);
+        buffer = Z_STRVAL(placeholder_z);
+        buffer_length = Z_STRLEN(placeholder_z);
+    } else {
+        buffer = Z_STRVAL_P(param_z);
+        buffer_length = Z_STRLEN_P(param_z);
     }
 
     strlen_or_indptr = buffer_length;
@@ -2436,11 +2444,51 @@ void sqlsrv_param::process_resource_param(_Inout_ zval* param_z)
     strlen_or_indptr = SQL_DATA_AT_EXEC;
 }
 
-void sqlsrv_param::process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
+void sqlsrv_param::convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
 {
-    // Assume the param refers to a DateTime object since it's the only type the drivers support.
-    // Verification occurs in the calling function as the drivers convert the DateTime object
-    // to a string before sending it to the server.
+    // This changes the member placeholder_z to hold the converted string of the datetime object
+    zval function_z;
+    zval format_z;
+    zval params[1];
+    ZVAL_UNDEF(&function_z);
+    ZVAL_UNDEF(&format_z);
+    ZVAL_UNDEF(params);
+
+    // If the user specifies the 'date' sql type, giving it the normal format will cause a 'date overflow error'
+    // meaning there is too much information in the character string.  If the user specifies the 'datetimeoffset'
+    // sql type, it lacks the timezone.
+    if (sql_data_type == SQL_SS_TIMESTAMPOFFSET) {
+        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATETIMEOFFSET_FORMAT),
+            DateTime::DATETIMEOFFSET_FORMAT_LEN);
+    } else if (sql_data_type == SQL_TYPE_DATE) {
+        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATE_FORMAT), DateTime::DATE_FORMAT_LEN);
+    } else {
+        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATETIME_FORMAT), DateTime::DATETIME_FORMAT_LEN);
+    }
+
+    // call the DateTime::format member function to convert the object to a string that SQL Server understands
+    core::sqlsrv_zval_stringl(&function_z, "format", sizeof("format") - 1);
+    params[0] = format_z;
+
+    // If placeholder_z has a string release it first before assigning a new string value
+    if (Z_TYPE(placeholder_z) == IS_STRING && Z_STR(placeholder_z) != NULL) {
+        zend_string_release(Z_STR(placeholder_z));
+    }
+    
+    // This is equivalent to the PHP code: $param_z->format($format_z); where param_z is the
+    // DateTime object and $format_z is the format string.
+    int zr = call_user_function(EG(function_table), param_z, &function_z, &placeholder_z, 1, params);
+
+    zend_string_release(Z_STR(format_z));
+    zend_string_release(Z_STR(function_z));
+
+    CHECK_CUSTOM_ERROR(zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1) {
+        throw core::CoreException();
+    }
+}
+
+void sqlsrv_param::preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
+{
     bool valid_class_name_found = false;
     zend_class_entry *class_entry = Z_OBJCE_P(param_z);
 
@@ -2484,43 +2532,18 @@ void sqlsrv_param::process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
             decimal_digits = SQL_SERVER_2008_DEFAULT_DATETIME_SCALE;
         }
     }
+}
 
-    zval function_z;
-    zval format_z;
-    zval params[1];
-    ZVAL_UNDEF(&function_z);
-    ZVAL_UNDEF(&format_z);
-    ZVAL_UNDEF(params);
+void sqlsrv_param::process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
+{
+    // Assume the param refers to a DateTime object since it's the only type the drivers support.
+    // Verification occurs in the calling function as the drivers convert the DateTime object
+    // to a string before sending it to the server.
+    preprocess_datetime_object(stmt, param_z);
+    convert_datetime_to_string(stmt, param_z);
 
-    // If the user specifies the 'date' sql type, giving it the normal format will cause a 'date overflow error'
-    // meaning there is too much information in the character string.  If the user specifies the 'datetimeoffset'
-    // sql type, it lacks the timezone.
-    if (sql_data_type == SQL_SS_TIMESTAMPOFFSET) {
-        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATETIMEOFFSET_FORMAT),
-            DateTime::DATETIMEOFFSET_FORMAT_LEN);
-    } else if (sql_data_type == SQL_TYPE_DATE) {
-        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATE_FORMAT), DateTime::DATE_FORMAT_LEN);
-    } else {
-        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATETIME_FORMAT), DateTime::DATETIME_FORMAT_LEN);
-    }
-
-    // call the DateTime::format member function to convert the object to a string that SQL Server understands
-    core::sqlsrv_zval_stringl(&function_z, "format", sizeof("format") - 1);
-    params[0] = format_z;
-
-    // This is equivalent to the PHP code: $param_z->format($format_z); where param_z is the
-    // DateTime object and $format_z is the format string.
-    int zr = call_user_function(EG(function_table), param_z, &function_z, &str_value_z, 1, params);
-
-    zend_string_release(Z_STR(format_z));
-    zend_string_release(Z_STR(function_z));
-
-    CHECK_CUSTOM_ERROR(zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1) {
-        throw core::CoreException();
-    }
-
-    buffer = Z_STRVAL(str_value_z);
-    buffer_length = Z_STRLEN(str_value_z) - 1;
+    buffer = Z_STRVAL(placeholder_z);
+    buffer_length = Z_STRLEN(placeholder_z) - 1;
     strlen_or_indptr = buffer_length;
 }
 
@@ -2533,7 +2556,7 @@ void sqlsrv_param::bind_param(_Inout_ sqlsrv_stmt* stmt)
     core::SQLBindParameter(stmt, param_pos + 1, direction, c_data_type, sql_data_type, column_size, decimal_digits, buffer, buffer_length, &strlen_or_indptr);
 }
 
-void sqlsrv_param::init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt)
+void sqlsrv_param::init_data_from_zval(_Inout_ sqlsrv_stmt* stmt)
 {
     // Get the stream from the param zval value
     stream_read = 0;
@@ -2541,7 +2564,7 @@ void sqlsrv_param::init_stream_from_zval(_Inout_ sqlsrv_stmt* stmt)
     core::sqlsrv_php_stream_from_zval_no_verify(*stmt, param_stream, param_ptr_z);
 }
 
-bool sqlsrv_param::send_stream_packet(_Inout_ sqlsrv_stmt* stmt)
+bool sqlsrv_param::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
 {
     // Check EOF first
     if (php_stream_eof(param_stream)) {
@@ -3062,14 +3085,14 @@ bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
     }
 
     current_param = reinterpret_cast<sqlsrv_param*>(param);
-    SQLSRV_ASSERT(current_param != NULL, "Stream parameter is missing!");
-    current_param->init_stream_from_zval(stmt);
+    SQLSRV_ASSERT(current_param != NULL, "sqlsrv_params_container::get_next_parameter_data - The parameter requested is missing!");
+    current_param->init_data_from_zval(stmt);
 
     return true;
 }
 
 // The following helper method sends one stream packet at a time, if available
-bool sqlsrv_params_container::send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt)
+bool sqlsrv_params_container::send_next_packet(_Inout_ sqlsrv_stmt* stmt)
 {
     if (current_param == NULL) {
         // If current_stream is NULL, either this is the first time checking or the previous parameter
@@ -3082,7 +3105,7 @@ bool sqlsrv_params_container::send_next_stream_packet(_Inout_ sqlsrv_stmt* stmt)
     }
 
     // The helper method send_stream_packet() returns false when EOF is reached
-    if (current_param->send_stream_packet(stmt) == false) {
+    if (current_param->send_data_packet(stmt) == false) {
         // Now that EOF has been reached, reset current_param for next round 
         // Bear in mind that SQLParamData might request the same stream resource again
         current_param = NULL;
