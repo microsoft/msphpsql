@@ -2134,11 +2134,6 @@ int round_up_decimal_numbers(_Inout_ char* buffer, _In_ int decimal_pos, _In_ in
 //
 // *** implementations of structures used for SQLBindParameter ***
 //
-sqlsrv_param::~sqlsrv_param()
-{
-    release_data();
-}
-
 void sqlsrv_param::release_data()
 {
     if (Z_TYPE(placeholder_z) == IS_STRING) {
@@ -2348,7 +2343,7 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* param_z)
 
 void sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
 {
-    // This changes the member placeholder_z to hold the wide string
+    // This converts the string in param_z and stores the wide string in the member placeholder_z
     char* str = Z_STRVAL_P(param_z);
     SQLLEN str_length = Z_STRLEN_P(param_z);
 
@@ -2386,8 +2381,10 @@ void sqlsrv_param::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
             LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
             throw core::CoreException();
         }
+        // This changes the member placeholder_z to hold the wide string
         convert_input_str_to_utf16(stmt, param_z);
 
+        // Bind the wide string in placeholder_z
         buffer = Z_STRVAL(placeholder_z);
         buffer_length = Z_STRLEN(placeholder_z);
     } else {
@@ -2470,7 +2467,7 @@ void sqlsrv_param::convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zv
     core::sqlsrv_zval_stringl(&function_z, "format", sizeof("format") - 1);
     params[0] = format_z;
 
-    // If placeholder_z has a string release it first before assigning a new string value
+    // If placeholder_z is a string, release it first before assigning a new string value
     if (Z_TYPE(placeholder_z) == IS_STRING && Z_STR(placeholder_z) != NULL) {
         zend_string_release(Z_STR(placeholder_z));
     }

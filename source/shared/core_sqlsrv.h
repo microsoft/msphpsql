@@ -1423,7 +1423,7 @@ struct sqlsrv_param
 
     void copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta);            // Only used when Always Encrypted is enabled
 
-    virtual ~sqlsrv_param();
+    virtual ~sqlsrv_param(){ release_data(); }
     virtual void release_data();
 
     bool derive_string_types_sizes(_In_ zval* param_z);
