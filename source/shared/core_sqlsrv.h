@@ -1410,7 +1410,7 @@ struct sqlsrv_param
     SQLSRV_ENCODING encoding;
     bool            was_null;       // false by default - the original parameter was a NULL zval
     zval            placeholder_z;  // A temp buffer for binding any input parameter, such as wide input string (UTF-16 buffer), the datetime strings, etc.
-    zval*           param_ptr_z;    // NULL by default - holds the stream resource or output param reference
+    zval*           param_ptr_z;    // NULL by default - points to the original parameter or its reference
     std::size_t     stream_read;    // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
     php_stream*     param_stream;   // NULL by default - used to send stream data from an input parameter to the server
     
@@ -1442,7 +1442,6 @@ struct sqlsrv_param
     virtual void process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     virtual void process_resource_param(_Inout_ zval* param_z);
     virtual void process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
-    virtual void finalize_output_value() {}
     
     virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
 
@@ -1454,9 +1453,9 @@ struct sqlsrv_param
 // *** output / inout parameter struct used for SQLBindParameter, inheriting sqlsrv_param ***
 struct sqlsrv_param_inout : public sqlsrv_param
 {
-    SQLSRV_PHPTYPE  php_out_type;           // Used to convert output param when necessary
-    bool            was_bool;               // false by default - the original parameter was a boolean zval
-    sqlsrv_stmt*    stmt;                   // NULL by default - points to the statement object
+    SQLSRV_PHPTYPE  php_out_type;   // Used to convert output param when necessary
+    bool            was_bool;       // false by default - the original parameter was a boolean zval
+    sqlsrv_stmt*    stmt;           // NULL by default - points to the statement object mainly for error processing
 
     sqlsrv_param_inout(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type,
                        _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits, SQLSRV_PHPTYPE php_out_type) :
@@ -1471,7 +1470,8 @@ struct sqlsrv_param_inout : public sqlsrv_param
     virtual bool prepare_param(_In_ zval* param_ref, _Inout_ zval* param_z);
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     virtual void process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
-    virtual void finalize_output_value();
+
+    void finalize_output_value();
 
     // The following methods are used for string parameters
     void resize_output_buffer(_Inout_ zval* param_z, _In_ bool is_numeric);
@@ -1483,8 +1483,8 @@ struct sqlsrv_params_container
 {
     std::vector<param_meta_data>    params_meta;                    // Empty by default - only used when Always Encrypted is enabled
 
-    std::map<SQLUSMALLINT, sqlsrv_param*>     input_params;         // consists of all the input params to their corresponding positions in params_data
-    std::map<SQLUSMALLINT, sqlsrv_param*>     output_params;        // consists of all the output / inout params to their corresponding positions in params_data
+    std::map<SQLUSMALLINT, sqlsrv_param*>     input_params;         // map of pointers to the input params with their ordinal positions as keys
+    std::map<SQLUSMALLINT, sqlsrv_param*>     output_params;        // map of pointers to the output / inout params with their ordinal positions as keys
 
     sqlsrv_param*                   current_param;                  // Null by default - points to a sqlsrv_param object used for sending stream data
 
@@ -1506,8 +1506,10 @@ struct sqlsrv_params_container
         std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it1;
         for (it1 = params_map.begin(); it1 != params_map.end(); ++it1) {
             sqlsrv_param* ptr = it1->second;
-            ptr->release_data();
-            sqlsrv_free(ptr);
+            if (ptr) {
+                ptr->release_data();
+                sqlsrv_free(ptr);
+            }
         }
         params_map.clear();
     }
@@ -1516,11 +1518,11 @@ struct sqlsrv_params_container
     void finalize_output_parameters();
 
     // The following functions are used to supply data to the server post execution
-    bool get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt);
+    bool get_next_parameter(_Inout_ sqlsrv_stmt* stmt);
     bool send_next_packet(_Inout_ sqlsrv_stmt* stmt);
     void send_all_packets(_Inout_ sqlsrv_stmt* stmt)
     {
-        while (get_next_parameter_data(stmt)) {
+        while (get_next_parameter(stmt)) {
             while (current_param->send_data_packet(stmt)) {}
         }
     }

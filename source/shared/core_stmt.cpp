@@ -3049,8 +3049,10 @@ void sqlsrv_params_container::finalize_output_parameters()
 {
     std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it;
     for (it = output_params.begin(); it != output_params.end(); ++it) {
-        sqlsrv_param* ptr = it->second;
-        ptr->finalize_output_value();
+        sqlsrv_param_inout* ptr = dynamic_cast<sqlsrv_param_inout*>(it->second);
+        if (ptr) {
+            ptr->finalize_output_value();
+        }
     }
 }
 
@@ -3068,7 +3070,7 @@ sqlsrv_param* sqlsrv_params_container::find_param(_In_ SQLUSMALLINT param_num, _
     }
 }
 
-bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
+bool sqlsrv_params_container::get_next_parameter(_Inout_ sqlsrv_stmt* stmt)
 {
     // Get the param ptr when binding the resource parameter
     SQLPOINTER param = NULL;
@@ -3082,7 +3084,7 @@ bool sqlsrv_params_container::get_next_parameter_data(_Inout_ sqlsrv_stmt* stmt)
     }
 
     current_param = reinterpret_cast<sqlsrv_param*>(param);
-    SQLSRV_ASSERT(current_param != NULL, "sqlsrv_params_container::get_next_parameter_data - The parameter requested is missing!");
+    SQLSRV_ASSERT(current_param != NULL, "sqlsrv_params_container::get_next_parameter - The parameter requested is missing!");
     current_param->init_data_from_zval(stmt);
 
     return true;
@@ -3093,10 +3095,10 @@ bool sqlsrv_params_container::send_next_packet(_Inout_ sqlsrv_stmt* stmt)
 {
     if (current_param == NULL) {
         // If current_stream is NULL, either this is the first time checking or the previous parameter
-        // is done. In either case, MUST call get_next_parameter_data() to see if there is any more
+        // is done. In either case, MUST call get_next_parameter() to see if there is any more
         // parameter requested by ODBC. Otherwise, "Function sequence error" will result, meaning the
         // ODBC functions are called out of the order required by the ODBC Specification
-        if (get_next_parameter_data(stmt) == false) {
+        if (get_next_parameter(stmt) == false) {
             return false;
         }
     }
@@ -3108,6 +3110,6 @@ bool sqlsrv_params_container::send_next_packet(_Inout_ sqlsrv_stmt* stmt)
         current_param = NULL;
     }
 
-    // Returns true regardless such that either get_next_parameter_data() will be called or next packet will be sent
+    // Returns true regardless such that either get_next_parameter() will be called or next packet will be sent
     return true;
 }
