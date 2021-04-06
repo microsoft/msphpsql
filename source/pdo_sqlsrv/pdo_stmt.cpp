@@ -1391,7 +1391,7 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 
                     // and bind the parameter
                     core_sqlsrv_bind_param( driver_stmt, static_cast<SQLUSMALLINT>( param->paramno ), direction, &(param->parameter) , php_out_type, encoding,
-                                            sql_type, column_size, decimal_digits );
+                                            sql_type, column_size, decimal_digits);
                 }
                 break;
             // undo any work done by the core layer after the statement is executed

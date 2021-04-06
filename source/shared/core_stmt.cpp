@@ -68,6 +68,7 @@ const int INITIAL_FIELD_STRING_LEN = 2048;          // base allocation size when
 
 const char  DECIMAL_POINT = '.';
 const int   SQL_SERVER_DECIMAL_MAXIMUM_PRECISION = 38;            // 38 is the maximum length of a stringified decimal number
+const int   MAX_COLUMN_NAME_LEN = 256;
 
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
 const unsigned int UTF8_MIDBYTE_MASK = 0xc0;
@@ -362,7 +363,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
 
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
                              _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
-                             _Inout_ SQLSMALLINT decimal_digits )
+                             _Inout_ SQLSMALLINT decimal_digits)
 {
     // check is only < because params are 0 based
     CHECK_CUSTOM_ERROR(param_num >= SQL_SERVER_MAX_PARAMS, stmt, SQLSRV_ERROR_MAX_PARAMS_EXCEEDED, param_num + 1) {
@@ -375,12 +376,21 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         ZVAL_DEREF(param_z);
     }
 
+    if (Z_TYPE_P(param_z) == IS_ARRAY) {
+        SQLSRV_ASSERT(direction == SQL_PARAM_INPUT, "sqlsrv_params_container::insert_param - Invalid parameter direction for table-valued parameters.");
+    }
+
     sqlsrv_param* param_ptr = stmt->params_container.find_param(param_num, (direction == SQL_PARAM_INPUT));
     try {
         if (param_ptr == NULL) {
             sqlsrv_malloc_auto_ptr<sqlsrv_param> new_param;
             if (direction == SQL_PARAM_INPUT) {
-                new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param))) sqlsrv_param(param_num, direction, encoding, sql_type, column_size, decimal_digits);
+                // Check if it's a Table-Valued Parameter first
+                if (Z_TYPE_P(param_z) == IS_ARRAY) {
+                    new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(param_num, encoding, SQL_SS_TABLE, 0, 0);
+                } else {
+                    new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param))) sqlsrv_param(param_num, direction, encoding, sql_type, column_size, decimal_digits);
+                }
             } else if (direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT) {
                 new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param_inout))) sqlsrv_param_inout(param_num, direction, encoding, sql_type, column_size, decimal_digits, php_out_type);
             } else {
@@ -1920,6 +1930,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
         case SQLSRV_PHPTYPE_INT:
         case SQLSRV_PHPTYPE_FLOAT:
         case SQLSRV_PHPTYPE_DATETIME:
+        case SQLSRV_PHPTYPE_TABLE:
             return true;
         case SQLSRV_PHPTYPE_STRING:
         case SQLSRV_PHPTYPE_STREAM:
@@ -2215,7 +2226,6 @@ void sqlsrv_param::process_null_param(_Inout_ zval* param_z)
         sql_data_type = (encoding == SQLSRV_ENCODING_BINARY) ? SQL_BINARY : SQL_CHAR;
     }
 
-    //c_data_type = (sql_data_type == SQL_BINARY) ? SQL_C_BINARY : SQL_C_CHAR;
     c_data_type = (encoding == SQLSRV_ENCODING_BINARY) ? SQL_C_BINARY : SQL_C_CHAR;
 
     if (column_size == SQLSRV_UNKNOWN_SIZE) {
@@ -2352,6 +2362,7 @@ void sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zv
         unsigned int wchar_size = 0;
 
         wide_buffer = utf16_string_from_mbcs_string(encoding, reinterpret_cast<const char*>(str), static_cast<int>(str_length), &wchar_size, true);
+        // TODO: a new error message for TVP column parameter
         CHECK_CUSTOM_ERROR(wide_buffer == 0, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, param_pos + 1, get_last_error_message()) {
             throw core::CoreException();
         }
@@ -2471,7 +2482,7 @@ void sqlsrv_param::convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zv
     if (Z_TYPE(placeholder_z) == IS_STRING && Z_STR(placeholder_z) != NULL) {
         zend_string_release(Z_STR(placeholder_z));
     }
-    
+
     // This is equivalent to the PHP code: $param_z->format($format_z); where param_z is the
     // DateTime object and $format_z is the format string.
     int zr = call_user_function(EG(function_table), param_z, &function_z, &placeholder_z, 1, params);
@@ -2479,6 +2490,7 @@ void sqlsrv_param::convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zv
     zend_string_release(Z_STR(format_z));
     zend_string_release(Z_STR(function_z));
 
+    // TODO: new error message for TVP parameter
     CHECK_CUSTOM_ERROR(zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1) {
         throw core::CoreException();
     }
@@ -2501,6 +2513,7 @@ void sqlsrv_param::preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zv
         }
     }
 
+    // TODO: find a new error for TVP parameter
     CHECK_CUSTOM_ERROR(!valid_class_name_found, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1) {
         throw core::CoreException();
     }
@@ -2760,7 +2773,7 @@ void sqlsrv_param_inout::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_
     }
 
     // If it's a UTF-8 input output parameter (signified by the C type being SQL_C_WCHAR)
-    // or if the PHP type is a binary encoded string with a N(VAR)CHAR/NTEXTSQL type,
+    // or if the PHP type is a binary encoded string with a N(VAR)CHAR/NTEXT SQL type,
     // convert it to wchar first
     if (direction == SQL_PARAM_INPUT_OUTPUT &&
         (c_data_type == SQL_C_WCHAR ||
@@ -3029,6 +3042,574 @@ void sqlsrv_param_inout::resize_output_buffer(_Inout_ zval* param_z, _In_ bool i
     if (strlen_or_indptr > buffer_length - (elem_size - buffer_null_extra)) {
         strlen_or_indptr = buffer_length - (elem_size - buffer_null_extra);
     }
+}
+
+/*static*/ void sqlsrv_param_tvp::sql_type_to_encoding(_In_ SQLSMALLINT sql_type, _Inout_ SQLSRV_ENCODING* encoding)
+{
+    switch (sql_type) {
+    case SQL_BIGINT:
+    case SQL_DECIMAL:
+    case SQL_NUMERIC:
+    case SQL_BIT:
+    case SQL_INTEGER:
+    case SQL_SMALLINT:
+    case SQL_TINYINT:
+    case SQL_FLOAT:
+    case SQL_REAL:
+        *encoding = SQLSRV_ENCODING_CHAR;
+        break;
+    case SQL_BINARY:
+    case SQL_LONGVARBINARY:
+    case SQL_VARBINARY:
+    case SQL_SS_UDT:
+        *encoding = SQLSRV_ENCODING_BINARY;
+        break;
+    default:
+        // Do nothing
+        break;
+    }
+}
+
+void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* table_type_name)
+{
+    SQLHANDLE   chstmt = SQL_NULL_HANDLE;
+    SQLRETURN   rc;
+    SQLSMALLINT sql_type;
+    SQLCHAR     sz_col_name[MAX_COLUMN_NAME_LEN] = { '\0' };
+    SQLINTEGER  col_size;
+    SQLSMALLINT dec_digits;
+    SQLLEN      cb_col_name;
+    SQLLEN      cb_sql_data_type;
+    SQLLEN      cb_col_size;
+    SQLLEN      cb_dec_digits;
+
+    core::SQLAllocHandle(SQL_HANDLE_STMT, *(stmt->conn), &chstmt);
+
+    rc = SQLSetStmtAttr(chstmt, SQL_SOPT_SS_NAME_SCOPE, (SQLPOINTER)SQL_SS_NAME_SCOPE_TABLE_TYPE, SQL_IS_UINTEGER);
+    // TODO
+    //CHECK_CUSTOM_ERROR(!SQL_SUCCEEDED(rc), stmt, ) {
+    //    throw CoreException();
+    //}
+    rc = SQLColumns(chstmt, NULL, 0, NULL, 0, table_type_name, SQL_NTS, NULL, 0);
+    // TODO
+    //CHECK_CUSTOM_ERROR(!SQL_SUCCEEDED(rc), stmt, ) {
+    //    throw CoreException();
+    //}
+
+    SQLSRV_ENCODING stmt_encoding = (stmt->encoding() == SQLSRV_ENCODING_DEFAULT) ? stmt->conn->encoding() : stmt->encoding();
+
+    if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
+        SQLBindCol(chstmt, 4, SQL_C_CHAR, sz_col_name, MAX_COLUMN_NAME_LEN, &cb_col_name);
+        SQLBindCol(chstmt, 7, SQL_C_SLONG, &col_size, 0, &cb_col_size);
+        SQLBindCol(chstmt, 9, SQL_C_SSHORT, &dec_digits, 0, &cb_dec_digits);
+        SQLBindCol(chstmt, 14, SQL_C_SSHORT, &sql_type, 0, &cb_sql_data_type);
+
+        SQLUSMALLINT pos = 0;
+        while (SQL_SUCCESS == rc) {
+            memset(sz_col_name, '\0', MAX_COLUMN_NAME_LEN);
+            rc = SQLFetch(chstmt);
+            if (rc == SQL_NO_DATA) {
+                break;
+            }
+
+            sqlsrv_malloc_auto_ptr<sqlsrv_param_tvp> param_ptr;
+
+            // The SQL data type is used only to derive the column encoding
+            SQLSRV_ENCODING column_encoding = stmt_encoding;
+            sql_type_to_encoding(sql_type, &column_encoding);
+
+            param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(pos, column_encoding, SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0);
+            param_ptr->column_name = reinterpret_cast<char*>(sz_col_name);
+
+            tvp_columns.push_back(param_ptr);
+            param_ptr.transferred();
+
+            pos++;
+        }
+    }
+
+    SQLCloseCursor(chstmt);
+    SQLFreeHandle(SQL_HANDLE_STMT, chstmt);
+}
+
+void sqlsrv_param_tvp::release_data()
+{
+    // Clean up tvp_columns as well
+    for (int i = 0; i < tvp_columns.size(); i++) {
+        tvp_columns[i]->release_data();
+        sqlsrv_free(tvp_columns[i]);
+    }
+
+    sqlsrv_param::release_data();
+}
+
+void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
+{
+    if (param_z == NULL) {
+        // No data is provided for this column
+        sqlsrv_param::process_null_param(param_z);
+        return;
+    }
+
+    SQLSRV_ASSERT(Z_TYPE_P(param_z) == IS_ARRAY, "sqlsrv_param_tvp::process_param - an array is expected for TVP row data");
+
+    if (sql_data_type == SQL_SS_TABLE) {
+        param_php_type = IS_ARRAY;
+        c_data_type = SQL_C_DEFAULT;
+
+        // The decimal_digits must be 0 for TVP
+        decimal_digits = 0;
+
+        // The column_size for a TVP is the row array size
+        // The following method will verify the input array and also derive num_rows
+        this->num_rows = 0;
+        int num_columns = parse_tv_param_arrays(stmt, param_z);
+        column_size = num_rows;
+        
+        buffer = NULL;
+        buffer_length = NULL;
+        strlen_or_indptr = (num_columns == 0)? SQL_DEFAULT_PARAM : SQL_DATA_AT_EXEC;
+    } else {
+        // Process the TVP columns one by one and set the member num_rows, which may be 0
+        HashTable* values_ht = Z_ARRVAL_P(param_z);
+        num_rows = zend_hash_num_elements(values_ht);
+
+        if (num_rows > 0) {
+            // Get the php type of the first element
+            zval* value_z = zend_hash_index_find(values_ht, 0);
+            param_php_type = Z_TYPE_P(value_z);
+
+            if (param_php_type == IS_NULL) {
+                process_null_param_values(stmt, param_z);
+            } else {
+                process_param_column_value(stmt, param_z, value_z);
+            }
+        } else {
+            // This means the column array is empty
+            sqlsrv_param::process_null_param(param_z);
+        }
+    }
+}
+
+int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
+{
+    // This method verifies if the table-valued parameter (i.e. param_z) provided by the user is valid.
+    // This returns the number of columns in the given table-valued parameter, which may be zero.
+
+    if (sql_data_type != SQL_SS_TABLE) {
+        // if this is not a TVP, simply return
+        return 0;
+    }
+
+    // First check if TVP table type name or the array of column encodings is provided
+    HashTable* inputs_ht = Z_ARRVAL_P(param_z);
+    zval *tvp_name_z = NULL;
+    tvp_name_z = zend_hash_index_find(inputs_ht, 0);
+    size_t total_num_columns = 0;
+
+    if (tvp_name_z == NULL) {
+        // TODO: throw an error - expect a table type name -- what lands to this case, the array is empty???
+    } else if (Z_TYPE_P(tvp_name_z) == IS_STRING) {
+        if (Z_STRLEN_P(tvp_name_z) > 0) {
+            // If the user provides a table type name, get its column meta data next
+            get_tvp_metadata(stmt, reinterpret_cast<SQLCHAR*>(Z_STRVAL_P(tvp_name_z)));
+            total_num_columns = tvp_columns.size();
+        } else {
+            // TODO: throw an error - type name must be a non-empty string or a null
+        }
+    } else if (Z_TYPE_P(tvp_name_z) != IS_NULL) {
+        // TODO: throw an error - type name must be a non-empty string or a null
+    }
+
+    zval *data_columns_z = NULL;
+    data_columns_z = zend_hash_index_find(inputs_ht, 1);
+    if (data_columns_z == NULL) {
+        // TODO: throw an error -- perhaps find the docs page somewhere that says a TVP can not be null but it may have null columns
+        return 0;
+    }
+
+    // Save the TVP columns data and check these next:
+    // (1) is the array empty with no columns?
+    // (2) check individual column and see if their sizes are consistent?
+    param_ptr_z = data_columns_z;
+
+    //HashTable* columns_ht = Z_ARRVAL_P(param_z);
+    HashTable* columns_ht = Z_ARRVAL_P(data_columns_z);
+    int num_columns = zend_hash_num_elements(columns_ht);
+    if (num_columns == 0) {
+        // TVP has no columns
+        return 0;
+    } else if (total_num_columns > 0 && num_columns > total_num_columns) {
+        // TODO: throw an error if the number of provided columns is more than the expected number of columns for the TVP
+    }
+
+    zend_ulong cid = -1;
+    zend_string *ckey = NULL;
+    zval* col_z = NULL;
+    int num_values = -1;
+    int type = HASH_KEY_NON_EXISTENT;
+
+    // Loop through the columns to check the number of rows for each column
+    ZEND_HASH_FOREACH_KEY_VAL(columns_ht, cid, ckey, col_z) {
+        int key_type = ckey ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
+
+        if (type == HASH_KEY_NON_EXISTENT) {
+            type = key_type;
+        } else if (type != key_type) {
+            // TODO: throw an error - mixed types of arrays are not accepted
+        }
+
+        if (Z_TYPE_P(col_z) != IS_ARRAY) {
+            // TODO: throw an error something like 'A TVP's column must be an array of values'
+        }
+
+        if (type == HASH_KEY_IS_STRING) {
+            // The column data provided using named parameters
+            if (total_num_columns == 0) {
+                // TODO: throw an error -- if a table type name was given get TVP meta data would have been populated
+            }
+        }
+
+        // Are all the TVP's rows the same size -- comparse those non-empty arrays
+        int size = zend_hash_num_elements(Z_ARRVAL_P(col_z));
+        if (num_values < 0) {
+            num_values = (size > 0) ? size : -1;
+        } else if (size > 0 && size != num_values) {
+            // TODO: throw an error something like 'The TVP's columns have inconsistent number of rows'
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    // Set member variable num_rows
+    if (num_values > 0) {
+        // This means at least one column contains some values
+        this->num_rows = num_values;
+    } else {
+        // None of the columns contain any value -- all empty
+        num_columns = 0;
+    }
+
+    return num_columns;
+}
+
+void sqlsrv_param_tvp::process_param_column_value(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* array_z, _Inout_ zval* data_z)
+{
+    int php_type = Z_TYPE_P(data_z);
+
+    switch (php_type) {
+    case IS_TRUE:
+    case IS_FALSE:
+    case IS_LONG:
+    case IS_DOUBLE:
+        sqlsrv_param::process_param(stmt, data_z);
+        param_ptr_z = array_z;              // save the entire array
+        buffer = &placeholder_z.value;      // use placeholder zval for binding later
+        break;
+    case IS_RESOURCE:
+        sqlsrv_param::process_resource_param(array_z);
+        break;
+    case IS_STRING:
+    case IS_OBJECT:
+        if (php_type == IS_STRING) {
+            // No need to check if it is a numerical type because for TVP string data, the sql data types
+            // are derived merely based on encoding, thus not that precise or accurate
+            derive_string_types_sizes(data_z);
+        } else {
+            preprocess_datetime_object(stmt, data_z);
+        }
+        param_ptr_z = array_z;              // save the entire array
+        buffer = reinterpret_cast<SQLPOINTER>(this);
+        buffer_length = 0;
+        strlen_or_indptr = SQL_DATA_AT_EXEC;
+        break;
+    case IS_NULL:
+        SQLSRV_ASSERT(false, "sqlsrv_param_tvp::process_param_column_values - data is NULL (should not have reached here)");
+        break;
+    default:
+        // TODO: add a new error for TVP param for this 
+        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1);
+        break;
+    }
+}
+
+void sqlsrv_param_tvp::process_null_param_values(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* array_z)
+{
+    // This method is called because the first element in the column array is null, so we should continue to look for the first non-null value
+    // in order to derive most arguments required by SQLBindParameter()
+    // For example: the column array could be [null, 0, 1, null, 5, ...], [null, 'abc', null, 'def', ...], [null, null, null, 9.678, 54.3, ...], etc.
+
+    HashTable* values_ht = Z_ARRVAL_P(array_z);
+    zend_ulong id = -1;
+    zend_string *key = NULL;
+    zval* data_z = NULL;
+
+    ZEND_HASH_FOREACH_KEY_VAL(values_ht, id, key, data_z) {
+        param_php_type = Z_TYPE_P(data_z);
+        if (param_php_type != IS_NULL) {
+            process_param_column_value(stmt, array_z, data_z);
+            break;
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    if (param_php_type == IS_NULL) {
+        // This means that the entire column array contains nothing but NULLs
+        sqlsrv_param::process_null_param(data_z);
+    }
+}
+
+// Returns -1 if the specified column name is not found 
+int sqlsrv_param_tvp::find_column_by_name(_In_ zend_string *col_name)
+{
+    std::string key = ZSTR_VAL(col_name);
+
+    if (sql_data_type != SQL_SS_TABLE) {
+        return -1;
+    }
+
+    int index = -1;
+    for (size_t i = 0; i < tvp_columns.size(); i++) {
+        if (stricmp(key.c_str(), tvp_columns[i]->column_name.c_str()) == 0) {
+            index = i;
+            break;
+        }
+    }
+
+    return index;
+}
+
+void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
+{
+    core::SQLBindParameter(stmt, param_pos + 1, direction, c_data_type, sql_data_type, column_size, decimal_digits, buffer, buffer_length, &strlen_or_indptr);
+
+    if (sql_data_type != SQL_SS_TABLE) {
+        return;
+    }
+
+    // Bind the TVP columns one by one
+    // Register this object first using SQLSetDescField() for sending TVP data post execution
+    SQLHDESC desc;
+    core::SQLGetStmtAttr(stmt, SQL_ATTR_APP_PARAM_DESC, &desc, 0, 0);
+    SQLRETURN r = ::SQLSetDescField(desc, param_pos + 1, SQL_DESC_DATA_PTR, reinterpret_cast<SQLPOINTER>(this), 0);
+    CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
+        throw core::CoreException();
+    }
+
+    // First set focus on this parameter
+    size_t ordinal = param_pos + 1;
+    core::SQLSetStmtAttr(stmt, SQL_SOPT_SS_PARAM_FOCUS, reinterpret_cast<SQLPOINTER>(ordinal), SQL_IS_INTEGER);
+
+    // This keeps track of which TVP column is bound, in case the user only provides a subset of column data
+    size_t total_num_columns = tvp_columns.size();
+    std::vector<bool>    column_bound(total_num_columns);
+    for (size_t i = 0; i < total_num_columns; i++) {
+        column_bound[i] = false;
+    }
+
+    // Bind the TVP columns - loop through the array values in param_ptr_z. The number of columns provided
+    // is not necessarily the same as total_num_columns
+    SQLSRV_ENCODING stmt_encoding = (stmt->encoding() == SQLSRV_ENCODING_DEFAULT) ? stmt->conn->encoding() : stmt->encoding();
+    int type = HASH_KEY_NON_EXISTENT;
+    HashTable* columns_ht = Z_ARRVAL_P(param_ptr_z);
+    size_t num_columns = zend_hash_num_elements(columns_ht);
+    zend_ulong col_id = -1;
+    zend_string *col_key = NULL;
+    zval* col_z = NULL;
+    
+    ZEND_HASH_FOREACH_KEY_VAL(columns_ht, col_id, col_key, col_z) {
+        sqlsrv_param* column_param = NULL;
+        type = col_key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
+
+        if (type == HASH_KEY_IS_STRING) {
+            // Column data provided by column name as KEYs, not position
+            int index = find_column_by_name(col_key);
+            if (index < 0) {
+                //TODO: throw an error because this column key is not found
+            }
+            column_param = tvp_columns[index];
+            column_bound[index] = true;
+        } else {
+            // If total_num_columns is 0 it means the user did not provide the TVP name.
+            // In such case, assume the user has supplied data for all columns in the right order.
+            // Also, all columns will simply inherit the stmt encoding.
+            SQLUSMALLINT pos = static_cast<SQLUSMALLINT>(col_id);
+            if (total_num_columns == 0) {
+                sqlsrv_malloc_auto_ptr<sqlsrv_param_tvp> param_ptr;
+                param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(pos, stmt_encoding, SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0);
+
+                tvp_columns.push_back(param_ptr);
+                param_ptr.transferred();
+            }                 
+            column_param = tvp_columns[pos];
+        }
+
+        SQLSRV_ASSERT(column_param != NULL, "sqlsrv_param_tvp::bind_param -- column param should not be null");
+
+        //sqlsrv_param* column_param = tvp_columns[index]; //tvp_columns[pos];
+        column_param->process_param(stmt, col_z);
+        column_param->bind_param(stmt);
+
+    } ZEND_HASH_FOREACH_END();
+
+    // Next, if the column data is provided in an associative array, check if any columns is not yet bound
+    if (type == HASH_KEY_IS_STRING) {
+        for (size_t i = 0; i < total_num_columns; i++) {
+            if (!column_bound[i]) {
+                sqlsrv_param* column_param = tvp_columns[i];
+                column_param->process_param(stmt, NULL);
+                column_param->bind_param(stmt);
+            }
+        }
+    }
+
+    // Reset focus
+    core::SQLSetStmtAttr(stmt, SQL_SOPT_SS_PARAM_FOCUS, reinterpret_cast<SQLPOINTER>(0), SQL_IS_INTEGER);
+}
+
+void sqlsrv_param_tvp::populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_ int ordinal)
+{
+    if (sql_data_type == SQL_SS_TABLE || ordinal >= num_rows) {
+        return;
+    }
+
+    HashTable* values_ht = NULL;
+    zval* value_z = NULL;
+    int type = IS_NULL;
+
+    switch (param_php_type) {
+    case IS_TRUE:
+    case IS_FALSE:
+    case IS_LONG:
+    case IS_DOUBLE:
+        // Populate the cell of a column at ordinal
+        values_ht = Z_ARRVAL_P(param_ptr_z);
+        value_z = zend_hash_index_find(values_ht, ordinal);
+        type = Z_TYPE_P(value_z);
+
+        // First check if value_z is NULL
+        if (type == IS_NULL) {
+            ZVAL_NULL(&placeholder_z);
+            strlen_or_indptr = SQL_NULL_DATA;
+        } else {
+            // Once the placeholder is bound with the correct value from the array, update current_row
+            if (param_php_type == IS_DOUBLE) {
+                if (type != IS_DOUBLE) {
+                    // If value_z type is different from param_php_type convert first
+                    convert_to_double(value_z);
+                }
+                strlen_or_indptr = sizeof(Z_DVAL_P(value_z));
+                ZVAL_DOUBLE(&placeholder_z, Z_DVAL_P(value_z));
+            } else {
+                if (type != IS_LONG) {
+                    // If value_z type is different from param_php_type convert first
+                    // Even for boolean values
+                    convert_to_long(value_z);
+                }
+                strlen_or_indptr = sizeof(Z_LVAL_P(value_z));
+                ZVAL_LONG(&placeholder_z, Z_LVAL_P(value_z));
+            }
+        }
+        current_row++;
+        break;
+    default:
+        // Do nothing for other types
+        break;
+    }
+}
+
+bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
+{
+    if (sql_data_type != SQL_SS_TABLE) {
+        // Check current_row first for each of the TVP columns
+        if (current_row >= num_rows) {
+            return false;
+        }
+
+        HashTable* values_ht = Z_ARRVAL_P(param_ptr_z);
+        zval* value_z = NULL;
+        value_z = zend_hash_index_find(values_ht, current_row);
+        // First check if value_z is NULL
+        if (Z_TYPE_P(value_z) == IS_NULL) {
+            core::SQLPutData(stmt, &value_z->value, SQL_NULL_DATA);
+            current_row++;
+        } else {
+            if (param_php_type == IS_RESOURCE) {
+                stream_read = 0;
+                param_stream = NULL;
+
+                // Get the stream from the zval value
+                core::sqlsrv_php_stream_from_zval_no_verify(*stmt, param_stream, value_z);
+                // Keep sending the packets until EOF is reached
+                while (sqlsrv_param::send_data_packet(stmt)) {}
+
+                current_row++;
+            } else {
+                SQLLEN  value_len = Z_STRLEN_P(value_z);
+
+                switch (param_php_type) {
+                case IS_OBJECT:
+                    // This method updates placeholder_z as string
+                    convert_datetime_to_string(stmt, value_z);
+                    core::SQLPutData(stmt, Z_STRVAL(placeholder_z), SQL_NTS);
+                    current_row++;
+                    break;
+                case IS_STRING:
+                    if (value_len > 0 && encoding == CP_UTF8) {
+                        if (value_len > INT_MAX) {
+                            LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
+                            throw core::CoreException();
+                        }
+                        // This method would change the member placeholder_z
+                        convert_input_str_to_utf16(stmt, value_z);
+                        send_string_data_in_batches(stmt, &placeholder_z);
+                    } else {
+                        if (value_len == 0) {
+                            // If it's an empty string
+                            core::SQLPutData(stmt, Z_STRVAL_P(value_z), 0);
+                        } else {
+                            send_string_data_in_batches(stmt, value_z);
+                        }
+                    }
+                    current_row++;
+                    break;
+                default:
+                    // Do nothing for other types
+                    break;
+                }
+            } // else not IS_RESOURCE
+        } // else not IS_NULL
+    } else {
+        if (current_row < num_rows) {
+            // Loop through the table parameter columns and populate each cell's placeholder whenever applicable
+            for (size_t i = 0; i < tvp_columns.size(); i++) {
+                tvp_columns[i]->populate_cell_placeholder(stmt, current_row);
+            }
+
+            // This indicates a TVP row is available
+            core::SQLPutData(stmt, reinterpret_cast<SQLPOINTER>(1), 1);
+            current_row++;
+        } else {
+            // This indicates there is no more TVP row
+            core::SQLPutData(stmt, reinterpret_cast<SQLPOINTER>(0), 0);
+        }
+    }
+
+    // Return false to indicate that the current row is sent
+    return false;
+}
+
+void sqlsrv_param_tvp::send_string_data_in_batches(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z)
+{
+    SQLLEN len = Z_STRLEN_P(value_z);
+    SQLLEN batch = column_size;
+    char* p = Z_STRVAL_P(value_z);
+
+    while (len > batch) {
+        core::SQLPutData(stmt, p, batch);
+        len -= batch;
+        p += batch;
+    }
+
+    // Put final batch
+    core::SQLPutData(stmt, p, len);
 }
 
 void sqlsrv_params_container::clean_up_param_data(_In_opt_ bool only_input/* = false*/)

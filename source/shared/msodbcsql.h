@@ -77,6 +77,8 @@
 #define SQL_SOPT_SS_BASE                            1225
 #define SQL_SOPT_SS_TEXTPTR_LOGGING                 (SQL_SOPT_SS_BASE+0) // Text pointer logging 
 #define SQL_SOPT_SS_NOBROWSETABLE                   (SQL_SOPT_SS_BASE+3) // Set NOBROWSETABLE option 
+#define SQL_SOPT_SS_PARAM_FOCUS                     (SQL_SOPT_SS_BASE+11)// Direct subsequent calls to parameter related methods to set properties on constituent columns/parameters of container types
+#define SQL_SOPT_SS_NAME_SCOPE                      (SQL_SOPT_SS_BASE+12)// Sets name scope for subsequent catalog function calls
 #define SQL_SOPT_SS_COLUMN_ENCRYPTION               (SQL_SOPT_SS_BASE+13)// Sets the column encryption mode 
 // Define old names 
 #define SQL_TEXTPTR_LOGGING                         SQL_SOPT_SS_TEXTPTR_LOGGING
@@ -180,6 +182,10 @@
 #define SQL_COLUMN_ENCRYPTION_DEFAULT       SQL_COLUMN_ENCRYPTION_DISABLE
     // Defines for use with SQL_COPT_SS_CEKCACHETTL
 #define SQL_CEKCACHETTL_DEFAULT             7200L        //  TTL value in seconds (2 hours)
+//SQL_SOPT_SS_NAME_SCOPE
+#define SQL_SS_NAME_SCOPE_TABLE             0L
+#define SQL_SS_NAME_SCOPE_TABLE_TYPE        1L
+#define SQL_SS_NAME_SCOPE_DEFAULT           SQL_SS_NAME_SCOPE_TABLE
 // SQL_COPT_SS_ENCRYPT 
 #define SQL_EN_OFF                          0L
 #define SQL_EN_ON                           1L

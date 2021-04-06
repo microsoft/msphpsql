@@ -64,7 +64,7 @@ enum SQLSRV_PHPTYPE zend_to_sqlsrv_phptype[] = {
     SQLSRV_PHPTYPE_INT,
     SQLSRV_PHPTYPE_FLOAT,
 	SQLSRV_PHPTYPE_STRING,
-    SQLSRV_PHPTYPE_INVALID,
+    SQLSRV_PHPTYPE_TABLE,
     SQLSRV_PHPTYPE_DATETIME,
     SQLSRV_PHPTYPE_STREAM,
     SQLSRV_PHPTYPE_INVALID,
@@ -227,7 +227,9 @@ sqlsrv_phptype ss_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, _
         case SQL_REAL:
             ss_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
             break;
-
+        case SQL_SS_TABLE:
+            ss_phptype.typeinfo.type = SQLSRV_PHPTYPE_TABLE;
+            break;
         case SQL_TYPE_DATE:
         case SQL_SS_TIMESTAMPOFFSET:
         case SQL_SS_TIME2:
@@ -1561,6 +1563,7 @@ bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, _In_ sqlsrv_sq
             *column_size = INT_MAX >> 1;
             break;
         case SQL_SS_XML:
+        case SQL_SS_TABLE:
             *column_size = SQL_SS_LENGTH_UNLIMITED;
             break;
         case SQL_BINARY:
@@ -1710,6 +1713,10 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
             }
             break;
         }
+        case SQL_SS_TABLE:
+            sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_TABLE;
+            sqlsrv_phptype.typeinfo.encoding = stmt->encoding();
+            break;
         default:
             sqlsrv_phptype.typeinfo.type = PHPTYPE_INVALID;
             break;
@@ -2076,6 +2083,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
         case SQLSRV_PHPTYPE_INT:
         case SQLSRV_PHPTYPE_FLOAT:
         case SQLSRV_PHPTYPE_DATETIME:
+        case SQLSRV_PHPTYPE_TABLE:
             return true;
         case SQLSRV_PHPTYPE_STRING:
         case SQLSRV_PHPTYPE_STREAM:
@@ -2120,6 +2128,7 @@ bool is_valid_sqlsrv_sqltype( _In_ sqlsrv_sqltype sql_type )
         case SQL_TYPE_DATE:
         case SQL_SS_TIME2:
         case SQL_SS_TIMESTAMPOFFSET:
+        case SQL_SS_TABLE:
             break;
         default:
             return false;

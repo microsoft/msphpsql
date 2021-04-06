@@ -207,6 +207,7 @@ enum SQLSRV_PHPTYPE {
     SQLSRV_PHPTYPE_STRING,
     SQLSRV_PHPTYPE_DATETIME,
     SQLSRV_PHPTYPE_STREAM,
+    SQLSRV_PHPTYPE_TABLE,
     MAX_SQLSRV_PHPTYPE,      // highest value for a php type
     SQLSRV_PHPTYPE_INVALID = MAX_SQLSRV_PHPTYPE     // used to see if a type is invalid
 };
@@ -1105,6 +1106,8 @@ struct sqlsrv_conn : public sqlsrv_context {
 
     sqlsrv_malloc_auto_ptr<ACCESSTOKEN> azure_ad_access_token;
 
+    //bool need_long_data_len;    // true if the data source needs the length of a long data value (e.g. SQL_LONGVARCHAR, SQL_LONGVARBINARY)
+
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
@@ -1478,6 +1481,40 @@ struct sqlsrv_param_inout : public sqlsrv_param
     void finalize_output_string();
 };
 
+// *** table-valued parameter struct used for SQLBindParameter, inheriting sqlsrv_param ***
+struct sqlsrv_param_tvp : public sqlsrv_param
+{
+    std::vector<sqlsrv_param_tvp*>  tvp_columns;
+    std::string                     column_name;
+    int                             num_rows;
+    int                             current_row;
+
+    sqlsrv_param_tvp(_In_ SQLUSMALLINT param_num, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
+        sqlsrv_param(param_num, SQL_PARAM_INPUT, enc, sql_type, col_size, dec_digits), num_rows(0), current_row(0)
+    {
+        ZVAL_UNDEF(&placeholder_z);
+    }
+    virtual ~sqlsrv_param_tvp() { release_data(); }
+    virtual void release_data();
+    virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
+    virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+
+    // The following methods are used to supply data to the server
+    virtual void init_data_from_zval(_Inout_ sqlsrv_stmt* stmt) {}
+    virtual bool send_data_packet(_Inout_ sqlsrv_stmt* stmt);
+
+    // The following methods are only applicable to a table-valued parameter or its individual columns
+    static void sql_type_to_encoding(_In_ SQLSMALLINT sql_type, _Inout_ SQLSRV_ENCODING* encoding);
+    
+    int find_column_by_name(_In_ zend_string *col_name);
+    void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* table_type_name);
+    int parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    void process_param_column_value(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* column_z, _Inout_ zval* data_z);
+    void process_null_param_values(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    void populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_ int ordinal);
+    void send_string_data_in_batches(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z);
+};
+
 // *** a container of all parameters used for SQLBindParameter ***
 struct sqlsrv_params_container
 {
@@ -1714,7 +1751,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
                                       _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver );
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
                              _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
-                             _Inout_ SQLSMALLINT decimal_digits );
+                             _Inout_ SQLSMALLINT decimal_digits);
 SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
 field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno );
 bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset );

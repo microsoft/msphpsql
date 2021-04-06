@@ -76,6 +76,7 @@ void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_l
 void load_azure_key_vault( _Inout_ sqlsrv_conn* conn );
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t key_size);
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size);
+void check_need_long_data_len(_Inout_ sqlsrv_conn* conn);
 }
 
 // core_sqlsrv_connect
@@ -259,6 +260,9 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     // After load_azure_key_vault, reset AKV related variables regardless
     load_azure_key_vault(conn);
     conn->ce_option.akv_reset();
+
+    //// Check if SQL_LEN_DATA_AT_EXEC(length) macro is required when sending long data 
+    //check_need_long_data_len(conn);
 
     // determine the version of the server we're connected to.  The server version is left in the
     // connection upon return.
@@ -524,6 +528,63 @@ void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn )
     sqlsrv_free( conn );
 }
 
+#define STR_LEN 256 
+void get_metadata_for_table_type_columns(_Inout_ sqlsrv_conn* conn, SQLTCHAR *TableTypeName) {
+    SQLHANDLE chstmt;
+    SQLRETURN rc;
+
+    // Declare buffers for result set data  
+    //SQLCHAR szSchema[STR_LEN];
+    //SQLCHAR szCatalog[STR_LEN];
+    //SQLCHAR szColumnName[STR_LEN];
+    //SQLCHAR szTableName[STR_LEN];
+    //SQLCHAR szTypeName[STR_LEN];
+
+    SQLINTEGER ColumnSize;
+    SQLINTEGER BufferLength;
+    SQLSMALLINT DecimalDigits;
+    SQLSMALLINT SQLDataType;
+    SQLSMALLINT DataType;
+
+    // Declare buffers for bytes available to return  
+    //SQLLEN cbCatalog;
+    //SQLLEN cbSchema;
+    //SQLLEN cbTableName;
+    SQLLEN cbColumnName;
+    SQLLEN cbDataType;
+    //SQLLEN cbTypeName;
+    SQLLEN cbColumnSize;
+    SQLLEN cbDecimalDigits;
+    SQLLEN cbBufferLength;
+    SQLLEN cbSQLDataType;
+
+    rc = SQLAllocHandle(SQL_HANDLE_STMT, conn->handle(), &chstmt);
+
+    rc = SQLSetStmtAttr(chstmt, SQL_SOPT_SS_NAME_SCOPE, (SQLPOINTER)SQL_SS_NAME_SCOPE_TABLE_TYPE, SQL_IS_UINTEGER);
+
+    rc = SQLColumns(chstmt, NULL, 0, NULL, 0, TableTypeName, SQL_NTS, NULL, 0);
+    if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
+        //SQLBindCol(chstmt, 1, SQL_C_CHAR, szCatalog, STR_LEN, &cbCatalog);
+        //SQLBindCol(chstmt, 2, SQL_C_CHAR, szSchema, STR_LEN, &cbSchema);
+        //SQLBindCol(chstmt, 3, SQL_C_CHAR, szTableName, STR_LEN, &cbTableName);
+        //SQLBindCol(chstmt, 4, SQL_C_CHAR, szColumnName, STR_LEN, &cbColumnName);
+        //SQLBindCol(chstmt, 6, SQL_C_CHAR, szTypeName, STR_LEN, &cbTypeName);
+        SQLBindCol(chstmt, 5, SQL_C_SSHORT, &DataType, 0, &cbDataType);
+        SQLBindCol(chstmt, 7, SQL_C_SLONG, &ColumnSize, 0, &cbColumnSize);
+        SQLBindCol(chstmt, 8, SQL_C_SLONG, &BufferLength, 0, &cbBufferLength);
+        SQLBindCol(chstmt, 9, SQL_C_SSHORT, &DecimalDigits, 0, &cbDecimalDigits);
+        SQLBindCol(chstmt, 14, SQL_C_SSHORT, &SQLDataType, 0, &cbSQLDataType);
+
+        while (SQL_SUCCESS == rc) {
+            rc = SQLFetch(chstmt);
+        }
+    }
+
+    rc = SQLCloseCursor(chstmt);
+    rc = SQLFreeHandle(SQL_HANDLE_STMT, chstmt);
+}
+
+
 // core_sqlsrv_prepare
 // Create a statement object and prepare the SQL query passed in for execution at a later time.
 // Parameters:
@@ -571,6 +632,18 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
                 core::SQLDescribeParam(stmt, i + 1, &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
 
                 stmt->params_container.params_meta.push_back(param);
+
+                if (param.sql_type == SQL_SS_TABLE) {
+                    SQLTCHAR parameterTypeName[256];
+                    SQLHANDLE IPD;
+                    SQLINTEGER StringLength;
+
+                    SQLRETURN rc = SQLGetStmtAttr(stmt->handle(), SQL_ATTR_IMP_PARAM_DESC, &IPD, SQL_IS_POINTER, &StringLength);
+
+                    rc = SQLGetDescField(IPD, i+1, SQL_CA_SS_TYPE_NAME, parameterTypeName, sizeof(parameterTypeName), &StringLength);
+
+                    get_metadata_for_table_type_columns(stmt->conn, parameterTypeName);
+                }
             }
         }
     }
@@ -955,6 +1028,18 @@ const char* get_processor_arch( void )
 #endif // !_WIN32
 }
 
+/*
+// A character string "Y" is returened if the data source needs the length of a long data value 
+// (the data type is SQL_LONGVARCHAR, SQL_LONGVARBINARY, or a long data source - specific data type) 
+// before that value is sent to the data source, "N" if it does not. 
+void check_need_long_data_len(_Inout_ sqlsrv_conn* conn)
+{
+    SQLSMALLINT len;
+    char str[2] = { '\0' };
+    core::SQLGetInfo(conn, SQL_NEED_LONG_DATA_LEN, str, 2, &len);
+
+    conn->need_long_data_len = (str[0] == 'Y');
+} */
 
 // some features require a server of a certain version or later
 // this function determines the version of the server we're connected to
