@@ -1430,11 +1430,11 @@ struct sqlsrv_param
     virtual void release_data();
 
     bool derive_string_types_sizes(_In_ zval* param_z);
-    void preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+    bool preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
 
-    // The following methods change the member placeholder_z 
-    void convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
-    void convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+    // The following methods change the member placeholder_z, and both will return false if conversions fail
+    bool convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+    bool convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
 
     virtual bool prepare_param(_In_ zval* param_ref, _Inout_ zval* param_z);
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
@@ -1481,16 +1481,22 @@ struct sqlsrv_param_inout : public sqlsrv_param
     void finalize_output_string();
 };
 
-// *** table-valued parameter struct used for SQLBindParameter, inheriting sqlsrv_param ***
+// *** Table-valued parameter struct used for SQLBindParameter, inheriting sqlsrv_param
+// *** A sqlsrv_param_tvp can be representing a table-valued parameter itself or one of
+// *** its constituent columns. When it is a table-valued parameter, tvp_columns cannot
+// *** be empty and tvp_param_pos is the same as param_pos. When it is a TVP column, 
+// *** tvp_columns must be empty and tvp_param_pos refers to the original param position
+// *** of the table-valued parameter in the statement.
 struct sqlsrv_param_tvp : public sqlsrv_param
 {
-    std::vector<sqlsrv_param_tvp*>  tvp_columns;
-    std::string                     column_name;
-    int                             num_rows;
-    int                             current_row;
+    SQLUSMALLINT                    tvp_param_pos;      // 0-based - the position of the table-valued parameter in the original statement
+    std::vector<sqlsrv_param_tvp*>  tvp_columns;        // The constituent columns of the table-valued parameter
+    std::string                     column_name;        // The name of a column of the table-valued parameter
+    int                             num_rows;           // The total number of rows in a column
+    int                             current_row;        // A counter to keep track of which row is to be processed
 
-    sqlsrv_param_tvp(_In_ SQLUSMALLINT param_num, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
-        sqlsrv_param(param_num, SQL_PARAM_INPUT, enc, sql_type, col_size, dec_digits), num_rows(0), current_row(0)
+    sqlsrv_param_tvp(_In_ SQLUSMALLINT tvp_pos, _In_ SQLUSMALLINT param_num, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
+        sqlsrv_param(param_num, SQL_PARAM_INPUT, enc, sql_type, col_size, dec_digits), num_rows(0), current_row(0), tvp_param_pos(tvp_pos)
     {
         ZVAL_UNDEF(&placeholder_z);
     }
@@ -2008,6 +2014,19 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
     SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE,
     SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
+    SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE,
+    SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE,
+    SQLSRV_ERROR_TVP_FETCH_METADATA,
+    SQLSRV_ERROR_TVP_COLUMN_DATA_NOT_ARRAY,
+    SQLSRV_ERROR_TVP_INVALID_INPUTS,
+    SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME,
+    SQLSRV_ERROR_TVP_TABLE_COLUMNS_NOT_ARRAY,
+    SQLSRV_ERROR_TVP_NUM_COLUMNS_UNEXPECTED,
+    SQLSRV_ERROR_TVP_MIXED_ARRAY_KEYS,
+    SQLSRV_ERROR_TVP_COLUMN_NOT_ARRAY,
+    SQLSRV_ERROR_TVP_TABLE_TYPE_NAME_MISSING,
+    SQLSRV_ERROR_TVP_COLUMNS_INCONSISTENT_NUM_VALUES,
+    SQLSRV_ERROR_TVP_COLUMN_NAME_NOT_FOUND,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,

@@ -387,7 +387,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             if (direction == SQL_PARAM_INPUT) {
                 // Check if it's a Table-Valued Parameter first
                 if (Z_TYPE_P(param_z) == IS_ARRAY) {
-                    new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(param_num, encoding, SQL_SS_TABLE, 0, 0);
+                    new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(param_num, param_num, encoding, SQL_SS_TABLE, 0, 0);
                 } else {
                     new_param = new (sqlsrv_malloc(sizeof(sqlsrv_param))) sqlsrv_param(param_num, direction, encoding, sql_type, column_size, decimal_digits);
                 }
@@ -2351,7 +2351,7 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* param_z)
     return is_numeric;
 }
 
-void sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
+bool sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
 {
     // This converts the string in param_z and stores the wide string in the member placeholder_z
     char* str = Z_STRVAL_P(param_z);
@@ -2362,9 +2362,8 @@ void sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zv
         unsigned int wchar_size = 0;
 
         wide_buffer = utf16_string_from_mbcs_string(encoding, reinterpret_cast<const char*>(str), static_cast<int>(str_length), &wchar_size, true);
-        // TODO: a new error message for TVP column parameter
-        CHECK_CUSTOM_ERROR(wide_buffer == 0, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, param_pos + 1, get_last_error_message()) {
-            throw core::CoreException();
+        if (wide_buffer == 0) {
+            return false;
         }
         wide_buffer[wchar_size] = L'\0';
         core::sqlsrv_zval_stringl(&placeholder_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
@@ -2372,6 +2371,8 @@ void sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zv
         // If the string is empty, then nothing needs to be done
         core::sqlsrv_zval_stringl(&placeholder_z, "", 0);
     }
+
+    return true;
 }
 
 void sqlsrv_param::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
@@ -2393,7 +2394,10 @@ void sqlsrv_param::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
             throw core::CoreException();
         }
         // This changes the member placeholder_z to hold the wide string
-        convert_input_str_to_utf16(stmt, param_z);
+        bool converted = convert_input_str_to_utf16(stmt, param_z);
+        CHECK_CUSTOM_ERROR(!converted, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, param_pos + 1, get_last_error_message()) {
+            throw core::CoreException();
+        }
 
         // Bind the wide string in placeholder_z
         buffer = Z_STRVAL(placeholder_z);
@@ -2452,7 +2456,7 @@ void sqlsrv_param::process_resource_param(_Inout_ zval* param_z)
     strlen_or_indptr = SQL_DATA_AT_EXEC;
 }
 
-void sqlsrv_param::convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
+bool sqlsrv_param::convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
 {
     // This changes the member placeholder_z to hold the converted string of the datetime object
     zval function_z;
@@ -2490,13 +2494,10 @@ void sqlsrv_param::convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zv
     zend_string_release(Z_STR(format_z));
     zend_string_release(Z_STR(function_z));
 
-    // TODO: new error message for TVP parameter
-    CHECK_CUSTOM_ERROR(zr == FAILURE, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1) {
-        throw core::CoreException();
-    }
+    return (zr != FAILURE);
 }
 
-void sqlsrv_param::preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
+bool sqlsrv_param::preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z)
 {
     bool valid_class_name_found = false;
     zend_class_entry *class_entry = Z_OBJCE_P(param_z);
@@ -2513,9 +2514,8 @@ void sqlsrv_param::preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zv
         }
     }
 
-    // TODO: find a new error for TVP parameter
-    CHECK_CUSTOM_ERROR(!valid_class_name_found, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1) {
-        throw core::CoreException();
+    if (!valid_class_name_found) {
+        return false;
     }
 
     // Derive the param SQL type only if it is unknown
@@ -2542,6 +2542,8 @@ void sqlsrv_param::preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zv
             decimal_digits = SQL_SERVER_2008_DEFAULT_DATETIME_SCALE;
         }
     }
+
+    return true;
 }
 
 void sqlsrv_param::process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
@@ -2549,8 +2551,13 @@ void sqlsrv_param::process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
     // Assume the param refers to a DateTime object since it's the only type the drivers support.
     // Verification occurs in the calling function as the drivers convert the DateTime object
     // to a string before sending it to the server.
-    preprocess_datetime_object(stmt, param_z);
-    convert_datetime_to_string(stmt, param_z);
+    bool succeeded = preprocess_datetime_object(stmt, param_z);
+    if (succeeded) {
+        succeeded = convert_datetime_to_string(stmt, param_z);
+    }
+    CHECK_CUSTOM_ERROR(!succeeded, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1) {
+        throw core::CoreException();
+    }
 
     buffer = Z_STRVAL(placeholder_z);
     buffer_length = Z_STRLEN(placeholder_z) - 1;
@@ -3086,15 +3093,14 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
     core::SQLAllocHandle(SQL_HANDLE_STMT, *(stmt->conn), &chstmt);
 
     rc = SQLSetStmtAttr(chstmt, SQL_SOPT_SS_NAME_SCOPE, (SQLPOINTER)SQL_SS_NAME_SCOPE_TABLE_TYPE, SQL_IS_UINTEGER);
-    // TODO
-    //CHECK_CUSTOM_ERROR(!SQL_SUCCEEDED(rc), stmt, ) {
-    //    throw CoreException();
-    //}
+    CHECK_CUSTOM_ERROR(!SQL_SUCCEEDED(rc), stmt, SQLSRV_ERROR_TVP_FETCH_METADATA, param_pos + 1) {
+        throw core::CoreException();
+    }
+
     rc = SQLColumns(chstmt, NULL, 0, NULL, 0, table_type_name, SQL_NTS, NULL, 0);
-    // TODO
-    //CHECK_CUSTOM_ERROR(!SQL_SUCCEEDED(rc), stmt, ) {
-    //    throw CoreException();
-    //}
+    CHECK_CUSTOM_ERROR(!SQL_SUCCEEDED(rc), stmt, SQLSRV_ERROR_TVP_FETCH_METADATA, param_pos + 1) {
+        throw core::CoreException();
+    }
 
     SQLSRV_ENCODING stmt_encoding = (stmt->encoding() == SQLSRV_ENCODING_DEFAULT) ? stmt->conn->encoding() : stmt->encoding();
 
@@ -3118,7 +3124,7 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
             SQLSRV_ENCODING column_encoding = stmt_encoding;
             sql_type_to_encoding(sql_type, &column_encoding);
 
-            param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(pos, column_encoding, SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0);
+            param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(param_pos, pos, column_encoding, SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0);
             param_ptr->column_name = reinterpret_cast<char*>(sz_col_name);
 
             tvp_columns.push_back(param_ptr);
@@ -3126,6 +3132,8 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
 
             pos++;
         }
+    } else {
+        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_FETCH_METADATA, param_pos + 1);
     }
 
     SQLCloseCursor(chstmt);
@@ -3151,8 +3159,6 @@ void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* pa
         return;
     }
 
-    SQLSRV_ASSERT(Z_TYPE_P(param_z) == IS_ARRAY, "sqlsrv_param_tvp::process_param - an array is expected for TVP row data");
-
     if (sql_data_type == SQL_SS_TABLE) {
         param_php_type = IS_ARRAY;
         c_data_type = SQL_C_DEFAULT;
@@ -3170,6 +3176,10 @@ void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* pa
         buffer_length = NULL;
         strlen_or_indptr = (num_columns == 0)? SQL_DEFAULT_PARAM : SQL_DATA_AT_EXEC;
     } else {
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(param_z) != IS_ARRAY, stmt, SQLSRV_ERROR_TVP_COLUMN_DATA_NOT_ARRAY, tvp_param_pos + 1, param_pos + 1) {
+            throw core::CoreException();
+        }
+
         // Process the TVP columns one by one and set the member num_rows, which may be 0
         HashTable* values_ht = Z_ARRVAL_P(param_z);
         num_rows = zend_hash_num_elements(values_ht);
@@ -3194,38 +3204,42 @@ void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* pa
 int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
 {
     // This method verifies if the table-valued parameter (i.e. param_z) provided by the user is valid.
-    // This returns the number of columns in the given table-valued parameter, which may be zero.
+    // The number of columns in the given table-valued parameter is returned, which may be zero.
 
     if (sql_data_type != SQL_SS_TABLE) {
         // if this is not a TVP, simply return
         return 0;
     }
 
-    // First check if TVP table type name or the array of column encodings is provided
+    // First check if TVP inputs contain the right number of elements: TVP name and an array of column arrays
     HashTable* inputs_ht = Z_ARRVAL_P(param_z);
+    int num_inputs = zend_hash_num_elements(inputs_ht);
+
+    CHECK_CUSTOM_ERROR(num_inputs != 2, stmt, SQLSRV_ERROR_TVP_INVALID_INPUTS, param_pos + 1) {
+        throw core::CoreException();
+    }
+ 
     zval *tvp_name_z = NULL;
     tvp_name_z = zend_hash_index_find(inputs_ht, 0);
     size_t total_num_columns = 0;
 
-    if (tvp_name_z == NULL) {
-        // TODO: throw an error - expect a table type name -- what lands to this case, the array is empty???
-    } else if (Z_TYPE_P(tvp_name_z) == IS_STRING) {
+    if (Z_TYPE_P(tvp_name_z) == IS_STRING) {
         if (Z_STRLEN_P(tvp_name_z) > 0) {
             // If the user provides a table type name, get its column meta data next
             get_tvp_metadata(stmt, reinterpret_cast<SQLCHAR*>(Z_STRVAL_P(tvp_name_z)));
             total_num_columns = tvp_columns.size();
         } else {
-            // TODO: throw an error - type name must be a non-empty string or a null
+            THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME, param_pos + 1);
         }
     } else if (Z_TYPE_P(tvp_name_z) != IS_NULL) {
-        // TODO: throw an error - type name must be a non-empty string or a null
+        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME, param_pos + 1);
     }
 
     zval *data_columns_z = NULL;
     data_columns_z = zend_hash_index_find(inputs_ht, 1);
-    if (data_columns_z == NULL) {
+    CHECK_CUSTOM_ERROR(Z_TYPE_P(data_columns_z) != IS_ARRAY, stmt, SQLSRV_ERROR_TVP_TABLE_COLUMNS_NOT_ARRAY, param_pos + 1) {
         // TODO: throw an error -- perhaps find the docs page somewhere that says a TVP can not be null but it may have null columns
-        return 0;
+        throw core::CoreException();
     }
 
     // Save the TVP columns data and check these next:
@@ -3233,14 +3247,13 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
     // (2) check individual column and see if their sizes are consistent?
     param_ptr_z = data_columns_z;
 
-    //HashTable* columns_ht = Z_ARRVAL_P(param_z);
     HashTable* columns_ht = Z_ARRVAL_P(data_columns_z);
     int num_columns = zend_hash_num_elements(columns_ht);
     if (num_columns == 0) {
         // TVP has no columns
         return 0;
     } else if (total_num_columns > 0 && num_columns > total_num_columns) {
-        // TODO: throw an error if the number of provided columns is more than the expected number of columns for the TVP
+        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_NUM_COLUMNS_UNEXPECTED, param_pos + 1);
     }
 
     zend_ulong cid = -1;
@@ -3256,17 +3269,20 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
         if (type == HASH_KEY_NON_EXISTENT) {
             type = key_type;
         } else if (type != key_type) {
-            // TODO: throw an error - mixed types of arrays are not accepted
+            // Mixed array keys not accepted
+            THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_MIXED_ARRAY_KEYS, param_pos + 1);
         }
 
         if (Z_TYPE_P(col_z) != IS_ARRAY) {
-            // TODO: throw an error something like 'A TVP's column must be an array of values'
+            // Individual column must be an array of values
+            THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_COLUMN_NOT_ARRAY, param_pos + 1);
         }
 
         if (type == HASH_KEY_IS_STRING) {
             // The column data provided using named parameters
             if (total_num_columns == 0) {
-                // TODO: throw an error -- if a table type name was given get TVP meta data would have been populated
+                // If a table type name was given get TVP meta data would have been populated
+                THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_TABLE_TYPE_NAME_MISSING, param_pos + 1);
             }
         }
 
@@ -3275,7 +3291,8 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
         if (num_values < 0) {
             num_values = (size > 0) ? size : -1;
         } else if (size > 0 && size != num_values) {
-            // TODO: throw an error something like 'The TVP's columns have inconsistent number of rows'
+            // The TVP's columns have inconsistent number of rows
+            THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_COLUMNS_INCONSISTENT_NUM_VALUES, param_pos + 1);
         }
     } ZEND_HASH_FOREACH_END();
 
@@ -3314,7 +3331,11 @@ void sqlsrv_param_tvp::process_param_column_value(_Inout_ sqlsrv_stmt* stmt, _In
             // are derived merely based on encoding, thus not that precise or accurate
             derive_string_types_sizes(data_z);
         } else {
-            preprocess_datetime_object(stmt, data_z);
+            // If preprocessing a datetime object fails, throw an error of invalid php type
+            bool succeeded = preprocess_datetime_object(stmt, data_z);
+            CHECK_CUSTOM_ERROR(!succeeded, stmt, SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE, tvp_param_pos + 1, param_pos + 1) {
+                throw core::CoreException();
+            }
         }
         param_ptr_z = array_z;              // save the entire array
         buffer = reinterpret_cast<SQLPOINTER>(this);
@@ -3325,8 +3346,7 @@ void sqlsrv_param_tvp::process_param_column_value(_Inout_ sqlsrv_stmt* stmt, _In
         SQLSRV_ASSERT(false, "sqlsrv_param_tvp::process_param_column_values - data is NULL (should not have reached here)");
         break;
     default:
-        // TODO: add a new error for TVP param for this 
-        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, param_pos + 1);
+        THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE, tvp_param_pos + 1, param_pos + 1);
         break;
     }
 }
@@ -3422,7 +3442,8 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
             // Column data provided by column name as KEYs, not position
             int index = find_column_by_name(col_key);
             if (index < 0) {
-                //TODO: throw an error because this column key is not found
+                // Column key not found
+                THROW_CORE_ERROR(stmt, SQLSRV_ERROR_TVP_COLUMN_NAME_NOT_FOUND, ZSTR_VAL(col_key), param_pos + 1);
             }
             column_param = tvp_columns[index];
             column_bound[index] = true;
@@ -3433,7 +3454,7 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
             SQLUSMALLINT pos = static_cast<SQLUSMALLINT>(col_id);
             if (total_num_columns == 0) {
                 sqlsrv_malloc_auto_ptr<sqlsrv_param_tvp> param_ptr;
-                param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(pos, stmt_encoding, SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0);
+                param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(param_pos, pos, stmt_encoding, SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0);
 
                 tvp_columns.push_back(param_ptr);
                 param_ptr.transferred();
@@ -3443,7 +3464,6 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
 
         SQLSRV_ASSERT(column_param != NULL, "sqlsrv_param_tvp::bind_param -- column param should not be null");
 
-        //sqlsrv_param* column_param = tvp_columns[index]; //tvp_columns[pos];
         column_param->process_param(stmt, col_z);
         column_param->bind_param(stmt);
 
@@ -3543,22 +3563,29 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
                 current_row++;
             } else {
                 SQLLEN  value_len = Z_STRLEN_P(value_z);
-
-                switch (param_php_type) {
-                case IS_OBJECT:
+                if (param_php_type == IS_OBJECT) {
                     // This method updates placeholder_z as string
-                    convert_datetime_to_string(stmt, value_z);
+                    bool succeeded = convert_datetime_to_string(stmt, value_z);
+
+                    // Conversion failed so assume the input was an invalid PHP type
+                    CHECK_CUSTOM_ERROR(!succeeded, stmt, SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE, tvp_param_pos + 1, param_pos + 1) {
+                        throw core::CoreException();
+                    }
+
                     core::SQLPutData(stmt, Z_STRVAL(placeholder_z), SQL_NTS);
                     current_row++;
-                    break;
-                case IS_STRING:
+                } else if (param_php_type == IS_STRING) {
                     if (value_len > 0 && encoding == CP_UTF8) {
                         if (value_len > INT_MAX) {
                             LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
                             throw core::CoreException();
                         }
                         // This method would change the member placeholder_z
-                        convert_input_str_to_utf16(stmt, value_z);
+                        bool succeeded = convert_input_str_to_utf16(stmt, value_z);
+                        CHECK_CUSTOM_ERROR(!succeeded, stmt, SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE, tvp_param_pos + 1, param_pos + 1, get_last_error_message()) {
+                            throw core::CoreException();
+                        }
+
                         send_string_data_in_batches(stmt, &placeholder_z);
                     } else {
                         if (value_len == 0) {
@@ -3569,10 +3596,6 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
                         }
                     }
                     current_row++;
-                    break;
-                default:
-                    // Do nothing for other types
-                    break;
                 }
             } // else not IS_RESOURCE
         } // else not IS_NULL

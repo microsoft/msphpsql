@@ -461,6 +461,58 @@ pdo_error PDO_ERRORS[] = {
         PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID,
         { IMSSP, (SQLCHAR*) "Invalid extended string type specified. PDO_ATTR_DEFAULT_STR_PARAM can be either PDO_PARAM_STR_CHAR or PDO_PARAM_STR_NATL.", -97, false}
     },
+    {
+        SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE,
+        { IMSSP, (SQLCHAR*) "An error occurred translating a string for TVP input param %1!d! column %2!d! to UTF-16: %3!s!", -98, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE,
+        { IMSSP, (SQLCHAR*) "An invalid type for Table-Valued Param %1!d! column %2!d! was specified", -99, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_FETCH_METADATA,
+        { IMSSP, (SQLCHAR*) "Failed to get metadata for Table-Valued Param %1!d!", -100, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_COLUMN_DATA_NOT_ARRAY,
+        { IMSSP, (SQLCHAR*) "Expect an array for Table-Valued Param %1!d! column %2!d!", -101, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_INPUTS,
+        { IMSSP, (SQLCHAR*) "Invalid inputs for Table-Valued Param %1!d!", -102, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME,
+        { IMSSP, (SQLCHAR*) "Expect a non-empty string or null for a Table Type Name for param %1!d!", -103, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_TABLE_COLUMNS_NOT_ARRAY,
+        { IMSSP, (SQLCHAR*) "Expect an array for constituent column data for Table-Valued Param %1!d!", -104, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_NUM_COLUMNS_UNEXPECTED,
+        { IMSSP, (SQLCHAR*) "Unexpected number of columns provided for Table-Valued Param %1!d!", -105, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_MIXED_ARRAY_KEYS,
+        { IMSSP, (SQLCHAR*) "Column data with mixed array keys not accepted for Table-Valued Param %1!d!", -106, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_COLUMN_NOT_ARRAY,
+        { IMSSP, (SQLCHAR*) "Expect array inputs for individual columns for Table-Valued Param %1!d!", -107, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_TABLE_TYPE_NAME_MISSING,
+        { IMSSP, (SQLCHAR*) "Must provide Table Type Name for Table-Valued Param %1!d! when using asssociative arrays as inputs for the constituent columns", -108, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_COLUMNS_INCONSISTENT_NUM_VALUES,
+        { IMSSP, (SQLCHAR*) "Number of values in the constituent columns for Table-Valued Param %1!d! are inconsistent", -109, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_COLUMN_NAME_NOT_FOUND,
+        { IMSSP, (SQLCHAR*) "Column name %1!s not found for Table-Valued Param %2!d!", -110, true }
+    },
 
     { UINT_MAX, {} }
 };

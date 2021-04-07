@@ -445,6 +445,58 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
         { IMSSP, (SQLCHAR*) "Failed to retrieve Data Classification Sensitivity Metadata: %1!s!", -121, true}
     },
+    {
+        SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE,
+        { IMSSP, (SQLCHAR*) "An error occurred translating a string for Table-Valued Param %1!d! column %2!d! to UTF-16: %3!s!", -122, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE,
+        { IMSSP, (SQLCHAR*) "An invalid type for Table-Valued Param %1!d! column %2!d! was specified", -123, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_FETCH_METADATA,
+        { IMSSP, (SQLCHAR*) "Failed to get metadata for Table-Valued Param %1!d!", -124, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_COLUMN_DATA_NOT_ARRAY,
+        { IMSSP, (SQLCHAR*) "Expect an array for Table-Valued Param %1!d! column %2!d!", -125, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_INPUTS,
+        { IMSSP, (SQLCHAR*) "Invalid inputs for Table-Valued Param %1!d!", -126, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME,
+        { IMSSP, (SQLCHAR*) "Expect a non-empty string or null for a Table Type Name for Table-Valued Param %1!d!", -127, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_TABLE_COLUMNS_NOT_ARRAY,
+        { IMSSP, (SQLCHAR*) "Expect an array for column data for Table-Valued Param %1!d!", -128, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_NUM_COLUMNS_UNEXPECTED,
+        { IMSSP, (SQLCHAR*) "Unexpected number of columns provided for Table-Valued Param %1!d!", -129, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_MIXED_ARRAY_KEYS,
+        { IMSSP, (SQLCHAR*) "Column data with mixed array keys not accepted for Table-Valued Param %1!d!", -130, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_COLUMN_NOT_ARRAY,
+        { IMSSP, (SQLCHAR*) "Expect array inputs for individual columns for Table-Valued Param %1!d!", -131, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_TABLE_TYPE_NAME_MISSING,
+        { IMSSP, (SQLCHAR*) "Must provide Table Type Name for Table-Valued Param %1!d! when using asssociative arrays as inputs for the constituent columns", -132, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_COLUMNS_INCONSISTENT_NUM_VALUES,
+        { IMSSP, (SQLCHAR*) "Number of values in the constituent columns for Table-Valued Param %1!d! are inconsistent", -133, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_COLUMN_NAME_NOT_FOUND,
+        { IMSSP, (SQLCHAR*) "Column name %1!s not found for Table-Valued Param %2!d!", -134, true }
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
