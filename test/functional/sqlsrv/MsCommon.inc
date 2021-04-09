@@ -11,6 +11,10 @@
 require_once('MsHelper.inc');
 require_once('MsSetup.inc');
 
+$tvpIncPath = dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'inc'.DIRECTORY_SEPARATOR;
+
+require_once($tvpIncPath. 'test_tvp_data.php');
+
 $usingUTF8data = false;
 
 function isWindows()
@@ -559,4 +563,19 @@ function verifyError($error, $state, $message)
     }
 }
 
+function getTodayDateAsString($conn)
+{
+    $tsql = 'SELECT CONVERT (VARCHAR(20), GETDATE())';
+    $stmt = sqlsrv_query($conn, $tsql);
+    $result = sqlsrv_fetch($stmt, SQLSRV_FETCH_NUMERIC);
+    $today = '';
+    if ($result) {
+        $today = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
+    } else {
+        echo "Failed to get today's date as string: " . PHP_EOL;
+        print_r(sqlsrv_errors());
+    }
+    
+    return $today;
+}
 ?>

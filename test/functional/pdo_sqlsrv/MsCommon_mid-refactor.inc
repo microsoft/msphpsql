@@ -8,6 +8,10 @@
 
 */
 
+$tvpIncPath = dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'inc'.DIRECTORY_SEPARATOR;
+
+require_once($tvpIncPath. 'test_tvp_data.php');
+
 //
 // looks like an additional file (in addition to pdo_test_base.inc) may be needed for these PHPTs
 // to be runnable from the MSSQL teams' internal proprietary test running system
@@ -1793,4 +1797,12 @@ function PhpVersionComponents(&$major, &$minor, &$sub)
     $major = strtok($str_version, ".");
     $minor = strtok(".");
     $sub = strtok(".");
+}
+
+function getTodayDateAsString($conn)
+{
+    $tsql = 'SELECT CONVERT (VARCHAR(20), GETDATE())';
+    $stmt = $conn->query($tsql);
+    $row = $stmt->fetch(PDO::FETCH_NUM);
+    return $row[0];
 }
