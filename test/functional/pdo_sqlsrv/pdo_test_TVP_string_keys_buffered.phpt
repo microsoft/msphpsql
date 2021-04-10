@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with string keys using prepare/execute and some inputs are NULLs
+Table-valued parameter with string keys using prepare/execute and all inputs provided but in random order
 --DESCRIPTION--
-Table-valued parameter with string keys using prepare/execute. Some columns may be NULLs, provided in random order. This test verifies the fetched results of all columns.
+Table-valued parameter with string keys using prepare/execute and only one column has NULL values. This test verifies the fetched results using client buffers.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -33,14 +33,19 @@ try {
     $conn->exec($createTVPOrderEntry);
     
     // Bind parameters for call to TVPOrderEntry
-    $custCode = 'PDO_456';
+    $custCode = 'PDO_789';
     $ordNo = 0;
     $ordDate = null;
 
     // TVP supports column-wise binding
+    $image3 = fopen($tvpIncPath. $gif3, 'rb');
+    $images = [null, null, $image3];
+
     // Create an array of column inputs with string keys
     $columns = array('label'=>array_column($items, 3),
-                     'price'=>array(),
+                     'price'=>array_column($items, 4),
+                     'photo'=>$images,
+                     'SalesDate'=>array_column($items, 2),
                      'OrderQty'=>array_column($items, 1),
                      'productcode'=>array_column($items, 0));
 
@@ -55,6 +60,7 @@ try {
     $stmt->bindParam(':tvp', $tvpInput, PDO::PARAM_LOB);
     $stmt->bindParam(':ordNo', $ordNo, PDO::PARAM_INT, 10);
     $stmt->bindParam(':ordDate', $ordDate, PDO::PARAM_STR, 20);
+
     $stmt->execute();
     $stmt->closeCursor();
 
@@ -77,10 +83,24 @@ try {
         var_dump($id);
     }
 
-    // Fetch all columns
-    $tsql = 'SELECT * FROM TVPItem ORDER BY ItemNo';
+    // Fetch the only image from the table that is not NULL
+    $tsql = 'SELECT ItemNo, Photo FROM TVPItem WHERE Photo IS NOT NULL ORDER BY ItemNo';
+    $stmt = $conn->query($tsql);
+    $index = 2;
+    $stmt->bindColumn('Photo', $photo, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
+    if ($row = $stmt->fetch(PDO::FETCH_BOUND)) {
+        if (!verifyBinaryData($images[$index], $photo)) {
+            echo 'Image data corrupted for row '. $index + 1 . PHP_EOL;
+        }
+    } else {
+        echo 'Failed in calling bindColumn' . PHP_EOL;
+    }
+    unset($photo);
+    fclose($image3);
+
+    // Fetch other basic types
     $stmt = $conn->query($selectTVPItemQuery);
-    while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         print_r($row);
     }
     unset($stmt);
@@ -101,32 +121,32 @@ try {
 Order Number: 1
 Array
 (
-    [0] => 1
-    [1] => 1
-    [2] => 0062836700
-    [3] => 367
-    [4] => 
-    [5] => AWC Tee Male Shirt
-    [6] => 
+    [OrdNo] => 1
+    [ItemNo] => 1
+    [ProductCode] => 0062836700
+    [OrderQty] => 367
+    [SalesDate] => 2009-03-12
+    [Label] => AWC Tee Male Shirt
+    [Price] => 20.75
 )
 Array
 (
-    [0] => 1
-    [1] => 2
-    [2] => 1250153272
-    [3] => 256
-    [4] => 
-    [5] => Superlight Black Bicycle
-    [6] => 
+    [OrdNo] => 1
+    [ItemNo] => 2
+    [ProductCode] => 1250153272
+    [OrderQty] => 256
+    [SalesDate] => 2017-11-07
+    [Label] => Superlight Black Bicycle
+    [Price] => 998.45
 )
 Array
 (
-    [0] => 1
-    [1] => 3
-    [2] => 1328781505
-    [3] => 260
-    [4] => 
-    [5] => Silver Chain for Bikes
-    [6] => 
+    [OrdNo] => 1
+    [ItemNo] => 3
+    [ProductCode] => 1328781505
+    [OrderQty] => 260
+    [SalesDate] => 2010-03-03
+    [Label] => Silver Chain for Bikes
+    [Price] => 88.98
 )
 Done

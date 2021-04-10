@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with numeric keys using direct queries
+Table-valued parameter with numeric keys using prepare/execute 
 --DESCRIPTION--
-Table-valued parameter with numeric keys using direct queries. This test verifies the fetched results of the basic data types. 
+Table-valued parameter with numeric keys using prepare/execute. This test verifies the fetched results of the basic data types. 
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -14,8 +14,7 @@ require_once('MsCommon_mid-refactor.inc');
 try {
     date_default_timezone_set('America/Los_Angeles');
 
-    $connectionInfo = "";
-    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server; database=$databaseName;", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $tvpType = 'TVPParam';

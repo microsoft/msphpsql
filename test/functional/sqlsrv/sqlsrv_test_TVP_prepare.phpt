@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with string keys using prepare/execute and NULL input values
+Table-valued parameter with string keys using prepare/execute and some inputs are NULLs
 --DESCRIPTION--
-Table-valued parameter with string keys using prepare/execute, and inputs may contain NULLs and are in random order. This test verifies the fetched results of the basic data types.
+Table-valued parameter with string keys using prepare/execute. Some columns may be NULLs, provided in random order. This test verifies the fetched results of the basic data types.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--

@@ -14,7 +14,7 @@ CREATE TABLE TVPItem(
     ProductCode CHAR(10), 
     OrderQty INTEGER, 
     SalesDate DATE, 
-    Label VARCHAR(30), 
+    Label NVARCHAR(30), 
     Price DECIMAL(5,2), 
     Photo VARBINARY(MAX))
 ITEM;
@@ -24,7 +24,7 @@ CREATE TYPE TVPParam AS TABLE(
                 ProductCode CHAR(10), 
                 OrderQty INTEGER, 
                 SalesDate DATE, 
-                Label VARCHAR(30), 
+                Label NVARCHAR(30), 
                 Price DECIMAL(5,2), 
                 Photo VARBINARY(MAX))
 TYPE;
@@ -65,18 +65,16 @@ $selectTVPItemQuery = 'SELECT OrdNo, ItemNo, ProductCode, OrderQty, SalesDate, L
 
 $createTestTVP = <<<TYPE1
 CREATE TYPE TestTVP AS TABLE(
-                c01 VARCHAR(255),
-                c02 VARCHAR(MAX),
-                c03 VARBINARY(255),
-                c04 VARBINARY(MAX),
-                c05 BIT,
-                c06 DATE,
-                c07 TIME,
-                c08 DATETIME2(5),
-                c09 BIGINT,
-                c10 FLOAT,
-                c11 NUMERIC(38, 24),
-                c12 UNIQUEIDENTIFIER)
+                C01 VARCHAR(255),
+                C02 VARCHAR(MAX),
+                C03 BIT,
+                C04 SMALLDATETIME,
+                C05 DATETIME2(5),
+                C06 UNIQUEIDENTIFIER,
+                C07 BIGINT,
+                C08 FLOAT,
+                C09 NUMERIC(38, 24),
+                C10 SQL_VARIANT)
 TYPE1;
 
 $createSelectTVP = <<<PROC1
@@ -85,6 +83,8 @@ CREATE PROCEDURE SelectTVP (
         AS 
         SELECT * FROM @TVP
 PROC1;
+
+$callSelectTVP = "{call SelectTVP(?)}";
 
 ///////////////////////////////////////////////////////
 // Common functions

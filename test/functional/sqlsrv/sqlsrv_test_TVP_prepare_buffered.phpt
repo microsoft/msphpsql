@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with string keys using prepare/execute and inputs are in random order
+Table-valued parameter with string keys using prepare/execute and all inputs provided but in random order
 --DESCRIPTION--
-Table-valued parameter with string keys using prepare/execute with only one NULL input. This test verifies the fetched results of the using client buffers.
+Table-valued parameter with string keys using prepare/execute and only one column has NULL values. This test verifies the fetched results of using client buffers.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -14,8 +14,7 @@ date_default_timezone_set('America/Los_Angeles');
 
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-$conn = AE\connect(array('ReturnDatesAsStrings' => true));
-
+$conn = connect(array('ReturnDatesAsStrings' => true));
 $tvpType = 'TVPParam';
 
 dropProc($conn, 'TVPOrderEntry');
@@ -40,9 +39,8 @@ $custCode = 'SRV_789';
 
 // 2 - Items TVP
 // TVP supports column-wise binding
-$image2 = fopen($tvpIncPath. $gif2, 'rb');
 $image3 = fopen($tvpIncPath. $gif3, 'rb');
-$images = [null, $image2, $image3];
+$images = [null, null, $image3];
 
 // Create an array of column inputs
 $columns = array('photo'=>$images,
@@ -102,15 +100,15 @@ if ($result = sqlsrv_fetch( $stmt, SQLSRV_FETCH_NUMERIC)) {
     print_r(sqlsrv_errors());
 }
 
-// Fetch the inserted images from the table and verify them, and only the first one is NULL
+// Fetch the only image from the table that is not NULL
 $tsql = 'SELECT ItemNo, Photo FROM TVPItem WHERE Photo IS NOT NULL ORDER BY ItemNo';
 $stmt = sqlsrv_query($conn, $tsql, array(), array("Scrollable"=>"buffered"));
 if (!$stmt) {
     print_r(sqlsrv_errors());
 }
 
-// Since the first image should be NULL, only compare the next two images
-$index = 1;
+// Only the last image is not NULL
+$index = 2;
 while (sqlsrv_fetch($stmt)) {
     $itemNo = sqlsrv_get_field($stmt, 0);
     echo $itemNo . PHP_EOL;
@@ -118,11 +116,8 @@ while (sqlsrv_fetch($stmt)) {
     if (!verifyBinaryStream($images[$index], $photo)) {
         echo "Stream data for image $index corrupted!" . PHP_EOL;
     }
-    $index++;
 }
 sqlsrv_free_stmt($stmt);
-
-fclose($image2);
 fclose($image3);
 
 // Fetch the other columns next
@@ -147,7 +142,6 @@ echo "Done" . PHP_EOL;
 ?>
 --EXPECT--
 Order Number: 1
-2
 3
 Array
 (

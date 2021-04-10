@@ -3124,7 +3124,8 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
             SQLSRV_ENCODING column_encoding = stmt_encoding;
             sql_type_to_encoding(sql_type, &column_encoding);
 
-            param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(param_pos, pos, column_encoding, SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0);
+            //param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(param_pos, pos, column_encoding, SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0);
+            param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(param_pos, pos, column_encoding, sql_type, col_size, dec_digits);
             param_ptr->column_name = reinterpret_cast<char*>(sz_col_name);
 
             tvp_columns.push_back(param_ptr);
