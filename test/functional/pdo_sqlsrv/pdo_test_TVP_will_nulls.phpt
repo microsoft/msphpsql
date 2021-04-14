@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter using bindParam and some inputs are NULLs
+Test Table-valued parameter using bindParam and some NULL inputs
 --DESCRIPTION--
-Table-valued parameter using bindParam with some NULL input values. This test verifies the fetched results of all columns.
+Test Table-valued parameter using bindParam with some NULL input values. This test verifies the fetched results of all columns.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--

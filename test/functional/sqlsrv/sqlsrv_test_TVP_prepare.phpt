@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with string keys using prepare/execute and some inputs are NULLs
+Test Table-valued parameter using prepare/execute and sqlsrv_send_stream_data with one NULL column
 --DESCRIPTION--
-Table-valued parameter with string keys using prepare/execute. Some columns may be NULLs, provided in random order. This test verifies the fetched results of the basic data types.
+Test Table-valued parameter using prepare/execute and sqlsrv_send_stream_data with one column of NULL input values. This test verifies the fetched results of the basic data types.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -39,11 +39,7 @@ sqlsrv_query($conn, $createTVPOrderEntry);
 $custCode = 'SRV_000';
 
 // 2 - Items TVP
-// TVP supports column-wise binding
-$image1 = fopen($tvpIncPath. $gif1, 'rb');
-$image2 = fopen($tvpIncPath. $gif2, 'rb');
-$image3 = fopen($tvpIncPath. $gif3, 'rb');
-$images = [$image1, $image2, $image3];
+$images = [null, null, null];
 
 for ($i = 0; $i < count($items); $i++) {
     array_push($items[$i], $images[$i]);
@@ -60,7 +56,8 @@ $params = array($custCode,
                 array(&$ordNo, SQLSRV_PARAM_OUT),
                 array(&$ordDate, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR)));
 
-$stmt = sqlsrv_prepare($conn, $callTVPOrderEntry, $params);
+$options = array("SendStreamParamsAtExec" => 0);
+$stmt = sqlsrv_prepare($conn, $callTVPOrderEntry, $params, $options);
 if (!$stmt) {
     print_r(sqlsrv_errors());
 }
@@ -69,9 +66,9 @@ if (!$res) {
     print_r(sqlsrv_errors());
 }
 
-fclose($image1);
-fclose($image2);
-fclose($image3);
+// Now call sqlsrv_send_stream_data in a loop
+while (sqlsrv_send_stream_data($stmt)) {
+}
 
 sqlsrv_next_result($stmt);
 
@@ -99,7 +96,7 @@ if ($result = sqlsrv_fetch( $stmt, SQLSRV_FETCH_NUMERIC)) {
     print_r(sqlsrv_errors());
 }
 
-$stmt = sqlsrv_query($conn, $selectTVPItemQuery);
+$stmt = sqlsrv_query($conn, 'SELECT * FROM TVPItem ORDER BY ItemNo');
 while ($row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC)) {
     print_r($row);
 }
@@ -125,6 +122,7 @@ Array
     [SalesDate] => 2009-03-12
     [Label] => AWC Tee Male Shirt
     [Price] => 20.75
+    [Photo] => 
 )
 Array
 (
@@ -135,6 +133,7 @@ Array
     [SalesDate] => 2017-11-07
     [Label] => Superlight Black Bicycle
     [Price] => 998.45
+    [Photo] => 
 )
 Array
 (
@@ -145,5 +144,6 @@ Array
     [SalesDate] => 2010-03-03
     [Label] => Silver Chain for Bikes
     [Price] => 88.98
+    [Photo] => 
 )
 Done

@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with string keys using prepare/execute and all inputs provided but in random order
+Test Table-valued parameter using prepare/execute and some NULL inputs
 --DESCRIPTION--
-Table-valued parameter with string keys using prepare/execute and only one column has NULL values. This test verifies the fetched results of using client buffers.
+Test Table-valued parameter using prepare/execute and some NULL inputs. This test fetches results as objects using client buffers.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -44,6 +44,11 @@ $images = [null, null, $image3];
 for ($i = 0; $i < count($items); $i++) {
     array_push($items[$i], $images[$i]);
 }
+
+// Randomly set some values to null
+$items[0][1] = null;
+$items[2][3] = null;
+$items[0][2] = null;
 
 // Create a TVP input array
 $tvpInput = array($tvpType => $items);
@@ -120,8 +125,8 @@ if (!$stmt) {
     print_r(sqlsrv_errors());
 }
 
-while ($row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_NUMERIC)) {
-    print_r($row);
+while ($item = sqlsrv_fetch_object($stmt)) {
+    print_r($item);
 }
 
 sqlsrv_free_stmt($stmt);
@@ -137,34 +142,34 @@ echo "Done" . PHP_EOL;
 --EXPECT--
 Order Number: 1
 3
-Array
+stdClass Object
 (
-    [0] => 1
-    [1] => 1
-    [2] => 0062836700
-    [3] => 367
-    [4] => 2009-03-12
-    [5] => AWC Tee Male Shirt
-    [6] => 20.75
+    [OrdNo] => 1
+    [ItemNo] => 1
+    [ProductCode] => 0062836700
+    [OrderQty] => 
+    [SalesDate] => 
+    [Label] => AWC Tee Male Shirt
+    [Price] => 20.75
 )
-Array
+stdClass Object
 (
-    [0] => 1
-    [1] => 2
-    [2] => 1250153272
-    [3] => 256
-    [4] => 2017-11-07
-    [5] => Superlight Black Bicycle
-    [6] => 998.45
+    [OrdNo] => 1
+    [ItemNo] => 2
+    [ProductCode] => 1250153272
+    [OrderQty] => 256
+    [SalesDate] => 2017-11-07
+    [Label] => Superlight Black Bicycle
+    [Price] => 998.45
 )
-Array
+stdClass Object
 (
-    [0] => 1
-    [1] => 3
-    [2] => 1328781505
-    [3] => 260
-    [4] => 2010-03-03
-    [5] => Silver Chain for Bikes
-    [6] => 88.98
+    [OrdNo] => 1
+    [ItemNo] => 3
+    [ProductCode] => 1328781505
+    [OrderQty] => 260
+    [SalesDate] => 2010-03-03
+    [Label] => 
+    [Price] => 88.98
 )
 Done

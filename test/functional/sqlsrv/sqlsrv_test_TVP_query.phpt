@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with numeric keys using direct queries
+Test Table-valued parameter using direct queries and no null values
 --DESCRIPTION--
-Table-valued parameter with numeric keys using direct queries. This test verifies the fetched results of the basic data types. 
+Test Table-valued parameter using direct queries and no null values. This test verifies the fetched results of all types.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -79,7 +79,7 @@ if ($ordDate != $today) {
 $tsql = 'SELECT CustID FROM TVPOrd';
 $stmt = sqlsrv_query($conn, $tsql);
 
-if ($result = sqlsrv_fetch( $stmt, SQLSRV_FETCH_NUMERIC)) {
+if ($result = sqlsrv_fetch($stmt, SQLSRV_FETCH_NUMERIC)) {
     $id = sqlsrv_get_field($stmt, 0);
     if ($id != $custCode) {
         echo "Customer ID unexpected: " . PHP_EOL;

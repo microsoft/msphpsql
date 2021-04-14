@@ -1,7 +1,7 @@
 --TEST--
 Table-valued parameter with bindParam and named parameters. The initial values of a column are NULLs
 --DESCRIPTION--
-Table-valued parameter with bindParam and named parameters. The initial values of a column are NULLs. This test verifies the fetched results using client buffers.
+Test Table-valued parameter with bindParam. The initial values of a column are NULLs. This test verifies the fetched results using client buffers.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -95,7 +95,8 @@ try {
     fclose($image3);
 
     // Fetch other basic types
-    $stmt = $conn->query($selectTVPItemQuery);
+    $stmt = $conn->prepare($selectTVPItemQuery, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL, PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED));
+    $stmt->execute();
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         print_r($row);
     }

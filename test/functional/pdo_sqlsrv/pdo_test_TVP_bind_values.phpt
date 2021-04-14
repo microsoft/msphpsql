@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with numeric keys using bindValue()
+Test Table-valued parameter using bindValue() and random null inputs
 --DESCRIPTION--
-Table-valued parameter with numeric keys using bindValue() instead of bindParam(). This test verifies that the user does not have to provide TVP name if there is no binary field.
+Test Table-valued parameter using bindValue() instead of bindParam() with random null values.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -15,23 +15,22 @@ try {
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName;", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $tvpType = 'TestTVP';
-    
     dropProc($conn, 'SelectTVP');
+
+    $tvpType = 'TestTVP';
     $dropTableType = dropTableTypeSQL($conn, $tvpType);
     $conn->exec($dropTableType);
 
-    // Create tables and a stored procedure
+    // Create table type and a stored procedure
     $conn->exec($createTestTVP);
     $conn->exec($createSelectTVP);
     
-    // TVP supports column-wise binding
-    // Create an array of column inputs
+    // Create column arrays
     $str = '';
     for ($i = 0; $i < 255; $i++) {
         $str .= chr(($i % 95) + 32);
     }
-    $longStr = str_repeat($str, 10); //1000);
+    $longStr = str_repeat($str, 2000);
     
     $c01 = ['abcde', '', $str];
     $c02 = ['Hello world!', 'ABCDEFGHIJKLMNOP', $longStr];
@@ -44,7 +43,7 @@ try {
             '0F12A09D-D614-4998-AB1F-BD7CDBF6E3FE',
             null];
     $c07 = ['1234567', '-9223372036854775808', '9223372036854775807'];
-    $c08 = [3.14159265359, -1.79E+308, 1.79E+308];
+    $c08 = [null, -1.79E+308, 1.79E+308];
     $c09 = ['31234567890123.141243449787580175325274',
                          '0.000000000000000000000001',
             '99999999999999.999999999999999999999999'];
@@ -105,7 +104,7 @@ NULL
 string(25) "2384-12-31 12:40:12.34565"
 string(36) "4CDBC69F-F0EE-4963-8F17-24DD47090126"
 string(7) "1234567"
-string(18) "3.1415926535900001"
+NULL
 string(39) "31234567890123.141243449787580175325274"
 
 Row 2: from Col 3 to 9

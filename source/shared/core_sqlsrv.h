@@ -1489,11 +1489,9 @@ struct sqlsrv_param_inout : public sqlsrv_param
 // *** of the table-valued parameter in the statement.
 struct sqlsrv_param_tvp : public sqlsrv_param
 {
-    //SQLUSMALLINT                    tvp_param_pos;      // 0-based - the position of the table-valued parameter in the original statement
-    sqlsrv_param_tvp*               parent_tvp;
+    sqlsrv_param_tvp*               parent_tvp;         // For a TVP column to reference to the table-valued parameter. NULL if this is the TVP itself.
     std::vector<sqlsrv_param_tvp*>  tvp_columns;        // The constituent columns of the table-valued parameter
-    //std::string                     column_name;        // The name of a column of the table-valued parameter
-    int                             num_rows;           // The total number of rows in a column
+    int                             num_rows;           // The total number of rows
     int                             current_row;        // A counter to keep track of which row is to be processed
 
     sqlsrv_param_tvp(_In_ SQLUSMALLINT param_num, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits, _In_ sqlsrv_param_tvp* tvp) :
