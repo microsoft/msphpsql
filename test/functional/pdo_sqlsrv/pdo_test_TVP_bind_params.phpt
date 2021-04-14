@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with string keys using prepare/execute and all inputs provided but in random order
+Table-valued parameter using bindParam
 --DESCRIPTION--
-Table-valued parameter with string keys using prepare/execute and only one column has NULL values. This test verifies the fetched results using client buffers.
+Table-valued parameter using bindParam. This test verifies the fetched results of the basic data types. 
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -32,35 +32,30 @@ try {
     $conn->exec($createTVPParam);
     $conn->exec($createTVPOrderEntry);
     
-    // Bind parameters for call to TVPOrderEntry
-    $custCode = 'PDO_789';
+    $custCode = 'PDO_123';
     $ordNo = 0;
     $ordDate = null;
 
-    // TVP supports column-wise binding
+    $image1 = fopen($tvpIncPath. $gif1, 'rb');
+    $image2 = fopen($tvpIncPath. $gif2, 'rb');
     $image3 = fopen($tvpIncPath. $gif3, 'rb');
-    $images = [null, null, $image3];
-
-    // Create an array of column inputs with string keys
-    $columns = array('label'=>array_column($items, 3),
-                     'price'=>array_column($items, 4),
-                     'photo'=>$images,
-                     'SalesDate'=>array_column($items, 2),
-                     'OrderQty'=>array_column($items, 1),
-                     'productcode'=>array_column($items, 0));
+    $images = [$image1, $image2, $image3];
+    
+    for ($i = 0; $i < count($items); $i++) {
+        array_push($items[$i], $images[$i]);
+    }
 
     // Create a TVP input array
-    $tvpInput = array($tvpType);
-    array_push($tvpInput, $columns);
+    $tvpInput = array($tvpType => $items);
 
     // Prepare to call the stored procedure
-    $stmt = $conn->prepare($callTVPOrderEntryNamed);
+    $stmt = $conn->prepare($callTVPOrderEntry);
    
-    $stmt->bindParam(':id', $custCode);
-    $stmt->bindParam(':tvp', $tvpInput, PDO::PARAM_LOB);
-    $stmt->bindParam(':ordNo', $ordNo, PDO::PARAM_INT, 10);
-    $stmt->bindParam(':ordDate', $ordDate, PDO::PARAM_STR, 20);
-
+    // Bind parameters for the stored procedure
+    $stmt->bindParam(1, $custCode);
+    $stmt->bindParam(2, $tvpInput, PDO::PARAM_LOB);
+    $stmt->bindParam(3, $ordNo, PDO::PARAM_INT, 10);
+    $stmt->bindParam(4, $ordDate, PDO::PARAM_STR, 20);
     $stmt->execute();
     $stmt->closeCursor();
 
@@ -73,20 +68,12 @@ try {
         var_dump($ordDate);
     }
 
-    // Fetch CustID
-    $tsql = 'SELECT CustID FROM TVPOrd';
+    // Fetch a random inserted image from the table and verify them
+    $n = rand(10,100);
+    $index = $n % count($images);
+    
+    $tsql = 'SELECT Photo FROM TVPItem WHERE ItemNo = ' . $index + 1;
     $stmt = $conn->query($tsql);
-    $row = $stmt->fetch(PDO::FETCH_NUM);
-    $id = $row[0];
-    if ($id != $custCode) {
-        echo "Customer ID unexpected: " . PHP_EOL;
-        var_dump($id);
-    }
-
-    // Fetch the only image from the table that is not NULL
-    $tsql = 'SELECT ItemNo, Photo FROM TVPItem WHERE Photo IS NOT NULL ORDER BY ItemNo';
-    $stmt = $conn->query($tsql);
-    $index = 2;
     $stmt->bindColumn('Photo', $photo, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
     if ($row = $stmt->fetch(PDO::FETCH_BOUND)) {
         if (!verifyBinaryData($images[$index], $photo)) {
@@ -96,7 +83,20 @@ try {
         echo 'Failed in calling bindColumn' . PHP_EOL;
     }
     unset($photo);
+
+    fclose($image1);
+    fclose($image2);
     fclose($image3);
+
+    // Fetch CustID
+    $tsql = 'SELECT CustID FROM TVPOrd';
+    $stmt = $conn->query($tsql);
+    $row = $stmt->fetch(PDO::FETCH_NUM);
+    $id = $row[0];
+    if ($id != $custCode) {
+        echo "Customer ID unexpected: " . PHP_EOL;
+        var_dump($id);
+    }
 
     // Fetch other basic types
     $stmt = $conn->query($selectTVPItemQuery);

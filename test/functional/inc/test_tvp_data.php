@@ -73,8 +73,7 @@ CREATE TYPE TestTVP AS TABLE(
                 C06 UNIQUEIDENTIFIER,
                 C07 BIGINT,
                 C08 FLOAT,
-                C09 NUMERIC(38, 24),
-                C10 SQL_VARIANT)
+                C09 NUMERIC(38, 24))
 TYPE1;
 
 $createSelectTVP = <<<PROC1

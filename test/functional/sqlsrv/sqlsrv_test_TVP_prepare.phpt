@@ -45,21 +45,18 @@ $image2 = fopen($tvpIncPath. $gif2, 'rb');
 $image3 = fopen($tvpIncPath. $gif3, 'rb');
 $images = [$image1, $image2, $image3];
 
-// Create an array of column inputs
-$columns = array('photo'=>$images,
-                 'price'=>array_column($items, 4),
-                 'OrderQty'=>array(),
-                 'Label'=>array_column($items, 3));
+for ($i = 0; $i < count($items); $i++) {
+    array_push($items[$i], $images[$i]);
+}
 
 // Create a TVP input array
-$tvpInput = array($tvpType);
-array_push($tvpInput, $columns);
+$tvpInput = array($tvpType => $items);
 
 $ordNo = 0;
 $ordDate = null;
 
 $params = array($custCode,
-                array($tvpInput, null, null, SQLSRV_SQLTYPE_TABLE),
+                array($tvpInput, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE),
                 array(&$ordNo, SQLSRV_PARAM_OUT),
                 array(&$ordDate, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR)));
 
@@ -123,9 +120,9 @@ Array
 (
     [OrdNo] => 1
     [ItemNo] => 1
-    [ProductCode] => 
-    [OrderQty] => 
-    [SalesDate] => 
+    [ProductCode] => 0062836700
+    [OrderQty] => 367
+    [SalesDate] => 2009-03-12
     [Label] => AWC Tee Male Shirt
     [Price] => 20.75
 )
@@ -133,9 +130,9 @@ Array
 (
     [OrdNo] => 1
     [ItemNo] => 2
-    [ProductCode] => 
-    [OrderQty] => 
-    [SalesDate] => 
+    [ProductCode] => 1250153272
+    [OrderQty] => 256
+    [SalesDate] => 2017-11-07
     [Label] => Superlight Black Bicycle
     [Price] => 998.45
 )
@@ -143,9 +140,9 @@ Array
 (
     [OrdNo] => 1
     [ItemNo] => 3
-    [ProductCode] => 
-    [OrderQty] => 
-    [SalesDate] => 
+    [ProductCode] => 1328781505
+    [OrderQty] => 260
+    [SalesDate] => 2010-03-03
     [Label] => Silver Chain for Bikes
     [Price] => 88.98
 )

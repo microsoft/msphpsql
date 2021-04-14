@@ -39,23 +39,17 @@ sqlsrv_query($conn, $createTVPOrderEntry);
 $custCode = 'SRV_123';
 
 // 2 - Items TVP
-// TVP supports column-wise binding
 $image1 = fopen($tvpIncPath. $gif1, 'rb');
 $image2 = fopen($tvpIncPath. $gif2, 'rb');
 $image3 = fopen($tvpIncPath. $gif3, 'rb');
 $images = [$image1, $image2, $image3];
 
-// Create an array of column inputs with numeric keys
-$ncolumns = count($items[0]);
-$columns = array();
-for ($i = 0; $i < $ncolumns; $i++) {
-    array_push($columns, array_column($items, $i));
+for ($i = 0; $i < count($items); $i++) {
+    array_push($items[$i], $images[$i]);
 }
-array_push($columns, $images);
 
 // Create a TVP input array
-$tvpInput = array($tvpType);
-array_push($tvpInput, $columns);
+$tvpInput = array($tvpType => $items);
 
 $ordNo = 0;
 $ordDate = null;

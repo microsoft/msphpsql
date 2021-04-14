@@ -1489,14 +1489,15 @@ struct sqlsrv_param_inout : public sqlsrv_param
 // *** of the table-valued parameter in the statement.
 struct sqlsrv_param_tvp : public sqlsrv_param
 {
-    SQLUSMALLINT                    tvp_param_pos;      // 0-based - the position of the table-valued parameter in the original statement
+    //SQLUSMALLINT                    tvp_param_pos;      // 0-based - the position of the table-valued parameter in the original statement
+    sqlsrv_param_tvp*               parent_tvp;
     std::vector<sqlsrv_param_tvp*>  tvp_columns;        // The constituent columns of the table-valued parameter
-    std::string                     column_name;        // The name of a column of the table-valued parameter
+    //std::string                     column_name;        // The name of a column of the table-valued parameter
     int                             num_rows;           // The total number of rows in a column
     int                             current_row;        // A counter to keep track of which row is to be processed
 
-    sqlsrv_param_tvp(_In_ SQLUSMALLINT tvp_pos, _In_ SQLUSMALLINT param_num, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
-        sqlsrv_param(param_num, SQL_PARAM_INPUT, enc, sql_type, col_size, dec_digits), num_rows(0), current_row(0), tvp_param_pos(tvp_pos)
+    sqlsrv_param_tvp(_In_ SQLUSMALLINT param_num, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits, _In_ sqlsrv_param_tvp* tvp) :
+        sqlsrv_param(param_num, SQL_PARAM_INPUT, enc, sql_type, col_size, dec_digits), num_rows(0), current_row(0), parent_tvp(tvp)
     {
         ZVAL_UNDEF(&placeholder_z);
     }
@@ -1512,11 +1513,10 @@ struct sqlsrv_param_tvp : public sqlsrv_param
     // The following methods are only applicable to a table-valued parameter or its individual columns
     static void sql_type_to_encoding(_In_ SQLSMALLINT sql_type, _Inout_ SQLSRV_ENCODING* encoding);
     
-    int find_column_by_name(_In_ zend_string *col_name);
     void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* table_type_name);
     int parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
-    void process_param_column_value(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* column_z, _Inout_ zval* data_z);
-    void process_null_param_values(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    void process_param_column_value(_Inout_ sqlsrv_stmt* stmt);
+    void process_null_param_value(_Inout_ sqlsrv_stmt* stmt);
     void populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_ int ordinal);
     void send_string_data_in_batches(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z);
 };
@@ -2020,13 +2020,11 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_TVP_COLUMN_DATA_NOT_ARRAY,
     SQLSRV_ERROR_TVP_INVALID_INPUTS,
     SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME,
-    SQLSRV_ERROR_TVP_TABLE_COLUMNS_NOT_ARRAY,
     SQLSRV_ERROR_TVP_NUM_COLUMNS_UNEXPECTED,
-    SQLSRV_ERROR_TVP_MIXED_ARRAY_KEYS,
-    SQLSRV_ERROR_TVP_COLUMN_NOT_ARRAY,
+    SQLSRV_ERROR_TVP_STRING_KEYS,
+    SQLSRV_ERROR_TVP_ROW_NOT_ARRAY,
     SQLSRV_ERROR_TVP_TABLE_TYPE_NAME_MISSING,
-    SQLSRV_ERROR_TVP_COLUMNS_INCONSISTENT_NUM_VALUES,
-    SQLSRV_ERROR_TVP_COLUMN_NAME_NOT_FOUND,
+    SQLSRV_ERROR_TVP_ROWS_INCONSISTENT_SIZE,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,

@@ -1,7 +1,7 @@
 --TEST--
-Table-valued parameter with string keys using prepare/execute and some inputs are NULLs
+Table-valued parameter using bindParam and some inputs are NULLs
 --DESCRIPTION--
-Table-valued parameter with string keys using prepare/execute. Some columns may be NULLs, provided in random order. This test verifies the fetched results of all columns.
+Table-valued parameter using bindParam with some NULL input values. This test verifies the fetched results of all columns.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -37,16 +37,17 @@ try {
     $ordNo = 0;
     $ordDate = null;
 
-    // TVP supports column-wise binding
-    // Create an array of column inputs with string keys
-    $columns = array('label'=>array_column($items, 3),
-                     'price'=>array(),
-                     'OrderQty'=>array_column($items, 1),
-                     'productcode'=>array_column($items, 0));
-
+    // Add null image to $items
+    for ($i = 0; $i < count($items); $i++) {
+        array_push($items[$i], null);
+    }
+    
+    // Randomly set some values to null
+    $items[1][0] = null;
+    $items[0][2] = null;
+    
     // Create a TVP input array
-    $tvpInput = array($tvpType);
-    array_push($tvpInput, $columns);
+    $tvpInput = array($tvpType => $items);
 
     // Prepare to call the stored procedure
     $stmt = $conn->prepare($callTVPOrderEntryNamed);
@@ -79,9 +80,9 @@ try {
 
     // Fetch all columns
     $tsql = 'SELECT * FROM TVPItem ORDER BY ItemNo';
-    $stmt = $conn->query($selectTVPItemQuery);
-    while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
-        print_r($row);
+    $stmt = $conn->query($tsql);
+    if ($row = $stmt->fetchall(PDO::FETCH_NUM)) {
+        var_dump($row);
     }
     unset($stmt);
 
@@ -99,34 +100,63 @@ try {
 ?>
 --EXPECT--
 Order Number: 1
-Array
-(
-    [0] => 1
-    [1] => 1
-    [2] => 0062836700
-    [3] => 367
-    [4] => 
-    [5] => AWC Tee Male Shirt
-    [6] => 
-)
-Array
-(
-    [0] => 1
-    [1] => 2
-    [2] => 1250153272
-    [3] => 256
-    [4] => 
-    [5] => Superlight Black Bicycle
-    [6] => 
-)
-Array
-(
-    [0] => 1
-    [1] => 3
-    [2] => 1328781505
-    [3] => 260
-    [4] => 
-    [5] => Silver Chain for Bikes
-    [6] => 
-)
+array(3) {
+  [0]=>
+  array(8) {
+    [0]=>
+    string(1) "1"
+    [1]=>
+    string(1) "1"
+    [2]=>
+    string(10) "0062836700"
+    [3]=>
+    string(3) "367"
+    [4]=>
+    NULL
+    [5]=>
+    string(18) "AWC Tee Male Shirt"
+    [6]=>
+    string(5) "20.75"
+    [7]=>
+    NULL
+  }
+  [1]=>
+  array(8) {
+    [0]=>
+    string(1) "1"
+    [1]=>
+    string(1) "2"
+    [2]=>
+    NULL
+    [3]=>
+    string(3) "256"
+    [4]=>
+    string(10) "2017-11-07"
+    [5]=>
+    string(24) "Superlight Black Bicycle"
+    [6]=>
+    string(6) "998.45"
+    [7]=>
+    NULL
+  }
+  [2]=>
+  array(8) {
+    [0]=>
+    string(1) "1"
+    [1]=>
+    string(1) "3"
+    [2]=>
+    string(10) "1328781505"
+    [3]=>
+    string(3) "260"
+    [4]=>
+    string(10) "2010-03-03"
+    [5]=>
+    string(22) "Silver Chain for Bikes"
+    [6]=>
+    string(5) "88.98"
+    [7]=>
+    NULL
+  }
+}
 Done
