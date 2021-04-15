@@ -46,7 +46,7 @@ try {
     $c06 = [null, $bin3, $bin4];
     $c07 = [null, '1234.56', '9876.54'];
     $c08 = [null, null, $xml];
-    $c09 = [4.321, 'CF43B0B3-E645-48C4-9F25-1A2BB4CE581A', 9999];
+    $c09 = [4.321, 'CF43B0B3-E645-48C4-9F25-1A2BB4CE581A', (0xCBAB)];
 
     // Create a TVP input array
     $nrows = 3;
