@@ -44,13 +44,14 @@ $c05 = [$bin1, null, $bin2];
 $c06 = [null, $bin3, $bin4];
 $c07 = [null, '1234.56', '9876.54'];
 $c08 = [null, null, $xml];
+$c09 = [9876, $str1, 'ABCDE'];
 
 // Create a TVP input array
 $nrows = 3;
-$ncols = 8;
+$ncols = 9;
 $inputs = array();
 for ($i = 0; $i < $nrows; $i++) {
-    $rowValues = array($c01[$i], $c02[$i], $c03[$i], $c04[$i], $c05[$i], $c06[$i], $c07[$i], $c08[$i]);
+    $rowValues = array($c01[$i], $c02[$i], $c03[$i], $c04[$i], $c05[$i], $c06[$i], $c07[$i], $c08[$i], $c09[$i]);
     array_push($inputs, $rowValues);
 }
 
@@ -92,28 +93,31 @@ sqlsrv_close($conn);
 echo "Done" . PHP_EOL;
 ?>
 --EXPECT--
-Row 1: from Col 3 to 8
+Row 1: from Col 3 to 9
 NULL
 NULL
 string(10) "0FD1CEFACE"
 NULL
 NULL
 NULL
+string(4) "9876"
 
-Row 2: from Col 3 to 8
+Row 2: from Col 3 to 9
 NULL
 string(9) "3.1415927"
 NULL
 string(18) "616263646566676869"
 string(9) "1234.5600"
 NULL
+string(46) "Šỡოē šâოрĺẻ ÅŚÇÏЇ-ťếхţ"
 
-Row 3: from Col 3 to 8
+Row 3: from Col 3 to 9
 string(3) "999"
 NULL
 string(10) "0001020304"
 string(24) "7A61CC86C7BDCEB2F18FB3BF"
 string(9) "9876.5400"
 string(120) "<XmlTestData><Letters1>The quick brown fox jumps over the lazy dog</Letters1><Digits1>0123456789</Digits1></XmlTestData>"
+string(5) "ABCDE"
 
 Done

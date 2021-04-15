@@ -110,6 +110,7 @@ stmt_option const* get_stmt_option( sqlsrv_conn const* conn, _In_ zend_ulong key
 bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits);
 bool is_a_numeric_type(_In_ SQLSMALLINT sql_type);
+bool is_a_string_type(_In_ SQLSMALLINT sql_type);
 }
 
 // constructor for sqlsrv_stmt.  Here so that we can use functions declared earlier.
@@ -1253,6 +1254,28 @@ bool is_a_numeric_type(_In_ SQLSMALLINT sql_type)
         case SQL_DECIMAL:
         case SQL_NUMERIC:
             return true;
+    }
+
+    return false;
+}
+
+bool is_a_string_type(_In_ SQLSMALLINT sql_type)
+{
+    switch (sql_type) {
+    case SQL_BIGINT:
+    case SQL_DECIMAL:
+    case SQL_NUMERIC:
+    case SQL_SS_VARIANT:
+    case SQL_SS_UDT:
+    case SQL_GUID:
+    case SQL_SS_XML:
+    case SQL_CHAR:
+    case SQL_WCHAR:
+    case SQL_VARCHAR:
+    case SQL_WVARCHAR:
+    case SQL_LONGVARCHAR:
+    case SQL_WLONGVARCHAR:
+        return true;
     }
 
     return false;
@@ -3254,9 +3277,10 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
 void sqlsrv_param_tvp::process_param_column_value(_Inout_ sqlsrv_stmt* stmt)
 {
     // This is one of the constituent columns of the table-valued parameter
-    // The corresponding column value of the TVP's first row is already saved in member variable param_ptr_z
+    // The corresponding column value of the TVP's first row is already saved in 
+    // the member variable param_ptr_z, which may be a NULL value
     zval *data_z = param_ptr_z;
-    param_php_type = Z_TYPE_P(data_z);
+    param_php_type = is_a_string_type(sql_data_type) ? IS_STRING : Z_TYPE_P(data_z);
 
     switch (param_php_type) {
     case IS_TRUE:
@@ -3502,6 +3526,10 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
                 break;
             case IS_STRING:
                 {
+                    int type = Z_TYPE_P(value_z);
+                    if (type != IS_STRING) {
+                        convert_to_string(value_z);
+                    }
                     SQLLEN value_len = Z_STRLEN_P(value_z);
                     if (value_len == 0) {
                         // If it's an empty string

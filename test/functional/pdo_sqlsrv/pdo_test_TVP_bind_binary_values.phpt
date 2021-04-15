@@ -46,13 +46,14 @@ try {
     $c06 = [null, $bin3, $bin4];
     $c07 = [null, '1234.56', '9876.54'];
     $c08 = [null, null, $xml];
+    $c09 = [4.321, 'CF43B0B3-E645-48C4-9F25-1A2BB4CE581A', 9999];
 
     // Create a TVP input array
     $nrows = 3;
     $ncols = 8;
     $params = array();
     for ($i = 0; $i < $nrows; $i++) {
-        $rowValues = array($c01[$i], $c02[$i], $c03[$i], $c04[$i], $c05[$i], $c06[$i], $c07[$i], $c08[$i]);
+        $rowValues = array($c01[$i], $c02[$i], $c03[$i], $c04[$i], $c05[$i], $c06[$i], $c07[$i], $c08[$i], $c09[$i]);
         array_push($params, $rowValues);
     }
 

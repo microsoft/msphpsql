@@ -96,7 +96,8 @@ CREATE TYPE TestTVP2 AS TABLE(
                 C05 VARBINARY(10),
                 C06 VARBINARY(MAX),
                 C07 MONEY,
-                C08 XML)
+                C08 XML,
+                C09 SQL_VARIANT)
 TYPE2;
 
 $createSelectTVP2 = <<<PROC2
