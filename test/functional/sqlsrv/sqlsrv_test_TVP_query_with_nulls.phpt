@@ -14,7 +14,7 @@ date_default_timezone_set('America/Los_Angeles');
 
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-$conn = AE\connect(array('ReturnDatesAsStrings' => true));
+$conn = connect(array('ReturnDatesAsStrings' => true));
 
 dropProc($conn, 'SelectTVP');
 
@@ -78,13 +78,13 @@ while ($result = sqlsrv_fetch($stmt, SQLSRV_FETCH_NUMERIC)) {
     for ($col = 0; $col < 2; $col++) {
         $field = sqlsrv_get_field($stmt, $col, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR));
         if ($field != $inputs[$row][$col]) {
-            echo 'Unexpected data at row ' . $row + 1 . ' and col ' . $col + 1 . PHP_EOL;
+            echo 'Unexpected data at row ' . ($row + 1) . ' and col ' . ($col + 1) . PHP_EOL;
             echo 'Expected: ' . $inputs[$row][$col] . PHP_EOL;
             echo 'Fetched: ' . $field . PHP_EOL;
         }
     }
     // For other types, print them
-    echo 'Row ' . $row + 1 . ': from Col ' . $col + 1 . ' to ' . $ncols . PHP_EOL;
+    echo 'Row ' . ($row + 1) . ': from Col ' . ($col + 1) . ' to ' . $ncols . PHP_EOL;
     for ($col = 2; $col < $ncols; $col++) {
         $field = sqlsrv_get_field($stmt, $col);
         var_dump($field);

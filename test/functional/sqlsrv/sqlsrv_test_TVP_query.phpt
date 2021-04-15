@@ -14,7 +14,7 @@ date_default_timezone_set('America/Los_Angeles');
 
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-$conn = AE\connect(array('ReturnDatesAsStrings' => true));
+$conn = connect(array('ReturnDatesAsStrings' => true));
 
 $tvpType = 'TVPParam';
 
@@ -108,7 +108,7 @@ $index = 0;
 while (sqlsrv_fetch($stmt)) {
     $photo = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
     if (!verifyBinaryStream($images[$index], $photo)) {
-            echo "Image data corrupted for row ". $index + 1 . PHP_EOL;
+            echo "Image data corrupted for row ". ($index + 1) . PHP_EOL;
     }
     $index++;
 }

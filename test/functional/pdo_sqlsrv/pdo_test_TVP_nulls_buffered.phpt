@@ -86,7 +86,7 @@ try {
     $stmt->bindColumn('Photo', $photo, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
     if ($row = $stmt->fetch(PDO::FETCH_BOUND)) {
         if (!verifyBinaryData($images[$index], $photo)) {
-            echo 'Image data corrupted for row '. $index + 1 . PHP_EOL;
+            echo 'Image data corrupted for row '. ($index + 1) . PHP_EOL;
         }
     } else {
         echo 'Failed in calling bindColumn' . PHP_EOL;

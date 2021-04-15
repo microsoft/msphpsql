@@ -14,7 +14,7 @@ date_default_timezone_set('America/Los_Angeles');
 
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
-$conn = AE\connect(array('ReturnDatesAsStrings' => true));
+$conn = connect(array('ReturnDatesAsStrings' => true));
 
 $tvpType = 'TVPParam';
 

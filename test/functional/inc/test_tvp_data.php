@@ -86,6 +86,29 @@ PROC1;
 $callSelectTVP = "{call SelectTVP(?)}";
 
 ///////////////////////////////////////////////////////
+
+$createTestTVP2 = <<<TYPE2
+CREATE TYPE TestTVP2 AS TABLE(
+                C01 NVARCHAR(50),
+                C02 NVARCHAR(MAX),
+                C03 INT,
+                C04 REAL,
+                C05 VARBINARY(10),
+                C06 VARBINARY(MAX),
+                C07 MONEY,
+                C08 XML)
+TYPE2;
+
+$createSelectTVP2 = <<<PROC2
+CREATE PROCEDURE SelectTVP2 (
+        @TVP TestTVP2 READONLY) 
+        AS 
+        SELECT * FROM @TVP
+PROC2;
+
+$callSelectTVP2 = "{call SelectTVP2(?)}";
+
+///////////////////////////////////////////////////////
 // Common functions
 ///////////////////////////////////////////////////////
 

@@ -72,13 +72,13 @@ try {
         // For strings, compare their values
         for ($col = 0; $col < 2; $col++) {
             if ($result[$col] != $params[$row][$col]) {
-                echo 'Unexpected data at row ' . $row + 1 . ' and col ' . $col + 1 . PHP_EOL;
+                echo 'Unexpected data at row ' . ($row + 1) . ' and col ' . ($col + 1) . PHP_EOL;
                 echo 'Expected: ' . $params[$row][$col] . PHP_EOL;
                 echo 'Fetched: ' . $result[$col] . PHP_EOL;
             }
         }
         // For other types, print them
-        echo 'Row ' . $row + 1 . ': from Col ' . $col + 1 . ' to ' . $ncols . PHP_EOL;
+        echo 'Row ' . ($row + 1) . ': from Col ' . ($col + 1) . ' to ' . $ncols . PHP_EOL;
         for ($col = 2; $col < $ncols; $col++) {
             var_dump($result[$col]);
         }
