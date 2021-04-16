@@ -493,6 +493,10 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_TVP_ROW_NOT_ARRAY,
         { IMSSP, (SQLCHAR*) "Expect an array for each row for Table-Valued Param %1!d!", -105, true }
     },
+    {
+        SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
+        { IMSSP, (SQLCHAR*) "You cannot return data in a table-valued parameter. Table-valued parameters are input-only.", -106, false }
+    },
 
     { UINT_MAX, {} }
 };

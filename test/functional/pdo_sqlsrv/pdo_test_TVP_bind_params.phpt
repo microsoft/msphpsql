@@ -72,7 +72,7 @@ try {
     $n = rand(10,100);
     $index = $n % count($images);
     
-    $tsql = 'SELECT Photo FROM TVPItem WHERE ItemNo = ' . $index + 1;
+    $tsql = 'SELECT Photo FROM TVPItem WHERE ItemNo = ' . ($index + 1);
     $stmt = $conn->query($tsql);
     $stmt->bindColumn('Photo', $photo, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
     if ($row = $stmt->fetch(PDO::FETCH_BOUND)) {

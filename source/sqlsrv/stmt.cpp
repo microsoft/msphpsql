@@ -1246,6 +1246,11 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
                 throw core::CoreException();
             }
 
+            // Table-valued parameters are input-only
+            CHECK_CUSTOM_ERROR(direction != SQL_PARAM_INPUT && (sql_type == SQL_SS_TABLE || php_out_type == SQLSRV_PHPTYPE_TABLE), stmt, SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY) {
+                throw ss::SSException();
+            }
+
             // bind the parameter
             SQLSRV_ASSERT( value_z != NULL, "bind_params: value_z is null." );
             core_sqlsrv_bind_param( stmt, static_cast<SQLUSMALLINT>( index ), direction, value_z, php_out_type, encoding, sql_type, column_size,

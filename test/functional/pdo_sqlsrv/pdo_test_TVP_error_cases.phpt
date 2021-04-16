@@ -9,13 +9,17 @@ PHPT_EXEC=true
 require_once('MsSetup.inc');
 require_once('MsCommon_mid-refactor.inc');
 
-function invokeProc($conn, $proc, $tvpInput, $caseNo)
+function invokeProc($conn, $proc, $tvpInput, $caseNo, $inputParam = true)
 {
     try {
         $stmt = $conn->prepare($proc);
 
-        // Bind parameters for the stored procedure
-        $stmt->bindValue(1, $tvpInput, PDO::PARAM_LOB);
+        // Bind TVP for the stored procedure
+        if ($inputParam) {
+            $stmt->bindValue(1, $tvpInput, PDO::PARAM_LOB);
+        } else {
+            $stmt->bindParam(1, $tvpInput, PDO::PARAM_LOB, 100);
+        }
         $stmt->execute();
     } catch (PDOException $e) {
         echo "Error $caseNo: ";
@@ -123,7 +127,10 @@ try {
     $tvpInput = array($tvpType => $inputs);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 12);
 
-    // Case (13) - test UTF-8 invalid/corrupt string for a TVP column
+    // Case (13) - bind a TVP as an OUTPUT param
+    invokeProc($conn, $callSelectTVP3, $tvpInput, 13, false);
+    
+    // Case (14) - test UTF-8 invalid/corrupt string for a TVP column
     unset($inputs);
     $utf8 = str_repeat("41", 8188);
     $utf8 = $utf8 . "e38395e38395";
@@ -135,7 +142,7 @@ try {
         ['DEF', 6789, null],
     ];
     $tvpInput = array($tvpType => $inputs);
-    invokeProc($conn, $callSelectTVP3, $tvpInput, 13);
+    invokeProc($conn, $callSelectTVP3, $tvpInput, 14);
 
     dropProc($conn, 'SelectTVP3');
     $conn->exec($dropTableType);
@@ -147,7 +154,7 @@ try {
     var_dump($e->getMessage());
 }
 ?>
---EXPECT--
+--EXPECTF--
 Error 1: SQLSTATE[IMSSP]: Expect a non-empty string for a Type Name for Table-Valued Param 1
 Error 2: SQLSTATE[IMSSP]: Expect a non-empty string for a Type Name for Table-Valued Param 1
 Error 3: SQLSTATE[IMSSP]: Invalid inputs for Table-Valued Param 1
@@ -160,6 +167,7 @@ Error 9: SQLSTATE[IMSSP]: Expect an array for each row for Table-Valued Param 1
 Error 10: SQLSTATE[IMSSP]: Associative arrays not allowed for Table-Valued Param 1
 Error 11: SQLSTATE[IMSSP]: An invalid type for Table-Valued Param 1 Column 3 was specified
 Error 12: SQLSTATE[IMSSP]: An invalid type for Table-Valued Param 1 Column 2 was specified
-Error 13: SQLSTATE[IMSSP]: An error occurred translating a string for Table-Valued Param 1 Column 1 to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.
+Error 13: SQLSTATE[IMSSP]: You cannot return data in a table-valued parameter. Table-valued parameters are input-only.
+Error 14: SQLSTATE[IMSSP]: An error occurred translating a string for Table-Valued Param 1 Column 1 to UTF-16:%s.
 
 Done

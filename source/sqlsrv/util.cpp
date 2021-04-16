@@ -477,6 +477,10 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_TVP_ROW_NOT_ARRAY,
         { IMSSP, (SQLCHAR*) "Expect an array for each row for Table-Valued Param %1!d!", -129, true }
     },
+    {
+        SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
+        { IMSSP, (SQLCHAR*) "You cannot return data in a table-valued parameter. Table-valued parameters are input-only.", -130, false }
+    },            
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }

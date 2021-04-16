@@ -528,63 +528,6 @@ void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn )
     sqlsrv_free( conn );
 }
 
-#define STR_LEN 256 
-void get_metadata_for_table_type_columns(_Inout_ sqlsrv_conn* conn, SQLTCHAR *TableTypeName) {
-    SQLHANDLE chstmt;
-    SQLRETURN rc;
-
-    // Declare buffers for result set data  
-    //SQLCHAR szSchema[STR_LEN];
-    //SQLCHAR szCatalog[STR_LEN];
-    //SQLCHAR szColumnName[STR_LEN];
-    //SQLCHAR szTableName[STR_LEN];
-    //SQLCHAR szTypeName[STR_LEN];
-
-    SQLINTEGER ColumnSize;
-    SQLINTEGER BufferLength;
-    SQLSMALLINT DecimalDigits;
-    SQLSMALLINT SQLDataType;
-    SQLSMALLINT DataType;
-
-    // Declare buffers for bytes available to return  
-    //SQLLEN cbCatalog;
-    //SQLLEN cbSchema;
-    //SQLLEN cbTableName;
-    SQLLEN cbColumnName;
-    SQLLEN cbDataType;
-    //SQLLEN cbTypeName;
-    SQLLEN cbColumnSize;
-    SQLLEN cbDecimalDigits;
-    SQLLEN cbBufferLength;
-    SQLLEN cbSQLDataType;
-
-    rc = SQLAllocHandle(SQL_HANDLE_STMT, conn->handle(), &chstmt);
-
-    rc = SQLSetStmtAttr(chstmt, SQL_SOPT_SS_NAME_SCOPE, (SQLPOINTER)SQL_SS_NAME_SCOPE_TABLE_TYPE, SQL_IS_UINTEGER);
-
-    rc = SQLColumns(chstmt, NULL, 0, NULL, 0, TableTypeName, SQL_NTS, NULL, 0);
-    if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
-        //SQLBindCol(chstmt, 1, SQL_C_CHAR, szCatalog, STR_LEN, &cbCatalog);
-        //SQLBindCol(chstmt, 2, SQL_C_CHAR, szSchema, STR_LEN, &cbSchema);
-        //SQLBindCol(chstmt, 3, SQL_C_CHAR, szTableName, STR_LEN, &cbTableName);
-        //SQLBindCol(chstmt, 4, SQL_C_CHAR, szColumnName, STR_LEN, &cbColumnName);
-        //SQLBindCol(chstmt, 6, SQL_C_CHAR, szTypeName, STR_LEN, &cbTypeName);
-        SQLBindCol(chstmt, 5, SQL_C_SSHORT, &DataType, 0, &cbDataType);
-        SQLBindCol(chstmt, 7, SQL_C_SLONG, &ColumnSize, 0, &cbColumnSize);
-        SQLBindCol(chstmt, 8, SQL_C_SLONG, &BufferLength, 0, &cbBufferLength);
-        SQLBindCol(chstmt, 9, SQL_C_SSHORT, &DecimalDigits, 0, &cbDecimalDigits);
-        SQLBindCol(chstmt, 14, SQL_C_SSHORT, &SQLDataType, 0, &cbSQLDataType);
-
-        while (SQL_SUCCESS == rc) {
-            rc = SQLFetch(chstmt);
-        }
-    }
-
-    rc = SQLCloseCursor(chstmt);
-    rc = SQLFreeHandle(SQL_HANDLE_STMT, chstmt);
-}
-
-
 // core_sqlsrv_prepare
 // Create a statement object and prepare the SQL query passed in for execution at a later time.
 // Parameters:
@@ -632,18 +575,6 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
                 core::SQLDescribeParam(stmt, i + 1, &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
 
                 stmt->params_container.params_meta.push_back(param);
-
-                if (param.sql_type == SQL_SS_TABLE) {
-                    SQLTCHAR parameterTypeName[256];
-                    SQLHANDLE IPD;
-                    SQLINTEGER StringLength;
-
-                    SQLRETURN rc = SQLGetStmtAttr(stmt->handle(), SQL_ATTR_IMP_PARAM_DESC, &IPD, SQL_IS_POINTER, &StringLength);
-
-                    rc = SQLGetDescField(IPD, i+1, SQL_CA_SS_TYPE_NAME, parameterTypeName, sizeof(parameterTypeName), &StringLength);
-
-                    get_metadata_for_table_type_columns(stmt->conn, parameterTypeName);
-                }
             }
         }
     }
@@ -1093,8 +1024,8 @@ void load_azure_key_vault(_Inout_ sqlsrv_conn* conn)
 
     char *akv_id = conn->ce_option.akv_id.get();
     char *akv_secret = conn->ce_option.akv_secret.get();
-    unsigned int id_len = strnlen_s(akv_id);
-    unsigned int key_size = strnlen_s(akv_secret);
+    size_t id_len = strnlen_s(akv_id);
+    size_t key_size = strnlen_s(akv_secret);
 
     configure_azure_key_vault(conn, AKV_CONFIG_FLAGS, conn->ce_option.akv_mode, 0);
     configure_azure_key_vault(conn, AKV_CONFIG_PRINCIPALID, akv_id, id_len);

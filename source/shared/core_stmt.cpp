@@ -377,10 +377,6 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         ZVAL_DEREF(param_z);
     }
 
-    if (Z_TYPE_P(param_z) == IS_ARRAY) {
-        SQLSRV_ASSERT(direction == SQL_PARAM_INPUT, "sqlsrv_params_container::insert_param - Invalid parameter direction for table-valued parameters.");
-    }
-
     sqlsrv_param* param_ptr = stmt->params_container.find_param(param_num, (direction == SQL_PARAM_INPUT));
     try {
         if (param_ptr == NULL) {
@@ -3106,7 +3102,7 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
     SQLRETURN   rc;
     SQLSMALLINT data_type, dec_digits;
     SQLINTEGER  col_size;
-    SQLLEN      cb_sql_data_type, cb_data_type, cb_col_size, cb_dec_digits;
+    SQLLEN      cb_data_type, cb_col_size, cb_dec_digits;
 
     core::SQLAllocHandle(SQL_HANDLE_STMT, *(stmt->conn), &chstmt);
 
@@ -3647,7 +3643,7 @@ sqlsrv_param* sqlsrv_params_container::find_param(_In_ SQLUSMALLINT param_num, _
         } else {
             return output_params.at(param_num);
         }
-    } catch (std::out_of_range& e) {
+    } catch (std::out_of_range&) {
         // not found
         return NULL;
     }

@@ -8,10 +8,14 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function invokeProc($conn, $proc, $tvpInput, $caseNo)
+function invokeProc($conn, $proc, $tvpInput, $caseNo, $dir = SQLSRV_PARAM_IN)
 {
-    $params = array(array($tvpInput, null, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE));
-
+    if ($dir == SQLSRV_PARAM_IN) {
+        $params = array(array($tvpInput, $dir, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE));
+    } else {
+        $params = array(array(&$tvpInput, $dir, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE));
+    }
+    
     $stmt = sqlsrv_query($conn, $proc, $params);
     if (!$stmt) {
         $errors = sqlsrv_errors(SQLSRV_ERR_ALL);
@@ -124,7 +128,10 @@ $inputs = [
 $tvpInput = array($tvpType => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 12);
 
-// Case (13) - test UTF-8 invalid/corrupt string for a TVP column
+// Case (13) - bind a TVP as an OUTPUT param
+invokeProc($conn, $callSelectTVP3, $tvpInput, 13, SQLSRV_PARAM_OUT);
+
+// Case (14) - test UTF-8 invalid/corrupt string for a TVP column
 unset($inputs);
 $utf8 = str_repeat("41", 8188);
 $utf8 = $utf8 . "e38395e38395";
@@ -136,7 +143,7 @@ $inputs = [
     ['DEF', 6789, null],
 ];
 $tvpInput = array($tvpType => $inputs);
-invokeProc($conn, $callSelectTVP3, $tvpInput, 13);
+invokeProc($conn, $callSelectTVP3, $tvpInput, 14);
 
 dropProc($conn, 'SelectTVP3');
 sqlsrv_query($conn, $dropTableType);
@@ -144,7 +151,7 @@ sqlsrv_close($conn);
 
 echo "Done" . PHP_EOL;
 ?>
---EXPECT--
+--EXPECTF--
 Error 1: Expect a non-empty string for a Type Name for Table-Valued Param 1
 Error 2: Expect a non-empty string for a Type Name for Table-Valued Param 1
 Error 3: Invalid inputs for Table-Valued Param 1
@@ -157,6 +164,7 @@ Error 9: Expect an array for each row for Table-Valued Param 1
 Error 10: Associative arrays not allowed for Table-Valued Param 1
 Error 11: An invalid type for Table-Valued Param 1 Column 3 was specified
 Error 12: An invalid type for Table-Valued Param 1 Column 2 was specified
-Error 13: An error occurred translating a string for Table-Valued Param 1 Column 1 to UTF-16: No mapping for the Unicode character exists in the target multi-byte code page.
+Error 13: You cannot return data in a table-valued parameter. Table-valued parameters are input-only.
+Error 14: An error occurred translating a string for Table-Valued Param 1 Column 1 to UTF-16:%s.
 
 Done
