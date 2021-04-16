@@ -110,6 +110,25 @@ PROC2;
 $callSelectTVP2 = "{call SelectTVP2(?)}";
 
 ///////////////////////////////////////////////////////
+
+$createTestTVP3 = <<<TYPE3
+CREATE TYPE TestTVP3 AS TABLE(
+    Review VARCHAR(MAX) NOT NULL,
+    SupplierId INT,
+    SalesDate DATETIME2 NULL
+)
+TYPE3;
+
+$createSelectTVP3 = <<<PROC3
+CREATE PROCEDURE SelectTVP3 (
+        @TVP TestTVP3 READONLY) 
+        AS 
+        SELECT * FROM @TVP
+PROC3;
+
+$callSelectTVP3 = "{call SelectTVP3(?)}";
+
+///////////////////////////////////////////////////////
 // Common functions
 ///////////////////////////////////////////////////////
 

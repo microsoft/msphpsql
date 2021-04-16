@@ -3131,6 +3131,9 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
         while (SQL_SUCCESS == rc) {
             rc = SQLFetch(chstmt);
             if (rc == SQL_NO_DATA) {
+                CHECK_CUSTOM_ERROR(tvp_columns.size() == 0, stmt, SQLSRV_ERROR_TVP_FETCH_METADATA, param_pos + 1) {
+                    throw core::CoreException();
+                }
                 break;
             }
 
@@ -3215,16 +3218,19 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
 
         int key_type = zend_hash_get_current_key(inputs_ht, &tvp_name, &num_index);
         if (key_type == HASH_KEY_IS_STRING) {
-            //tvp_name = ZSTR_VAL(tvp_name);
             key_len = ZSTR_LEN(tvp_name);
             tvp_data_z = zend_hash_get_current_data_ex(inputs_ht, &pos);
         } 
 
-        CHECK_CUSTOM_ERROR((key_type == HASH_KEY_IS_LONG || key_len == 0), stmt, SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME, param_pos + 1);
+        CHECK_CUSTOM_ERROR((key_type == HASH_KEY_IS_LONG || key_len == 0), stmt, SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME, param_pos + 1) {
+            throw core::CoreException();
+        }
     } 
     
     // TODO: Find the docs page somewhere that says a TVP can not be null but it may have null columns??
-    CHECK_CUSTOM_ERROR(tvp_data_z == NULL || Z_TYPE_P(tvp_data_z) != IS_ARRAY, stmt, SQLSRV_ERROR_TVP_INVALID_INPUTS, param_pos + 1);
+    CHECK_CUSTOM_ERROR(tvp_data_z == NULL || Z_TYPE_P(tvp_data_z) == IS_NULL || Z_TYPE_P(tvp_data_z) != IS_ARRAY, stmt, SQLSRV_ERROR_TVP_INVALID_INPUTS, param_pos + 1) {
+        throw core::CoreException();
+    }
 
     // Save the TVP multi-dim array data, which should be something like this
     // [ 
@@ -3256,18 +3262,24 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
     // Loop through the rows to check the number of columns
     ZEND_HASH_FOREACH_KEY_VAL(rows_ht, id, key, row_z) {
         type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
-        CHECK_CUSTOM_ERROR(type == HASH_KEY_IS_STRING, stmt, SQLSRV_ERROR_TVP_STRING_KEYS, param_pos + 1);
+        CHECK_CUSTOM_ERROR(type == HASH_KEY_IS_STRING, stmt, SQLSRV_ERROR_TVP_STRING_KEYS, param_pos + 1) {
+            throw core::CoreException();
+        }
 
         if (Z_ISREF_P(row_z)) {
             ZVAL_DEREF(row_z);
         }
 
         // Individual row must be an array
-        CHECK_CUSTOM_ERROR(Z_TYPE_P(row_z) != IS_ARRAY, stmt, SQLSRV_ERROR_TVP_ROW_NOT_ARRAY, param_pos + 1);
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(row_z) != IS_ARRAY, stmt, SQLSRV_ERROR_TVP_ROW_NOT_ARRAY, param_pos + 1) {
+            throw core::CoreException();
+        }
 
         // Are all the TVP's rows the same size
         num_columns = zend_hash_num_elements(Z_ARRVAL_P(row_z));
-        CHECK_CUSTOM_ERROR(num_columns != total_num_columns, stmt, SQLSRV_ERROR_TVP_ROWS_INCONSISTENT_SIZE, param_pos + 1);
+        CHECK_CUSTOM_ERROR(num_columns != total_num_columns, stmt, SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE, param_pos + 1, total_num_columns) {
+            throw core::CoreException();
+        }
     } ZEND_HASH_FOREACH_END();
 
     // Return the number of columns
@@ -3296,8 +3308,6 @@ void sqlsrv_param_tvp::process_param_column_value(_Inout_ sqlsrv_stmt* stmt)
     case IS_STRING:
     case IS_OBJECT:
         if (param_php_type == IS_STRING) {
-            // No need to check if it is a numerical type because for TVP string data, the sql data types
-            // are derived merely based on encoding, thus not that precise or accurate
             derive_string_types_sizes(data_z);
         } else {
             // If preprocessing a datetime object fails, throw an error of invalid php type
@@ -3362,6 +3372,11 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
         return;
     }
 
+    if (num_rows == 0) {
+        // TVP has no data
+        return;
+    }
+
     // Bind the TVP columns one by one
     // Register this object first using SQLSetDescField() for sending TVP data post execution
     SQLHDESC desc;
@@ -3393,7 +3408,9 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
     // Loop through the first row of column values
     ZEND_HASH_FOREACH_KEY_VAL(cols_ht, id, key, data_z) {
         int type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
-        CHECK_CUSTOM_ERROR(type == HASH_KEY_IS_STRING, stmt, SQLSRV_ERROR_TVP_STRING_KEYS, param_pos + 1);
+        CHECK_CUSTOM_ERROR(type == HASH_KEY_IS_STRING, stmt, SQLSRV_ERROR_TVP_STRING_KEYS, param_pos + 1) {
+            throw core::CoreException();
+        }
 
         // Assume the user has supplied data for all columns in the right order
         SQLUSMALLINT pos = static_cast<SQLUSMALLINT>(id);
@@ -3534,20 +3551,22 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
                     if (value_len == 0) {
                         // If it's an empty string
                         core::SQLPutData(stmt, Z_STRVAL_P(value_z), 0);
-                    } else if (encoding == CP_UTF8) {
-                        if (value_len > INT_MAX) {
-                            LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
-                            throw core::CoreException();
-                        }
-                        // This method would change the member placeholder_z
-                        bool succeeded = convert_input_str_to_utf16(stmt, value_z);
-                        CHECK_CUSTOM_ERROR(!succeeded, stmt, SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE, parent_tvp->param_pos + 1, param_pos + 1, get_last_error_message()) {
-                            throw core::CoreException();
-                        }
-
-                        send_string_data_in_batches(stmt, &placeholder_z);
                     } else {
-                        send_string_data_in_batches(stmt, value_z);
+                        if (encoding == CP_UTF8 && !is_a_numeric_type(sql_data_type)) {
+                            if (value_len > INT_MAX) {
+                                LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
+                                throw core::CoreException();
+                            }
+                            // This method would change the member placeholder_z
+                            bool succeeded = convert_input_str_to_utf16(stmt, value_z);
+                            CHECK_CUSTOM_ERROR(!succeeded, stmt, SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE, parent_tvp->param_pos + 1, param_pos + 1, get_last_error_message()) {
+                                throw core::CoreException();
+                            }
+
+                            send_string_data_in_batches(stmt, &placeholder_z);
+                        } else {
+                            send_string_data_in_batches(stmt, value_z);
+                        }
                     }
                     current_row++;
                 }
