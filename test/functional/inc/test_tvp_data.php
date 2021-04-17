@@ -49,6 +49,9 @@ PROC;
 $callTVPOrderEntry = "{call TVPOrderEntry(?, ?, ?, ?)}";
 $callTVPOrderEntryNamed = "{call TVPOrderEntry(:id, :tvp, :ordNo, :ordDate)}";
 
+// The following gif files are some random product pictures 
+// retrieved from the AdventureWorks sample database (their 
+// sizes ranging from 12 KB to 26 KB)
 $gif1 = 'awc_tee_male_large.gif';
 $gif2 = 'superlight_black_f_large.gif';
 $gif3 = 'silver_chain_large.gif';
