@@ -57,9 +57,9 @@ $gif2 = 'superlight_black_f_large.gif';
 $gif3 = 'silver_chain_large.gif';
 
 $items = [
-    ['0062836700', 367, date_create("2009-03-12"), 'AWC Tee Male Shirt', '20.75'],
-    ['1250153272', 256, date_create("2017-11-07"), 'Superlight Black Bicycle', '998.45'],
-    ['1328781505', 260, date_create("2010-03-03"), 'Silver Chain for Bikes', '88.98'],
+    ['0062836700', 367, "2009-03-12", 'AWC Tee Male Shirt', '20.75'],
+    ['1250153272', 256, "2017-11-07", 'Superlight Black Bicycle', '998.45'],
+    ['1328781505', 260, "2010-03-03", 'Silver Chain for Bikes', '88.98'],
 ];
 
 $selectTVPItemQuery = 'SELECT OrdNo, ItemNo, ProductCode, OrderQty, SalesDate, Label, Price FROM TVPItem ORDER BY ItemNo';
