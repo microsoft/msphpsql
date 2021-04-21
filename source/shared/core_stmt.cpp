@@ -3121,8 +3121,8 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
         char schema[SS_MAXCOLNAMELEN] = { '\0' };
         char type[SS_MAXCOLNAMELEN] = { '\0' };
 
-        std::strcpy(schema, str1.c_str());
-        std::strcpy(type, str2.c_str());
+        strcpy_s(schema, SS_MAXCOLNAMELEN, str1.c_str());
+        strcpy_s(type, SS_MAXCOLNAMELEN, str2.c_str());
 
         rc = SQLColumns(chstmt, NULL, 0, reinterpret_cast<SQLCHAR *>(schema), SQL_NTS, reinterpret_cast<SQLCHAR *>(type), SQL_NTS, NULL, 0);
     } else {
