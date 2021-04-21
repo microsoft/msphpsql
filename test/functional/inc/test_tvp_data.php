@@ -114,8 +114,11 @@ $callSelectTVP2 = "{call SelectTVP2(?)}";
 
 ///////////////////////////////////////////////////////
 
+$createSchema = 'CREATE SCHEMA [Sales DB]';
+$dropSchema = 'DROP SCHEMA IF EXISTS [Sales DB]';
+
 $createTestTVP3 = <<<TYPE3
-CREATE TYPE TestTVP3 AS TABLE(
+CREATE TYPE [Sales DB].[TestTVP3] AS TABLE(
     Review VARCHAR(MAX) NOT NULL,
     SupplierId INT,
     SalesDate DATETIME2 NULL
@@ -123,21 +126,26 @@ CREATE TYPE TestTVP3 AS TABLE(
 TYPE3;
 
 $createSelectTVP3 = <<<PROC3
-CREATE PROCEDURE SelectTVP3 (
+CREATE PROCEDURE [Sales DB].[SelectTVP3] (
         @TVP TestTVP3 READONLY) 
         AS 
         SELECT * FROM @TVP
 PROC3;
 
-$callSelectTVP3 = "{call SelectTVP3(?)}";
+$callSelectTVP3 = "{call [Sales DB].[SelectTVP3](?)}";
 
 ///////////////////////////////////////////////////////
 // Common functions
 ///////////////////////////////////////////////////////
 
+function dropProcSQL($conn, $procName)
+{
+    return "DROP PROC IF EXISTS $procName";
+}
+
 function dropTableTypeSQL($conn, $typeName)
 {
-    return "IF EXISTS (SELECT * FROM sys.types WHERE is_table_type = 1 AND name = '$typeName') DROP TYPE $typeName";
+    return "DROP TYPE IF EXISTS $typeName";
 }
 
 function verifyBinaryData($fp, $data)

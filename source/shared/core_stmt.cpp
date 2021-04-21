@@ -3111,7 +3111,24 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
         throw core::CoreException();
     }
 
-    rc = SQLColumns(chstmt, NULL, 0, NULL, 0, table_type_name, SQL_NTS, NULL, 0);
+    // Check table type name and see if the schema is specified. Otherwise, assume DBO
+    std::string type_name(reinterpret_cast<char *>(table_type_name));
+    std::size_t pos = type_name.find_first_of(".");
+    if (pos != std::string::npos) {
+        std::string str1 = type_name.substr(0, pos);
+        std::string str2 = type_name.substr(pos + 1);
+
+        char schema[SS_MAXCOLNAMELEN] = { '\0' };
+        char type[SS_MAXCOLNAMELEN] = { '\0' };
+
+        std::strcpy(schema, str1.c_str());
+        std::strcpy(type, str2.c_str());
+
+        rc = SQLColumns(chstmt, NULL, 0, reinterpret_cast<SQLCHAR *>(schema), SQL_NTS, reinterpret_cast<SQLCHAR *>(type), SQL_NTS, NULL, 0);
+    } else {
+        rc = SQLColumns(chstmt, NULL, 0, NULL, 0, table_type_name, SQL_NTS, NULL, 0);
+    }
+
     CHECK_CUSTOM_ERROR(!SQL_SUCCEEDED(rc), stmt, SQLSRV_ERROR_TVP_FETCH_METADATA, param_pos + 1) {
         throw core::CoreException();
     }

@@ -29,17 +29,37 @@ function invokeProc($conn, $proc, $tvpInput, $caseNo, $dir = SQLSRV_PARAM_IN)
     }
 }
 
+function cleanup($conn, $schema, $tvpType, $procName)
+{
+    global $dropSchema;
+    
+    $dropProcedure = dropProcSQL($conn, "[$schema].[$procName]");
+    sqlsrv_query($conn, $dropProcedure);
+
+    $dropTableType = dropTableTypeSQL($conn, "[$schema].[$tvpType]");
+    sqlsrv_query($conn, $dropTableType);
+    
+    sqlsrv_query($conn, $dropSchema);
+}
+
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
 $conn = connect(array('CharacterSet'=>'UTF-8'));
 
-dropProc($conn, 'SelectTVP3');
-
+// Use a different schema instead of dbo
+$schema = 'Sales DB';
 $tvpType = 'TestTVP3';
-$dropTableType = dropTableTypeSQL($conn, $tvpType);
-sqlsrv_query($conn, $dropTableType);
+$procName = 'SelectTVP3';
+
+cleanup($conn, $schema, $tvpType, $procName);
+// dropProc($conn, 'SelectTVP3');
+
+// $tvpType = 'TestTVP3';
+// $dropTableType = dropTableTypeSQL($conn, $tvpType);
+// sqlsrv_query($conn, $dropTableType);
 
 // Create table type and a stored procedure
+sqlsrv_query($conn, $createSchema);
 sqlsrv_query($conn, $createTestTVP3);
 sqlsrv_query($conn, $createSelectTVP3);
 
@@ -59,12 +79,15 @@ invokeProc($conn, $callSelectTVP3, $tvpInput, 1);
 $tvpInput = array("" => array());
 invokeProc($conn, $callSelectTVP3, $tvpInput, 2);
 
+// The TVP name should include the schema
+$tvpTypeName = "$schema.$tvpType";
+
 // Case (3) - null inputs
-$tvpInput = array($tvpType => null);
+$tvpInput = array($tvpTypeName => null);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 3);
 
 // Case (4) - not using array as inputs
-$tvpInput = array($tvpType => 1);
+$tvpInput = array($tvpTypeName => 1);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 4);
 
 // Case (5) - invalid TVP type name
@@ -72,7 +95,7 @@ $tvpInput = array($str => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 5);
 
 // Case (6)  - input rows are not the same size
-$tvpInput = array($tvpType => $inputs);
+$tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 6);
 
 // Case (7) - input row wrong size
@@ -80,7 +103,7 @@ unset($inputs);
 $inputs = [
     ['ABC', 12345, null, null]
 ];
-$tvpInput = array($tvpType => $inputs);
+$tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 7);
 
 // Case (8) - use string keys
@@ -88,13 +111,13 @@ unset($inputs);
 $inputs = [
     ['A' => null, null, null]
 ];
-$tvpInput = array($tvpType => $inputs);
+$tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 8);
 
 // Case (9) - a row is not an array
 unset($inputs);
 $inputs = [null];
-$tvpInput = array($tvpType => $inputs);
+$tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 9);
 
 // Case (10) - a column value used a string key
@@ -102,7 +125,7 @@ unset($inputs);
 $inputs = [
     ['ABC', 12345, "key"=>null]
 ];
-$tvpInput = array($tvpType => $inputs);
+$tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 10);
 
 // Case (11) - invalid input object for a TVP column
@@ -116,7 +139,7 @@ $inputs = [
     ['ABC', 1234, $bar],
     ['DEF', 6789, null],
 ];
-$tvpInput = array($tvpType => $inputs);
+$tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 11);
 
 // Case (12) - invalid input type for a TVP column
@@ -125,7 +148,7 @@ $inputs = [
     ['ABC', &$str, null],
     ['DEF', 6789, null],
 ];
-$tvpInput = array($tvpType => $inputs);
+$tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 12);
 
 // Case (13) - bind a TVP as an OUTPUT param
@@ -142,11 +165,13 @@ $inputs = [
     [$utf8, 1234, null],
     ['DEF', 6789, null],
 ];
-$tvpInput = array($tvpType => $inputs);
+$tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 14);
 
-dropProc($conn, 'SelectTVP3');
-sqlsrv_query($conn, $dropTableType);
+cleanup($conn, $schema, $tvpType, $procName);
+
+// dropProc($conn, 'SelectTVP3');
+// sqlsrv_query($conn, $dropTableType);
 sqlsrv_close($conn);
 
 echo "Done" . PHP_EOL;
