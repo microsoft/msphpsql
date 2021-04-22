@@ -113,13 +113,15 @@ PROC2;
 $callSelectTVP2 = "{call SelectTVP2(?)}";
 
 ///////////////////////////////////////////////////////
+// Use schema other than DBO
+///////////////////////////////////////////////////////
 
 $createSchema = 'CREATE SCHEMA [Sales DB]';
 $dropSchema = 'DROP SCHEMA IF EXISTS [Sales DB]';
 
 $createTestTVP3 = <<<TYPE3
 CREATE TYPE [Sales DB].[TestTVP3] AS TABLE(
-    Review VARCHAR(MAX) NOT NULL,
+    Review VARCHAR(100) NOT NULL,
     SupplierId INT,
     SalesDate DATETIME2 NULL
 )
@@ -127,12 +129,30 @@ TYPE3;
 
 $createSelectTVP3 = <<<PROC3
 CREATE PROCEDURE [Sales DB].[SelectTVP3] (
-        @TVP TestTVP3 READONLY) 
+        @TVP TestTVP3 READONLY )
         AS 
         SELECT * FROM @TVP
 PROC3;
 
 $callSelectTVP3 = "{call [Sales DB].[SelectTVP3](?)}";
+
+$createSupplierType = <<<SUPP_TYPE
+CREATE TYPE [Sales DB].[SupplierType] AS TABLE(
+    SupplierId INT,
+    SupplierName NVARCHAR(50)
+)
+SUPP_TYPE;
+
+$createAddReview = <<<SUPP_PROC
+CREATE PROCEDURE [Sales DB].[AddReview] (
+    @suppType SupplierType READONLY,
+    @reviewType TestTVP3 READONLY )
+    AS
+    SELECT * FROM @suppType;
+    SELECT SupplierId, SalesDate, Review FROM @reviewType
+SUPP_PROC;
+
+$callAddReview = "{call [Sales DB].[AddReview](?, ?)}";
 
 ///////////////////////////////////////////////////////
 // Common functions
@@ -140,12 +160,12 @@ $callSelectTVP3 = "{call [Sales DB].[SelectTVP3](?)}";
 
 function dropProcSQL($conn, $procName)
 {
-    return "DROP PROC IF EXISTS $procName";
+    return "IF OBJECT_ID('$procName', 'P') IS NOT NULL DROP PROCEDURE $procName";
 }
 
-function dropTableTypeSQL($conn, $typeName)
+function dropTableTypeSQL($conn, $typeName, $schema = 'dbo')
 {
-    return "DROP TYPE IF EXISTS $typeName";
+    return "IF EXISTS (SELECT * FROM sys.types WHERE is_table_type = 1 AND name = '$typeName') DROP TYPE [$schema].[$typeName]";
 }
 
 function verifyBinaryData($fp, $data)

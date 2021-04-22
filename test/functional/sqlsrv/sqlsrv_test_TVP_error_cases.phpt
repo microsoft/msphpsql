@@ -36,7 +36,7 @@ function cleanup($conn, $schema, $tvpType, $procName)
     $dropProcedure = dropProcSQL($conn, "[$schema].[$procName]");
     sqlsrv_query($conn, $dropProcedure);
 
-    $dropTableType = dropTableTypeSQL($conn, "[$schema].[$tvpType]");
+    $dropTableType = dropTableTypeSQL($conn, $tvpType, $schema);
     sqlsrv_query($conn, $dropTableType);
     
     sqlsrv_query($conn, $dropSchema);
@@ -52,11 +52,6 @@ $tvpType = 'TestTVP3';
 $procName = 'SelectTVP3';
 
 cleanup($conn, $schema, $tvpType, $procName);
-// dropProc($conn, 'SelectTVP3');
-
-// $tvpType = 'TestTVP3';
-// $dropTableType = dropTableTypeSQL($conn, $tvpType);
-// sqlsrv_query($conn, $dropTableType);
 
 // Create table type and a stored procedure
 sqlsrv_query($conn, $createSchema);
@@ -94,7 +89,7 @@ invokeProc($conn, $callSelectTVP3, $tvpInput, 4);
 $tvpInput = array($str => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 5);
 
-// Case (6)  - input rows are not the same size
+// Case (6) - input rows are not the same size
 $tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 6);
 
@@ -170,8 +165,6 @@ invokeProc($conn, $callSelectTVP3, $tvpInput, 14);
 
 cleanup($conn, $schema, $tvpType, $procName);
 
-// dropProc($conn, 'SelectTVP3');
-// sqlsrv_query($conn, $dropTableType);
 sqlsrv_close($conn);
 
 echo "Done" . PHP_EOL;

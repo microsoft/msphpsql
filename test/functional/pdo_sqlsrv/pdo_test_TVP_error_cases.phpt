@@ -35,7 +35,7 @@ function cleanup($conn, $schema, $tvpType, $procName)
     $dropProcedure = dropProcSQL($conn, "[$schema].[$procName]");
     $conn->exec($dropProcedure);
 
-    $dropTableType = dropTableTypeSQL($conn, "[$schema].[$tvpType]");
+    $dropTableType = dropTableTypeSQL($conn, $tvpType, $schema);
     $conn->exec($dropTableType);
     
     $conn->exec($dropSchema);
@@ -88,7 +88,7 @@ try {
     $tvpInput = array($str => $inputs);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 5);
 
-    // Case (6)  - input rows are not the same size
+    // Case (6) - input rows are not the same size
     $tvpInput = array($tvpTypeName => $inputs);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 6);
 
