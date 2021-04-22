@@ -13,7 +13,7 @@ CREATE TABLE TVPItem(
     ItemNo INTEGER IDENTITY(1,1), 
     ProductCode CHAR(10), 
     OrderQty INTEGER, 
-    SalesDate DATE, 
+    PackedOn DATE, 
     Label NVARCHAR(30), 
     Price DECIMAL(5,2), 
     Photo VARBINARY(MAX))
@@ -23,7 +23,7 @@ $createTVPParam = <<<TYPE
 CREATE TYPE TVPParam AS TABLE(
                 ProductCode CHAR(10), 
                 OrderQty INTEGER, 
-                SalesDate DATE, 
+                PackedOn DATE, 
                 Label NVARCHAR(30), 
                 Price DECIMAL(5,2), 
                 Photo VARBINARY(MAX))
@@ -40,8 +40,8 @@ BEGIN
     SET @OrdDate = GETDATE(); SET NOCOUNT ON; 
     INSERT INTO TVPOrd (OrdDate, CustID) VALUES (@OrdDate, @CustID);
     SELECT @OrdNo = SCOPE_IDENTITY();
-    INSERT INTO TVPItem (OrdNo, ProductCode, OrderQty, SalesDate, Label, Price, Photo)
-    SELECT @OrdNo, ProductCode, OrderQty, SalesDate, Label, Price, Photo 
+    INSERT INTO TVPItem (OrdNo, ProductCode, OrderQty, PackedOn, Label, Price, Photo)
+    SELECT @OrdNo, ProductCode, OrderQty, PackedOn, Label, Price, Photo 
     FROM @Items
 END;
 PROC;
@@ -62,7 +62,7 @@ $items = [
     ['1328781505', 260, "2010-03-03", 'Silver Chain for Bikes', '88.98'],
 ];
 
-$selectTVPItemQuery = 'SELECT OrdNo, ItemNo, ProductCode, OrderQty, SalesDate, Label, Price FROM TVPItem ORDER BY ItemNo';
+$selectTVPItemQuery = 'SELECT OrdNo, ItemNo, ProductCode, OrderQty, PackedOn, Label, Price FROM TVPItem ORDER BY ItemNo';
 
 ///////////////////////////////////////////////////////
 
@@ -146,13 +146,15 @@ SUPP_TYPE;
 $createAddReview = <<<SUPP_PROC
 CREATE PROCEDURE [Sales DB].[AddReview] (
     @suppType SupplierType READONLY,
-    @reviewType TestTVP3 READONLY )
+    @reviewType TestTVP3 READONLY,
+    @image VARBINARY(MAX))
     AS
     SELECT * FROM @suppType;
-    SELECT SupplierId, SalesDate, Review FROM @reviewType
+    SELECT SupplierId, SalesDate, Review FROM @reviewType;
+    SELECT @image
 SUPP_PROC;
 
-$callAddReview = "{call [Sales DB].[AddReview](?, ?)}";
+$callAddReview = "{call [Sales DB].[AddReview](?, ?, ?)}";
 
 ///////////////////////////////////////////////////////
 // Common functions

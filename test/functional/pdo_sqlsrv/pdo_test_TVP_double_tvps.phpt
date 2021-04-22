@@ -57,9 +57,12 @@ try {
     $tvpInput1 = array($tvpType1 => $inputs1);
     $tvpInput2 = array($tvpType2 => $inputs2);
 
+    $image = fopen($tvpIncPath. 'superlight_black_f_large.gif', 'rb');
+
     $stmt = $conn->prepare($callAddReview);
-    $stmt->bindValue(1, $tvpInput1, PDO::PARAM_LOB);
-    $stmt->bindValue(2, $tvpInput2, PDO::PARAM_LOB);
+    $stmt->bindParam(1, $tvpInput1, PDO::PARAM_LOB);
+    $stmt->bindParam(2, $tvpInput2, PDO::PARAM_LOB);
+    $stmt->bindParam(3, $image, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
     $stmt->execute();
 
     // Verify the results
@@ -70,6 +73,16 @@ try {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         print_r($row);
     }
+    $stmt->nextRowset();
+    if ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+        if (!verifyBinaryData($image, $row[0])) {
+            echo 'The image is corrupted' . PHP_EOL;
+        }
+    } else {
+        echo 'Something went wrong reading the image' . PHP_EOL;
+    }
+    
+    fclose($image);
     unset($stmt);
     
     cleanup($conn, $schema);

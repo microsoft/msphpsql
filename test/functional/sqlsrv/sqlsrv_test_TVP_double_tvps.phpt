@@ -58,8 +58,11 @@ $tvpType2 = "$schema.TestTVP3";
 $tvpInput1 = array($tvpType1 => $inputs1);
 $tvpInput2 = array($tvpType2 => $inputs2);
 
+$image = fopen($tvpIncPath. 'awc_tee_male_large.gif', 'rb');
+
 $params = array(array($tvpInput1, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE),
-                array($tvpInput2, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE));
+                array($tvpInput2, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE),
+                array($image, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY), SQLSRV_SQLTYPE_VARBINARY('MAX')));
 
 $stmt = sqlsrv_query($conn, $callAddReview, $params);
 if (!$stmt) {
@@ -75,7 +78,17 @@ sqlsrv_next_result($stmt);
 while ($result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
     print_r($result);
 }
+sqlsrv_next_result($stmt);
+if (sqlsrv_fetch($stmt)) {
+    $photo = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_BINARY));
+    if (!verifyBinaryStream($image, $photo)) {
+        echo 'Image data is corrupted' . PHP_EOL;
+    }
+} else {
+    echo 'Something went wrong reading the image' . PHP_EOL;
+}
 
+fclose($image);
 cleanup($conn, $schema);
 
 sqlsrv_free_stmt($stmt);

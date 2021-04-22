@@ -148,7 +148,7 @@ stdClass Object
     [ItemNo] => 1
     [ProductCode] => 0062836700
     [OrderQty] => 
-    [SalesDate] => 
+    [PackedOn] => 
     [Label] => AWC Tee Male Shirt
     [Price] => 20.75
 )
@@ -158,7 +158,7 @@ stdClass Object
     [ItemNo] => 2
     [ProductCode] => 1250153272
     [OrderQty] => 256
-    [SalesDate] => 2017-11-07
+    [PackedOn] => 2017-11-07
     [Label] => Superlight Black Bicycle
     [Price] => 998.45
 )
@@ -168,7 +168,7 @@ stdClass Object
     [ItemNo] => 3
     [ProductCode] => 1328781505
     [OrderQty] => 260
-    [SalesDate] => 2010-03-03
+    [PackedOn] => 2010-03-03
     [Label] => 
     [Price] => 88.98
 )
