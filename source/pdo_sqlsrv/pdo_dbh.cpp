@@ -1523,44 +1523,26 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
     }
 #endif
 
-    if ( encoding == SQLSRV_ENCODING_BINARY ) {
-        // convert from char* to hex digits using os
-        std::basic_ostringstream<char> os;
-        for ( size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index ) {
-            // if unquoted is < 0 or > 255, that means this is a non-ascii character. Translation from non-ascii to binary is not supported.
-            // return an empty terminated string for now
-            if (( int )unquoted[index] < 0 || ( int )unquoted[index] > 255) {
-                *quoted_len = 0;
-                *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-                ( *quoted )[0] = '\0';
-                return 1;
+    if ( encoding == SQLSRV_ENCODING_BINARY ) { 
+        *quoted_len = (unquoted_len * 2) + 2;   // each character will be converted to 2 hex digits and prepend '0x' to the result
+        *quoted = reinterpret_cast<char*>(sqlsrv_malloc(*quoted_len, sizeof(char), 1));     // include space for null terminator
+        memset(*quoted, '\0', *quoted_len + 1);
+
+        unsigned int pos = 0;
+        (*quoted)[pos++] = '0';
+        (*quoted)[pos++] = 'x';
+        
+        for (size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index) {
+            // On success, the total number of characters written is returned
+            // On failure, a negative number is returned
+            int n = sprintf((char*)(*quoted + pos), "%02X", unquoted[index]);
+            if (n < 0) {
+                // Something went wrong, simply return 0 (failure)
+                return 0;
             }
-            // when an int is < 16 and is appended to os, its hex representation which starts
-            // with '0' does not get appended properly (the starting '0' does not get appended)
-            // thus append '0' first
-            if (( int )unquoted[index] < 16 ) {
-                os << '0';
-            }
-           os << std::hex << ( int )unquoted[index];
+            pos += 2;
         }
-        std::basic_string<char> str_hex = os.str();
-        // each character is represented by 2 digits of hex
-        size_t unquoted_str_len = unquoted_len * 2; // length returned should not account for null terminator
-        char* unquoted_str = reinterpret_cast<char*>( sqlsrv_malloc( unquoted_str_len, sizeof( char ), 1 )); // include space for null terminator
-        strcpy_s( unquoted_str, unquoted_str_len + 1 /* include null terminator*/, str_hex.c_str() );
-        // include length of '0x' in the binary string
-        *quoted_len = unquoted_str_len + 2;
-        *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-        unsigned int out_current = 0;
-        // insert '0x'
-        ( *quoted )[out_current++] = '0';
-        ( *quoted )[out_current++] = 'x';
-        for ( size_t index = 0; index < unquoted_str_len && unquoted_str[index] != '\0'; ++index ) {
-            ( *quoted )[out_current++] = unquoted_str[index];
-        }
-        // null terminator
-        ( *quoted )[out_current] = '\0';
-        sqlsrv_free( unquoted_str );
+        
         return 1;
     }
     else {

@@ -21,17 +21,23 @@ try {
     $tbname = "watchdog";
     createTable( $cnn, $tbname, array( "system_encoding" => "nvarchar(128)", "utf8_encoding" => "nvarchar(128)", "binary_encoding" => "varbinary(max)"));
 
+    $query = "INSERT INTO [watchdog] ([system_encoding], [utf8_encoding], [binary_encoding]) VALUES
+    (?, ?, ?)";
+
+    /** @var MyStatement */
+    $st = $cnn->prepare($query, $pdo_options);
+
     $system_param = 'system encoded string';
     $utf8_param = '가각ácasa';
     $binary_param = fopen('php://memory', 'a');
     fwrite($binary_param, 'asdgasdgasdgsadg');
     rewind($binary_param);
 
-    $inputs = array("system_encoding" => $system_param,
-                    "utf8_encoding" => new BindParamOp( 2, $utf8_param, "PDO::PARAM_STR", 0, "PDO::SQLSRV_ENCODING_UTF8" ),
-                    "binary_encoding" => new BindParamOp( 3, $binary_param, "PDO::PARAM_LOB", 0, "PDO::SQLSRV_ENCODING_BINARY" ));
+    $st->bindParam(1, $system_param, PDO::PARAM_STR);
+    $st->bindParam(2, $utf8_param, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+    $st->bindParam(3, $binary_param, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
 
-    insertRow($cnn, $tbname, $inputs, "prepareBindParam");
+    $st->execute();
 
     $data = selectAll($cnn, $tbname);
     var_dump($data);
