@@ -34,7 +34,7 @@ namespace {
 
 const char LAST_INSERT_ID_QUERY[] = "SELECT @@IDENTITY;";
 const size_t LAST_INSERT_ID_BUFF_LEN = 50;    // size of the buffer to hold the string value of the last inserted id, which may be an int, bigint, decimal(p,0) or numeric(p,0)
-const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT current_value FROM sys.sequences WHERE name=%s";
+const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT current_value FROM sys.sequences WHERE name=N'%s'";
 const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( SEQUENCE_CURRENT_VALUE_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
 
 // List of PDO supported connection options.
@@ -1370,12 +1370,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
             strcpy_s( last_insert_id_query, sizeof( last_insert_id_query ), LAST_INSERT_ID_QUERY );
         }
         else {
-            char* quoted_table = NULL;
-            size_t quoted_len = 0;
-            int quoted = pdo_sqlsrv_dbh_quote( dbh, name, strnlen_s( name ), &quoted_table, &quoted_len, PDO_PARAM_NULL );
-            SQLSRV_ASSERT( quoted, "PDO::lastInsertId failed to quote the table name.");
-            snprintf( last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, quoted_table );
-            sqlsrv_free( quoted_table );
+            snprintf(last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
         }
 
         // temp PDO statement used for error handling if something happens
@@ -1523,44 +1518,27 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
     }
 #endif
 
-    if ( encoding == SQLSRV_ENCODING_BINARY ) {
-        // convert from char* to hex digits using os
-        std::basic_ostringstream<char> os;
-        for ( size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index ) {
-            // if unquoted is < 0 or > 255, that means this is a non-ascii character. Translation from non-ascii to binary is not supported.
-            // return an empty terminated string for now
-            if (( int )unquoted[index] < 0 || ( int )unquoted[index] > 255) {
-                *quoted_len = 0;
-                *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-                ( *quoted )[0] = '\0';
-                return 1;
+    if ( encoding == SQLSRV_ENCODING_BINARY ) { 
+        *quoted_len = (unquoted_len * 2) + 2;   // each character will be converted to 2 hex digits and prepend '0x' to the result
+        *quoted = reinterpret_cast<char*>(sqlsrv_malloc(*quoted_len, sizeof(char), 1));     // include space for null terminator
+        memset(*quoted, '\0', *quoted_len + 1);
+
+        unsigned int pos = 0;
+        (*quoted)[pos++] = '0';
+        (*quoted)[pos++] = 'x';
+        
+        for (size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index) {
+            // On success, snprintf returns the total number of characters written
+            // On failure, a negative number is returned
+            // The generated string has a length of at most len - 1, so 
+            // len is 3 (2 hex digits + 1)
+            int n = snprintf((char*)(*quoted + pos), 3, "%02X", unquoted[index]);
+            if (n < 0) {
+                // Something went wrong, simply return 0 (failure)
+                return 0;
             }
-            // when an int is < 16 and is appended to os, its hex representation which starts
-            // with '0' does not get appended properly (the starting '0' does not get appended)
-            // thus append '0' first
-            if (( int )unquoted[index] < 16 ) {
-                os << '0';
-            }
-           os << std::hex << ( int )unquoted[index];
+            pos += 2;
         }
-        std::basic_string<char> str_hex = os.str();
-        // each character is represented by 2 digits of hex
-        size_t unquoted_str_len = unquoted_len * 2; // length returned should not account for null terminator
-        char* unquoted_str = reinterpret_cast<char*>( sqlsrv_malloc( unquoted_str_len, sizeof( char ), 1 )); // include space for null terminator
-        strcpy_s( unquoted_str, unquoted_str_len + 1 /* include null terminator*/, str_hex.c_str() );
-        // include length of '0x' in the binary string
-        *quoted_len = unquoted_str_len + 2;
-        *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-        unsigned int out_current = 0;
-        // insert '0x'
-        ( *quoted )[out_current++] = '0';
-        ( *quoted )[out_current++] = 'x';
-        for ( size_t index = 0; index < unquoted_str_len && unquoted_str[index] != '\0'; ++index ) {
-            ( *quoted )[out_current++] = unquoted_str[index];
-        }
-        // null terminator
-        ( *quoted )[out_current] = '\0';
-        sqlsrv_free( unquoted_str );
         return 1;
     }
     else {
