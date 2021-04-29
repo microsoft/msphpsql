@@ -1362,13 +1362,13 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
 
     char    idSTR[LAST_INSERT_ID_BUFF_LEN] = { '\0' };
     char*   str = NULL;
-    SQLLEN cbID = 0;
+    SQLLEN  cbID = 0;
 
     try {
 
         char last_insert_id_query[LAST_INSERT_ID_QUERY_MAX_LEN] = {'\0'};
         if( name == NULL ) {
-            strcpy_s( last_insert_id_query, sizeof( last_insert_id_query ), LAST_INSERT_ID_QUERY );
+            strcpy_s(last_insert_id_query, sizeof(last_insert_id_query), LAST_INSERT_ID_QUERY);
         }
         else {
             snprintf(last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
@@ -1402,13 +1402,8 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         }
 
         driver_stmt->~sqlsrv_stmt();
-
-        *len = static_cast<size_t>(cbID);
-        str = reinterpret_cast<char*>(sqlsrv_malloc(cbID, sizeof(char), 1));     // include space for null terminator
-        strcpy_s(str, cbID + 1, idSTR);
     }
     catch( core::CoreException& ) {
-
         // copy any errors on the statement to the connection so that the user sees them, since the statement is released
         // before this method returns
         strcpy_s( dbh->error_code, sizeof( dbh->error_code ),
@@ -1418,9 +1413,8 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         if( driver_stmt ) {
             driver_stmt->~sqlsrv_stmt();
         }
-
         *len = 0;
-        char * str = reinterpret_cast<char*>(sqlsrv_malloc(0, sizeof(char), 1));     // include space for null terminator
+        str = reinterpret_cast<char*>(sqlsrv_malloc(0, sizeof(char), 1));     // return an empty string with a null terminator
         str[0] = '\0';
         return str;
     }
@@ -1428,6 +1422,10 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
     // restore error handling to its previous mode
     dbh->error_mode = prev_err_mode;
 
+    // copy the last ID string and return it
+    *len = static_cast<size_t>(cbID);
+    str = reinterpret_cast<char*>(sqlsrv_malloc(cbID, sizeof(char), 1));     // include space for null terminator
+    strcpy_s(str, cbID + 1, idSTR);
     return str;
 }
 
