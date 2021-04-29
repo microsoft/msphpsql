@@ -1360,8 +1360,9 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
     pdo_sqlsrv_dbh* driver_dbh = static_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
     SQLSRV_ASSERT( driver_dbh != NULL, "pdo_sqlsrv_dbh_last_id: driver_data object was NULL." );
 
-    sqlsrv_malloc_auto_ptr<char> id_str;
-    id_str = reinterpret_cast<char*>( sqlsrv_malloc( LAST_INSERT_ID_BUFF_LEN ));
+    char    idSTR[LAST_INSERT_ID_BUFF_LEN] = { '\0' };
+    char*   str = NULL;
+    SQLLEN cbID = 0;
 
     try {
 
@@ -1392,17 +1393,19 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
 
         // execute the last insert id query        
         core::SQLExecDirectW( driver_stmt, wsql_string );
-
         core::SQLFetchScroll( driver_stmt, SQL_FETCH_NEXT, 0 );
-        SQLRETURN r = core::SQLGetData( driver_stmt, 1, SQL_C_CHAR, id_str, LAST_INSERT_ID_BUFF_LEN, 
-                                        reinterpret_cast<SQLLEN*>( len ), false );
 
-        CHECK_CUSTOM_ERROR( (!SQL_SUCCEEDED( r ) || *len == SQL_NULL_DATA || *len == SQL_NO_TOTAL), driver_stmt,
-                            PDO_SQLSRV_ERROR_LAST_INSERT_ID ) {
+        SQLRETURN r = core::SQLGetData(driver_stmt, 1, SQL_C_CHAR, idSTR, LAST_INSERT_ID_BUFF_LEN, &cbID, false);
+        CHECK_CUSTOM_ERROR((!SQL_SUCCEEDED(r) || cbID == SQL_NULL_DATA || cbID == SQL_NO_TOTAL), driver_stmt,
+            PDO_SQLSRV_ERROR_LAST_INSERT_ID) {
             throw core::CoreException();
         }
 
         driver_stmt->~sqlsrv_stmt();
+
+        *len = static_cast<size_t>(cbID);
+        str = reinterpret_cast<char*>(sqlsrv_malloc(cbID, sizeof(char), 1));     // include space for null terminator
+        strcpy_s(str, cbID + 1, idSTR);
     }
     catch( core::CoreException& ) {
 
@@ -1416,17 +1419,16 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
             driver_stmt->~sqlsrv_stmt();
         }
 
-        strcpy_s( id_str.get(), 1, "" );
         *len = 0;
+        char * str = reinterpret_cast<char*>(sqlsrv_malloc(0, sizeof(char), 1));     // include space for null terminator
+        str[0] = '\0';
+        return str;
     }
-
-    char* ret_id_str = id_str.get();
-    id_str.transferred();
 
     // restore error handling to its previous mode
     dbh->error_mode = prev_err_mode;
 
-    return ret_id_str;
+    return str;
 }
 
 // pdo_sqlsrv_dbh_quote
