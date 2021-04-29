@@ -21,8 +21,10 @@ try {
     $tbname = "watchdog";
     createTable( $cnn, $tbname, array( "system_encoding" => "nvarchar(128)", "utf8_encoding" => "nvarchar(128)", "binary_encoding" => "varbinary(max)"));
 
-    $query = "INSERT INTO [watchdog] ([system_encoding], [utf8_encoding], [binary_encoding]) VALUES
-    (?, ?, ?)";
+    $query = <<<EOF
+INSERT INTO [watchdog] ([system_encoding], [utf8_encoding], [binary_encoding]) VALUES
+(?, ?, ?)
+EOF;
 
     /** @var MyStatement */
     $st = $cnn->prepare($query, $pdo_options);
