@@ -1542,43 +1542,31 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         return 1;
     }
     else {
-        // count the number of quotes needed
-        unsigned int quotes_needed = 2;  // the initial start and end quotes of course
-        // include the N proceeding the initial quote if encoding is UTF8
-        if (use_national_char_set) {
-            quotes_needed = 3;
+        // The minimum number of single quotes needed is 2 -- the initial start and end quotes
+        // Add the letter N before the initial quote if the encoding is UTF8
+        int quotes_needed = (use_national_char_set) ? 3 : 2;
+        char c = '\'';
+
+        std::string tmp_str(unquoted, unquoted_len);    // Copy all unquoted_len characters from unquoted
+        std::size_t found = tmp_str.find(c);            // Find the first single quote
+        while (found != std::string::npos) {
+            tmp_str.insert(found + 1, 1, c);            // Insert an additional single quote
+            found = tmp_str.find(c, found + 2);         // Find the next single quote
         }
-        for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[index] == '\'' ) {
-                ++quotes_needed;
-            }
+        size_t len = tmp_str.length();
+        *quoted_len = quotes_needed + len;              // The new length should be number of quotes plus the length of tmp_str
+        *quoted = reinterpret_cast<char*>(sqlsrv_malloc(*quoted_len, sizeof(char), 1));     // include space for null terminator
+        memset(*quoted, '\0', *quoted_len + 1);
+
+        char *p = *quoted;
+        size_t pos = 0;
+        if (use_national_char_set) {                    // Insert the letter N if the encoding is UTF8
+            *(p + (pos++)) = 'N';
         }
-
-        *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
-        *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
-        unsigned int out_current = 0;
-
-        // insert N if the encoding is UTF8
-        if (use_national_char_set) {
-            ( *quoted )[out_current++] = 'N';
-        }
-        // insert initial quote
-        ( *quoted )[out_current++] = '\'';
-
-        for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[index] == '\'' ) {
-                ( *quoted )[out_current++] = '\'';
-                ( *quoted )[out_current++] = '\'';
-            }
-            else {
-                ( *quoted )[out_current++] = unquoted[index];
-            }
-        }
-
-        // trailing quote and null terminator
-        ( *quoted )[out_current++] = '\'';
-        ( *quoted )[out_current] = '\0';
-
+        *(p + (pos++)) = c;                             // Add the initial quote
+        tmp_str.copy(p + pos, len, 0);                  // Copy tmp_str to *quoted
+        pos += len;
+        *(p + pos) = c;                                 // Add the end quote
         return 1;
     }
 }
