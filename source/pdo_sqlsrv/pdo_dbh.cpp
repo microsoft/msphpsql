@@ -1365,13 +1365,18 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
     SQLLEN  cbID = 0;
 
     try {
+        sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
+        unsigned int wsql_len;
 
-        char last_insert_id_query[LAST_INSERT_ID_QUERY_MAX_LEN] = {'\0'};
-        if( name == NULL ) {
-            strcpy_s(last_insert_id_query, sizeof(last_insert_id_query), LAST_INSERT_ID_QUERY);
+        if (name == NULL) {
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, LAST_INSERT_ID_QUERY, sizeof(LAST_INSERT_ID_QUERY), &wsql_len);
+        } else {
+            char buffer[LAST_INSERT_ID_QUERY_MAX_LEN] = { '\0' };
+            snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, buffer, LAST_INSERT_ID_QUERY_MAX_LEN, &wsql_len);
         }
-        else {
-            snprintf(last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
+        CHECK_CUSTOM_ERROR(wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message()) {
+            throw core::CoreException();
         }
 
         // temp PDO statement used for error handling if something happens
@@ -1382,16 +1387,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         driver_stmt = core_sqlsrv_create_stmt( driver_dbh, core::allocate_stmt<pdo_sqlsrv_stmt>, NULL /*options_ht*/, NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt );
         driver_stmt->set_func( __FUNCTION__ );
 
-        
-        sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
-        unsigned int wsql_len;
-        wsql_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_CHAR, reinterpret_cast<const char*>( last_insert_id_query ), sizeof(last_insert_id_query), &wsql_len );
-
-        CHECK_CUSTOM_ERROR( wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message() ) {
-                throw core::CoreException();
-        }
-
-        // execute the last insert id query        
+        // execute the last insert id query
         core::SQLExecDirectW( driver_stmt, wsql_string );
         core::SQLFetchScroll( driver_stmt, SQL_FETCH_NEXT, 0 );
 
@@ -1402,8 +1398,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         }
 
         driver_stmt->~sqlsrv_stmt();
-    }
-    catch( core::CoreException& ) {
+    } catch( core::CoreException& ) {
         // copy any errors on the statement to the connection so that the user sees them, since the statement is released
         // before this method returns
         strcpy_s( dbh->error_code, sizeof( dbh->error_code ),
