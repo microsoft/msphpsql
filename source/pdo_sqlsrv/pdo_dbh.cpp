@@ -1373,7 +1373,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         } else {
             char buffer[LAST_INSERT_ID_QUERY_MAX_LEN] = { '\0' };
             snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
-            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, buffer, LAST_INSERT_ID_QUERY_MAX_LEN, &wsql_len);
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, buffer, sizeof(buffer), &wsql_len);
         }
         CHECK_CUSTOM_ERROR(wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message()) {
             throw core::CoreException();
