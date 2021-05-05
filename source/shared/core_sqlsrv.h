@@ -1409,19 +1409,19 @@ struct sqlsrv_param
     int             param_php_type;
     SQLSRV_ENCODING encoding;
     bool            was_null;       // false by default - the original parameter was a NULL zval
-    zval            placeholder_z;  // A temp buffer for binding any input parameter, such as wide input string (UTF-16 buffer), the datetime strings, etc.
+    zval            placeholder_z;  // A temp zval for binding any input parameter value, including simple data types, wide input string (UTF-16 buffer), the datetime strings, etc.
     zval*           param_ptr_z;    // NULL by default - points to the original parameter or its reference
-    std::size_t     stream_read;    // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
+    std::size_t     num_bytes_read; // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
     php_stream*     param_stream;   // NULL by default - used to send stream data from an input parameter to the server
     
     sqlsrv_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
         c_data_type(0), buffer(NULL), buffer_length(0), strlen_or_indptr(0), param_pos(param_num), direction(dir), encoding(enc), sql_data_type(sql_type),
-        column_size(col_size), decimal_digits(dec_digits), param_php_type(0), was_null(false), param_ptr_z(NULL), stream_read(0), param_stream(NULL)
+        column_size(col_size), decimal_digits(dec_digits), param_php_type(0), was_null(false), param_ptr_z(NULL), num_bytes_read(0), param_stream(NULL)
     {
         ZVAL_UNDEF(&placeholder_z);
     }
 
-    void copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta);            // Only used when Always Encrypted is enabled
+    void copy_param_meta_ae(_Inout_ zval* param_z, _In_ param_meta_data& meta);            // Only used when Always Encrypted is enabled
 
     virtual ~sqlsrv_param(){ release_data(); }
     virtual void release_data();
@@ -1474,14 +1474,14 @@ struct sqlsrv_param_inout : public sqlsrv_param
     void finalize_output_value();
 
     // The following methods are used for string parameters
-    void resize_output_buffer(_Inout_ zval* param_z, _In_ bool is_numeric);
+    void resize_output_string_buffer(_Inout_ zval* param_z, _In_ bool is_numeric_type);
     void finalize_output_string();
 };
 
 // *** a container of all parameters used for SQLBindParameter ***
 struct sqlsrv_params_container
 {
-    std::vector<param_meta_data>    params_meta;                    // Empty by default - only used when Always Encrypted is enabled
+    std::vector<param_meta_data>    params_meta_ae;                 // Empty by default - only used when Always Encrypted is enabled
 
     std::map<SQLUSMALLINT, sqlsrv_param*>     input_params;         // map of pointers to the input params with their ordinal positions as keys
     std::map<SQLUSMALLINT, sqlsrv_param*>     output_params;        // map of pointers to the output / inout params with their ordinal positions as keys
@@ -1489,7 +1489,7 @@ struct sqlsrv_params_container
     sqlsrv_param*                   current_param;                  // Null by default - points to a sqlsrv_param object used for sending stream data
 
     sqlsrv_params_container() { current_param = NULL; }
-    ~sqlsrv_params_container() { params_meta.clear(); clean_up_param_data(); }
+    ~sqlsrv_params_container() { params_meta_ae.clear(); clean_up_param_data(); }
 
     sqlsrv_param* find_param(_In_ SQLUSMALLINT param_num, _In_ bool is_input);
     void insert_param(_In_ SQLUSMALLINT param_num, _In_ sqlsrv_param* new_param)

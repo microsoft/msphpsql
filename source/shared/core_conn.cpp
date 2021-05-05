@@ -570,7 +570,7 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
                 param_meta_data param;
                 core::SQLDescribeParam(stmt, i + 1, &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
 
-                stmt->params_container.params_meta.push_back(param);
+                stmt->params_container.params_meta_ae.push_back(param);
             }
         }
     }
