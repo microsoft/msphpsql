@@ -1365,13 +1365,18 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
     SQLLEN  cbID = 0;
 
     try {
+        sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
+        unsigned int wsql_len;
 
-        char last_insert_id_query[LAST_INSERT_ID_QUERY_MAX_LEN] = {'\0'};
-        if( name == NULL ) {
-            strcpy_s(last_insert_id_query, sizeof(last_insert_id_query), LAST_INSERT_ID_QUERY);
+        if (name == NULL) {
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, LAST_INSERT_ID_QUERY, sizeof(LAST_INSERT_ID_QUERY), &wsql_len);
+        } else {
+            char buffer[LAST_INSERT_ID_QUERY_MAX_LEN] = { '\0' };
+            snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, buffer, sizeof(buffer), &wsql_len);
         }
-        else {
-            snprintf(last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
+        CHECK_CUSTOM_ERROR(wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message()) {
+            throw core::CoreException();
         }
 
         // temp PDO statement used for error handling if something happens
@@ -1382,16 +1387,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         driver_stmt = core_sqlsrv_create_stmt( driver_dbh, core::allocate_stmt<pdo_sqlsrv_stmt>, NULL /*options_ht*/, NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt );
         driver_stmt->set_func( __FUNCTION__ );
 
-        
-        sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
-        unsigned int wsql_len;
-        wsql_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_CHAR, reinterpret_cast<const char*>( last_insert_id_query ), sizeof(last_insert_id_query), &wsql_len );
-
-        CHECK_CUSTOM_ERROR( wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message() ) {
-                throw core::CoreException();
-        }
-
-        // execute the last insert id query        
+        // execute the last insert id query
         core::SQLExecDirectW( driver_stmt, wsql_string );
         core::SQLFetchScroll( driver_stmt, SQL_FETCH_NEXT, 0 );
 
@@ -1402,8 +1398,7 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         }
 
         driver_stmt->~sqlsrv_stmt();
-    }
-    catch( core::CoreException& ) {
+    } catch( core::CoreException& ) {
         // copy any errors on the statement to the connection so that the user sees them, since the statement is released
         // before this method returns
         strcpy_s( dbh->error_code, sizeof( dbh->error_code ),
@@ -1542,43 +1537,31 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
         return 1;
     }
     else {
-        // count the number of quotes needed
-        unsigned int quotes_needed = 2;  // the initial start and end quotes of course
-        // include the N proceeding the initial quote if encoding is UTF8
-        if (use_national_char_set) {
-            quotes_needed = 3;
+        // The minimum number of single quotes needed is 2 -- the initial start and end quotes
+        // Add the letter N before the initial quote if the encoding is UTF8
+        int quotes_needed = (use_national_char_set) ? 3 : 2;
+        char c = '\'';
+
+        std::string tmp_str(unquoted, unquoted_len);    // Copy all unquoted_len characters from unquoted
+        std::size_t found = tmp_str.find(c);            // Find the first single quote
+        while (found != std::string::npos) {
+            tmp_str.insert(found + 1, 1, c);            // Insert an additional single quote
+            found = tmp_str.find(c, found + 2);         // Find the next single quote
         }
-        for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[index] == '\'' ) {
-                ++quotes_needed;
-            }
+        size_t len = tmp_str.length();
+        *quoted_len = quotes_needed + len;              // The new length should be number of quotes plus the length of tmp_str
+        *quoted = reinterpret_cast<char*>(sqlsrv_malloc(*quoted_len, sizeof(char), 1));     // include space for null terminator
+        memset(*quoted, '\0', *quoted_len + 1);
+
+        char *p = *quoted;
+        size_t pos = 0;
+        if (use_national_char_set) {                    // Insert the letter N if the encoding is UTF8
+            *(p + (pos++)) = 'N';
         }
-
-        *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
-        *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
-        unsigned int out_current = 0;
-
-        // insert N if the encoding is UTF8
-        if (use_national_char_set) {
-            ( *quoted )[out_current++] = 'N';
-        }
-        // insert initial quote
-        ( *quoted )[out_current++] = '\'';
-
-        for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[index] == '\'' ) {
-                ( *quoted )[out_current++] = '\'';
-                ( *quoted )[out_current++] = '\'';
-            }
-            else {
-                ( *quoted )[out_current++] = unquoted[index];
-            }
-        }
-
-        // trailing quote and null terminator
-        ( *quoted )[out_current++] = '\'';
-        ( *quoted )[out_current] = '\0';
-
+        *(p + (pos++)) = c;                             // Add the initial quote
+        tmp_str.copy(p + pos, len, 0);                  // Copy tmp_str to *quoted
+        pos += len;
+        *(p + pos) = c;                                 // Add the end quote
         return 1;
     }
 }

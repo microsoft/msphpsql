@@ -15,6 +15,12 @@ try {
     print("Original: " . str_replace("\0", "{NUL}", $str) . "\n");
     $str = $connection->quote($str);
     print("Quoted:   " . str_replace("\0", "{NUL}", $str) . "\n");
+
+    $str1 = "X'X\0'XX";
+    print("Original: " . str_replace("\0", "{NUL}", $str1) . "\n");
+    $str1 = $connection->quote($str1);
+    print("Quoted:   " . str_replace("\0", "{NUL}", $str1) . "\n");
+
 } catch (PDOException $e) {
     die("Connection error: " . $e->getMessage());
 }
@@ -22,3 +28,5 @@ try {
 --EXPECT--
 Original: XX{NUL}XX
 Quoted:   'XX{NUL}XX'
+Original: X'X{NUL}'XX
+Quoted:   'X''X{NUL}''XX'
