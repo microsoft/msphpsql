@@ -34,7 +34,7 @@ namespace {
 
 const char LAST_INSERT_ID_QUERY[] = "SELECT @@IDENTITY;";
 const size_t LAST_INSERT_ID_BUFF_LEN = 50;    // size of the buffer to hold the string value of the last inserted id, which may be an int, bigint, decimal(p,0) or numeric(p,0)
-const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT CURRENT_VALUE FROM SYS.SEQUENCES WHERE NAME=%s";
+const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT current_value FROM sys.sequences WHERE name=N'%s'";
 const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( SEQUENCE_CURRENT_VALUE_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
 
 // List of PDO supported connection options.
@@ -1360,22 +1360,23 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
     pdo_sqlsrv_dbh* driver_dbh = static_cast<pdo_sqlsrv_dbh*>( dbh->driver_data );
     SQLSRV_ASSERT( driver_dbh != NULL, "pdo_sqlsrv_dbh_last_id: driver_data object was NULL." );
 
-    sqlsrv_malloc_auto_ptr<char> id_str;
-    id_str = reinterpret_cast<char*>( sqlsrv_malloc( LAST_INSERT_ID_BUFF_LEN ));
+    char    idSTR[LAST_INSERT_ID_BUFF_LEN] = { '\0' };
+    char*   str = NULL;
+    SQLLEN  cbID = 0;
 
     try {
+        sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
+        unsigned int wsql_len;
 
-        char last_insert_id_query[LAST_INSERT_ID_QUERY_MAX_LEN] = {'\0'};
-        if( name == NULL ) {
-            strcpy_s( last_insert_id_query, sizeof( last_insert_id_query ), LAST_INSERT_ID_QUERY );
+        if (name == NULL) {
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, LAST_INSERT_ID_QUERY, sizeof(LAST_INSERT_ID_QUERY), &wsql_len);
+        } else {
+            char buffer[LAST_INSERT_ID_QUERY_MAX_LEN] = { '\0' };
+            snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, buffer, sizeof(buffer), &wsql_len);
         }
-        else {
-            char* quoted_table = NULL;
-            size_t quoted_len = 0;
-            int quoted = pdo_sqlsrv_dbh_quote( dbh, name, strnlen_s( name ), &quoted_table, &quoted_len, PDO_PARAM_NULL );
-            SQLSRV_ASSERT( quoted, "PDO::lastInsertId failed to quote the table name.");
-            snprintf( last_insert_id_query, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, quoted_table );
-            sqlsrv_free( quoted_table );
+        CHECK_CUSTOM_ERROR(wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message()) {
+            throw core::CoreException();
         }
 
         // temp PDO statement used for error handling if something happens
@@ -1386,31 +1387,18 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         driver_stmt = core_sqlsrv_create_stmt( driver_dbh, core::allocate_stmt<pdo_sqlsrv_stmt>, NULL /*options_ht*/, NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt );
         driver_stmt->set_func( __FUNCTION__ );
 
-        
-        sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
-        unsigned int wsql_len;
-        wsql_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_CHAR, reinterpret_cast<const char*>( last_insert_id_query ), sizeof(last_insert_id_query), &wsql_len );
-
-        CHECK_CUSTOM_ERROR( wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message() ) {
-                throw core::CoreException();
-        }
-
-        // execute the last insert id query        
+        // execute the last insert id query
         core::SQLExecDirectW( driver_stmt, wsql_string );
-
         core::SQLFetchScroll( driver_stmt, SQL_FETCH_NEXT, 0 );
-        SQLRETURN r = core::SQLGetData( driver_stmt, 1, SQL_C_CHAR, id_str, LAST_INSERT_ID_BUFF_LEN, 
-                                        reinterpret_cast<SQLLEN*>( len ), false );
 
-        CHECK_CUSTOM_ERROR( (!SQL_SUCCEEDED( r ) || *len == SQL_NULL_DATA || *len == SQL_NO_TOTAL), driver_stmt,
-                            PDO_SQLSRV_ERROR_LAST_INSERT_ID ) {
+        SQLRETURN r = core::SQLGetData(driver_stmt, 1, SQL_C_CHAR, idSTR, LAST_INSERT_ID_BUFF_LEN, &cbID, false);
+        CHECK_CUSTOM_ERROR((!SQL_SUCCEEDED(r) || cbID == SQL_NULL_DATA || cbID == SQL_NO_TOTAL), driver_stmt,
+            PDO_SQLSRV_ERROR_LAST_INSERT_ID) {
             throw core::CoreException();
         }
 
         driver_stmt->~sqlsrv_stmt();
-    }
-    catch( core::CoreException& ) {
-
+    } catch( core::CoreException& ) {
         // copy any errors on the statement to the connection so that the user sees them, since the statement is released
         // before this method returns
         strcpy_s( dbh->error_code, sizeof( dbh->error_code ),
@@ -1420,18 +1408,20 @@ char * pdo_sqlsrv_dbh_last_id( _Inout_ pdo_dbh_t *dbh, _In_z_ const char *name, 
         if( driver_stmt ) {
             driver_stmt->~sqlsrv_stmt();
         }
-
-        strcpy_s( id_str.get(), 1, "" );
         *len = 0;
+        str = reinterpret_cast<char*>(sqlsrv_malloc(0, sizeof(char), 1));     // return an empty string with a null terminator
+        str[0] = '\0';
+        return str;
     }
-
-    char* ret_id_str = id_str.get();
-    id_str.transferred();
 
     // restore error handling to its previous mode
     dbh->error_mode = prev_err_mode;
 
-    return ret_id_str;
+    // copy the last ID string and return it
+    *len = static_cast<size_t>(cbID);
+    str = reinterpret_cast<char*>(sqlsrv_malloc(cbID, sizeof(char), 1));     // include space for null terminator
+    strcpy_s(str, cbID + 1, idSTR);
+    return str;
 }
 
 // pdo_sqlsrv_dbh_quote
@@ -1523,84 +1513,55 @@ int pdo_sqlsrv_dbh_quote( _Inout_ pdo_dbh_t* dbh, _In_reads_(unquoted_len) const
     }
 #endif
 
-    if ( encoding == SQLSRV_ENCODING_BINARY ) {
-        // convert from char* to hex digits using os
-        std::basic_ostringstream<char> os;
-        for ( size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index ) {
-            // if unquoted is < 0 or > 255, that means this is a non-ascii character. Translation from non-ascii to binary is not supported.
-            // return an empty terminated string for now
-            if (( int )unquoted[index] < 0 || ( int )unquoted[index] > 255) {
-                *quoted_len = 0;
-                *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-                ( *quoted )[0] = '\0';
-                return 1;
+    if ( encoding == SQLSRV_ENCODING_BINARY ) { 
+        *quoted_len = (unquoted_len * 2) + 2;   // each character will be converted to 2 hex digits and prepend '0x' to the result
+        *quoted = reinterpret_cast<char*>(sqlsrv_malloc(*quoted_len, sizeof(char), 1));     // include space for null terminator
+        memset(*quoted, '\0', *quoted_len + 1);
+
+        unsigned int pos = 0;
+        (*quoted)[pos++] = '0';
+        (*quoted)[pos++] = 'x';
+        
+        for (size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index) {
+            // On success, snprintf returns the total number of characters written
+            // On failure, a negative number is returned
+            // The generated string has a length of at most len - 1, so 
+            // len is 3 (2 hex digits + 1)
+            int n = snprintf((char*)(*quoted + pos), 3, "%02X", unquoted[index]);
+            if (n < 0) {
+                // Something went wrong, simply return 0 (failure)
+                return 0;
             }
-            // when an int is < 16 and is appended to os, its hex representation which starts
-            // with '0' does not get appended properly (the starting '0' does not get appended)
-            // thus append '0' first
-            if (( int )unquoted[index] < 16 ) {
-                os << '0';
-            }
-           os << std::hex << ( int )unquoted[index];
+            pos += 2;
         }
-        std::basic_string<char> str_hex = os.str();
-        // each character is represented by 2 digits of hex
-        size_t unquoted_str_len = unquoted_len * 2; // length returned should not account for null terminator
-        char* unquoted_str = reinterpret_cast<char*>( sqlsrv_malloc( unquoted_str_len, sizeof( char ), 1 )); // include space for null terminator
-        strcpy_s( unquoted_str, unquoted_str_len + 1 /* include null terminator*/, str_hex.c_str() );
-        // include length of '0x' in the binary string
-        *quoted_len = unquoted_str_len + 2;
-        *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 ));
-        unsigned int out_current = 0;
-        // insert '0x'
-        ( *quoted )[out_current++] = '0';
-        ( *quoted )[out_current++] = 'x';
-        for ( size_t index = 0; index < unquoted_str_len && unquoted_str[index] != '\0'; ++index ) {
-            ( *quoted )[out_current++] = unquoted_str[index];
-        }
-        // null terminator
-        ( *quoted )[out_current] = '\0';
-        sqlsrv_free( unquoted_str );
         return 1;
     }
     else {
-        // count the number of quotes needed
-        unsigned int quotes_needed = 2;  // the initial start and end quotes of course
-        // include the N proceeding the initial quote if encoding is UTF8
-        if (use_national_char_set) {
-            quotes_needed = 3;
+        // The minimum number of single quotes needed is 2 -- the initial start and end quotes
+        // Add the letter N before the initial quote if the encoding is UTF8
+        int quotes_needed = (use_national_char_set) ? 3 : 2;
+        char c = '\'';
+
+        std::string tmp_str(unquoted, unquoted_len);    // Copy all unquoted_len characters from unquoted
+        std::size_t found = tmp_str.find(c);            // Find the first single quote
+        while (found != std::string::npos) {
+            tmp_str.insert(found + 1, 1, c);            // Insert an additional single quote
+            found = tmp_str.find(c, found + 2);         // Find the next single quote
         }
-        for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[index] == '\'' ) {
-                ++quotes_needed;
-            }
+        size_t len = tmp_str.length();
+        *quoted_len = quotes_needed + len;              // The new length should be number of quotes plus the length of tmp_str
+        *quoted = reinterpret_cast<char*>(sqlsrv_malloc(*quoted_len, sizeof(char), 1));     // include space for null terminator
+        memset(*quoted, '\0', *quoted_len + 1);
+
+        char *p = *quoted;
+        size_t pos = 0;
+        if (use_national_char_set) {                    // Insert the letter N if the encoding is UTF8
+            *(p + (pos++)) = 'N';
         }
-
-        *quoted_len = unquoted_len + quotes_needed;  // length returned to the caller should not account for null terminator.
-        *quoted = reinterpret_cast<char*>( sqlsrv_malloc( *quoted_len, sizeof( char ), 1 )); // include space for null terminator. 
-        unsigned int out_current = 0;
-
-        // insert N if the encoding is UTF8
-        if (use_national_char_set) {
-            ( *quoted )[out_current++] = 'N';
-        }
-        // insert initial quote
-        ( *quoted )[out_current++] = '\'';
-
-        for ( size_t index = 0; index < unquoted_len; ++index ) {
-            if ( unquoted[index] == '\'' ) {
-                ( *quoted )[out_current++] = '\'';
-                ( *quoted )[out_current++] = '\'';
-            }
-            else {
-                ( *quoted )[out_current++] = unquoted[index];
-            }
-        }
-
-        // trailing quote and null terminator
-        ( *quoted )[out_current++] = '\'';
-        ( *quoted )[out_current] = '\0';
-
+        *(p + (pos++)) = c;                             // Add the initial quote
+        tmp_str.copy(p + pos, len, 0);                  // Copy tmp_str to *quoted
+        pos += len;
+        *(p + pos) = c;                                 // Add the end quote
         return 1;
     }
 }
