@@ -10,8 +10,8 @@ try {
     $cnn = connect();
 
     $pdo_options = array();
-    if (!isColEncrypted()) {
-        // Emulate prepare and direct query are not supported with Always Encrypted
+    if (!isAEConnected()) {
+        // Emulate prepare and direct query not supported when connected with Always Encrypted
         $pdo_options[PDO::ATTR_EMULATE_PREPARES] = TRUE;
         $pdo_options[PDO::SQLSRV_ATTR_DIRECT_QUERY] = TRUE;
     }
