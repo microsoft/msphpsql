@@ -253,7 +253,11 @@ try {
 
     $query = "INSERT INTO $tableName VALUES(?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($query);
-    for ($i = 0; $i < count($columns); $i++) {
+
+    // Bind the first param using the PHP DateTime object
+    $today = date_create($values[0]);
+    $stmt->bindParam(1, $today, PDO::PARAM_LOB);
+    for ($i = 1; $i < count($columns); $i++) {
         $stmt->bindParam($i+1, $values[$i], PDO::PARAM_LOB);
     }
     $stmt->execute();

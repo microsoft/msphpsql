@@ -561,18 +561,16 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
         // prepare our wide char query string
         core::SQLPrepareW( stmt, reinterpret_cast<SQLWCHAR*>( wsql_string.get() ), wsql_len );
 
-        stmt->param_descriptions.clear();
-
         // if AE is enabled, get meta data for all parameters before binding them
         if( stmt->conn->ce_option.enabled ) {
             SQLSMALLINT num_params;
             core::SQLNumParams( stmt, &num_params);
+
             for( int i = 0; i < num_params; i++ ) {
                 param_meta_data param;
+                core::SQLDescribeParam(stmt, i + 1, &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
 
-                core::SQLDescribeParam( stmt, i + 1, &( param.sql_type ), &( param.column_size ), &( param.decimal_digits ), &( param.nullable ) );
-
-                stmt->param_descriptions.push_back( param );
+                stmt->params_container.params_meta_ae.push_back(param);
             }
         }
     }

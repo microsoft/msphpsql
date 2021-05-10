@@ -13,15 +13,25 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-function sendStream($minType, $maxType, $atExec)
+function sendStream($minType, $maxType, $atExec, $useUTF8)
 {
     $testName = "Stream - ".($atExec ? "Send at Execution" : "Send after Execution");
+    if ($useUTF8) {
+        $testName .= ' (UTF-8)';
+    }
     startTest($testName);
 
     setup();
     $tableName = "TC52test" . rand(0, 100);
     $fileName = "TC52test.dat";
-    $conn1 = AE\connect();
+    
+    if ($useUTF8) {
+        $conn1 = AE\connect(array('CharacterSet'=>'UTF-8'));
+    } else {
+        $conn1 = AE\connect();
+    }
+    
+    $factor = 500;
 
     for ($k = $minType; $k <= $maxType; $k++) {
         switch ($k) {
@@ -53,6 +63,7 @@ function sendStream($minType, $maxType, $atExec)
         case 14:// varchar(max)
         case 17:// nvarchar(max)
             $data = "The quick brown fox jumps over the lazy dog 0123456789";
+            $data = str_repeat($data, $factor);
             break;
 
         case 18:// text
@@ -70,10 +81,12 @@ function sendStream($minType, $maxType, $atExec)
 
         case 22:// varbinary(max)
             $data = "98765432100123456789";
+            $data = str_repeat($data, $factor);
             break;
 
         case 23:// image
             $data = "01234567899876543210";
+            $data = str_repeat($data, $factor);
             $phpType = SQLSRV_SQLTYPE_IMAGE;
             break;
 
@@ -94,7 +107,7 @@ function sendStream($minType, $maxType, $atExec)
             die("Unknown data type: $k.");
             break;
         }
-
+        
         if ($data != null) {
             $fname1 = fopen($fileName, "w");
             fwrite($fname1, $data);
@@ -168,8 +181,10 @@ function checkData($conn, $table, $cols, $expectedValue)
 }
 
 try {
-    sendStream(12, 28, true);   // send stream at execution
-    sendStream(12, 28, false);  // send stream after execution
+    sendStream(12, 28, true, false);   // send stream at execution
+    sendStream(12, 28, false, false);  // send stream after execution
+    sendStream(12, 28, true, true);    // send stream at execution (UTF-8)
+    sendStream(12, 28, false, true);   // send stream after execution (UTF-8)
 } catch (Exception $e) {
     echo $e->getMessage();
 }
@@ -178,3 +193,5 @@ try {
 --EXPECT--
 Test "Stream - Send at Execution" completed successfully.
 Test "Stream - Send after Execution" completed successfully.
+Test "Stream - Send at Execution (UTF-8)" completed successfully.
+Test "Stream - Send after Execution (UTF-8)" completed successfully.

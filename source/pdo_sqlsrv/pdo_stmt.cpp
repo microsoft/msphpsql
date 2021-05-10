@@ -1399,15 +1399,8 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                 {
                     PDO_VALIDATE_STMT;
                     PDO_LOG_STMT_ENTRY;
-
-                    // skip column bindings
-                    if( !param->is_param ) {
-                        break;
-                    }
-                    
-                    core_sqlsrv_post_param( reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data ), param->paramno, 
-                                            &(param->parameter) );
                 }
+
                 break;
             case PDO_PARAM_EVT_FETCH_PRE:
                 break;
