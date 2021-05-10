@@ -1471,10 +1471,13 @@ struct sqlsrv_param_inout : public sqlsrv_param
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     virtual void process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
 
+    // Called when the output parameter is ready to be finalized, using the value stored in param_ptr_z
     void finalize_output_value();
 
-    // The following methods are used for string parameters
+    // Resize the output string buffer based on its properties and whether it is a numeric type
     void resize_output_string_buffer(_Inout_ zval* param_z, _In_ bool is_numeric_type);
+    
+    // A helper method called by finalize_output_value() to finalize output string parameters
     void finalize_output_string();
 };
 

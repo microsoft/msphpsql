@@ -2813,6 +2813,7 @@ void sqlsrv_param_inout::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_
     }
 }
 
+// Called when the output parameter is ready to be finalized, using the value stored in param_ptr_z
 void sqlsrv_param_inout::finalize_output_value()
 {
     if (param_ptr_z == NULL) {
@@ -2864,6 +2865,7 @@ void sqlsrv_param_inout::finalize_output_value()
     param_ptr_z = NULL; // Do not keep the reference now that the output param has been processed
 }
 
+// A helper method called by finalize_output_value() to finalize output string parameters
 void sqlsrv_param_inout::finalize_output_string()
 {
     zval* value_z = Z_REFVAL_P(param_ptr_z);
