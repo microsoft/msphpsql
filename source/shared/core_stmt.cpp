@@ -411,7 +411,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         if (stmt->conn->ce_option.enabled) {
             if (param_ptr->sql_data_type == SQL_UNKNOWN_TYPE || param_ptr->column_size == SQLSRV_UNKNOWN_SIZE) {
                 // meta data parameters are always sorted based on parameter number
-                param_ptr->copy_param_meta(param_z, stmt->params_container.params_meta[param_num]);
+                param_ptr->copy_param_meta_ae(param_z, stmt->params_container.params_meta_ae[param_num]);
             }
         }
 
@@ -424,7 +424,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         // This is because SQL_TYPE_TIMESTAMP corresponds to Datetime2 by default, and conversion of Datetime2 to Datetime and conversion of Datetime2 to SmallDatatime is not allowed with encrypted columns.
         // To fix the conversion problem, set the SQL_CA_SS_SERVER_TYPE field of the parameter to SQL_SS_TYPE_DATETIME and SQL_SS_TYPE_SMALLDATETIME respectively for a Datetime and Smalldatetime column.
         // Note this must be called after SQLBindParameter() or SQLSetDescField() may fail. 
-        // TODO: how to correctly distinguish datetime from datetime2(3)? Both have the same decimal_digits and column_size
+        // VSO BUG 2693: how to correctly distinguish datetime from datetime2(3)? Both have the same decimal_digits and column_size
         if (stmt->conn->ce_option.enabled && param_ptr->sql_data_type == SQL_TYPE_TIMESTAMP) {
             if (param_ptr->decimal_digits == 3) {
                 core::SQLSetDescField(stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, SQL_IS_INTEGER);
@@ -1105,6 +1105,7 @@ void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_
 // given.  Any errors that occur will be thrown.
 // Parameters:
 // stmt - query to send the next packet for
+// get_all - send stream data all at once (false by default)
 // Returns:
 // true if more data remains to be sent, false if all data processed
 
@@ -1114,7 +1115,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool ge
 
     try {
         if (get_all) {
-            // send all the stream data (so no more after this)
+            // send stream data all at once (so no more after this)
             stmt->params_container.send_all_packets(stmt);
         } else {
             bMore = stmt->params_container.send_next_packet(stmt);
@@ -1148,7 +1149,7 @@ void stmt_option_query_timeout:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
 void stmt_option_send_at_exec:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
 {
     // zend_is_true does not fail. It either returns true or false.
-    stmt->send_streams_at_exec = (zend_is_true(value_z)) ? true : false;
+    stmt->send_streams_at_exec = (zend_is_true(value_z));
 }
 
 void stmt_option_buffered_query_limit:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
@@ -2172,11 +2173,11 @@ void sqlsrv_param::release_data()
     }
 
     param_stream = NULL;
-    stream_read = 0;
+    num_bytes_read = 0;
     param_ptr_z = NULL;
 }
 
-void sqlsrv_param::copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta)
+void sqlsrv_param::copy_param_meta_ae(_Inout_ zval* param_z, _In_ param_meta_data& meta)
 {
     // Always Encrypted (AE) enabled - copy the meta data from SQLDescribeParam()
     sql_data_type = meta.sql_type;
@@ -2595,7 +2596,7 @@ void sqlsrv_param::bind_param(_Inout_ sqlsrv_stmt* stmt)
 void sqlsrv_param::init_data_from_zval(_Inout_ sqlsrv_stmt* stmt)
 {
     // Get the stream from the param zval value
-    stream_read = 0;
+    num_bytes_read = 0;
     param_stream = NULL;
     core::sqlsrv_php_stream_from_zval_no_verify(*stmt, param_stream, param_ptr_z);
 }
@@ -2610,8 +2611,8 @@ bool sqlsrv_param::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
             LOG(SEV_ERROR, "PHP stream: stream seek failed.");
             throw core::CoreException();
         }
-        // Reset stream_read
-        stream_read = 0;
+        // Reset num_bytes_read
+        num_bytes_read = 0;
 
         return false;
     } else {
@@ -2625,7 +2626,7 @@ bool sqlsrv_param::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
             throw core::CoreException();
         }
 
-        stream_read += read;
+        num_bytes_read += read;
         if (read == 0) {
             // Send an empty string, which is what a 0 length does.
             char buff[1];       // Temp storage to hand to SQLPutData
@@ -2825,7 +2826,7 @@ void sqlsrv_param_inout::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_
 
     // Since this is an output string, assure there is enough space to hold the requested size and
     // update all the variables accordingly (param_z, buffer, buffer_length, and strlen_or_indptr)
-    resize_output_buffer(param_z, is_numeric);
+    resize_output_string_buffer(param_z, is_numeric);
     if (is_numeric) {
         encoding = SQLSRV_ENCODING_CHAR;
     }
@@ -2988,7 +2989,7 @@ void sqlsrv_param_inout::finalize_output_string()
     value_z = NULL;
 }
 
-void sqlsrv_param_inout::resize_output_buffer(_Inout_ zval* param_z, _In_ bool is_numeric)
+void sqlsrv_param_inout::resize_output_string_buffer(_Inout_ zval* param_z, _In_ bool is_numeric)
 {
     // Prerequisites: buffer, buffer_length, column_size, and strlen_or_indptr have been set to a known value 
     // Purpose: 
@@ -3529,7 +3530,7 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
             switch (param_php_type) {
             case IS_RESOURCE:
                 {
-                    stream_read = 0;
+                    num_bytes_read = 0;
                     param_stream = NULL;
 
                     // Get the stream from the zval value

@@ -76,7 +76,6 @@ void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_l
 void load_azure_key_vault( _Inout_ sqlsrv_conn* conn );
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t key_size);
 void configure_azure_key_vault( sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size);
-void check_need_long_data_len(_Inout_ sqlsrv_conn* conn);
 }
 
 // core_sqlsrv_connect
@@ -260,9 +259,6 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     // After load_azure_key_vault, reset AKV related variables regardless
     load_azure_key_vault(conn);
     conn->ce_option.akv_reset();
-
-    //// Check if SQL_LEN_DATA_AT_EXEC(length) macro is required when sending long data 
-    //check_need_long_data_len(conn);
 
     // determine the version of the server we're connected to.  The server version is left in the
     // connection upon return.
@@ -574,7 +570,7 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
                 param_meta_data param;
                 core::SQLDescribeParam(stmt, i + 1, &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
 
-                stmt->params_container.params_meta.push_back(param);
+                stmt->params_container.params_meta_ae.push_back(param);
             }
         }
     }
@@ -958,19 +954,6 @@ const char* get_processor_arch( void )
     return NULL;
 #endif // !_WIN32
 }
-
-/*
-// A character string "Y" is returened if the data source needs the length of a long data value 
-// (the data type is SQL_LONGVARCHAR, SQL_LONGVARBINARY, or a long data source - specific data type) 
-// before that value is sent to the data source, "N" if it does not. 
-void check_need_long_data_len(_Inout_ sqlsrv_conn* conn)
-{
-    SQLSMALLINT len;
-    char str[2] = { '\0' };
-    core::SQLGetInfo(conn, SQL_NEED_LONG_DATA_LEN, str, 2, &len);
-
-    conn->need_long_data_len = (str[0] == 'Y');
-} */
 
 // some features require a server of a certain version or later
 // this function determines the version of the server we're connected to
