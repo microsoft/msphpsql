@@ -1106,8 +1106,6 @@ struct sqlsrv_conn : public sqlsrv_context {
 
     sqlsrv_malloc_auto_ptr<ACCESSTOKEN> azure_ad_access_token;
 
-    //bool need_long_data_len;    // true if the data source needs the length of a long data value (e.g. SQL_LONGVARCHAR, SQL_LONGVARBINARY)
-
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding ) :
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
@@ -1487,9 +1485,9 @@ struct sqlsrv_param_inout : public sqlsrv_param
 // *** Table-valued parameter struct used for SQLBindParameter, inheriting sqlsrv_param
 // *** A sqlsrv_param_tvp can be representing a table-valued parameter itself or one of
 // *** its constituent columns. When it is a table-valued parameter, tvp_columns cannot
-// *** be empty and tvp_param_pos is the same as param_pos. When it is a TVP column, 
-// *** tvp_columns must be empty and tvp_param_pos refers to the original param position
-// *** of the table-valued parameter in the statement.
+// *** be empty. When it is a TVP column, parent_tvp points to its table-valued parameter
+// *** and tvp_columns must be empty. The member param_pos refers to the ordinal position
+// *** of this column in the corresponding table type.
 struct sqlsrv_param_tvp : public sqlsrv_param
 {
     sqlsrv_param_tvp*               parent_tvp;         // For a TVP column to reference to the table-valued parameter. NULL if this is the TVP itself.
@@ -1507,15 +1505,16 @@ struct sqlsrv_param_tvp : public sqlsrv_param
     virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
 
-    // The following methods are used to supply data to the server
+    // The following methods are used to supply data to the server post execution
     virtual void init_data_from_zval(_Inout_ sqlsrv_stmt* stmt) {}
     virtual bool send_data_packet(_Inout_ sqlsrv_stmt* stmt);
 
-    // The following methods are only applicable to a table-valued parameter or its individual columns
+    // Change the column encoding based on the sql data type
     static void sql_type_to_encoding(_In_ SQLSMALLINT sql_type, _Inout_ SQLSRV_ENCODING* encoding);
     
-    void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* table_type_name);
+    // The following methods are only applicable to a table-valued parameter or its individual columns
     int parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* table_type_name);
     void process_param_column_value(_Inout_ sqlsrv_stmt* stmt);
     void process_null_param_value(_Inout_ sqlsrv_stmt* stmt);
     void populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_ int ordinal);
