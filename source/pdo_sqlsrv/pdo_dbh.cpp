@@ -1574,12 +1574,13 @@ pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _Inout_ pdo_dbh_t *dbh
     PDO_LOG_DBH_ENTRY;
 
     sqlsrv_conn* driver_conn = reinterpret_cast<sqlsrv_conn*>( dbh->driver_data );
-    SQLSRV_ASSERT( driver_conn != NULL, "pdo_sqlsrv_get_driver_methods: driver_data object was NULL." );
-    CHECK_CUSTOM_ERROR( true, driver_conn, PDO_SQLSRV_ERROR_FUNCTION_NOT_IMPLEMENTED ) {
-        return NULL;
-    }
 
-    return NULL;    // to avoid a compiler warning
+    // As per documentation, simply return false if the method does not exist
+    // https://www.php.net/manual/en/function.is-callable.php
+    // But user can call PDO::errorInfo() to check the error message if necessary
+    CHECK_CUSTOM_WARNING_AS_ERROR(true, driver_conn, PDO_SQLSRV_ERROR_FUNCTION_NOT_IMPLEMENTED);
+
+    return NULL;    // return NULL for PDO to take care of the rest
 }
 
 namespace {
