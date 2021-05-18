@@ -1049,7 +1049,7 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             break;
 
             case SQLSRV_ATTR_DIRECT_QUERY:
-                driver_dbh->direct_query = ( zend_is_true( val ) ) ? true : false;
+                driver_dbh->direct_query = zend_is_true(val);
                 break;
 
             case SQLSRV_ATTR_QUERY_TIMEOUT:
@@ -1069,15 +1069,15 @@ int pdo_sqlsrv_dbh_set_attr( _Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 break;
 
             case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-                driver_dbh->fetch_numeric = (zend_is_true(val)) ? true : false;
+                driver_dbh->fetch_numeric = zend_is_true(val);
                 break;
 
             case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
-                driver_dbh->fetch_datetime = (zend_is_true(val)) ? true : false;
+                driver_dbh->fetch_datetime = zend_is_true(val);
                 break;
 
             case SQLSRV_ATTR_FORMAT_DECIMALS:
-                driver_dbh->format_decimals = (zend_is_true(val)) ? true : false;
+                driver_dbh->format_decimals = zend_is_true(val);
                 break;
 
             case SQLSRV_ATTR_DECIMAL_PLACES:

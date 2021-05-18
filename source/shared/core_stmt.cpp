@@ -1158,22 +1158,12 @@ void stmt_option_buffered_query_limit:: operator()( _Inout_ sqlsrv_stmt* stmt, s
 
 void stmt_option_date_as_string:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z )
 {
-    if (zend_is_true(value_z)) {
-        stmt->date_as_string = true;
-    }
-    else {
-        stmt->date_as_string = false;
-    }
+    stmt->date_as_string = zend_is_true(value_z);
 }
 
 void stmt_option_format_decimals:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z )
 {
-    if (zend_is_true(value_z)) {
-        stmt->format_decimals = true;
-    }
-    else {
-        stmt->format_decimals = false;
-    }
+    stmt->format_decimals = zend_is_true(value_z);
 }
 
 void stmt_option_decimal_places:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z )
@@ -1183,12 +1173,7 @@ void stmt_option_decimal_places:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
 
 void stmt_option_data_classification:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z )
 {
-    if (zend_is_true(value_z)) {
-        stmt->data_classification = true;
-    }
-    else {
-        stmt->data_classification = false;
-    }
+    stmt->data_classification = zend_is_true(value_z);
 }
 
 // internal function to release the active stream.  Called by each main API function
