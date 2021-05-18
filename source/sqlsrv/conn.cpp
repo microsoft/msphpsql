@@ -109,7 +109,7 @@ struct bool_conn_str_func {
     {
         char temp_str[MAX_CONN_VALSTRING_LEN];
 
-        snprintf(temp_str, sizeof(temp_str), "%s={%s};", option->odbc_name, (zend_is_true(value) ? "yes" : "no"));
+        snprintf(temp_str, MAX_CONN_VALSTRING_LEN, "%s={%s};", option->odbc_name, (zend_is_true(value) ? "yes" : "no"));
         conn_str += temp_str;
     }
 };
@@ -122,15 +122,8 @@ struct int_conn_str_func {
 
         char temp_str[MAX_CONN_VALSTRING_LEN];
 
-        snprintf(temp_str, sizeof(temp_str), "%s={%d};", option->odbc_name, Z_LVAL_P(value));
+        snprintf(temp_str, MAX_CONN_VALSTRING_LEN, "%s={%d};", option->odbc_name, Z_LVAL_P(value));
         conn_str += temp_str;
-
-        //std::string val_str = std::to_string( Z_LVAL_P( value ));
-        //
-        //conn_str += option->odbc_name;
-        //conn_str += "={";
-        //conn_str += val_str;
-        //conn_str += "};";
     }
 };
 
