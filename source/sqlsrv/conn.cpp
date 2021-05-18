@@ -30,6 +30,8 @@ extern "C" {
 
 namespace {
 
+const int MAX_CONN_VALSTRING_LEN = 256;
+
 // current subsytem.  defined for the CHECK_SQL_{ERROR|WARNING} macros
 unsigned int current_log_subsystem = LOG_CONN;
 
@@ -38,13 +40,7 @@ struct date_as_string_func {
     static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ )
     {
         ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>( conn );
-
-        if( zend_is_true( value )) {
-            ss_conn->date_as_string = true;
-        }
-        else {
-            ss_conn->date_as_string = false;
-        }
+        ss_conn->date_as_string = zend_is_true(value);
     }
 };
 
@@ -53,13 +49,7 @@ struct format_decimals_func
     static void func(connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/)
     {
         ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>(conn);
-
-        if (zend_is_true(value)) {
-            ss_conn->format_decimals = true;
-        }
-        else {
-            ss_conn->format_decimals = false;
-        }
+        ss_conn->format_decimals = zend_is_true(value);
     }
 };
 
@@ -117,17 +107,10 @@ struct bool_conn_str_func {
 
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Out_ std::string& conn_str )
     {
-        char const* val_str;
-        if( zend_is_true( value )) {
-            val_str = "yes";
-        }
-        else {
-            val_str = "no";
-        }
-        conn_str += option->odbc_name;
-        conn_str += "={";
-        conn_str += val_str;
-        conn_str += "};";
+        char temp_str[MAX_CONN_VALSTRING_LEN];
+
+        snprintf(temp_str, sizeof(temp_str), "%s={%s};", option->odbc_name, (zend_is_true(value) ? "yes" : "no"));
+        conn_str += temp_str;
     }
 };
 
@@ -137,12 +120,17 @@ struct int_conn_str_func {
     {
         SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_LONG, "An integer is expected for this keyword" ) 
 
-        std::string val_str = std::to_string( Z_LVAL_P( value ));
-        
-        conn_str += option->odbc_name;
-        conn_str += "={";
-        conn_str += val_str;
-        conn_str += "};";
+        char temp_str[MAX_CONN_VALSTRING_LEN];
+
+        snprintf(temp_str, sizeof(temp_str), "%s={%d};", option->odbc_name, Z_LVAL_P(value));
+        conn_str += temp_str;
+
+        //std::string val_str = std::to_string( Z_LVAL_P( value ));
+        //
+        //conn_str += option->odbc_name;
+        //conn_str += "={";
+        //conn_str += val_str;
+        //conn_str += "};";
     }
 };
 
