@@ -68,7 +68,6 @@ const int INITIAL_FIELD_STRING_LEN = 2048;          // base allocation size when
 
 const char  DECIMAL_POINT = '.';
 const int   SQL_SERVER_DECIMAL_MAXIMUM_PRECISION = 38;            // 38 is the maximum length of a stringified decimal number
-const int   MAX_COLUMN_NAME_LEN = 256;
 
 // UTF-8 tags for byte length of characters, used by streams to make sure we don't clip a character in between reads
 const unsigned int UTF8_MIDBYTE_MASK = 0xc0;
@@ -411,7 +410,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         if (stmt->conn->ce_option.enabled) {
             if (param_ptr->sql_data_type == SQL_UNKNOWN_TYPE || param_ptr->column_size == SQLSRV_UNKNOWN_SIZE) {
                 // meta data parameters are always sorted based on parameter number
-                param_ptr->copy_param_meta(param_z, stmt->params_container.params_meta[param_num]);
+                param_ptr->copy_param_meta_ae(param_z, stmt->params_container.params_meta_ae[param_num]);
             }
         }
 
@@ -424,7 +423,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         // This is because SQL_TYPE_TIMESTAMP corresponds to Datetime2 by default, and conversion of Datetime2 to Datetime and conversion of Datetime2 to SmallDatatime is not allowed with encrypted columns.
         // To fix the conversion problem, set the SQL_CA_SS_SERVER_TYPE field of the parameter to SQL_SS_TYPE_DATETIME and SQL_SS_TYPE_SMALLDATETIME respectively for a Datetime and Smalldatetime column.
         // Note this must be called after SQLBindParameter() or SQLSetDescField() may fail. 
-        // TODO: how to correctly distinguish datetime from datetime2(3)? Both have the same decimal_digits and column_size
+        // VSO BUG 2693: how to correctly distinguish datetime from datetime2(3)? Both have the same decimal_digits and column_size
         if (stmt->conn->ce_option.enabled && param_ptr->sql_data_type == SQL_TYPE_TIMESTAMP) {
             if (param_ptr->decimal_digits == 3) {
                 core::SQLSetDescField(stmt, param_num + 1, SQL_CA_SS_SERVER_TYPE, (SQLPOINTER)SQL_SS_TYPE_DATETIME, SQL_IS_INTEGER);
@@ -1105,6 +1104,7 @@ void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_
 // given.  Any errors that occur will be thrown.
 // Parameters:
 // stmt - query to send the next packet for
+// get_all - send stream data all at once (false by default)
 // Returns:
 // true if more data remains to be sent, false if all data processed
 
@@ -1114,7 +1114,7 @@ bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool ge
 
     try {
         if (get_all) {
-            // send all the stream data (so no more after this)
+            // send stream data all at once (so no more after this)
             stmt->params_container.send_all_packets(stmt);
         } else {
             bMore = stmt->params_container.send_next_packet(stmt);
@@ -1148,7 +1148,7 @@ void stmt_option_query_timeout:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
 void stmt_option_send_at_exec:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
 {
     // zend_is_true does not fail. It either returns true or false.
-    stmt->send_streams_at_exec = (zend_is_true(value_z)) ? true : false;
+    stmt->send_streams_at_exec = (zend_is_true(value_z));
 }
 
 void stmt_option_buffered_query_limit:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
@@ -1158,22 +1158,12 @@ void stmt_option_buffered_query_limit:: operator()( _Inout_ sqlsrv_stmt* stmt, s
 
 void stmt_option_date_as_string:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z )
 {
-    if (zend_is_true(value_z)) {
-        stmt->date_as_string = true;
-    }
-    else {
-        stmt->date_as_string = false;
-    }
+    stmt->date_as_string = zend_is_true(value_z);
 }
 
 void stmt_option_format_decimals:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z )
 {
-    if (zend_is_true(value_z)) {
-        stmt->format_decimals = true;
-    }
-    else {
-        stmt->format_decimals = false;
-    }
+    stmt->format_decimals = zend_is_true(value_z);
 }
 
 void stmt_option_decimal_places:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z )
@@ -1183,12 +1173,7 @@ void stmt_option_decimal_places:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_op
 
 void stmt_option_data_classification:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /**/, _In_ zval* value_z )
 {
-    if (zend_is_true(value_z)) {
-        stmt->data_classification = true;
-    }
-    else {
-        stmt->data_classification = false;
-    }
+    stmt->data_classification = zend_is_true(value_z);
 }
 
 // internal function to release the active stream.  Called by each main API function
@@ -2172,11 +2157,11 @@ void sqlsrv_param::release_data()
     }
 
     param_stream = NULL;
-    stream_read = 0;
+    num_bytes_read = 0;
     param_ptr_z = NULL;
 }
 
-void sqlsrv_param::copy_param_meta(_Inout_ zval* param_z, _In_ param_meta_data& meta)
+void sqlsrv_param::copy_param_meta_ae(_Inout_ zval* param_z, _In_ param_meta_data& meta)
 {
     // Always Encrypted (AE) enabled - copy the meta data from SQLDescribeParam()
     sql_data_type = meta.sql_type;
@@ -2595,7 +2580,7 @@ void sqlsrv_param::bind_param(_Inout_ sqlsrv_stmt* stmt)
 void sqlsrv_param::init_data_from_zval(_Inout_ sqlsrv_stmt* stmt)
 {
     // Get the stream from the param zval value
-    stream_read = 0;
+    num_bytes_read = 0;
     param_stream = NULL;
     core::sqlsrv_php_stream_from_zval_no_verify(*stmt, param_stream, param_ptr_z);
 }
@@ -2610,8 +2595,8 @@ bool sqlsrv_param::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
             LOG(SEV_ERROR, "PHP stream: stream seek failed.");
             throw core::CoreException();
         }
-        // Reset stream_read
-        stream_read = 0;
+        // Reset num_bytes_read
+        num_bytes_read = 0;
 
         return false;
     } else {
@@ -2625,7 +2610,7 @@ bool sqlsrv_param::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
             throw core::CoreException();
         }
 
-        stream_read += read;
+        num_bytes_read += read;
         if (read == 0) {
             // Send an empty string, which is what a 0 length does.
             char buff[1];       // Temp storage to hand to SQLPutData
@@ -2783,7 +2768,7 @@ void sqlsrv_param_inout::process_param(_Inout_ sqlsrv_stmt* stmt, zval* param_z)
 
 void sqlsrv_param_inout::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
 {
-    bool is_numeric = derive_string_types_sizes(param_z);
+    bool is_numeric_type = derive_string_types_sizes(param_z);
 
     buffer = Z_STRVAL_P(param_z);
     buffer_length = Z_STRLEN_P(param_z);
@@ -2825,8 +2810,8 @@ void sqlsrv_param_inout::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_
 
     // Since this is an output string, assure there is enough space to hold the requested size and
     // update all the variables accordingly (param_z, buffer, buffer_length, and strlen_or_indptr)
-    resize_output_buffer(param_z, is_numeric);
-    if (is_numeric) {
+    resize_output_string_buffer(param_z, is_numeric_type);
+    if (is_numeric_type) {
         encoding = SQLSRV_ENCODING_CHAR;
     }
 
@@ -2852,6 +2837,7 @@ void sqlsrv_param_inout::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_
     }
 }
 
+// Called when the output parameter is ready to be finalized, using the value stored in param_ptr_z
 void sqlsrv_param_inout::finalize_output_value()
 {
     if (param_ptr_z == NULL) {
@@ -2903,6 +2889,7 @@ void sqlsrv_param_inout::finalize_output_value()
     param_ptr_z = NULL; // Do not keep the reference now that the output param has been processed
 }
 
+// A helper method called by finalize_output_value() to finalize output string parameters
 void sqlsrv_param_inout::finalize_output_string()
 {
     zval* value_z = Z_REFVAL_P(param_ptr_z);
@@ -2942,7 +2929,7 @@ void sqlsrv_param_inout::finalize_output_string()
         throw core::CoreException();
     }
 
-    // For ODBC 11+ see https://msdn.microsoft.com/en-us/library/jj219209.aspx
+    // For ODBC 11+ see https://docs.microsoft.com/sql/relational-databases/native-client/features/odbc-driver-behavior-change-when-handling-character-conversions
     // A length value of SQL_NO_TOTAL for SQLBindParameter indicates that the buffer contains data up to the
     // original buffer_length and is NULL terminated.
     // The IF statement can be true when using connection pooling with unixODBC 2.3.4.
@@ -2988,7 +2975,7 @@ void sqlsrv_param_inout::finalize_output_string()
     value_z = NULL;
 }
 
-void sqlsrv_param_inout::resize_output_buffer(_Inout_ zval* param_z, _In_ bool is_numeric)
+void sqlsrv_param_inout::resize_output_string_buffer(_Inout_ zval* param_z, _In_ bool is_numeric_type)
 {
     // Prerequisites: buffer, buffer_length, column_size, and strlen_or_indptr have been set to a known value 
     // Purpose: 
@@ -3013,7 +3000,7 @@ void sqlsrv_param_inout::resize_output_buffer(_Inout_ zval* param_z, _In_ bool i
     // does not include the negative sign or decimal place for numeric values
     // VSO Bug 2913: without AE, the same can happen as well, in particular to decimals
     // and numerics with precision/scale specified
-    if (is_numeric) {
+    if (is_numeric_type) {
         // Include the possible negative sign
         field_size += elem_size;
         // Include the decimal dot for output params by adding elem_size
@@ -3070,6 +3057,7 @@ void sqlsrv_param_inout::resize_output_buffer(_Inout_ zval* param_z, _In_ bool i
     }
 }
 
+// Change the column encoding based on the sql data type
 /*static*/ void sqlsrv_param_tvp::sql_type_to_encoding(_In_ SQLSMALLINT sql_type, _Inout_ SQLSRV_ENCODING* encoding)
 {
     switch (sql_type) {
@@ -3381,6 +3369,7 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
 {
     core::SQLBindParameter(stmt, param_pos + 1, direction, c_data_type, sql_data_type, column_size, decimal_digits, buffer, buffer_length, &strlen_or_indptr);
 
+    // No need to continue if this is one of the constituent columns of the table-valued parameter
     if (sql_data_type != SQL_SS_TABLE) {
         return;
     }
@@ -3418,7 +3407,8 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
     zval* data_z = NULL;
     int num_columns = 0;
 
-    // Loop through the first row of column values
+    // In case there are null values in the first row, have to loop 
+    // through the entire first row of column values using the Zend macros. 
     ZEND_HASH_FOREACH_KEY_VAL(cols_ht, id, key, data_z) {
         int type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
         CHECK_CUSTOM_ERROR(type == HASH_KEY_IS_STRING, stmt, SQLSRV_ERROR_TVP_STRING_KEYS, param_pos + 1) {
@@ -3430,12 +3420,16 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
         sqlsrv_param* column_param = tvp_columns[pos];
         SQLSRV_ASSERT(column_param != NULL, "sqlsrv_param_tvp::bind_param -- column param should not be null");
 
-        // Save the data in the member variable for later processing (in case there are null values)
+        // If data_z is NULL, will need to keep looking in the subsequent rows of 
+        // the same column until a non-null value is found. Since Zend macros must be 
+        // used to traverse the array items, nesting Zend macros in different directions
+        // does not work.
+        // Therefore, save data_z for later processing and binding.
         column_param->param_ptr_z = data_z;
         num_columns++;
     } ZEND_HASH_FOREACH_END();
 
-    // Process the columns and bind each of them
+    // Process the columns and bind each of them using the saved data
     for (int i = 0; i < num_columns; i++) {
         sqlsrv_param* column_param = tvp_columns[i];
 
@@ -3447,6 +3441,9 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
     core::SQLSetStmtAttr(stmt, SQL_SOPT_SS_PARAM_FOCUS, reinterpret_cast<SQLPOINTER>(0), SQL_IS_INTEGER);
 }
 
+// For each of the constituent columns of the table-valued parameter, check its PHP type
+// For pure scalar types, map the cell value (based on current_row and ordinal) to the
+// member placeholder_z
 void sqlsrv_param_tvp::populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_ int ordinal)
 {
     if (sql_data_type == SQL_SS_TABLE || ordinal >= num_rows) {
@@ -3458,7 +3455,6 @@ void sqlsrv_param_tvp::populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_
     zval* value_z = NULL;
     int type = IS_NULL;
 
-    // This is one of the constituent columns of the table-valued parameter
     switch (param_php_type) {
     case IS_TRUE:
     case IS_FALSE:
@@ -3499,11 +3495,16 @@ void sqlsrv_param_tvp::populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_
         current_row++;
         break;
     default:
-        // Do nothing for other types
+        // Do nothing for non-scalar types
         break;
     }
 }
 
+// If this is the table-valued parameter, loop through each parameter column 
+// and populate the cell's placeholder_z.
+// If this is one of the constituent columns of the table-valued parameter, 
+// call SQLPutData() to send the cell value to the server (based on current_row 
+// and param_pos)
 bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
 {
     if (sql_data_type != SQL_SS_TABLE) {
@@ -3529,7 +3530,7 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
             switch (param_php_type) {
             case IS_RESOURCE:
                 {
-                    stream_read = 0;
+                    num_bytes_read = 0;
                     param_stream = NULL;
 
                     // Get the stream from the zval value
@@ -3610,9 +3611,9 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
     return false;
 }
 
+// A helper method for sending large string data in batches
 void sqlsrv_param_tvp::send_string_data_in_batches(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z)
 {
-    // A helper method for sending large data in batches
     SQLLEN len = Z_STRLEN_P(value_z);
     SQLLEN batch = (encoding == CP_UTF8) ? PHP_STREAM_BUFFER_SIZE / sizeof(SQLWCHAR) : PHP_STREAM_BUFFER_SIZE;
 

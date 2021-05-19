@@ -320,7 +320,7 @@ void stmt_option_encoding:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option c
 void stmt_option_direct_query:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
 {
     pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
-    pdo_stmt->direct_query = ( zend_is_true( value_z )) ? true : false;
+    pdo_stmt->direct_query = zend_is_true(value_z);
 }
 
 void stmt_option_cursor_scroll_type:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
@@ -337,13 +337,13 @@ void stmt_option_emulate_prepares:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_
 void stmt_option_fetch_numeric:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
 {
     pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
-    pdo_stmt->fetch_numeric = ( zend_is_true( value_z )) ? true : false;
+    pdo_stmt->fetch_numeric = zend_is_true(value_z);
 }
 
 void stmt_option_fetch_datetime:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
 {
     pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
-    pdo_stmt->fetch_datetime = ( zend_is_true( value_z )) ? true : false;
+    pdo_stmt->fetch_datetime = zend_is_true(value_z);
 }
 
 // log a function entry point
@@ -927,15 +927,15 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 break;
 
             case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
-                driver_stmt->fetch_numeric = ( zend_is_true( val )) ? true : false;
+                driver_stmt->fetch_numeric = zend_is_true(val);
                 break;
 
             case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
-                driver_stmt->fetch_datetime = ( zend_is_true( val )) ? true : false;
+                driver_stmt->fetch_datetime = zend_is_true(val);
                 break;
 
             case SQLSRV_ATTR_FORMAT_DECIMALS:
-                driver_stmt->format_decimals = ( zend_is_true( val )) ? true : false;
+                driver_stmt->format_decimals = zend_is_true(val);
                 break;
 
             case SQLSRV_ATTR_DECIMAL_PLACES:
@@ -943,7 +943,7 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 break;
 
             case SQLSRV_ATTR_DATA_CLASSIFICATION:
-                driver_stmt->data_classification = (zend_is_true(val)) ? true : false;
+                driver_stmt->data_classification = zend_is_true(val);
                 break;
 
             default:

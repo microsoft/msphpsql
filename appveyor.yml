@@ -116,10 +116,13 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
     - Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    # for code coverage - exclude the following files:
+    #   core_init.cpp, which primarily consists module initialization and shutdown
+    #   core_stream.cpp for pdo_sqlsrv because it is only used by sqlsrv driver
     - ps: >-
         If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --cover_children --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --excluded_sources core_init.cpp --excluded_sources ${env:PHP_SRC_DIR}\pdo_sqlsrv\shared\core_stream.cpp --export_type=cobertura:c:\projects\coverage.xml --quiet --optimized_build -- .\php.exe run-tests.php -P --no-color ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --excluded_sources core_init.cpp --excluded_sources ${env:PHP_SRC_DIR}\pdo_sqlsrv\shared\core_stream.cpp --export_type=cobertura:c:\projects\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P --no-color ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             Write-Host "Showing the last 25 lines of the log file..."
             Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 25;
             ls *.xml
