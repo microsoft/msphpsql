@@ -2474,16 +2474,16 @@ bool sqlsrv_param::convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zv
     // meaning there is too much information in the character string.  If the user specifies the 'datetimeoffset'
     // sql type, it lacks the timezone.
     if (sql_data_type == SQL_SS_TIMESTAMPOFFSET) {
-        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATETIMEOFFSET_FORMAT),
-            DateTime::DATETIMEOFFSET_FORMAT_LEN);
+        ZVAL_STRINGL(&format_z, DateTime::DATETIMEOFFSET_FORMAT, DateTime::DATETIMEOFFSET_FORMAT_LEN);
     } else if (sql_data_type == SQL_TYPE_DATE) {
-        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATE_FORMAT), DateTime::DATE_FORMAT_LEN);
+        ZVAL_STRINGL(&format_z, DateTime::DATE_FORMAT, DateTime::DATE_FORMAT_LEN);
     } else {
-        core::sqlsrv_zval_stringl(&format_z, const_cast<char*>(DateTime::DATETIME_FORMAT), DateTime::DATETIME_FORMAT_LEN);
+        ZVAL_STRINGL(&format_z, DateTime::DATETIME_FORMAT, DateTime::DATETIME_FORMAT_LEN);
     }
 
     // call the DateTime::format member function to convert the object to a string that SQL Server understands
-    core::sqlsrv_zval_stringl(&function_z, "format", sizeof("format") - 1);
+    ZVAL_STRINGL(&function_z, "format", sizeof("format") - 1);
+    //core::sqlsrv_zval_stringl(&function_z, "format", sizeof("format") - 1);
     params[0] = format_z;
 
     // If placeholder_z is a string, release it first before assigning a new string value
