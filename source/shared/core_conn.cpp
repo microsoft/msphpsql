@@ -955,7 +955,6 @@ const char* get_processor_arch( void )
 #endif // !_WIN32
 }
 
-
 // some features require a server of a certain version or later
 // this function determines the version of the server we're connected to
 // and stores it in the connection.  Any errors are logged before return.
@@ -1008,8 +1007,8 @@ void load_azure_key_vault(_Inout_ sqlsrv_conn* conn)
 
     char *akv_id = conn->ce_option.akv_id.get();
     char *akv_secret = conn->ce_option.akv_secret.get();
-    unsigned int id_len = strnlen_s(akv_id);
-    unsigned int key_size = strnlen_s(akv_secret);
+    size_t id_len = strnlen_s(akv_id);
+    size_t key_size = strnlen_s(akv_secret);
 
     configure_azure_key_vault(conn, AKV_CONFIG_FLAGS, conn->ce_option.akv_mode, 0);
     configure_azure_key_vault(conn, AKV_CONFIG_PRINCIPALID, akv_id, id_len);

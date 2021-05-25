@@ -207,6 +207,7 @@ enum SQLSRV_PHPTYPE {
     SQLSRV_PHPTYPE_STRING,
     SQLSRV_PHPTYPE_DATETIME,
     SQLSRV_PHPTYPE_STREAM,
+    SQLSRV_PHPTYPE_TABLE,
     MAX_SQLSRV_PHPTYPE,      // highest value for a php type
     SQLSRV_PHPTYPE_INVALID = MAX_SQLSRV_PHPTYPE     // used to see if a type is invalid
 };
@@ -1427,11 +1428,11 @@ struct sqlsrv_param
     virtual void release_data();
 
     bool derive_string_types_sizes(_In_ zval* param_z);
-    void preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+    bool preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
 
-    // The following methods change the member placeholder_z 
-    void convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
-    void convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+    // The following methods change the member placeholder_z, and both will return false if conversions fail
+    bool convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+    bool convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
 
     virtual bool prepare_param(_In_ zval* param_ref, _Inout_ zval* param_z);
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
@@ -1479,6 +1480,45 @@ struct sqlsrv_param_inout : public sqlsrv_param
     
     // A helper method called by finalize_output_value() to finalize output string parameters
     void finalize_output_string();
+};
+
+// *** Table-valued parameter struct used for SQLBindParameter, inheriting sqlsrv_param
+// *** A sqlsrv_param_tvp can be representing a table-valued parameter itself or one of
+// *** its constituent columns. When it is a table-valued parameter, tvp_columns cannot
+// *** be empty. When it is a TVP column, parent_tvp points to its table-valued parameter
+// *** and tvp_columns must be empty. The member param_pos refers to the ordinal position
+// *** of this column in the corresponding table type.
+struct sqlsrv_param_tvp : public sqlsrv_param
+{
+    sqlsrv_param_tvp*               parent_tvp;         // For a TVP column to reference to the table-valued parameter. NULL if this is the TVP itself.
+    std::vector<sqlsrv_param_tvp*>  tvp_columns;        // The constituent columns of the table-valued parameter
+    int                             num_rows;           // The total number of rows
+    int                             current_row;        // A counter to keep track of which row is to be processed
+
+    sqlsrv_param_tvp(_In_ SQLUSMALLINT param_num, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits, _In_ sqlsrv_param_tvp* tvp) :
+        sqlsrv_param(param_num, SQL_PARAM_INPUT, enc, sql_type, col_size, dec_digits), num_rows(0), current_row(0), parent_tvp(tvp)
+    {
+        ZVAL_UNDEF(&placeholder_z);
+    }
+    virtual ~sqlsrv_param_tvp() { release_data(); }
+    virtual void release_data();
+    virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
+    virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+
+    // The following methods are used to supply data to the server post execution
+    virtual void init_data_from_zval(_Inout_ sqlsrv_stmt* stmt) {}
+    virtual bool send_data_packet(_Inout_ sqlsrv_stmt* stmt);
+
+    // Change the column encoding based on the sql data type
+    static void sql_type_to_encoding(_In_ SQLSMALLINT sql_type, _Inout_ SQLSRV_ENCODING* encoding);
+    
+    // The following methods are only applicable to a table-valued parameter or its individual columns
+    int parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* table_type_name);
+    void process_param_column_value(_Inout_ sqlsrv_stmt* stmt);
+    void process_null_param_value(_Inout_ sqlsrv_stmt* stmt);
+    void populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_ int ordinal);
+    void send_string_data_in_batches(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z);
 };
 
 // *** a container of all parameters used for SQLBindParameter ***
@@ -1717,7 +1757,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
                                       _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver );
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
                              _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
-                             _Inout_ SQLSMALLINT decimal_digits );
+                             _Inout_ SQLSMALLINT decimal_digits);
 SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
 field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno );
 bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset );
@@ -1974,6 +2014,15 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
     SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE,
     SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
+    SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE,
+    SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE,
+    SQLSRV_ERROR_TVP_FETCH_METADATA,
+    SQLSRV_ERROR_TVP_INVALID_INPUTS,
+    SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME,
+    SQLSRV_ERROR_TVP_STRING_KEYS,
+    SQLSRV_ERROR_TVP_ROW_NOT_ARRAY,
+    SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE,
+    SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,

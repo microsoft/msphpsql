@@ -237,8 +237,8 @@ void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* i
     ZVAL_UNDEF(params);
 
     // Convert the datetime string to a PHP DateTime object
-    core::sqlsrv_zval_stringl(&value_temp_z, input, length);
-    core::sqlsrv_zval_stringl(&function_z, "date_create", sizeof("date_create") - 1);
+    ZVAL_STRINGL(&value_temp_z, input, length);
+    ZVAL_STRINGL(&function_z, "date_create", sizeof("date_create") - 1);
     params[0] = value_temp_z;
 
     if (call_user_function(EG(function_table), NULL, &function_z, &out_zval, 1,

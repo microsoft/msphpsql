@@ -1325,8 +1325,19 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                         switch( php_out_type ) {
                             case SQLSRV_PHPTYPE_NULL:
                             case SQLSRV_PHPTYPE_STREAM:
-                                THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE );
+                            {
+                                zval *zv = &param->parameter;
+                                if (Z_ISREF_P(zv)) {
+                                    ZVAL_DEREF(zv);
+                                }
+                                // Table-valued parameters are input-only
+                                CHECK_CUSTOM_ERROR(Z_TYPE_P(zv) == IS_ARRAY, driver_stmt, SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY) {
+                                    throw pdo::PDOException();
+                                }
+                                // For other types, simply throw the following error
+                                THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE);
                                 break;
+                            }
                             case SQLSRV_PHPTYPE_INT:
                                 column_size = SQLSRV_UNKNOWN_SIZE;
                                 break;
@@ -1391,7 +1402,7 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 
                     // and bind the parameter
                     core_sqlsrv_bind_param( driver_stmt, static_cast<SQLUSMALLINT>( param->paramno ), direction, &(param->parameter) , php_out_type, encoding,
-                                            sql_type, column_size, decimal_digits );
+                                            sql_type, column_size, decimal_digits);
                 }
                 break;
             // undo any work done by the core layer after the statement is executed
