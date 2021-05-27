@@ -96,13 +96,14 @@ sqlsrv_phptype determine_sqlsrv_php_type( sqlsrv_stmt const* stmt, SQLINTEGER sq
 void determine_stmt_has_rows( _Inout_ ss_sqlsrv_stmt* stmt );
 bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 bool is_valid_sqlsrv_sqltype( _In_ sqlsrv_sqltype type );
-void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array, zend_ulong index, _Out_ SQLSMALLINT& direction,
-                        _Out_ SQLSRV_PHPTYPE& php_out_type, _Out_ SQLSRV_ENCODING& encoding, _Out_ SQLSMALLINT& sql_type,
-                        _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits );
 void type_and_encoding( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 void type_and_precision_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ sqlsrv_phptype& phptype_encoding );
+zval* parse_param_array(_Inout_ ss_sqlsrv_stmt* stmt, _Inout_ HashTable* param_ht, zend_ulong index, 
+    _Out_ SQLSMALLINT& direction, _Out_ SQLSRV_PHPTYPE& php_out_type, 
+    _Out_ SQLSRV_ENCODING& encoding, _Out_ SQLSMALLINT& sql_type,
+    _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits);
 
 }
 
@@ -1194,44 +1195,50 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
 
         HashTable* params_ht = Z_ARRVAL_P( params_z );
 
-		zend_ulong index = -1;
-		zend_string *key = NULL;
-		zval* param_z = NULL;
+        zend_ulong index = -1;
+        zend_string *key = NULL;
+        zval* param_z = NULL;
 
-		ZEND_HASH_FOREACH_KEY_VAL( params_ht, index, key, param_z ) {
-			zval* value_z = NULL;
-			SQLSMALLINT direction = SQL_PARAM_INPUT;
-			SQLSRV_ENCODING encoding = stmt->encoding();
-			if( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) {
-				encoding = stmt->conn->encoding();
-			}
-			SQLSMALLINT sql_type = SQL_UNKNOWN_TYPE;
-			SQLULEN column_size = SQLSRV_UNKNOWN_SIZE;
-			SQLSMALLINT decimal_digits = 0;
-			SQLSRV_PHPTYPE php_out_type = SQLSRV_PHPTYPE_INVALID;
+        ZEND_HASH_FOREACH_KEY_VAL( params_ht, index, key, param_z ) {
+            // make sure it's an integer index
+            int type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
+            CHECK_CUSTOM_ERROR(type != HASH_KEY_IS_LONG, stmt, SS_SQLSRV_ERROR_PARAM_INVALID_INDEX) {
+                throw ss::SSException();
+            }
 
-			// make sure it's an integer index
-			int type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
-			CHECK_CUSTOM_ERROR( type != HASH_KEY_IS_LONG, stmt, SS_SQLSRV_ERROR_PARAM_INVALID_INDEX ) {
-				throw ss::SSException();
-			}
+            zval* value_z = NULL;
+            SQLSMALLINT direction = SQL_PARAM_INPUT;
+            SQLSRV_ENCODING encoding = stmt->encoding();
+            if( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) {
+                encoding = stmt->conn->encoding();
+            }
+            SQLSMALLINT sql_type = SQL_UNKNOWN_TYPE;
+            SQLULEN column_size = SQLSRV_UNKNOWN_SIZE;
+            SQLSMALLINT decimal_digits = 0;
+            SQLSRV_PHPTYPE php_out_type = SQLSRV_PHPTYPE_INVALID;
 
             // if it's a parameter array
-            if( Z_TYPE_P( param_z ) == IS_ARRAY ) {
-
-                zval* var = NULL;
-                int zr = ( NULL != ( var = zend_hash_index_find( Z_ARRVAL_P( param_z ), 0 ))) ? SUCCESS : FAILURE;
-                CHECK_CUSTOM_ERROR( zr == FAILURE, stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1 ) {
-                    throw ss::SSException();
+            if (Z_TYPE_P(param_z) == IS_ARRAY) {
+                try {
+                    HashTable* param_ht = Z_ARRVAL_P(param_z);
+                    // Check the number of elements in the array
+                    int num_elems = zend_hash_num_elements(param_ht);
+                    if (num_elems > 1) {
+                        value_z = parse_param_array(stmt, param_ht, index, direction, php_out_type, encoding, sql_type, column_size, decimal_digits);
+                    } else {
+                        // Simply get the first variable and use the defaults
+                        value_z = zend_hash_index_find(param_ht, 0);
+                        if (value_z == NULL) {
+                            THROW_SS_ERROR(stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1);
+                        }
+                    }
+                } catch (core::CoreException&) {
+                    SQLFreeStmt(stmt->handle(), SQL_RESET_PARAMS);
+                    throw;
                 }
-
-                // parse the parameter array that the user gave
-                parse_param_array( stmt, param_z, index, direction, php_out_type, encoding, sql_type, column_size,
-                    decimal_digits );
-                value_z = var;
             }
             else {
-                CHECK_CUSTOM_ERROR( !stmt->prepared && stmt->conn->ce_option.enabled, stmt, SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED ) {
+                CHECK_CUSTOM_ERROR(!stmt->prepared && stmt->conn->ce_option.enabled, stmt, SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED) {
                     throw ss::SSException();
                 }
                 value_z = param_z;
@@ -1252,7 +1259,6 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
             }
 
             // bind the parameter
-            SQLSRV_ASSERT( value_z != NULL, "bind_params: value_z is null." );
             core_sqlsrv_bind_param( stmt, static_cast<SQLUSMALLINT>( index ), direction, value_z, php_out_type, encoding, sql_type, column_size,
                 decimal_digits );
 
@@ -1724,6 +1730,7 @@ sqlsrv_phptype determine_sqlsrv_php_type( _In_ ss_sqlsrv_stmt const* stmt, _In_ 
             break;
         default:
             sqlsrv_phptype.typeinfo.type = PHPTYPE_INVALID;
+            SQLSRV_ASSERT(false, "An invalid php type was returned with (supposedly) validated sql type and column_size");
             break;
     }
 
@@ -1905,179 +1912,106 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 
 }
 
-void parse_param_array( _Inout_ ss_sqlsrv_stmt* stmt, _Inout_ zval* param_array, zend_ulong index, _Out_ SQLSMALLINT& direction,
+zval* parse_param_array(_Inout_ ss_sqlsrv_stmt* stmt, _Inout_ HashTable* param_ht, zend_ulong index, _Out_ SQLSMALLINT& direction,
                         _Out_ SQLSRV_PHPTYPE& php_out_type, _Out_ SQLSRV_ENCODING& encoding, _Out_ SQLSMALLINT& sql_type,
-                        _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits )
+                        _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits)
 {
-    zval* var_or_val = NULL;
-    zval* temp = NULL;
-    HashTable* param_ht = Z_ARRVAL_P( param_array );
-    sqlsrv_sqltype sqlsrv_sql_type;
-    HashPosition pos;
+    zval* var_or_val = zend_hash_index_find(param_ht, 0);
+    bool php_type_param_is_null = true;
+    bool sql_type_param_is_null = true;
 
-    try {
+    // Assumption: there are more than only the variable, parse the rest of the array
+    zval* dir = zend_hash_index_find(param_ht, 1);
+    if (Z_TYPE_P(dir) != IS_NULL) {
+        // if param direction is specified, make sure it's valid
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(dir) != IS_LONG, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1) {
+            throw ss::SSException();
+        }
+        direction = static_cast<SQLSMALLINT>(Z_LVAL_P(dir));
 
-    bool php_type_param_was_null = true;
-    bool sql_type_param_was_null = true;
-
-    php_out_type = SQLSRV_PHPTYPE_INVALID;
-    encoding = SQLSRV_ENCODING_INVALID;
-
-    // handle the array parameters that contain the value/var, direction, php_type, sql_type
-    zend_hash_internal_pointer_reset_ex( param_ht, &pos );
-    if( zend_hash_has_more_elements_ex( param_ht, &pos ) == FAILURE ||
-        (var_or_val = zend_hash_get_current_data_ex(param_ht, &pos)) == NULL) {
-
-        THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1 );
+        CHECK_CUSTOM_ERROR(direction != SQL_PARAM_INPUT && direction != SQL_PARAM_OUTPUT && direction != SQL_PARAM_INPUT_OUTPUT,
+            stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1) {
+            throw ss::SSException();
+        }
+        CHECK_CUSTOM_ERROR(direction != SQL_PARAM_INPUT && !Z_ISREF_P(var_or_val), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1) {
+            throw ss::SSException();
+        }
     }
 
-    // if the direction is included, then use what they gave, otherwise INPUT is assumed
-    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
-            Z_TYPE_P( temp ) != IS_NULL ) {
+    // Check if the user provides php type or sql type or both
+    zval* phptype_z = zend_hash_index_find(param_ht, 2);
+    zval* sqltype_z = zend_hash_index_find(param_ht, 3);
 
-        CHECK_CUSTOM_ERROR( Z_TYPE_P( temp ) != IS_LONG, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
+    php_type_param_is_null = (phptype_z == NULL || Z_TYPE_P(phptype_z) == IS_NULL);
+    sql_type_param_is_null = (sqltype_z == NULL || Z_TYPE_P(sqltype_z) == IS_NULL);
 
-            throw ss::SSException();
+    if (php_type_param_is_null) {
+        // so set default for php type based on the variable
+        if (Z_ISREF_P(var_or_val)) {
+            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P(Z_REFVAL_P(var_or_val))];
+        } else {
+            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P(var_or_val)];
         }
-        direction = static_cast<SQLSMALLINT>( Z_LVAL_P( temp ));
-        CHECK_CUSTOM_ERROR( direction != SQL_PARAM_INPUT && direction != SQL_PARAM_OUTPUT && direction != SQL_PARAM_INPUT_OUTPUT,
-                            stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1 ) {
-            throw ss::SSException();
-        }
-
-        CHECK_CUSTOM_ERROR( !Z_ISREF_P( var_or_val ) && ( direction == SQL_PARAM_OUTPUT || direction == SQL_PARAM_INPUT_OUTPUT ), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1 ) {
-            throw ss::SSException();
-        }
-
-    }
-    else {
-        direction = SQL_PARAM_INPUT;
-    }
-
-    // extract the php type and encoding from the 3rd parameter
-    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
-            Z_TYPE_P( temp ) != IS_NULL ) {
-
-        php_type_param_was_null = false;
-        sqlsrv_phptype sqlsrv_phptype;
-
-        CHECK_CUSTOM_ERROR( Z_TYPE_P( temp ) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, index + 1 ) {
-
+    } else {
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(phptype_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, index + 1) {
             throw ss::SSException();
         }
 
-        sqlsrv_phptype.value = Z_LVAL_P( temp );
-
-        CHECK_CUSTOM_ERROR( !is_valid_sqlsrv_phptype( sqlsrv_phptype ), stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE,
-                            index + 1 ) {
-
+        sqlsrv_phptype srv_phptype;
+        srv_phptype.value = Z_LVAL_P(phptype_z);
+        CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_phptype(srv_phptype), stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, index + 1) {
             throw ss::SSException();
         }
 
-        php_out_type = static_cast<SQLSRV_PHPTYPE>( sqlsrv_phptype.typeinfo.type );
-        encoding = ( SQLSRV_ENCODING ) sqlsrv_phptype.typeinfo.encoding;
+        php_out_type = static_cast<SQLSRV_PHPTYPE>(srv_phptype.typeinfo.type);
+        encoding = (SQLSRV_ENCODING)srv_phptype.typeinfo.encoding;
         // if the call has a SQLSRV_PHPTYPE_STRING/STREAM('default'), then the stream is in the encoding established
         // by the connection
-        if( encoding == SQLSRV_ENCODING_DEFAULT ) {
-            encoding = stmt->conn->encoding();
-        }
-    }
-    // set default for php type and encoding if not supplied
-    else {
-
-        php_type_param_was_null = true;
-
-        if ( Z_ISREF_P( var_or_val )){
-            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P( Z_REFVAL_P( var_or_val ))];
-        }
-        else{
-            php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P( var_or_val )];
-        }
-        encoding = stmt->encoding();
-        if( encoding == SQLSRV_ENCODING_DEFAULT ) {
+        if (encoding == SQLSRV_ENCODING_DEFAULT) {
             encoding = stmt->conn->encoding();
         }
     }
 
-    // get the server type, column size/precision and the decimal digits if provided
-    if ( zend_hash_move_forward_ex( param_ht, &pos ) == SUCCESS && ( temp = zend_hash_get_current_data_ex( param_ht, &pos )) != NULL &&
-            Z_TYPE_P( temp ) != IS_NULL ) {
-
-        sql_type_param_was_null = false;
-
-        CHECK_CUSTOM_ERROR( Z_TYPE_P( temp ) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE, index + 1 ) {
-
+    if (sql_type_param_is_null) {
+        // the sql type is not specified, which is required for always encrypted for non-prepared statements
+        CHECK_CUSTOM_ERROR(stmt->conn->ce_option.enabled && !stmt->prepared, stmt, SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED) {
             throw ss::SSException();
         }
-
-        sqlsrv_sql_type.value = Z_LVAL_P( temp );
+    } else {
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(sqltype_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE, index + 1) {
+            throw ss::SSException();
+        }
 
         // since the user supplied this type, make sure it's valid
-        CHECK_CUSTOM_ERROR( !is_valid_sqlsrv_sqltype( sqlsrv_sql_type ), stmt, SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE,
-                            index + 1 ) {
-
+        sqlsrv_sqltype sqlsrv_sql_type;
+        sqlsrv_sql_type.value = Z_LVAL_P(sqltype_z);
+        CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_sqltype(sqlsrv_sql_type), stmt, SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE, index + 1) {
             throw ss::SSException();
         }
 
-		bool size_okay = determine_column_size_or_precision( stmt, sqlsrv_sql_type, &column_size, &decimal_digits );
-
-        CHECK_CUSTOM_ERROR( !size_okay, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_PRECISION, index + 1 ) {
-
+        bool size_okay = determine_column_size_or_precision(stmt, sqlsrv_sql_type, &column_size, &decimal_digits);
+        CHECK_CUSTOM_ERROR(!size_okay, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_PRECISION, index + 1) {
             throw ss::SSException();
         }
 
         sql_type = sqlsrv_sql_type.typeinfo.type;
-    }
-    // else the sql type and size are unknown, so tell the core layer to use its defaults
-    else {
-        CHECK_CUSTOM_ERROR( !stmt->prepared && stmt->conn->ce_option.enabled, stmt, SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED ) {
-            throw ss::SSException();
+
+        if (direction != SQL_PARAM_INPUT && php_type_param_is_null) {
+            sqlsrv_phptype srv_phptype;
+            srv_phptype = determine_sqlsrv_php_type(stmt, sql_type, (SQLUINTEGER)column_size, true);
+
+            php_out_type = static_cast<SQLSRV_PHPTYPE>(srv_phptype.typeinfo.type);
+            encoding = static_cast<SQLSRV_ENCODING>(srv_phptype.typeinfo.encoding);
         }
-        sql_type_param_was_null = true;
-
-        sql_type = SQL_UNKNOWN_TYPE;
-        column_size = SQLSRV_UNKNOWN_SIZE;
-        decimal_digits = 0;
     }
 
-    // if the user for some reason provides an inout / output parameter with a null phptype and a specified
-    // sql server type, infer the php type from the sql server type.
-    if( direction != SQL_PARAM_INPUT && php_type_param_was_null && !sql_type_param_was_null ) {
-
-        sqlsrv_phptype sqlsrv_phptype;
-
-        sqlsrv_phptype = determine_sqlsrv_php_type( stmt, sql_type, (SQLUINTEGER)column_size, true );
-
-        // we DIE here since everything should have been validated already and to return the user an error
-        // for our own logic error would be confusing/misleading.
-        SQLSRV_ASSERT( sqlsrv_phptype.typeinfo.type != PHPTYPE_INVALID, "An invalid php type was returned with (supposed) "
-                       "validated sql type and column_size" );
-
-        php_out_type = static_cast<SQLSRV_PHPTYPE>( sqlsrv_phptype.typeinfo.type );
-        encoding = static_cast<SQLSRV_ENCODING>( sqlsrv_phptype.typeinfo.encoding );
-    }
-
-    // verify that the parameter is a valid output param type
-    if( direction == SQL_PARAM_OUTPUT ) {
-
-        switch( php_out_type ) {
-            case SQLSRV_PHPTYPE_NULL:
-            case SQLSRV_PHPTYPE_DATETIME:
-            case SQLSRV_PHPTYPE_STREAM:
-                THROW_CORE_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE );
-                break;
-            default:
-                break;
+    if (direction == SQL_PARAM_OUTPUT) {
+        if (php_out_type == SQLSRV_PHPTYPE_NULL || php_out_type == SQLSRV_PHPTYPE_DATETIME || php_out_type == SQLSRV_PHPTYPE_STREAM) {
+            THROW_CORE_ERROR(stmt, SS_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE);
         }
-
     }
 
-    }
-    catch( core::CoreException& ) {
-
-        SQLFreeStmt( stmt->handle(), SQL_RESET_PARAMS );
-        throw;
-    }
+    return var_or_val;
 }
 
 bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
