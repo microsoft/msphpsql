@@ -18,10 +18,12 @@ function invokeProc($conn, $proc, $tvpInput, $caseNo, $dir = SQLSRV_PARAM_IN)
     
     $stmt = sqlsrv_query($conn, $proc, $params);
     if (!$stmt) {
-        $errors = sqlsrv_errors(SQLSRV_ERR_ALL);
+        // $errors = sqlsrv_errors(SQLSRV_ERR_ALL);
+        $errors = sqlsrv_errors();
         if (!empty($errors)) {
             $count = count($errors);
         }
+        $count = 1;
         for ($i = 0; $i < $count; $i++) {
             echo "Error $caseNo: ";
             echo $errors[$i]['message'] . PHP_EOL;
@@ -29,17 +31,23 @@ function invokeProc($conn, $proc, $tvpInput, $caseNo, $dir = SQLSRV_PARAM_IN)
     }
 }
 
-function cleanup($conn, $schema, $tvpType, $procName)
+function cleanup($conn, $schema, $tvpType, $procName, $pre2016)
 {
-    global $dropSchema;
-    
-    $dropProcedure = dropProcSQL($conn, "[$schema].[$procName]");
-    sqlsrv_query($conn, $dropProcedure);
+    if ($pre2016) {
+        sqlsrv_query($conn, "DROP PROCEDURE [$schema].[$procName]");
+        sqlsrv_query($conn, "DROP TYPE [$schema].[$tvpType]");
+        sqlsrv_query($conn, "DROP SCHEMA [$schema]");
+    } else {
+        global $dropSchema;
+        
+        $dropProcedure = dropProcSQL($conn, "[$schema].[$procName]");
+        sqlsrv_query($conn, $dropProcedure);
 
-    $dropTableType = dropTableTypeSQL($conn, $tvpType, $schema);
-    sqlsrv_query($conn, $dropTableType);
-    
-    sqlsrv_query($conn, $dropSchema);
+        $dropTableType = dropTableTypeSQL($conn, $tvpType, $schema);
+        sqlsrv_query($conn, $dropTableType);
+        
+        sqlsrv_query($conn, $dropSchema);
+    }
 }
 
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
@@ -51,7 +59,14 @@ $schema = 'Sales DB';
 $tvpType = 'TestTVP3';
 $procName = 'SelectTVP3';
 
-cleanup($conn, $schema, $tvpType, $procName);
+$stmt = sqlsrv_query($conn, "SELECT @@VERSION");
+if (sqlsrv_fetch($stmt)) {
+    $result = sqlsrv_get_field($stmt, 0);
+}
+$version = explode(' ', $result);
+$pre2016 = ($version[3] < '2016');
+
+cleanup($conn, $schema, $tvpType, $procName, $pre2016);
 
 // Create table type and a stored procedure
 sqlsrv_query($conn, $createSchema);
@@ -163,7 +178,7 @@ $inputs = [
 $tvpInput = array($tvpTypeName => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 14);
 
-cleanup($conn, $schema, $tvpType, $procName);
+cleanup($conn, $schema, $tvpType, $procName, $pre2016);
 
 sqlsrv_close($conn);
 
