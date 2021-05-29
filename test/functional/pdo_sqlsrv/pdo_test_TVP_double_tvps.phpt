@@ -9,28 +9,45 @@ PHPT_EXEC=true
 require_once('MsSetup.inc');
 require_once('MsCommon_mid-refactor.inc');
 
-function cleanup($conn, $schema)
+function cleanup($conn, $schema, $pre2016)
 {
-    global $dropSchema;
-    
-    $dropProcedure = dropProcSQL($conn, "[$schema].[AddReview]");
-    $conn->exec($dropProcedure);
+    if ($pre2016) {
+        // ignore the errors dropping all these
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+        
+        $conn->exec("DROP PROCEDURE [$schema].[AddReview]");
+        $conn->exec("DROP TYPE [$schema].[TestTVP3]");
+        $conn->exec("DROP TYPE [$schema].[SupplierType]");
+        $conn->exec("DROP SCHEMA [$schema]");
+        
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } else {
+        global $dropSchema;
+        
+        $dropProcedure = dropProcSQL($conn, "[$schema].[AddReview]");
+        $conn->exec($dropProcedure);
 
-    $dropTableType = dropTableTypeSQL($conn, "TestTVP3", $schema);
-    $conn->exec($dropTableType);
-    $dropTableType = dropTableTypeSQL($conn, "SupplierType", $schema);
-    $conn->exec($dropTableType);
+        $dropTableType = dropTableTypeSQL($conn, "TestTVP3", $schema);
+        $conn->exec($dropTableType);
+        $dropTableType = dropTableTypeSQL($conn, "SupplierType", $schema);
+        $conn->exec($dropTableType);
 
-    $conn->exec($dropSchema);
+        $conn->exec($dropSchema);
+    }
 }
 
 try {
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName;", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+    $stmt = $conn->query("SELECT @@VERSION");
+    $result = $stmt->fetch(PDO::FETCH_NUM)[0];
+    $version = explode(' ', $result);
+    $pre2016 = ($version[3] < '2016');
+
     // Use a different schema instead of dbo
     $schema = 'Sales DB';
-    cleanup($conn, $schema);
+    cleanup($conn, $schema, $pre2016);
     
     // Create the table type and stored procedure
     $conn->exec($createSchema);
@@ -85,7 +102,7 @@ try {
     fclose($image);
     unset($stmt);
     
-    cleanup($conn, $schema);
+    cleanup($conn, $schema, $pre2016);
 
     unset($conn);
     echo "Done" . PHP_EOL;

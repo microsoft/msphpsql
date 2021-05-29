@@ -10,28 +10,42 @@ require_once('MsCommon.inc');
 
 date_default_timezone_set('America/Los_Angeles');
 
-function cleanup($conn, $schema)
+function cleanup($conn, $schema, $pre2016)
 {
-    global $dropSchema;
-    
-    $dropProcedure = dropProcSQL($conn, "[$schema].[AddReview]");
-    sqlsrv_query($conn, $dropProcedure);
+    if ($pre2016) {
+        sqlsrv_query($conn, "DROP PROCEDURE [$schema].[AddReview]");
+        sqlsrv_query($conn, "DROP TYPE [$schema].[TestTVP3]");
+        sqlsrv_query($conn, "DROP TYPE [$schema].[SupplierType]");
+        sqlsrv_query($conn, "DROP SCHEMA [$schema]");
+    } else {
+        global $dropSchema;
+        
+        $dropProcedure = dropProcSQL($conn, "[$schema].[AddReview]");
+        sqlsrv_query($conn, $dropProcedure);
 
-    $dropTableType = dropTableTypeSQL($conn, "TestTVP3", $schema);
-    sqlsrv_query($conn, $dropTableType);
-    $dropTableType = dropTableTypeSQL($conn, "SupplierType", $schema);
-    sqlsrv_query($conn, $dropTableType);
-    
-    sqlsrv_query($conn, $dropSchema);
+        $dropTableType = dropTableTypeSQL($conn, "TestTVP3", $schema);
+        sqlsrv_query($conn, $dropTableType);
+        $dropTableType = dropTableTypeSQL($conn, "SupplierType", $schema);
+        sqlsrv_query($conn, $dropTableType);
+        
+        sqlsrv_query($conn, $dropSchema);
+    }
 }
 
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
 $conn = connect(array('CharacterSet'=>'UTF-8', 'ReturnDatesAsStrings' => true));
 
+$stmt = sqlsrv_query($conn, "SELECT @@VERSION");
+if (sqlsrv_fetch($stmt)) {
+    $result = sqlsrv_get_field($stmt, 0);
+}
+$version = explode(' ', $result);
+$pre2016 = ($version[3] < '2016');
+
 // Use a different schema instead of dbo
 $schema = 'Sales DB';
-cleanup($conn, $schema);
+cleanup($conn, $schema, $pre2016);
 
 // Create table types and stored procedures
 sqlsrv_query($conn, $createSchema);
@@ -89,7 +103,7 @@ if (sqlsrv_fetch($stmt)) {
 }
 
 fclose($image);
-cleanup($conn, $schema);
+cleanup($conn, $schema, $pre2016);
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);

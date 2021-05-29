@@ -28,29 +28,45 @@ function invokeProc($conn, $proc, $tvpInput, $caseNo, $inputParam = true)
     }
 }
 
-function cleanup($conn, $schema, $tvpType, $procName)
+function cleanup($conn, $schema, $tvpType, $procName, $pre2016)
 {
-    global $dropSchema;
-    
-    $dropProcedure = dropProcSQL($conn, "[$schema].[$procName]");
-    $conn->exec($dropProcedure);
+    if ($pre2016) {
+        // ignore the errors dropping all these
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+        
+        $conn->exec("DROP PROCEDURE [$schema].[$procName]");
+        $conn->exec("DROP TYPE [$schema].[$tvpType]");
+        $conn->exec("DROP SCHEMA [$schema]");
+        
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } else {
+        global $dropSchema;
+            
+        $dropProcedure = dropProcSQL($conn, "[$schema].[$procName]");
+        $conn->exec($dropProcedure);
 
-    $dropTableType = dropTableTypeSQL($conn, $tvpType, $schema);
-    $conn->exec($dropTableType);
-    
-    $conn->exec($dropSchema);
+        $dropTableType = dropTableTypeSQL($conn, $tvpType, $schema);
+        $conn->exec($dropTableType);
+        
+        $conn->exec($dropSchema);
+    }
 }
 
 try {
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName;", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+    $stmt = $conn->query("SELECT @@VERSION");
+    $result = $stmt->fetch(PDO::FETCH_NUM)[0];
+    $version = explode(' ', $result);
+    $pre2016 = ($version[3] < '2016');
+
     // Use a different schema instead of dbo
     $schema = 'Sales DB';
     $tvpType = 'TestTVP3';
     $procName = 'SelectTVP3';
     
-    cleanup($conn, $schema, $tvpType, $procName);
+    cleanup($conn, $schema, $tvpType, $procName, $pre2016);
     
     // Create the table type and stored procedure
     $conn->exec($createSchema);
@@ -162,7 +178,7 @@ try {
     $tvpInput = array($tvpTypeName => $inputs);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 14);
 
-    cleanup($conn, $schema, $tvpType, $procName);
+    cleanup($conn, $schema, $tvpType, $procName, $pre2016);
 
     unset($conn);
     echo "Done" . PHP_EOL;
