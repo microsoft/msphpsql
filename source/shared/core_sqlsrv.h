@@ -1514,7 +1514,7 @@ struct sqlsrv_param_tvp : public sqlsrv_param
     
     // The following methods are only applicable to a table-valued parameter or its individual columns
     int parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
-    void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* table_type_name);
+    void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string* table_type_name, _In_ zend_string* schema_name);
     void process_param_column_value(_Inout_ sqlsrv_stmt* stmt);
     void process_null_param_value(_Inout_ sqlsrv_stmt* stmt);
     void populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_ int ordinal);
