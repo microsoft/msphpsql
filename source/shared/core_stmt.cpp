@@ -3084,13 +3084,14 @@ void sqlsrv_param_inout::resize_output_string_buffer(_Inout_ zval* param_z, _In_
     }
 }
 
-void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* table_type_name)
+void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string* table_type_name, _In_ zend_string* schema_name)
 {
     SQLHANDLE   chstmt = SQL_NULL_HANDLE;
     SQLRETURN   rc;
     SQLSMALLINT data_type, dec_digits;
     SQLINTEGER  col_size;
     SQLLEN      cb_data_type, cb_col_size, cb_dec_digits;
+    char*       table_type = ZSTR_VAL(table_type_name);
 
     core::SQLAllocHandle(SQL_HANDLE_STMT, *(stmt->conn), &chstmt);
 
@@ -3100,21 +3101,11 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ SQLCHAR* ta
     }
 
     // Check table type name and see if the schema is specified. Otherwise, assume DBO
-    std::string type_name(reinterpret_cast<char *>(table_type_name));
-    std::size_t pos = type_name.find_first_of(".");
-    if (pos != std::string::npos) {
-        std::string str1 = type_name.substr(0, pos);
-        std::string str2 = type_name.substr(pos + 1);
-
-        char schema[SS_MAXCOLNAMELEN] = { '\0' };
-        char type[SS_MAXCOLNAMELEN] = { '\0' };
-
-        strcpy_s(schema, SS_MAXCOLNAMELEN, str1.c_str());
-        strcpy_s(type, SS_MAXCOLNAMELEN, str2.c_str());
-
-        rc = SQLColumns(chstmt, NULL, 0, reinterpret_cast<SQLCHAR *>(schema), SQL_NTS, reinterpret_cast<SQLCHAR *>(type), SQL_NTS, NULL, 0);
+    if (schema_name != NULL) {
+        char* schema = ZSTR_VAL(schema_name);
+        rc = SQLColumns(chstmt, NULL, 0, reinterpret_cast<SQLCHAR*>(schema), SQL_NTS, reinterpret_cast<SQLCHAR*>(table_type), SQL_NTS, NULL, 0);
     } else {
-        rc = SQLColumns(chstmt, NULL, 0, NULL, 0, table_type_name, SQL_NTS, NULL, 0);
+        rc = SQLColumns(chstmt, NULL, 0, NULL, SQL_NTS, reinterpret_cast<SQLCHAR*>(table_type), SQL_NTS, NULL, 0);
     }
 
     CHECK_CUSTOM_ERROR(!SQL_SUCCEEDED(rc), stmt, SQLSRV_ERROR_TVP_FETCH_METADATA, param_pos + 1) {
@@ -3208,6 +3199,7 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
     // The number of columns in the given table-valued parameter is returned, which may be zero.
     HashTable* inputs_ht = Z_ARRVAL_P(param_z);
     zend_string *tvp_name = NULL;
+    zend_string *schema_name = NULL;
     zval *tvp_data_z = NULL;
     HashPosition pos;
     
@@ -3227,10 +3219,18 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
             throw core::CoreException();
         }
     } 
-    
+
     // TODO: Find the docs page somewhere that says a TVP can not be null but it may have null columns??
     CHECK_CUSTOM_ERROR(tvp_data_z == NULL || Z_TYPE_P(tvp_data_z) == IS_NULL || Z_TYPE_P(tvp_data_z) != IS_ARRAY, stmt, SQLSRV_ERROR_TVP_INVALID_INPUTS, param_pos + 1) {
         throw core::CoreException();
+    }
+
+    // Check if schema is provided by the user
+    if (zend_hash_move_forward_ex(inputs_ht, &pos) == SUCCESS) {
+        zval *schema_z = zend_hash_get_current_data_ex(inputs_ht, &pos);
+        if (schema_z != NULL && Z_TYPE_P(schema_z) == IS_STRING) {
+            schema_name = Z_STR_P(schema_z);
+        }
     }
 
     // Save the TVP multi-dim array data, which should be something like this
@@ -3249,7 +3249,7 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
 
     // Given the table type name, get its column meta data next
     size_t total_num_columns = 0;
-    get_tvp_metadata(stmt, reinterpret_cast<SQLCHAR*>(ZSTR_VAL(tvp_name)));
+    get_tvp_metadata(stmt, tvp_name, schema_name);
     total_num_columns = tvp_columns.size();
 
     // (1) Is the array empty?

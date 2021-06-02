@@ -68,11 +68,11 @@ try {
         ['klmop', 45678, '2007-04-08 06:15:15.333'],
     ];
 
-    $tvpType1 = "$schema.SupplierType";
-    $tvpType2 = "$schema.TestTVP3";
+    $tvpType1 = "SupplierType";
+    $tvpType2 = "TestTVP3";
 
-    $tvpInput1 = array($tvpType1 => $inputs1);
-    $tvpInput2 = array($tvpType2 => $inputs2);
+    $tvpInput1 = array($tvpType1 => $inputs1, $schema);
+    $tvpInput2 = array($tvpType2 => $inputs2, $schema);
 
     $image = fopen($tvpIncPath. 'superlight_black_f_large.gif', 'rb');
 

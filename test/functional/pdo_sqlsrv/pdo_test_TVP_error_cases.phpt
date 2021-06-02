@@ -63,10 +63,10 @@ try {
 
     // Use a different schema instead of dbo
     $schema = 'Sales DB';
-    $tvpType = 'TestTVP3';
+    $tvpTypeName = 'TestTVP3';
     $procName = 'SelectTVP3';
     
-    cleanup($conn, $schema, $tvpType, $procName, $pre2016);
+    cleanup($conn, $schema, $tvpTypeName, $procName, $pre2016);
     
     // Create the table type and stored procedure
     $conn->exec($createSchema);
@@ -89,9 +89,6 @@ try {
     $tvpInput = array("" => array());
     invokeProc($conn, $callSelectTVP3, $tvpInput, 2);
     
-    // The TVP name should include the schema
-    $tvpTypeName = "$schema.$tvpType";
-    
     // Case (3) - null inputs
     $tvpInput = array($tvpTypeName => null);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 3);
@@ -105,7 +102,7 @@ try {
     invokeProc($conn, $callSelectTVP3, $tvpInput, 5);
 
     // Case (6) - input rows are not the same size
-    $tvpInput = array($tvpTypeName => $inputs);
+    $tvpInput = array($tvpTypeName => $inputs, $schema);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 6);
 
     // Case (7) - input row wrong size
@@ -113,7 +110,7 @@ try {
     $inputs = [
         ['ABC', 12345, null, null]
     ];
-    $tvpInput = array($tvpTypeName => $inputs);
+    $tvpInput = array($tvpTypeName => $inputs, $schema);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 7);
 
     // Case (8) - use string keys
@@ -121,13 +118,13 @@ try {
     $inputs = [
         ['A' => null, null, null]
     ];
-    $tvpInput = array($tvpTypeName => $inputs);
+    $tvpInput = array($tvpTypeName => $inputs, $schema);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 8);
 
     // Case (9) - a row is not an array
     unset($inputs);
     $inputs = [null];
-    $tvpInput = array($tvpTypeName => $inputs);
+    $tvpInput = array($tvpTypeName => $inputs, $schema);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 9);
 
     // Case (10) - a column value used a string key
@@ -135,7 +132,7 @@ try {
     $inputs = [
         ['ABC', 12345, "key"=>null]
     ];
-    $tvpInput = array($tvpTypeName => $inputs);
+    $tvpInput = array($tvpTypeName => $inputs, $schema);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 10);
 
     // Case (11) - invalid input object for a TVP column
@@ -149,7 +146,7 @@ try {
         ['ABC', 1234, $bar],
         ['DEF', 6789, null],
     ];
-    $tvpInput = array($tvpTypeName => $inputs);
+    $tvpInput = array($tvpTypeName => $inputs, $schema);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 11);
 
     // Case (12) - invalid input type for a TVP column
@@ -158,7 +155,7 @@ try {
         ['ABC', &$str, null],
         ['DEF', 6789, null],
     ];
-    $tvpInput = array($tvpTypeName => $inputs);
+    $tvpInput = array($tvpTypeName => $inputs, $schema);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 12);
 
     // Case (13) - bind a TVP as an OUTPUT param
@@ -175,10 +172,10 @@ try {
         [$utf8, 1234, null],
         ['DEF', 6789, null],
     ];
-    $tvpInput = array($tvpTypeName => $inputs);
+    $tvpInput = array($tvpTypeName => $inputs, $schema);
     invokeProc($conn, $callSelectTVP3, $tvpInput, 14);
 
-    cleanup($conn, $schema, $tvpType, $procName, $pre2016);
+    cleanup($conn, $schema, $tvpTypeName, $procName, $pre2016);
 
     unset($conn);
     echo "Done" . PHP_EOL;
