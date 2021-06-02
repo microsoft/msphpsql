@@ -54,7 +54,7 @@ $conn = connect(array('CharacterSet'=>'UTF-8'));
 
 // Use a different schema instead of dbo
 $schema = 'Sales DB';
-$tvpType = 'TestTVP3';
+$tvpTypeName = 'TestTVP3';
 $procName = 'SelectTVP3';
 
 $stmt = sqlsrv_query($conn, "SELECT @@VERSION");
@@ -64,7 +64,7 @@ if (sqlsrv_fetch($stmt)) {
 $version = explode(' ', $result);
 $pre2016 = ($version[3] < '2016');
 
-cleanup($conn, $schema, $tvpType, $procName, $pre2016);
+cleanup($conn, $schema, $tvpTypeName, $procName, $pre2016);
 
 // Create table type and a stored procedure
 sqlsrv_query($conn, $createSchema);
@@ -87,9 +87,6 @@ invokeProc($conn, $callSelectTVP3, $tvpInput, 1);
 $tvpInput = array("" => array());
 invokeProc($conn, $callSelectTVP3, $tvpInput, 2);
 
-// The TVP name should include the schema
-$tvpTypeName = "$schema.$tvpType";
-
 // Case (3) - null inputs
 $tvpInput = array($tvpTypeName => null);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 3);
@@ -103,7 +100,7 @@ $tvpInput = array($str => $inputs);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 5);
 
 // Case (6) - input rows are not the same size
-$tvpInput = array($tvpTypeName => $inputs);
+$tvpInput = array($tvpTypeName => $inputs, $schema);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 6);
 
 // Case (7) - input row wrong size
@@ -111,7 +108,7 @@ unset($inputs);
 $inputs = [
     ['ABC', 12345, null, null]
 ];
-$tvpInput = array($tvpTypeName => $inputs);
+$tvpInput = array($tvpTypeName => $inputs, $schema);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 7);
 
 // Case (8) - use string keys
@@ -119,13 +116,13 @@ unset($inputs);
 $inputs = [
     ['A' => null, null, null]
 ];
-$tvpInput = array($tvpTypeName => $inputs);
+$tvpInput = array($tvpTypeName => $inputs, $schema);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 8);
 
 // Case (9) - a row is not an array
 unset($inputs);
 $inputs = [null];
-$tvpInput = array($tvpTypeName => $inputs);
+$tvpInput = array($tvpTypeName => $inputs, $schema);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 9);
 
 // Case (10) - a column value used a string key
@@ -133,7 +130,7 @@ unset($inputs);
 $inputs = [
     ['ABC', 12345, "key"=>null]
 ];
-$tvpInput = array($tvpTypeName => $inputs);
+$tvpInput = array($tvpTypeName => $inputs, $schema);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 10);
 
 // Case (11) - invalid input object for a TVP column
@@ -147,7 +144,7 @@ $inputs = [
     ['ABC', 1234, $bar],
     ['DEF', 6789, null],
 ];
-$tvpInput = array($tvpTypeName => $inputs);
+$tvpInput = array($tvpTypeName => $inputs, $schema);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 11);
 
 // Case (12) - invalid input type for a TVP column
@@ -156,7 +153,7 @@ $inputs = [
     ['ABC', &$str, null],
     ['DEF', 6789, null],
 ];
-$tvpInput = array($tvpTypeName => $inputs);
+$tvpInput = array($tvpTypeName => $inputs, $schema);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 12);
 
 // Case (13) - bind a TVP as an OUTPUT param
@@ -173,10 +170,10 @@ $inputs = [
     [$utf8, 1234, null],
     ['DEF', 6789, null],
 ];
-$tvpInput = array($tvpTypeName => $inputs);
+$tvpInput = array($tvpTypeName => $inputs, $schema);
 invokeProc($conn, $callSelectTVP3, $tvpInput, 14);
 
-cleanup($conn, $schema, $tvpType, $procName, $pre2016);
+cleanup($conn, $schema, $tvpTypeName, $procName, $pre2016);
 
 sqlsrv_close($conn);
 
