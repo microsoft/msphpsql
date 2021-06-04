@@ -1742,23 +1742,30 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                             core::SQLGetDiagField(stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len);
                         }
                     } while (r == SQL_SUCCESS_WITH_INFO && is_truncated_warning(state));
-                } else {
+                } // if (field_len_temp == SQL_NO_TOTAL)
+                else {
+                    // The field length (or its estimate) is returned, thus no need to double the allocation size. 
+                    // Allocate field_len_temp (which is the field length retrieved from the first SQLGetData) but with some padding
+                    // because there is a chance that the estimated field_len_temp is not accurate enough
                     SQLLEN buffer_len = 50;
                     field_value_temp = static_cast<char*>(sqlsrv_realloc(field_value_temp, field_len_temp + buffer_len + 1));
                     field_len_temp -= initial_field_len;
 
                     // Get the rest of the data
                     r = stmt->current_results->get_data(field_index + 1, c_type, field_value_temp + initial_field_len,
-                        field_len_temp + buffer_len, &dummy_field_len, false /*handle_warning*/);
+                        field_len_temp + buffer_len, &chunk_field_len, false /*handle_warning*/);
+                    field_len_temp += chunk_field_len;
 
-                    if (r == SQL_SUCCESS_WITH_INFO) {
-                        core::SQLGetDiagField(stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len);
+                    CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
+                        throw core::CoreException();
                     }
-                    field_len_temp = initial_field_len + dummy_field_len;
+
+                    // Reallocate field_value_temp next
                     field_value_temp = static_cast<char*>(sqlsrv_realloc(field_value_temp, field_len_temp + extra + 1));
                 }
-            } 
-        }
+            } // if (is_truncated_warning(state))
+        } // if (r == SQL_SUCCESS_WITH_INFO)
+
         CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
             throw core::CoreException();
         }
