@@ -1710,7 +1710,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 
             stmt->current_results->get_diag_field(1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len);
             if (is_truncated_warning(state)) {
-                SQLLEN dummy_field_len = 0;
+                SQLLEN chunk_field_len = 0;
 
                 // for XML (and possibly other conditions) the field length returned is not the real field length, so
                 // in every pass, we double the allocation size to retrieve all the contents.
@@ -1730,11 +1730,11 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
 
                         // Get the rest of the data
                         r = stmt->current_results->get_data(field_index + 1, c_type, field_value_temp + buffer_len,
-                            field_len_temp + extra, &dummy_field_len, false /*handle_warning*/);
+                            field_len_temp + extra, &chunk_field_len, false /*handle_warning*/);
                         // the last packet will contain the actual amount retrieved, not SQL_NO_TOTAL
                         // so we calculate the actual length of the string with that.
-                        if (dummy_field_len != SQL_NO_TOTAL)
-                            field_len_temp += dummy_field_len;
+                        if (chunk_field_len != SQL_NO_TOTAL)
+                            field_len_temp += chunk_field_len;
                         else
                             field_len_temp += buffer_len;
 
@@ -1754,7 +1754,7 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
                     // Get the rest of the data
                     r = stmt->current_results->get_data(field_index + 1, c_type, field_value_temp + initial_field_len,
                         field_len_temp + buffer_len, &chunk_field_len, false /*handle_warning*/);
-                    field_len_temp += chunk_field_len;
+                    field_len_temp = initial_field_len + chunk_field_len;
 
                     CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
                         throw core::CoreException();
