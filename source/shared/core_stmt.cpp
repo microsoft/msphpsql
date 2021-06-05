@@ -1621,8 +1621,8 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
     *field_len = len;
 }
 
-void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
-                          _Inout_updates_bytes_(*field_len) void*& field_value, _Inout_ SQLLEN* field_len )
+void get_field_as_string(_Inout_ sqlsrv_stmt *stmt, _In_ SQLUSMALLINT field_index, _Inout_ sqlsrv_phptype sqlsrv_php_type,
+                         _Inout_updates_bytes_(*field_len) void *&field_value, _Inout_ SQLLEN *field_len)
 {
     SQLRETURN r;
     SQLSMALLINT c_type;
@@ -1785,19 +1785,20 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
             format_decimal_numbers(decimal_places, stmt->current_meta_data[field_index]->field_scale, field_value_temp, &field_len_temp);
         }
 
+        // finalized the returned values
+        field_value = field_value_temp;
+        *field_len = field_len_temp;
+
         // prevent a warning in debug mode about strings not being NULL terminated.  Even though nulls are not necessary, the PHP
         // runtime checks to see if a string is null terminated and issues a warning about it if running in debug mode.
         // SQL_C_BINARY fields don't return a NULL terminator, so we allocate an extra byte on each field and use the ternary
         // operator to set add 1 to fill the null terminator
-
         // with unixODBC connection pooling sometimes field_len_temp can be SQL_NO_DATA.
         // In that cause do not set null terminator and set length to 0.
-
-        field_value = field_value_temp;
-        *field_len = (field_len_temp == SQL_NO_DATA) ? 0 : field_len_temp;
-
         if (field_len_temp > 0) {
             field_value_temp[field_len_temp] = '\0';
+        } else {
+            *field_len = 0;
         }
     }
     catch (core::CoreException&) {
@@ -1812,7 +1813,6 @@ void get_field_as_string( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_ind
         throw;
     }
 }
-
 
 // return the option from the stmt_opts array that matches the key.  If no option found,
 // NULL is returned.
