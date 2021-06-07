@@ -1678,10 +1678,9 @@ void get_field_as_string(_Inout_ sqlsrv_stmt *stmt, _In_ SQLUSMALLINT field_inde
         // If this is a large type, then read the first chunk to get the actual length from SQLGetData
         // The user may use "SET TEXTSIZE" to specify the size of varchar(max), nvarchar(max), 
         // varbinary(max), text, ntext, and image data returned by a SELECT statement. 
-        // For varchar(max) and nvarchar(max), sql_display_size will be 0, regardless
+        // For varbinary(max), varchar(max) and nvarchar(max), sql_display_size will be 0, regardless
         if (sql_display_size == 0 ||
-            (sql_display_size > SQL_SERVER_MAX_FIELD_SIZE &&
-            (sql_field_type == SQL_WLONGVARCHAR || sql_field_type == SQL_LONGVARCHAR || sql_field_type == SQL_LONGVARBINARY))) {
+            (sql_field_type == SQL_WLONGVARCHAR || sql_field_type == SQL_LONGVARCHAR || sql_field_type == SQL_LONGVARBINARY)) {
 
             field_len_temp = initial_field_len;
             field_value_temp = static_cast<char*>(sqlsrv_malloc(field_len_temp + extra + 1));
@@ -1785,20 +1784,15 @@ void get_field_as_string(_Inout_ sqlsrv_stmt *stmt, _In_ SQLUSMALLINT field_inde
             format_decimal_numbers(decimal_places, stmt->current_meta_data[field_index]->field_scale, field_value_temp, &field_len_temp);
         }
 
-        // finalized the returned values
+        // finalized the returned values and set field_len to 0 if field_len_temp is negative (which may happen with unixODBC connection pooling)
         field_value = field_value_temp;
-        *field_len = field_len_temp;
+        *field_len = (field_len_temp > 0) ? field_len_temp : 0;
 
         // prevent a warning in debug mode about strings not being NULL terminated.  Even though nulls are not necessary, the PHP
         // runtime checks to see if a string is null terminated and issues a warning about it if running in debug mode.
-        // SQL_C_BINARY fields don't return a NULL terminator, so we allocate an extra byte on each field and use the ternary
-        // operator to set add 1 to fill the null terminator
-        // with unixODBC connection pooling sometimes field_len_temp can be SQL_NO_DATA.
-        // In that cause do not set null terminator and set length to 0.
+        // SQL_C_BINARY fields don't return a NULL terminator, so we allocate an extra byte on each field and add 1 to fill the null terminator
         if (field_len_temp > 0) {
             field_value_temp[field_len_temp] = '\0';
-        } else {
-            *field_len = 0;
         }
     }
     catch (core::CoreException&) {
