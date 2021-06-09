@@ -137,11 +137,11 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     ZVAL_UNDEF( &active_stream );
 
     // initialize the col cache
-    ZVAL_NEW_ARR( &col_cache );
+    array_init(&col_cache);
     core::sqlsrv_zend_hash_init( *conn, Z_ARRVAL(col_cache), 5 /* # of buckets */, col_cache_dtor, 0 /*persistent*/ );
 
     // initialize the field cache
-    ZVAL_NEW_ARR( &field_cache );
+    array_init(&field_cache);
     core::sqlsrv_zend_hash_init(*conn, Z_ARRVAL(field_cache), 5 /* # of buckets */, field_cache_dtor, 0 /*persistent*/);
 }
 
