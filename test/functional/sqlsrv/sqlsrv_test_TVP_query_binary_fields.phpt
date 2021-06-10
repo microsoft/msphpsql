@@ -5,7 +5,16 @@ Test Table-valued parameter using direct queries and sqlsrv_send_stream_data wit
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php
+if (!extension_loaded("sqlsrv")) {
+    die("skip Extension not loaded");
+}
+
+require_once('MsSetup.inc');
+if ($localeDisabled) {
+    die("skip Locale not supported");
+}
+?>
 --FILE--
 <?php
 require_once('MsCommon.inc');

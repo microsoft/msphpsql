@@ -5,7 +5,16 @@ Test Table-valued parameter using bindValue() instead of bindParam() with random
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php
+if (!extension_loaded("pdo_sqlsrv")) {
+    die("skip Extension not loaded");
+}
+
+require_once('MsSetup.inc');
+if ($localeDisabled) {
+    die("skip Locale not supported");
+}
+?>
 --FILE--
 <?php
 require_once('MsSetup.inc');
