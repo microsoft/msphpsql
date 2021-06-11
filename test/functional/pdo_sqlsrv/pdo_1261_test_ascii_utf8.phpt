@@ -24,8 +24,7 @@ try {
     # SQLSRV_ATTR_ENCODING must be set to SQLSRV_ENCODING_SYSTEM (works with PDO::SQLSRV_ENCODING_UTF8)
     # COLLATE must not be %UTF8% (e.g. Latin1_General_100_CI_AS_SC_UTF8 works)
 
-    $sql = "DROP TABLE IF EXISTS #tmpTest;
-            SET NOCOUNT ON;
+    $sql = "SET NOCOUNT ON;
             DECLARE @val VARCHAR(8000) =  REPLICATE('a', 2045) + 'Ã±';
             CREATE TABLE #tmpTest (testCol VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS);
             INSERT INTO #tmpTest (testCol) VALUES (@val);
