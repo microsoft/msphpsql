@@ -5,9 +5,9 @@ prepares a statement with parameter markers and forward-only (server-side) curso
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = tempdb", "$uid", "$pwd");
+$conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
 
-$conn->exec("CREAtE TABLE Table1(col1 VARCHAR(100), col2 VARCHAR(100))");
+$conn->exec("CREATE TABLE Table1(col1 VARCHAR(100), col2 VARCHAR(100))");
 
 $col1 = 'a';
 $col2 = 'b';

@@ -6,8 +6,8 @@ insert with quoted parameters
 <?php
 
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = tempdb", "$uid", "$pwd");
-$conn->exec("CREAtE TABLE Table1(col1 VARCHAR(15), col2 VARCHAR(15)) ");
+$conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
+$conn->exec("CREATE TABLE Table1(col1 VARCHAR(15), col2 VARCHAR(15)) ");
 
 $param = 'a \' g';
 $param2 = $conn->quote( $param );

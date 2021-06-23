@@ -5,9 +5,9 @@ starts a transaction, insert 2 rows and commit the transaction
 --FILE--
 <?php
 	require('connect.inc');
-   //make connection and create a temporaty table in tempdb
-   $conn = new PDO( "sqlsrv:Server=$server; Database = tempdb ", "$uid", "$pwd");
-   $conn->exec("CREAtE TABLE Table1(col1 CHARACTER(1), col2 CHARACTER(1)) ");
+   //make connection and create a temporaty table
+   $conn = new PDO( "sqlsrv:Server=$server; Database = $databaseName ", "$uid", "$pwd");
+   $conn->exec("CREATE TABLE Table1(col1 CHARACTER(1), col2 CHARACTER(1)) ");
    
    $conn->beginTransaction();
    $ret = $conn->exec("insert into Table1(col1, col2) values('a', 'b') ");
