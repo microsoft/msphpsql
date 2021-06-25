@@ -6,12 +6,15 @@ returns the number of rows added to a table; returns the number of rows in a res
 <?php
 require('connect.inc');
 $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
-$conn->exec("CREATE TABLE Table1(col1 VARCHAR(15), col2 VARCHAR(15)) ");
+
+$tableName = "pdoRowCount";
+dropTable($conn, $tableName);
+$conn->exec("CREATE TABLE $tableName(col1 VARCHAR(15), col2 VARCHAR(15)) ");
    
 $col1 = 'a';
 $col2 = 'b';
 
-$query = "insert into Table1(col1, col2) values(?, ?)";
+$query = "INSERT INTO $tableName(col1, col2) values(?, ?)";
 $stmt = $conn->prepare( $query );
 $stmt->execute( array( $col1, $col2 ) );
 print $stmt->rowCount();
@@ -20,15 +23,15 @@ print " rows affected.";
 echo "\n\n";
 
 //revert the insert
-$conn->exec("delete from Table1 where col1 = 'a' AND col2 = 'b'");
+$conn->exec("DELETE FROM $tableName where col1 = 'a' AND col2 = 'b'");
 
-$conn->exec("DROP TABLE Table1");
+dropTable($conn, $tableName, false);
 
 $conn = null;
 
 $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
 
-$query = "select * from Person.ContactType";
+$query = "SELECT * FROM Person.ContactType";
 $stmt = $conn->prepare( $query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
 $stmt->execute();
 print $stmt->rowCount();

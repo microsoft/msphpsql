@@ -57,16 +57,17 @@ echo "<br>";
 
 sqlsrv_free_stmt( $stmt);
 
+// RevisionNumber in SalesOrderHeader is subject to a trigger incrementing it whenever
+// changes are made to SalesOrderDetail. Since RevisonNumber is a tinyint, it can
+// overflow quickly if this test is often run. So disable the trigger.
+$tsql = "DISABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader";
+$stmt = sqlsrv_query($conn, $tsql);
+
+
 /* Prepare with string type in parameter. */
 $tsql = "UPDATE Sales.SalesOrderDetail
 	SET OrderQty=(?)
 	WHERE CarrierTrackingNumber=(?)";
-
-// RevisionNumber in SalesOrderHeader is subject to a trigger incrementing it whenever
-// changes are made to SalesOrderDetail. Since RevisonNumber is a tinyint, it can
-// overflow quickly if this test is often run. So we change it directly here first
-// before it can overflow.
-$stmt0 = sqlsrv_query( $conn, "UPDATE Sales.SalesOrderHeader SET RevisionNumber = 2 WHERE SalesOrderID = $soID" );
 
 //Pass in parameters directly
 $params = array(5, '8650-4A20-B1');
@@ -140,11 +141,13 @@ else
      die( print_r( sqlsrv_errors(), true));
 }
 echo sqlsrv_rows_affected( $stmt)." rows affected.<br>";
-sqlsrv_free_stmt( $stmt);
 
+// Re-enable the trigger
+$tsql = "ENABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader";
+$stmt = sqlsrv_query($conn, $tsql);
 
 /* Free the statement and connection resources. */
-//sqlsrv_free_stmt( $stmt);
+sqlsrv_free_stmt( $stmt);
 sqlsrv_close( $conn);
 ?>
 --EXPECT--

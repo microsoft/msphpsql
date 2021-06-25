@@ -34,25 +34,14 @@ $r_sql="UPDATE HumanResources.Employee SET VacationHours=61 WHERE BusinessEntity
 		UPDATE HumanResources.Employee SET VacationHours=62 WHERE BusinessEntityID=8;
 		UPDATE HumanResources.Employee SET VacationHours=63 WHERE BusinessEntityID=9;
 		UPDATE HumanResources.Employee SET VacationHours=7 WHERE BusinessEntityID=11";
-$stmt4=sqlsrv_query($conn, $r_sql);
-sqlsrv_free_stmt( $stmt4 );
+$stmt=sqlsrv_query($conn, $r_sql);
+sqlsrv_free_stmt( $stmt );
 
 /* Drop the stored procedure if it already exists. */
-$tsql1 = "IF OBJECT_ID('SubtractVacationHours', 'P') IS NOT NULL
-                DROP PROCEDURE SubtractVacationHours";
-$stmt1 = sqlsrv_query($conn, $tsql1);
+dropProc($conn, "SubtractVacationHours");
 
-/* If the query fails, display errors and exit the script. */
-if( $stmt1 === false)
-{
-     DisplayErrors();
-     die;
-}
 /* Display any warnings. */
 DisplayWarnings();
-
-/* Free the statement resources. */
-sqlsrv_free_stmt( $stmt1 );
 
 /* Create the stored procedure. */
 $tsql2 = "CREATE PROCEDURE SubtractVacationHours
@@ -69,10 +58,10 @@ $tsql2 = "CREATE PROCEDURE SubtractVacationHours
               BEGIN
                 PRINT 'WARNING: Vacation hours are now less than zero.'
               END;";
-$stmt2 = sqlsrv_query( $conn, $tsql2 );
+$stmt = sqlsrv_query( $conn, $tsql2 );
 
 /* If the query fails, display errors and exit the script. */
-if( $stmt2 === false)
+if( $stmt === false)
 {
      DisplayErrors();
      die;
@@ -81,7 +70,7 @@ if( $stmt2 === false)
 DisplayWarnings();
 
 /* Free the statement resources. */
-sqlsrv_free_stmt( $stmt2 );
+sqlsrv_free_stmt( $stmt );
 
 /* Set up the array that maps employee ID to used vacation hours. */
 $emp_hrs = array (7=>4, 8=>5, 9=>8, 11=>50);
@@ -98,10 +87,10 @@ $params = array(
 
 /* Define and prepare the query to substract used vacation hours. */
 $tsql3 = "{call SubtractVacationHours(?, ?)}";
-$stmt3 = sqlsrv_prepare($conn, $tsql3, $params);
+$stmt = sqlsrv_prepare($conn, $tsql3, $params);
 
 /* If the statement preparation fails, display errors and exit the script. */
-if( $stmt3 === false)
+if( $stmt === false)
 {
      DisplayErrors();
      die;
@@ -115,7 +104,7 @@ foreach(array_keys($emp_hrs) as $businessEntityId)
 {
      $vacationHrs = $emp_hrs[$businessEntityId];
      /* Execute the query.  If it fails, display the errors. */
-     if( sqlsrv_execute($stmt3) === false)
+     if( sqlsrv_execute($stmt) === false)
      {
           DisplayErrors();
           die;
@@ -124,7 +113,7 @@ foreach(array_keys($emp_hrs) as $businessEntityId)
      DisplayWarnings();
 
      /*Move to the next result returned by the stored procedure. */
-     if( sqlsrv_next_result($stmt3) === false)
+     if( sqlsrv_next_result($stmt) === false)
      {
           DisplayErrors();
           die;
@@ -138,7 +127,9 @@ foreach(array_keys($emp_hrs) as $businessEntityId)
 }
 
 /* Free the statement*/
-sqlsrv_free_stmt( $stmt3 );
+sqlsrv_free_stmt( $stmt );
+
+dropProc($conn, "SubtractVacationHours", false);
 
 /* close connection resources. */
 sqlsrv_close( $conn );

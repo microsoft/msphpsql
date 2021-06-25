@@ -7,35 +7,39 @@ insert with quoted parameters
 
 require('connect.inc');
 $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
-$conn->exec("CREATE TABLE Table1(col1 VARCHAR(15), col2 VARCHAR(15)) ");
+
+$tableName = "pdoQuote";
+dropTable($conn, $tableName);
+
+$conn->exec("CREATE TABLE $tableName(col1 VARCHAR(15), col2 VARCHAR(15)) ");
 
 $param = 'a \' g';
 $param2 = $conn->quote( $param );
 
-$query = "INSERT INTO Table1 VALUES( ?, '1' )";
+$query = "INSERT INTO $tableName VALUES( ?, '1' )";
 $stmt = $conn->prepare( $query );
 $stmt->execute(array($param));
 
-$query = "INSERT INTO Table1 VALUES( ?, ? )";
+$query = "INSERT INTO $tableName VALUES( ?, ? )";
 $stmt = $conn->prepare( $query );
 $stmt->execute(array($param, $param2));
 
-$query = "SELECT * FROM Table1";
+$query = "SELECT * FROM $tableName";
 $stmt = $conn->query($query);
 while ( $row = $stmt->fetch( PDO::FETCH_ASSOC ) ){
    print_r( $row['col1'] ." was inserted\n" );
 }
 
 // revert the inserts
-$query = "delete from Table1 where col1 = ?";
+$query = "DELETE FROM $tableName WHERE col1 = ?";
 $stmt = $conn->prepare( $query );
 $stmt->execute(array($param));
 
-$conn->exec("DROP TABLE Table1 ");
-  
+dropTable($conn, $tableName, false);
+
 //free the statement and connection
-$stmt=null;
-$conn=null;
+unset($stmt);
+unset($conn);
 ?>
 --EXPECT--
 a ' g was inserted

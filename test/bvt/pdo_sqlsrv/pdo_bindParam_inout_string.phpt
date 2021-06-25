@@ -8,10 +8,7 @@ call a stored procedure and retrieve the errorString that is returned
     $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
     
     // Drop the stored procedure if it already exists
-    $tsql_dropSP = "IF OBJECT_ID('sp_Test_String', 'P') IS NOT NULL
-                    DROP PROCEDURE sp_Test_String";
-                    
-    $stmt = $conn->query($tsql_dropSP);
+    dropProc($conn, 'sp_Test_String');
 
     // Create the stored procedure
     $tsql_createSP = "CREATE PROCEDURE sp_Test_String
@@ -39,11 +36,11 @@ call a stored procedure and retrieve the errorString that is returned
     print("Error String: $errorString\n\n");
     print_r($result);
     
-    $stmt = $conn->query($tsql_dropSP);
+    dropProc($conn, 'sp_Test_String', false);
 
     //free the statement and connection
-    $stmt = null;
-    $conn = null;
+    unset($stmt);
+    unset($conn);
 ?>
 --EXPECT--
 Error String: 12345
