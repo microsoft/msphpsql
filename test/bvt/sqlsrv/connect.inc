@@ -4,30 +4,16 @@ $databaseName = 'TARGET_DATABASE';
 $uid = 'TARGET_USERNAME';
 $pwd = 'TARGET_PASSWORD';
 
-$server2 = 'ANOTHER_SERVER';
-
-// RevisionNumber in SalesOrderHeader is subject to a trigger incrementing it whenever
-// changes are made to SalesOrderDetail. Since RevisionNumber is a tinyint, it can
-// overflow quickly if the BVT tests often run. So we change it directly here first
-// before it can overflow.
-function ResetRevisionNumber( $server, $databaseName, $uid, $pwd )
+function dropTable($conn, $tableName)
 {
-    $connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd );
-    $conn = sqlsrv_connect( $server, $connectionInfo);
-    if( $conn === false )
-    {
-         echo "Could not connect.<br>";
-         die( print_r( sqlsrv_errors(), true));
-    }
+    $tsql = "IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'" . $tableName . "') AND type in (N'U')) DROP TABLE [$tableName]";
+    sqlsrv_query($conn, $tsql);
+}
 
-    $stmt0 = sqlsrv_query( $conn, "UPDATE Sales.SalesOrderHeader SET RevisionNumber = 2");
-    if ( !$stmt0 )
-    {
-        echo "Resetting the RevisionNumber failed.\n";
-        die( print_r( sqlsrv_errors(), true));
-    }
-    
-    sqlsrv_close( $conn );
+function dropProc($conn, $procName)
+{
+    $tsql = "IF OBJECT_ID('". $procName ."', 'P') IS NOT NULL DROP PROCEDURE [$procName]";
+    sqlsrv_query($conn, $tsql);
 }
 
 ?>

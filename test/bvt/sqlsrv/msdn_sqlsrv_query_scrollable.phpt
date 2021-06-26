@@ -11,34 +11,32 @@ if ( $conn === false ) {
    die( print_r( sqlsrv_errors(), true ));
 }
 
-$stmt = sqlsrv_query( $conn, "DROP TABLE dbo.ScrollTest" );
-if ( $stmt !== false ) { 
-   sqlsrv_free_stmt( $stmt ); 
-}
+$tableName = 'ScrollTest';
+dropTable($conn, $tableName);
 
-$stmt = sqlsrv_query( $conn, "CREATE TABLE ScrollTest (id int, value char(10))" );
+$stmt = sqlsrv_query( $conn, "CREATE TABLE $tableName (id int, value char(10))" );
 if ( $stmt === false ) {
    die( print_r( sqlsrv_errors(), true ));
 }
 
-$stmt = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 1, "Row 1" ));
+$stmt = sqlsrv_query( $conn, "INSERT INTO $tableName (id, value) VALUES(?,?)", array( 1, "Row 1" ));
 if ( $stmt === false ) {
    die( print_r( sqlsrv_errors(), true ));
 }
 
-$stmt = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 2, "Row 2" ));
+$stmt = sqlsrv_query( $conn, "INSERT INTO $tableName (id, value) VALUES(?,?)", array( 2, "Row 2" ));
 if ( $stmt === false ) {
    die( print_r( sqlsrv_errors(), true ));
 }
 
-$stmt = sqlsrv_query( $conn, "INSERT INTO ScrollTest (id, value) VALUES(?,?)", array( 3, "Row 3" ));
+$stmt = sqlsrv_query( $conn, "INSERT INTO $tableName (id, value) VALUES(?,?)", array( 3, "Row 3" ));
 if ( $stmt === false ) {
    die( print_r( sqlsrv_errors(), true ));
 }
 
-$stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => 'keyset' ));
-// $stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => 'dynamic' ));
-// $stmt = sqlsrv_query( $conn, "SELECT * FROM ScrollTest", array(), array( "Scrollable" => 'static' ));
+$stmt = sqlsrv_query( $conn, "SELECT * FROM $tableName", array(), array( "Scrollable" => 'keyset' ));
+// $stmt = sqlsrv_query( $conn, "SELECT * FROM $tableName", array(), array( "Scrollable" => 'dynamic' ));
+// $stmt = sqlsrv_query( $conn, "SELECT * FROM $tableName", array(), array( "Scrollable" => 'static' ));
 
 $rows = sqlsrv_has_rows( $stmt );
 if ( $rows != true ) {
@@ -50,9 +48,9 @@ $field1 = sqlsrv_get_field( $stmt, 0 );
 $field2 = sqlsrv_get_field( $stmt, 1 );
 echo "\n$field1 $field2\n";
 
-//$stmt2 = sqlsrv_query( $conn, "delete from ScrollTest where id = 3" );
+//$stmt2 = sqlsrv_query( $conn, "delete from $tableName where id = 3" );
 // or
-$stmt2 = sqlsrv_query( $conn, "UPDATE ScrollTest SET id = 4 WHERE id = 3" );
+$stmt2 = sqlsrv_query( $conn, "UPDATE $tableName SET id = 4 WHERE id = 3" );
 if ( $stmt2 !== false ) { 
    sqlsrv_free_stmt( $stmt2 ); 
 }
@@ -61,6 +59,8 @@ $result = sqlsrv_fetch( $stmt, SQLSRV_SCROLL_LAST );
 $field1 = sqlsrv_get_field( $stmt, 0 );
 $field2 = sqlsrv_get_field( $stmt, 1 );
 echo "\n$field1 $field2\n";
+
+dropTable($conn, $tableName, false);
 
 sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );

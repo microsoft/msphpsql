@@ -32,4 +32,4 @@ else
 sqlsrv_close( $conn);
 ?>
 --EXPECTREGEX--
-CurrentDatabase: AdventureWorks.*<br>SQLServerVersion: 1[2-9].00.[0-9]{4}<br>SQLServerName: SQL.+<br>
+CurrentDatabase: AdventureWorks201.<br>SQLServerVersion: 1[2-9].00.[0-9]{4}<br>SQLServerName: .+<br>
