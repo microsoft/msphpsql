@@ -15,14 +15,8 @@ call a stored procedure (SQLSRV Driver) and retrieve the errorNumber that is ret
 	}
 
 	// Drop the stored procedure if it already exists
-	$tsql_dropSP = "IF OBJECT_ID('sp_Test', 'P') IS NOT NULL
-					DROP PROCEDURE sp_Test";
-	$stmt1 = sqlsrv_query($conn, $tsql_dropSP);
-	if ($stmt1 === false) {
-		echo "Error in executing statement 1.\n";
-		die (print_r (sqlsrv_errors(), true));		
-	}
-	
+	dropProc($conn, "sp_Test");
+
 	// Create the stored procedure
 	$tsql_createSP = "CREATE PROCEDURE sp_Test
 						@ErrorNumber INT = 0 OUTPUT
@@ -31,8 +25,8 @@ call a stored procedure (SQLSRV Driver) and retrieve the errorNumber that is ret
 						SET @ErrorNumber = -1
 						SELECT 1,2,3
 					  END";
-	$stmt2 = sqlsrv_query($conn, $tsql_createSP);
-	if ($stmt2 === false) {
+	$stmt = sqlsrv_query($conn, $tsql_createSP);
+	if ($stmt === false) {
 		echo "Error in executing statement 2.\n";
 		die (print_r (sqlsrv_errors(), true));		
 	}
@@ -47,20 +41,20 @@ call a stored procedure (SQLSRV Driver) and retrieve the errorNumber that is ret
 				);
 	
 	// Execute the query
-	$stmt3 = sqlsrv_query($conn, $tsql_callSP, $params);
-	if ($stmt3 === false) {
+	$stmt = sqlsrv_query($conn, $tsql_callSP, $params);
+	if ($stmt === false) {
 		echo "Error in executing statement 3.\n";
 		die (print_r (sqlsrv_errors(), true));		
 	}
 	
 	// Display the value of the output parameter $errorNumber
-	sqlsrv_next_result($stmt3);
+	sqlsrv_next_result($stmt);
 	print("Error Number: $errorNumber\n\n");
-	
+
+	dropProc($conn, "sp_Test", false);
+
 	// Free the statement and connection resources. */
-	sqlsrv_free_stmt( $stmt1);
-	sqlsrv_free_stmt( $stmt2);
-	sqlsrv_free_stmt( $stmt3);
+	sqlsrv_free_stmt( $stmt);
 	sqlsrv_close( $conn);
 ?>
 --EXPECT--

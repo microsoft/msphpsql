@@ -16,14 +16,7 @@ if( $conn === false )
 }
 
 /* Drop the stored procedure if it already exists. */
-$tsql_dropSP = "IF OBJECT_ID('GetEmployeeSalesYTD', 'P') IS NOT NULL
-                DROP PROCEDURE GetEmployeeSalesYTD";
-$stmt1 = sqlsrv_query( $conn, $tsql_dropSP);
-if( $stmt1 === false )
-{
-     echo "Error in executing statement 1.\n";
-     die( print_r( sqlsrv_errors(), true));
-}
+dropProc($conn, 'GetEmployeeSalesYTD');
 
 /* Create the stored procedure. */
 $tsql_createSP = " CREATE PROCEDURE GetEmployeeSalesYTD
@@ -35,8 +28,8 @@ $tsql_createSP = " CREATE PROCEDURE GetEmployeeSalesYTD
                    JOIN HumanResources.vEmployee AS e 
                    ON e.BusinessEntityID = sp.BusinessEntityID
                    WHERE LastName = @SalesPerson";
-$stmt2 = sqlsrv_query( $conn, $tsql_createSP);
-if( $stmt2 === false )
+$stmt = sqlsrv_query( $conn, $tsql_createSP);
+if( $stmt === false )
 {
      echo "Error in executing statement 2.\n";
      die( print_r( sqlsrv_errors(), true));
@@ -62,8 +55,8 @@ $params = array(
                );
 
 /* Execute the query. */
-$stmt3 = sqlsrv_query( $conn, $tsql_callSP, $params);
-if( $stmt3 === false )
+$stmt = sqlsrv_query( $conn, $tsql_callSP, $params);
+if( $stmt === false )
 {
      echo "Error in executing statement 3.\n";
      die( print_r( sqlsrv_errors(), true));
@@ -72,10 +65,10 @@ if( $stmt3 === false )
 /* Display the value of the output parameter $salesYTD. */
 echo "YTD sales for ".$lastName." are ". $salesYTD. ".";
 
+dropProc($conn, 'GetEmployeeSalesYTD', false);
+
 /*Free the statement and connection resources. */
-sqlsrv_free_stmt( $stmt1);
-sqlsrv_free_stmt( $stmt2);
-sqlsrv_free_stmt( $stmt3);
+sqlsrv_free_stmt( $stmt);
 sqlsrv_close( $conn);
 ?>
 --EXPECT--

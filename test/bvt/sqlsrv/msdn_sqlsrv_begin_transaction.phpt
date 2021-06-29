@@ -6,9 +6,6 @@ executes two queries as part of a transaction
 <?php
 require('connect.inc');
 
-// First, reset the RevisionNumber to make sure it won't overflow
-ResetRevisionNumber( $server, $databaseName, $uid, $pwd );
-
 $connectionInfo = array( "Database"=>"$databaseName", "UID"=>$uid, "PWD"=>$pwd);
 $conn = sqlsrv_connect( $server, $connectionInfo);
 if( $conn === false )
@@ -16,6 +13,9 @@ if( $conn === false )
      echo "Could not connect.\n";
      die( print_r( sqlsrv_errors(), true ));
 }
+
+$tsql = "DISABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader";
+$stmt = sqlsrv_query($conn, $tsql);
 
 /* Initiate transaction. */
 /* Exit script if transaction cannot be initiated. */
@@ -63,6 +63,9 @@ else
 /* Revert the changes */
 $d_sql = "DELETE FROM Sales.SalesOrderDetail WHERE SalesOrderID=43659 AND OrderQty=5 AND ProductID=709 AND SpecialOfferID=1 AND Unitprice=5.70";
 $stmt3 = sqlsrv_query($conn, $d_sql); 
+
+$tsql = "ENABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader";
+$stmt = sqlsrv_query($conn, $tsql);
 
 /* Free statement and connection resources. */
 sqlsrv_free_stmt( $stmt1);

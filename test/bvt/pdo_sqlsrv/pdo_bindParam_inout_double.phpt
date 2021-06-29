@@ -7,11 +7,7 @@ call a stored procedure and retrieve the errorNumber that is returned
 	require('connect.inc');
 	$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
 
-	// Drop the stored procedure if it already exists
-	$tsql_dropSP = "IF OBJECT_ID('sp_Test_Double', 'P') IS NOT NULL
-					DROP PROCEDURE sp_Test_Double";
-					
-	$stmt = $conn->query($tsql_dropSP);
+	dropProc($conn, 'sp_Test_Double');
 
 	// Create the stored procedure
 	$tsql_createSP = "CREATE PROCEDURE sp_Test_Double
@@ -39,10 +35,11 @@ call a stored procedure and retrieve the errorNumber that is returned
 	print("Error Number minus 2: $value\n\n");
 
 	print_r($result);
-	
+	dropProc($conn, 'sp_Test_Double', false);
+
 	//free the statement and connection
-	$stmt = null;
-	$conn = null;
+	unset($stmt);
+	unset($conn);
 ?>
 --EXPECT--
 Error Number: -1.111
