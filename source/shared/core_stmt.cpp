@@ -3101,7 +3101,7 @@ void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* pa
         column_size = num_rows;
         
         buffer = NULL;
-        buffer_length = NULL;
+        buffer_length = 0;
         strlen_or_indptr = (num_columns == 0)? SQL_DEFAULT_PARAM : SQL_DATA_AT_EXEC;
     } else {
         // This is one of the constituent columns of the table-valued parameter
