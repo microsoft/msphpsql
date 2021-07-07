@@ -5,7 +5,14 @@ Verification of capabilities for extending PDO.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php
+if (!extension_loaded("pdo_sqlsrv")) {
+    die("skip Extension not loaded");
+}
+if (PHP_VERSION_ID < 80000) {
+    die("skip Test designed for PHP 8.*");
+}
+?>
 --FILE--
 <?php
 include 'MsCommon.inc';
@@ -69,7 +76,7 @@ class ExPDO extends PDO
         echo __METHOD__ . "()\n";
     }
 
-    function query($sql, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
+    function query(string $sql, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
     {
         echo __METHOD__ . "()\n";
         $stmt = parent::query($sql);
@@ -93,10 +100,10 @@ class ExPDOStatement extends PDOStatement
         echo __METHOD__ . "()\n";
     }
 
-    function execute($params = array())
+    function execute(?array $params = null) : bool
     {
         echo __METHOD__ . "()\n";
-        parent::execute();      
+        return parent::execute();
     }
 }
 

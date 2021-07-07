@@ -9,8 +9,8 @@ PHPT_EXEC=true
 if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
 }
-if (PHP_VERSION_ID < 80000) {
-    die("skip Test designed for PHP 8.*");
+if (PHP_VERSION_ID >= 80000) {
+    die("skip Test designed for PHP 7.*");
 }
 ?>
 --FILE--
@@ -65,7 +65,7 @@ class ExPDO extends PDO
         $this->test2 = 22;
     }
     
-    function query(string $sql, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+    function query($sql, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
     {
         echo __METHOD__ . "()\n";
         $stmt = parent::prepare($sql, array(PDO::ATTR_STATEMENT_CLASS=>array('ExPDOStatement')));
