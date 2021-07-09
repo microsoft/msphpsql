@@ -3080,8 +3080,9 @@ void sqlsrv_param_tvp::release_data()
         tvp_columns[i]->release_data();
         sqlsrv_free(tvp_columns[i]);
     }
-
     sqlsrv_param::release_data();
+
+    tvp_columns.clear();
 }
 
 void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
