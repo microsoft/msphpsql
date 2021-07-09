@@ -9,8 +9,8 @@ PHPT_EXEC=true
 if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
 }
-if (PHP_VERSION_ID < 80000) {
-    die("skip Test designed for PHP 8.*");
+if (PHP_VERSION_ID >= 80000) {
+    die("skip Test designed for PHP 7.*");
 }
 ?>
 --FILE--
@@ -55,14 +55,14 @@ class ExPDO extends PDO
         return (call_user_func_array(array($this, 'parent::__construct'), $args));
     }
 
-    public function exec(string $args1) : int|false
+    public function exec($args1)
     {
         $this->protocol();
         $args = func_get_args();
         return (call_user_func_array(array($this, 'parent::exec'), $args));
     }
 
-    function query(string $sql, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+    public function query($statement, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
     {
         $this->protocol();
         $args = func_get_args();

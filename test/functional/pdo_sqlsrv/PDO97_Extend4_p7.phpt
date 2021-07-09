@@ -1,5 +1,5 @@
 --TEST--
-Extending PDO Test #2
+Extending PDO Test #3
 --DESCRIPTION--
 Verification of capabilities for extending PDO.
 --ENV--
@@ -9,8 +9,8 @@ PHPT_EXEC=true
 if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
 }
-if (PHP_VERSION_ID < 80000) {
-    die("skip Test designed for PHP 8.*");
+if (PHP_VERSION_ID >= 80000) {
+    die("skip Test designed for PHP 7.*");
 }
 ?>
 --FILE--
@@ -42,10 +42,15 @@ function Extend()
     }
     unset($stmt1);
 
+    echo "===QUERY===\n";
+
     // Retrieve test data via a direct query
     $stmt1 = $conn1->query("SELECT * FROM [$tableName]");
     var_dump(get_class($stmt1));
     var_dump(get_class($stmt1->dbh));
+
+    echo "===FOREACH===\n";
+
     foreach($stmt1 as $obj)
     {
         var_dump($obj);
@@ -68,7 +73,7 @@ class ExPDO extends PDO
         echo __METHOD__ . "()\n";
     }
 
-    function query(string $sql, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+    function query($sql, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
     {
         echo __METHOD__ . "()\n";
         $stmt = $this->prepare($sql, array(PDO::ATTR_STATEMENT_CLASS=>array('ExPDOStatement', array($this))));
@@ -91,6 +96,12 @@ class ExPDOStatement extends PDOStatement
     function __destruct()
     {
         echo __METHOD__ . "()\n";
+    }
+
+    function execute($params = array())
+    {
+        echo __METHOD__ . "()\n";
+        parent::execute();      
     }
 }
 
@@ -118,10 +129,13 @@ Repro();
 --EXPECT--
 string(5) "ExPDO"
 string(12) "PDOStatement"
+===QUERY===
 ExPDO::query()
 ExPDOStatement::__construct()
+ExPDOStatement::execute()
 string(14) "ExPDOStatement"
 string(5) "ExPDO"
+===FOREACH===
 array(3) {
   ["id"]=>
   string(2) "10"
