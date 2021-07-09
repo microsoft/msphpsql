@@ -1,5 +1,5 @@
 --TEST--
-Extending PDO Test #2
+Extending PDO Test #4
 --DESCRIPTION--
 Verification of capabilities for extending PDO.
 --ENV--
@@ -9,8 +9,8 @@ PHPT_EXEC=true
 if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
 }
-if (PHP_VERSION_ID < 80000) {
-    die("skip Test designed for PHP 8.*");
+if (PHP_VERSION_ID >= 80000) {
+    die("skip Test designed for PHP 7.*");
 }
 ?>
 --FILE--
@@ -42,10 +42,18 @@ function Extend()
     }
     unset($stmt1);
 
+    echo "===QUERY===\n";
+
     // Retrieve test data via a direct query
+    var_dump($conn1->getAttribute(PDO::ATTR_STATEMENT_CLASS));
+    $conn1->setAttribute(PDO::ATTR_STATEMENT_CLASS, array('ExPDOStatement', array($conn1)));
+    var_dump($conn1->getAttribute(PDO::ATTR_STATEMENT_CLASS));
     $stmt1 = $conn1->query("SELECT * FROM [$tableName]");
     var_dump(get_class($stmt1));
     var_dump(get_class($stmt1->dbh));
+
+    echo "===FOREACH===\n";
+
     foreach($stmt1 as $obj)
     {
         var_dump($obj);
@@ -68,12 +76,10 @@ class ExPDO extends PDO
         echo __METHOD__ . "()\n";
     }
 
-    function query(string $sql, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+    function query($sql, $fetch_style = PDO::FETCH_BOTH,...$fetch_mode_args)
     {
         echo __METHOD__ . "()\n";
-        $stmt = $this->prepare($sql, array(PDO::ATTR_STATEMENT_CLASS=>array('ExPDOStatement', array($this))));
-        $stmt->setFetchMode(PDO::FETCH_ASSOC);
-        $stmt->execute();
+        $stmt = parent::query($sql);
         return ($stmt);
     }
 }
@@ -85,12 +91,19 @@ class ExPDOStatement extends PDOStatement
     protected function __construct($dbh)
     {
         $this->dbh = $dbh;
+        $this->setFetchMode(PDO::FETCH_ASSOC);
         echo __METHOD__ . "()\n";
     }
 
     function __destruct()
     {
         echo __METHOD__ . "()\n";
+    }
+
+    function execute($params = array())
+    {
+        echo __METHOD__ . "()\n";
+        parent::execute();      
     }
 }
 
@@ -115,13 +128,29 @@ function Repro()
 Repro();
 
 ?>
---EXPECT--
+--EXPECTF--
 string(5) "ExPDO"
 string(12) "PDOStatement"
+===QUERY===
+array(1) {
+  [0]=>
+  string(12) "PDOStatement"
+}
+array(2) {
+  [0]=>
+  string(14) "ExPDOStatement"
+  [1]=>
+  array(1) {
+    [0]=>
+    object(ExPDO)#%d (0) {
+    }
+  }
+}
 ExPDO::query()
 ExPDOStatement::__construct()
 string(14) "ExPDOStatement"
 string(5) "ExPDO"
+===FOREACH===
 array(3) {
   ["id"]=>
   string(2) "10"
@@ -148,5 +177,5 @@ array(3) {
 }
 ===DONE===
 ExPDOStatement::__destruct()
-ExPDO::__destruct()
 Test "PDO - Extension" completed successfully.
+ExPDO::__destruct()
