@@ -2075,9 +2075,11 @@ void sqlsrv_param::release_data()
 {
     if (Z_TYPE(placeholder_z) == IS_STRING) {
         zend_string_release(Z_STR(placeholder_z));
-        ZVAL_UNDEF(&placeholder_z);
     }
 
+    ZVAL_UNDEF(&placeholder_z);
+
+    buffer = NULL;
     param_stream = NULL;
     num_bytes_read = 0;
     param_ptr_z = NULL;
@@ -3076,13 +3078,31 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string
 void sqlsrv_param_tvp::release_data()
 {
     // Clean up tvp_columns as well
-    for (int i = 0; i < tvp_columns.size(); i++) {
-        tvp_columns[i]->release_data();
-        sqlsrv_free(tvp_columns[i]);
-    }
-    sqlsrv_param::release_data();
+    //for (int i = 0; i < tvp_columns.size(); i++) {
+    //    sqlsrv_param_tvp *ptr = NULL;
+    //    ptr = tvp_columns[i];
+    //    if (ptr) {
+    //        ptr->release_data();
+    //        sqlsrv_free(ptr);
+    //    }
+    //    tvp_columns[i] = NULL;
+    //}
+    //tvp_columns.clear();
 
+    //sqlsrv_param::release_data();
+
+    // Clean up tvp_columns 
+    std::vector<sqlsrv_param_tvp*>::iterator it;
+    for (it = tvp_columns.begin(); it != tvp_columns.end(); ++it) {
+        sqlsrv_param_tvp* ptr = *it;
+        if (ptr) {
+            ptr->release_data();
+            sqlsrv_free(ptr);
+        }
+    }
     tvp_columns.clear();
+
+    sqlsrv_param::release_data();
 }
 
 void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z)
@@ -3316,7 +3336,7 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
     core::SQLSetStmtAttr(stmt, SQL_SOPT_SS_PARAM_FOCUS, reinterpret_cast<SQLPOINTER>(ordinal), SQL_IS_INTEGER);
 
     // Bind the TVP columns
-    SQLSRV_ENCODING stmt_encoding = (stmt->encoding() == SQLSRV_ENCODING_DEFAULT) ? stmt->conn->encoding() : stmt->encoding();
+    //SQLSRV_ENCODING stmt_encoding = (stmt->encoding() == SQLSRV_ENCODING_DEFAULT) ? stmt->conn->encoding() : stmt->encoding();
     HashTable* rows_ht = Z_ARRVAL_P(param_ptr_z);
     zval* row_z = zend_hash_index_find(rows_ht, 0);
 
