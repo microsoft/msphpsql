@@ -3062,7 +3062,7 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string
             param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(pos, column_encoding, data_type, col_size, dec_digits, this);
             param_ptr->num_rows = this->num_rows;   // Each column inherits the number of rows from the TVP
 
-            tvp_columns.push_back(param_ptr);
+            tvp_columns[pos] = param_ptr.get();
             param_ptr.transferred();
 
             pos++;
@@ -3077,24 +3077,10 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string
 
 void sqlsrv_param_tvp::release_data()
 {
-    // Clean up tvp_columns as well
-    //for (int i = 0; i < tvp_columns.size(); i++) {
-    //    sqlsrv_param_tvp *ptr = NULL;
-    //    ptr = tvp_columns[i];
-    //    if (ptr) {
-    //        ptr->release_data();
-    //        sqlsrv_free(ptr);
-    //    }
-    //    tvp_columns[i] = NULL;
-    //}
-    //tvp_columns.clear();
-
-    //sqlsrv_param::release_data();
-
-    // Clean up tvp_columns 
-    std::vector<sqlsrv_param_tvp*>::iterator it;
+    // Clean up tvp_columns
+    std::map<SQLUSMALLINT, sqlsrv_param_tvp*>::iterator it;
     for (it = tvp_columns.begin(); it != tvp_columns.end(); ++it) {
-        sqlsrv_param_tvp* ptr = *it;
+        sqlsrv_param_tvp* ptr = it->second;
         if (ptr) {
             ptr->release_data();
             sqlsrv_free(ptr);
