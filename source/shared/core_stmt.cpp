@@ -3322,7 +3322,6 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
     core::SQLSetStmtAttr(stmt, SQL_SOPT_SS_PARAM_FOCUS, reinterpret_cast<SQLPOINTER>(ordinal), SQL_IS_INTEGER);
 
     // Bind the TVP columns
-    //SQLSRV_ENCODING stmt_encoding = (stmt->encoding() == SQLSRV_ENCODING_DEFAULT) ? stmt->conn->encoding() : stmt->encoding();
     HashTable* rows_ht = Z_ARRVAL_P(param_ptr_z);
     zval* row_z = zend_hash_index_find(rows_ht, 0);
 
