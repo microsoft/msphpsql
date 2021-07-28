@@ -74,7 +74,7 @@ class ColumnMeta
 
         $unsupported = array("xml", "timestamp", "image", "ntext", "text", "sql_variant", "hierarchyid", "geography", "geometry", "alias");
 
-        if (stripos($this->options, "identity") !== false) {
+        if (!is_null($this->options) && stripos($this->options, "identity") !== false) {
             $this->encryptable = false;
         } elseif (in_array(strtolower($this->dataType), $unsupported)) {
             $this->encryptable = false;
@@ -180,7 +180,7 @@ class BindParamOption
                     $scal = $prec_scal[1];
                     $size = null;
                 }
-                if (strpos($size, "max") !== false) {
+                if (!is_null($size) && strpos($size, "max") !== false) {
                     $size = trim($size, "'");
                 }
             }
@@ -794,15 +794,14 @@ function getInsertData($rowIndex, $colIndex)
     if (empty($inputArray)) {
         fatalError("getInsertData: failed to retrieve data at row $rowIndex.\n");
     }
-    $count = 0;
-    foreach ($inputArray as $key => $value) {
-        if (++$count == $colIndex) {
-            if (is_array($value)) {
-                return $value[0];
-            } else {
-                return $value;
-            }
-            break;
+    
+    $key = getColName($colIndex);
+    if (!empty($key)) {
+        $value = $inputArray[$key];
+        if (is_array($value)) {
+            return $value[0];
+        } else {
+            return $value;
         }
     }
 
@@ -988,11 +987,7 @@ function isUnicode($k)
 
 function isUpdatable($k)
 {
-    switch ($k) {
-        case 27:    return (false); // timestamp
-        default:    break;
-    }
-    return (true);
+    return ($k != 27); // timestamp
 }
 
 function isLiteral($k)

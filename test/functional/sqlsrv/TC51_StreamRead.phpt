@@ -86,15 +86,24 @@ function verifyStream($stmt, $row, $colIndex)
 
 function checkData($col, $actual, $expected)
 {
+    if (is_null($expected)) {
+        return empty($actual);
+    }
+    
     $success = true;
-
+          
     if (isBinary($col)) {
-        $actual = bin2hex($actual);
-        if (strncasecmp($actual, $expected, strlen($expected)) != 0) {
+        if (is_null($actual)) {
             $success = false;
+        } else {
+            $actual = bin2hex($actual);
+            if (strncasecmp($actual, $expected, strlen($expected)) != 0) {
+                $success = false;
+            }
         }
     } else {
-        if (strncasecmp($actual, $expected, strlen($expected)) != 0) {
+        $len = (empty($expected)) ? 0 : strlen($expected);
+        if (strncasecmp($actual, $expected, $len) != 0) {
             if ($col != 19) {    // skip ntext
                 $pos = strpos($actual, $expected);
                 if (($pos === false) || ($pos > 1)) {
@@ -120,7 +129,8 @@ startTest($testName);
 if (isLocaleSupported()) {
     try {
         setUTF8Data(false);
-        streamRead(20, 1);
+        // streamRead(20, 1);
+        streamRead(14, 1);
     } catch (Exception $e) {
         echo $e->getMessage();
     }
@@ -132,7 +142,8 @@ startTest($testName);
 try {
     setUTF8Data(true);
     resetLocaleToDefault();
-    streamRead(20, 1);
+    // streamRead(20, 1);
+    streamRead(14, 1);
 } catch (Exception $e) {
     echo $e->getMessage();
 }
