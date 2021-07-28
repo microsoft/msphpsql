@@ -10,7 +10,7 @@ PHPT_EXEC=true
 <?php
 include 'MsCommon.inc';
 
-function ReadOnly()
+function testReadOnly()
 {
     include 'MsSetup.inc';
 
@@ -62,7 +62,7 @@ function Repro()
 
     try
     {
-        ReadOnly();
+        testReadOnly();
     }
     catch (Exception $e)
     {

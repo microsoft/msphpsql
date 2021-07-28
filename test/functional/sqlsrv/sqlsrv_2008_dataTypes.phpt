@@ -25,13 +25,14 @@ if (!$stmt) {
 }
 
 // insert new date time types as strings (this works now)
+$d1 = date_create();
 $insertSql = "INSERT INTO [$tableName] (id, [c1_date], [c2_time], [c3_datetimeoffset], [c4_datetime2]) VALUES (?, ?, ?, ?, ?)";
 $stmt = AE\executeQueryParams(
     $conn, 
     $insertSql,
     array(rand(0, 99999),
-               array(strftime('%Y-%m-%d'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATE),
-               array(strftime('%H:%M:%S'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_TIME),
+               array(date_format($d1, 'Y-m-d'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATE),
+               array(date_format($d1, 'H:i:s'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_TIME),
                array(date_format(date_create(), 'Y-m-d H:i:s.u P'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATETIMEOFFSET),
                array(date_format(date_create(), 'Y-m-d H:i:s.u'), SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('utf-8'), SQLSRV_SQLTYPE_DATETIME2)),
     false,
@@ -61,10 +62,11 @@ $stmt = AE\executeQueryParams(
 );
 
 // insert new date time types as strings with no type information (this works)
+$d2 = date_create();
 $stmt = AE\executeQueryParams(
     $conn,
     $insertSql,
-    array(rand(0, 99999), strftime('%Y-%m-%d'), strftime('%H:%M:%S'), date_format(date_create(), 'Y-m-d H:i:s.u P'), date_format(date_create(), 'Y-m-d H:i:s.u P')),
+    array(rand(0, 99999), date_format($d2, 'Y-m-d'), date_format($d2, 'H:i:s'), date_format(date_create(), 'Y-m-d H:i:s.u P'), date_format(date_create(), 'Y-m-d H:i:s.u P')),
     false,
     "Insert 4 failed"
 );

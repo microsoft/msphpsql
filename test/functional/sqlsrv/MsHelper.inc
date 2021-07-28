@@ -74,7 +74,7 @@ class ColumnMeta
 
         $unsupported = array("xml", "timestamp", "image", "ntext", "text", "sql_variant", "hierarchyid", "geography", "geometry", "alias");
 
-        if (stripos($this->options, "identity") !== false) {
+        if (!is_null($this->options) && stripos($this->options, "identity") !== false) {
             $this->encryptable = false;
         } elseif (in_array(strtolower($this->dataType), $unsupported)) {
             $this->encryptable = false;
@@ -180,7 +180,7 @@ class BindParamOption
                     $scal = $prec_scal[1];
                     $size = null;
                 }
-                if (strpos($size, "max") !== false) {
+                if (!is_null($size) && strpos($size, "max") !== false) {
                     $size = trim($size, "'");
                 }
             }
