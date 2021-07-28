@@ -60,7 +60,12 @@ function FetchAsStream_Binary()
 
 function CompareValues($actual, $expected)
 {
-    return (strncasecmp($actual, $expected, strlen($expected)) === 0);
+    if (is_null($expected)) {
+        return (is_null($actual));
+    }
+
+    $len = (empty($expected)) ? 0 : strlen($expected);
+    return (strncasecmp($actual, $expected, $len) === 0);
 }
 
 function GetQuery($tableName, $index)

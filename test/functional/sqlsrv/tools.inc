@@ -218,7 +218,7 @@ function compareDataStream($colType, $rowIndex, $colName, $stream, $expected)
 function compareBinaryData($actual, $expected)
 {
     // this function assumes $actual is a stream of hex
-    $len = strlen($expected);
+    $len = (empty($expected)) ? 0 : strlen($expected);
     $pos = 0;
 
     $matched = true;
