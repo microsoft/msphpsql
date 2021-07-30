@@ -57,12 +57,7 @@ echo "<br>";
 
 sqlsrv_free_stmt( $stmt);
 
-// RevisionNumber in SalesOrderHeader is subject to a trigger incrementing it whenever
-// changes are made to SalesOrderDetail. Since RevisonNumber is a tinyint, it can
-// overflow quickly if this test is often run. So disable the trigger.
-$tsql = "DISABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader";
-$stmt = sqlsrv_query($conn, $tsql);
-
+disableTrigger($conn);
 
 /* Prepare with string type in parameter. */
 $tsql = "UPDATE Sales.SalesOrderDetail
@@ -141,10 +136,6 @@ else
      die( print_r( sqlsrv_errors(), true));
 }
 echo sqlsrv_rows_affected( $stmt)." rows affected.<br>";
-
-// Re-enable the trigger
-$tsql = "ENABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader";
-$stmt = sqlsrv_query($conn, $tsql);
 
 /* Free the statement and connection resources. */
 sqlsrv_free_stmt( $stmt);

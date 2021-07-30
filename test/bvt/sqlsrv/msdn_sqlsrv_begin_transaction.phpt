@@ -14,8 +14,7 @@ if( $conn === false )
      die( print_r( sqlsrv_errors(), true ));
 }
 
-$tsql = "DISABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader";
-$stmt = sqlsrv_query($conn, $tsql);
+disableTrigger($conn);
 
 /* Initiate transaction. */
 /* Exit script if transaction cannot be initiated. */
@@ -63,9 +62,6 @@ else
 /* Revert the changes */
 $d_sql = "DELETE FROM Sales.SalesOrderDetail WHERE SalesOrderID=43659 AND OrderQty=5 AND ProductID=709 AND SpecialOfferID=1 AND Unitprice=5.70";
 $stmt3 = sqlsrv_query($conn, $d_sql); 
-
-$tsql = "ENABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader";
-$stmt = sqlsrv_query($conn, $tsql);
 
 /* Free statement and connection resources. */
 sqlsrv_free_stmt( $stmt1);
