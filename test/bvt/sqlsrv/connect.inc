@@ -16,4 +16,11 @@ function dropProc($conn, $procName)
     sqlsrv_query($conn, $tsql);
 }
 
+// RevisionNumber in SalesOrderHeader is subject to a trigger incrementing it whenever
+// changes are made to SalesOrderDetail. Since RevisionNumber is a tinyint, it can
+// overflow quickly if the BVT tests often run. Disable the trigger.
+function disableTrigger($conn)
+{   
+    sqlsrv_query($conn, 'DISABLE TRIGGER uSalesOrderHeader ON Sales.SalesOrderHeader');
+}
 ?>

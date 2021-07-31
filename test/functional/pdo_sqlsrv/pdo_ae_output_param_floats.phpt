@@ -1,7 +1,8 @@
 --TEST--
 Test for retrieving encrypted data of floats as output parameters
 --DESCRIPTION--
-Use PDOstatement::bindParam with all PDO::PARAM_ types
+Use PDOstatement::bindParam with all PDO::PARAM_ types. This test generates input float. For your reference:
+https://en.wikipedia.org/wiki/Single-precision_floating-point_format#Precision_limitations_on_integer_values
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -51,9 +52,9 @@ function testOutputFloats($fetchNumeric, $inout)
             $inputValues = array();
             // create random input values
             for ($i = 0; $i < 2; $i++) {
-                $mantissa = rand(1, 100000000);
-                $decimals = rand(1, 100000000);
-                $floatNum = $mantissa + $decimals / 10000000;
+                $mantissa = rand(1, 10000000);
+                $decimals = rand(1, 100);
+                $floatNum = $mantissa + $decimals / 10000;
                 if ($i > 0) {
                     // make the second input negative
                     $floatNum *= -1;

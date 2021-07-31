@@ -11,6 +11,16 @@ PHPT_EXEC=true
 require_once('MsSetup.inc');
 require_once('MsCommon_mid-refactor.inc');
 
+function verifyPhoto($image, $photo)
+{
+    // With PHP 8.1+, bindColumn() of binary fields will be resource
+    if (PHP_VERSION_ID >= 80100) {
+        return verifyBinaryStream($image, $photo);
+    } else {
+        return verifyBinaryData($image, $photo);
+    }
+}
+
 try {
     date_default_timezone_set('America/Los_Angeles');
 
@@ -84,8 +94,9 @@ try {
     $stmt = $conn->query($tsql);
     $index = 2;
     $stmt->bindColumn('Photo', $photo, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
+    
     if ($row = $stmt->fetch(PDO::FETCH_BOUND)) {
-        if (!verifyBinaryData($images[$index], $photo)) {
+        if (!verifyPhoto($images[$index], $photo)) {
             echo 'Image data corrupted for row '. ($index + 1) . PHP_EOL;
         }
     } else {
