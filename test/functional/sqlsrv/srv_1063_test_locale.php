@@ -112,7 +112,8 @@ if ($sep !== $info['thousands_sep']) {
 $n1 = 10000.98765;
 printMoney($n1, $info);
 
-printCal(new DateTime("12/25/2020"));
+$d = new DateTime("12/25/2020", new DateTimeZone('America/Los_Angeles'));
+printCal($d);
 
 $conn = sqlsrv_connect($server, $connectionOptions);
 if (!$conn) {
