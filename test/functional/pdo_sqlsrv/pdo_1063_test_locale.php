@@ -25,6 +25,22 @@ function printMoney($amt, $info)
     echo PHP_EOL;
 }
 
+function printCal($date)
+{
+    $loc = setlocale(LC_TIME, 0);
+    $fmt = datefmt_create(
+        $loc,
+        IntlDateFormatter::FULL,
+        IntlDateFormatter::FULL,
+        'America/Los_Angeles',
+        IntlDateFormatter::GREGORIAN
+    );
+    datefmt_set_pattern($fmt, 'cccc');
+    echo datefmt_format($fmt, $date) . PHP_EOL;
+    datefmt_set_pattern($fmt, 'MMMM');
+    echo datefmt_format($fmt, $date) . PHP_EOL;
+}
+
 require_once('MsSetup.inc');
 
 $setLocaleInfo = ($_SERVER['argv'][1]);
@@ -90,8 +106,7 @@ if ($sep !== $info['thousands_sep']) {
 $n1 = 10000.98765;
 printMoney($n1, $info);
 
-echo strftime("%A", strtotime("12/25/2020")) . PHP_EOL;
-echo strftime("%B", strtotime("12/25/2020")) . PHP_EOL;
+printCal(new DateTime("12/25/2020"));
 
 try {
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver", $uid, $pwd );
