@@ -103,10 +103,21 @@ function verifyStream($stmt, $row, $colIndex)
     }
 }
 
+function isValueNull($col, $value)
+{
+    if ($col == 20) {
+        // the binary field has fixed size - the stream contains 512 (the column size) of null characters
+        return (strlen($value) == getColSize($col) && empty(trim($value, "\0")));
+    } else {
+        // for other fields the value should be simply empty strings
+        return empty($value);
+    }
+}
+
 function checkData($col, $actual, $expected)
 {
     if (is_null($expected)) {
-        return empty($actual);
+        return isValueNull($col, $actual);
     }
     
     $success = true;
@@ -152,8 +163,7 @@ startTest($testName);
 if (isLocaleSupported()) {
     try {
         setUTF8Data(false);
-        // streamScroll(20, 1);
-        streamScroll(14, 1);
+        streamScroll(20, 1);
     } catch (Exception $e) {
         echo $e->getMessage();
     }
@@ -165,8 +175,7 @@ startTest($testName);
 try {
     setUTF8Data(true);
     resetLocaleToDefault();
-    // streamScroll(20, 1);
-    streamScroll(14, 1);
+    streamScroll(20, 1);
 } catch (Exception $e) {
     echo $e->getMessage();
 }

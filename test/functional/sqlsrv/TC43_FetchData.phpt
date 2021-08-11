@@ -23,7 +23,7 @@ function fetchFields()
     AE\createTestTable($conn1, $tableName);
 
     $startRow = 1;
-    $noRows = 14; // 20;
+    $noRows = 20;
     AE\insertTestRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
@@ -49,8 +49,7 @@ function fetchFields()
             if (isUpdatable($col)) {
                 // should check data even if $fld is null
                 $data = AE\getInsertData($startRow + $i, $col);
-                if (!checkData($col, $fld, $data, isBinary($col))) {
-                    // echo("\nData error\nExpected:\n$data\nActual:\n$fld\n");
+                if (!checkData($col, $fld, $data)) {
                     echo("\nData error\nExpected:\n");
                     var_dump($data);
                     echo("\nActual:\n");
@@ -70,13 +69,28 @@ function fetchFields()
     sqlsrv_close($conn1);
 }
 
-function checkData($col, $actual, $expected, $isBinary)
+function isValueNull($col, $value)
+{
+    if ($col == 20) {
+        // the binary field has fixed size
+        // a null value will be represented as a string of zeroes, like "000000...00"
+        $expected = str_repeat('00', getColSize($col));
+        return ($value === $expected);
+    } elseif (isBinary($col)) {
+        // may be varbinary(512), varbinary(max) or image
+        return empty($value);
+    } else {
+        return is_null($value);
+    }
+}
+
+function checkData($col, $actual, $expected)
 {
     $success = true;
     
     // First check for nulls
     if (is_null($expected)) {
-        $success = ($isBinary) ? empty($actual) : is_null($actual);
+        $success = isValueNull($col, $actual);
         if (!$success) {
             trace("\nData error\nExpected null but Actual:\n$actual\n");
         }
