@@ -129,8 +129,7 @@ startTest($testName);
 if (isLocaleSupported()) {
     try {
         setUTF8Data(false);
-        // streamRead(20, 1);
-        streamRead(14, 1);
+        streamRead(20, 1);
     } catch (Exception $e) {
         echo $e->getMessage();
     }
@@ -142,8 +141,7 @@ startTest($testName);
 try {
     setUTF8Data(true);
     resetLocaleToDefault();
-    // streamRead(20, 1);
-    streamRead(14, 1);
+    streamRead(20, 1);
 } catch (Exception $e) {
     echo $e->getMessage();
 }

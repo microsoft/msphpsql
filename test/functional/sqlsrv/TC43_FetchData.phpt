@@ -23,7 +23,7 @@ function fetchFields()
     AE\createTestTable($conn1, $tableName);
 
     $startRow = 1;
-    $noRows = 14; // 20;
+    $noRows = 20;
     AE\insertTestRowsByRange($conn1, $tableName, $startRow, $startRow + $noRows - 1);
 
     $query = "SELECT * FROM [$tableName] ORDER BY c27_timestamp";
@@ -50,7 +50,6 @@ function fetchFields()
                 // should check data even if $fld is null
                 $data = AE\getInsertData($startRow + $i, $col);
                 if (!checkData($col, $fld, $data, isBinary($col))) {
-                    // echo("\nData error\nExpected:\n$data\nActual:\n$fld\n");
                     echo("\nData error\nExpected:\n");
                     var_dump($data);
                     echo("\nActual:\n");
@@ -76,7 +75,7 @@ function checkData($col, $actual, $expected, $isBinary)
     
     // First check for nulls
     if (is_null($expected)) {
-        $success = ($isBinary) ? empty($actual) : is_null($actual);
+        $success = is_null($actual);
         if (!$success) {
             trace("\nData error\nExpected null but Actual:\n$actual\n");
         }
