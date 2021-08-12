@@ -513,10 +513,14 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
     NULL,                               // check liveness not implemented
     pdo_sqlsrv_get_driver_methods,
     NULL,                               // request shutdown not implemented
+#if PHP_VERSION_ID < 80100
+    NULL                                // in transaction not implemented
+};
+#else
     NULL,                               // in transaction not implemented
     NULL                                // get_gc not implemented
 };
-
+#endif
 
 // log a function entry point
 #define PDO_LOG_DBH_ENTRY \
