@@ -103,21 +103,10 @@ function verifyStream($stmt, $row, $colIndex)
     }
 }
 
-function isValueNull($col, $value)
-{
-    if ($col == 20) {
-        // the binary field has fixed size - the stream contains 512 (the column size) of null characters
-        return (strlen($value) == getColSize($col) && empty(trim($value, "\0")));
-    } else {
-        // for other fields the value should be simply empty strings
-        return empty($value);
-    }
-}
-
 function checkData($col, $actual, $expected)
 {
     if (is_null($expected)) {
-        return isValueNull($col, $actual);
+        return empty($actual);
     }
     
     $success = true;

@@ -740,7 +740,11 @@ function insertTestRow($conn, $tbname, $index)
                 $value = $value[0];
                 // this might be an input to a decimal, a numeric or a binary field
                 if (isBinary($col)) {
-                    $value = "0x" . $value;    // annotate the input string as a hex string
+                    if (!is_null($value)) {
+                        $value = "0x" . $value;    // annotate the input string as a hex string
+                    } else {
+                        $value = null;
+                    }
                 }
             }
             if (is_null($value)) {

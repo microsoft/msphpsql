@@ -49,7 +49,7 @@ function fetchFields()
             if (isUpdatable($col)) {
                 // should check data even if $fld is null
                 $data = AE\getInsertData($startRow + $i, $col);
-                if (!checkData($col, $fld, $data)) {
+                if (!checkData($col, $fld, $data, isBinary($col))) {
                     echo("\nData error\nExpected:\n");
                     var_dump($data);
                     echo("\nActual:\n");
@@ -69,28 +69,13 @@ function fetchFields()
     sqlsrv_close($conn1);
 }
 
-function isValueNull($col, $value)
-{
-    if ($col == 20) {
-        // the binary field has fixed size
-        // a null value will be represented as a string of zeroes, like "000000...00"
-        $expected = str_repeat('00', getColSize($col));
-        return ($value === $expected);
-    } elseif (isBinary($col)) {
-        // may be varbinary(512), varbinary(max) or image
-        return empty($value);
-    } else {
-        return is_null($value);
-    }
-}
-
-function checkData($col, $actual, $expected)
+function checkData($col, $actual, $expected, $isBinary)
 {
     $success = true;
     
     // First check for nulls
     if (is_null($expected)) {
-        $success = isValueNull($col, $actual);
+        $success = is_null($actual);
         if (!$success) {
             trace("\nData error\nExpected null but Actual:\n$actual\n");
         }
