@@ -122,7 +122,7 @@ struct int_conn_str_func {
 
         char temp_str[MAX_CONN_VALSTRING_LEN];
 
-        snprintf(temp_str, MAX_CONN_VALSTRING_LEN, "%s={%d};", option->odbc_name, Z_LVAL_P(value));
+        snprintf(temp_str, MAX_CONN_VALSTRING_LEN, "%s={%ld};", option->odbc_name, Z_LVAL_P(value));
         conn_str += temp_str;
     }
 };
