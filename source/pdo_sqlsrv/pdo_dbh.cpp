@@ -510,12 +510,17 @@ struct pdo_dbh_methods pdo_sqlsrv_dbh_methods = {
     pdo_sqlsrv_dbh_last_id,
     pdo_sqlsrv_dbh_return_error,
     pdo_sqlsrv_dbh_get_attr,
-    NULL,                           // check liveness not implemented
+    NULL,                               // check liveness not implemented
     pdo_sqlsrv_get_driver_methods,
-    NULL,                            // request shutdown not implemented
-    NULL                             // in transaction not implemented
+    NULL,                               // request shutdown not implemented
+#if PHP_VERSION_ID < 80100
+    NULL                                // in transaction not implemented
 };
-
+#else
+    NULL,                               // in transaction not implemented
+    NULL                                // get_gc not implemented
+};
+#endif
 
 // log a function entry point
 #define PDO_LOG_DBH_ENTRY \
@@ -1723,7 +1728,8 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
             // On failure, a negative number is returned
             // The generated string has a length of at most len - 1, so 
             // len is 3 (2 hex digits + 1)
-            int n = snprintf((char*)(*quoted + pos), 3, "%02X", unquoted[index]);
+            // Requires "& 0x000000FF", or snprintf will translate "0x90" to "0xFFFFFF90"
+            int n = snprintf((char*)(*quoted + pos), 3, "%02X", unquoted[index] & 0x000000FF);
             if (n < 0) {
                 // Something went wrong, simply return 0 (failure)
                 return 0;
