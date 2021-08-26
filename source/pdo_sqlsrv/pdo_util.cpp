@@ -383,7 +383,7 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,
-        { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.", -78, false }
+        { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server (or above) %1!s!.", -78, true }
     },
     {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
