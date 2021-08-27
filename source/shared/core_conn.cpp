@@ -48,9 +48,6 @@ const int INFO_BUFFER_LEN = 256;
 // length for name of keystore used in CEKeyStoreData
 const int MAX_CE_NAME_LEN = 260;
 
-// processor architectures
-//const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64", "arm64" };
-
 // ODBC driver names.
 // the order of this list should match the order of DRIVER_VERSION enum
 std::vector<std::string> CONNECTION_STRING_DRIVER_NAME{ "Driver={ODBC Driver 17 for SQL Server};", "Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};" };
