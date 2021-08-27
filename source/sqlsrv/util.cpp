@@ -379,7 +379,7 @@ ss_error SS_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,
-        { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server (or above hello) %1!s!.", -105, true }
+        { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server (or above) for %1!s!.", -105, true }
     },
     {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
