@@ -48,9 +48,6 @@ const int INFO_BUFFER_LEN = 256;
 // length for name of keystore used in CEKeyStoreData
 const int MAX_CE_NAME_LEN = 260;
 
-// processor architectures
-const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
-
 // ODBC driver names.
 // the order of this list should match the order of DRIVER_VERSION enum
 std::vector<std::string> CONNECTION_STRING_DRIVER_NAME{ "Driver={ODBC Driver 17 for SQL Server};", "Driver={ODBC Driver 13 for SQL Server};", "Driver={ODBC Driver 11 for SQL Server};" };
@@ -917,42 +914,28 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 // and return the string of the processor name.
 const char* get_processor_arch( void )
 {
-#ifndef _WIN32
-   struct utsname sys_info;
-    if ( uname(&sys_info) == -1 )
-    {
-        DIE( "Error retrieving system info" );
-    }
-    if( strcmp(sys_info.machine, "x86") == 0 ) {
-        return PROCESSOR_ARCH[0];
-    } else if ( strcmp(sys_info.machine, "x86_64") == 0) {
-        return PROCESSOR_ARCH[1];
-    } else if ( strcmp(sys_info.machine, "ia64") == 0 ) {
-        return PROCESSOR_ARCH[2];
-    } else {
-        DIE( "Unknown processor architecture." );
-    }
-        return NULL;
-#else
+    // processor architectures
+    const char* PROCESSOR_ARCH[] = {"x86", "x64", "arm64"};
+#ifdef _WIN32
     SYSTEM_INFO sys_info;
-    GetSystemInfo( &sys_info);
-    switch( sys_info.wProcessorArchitecture ) {
-
-        case PROCESSOR_ARCHITECTURE_INTEL:
-           return PROCESSOR_ARCH[0];
-
-        case PROCESSOR_ARCHITECTURE_AMD64:
-            return PROCESSOR_ARCH[1];
-
-        case PROCESSOR_ARCHITECTURE_IA64:
-            return PROCESSOR_ARCH[2];
-
-        default:
-            DIE( "Unknown Windows processor architecture." );
-            return NULL;
+    GetSystemInfo(&sys_info);
+    switch (sys_info.wProcessorArchitecture) {
+    case PROCESSOR_ARCHITECTURE_INTEL:
+        return PROCESSOR_ARCH[0];
+    case PROCESSOR_ARCHITECTURE_AMD64:
+        return PROCESSOR_ARCH[1];
+    default:
+        DIE("Unsupported Windows processor architecture.");
+        return NULL;
     }
+#elif defined(__arm64__)
+    return PROCESSOR_ARCH[2];
+#elif defined(__x86_64__)
+    return PROCESSOR_ARCH[1];
+#else
+    DIE("Unsupported processor architecture.");
     return NULL;
-#endif // !_WIN32
+#endif // _WIN32
 }
 
 // some features require a server of a certain version or later
