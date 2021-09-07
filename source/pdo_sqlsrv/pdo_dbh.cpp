@@ -1757,7 +1757,8 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
             // On failure, a negative number is returned
             // The generated string has a length of at most len - 1, so 
             // len is 3 (2 hex digits + 1)
-            int n = snprintf((char*)(p + pos), 3, "%02X", unquoted_str[index]);
+            // Requires "& 0x000000FF", or snprintf will translate "0x90" to "0xFFFFFF90"
+            int n = snprintf((char*)(p + pos), 3, "%02X", unquoted_str[index] & 0x000000FF);
             if (n < 0) {
                 // Something went wrong, simply return NULL (failure)
                 return NULL;
