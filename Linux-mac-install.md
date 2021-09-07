@@ -1,5 +1,5 @@
 # Linux and macOS Installation Tutorial for the Microsoft Drivers for PHP for SQL Server
-The following instructions assume a clean environment and show how to install PHP 8.0, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu 16.04, 18.04, and 20.04, RedHat 7 and 8, Debian 9 and 10, Suse 12 and 15, Alpine 3.11 and 3.12, and macOS 10.14, 10.15, and 11.0. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
+The following instructions assume a clean environment and show how to install PHP 8.0, the Microsoft ODBC driver, the Apache web server, and the Microsoft Drivers for PHP for SQL Server on Ubuntu, RedHat, Debian, Suse, Alpine, and macOS. These instructions advise installing the drivers using PECL, but you can also download the prebuilt binaries from the [Microsoft Drivers for PHP for SQL Server](https://github.com/Microsoft/msphpsql/releases) Github project page and install them following the instructions in [Loading the Microsoft Drivers for PHP for SQL Server](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver). For an explanation of extension loading and why we do not add the extensions to php.ini, see the section on [loading the drivers](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver#loading-the-driver-at-php-startup).
 
 The following instructions install PHP 8.0 by default using `pecl install`, if the PHP 8.0 packages are available. You may need to run `pecl channel-update pecl.php.net` first. Note that some supported Linux distros default to PHP 7.1 or earlier, which is not supported for the latest version of the PHP drivers for SQL Server -- please see the notes at the beginning of each section to install PHP 7.4 or 7.3 instead.
 
@@ -9,15 +9,15 @@ While these instructions contain commands to install both SQLSRV and PDO_SQLSRV 
 
 ## Contents of this page
 
-- [Installing the drivers on Ubuntu 16.04, 18.04, and 20.04](#installing-the-drivers-on-ubuntu-1604-1804-and-2004)
+- [Installing the drivers on Ubuntu 18.04, 20.04 and 21.04](#installing-the-drivers-on-ubuntu-1804-2004-and-2104)
 - [Installing the drivers with PHP-FPM on Ubuntu](#installing-the-drivers-with-php-fpm-on-ubuntu)
 - [Installing the drivers on Red Hat 7 and 8](#installing-the-drivers-on-red-hat-7-and-8)
 - [Installing the drivers on Debian 9 and 10](#installing-the-drivers-on-debian-9-and-10)
 - [Installing the drivers on Suse 12 and 15](#installing-the-drivers-on-suse-12-and-15)
-- [Installing the drivers on Alpine 3.11 and 3.12](#installing-the-drivers-on-alpine-311-and-312)
+- [Installing the drivers on Alpine 3.11, 3.12 and 3.13](#installing-the-drivers-on-alpine-311-312-and-313)
 - [Installing the drivers on macOS Mojave, Catalina and Big Sur](#installing-the-drivers-on-macos-mojave-catalina-and-big-sur)
 
-## Installing the drivers on Ubuntu 16.04, 18.04, and 20.04
+## Installing the drivers on Ubuntu 18.04, 20.04 and 21.04
 
 > [!NOTE]
 > To install PHP 7.4 or 7.3, replace 8.0 with 7.4 or 7.3 in the following commands.
@@ -292,7 +292,7 @@ sudo systemctl restart apache2
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on Alpine 3.11 and 3.12
+## Installing the drivers on Alpine 3.11, 3.12 and 3.13
 
 > [!NOTE]
 > The default version of PHP is 7.3. PHP 7.4 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
@@ -334,10 +334,13 @@ To test your installation, see [Testing your installation](#testing-your-install
 
 ## Installing the drivers on macOS Mojave, Catalina and Big Sur
 
-If you do not already have it, install brew as follows:
+If you do not already have it, install Homebrew as follows:
 ```bash
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
+
+> [!NOTE]
+> If using Apple M1 ARM64 hardware, please install Homebrew and PHP directly without using the emulator Rosetta 2.
 
 > [!NOTE]
 > To install PHP 7.4 or 7.3, replace php@8.0 with php@7.4 or php@7.3 respectively in the following commands.
@@ -358,6 +361,9 @@ brew link --force --overwrite php@8.0
 Install the ODBC driver for macOS by following the instructions on the [Install the Microsoft ODBC driver for SQL Server (macOS)](
 https://docs.microsoft.com/sql/connect/odbc/linux-mac/install-microsoft-odbc-driver-sql-server-macos?view=sql-server-ver15). 
 
+> [!NOTE]
+> If using Apple M1 ARM64 hardware, please install Microsoft ODBC driver 17.8+ directly without using the emulator Rosetta 2.
+
 In addition, you may need to install the GNU make tools:
 ```bash
 brew install autoconf automake libtool
@@ -368,7 +374,18 @@ brew install autoconf automake libtool
 sudo pecl install sqlsrv
 sudo pecl install pdo_sqlsrv
 ```
+
+If using Apple M1 ARM64, do the following instead:
+```bash
+sudo CXXFLAGS="-I/opt/homebrew/opt/unixodbc/include/" LDFLAGS="-L/opt/homebrew/lib/" pecl install sqlsrv
+sudo CXXFLAGS="-I/opt/homebrew/opt/unixodbc/include/" LDFLAGS="-L/opt/homebrew/lib/" pecl install pdo_sqlsrv
+```
+
 ### Step 4. Install Apache and configure driver loading
+
+> [!NOTE]
+> The latest macOS 11.0 Big Sur comes with Apache 2.4 pre-installed, but Apple has also removed some required scripts. The solution is to install Apache 2.4 via Homebrew and then configure it, but this is out of scope for this installation guide, so please check Apache or Homebrew for detailed instructions.
+
 ```bash
 brew install apache2
 ```
