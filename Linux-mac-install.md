@@ -9,20 +9,20 @@ While these instructions contain commands to install both SQLSRV and PDO_SQLSRV 
 
 ## Contents of this page
 
-- [Installing the drivers on Ubuntu 18.04, 20.04 and 21.04](#installing-the-drivers-on-ubuntu-1804-2004-and-2104)
+- [Installing the drivers on Ubuntu](#installing-the-drivers-on-ubuntu)
 - [Installing the drivers with PHP-FPM on Ubuntu](#installing-the-drivers-with-php-fpm-on-ubuntu)
-- [Installing the drivers on Red Hat 7 and 8](#installing-the-drivers-on-red-hat-7-and-8)
-- [Installing the drivers on Debian 9 and 10](#installing-the-drivers-on-debian-9-and-10)
-- [Installing the drivers on Suse 12 and 15](#installing-the-drivers-on-suse-12-and-15)
-- [Installing the drivers on Alpine 3.11, 3.12 and 3.13](#installing-the-drivers-on-alpine-311-312-and-313)
-- [Installing the drivers on macOS Mojave, Catalina and Big Sur](#installing-the-drivers-on-macos-mojave-catalina-and-big-sur)
+- [Installing the drivers on Red Hat](#installing-the-drivers-on-red-hat)
+- [Installing the drivers on Debian](#installing-the-drivers-on-debian)
+- [Installing the drivers on Suse](#installing-the-drivers-on-suse)
+- [Installing the drivers on Alpine](#installing-the-drivers-on-alpine)
+- [Installing the drivers on macOS](#installing-the-drivers-on-macos)
 
-## Installing the drivers on Ubuntu 18.04, 20.04 and 21.04
+## Installing the drivers on Ubuntu
 
 > [!NOTE]
 > To install PHP 7.4 or 7.3, replace 8.0 with 7.4 or 7.3 in the following commands.
 
-### Step 1. Install PHP
+### Step 1. Install PHP on Ubuntu 18.04, 20.04 and 21.04
 ```bash
 sudo su
 add-apt-repository ppa:ondrej/php -y
@@ -127,9 +127,9 @@ sudo systemctl restart nginx.service
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on Red Hat 7 and 8
+## Installing the drivers on Red Hat
 
-### Step 1. Install PHP
+### Step 1. Install PHP on Red Hat 7 and 8
 
 To install PHP on Red Hat 7, run the following:
 > [!NOTE]
@@ -193,12 +193,12 @@ sudo apachectl restart
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on Debian 9 and 10
+## Installing the drivers on Debian
 
 > [!NOTE]
 > To install PHP 7.4 or 7.3, replace 8.0 in the following commands with 7.4 or 7.3.
 
-### Step 1. Install PHP
+### Step 1. Install PHP on Debian 9 and 10
 ```bash
 sudo su
 apt-get install curl apt-transport-https
@@ -245,7 +245,7 @@ sudo service apache2 restart
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on Suse 12 and 15
+## Installing the drivers on Suse
 
 > [!NOTE]
 > In the following instructions, replace `<SuseVersion>` with your version of Suse - if you are using Suse Enterprise Linux 15, it will be SLE_15_SP1 or SLE_15_SP2. For Suse 12, use SLE_12_SP4 (or above if applicable). Not all versions of PHP are available for all versions of Suse Linux - please refer to `http://download.opensuse.org/repositories/devel:/languages:/php` to see which versions of Suse have the default version PHP available, or check `http://download.opensuse.org/repositories/devel:/languages:/php:/` to see which other versions of PHP are available for which versions of Suse.
@@ -255,7 +255,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 > To install PHP 7.3, replace the repository URL below with the following URL:
       `https://download.opensuse.org/repositories/devel:/languages:/php:/php73/<SuseVersion>/devel:languages:php:php73.repo`.
 
-### Step 1. Install PHP
+### Step 1. Install PHP on Suse 12 and 15
 ```bash
 sudo su
 zypper -n ar -f https://download.opensuse.org/repositories/devel:languages:php/<SuseVersion>/devel:languages:php.repo
@@ -292,12 +292,12 @@ sudo systemctl restart apache2
 ```
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
-## Installing the drivers on Alpine 3.11, 3.12 and 3.13
+## Installing the drivers on Alpine
 
 > [!NOTE]
 > The default version of PHP is 7.3. PHP 7.4 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
 
-### Step 1. Install PHP
+### Step 1. Install PHP on Alpine 3.11, 3.12 and 3.13
 PHP packages for Alpine can be found in the `edge/community` repository. Please check [Enable Community Repository](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository) on their WIKI page. Add the following line to `/etc/apk/repositories`, replacing `<mirror>` with the URL of an Alpine repository mirror:
 ```bash
 http://<mirror>/alpine/edge/community
@@ -332,7 +332,7 @@ sudo rc-service apache2 restart
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
 
-## Installing the drivers on macOS Mojave, Catalina and Big Sur
+## Installing the drivers on macOS
 
 If you do not already have it, install Homebrew as follows:
 ```bash
@@ -345,7 +345,7 @@ If you do not already have it, install Homebrew as follows:
 > [!NOTE]
 > To install PHP 7.4 or 7.3, replace php@8.0 with php@7.4 or php@7.3 respectively in the following commands.
 
-### Step 1. Install PHP
+### Step 1. Install PHP on macOS Mojave, Catalina and Big Sur
 
 ```bash
 brew tap
