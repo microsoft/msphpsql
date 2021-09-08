@@ -8,9 +8,9 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Added
 - Support for PHP 8.1 RC 1
-- Support for Ubuntu 21.04
+- Support for Ubuntu 21.04 and Alpine 3.13
 - Support for Apple M1 ARM64 hardware (requires [MS ODBC Driver 17.8+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/install-microsoft-odbc-driver-sql-server-macos?view=sql-server-ver15)
-- Feature Request [#795](https://github.com/microsoft/msphpsql/issues/795) - adding support for Table-valued parameters
+- Feature Request [#795](https://github.com/microsoft/msphpsql/issues/795) - adding support for [Table-valued parameters](https://github.com/Microsoft/msphpsql/wiki/Features#tvp)
 
 ### Removed
 - Support for Ubuntu 16.04
@@ -20,9 +20,8 @@ Updated PECL release packages. Here is the list of updates:
 - Pull request [#1251](https://github.com/microsoft/msphpsql/pull/1251) - simplified implementations of last insert id and quote
 - Issue [#1258](https://github.com/microsoft/msphpsql/issues/1258) - updated pdo_sqlsrv_get_driver_methods as per documentation - pull request [#1259](https://github.com/microsoft/msphpsql/pull/1259)
 - Pull request [#1260](https://github.com/microsoft/msphpsql/pull/1260) - cleaned up redundant code
-- Pull request [#1262](https://github.com/microsoft/msphpsql/pull/1262) - simplified parse_param_array in sqlsrv
-- Pull request [#1262](https://github.com/microsoft/msphpsql/pull/1262) - simplified parse_param_array in sqlsrv
 - Issue [#1261](https://github.com/microsoft/msphpsql/issues/1261) - simplified get_field_as_string and made it more robust - pull request [#1265](https://github.com/microsoft/msphpsql/pull/1265)
+- Pull request [#1262](https://github.com/microsoft/msphpsql/pull/1262) - simplified parse_param_array in sqlsrv
 - Pull request [#1267](https://github.com/microsoft/msphpsql/pull/1267) - replaced the obsolete MACRO ZVAL_NEW_ARR with array_init
 - Pull request [#1275](https://github.com/microsoft/msphpsql/pull/1275) - fixed warning compiling core_stmt.cpp by mlocati
 - Pull request [#1288](https://github.com/microsoft/msphpsql/pull/1288) - applied mask to pdo quote for binary inputs
