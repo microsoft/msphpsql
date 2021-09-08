@@ -30,7 +30,7 @@ environment:
         SQL_INSTANCE: SQL2019
         PHP_VC: vs16
         PHP_MAJOR_VER: 8.0
-        PHP_MINOR_VER: 0RC2
+        PHP_MINOR_VER: latest
         PHP_EXE_PATH: Release
         THREAD: nts
         platform: x86
@@ -79,7 +79,7 @@ install:
         }
     - echo Downloading MSODBCSQL 17
     # AppVeyor build works are x64 VMs and 32-bit ODBC driver cannot be installed on it
-    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/6/b/3/6b3dd05c-678c-4e6b-b503-1d66e16ef23d/en-US/17.6.1.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
+    - ps: (new-object net.webclient).DownloadFile('https://download.microsoft.com/download/a/e/b/aeb7d4ff-ca20-45db-86b8-8a8f774ce97b/en-US/17.8.1.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
     - cmd /c start /wait msiexec /i "c:\projects\msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
     - echo Checking the version of MSODBCSQL
     - reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
@@ -116,10 +116,13 @@ test_script:
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %SQLSRV_DBNAME%
     - Echo setup test database for PDO_SQLSRV tests - %PDOSQLSRV_DBNAME%
     - python %APPVEYOR_BUILD_FOLDER%\test\functional\setup\setup_dbs.py -dbname %PDOSQLSRV_DBNAME%
+    # for code coverage - exclude the following files:
+    #   core_init.cpp, which primarily consists module initialization and shutdown
+    #   core_stream.cpp for pdo_sqlsrv because it is only used by sqlsrv driver
     - ps: >-
         If ($env:BUILD_PLATFORM -Match "x86") {
             Write-Host "Running phpt tests via OpenCppCoverage..."
-            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --excluded_sources ${env:PHP_SRC_DIR}\pdo_sqlsrv\shared\core_stream.cpp --export_type=cobertura:c:\projects\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P --no-color ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
+            OpenCppCoverage.exe --sources ${env:PHP_SRC_DIR}\*sqlsrv --modules ${env:PHP_EXE_PATH}\php*sqlsrv.dll --excluded_sources core_init.cpp --excluded_sources ${env:PHP_SRC_DIR}\pdo_sqlsrv\shared\core_stream.cpp --export_type=cobertura:c:\projects\coverage.xml --quiet --cover_children --continue_after_cpp_exception --optimized_build -- .\php.exe run-tests.php -P --no-color ${env:APPVEYOR_BUILD_FOLDER}\test\functional\ | out-file -filePath ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -encoding UTF8;
             Write-Host "Showing the last 25 lines of the log file..."
             Get-Content ${env:APPVEYOR_BUILD_FOLDER}\test\functional\tests.log -Tail 25;
             ls *.xml

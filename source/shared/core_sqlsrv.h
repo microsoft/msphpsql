@@ -6,7 +6,7 @@
 //
 // Contents: Core routines and constants shared by the Microsoft Drivers for PHP for SQL Server
 //
-// Microsoft Drivers 5.9 for PHP for SQL Server
+// Microsoft Drivers 5.10 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -207,6 +207,7 @@ enum SQLSRV_PHPTYPE {
     SQLSRV_PHPTYPE_STRING,
     SQLSRV_PHPTYPE_DATETIME,
     SQLSRV_PHPTYPE_STREAM,
+    SQLSRV_PHPTYPE_TABLE,
     MAX_SQLSRV_PHPTYPE,      // highest value for a php type
     SQLSRV_PHPTYPE_INVALID = MAX_SQLSRV_PHPTYPE     // used to see if a type is invalid
 };
@@ -1394,51 +1395,185 @@ struct param_meta_data
     SQLULEN get_column_size() { return column_size; }
 };
 
-// holds the output parameter information.  Strings also need the encoding and other information for
-// after processing.  Only integer, float, and strings are allowable output parameters.
-struct sqlsrv_output_param {
-
-    zval* param_z;
+// *** parameter struct used for SQLBindParameter ***
+struct sqlsrv_param
+{
+    SQLUSMALLINT    param_pos;      // 0-based - the position in the parameters of the statement
+    SQLSMALLINT     direction;
+    SQLSMALLINT     c_data_type;
+    SQLSMALLINT     sql_data_type;
+    SQLULEN         column_size;
+    SQLSMALLINT     decimal_digits;
+    SQLPOINTER      buffer;
+    SQLLEN          buffer_length;
+    SQLLEN          strlen_or_indptr;
+    int             param_php_type;
     SQLSRV_ENCODING encoding;
-    SQLUSMALLINT param_num;             // used to index into the ind_or_len of the statement
-    SQLLEN original_buffer_len;         // used to make sure the returned length didn't overflow the buffer
-    SQLSRV_PHPTYPE php_out_type;        // used to convert output param if necessary
-    bool is_bool;
-    param_meta_data meta_data;          // parameter meta data
+    bool            was_null;       // false by default - the original parameter was a NULL zval
+    zval            placeholder_z;  // A temp zval for binding any input parameter value, including simple data types, wide input string (UTF-16 buffer), the datetime strings, etc.
+    zval*           param_ptr_z;    // NULL by default - points to the original parameter or its reference
+    std::size_t     num_bytes_read; // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
+    php_stream*     param_stream;   // NULL by default - used to send stream data from an input parameter to the server
+    
+    sqlsrv_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
+        c_data_type(0), buffer(NULL), buffer_length(0), strlen_or_indptr(0), param_pos(param_num), direction(dir), encoding(enc), sql_data_type(sql_type),
+        column_size(col_size), decimal_digits(dec_digits), param_php_type(0), was_null(false), param_ptr_z(NULL), num_bytes_read(0), param_stream(NULL)
+    {
+        ZVAL_UNDEF(&placeholder_z);
+    }
 
-    // string output param constructor
-    sqlsrv_output_param( _In_ zval* p_z, _In_ SQLSRV_ENCODING enc, _In_ int num, _In_ SQLUINTEGER buffer_len ) :
-        param_z(p_z), encoding(enc), param_num(num), original_buffer_len(buffer_len), is_bool(false), php_out_type(SQLSRV_PHPTYPE_INVALID)
+    void copy_param_meta_ae(_Inout_ zval* param_z, _In_ param_meta_data& meta);            // Only used when Always Encrypted is enabled
+
+    virtual ~sqlsrv_param(){ release_data(); }
+    virtual void release_data();
+
+    bool derive_string_types_sizes(_In_ zval* param_z);
+    bool preprocess_datetime_object(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+
+    // The following methods change the member placeholder_z, and both will return false if conversions fail
+    bool convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+    bool convert_datetime_to_string(_Inout_ sqlsrv_stmt* stmt, _In_ zval* param_z);
+
+    virtual bool prepare_param(_In_ zval* param_ref, _Inout_ zval* param_z);
+    virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    virtual void process_null_param(_Inout_ zval* param_z);
+    virtual void process_bool_param(_Inout_ zval* param_z);
+    virtual void process_long_param(_Inout_ zval* param_z);
+    virtual void process_double_param(_Inout_ zval* param_z);
+    virtual void process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    virtual void process_resource_param(_Inout_ zval* param_z);
+    virtual void process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    
+    virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
+
+    // The following methods are used to supply data to the server via SQLPutData
+    virtual void init_data_from_zval(_Inout_ sqlsrv_stmt* stmt);
+    virtual bool send_data_packet(_Inout_ sqlsrv_stmt* stmt);
+};
+
+// *** output / inout parameter struct used for SQLBindParameter, inheriting sqlsrv_param ***
+struct sqlsrv_param_inout : public sqlsrv_param
+{
+    SQLSRV_PHPTYPE  php_out_type;   // Used to convert output param when necessary
+    bool            was_bool;       // false by default - the original parameter was a boolean zval
+    sqlsrv_stmt*    stmt;           // NULL by default - points to the statement object mainly for error processing
+
+    sqlsrv_param_inout(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type,
+                       _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits, SQLSRV_PHPTYPE php_out_type) :
+        sqlsrv_param(param_num, dir, enc, sql_type, col_size, dec_digits),
+        php_out_type(php_out_type), was_bool(false), stmt(NULL)
     {
     }
 
-    // every other type output parameter constructor
-    sqlsrv_output_param( _In_ zval* p_z, _In_ int num, _In_ bool is_bool, _In_ SQLSRV_PHPTYPE php_out_type) :
-        param_z( p_z ),
-        encoding( SQLSRV_ENCODING_INVALID ),
-        param_num( num ),
-        original_buffer_len( -1 ),
-        is_bool( is_bool ),
-        php_out_type(php_out_type)
+    virtual ~sqlsrv_param_inout() { param_ptr_z = NULL; }
+    virtual void release_data() { param_ptr_z = NULL; }
+
+    virtual bool prepare_param(_In_ zval* param_ref, _Inout_ zval* param_z);
+    virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    virtual void process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+
+    // Called when the output parameter is ready to be finalized, using the value stored in param_ptr_z
+    void finalize_output_value();
+
+    // Resize the output string buffer based on its properties and whether it is a numeric type
+    void resize_output_string_buffer(_Inout_ zval* param_z, _In_ bool is_numeric_type);
+    
+    // A helper method called by finalize_output_value() to finalize output string parameters
+    void finalize_output_string();
+};
+
+// *** Table-valued parameter struct used for SQLBindParameter, inheriting sqlsrv_param
+// *** A sqlsrv_param_tvp can be representing a table-valued parameter itself or one of
+// *** its constituent columns. When it is a table-valued parameter, tvp_columns cannot
+// *** be empty. When it is a TVP column, parent_tvp points to its table-valued parameter
+// *** and tvp_columns must be empty. The member param_pos refers to the ordinal position
+// *** of this column in the corresponding table type.
+struct sqlsrv_param_tvp : public sqlsrv_param
+{
+    std::map<SQLUSMALLINT, sqlsrv_param_tvp*> tvp_columns;  // The constituent columns of the table-valued parameter
+    
+    sqlsrv_param_tvp*   parent_tvp;     // For a TVP column to reference to the table-valued parameter. NULL if this is the TVP itself.
+    int                 num_rows;       // The total number of rows
+    int                 current_row;    // A counter to keep track of which row is to be processed
+
+    sqlsrv_param_tvp(_In_ SQLUSMALLINT param_num, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits, _In_ sqlsrv_param_tvp* tvp) :
+        sqlsrv_param(param_num, SQL_PARAM_INPUT, enc, sql_type, col_size, dec_digits), num_rows(0), current_row(0), parent_tvp(tvp)
     {
+        ZVAL_UNDEF(&placeholder_z);
+    }
+    virtual ~sqlsrv_param_tvp() { release_data(); }
+    virtual void release_data();
+    virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
+    virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+
+    // The following methods are used to supply data to the server post execution
+    virtual void init_data_from_zval(_Inout_ sqlsrv_stmt* stmt) {}
+    virtual bool send_data_packet(_Inout_ sqlsrv_stmt* stmt);
+
+    // Change the column encoding based on the sql data type
+    static void sql_type_to_encoding(_In_ SQLSMALLINT sql_type, _Inout_ SQLSRV_ENCODING* encoding);
+    
+    // The following methods are only applicable to a table-valued parameter or its individual columns
+    int parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
+    void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string* table_type_name, _In_ zend_string* schema_name);
+    void process_param_column_value(_Inout_ sqlsrv_stmt* stmt);
+    void process_null_param_value(_Inout_ sqlsrv_stmt* stmt);
+    void populate_cell_placeholder(_Inout_ sqlsrv_stmt* stmt, _In_ int ordinal);
+    void send_string_data_in_batches(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z);
+};
+
+// *** a container of all parameters used for SQLBindParameter ***
+struct sqlsrv_params_container
+{
+    std::vector<param_meta_data>    params_meta_ae;                 // Empty by default - only used when Always Encrypted is enabled
+
+    std::map<SQLUSMALLINT, sqlsrv_param*>     input_params;         // map of pointers to the input params with their ordinal positions as keys
+    std::map<SQLUSMALLINT, sqlsrv_param*>     output_params;        // map of pointers to the output / inout params with their ordinal positions as keys
+
+    sqlsrv_param*                   current_param;                  // Null by default - points to a sqlsrv_param object used for sending stream data
+
+    sqlsrv_params_container() { current_param = NULL; }
+    ~sqlsrv_params_container() { params_meta_ae.clear(); clean_up_param_data(); }
+
+    sqlsrv_param* find_param(_In_ SQLUSMALLINT param_num, _In_ bool is_input);
+    void insert_param(_In_ SQLUSMALLINT param_num, _In_ sqlsrv_param* new_param)
+    {
+        if (new_param->direction == SQL_PARAM_INPUT) {
+            input_params[param_num] = new_param;
+        } else {
+            output_params[param_num] = new_param;
+        }
     }
 
-    void saveMetaData(SQLSMALLINT sql_type, SQLSMALLINT column_size, SQLSMALLINT decimal_digits, SQLSMALLINT nullable = SQL_NULLABLE)
+    void remove_params(std::map<SQLUSMALLINT, sqlsrv_param*>& params_map)
     {
-        meta_data.sql_type = sql_type;
-        meta_data.column_size = column_size;
-        meta_data.decimal_digits = decimal_digits;
-        meta_data.nullable = nullable;
+        std::map<SQLUSMALLINT, sqlsrv_param*>::iterator it1;
+        for (it1 = params_map.begin(); it1 != params_map.end(); ++it1) {
+            sqlsrv_param* ptr = it1->second;
+            if (ptr) {
+                ptr->release_data();
+                sqlsrv_free(ptr);
+            }
+        }
+        params_map.clear();
     }
 
-    param_meta_data& getMetaData()
+    void clean_up_param_data(_In_opt_ bool only_input = false);
+    void finalize_output_parameters();
+
+    // The following functions are used to supply data to the server post execution
+    bool get_next_parameter(_Inout_ sqlsrv_stmt* stmt);
+    bool send_next_packet(_Inout_ sqlsrv_stmt* stmt);
+    void send_all_packets(_Inout_ sqlsrv_stmt* stmt)
     {
-        return meta_data;
+        while (get_next_parameter(stmt)) {
+            while (current_param->send_data_packet(stmt)) {}
+        }
     }
 };
 
 namespace data_classification {
-    const int VERSION_RANK_AVAILABLE = 2;   // Rank info is available when data classification version is 2+
+    const size_t VERSION_RANK_AVAILABLE = 2;   // Rank info is available when data classification version is 2+
     const int RANK_NOT_DEFINED = -1;
     // *** data classficiation metadata structures and helper methods -- to store and/or process the sensitivity classification data ***
     struct name_id_pair;
@@ -1522,6 +1657,10 @@ struct sqlsrv_stmt : public sqlsrv_context {
 
     // free sensitivity classification metadata
     void clean_up_sensitivity_metadata();
+
+    // free resultset metadata
+    void clean_up_results_metadata();
+
     // set query timeout
     void set_query_timeout();
 
@@ -1544,23 +1683,12 @@ struct sqlsrv_stmt : public sqlsrv_context {
     short decimal_places;                 // indicates number of decimals shown in fetched results (-1 by default, which means no change to number of decimal digits)
     bool data_classification;             // false by default but the user can set this to true to retrieve data classification sensitivity metadata
 
-    // holds output pointers for SQLBindParameter
-    // We use a deque because it 1) provides the at/[] access in constant time, and 2) grows dynamically without moving
-    // memory, which is important because we pass the pointer to an element of the deque to SQLBindParameter to hold
-    std::deque<SQLLEN>   param_ind_ptrs;  // output pointers for lengths for calls to SQLBindParameter
-    zval param_input_strings;             // hold all UTF-16 input strings that aren't managed by PHP
-    zval output_params;                   // hold all the output parameters
-    zval param_streams;                   // track which streams to send data to the server
-    zval param_datetime_buffers;          // datetime strings to be converted back to DateTime objects
     bool send_streams_at_exec;            // send all stream data right after execution before returning
-    sqlsrv_stream current_stream;         // current stream sending data to the server as an input parameter
-    unsigned int current_stream_read;     // # of bytes read so far. (if we read an empty PHP stream, we send an empty string
-                                          // to the server)
     zval field_cache;                     // cache for a single row of fields, to allow multiple and out of order retrievals
     zval col_cache;                       // Used by get_field_as_string not to call SQLColAttribute()  after every fetch.
     zval active_stream;                   // the currently active stream reading data from the database
 
-    std::vector<param_meta_data> param_descriptions;
+    sqlsrv_params_container params_container;       // holds all parameters and references used for SQLBindParameter
 
     // meta data for current result set
     std::vector<field_meta_data*, sqlsrv_allocator<field_meta_data*>> current_meta_data;
@@ -1630,7 +1758,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
                                       _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver );
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
                              _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
-                             _Inout_ SQLSMALLINT decimal_digits );
+                             _Inout_ SQLSMALLINT decimal_digits);
 SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
 field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno );
 bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset );
@@ -1639,11 +1767,9 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                             _Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out);
 bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt );
 void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
-void core_sqlsrv_post_param( _Inout_ sqlsrv_stmt* stmt, _In_ zend_ulong paramno, zval* param_z );
 void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type );
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z );
-void core_sqlsrv_set_send_at_exec( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z );
-bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt );
+bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool get_all = false);
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z );
 void core_sqlsrv_set_buffered_query_limit( _Inout_ sqlsrv_stmt* stmt, _In_ SQLLEN limit );
 void core_sqlsrv_set_decimal_places(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z);
@@ -1889,6 +2015,15 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
     SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE,
     SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
+    SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE,
+    SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE,
+    SQLSRV_ERROR_TVP_FETCH_METADATA,
+    SQLSRV_ERROR_TVP_INVALID_INPUTS,
+    SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME,
+    SQLSRV_ERROR_TVP_STRING_KEYS,
+    SQLSRV_ERROR_TVP_ROW_NOT_ARRAY,
+    SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE,
+    SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,

@@ -17,17 +17,10 @@ if( $conn === false )
 
 /*revert inserts from previous tests*/
 $d_sql = "DELETE FROM Production.ProductReview WHERE EmailAddress!='john@fourthcoffee.com' AND ProductID=709";
-$stmt4 = sqlsrv_query($conn, $d_sql);
+$stmt = sqlsrv_query($conn, $d_sql);
 
 /* Drop the stored procedure if it already exists. */
-$tsql_dropSP = "IF OBJECT_ID('InsertProductReview', 'P') IS NOT NULL
-                DROP PROCEDURE InsertProductReview";
-$stmt1 = sqlsrv_query( $conn, $tsql_dropSP);
-if( $stmt1 === false )
-{
-     echo "Error in executing statement 1.\n";
-     die( print_r( sqlsrv_errors(), true));
-}
+dropProc($conn, 'InsertProductReview');
 
 /* Create the stored procedure. */
 $tsql_createSP = " CREATE PROCEDURE InsertProductReview
@@ -56,9 +49,9 @@ $tsql_createSP = " CREATE PROCEDURE InsertProductReview
                              SELECT * FROM Production.ProductReview
                                 WHERE ProductID = @ProductID;
                        END";
-$stmt2 = sqlsrv_query( $conn, $tsql_createSP);
+$stmt = sqlsrv_query( $conn, $tsql_createSP);
 
-if( $stmt2 === false)
+if( $stmt === false)
 {
      echo "Error in executing statement 2.\n";
      die( print_r( sqlsrv_errors(), true));
@@ -86,8 +79,8 @@ $params = array(
                );
 
 /* Execute the query. */
-$stmt3 = sqlsrv_query( $conn, $tsql_callSP, $params);
-if( $stmt3 === false)
+$stmt = sqlsrv_query( $conn, $tsql_callSP, $params);
+if( $stmt === false)
 {
      echo "Error in executing statement 3.\n";
      die( print_r( sqlsrv_errors(), true));
@@ -97,17 +90,17 @@ echo "<p>";
 
 /* Consume the first result (rows affected by INSERT query in the
 stored procedure) without calling sqlsrv_next_result. */
-echo "Rows affectd: ".sqlsrv_rows_affected($stmt3)."-----\n";
+echo "Rows affectd: ".sqlsrv_rows_affected($stmt)."-----\n";
 
 echo "<p>";
 
 /* Move to the next result and display results. */
-$next_result = sqlsrv_next_result($stmt3);
+$next_result = sqlsrv_next_result($stmt);
 if( $next_result )
 {
 	 echo "<p>";
      echo "\nReview information for product ID ".$productID.".---\n";
-     while( $row = sqlsrv_fetch_array( $stmt3, SQLSRV_FETCH_ASSOC))
+     while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC))
      {
           echo "<br>ReviewerName: ".$row['ReviewerName']."\n";
           echo "<br>ReviewDate: ".date_format($row['ReviewDate'],
@@ -127,13 +120,10 @@ else
      die(print_r(sqlsrv_errors(), true));
 }
 
+dropProc($conn, 'InsertProductReview', false);
+
 /* Free statement and connection resources. */
-sqlsrv_free_stmt( $stmt1 );
-sqlsrv_free_stmt( $stmt2 );
-sqlsrv_free_stmt( $stmt3 );
-sqlsrv_free_stmt( $stmt4 );
-
-
+sqlsrv_free_stmt( $stmt );
 sqlsrv_close( $conn );
 ?>
 --EXPECT--

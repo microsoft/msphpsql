@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use connection handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 5.9 for PHP for SQL Server
+// Microsoft Drivers 5.10 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -47,9 +47,6 @@ const int INFO_BUFFER_LEN = 256;
 
 // length for name of keystore used in CEKeyStoreData
 const int MAX_CE_NAME_LEN = 260;
-
-// processor architectures
-const char* PROCESSOR_ARCH[] = { "x86", "x64", "ia64" };
 
 // ODBC driver names.
 // the order of this list should match the order of DRIVER_VERSION enum
@@ -561,18 +558,16 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
         // prepare our wide char query string
         core::SQLPrepareW( stmt, reinterpret_cast<SQLWCHAR*>( wsql_string.get() ), wsql_len );
 
-        stmt->param_descriptions.clear();
-
         // if AE is enabled, get meta data for all parameters before binding them
         if( stmt->conn->ce_option.enabled ) {
             SQLSMALLINT num_params;
             core::SQLNumParams( stmt, &num_params);
+
             for( int i = 0; i < num_params; i++ ) {
                 param_meta_data param;
+                core::SQLDescribeParam(stmt, i + 1, &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
 
-                core::SQLDescribeParam( stmt, i + 1, &( param.sql_type ), &( param.column_size ), &( param.decimal_digits ), &( param.nullable ) );
-
-                stmt->param_descriptions.push_back( param );
+                stmt->params_container.params_meta_ae.push_back(param);
             }
         }
     }
@@ -919,44 +914,29 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 // and return the string of the processor name.
 const char* get_processor_arch( void )
 {
-#ifndef _WIN32
-   struct utsname sys_info;
-    if ( uname(&sys_info) == -1 )
-    {
-        DIE( "Error retrieving system info" );
-    }
-    if( strcmp(sys_info.machine, "x86") == 0 ) {
-        return PROCESSOR_ARCH[0];
-    } else if ( strcmp(sys_info.machine, "x86_64") == 0) {
-        return PROCESSOR_ARCH[1];
-    } else if ( strcmp(sys_info.machine, "ia64") == 0 ) {
-        return PROCESSOR_ARCH[2];
-    } else {
-        DIE( "Unknown processor architecture." );
-    }
-        return NULL;
-#else
+    // processor architectures
+    const char* PROCESSOR_ARCH[] = {"x86", "x64", "arm64"};
+#ifdef _WIN32
     SYSTEM_INFO sys_info;
-    GetSystemInfo( &sys_info);
-    switch( sys_info.wProcessorArchitecture ) {
-
-        case PROCESSOR_ARCHITECTURE_INTEL:
-           return PROCESSOR_ARCH[0];
-
-        case PROCESSOR_ARCHITECTURE_AMD64:
-            return PROCESSOR_ARCH[1];
-
-        case PROCESSOR_ARCHITECTURE_IA64:
-            return PROCESSOR_ARCH[2];
-
-        default:
-            DIE( "Unknown Windows processor architecture." );
-            return NULL;
+    GetSystemInfo(&sys_info);
+    switch (sys_info.wProcessorArchitecture) {
+    case PROCESSOR_ARCHITECTURE_INTEL:
+        return PROCESSOR_ARCH[0];
+    case PROCESSOR_ARCHITECTURE_AMD64:
+        return PROCESSOR_ARCH[1];
+    default:
+        DIE("Unsupported Windows processor architecture.");
+        return NULL;
     }
+#elif defined(__arm64__)
+    return PROCESSOR_ARCH[2];
+#elif defined(__x86_64__)
+    return PROCESSOR_ARCH[1];
+#else
+    DIE("Unsupported processor architecture.");
     return NULL;
-#endif // !_WIN32
+#endif // _WIN32
 }
-
 
 // some features require a server of a certain version or later
 // this function determines the version of the server we're connected to
@@ -1010,8 +990,8 @@ void load_azure_key_vault(_Inout_ sqlsrv_conn* conn)
 
     char *akv_id = conn->ce_option.akv_id.get();
     char *akv_secret = conn->ce_option.akv_secret.get();
-    unsigned int id_len = strnlen_s(akv_id);
-    unsigned int key_size = strnlen_s(akv_secret);
+    size_t id_len = strnlen_s(akv_id);
+    size_t key_size = strnlen_s(akv_secret);
 
     configure_azure_key_vault(conn, AKV_CONFIG_FLAGS, conn->ce_option.akv_mode, 0);
     configure_azure_key_vault(conn, AKV_CONFIG_PRINCIPALID, akv_id, id_len);

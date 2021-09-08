@@ -8,6 +8,10 @@
 
 */
 
+$tvpIncPath = dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'inc'.DIRECTORY_SEPARATOR;
+
+require_once($tvpIncPath. 'test_tvp_data.php');
+
 //
 // looks like an additional file (in addition to pdo_test_base.inc) may be needed for these PHPTs
 // to be runnable from the MSSQL teams' internal proprietary test running system
@@ -302,7 +306,7 @@ class BindParamOp
         }
 
         if ($length >= 0 || is_null($length)) {
-            $this->length = $length;
+            $this->length = is_null($length) ? 0 : $length;
         } else {
             printf("BindParamOp construct: The length provided must be greater or equal to 0.\n");
             exit;
@@ -527,14 +531,11 @@ function fetchAll($conn, $tbname)
  * @param  string  $fetchStyle : fetch_style argument passed to PDOStatement::fetchAll
  * @return array rows in a result set
  */
-function selectAll($conn, $tbname, $fetchStyle = null)
+function selectAll($conn, $tbname, $fetchStyle = PDO::FETCH_BOTH)
 {
     try {
         $sql = "SELECT * FROM $tbname";
         $stmt = $conn->query($sql);
-        if ($fetchStyle) {
-            $fetchStyle = constant($fetchStyle);
-        }
         $data = $stmt->fetchAll($fetchStyle);
         return $data;
     } catch (PDOException $e) {
@@ -1793,4 +1794,31 @@ function PhpVersionComponents(&$major, &$minor, &$sub)
     $major = strtok($str_version, ".");
     $minor = strtok(".");
     $sub = strtok(".");
+}
+
+function getTodayDateAsString($conn)
+{
+    $tsql = 'SELECT CONVERT (VARCHAR(20), GETDATE())';
+    $stmt = $conn->query($tsql);
+    $row = $stmt->fetch(PDO::FETCH_NUM);
+    return $row[0];
+}
+
+function compareResourceToInput($actual, $expected)
+{
+    $size = 8192;
+    $pos = 0;
+    $matched = true;
+    while (!feof($actual)) {
+        $original = fread($actual, $size);
+        $str = substr($expected, $pos, $size);
+        
+        if ($original !== $str) {
+            $matched = false;
+            break;
+        }
+        $pos += $size;
+    }
+    
+    return $matched;
 }

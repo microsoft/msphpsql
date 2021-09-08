@@ -37,7 +37,7 @@ function deleteQuery()
 
         trace("Deleting rows from $tableName ...");
         $delRows = 1;
-        if (strlen($keyValue) == 0) {
+        if (empty($keyValue)) {
             $stmt2 = AE\executeQuery($conn1, "DELETE TOP(1) FROM [$tableName]");
             $cond = "(top row)";
         } else {

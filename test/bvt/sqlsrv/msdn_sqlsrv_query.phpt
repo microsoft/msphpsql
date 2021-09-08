@@ -15,6 +15,8 @@ if( $conn === false )
      die( print_r( sqlsrv_errors(), true));
 }
 
+disableTrigger($conn);
+
 /* Set up the parameterized query. */
 $tsql = "INSERT INTO Sales.SalesOrderDetail 
         (SalesOrderID, 
@@ -28,12 +30,6 @@ $tsql = "INSERT INTO Sales.SalesOrderDetail
 
 /* Set parameter values. */
 $params = array(75123, 5, 741, 1, 818.70, 0.00);
-
-// RevisionNumber in SalesOrderHeader is subject to a trigger incrementing it whenever
-// changes are made to SalesOrderDetail. Since RevisonNumber is a tinyint, it can
-// overflow quickly if this test is often run. So we change it directly here first
-// before it can overflow.
-$stmt0 = sqlsrv_query( $conn, "UPDATE Sales.SalesOrderHeader SET RevisionNumber = 2 WHERE SalesOrderID = $params[0]");
 
 /* Prepare and execute the query. */
 $stmt = sqlsrv_query( $conn, $tsql, $params);

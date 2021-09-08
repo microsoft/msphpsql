@@ -33,6 +33,7 @@ class ColumnMeta
     public      $options;       // a string that is null by default (e.g. NOT NULL Identity (1,1) )
 
     protected   $encryptable;   // whether Always Encrypted supports this column
+    protected   $forcedEncrypt; // force column encryption regardless, default to 'false'
 
     public function __construct($dataType, $colName = null, $options = null, $deterministic = true, $noEncrypt = false)
     {
@@ -41,6 +42,8 @@ class ColumnMeta
         } else {
             $this->colName = $colName;
         }
+        
+        $this->forcedEncrypt = false;
 
         $this->encType = ($deterministic ? "deterministic" : "randomized");
         if (empty($dataType)) {
@@ -71,7 +74,7 @@ class ColumnMeta
 
         $unsupported = array("xml", "timestamp", "image", "ntext", "text", "sql_variant", "hierarchyid", "geography", "geometry", "alias");
 
-        if (stripos($this->options, "identity") !== false) {
+        if (!is_null($this->options) && stripos($this->options, "identity") !== false) {
             $this->encryptable = false;
         } elseif (in_array(strtolower($this->dataType), $unsupported)) {
             $this->encryptable = false;
@@ -79,6 +82,16 @@ class ColumnMeta
             $this->encryptable = true;
         }
     }
+
+    /**
+     * force column to be encrypted regardless of the current settings
+     * @return void
+     */
+    public function forceEncryption($forceEncryption)
+    {
+        $this->forcedEncrypt = $forceEncryption;
+    }
+    
     /**
      * @return string column definition for creating a table
      */
@@ -86,9 +99,12 @@ class ColumnMeta
     {
         $append = " ";
 
-        if ($this->encryptable && isDataEncrypted()) {
+        if (($this->encryptable && isDataEncrypted()) || $this->forcedEncrypt) {
 
             $cekName = getCekName();
+            if ($this->forcedEncrypt && empty($cekName)) {
+                $cekName = 'AEColumnKey';   // Use Windows AE key by default
+            }
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
             }
@@ -164,7 +180,7 @@ class BindParamOption
                     $scal = $prec_scal[1];
                     $size = null;
                 }
-                if (strpos($size, "max") !== false) {
+                if (!is_null($size) && strpos($size, "max") !== false) {
                     $size = trim($size, "'");
                 }
             }
@@ -724,7 +740,11 @@ function insertTestRow($conn, $tbname, $index)
                 $value = $value[0];
                 // this might be an input to a decimal, a numeric or a binary field
                 if (isBinary($col)) {
-                    $value = "0x" . $value;    // annotate the input string as a hex string
+                    if (!is_null($value)) {
+                        $value = "0x" . $value;    // annotate the input string as a hex string
+                    } else {
+                        $value = null;
+                    }
                 }
             }
             if (is_null($value)) {
@@ -778,15 +798,14 @@ function getInsertData($rowIndex, $colIndex)
     if (empty($inputArray)) {
         fatalError("getInsertData: failed to retrieve data at row $rowIndex.\n");
     }
-    $count = 0;
-    foreach ($inputArray as $key => $value) {
-        if (++$count == $colIndex) {
-            if (is_array($value)) {
-                return $value[0];
-            } else {
-                return $value;
-            }
-            break;
+    
+    $key = getColName($colIndex);
+    if (!empty($key)) {
+        $value = $inputArray[$key];
+        if (is_array($value)) {
+            return $value[0];
+        } else {
+            return $value;
         }
     }
 
@@ -972,11 +991,7 @@ function isUnicode($k)
 
 function isUpdatable($k)
 {
-    switch ($k) {
-        case 27:    return (false); // timestamp
-        default:    break;
-    }
-    return (true);
+    return ($k != 27); // timestamp
 }
 
 function isLiteral($k)

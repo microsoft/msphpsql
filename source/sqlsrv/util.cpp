@@ -5,7 +5,7 @@
 //
 // Comments: Mostly error handling and some type handling
 //
-// Microsoft Drivers 5.9 for PHP for SQL Server
+// Microsoft Drivers 5.10 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -379,7 +379,7 @@ ss_error SS_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,
-        { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.", -105, false }
+        { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server (or above) for %1!s!.", -105, true }
     },
     {
         SQLSRV_ERROR_CONNECT_INVALID_DRIVER,
@@ -445,6 +445,42 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,
         { IMSSP, (SQLCHAR*) "Failed to retrieve Data Classification Sensitivity Metadata: %1!s!", -121, true}
     },
+    {
+        SQLSRV_ERROR_TVP_STRING_ENCODING_TRANSLATE,
+        { IMSSP, (SQLCHAR*) "An error occurred translating a string for Table-Valued Param %1!d! Column %2!d! to UTF-16: %3!s!", -122, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_COLUMN_PHPTYPE,
+        { IMSSP, (SQLCHAR*) "An invalid type for Table-Valued Param %1!d! Column %2!d! was specified", -123, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_FETCH_METADATA,
+        { IMSSP, (SQLCHAR*) "Failed to get metadata for Table-Valued Param %1!d!", -124, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_INPUTS,
+        { IMSSP, (SQLCHAR*) "Invalid inputs for Table-Valued Param %1!d!", -125, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INVALID_TABLE_TYPE_NAME,
+        { IMSSP, (SQLCHAR*) "Expect a non-empty string for a Type Name for Table-Valued Param %1!d!", -126, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE,
+        { IMSSP, (SQLCHAR*) "For Table-Valued Param %1!d! the number of values in a row is expected to be %2!d!", -127, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_STRING_KEYS,
+        { IMSSP, (SQLCHAR*) "Associative arrays not allowed for Table-Valued Param %1!d!", -128, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_ROW_NOT_ARRAY,
+        { IMSSP, (SQLCHAR*) "Expect an array for each row for Table-Valued Param %1!d!", -129, true }
+    },
+    {
+        SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
+        { IMSSP, (SQLCHAR*) "You cannot return data in a table-valued parameter. Table-valued parameters are input-only.", -130, false }
+    },            
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
