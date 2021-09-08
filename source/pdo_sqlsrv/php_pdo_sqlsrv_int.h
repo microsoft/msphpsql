@@ -6,7 +6,7 @@
 //
 // Contents: Internal declarations for the extension
 //
-// Microsoft Drivers 5.9 for PHP for SQL Server
+// Microsoft Drivers 5.10 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
