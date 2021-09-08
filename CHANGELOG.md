@@ -3,6 +3,49 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 5.10.0-beta1 - 2021-09-08
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Support for PHP 8.1 RC 1
+- Support for Ubuntu 21.04
+- Support for Apple M1 ARM64 hardware (requires [MS ODBC Driver 17.8+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/install-microsoft-odbc-driver-sql-server-macos?view=sql-server-ver15)
+- Feature Request [#795](https://github.com/microsoft/msphpsql/issues/795) - adding support for Table-valued parameters
+
+### Removed
+- Support for Ubuntu 16.04
+
+### Fixed
+- Issue [#1244](https://github.com/microsoft/msphpsql/issues/1244) - use lower case for object names for PDO::lastInsertId() - pull request [#1245](https://github.com/microsoft/msphpsql/pull/1245) by morozov
+- Pull request [#1251](https://github.com/microsoft/msphpsql/pull/1251) - simplified implementations of last insert id and quote
+- Issue [#1258](https://github.com/microsoft/msphpsql/issues/1258) - updated pdo_sqlsrv_get_driver_methods as per documentation - pull request [#1259](https://github.com/microsoft/msphpsql/pull/1259)
+- Pull request [#1260](https://github.com/microsoft/msphpsql/pull/1260) - cleaned up redundant code
+- Pull request [#1262](https://github.com/microsoft/msphpsql/pull/1262) - simplified parse_param_array in sqlsrv
+- Pull request [#1262](https://github.com/microsoft/msphpsql/pull/1262) - simplified parse_param_array in sqlsrv
+- Issue [#1261](https://github.com/microsoft/msphpsql/issues/1261) - simplified get_field_as_string and made it more robust - pull request [#1265](https://github.com/microsoft/msphpsql/pull/1265)
+- Pull request [#1267](https://github.com/microsoft/msphpsql/pull/1267) - replaced the obsolete MACRO ZVAL_NEW_ARR with array_init
+- Pull request [#1275](https://github.com/microsoft/msphpsql/pull/1275) - fixed warning compiling core_stmt.cpp by mlocati
+- Pull request [#1288](https://github.com/microsoft/msphpsql/pull/1288) - applied mask to pdo quote for binary inputs
+- Pull request [#1290](https://github.com/microsoft/msphpsql/pull/1290) - updated list of supported processor architecture
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- This release requires ODBC Driver 17.4.2 or above. Otherwise, a warning about failing to set an attribute may be suppressed when using an older ODBC driver.
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+
+
 ## 5.9.0 - 2021-01-29
 Updated PECL release packages. Here is the list of updates:
 
