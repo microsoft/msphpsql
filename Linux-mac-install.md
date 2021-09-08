@@ -22,7 +22,7 @@ While these instructions contain commands to install both SQLSRV and PDO_SQLSRV 
 > [!NOTE]
 > To install PHP 7.4 or 7.3, replace 8.0 with 7.4 or 7.3 in the following commands.
 
-### Step 1. Install PHP on Ubuntu 18.04, 20.04 and 21.04
+### Step 1. Install PHP
 ```bash
 sudo su
 add-apt-repository ppa:ondrej/php -y
@@ -129,7 +129,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 
 ## Installing the drivers on Red Hat
 
-### Step 1. Install PHP on Red Hat 7 and 8
+### Step 1. Install PHP
 
 To install PHP on Red Hat 7, run the following:
 > [!NOTE]
@@ -198,7 +198,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 > [!NOTE]
 > To install PHP 7.4 or 7.3, replace 8.0 in the following commands with 7.4 or 7.3.
 
-### Step 1. Install PHP on Debian 9 and 10
+### Step 1. Install PHP
 ```bash
 sudo su
 apt-get install curl apt-transport-https
@@ -255,7 +255,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 > To install PHP 7.3, replace the repository URL below with the following URL:
       `https://download.opensuse.org/repositories/devel:/languages:/php:/php73/<SuseVersion>/devel:languages:php:php73.repo`.
 
-### Step 1. Install PHP on Suse 12 and 15
+### Step 1. Install PHP
 ```bash
 sudo su
 zypper -n ar -f https://download.opensuse.org/repositories/devel:languages:php/<SuseVersion>/devel:languages:php.repo
@@ -297,7 +297,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 > [!NOTE]
 > The default version of PHP is 7.3. PHP 7.4 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
 
-### Step 1. Install PHP on Alpine 3.11, 3.12 and 3.13
+### Step 1. Install PHP
 PHP packages for Alpine can be found in the `edge/community` repository. Please check [Enable Community Repository](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository) on their WIKI page. Add the following line to `/etc/apk/repositories`, replacing `<mirror>` with the URL of an Alpine repository mirror:
 ```bash
 http://<mirror>/alpine/edge/community
@@ -345,7 +345,7 @@ If you do not already have it, install Homebrew as follows:
 > [!NOTE]
 > To install PHP 7.4 or 7.3, replace php@8.0 with php@7.4 or php@7.3 respectively in the following commands.
 
-### Step 1. Install PHP on macOS Mojave, Catalina and Big Sur
+### Step 1. Install PHP
 
 ```bash
 brew tap
