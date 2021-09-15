@@ -47,17 +47,21 @@ try {
     print_r($row);
 
     //with emulate prepare and no bind param options
-    print_r("Prepare with emulate prepare and no bindParam options:\n");
     if (!isAEConnected()) {
         $options = array(PDO::ATTR_EMULATE_PREPARES => true);
     } else {
         $options = array(PDO::ATTR_EMULATE_PREPARES => false);
     }
-    $stmt = prepareStmt($conn, $query, $options);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    print_r($row);
-    if ($stmt->rowCount() == 0) {
-        print_r("No results for this query\n");
+
+    print_r("Prepare with emulate prepare and no bindParam options:\n");
+    // This test only makes sense without AE because the default encoding is PDO::SQLSRV_ENCODING_UTF8
+    if (!isAEConnected()) {   
+        $stmt = prepareStmt($conn, $query, $options);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($stmt->rowCount() != 0) {
+            print_r("Do not expect results for this query!\n");
+            print_r($row);
+        }
     }
 
     //with emulate prepare and SQLSRV_ENCODING_UTF8
@@ -117,7 +121,6 @@ Array
     [age] => 30
 )
 Prepare with emulate prepare and no bindParam options:
-No results for this query
 Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:
 Array
 (
