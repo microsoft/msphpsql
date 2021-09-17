@@ -1,7 +1,8 @@
 --TEST--
 Test PDO::__Construct by passing connection options
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
+<?php require('skipif_azure.inc');
+      require('skipif_mid-refactor.inc');  ?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");

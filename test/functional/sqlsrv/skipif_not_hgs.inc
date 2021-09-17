@@ -34,7 +34,7 @@ if ($msodbcsql_min < 4 and $msodbcsql_maj == 17) {
 
 // Get SQL Server
 $server_info = sqlsrv_server_info($conn);
-if (strpos($server_info['SQLServerName'], 'PHPHGS') === false) {
+if (strpos($server_info['SQLServerName'], 'HGS') === false) {
     die("skip Server is not HGS enabled");
 }
 ?>

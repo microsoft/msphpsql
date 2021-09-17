@@ -8,21 +8,16 @@ the error message of one test case is not the same.
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsSetup.inc");
+require_once('MsCommon_mid-refactor.inc');
+
 $msodbcsqlMaj = "";
-$hgsEnabled = true;
+$hgsEnabled = isServerHGSEnabled();
 
 try {
     $conn = new PDO("sqlsrv:server = $server", $uid, $pwd);
     $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)['DriverVer'];
     $version = explode(".", $msodbcsqlVer);
     $msodbcsqlMaj = $version[0];
-
-    // Next, check if the server is HGS enabled
-    $serverInfo = $conn->getAttribute(PDO::ATTR_SERVER_INFO);
-    if (strpos($serverInfo['SQLServerName'], 'PHPHGS') === false) {
-        $hgsEnabled = false;
-    }
 } catch (PDOException $e) {
     echo "Failed to connect\n";
     print_r($e->getMessage());
@@ -31,7 +26,6 @@ try {
 
 testColumnEncryption($server, $uid, $pwd, $msodbcsqlMaj);
 echo "Done";
-
 
 function verifyOutput($PDOerror, $expected, $caseNum)
 {
