@@ -202,6 +202,7 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)
+      PYTHONWARNINGS=ignore::yaml.YAMLLoadWarning
       echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
         -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
