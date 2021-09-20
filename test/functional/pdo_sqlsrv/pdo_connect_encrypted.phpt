@@ -8,6 +8,7 @@ the error message of one test case is not the same.
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
+require_once('MsSetup.inc');
 require_once('MsCommon_mid-refactor.inc');
 
 $msodbcsqlMaj = "";
