@@ -206,10 +206,12 @@ jobs:
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
         -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
     displayName: 'Invoke coveralls using repo token'
+    condition: false
     env:
       COVERALLS_REPO_TOKEN: $(repo_token)
       TRAVIS_JOB_ID: $(Build.BuildId)
       TRAVIS_BRANCH: $(Build.SourceBranchName)
+      PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
      
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/

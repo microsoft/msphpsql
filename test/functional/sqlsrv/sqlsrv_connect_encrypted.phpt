@@ -9,7 +9,7 @@ the error message of one test case is not the same.
 --FILE--
 <?php
 sqlsrv_configure('WarningsReturnAsErrors', 0);
-require('MsSetup.inc');
+require('MsCommon.inc');
 
 $connectionOptions = array("Database"=>$database,"UID"=>$userName, "PWD"=>$userPassword);
 testColumnEncryption($server, $connectionOptions);
@@ -25,11 +25,7 @@ function testColumnEncryption($server, $connectionOptions)
     $msodbcsqlMaj = explode(".", $msodbcsql_ver)[0];
 
     // Next, check if the server is HGS enabled
-    $hgsEnabled = true;
-    $serverInfo = sqlsrv_server_info($conn);
-    if (strpos($serverInfo['SQLServerName'], 'PHPHGS') === false) {
-        $hgsEnabled = false;
-    }
+    $hgsEnabled = isServerHGSEnabled();
     
     // Only works for ODBC 17
     $connectionOptions['ColumnEncryption'] = 'Enabled';

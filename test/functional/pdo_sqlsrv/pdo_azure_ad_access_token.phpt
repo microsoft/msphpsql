@@ -3,7 +3,7 @@ Test some basics of Azure AD Access Token support
 --DESCRIPTION--
 This test also expects certain exceptions to be thrown under some conditions.
 --SKIPIF--
-<?php require('skipif.inc');
+<?php require('skipif_azure.inc');
       require('skipif_azure_ad_acess_token.inc');  ?>
 --FILE--
 <?php
