@@ -3107,8 +3107,6 @@ void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* pa
         int num_columns = parse_tv_param_arrays(stmt, param_z);
         column_size = num_rows;
         
-        // buffer = NULL;
-        // buffer_length = 0;
         strlen_or_indptr = (num_columns == 0)? SQL_DEFAULT_PARAM : SQL_DATA_AT_EXEC;
     } else {
         // This is one of the constituent columns of the table-valued parameter
@@ -3163,8 +3161,6 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
         zval *schema_z = zend_hash_get_current_data_ex(inputs_ht, &pos);
         if (schema_z != NULL && Z_TYPE_P(schema_z) == IS_STRING) {
             schema_name = Z_STR_P(schema_z);
-            
-            SQLSRV_ASSERT(Z_TYPE(placeholder_z) == IS_UNDEF, "parse_tv_param_arrays - placeholder already defined!");
             ZVAL_NEW_STR(&placeholder_z, schema_name);
         }
     }
