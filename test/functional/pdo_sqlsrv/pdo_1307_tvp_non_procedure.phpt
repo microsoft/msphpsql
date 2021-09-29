@@ -1,27 +1,41 @@
 --TEST--
 Verify Github Issue 1307 is fixed.
+--DESCRIPTION--
+To show that table-valued parameters work with non-procedure statements
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
 function cleanup($conn, $tvpname, $testTable)
 {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
-    $conn->exec("DROP TYPE [$tvpname]");
-    $conn->exec("DROP TABLE [$testTable]");
+    $dropTableType = dropTableTypeSQL($conn, $tvpname);
+    $conn->exec($dropTableType);
+    $conn->exec("DROP TABLE IF EXISTS [$testTable]");
 
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+}
+
+function readData($conn, $testTable)
+{
+    $tsql = "SELECT id FROM $testTable ORDER BY id";
+    $stmt = $conn->query($tsql);
+    $stmt->bindColumn('id', $ID);  
+    while ($row = $stmt->fetch( PDO::FETCH_BOUND ) ){  
+        echo $ID . PHP_EOL;
+    }
 }
 
 try {
     $conn = new PDO("sqlsrv:Server=$server;Database=$databaseName;", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $tvpname = 'id_table';
-    $testTable = 'test_table';
+    $tvpname = 'pdo_id_table';
+    $testTable = 'pdo_test_table';
     
     cleanup($conn, $tvpname, $testTable);
 
@@ -41,12 +55,7 @@ try {
     $result = $stmt->execute();
     
     // Verify the results
-    $tsql = "SELECT id FROM $testTable ORDER BY id";
-    $stmt = $conn->query($tsql);
-    $stmt->bindColumn('id', $ID);  
-    while ($row = $stmt->fetch( PDO::FETCH_BOUND ) ){  
-        echo $ID . PHP_EOL;
-    }
+    readData($conn, $testTable);
     
     // Use Merge statement next
     $tsql = <<<QRY
@@ -64,12 +73,7 @@ QRY;
     $result = $stmt->execute();
     
     // Verify the results
-    $tsql = "SELECT id FROM $testTable ORDER BY id";
-    $stmt = $conn->query($tsql);
-    $stmt->bindColumn('id', $ID);  
-    while ($row = $stmt->fetch( PDO::FETCH_BOUND ) ){  
-        echo $ID . PHP_EOL;
-    }
+    readData($conn, $testTable);
 
     cleanup($conn, $tvpname, $testTable);
     

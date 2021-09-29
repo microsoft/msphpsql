@@ -1,31 +1,49 @@
 --TEST--
 Verify Github Issue 1307 is fixed but TVP and table are defined in a different schema
+--DESCRIPTION--
+To show that table-valued parameters work with non-procedure statements
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once("MsSetup.inc");
+require_once("MsCommon_mid-refactor.inc");
 
 function cleanup($conn, $tvpname, $testTable, $schema)
 {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
-    $conn->exec("DROP TYPE [$schema].[$tvpname]");
-    $conn->exec("DROP TABLE [$schema].[$testTable]");
-    $conn->exec("DROP TABLE [$schema]");
+    $dropTableType = dropTableTypeSQL($conn, $tvpname, $schema);
+    $conn->exec($dropTableType);
+    $conn->exec("DROP TABLE IF EXISTS [$schema].[$testTable]");
+    $conn->exec("DROP SCHEMA IF EXISTS [$schema]");
 
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+}
+
+function readData($conn, $schema, $testTable)
+{
+    $tsql = "SELECT id FROM [$schema].[$testTable] ORDER BY id";
+    $stmt = $conn->query($tsql);
+    $stmt->bindColumn('id', $ID);  
+    while ($row = $stmt->fetch( PDO::FETCH_BOUND ) ){  
+        echo $ID . PHP_EOL;
+    }
 }
 
 try {
     $conn = new PDO("sqlsrv:Server=$server;Database=$databaseName;", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $tvpname = 'id_table2';
-    $testTable = 'test_table2';
-    $schema = 'my schema';
+    $tvpname = 'pdo_id_table2';
+    $testTable = 'pdo_test_table2';
+    $schema = 'pdo schema';
     
     cleanup($conn, $tvpname, $testTable, $schema);
+
+    // Create the schema
+    $tsql = "CREATE SCHEMA [$schema]";
+    $conn->exec($tsql);
 
     // Create the table type and test table
     $tsql = "CREATE TYPE [$schema].[$tvpname] AS TABLE(id INT PRIMARY KEY)";
@@ -43,12 +61,7 @@ try {
     $result = $stmt->execute();
     
     // Verify the results
-    $tsql = "SELECT id FROM [$schema].[$testTable] ORDER BY id";
-    $stmt = $conn->query($tsql);
-    $stmt->bindColumn('id', $ID);  
-    while ($row = $stmt->fetch( PDO::FETCH_BOUND ) ){  
-        echo $ID . PHP_EOL;
-    }
+    readData($conn, $schema, $testTable);
     
     // Use Merge statement next
     $tsql = <<<QRY
@@ -66,12 +79,7 @@ QRY;
     $result = $stmt->execute();
     
     // Verify the results
-    $tsql = "SELECT id FROM [$schema].[$testTable] ORDER BY id";
-    $stmt = $conn->query($tsql);
-    $stmt->bindColumn('id', $ID);  
-    while ($row = $stmt->fetch( PDO::FETCH_BOUND ) ){  
-        echo $ID . PHP_EOL;
-    }
+    readData($conn, $schema, $testTable);
 
     cleanup($conn, $tvpname, $testTable, $schema);
     
