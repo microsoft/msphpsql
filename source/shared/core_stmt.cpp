@@ -3107,8 +3107,6 @@ void sqlsrv_param_tvp::process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* pa
         int num_columns = parse_tv_param_arrays(stmt, param_z);
         column_size = num_rows;
         
-        buffer = NULL;
-        buffer_length = 0;
         strlen_or_indptr = (num_columns == 0)? SQL_DEFAULT_PARAM : SQL_DATA_AT_EXEC;
     } else {
         // This is one of the constituent columns of the table-valued parameter
@@ -3154,11 +3152,16 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
         throw core::CoreException();
     }
 
+    // Save the TVP type name for SQLSetDescField later
+    buffer = ZSTR_VAL(tvp_name);
+    buffer_length = SQL_NTS;
+    
     // Check if schema is provided by the user
     if (zend_hash_move_forward_ex(inputs_ht, &pos) == SUCCESS) {
         zval *schema_z = zend_hash_get_current_data_ex(inputs_ht, &pos);
         if (schema_z != NULL && Z_TYPE_P(schema_z) == IS_STRING) {
             schema_name = Z_STR_P(schema_z);
+            ZVAL_NEW_STR(&placeholder_z, schema_name);
         }
     }
 
@@ -3306,6 +3309,34 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
     if (num_rows == 0) {
         // TVP has no data
         return;
+    }
+
+    // Set Table-Valued parameter type name (and the schema where it is defined)
+    SQLHDESC hIpd = NULL;
+    core::SQLGetStmtAttr(stmt, SQL_ATTR_IMP_PARAM_DESC, &hIpd, 0, 0);
+
+    if (buffer != NULL) {
+        // SQL_CA_SS_TYPE_NAME is optional for stored procedure calls, but it must be 
+        // specified for SQL statements that are not procedure calls to enable the 
+        // server to determine the type of the table-valued parameter.
+        char *tvp_name = reinterpret_cast<char *>(buffer);
+        SQLRETURN r = ::SQLSetDescField(hIpd, param_pos + 1, SQL_CA_SS_TYPE_NAME, reinterpret_cast<SQLCHAR*>(tvp_name), SQL_NTS);
+        CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
+            throw core::CoreException();
+        }
+    }
+    if (Z_TYPE(placeholder_z) == IS_STRING) {
+        // If the table type for the table-valued parameter is defined in a different 
+        // schema than the default, SQL_CA_SS_SCHEMA_NAME must be specified. If not, 
+        // the server will not be able to determine the type of the table-valued parameter.
+        char * schema_name = Z_STRVAL(placeholder_z);
+        SQLRETURN r = ::SQLSetDescField(hIpd, param_pos + 1, SQL_CA_SS_SCHEMA_NAME, reinterpret_cast<SQLCHAR*>(schema_name), SQL_NTS);
+        CHECK_SQL_ERROR_OR_WARNING(r, stmt) {
+            throw core::CoreException();
+        }
+        // Free and reset the placeholder_z
+        zend_string_release(Z_STR(placeholder_z));
+        ZVAL_UNDEF(&placeholder_z);
     }
 
     // Bind the TVP columns one by one
@@ -3606,11 +3637,16 @@ bool sqlsrv_params_container::get_next_parameter(_Inout_ sqlsrv_stmt* stmt)
         // Done now, reset current_param 
         current_param = NULL;
         return false;
+    } else if (r == SQL_NEED_DATA) {
+        if (param != NULL) {
+            current_param = reinterpret_cast<sqlsrv_param*>(param);
+            SQLSRV_ASSERT(current_param != NULL, "sqlsrv_params_container::get_next_parameter - The parameter requested is missing!");
+            current_param->init_data_from_zval(stmt);
+        } else {
+            // Do not reset current_param when param is NULL, because 
+            // it means that data is expected from the existing current_param
+        }
     }
-
-    current_param = reinterpret_cast<sqlsrv_param*>(param);
-    SQLSRV_ASSERT(current_param != NULL, "sqlsrv_params_container::get_next_parameter - The parameter requested is missing!");
-    current_param->init_data_from_zval(stmt);
 
     return true;
 }
