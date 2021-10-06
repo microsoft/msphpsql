@@ -2497,8 +2497,8 @@ void sqlsrv_param::bind_param(_Inout_ sqlsrv_stmt* stmt)
     if (was_null) {
         strlen_or_indptr = SQL_NULL_DATA;
 	if ((sql_data_type == SQL_CHAR) && (column_size == 1) && (direction == SQL_PARAM_INPUT)) {
-	  // This is a work-around for a bug in Microsoft SQL Server and/or unixODBC and/or msodbcsql;
-	  // as to how the T-SQL operator ISNULL likes to see a NULL.
+	  // This provides a more useful NULL value that is compatible with
+	  // how the T-SQL operator ISNULL works.
 	  sql_data_type = SQL_VARCHAR;
 	  column_size = 0;
 	}
