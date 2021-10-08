@@ -25,7 +25,7 @@ def write_index(index_filename, tag_version):
     PATH=%var2%
     SRCSRVTRG=%TARG%\%PDBVERSION%\%fnbksl%(%var2%)
     SRCURL=https://raw.githubusercontent.com/Microsoft/msphpsql/%SRCVERSION%/source/%PATH%
-    SRCSRVCMD=powershell -Command "$r=New-Object -ComObject Msxml2.XMLHTTP; $r.open('GET', '%SRCURL%', $false); $r.send(); [io.file]::WriteAllBytes('%SRCSRVTRG%', $r.responseBody)"
+    SRCSRVCMD=powershell -Command "Invoke-WebRequest -Uri '%SRCURL%' -OutFile '%SRCSRVTRG%'"
     SRCVERSION=v5.6.0
     PDBVERSION=v5.6.0
     For example
@@ -38,9 +38,7 @@ def write_index(index_filename, tag_version):
         f.write('SRCSRVTRG=%TARG%\%PDBVERSION%\%fnbksl%(%var2%)' + os.linesep)
         f.write('SRCURL=https://raw.githubusercontent.com/Microsoft/msphpsql/%SRCVERSION%/source/%PATH%' + os.linesep)
         f.write('SRCSRVCMD=powershell -Command ')
-        f.write('\"$r=New-Object -ComObject Msxml2.XMLHTTP; ')
-        f.write('$r.open(\'GET\', \'%SRCURL%\', $false); ')
-        f.write('$r.send(); [io.file]::WriteAllBytes(\'%SRCSRVTRG%\', $r.responseBody)\"' + os.linesep)
+        f.write('\"Invoke-WebRequest -Uri \'%SRCURL%\' -OutFile \'%SRCSRVTRG%\'\"' + os.linesep)
         f.write('SRCVERSION=' + tag_version + os.linesep)
         f.write('PDBVERSION=' + tag_version + os.linesep)
 
