@@ -106,9 +106,8 @@ jobs:
     displayName: 'Install prerequisites'
 
   - script: |
-      python --version
       python3 --version
-      sudo apt install python3-pip
+      python3 -m pip install --upgrade pip
       python3 -m pip --version
       python3 -m pip install PyYAML
       python3 -m pip install cpp-coveralls
@@ -205,6 +204,7 @@ jobs:
   - script: |
       cd $(Build.SourcesDirectory)
       echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
+      yaml.warnings({'YAMLLoadWarning': False})
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
         -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
     displayName: 'Invoke coveralls using repo token'
