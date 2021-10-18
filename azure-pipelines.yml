@@ -108,6 +108,7 @@ jobs:
   - script: |
       python3 --version
       python3 -m pip install --upgrade pip
+      python3 -m pip install wheel
       python3 -m pip --version
       python3 -m pip install PyYAML
       python3 -m pip install cpp-coveralls
@@ -204,7 +205,7 @@ jobs:
   - script: |
       cd $(Build.SourcesDirectory)
       echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
-      yaml.warnings({'YAMLLoadWarning': False})
+      export PYTHONWARNINGS=ignore::yaml.YAMLLoadWarning
       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
         -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
     displayName: 'Invoke coveralls using repo token'
