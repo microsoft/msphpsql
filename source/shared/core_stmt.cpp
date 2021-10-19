@@ -2148,16 +2148,16 @@ void sqlsrv_param::process_null_param(_Inout_ zval* param_z)
     // Derive the param SQL type only if it is unknown
     if (sql_data_type == SQL_UNKNOWN_TYPE) {
         // Use the encoding to guess whether the sql_type is binary type or char type. For NULL cases,
-        // if the server type is a binary type, than the server expects the sql_type to be binary type
+        // if the server type is a binary type, then the server expects the sql_type to be binary type
         // as well, otherwise an error stating "Implicit conversion not allowed.." is thrown by the
         // server. For all other server types, setting the sql_type to sql_char works fine.
-        sql_data_type = (encoding == SQLSRV_ENCODING_BINARY) ? SQL_BINARY : SQL_CHAR;
+        sql_data_type = (encoding == SQLSRV_ENCODING_BINARY) ? SQL_BINARY : SQL_VARCHAR;
     }
 
     c_data_type = (encoding == SQLSRV_ENCODING_BINARY) ? SQL_C_BINARY : SQL_C_CHAR;
 
     if (column_size == SQLSRV_UNKNOWN_SIZE) {
-        column_size = 1;
+        column_size = (encoding == SQLSRV_ENCODING_BINARY) ? 1 : 0;
         decimal_digits = 0;
     }
     buffer = NULL;
