@@ -2150,7 +2150,8 @@ void sqlsrv_param::process_null_param(_Inout_ zval* param_z)
         // Use the encoding to guess whether the sql_type is binary type or char type. For NULL cases,
         // if the server type is a binary type, then the server expects the sql_type to be binary type
         // as well, otherwise an error stating "Implicit conversion not allowed.." is thrown by the
-        // server. For all other server types, setting the sql_type to sql_char works fine.
+        // server. For all other server types, setting the sql_type to sql_varchar works fine.
+        // It must be varchar with column size 0 for ISNULL to work properly.
         sql_data_type = (encoding == SQLSRV_ENCODING_BINARY) ? SQL_BINARY : SQL_VARCHAR;
     }
 
@@ -2496,12 +2497,6 @@ void sqlsrv_param::bind_param(_Inout_ sqlsrv_stmt* stmt)
 {
     if (was_null) {
         strlen_or_indptr = SQL_NULL_DATA;
-	if ((sql_data_type == SQL_CHAR) && (column_size == 1) && (direction == SQL_PARAM_INPUT)) {
-	  // This provides a more useful NULL value that is compatible with
-	  // how the T-SQL operator ISNULL works.
-	  sql_data_type = SQL_VARCHAR;
-	  column_size = 0;
-	}
     }
 
     core::SQLBindParameter(stmt, param_pos + 1, direction, c_data_type, sql_data_type, column_size, decimal_digits, buffer, buffer_length, &strlen_or_indptr);
