@@ -399,7 +399,7 @@ pdo_error PDO_ERRORS[] = {
     },
     {
         PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED,
-        { IMSSP, (SQLCHAR*) "The emulation of prepared statements is not supported when connecting with Column Encryption enabled.", -82, false }
+        { IMSSP, (SQLCHAR*) "Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.", -82, false }
     },
     {
         SQLSRV_ERROR_OUTPUT_PARAM_TYPES_NOT_SUPPORTED,
