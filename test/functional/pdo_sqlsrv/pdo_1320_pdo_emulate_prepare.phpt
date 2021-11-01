@@ -41,5 +41,5 @@ unset($conn);
 ?> 
 
 --EXPECT--
-SQLSTATE[IMSSP]: The emulation of prepared statements is not supported when connecting with Column Encryption enabled.
-SQLSTATE[IMSSP]: The emulation of prepared statements is not supported when connecting with Column Encryption enabled.
+SQLSTATE[IMSSP]: Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.
+SQLSTATE[IMSSP]: Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.
