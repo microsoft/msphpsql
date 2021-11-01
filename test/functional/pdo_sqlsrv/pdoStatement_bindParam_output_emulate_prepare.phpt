@@ -8,10 +8,11 @@ connection setting of PDO::ATTR_EMULATE_PREPARES
 <?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
-require_once("MsCommon_mid-refactor.inc");
+require_once("MsSetup.inc");
 
 try {
-    $conn = connect();
+    // Do not connect with AE enabled because otherwise this would have thrown a different exception
+    $conn = new PDO("sqlsrv:server=$server; Database = $databaseName;", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
 
     $count = 0;

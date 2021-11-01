@@ -2,6 +2,7 @@
 GitHub issue 1310 - bind null field as varchar(max) if not binary
 --DESCRIPTION--
 The test shows null fields are no longer bound as char(1) if not binary such that it solves both issues 1310 and 1102.
+Note that this test does not connect with AE enabled because SQLDescribeParam() does not work with these queries.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -9,10 +10,9 @@ PHPT_EXEC=true
 --FILE--
 <?php
 require_once("MsSetup.inc");
-require_once("MsCommon_mid-refactor.inc");
 
 try {
-    $conn = connect();
+    $conn = new PDO("sqlsrv:server=$server; Database = $databaseName;", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Issue 1310
