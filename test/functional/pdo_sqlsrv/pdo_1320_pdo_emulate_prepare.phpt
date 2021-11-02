@@ -38,8 +38,20 @@ try {
 
 unset($conn);
 
+try {
+    // Connection with column encryption enabled - PDO::ATTR_EMULATE_PREPARES is false by default
+    $connectionInfo = "ColumnEncryption = Enabled;";
+    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    echo "Connected successfully with column encryption enabled.\n";
+} catch (PDOException $e) {
+    echo $e->getMessage() . "\n";
+}
+
 ?> 
 
 --EXPECT--
 SQLSTATE[IMSSP]: Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.
 SQLSTATE[IMSSP]: Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.
+Connected successfully with column encryption enabled.
