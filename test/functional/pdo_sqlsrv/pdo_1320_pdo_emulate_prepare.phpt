@@ -45,6 +45,9 @@ try {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     echo "Connected successfully with column encryption enabled.\n";
+    $enabled = $conn->getAttribute(PDO::ATTR_EMULATE_PREPARES);
+    echo "By default, the emulation of prepared statements is:\n";
+    var_dump($enabled);
 } catch (PDOException $e) {
     echo $e->getMessage() . "\n";
 }
@@ -55,3 +58,5 @@ try {
 SQLSTATE[IMSSP]: Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.
 SQLSTATE[IMSSP]: Parameterized statement with attribute PDO::ATTR_EMULATE_PREPARES is not supported in a Column Encryption enabled Connection.
 Connected successfully with column encryption enabled.
+By default, the emulation of prepared statements is:
+bool(false)
