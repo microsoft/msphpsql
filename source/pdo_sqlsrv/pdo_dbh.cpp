@@ -735,7 +735,7 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         // assign the methods for the statement object.  This is necessary even if the 
         // statement fails so the user can retrieve the error information.
         stmt->methods = &pdo_sqlsrv_stmt_methods;
-        //stmt->supports_placeholders = PDO_PLACEHOLDER_POSITIONAL;   // we support parameterized queries with ?, not names
+        // if not emulate_prepare, we support parameterized queries with ?, not names
         stmt->supports_placeholders = (driver_dbh->emulate_prepare) ? PDO_PLACEHOLDER_NONE : PDO_PLACEHOLDER_POSITIONAL; // the statement options may override this later
 
         // Initialize the options array to be passed to the core layer
