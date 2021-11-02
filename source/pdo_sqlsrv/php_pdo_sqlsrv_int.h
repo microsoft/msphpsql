@@ -194,6 +194,7 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool format_decimals;
     short decimal_places;
     short use_national_characters;
+    bool emulate_prepare;
 
     pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver );
 };
