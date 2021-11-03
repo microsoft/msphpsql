@@ -103,7 +103,7 @@ function connectInvalidServer()
 require_once('MsSetup.inc');
 
 // Test some error conditions
-connectWithInvalidOptions();
+// connectWithInvalidOptions();
 
 // Make a connection to an invalid server
 connectInvalidServer();

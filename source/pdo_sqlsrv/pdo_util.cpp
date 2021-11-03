@@ -378,10 +378,6 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "Statement with emulate prepare on does not support output or input_output parameters.", -72, false }
     },
     {
-        PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
-        { IMSSP, (SQLCHAR*) "Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectoryServicePrincipal is supported.", -73, false }
-    },
-    {
         SQLSRV_ERROR_CE_DRIVER_REQUIRED,
         { IMSSP, (SQLCHAR*) "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server (or above) for %1!s!.", -78, true }
     },
@@ -441,10 +437,10 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
         { IMSSP, (SQLCHAR*) "Expected an integer to specify number of decimals to format the output values of decimal data types.", -92, false}
     },
-    {
-        SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
-        { IMSSP, (SQLCHAR*) "When using ActiveDirectoryMsi Authentication, PWD must be NULL. UID can be NULL, but if not, an empty string is not accepted.", -93, false}
-    },
+    //{
+    //    SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
+    //    { IMSSP, (SQLCHAR*) "When using ActiveDirectoryMsi Authentication, PWD must be NULL. UID can be NULL, but if not, an empty string is not accepted.", -93, false}
+    //},
     {
         SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
         { IMSSP, (SQLCHAR*) "The statement must be executed to retrieve Data Classification Sensitivity Metadata.", -94, false}

@@ -77,7 +77,7 @@ function connectInvalidServer()
 }
 
 // Test some error conditions
-connectWithInvalidOptions($server);
+// connectWithInvalidOptions($server);
 
 // Make a connection to an invalid server
 connectInvalidServer();
