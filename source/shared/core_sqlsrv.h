@@ -190,11 +190,6 @@ const int SQL_SERVER_2005_DEFAULT_DATETIME_SCALE = 3;
 const int SQL_SERVER_2008_DEFAULT_DATETIME_PRECISION = 34;
 const int SQL_SERVER_2008_DEFAULT_DATETIME_SCALE = 7;
 
-//namespace AzureADOptions {
-//    bool isAuthValid(_In_z_ const char* value, _In_ size_t value_len);
-//    bool isAADMsi(_In_z_ const char* value);
-//}
-
 // the message returned by ODBC Driver for SQL Server
 const char ODBC_CONNECTION_BUSY_ERROR[] = "Connection is busy with results for another command";
 
@@ -2011,7 +2006,6 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
     SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,
     SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
-    //SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
     SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,
     SQLSRV_ERROR_DATA_CLASSIFICATION_NOT_AVAILABLE,
     SQLSRV_ERROR_DATA_CLASSIFICATION_FAILED,

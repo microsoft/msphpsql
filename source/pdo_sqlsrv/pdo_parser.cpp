@@ -173,32 +173,6 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
     THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
 }
 
-/*
-void conn_string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ int len )
-{
-    // if the keyword is 'Authentication', check whether the user specified option is supported
-    bool valid = true;
-    //if ( stricmp( this->current_key_name, ODBCConnOptions::Authentication ) == 0 ) {
-    //    if (len <= 0)
-    //        valid = false;
-    //    else {
-    //        // extract option from the value by len
-    //        sqlsrv_malloc_auto_ptr<char> option;
-    //        option = static_cast<char*>( sqlsrv_malloc( len + 1 ) );
-    //        memcpy_s( option, len + 1, value, len );
-    //        option[len] = '\0';
-
-    //        valid = AzureADOptions::isAuthValid(option, len);
-    //    }
-    //}
-    //if( !valid ) {
-    //    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION, this->current_key_name );
-    //}
-
-    string_parser::add_key_value_pair( value, len );
-}
-*/
-
 inline bool sql_string_parser::is_placeholder_char( char c )
 {
     // placeholder only accepts numbers, upper and lower case alphabets and underscore

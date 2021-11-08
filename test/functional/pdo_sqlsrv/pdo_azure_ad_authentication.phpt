@@ -35,22 +35,6 @@ if ($stmt === false) {
 unset($conn);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-// Test Azure AD with integrated authentication. This should fail because
-// we don't support it.
-//
-// $connectionInfo = "Authentication = ActiveDirectoryIntegrated; TrustServerCertificate = true;";
-
-// try {
-    // $conn = new PDO("sqlsrv:server = $server ; $connectionInfo");
-    // echo "Connected successfully with Authentication=ActiveDirectoryIntegrated.\n";
-    // unset($conn);
-// } catch (PDOException $e) {
-    // echo "Could not connect with Authentication=ActiveDirectoryIntegrated.\n";
-    // print_r($e->getMessage());
-    // echo "\n";
-// }
-
-///////////////////////////////////////////////////////////////////////////////////////////
 // Test Azure AD on an Azure database instance. Replace $azureServer, etc with
 // your credentials to test, or this part is skipped.
 //
