@@ -40,7 +40,7 @@ try {
 
 
 ?>
---EXPECTREGEX--
-string\(3\) "200"
-string\(3\) "102"
-(string\(0\) ""|bool\(false\))
+--EXPECT--
+string(3) "200"
+string(3) "102"
+string(0) ""
