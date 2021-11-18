@@ -32,15 +32,21 @@ try {
     dropTable($conn, "table1");
     dropTable($conn, "table2");
     dropTable($conn, "table3");
+
+    // Should trigger exception
+    $tsql = "SELECT * FROM dummy";
+    $conn->exec($tsql);
+
     unset($conn);
 } catch (PDOException $e) {
-    var_dump($e);
+    print_r($e->getMessage());
     exit;
 }
 
 
 ?>
---EXPECT--
-int(2)
-int(2)
-int(2)
+--EXPECTREGEX--
+int\(2\)
+int\(2\)
+int\(2\)
+.*Invalid object name \'dummy\'\.
