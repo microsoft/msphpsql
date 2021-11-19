@@ -1616,7 +1616,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         str[0] = '\0';
         return str;
 #else
-        return NULL;
+        return ZSTR_EMPTY_ALLOC();
 #endif
     }
 
