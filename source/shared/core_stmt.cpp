@@ -395,6 +395,11 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             stmt->params_container.insert_param(param_num, new_param);
             param_ptr = new_param;
             new_param.transferred();
+        } else if (direction == SQL_PARAM_INPUT && param_ptr->sql_data_type != SQL_SS_TABLE) {
+            // reset the followings for regular input parameters
+            param_ptr->sql_data_type = sql_type;
+            param_ptr->column_size = column_size;
+            param_ptr->decimal_digits = decimal_digits;
         }
 
         SQLSRV_ASSERT(param_ptr != NULL, "core_sqlsrv_bind_param: param_ptr is null. Something went wrong.");
