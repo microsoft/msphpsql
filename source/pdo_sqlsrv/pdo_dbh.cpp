@@ -1598,6 +1598,9 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
 
         driver_stmt->~sqlsrv_stmt();
     } catch( core::CoreException& ) {
+        // restore error handling to its previous mode
+        dbh->error_mode = prev_err_mode;
+
         // copy any errors on the statement to the connection so that the user sees them, since the statement is released
         // before this method returns
         strcpy_s( dbh->error_code, sizeof( dbh->error_code ),
@@ -1613,7 +1616,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         str[0] = '\0';
         return str;
 #else
-        return NULL;
+        return ZSTR_EMPTY_ALLOC();
 #endif
     }
 

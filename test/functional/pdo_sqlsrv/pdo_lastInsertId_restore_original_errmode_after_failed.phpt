@@ -1,5 +1,5 @@
 --TEST--
-Test the PDO::lastInsertId() method.
+Confirm that PDO::ATTR_ERRMODE value should be restored whether PDO::lastInsertId() call succeeded or not.
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -16,31 +16,37 @@ try {
 
     insertRow($conn, "table1", array("val" => 1), "exec");
     insertRow($conn, "table2", array("val" => 2), "exec");
-    $id = $conn->lastInsertId();
-    var_dump($id);
+    $conn->lastInsertId();
+    var_dump($conn->getAttribute(PDO::ATTR_ERRMODE));
 
     insertRow($conn, "table2", array("val" => 3), "exec");
     insertRow($conn, "table1", array("val" => 4), "exec");
-    $id = $conn->lastInsertId();
-    var_dump($id);
+    $conn->lastInsertId();
+    var_dump($conn->getAttribute(PDO::ATTR_ERRMODE));
 
-    // Should return empty string as the table does not have an IDENTITY column.
+    // Should restore original value even if PDO::lastInsertId() failed.
     insertRow($conn, "table3", array("id" => 1, "val" => 1), "exec");
-    $id = $conn->lastInsertId();
-    var_dump($id);
+    $conn->lastInsertId();
+    var_dump($conn->getAttribute(PDO::ATTR_ERRMODE));
 
     dropTable($conn, "table1");
     dropTable($conn, "table2");
     dropTable($conn, "table3");
+
+    // Should trigger exception
+    $tsql = "SELECT * FROM dummy";
+    $conn->exec($tsql);
+
     unset($conn);
 } catch (PDOException $e) {
-    var_dump($e);
+    print_r($e->getMessage());
     exit;
 }
 
 
 ?>
---EXPECT--
-string(3) "200"
-string(3) "102"
-string(0) ""
+--EXPECTREGEX--
+int\(2\)
+int\(2\)
+int\(2\)
+.*Invalid object name \'dummy\'\.
