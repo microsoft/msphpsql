@@ -60,6 +60,16 @@ INSERTSQL;
     $stmt->bindParam(4, $invalid);
     $stmt->execute();
     
+    $authority = 'other-redirects.com';
+    $base = 'foobar.com';
+    $notFound = null;
+    $invalid = 'none';
+    $stmt->bindParam(1, $authority);
+    $stmt->bindParam(2, $base);
+    $stmt->bindParam(3, $notFound);
+    $stmt->bindParam(4, $invalid);
+    $stmt->execute();
+
     // fetch the data
     $stmt = $conn->prepare("SELECT * FROM domains");
     $stmt->execute();
@@ -93,6 +103,15 @@ Array
             [2] => foo.com
             [3] => bar.com
             [4] => 
+        )
+
+    [2] => Array
+        (
+            [0] => 3
+            [1] => other-redirects.com
+            [2] => foobar.com
+            [3] => 
+            [4] => none
         )
 
 )

@@ -56,6 +56,15 @@ if (!$result) {
     fatalError("failed to execute the insert statement (2)");
 }
 
+$authority = 'other-redirects.com';
+$base = 'foobar.com';
+$notFound = null;
+$invalid = 'none';
+$result = sqlsrv_execute($stmt);
+if (!$result) {
+    fatalError("failed to execute the insert statement (3)");
+}
+
 // fetch the data
 $tsql = "SELECT * FROM srv_domains";
 $stmt = sqlsrv_query($conn, $tsql);
@@ -90,5 +99,13 @@ Array
     [2] => foo.com
     [3] => bar.com
     [4] => 
+)
+Array
+(
+    [0] => 3
+    [1] => other-redirects.com
+    [2] => foobar.com
+    [3] => 
+    [4] => none
 )
 Done
