@@ -10,7 +10,8 @@ PHPT_EXEC=true
 <?php
 require_once('MsCommon.inc');
 
-$conn = AE\connect();
+$connectionInfo = array('CharacterSet'=>'UTF-8');
+$conn = AE\connect($connectionInfo);
 
 dropTable($conn, 'srv_domains');
 
