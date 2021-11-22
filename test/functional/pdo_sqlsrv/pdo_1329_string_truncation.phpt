@@ -50,9 +50,9 @@ INSERTSQL;
     $stmt->bindParam(4, $invalid);
     $stmt->execute();
 
-    $authority = 'detached-with-redirects.com';
-    $base = 'foo.com';
-    $notFound = 'bar.com';
+    $authority = 'detached-with-ředirects.com';
+    $base = 'fŏő.com';
+    $notFound = 'baŗ.com';
     $invalid = null;
     $stmt->bindParam(1, $authority);
     $stmt->bindParam(2, $base);
@@ -60,10 +60,10 @@ INSERTSQL;
     $stmt->bindParam(4, $invalid);
     $stmt->execute();
     
-    $authority = 'other-redirects.com';
-    $base = 'foobar.com';
+    $authority = 'Őther-redirects.com';
+    $base = 'fooš.com';
     $notFound = null;
-    $invalid = 'none';
+    $invalid = 'ŷëå';
     $stmt->bindParam(1, $authority);
     $stmt->bindParam(2, $base);
     $stmt->bindParam(3, $notFound);
@@ -99,19 +99,19 @@ Array
     [1] => Array
         (
             [0] => 2
-            [1] => detached-with-redirects.com
-            [2] => foo.com
-            [3] => bar.com
+            [1] => detached-with-ředirects.com
+            [2] => fŏő.com
+            [3] => baŗ.com
             [4] => 
         )
 
     [2] => Array
         (
             [0] => 3
-            [1] => other-redirects.com
-            [2] => foobar.com
+            [1] => Őther-redirects.com
+            [2] => fooš.com
             [3] => 
-            [4] => none
+            [4] => ŷëå
         )
 
 )

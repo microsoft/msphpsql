@@ -47,19 +47,19 @@ if (!$result) {
     fatalError("failed to execute the insert statement (1)");
 }
 
-$authority = 'detached-with-redirects.com';
-$base = 'foo.com';
-$notFound = 'bar.com';
+$authority = 'detached-with-ředirects.com';
+$base = 'fŏő.com';
+$notFound = 'baŗ.com';
 $invalid = null;
 $result = sqlsrv_execute($stmt);
 if (!$result) {
     fatalError("failed to execute the insert statement (2)");
 }
 
-$authority = 'other-redirects.com';
-$base = 'foobar.com';
+$authority = 'Őther-redirects.com';
+$base = 'fooš.com';
 $notFound = null;
-$invalid = 'none';
+$invalid = 'ŷëå';
 $result = sqlsrv_execute($stmt);
 if (!$result) {
     fatalError("failed to execute the insert statement (3)");
@@ -95,17 +95,17 @@ Array
 Array
 (
     [0] => 2
-    [1] => detached-with-redirects.com
-    [2] => foo.com
-    [3] => bar.com
+    [1] => detached-with-ředirects.com
+    [2] => fŏő.com
+    [3] => baŗ.com
     [4] => 
 )
 Array
 (
     [0] => 3
-    [1] => other-redirects.com
-    [2] => foobar.com
+    [1] => Őther-redirects.com
+    [2] => fooš.com
     [3] => 
-    [4] => none
+    [4] => ŷëå
 )
 Done
