@@ -100,4 +100,12 @@ Array
     [3] => bar.com
     [4] => 
 )
+Array
+(
+    [0] => 3
+    [1] => other-redirects.com
+    [2] => foobar.com
+    [3] => 
+    [4] => none
+)
 Done
