@@ -1187,8 +1187,6 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
 
     try {
 
-        // stmt->free_param_data();
-
         stmt->executed = false;
 
         zval* params_z = stmt->params_z;
