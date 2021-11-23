@@ -1187,8 +1187,6 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
 
     try {
 
-        stmt->free_param_data();
-
         stmt->executed = false;
 
         zval* params_z = stmt->params_z;
@@ -1265,6 +1263,8 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
         } ZEND_HASH_FOREACH_END();
     }
     catch( core::CoreException& ) {
+        stmt->free_param_data();
+
         SQLFreeStmt( stmt->handle(), SQL_RESET_PARAMS );
         zval_ptr_dtor( stmt->params_z );
         sqlsrv_free( stmt->params_z );
