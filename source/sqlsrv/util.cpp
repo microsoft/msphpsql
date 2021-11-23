@@ -363,10 +363,6 @@ ss_error SS_ERRORS[] = {
         "Output or bidirectional variable parameters (SQLSRV_PARAM_OUT and SQLSRV_PARAM_INOUT) passed to sqlsrv_prepare or sqlsrv_query should be passed by reference, not by value."
         , -61, true }
     },
-	{
-		SS_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
-		{ IMSSP, (SQLCHAR*)"Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectoryServicePrincipal is supported.", -62, false }
-	},
     {
         SS_SQLSRV_ERROR_AE_QUERY_SQLTYPE_REQUIRED,
         { IMSSP, (SQLCHAR*)"Must specify the SQL type for each parameter in a parameterized query when using sqlsrv_query in a column encryption enabled connection.", -63, false }
@@ -428,10 +424,6 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_INVALID_DECIMAL_PLACES,
         { IMSSP, (SQLCHAR*) "Expected an integer to specify number of decimals to format the output values of decimal data types.", -117, false}
-    },
-    {
-        SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL,
-        { IMSSP, (SQLCHAR*) "When using ActiveDirectoryMsi Authentication, PWD must be NULL. UID can be NULL, but if not, an empty string is not accepted.", -118, false}
     },
     {
         SQLSRV_ERROR_DATA_CLASSIFICATION_PRE_EXECUTION,

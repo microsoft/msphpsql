@@ -19,34 +19,6 @@ function verifyErrorMessage($conn, $expectedError, $msg)
     }
 }
 
-function connectWithInvalidOptions()
-{
-    global $server;
-    
-    $expectedError = 'When using ActiveDirectoryMsi Authentication, PWD must be NULL. UID can be NULL, but if not, an empty string is not accepted';
-    
-    $connectionInfo = array("UID"=>"", "Authentication" => "ActiveDirectoryMsi");
-    $conn = sqlsrv_connect($server, $connectionInfo);
-    verifyErrorMessage($conn, $expectedError, 'empty UID provided');
-    unset($connectionInfo);
-
-    $connectionInfo = array("PWD"=>"", "Authentication" => "ActiveDirectoryMsi");
-    $conn = sqlsrv_connect($server, $connectionInfo);
-    verifyErrorMessage($conn, $expectedError, 'empty PWD provided');
-    unset($connectionInfo);
-
-    $connectionInfo = array("PWD"=>"pwd", "Authentication" => "ActiveDirectoryMsi");
-    $conn = sqlsrv_connect($server, $connectionInfo);
-    verifyErrorMessage($conn, $expectedError, 'PWD provided');
-    unset($connectionInfo);
-
-    $expectedError = 'When using Azure AD Access Token, the connection string must not contain UID, PWD, or Authentication keywords.';
-    $connectionInfo = array("Authentication"=>"ActiveDirectoryMsi", "AccessToken" => "123");
-    $conn = sqlsrv_connect($server, $connectionInfo);
-    verifyErrorMessage($conn, $expectedError, 'AccessToken option');
-    unset($connectionInfo);
-}
-
 function connectInvalidServer()
 {
     global $server, $driver, $userName, $userPassword;
@@ -75,9 +47,6 @@ function connectInvalidServer()
         // TODO: check the exception message here, using verifyErrorMessage() 
     }
 }
-
-// Test some error conditions
-connectWithInvalidOptions($server);
 
 // Make a connection to an invalid server
 connectInvalidServer();
