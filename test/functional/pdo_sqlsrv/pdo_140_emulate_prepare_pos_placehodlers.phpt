@@ -44,6 +44,28 @@ EOF;
     $data = selectAll($cnn, $tbname);
     var_dump($data);
 
+    $system_param = 'another string';
+    $utf8_param = 'Привет';
+    $binary_param = fopen('php://memory', 'a');
+    fwrite($binary_param, hex2bin('80838790a9'));   // testing some extended characters
+    rewind($binary_param);
+
+    $st->bindParam(1, $system_param, PDO::PARAM_STR);
+    $st->bindParam(2, $utf8_param, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+    $st->bindParam(3, $binary_param, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
+
+    $st->execute();
+
+    $sql = "SELECT * FROM $tbname WHERE system_encoding = 'another string'";
+    $st = $cnn->query($sql);
+    $st->bindColumn('utf8_encoding', $param2);
+    $st->bindColumn('binary_encoding', $param3);
+    $row = $st->fetch(PDO::FETCH_BOUND);
+    if ($param2 != $utf8_param)
+        echo "$param2\n";
+    if (bin2hex($param3) != '80838790a9')
+        echo "$param3\n";
+
     dropTable($cnn, $tbname);
     unset($st);
     unset($cnn);
