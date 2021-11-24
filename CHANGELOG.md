@@ -3,6 +3,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 5.10.0-beta2 - 2021-12-03
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Support for PHP 8.1
+- Support for Ubuntu 21.10
+- Feature Request [#1320](https://github.com/microsoft/msphpsql/issues/1320) - allow PDO::ATTR_EMULATE_PREPARES to be set at the connection level
+
+### Fixed
+- Issue [#1307](https://github.com/microsoft/msphpsql/issues/1307) - added TVP support to non-procedure statements
+- Issue [#1310](https://github.com/microsoft/msphpsql/issues/1310) - adjusted sql_data_type and column size for NULL parameters - pull request [#1311](https://github.com/microsoft/msphpsql/pull/1311) by gjcarrette
+- Pull request [#1326](https://github.com/microsoft/msphpsql/pull/1326) - php drivers simply pass Azure AD Authentication to ODBC driver, which will verify the settings
+- Issue [#1329](https://github.com/microsoft/msphpsql/issues/1329) - reset sql type and column size for input params
+- Issue [#1331](https://github.com/microsoft/msphpsql/issues/1331) - restore PDO::ATTR_ERRMODE if calling PDO::lastInsertId() call fails - pull request [#1330](https://github.com/microsoft/msphpsql/pull/1330) by mpyw and pull request [#1332](https://github.com/microsoft/msphpsql/pull/1332)
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- This release requires ODBC Driver 17.4.2 or above. Otherwise, a warning about failing to set an attribute may be suppressed when using an older ODBC driver.
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+
+
 ## 5.10.0-beta1 - 2021-09-08
 Updated PECL release packages. Here is the list of updates:
 
