@@ -636,6 +636,25 @@ function IsDaasMode()
     return ($daasMode ? true : false);
 }
 
+function isServerHGSEnabled()
+{
+    $enabled = false;
+    try {
+        $conn = connect();
+        $tsql = "SELECT @@SERVERNAME";
+        $stmt = $conn->query($tsql);
+        
+        $result = $stmt->fetch(PDO::FETCH_NUM);
+        $name = $result[0];
+        
+        $enabled = (strpos($result[0], 'HGS') != false);
+    } catch (Exception $e) {
+        echo $e->getMessage();
+        die("Could not fetch server property.");
+    }
+    return $enabled;
+}
+
 function isSQLAzure()
 {
     // 'SQL Azure' indicates SQL Database or SQL Data Warehouse

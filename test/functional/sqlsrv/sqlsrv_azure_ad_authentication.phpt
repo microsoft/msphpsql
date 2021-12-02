@@ -35,22 +35,6 @@ sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-// Test Azure AD with integrated authentication. This should fail because
-// we don't support it.
-//
-$connectionInfo = array( "Authentication"=>"ActiveDirectoryIntegrated", "TrustServerCertificate"=>true );
-
-$conn = sqlsrv_connect($server, $connectionInfo);
-if ($conn === false) {
-    echo "Could not connect with Authentication=ActiveDirectoryIntegrated.\n";
-    $errors = sqlsrv_errors();
-    print_r($errors[0]);
-} else {
-    echo "Connected successfully with Authentication=ActiveDirectoryIntegrated.\n";
-    sqlsrv_close($conn);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////
 // Test Azure AD on an Azure database instance. Replace $azureServer, etc with
 // your credentials to test, or this part is skipped.
 //
@@ -99,14 +83,4 @@ if ($azureServer != 'TARGET_AD_SERVER') {
 --EXPECTF--
 Connected successfully with Authentication=SqlPassword.
 string(1) "%d"
-Could not connect with Authentication=ActiveDirectoryIntegrated.
-Array
-(
-    [0] => IMSSP
-    [SQLSTATE] => IMSSP
-    [1] => -62
-    [code] => -62
-    [2] => Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectoryServicePrincipal is supported.
-    [message] => Invalid option for the Authentication keyword. Only SqlPassword, ActiveDirectoryPassword, ActiveDirectoryMsi or ActiveDirectoryServicePrincipal is supported.
-)
 %s with Authentication=ActiveDirectoryPassword.

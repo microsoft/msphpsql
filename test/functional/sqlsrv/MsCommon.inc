@@ -94,6 +94,21 @@ function isLocaleDisabled()
     return ($daasMode || $localeDisabled);
 }
 
+function isServerHGSEnabled()
+{
+    $conn = connect();
+    $tsql = "SELECT @@SERVERNAME";
+    $stmt = sqlsrv_query($conn, $tsql);
+
+    if (sqlsrv_fetch($stmt)) {
+        $name = sqlsrv_get_field($stmt, 0);
+        if (strpos($name, 'HGS') != false) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function isSQLAzure()
 {
     // 'SQL Azure' indicates SQL Database or SQL Data Warehouse

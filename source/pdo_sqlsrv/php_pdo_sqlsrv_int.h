@@ -149,9 +149,6 @@ class conn_string_parser : private string_parser
         int discard_trailing_white_spaces( _In_reads_(len) const char* str, _Inout_ int len );
         void validate_key( _In_reads_(key_len) const char *key, _Inout_ int key_len);
 
-    protected:
-        void add_key_value_pair( _In_reads_(len) const char* value, _In_ int len);
-
     public:
         conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len, _In_ HashTable* conn_options_ht );
         void parse_conn_string( void );
@@ -194,6 +191,7 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     bool format_decimals;
     short decimal_places;
     short use_national_characters;
+    bool emulate_prepare;
 
     pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver );
 };
@@ -390,7 +388,6 @@ enum PDO_ERROR_CODES {
     PDO_SQLSRV_ERROR_INVALID_OUTPUT_PARAM_TYPE,
     PDO_SQLSRV_ERROR_INVALID_CURSOR_WITH_SCROLL_TYPE,
     PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
-    PDO_SQLSRV_ERROR_INVALID_AUTHENTICATION_OPTION,
     PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED,
     PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED,
     PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID

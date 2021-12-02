@@ -542,7 +542,8 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
     fetch_datetime( false ),
     format_decimals( false ),
     decimal_places( NO_CHANGE_DECIMAL_PLACES ), 
-    use_national_characters(CHARSET_PREFERENCE_NOT_SPECIFIED)
+    use_national_characters(CHARSET_PREFERENCE_NOT_SPECIFIED),
+    emulate_prepare(false)
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -734,7 +735,8 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         // assign the methods for the statement object.  This is necessary even if the 
         // statement fails so the user can retrieve the error information.
         stmt->methods = &pdo_sqlsrv_stmt_methods;
-        stmt->supports_placeholders = PDO_PLACEHOLDER_POSITIONAL;   // we support parameterized queries with ?, not names
+        // if not emulate_prepare, we support parameterized queries with ?, not names
+        stmt->supports_placeholders = (driver_dbh->emulate_prepare) ? PDO_PLACEHOLDER_NONE : PDO_PLACEHOLDER_POSITIONAL; // the statement options may override this later
 
         // Initialize the options array to be passed to the core layer
         ALLOC_HASHTABLE( pdo_stmt_options_ht );
@@ -1288,8 +1290,15 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_READ_ONLY_DBH_ATTR );
             }
 
-            // Statement level only
             case PDO_ATTR_EMULATE_PREPARES:
+                {
+                    driver_dbh->emulate_prepare = zend_is_true(val);
+                    if (driver_dbh->emulate_prepare && driver_dbh->ce_option.enabled) {
+                        THROW_PDO_ERROR(driver_dbh, PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED);
+                    }
+                }
+                break;
+            // Statement level only
             case PDO_ATTR_CURSOR:
             case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:    
             case SQLSRV_ATTR_DATA_CLASSIFICATION:
@@ -1362,8 +1371,13 @@ int pdo_sqlsrv_dbh_get_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_
 #endif
             }
 
-             // Statement level only
             case PDO_ATTR_EMULATE_PREPARES:
+            {
+                ZVAL_BOOL(return_value, driver_dbh->emulate_prepare);
+                break;
+            }
+
+            // Statement level only
             case PDO_ATTR_CURSOR:
             case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:  
             case SQLSRV_ATTR_DATA_CLASSIFICATION:
@@ -1584,6 +1598,9 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
 
         driver_stmt->~sqlsrv_stmt();
     } catch( core::CoreException& ) {
+        // restore error handling to its previous mode
+        dbh->error_mode = prev_err_mode;
+
         // copy any errors on the statement to the connection so that the user sees them, since the statement is released
         // before this method returns
         strcpy_s( dbh->error_code, sizeof( dbh->error_code ),
@@ -1599,7 +1616,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         str[0] = '\0';
         return str;
 #else
-        return NULL;
+        return ZSTR_EMPTY_ALLOC();
 #endif
     }
 

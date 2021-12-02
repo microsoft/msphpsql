@@ -704,41 +704,6 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
     return true;
 }
 
-namespace AzureADOptions {
-    enum AAD_AUTH_TYPE {
-        MIN_AAD_AUTH_TYPE = 0,
-        SQL_PASSWORD = 0,
-        AAD_PASSWORD,
-        AAD_MSI,
-        AAD_SPA,
-        MAX_AAD_AUTH_TYPE
-    };
-
-    const char *AADAuths[] = { "SqlPassword", "ActiveDirectoryPassword", "ActiveDirectoryMsi", "ActiveDirectoryServicePrincipal" };
-
-    bool isAuthValid(_In_z_ const char* value, _In_ size_t value_len)
-    {
-        if (value_len <= 0)
-            return false;
-
-        bool isValid = false;
-        for (short i = MIN_AAD_AUTH_TYPE; i < MAX_AAD_AUTH_TYPE && !isValid; i++)
-        {
-            if (!stricmp(value, AADAuths[i])) {
-                isValid = true;
-            }
-        }
-
-        return isValid;
-    }
-
-    bool isAADMsi(_In_z_ const char* value)
-    {
-        return (value != NULL && !stricmp(value, AADAuths[AAD_MSI]));
-    }
-}
-
-
 // *** internal connection functions and classes ***
 
 namespace {
@@ -792,10 +757,11 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
             access_token_used = true;
         }
 
-        // Check if Authentication is ActiveDirectoryMSI
+        // Check if Authentication is ActiveDirectoryMSI because we have to handle this case differently
         // https://docs.microsoft.com/en-ca/azure/active-directory/managed-identities-azure-resources/overview
         bool activeDirectoryMSI = false;
         if (authentication_option_used) {
+            const char aadMSIoption[] = "ActiveDirectoryMSI";
             zval* auth_option = NULL;
             auth_option = zend_hash_index_find(options, SQLSRV_CONN_OPTION_AUTHENTICATION);
 
@@ -804,34 +770,16 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                 option = Z_STRVAL_P(auth_option);
             }
 
-            //if (option != NULL && !stricmp(option, AzureADOptions::AZURE_AUTH_AD_MSI)) {
-            activeDirectoryMSI = AzureADOptions::isAADMsi(option);
-            if (activeDirectoryMSI) {
-                // There are two types of managed identities:
-                // (1) A system-assigned managed identity: UID must be NULL
-                // (2) A user-assigned managed identity: UID defined but must not be an empty string
-                // In both cases, PWD must be NULL
-
-                bool invalid = false;
-                if (pwd != NULL) {
-                    invalid = true;
-                } else {
-                    if (uid != NULL && strnlen_s(uid) == 0) {
-                        invalid = true;
-                    }
-                }
-
-                CHECK_CUSTOM_ERROR(invalid, conn, SQLSRV_ERROR_AAD_MSI_UID_PWD_NOT_NULL ) {
-                    throw core::CoreException();
-                }
+            if (option != NULL && !stricmp(option, aadMSIoption)) {
+                activeDirectoryMSI = true;
             }
         }
 
         // Add the server name
         common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string );
 
-        // If uid is not present then we use trusted connection -- but not when access token or ActiveDirectoryMSI is used,
-        // because they are incompatible
+        // If uid is not present then we use trusted connection -- but not when connecting
+        // using the access token or Authentication is ActiveDirectoryMSI
         if (!access_token_used && !activeDirectoryMSI) {
             if (uid == NULL || strnlen_s(uid) == 0) {
                 connection_string += CONNECTION_OPTION_NO_CREDENTIALS;  //  "Trusted_Connection={Yes};"

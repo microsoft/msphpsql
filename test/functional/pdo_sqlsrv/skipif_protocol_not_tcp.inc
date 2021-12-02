@@ -3,31 +3,31 @@ if (!extension_loaded("pdo_sqlsrv")) {
     die("skip Extension not loaded");
 }
 
-require_once( "MsSetup.inc" );
+require_once("MsSetup.inc");
 
-$conn = new PDO( "sqlsrv:server = $server ;", $uid, $pwd );
-if( $conn === false )
-{
-    die( "skip Could not connect during SKIPIF." );
+try {
+    $conn = new PDO("sqlsrv:server = $server", $uid, $pwd);
+} catch (PDOException $e) {
+    die("skip Could not connect during SKIPIF.");
 }
 
-// Get process ID. Not the same as the one during the actual test, but
-// we only need to know the protocol for a particular connection.
-$stmt = $conn->query( "SELECT @@SPID" );
-if ( $stmt )
-{
-    $spid = $stmt->fetch(PDO::FETCH_NUM)[0];
-}
-else
-{
-    die( "skip Could not fetch SPID during SKIPIF.");
-}
+$tsql = <<<SQL
+SELECT c.session_id, c.net_transport
+FROM sys.dm_exec_connections AS c  
+JOIN sys.dm_exec_sessions AS s  
+    ON c.session_id = s.session_id  
+WHERE c.session_id = @@SPID;
+SQL;
 
-$stmt = $conn->query( "SELECT * FROM sys.dm_exec_connections WHERE session_id = ".$spid);
-$prot = $stmt->fetchColumn(3);
+try {
+    // Check the transport protocol for the current connection
+    $stmt = $conn->query($tsql);
+    $prot = $stmt->fetchColumn(1);
 
-if ($prot != 'TCP')
-{
-    die("skip Not using a TCP protocol." );
+    if ($prot != 'TCP') {
+        die("skip Not using a TCP protocol.");
+    }
+} catch (PDOException $e) {
+    die("skip Failed to fetch SPID and transport protocol.");
 }
 ?>

@@ -34,7 +34,7 @@ if ($msodbcsqlMin < 4 and $msodbcsqlMaj == 17) {
 
 // Get SQL Server
 $serverInfo = $conn->getAttribute(PDO::ATTR_SERVER_INFO);
-if (strpos($serverInfo['SQLServerName'], 'PHPHGS') === false) {
+if (strpos($serverInfo['SQLServerName'], 'HGS') === false) {
     die("skip Server is not HGS enabled");
 }
 ?>

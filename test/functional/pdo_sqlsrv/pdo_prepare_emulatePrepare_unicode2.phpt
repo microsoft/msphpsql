@@ -1,5 +1,8 @@
 --TEST--
-prepare with emulate prepare and binding uft8 characters
+Prepare with emulate prepare and binding uft8 characters
+--DESCRIPTION--
+This is the same as pdo_prepare_emulatePrepare_unicode.phpt except that
+PDO::ATTR_EMULATE_PREPARES at the connection level
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -46,17 +49,17 @@ try {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     print_r($row);
 
-    //with emulate prepare and no bind param options
     if (!isAEConnected()) {
-        $options = array(PDO::ATTR_EMULATE_PREPARES => true);
+        $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
     } else {
-        $options = array(PDO::ATTR_EMULATE_PREPARES => false);
+        $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     }
 
+    //with emulate prepare and no bind param options
     print_r("Prepare with emulate prepare and no bindParam options:\n");
     // This test only makes sense without AE because the default encoding is PDO::SQLSRV_ENCODING_UTF8
-    if (!isAEConnected()) {   
-        $stmt = prepareStmt($conn, $query, $options);
+    if (!isAEConnected()) {
+        $stmt = prepareStmt($conn, $query, array());
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($stmt->rowCount() != 0) {
             print_r("Do not expect results for this query!\n");
@@ -66,15 +69,15 @@ try {
 
     //with emulate prepare and SQLSRV_ENCODING_UTF8
     print_r("Prepare with emulate prepare and SQLSRV_ENCODING_UTF8:\n");
-    $stmt = prepareStmt($conn, $query, $options, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+    $stmt = prepareStmt($conn, $query, array(), PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     print_r($row);
 
     //with emulate prepare and SQLSRV_ENCODING_SYSTEM
     print_r("Prepare with emulate prepare and and SQLSRV_ENCODING_SYSTEM:\n");
-    $stmt = prepareStmt($conn, $query, $options, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
+    $stmt = prepareStmt($conn, $query, array(), PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_SYSTEM);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     // The combination of Column Encryption and Unix platforms support SQLSRV_ENCODING_SYSTEM because:
     // With Column Encryption enabled, binding parameters uses exact datatypes as the column definition
     // the default encoding in Linux and Mac is UTF8
@@ -97,7 +100,7 @@ try {
 
     //with emulate prepare and encoding SQLSRV_ENCODING_BINARY
     print_r("Prepare with emulate prepare and encoding SQLSRV_ENCODING_BINARY:\n");
-    $stmt = prepareStmt($conn, $query, $options, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
+    $stmt = prepareStmt($conn, $query, array(), PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_BINARY);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     print_r($row);
     if ($stmt->rowCount() == 0) {
