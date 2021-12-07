@@ -68,6 +68,7 @@ const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
 const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char WSID[] = "WSID";
+const char ComputePool[] = "ComputePool";
 
 }
 
@@ -466,6 +467,15 @@ const connection_option PDO_CONN_OPTS[] = {
         ODBCConnOptions::WSID,
         sizeof( ODBCConnOptions::WSID ),
         CONN_ATTR_STRING, 
+        conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::ComputePool,
+        sizeof(PDOConnOptionNames::ComputePool),
+        SQLSRV_CONN_OPTION_COMPUTE_POOL,
+        ODBCConnOptions::ComputePool,
+        sizeof(ODBCConnOptions::ComputePool),
+        CONN_ATTR_STRING,
         conn_str_append_func::func
     },
     { NULL, 0, SQLSRV_CONN_OPTION_INVALID, NULL, 0 , CONN_ATTR_INVALID, NULL },  //terminate the table
