@@ -1164,6 +1164,7 @@ const char WSID[] = "WSID";
 const char UID[] = "UID";
 const char PWD[] = "PWD";
 const char SERVER[] = "Server";
+const char ComputePool[] = "ComputePool";
 
 }
 
@@ -1201,6 +1202,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_TRANSPARENT_NETWORK_IP_RESOLUTION,
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
+    SQLSRV_CONN_OPTION_COMPUTE_POOL,
 
    // Driver specific connection options
    SQLSRV_CONN_OPTION_DRIVER_SPECIFIC = 1000,
