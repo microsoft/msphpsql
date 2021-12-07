@@ -1124,34 +1124,22 @@ void ce_akv_str_set_func::func(_In_ connection_option const* option, _In_ zval* 
 // Values = ("true" or "1") are treated as true values. Everything else is treated as false.
 // Returns 1 for true and 0 for false.
 
-size_t core_str_zval_is_true( _Inout_ zval* value_z )
+size_t core_str_zval_is_true(_Inout_ zval* value_z)
 {
     SQLSRV_ASSERT( Z_TYPE_P( value_z ) == IS_STRING, "core_str_zval_is_true: This function only accepts zval of type string." );
+    std::string val_str = Z_STRVAL_P(value_z);
+    std::string whitespaces(" \t\f\v\n\r");
 
-    char* value_in = Z_STRVAL_P( value_z );
-    size_t val_len = Z_STRLEN_P( value_z );
+    // Trim white spaces
+    std::size_t found = val_str.find_last_not_of(whitespaces);
+    if (found != std::string::npos)
+        val_str.erase(found + 1);
 
-    // strip any whitespace at the end (whitespace is the same value in ASCII and UTF-8)
-    size_t last_char = val_len - 1;
-    while( isspace(( unsigned char )value_in[last_char] )) {
-        value_in[last_char] = '\0';
-        val_len = last_char;
-        --last_char;
+    const char TRUE_VALUE_1[] = "true";
+    const char TRUE_VALUE_2[] = "1";
+    if (!val_str.compare(TRUE_VALUE_1) || !val_str.compare(TRUE_VALUE_2)) {
+        return 1; // true
     }
-
-    // save adjustments to the value made by stripping whitespace at the end
-    Z_STRLEN_P( value_z ) = val_len;
-
-    const char VALID_TRUE_VALUE_1[] = "true";
-    const char VALID_TRUE_VALUE_2[] = "1";
-
-    if(( val_len == ( sizeof( VALID_TRUE_VALUE_1 ) - 1 ) && !strnicmp( value_in, VALID_TRUE_VALUE_1, val_len )) ||
-       ( val_len == ( sizeof( VALID_TRUE_VALUE_2 ) - 1 ) && !strnicmp( value_in, VALID_TRUE_VALUE_2, val_len ))
-      ) {
-
-         return 1; // true
-    }
-
     return 0; // false
 }
 
