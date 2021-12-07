@@ -1,5 +1,8 @@
 --TEST--
 Test various encrypt attributes
+--DESCRIPTION--
+This test does not test if any connection is successful but mainly test if the Encrypt keyword takes
+different attributes.
 --SKIPIF--
 <?php require('skipif.inc');?>
 --FILE--
