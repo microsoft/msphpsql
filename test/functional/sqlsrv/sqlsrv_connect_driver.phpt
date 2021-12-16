@@ -31,6 +31,7 @@ function connectVerifyOutput($server, $connectionOptions, $testcase, $expected =
     if ($conn === false) {
         if (is_null($expected)) {
             echo "'$testcase' is expected to pass!\n";
+            print_r(sqlsrv_errors());
         } elseif (strpos(sqlsrv_errors($conn)[0]['message'], $expected) === false) {
             echo "The error returned for '$testcase' is unexpected:\n";
             print_r(sqlsrv_errors());

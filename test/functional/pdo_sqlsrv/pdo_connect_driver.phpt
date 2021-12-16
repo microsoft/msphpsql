@@ -39,6 +39,7 @@ function connectVerifyOutput($connectionOptions, $testcase, $expected = null)
     } catch(PDOException $e) {
         if (is_null($expected)) {
             echo "'$testcase' is expected to pass!" . PHP_EOL;
+            echo $e->getMessage() . PHP_EOL;
         } elseif (strpos($e->getMessage(), $expected) === false) {
             echo "The error returned for '$testcase' is unexpected:" . PHP_EOL;
             echo $e->getMessage() . PHP_EOL;
