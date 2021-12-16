@@ -23,18 +23,24 @@ testValidValues();
 testInvalidValues();
 testEncryptedWithODBC();
 testWrongODBC();
-echo "Done";
+echo "Done" . PHP_EOL;
 // end test
 
 ///////////////////////////
-function connectVerifyOutput($connectionOptions, $expected = null)
+function connectVerifyOutput($connectionOptions, $testcase, $expected = null)
 {
     global $server, $uid, $pwd;
 
     try {
         $conn = new PDO("sqlsrv:server = $server ; $connectionOptions", $uid, $pwd);
+        if (!is_null($expected)) {
+            echo "'$testcase' is expected to fail!" . PHP_EOL;
+        }
     } catch(PDOException $e) {
-        if (is_null($expected) || (strpos($e->getMessage(), $expected) === false)) {
+        if (is_null($expected)) {
+            echo "'$testcase' is expected to pass!" . PHP_EOL;
+        } elseif (strpos($e->getMessage(), $expected) === false) {
+            echo "The error returned for '$testcase' is unexpected:" . PHP_EOL;
             echo $e->getMessage() . PHP_EOL;
         }
     }
@@ -62,7 +68,7 @@ function testValidValues()
             $value = "invalid value $msodbcsqlMaj";
     }
     $connectionOptions = "Driver = $value";
-    connectVerifyOutput($connectionOptions);
+    connectVerifyOutput($connectionOptions, "Driver with curly brackets");
 
     // Test without {}
     switch ($msodbcsqlMaj) {
@@ -81,7 +87,7 @@ function testValidValues()
     }
 
     $connectionOptions = "Driver = $value";
-    connectVerifyOutput($connectionOptions);
+    connectVerifyOutput($connectionOptions, "Driver without curly brackets");
 }
 
 function testInvalidValues()
@@ -95,7 +101,7 @@ function testInvalidValues()
     foreach ($values as $value) {
         $connectionOptions = "Driver = $value";
         $expected = "Invalid value $value was specified for Driver option.";
-        connectVerifyOutput($connectionOptions, $expected);
+        connectVerifyOutput($connectionOptions, "Invalid driver $value", $expected);
     }
 }
 
@@ -108,21 +114,18 @@ function testEncryptedWithODBC()
 
     $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server";
 
-    connectVerifyOutput($connectionOptions, $expected);
+    connectVerifyOutput($connectionOptions, "Using ODBC 13 for AE", $expected);
 }
 
 function testWrongODBC()
 {
     global $msodbcsqlMaj;
 
-    $value = "ODBC Driver 11 for SQL Server";
-    if ($msodbcsqlMaj == 17 || $msodbcsqlMaj < 13) {
-        $value = "ODBC Driver 13 for SQL Server";
-    }
+    $value = "ODBC Driver 13 for SQL Server";
     $connectionOptions = "Driver = $value;";
     $expected = "The specified ODBC Driver is not found.";
 
-    connectVerifyOutput($connectionOptions, $expected);
+    connectVerifyOutput($connectionOptions, "Connect with ODBC 13", $expected);
 }
 
 ?>

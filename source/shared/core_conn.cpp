@@ -1015,22 +1015,28 @@ void driver_set_func::func(_In_ connection_option const* option, _In_ zval* valu
 {
     const char* val_str = Z_STRVAL_P(value);
     size_t val_len = Z_STRLEN_P(value);
-    std::string driver_option(val_str);
+
+    // Check if curly brackets are used, if so, trim them for matching
     if (val_len > 0 && val_str[0] == '{' && val_str[val_len - 1] == '}') {
-        driver_option = driver_option.substr(1, val_len - 2);
+        ++val_str;
+        val_len -= 2;
     }
 
+    // Check if the user provided driver_option one of the acceptable options
+    std::string driver_option(val_str, val_len);
     conn->driver_version = ODBC_DRIVER_UNKNOWN;
     for (short i = DRIVER_VERSION::FIRST; i <= DRIVER_VERSION::LAST && conn->driver_version == ODBC_DRIVER_UNKNOWN; ++i) {
-        if (!driver_option.compare(CONNECTION_STRING_DRIVER_NAME[i])) {
+        if (! driver_option.compare(CONNECTION_STRING_DRIVER_NAME[i])) {
             conn->driver_version = DRIVER_VERSION(i);
+            break;
         }
     }
 
-    CHECK_CUSTOM_ERROR(conn->driver_version == ODBC_DRIVER_UNKNOWN, conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, val_str) {
+    CHECK_CUSTOM_ERROR(conn->driver_version == ODBC_DRIVER_UNKNOWN, conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, Z_STRVAL_P(value)) {
         throw core::CoreException();
     }
 
+    // Append this driver option to the connection string
     common_conn_str_append_func(option->odbc_name, val_str, val_len, conn_str);
 }
 
