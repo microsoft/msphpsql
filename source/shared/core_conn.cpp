@@ -182,7 +182,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         }
 
         // if column encryption enabled check ODBC driver version
-        if (conn->ce_option.enabled && version != ODBC_DRIVER_17 && version != ODBC_DRIVER_18)) {
+        if (conn->ce_option.enabled && version != ODBC_DRIVER_17 && version != ODBC_DRIVER_18) {
             CHECK_CUSTOM_ERROR(true, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch()) {
                 throw core::CoreException();
             }
@@ -193,7 +193,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
             throw core::CoreException();
         }
         // now append the driver name to the connection string
-        common_conn_str_append_func(ODBCConnOptions::Driver, CONNECTION_STRING_DRIVER_NAME[version].c_str(), CONNECTION_STRING_DRIVER_NAME.length(), conn_str);
+        common_conn_str_append_func(ODBCConnOptions::Driver, CONNECTION_STRING_DRIVER_NAME[version].c_str(), CONNECTION_STRING_DRIVER_NAME[version].length(), conn_str);
         r = core_odbc_connect(conn, conn_str, is_pooled);
     } // else driver_version not unknown
 #else
