@@ -159,7 +159,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     // Therefore, it is unreliable to check for a certain sql state error
     // In Windows, we try to connect with ODBC driver first and rely on the returned error code to try connecting with other supported ODBC drivers
     if (conn->driver_version != ODBC_DRIVER::VER_UNKNOWN) {
-        // If column encryption is enabled, must use ODBC driver 17 or above
+        // if column encryption is enabled, must use ODBC driver 17 or above
         CHECK_CUSTOM_ERROR(conn->ce_option.enabled && conn->driver_version == ODBC_DRIVER::VER_13, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch()) {
             throw core::CoreException();
         }
@@ -182,7 +182,8 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif
     }
     else {
-        // driver not specified, so check if ODBC 17 then ODBC 18 and ODBC 13 finally
+        // ODBC driver not specified, so check ODBC 17 first then ODBC 18 and/or ODBC 13 
+        // If column encryption is enabled, check up to ODBC 18
         ODBC_DRIVER drivers[] = { ODBC_DRIVER::VER_17, ODBC_DRIVER::VER_18, ODBC_DRIVER::VER_13 };
         ODBC_DRIVER last_version = (conn->ce_option.enabled) ? ODBC_DRIVER::VER_18 : ODBC_DRIVER::VER_13;
 
@@ -206,18 +207,18 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
             }
 #endif
             else if (d == last_version) {
-                // if column encryption enabled check ODBC driver version
+                // if column encryption is enabled, throw the exception related to column encryption
                 CHECK_CUSTOM_ERROR(conn->ce_option.enabled, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch()) {
                     throw core::CoreException();
                 }
 
-                // if ODBC driver version is still unknown throw an exception here
+                // here it means that none of the supported ODBC drivers is found 
                 CHECK_CUSTOM_ERROR(true, conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
                     throw core::CoreException();
                 }
             }
         }
-    } // else driver_version not unknown
+    }
 
     // time to free the access token, if not null
     if (conn->azure_ad_access_token) {
@@ -960,7 +961,7 @@ std::string get_ODBC_driver_name(_In_ ODBC_DRIVER driver)
 // This method is meant to be used in a non-Windows environment,
 // searching for a particular ODBC driver name in the odbcinst.ini file
 // Parameters:
-// driver_version   - a valid value in enum DRIVER_VERSION
+// driver           - a valid value in enum ODBC_DRIVER
 // Return           - a boolean flag that indicates if the specified driver version is found or not
 bool core_search_odbc_driver_unix(_In_ ODBC_DRIVER driver)
 {
@@ -973,9 +974,8 @@ bool core_search_odbc_driver_unix(_In_ ODBC_DRIVER driver)
     if (!SQLGetInstalledDrivers(szBuf, cbBufMax, &cbBufOut))
         return false;
 
-    // derive the ODBC driver name
+    // search for the derived ODBC driver name based on the given version
     std::string driver_name = get_ODBC_driver_name(driver);
-    // search for the ODBC driver_name
     do
     {
         if (strstr(pszBuf, driver_name.c_str()) != 0)
@@ -1016,15 +1016,13 @@ void driver_set_func::func(_In_ connection_option const* option, _In_ zval* valu
         val_len -= 2;
     }
 
-    // Check if the user provided driver_option one of the acceptable options
+    // Check if the user provided driver_option matches any of the acceptable driver names
     std::string driver_option(val_str, val_len);
-    const short BUFFER_LEN = sizeof(ODBC_DRIVER_NAME);
     ODBC_DRIVER drivers[] = { ODBC_DRIVER::VER_17, ODBC_DRIVER::VER_18, ODBC_DRIVER::VER_13 };
 
     conn->driver_version = ODBC_DRIVER::VER_UNKNOWN;
-    std::string name;
     for (auto &d : drivers) {
-        name = get_ODBC_driver_name(d);
+        std::string name = get_ODBC_driver_name(d);
         if (!driver_option.compare(name)) {
             conn->driver_version = d;
             break;
@@ -1036,7 +1034,7 @@ void driver_set_func::func(_In_ connection_option const* option, _In_ zval* valu
     }
 
     // Append this driver option to the connection string
-    common_conn_str_append_func(ODBCConnOptions::Driver, name.c_str(), name.length(), conn_str);
+    common_conn_str_append_func(ODBCConnOptions::Driver, driver_option.c_str(), driver_option.length(), conn_str);
 }
 
 void column_encryption_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str )
