@@ -49,7 +49,7 @@ const int INFO_BUFFER_LEN = 256;
 const int MAX_CE_NAME_LEN = 260;
 
 // ODBC driver name
-const char ODBC_DRIVER_NAME[] = "ODBC Driver %u for SQL Server";
+const char ODBC_DRIVER_NAME[] = "ODBC Driver %d for SQL Server";
 
 // default options if only the server is specified
 const char CONNECTION_STRING_DEFAULT_OPTIONS[] = "Mars_Connection={Yes};";
@@ -301,43 +301,6 @@ bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN rc, _In_ 
 
     return ( SQL_SUCCEEDED(sr) && ! strcmp(error_state, reinterpret_cast<char*>( state ) ) );
 }
-
-// core_search_odbc_driver_unix
-// This method is meant to be used in a non-Windows environment,
-// searching for a particular ODBC driver name in the odbcinst.ini file
-// Parameters:
-// driver_version   - a valid value in enum DRIVER_VERSION
-// Return           - a boolean flag that indicates if the specified driver version is found or not
-#ifndef _WIN32
-bool core_search_odbc_driver_unix(_In_ ODBC_DRIVER driver)
-{
-    char szBuf[DEFAULT_CONN_STR_LEN + 1] = { '\0' };     // use a large enough buffer size
-    WORD cbBufMax = DEFAULT_CONN_STR_LEN;
-    WORD cbBufOut;
-    char *pszBuf = szBuf;
-
-    // get all the names of the installed drivers delimited by null characters
-    if (!SQLGetInstalledDrivers(szBuf, cbBufMax, &cbBufOut))
-        return false;
-
-    // derive the ODBC driver name
-    const int DRIVER_LEN = sizeof(ODBC_DRIVER_NAME);
-    char driver_name[DRIVER_LEN] = { '\0' };
-    snprintf(driver_name, DRIVER_LEN, ODBC_DRIVER_NAME, d);
-
-    // search for the ODBC driver_name
-    do
-    {
-        if (strstr(pszBuf, driver_name) != 0)
-            return true;
-
-        // get the next driver
-        pszBuf = strchr(pszBuf, '\0') + 1;
-    } while (pszBuf[1] != '\0'); // end when there are two consecutive null characters
-
-    return false;
-}
-#endif // !_WIN32
 
 // core_odbc_connect
 // calls odbc connect API to establish the connection to server
@@ -987,10 +950,44 @@ std::string get_ODBC_driver_name(_In_ ODBC_DRIVER driver)
 {
     const short BUFFER_LEN = sizeof(ODBC_DRIVER_NAME);
     char driver_name[BUFFER_LEN] = { '\0' };
-    snprintf(driver_name, BUFFER_LEN, ODBC_DRIVER_NAME, driver);
+    snprintf(driver_name, BUFFER_LEN, ODBC_DRIVER_NAME, static_cast<int>(driver));
 
     return driver_name;
 }
+
+#ifndef _WIN32
+// core_search_odbc_driver_unix
+// This method is meant to be used in a non-Windows environment,
+// searching for a particular ODBC driver name in the odbcinst.ini file
+// Parameters:
+// driver_version   - a valid value in enum DRIVER_VERSION
+// Return           - a boolean flag that indicates if the specified driver version is found or not
+bool core_search_odbc_driver_unix(_In_ ODBC_DRIVER driver)
+{
+    char szBuf[DEFAULT_CONN_STR_LEN + 1] = { '\0' };     // use a large enough buffer size
+    WORD cbBufMax = DEFAULT_CONN_STR_LEN;
+    WORD cbBufOut;
+    char *pszBuf = szBuf;
+
+    // get all the names of the installed drivers delimited by null characters
+    if (!SQLGetInstalledDrivers(szBuf, cbBufMax, &cbBufOut))
+        return false;
+
+    // derive the ODBC driver name
+    std::string driver_name = get_ODBC_driver_name(driver);
+    // search for the ODBC driver_name
+    do
+    {
+        if (strstr(pszBuf, driver_name.c_str()) != 0)
+            return true;
+
+        // get the next driver
+        pszBuf = strchr(pszBuf, '\0') + 1;
+    } while (pszBuf[1] != '\0'); // end when there are two consecutive null characters
+
+    return false;
+}
+#endif // !_WIN32
 
 }   // namespace
 
