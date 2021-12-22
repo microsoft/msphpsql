@@ -117,11 +117,11 @@ function testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions)
 
 function testWrongODBC($msodbcsqlMaj, $server, $connectionOptions)
 {
-    $value = "ODBC Driver 13 for SQL Server";
+    $value = "ODBC Driver 18 for SQL Server";
     $connectionOptions['Driver']=$value;
     $expected = "The specified ODBC Driver is not found.";
 
-    connectVerifyOutput($server, $connectionOptions, "Connect with ODBC 13", $expected);
+    connectVerifyOutput($server, $connectionOptions, "Connect with ODBC 18", $expected);
 }
 
 ?>
