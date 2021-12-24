@@ -374,6 +374,10 @@ inline void sqlsrv_free_trace( _Inout_ void* ptr, _In_ const char* file, _In_ in
 
 #else
 
+// Unlike their C standard library's counterparts the Zend Engine's memory management functions
+// emalloc or erealloc won't return NULL in case of an problem while allocating the requested 
+// memory but bail out and terminate the current request.
+// Check www.phpinternalsbook.com/php7/memory_management/zend_memory_manager.html for details
 inline void* sqlsrv_malloc( _In_ size_t size )
 {
     return emalloc( size );
