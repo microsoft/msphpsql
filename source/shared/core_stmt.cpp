@@ -3673,7 +3673,7 @@ bool sqlsrv_params_container::send_next_packet(_Inout_ sqlsrv_stmt* stmt)
     }
 
     // The helper method send_stream_packet() returns false when EOF is reached
-    if (current_param->send_data_packet(stmt) == false) {
+    if (current_param && current_param->send_data_packet(stmt) == false) {
         // Now that EOF has been reached, reset current_param for next round 
         // Bear in mind that SQLParamData might request the same stream resource again
         current_param = NULL;
