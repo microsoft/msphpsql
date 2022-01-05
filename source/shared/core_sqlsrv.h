@@ -1168,6 +1168,7 @@ const char UID[] = "UID";
 const char PWD[] = "PWD";
 const char SERVER[] = "Server";
 const char ComputePool[] = "ComputePool";
+const char HostNameInCertificate[] = "HostNameInCertificate";
 
 }
 
@@ -1206,6 +1207,7 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
     SQLSRV_CONN_OPTION_COMPUTE_POOL,
+    SQLSRV_CONN_OPTION_HOSTNAME_IN_CERT,
 
    // Driver specific connection options
    SQLSRV_CONN_OPTION_DRIVER_SPECIFIC = 1000,

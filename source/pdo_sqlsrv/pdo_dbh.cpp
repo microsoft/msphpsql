@@ -69,6 +69,7 @@ const char TransactionIsolation[] = "TransactionIsolation";
 const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char WSID[] = "WSID";
 const char ComputePool[] = "ComputePool";
+const char HostNameInCertificate[] = "HostNameInCertificate";
 
 }
 
@@ -475,6 +476,15 @@ const connection_option PDO_CONN_OPTS[] = {
         SQLSRV_CONN_OPTION_COMPUTE_POOL,
         ODBCConnOptions::ComputePool,
         sizeof(ODBCConnOptions::ComputePool),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::HostNameInCertificate,
+        sizeof(PDOConnOptionNames::HostNameInCertificate),
+        SQLSRV_CONN_OPTION_HOSTNAME_IN_CERT,
+        ODBCConnOptions::HostNameInCertificate,
+        sizeof(ODBCConnOptions::HostNameInCertificate),
         CONN_ATTR_STRING,
         conn_str_append_func::func
     },
