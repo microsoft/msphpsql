@@ -9,7 +9,7 @@ Updated PECL release packages. Here is the list of updates:
 ### Added
 - Support for PHP 8.1
 - Support for macOS Monterey, Ubuntu 21.04 and 21.10, Debian 11, Alpine 3.13
-- Support for Apple M1 ARM64 hardware (requires [MS ODBC Driver 17.8+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/install-microsoft-odbc-driver-sql-server-macos?view=sql-server-ver15)
+- Support for Apple M1 ARM64 hardware -- requires [MS ODBC Driver 17.8+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/install-microsoft-odbc-driver-sql-server-macos?view=sql-server-ver15)
 - Adjusted connection keyword and value validation for more flexibility
 - Feature Request [#795](https://github.com/microsoft/msphpsql/issues/795) - adding support for [Table-valued parameters](https://github.com/Microsoft/msphpsql/wiki/Features#tvp)
 - Feature Request [#1320](https://github.com/microsoft/msphpsql/issues/1320) - allow PDO::ATTR_EMULATE_PREPARES to be set at the connection level
