@@ -2,7 +2,6 @@
 # https://aka.ms/yaml
 
 variables:
-  phpVersion: 8.0
   server: 'localhost,1433'
   host: 'sql1'
   sqlsrv_db: 'sqlsrv_testdb'
@@ -34,9 +33,8 @@ jobs:
       brew tap
       brew tap homebrew/core
       brew reinstall autoconf automake libtool
-      brew reinstall php@$(phpVersion)
       php -v
-    displayName: 'Install PHP'
+    displayName: 'Install PHP prerequisites'
 
   - script: |
       echo ready to build extensions
@@ -63,7 +61,7 @@ jobs:
 
 - job: Linux
   variables:
-    phpver: 8.1
+    phpver: 8.0
   pool:
     vmImage: 'ubuntu-20.04'
   steps:
@@ -235,8 +233,10 @@ jobs:
     condition: always()
 
 - job: Windows
+  variables:
+    phpVersion: 8.1
   pool:
-   vmImage: 'windows-2019'
+    vmImage: 'windows-2019'
   steps:
   - checkout: self
     clean: true
