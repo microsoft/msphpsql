@@ -143,7 +143,7 @@ yum install yum-utils
 yum-config-manager --enable remi-php81
 yum update
 # Note: The php-pdo package is required only for the PDO_SQLSRV driver
-yum install php php-pdo php-xml php-pear php-devel re2c gcc-c++ gcc
+yum install php php-pdo php-pear php-devel
 ```
 
 To install PHP on Red Hat 8, run the following:
@@ -293,7 +293,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 ## Installing the drivers on Alpine
 
 > [!NOTE]
-> The default version of PHP is 7.4. PHP 8.0 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
+> The default version of PHP is 7.4 or 8.0. PHP 8.1 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
 
 ### Step 1. Install PHP
 PHP packages for Alpine can be found in the `edge/community` repository. Please check [Enable Community Repository](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository) on their WIKI page. Add the following line to `/etc/apk/repositories`, replacing `<mirror>` with the URL of an Alpine repository mirror:
@@ -304,9 +304,21 @@ Then run:
 ```bash
 sudo su
 apk update
-# Note: The php7-pdo package is required only for the PDO_SQLSRV driver
+# Note: The php*-pdo package is required only for the PDO_SQLSRV driver
+# For PHP 7.*
 apk add php7 php7-dev php7-pear php7-pdo php7-openssl autoconf make g++
+# For PHP 8.*
+apk add php8 php8-dev php8-pear php8-pdo php8-openssl autoconf make g++
+# The following symbolic links are optional but useful
+ln -s /usr/bin/php8 /usr/bin/php
+ln -s /usr/bin/phpize8 /usr/bin/phpize
+ln -s /usr/bin/pecl8 /usr/bin/pecl
+ln -s /usr/bin/php-config8 /usr/bin/php-config
 ```
+
+> [!NOTE]
+> You might need to The default version of PHP is 7.4 or 8.0. PHP 8.1 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
+
 ### Step 2. Install prerequisites
 Install the ODBC driver for Alpine by following the instructions on the [Install the Microsoft ODBC driver for SQL Server (Linux)](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver15). 
 
@@ -316,7 +328,7 @@ sudo pecl install sqlsrv
 sudo pecl install pdo_sqlsrv
 sudo su
 echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/10_pdo_sqlsrv.ini
-echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/00_sqlsrv.ini
+echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20_sqlsrv.ini
 ```
 
 ### Step 4. Install Apache and configure driver loading
