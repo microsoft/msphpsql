@@ -264,9 +264,6 @@ zypper -n install php8 php8-pdo php8-devel php8-openssl
 Install the ODBC driver for Suse by following the instructions on the [Install the Microsoft ODBC driver for SQL Server (Linux)](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver15).
 
 ### Step 3. Install the PHP drivers for Microsoft SQL Server
-> [!NOTE]
-> If you get an error message saying `Connection to 'pecl.php.net:443' failed: Unable to find the socket transport "ssl"`, edit the pecl script at /usr/bin/pecl and remove the `-n` switch in the last line. This switch prevents PECL from loading ini files when PHP is called, which prevents the OpenSSL extension from loading.
-
 ```bash
 sudo pecl install sqlsrv
 sudo pecl install pdo_sqlsrv
@@ -278,10 +275,10 @@ exit
 ### Step 4. Install Apache and configure driver loading
 ```bash
 sudo su
-zypper install apache2 apache2-mod_php7
-a2enmod php7
-echo "extension=sqlsrv.so" >> /etc/php7/apache2/php.ini
-echo "extension=pdo_sqlsrv.so" >> /etc/php7/apache2/php.ini
+zypper install apache2 apache2-mod_php8
+a2enmod php8
+echo "extension=sqlsrv.so" >> /etc/php8/apache2/php.ini
+echo "extension=pdo_sqlsrv.so" >> /etc/php8/apache2/php.ini
 exit
 ```
 ### Step 5. Restart Apache and test the sample script
@@ -293,7 +290,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 ## Installing the drivers on Alpine
 
 > [!NOTE]
-> The default version of PHP is 7.4 or 8.0. PHP 8.1 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
+> PHP 8.1 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
 
 ### Step 1. Install PHP
 PHP packages for Alpine can be found in the `edge/community` repository. Please check [Enable Community Repository](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository) on their WIKI page. Add the following line to `/etc/apk/repositories`, replacing `<mirror>` with the URL of an Alpine repository mirror:
@@ -316,9 +313,6 @@ ln -s /usr/bin/pecl8 /usr/bin/pecl
 ln -s /usr/bin/php-config8 /usr/bin/php-config
 ```
 
-> [!NOTE]
-> The default version of PHP is 7.4 or 8.0. PHP 8.1 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
-
 ### Step 2. Install prerequisites
 Install the ODBC driver for Alpine by following the instructions on the [Install the Microsoft ODBC driver for SQL Server (Linux)](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver15). 
 
@@ -333,7 +327,10 @@ echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" |
 
 ### Step 4. Install Apache and configure driver loading
 ```bash
+# For PHP 7.*
 sudo apk add php7-apache2 apache2
+# For PHP 8.*
+sudo apk add php8-apache2 apache2
 ```
 ### Step 5. Restart Apache and test the sample script
 ```bash
@@ -408,10 +405,12 @@ The following commands append the required configuration to `httpd.conf`. Be sur
 echo "LoadModule php7_module /usr/local/opt/php@8.1/lib/httpd/modules/libphp7.so" >> /usr/local/etc/httpd/httpd.conf
 (echo "<FilesMatch .php$>"; echo "SetHandler application/x-httpd-php"; echo "</FilesMatch>";) >> /usr/local/etc/httpd/httpd.conf
 ```
+
 ### Step 5. Restart Apache and test the sample script
 ```bash
 sudo apachectl restart
 ```
+
 To test your installation, see [Testing your installation](#testing-your-installation) at the end of this document.
 
 ## Testing Your Installation
