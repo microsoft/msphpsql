@@ -251,7 +251,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 > In the following instructions, replace `<SuseVersion>` with your version of Suse - if you are using Suse Enterprise Linux 15, it will be SLE_15_SP3 or SLE_15_SP4 (or above). For Suse 12, use SLE_12_SP5 (or above). Not all versions of PHP are available for all versions of Suse Linux - please refer to `http://download.opensuse.org/repositories/devel:/languages:/php` to see which versions of Suse have the default version PHP available, or check `http://download.opensuse.org/repositories/devel:/languages:/php:/` to see which other versions of PHP are available for which versions of Suse.
 
 > [!NOTE]
-> Packages for PHP 7.4 or above are not available for Suse 12. For now PHP 8.0 is the default for Suse 15 but packages for PHP 8.1 are available in `https://download.opensuse.org/repositories/devel:/languages:/php:/php81/SLE_15_SP4/devel:languages:php:php81.repo`.
+> Packages for PHP 7.4 or above are not available for Suse 12. As of today, PHP 8.0 is the default for Suse 15.
 
 ### Step 1. Install PHP
 ```bash
@@ -317,7 +317,7 @@ ln -s /usr/bin/php-config8 /usr/bin/php-config
 ```
 
 > [!NOTE]
-> You might need to The default version of PHP is 7.4 or 8.0. PHP 8.1 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
+> The default version of PHP is 7.4 or 8.0. PHP 8.1 or above may be available from testing or edge repositories for Alpine. You can instead compile PHP from source.
 
 ### Step 2. Install prerequisites
 Install the ODBC driver for Alpine by following the instructions on the [Install the Microsoft ODBC driver for SQL Server (Linux)](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver15). 
