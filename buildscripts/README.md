@@ -14,7 +14,7 @@ To use the sample build scripts `builddrivers.py` and `buildtools.py`, install P
 
 You must first be able to build PHP source without including our PHP extensions. For help with building PHP 7.0* or PHP 7.1* in Windows, see the [official PHP website](https://wiki.php.net/internals/windows/stepbystepbuild). For PHP 7.2 or above, visit [PHP SDK page](https://github.com/OSTC/php-sdk-binary-tools) for new instructions.
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.2+ using Visual Studio 2017 and PHP 8.0 previews using Visual Studio 2019. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode. It verifies the publisher's identity and prevents malicious actors from posing as legitimate developers.
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.3+ using Visual Studio 2017 and PHP 8.0+ using Visual Studio 2019. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode. It verifies the publisher's identity and prevents malicious actors from posing as legitimate developers.
 
 ### Manually building from source 
 
@@ -26,7 +26,7 @@ The Microsoft Drivers for PHP for SQL Server have been compiled and tested with 
 
 4. Run `buildconf --force` to rebuild the configure.js script to include the *sqlsrv* and/or *pdo_sqlsrv* driver(s).
 
-5. Run `configure.bat` with the desired driver options (as shown below) to generate the makefile. You can run `configure.bat --help` to see what other options are available. For example, for non-thread safe build, add this option `--disable-zts`.  
+5. Run `configure.bat` with the desired driver options (as shown below) to generate the makefile. You can run `configure.bat --help` to see what other options are available. For example, for non-thread safe build, add this option `--disable-zts`.
     * For SQLSRV add: `--enable-sqlsrv=shared`
     * For PDO_SQLSRV add: `--enable-pdo --with-pdo-sqlsrv=shared`
 
@@ -45,7 +45,7 @@ The sample build scripts, `builddrivers.py` and `buildtools.py`, can be used to 
 
 #### Overview
 
-When asked to provide the PHP version, you should enter values like `7.3.17`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 8.0.0 beta 3, the tag name is `php-8.0.0beta3`, so you will enter `8.0.0beta3`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
+When asked to provide the PHP version, you should enter values like `7.4.27`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 8.0.0 beta 3, the tag name is `php-8.0.0beta3`, so you will enter `8.0.0beta3`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
 
 PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will, by default, create a `php-sdk` folder in the C:\ drive, and this `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
 
@@ -69,7 +69,7 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
     * Type `py builddrivers.py -h` to get a list of options and their descriptions
     * For example, 
         * `py builddrivers.py --PHPVER=7.4.10 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE=C:\local\source`
-        * `py builddrivers.py --PHPVER=7.2.30 --ARCH=x86 --THREAD=ts --DEBUG`
+        * `py builddrivers.py --PHPVER=8.1.0 --ARCH=x86 --THREAD=ts --DEBUG`
 
 5. Based on the given configuration, if the script detects the presence of the PHP source directory, you can choose whether to rebuild, clean or superclean:
     * `rebuild` to build again using the same configuration (32 bit, thread safe, etc.)
