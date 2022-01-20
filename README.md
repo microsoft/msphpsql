@@ -13,28 +13,20 @@ Thank you for taking the time to participate in the [sentiment survey](https://g
 <a href="https://aka.ms/mssqlphpsurvey"><img style="float: right;"  height="67" width="156" src="https://sqlchoice.blob.core.windows.net/sqlchoice/static/images/survey.png"></a>
 
 ### Status of Most Recent Builds
-Azure Pipelines       | AppVeyor (Windows)       | Travis CI (Linux)        | Coverage (Windows)                    | Coverage (Linux)                          |
-|---------------------|--------------------------|--------------------------|---------------------------------------|-------------------------------------------|
-| [![az-image][]][az-site] | [![av-image][]][av-site] | [![tv-image][]][tv-site] | [![Coverage Codecov][]][codecov-site] | [![Coverage Coveralls][]][coveralls-site] |
+| Azure Pipelines (Linux)  | AppVeyor (Windows)       | Coverage (Windows)                    |
+|--------------------------|--------------------------|---------------------------------------|
+| [![az-image][]][az-site] | [![av-image][]][av-site] | [![Coverage Codecov][]][codecov-site] |
 
 [av-image]: https://ci.appveyor.com/api/projects/status/vo4rfei6lxlamrnc?svg=true
 [av-site]: https://ci.appveyor.com/project/msphpsql/msphpsql/branch/dev
-[tv-image]:  https://travis-ci.org/microsoft/msphpsql.svg?branch=dev
-[tv-site]: https://travis-ci.org/microsoft/msphpsql/
 [az-site]: https://dev.azure.com/sqlclientdrivers-ci/msphpsql/_build/latest?definitionId=6&branchName=dev
 [az-image]: https://dev.azure.com/sqlclientdrivers-ci/msphpsql/_apis/build/status/Microsoft.msphpsql?branchName=dev
-[Coverage Coveralls]: https://coveralls.io/repos/github/microsoft/msphpsql/badge.svg?branch=dev&&service=github
-[coveralls-site]: https://coveralls.io/github/microsoft/msphpsql?branch=dev
 [Coverage Codecov]: https://codecov.io/gh/microsoft/msphpsql/branch/dev/graph/badge.svg
 [codecov-site]: https://codecov.io/gh/microsoft/msphpsql
 
 ## Get Started
 
-* [**Windows + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/windows)
-* [**Ubuntu + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/ubuntu)
-* [**RedHat + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/rhel)
-* [**SUSE + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/sles)
-* [**macOS + SQL Server + PHP 7**](https://www.microsoft.com/sql-server/developer-get-started/php/mac/)
+Please follow the [Getting started](https://docs.microsoft.com/sql/connect/php/getting-started-with-the-php-sql-driver) page.
 
 ## Announcements
 
@@ -45,19 +37,19 @@ Azure Pipelines       | AppVeyor (Windows)       | Travis CI (Linux)        | Co
 For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
 
 On the client machine:
-- 7.3.x, 7.4.x, 8.0.x
-- [Microsoft ODBC Driver 17, Microsoft ODBC Driver 13, or Microsoft ODBC Driver 11][odbcdoc]
+- 7.4.*, 8.0.*, 8.1.*
+- [Microsoft ODBC Driver 17 or Microsoft ODBC Driver 13][odbcdoc]
 - If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
 On the server side, Microsoft SQL Server 2012 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
 
 ## Building and Installing the Drivers on Windows
 
-The drivers are distributed as pre-compiled extensions for PHP found on the [releases page][releases]. They are available in thread-safe and non thread-safe versions, and in 32-bit and 64-bit versions. The source code for the drivers is also available, and you can compile them as thread safe or non-thread safe versions. The thread safety configuration of your web server will determine which version you need. 
+The drivers are distributed as pre-compiled extensions for PHP found on the [releases page][releases]. They are available in thread-safe and non-thread-safe versions, and in 32-bit (Windows only) and 64-bit versions. The source code for the drivers is also available, and you can compile them as thread safe or non-thread-safe versions. The thread safety configuration of your web server will determine which version you need. 
  
-If you choose to build the drivers, you must be able to build PHP 7.* without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/Microsoft/msphpsql/tree/dev/buildscripts#windows) -- an example buildscript is provided, but you can also compile the drivers manually.
+If you choose to build the drivers, you must be able to build PHP 7.* or 8.* without including these extensions. For help building PHP on Windows, see the [official PHP website][phpbuild]. For details on compiling the drivers, see the [documentation](https://github.com/microsoft/msphpsql/blob/master/buildscripts/README.md) -- an example buildscript is provided, but you can also compile the drivers manually.
 
-To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to it.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
+To load the drivers, make sure that the driver is in your PHP extension directory and enable it in your PHP installation's php.ini file by adding `extension=php_sqlsrv.dll` and/or `extension=php_pdo_sqlsrv.dll` to the ini file.  If necessary, specify the extension directory using `extension_dir`, for example: `extension_dir = "C:\PHP\ext"`. Note that the precompiled binaries have different names -- substitute accordingly in php.ini. For more details on loading the drivers, see [Loading the PHP SQL Driver](https://docs.microsoft.com/sql/connect/php/loading-the-php-sql-driver) on Microsoft Docs.
 
 Finally, if running PHP in a Web server, restart the Web server.
 
@@ -131,9 +123,9 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [sqldrivers]: https://techcommunity.microsoft.com/t5/SQL-Server/bg-p/SQLServer/label-name/SQLServerDrivers
 
-[project]: https://github.com/Microsoft/msphpsql
+[project]: https://github.com/microsoft/msphpsql
 
-[issues]: https://github.com/Microsoft/msphpsql/issues
+[issues]: https://github.com/microsoft/msphpsql/issues
 
 [releases]: https://github.com/microsoft/msphpsql/releases
 
@@ -141,8 +133,8 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 [phpbuild]: https://wiki.php.net/internals/windows/stepbystepbuild_sdk_2
 
-[phpdoc]: https://docs.microsoft.com/sql/connect/php/microsoft-php-driver-for-sql-server?view=sql-server-2017
+[phpdoc]: https://docs.microsoft.com/sql/connect/php/microsoft-php-driver-for-sql-server
 
-[odbcdoc]: https://docs.microsoft.com/sql/connect/odbc/microsoft-odbc-driver-for-sql-server?view=sql-server-2017
+[odbcdoc]: https://docs.microsoft.com/sql/connect/odbc/microsoft-odbc-driver-for-sql-server
 
 [unixinstructions]: https://docs.microsoft.com/sql/connect/php/installation-tutorial-linux-mac
