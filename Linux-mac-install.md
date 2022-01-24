@@ -364,6 +364,11 @@ PHP should now be in your path. Run `php -v` to verify that you are running the 
 brew link --force --overwrite php@8.1
 ```
 
+If using Apple M1 ARM64, you might need to set the path:
+```bash
+export PATH="/opt/homebrew/bin:$PATH"
+```
+
 ### Step 2. Install prerequisites
 Install the ODBC driver for macOS by following the instructions on the [Install the Microsoft ODBC driver for SQL Server (macOS)](
 https://docs.microsoft.com/sql/connect/odbc/linux-mac/install-microsoft-odbc-driver-sql-server-macos?view=sql-server-ver15). 
