@@ -13,10 +13,10 @@ function fatalError($message)
     die($message);
 }
 
-function printMoney($amt, $info) 
+function printMoney($amt, $info)
 {
     // The money_format() function is deprecated in PHP 7.4, so use intl NumberFormatter
-    $loc = setlocale(LC_MONETARY, null);
+    $loc = setlocale(LC_MONETARY, 0);
     $symbol = $info['int_curr_symbol'];
 
     echo "Amount formatted: ";
@@ -32,7 +32,7 @@ function printMoney($amt, $info)
 
 function printCal($date)
 {
-    $loc = setlocale(LC_TIME, null);
+    $loc = setlocale(LC_TIME, 0);
     $fmt = datefmt_create(
         $loc,
         IntlDateFormatter::FULL,
@@ -53,30 +53,34 @@ $locale = ($_SERVER['argv'][2] ?? '');
 
 echo "**Begin**" . PHP_EOL;
 
-// Assuming LC_ALL is 'en_US.UTF-8', and so are LC_CTYPE and LC_MONETARY
-$ctype = 'en_US.UTF-8';
-$m = $ctype;
+// Assuming LC_ALL is 'en_US.UTF-8', but default LC_CTYPE and LC_MONETARY vary in various
+// platforms and PHP versions, so only check when $setLocaleInfo is 2
 switch ($setLocaleInfo) {
     case 0:
     case 1:
         $symbol = ''; $sep = '';
         break;
     case 2:
-        symbol = '$'; $sep = ',';
+        $symbol = '$'; $sep = ',';
         break;
     default:
         fatalError("Unexpected $setLocaleInfo\n");
         break;
 }
 
-$m1 = setlocale(LC_MONETARY, null);
-if ($m !== $m1) {
-    echo "Unexpected LC_MONETARY: $m1" . PHP_EOL;
-}
-$c1 = setlocale(LC_CTYPE, null);
-if ($ctype !== $c1) {
-    echo "Unexpected LC_CTYPE: $c1" . PHP_EOL;
-    echo "LC_NUMERIC for $setLocaleInfo: " . setlocale(LC_NUMERIC, null) . PHP_EOL;
+if ($setLocaleInfo == 2) {
+    $ctype = 'en_US.UTF-8';
+    $m = 'en_US.UTF-8';
+
+    $m1 = setlocale(LC_MONETARY, 0);
+    if ($m !== $m1) {
+        echo "Unexpected LC_MONETARY: $m1" . PHP_EOL;
+    }
+    $c1 = setlocale(LC_CTYPE, 0);
+    if ($ctype !== $c1) {
+        echo "Unexpected LC_CTYPE: $c1" . PHP_EOL;
+        echo "LC_NUMERIC for $setLocaleInfo: " . setlocale(LC_NUMERIC, 0) . PHP_EOL;
+    }
 }
 
 // Set a different locale, if the input is not empty
@@ -86,7 +90,7 @@ if (!empty($locale)) {
     if ($loc !== $locale) {
         echo "Unexpected $loc for LC_ALL " . PHP_EOL;
     }
-    
+
     // Currency symbol and thousands separator in Linux and macOS may be different
     if ($loc === 'de_DE.UTF-8') {
         $symbol = strtoupper(PHP_OS) === 'LINUX' ? '€' : 'Eu';
