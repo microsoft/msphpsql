@@ -16,7 +16,7 @@ function fatalError($message)
 function printMoney($amt, $info) 
 {
     // The money_format() function is deprecated in PHP 7.4, so use intl NumberFormatter
-    $loc = setlocale(LC_MONETARY, 0);
+    $loc = setlocale(LC_MONETARY, null);
     $symbol = $info['int_curr_symbol'];
 
     echo "Amount formatted: ";
@@ -32,7 +32,7 @@ function printMoney($amt, $info)
 
 function printCal($date)
 {
-    $loc = setlocale(LC_TIME, 0);
+    $loc = setlocale(LC_TIME, null);
     $fmt = datefmt_create(
         $loc,
         IntlDateFormatter::FULL,
@@ -53,30 +53,30 @@ $locale = ($_SERVER['argv'][2] ?? '');
 
 echo "**Begin**" . PHP_EOL;
 
-// Assuming LC_ALL is 'en_US.UTF-8', so is LC_CTYPE, except in PHP 8 (TODO)
-// But default LC_MONETARY varies
-$ctype = (PHP_MAJOR_VERSION == 8 && $setLocaleInfo == 0) ? 'C' : 'en_US.UTF-8';
+// Assuming LC_ALL is 'en_US.UTF-8', and so are LC_CTYPE and LC_MONETARY
+$ctype = 'en_US.UTF-8';
+$m = $ctype;
 switch ($setLocaleInfo) {
     case 0:
     case 1:
-        $m = 'C'; $symbol = ''; $sep = '';
+        $symbol = ''; $sep = '';
         break;
     case 2:
-        $m = 'en_US.UTF-8'; $symbol = '$'; $sep = ',';
+        symbol = '$'; $sep = ',';
         break;
     default:
         fatalError("Unexpected $setLocaleInfo\n");
         break;
 }
 
-$m1 = setlocale(LC_MONETARY, 0);
+$m1 = setlocale(LC_MONETARY, null);
 if ($m !== $m1) {
     echo "Unexpected LC_MONETARY: $m1" . PHP_EOL;
 }
-$c1 = setlocale(LC_CTYPE, 0);
+$c1 = setlocale(LC_CTYPE, null);
 if ($ctype !== $c1) {
     echo "Unexpected LC_CTYPE: $c1" . PHP_EOL;
-    echo "LC_NUMERIC for $setLocaleInfo: " . setlocale(LC_NUMERIC, 0) . PHP_EOL;
+    echo "LC_NUMERIC for $setLocaleInfo: " . setlocale(LC_NUMERIC, null) . PHP_EOL;
 }
 
 // Set a different locale, if the input is not empty
