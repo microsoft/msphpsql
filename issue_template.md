@@ -1,4 +1,4 @@
-Please check the [FAQ (frequently-asked questions)](https://github.com/Microsoft/msphpsql/wiki/FAQ) first. If you have other questions or something to report, please address the following:
+Please check the [FAQ (frequently-asked questions)](https://github.com/Microsoft/msphpsql/wiki/FAQ) first. If you have other questions or something to report, please address the following (Skipping information might slow down our responses):
 
 ## PHP Driver version or file name
 
