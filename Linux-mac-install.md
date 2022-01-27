@@ -251,7 +251,7 @@ To test your installation, see [Testing your installation](#testing-your-install
 > In the following instructions, replace `<SuseVersion>` with your version of Suse - if you are using Suse Enterprise Linux 15, it will be SLE_15_SP3 or SLE_15_SP4 (or above). For Suse 12, use SLE_12_SP5 (or above). Not all versions of PHP are available for all versions of Suse Linux - please refer to `http://download.opensuse.org/repositories/devel:/languages:/php` to see which versions of Suse have the default version PHP available, or check `http://download.opensuse.org/repositories/devel:/languages:/php:/` to see which other versions of PHP are available for which versions of Suse.
 
 > [!NOTE]
-> Packages for PHP 7.4 or above are not available for Suse 12. As of today, PHP 8.0 is the default for Suse 15.
+> Packages for PHP 7.4 or above are not available for Suse 12, as of today.
 
 ### Step 1. Install PHP
 ```bash
@@ -362,6 +362,11 @@ brew install php@8.1
 PHP should now be in your path. Run `php -v` to verify that you are running the correct version of PHP. If PHP is not in your path or it is not the correct version, run the following:
 ```bash
 brew link --force --overwrite php@8.1
+```
+
+If using Apple M1 ARM64, you might need to set the path:
+```bash
+export PATH="/opt/homebrew/bin:$PATH"
 ```
 
 ### Step 2. Install prerequisites
