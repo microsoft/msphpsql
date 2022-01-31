@@ -55,7 +55,6 @@ struct format_decimals_func
 
 struct decimal_places_func
 {
-
     static void func(connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/)
     {
         // first check if the input is an integer
@@ -70,6 +69,33 @@ struct decimal_places_func
 
         ss_sqlsrv_conn* ss_conn = static_cast<ss_sqlsrv_conn*>(conn);
         ss_conn->decimal_places = static_cast<short>(decimal_places);
+    }
+};
+
+struct srv_encrypt_set_func {
+    static void func(connection_option const* option, _In_ zval* value_z, _Inout_ sqlsrv_conn* conn, std::string& conn_str)
+    {
+        std::string attr;
+
+        if (Z_TYPE_P(value_z) == IS_LONG) {
+            long val = Z_LVAL_P(value_z);
+            if (val == 1) {
+                attr = "yes";
+            } else if (val == 0) {
+                attr = "no";
+            } else {
+                attr = std::to_string(val);
+            }
+        } else if (Z_TYPE_P(value_z) == IS_TRUE || Z_TYPE_P(value_z) == IS_FALSE) {
+            attr = zend_is_true(value_z) ? "yes" : "no";
+        } else {
+            attr = Z_STRVAL_P(value_z);
+        }
+
+        char temp_str[MAX_CONN_VALSTRING_LEN];
+        snprintf(temp_str, MAX_CONN_VALSTRING_LEN, "%s={%s};", option->odbc_name, attr.c_str());
+
+        conn_str += temp_str;
     }
 };
 
@@ -232,6 +258,8 @@ const char TransactionIsolation[] = "TransactionIsolation";
 const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char UID[] = "UID";
 const char WSID[] = "WSID";
+const char ComputePool[] = "ComputePool";
+const char HostNameInCertificate[] = "HostNameInCertificate";
 
 }
 
@@ -421,8 +449,8 @@ const connection_option SS_CONN_OPTS[] = {
         SQLSRV_CONN_OPTION_ENCRYPT,
         ODBCConnOptions::Encrypt, 
         sizeof( ODBCConnOptions::Encrypt ),
-        CONN_ATTR_BOOL,
-        bool_conn_str_func::func
+        CONN_ATTR_MIXED,
+        srv_encrypt_set_func::func
     },
     { 
         SSConnOptionNames::Failover_Partner,
@@ -577,6 +605,25 @@ const connection_option SS_CONN_OPTS[] = {
         CONN_ATTR_INT,
         decimal_places_func::func
     },
+    {
+        SSConnOptionNames::ComputePool,
+        sizeof(SSConnOptionNames::ComputePool),
+        SQLSRV_CONN_OPTION_COMPUTE_POOL,
+        ODBCConnOptions::ComputePool,
+        sizeof(ODBCConnOptions::ComputePool),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        SSConnOptionNames::HostNameInCertificate,
+        sizeof(SSConnOptionNames::HostNameInCertificate),
+        SQLSRV_CONN_OPTION_HOSTNAME_IN_CERT,
+        ODBCConnOptions::HostNameInCertificate,
+        sizeof(ODBCConnOptions::HostNameInCertificate),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+
     { NULL, 0, SQLSRV_CONN_OPTION_INVALID, NULL, 0 , CONN_ATTR_INVALID, NULL },  //terminate the table
 };
 
@@ -1335,6 +1382,8 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                     // as yes or no or integral connection attributes.  This will have to be reworked
                     // if we ever introduce a boolean connection option that maps to a string connection
                     // attribute.
+                    break;
+                case CONN_ATTR_MIXED:
                     break;
                 case CONN_ATTR_INT:
                 {

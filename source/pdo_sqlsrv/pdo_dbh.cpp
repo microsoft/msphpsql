@@ -68,6 +68,8 @@ const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
 const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char WSID[] = "WSID";
+const char ComputePool[] = "ComputePool";
+const char HostNameInCertificate[] = "HostNameInCertificate";
 
 }
 
@@ -125,13 +127,49 @@ struct pdo_int_conn_str_func {
 
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Out_ std::string& conn_str )
     {
-        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_STRING, "Wrong zval type for this keyword" ) 
+        SQLSRV_ASSERT(Z_TYPE_P(value) == IS_STRING, "Wrong zval type for this keyword");
 
         std::string val_str = Z_STRVAL_P( value );
         
         conn_str += option->odbc_name;
         conn_str += "={";
         conn_str += val_str;
+        conn_str += "};";
+    }
+};
+
+struct pdo_encrypt_set_func
+{
+    static void func(_In_ connection_option const* option, _Inout_ zval* value_z, sqlsrv_conn* /*conn*/, _Out_ std::string& conn_str)
+    {
+        SQLSRV_ASSERT(Z_TYPE_P(value_z) == IS_STRING, "Wrong zval type for this keyword");
+        std::string val_str = Z_STRVAL_P(value_z);
+        std::string whitespaces(" \t\f\v\n\r");
+
+        // Trim white spaces
+        std::size_t found = val_str.find_last_not_of(whitespaces);
+        if (found != std::string::npos)
+            val_str.erase(found + 1);
+
+        const char TRUE_VALUE_1[] = "true";
+        const char TRUE_VALUE_2[] = "1";
+        const char FALSE_VALUE_1[] = "false";
+        const char FALSE_VALUE_2[] = "0";
+
+        // For backward compatibility, convert true/1 to yes and false/0 to no
+        std::string attr;
+        if (!val_str.compare(TRUE_VALUE_1) || !val_str.compare(TRUE_VALUE_2)) {
+            attr = "yes";
+        } else if (!val_str.compare(FALSE_VALUE_1) || !val_str.compare(FALSE_VALUE_2)) {
+            attr = "no";
+        } else {
+            // simply pass the attribute value to ODBC driver
+            attr = val_str;
+        }
+
+        conn_str += option->odbc_name;
+        conn_str += "={";
+        conn_str += attr;
         conn_str += "};";
     }
 };
@@ -303,8 +341,8 @@ const connection_option PDO_CONN_OPTS[] = {
         SQLSRV_CONN_OPTION_ENCRYPT,
         ODBCConnOptions::Encrypt, 
         sizeof( ODBCConnOptions::Encrypt ),
-        CONN_ATTR_BOOL,
-        pdo_bool_conn_str_func::func
+        CONN_ATTR_MIXED,
+        pdo_encrypt_set_func::func
     },
     { 
         PDOConnOptionNames::Failover_Partner,
@@ -430,6 +468,24 @@ const connection_option PDO_CONN_OPTS[] = {
         ODBCConnOptions::WSID,
         sizeof( ODBCConnOptions::WSID ),
         CONN_ATTR_STRING, 
+        conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::ComputePool,
+        sizeof(PDOConnOptionNames::ComputePool),
+        SQLSRV_CONN_OPTION_COMPUTE_POOL,
+        ODBCConnOptions::ComputePool,
+        sizeof(ODBCConnOptions::ComputePool),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::HostNameInCertificate,
+        sizeof(PDOConnOptionNames::HostNameInCertificate),
+        SQLSRV_CONN_OPTION_HOSTNAME_IN_CERT,
+        ODBCConnOptions::HostNameInCertificate,
+        sizeof(ODBCConnOptions::HostNameInCertificate),
+        CONN_ATTR_STRING,
         conn_str_append_func::func
     },
     { NULL, 0, SQLSRV_CONN_OPTION_INVALID, NULL, 0 , CONN_ATTR_INVALID, NULL },  //terminate the table
@@ -1569,7 +1625,6 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
 #if PHP_VERSION_ID < 80100
             snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
 #else
-            const char *name_str = ZSTR_VAL(name);
             snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, ZSTR_VAL(name));
 #endif
             wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, buffer, sizeof(buffer), &wsql_len);

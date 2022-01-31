@@ -374,6 +374,10 @@ inline void sqlsrv_free_trace( _Inout_ void* ptr, _In_ const char* file, _In_ in
 
 #else
 
+// Unlike their C standard library's counterparts the Zend Engine's memory management functions
+// emalloc or erealloc won't return NULL in case of an problem while allocating the requested 
+// memory but bail out and terminate the current request.
+// Check www.phpinternalsbook.com/php7/memory_management/zend_memory_manager.html for details
 inline void* sqlsrv_malloc( _In_ size_t size )
 {
     return emalloc( size );
@@ -1054,14 +1058,13 @@ enum SERVER_VERSION {
 };
 
 // supported driver versions.
-// the latest RTWed ODBC is the first one
-enum DRIVER_VERSION {
-    ODBC_DRIVER_UNKNOWN = -1,
-    FIRST = 0,
-    ODBC_DRIVER_17 = FIRST,
-    ODBC_DRIVER_13 = 1,
-    ODBC_DRIVER_11 = 2,
-    LAST = ODBC_DRIVER_11
+// ODBC 17 is the default
+enum class ODBC_DRIVER : int
+{ 
+    VER_17 = 17,
+    VER_18 = 18,
+    VER_13 = 13,
+    VER_UNKNOWN = 0
 };
 
 // forward decl
@@ -1097,7 +1100,7 @@ struct sqlsrv_conn : public sqlsrv_context {
     SERVER_VERSION server_version;  // version of the server that we're connected to
 
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
-    DRIVER_VERSION driver_version;      // version of ODBC driver
+    ODBC_DRIVER driver_version;         // version of ODBC driver
 
     sqlsrv_malloc_auto_ptr<ACCESSTOKEN> azure_ad_access_token;
 
@@ -1106,7 +1109,7 @@ struct sqlsrv_conn : public sqlsrv_context {
         sqlsrv_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
-        driver_version = ODBC_DRIVER_UNKNOWN;
+        driver_version = ODBC_DRIVER::VER_UNKNOWN;
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be
@@ -1164,6 +1167,8 @@ const char WSID[] = "WSID";
 const char UID[] = "UID";
 const char PWD[] = "PWD";
 const char SERVER[] = "Server";
+const char ComputePool[] = "ComputePool";
+const char HostNameInCertificate[] = "HostNameInCertificate";
 
 }
 
@@ -1201,6 +1206,8 @@ enum SQLSRV_CONN_OPTIONS {
     SQLSRV_CONN_OPTION_TRANSPARENT_NETWORK_IP_RESOLUTION,
     SQLSRV_CONN_OPTION_CONN_RETRY_COUNT,
     SQLSRV_CONN_OPTION_CONN_RETRY_INTERVAL,
+    SQLSRV_CONN_OPTION_COMPUTE_POOL,
+    SQLSRV_CONN_OPTION_HOSTNAME_IN_CERT,
 
    // Driver specific connection options
    SQLSRV_CONN_OPTION_DRIVER_SPECIFIC = 1000,
@@ -1215,6 +1222,7 @@ enum CONN_ATTR_TYPE {
     CONN_ATTR_INT,
     CONN_ATTR_BOOL,
     CONN_ATTR_STRING,
+    CONN_ATTR_MIXED,
     CONN_ATTR_INVALID,
 };
 
@@ -1283,7 +1291,6 @@ void core_sqlsrv_get_server_version( _Inout_ sqlsrv_conn* conn, _Inout_ zval *se
 void core_sqlsrv_get_client_info( _Inout_ sqlsrv_conn* conn, _Out_ zval *client_info );
 bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len );
 size_t core_str_zval_is_true( _Inout_ zval* str_zval );
-bool core_search_odbc_driver_unix( _In_ DRIVER_VERSION driver_version );
 bool core_compare_error_state( _In_ sqlsrv_conn* conn,  _In_ SQLRETURN r, _In_ const char* error_state );
 
 //*********************************************************************************************************************************
