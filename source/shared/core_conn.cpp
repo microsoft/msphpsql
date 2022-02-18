@@ -676,8 +676,8 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 
     try {
         // Since connection options access token and authentication cannot coexist, check if both of them are used.
-        // If access token is specified, check UID and PWD as well.
-        // No need to check the keyword Trusted_Connection because it is not among the acceptable options for SQLSRV drivers
+        // If access token is specified, check UID andï¿½PWD as well.
+        // No need to check the keyword Trusted_Connectionï¿½because it is not among the acceptable options for SQLSRV drivers
         if (zend_hash_index_exists(options, SQLSRV_CONN_OPTION_ACCESS_TOKEN)) {
             bool invalidOptions = false;
 
@@ -714,6 +714,19 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 
         // Add the server name
         common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string );
+
+        // Check uid when Authentication is ActiveDirectoryMSI
+        // uid can be specified when using user-assigned identity
+        if (activeDirectoryMSI) {
+            if (uid != NULL && strnlen_s(uid) > 0) {
+                bool escaped = core_is_conn_opt_value_escaped(uid, strnlen_s(uid));
+                CHECK_CUSTOM_ERROR(!escaped, conn, SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED) {
+                    throw core::CoreException();
+                }
+
+                common_conn_str_append_func(ODBCConnOptions::UID, uid, strnlen_s(uid), connection_string);
+            }
+        }
 
         // If uid is not present then we use trusted connection -- but not when connecting
         // using the access token or Authentication is ActiveDirectoryMSI
