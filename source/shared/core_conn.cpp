@@ -676,8 +676,8 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 
     try {
         // Since connection options access token and authentication cannot coexist, check if both of them are used.
-        // If access token is specified, check UID and�PWD as well.
-        // No need to check the keyword Trusted_Connection�because it is not among the acceptable options for SQLSRV drivers
+        // If access token is specified, check UID and PWD as well.
+        // No need to check the keyword Trusted_Connection because it is not among the acceptable options for SQLSRV drivers
         if (zend_hash_index_exists(options, SQLSRV_CONN_OPTION_ACCESS_TOKEN)) {
             bool invalidOptions = false;
 
