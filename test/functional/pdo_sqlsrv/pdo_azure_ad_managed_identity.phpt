@@ -83,6 +83,7 @@ require_once('MsSetup.inc');
 
 // Make a connection to an invalid server
 connectInvalidServer();
+connectInvalidServerWithUser();
 
 echo "Done\n";
 ?>
