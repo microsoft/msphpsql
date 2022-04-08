@@ -697,8 +697,10 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
         // Check if Authentication is ActiveDirectoryMSI because we have to handle this case differently
         // https://docs.microsoft.com/en-ca/azure/active-directory/managed-identities-azure-resources/overview
         bool activeDirectoryMSI = false;
+        bool activeDirectoryIntegrated = false;
         if (authentication_option_used) {
             const char aadMSIoption[] = "ActiveDirectoryMSI";
+            const char addIntegratedOption[] = "ActiveDirectoryIntegrated";
             zval* auth_option = NULL;
             auth_option = zend_hash_index_find(options, SQLSRV_CONN_OPTION_AUTHENTICATION);
 
@@ -707,8 +709,14 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                 option = Z_STRVAL_P(auth_option);
             }
 
-            if (option != NULL && !stricmp(option, aadMSIoption)) {
-                activeDirectoryMSI = true;
+            if (option != NULL) {
+                // Check if the user is using ActiveDirectoryMSI or ActiveDirectoryIntegrated
+                if (!stricmp(option, aadMSIoption)) {
+                    activeDirectoryMSI = true;
+                }
+                else if (!stricmp(option, addIntegratedOption)) {
+                    activeDirectoryIntegrated = true;
+                }
             }
         }
 
@@ -730,7 +738,8 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 
         // If uid is not present then we use trusted connection -- but not when connecting
         // using the access token or Authentication is ActiveDirectoryMSI
-        if (!access_token_used && !activeDirectoryMSI) {
+        // ActiveDirectoryIntegrated does not need UID or PWD
+        if (!access_token_used && !activeDirectoryMSI && !activeDirectoryIntegrated) {
             if (uid == NULL || strnlen_s(uid) == 0) {
                 connection_string += CONNECTION_OPTION_NO_CREDENTIALS;  //  "Trusted_Connection={Yes};"
             }
