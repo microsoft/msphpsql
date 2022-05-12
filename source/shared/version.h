@@ -27,7 +27,7 @@
 // Increase Patch for backward compatible fixes.
 #define SQLVERSION_MAJOR 5
 #define SQLVERSION_MINOR 10
-#define SQLVERSION_PATCH 0
+#define SQLVERSION_PATCH 1
 #define SQLVERSION_BUILD 0
 
 // For previews, set this constant to 1, 2 and so on. Otherwise, set it to 0
@@ -59,7 +59,7 @@
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
 // PECL package version ('-' or '+' is not allowed) - to support Pickle do not use macros below
-#define PHP_SQLSRV_VERSION      "5.10.0"
-#define PHP_PDO_SQLSRV_VERSION  "5.10.0"
+#define PHP_SQLSRV_VERSION      "5.10.1"
+#define PHP_PDO_SQLSRV_VERSION  "5.10.1"
 
 #endif // VERSION_H
