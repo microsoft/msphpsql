@@ -41,7 +41,9 @@ function connectInvalidServer()
             $conn = new PDO("sqlsrv:server = invalidServer; $connectionInfo", null, null);
             echo $message . $testCase . PHP_EOL;
         } catch(PDOException $e) {
-            // TODO: check the exception message here
+            echo "Failed to connect\n";
+            print_r($e->getMessage());
+            echo "\n";
         }
     } catch(PDOException $e) {
         print_r($e->getMessage());
@@ -72,7 +74,9 @@ function connectInvalidServerWithUser()
             $conn = new PDO("sqlsrv:server = invalidServer; $connectionInfo", $user, null);
             echo $message . $testCase . PHP_EOL;
         } catch(PDOException $e) {
-            // TODO: check the exception message here
+            echo "Failed to connect\n";
+            print_r($e->getMessage());
+            echo "\n";
         }
     } catch(PDOException $e) {
         print_r($e->getMessage());
