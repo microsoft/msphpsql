@@ -3,7 +3,10 @@ Test some error conditions of Azure AD Managed Identity support
 --DESCRIPTION--
 This test expects certain exceptions to be thrown under some conditions.
 --SKIPIF--
-<?php require('skipif.inc');?>
+<?php 
+require('skipif.inc');
+require('skipif_Appveyor.inc');
+?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
