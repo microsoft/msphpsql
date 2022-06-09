@@ -6,6 +6,7 @@ This test expects certain exceptions to be thrown under some conditions.
 <?php 
 require('skipif.inc');
 require('skipif_Appveyor.inc');
+require('skipif_unix.inc');
 ?>
 --FILE--
 <?php
