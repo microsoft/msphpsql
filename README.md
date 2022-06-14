@@ -10,7 +10,7 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.3+ with improv
 
 Thank you for taking the time to participate in the [sentiment survey](https://github.com/microsoft/msphpsql/wiki/Survey-Results). You can continue to help us improve by letting us know how we are doing and how you use [PHP][phpweb]:
 
-<a href="https://aka.ms/mssqlphpsurvey"><img style="float: right;"  height="67" width="156" src="https://sqlchoice.blob.core.windows.net/sqlchoice/static/images/survey.png"></a>
+<a href="https://forms.office.com/r/UQT30D2iJQ"><img style="float: right;"  height="67" width="156" src="https://sqlchoice.blob.core.windows.net/sqlchoice/static/images/survey.png"></a>
 
 ### Status of Most Recent Builds
 | Azure Pipelines (Linux)  | AppVeyor (Windows)       | Coverage (Windows)                    |
