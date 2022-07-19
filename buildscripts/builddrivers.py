@@ -200,7 +200,10 @@ class BuildDriver(object):
                 print('Something went wrong, launching log file', logfile)
                 # display log file only when not testing
                 if not self.testing:
-                    os.startfile(os.path.join(root_dir, 'php-sdk', logfile))
+                    logfile_path = os.path.join(root_dir, 'php-sdk', logfile)
+                    os.startfile(logfile_path)
+                    with open(logfile_path, 'r') as f:
+                        print(f.read())
                 os.chdir(work_dir)
                 exit(1)
 
