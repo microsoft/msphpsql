@@ -205,7 +205,6 @@ class BuildDriver(object):
                         print(f.read())
                 os.chdir(work_dir)
                 exit(1)
- ""
             if not self.testing:
                 choice = input("Rebuild using the same configuration(yes) or quit (no) [yes/no]: ")
                 choice = choice.lower()
