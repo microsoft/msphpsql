@@ -201,12 +201,11 @@ class BuildDriver(object):
                 # display log file only when not testing
                 if not self.testing:
                     logfile_path = os.path.join(root_dir, 'php-sdk', logfile)
-                    os.startfile(logfile_path)
                     with open(logfile_path, 'r') as f:
                         print(f.read())
                 os.chdir(work_dir)
                 exit(1)
-
+ ""
             if not self.testing:
                 choice = input("Rebuild using the same configuration(yes) or quit (no) [yes/no]: ")
                 choice = choice.lower()
