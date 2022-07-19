@@ -34,6 +34,11 @@
 #include <odbcinst.h>
 #endif
 
+extern "C" {
+#include "php_pdo_sqlsrv.h"
+}
+#include "php_pdo_sqlsrv_int.h"
+
 // *** internal variables and constants ***
 
 namespace {
@@ -1183,12 +1188,30 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     //
     // See https://docs.microsoft.com/sql/connect/odbc/using-azure-active-directory#authenticating-with-an-access-token
 
+    size_t next_token_position = 0;
+    bool same_token_used = false;
+
+    for (size_t current_token_index = 0; current_token_index < PDO_SQLSRV_G(access_tokens_size); current_token_index++) {
+        std::string string_token;
+        for (size_t i = 0; i < PDO_SQLSRV_G(access_tokens)[current_token_index]->dataSize; i += 2) {
+            string_token.push_back(PDO_SQLSRV_G(access_tokens)[current_token_index]->data[i]);
+        }
+        if (string_token == std::string(value_str)) {
+            // Token already exists in access_toiens
+            memset(PDO_SQLSRV_G(access_tokens)[current_token_index]->data, 0, PDO_SQLSRV_G(access_tokens)[current_token_index]->dataSize);
+            sqlsrv_free(PDO_SQLSRV_G(access_tokens)[current_token_index]);
+            next_token_position = current_token_index;
+            same_token_used = true;
+            break;
+        }
+    }
+
     size_t dataSize = 2 * value_len;
 
     sqlsrv_malloc_auto_ptr<ACCESSTOKEN> accToken;
     accToken = reinterpret_cast<ACCESSTOKEN*>(sqlsrv_malloc(sizeof(ACCESSTOKEN) + dataSize));
 
-    ACCESSTOKEN *pAccToken = accToken.get();
+    ACCESSTOKEN* pAccToken = accToken.get();
     SQLSRV_ASSERT(pAccToken != NULL, "Something went wrong when trying to allocate memory for the access token.");
 
     pAccToken->dataSize = dataSize;
@@ -1196,7 +1219,7 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     // Expand access token with padding bytes
     for (size_t i = 0, j = 0; i < dataSize; i += 2, j++) {
         pAccToken->data[i] = value_str[j];
-        pAccToken->data[i+1] = 0;
+        pAccToken->data[i + 1] = 0;
     }
 
     core::SQLSetConnectAttr(conn, SQL_COPT_SS_ACCESS_TOKEN, reinterpret_cast<SQLPOINTER>(pAccToken), SQL_IS_POINTER);
@@ -1204,4 +1227,11 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     // Save the pointer because SQLDriverConnect() will use it to make connection to the server
     conn->azure_ad_access_token = pAccToken;
     accToken.transferred();
+
+    if (!same_token_used) {
+        next_token_position = PDO_SQLSRV_G(access_tokens_size);
+        PDO_SQLSRV_G(access_tokens_size)++;
+        PDO_SQLSRV_G(access_tokens) = reinterpret_cast<ACCESSTOKEN**>(sqlsrv_realloc(PDO_SQLSRV_G(access_tokens), PDO_SQLSRV_G(access_tokens_size) * sizeof(ACCESSTOKEN)));
+    }
+    PDO_SQLSRV_G(access_tokens)[next_token_position] = conn->azure_ad_access_token;
 }
