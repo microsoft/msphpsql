@@ -21,7 +21,10 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "php.h"
+
+#ifdef _WIN32
 #include "msodbcsql.h"
+#endif
 //*********************************************************************************************************************************
 // Global variables
 //*********************************************************************************************************************************
@@ -32,11 +35,12 @@ ZEND_BEGIN_MODULE_GLOBALS(pdo_sqlsrv)
 unsigned int pdo_log_severity;
 zend_long client_buffer_max_size;
 short report_additional_errors;
-ACCESSTOKEN** access_tokens;
-unsigned int access_tokens_size = 0;
 
 #ifndef _WIN32
 zend_long set_locale_info;
+#else
+ACCESSTOKEN** access_tokens;
+unsigned int access_tokens_size = 0;
 #endif
 
 ZEND_END_MODULE_GLOBALS(pdo_sqlsrv)

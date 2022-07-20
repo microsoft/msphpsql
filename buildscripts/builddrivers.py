@@ -197,11 +197,11 @@ class BuildDriver(object):
                 ext_dir = self.build_extensions(root_dir, logfile)
                 print('Build Completed')
             except:
-                print('Something went wrong, launching log file', logfile)
-                # display log file only when not testing
-                if not self.testing:
-                    logfile_path = os.path.join(root_dir, 'php-sdk', logfile)
+                print('Something went wrong, Print logfile to terminal', logfile)
+                logfile_path = os.path.join(root_dir, 'php-sdk', logfile)
+                if os.path.isfile(logfile_path):
                     with open(logfile_path, 'r') as f:
+                        f.seek(0)
                         print(f.read())
                 os.chdir(work_dir)
                 exit(1)

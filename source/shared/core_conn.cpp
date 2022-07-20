@@ -32,12 +32,12 @@
 #ifndef _WIN32
 #include <sys/utsname.h>
 #include <odbcinst.h>
-#endif
-
+#else
 extern "C" {
 #include "php_pdo_sqlsrv.h"
 }
 #include "php_pdo_sqlsrv_int.h"
+#endif
 
 // *** internal variables and constants ***
 
@@ -1187,7 +1187,7 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     // similar to a UCS-2 string containing only ASCII characters
     //
     // See https://docs.microsoft.com/sql/connect/odbc/using-azure-active-directory#authenticating-with-an-access-token
-
+#ifdef _WIN32
     size_t next_token_position = 0;
     bool same_token_used = false;
 
@@ -1205,6 +1205,7 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
             break;
         }
     }
+#endif
 
     size_t dataSize = 2 * value_len;
 
@@ -1227,11 +1228,12 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     // Save the pointer because SQLDriverConnect() will use it to make connection to the server
     conn->azure_ad_access_token = pAccToken;
     accToken.transferred();
-
+#ifdef _WIN32
     if (!same_token_used) {
         next_token_position = PDO_SQLSRV_G(access_tokens_size);
         PDO_SQLSRV_G(access_tokens_size)++;
         PDO_SQLSRV_G(access_tokens) = reinterpret_cast<ACCESSTOKEN**>(sqlsrv_realloc(PDO_SQLSRV_G(access_tokens), PDO_SQLSRV_G(access_tokens_size) * sizeof(ACCESSTOKEN)));
     }
     PDO_SQLSRV_G(access_tokens)[next_token_position] = conn->azure_ad_access_token;
+#endif
 }
