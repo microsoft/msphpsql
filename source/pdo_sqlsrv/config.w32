@@ -33,6 +33,7 @@ if( PHP_PDO_SQLSRV != "no" ) {
             CHECK_HEADER_ADD_INCLUDE("sqlext.h", "CFLAGS_PDO_SQLSRV_ODBC");
             ADD_SOURCES( configure_module_dirname + "\\shared", shared_src_class, "pdo_sqlsrv" );
             ADD_FLAG( "LDFLAGS_PDO_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug /guard:cf" );
+            ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/D PDO_SQLSRV" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/EHsc" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/GS" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/Zi" );

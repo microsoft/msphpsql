@@ -32,7 +32,10 @@ if( PHP_SQLSRV != "no" ) {
             }
             CHECK_HEADER_ADD_INCLUDE("sql.h", "CFLAGS_SQLSRV_ODBC");
             CHECK_HEADER_ADD_INCLUDE("sqlext.h", "CFLAGS_SQLSRV_ODBC");
+            CHECK_HEADER_ADD_INCLUDE("php_sqlsrv_int.h", "CFLAGS_SQLSRV", configure_module_dirname);
+            CHECK_HEADER_ADD_INCLUDE("php_sqlsrv.h", "CFLAGS_SQLSRV", configure_module_dirname);
             ADD_FLAG( "LDFLAGS_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug /guard:cf" );
+            ADD_FLAG( "CFLAGS_SQLSRV", "/D SQLSRV" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/D ZEND_WIN32_FORCE_INLINE" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/EHsc" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/GS" );
