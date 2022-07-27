@@ -696,7 +696,7 @@ PHP_RSHUTDOWN_FUNCTION(sqlsrv)
     // SQLSRV_UNUSED( type );
 
     LOG_FUNCTION( "PHP_RSHUTDOWN for php_sqlsrv" );
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(ZTS)
     for (size_t current_token = 0; current_token < SQLSRV_G(access_tokens_size); current_token++) {
         if (SQLSRV_G(access_tokens)[current_token]) {
             memset(SQLSRV_G(access_tokens)[current_token]->data, 0, SQLSRV_G(access_tokens)[current_token]->dataSize);

@@ -232,12 +232,13 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         }
     }
 
+#ifdef ZTS
     // time to free the access token, if not null
     if (conn->azure_ad_access_token) {
         memset(conn->azure_ad_access_token->data, 0, conn->azure_ad_access_token->dataSize); // clear the memory
         conn->azure_ad_access_token.reset();
     }
-
+#endif
     CHECK_SQL_ERROR( r, conn ) {
         throw core::CoreException();
     }
@@ -1165,7 +1166,7 @@ size_t core_str_zval_is_true(_Inout_ zval* value_z)
     return 0; // false
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(ZTS)
 ACCESSTOKEN** get_access_tokens() {
 #ifdef PDO_SQLSRV
     return PDO_SQLSRV_G(access_tokens);
@@ -1204,7 +1205,7 @@ void access_token_set_func::func(_In_ connection_option const* option, _In_ zval
     // similar to a UCS-2 string containing only ASCII characters
     //
     // See https://docs.microsoft.com/sql/connect/odbc/using-azure-active-directory#authenticating-with-an-access-token
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(ZTS)
     size_t next_token_position = 0;
     bool same_token_used = false;
     #ifdef PDO_SQLSRV
@@ -1249,14 +1250,14 @@ void access_token_set_func::func(_In_ connection_option const* option, _In_ zval
     // Save the pointer because SQLDriverConnect() will use it to make connection to the server
     conn->azure_ad_access_token = pAccToken;
     accToken.transferred();
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(ZTS)
     if (!same_token_used) {
         next_token_position = access_tokens_size;
         access_tokens_size++;
         #ifdef PDO_SQLSRV
-        PDO_SQLSRV_G(access_tokens) = reinterpret_cast<ACCESSTOKEN**>(sqlsrv_realloc(PDO_SQLSRV_G(access_tokens), access_tokens_size * sizeof(ACCESSTOKEN)));
+        PDO_SQLSRV_G(access_tokens) = reinterpret_cast<ACCESSTOKEN**>(sqlsrv_realloc(PDO_SQLSRV_G(access_tokens), access_tokens_size * sizeof(ACCESSTOKEN*)));
         #elif SQLSRV
-        SQLSRV_G(access_tokens) = reinterpret_cast<ACCESSTOKEN**>(sqlsrv_realloc(SQLSRV_G(access_tokens), access_tokens_size * sizeof(ACCESSTOKEN)));
+        SQLSRV_G(access_tokens) = reinterpret_cast<ACCESSTOKEN**>(sqlsrv_realloc(SQLSRV_G(access_tokens), access_tokens_size * sizeof(ACCESSTOKEN*)));
         #endif
     }
     get_access_tokens()[next_token_position] = conn->azure_ad_access_token;
