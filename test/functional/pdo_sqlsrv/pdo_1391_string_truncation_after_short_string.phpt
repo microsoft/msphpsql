@@ -61,7 +61,7 @@ INSERTSQL;
     // fetch the data
     $stmt = $conn->prepare("SELECT COUNT(*) FROM long_strings");
     $stmt->execute();
-    $row = $stmt->fetchAll(PDO::FETCH_NUM);
+    $row = $stmt->fetch(PDO::FETCH_NUM);
     echo $row[0]."\n";
     
     dropTable($conn, 'long_strings');
