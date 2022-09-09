@@ -26,9 +26,13 @@ while ( $row = $stmt->fetch() ){
 }
 
 echo "\n........ query with a new class ............\n";
-$query = 'select * from HumanResources.Department order by GroupName';
+$query = 'select DepartmentID, Name, GroupName from HumanResources.Department order by GroupName';
 // query with a class
 class cc {
+      public $DepartmentID;
+      public $Name;
+      public $GroupName;
+
    function __construct( $arg ) {
       echo "$arg";
    }
