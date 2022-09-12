@@ -12,6 +12,7 @@ environment:
     SQLSRV_DBNAME: msphpsql_sqlsrv
     PDOSQLSRV_DBNAME: msphpsql_pdosqlsrv
     PYTHON: c:\Python36
+    APPVEYOR: true
     # For details about Appveyor build worker images (VM template): https://www.appveyor.com/docs/build-environment/#build-worker-images
     matrix:
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017

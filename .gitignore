@@ -1,0 +1,9 @@
+.vs
+.vscode
+__pycache__
+*.diff
+*.exp
+*.log
+*.sh
+*.out
+test/**/**/*.php
