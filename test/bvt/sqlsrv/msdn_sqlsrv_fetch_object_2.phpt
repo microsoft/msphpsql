@@ -7,6 +7,8 @@ retrieves each row of a result set as an instance of the Product class defined i
 /* Define the Product class. */
 class Product
 {
+
+
      /* Constructor */
      public function ProductConstruct($ID)
      {
@@ -17,6 +19,8 @@ class Product
      public $StockedQty;
      public $SafetyStockLevel;
      private $UnitPrice;
+     public $Name;
+     public $Color;
      function getPrice()
      {
           return $this->UnitPrice;

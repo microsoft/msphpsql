@@ -8,9 +8,13 @@ fetch with all fetch styles
    $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
 
    print( "\n---------- PDO::FETCH_CLASS -------------\n" );
-   $stmt = $conn->query( "select * from HumanResources.Department order by GroupName" );
+   $stmt = $conn->query( "select DepartmentID, Name, GroupName from HumanResources.Department order by GroupName" );
 
    class cc {
+      public $DepartmentID;
+      public $Name;
+      public $GroupName;
+
       function __construct( $arg ) {
          echo "$arg";
       }
@@ -26,7 +30,7 @@ fetch with all fetch styles
    }
 
    print( "\n---------- PDO::FETCH_INTO -------------\n" );
-   $stmt = $conn->query( "select * from HumanResources.Department order by GroupName" );
+   $stmt = $conn->query( "select DepartmentID, Name, GroupName from HumanResources.Department order by GroupName" );
    $c_obj = new cc( '' );
 
    $stmt->setFetchMode(PDO::FETCH_INTO, $c_obj);
