@@ -217,7 +217,6 @@ jobs:
       for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
       python output.py
       ls -l *.xml
-      cat *.diff
     displayName: 'Processing test results'
 
   - task: PublishTestResults@2
