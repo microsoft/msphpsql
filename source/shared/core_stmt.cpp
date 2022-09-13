@@ -414,10 +414,22 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         }
 
         // If Always Encrypted is enabled, transfer the known param meta data if applicable, which might alter param_z for decimal types
-        if (stmt->conn->ce_option.enabled) {
-            if (param_ptr->sql_data_type == SQL_UNKNOWN_TYPE || param_ptr->column_size == SQLSRV_UNKNOWN_SIZE) {
+        if (stmt->conn->ce_option.enabled
+            && (param_ptr->sql_data_type == SQL_UNKNOWN_TYPE || param_ptr->column_size == SQLSRV_UNKNOWN_SIZE)) {
                 // meta data parameters are always sorted based on parameter number
                 param_ptr->copy_param_meta_ae(param_z, stmt->params_container.params_meta_ae[param_num]);
+        }
+        else {
+            if (Z_TYPE_P(param_z) == IS_STRING && column_size == SQLSRV_UNKNOWN_SIZE) {
+                size_t char_size = (encoding == SQLSRV_ENCODING_UTF8) ? sizeof(SQLWCHAR) : sizeof(char);
+                    SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
+
+                    if (byte_len > SQL_SERVER_MAX_FIELD_SIZE) {
+                        param_ptr->column_size = SQL_SERVER_MAX_TYPE_SIZE;
+                    }
+                    else {
+                        param_ptr->column_size = SQL_SERVER_MAX_FIELD_SIZE / char_size;
+                    }
             }
         }
 
@@ -2270,18 +2282,6 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* param_z)
         break;
     default:
         break;
-    }
-
-    // Derive the column size also only if it is unknown
-    if (column_size == SQLSRV_UNKNOWN_SIZE) {
-        size_t char_size = (encoding == SQLSRV_ENCODING_UTF8) ? sizeof(SQLWCHAR) : sizeof(char);
-        SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
-
-        if (byte_len > SQL_SERVER_MAX_FIELD_SIZE) {
-            column_size = SQL_SERVER_MAX_TYPE_SIZE;
-        } else {
-            column_size = SQL_SERVER_MAX_FIELD_SIZE / char_size;
-        }
     }
 
     return is_numeric;
