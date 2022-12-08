@@ -122,11 +122,11 @@ function testWrongODBC()
 {
     global $msodbcsqlMaj;
 
-    $value = "ODBC Driver 18 for SQL Server";
+    $value = "ODBC Driver 13 for SQL Server";
     $connectionOptions = "Driver = $value;";
     $expected = "The specified ODBC Driver is not found.";
 
-    connectVerifyOutput($connectionOptions, "Connect with ODBC 18", $expected);
+    connectVerifyOutput($connectionOptions, "Connect with ODBC 13", $expected);
 }
 
 ?>
