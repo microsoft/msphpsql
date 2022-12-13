@@ -3,7 +3,11 @@ Test some error conditions of Azure AD Managed Identity support
 --DESCRIPTION--
 This test expects certain exceptions to be thrown under some conditions.
 --SKIPIF--
-<?php require('skipif.inc');?>
+<?php 
+require('skipif.inc');
+require('skipif_Appveyor.inc');
+require('skipif_unix.inc');
+?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
@@ -41,7 +45,9 @@ function connectInvalidServer()
             $conn = new PDO("sqlsrv:server = invalidServer; $connectionInfo", null, null);
             echo $message . $testCase . PHP_EOL;
         } catch(PDOException $e) {
-            // TODO: check the exception message here
+            echo "Failed to connect\n";
+            print_r($e->getMessage());
+            echo "\n";
         }
     } catch(PDOException $e) {
         print_r($e->getMessage());
@@ -72,7 +78,9 @@ function connectInvalidServerWithUser()
             $conn = new PDO("sqlsrv:server = invalidServer; $connectionInfo", $user, null);
             echo $message . $testCase . PHP_EOL;
         } catch(PDOException $e) {
-            // TODO: check the exception message here
+            echo "Failed to connect\n";
+            print_r($e->getMessage());
+            echo "\n";
         }
     } catch(PDOException $e) {
         print_r($e->getMessage());
