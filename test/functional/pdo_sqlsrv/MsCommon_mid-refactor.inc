@@ -203,9 +203,9 @@ class ColumnMeta
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
         if (isColEncrypted() && ($this->encType == "deterministic" || $this->encType == "randomized") && $this->isEncryptableType() 
-            && stripos($this->options, "identity") === false && stripos($this->options, "rowguidcol") === false) {
+            && ($this->options !== null && (stripos($this->options, "identity") === false && stripos($this->options, "rowguidcol") === false))) {
             $cekName = getCekName();
-            if (stripos($this->dataType, "char") !== false) {
+            if ($this->dataType !== null && (stripos($this->dataType, "char") !== false)) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
             }
             $append .= sprintf("ENCRYPTED WITH (ENCRYPTION_TYPE = %s, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256', COLUMN_ENCRYPTION_KEY = $cekName) ", $this->encType);
