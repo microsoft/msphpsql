@@ -422,14 +422,15 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
         else {
             if (Z_TYPE_P(param_z) == IS_STRING && column_size == SQLSRV_UNKNOWN_SIZE) {
                 size_t char_size = (encoding == SQLSRV_ENCODING_UTF8) ? sizeof(SQLWCHAR) : sizeof(char);
-                    SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
-
-                    if (byte_len > SQL_SERVER_MAX_FIELD_SIZE) {
-                        param_ptr->column_size = SQL_SERVER_MAX_TYPE_SIZE;
-                    }
-                    else {
+                SQLULEN byte_len = Z_STRLEN_P(param_z) * char_size;
+                if (byte_len > SQL_SERVER_MAX_FIELD_SIZE) {
+                    param_ptr->column_size = SQL_SERVER_MAX_TYPE_SIZE;
+                }
+                else {
+                    if (param_ptr->column_size == SQLSRV_UNKNOWN_SIZE) {
                         param_ptr->column_size = SQL_SERVER_MAX_FIELD_SIZE / char_size;
                     }
+                }
             }
         }
 
