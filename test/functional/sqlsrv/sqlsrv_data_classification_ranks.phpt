@@ -63,7 +63,7 @@ function isDataClassSupported($conn, &$driverCapable)
 
     // ODBC Driver must be 17.2 or above
     $driverCapable = true;
-    if ($version[0] < 17 || $version[1] < 2) {
+    if ($version[0] < 17 || ($version[0] == 17 && $version[1] < 2)) {
         $driverCapable = false;
         return false;
     }

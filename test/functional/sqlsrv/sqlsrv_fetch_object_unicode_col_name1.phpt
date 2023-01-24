@@ -5,6 +5,7 @@ Test for fetch_object with Unicode column name
 --FILE--
 <?php
 
+#[AllowDynamicProperties]
 class foo
 {
     public $stuff = "stuff";
@@ -25,6 +26,7 @@ class foo
     }
 }
 
+#[AllowDynamicProperties]
 class foo_noargs
 {
     public $stuff = "stuff";

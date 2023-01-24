@@ -6,6 +6,7 @@ sqlsrv_fetch_object() into a class with Unicode column name
 <?php
 
 // Define the Product class
+#[AllowDynamicProperties]
 class Product
 {
     public function __construct($ID, $UID)
@@ -37,6 +38,7 @@ class Product
     }
 }
 
+#[AllowDynamicProperties]
 class Sample extends Product
 {
     public function __construct($ID)

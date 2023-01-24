@@ -90,10 +90,15 @@ function connectInvalidServerWithUser()
 require_once('MsSetup.inc');
 
 // Make a connection to an invalid server
+// Expect to get two error messages
 connectInvalidServer();
 connectInvalidServerWithUser();
 
 echo "Done\n";
 ?>
 --EXPECT--
+Failed to connect
+SQLSTATE[08001]: [Microsoft][ODBC Driver 17 for SQL Server]Named Pipes Provider: Could not open a connection to SQL Server [53]. 
+Failed to connect
+SQLSTATE[08001]: [Microsoft][ODBC Driver 17 for SQL Server]Named Pipes Provider: Could not open a connection to SQL Server [53]. 
 Done

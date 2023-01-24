@@ -10,7 +10,7 @@ This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 7.3+ with improv
 
 Thank you for taking the time to participate in the [sentiment survey](https://github.com/microsoft/msphpsql/wiki/Survey-Results). You can continue to help us improve by letting us know how we are doing and how you use [PHP][phpweb]:
 
-<a href="https://aka.ms/mssqlphpsurvey"><img style="float: right;"  height="67" width="156" src="https://sqlchoice.blob.core.windows.net/sqlchoice/static/images/survey.png"></a>
+[**Click here to start the PHP survey**](https://aka.ms/mssqlphpsurvey)
 
 ### Status of Most Recent Builds
 | Azure Pipelines (Linux)  | AppVeyor (Windows)       | Coverage (Windows)                    |
@@ -37,8 +37,8 @@ Please follow the [Getting started](https://docs.microsoft.com/sql/connect/php/g
 For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
 
 On the client machine:
-- 7.4.x, 8.0.x, 8.1.x
-- [Microsoft ODBC Driver 17 or Microsoft ODBC Driver 13][odbcdoc]
+- 7.4.x, 8.0.x, 8.1.x, 8.2.x
+- [Microsoft ODBC Driver 18, 17 or 13][odbcdoc]
 - If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
 On the server side, Microsoft SQL Server 2012 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.
