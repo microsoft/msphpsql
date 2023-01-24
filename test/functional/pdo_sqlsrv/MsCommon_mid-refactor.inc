@@ -7,7 +7,7 @@
         Common functions (shared by all tests).
 
 */
-
+error_reporting( ~E_DEPRECATED );
 $tvpIncPath = dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'inc'.DIRECTORY_SEPARATOR;
 
 require_once($tvpIncPath. 'test_tvp_data.php');
@@ -203,7 +203,7 @@ class ColumnMeta
 
         // an identity column is not encrypted because a select query with identity column as the where clause is often run and the user want to have to bind parameter every time
         if (isColEncrypted() && ($this->encType == "deterministic" || $this->encType == "randomized") && $this->isEncryptableType() 
-            && ($this->options !== null && stripos($this->options, "identity") === false) && ($this->options !== null && stripos($this->options, "rowguidcol")) === false) {
+            && stripos($this->options, "identity") === false && stripos($this->options, "rowguidcol") === false) {
             $cekName = getCekName();
             if (stripos($this->dataType, "char") !== false) {
                 $append .= "COLLATE Latin1_General_BIN2 ";
