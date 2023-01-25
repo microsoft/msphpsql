@@ -4,7 +4,7 @@
 // File: version.h
 // Contents: Version number constants
 //
-// Microsoft Drivers 5.10 for PHP for SQL Server
+// Microsoft Drivers 5.11 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -59,7 +59,7 @@
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
 // PECL package version ('-' or '+' is not allowed) - to support Pickle do not use macros below
-#define PHP_SQLSRV_VERSION      "5.10.1"
-#define PHP_PDO_SQLSRV_VERSION  "5.10.1"
+#define PHP_SQLSRV_VERSION      "5.11.0beta1"
+#define PHP_PDO_SQLSRV_VERSION  "5.11.0beta1"
 
 #endif // VERSION_H
