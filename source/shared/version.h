@@ -26,8 +26,8 @@
 // Increase Minor with backward compatible new functionalities and API changes.
 // Increase Patch for backward compatible fixes.
 #define SQLVERSION_MAJOR 5
-#define SQLVERSION_MINOR 10
-#define SQLVERSION_PATCH 1
+#define SQLVERSION_MINOR 11
+#define SQLVERSION_PATCH 0
 #define SQLVERSION_BUILD 0
 
 // For previews, set this constant to 1, 2 and so on. Otherwise, set it to 0
