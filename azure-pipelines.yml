@@ -11,6 +11,7 @@ variables:
 
 trigger:
 - dev
+- fix/*
 
 pr:
 - dev

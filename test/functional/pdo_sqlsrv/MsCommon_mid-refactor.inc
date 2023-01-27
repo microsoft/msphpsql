@@ -7,7 +7,7 @@
         Common functions (shared by all tests).
 
 */
-
+error_reporting( ~E_DEPRECATED );
 $tvpIncPath = dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'inc'.DIRECTORY_SEPARATOR;
 
 require_once($tvpIncPath. 'test_tvp_data.php');

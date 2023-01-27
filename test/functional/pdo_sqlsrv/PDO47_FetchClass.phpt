@@ -72,6 +72,7 @@ function FetchAll()
     EndTest($testName);
 }
 
+#[AllowDynamicProperties]
 class Test1
 {
     public function __construct()
@@ -80,6 +81,7 @@ class Test1
     }
 }
 
+#[AllowDynamicProperties]
 class Test2
 {
     public function __construct()
@@ -88,6 +90,7 @@ class Test2
     }
 }
 
+#[AllowDynamicProperties]
 class Test3
 {
     public function __construct()
