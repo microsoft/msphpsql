@@ -60,7 +60,7 @@
     {
         /* Display errors. */
         echo "Error information: <br/>";
-     
+     	echo "Ooooo";
         foreach ($errors as $error) {
             echo "SQLSTATE: ".$error['SQLSTATE']."<br/>";
             echo "Code: ".$error['code']."<br/>";
