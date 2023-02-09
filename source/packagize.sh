@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "[!] Packaging.."
 if [[ -z $1 ]]; then
     cp -rf "$PWD"/shared "$PWD"/sqlsrv
     cp -rf "$PWD"/shared "$PWD"/pdo_sqlsrv  
