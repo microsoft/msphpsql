@@ -35,7 +35,6 @@ size_t      strnlen_s(const char * _Str, size_t _MaxCount = INT_MAX);
 
 // Copy
 #define memcpy_s        mplat_memcpy_s
-#define strcat_s        mplat_strcat_s
 #define strcpy_s        mplat_strcpy_s
-
+#define strcat_s        mplat_strcat_s
 #endif // _STRINGFUNCTIONS_H_
