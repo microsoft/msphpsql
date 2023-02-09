@@ -44,8 +44,8 @@ unsigned int current_log_subsystem = LOG_STMT;
 const zend_uchar PHPTYPE_INVALID = SQLSRV_PHPTYPE_INVALID;
 const int SQLSRV_INVALID_PRECISION = -1;
 const SQLUINTEGER SQLSRV_INVALID_SIZE = (~1U);
-const int SQLSRV_INVALID_SCALE = -1;
 const int SQLSRV_SIZE_MAX_TYPE = -1;
+const int SQLSRV_INVALID_SCALE = -1;
 
 // constants for maximums in SQL Server
 const int SQL_SERVER_MAX_FIELD_SIZE = 8000;
