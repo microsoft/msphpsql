@@ -4,6 +4,8 @@ Send a large amount (10MB) using encryption. In a Linux CI environment use a sma
 <?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
+
+#[AllowDynamicProperties]
 class my_stream
 {
     public $total_read = 0;

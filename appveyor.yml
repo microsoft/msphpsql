@@ -12,6 +12,7 @@ environment:
     SQLSRV_DBNAME: msphpsql_sqlsrv
     PDOSQLSRV_DBNAME: msphpsql_pdosqlsrv
     PYTHON: c:\Python36
+    APPVEYOR: true
     # For details about Appveyor build worker images (VM template): https://www.appveyor.com/docs/build-environment/#build-worker-images
     matrix:
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
@@ -73,7 +74,7 @@ install:
         $client.Headers.Add("user-agent", "appveyor-ci-build2");
         $client.DownloadFile("http://windows.php.net/downloads/releases/sha256sum.txt", "c:\projects\sha256sum.txt");
         If ($env:PHP_MINOR_VER -Match "latest") {
-            $env:PHP_VERSION=type c:\projects\sha256sum.txt | where { $_ -match "php-($env:PHP_MAJOR_VER\.\d+)-src" } | foreach { $matches[1] }  ;
+            $env:PHP_VERSION=type c:\projects\sha256sum.txt | where { $_ -match "php-($env:PHP_MAJOR_VER\.\d+)-src" } | foreach { $matches[1] } | Select -First 1 ;
         } Else {
             $env:PHP_VERSION=$env:PHP_MAJOR_VER + '.' + $env:PHP_MINOR_VER;
         }

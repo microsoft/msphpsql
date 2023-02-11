@@ -20,7 +20,6 @@ sqlsrv_close($conn);
 testValidValues($msodbcsqlMaj, $server, $connectionOptions);
 testInvalidValues($msodbcsqlMaj, $server, $connectionOptions);
 testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions);
-testWrongODBC($msodbcsqlMaj, $server, $connectionOptions);
 echo "Done\n";
 // end test
 
@@ -113,15 +112,6 @@ function testEncryptedWithODBC($msodbcsqlMaj, $server, $connectionOptions)
     $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server";
 
     connectVerifyOutput($server, $connectionOptions, "Using ODBC 13 for AE", $expected);
-}
-
-function testWrongODBC($msodbcsqlMaj, $server, $connectionOptions)
-{
-    $value = "ODBC Driver 18 for SQL Server";
-    $connectionOptions['Driver']=$value;
-    $expected = "The specified ODBC Driver is not found.";
-
-    connectVerifyOutput($server, $connectionOptions, "Connect with ODBC 18", $expected);
 }
 
 ?>

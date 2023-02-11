@@ -8,6 +8,8 @@ This test should not use temporary table as it might occasionally cause deadlock
 <?php
 
 include 'MsCommon.inc';
+
+#[AllowDynamicProperties]
 class PdoTestClass
 {
     function __construct ()
@@ -16,6 +18,7 @@ class PdoTestClass
     }
 }
 
+#[AllowDynamicProperties]
 class PdoTestClass2
 {
     function __construct ($a1, $a2)
