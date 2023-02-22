@@ -375,7 +375,7 @@ inline void sqlsrv_free_trace( _Inout_ void* ptr, _In_ const char* file, _In_ in
 #else
 
 // Unlike their C standard library's counterparts the Zend Engine's memory management functions
-// emalloc or erealloc won't return NULL in case of an problem while allocating the requested 
+// emalloc or erealloc won't return NULL in case of an problem while allocating the requested
 // memory but bail out and terminate the current request.
 // Check www.phpinternalsbook.com/php7/memory_management/zend_memory_manager.html for details
 inline void* sqlsrv_malloc( _In_ size_t size )
@@ -1060,7 +1060,7 @@ enum SERVER_VERSION {
 // supported driver versions.
 // ODBC 17 is the default
 enum class ODBC_DRIVER : int
-{ 
+{
     VER_17 = 17,
     VER_18 = 18,
     VER_13 = 13,
@@ -1416,7 +1416,7 @@ struct sqlsrv_param
     zval*           param_ptr_z;    // NULL by default - points to the original parameter or its reference
     std::size_t     num_bytes_read; // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
     php_stream*     param_stream;   // NULL by default - used to send stream data from an input parameter to the server
-    
+
     sqlsrv_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
         c_data_type(0), buffer(NULL), buffer_length(0), strlen_or_indptr(0), param_pos(param_num), direction(dir), encoding(enc), sql_data_type(sql_type),
         column_size(col_size), decimal_digits(dec_digits), param_php_type(0), was_null(false), param_ptr_z(NULL), num_bytes_read(0), param_stream(NULL)
@@ -1445,7 +1445,7 @@ struct sqlsrv_param
     virtual void process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     virtual void process_resource_param(_Inout_ zval* param_z);
     virtual void process_object_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
-    
+
     virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
 
     // The following methods are used to supply data to the server via SQLPutData
@@ -1479,7 +1479,7 @@ struct sqlsrv_param_inout : public sqlsrv_param
 
     // Resize the output string buffer based on its properties and whether it is a numeric type
     void resize_output_string_buffer(_Inout_ zval* param_z, _In_ bool is_numeric_type);
-    
+
     // A helper method called by finalize_output_value() to finalize output string parameters
     void finalize_output_string();
 };
@@ -1493,7 +1493,7 @@ struct sqlsrv_param_inout : public sqlsrv_param
 struct sqlsrv_param_tvp : public sqlsrv_param
 {
     std::map<SQLUSMALLINT, sqlsrv_param_tvp*> tvp_columns;  // The constituent columns of the table-valued parameter
-    
+
     sqlsrv_param_tvp*   parent_tvp;     // For a TVP column to reference to the table-valued parameter. NULL if this is the TVP itself.
     int                 num_rows;       // The total number of rows
     int                 current_row;    // A counter to keep track of which row is to be processed
@@ -1514,7 +1514,7 @@ struct sqlsrv_param_tvp : public sqlsrv_param
 
     // Change the column encoding based on the sql data type
     static void sql_type_to_encoding(_In_ SQLSMALLINT sql_type, _Inout_ SQLSRV_ENCODING* encoding);
-    
+
     // The following methods are only applicable to a table-valued parameter or its individual columns
     int parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
     void get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string* table_type_name, _In_ zend_string* schema_name);
@@ -2208,7 +2208,7 @@ namespace core {
                 // regular error handling
                 return;
             }
-            CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt ) {
+            CHECK_SQL_ERROR_OR_WARNING( rtemp, stmt, NULL ) {
 
                 throw CoreException();
             }
@@ -2239,7 +2239,7 @@ namespace core {
         SQLRETURN r = ::SQLGetDiagField( ctx->handle_type(), ctx->handle(), record_number, diag_identifier,
                                        diag_info_buffer, buffer_length, out_buffer_length );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, ctx, NULL) {
             throw CoreException();
         }
 
@@ -2251,7 +2251,7 @@ namespace core {
     {
         SQLRETURN r;
         r = ::SQLAllocHandle( HandleType, InputHandle.handle(), OutputHandlePtr );
-        CHECK_SQL_ERROR_OR_WARNING( r, InputHandle ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, InputHandle, NULL ) {
             throw CoreException();
         }
     }
@@ -2272,7 +2272,7 @@ namespace core {
         r = ::SQLBindParameter( stmt->handle(), ParameterNumber, InputOutputType, ValueType, ParameterType, ColumnSize,
                                 DecimalDigits, ParameterValuePtr, BufferLength, StrLen_Or_IndPtr );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2281,7 +2281,7 @@ namespace core {
     {
         SQLRETURN r = ::SQLCloseCursor( stmt->handle() );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2293,7 +2293,7 @@ namespace core {
         SQLRETURN r = ::SQLColAttribute( stmt->handle(), field_index, field_identifier, field_type_char,
                                          buffer_length, out_buffer_length, field_type_num );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2305,7 +2305,7 @@ namespace core {
         SQLRETURN r = ::SQLColAttributeW( stmt->handle(), field_index, field_identifier, field_type_char,
                                           buffer_length, out_buffer_length, field_type_num );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2318,7 +2318,7 @@ namespace core {
         r = ::SQLDescribeCol( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
                               data_type, col_size, decimal_digits, nullable);
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2331,7 +2331,7 @@ namespace core {
 		r = ::SQLDescribeColW( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
                                data_type, col_size, decimal_digits, nullable );
 
-		CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+		CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
 			throw CoreException();
 		}
 	}
@@ -2342,7 +2342,7 @@ namespace core {
         SQLRETURN r;
         r = ::SQLDescribeParam( stmt->handle(), paramno, data_type, col_size, decimal_digits, nullable );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2352,7 +2352,7 @@ namespace core {
         SQLRETURN r;
         r = ::SQLNumParams( stmt->handle(), num_params );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2361,7 +2361,7 @@ namespace core {
     {
         SQLRETURN r = ::SQLEndTran( handleType, conn->handle(), completionType );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, conn ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, conn, NULL ) {
             throw CoreException();
         }
     }
@@ -2373,7 +2373,7 @@ namespace core {
 
         check_for_mars_error( stmt, r );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
 
             throw CoreException();
         }
@@ -2387,7 +2387,7 @@ namespace core {
 
         check_for_mars_error( stmt, r );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
         return r;
@@ -2401,7 +2401,7 @@ namespace core {
 
         check_for_mars_error( stmt, r );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
 
@@ -2412,7 +2412,7 @@ namespace core {
     {
         SQLRETURN r = ::SQLFetchScroll( stmt->handle(), fetch_orientation, fetch_offset );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
         return r;
@@ -2424,14 +2424,14 @@ namespace core {
     {
         SQLRETURN r;
         r = ::SQLFreeHandle( ctx.handle_type(), ctx.handle() );
-        CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {}
+        CHECK_SQL_ERROR_OR_WARNING( r, ctx, NULL ) {}
     }
 
     inline void SQLGetStmtAttr( _Inout_ sqlsrv_stmt* stmt, _In_ SQLINTEGER attr, _Out_writes_opt_(buf_len) void* value_ptr, _In_ SQLINTEGER buf_len, _Out_opt_ SQLINTEGER* str_len)
     {
         SQLRETURN r;
         r = ::SQLGetStmtAttr( stmt->handle(), attr, value_ptr, buf_len, str_len );
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2450,7 +2450,7 @@ namespace core {
         }
 
         if( handle_warning ) {
-            CHECK_SQL_WARNING_AS_ERROR( r, stmt ) {
+            CHECK_SQL_WARNING_AS_ERROR( r, stmt, NULL ) {
                 throw CoreException();
             }
         }
@@ -2465,7 +2465,7 @@ namespace core {
         SQLRETURN r;
         r = ::SQLGetInfo( conn->handle(), info_type, info_value, buffer_len, str_len );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, conn ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, conn, NULL ) {
             throw CoreException();
         }
     }
@@ -2476,7 +2476,7 @@ namespace core {
         SQLRETURN r;
         r = ::SQLGetTypeInfo( stmt->handle(), data_type );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2487,7 +2487,7 @@ namespace core {
     {
         SQLRETURN r = ::SQLMoreResults( stmt->handle() );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
 
@@ -2500,7 +2500,7 @@ namespace core {
         SQLSMALLINT num_cols;
         r = ::SQLNumResultCols( stmt->handle(), &num_cols );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
 
@@ -2513,7 +2513,7 @@ namespace core {
     {
         SQLRETURN r;
         r = ::SQLParamData( stmt->handle(), value_ptr_ptr );
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
         return r;
@@ -2523,7 +2523,7 @@ namespace core {
     {
         SQLRETURN r;
         r = ::SQLPrepareW( stmt->handle(), sql, sql_len );
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2533,7 +2533,7 @@ namespace core {
     {
         SQLRETURN r;
         r = ::SQLPutData( stmt->handle(), data_ptr, strlen_or_ind );
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }
@@ -2558,7 +2558,7 @@ namespace core {
            return 0;
 #endif // !_WIN32
 
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
 
@@ -2571,7 +2571,7 @@ namespace core {
         SQLRETURN r;
         r = ::SQLSetConnectAttr( ctx.handle(), attr, value_ptr, str_len );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, ctx, NULL ) {
             throw CoreException();
         }
     }
@@ -2583,7 +2583,7 @@ namespace core {
         core::SQLGetStmtAttr( stmt, SQL_ATTR_IMP_PARAM_DESC, &hIpd, 0, 0 );
         if( value_ptr ) {
             r = ::SQLSetDescField( hIpd, rec_num, fld_id, value_ptr, str_len );
-            CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+            CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
                 throw CoreException();
             }
         }
@@ -2593,7 +2593,7 @@ namespace core {
     {
         SQLRETURN r;
         r = ::SQLSetEnvAttr( ctx.handle(), attr, value_ptr, str_len );
-        CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, ctx, NULL ) {
             throw CoreException();
         }
     }
@@ -2602,7 +2602,7 @@ namespace core {
     {
         SQLRETURN r = ::SQLSetConnectAttr( conn->handle(), attribute, value_ptr, value_len );
 
-        CHECK_SQL_ERROR_OR_WARNING( r, conn ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, conn, NULL ) {
             throw CoreException();
         }
     }
@@ -2611,7 +2611,7 @@ namespace core {
     {
         SQLRETURN r;
         r = ::SQLSetStmtAttr( stmt->handle(), attr, value_ptr, str_len );
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw CoreException();
         }
     }

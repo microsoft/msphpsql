@@ -7,13 +7,13 @@
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
-//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""),
+//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
 //  and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ const int INITIAL_LOB_FIELD_LEN = 2048;      // base allocation size when retrie
 template <int align, typename T>
 T align_to( _In_ T number )
 {
-    DEBUG_SQLSRV_ASSERT( (number + align) > number, "Number to align overflowed" ); 
+    DEBUG_SQLSRV_ASSERT( (number + align) > number, "Number to align overflowed" );
     return ((number % align) == 0) ? number : (number + align - (number % align));
 }
 
@@ -92,7 +92,7 @@ size_t get_float_precision( _In_ SQLLEN buffer_length, _In_ size_t unitsize)
 
     // use the display size to determine the sql type. And if it is a double, set the precision accordingly
     // the display sizes are set by the ODBC driver based on the precision of the sql type
-    // otherwise we can just use the default precision 
+    // otherwise we can just use the default precision
     size_t real_display_size = 14;
     size_t float_display_size = 24;
     size_t real_precision = 7;
@@ -206,14 +206,14 @@ SQLRETURN number_to_string( _In_ Number* number_data, _Out_writes_bytes_to_opt_(
     {
 
         std::basic_string<char16_t> str;
-                
+
         for (const auto &mb : str_num )
         {
             size_t cch = SystemLocale::NextChar( CP_ACP, &mb ) - &mb;
             if ( cch > 0 )
             {
                 WCHAR ch16;
-                DWORD rc;                
+                DWORD rc;
                 size_t cchActual = SystemLocale::ToUtf16( CP_ACP, &mb, cch, &ch16, 1, &rc);
                 if (cchActual > 0)
                 {
@@ -242,8 +242,8 @@ std::string getUTF8StringFromString( _In_z_ const SQLWCHAR* source )
     SQLLEN i = 0;
     std::string str;
     while ( source[i] )
-    {        
-        memset( c_str, 0, sizeof( c_str ) );        
+    {
+        memset( c_str, 0, sizeof( c_str ) );
         int cch = 0;
         errno_t err = mplat_wctomb_s( &cch, c_str, sizeof( c_str ), source[i++] );
         if ( cch > 0 && err == ERROR_SUCCESS )
@@ -271,7 +271,7 @@ struct row_dtor_closure {
     row_dtor_closure( _In_ sqlsrv_buffered_result_set* st, _In_ BYTE* row ) :
         results( st ), row_data( row )
     {
-    }                      
+    }
 };
 
 sqlsrv_error* odbc_get_diag_rec( _In_ sqlsrv_stmt* odbc, _In_ SQLSMALLINT record_number )
@@ -280,9 +280,9 @@ sqlsrv_error* odbc_get_diag_rec( _In_ sqlsrv_stmt* odbc, _In_ SQLSMALLINT record
     SQLWCHAR wnative_message[SQL_MAX_ERROR_MESSAGE_LENGTH + 1] = {L'\0'};
     SQLINTEGER native_code;
     SQLSMALLINT wnative_message_len = 0;
-    
+
     SQLSRV_ASSERT(odbc != NULL, "odbc_get_diag_rec: sqlsrv_stmt* odbc was null.");
-    SQLRETURN r = SQLGetDiagRecW( SQL_HANDLE_STMT, odbc->handle(), record_number, wsql_state, &native_code, wnative_message, 
+    SQLRETURN r = SQLGetDiagRecW( SQL_HANDLE_STMT, odbc->handle(), record_number, wsql_state, &native_code, wnative_message,
                                   SQL_MAX_ERROR_MESSAGE_LENGTH + 1, &wnative_message_len );
     if( !SQL_SUCCEEDED( r ) || r == SQL_NO_DATA ) {
         return NULL;
@@ -300,14 +300,14 @@ sqlsrv_error* odbc_get_diag_rec( _In_ sqlsrv_stmt* odbc, _In_ SQLSMALLINT record
     if ( !convert_string_from_utf16( enc, wsql_state, SQL_SQLSTATE_BUFSIZE, (char**)&sql_state, sql_state_len )) {
         return NULL;
     }
-    
+
     sqlsrv_malloc_auto_ptr<SQLCHAR> native_message;
     SQLLEN native_message_len = 0;
     if (!convert_string_from_utf16( enc, wnative_message, wnative_message_len, (char**)&native_message, native_message_len )) {
         return NULL;
     }
 
-    return new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( (SQLCHAR*) sql_state, (SQLCHAR*) native_message, 
+    return new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( (SQLCHAR*) sql_state, (SQLCHAR*) native_message,
                                                                       native_code );
 }
 
@@ -324,7 +324,7 @@ sqlsrv_result_set::sqlsrv_result_set( _In_ sqlsrv_stmt* stmt ) :
 // ODBC result set
 // This object simply wraps ODBC function calls
 
-sqlsrv_odbc_result_set::sqlsrv_odbc_result_set( _In_ sqlsrv_stmt* stmt ) : 
+sqlsrv_odbc_result_set::sqlsrv_odbc_result_set( _In_ sqlsrv_stmt* stmt ) :
     sqlsrv_result_set( stmt )
 {
 }
@@ -347,12 +347,12 @@ SQLRETURN sqlsrv_odbc_result_set::get_data( _In_ SQLUSMALLINT field_index, _In_ 
     return core::SQLGetData( odbc, field_index, target_type, buffer, buffer_length, out_buffer_length, handle_warning );
 }
 
-SQLRETURN sqlsrv_odbc_result_set::get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
+SQLRETURN sqlsrv_odbc_result_set::get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier,
                                                   _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
                                                   _Inout_ SQLSMALLINT* out_buffer_length )
 {
     SQLSRV_ASSERT( odbc != NULL, "Invalid statement handle" );
-    return core::SQLGetDiagField( odbc, record_number, diag_identifier, diag_info_buffer, buffer_length, 
+    return core::SQLGetDiagField( odbc, record_number, diag_identifier, diag_info_buffer, buffer_length,
                                   out_buffer_length );
 }
 
@@ -388,7 +388,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
     }
 
     SQLULEN null_bytes = ( col_count / 8 ) + 1; // number of bits to reserve at the beginning of each row for NULL flags
-    meta = static_cast<sqlsrv_buffered_result_set::meta_data*>( sqlsrv_malloc( col_count * 
+    meta = static_cast<sqlsrv_buffered_result_set::meta_data*>( sqlsrv_malloc( col_count *
                                                                                sizeof( sqlsrv_buffered_result_set::meta_data )));
 
     SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() :
@@ -397,7 +397,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
     // get the meta data and calculate the size of a row buffer
     SQLULEN offset = null_bytes;
     for( SQLSMALLINT i = 0; i < col_count; ++i ) {
-				
+
         core::SQLDescribeColW( stmt, i + 1, NULL, 0, NULL, &meta[i].type, &meta[i].length, &meta[i].scale, NULL );
 
         offset = align_to<sizeof(SQLPOINTER)>( offset );
@@ -423,7 +423,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                 }
                 else {
                     // If encoding is set to UTF-8, the following types are not necessarily column size.
-                    // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 
+                    // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly.
                     if ( encoding == SQLSRV_ENCODING_UTF8 ) {
                         meta[i].length *= sizeof( WCHAR );
                         meta[i].length += sizeof( SQLULEN ) + sizeof( WCHAR ); // length plus null terminator space
@@ -477,7 +477,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
             case SQL_SS_TIME2:
             case SQL_SS_TIMESTAMPOFFSET:
             case SQL_TYPE_TIMESTAMP:
-                core::SQLColAttributeW( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, 
+                core::SQLColAttributeW( stmt, i + 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL,
                                        reinterpret_cast<SQLLEN*>( &meta[i].length ) );
                 meta[i].length += sizeof(char) + sizeof( SQLULEN );  // null terminator space
                 offset += meta[i].length;
@@ -517,13 +517,13 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
             case SQL_TYPE_TIMESTAMP:
                 meta[i].c_type = SQL_C_CHAR;
                 break;
-                
+
             case SQL_CHAR:
             case SQL_VARCHAR:
             case SQL_SS_VARIANT:
             case SQL_LONGVARCHAR:
                 // If encoding is set to UTF-8, the following types are not necessarily column size.
-                // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly. 
+                // We need to call SQLGetData with c_type SQL_C_WCHAR and set the size accordingly.
                 if ( encoding == SQLSRV_ENCODING_UTF8 ) {
                     meta[i].c_type = SQL_C_WCHAR;
                 }
@@ -531,7 +531,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                     meta[i].c_type = SQL_C_CHAR;
                 }
                 break;
-                
+
             case SQL_SS_UDT:
             case SQL_LONGVARBINARY:
             case SQL_BINARY:
@@ -574,7 +574,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
 
     try {
         while( core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 ) != SQL_NO_DATA ) {
-            
+
             // allocate the row buffer
             sqlsrv_malloc_auto_ptr<unsigned char> rowAuto;
             rowAuto = static_cast<unsigned char*>( sqlsrv_malloc( offset ));
@@ -610,15 +610,15 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                         else {
 
     						mem_used += meta[i].length;
-                            CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
-                                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+                            CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt,
+                                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit, NULL) {
 
                                 throw core::CoreException();
                             }
 
                             buffer = row + meta[i].offset + sizeof( SQLULEN );
                             out_buffer_length = reinterpret_cast<SQLLEN*>( row + meta[i].offset );
-                            core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
+                            core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length,
                                               false );
                         }
                         break;
@@ -627,17 +627,17 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
                     case SQL_C_DOUBLE:
                         {
                             mem_used += meta[i].length;
-                            CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt, 
-                                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+                            CHECK_CUSTOM_ERROR( mem_used > stmt->buffered_query_limit * 1024, stmt,
+                                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit, NULL) {
 
                                 throw core::CoreException();
                             }
                             buffer = row + meta[i].offset;
                             out_buffer_length = &out_buffer_temp;
-                            core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length, 
+                            core::SQLGetData( stmt, i + 1, meta[i].c_type, buffer, meta[i].length, out_buffer_length,
                                               false );
                         }
-                        break;                        
+                        break;
 
                     default:
                         SQLSRV_ASSERT( false, "Unknown C type" );
@@ -656,8 +656,8 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
             row_dtor_closure cl( this, row );
             sqlsrv_zend_hash_next_index_insert_mem( *stmt, cache, &cl, sizeof(row_dtor_closure) );
             rowAuto.transferred();
-        }   
-    } 
+        }
+    }
     catch( core::CoreException& ) {
         // free the rows
         if( cache ) {
@@ -753,7 +753,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
         *out_buffer_length = SQL_NULL_DATA;
         return SQL_SUCCESS;
     }
-    
+
     // check to make sure the conversion type is valid
     switch (meta[field_index].c_type) {
     case SQL_C_CHAR:
@@ -817,21 +817,21 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
     return SQL_ERROR;
 }
 
-SQLRETURN sqlsrv_buffered_result_set::get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
+SQLRETURN sqlsrv_buffered_result_set::get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier,
                                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
                                                       _Inout_ SQLSMALLINT* out_buffer_length )
 {
     SQLSRV_ASSERT( record_number == 1, "Only record number 1 can be fetched by sqlsrv_buffered_result_set::get_diag_field" );
-    SQLSRV_ASSERT( diag_identifier == SQL_DIAG_SQLSTATE, 
+    SQLSRV_ASSERT( diag_identifier == SQL_DIAG_SQLSTATE,
                    "Only SQL_DIAG_SQLSTATE can be fetched by sqlsrv_buffered_result_set::get_diag_field" );
-    SQLSRV_ASSERT( buffer_length >= SQL_SQLSTATE_BUFSIZE, 
+    SQLSRV_ASSERT( buffer_length >= SQL_SQLSTATE_BUFSIZE,
                    "Buffer not big enough to return SQLSTATE in sqlsrv_buffered_result_set::get_diag_field" );
 
     if( last_error == 0 ) {
         return SQL_NO_DATA;
     }
 
-    SQLSRV_ASSERT( last_error->sqlstate != NULL, 
+    SQLSRV_ASSERT( last_error->sqlstate != NULL,
                    "Must have a SQLSTATE in a valid last_error in sqlsrv_buffered_result_set::get_diag_field" );
 
     SQLSMALLINT bufsize = ( buffer_length < SQL_SQLSTATE_BUFSIZE ) ? buffer_length : SQL_SQLSTATE_BUFSIZE;
@@ -858,8 +858,8 @@ sqlsrv_error* sqlsrv_buffered_result_set::get_diag_rec( _In_ SQLSMALLINT record_
     if( record_number > 1 ) {
         return NULL;
     }
-    	
-    return new (sqlsrv_malloc( sizeof( sqlsrv_error ))) 
+
+    return new (sqlsrv_malloc( sizeof( sqlsrv_error )))
         sqlsrv_error( last_error->sqlstate, last_error->native_message, last_error->native_code );
 }
 
@@ -879,7 +879,7 @@ SQLLEN sqlsrv_buffered_result_set::row_count( void )
 // private functions
 template <typename Char>
 SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so_far,  _Out_writes_z_(*out_buffer_length) void* buffer,
-                                                        _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length, 
+                                                        _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
                                                         _Inout_ sqlsrv_error_auto_ptr& out_error )
 {
     // The hex characters for the conversion loop below
@@ -892,7 +892,7 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
     // Set the amount of space necessary for null characters at the end of the data.
     SQLSMALLINT extra = sizeof(Char);
 
-    // TO convert a binary to a system string or a binary to a wide string, the buffer size minus 
+    // TO convert a binary to a system string or a binary to a wide string, the buffer size minus
     // 'extra' is ideally multiples of 2 or 4 (depending on Char), but calculating to_copy_hex below
     // takes care of this.
 
@@ -900,7 +900,7 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
     // the entire length of the string is returned the first
     // call in out_buffer_len.  Successive calls return how much is
     // left minus how much has already been read by previous reads
-    // *2 is for each byte to hex conversion and * extra is for either system 
+    // *2 is for each byte to hex conversion and * extra is for either system
     // or wide string allocation
     *out_buffer_length = (*reinterpret_cast<SQLLEN*>( field_data - sizeof( SQLULEN )) - read_so_far) * 2 * extra;
 
@@ -908,7 +908,7 @@ SQLRETURN binary_to_string( _Inout_ SQLCHAR* field_data, _Inout_ SQLLEN& read_so
     SQLLEN to_copy;
     if( buffer_length < *out_buffer_length + extra ) {
         to_copy = (buffer_length - extra);
-        out_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) 
+        out_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error )))
             sqlsrv_error( (SQLCHAR*) "01004", (SQLCHAR*) "String data, right truncated", -1 );
         r = SQL_SUCCESS_WITH_INFO;
     }
@@ -990,13 +990,13 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_long( _In_ SQLSMALLINT field_ind
     LONG* long_data = reinterpret_cast<LONG*>( buffer );
 
     if( *double_data < double( LONG_MIN ) || *double_data > double( LONG_MAX )) {
-        last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( (SQLCHAR*) "22003", 
+        last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( (SQLCHAR*) "22003",
                                                                                 (SQLCHAR*) "Numeric value out of range", 0 );
         return SQL_ERROR;
     }
 
     if( *double_data != floor( *double_data )) {
-        last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( (SQLCHAR*) "01S07", 
+        last_error = new (sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error( (SQLCHAR*) "01S07",
                                                                                 (SQLCHAR*) "Fractional truncation", 0 );
         return SQL_SUCCESS_WITH_INFO;
     }
@@ -1024,7 +1024,7 @@ SQLRETURN sqlsrv_buffered_result_set::double_to_system_string( _In_ SQLSMALLINT 
     return r;
 }
 
-SQLRETURN sqlsrv_buffered_result_set::long_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length, 
+SQLRETURN sqlsrv_buffered_result_set::long_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                       _Out_ SQLLEN* out_buffer_length )
 {
     SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_LONG, "Invalid conversion to long" );
@@ -1148,7 +1148,7 @@ SQLRETURN sqlsrv_buffered_result_set::wstring_to_long( _In_ SQLSMALLINT field_in
     return SQL_SUCCESS;
 }
 
-SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_z_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length, 
+SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( _In_ SQLSMALLINT field_index, _Out_writes_z_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                              _Out_ SQLLEN* out_buffer_length )
 {
     SQLSRV_ASSERT( last_error == 0, "Pending error for sqlsrv_buffered_results_set::system_to_wide_string" );
@@ -1184,7 +1184,7 @@ SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( _In_ SQLSMALLINT fi
     if( (size_t) buffer_length < (field_len - read_so_far + sizeof(char)) * sizeof(WCHAR)) {
 
         to_copy = (buffer_length - sizeof(WCHAR)) / sizeof(WCHAR);    // to_copy is the number of characters
-        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) 
+        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error )))
             sqlsrv_error( (SQLCHAR*) "01004", (SQLCHAR*) "String data, right truncated", -1 );
         r = SQL_SUCCESS_WITH_INFO;
     }
@@ -1204,20 +1204,20 @@ SQLRETURN sqlsrv_buffered_result_set::system_to_wide_string( _In_ SQLSMALLINT fi
 			}
 
 #ifndef _WIN32
-             int ch_space = SystemLocale::ToUtf16( CP_ACP, (LPCSTR) field_data, static_cast<int>(to_copy), 
+             int ch_space = SystemLocale::ToUtf16( CP_ACP, (LPCSTR) field_data, static_cast<int>(to_copy),
                                     static_cast<LPWSTR>(buffer), static_cast<int>(to_copy));
-									
+
 #else
-            int ch_space = MultiByteToWideChar( CP_ACP, MB_ERR_INVALID_CHARS, (LPCSTR) field_data, static_cast<int>(to_copy), 
+            int ch_space = MultiByteToWideChar( CP_ACP, MB_ERR_INVALID_CHARS, (LPCSTR) field_data, static_cast<int>(to_copy),
                                       static_cast<LPWSTR>(buffer), static_cast<int>(to_copy));
 #endif // !_WIN32
-			
+
             if( ch_space == 0 ) {
 
                 switch( GetLastError() ) {
 
                     case ERROR_NO_UNICODE_TRANSLATION:
-                        // the theory here is the conversion failed because the end of the buffer we provided contained only 
+                        // the theory here is the conversion failed because the end of the buffer we provided contained only
                         // half a character at the end
                         if( !tried_again ) {
                             to_copy--;
@@ -1295,7 +1295,7 @@ SQLRETURN sqlsrv_buffered_result_set::to_same_string( _In_ SQLSMALLINT field_ind
     SQLLEN to_copy;
     if( buffer_length < *out_buffer_length + extra ) {
         to_copy = buffer_length - extra;
-        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) 
+        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error )))
             sqlsrv_error( (SQLCHAR*) "01004", (SQLCHAR*) "String data, right truncated", -1 );
         r = SQL_SUCCESS_WITH_INFO;
     }
@@ -1355,17 +1355,17 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( _In_ SQLSMALLINT fi
 
         // allocate enough to handle WC -> DBCS conversion if it happens
         temp_string = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( field_len, sizeof(char), sizeof(char)));
-			
-#ifndef _WIN32		
+
+#ifndef _WIN32
         temp_length = SystemLocale::FromUtf16( CP_ACP, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),
                                  (LPSTR) temp_string.get(), static_cast<int>(field_len) );
-#else								 			
+#else
         BOOL default_char_used = FALSE;
         char default_char = '?';
 
         temp_length = WideCharToMultiByte( CP_ACP, 0, (LPCWSTR) field_data, static_cast<int>(field_len / sizeof(WCHAR)),
                                            (LPSTR) temp_string.get(), static_cast<int>(field_len), &default_char, &default_char_used );
-#endif	// !_WIN32	
+#endif	// !_WIN32
         if( temp_length == 0 ) {
 
             switch( GetLastError() ) {
@@ -1390,7 +1390,7 @@ SQLRETURN sqlsrv_buffered_result_set::wide_to_system_string( _In_ SQLSMALLINT fi
     if( (size_t) buffer_length < (temp_length - read_so_far + sizeof(char))) {
 
         to_copy = buffer_length - sizeof(char);
-        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) 
+        last_error = new ( sqlsrv_malloc( sizeof( sqlsrv_error )))
             sqlsrv_error( (SQLCHAR*) "01004", (SQLCHAR*) "String data, right truncated", -1 );
         r = SQL_SUCCESS_WITH_INFO;
     }
@@ -1469,7 +1469,7 @@ void cache_row_dtor( _In_ zval* data )
 	sqlsrv_free( cl );
 }
 
-SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_buffered_result_set::meta_data& meta, 
+SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ sqlsrv_buffered_result_set::meta_data& meta,
                            _In_ zend_long mem_used )
 {
     SQLSMALLINT extra = 0;
@@ -1515,8 +1515,8 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
         // if the last read was successful, we're done
         if( r == SQL_SUCCESS ) {
             // check to make sure we haven't overflown our memory limit
-            CHECK_CUSTOM_ERROR( mem_used + last_field_len > stmt->buffered_query_limit * 1024, stmt, 
-                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+            CHECK_CUSTOM_ERROR( mem_used + last_field_len > stmt->buffered_query_limit * 1024, stmt,
+                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit, NULL) {
 
                 throw core::CoreException();
             }
@@ -1525,7 +1525,7 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
         // else if it wasn't the truncated warning (01004) then we're done
         else if( r == SQL_SUCCESS_WITH_INFO ) {
             SQLSMALLINT len;
-            core::SQLGetDiagField( stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len 
+            core::SQLGetDiagField( stmt, 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len
                                    );
 
             if( !is_truncated_warning( state )) {
@@ -1539,8 +1539,8 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
         // if the type of the field returns the total to be read, we use that and preallocate the buffer
         if( last_field_len != SQL_NO_TOTAL ) {
 
-            CHECK_CUSTOM_ERROR( mem_used + last_field_len > stmt->buffered_query_limit * 1024, stmt, 
-                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+            CHECK_CUSTOM_ERROR( mem_used + last_field_len > stmt->buffered_query_limit * 1024, stmt,
+                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit, NULL) {
 
                 throw core::CoreException();
             }
@@ -1554,8 +1554,8 @@ SQLPOINTER read_lob_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_in
         // otherwise allocate another chunk of memory to read in
         else {
             to_read *=  2;
-            CHECK_CUSTOM_ERROR( mem_used + to_read > stmt->buffered_query_limit * 1024, stmt, 
-                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit ) {
+            CHECK_CUSTOM_ERROR( mem_used + to_read > stmt->buffered_query_limit * 1024, stmt,
+                                SQLSRV_ERROR_BUFFER_LIMIT_EXCEEDED, stmt->buffered_query_limit, NULL) {
 
                 throw core::CoreException();
             }
