@@ -7,13 +7,13 @@
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
-//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""),
+//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
 //  and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ )
 {
     sqlsrv_stream* ss = static_cast<sqlsrv_stream*>( stream->abstract );
     SQLSRV_ASSERT( ss != NULL && ss->stmt != NULL, "sqlsrv_stream_close: sqlsrv_stream* ss was null." );
-    
+
     // free the stream resources in the Zend engine
     php_stream_free( stream, PHP_STREAM_FREE_RELEASE_STREAM );
 
@@ -44,7 +44,7 @@ int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ )
 // read from a sqlsrv stream into the buffer provided by Zend.  The parameters for binary vs. char are
 // set when sqlsrv_get_field is called by the user specifying which field type they want.
 
-#if PHP_VERSION_ID >= 70400        
+#if PHP_VERSION_ID >= 70400
 ssize_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count)
 #else
 size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count)
@@ -97,7 +97,7 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
         SQLRETURN r = ss->stmt->current_results->get_data(ss->field_index + 1, c_type, get_data_buffer, count /*BufferLength*/, &read, false /*handle_warning*/);
 
         CHECK_SQL_ERROR( r, ss->stmt ) {
-            stream->eof = 1; 
+            stream->eof = 1;
             throw core::CoreException();
         }
 
@@ -126,7 +126,7 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
                                "did not occur." );
             }
 
-            // As per SQLGetData documentation, if the length of character data exceeds the BufferLength, 
+            // As per SQLGetData documentation, if the length of character data exceeds the BufferLength,
             // SQLGetData truncates the data to BufferLength less the length of null-termination character.
             // But when fetching binary fields as chars (wide chars), each byte is represented as 2 hex characters,
             // each takes the size of a char (wide char). Note that BufferLength may not be multiples of 2 or 4.
@@ -138,7 +138,7 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
             if( is_truncated_warning( state ) || count < read) {
         #else
             if( is_truncated_warning( state ) ) {
-        #endif // !_WIN32 
+        #endif // !_WIN32
                 size_t char_size = sizeof(SQLCHAR);
 
                 switch( c_type ) {
@@ -168,13 +168,13 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
                 }
             }
             else {
-                CHECK_SQL_WARNING( r, ss->stmt );
+                CHECK_SQL_WARNING( r, ss->stmt, NULL );
             }
         }
 
         // If the encoding is UTF-8
         if( c_type == SQL_C_WCHAR ) {
-            count *= 2;          
+            count *= 2;
             // Undo the shift to use the full buffer
             // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
             // an error.  This happens only on XP.
@@ -199,18 +199,18 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
                                                static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 #endif // !_WIN32
             if( enc_len == 0 ) {
-            
+
                 stream->eof = 1;
-                THROW_CORE_ERROR( ss->stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message() );
+                THROW_CORE_ERROR( ss->stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message(), NULL );
             }
 
             read = enc_len;
         }
 
         return static_cast<size_t>( read );
-    } 
+    }
     catch (core::CoreException&) {
-#if PHP_VERSION_ID >= 70400        
+#if PHP_VERSION_ID >= 70400
         return -1;
 #else
         return 0;
@@ -218,7 +218,7 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
     }
     catch (...) {
         LOG(SEV_ERROR, "sqlsrv_stream_read: Unknown exception caught.");
-#if PHP_VERSION_ID >= 70400        
+#if PHP_VERSION_ID >= 70400
         return -1;
 #else
         return 0;
@@ -242,7 +242,7 @@ php_stream_ops sqlsrv_stream_ops = {
 // open a stream and return the sqlsrv_stream_ops function table as part of the
 // return value.  There is only one valid way to open a stream, using sqlsrv_get_field on
 // certain field types.  A sqlsrv stream may only be opened in read mode.
-static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _In_ const char*, _In_ const char* mode, 
+static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _In_ const char*, _In_ const char* mode,
                                          _In_opt_ int options, _In_ zend_string **, php_stream_context* STREAMS_DC )
 {
 
@@ -259,8 +259,8 @@ static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _
     ss = static_cast<sqlsrv_stream*>( sqlsrv_malloc( sizeof( sqlsrv_stream )));
     memset( ss, 0, sizeof( sqlsrv_stream ));
 
-    // The function core_get_field_common() is changed to pass REPORT_ERRORS for 
-    // php_stream_open_wrapper(). Whether the error flag is toggled or cleared, 
+    // The function core_get_field_common() is changed to pass REPORT_ERRORS for
+    // php_stream_open_wrapper(). Whether the error flag is toggled or cleared,
     // the argument "options" will be zero.
     // For details check this pull request: https://github.com/php/php-src/pull/6190
     if (options != 0) {

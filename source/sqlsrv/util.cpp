@@ -9,13 +9,13 @@
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
-//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""),
+//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
 //  and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
@@ -26,17 +26,17 @@ extern "C" {
 #include "php_sqlsrv_int.h"
 
 namespace {
-    
+
 // current subsytem.  defined for the CHECK_SQL_{ERROR|WARNING} macros
 unsigned int current_log_subsystem = LOG_UTIL;
 
 // *** internal functions ***
 sqlsrv_error_const* get_error_message( _In_ unsigned int sqlsrv_error_code );
 
-void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, 
+void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain,
                                 _In_ bool warning );
 bool ignore_warning( _In_ char* sql_state, _In_ int native_code );
-bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, _In_ logging_severity log_severity, 
+bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, _In_ logging_severity log_severity,
                                  _In_ unsigned int sqlsrv_error_code, _In_ int warning, _In_opt_ va_list* print_args );
 
 int  sqlsrv_merge_zend_hash_dtor( _Inout_ zval* dest );
@@ -46,9 +46,9 @@ bool sqlsrv_merge_zend_hash( _Inout_ zval* dest_z, zval const* src_z );
 
 // List of all error messages
 ss_error SS_ERRORS[] = {
-          
+
     {
-        SS_SQLSRV_ERROR_INVALID_OPTION,  
+        SS_SQLSRV_ERROR_INVALID_OPTION,
         { IMSSP, (SQLCHAR*)"Invalid option %1!s! was passed to sqlsrv_connect.", -1, true }
     },
 
@@ -57,23 +57,23 @@ ss_error SS_ERRORS[] = {
 
     // these two share the same code since they are basically the same error.
     {
-        SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED,  
+        SQLSRV_ERROR_UID_PWD_BRACES_NOT_ESCAPED,
         { IMSSP, (SQLCHAR*) "An unescaped right brace (}) was found in either the user name or password.  All right braces must be"
         " escaped with another right brace (}}).", -4, false }
     },
 
     {
-        SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED, 
+        SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED,
         { IMSSP, (SQLCHAR*)"An unescaped right brace (}) was found in option %1!s!.", -4, true }
     },
-   
-    {
-        SQLSRV_ERROR_NO_DATA, 
-        { IMSSP, (SQLCHAR*)"Field %1!d! returned no data.", -5, true }
-    }, 
 
     {
-        SQLSRV_ERROR_STREAMABLE_TYPES_ONLY, 
+        SQLSRV_ERROR_NO_DATA,
+        { IMSSP, (SQLCHAR*)"Field %1!d! returned no data.", -5, true }
+    },
+
+    {
+        SQLSRV_ERROR_STREAMABLE_TYPES_ONLY,
         { IMSSP, (SQLCHAR*)"Only char, nchar, varchar, nvarchar, binary, varbinary, and large object types can be read by using "
           "streams.", -6, false}
     },
@@ -90,12 +90,12 @@ ss_error SS_ERRORS[] = {
     },
 
     {
-        SS_SQLSRV_ERROR_VAR_REQUIRED, 
+        SS_SQLSRV_ERROR_VAR_REQUIRED,
         { IMSSP, (SQLCHAR*)"Parameter array %1!d! must have at least one value or variable.", -9, true }
     },
-    
+
     {
-        SS_SQLSRV_ERROR_INVALID_FETCH_TYPE, 
+        SS_SQLSRV_ERROR_INVALID_FETCH_TYPE,
         { IMSSP, (SQLCHAR*)"An invalid fetch type was specified. SQLSRV_FETCH_NUMERIC, SQLSRV_FETCH_ARRAY and SQLSRV_FETCH_BOTH are acceptable values.", -10, false }
     },
 
@@ -103,24 +103,24 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_STATEMENT_NOT_EXECUTED,
         { IMSSP, (SQLCHAR*)"The statement must be executed before results can be retrieved.", -11, false }
     },
-    
+
     {
         SS_SQLSRV_ERROR_ALREADY_IN_TXN,
         { IMSSP, (SQLCHAR*)"Cannot begin a transaction until the current transaction has been completed by calling either "
           "sqlsrv_commit or sqlsrv_rollback.", -12, false }
-    },  
-    
+    },
+
     {
         SS_SQLSRV_ERROR_NOT_IN_TXN,
         { IMSSP, (SQLCHAR*)"A transaction must be started by calling sqlsrv_begin_transaction before calling sqlsrv_commit or "
           "sqlsrv_rollback.", -13, false }
-    },  
-    
+    },
+
     {
         SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER,
         { IMSSP, (SQLCHAR*)"An invalid parameter was passed to %1!s!.", -14, true }
-    },  
-      
+    },
+
     {
         SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION,
         { IMSSP, (SQLCHAR*)"An invalid direction for parameter %1!d! was specified. SQLSRV_PARAM_IN, SQLSRV_PARAM_OUT, and "
@@ -140,7 +140,7 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_FETCH_NOT_CALLED,
         { IMSSP, (SQLCHAR*)"A row must be retrieved with sqlsrv_fetch before retrieving data with sqlsrv_get_field.", -18, false }
-    },    
+    },
 
     {
         SQLSRV_ERROR_FIELD_INDEX_ERROR,
@@ -159,14 +159,14 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_FETCH_PAST_END,
         { IMSSP, (SQLCHAR*)"There are no more rows in the active result set.  Since this result set is not scrollable, no more "
-          "data may be retrieved.", -22, false } 
+          "data may be retrieved.", -22, false }
     },
-    
+
     {
-        SS_SQLSRV_ERROR_STATEMENT_NOT_PREPARED, 
+        SS_SQLSRV_ERROR_STATEMENT_NOT_PREPARED,
         { IMSSP, (SQLCHAR*)"A statement must be prepared with sqlsrv_prepare before calling sqlsrv_execute.", -23, false }
-    },   
-   
+    },
+
     {
         SQLSRV_ERROR_ZEND_HASH,
         { IMSSP, (SQLCHAR*)"An error occurred while creating or accessing a Zend hash table.", -24, false }
@@ -181,37 +181,37 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_NEXT_RESULT_PAST_END,
         { IMSSP, (SQLCHAR*)"There are no more results returned by the query.", -26, false }
     },
-      
+
     {
         SQLSRV_ERROR_STREAM_CREATE,
         { IMSSP, (SQLCHAR*)"An error occurred while retrieving a SQL Server field as a stream.", -27, false }
     },
-          
+
     {
         SQLSRV_ERROR_NO_FIELDS,
         { IMSSP, (SQLCHAR*)"The active result for the query contains no fields.", -28, false }
     },
 
     {
-        SS_SQLSRV_ERROR_ZEND_BAD_CLASS, 
+        SS_SQLSRV_ERROR_ZEND_BAD_CLASS,
         { IMSSP, (SQLCHAR*)"Failed to find class %1!s!.", -29, true }
-    }, 
+    },
 
     {
         SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED,
         { IMSSP, (SQLCHAR*)"Failed to create an instance of class %1!s!.", -30, true }
     },
- 
+
     {
         SS_SQLSRV_ERROR_INVALID_PARAMETER_PRECISION,
         { IMSSP, (SQLCHAR*)"An invalid size or precision for parameter %1!d! was specified.", -31, true }
     },
-        
+
     {
         SQLSRV_ERROR_INVALID_OPTION_KEY,
         { IMSSP, (SQLCHAR*)"Option %1!s! is invalid.", -32, true }
     },
- 
+
     // these three errors are returned for invalid options, so they are given the same number for compatibility with 1.1
     {
         SQLSRV_ERROR_INVALID_QUERY_TIMEOUT_VALUE,
@@ -219,17 +219,17 @@ ss_error SS_ERRORS[] = {
     },
 
     {
-        SQLSRV_ERROR_INVALID_OPTION_TYPE_INT, 
+        SQLSRV_ERROR_INVALID_OPTION_TYPE_INT,
         { IMSSP, (SQLCHAR*) "Invalid value type for option %1!s! was specified.  Integer type was expected.", -33, true }
     },
 
     {
-        SQLSRV_ERROR_INVALID_OPTION_TYPE_STRING, 
+        SQLSRV_ERROR_INVALID_OPTION_TYPE_STRING,
         { IMSSP, (SQLCHAR*) "Invalid value type for option %1!s! was specified.  String type was expected.", -33, true }
     },
-        
+
     {
-        SQLSRV_ERROR_INPUT_OUTPUT_PARAM_TYPE_MATCH, 
+        SQLSRV_ERROR_INPUT_OUTPUT_PARAM_TYPE_MATCH,
         { IMSSP, (SQLCHAR*)"The type of output parameter %1!d! does not match the type specified by the SQLSRV_PHPTYPE_* constant."
            " For output parameters, the type of the variable's current value must match the SQLSRV_PHPTYPE_* constant, or be NULL. "
            "If the type is NULL, the PHP type of the output parameter is inferred from the SQLSRV_SQLTYPE_* constant.", -34, true }
@@ -238,14 +238,14 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_INVALID_TYPE,
         { IMSSP, (SQLCHAR*)"Invalid type", -35, false }
-    },    
-        
+    },
+
     // 36-38 have no equivalent 2.0 errors
 
     {
         SS_SQLSRV_ERROR_REGISTER_RESOURCE,
         { IMSSP, (SQLCHAR*)"Registering the %1!s! resource failed.", -39, true }
-    },  
+    },
 
     {
         SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE,
@@ -256,7 +256,7 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE,
         { IMSSP, (SQLCHAR*)"An error occurred translating string for an output param to UTF-8: %1!s!", -41, true }
     },
-    
+
     {
         SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE,
         { IMSSP, (SQLCHAR*)"An error occurred translating string for a field to UTF-8: %1!s!", -42, true }
@@ -267,24 +267,24 @@ ss_error SS_ERRORS[] = {
         { IMSSP, (SQLCHAR*)"An error occurred translating a PHP stream from UTF-8 to UTF-16: %1!s!", -43, true }
     },
 
-    {  
+    {
         SQLSRV_ERROR_MARS_OFF,
         { IMSSP, (SQLCHAR*)"The connection cannot process this operation because there is a statement with pending results.  "
           "To make the connection available for other queries, either fetch all results or cancel or free the statement.  "
           "For more information, see the product documentation about the MultipleActiveResultSets connection option.", -44, false }
     },
-  
+
     {
-        SQLSRV_ERROR_CONN_OPTS_WRONG_TYPE, 
+        SQLSRV_ERROR_CONN_OPTS_WRONG_TYPE,
         { IMSSP, (SQLCHAR*) "Expected an array of options for the connection. Connection options must be passed as an array of "
         "key/value pairs.", -45, false }
     },
 
-    {   
+    {
         SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE,
-        { IMSSP, (SQLCHAR*) "An error occurred translating the query string to UTF-16: %1!s!.", -46, true }   
+        { IMSSP, (SQLCHAR*) "An error occurred translating the query string to UTF-16: %1!s!.", -46, true }
     },
-        
+
     {
         SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE,
         { IMSSP, (SQLCHAR*) "An error occurred translating the connection string to UTF-16: %1!s!", -47, true }
@@ -300,13 +300,13 @@ ss_error SS_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "This extension requires the Microsoft ODBC Driver for SQL Server. "
         "Access the following URL to download the ODBC Driver for SQL Server for %1!s!: "
         "https://go.microsoft.com/fwlink/?LinkId=163712", -49, true }
-    },     
+    },
 
-    {   
+    {
         SS_SQLSRV_ERROR_STATEMENT_NOT_SCROLLABLE,
         { IMSSP, (SQLCHAR*)"This function only works with statements that have static or keyset scrollable cursors.", -50, false }
     },
-    
+
     {
         SS_SQLSRV_ERROR_STATEMENT_SCROLLABLE,
         { IMSSP, (SQLCHAR*)"This function only works with statements that are not scrollable.", -51, false }
@@ -314,11 +314,11 @@ ss_error SS_ERRORS[] = {
 
     // new error for 2.0, used here since 1.1 didn't have a -52
     {
-        SQLSRV_ERROR_MAX_PARAMS_EXCEEDED, 
+        SQLSRV_ERROR_MAX_PARAMS_EXCEEDED,
         { IMSSP, (SQLCHAR*) "Tried to bind parameter number %1!d!.  SQL Server supports a maximum of 2100 parameters.", -52, true }
     },
 
-    {  
+    {
         SS_SQLSRV_ERROR_INVALID_FETCH_STYLE,
         { IMSSP, (SQLCHAR*)"The scroll type passed to sqlsrv_fetch, sqlsrv_fetch_array, or sqlsrv_fetch_object was not valid.  "
           "Please use one of the SQLSRV_SCROLL constants.", -53, false }
@@ -329,14 +329,14 @@ ss_error SS_ERRORS[] = {
         { IMSSP, (SQLCHAR*)"The value passed for the 'Scrollable' statement option is invalid.  Please use 'static', 'dynamic', "
           "'keyset', 'forward', or 'buffered'.", -54, false }
     },
- 
+
     {
         SQLSRV_ERROR_UNKNOWN_SERVER_VERSION,
         { IMSSP, (SQLCHAR*)"Failed to retrieve the server version.  Unable to continue.", -55, false }
     },
 
     {
-        SQLSRV_ERROR_INVALID_PARAMETER_ENCODING, 
+        SQLSRV_ERROR_INVALID_PARAMETER_ENCODING,
         { IMSSP, (SQLCHAR*) "An invalid encoding was specified for parameter %1!d!.", -56, true }
     },
 
@@ -346,7 +346,7 @@ ss_error SS_ERRORS[] = {
     },
 
     {
-        SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED, 
+        SQLSRV_ERROR_OUTPUT_PARAM_TRUNCATED,
         { IMSSP, (SQLCHAR*) "String data, right truncated for output parameter %1!d!.", -58, true }
     },
     {
@@ -472,7 +472,7 @@ ss_error SS_ERRORS[] = {
     {
         SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
         { IMSSP, (SQLCHAR*) "You cannot return data in a table-valued parameter. Table-valued parameters are input-only.", -130, false }
-    },            
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
@@ -491,7 +491,7 @@ bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_err
         severity = SEV_WARNING;
     }
 
-    return handle_errors_and_warnings( ctx, &SQLSRV_G( errors ), &SQLSRV_G( warnings ), severity, sqlsrv_error_code, warning, 
+    return handle_errors_and_warnings( ctx, &SQLSRV_G( errors ), &SQLSRV_G( warnings ), severity, sqlsrv_error_code, warning,
                                        print_args );
 }
 
@@ -507,7 +507,7 @@ bool ss_error_handler( _Inout_ sqlsrv_context& ctx, _In_ unsigned int sqlsrv_err
 //
 // $errorsAndOrWarnings[OPTIONAL]: A predefined constant. This parameter can
 // take one of the values listed:
-// 
+//
 //  SQLSRV_ERR_ALL
 //      Errors and warnings generated on the last sqlsrv function call are returned.
 //  SQLSRV_ERR_ERRORS
@@ -603,10 +603,10 @@ PHP_FUNCTION( sqlsrv_configure )
         // dummy context to pass onto the error handler
         error_ctx = new ( sqlsrv_malloc( sizeof( sqlsrv_context ))) sqlsrv_context( 0, ss_error_handler, NULL );
         error_ctx->set_func(_FN_);
-    
+
         int zr = zend_parse_parameters( ZEND_NUM_ARGS(), "sz", &option, &option_len, &value_z );
-        CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
-            
+        CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL) {
+
             throw ss::SSException();
         }
 
@@ -622,11 +622,11 @@ PHP_FUNCTION( sqlsrv_configure )
         // LogSeverity
         else if( !stricmp( option, INI_LOG_SEVERITY )) {
 
-            CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_LONG ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
-            
+            CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_LONG ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL) {
+
                 throw ss::SSException();
-            }   
-        
+            }
+
             zend_long severity_mask = Z_LVAL_P( value_z );
             // make sure they can't use 0 to shut off the masking in the severity
             if( severity_mask < SEV_ALL || severity_mask == 0 || severity_mask > (SEV_NOTICE + SEV_ERROR + SEV_WARNING) ) {
@@ -641,11 +641,11 @@ PHP_FUNCTION( sqlsrv_configure )
         // LogSubsystems
         else if( !stricmp( option, INI_LOG_SUBSYSTEMS )) {
 
-            CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_LONG ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
+            CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_LONG ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL) {
 
                 throw ss::SSException();
             }
-        
+
             zend_long subsystem_mask = Z_LVAL_P( value_z );
 
             if( subsystem_mask < LOG_ALL || subsystem_mask > (LOG_INIT + LOG_CONN + LOG_STMT + LOG_UTIL) ) {
@@ -658,15 +658,15 @@ PHP_FUNCTION( sqlsrv_configure )
         }
 
         else if( !stricmp( option, INI_BUFFERED_QUERY_LIMIT )) {
-            
-            CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_LONG ), error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_ ) {
+
+            CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_LONG ), error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_, NULL) {
 
                 throw ss::SSException();
             }
 
             zend_long buffered_query_limit = Z_LVAL_P( value_z );
 
-            CHECK_CUSTOM_ERROR( buffered_query_limit <= 0, error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_ ) {
+            CHECK_CUSTOM_ERROR( buffered_query_limit <= 0, error_ctx, SQLSRV_ERROR_INVALID_BUFFER_LIMIT, _FN_, NULL) {
 
                 throw ss::SSException();
             }
@@ -678,7 +678,7 @@ PHP_FUNCTION( sqlsrv_configure )
 
         else {
 
-            THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+            THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
     }
     catch( core::CoreException& ) {
@@ -693,7 +693,7 @@ PHP_FUNCTION( sqlsrv_configure )
 
 
 // sqlsrv_get_config( string $setting )
-// 
+//
 // Returns the current value of the specified configuration setting.
 //
 // Parameters
@@ -719,15 +719,15 @@ PHP_FUNCTION( sqlsrv_get_config )
     reset_errors();
 
     try {
-           
+
         // dummy context to pass onto the error handler
         error_ctx = new ( sqlsrv_malloc( sizeof( sqlsrv_context ))) sqlsrv_context( 0, ss_error_handler, NULL );
         error_ctx->set_func(_FN_);
 
         int zr = zend_parse_parameters( ZEND_NUM_ARGS(), "s", &option, &option_len );
-        CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
+        CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ , NULL) {
 
-            throw ss::SSException();        
+            throw ss::SSException();
         }
         SQLSRV_ASSERT( option != NULL, "sqlsrv_get_config: option was null." );
         if( !stricmp( option, INI_WARNINGS_RETURN_AS_ERRORS )) {
@@ -751,16 +751,16 @@ PHP_FUNCTION( sqlsrv_get_config )
             return;
         }
         else {
-       
-            THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+
+            THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
     }
     catch( core::CoreException& ) {
-        
+
         RETURN_FALSE;
     }
     catch( ... ) {
-    
+
         DIE( "sqlsrv_get_config: Unknown exception caught." );
     }
 }
@@ -782,13 +782,13 @@ sqlsrv_error_const* get_error_message( _In_ unsigned int sqlsrv_error_code ) {
 	return error_message;
 }
 
-void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, 
+void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain,
                          _In_ bool warning )
 {
     array_init(error_z);
 
     // sqlstate
-    zval temp; 
+    zval temp;
     ZVAL_UNDEF(&temp);
     core::sqlsrv_zval_stringl( &temp, reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_SIZE );
     Z_TRY_ADDREF_P( &temp );
@@ -819,36 +819,36 @@ void copy_error_to_zval( _Inout_ zval* error_z, _In_ sqlsrv_error_const* error, 
     // add the error or warning to the reported_chain.
     if( !warning || SQLSRV_G( warnings_return_as_errors ) )
     {
-        // if the warning is part of the ignored warning list than 
+        // if the warning is part of the ignored warning list than
         // add to the ignored chain if the ignored chain is not null.
         if( warning && ignore_warning( reinterpret_cast<char*>(error->sqlstate), error->native_code ) &&
             ignored_chain != NULL ) {
-            
+
             if( add_next_index_zval( ignored_chain, error_z ) == FAILURE ) {
                 DIE( "Fatal error during error processing" );
-            }          
+            }
         }
         else {
 
-            // It is either an error or a warning which should not be ignored. 
+            // It is either an error or a warning which should not be ignored.
             if( add_next_index_zval( reported_chain, error_z ) == FAILURE ) {
                 DIE( "Fatal error during error processing" );
-            }          
+            }
         }
     }
     else
     {
         // It is a warning with warning_return_as_errors as false, so simply add it to the ignored_chain list
         if( ignored_chain != NULL ) {
-         
+
             if( add_next_index_zval( ignored_chain, error_z ) == FAILURE ) {
                 DIE( "Fatal error during error processing" );
-            }          
+            }
         }
     }
 }
 
-bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, _In_ logging_severity log_severity, 
+bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* reported_chain, _Inout_ zval* ignored_chain, _In_ logging_severity log_severity,
                                  _In_ unsigned int sqlsrv_error_code, _In_ int warning, _In_opt_ va_list* print_args )
 {
     bool result = true;
@@ -872,20 +872,20 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
 
     // array of ignored errors
     if( ignored_chain != NULL ) {
-        
+
         if( Z_TYPE_P( ignored_chain ) == IS_NULL ) {
-            
+
             ignored_chain_was_null = true;
             array_init( ignored_chain );
         }
     }
 
     if( sqlsrv_error_code != SQLSRV_ERROR_ODBC ) {
-        
+
         core_sqlsrv_format_driver_error( ctx, get_error_message( sqlsrv_error_code ), error, log_severity, print_args );
         copy_error_to_zval( &error_z, error, reported_chain, ignored_chain, warning );
     }
-  
+
     SQLSMALLINT record_number = 0;
     do {
 
@@ -894,7 +894,7 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
             copy_error_to_zval( &error_z, error, reported_chain, ignored_chain, warning );
         }
     } while( result );
-    
+
     // If it were a warning, we report that warnings where ignored except if warnings_return_as_errors
     // was true and we added some warnings to the reported_chain.
     if( warning ) {
@@ -902,9 +902,9 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
         errors_ignored = true;
 
         if( SQLSRV_G( warnings_return_as_errors ) ) {
-            
+
             if( zend_hash_num_elements( Z_ARRVAL_P( reported_chain )) > prev_reported_cnt ) {
-                
+
                 // We actually added some errors
                 errors_ignored = false;
             }
@@ -946,12 +946,12 @@ bool ignore_warning( _In_ char* sql_state, _In_ int native_code )
 			return true;
 		}
 	} ZEND_HASH_FOREACH_END();
-        
+
     return false;
 }
 
 int  sqlsrv_merge_zend_hash_dtor( _Inout_ zval* dest )
-{  
+{
 	zval_ptr_dtor( dest );
     return ZEND_HASH_APPLY_REMOVE;
 }
@@ -988,6 +988,6 @@ bool sqlsrv_merge_zend_hash( _Inout_ zval* dest_z, zval const* src_z )
 	} ZEND_HASH_FOREACH_END();
 
     return true;
-} 
+}
 
 } // namespace

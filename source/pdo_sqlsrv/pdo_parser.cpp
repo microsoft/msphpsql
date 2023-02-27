@@ -2,20 +2,20 @@
 // File: pdo_parser.cpp
 //
 // Contents: Implements a parser to parse the PDO DSN.
-// 
+//
 // Copyright Microsoft Corporation
 //
 // Microsoft Drivers 5.11 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
-//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""),
+//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
 //  and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ conn_string_parser:: conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const ch
     this->pos = -1;
     this->ctx = &ctx;
     this->current_key = 0;
-    this->current_key_name = NULL;    
+    this->current_key_name = NULL;
 }
 
 sql_string_parser:: sql_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* sql_str, _In_ int len, _In_ HashTable* placeholders_ht )
@@ -55,16 +55,16 @@ inline bool string_parser::next( void )
 
         return false;
     }
-        
+
     SQLSRV_ASSERT( this->pos < len, "Unexpected cursor position in conn_string_parser::next" );
 
-    this->pos++;    
+    this->pos++;
 
     if ( this->is_eos() ) {
-    
+
         return false;
     }
-    
+
     return true;
 }
 
@@ -77,12 +77,12 @@ inline bool string_parser::is_eos( void )
     }
 
     SQLSRV_ASSERT(this->pos < len, "Unexpected cursor position in conn_string_parser::is_eos" );
-    
+
     return false;
 }
 
-// Check for white space. 
-inline bool string_parser::is_white_space( _In_ char c ) 
+// Check for white space.
+inline bool string_parser::is_white_space( _In_ char c )
 {
     if( c == ' ' || c == '\r' || c == '\n' || c == '\t' ) {
         return true;
@@ -94,9 +94,9 @@ inline bool string_parser::is_white_space( _In_ char c )
 int conn_string_parser::discard_trailing_white_spaces( _In_reads_(len) const char* str, _Inout_ int len )
 {
     const char* end = str + ( len - 1 );
-    
+
     while(( this->is_white_space( *end ) ) && (len > 0) ) {
-    
+
         len--;
         end--;
     }
@@ -108,16 +108,16 @@ int conn_string_parser::discard_trailing_white_spaces( _In_reads_(len) const cha
 bool string_parser::discard_white_spaces()
 {
     if( this->is_eos() ) {
-    
+
         return false;
     }
 
     while( this->is_white_space( this->orig_str[pos] )) {
-    
+
         if( !next() )
             return false;
-    } 
-       
+    }
+
     return true;
 }
 
@@ -128,22 +128,22 @@ void string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ 
     ZVAL_UNDEF( &value_z );
 
     if( len == 0 ) {
-    
+
         ZVAL_STRINGL( &value_z, "", 0);
     }
     else {
 
         ZVAL_STRINGL( &value_z, const_cast<char*>( value ), len );
-    }                
+    }
 
-    core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z ); 
+    core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z );
 }
 
 // Add a key-value pair to the hashtable with int value
 void sql_string_parser::add_key_int_value_pair( _In_ unsigned int value ) {
     zval value_z;
     ZVAL_LONG( &value_z, value );
-    
+
     core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z );
 }
 
@@ -168,9 +168,9 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
     key_name = static_cast<char*>( sqlsrv_malloc( new_len + 1 ));
     memcpy_s( key_name, new_len + 1 ,key, new_len );
 
-    key_name[new_len] = '\0';  
+    key_name[new_len] = '\0';
 
-    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ) ); 
+    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, static_cast<char*>( key_name ), NULL );
 }
 
 inline bool sql_string_parser::is_placeholder_char( char c )
@@ -183,7 +183,7 @@ inline bool sql_string_parser::is_placeholder_char( char c )
 }
 
 // Primary function which parses the connection string/DSN.
-void conn_string_parser:: parse_conn_string( void ) 
+void conn_string_parser:: parse_conn_string( void )
 {
     States state = FirstKeyValuePair; // starting state
     int start_pos = -1;
@@ -191,17 +191,17 @@ void conn_string_parser:: parse_conn_string( void )
     try {
 
         while( !this->is_eos() ) {
-        
+
             switch( state ) {
-            
+
                 case FirstKeyValuePair:
                 {
                     // discard leading spaces
                     if( !next() || !discard_white_spaces() ) {
-                        
+
                         THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_STRING ); //EOS
                     }
-                  
+
                     state = Key;
                     break;
                 }
@@ -212,15 +212,15 @@ void conn_string_parser:: parse_conn_string( void )
 
                     // read the key name
                     while( this->orig_str[pos] != '=' ) {
-                    
-                        if( !next() ) {
-                            
-                            THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_DSN_STRING_ENDED_UNEXPECTEDLY ); //EOS 
-                        }      
-                    } 
 
-                    this->validate_key( &( this->orig_str[start_pos] ), ( pos - start_pos ) ); 
-                
+                        if( !next() ) {
+
+                            THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_DSN_STRING_ENDED_UNEXPECTEDLY ); //EOS
+                        }
+                    }
+
+                    this->validate_key( &( this->orig_str[start_pos] ), ( pos - start_pos ) );
+
                     state = Value;
 
                     break;
@@ -239,23 +239,23 @@ void conn_string_parser:: parse_conn_string( void )
                         add_key_value_pair( NULL, 0 );
 
                         if( this->is_eos() ) {
-                            
+
                             break; // EOS
                         }
                         else {
 
-                            // this->orig_str[pos] == ';' 
+                            // this->orig_str[pos] == ';'
                             state = NextKeyValuePair;
                         }
                     }
-                    
+
                     // if LCB
                     else if( this->orig_str[pos] == '{' ) {
-                        
+
                         start_pos = this->pos; // starting character is LCB
                         state = ValueContent1;
                     }
-                    
+
                     // If NonSP-LCB-SC
                     else  {
 
@@ -269,10 +269,10 @@ void conn_string_parser:: parse_conn_string( void )
                 case ValueContent1:
                 {
                     while ( this->orig_str[pos] != '}' ) {
-                    
+
                         if ( ! next() ) {
 
-                            THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_RCB_MISSING_IN_DSN_VALUE, this->current_key_name ); 
+                            THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_RCB_MISSING_IN_DSN_VALUE, this->current_key_name, NULL );
                         }
                     }
 
@@ -287,20 +287,20 @@ void conn_string_parser:: parse_conn_string( void )
                     while( this->orig_str[pos] != ';' ) {
 
                         if( ! next() ) {
-                            
+
                             break; //EOS
                         }
                     }
 
                     if( !this->is_eos() && this->orig_str[pos] == ';' ) {
-                    
+
                         // semi-colon encountered, so go to next key-value pair
                         state = NextKeyValuePair;
                     }
-                    
+
                     add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos );
-              
-                    SQLSRV_ASSERT((( state == NextKeyValuePair ) || ( this->is_eos() )), 
+
+                    SQLSRV_ASSERT((( state == NextKeyValuePair ) || ( this->is_eos() )),
                                   "conn_string_parser::parse_conn_string: Invalid state encountered " );
 
                     break;
@@ -308,7 +308,7 @@ void conn_string_parser:: parse_conn_string( void )
 
                 case RCBEncountered:
                 {
-                    
+
                     // Read the next character after RCB.
                     if( !next() ) {
 
@@ -321,11 +321,11 @@ void conn_string_parser:: parse_conn_string( void )
 
                     // if second RCB encountered than go back to ValueContent1
                     if( this->orig_str[pos] == '}' ) {
-                        
+
                         if( !next() ) {
 
                             // EOS after a second RCB is error
-                            THROW_PDO_ERROR( this->ctx, SQLSRV_ERROR_UNESCAPED_RIGHT_BRACE_IN_DSN, this->current_key_name );                              
+                            THROW_PDO_ERROR( this->ctx, SQLSRV_ERROR_UNESCAPED_RIGHT_BRACE_IN_DSN, this->current_key_name, NULL );
                         }
 
                         state = ValueContent1;
@@ -336,9 +336,9 @@ void conn_string_parser:: parse_conn_string( void )
 
                     // discard any trailing white-spaces.
                     if( this->is_white_space( this->orig_str[pos] )) {
-                    
+
                         if( ! this->discard_white_spaces() ) {
-                            
+
                             //EOS
                             add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos );
                             break;
@@ -347,32 +347,32 @@ void conn_string_parser:: parse_conn_string( void )
 
                     // if semi-colon than go to next key-value pair
                     if ( this->orig_str[pos] == ';' ) {
-                        
+
                         add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos );
                         state = NextKeyValuePair;
                         break;
                     }
 
                     // Non - (RCB, SP*, SC, EOS) character. Any other character after an RCB is an error.
-                    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, this->current_key_name );      
-                    break;    
+                    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, this->current_key_name, NULL );
+                    break;
                 }
                 case NextKeyValuePair:
                 {
-                    SQLSRV_ASSERT(( this->orig_str[pos] == ';' ), 
+                    SQLSRV_ASSERT(( this->orig_str[pos] == ';' ),
                                   "conn_string_parser::parse_conn_string: semi-colon was expected." );
 
                     // Call next() to skip the semi-colon.
                     if( !next() || !this->discard_white_spaces() ) {
-                    
+
                         // EOS
                         break;
                     }
-                    
+
                     if( this->orig_str[pos] == ';' ) {
-                    
+
                         // a second semi-colon is error case.
-                        THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_EXTRA_SEMI_COLON_IN_DSN_STRING, this->pos );      
+                        THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_EXTRA_SEMI_COLON_IN_DSN_STRING, this->pos, NULL );
                     }
 
                     else {
@@ -384,7 +384,7 @@ void conn_string_parser:: parse_conn_string( void )
                 } //case NextKeyValuePair
             } // switch
         } //while
-    } 
+    }
     catch( pdo::PDOException& ) {
 
         throw;
