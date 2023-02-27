@@ -19,7 +19,7 @@ pr:
 jobs:
 - job: macOS
   pool:
-    vmImage: 'macOS-10.15'
+    vmImage: 'macos-latest'
   steps:
   - checkout: self
     clean: true
