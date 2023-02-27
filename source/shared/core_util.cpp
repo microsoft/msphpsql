@@ -2,20 +2,20 @@
 // File: core_util.cpp
 //
 // Contents: Utility functions used by both connection or statement functions for both the PDO and sqlsrv drivers
-// 
+//
 // Comments: Mostly error handling and some type handling
 //
 // Microsoft Drivers 5.11 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
-//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""),
+//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
 //  and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ char last_err_msg[2048] = {'\0'};  // 2k to hold the error messages
 
 // routine used by utf16_string_from_mbcs_string
 unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
-                                                   _In_ unsigned int mbcs_len, 
+                                                   _In_ unsigned int mbcs_len,
                                                    _Out_writes_(utf16_len) __transfer( mbcs_in_string ) SQLWCHAR* utf16_out_string,
                                                    _In_ unsigned int utf16_len, bool use_strict_conversion = false );
 
@@ -62,13 +62,13 @@ void log_activity(_In_opt_ const char* msg, _In_opt_ va_list* print_args)
 
 }
 
-// SQLSTATE for all internal errors 
+// SQLSTATE for all internal errors
 SQLCHAR IMSSP[] = "IMSSP";
 
 // SQLSTATE for all internal warnings
 SQLCHAR SSPWARN[] = "01SSP";
 
-// write to the php log if the severity and subsystem match the filters currently set in the INI or 
+// write to the php log if the severity and subsystem match the filters currently set in the INI or
 // the script (sqlsrv_configure).
 void write_to_log( _In_ unsigned int severity, _In_ const char* msg, ...)
 {
@@ -150,7 +150,7 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     // Allocate enough space to hold the largest possible number of bytes for UTF-8 conversion
     // instead of calling FromUtf16, for performance reasons
     cchOutLen = 4 * cchInLen;
-#else	
+#else
     // flags set to 0 by default, which means that any invalid characters are dropped rather than causing
     // an error.   This happens only on XP.
     DWORD flags = 0;
@@ -162,10 +162,10 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     // Calculate the number of output bytes required - no performance hit here because
     // WideCharToMultiByte is highly optimised
     cchOutLen = WideCharToMultiByte( encoding, flags,
-                                   inString, cchInLen, 
+                                   inString, cchInLen,
                                    NULL, 0, NULL, NULL );
-#endif // !_WIN32   
-	
+#endif // !_WIN32
+
     if( cchOutLen == 0 ) {
         return false;
     }
@@ -173,7 +173,7 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     // Create a buffer to fit the encoded string
     char* newString = reinterpret_cast<char*>( sqlsrv_malloc( cchOutLen + 1 /* NULL char*/ ));
     memset(newString, '\0', cchOutLen+1);
-    
+
 #ifndef _WIN32
     int rc = SystemLocale::FromUtf16Strict( encoding, inString, cchInLen, newString, static_cast<int>(cchOutLen));
 #else
@@ -216,7 +216,7 @@ SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_
     return utf16_string;
 }
 
-// Converts an input (assuming a datetime string) to a zval containing a PHP DateTime object. 
+// Converts an input (assuming a datetime string) to a zval containing a PHP DateTime object.
 // If the input is null, this simply returns a NULL zval. If anything wrong occurs during conversion,
 // an exception will be thrown.
 void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* input, _In_ SQLLEN length, _Inout_ zval& out_zval)
@@ -308,10 +308,10 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
             SQLLEN sqlstate_len = 0;
 
             convert_string_from_utf16(enc, wsqlstate, wsqlstate_len, (char**)&error->sqlstate, sqlstate_len);
-            
+
             SQLLEN message_len = 0;
             if (r == SQL_SUCCESS_WITH_INFO && wmessage_len > SQL_MAX_ERROR_MESSAGE_LENGTH) {
-                // note that wmessage_len is the number of characters required for the error message -- 
+                // note that wmessage_len is the number of characters required for the error message --
                 // create a new buffer big enough for this lengthy error message
                 sqlsrv_malloc_auto_ptr<SQLWCHAR> wnative_message_str;
 
@@ -319,7 +319,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
                 SQLSMALLINT returned_len = 0;
 
                 wnative_message_str = reinterpret_cast<SQLWCHAR*>(sqlsrv_malloc(expected_len));
-                memset(wnative_message_str, '\0', expected_len); 
+                memset(wnative_message_str, '\0', expected_len);
 
                 SQLRETURN rtemp = ::SQLGetDiagFieldW(h_type, h, record_number, SQL_DIAG_MESSAGE_TEXT, wnative_message_str, wmessage_len, &returned_len);
                 if (!SQL_SUCCEEDED(rtemp) || returned_len != expected_len) {
@@ -341,7 +341,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
 
     // Only overrides 'severity' if 'check_warning' is true (false by default)
     if (check_warning) {
-        // The character string value returned for an SQLSTATE consists of a two-character class value 
+        // The character string value returned for an SQLSTATE consists of a two-character class value
         // followed by a three-character subclass value. A class value of "01" indicates a warning.
         // https://docs.microsoft.com/sql/odbc/reference/appendixes/appendix-a-odbc-error-codes?view=sql-server-ver15
         if (error->sqlstate[0] == '0' && error->sqlstate[1] == '1') {
@@ -360,7 +360,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_nu
 }
 
 // format and return a driver specfic error
-void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_error_const const* custom_error, 
+void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_error_const const* custom_error,
                                       _Out_ sqlsrv_error_auto_ptr& formatted_error, _In_ logging_severity severity, _In_opt_ va_list* args )
 {
     // allocate space for the formatted message
@@ -368,13 +368,13 @@ void core_sqlsrv_format_driver_error( _In_ sqlsrv_context& ctx, _In_ sqlsrv_erro
     formatted_error->sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
     formatted_error->native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
 
-    DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, reinterpret_cast<LPSTR>( custom_error->native_message ), 0, 0, 
+    DWORD rc = FormatMessage( FORMAT_MESSAGE_FROM_STRING, reinterpret_cast<LPSTR>( custom_error->native_message ), 0, 0,
                               reinterpret_cast<LPSTR>( formatted_error->native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH, args );
     if( rc == 0 ) {
         strcpy_s( reinterpret_cast<char*>( formatted_error->native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH,
                   reinterpret_cast<char*>( INTERNAL_FORMAT_ERROR ));
     }
-    
+
     strcpy_s( reinterpret_cast<char*>( formatted_error->sqlstate ), SQL_SQLSTATE_BUFSIZE,
               reinterpret_cast<char*>( custom_error->sqlstate ));
     formatted_error->native_code = custom_error->native_code;
@@ -471,7 +471,7 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
 #else
     unsigned int required_len = MultiByteToWideChar( win_encoding, MB_ERR_INVALID_CHARS, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
 #endif // !_Win32
-    
+
     if( required_len == 0 ) {
         return 0;
     }
@@ -509,7 +509,7 @@ namespace data_classification {
 
         bool converted = convert_string_from_utf16(encoding, temp_field_name, len, field_name, field_name_len);
 
-        CHECK_CUSTOM_ERROR(!converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message()) {
+        CHECK_CUSTOM_ERROR(!converted, stmt, SQLSRV_ERROR_FIELD_ENCODING_TRANSLATE, get_last_error_message(), NULL) {
             throw core::CoreException();
         }
     }
@@ -524,16 +524,16 @@ namespace data_classification {
         }
         sqlsrv_free(pair);
     }
-    
+
     void parse_sensitivity_name_id_pairs(_Inout_ sqlsrv_stmt* stmt, _Inout_ USHORT& numpairs, _Inout_ std::vector<name_id_pair*, sqlsrv_allocator<name_id_pair*>>* pairs, _Inout_ unsigned char **pptr)
     {
         unsigned char *ptr = *pptr;
         unsigned short npairs;
-        numpairs = npairs = *(reinterpret_cast<unsigned short*>(ptr)); 
+        numpairs = npairs = *(reinterpret_cast<unsigned short*>(ptr));
         SQLSRV_ENCODING encoding = ((stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
 
         pairs->reserve(numpairs);
-    
+
         ptr += sizeof(unsigned short);
         while (npairs--) {
             int namelen, idlen;
@@ -549,7 +549,7 @@ namespace data_classification {
             namelen = *ptr++;
             nameptr = ptr;
 
-            pair->name_len = namelen; 
+            pair->name_len = namelen;
             convert_sensivity_field(stmt, encoding, nameptr, namelen, (char**)&name, field_len);
             pair->name = name;
 
@@ -566,7 +566,7 @@ namespace data_classification {
             pair.transferred();
         }
         *pptr = ptr;
-    } 
+    }
 
     void parse_column_sensitivity_props(_Inout_ sensitivity_metadata* meta, _Inout_ unsigned char **pptr, _In_ bool getRankInfo)
     {
@@ -628,7 +628,7 @@ namespace data_classification {
         if (meta == NULL) {
             return 0;
         }
-       
+
         SQLSRV_ASSERT(colno >= 0 && colno < meta->num_columns, "fill_column_sensitivity_array: column number out of bounds");
 
         zval data_classification;
