@@ -59,7 +59,7 @@
 #define _FILEVERSION            SQLVERSION_MAJOR,SQLVERSION_MINOR,SQLVERSION_PATCH,SQLVERSION_BUILD
 
 // PECL package version ('-' or '+' is not allowed) - to support Pickle do not use macros below
-#define PHP_SQLSRV_VERSION      "5.11.0beta1"
-#define PHP_PDO_SQLSRV_VERSION  "5.11.0beta1"
+#define PHP_SQLSRV_VERSION      "5.11.0"
+#define PHP_PDO_SQLSRV_VERSION  "5.11.0"
 
 #endif // VERSION_H

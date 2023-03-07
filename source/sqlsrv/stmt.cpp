@@ -100,8 +100,8 @@ void type_and_encoding( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 void type_and_precision_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ sqlsrv_phptype& phptype_encoding );
-zval* parse_param_array(_Inout_ ss_sqlsrv_stmt* stmt, _Inout_ HashTable* param_ht, zend_ulong index, 
-    _Out_ SQLSMALLINT& direction, _Out_ SQLSRV_PHPTYPE& php_out_type, 
+zval* parse_param_array(_Inout_ ss_sqlsrv_stmt* stmt, _Inout_ HashTable* param_ht, zend_ulong index,
+    _Out_ SQLSMALLINT& direction, _Out_ SQLSRV_PHPTYPE& php_out_type,
     _Out_ SQLSRV_ENCODING& encoding, _Out_ SQLSMALLINT& sql_type,
     _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits);
 
@@ -341,7 +341,7 @@ PHP_FUNCTION( sqlsrv_fetch )
     zend_long fetch_offset = 0;               // default value for parameter if one isn't supplied
 
     // take only the statement resource
-    PROCESS_PARAMS( stmt, "r|ll", _FN_, 2, &fetch_style, &fetch_offset );
+    PROCESS_PARAMS( stmt, "r|ll", _FN_, 2, &fetch_style, &fetch_offset, NULL );
 
     try {
 
@@ -395,7 +395,7 @@ PHP_FUNCTION( sqlsrv_fetch_array )
 
     // retrieve the statement resource and optional fetch type (see enum SQLSRV_FETCH_TYPE),
     // fetch style (see SQLSRV_SCROLL_* constants) and fetch offset
-    PROCESS_PARAMS( stmt, "r|lll", _FN_, 3, &fetch_type, &fetch_style, &fetch_offset );
+    PROCESS_PARAMS( stmt, "r|lll", _FN_, 3, &fetch_type, &fetch_style, &fetch_offset, NULL );
 
     try {
 
@@ -786,7 +786,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
     // fetch style (see SQLSRV_SCROLL_* constants) and fetch offset
     // we also use z! instead of s and a so that null may be passed in as valid values for
     // the class name and ctor params
-    PROCESS_PARAMS( stmt, "r|z!z!ll", _FN_, 4, &class_name_z, &ctor_params_z, &fetch_style, &fetch_offset );
+    PROCESS_PARAMS( stmt, "r|z!z!ll", _FN_, 4, &class_name_z, &ctor_params_z, &fetch_style, &fetch_offset, NULL );
 
     try {
 
@@ -797,7 +797,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 
         if( class_name_z ) {
 
-            CHECK_CUSTOM_ERROR(( Z_TYPE_P( class_name_z ) != IS_STRING ), stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
+            CHECK_CUSTOM_ERROR(( Z_TYPE_P( class_name_z ) != IS_STRING ), stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL) {
                 throw ss::SSException();
             }
             class_name = Z_STRVAL( *class_name_z );
@@ -805,7 +805,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
         }
 
         if( ctor_params_z && Z_TYPE_P( ctor_params_z ) != IS_ARRAY ) {
-            THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+            THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
 
         // fetch the data
@@ -822,14 +822,14 @@ PHP_FUNCTION( sqlsrv_fetch_object )
         zend_string* class_name_str_z = zend_string_init( class_name, class_name_len, 0 );
         int zr = ( NULL != ( class_entry = zend_lookup_class( class_name_str_z ))) ? SUCCESS : FAILURE;
 		zend_string_release( class_name_str_z );
-        CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_BAD_CLASS, class_name ) {
+        CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_BAD_CLASS, class_name, NULL ) {
             throw ss::SSException();
         }
 
         // create an instance of the object with its default properties
         // we pass NULL for the properties so that the object will be populated by its default properties
         zr = object_and_properties_init( &retval_z, class_entry, NULL /*properties*/ );
-        CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name ) {
+        CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name, NULL ) {
             throw ss::SSException();
         }
 
@@ -872,7 +872,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 				zval* value_z = NULL;
 				ZEND_HASH_FOREACH_VAL( ctor_params_ht, value_z ) {
 					zr = ( value_z ) ? SUCCESS : FAILURE;
-					CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name ) {
+					CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name, NULL ) {
 						throw ss::SSException();
 					}
 					ZVAL_COPY_VALUE(&params_m[i], value_z);
@@ -906,7 +906,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             fcic.object = Z_OBJ_P( &retval_z );
 
             zr = zend_call_function( &fci, &fcic );
-            CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name ) {
+            CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name, NULL ) {
                 throw ss::SSException();
             }
 
@@ -1083,7 +1083,7 @@ PHP_FUNCTION( sqlsrv_get_field )
     ZVAL_UNDEF(&retval_z);
 
     // get the statement, the field index and the optional type
-    PROCESS_PARAMS( stmt, "rl|l", _FN_, 2, &field_index, &sqlsrv_php_type );
+    PROCESS_PARAMS( stmt, "rl|l", _FN_, 2, &field_index, &sqlsrv_php_type, NULL );
 
     try {
 
@@ -1091,7 +1091,7 @@ PHP_FUNCTION( sqlsrv_get_field )
         SQLSMALLINT num_cols = get_resultset_meta_data(stmt);
 
         if( field_index < 0 || field_index >= num_cols ) {
-            THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+            THROW_SS_ERROR( stmt, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
 
         core_sqlsrv_get_field( stmt, static_cast<SQLUSMALLINT>( field_index ), sqlsrv_php_type, false, field_value, &field_len, false/*cache_field*/,
@@ -1227,7 +1227,7 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
                         // Simply get the first variable and use the defaults
                         value_z = zend_hash_index_find(param_ht, 0);
                         if (value_z == NULL) {
-                            THROW_SS_ERROR(stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1);
+                            THROW_SS_ERROR(stmt, SS_SQLSRV_ERROR_VAR_REQUIRED, index + 1, NULL);
                         }
                     }
                 } catch (core::CoreException&) {
@@ -1300,7 +1300,7 @@ PHP_FUNCTION( sqlsrv_cancel )
         close_active_stream( stmt );
 
         SQLRETURN r = SQLCancel( stmt->handle() );
-        CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
+        CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
             throw ss::SSException();
         }
 
@@ -1375,7 +1375,7 @@ PHP_FUNCTION( sqlsrv_free_stmt )
 
             // Check if it was a zval
             int zr = zend_parse_parameters( ZEND_NUM_ARGS(), "z", &stmt_r );
-            CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
+            CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL) {
 
                 throw ss::SSException();
             }
@@ -1386,7 +1386,7 @@ PHP_FUNCTION( sqlsrv_free_stmt )
             }
             else {
 
-                THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+                THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
             }
         }
 
@@ -1402,7 +1402,7 @@ PHP_FUNCTION( sqlsrv_free_stmt )
 
         if( stmt == NULL ) {
 
-            THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+            THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
 
         // delete the resource from Zend's master list, which will trigger the statement's destructor
@@ -1774,7 +1774,7 @@ void determine_stmt_has_rows( _Inout_ ss_sqlsrv_stmt* stmt )
         if( SQL_SUCCEEDED( r )) {
 
             stmt->has_rows = true;
-            CHECK_SQL_WARNING( r, stmt );
+            CHECK_SQL_WARNING( r, stmt, NULL );
             // restore the cursor to its original position.
             r = stmt->current_results->fetch( SQL_FETCH_ABSOLUTE, 0 );
             SQLSRV_ASSERT(( r == SQL_NO_DATA ), "core_sqlsrv_has_rows: Should have scrolled the cursor to the beginning "
@@ -1791,7 +1791,7 @@ void determine_stmt_has_rows( _Inout_ ss_sqlsrv_stmt* stmt )
         if( SQL_SUCCEEDED( r )) {
 
             stmt->has_rows = true;
-            CHECK_SQL_WARNING( r, stmt );
+            CHECK_SQL_WARNING( r, stmt, NULL );
             return;
         }
     }
@@ -1841,7 +1841,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
 	SQLSRV_PHPTYPE sqlsrv_php_type_out = SQLSRV_PHPTYPE_INVALID;
 
 	// make sure that the fetch type is legal
-	CHECK_CUSTOM_ERROR((fetch_type < MIN_SQLSRV_FETCH || fetch_type > MAX_SQLSRV_FETCH), stmt, SS_SQLSRV_ERROR_INVALID_FETCH_TYPE, stmt->func()) {
+	CHECK_CUSTOM_ERROR((fetch_type < MIN_SQLSRV_FETCH || fetch_type > MAX_SQLSRV_FETCH), stmt, SS_SQLSRV_ERROR_INVALID_FETCH_TYPE, stmt->func(), NULL) {
 		throw ss::SSException();
 	}
 
@@ -1893,7 +1893,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
         if( fetch_type & SQLSRV_FETCH_ASSOC ) {
 
             CHECK_CUSTOM_WARNING_AS_ERROR(( stmt->fetch_field_names[i].len == 0 && !allow_empty_field_names ), stmt,
-                                            SS_SQLSRV_WARNING_FIELD_NAME_EMPTY) {
+                                            SS_SQLSRV_WARNING_FIELD_NAME_EMPTY, NULL) {
                 throw ss::SSException();
             }
 
@@ -1924,16 +1924,16 @@ zval* parse_param_array(_Inout_ ss_sqlsrv_stmt* stmt, _Inout_ HashTable* param_h
     zval* dir = zend_hash_index_find(param_ht, 1);
     if (Z_TYPE_P(dir) != IS_NULL) {
         // if param direction is specified, make sure it's valid
-        CHECK_CUSTOM_ERROR(Z_TYPE_P(dir) != IS_LONG, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1) {
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(dir) != IS_LONG, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1, NULL) {
             throw ss::SSException();
         }
         direction = static_cast<SQLSMALLINT>(Z_LVAL_P(dir));
 
         CHECK_CUSTOM_ERROR(direction != SQL_PARAM_INPUT && direction != SQL_PARAM_OUTPUT && direction != SQL_PARAM_INPUT_OUTPUT,
-            stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1) {
+            stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1, NULL) {
             throw ss::SSException();
         }
-        CHECK_CUSTOM_ERROR(direction != SQL_PARAM_INPUT && !Z_ISREF_P(var_or_val), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1) {
+        CHECK_CUSTOM_ERROR(direction != SQL_PARAM_INPUT && !Z_ISREF_P(var_or_val), stmt, SS_SQLSRV_ERROR_PARAM_VAR_NOT_REF, index + 1, NULL) {
             throw ss::SSException();
         }
     }
@@ -1953,13 +1953,13 @@ zval* parse_param_array(_Inout_ ss_sqlsrv_stmt* stmt, _Inout_ HashTable* param_h
             php_out_type = zend_to_sqlsrv_phptype[Z_TYPE_P(var_or_val)];
         }
     } else {
-        CHECK_CUSTOM_ERROR(Z_TYPE_P(phptype_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, index + 1) {
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(phptype_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, index + 1, NULL) {
             throw ss::SSException();
         }
 
         sqlsrv_phptype srv_phptype;
         srv_phptype.value = Z_LVAL_P(phptype_z);
-        CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_phptype(srv_phptype), stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, index + 1) {
+        CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_phptype(srv_phptype), stmt, SQLSRV_ERROR_INVALID_PARAMETER_PHPTYPE, index + 1, NULL) {
             throw ss::SSException();
         }
 
@@ -1978,19 +1978,19 @@ zval* parse_param_array(_Inout_ ss_sqlsrv_stmt* stmt, _Inout_ HashTable* param_h
             throw ss::SSException();
         }
     } else {
-        CHECK_CUSTOM_ERROR(Z_TYPE_P(sqltype_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE, index + 1) {
+        CHECK_CUSTOM_ERROR(Z_TYPE_P(sqltype_z) != IS_LONG, stmt, SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE, index + 1, NULL) {
             throw ss::SSException();
         }
 
         // since the user supplied this type, make sure it's valid
         sqlsrv_sqltype sqlsrv_sql_type;
         sqlsrv_sql_type.value = Z_LVAL_P(sqltype_z);
-        CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_sqltype(sqlsrv_sql_type), stmt, SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE, index + 1) {
+        CHECK_CUSTOM_ERROR(!is_valid_sqlsrv_sqltype(sqlsrv_sql_type), stmt, SQLSRV_ERROR_INVALID_PARAMETER_SQLTYPE, index + 1, NULL) {
             throw ss::SSException();
         }
 
         bool size_okay = determine_column_size_or_precision(stmt, sqlsrv_sql_type, &column_size, &decimal_digits);
-        CHECK_CUSTOM_ERROR(!size_okay, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_PRECISION, index + 1) {
+        CHECK_CUSTOM_ERROR(!size_okay, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_PRECISION, index + 1, NULL) {
             throw ss::SSException();
         }
 

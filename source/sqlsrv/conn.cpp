@@ -7,13 +7,13 @@
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""), 
-//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the ""Software""),
+//  to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
 //  and / or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
@@ -117,7 +117,7 @@ struct conn_char_set_func {
              if (!strnicmp( encoding, ss_encoding->iana, encoding_len )) {
 
                  if ( ss_encoding->not_for_connection ) {
-                     THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING, encoding );
+                     THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING, encoding, NULL );
                  }
 
                  conn->set_encoding( static_cast<SQLSRV_ENCODING>(ss_encoding->code_page ));
@@ -125,7 +125,7 @@ struct conn_char_set_func {
              }
          } ZEND_HASH_FOREACH_END();
 
-         THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING, encoding );
+         THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING, encoding, NULL );
     }
 };
 
@@ -144,7 +144,7 @@ struct int_conn_str_func {
 
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Out_ std::string& conn_str )
     {
-        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_LONG, "An integer is expected for this keyword" ) 
+        SQLSRV_ASSERT( Z_TYPE_P( value ) == IS_LONG, "An integer is expected for this keyword" )
 
         char temp_str[MAX_CONN_VALSTRING_LEN];
 
@@ -159,7 +159,7 @@ struct int_conn_attr_func {
     static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/ )
     {
         try {
-        
+
             core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_LVAL_P( value )), SQL_IS_UINTEGER );
         }
         catch( core::CoreException& ) {
@@ -175,7 +175,7 @@ struct bool_conn_attr_func {
     {
          try {
              core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>((zend_long)zend_is_true(value)), SQL_IS_UINTEGER);
-        
+
         }
         catch( core::CoreException& ) {
             throw;
@@ -187,13 +187,13 @@ struct bool_conn_attr_func {
 //// *** internal functions ***
 
 void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn );
-void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options_z, _Inout_ char** uid, _Inout_ char** pwd, 
+void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options_z, _Inout_ char** uid, _Inout_ char** pwd,
                             _Inout_ HashTable* ss_conn_options_ht );
 void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht );
-void add_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, 
+void add_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len,
                          _Inout_ HashTable* options_ht, _Inout_ zval* data );
 void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ HashTable* options_ht, _Inout_ zval* data );
-int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z );   
+int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z );
 int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len );
 
 }
@@ -264,60 +264,60 @@ const char HostNameInCertificate[] = "HostNameInCertificate";
 }
 
 enum SS_CONN_OPTIONS {
-    
+
     SS_CONN_OPTION_DATE_AS_STRING = SQLSRV_CONN_OPTION_DRIVER_SPECIFIC,
     SS_CONN_OPTION_FORMAT_DECIMALS,
     SS_CONN_OPTION_DECIMAL_PLACES,
 };
 
 //List of all statement options supported by this driver
-const stmt_option SS_STMT_OPTS[] = {   
+const stmt_option SS_STMT_OPTS[] = {
     {
-        SSStmtOptionNames::QUERY_TIMEOUT, 
+        SSStmtOptionNames::QUERY_TIMEOUT,
         sizeof( SSStmtOptionNames::QUERY_TIMEOUT ),
-        SQLSRV_STMT_OPTION_QUERY_TIMEOUT, 
+        SQLSRV_STMT_OPTION_QUERY_TIMEOUT,
         std::unique_ptr<stmt_option_query_timeout>( new stmt_option_query_timeout )
     },
-    { 
-        SSStmtOptionNames::SEND_STREAMS_AT_EXEC, 
+    {
+        SSStmtOptionNames::SEND_STREAMS_AT_EXEC,
         sizeof( SSStmtOptionNames::SEND_STREAMS_AT_EXEC ),
-        SQLSRV_STMT_OPTION_SEND_STREAMS_AT_EXEC, 
+        SQLSRV_STMT_OPTION_SEND_STREAMS_AT_EXEC,
         std::unique_ptr<stmt_option_send_at_exec>( new stmt_option_send_at_exec )
     },
-    { 
-        SSStmtOptionNames::SCROLLABLE, 
+    {
+        SSStmtOptionNames::SCROLLABLE,
         sizeof( SSStmtOptionNames::SCROLLABLE ),
-        SQLSRV_STMT_OPTION_SCROLLABLE, 
+        SQLSRV_STMT_OPTION_SCROLLABLE,
         std::unique_ptr<stmt_option_ss_scrollable>( new stmt_option_ss_scrollable )
     },
-    { 
-        SSStmtOptionNames::CLIENT_BUFFER_MAX_SIZE, 
+    {
+        SSStmtOptionNames::CLIENT_BUFFER_MAX_SIZE,
         sizeof( SSStmtOptionNames::CLIENT_BUFFER_MAX_SIZE ),
-        SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE, 
+        SQLSRV_STMT_OPTION_CLIENT_BUFFER_MAX_SIZE,
         std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit )
     },
     {
-        SSStmtOptionNames::DATE_AS_STRING, 
+        SSStmtOptionNames::DATE_AS_STRING,
         sizeof( SSStmtOptionNames::DATE_AS_STRING ),
-        SQLSRV_STMT_OPTION_DATE_AS_STRING, 
+        SQLSRV_STMT_OPTION_DATE_AS_STRING,
         std::unique_ptr<stmt_option_date_as_string>( new stmt_option_date_as_string )
     },
     {
-        SSStmtOptionNames::FORMAT_DECIMALS, 
+        SSStmtOptionNames::FORMAT_DECIMALS,
         sizeof( SSStmtOptionNames::FORMAT_DECIMALS ),
-        SQLSRV_STMT_OPTION_FORMAT_DECIMALS, 
+        SQLSRV_STMT_OPTION_FORMAT_DECIMALS,
         std::unique_ptr<stmt_option_format_decimals>( new stmt_option_format_decimals )
     },
     {
-        SSStmtOptionNames::DECIMAL_PLACES, 
+        SSStmtOptionNames::DECIMAL_PLACES,
         sizeof( SSStmtOptionNames::DECIMAL_PLACES),
-        SQLSRV_STMT_OPTION_DECIMAL_PLACES, 
+        SQLSRV_STMT_OPTION_DECIMAL_PLACES,
         std::unique_ptr<stmt_option_decimal_places>( new stmt_option_decimal_places )
     },
     {
-        SSStmtOptionNames::DATA_CLASSIFICATION, 
+        SSStmtOptionNames::DATA_CLASSIFICATION,
         sizeof( SSStmtOptionNames::DATA_CLASSIFICATION ),
-        SQLSRV_STMT_OPTION_DATA_CLASSIFICATION, 
+        SQLSRV_STMT_OPTION_DATA_CLASSIFICATION,
         std::unique_ptr<stmt_option_data_classification>( new stmt_option_data_classification )
     },
     { NULL, 0, SQLSRV_STMT_OPTION_INVALID, std::unique_ptr<stmt_option_functor>{} },
@@ -326,32 +326,32 @@ const stmt_option SS_STMT_OPTS[] = {
 
 // List of all connection options supported by this driver.
 const connection_option SS_CONN_OPTS[] = {
-    { 
+    {
         SSConnOptionNames::APP,
         sizeof( SSConnOptionNames::APP ),
         SQLSRV_CONN_OPTION_APP,
         ODBCConnOptions::APP,
         sizeof( ODBCConnOptions::APP ),
         CONN_ATTR_STRING,
-        conn_str_append_func::func 
+        conn_str_append_func::func
     },
     {
         SSConnOptionNames::AccessToken,
         sizeof( SSConnOptionNames::AccessToken ),
         SQLSRV_CONN_OPTION_ACCESS_TOKEN,
         ODBCConnOptions::AccessToken,
-        sizeof( ODBCConnOptions::AccessToken), 
+        sizeof( ODBCConnOptions::AccessToken),
         CONN_ATTR_STRING,
         access_token_set_func::func
     },
-    { 
+    {
         SSConnOptionNames::ApplicationIntent,
         sizeof( SSConnOptionNames::ApplicationIntent ),
         SQLSRV_CONN_OPTION_APPLICATION_INTENT,
         ODBCConnOptions::ApplicationIntent,
         sizeof( ODBCConnOptions::ApplicationIntent ),
         CONN_ATTR_STRING,
-        conn_str_append_func::func 
+        conn_str_append_func::func
     },
     {
         SSConnOptionNames::AttachDBFileName,
@@ -447,17 +447,17 @@ const connection_option SS_CONN_OPTS[] = {
         SSConnOptionNames::Encrypt,
         sizeof( SSConnOptionNames::Encrypt ),
         SQLSRV_CONN_OPTION_ENCRYPT,
-        ODBCConnOptions::Encrypt, 
+        ODBCConnOptions::Encrypt,
         sizeof( ODBCConnOptions::Encrypt ),
         CONN_ATTR_MIXED,
         srv_encrypt_set_func::func
     },
-    { 
+    {
         SSConnOptionNames::Failover_Partner,
         sizeof( SSConnOptionNames::Failover_Partner ),
         SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
         ODBCConnOptions::Failover_Partner,
-        sizeof( ODBCConnOptions::Failover_Partner ), 
+        sizeof( ODBCConnOptions::Failover_Partner ),
         CONN_ATTR_STRING,
         conn_str_append_func::func
     },
@@ -468,7 +468,7 @@ const connection_option SS_CONN_OPTS[] = {
         ODBCConnOptions::KeyStoreAuthentication,
         sizeof( ODBCConnOptions::KeyStoreAuthentication ),
         CONN_ATTR_STRING,
-        ce_akv_str_set_func::func 
+        ce_akv_str_set_func::func
     },
     {
         SSConnOptionNames::KeyStorePrincipalId,
@@ -477,7 +477,7 @@ const connection_option SS_CONN_OPTS[] = {
         ODBCConnOptions::KeyStorePrincipalId,
         sizeof( ODBCConnOptions::KeyStorePrincipalId ),
         CONN_ATTR_STRING,
-        ce_akv_str_set_func::func 
+        ce_akv_str_set_func::func
     },
     {
         SSConnOptionNames::KeyStoreSecret,
@@ -495,7 +495,7 @@ const connection_option SS_CONN_OPTS[] = {
         ODBCConnOptions::LoginTimeout,
         sizeof( ODBCConnOptions::LoginTimeout ),
         CONN_ATTR_INT,
-        int_conn_attr_func<SQL_ATTR_LOGIN_TIMEOUT>::func 
+        int_conn_attr_func<SQL_ATTR_LOGIN_TIMEOUT>::func
     },
     {
         SSConnOptionNames::MARS_Option,
@@ -529,9 +529,9 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( SSConnOptionNames::TraceFile ),
         SQLSRV_CONN_OPTION_TRACE_FILE,
         ODBCConnOptions::TraceFile,
-        sizeof( ODBCConnOptions::TraceFile ), 
+        sizeof( ODBCConnOptions::TraceFile ),
         CONN_ATTR_STRING,
-        str_conn_attr_func<SQL_ATTR_TRACEFILE>::func 
+        str_conn_attr_func<SQL_ATTR_TRACEFILE>::func
     },
     {
         SSConnOptionNames::TraceOn,
@@ -575,7 +575,7 @@ const connection_option SS_CONN_OPTS[] = {
         SQLSRV_CONN_OPTION_WSID,
         ODBCConnOptions::WSID,
         sizeof( ODBCConnOptions::WSID ),
-        CONN_ATTR_STRING, 
+        CONN_ATTR_STRING,
         conn_str_append_func::func
     },
     {
@@ -643,11 +643,11 @@ const connection_option SS_CONN_OPTS[] = {
 // $connectionInfo [OPTIONAL]: An associative array that contains connection
 // attributes (for example, array("Database" => "AdventureWorks")).
 //
-// Return Value 
+// Return Value
 // A PHP connection resource. If a connection cannot be successfully created and
 // opened, false is returned
 
-PHP_FUNCTION ( sqlsrv_connect ) 
+PHP_FUNCTION ( sqlsrv_connect )
 {
     LOG_FUNCTION( "sqlsrv_connect" );
     g_ss_henv_cp->set_func(_FN_);
@@ -664,11 +664,11 @@ PHP_FUNCTION ( sqlsrv_connect )
     ZVAL_UNDEF(&conn_z);
     // get the server name and connection options
     int result = zend_parse_parameters( ZEND_NUM_ARGS(), "s|a", &server, &server_len, &options_z );
-    
-    CHECK_CUSTOM_ERROR(( result == FAILURE ), *g_ss_henv_cp, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, "sqlsrv_connect" ) {
+
+    CHECK_CUSTOM_ERROR(( result == FAILURE ), *g_ss_henv_cp, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, "sqlsrv_connect", NULL) {
         RETURN_FALSE;
     }
-    
+
     hash_auto_ptr ss_conn_options_ht;
     hash_auto_ptr stmts;
     ss_sqlsrv_conn* conn = NULL;
@@ -677,38 +677,38 @@ PHP_FUNCTION ( sqlsrv_connect )
 
         // Initialize the options array to be passed to the core layer
         ALLOC_HASHTABLE( ss_conn_options_ht );
-        
-        core::sqlsrv_zend_hash_init( *g_ss_henv_cp, ss_conn_options_ht, 10 /* # of buckets */, 
+
+        core::sqlsrv_zend_hash_init( *g_ss_henv_cp, ss_conn_options_ht, 10 /* # of buckets */,
                                  ZVAL_PTR_DTOR, 0 /*persistent*/ );
-   
+
         // Either of g_ss_henv_cp or g_ss_henv_ncp can be used to propagate the error.
-        ::validate_conn_options( *g_ss_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht );   
-     
-        // call the core connect function  
+        ::validate_conn_options( *g_ss_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht );
+
+        // call the core connect function
         conn = static_cast<ss_sqlsrv_conn*>( core_sqlsrv_connect( *g_ss_henv_cp, *g_ss_henv_ncp, &core::allocate_conn<ss_sqlsrv_conn>,
-                                                                  server, uid, pwd, ss_conn_options_ht, ss_error_handler,  
-                                                                  SS_CONN_OPTS, NULL, "sqlsrv_connect" )); 
-        
+                                                                  server, uid, pwd, ss_conn_options_ht, ss_error_handler,
+                                                                  SS_CONN_OPTS, NULL, "sqlsrv_connect" ));
+
         SQLSRV_ASSERT( conn != NULL, "sqlsrv_connect: Invalid connection returned.  Exception should have been thrown." );
-        
+
         // create a bunch of statements
         ALLOC_HASHTABLE( stmts );
-    
+
         core::sqlsrv_zend_hash_init( *g_ss_henv_cp, stmts, 5, NULL /* dtor */, 0 /* persistent */ );
 
-        // register the connection with the PHP runtime 
-        
+        // register the connection with the PHP runtime
+
         ss::zend_register_resource(conn_z, conn, ss_sqlsrv_conn::descriptor, ss_sqlsrv_conn::resource_name);
 
         conn->stmts = stmts;
         stmts.transferred();
         RETURN_RES( Z_RES(conn_z) );
     }
-    
+
     catch( core::CoreException& ) {
-        
+
         if( conn != NULL ) {
-         
+
             conn->invalidate();
         }
 
@@ -732,7 +732,7 @@ PHP_FUNCTION ( sqlsrv_connect )
 // queries are automatically committed upon success unless they have been
 // designated as part of an explicit transaction by using
 // sqlsrv_begin_transaction.
-// 
+//
 // If sqlsrv_begin_transaction is called after a transaction has already been
 // initiated on the connection but not completed by calling either sqlsrv_commit
 // or sqlsrv_rollback, the call returns false and an Already in Transaction
@@ -744,11 +744,11 @@ PHP_FUNCTION ( sqlsrv_connect )
 // Return Value
 // A Boolean value: true if the transaction was successfully begun. Otherwise, false.
 
-PHP_FUNCTION( sqlsrv_begin_transaction ) 
-{   
+PHP_FUNCTION( sqlsrv_begin_transaction )
+{
     LOG_FUNCTION( "sqlsrv_begin_transaction" );
 
-    
+
     ss_sqlsrv_conn* conn = NULL;
     PROCESS_PARAMS( conn, "r", _FN_, 0 );
 
@@ -766,7 +766,7 @@ PHP_FUNCTION( sqlsrv_begin_transaction )
 
     catch( core::CoreException& ) {
         RETURN_FALSE;
-    }        
+    }
     catch( ... ) {
 
         DIE("sqlsrv_begin_transaction: Unknown exception caught.");
@@ -793,33 +793,33 @@ PHP_FUNCTION( sqlsrv_begin_transaction )
 PHP_FUNCTION( sqlsrv_close )
 {
     LOG_FUNCTION( "sqlsrv_close" );
-    
+
     zval* conn_r = NULL;
     ss_sqlsrv_conn* conn = NULL;
     sqlsrv_context_auto_ptr error_ctx;
 
     reset_errors();
-    
+
     try {
-        
+
         // dummy context to pass to the error handler
         error_ctx = new (sqlsrv_malloc( sizeof( sqlsrv_context ))) sqlsrv_context( 0, ss_error_handler, NULL );
         error_ctx->set_func(_FN_);
 
         if( zend_parse_parameters(ZEND_NUM_ARGS(), "r", &conn_r) == FAILURE ) {
-        
+
              // Check if it was a zval
             int zr = zend_parse_parameters( ZEND_NUM_ARGS(), "z", &conn_r );
-            CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
+            CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ , NULL) {
                 throw ss::SSException();
-            }   
-            
+            }
+
             // if sqlsrv_close was called on a non-existent connection then we just return success.
             if( Z_TYPE_P( conn_r ) == IS_NULL ) {
                 RETURN_TRUE;
             }
-            else { 
-              THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );  
+            else {
+              THROW_CORE_ERROR( error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
             }
         }
         SQLSRV_ASSERT( conn_r != NULL, "sqlsrv_close: conn_r was null" );
@@ -829,16 +829,16 @@ PHP_FUNCTION( sqlsrv_close )
         if ( Z_RES_TYPE_P( conn_r ) == RSRC_INVALID_TYPE) {
             RETURN_TRUE;
         }
-    
-        CHECK_CUSTOM_ERROR(( conn == NULL ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
-          
+
+        CHECK_CUSTOM_ERROR(( conn == NULL ), error_ctx, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL) {
+
             throw ss::SSException();
-        }   
+        }
 
         conn->set_func(_FN_);
-        
+
         // cause any variables still holding a reference to this to be invalid so they cause
-        // an error when passed to a sqlsrv function.  There's nothing we can do if the 
+        // an error when passed to a sqlsrv function.  There's nothing we can do if the
         // removal fails, so we just log it and move on.
 #if PHP_VERSION_ID < 80000
         if (zend_list_close(Z_RES_P(conn_r)) == FAILURE) {
@@ -857,7 +857,7 @@ PHP_FUNCTION( sqlsrv_close )
         RETURN_TRUE;
     }
     catch( core::CoreException& ) {
-        
+
         RETURN_FALSE;
     }
     catch( ... ) {
@@ -868,7 +868,7 @@ PHP_FUNCTION( sqlsrv_close )
 
 void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc )
 {
-    // Without sqlsrv_close(), this function is invoked by php during the final clean up stage. 
+    // Without sqlsrv_close(), this function is invoked by php during the final clean up stage.
     // To prevent memory/resource leaks, no more logging at this point.
     //LOG_FUNCTION( "sqlsrv_conn_dtor" );
 
@@ -883,17 +883,17 @@ void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc )
 
     // close the connection itself.
     core_sqlsrv_close( conn );
-    
+
     rsrc->ptr = NULL;
 }
- 
+
 // sqlsrv_commit( resource $conn )
 //
 // Commits the current transaction on the specified connection and returns the
 // connection to the auto-commit mode. The current transaction includes all
 // statements on the specified connection that were executed after the call to
 // sqlsrv_begin_transaction and before any calls to sqlsrv_rollback or
-// sqlsrv_commit.  
+// sqlsrv_commit.
 
 // The SQLSRV driver is in auto-commit mode by
 // default. This means that all queries are automatically committed upon success
@@ -902,7 +902,7 @@ void __cdecl sqlsrv_conn_dtor( _Inout_ zend_resource *rsrc )
 // not in an active transaction and that was initiated with
 // sqlsrv_begin_transaction, the call returns false and a Not in Transaction
 // error is added to the error collection.
-// 
+//
 // Parameters
 // $conn: The connection on which the transaction is active.
 //
@@ -921,7 +921,7 @@ PHP_FUNCTION( sqlsrv_commit )
     CHECK_CUSTOM_ERROR(( conn->in_transaction == false ), *conn, SS_SQLSRV_ERROR_NOT_IN_TXN ) {
         RETURN_FALSE;
     }
-    
+
     try {
 
         conn->in_transaction = false;
@@ -945,7 +945,7 @@ PHP_FUNCTION( sqlsrv_commit )
 // statements on the specified connection that were executed after the call to
 // sqlsrv_begin_transaction and before any calls to sqlsrv_rollback or
 // sqlsrv_commit.
-// 
+//
 // The SQLSRV driver is in auto-commit mode by default. This
 // means that all queries are automatically committed upon success unless they
 // have been designated as part of an explicit transaction by using
@@ -955,7 +955,7 @@ PHP_FUNCTION( sqlsrv_commit )
 // transaction that was initiated with sqlsrv_begin_transaction, the call
 // returns false and a Not in Transaction error is added to the error
 // collection.
-// 
+//
 // Parameters
 // $conn: The connection on which the transaction is active.
 //
@@ -970,14 +970,14 @@ PHP_FUNCTION( sqlsrv_rollback )
     ss_sqlsrv_conn* conn = NULL;
 
     PROCESS_PARAMS( conn, "r", _FN_, 0 );
-    
+
     // Return false if not in transaction
     CHECK_CUSTOM_ERROR(( conn->in_transaction == false ), *conn, SS_SQLSRV_ERROR_NOT_IN_TXN ) {
         RETURN_FALSE;
     }
 
     try {
-        
+
         conn->in_transaction = false;
         core_sqlsrv_rollback( conn );
         RETURN_TRUE;
@@ -1002,7 +1002,7 @@ PHP_FUNCTION( sqlsrv_client_info )
     LOG_FUNCTION( "sqlsrv_client_info" );
     ss_sqlsrv_conn* conn = NULL;
     PROCESS_PARAMS( conn, "r", _FN_, 0 );
-    
+
     try {
         core_sqlsrv_get_client_info(conn, return_value);
 
@@ -1019,14 +1019,14 @@ PHP_FUNCTION( sqlsrv_client_info )
 }
 
 // sqlsrv_server_info( resource $conn )
-// 
+//
 // Returns information about the server.
-// 
+//
 // Parameters
 // $conn: The connection resource by which the client and server are connected.
 //
 // Return Value
-// An associative array with the following keys: 
+// An associative array with the following keys:
 //  CurrentDatabase
 //      The database currently being targeted.
 //  SQLServerVersion
@@ -1051,7 +1051,7 @@ PHP_FUNCTION( sqlsrv_server_info )
 
 
 // sqlsrv_prepare( resource $conn, string $tsql [, array $params [, array $options]])
-// 
+//
 // Creates a statement resource associated with the specified connection.  A statement
 // resource returned by sqlsrv_prepare may be executed multiple times by sqlsrv_execute.
 // In between each execution, the values may be updated by changing the value of the
@@ -1097,7 +1097,7 @@ PHP_FUNCTION( sqlsrv_prepare )
     zval stmt_z;
     ZVAL_UNDEF(&stmt_z);
 
-    PROCESS_PARAMS( conn, "rs|a!a!", _FN_, 4, &sql, &sql_len, &params_z, &options_z );
+    PROCESS_PARAMS( conn, "rs|a!a!", _FN_, 4, &sql, &sql_len, &params_z, &options_z, NULL );
 
     try {
 
@@ -1105,19 +1105,19 @@ PHP_FUNCTION( sqlsrv_prepare )
 
             // Initialize the options array to be passed to the core layer
             ALLOC_HASHTABLE( ss_stmt_options_ht );
-            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 5 /* # of buckets */, 
+            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 5 /* # of buckets */,
                                          ZVAL_PTR_DTOR, 0 /*persistent*/ );
-            
+
             validate_stmt_options( *conn, options_z, ss_stmt_options_ht );
-        
+
         }
 
         if( params_z && Z_TYPE_P( params_z ) != IS_ARRAY ) {
-            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
 
         if( options_z && Z_TYPE_P( options_z ) != IS_ARRAY ) {
-            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
 
         if( sql == NULL ) {
@@ -1125,12 +1125,12 @@ PHP_FUNCTION( sqlsrv_prepare )
             DIE( "sqlsrv_prepare: sql string was null." );
         }
 
-        stmt = static_cast<ss_sqlsrv_stmt*>( core_sqlsrv_create_stmt( conn, core::allocate_stmt<ss_sqlsrv_stmt>, 
-                                                                      ss_stmt_options_ht, SS_STMT_OPTS, 
+        stmt = static_cast<ss_sqlsrv_stmt*>( core_sqlsrv_create_stmt( conn, core::allocate_stmt<ss_sqlsrv_stmt>,
+                                                                      ss_stmt_options_ht, SS_STMT_OPTS,
                                                                       ss_error_handler, NULL ) );
-       
+
         core_sqlsrv_prepare( stmt, sql, sql_len );
-        
+
         if (params_z) {
             stmt->params_z = (zval *)sqlsrv_malloc(sizeof(zval));
             ZVAL_COPY(stmt->params_z, params_z);
@@ -1138,27 +1138,27 @@ PHP_FUNCTION( sqlsrv_prepare )
 
         stmt->prepared = true;
 
-        // register the statement with the PHP runtime        
+        // register the statement with the PHP runtime
         ss::zend_register_resource( stmt_z, stmt, ss_sqlsrv_stmt::descriptor, ss_sqlsrv_stmt::resource_name );
 
-        // store the resource id with the connection so the connection 
+        // store the resource id with the connection so the connection
         // can release this statement when it closes.
         zend_long next_index = zend_hash_next_free_element( conn->stmts );
-  
+
         core::sqlsrv_zend_hash_index_update(*conn, conn->stmts, next_index, &stmt_z);
 
         stmt->conn_index = next_index;
 
         // the statement is now registered with EG( regular_list )
         stmt.transferred();
-        
+
         RETURN_RES(Z_RES(stmt_z));
 
     }
     catch( core::CoreException& ) {
 
         if( stmt ) {
-            
+
             stmt->conn = NULL;
             stmt->~ss_sqlsrv_stmt();
         }
@@ -1176,7 +1176,7 @@ PHP_FUNCTION( sqlsrv_prepare )
 }
 
 // sqlsrv_query( resource $conn, string $tsql [, array $params [, array $options]])
-// 
+//
 // Creates a statement resource associated with the specified connection.  The statement
 // is immediately executed and may not be executed again using sqlsrv_execute.
 //
@@ -1215,11 +1215,11 @@ PHP_FUNCTION( sqlsrv_query )
     hash_auto_ptr ss_stmt_options_ht;
     size_t sql_len = 0;
     zval* options_z = NULL;
-    zval* params_z = NULL;  
+    zval* params_z = NULL;
     zval stmt_z;
     ZVAL_UNDEF(&stmt_z);
 
-    PROCESS_PARAMS( conn, "rs|a!a!", _FN_, 4, &sql, &sql_len, &params_z, &options_z );
+    PROCESS_PARAMS( conn, "rs|a!a!", _FN_, 4, &sql, &sql_len, &params_z, &options_z, NULL );
 
     try {
 
@@ -1228,18 +1228,18 @@ PHP_FUNCTION( sqlsrv_query )
 
             // Initialize the options array to be passed to the core layer
             ALLOC_HASHTABLE( ss_stmt_options_ht );
-            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 5 /* # of buckets */, ZVAL_PTR_DTOR, 
+            core::sqlsrv_zend_hash_init( *conn , ss_stmt_options_ht, 5 /* # of buckets */, ZVAL_PTR_DTOR,
                                          0 /*persistent*/ );
-            
-            validate_stmt_options( *conn, options_z, ss_stmt_options_ht );    
+
+            validate_stmt_options( *conn, options_z, ss_stmt_options_ht );
         }
 
         if( params_z && Z_TYPE_P( params_z ) != IS_ARRAY ) {
-            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
 
         if( options_z && Z_TYPE_P( options_z ) != IS_ARRAY ) {
-            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
+            THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_INVALID_FUNCTION_PARAMETER, _FN_, NULL );
         }
 
         if( sql == NULL ) {
@@ -1247,8 +1247,8 @@ PHP_FUNCTION( sqlsrv_query )
             DIE( "sqlsrv_query: sql string was null." );
         }
 
-        stmt = static_cast<ss_sqlsrv_stmt*>( core_sqlsrv_create_stmt( conn, core::allocate_stmt<ss_sqlsrv_stmt>, 
-                                                                      ss_stmt_options_ht, SS_STMT_OPTS, 
+        stmt = static_cast<ss_sqlsrv_stmt*>( core_sqlsrv_create_stmt( conn, core::allocate_stmt<ss_sqlsrv_stmt>,
+                                                                      ss_stmt_options_ht, SS_STMT_OPTS,
                                                                       ss_error_handler, NULL ) );
 
         if( params_z ) {
@@ -1262,13 +1262,13 @@ PHP_FUNCTION( sqlsrv_query )
 
         // execute the statement
         core_sqlsrv_execute( stmt, sql, static_cast<int>( sql_len ) );
-       
-        // register the statement with the PHP runtime 
+
+        // register the statement with the PHP runtime
         ss::zend_register_resource(stmt_z, stmt, ss_sqlsrv_stmt::descriptor, ss_sqlsrv_stmt::resource_name);
-        // store the resource id with the connection so the connection 
+        // store the resource id with the connection so the connection
         // can release this statement when it closes.
         zend_ulong next_index = zend_hash_next_free_element( conn->stmts );
-     
+
         core::sqlsrv_zend_hash_index_update(*conn, conn->stmts, next_index, &stmt_z);
         stmt->conn_index = next_index;
         stmt.transferred();
@@ -1311,7 +1311,7 @@ void free_stmt_resource( _Inout_ zval* stmt_z )
 
 // internal connection functions
 
-namespace {    
+namespace {
 
 // must close all statement handles opened by this connection before closing the connection
 // no errors are returned, since close should always succeed
@@ -1322,8 +1322,8 @@ void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn )
     SQLSRV_ASSERT(( conn->handle() != NULL ), "sqlsrv_conn_close_stmts: Connection handle is NULL. Trying to destroy an "
                   "already destroyed connection.");
     SQLSRV_ASSERT(( conn->stmts ), "sqlsrv_conn_close_stmts: Connection doesn't contain a statement array." );
-    
-    // loop through the stmts hash table and destroy each stmt resource so we can close the 
+
+    // loop through the stmts hash table and destroy each stmt resource so we can close the
     // ODBC connection
 
     zval* rsrc_ptr = NULL;
@@ -1368,16 +1368,16 @@ void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn )
     conn->stmts = NULL;
 }
 
-int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z )    
+int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z )
 {
     for( int i=0; SS_CONN_OPTS[i].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
     {
         if( key_len == SS_CONN_OPTS[i].sqlsrv_len && !stricmp( ZSTR_VAL( key ), SS_CONN_OPTS[i].sqlsrv_name )) {
-            
+
 
              switch( SS_CONN_OPTS[i].value_type ) {
 
-                case CONN_ATTR_BOOL:                        
+                case CONN_ATTR_BOOL:
                     // bool attributes can be either strings to be appended to the connection string
                     // as yes or no or integral connection attributes.  This will have to be reworked
                     // if we ever introduce a boolean connection option that maps to a string connection
@@ -1388,7 +1388,7 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                 case CONN_ATTR_INT:
                 {
                     CHECK_CUSTOM_ERROR( (Z_TYPE_P( value_z ) != IS_LONG ), ctx, SQLSRV_ERROR_INVALID_OPTION_TYPE_INT,
-                                        SS_CONN_OPTS[i].sqlsrv_name ) 
+                                        SS_CONN_OPTS[i].sqlsrv_name, NULL)
                     {
                         throw ss::SSException();
                     }
@@ -1396,8 +1396,8 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                 }
                 case CONN_ATTR_STRING:
                 {
-                    CHECK_CUSTOM_ERROR( Z_TYPE_P( value_z ) != IS_STRING, ctx, SQLSRV_ERROR_INVALID_OPTION_TYPE_STRING, 
-                                        SS_CONN_OPTS[i].sqlsrv_name ) {
+                    CHECK_CUSTOM_ERROR( Z_TYPE_P( value_z ) != IS_STRING, ctx, SQLSRV_ERROR_INVALID_OPTION_TYPE_STRING,
+                                        SS_CONN_OPTS[i].sqlsrv_name, NULL) {
 
                         throw ss::SSException();
                     }
@@ -1406,7 +1406,7 @@ int get_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In
                     size_t value_len = Z_STRLEN_P( value_z );
                     bool escaped = core_is_conn_opt_value_escaped( value, value_len );
 
-                    CHECK_CUSTOM_ERROR( !escaped, ctx, SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED, SS_CONN_OPTS[i].sqlsrv_name ) {
+                    CHECK_CUSTOM_ERROR( !escaped, ctx, SS_SQLSRV_ERROR_CONNECT_BRACES_NOT_ESCAPED, SS_CONN_OPTS[i].sqlsrv_name, NULL) {
 
                         throw ss::SSException();
                     }
@@ -1435,34 +1435,34 @@ int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len )
     return SQLSRV_STMT_OPTION_INVALID;
 }
 
-void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, 
+void add_stmt_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len,
                          _Inout_ HashTable* options_ht, _Inout_ zval* data )
 {
-    int option_key = ::get_stmt_option_key( key, key_len );   
-    
-    CHECK_CUSTOM_ERROR((option_key == SQLSRV_STMT_OPTION_INVALID ), ctx, SQLSRV_ERROR_INVALID_OPTION_KEY, ZSTR_VAL( key ) ) {
+    int option_key = ::get_stmt_option_key( key, key_len );
+
+    CHECK_CUSTOM_ERROR((option_key == SQLSRV_STMT_OPTION_INVALID ), ctx, SQLSRV_ERROR_INVALID_OPTION_KEY, ZSTR_VAL( key ), NULL) {
 
         throw ss::SSException();
-    }        
+    }
 
     Z_TRY_ADDREF_P(data);      // inc the ref count since this is going into the options_ht too.
     core::sqlsrv_zend_hash_index_update( ctx, options_ht, option_key, data );
 }
 
-void add_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len, 
+void add_conn_option_key( _Inout_ sqlsrv_context& ctx, _In_ zend_string* key, _In_ size_t key_len,
                          _Inout_ HashTable* options_ht, _Inout_ zval* data )
 {
-    int option_key = ::get_conn_option_key( ctx, key, key_len, data );    
-    CHECK_CUSTOM_ERROR((option_key == SQLSRV_STMT_OPTION_INVALID ), ctx, SS_SQLSRV_ERROR_INVALID_OPTION, ZSTR_VAL( key ) ) {
+    int option_key = ::get_conn_option_key( ctx, key, key_len, data );
+    CHECK_CUSTOM_ERROR((option_key == SQLSRV_STMT_OPTION_INVALID ), ctx, SS_SQLSRV_ERROR_INVALID_OPTION, ZSTR_VAL( key ), NULL) {
 
         throw ss::SSException();
-    }        
+    }
 
     Z_TRY_ADDREF_P(data);      // inc the ref count since this is going into the options_ht too.
     core::sqlsrv_zend_hash_index_update( ctx, options_ht, option_key, data );
 }
 
-// Iterates through the list of statement options provided by the user and validates them 
+// Iterates through the list of statement options provided by the user and validates them
 // against the list of supported statement options by this driver. After validation
 // creates a Hashtable of statement options to be sent to the core layer for processing.
 
@@ -1470,7 +1470,7 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
 {
     try {
         if( stmt_options ) {
-           
+
             HashTable* options_ht = Z_ARRVAL_P( stmt_options );
             zend_ulong int_key = -1;
             zend_string *key = NULL;
@@ -1482,7 +1482,7 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
                 type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
                 if (type != HASH_KEY_IS_STRING) {
-                    CHECK_CUSTOM_ERROR(true, ctx, SQLSRV_ERROR_INVALID_OPTION_KEY, std::to_string( int_key ).c_str() ) {
+                    CHECK_CUSTOM_ERROR(true, ctx, SQLSRV_ERROR_INVALID_OPTION_KEY, std::to_string( int_key ).c_str(), NULL) {
                         throw core::CoreException();
                     }
                 }
@@ -1502,7 +1502,7 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
     }
 }
 
-// Iterates through the list of connection options provided by the user and validates them 
+// Iterates through the list of connection options provided by the user and validates them
 // against the predefined list of supported connection options by this driver. After validation
 // creates a Hashtable of connection options to be sent to the core layer for processing.
 
@@ -1520,7 +1520,7 @@ void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options
                 int type = HASH_KEY_NON_EXISTENT;
                 type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
-                CHECK_CUSTOM_ERROR(( Z_TYPE_P( data ) == IS_NULL || Z_TYPE_P( data ) == IS_UNDEF ), ctx, SS_SQLSRV_ERROR_INVALID_OPTION, key) {
+                CHECK_CUSTOM_ERROR(( Z_TYPE_P( data ) == IS_NULL || Z_TYPE_P( data ) == IS_UNDEF ), ctx, SS_SQLSRV_ERROR_INVALID_OPTION, key, NULL) {
                     throw ss::SSException();
                 }
 
@@ -1548,7 +1548,7 @@ void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options
                     DIE( "validate_conn_options: key was null." );
                 }
             } ZEND_HASH_FOREACH_END();
-        } 
+        }
     }
     catch( core::CoreException& ) {
         throw;
