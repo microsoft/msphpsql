@@ -53,7 +53,7 @@ try {
     $stmt = $conn->prepare($tsql);
     $stmt->bindParam(1, $tvpinput, PDO::PARAM_LOB);
     $result = $stmt->execute();
-    
+
     // Verify the results
     readData($conn, $testTable);
     
