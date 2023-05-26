@@ -10,7 +10,6 @@ require_once("MsCommon_mid-refactor.inc");
 try {
     $dsn = "ConnectionPooling = false;" .
            "APP = whatever;" .
-           "LoginTimeout = 1;" .
            "ApplicationIntent = ReadOnly;" .
            "Encrypt = false;" .
            "Failover_Partner = whatever;" .
