@@ -16,8 +16,6 @@ try {
            "MultipleActiveResultSets = true;" .
            "MultiSubnetFailover = NO;" .
            "QuotedId = false;" .
-           "TraceFile = whatever;" .
-           "TraceOn = true;" .
            "TrustServerCertificate = false;" .
            "WSID = whatever;";
     $conn = connect($dsn);
