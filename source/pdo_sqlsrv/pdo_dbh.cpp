@@ -1323,14 +1323,6 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             break;
 #endif
 
-#if (PHP_VERSION_ID >= 80122 && PHP_VERSION_ID < 80200) || PHP_VERSION_ID >= 80209
-            case PDO_ATTR_STRINGIFY_FETCHES:
-            {
-                // do nothing
-            }
-            break;
-#endif
-
             // Not supported
             case PDO_ATTR_FETCH_TABLE_NAMES:
             case PDO_ATTR_FETCH_CATALOG_NAMES:
