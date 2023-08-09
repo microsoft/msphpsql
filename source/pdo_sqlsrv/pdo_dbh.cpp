@@ -155,6 +155,7 @@ struct pdo_encrypt_set_func
         const char TRUE_VALUE_2[] = "1";
         const char FALSE_VALUE_1[] = "false";
         const char FALSE_VALUE_2[] = "0";
+        transform(val_str.begin(), val_str.end(), val_str.begin(), ::tolower);
 
         // For backward compatibility, convert true/1 to yes and false/0 to no
         std::string attr;
