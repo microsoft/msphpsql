@@ -1922,6 +1922,7 @@ zval* parse_param_array(_Inout_ ss_sqlsrv_stmt* stmt, _Inout_ HashTable* param_h
 
     // Assumption: there are more than only the variable, parse the rest of the array
     zval* dir = zend_hash_index_find(param_ht, 1);
+    if(!dir) { throw ss::SSException(); }
     if (Z_TYPE_P(dir) != IS_NULL) {
         // if param direction is specified, make sure it's valid
         CHECK_CUSTOM_ERROR(Z_TYPE_P(dir) != IS_LONG, stmt, SS_SQLSRV_ERROR_INVALID_PARAMETER_DIRECTION, index + 1, NULL) {
