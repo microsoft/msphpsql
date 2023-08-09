@@ -163,7 +163,9 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         CHECK_CUSTOM_ERROR(conn->ce_option.enabled && conn->driver_version == ODBC_DRIVER::VER_13, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch(), NULL) {
             throw core::CoreException();
         }
-
+    if (conn->driver_version == ODBC_DRIVER::VER_13) {
+        zend_error(E_DEPRECATED, "ODBC driver version 13 is deprecated, please consider upgrading to the latest version.");
+    }
 #ifndef _WIN32
         // check if the ODBC driver actually exists, if not, throw an exception
         CHECK_CUSTOM_ERROR(!core_search_odbc_driver_unix(conn->driver_version), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND) {
