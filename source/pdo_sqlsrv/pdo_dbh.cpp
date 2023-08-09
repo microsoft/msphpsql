@@ -155,6 +155,7 @@ struct pdo_encrypt_set_func
         const char TRUE_VALUE_2[] = "1";
         const char FALSE_VALUE_1[] = "false";
         const char FALSE_VALUE_2[] = "0";
+        transform(val_str.begin(), val_str.end(), val_str.begin(), ::tolower);
 
         // For backward compatibility, convert true/1 to yes and false/0 to no
         std::string attr;
@@ -1319,6 +1320,14 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 else {
                     THROW_PDO_ERROR(driver_dbh, PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID);
                 }
+            }
+            break;
+#endif
+
+#if (PHP_VERSION_ID >= 80122 && PHP_VERSION_ID < 80200) || PHP_VERSION_ID >= 80209
+            case PDO_ATTR_STRINGIFY_FETCHES:
+            {
+                // do nothing
             }
             break;
 #endif

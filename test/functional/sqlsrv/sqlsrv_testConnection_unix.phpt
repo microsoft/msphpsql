@@ -73,8 +73,6 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
                                "LoginTimeout" => 120,
                                "MultipleActiveResultSets" => false,
                                "QuotedId" => false,
-                               "TraceOn" => true,
-                               "TraceFile" => "trace.odbc",
                                "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
                                "TrustServerCertificate" => 1,
                                "WSID" => "JAYKINT1" );
@@ -85,8 +83,6 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
                                "LoginTimeout" => 120,
                                "MultipleActiveResultSets" => false,
                                "QuotedId" => true,
-                               "TraceOn" => true,
-                               "TraceFile" => "trace.odbc",
                                "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
                                "TrustServerCertificate" => 1,
                                "WSID" => "JAYKINT1" );
