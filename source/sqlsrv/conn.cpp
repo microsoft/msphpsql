@@ -135,7 +135,16 @@ struct bool_conn_str_func {
     {
         char temp_str[MAX_CONN_VALSTRING_LEN];
 
-        snprintf(temp_str, MAX_CONN_VALSTRING_LEN, "%s={%s};", option->odbc_name, (zend_is_true(value) ? "yes" : "no"));
+        if (Z_TYPE_P(value) != IS_STRING) {
+            convert_to_string(value);
+        }
+        const char *value_str = Z_STRVAL_P(value);
+
+        snprintf(temp_str,
+                 MAX_CONN_VALSTRING_LEN,
+                 "%s={%s};",
+                 option->odbc_name,
+                 ((stricmp(value_str, "true") == 0 || stricmp(value_str, "1") == 0) ? "yes" : "no"));
         conn_str += temp_str;
     }
 };
