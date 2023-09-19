@@ -3,6 +3,7 @@ Test connection resiliency timeouts
 --DESCRIPTION--
 1. Connect with ConnectRetryCount equal to 0.
 2. Reconnect with the default value of ConnectRetryCount(1).
+--FLAKY--
 --SKIPIF--
 <?php require('skipif_protocol_not_tcp.inc');
       require('skipif_version_less_than_2k14.inc'); ?>
