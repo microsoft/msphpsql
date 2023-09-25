@@ -26,7 +26,7 @@ environment:
         THREAD: nts
         platform: x86
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-        BUILD_PLATFORM: x64
+        BUILD_PLATFORM: x86
         TEST_PHP_SQL_SERVER: (local)\SQL2019
         SQL_INSTANCE: SQL2019
         PHP_VC: vs16
