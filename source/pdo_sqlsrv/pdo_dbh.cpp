@@ -151,17 +151,13 @@ struct pdo_encrypt_set_func
         if (found != std::string::npos)
             val_str.erase(found + 1);
 
-        const char TRUE_VALUE_1[] = "true";
-        const char TRUE_VALUE_2[] = "1";
-        const char FALSE_VALUE_1[] = "false";
-        const char FALSE_VALUE_2[] = "0";
         transform(val_str.begin(), val_str.end(), val_str.begin(), ::tolower);
 
-        // For backward compatibility, convert true/1 to yes and false/0 to no
+        // For backward compatibility, convert true/1 to yes
         std::string attr;
-        if (!val_str.compare(TRUE_VALUE_1) || !val_str.compare(TRUE_VALUE_2)) {
+        if (!val_str.compare("true") || !val_str.compare("1") || !val_str.compare("yes")) {
             attr = "yes";
-        } else if (!val_str.compare(FALSE_VALUE_1) || !val_str.compare(FALSE_VALUE_2)) {
+        } else if (!val_str.compare("false") || !val_str.compare("0") || !val_str.compare("no")) {
             attr = "no";
         } else {
             // simply pass the attribute value to ODBC driver

@@ -72,32 +72,6 @@ struct decimal_places_func
     }
 };
 
-struct srv_encrypt_set_func {
-    static void func(connection_option const* option, _In_ zval* value_z, _Inout_ sqlsrv_conn* conn, std::string& conn_str)
-    {
-        std::string attr;
-
-        if (Z_TYPE_P(value_z) == IS_LONG) {
-            long val = Z_LVAL_P(value_z);
-            if (val == 1) {
-                attr = "yes";
-            } else if (val == 0) {
-                attr = "no";
-            } else {
-                attr = std::to_string(val);
-            }
-        } else if (Z_TYPE_P(value_z) == IS_TRUE || Z_TYPE_P(value_z) == IS_FALSE) {
-            attr = zend_is_true(value_z) ? "yes" : "no";
-        } else {
-            attr = Z_STRVAL_P(value_z);
-        }
-
-        char temp_str[MAX_CONN_VALSTRING_LEN];
-        snprintf(temp_str, MAX_CONN_VALSTRING_LEN, "%s={%s};", option->odbc_name, attr.c_str());
-
-        conn_str += temp_str;
-    }
-};
 
 struct conn_char_set_func {
 
@@ -133,18 +107,22 @@ struct bool_conn_str_func {
 
     static void func( _In_ connection_option const* option, _In_ zval* value, sqlsrv_conn* /*conn*/, _Out_ std::string& conn_str )
     {
-        char temp_str[MAX_CONN_VALSTRING_LEN];
+        std::string attr;
 
         if (Z_TYPE_P(value) != IS_STRING) {
-            convert_to_string(value);
+            convert_to_string_ex(value);
         }
-        const char *value_str = Z_STRVAL_P(value);
 
+        attr = Z_STRVAL_P(value);
+        transform(attr.begin(), attr.end(), attr.begin(), ::tolower);
+
+        char temp_str[MAX_CONN_VALSTRING_LEN];
         snprintf(temp_str,
                  MAX_CONN_VALSTRING_LEN,
                  "%s={%s};",
                  option->odbc_name,
-                 ((stricmp(value_str, "true") == 0 || stricmp(value_str, "1") == 0) ? "yes" : "no"));
+                 ((!attr.compare("true") || !attr.compare("1") || !attr.compare("yes")) ? "yes" : "no"));
+
         conn_str += temp_str;
     }
 };
@@ -459,7 +437,7 @@ const connection_option SS_CONN_OPTS[] = {
         ODBCConnOptions::Encrypt,
         sizeof( ODBCConnOptions::Encrypt ),
         CONN_ATTR_MIXED,
-        srv_encrypt_set_func::func
+        bool_conn_str_func::func
     },
     {
         SSConnOptionNames::Failover_Partner,

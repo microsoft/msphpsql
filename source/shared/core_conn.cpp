@@ -1147,10 +1147,8 @@ size_t core_str_zval_is_true(_Inout_ zval* value_z)
     if (found != std::string::npos)
         val_str.erase(found + 1);
 
-    const char TRUE_VALUE_1[] = "true";
-    const char TRUE_VALUE_2[] = "1";
     transform(val_str.begin(), val_str.end(), val_str.begin(), ::tolower);
-    if (!val_str.compare(TRUE_VALUE_1) || !val_str.compare(TRUE_VALUE_2)) {
+    if (!val_str.compare("true") || !val_str.compare("1") || !val_str.compare("yes")) {
         return 1; // true
     }
     return 0; // false
