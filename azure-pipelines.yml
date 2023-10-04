@@ -62,7 +62,7 @@ jobs:
 
 - job: Linux
   variables:
-    phpver: 8.0
+    phpver: 8.1
   pool:
     vmImage: 'ubuntu-20.04'
   steps:
@@ -185,7 +185,7 @@ jobs:
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
       export LC_ALL='en_US.UTF-8'
-      php run-tests.php -P ./*.phpt --no-color 2>&1 | tee ../sqlsrv.log
+      php run-tests.php -P ./*.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
   - script: |
@@ -196,7 +196,7 @@ jobs:
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
       export LC_ALL='en_US.UTF-8'
-      php run-tests.php -P ./*.phpt --no-color 2>&1 | tee ../pdo_sqlsrv.log
+      php run-tests.php -P ./*.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
@@ -213,6 +213,7 @@ jobs:
       PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
      
   - script: |
+      docker logs -t $(host)
       cd $(Build.SourcesDirectory)/test/functional/
       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
       for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true

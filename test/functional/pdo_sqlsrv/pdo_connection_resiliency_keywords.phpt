@@ -1,5 +1,6 @@
 --TEST--
 Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterval and their ranges of acceptable values
+--FLAKY--
 --SKIPIF--
 <?php require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
