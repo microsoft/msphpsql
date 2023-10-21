@@ -9,6 +9,7 @@ sets to PDO::SQLSRV_ATTR_DIRECT_QUERY
     $conn->setAttribute(PDO::SQLSRV_ATTR_DIRECT_QUERY, true);
 
     $tableName = 'pdo_direct_query';
+    $conn->query("DROP TABLE IF EXISTS $tableName");
     $conn->query("CREATE TABLE $tableName ([c1_int] int, [c2_int] int)");
 
     $v1 = 1;
