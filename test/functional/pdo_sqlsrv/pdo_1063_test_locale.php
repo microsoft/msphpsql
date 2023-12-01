@@ -25,9 +25,12 @@ function printMoney($amt, $info)
     echo PHP_EOL;
 }
 
-function printCal($date)
+function printCal($date, $locale)
 {
     $loc = setlocale(LC_TIME, 0);
+    if ($loc === "C") {
+        $loc = $locale;
+    }
     $fmt = datefmt_create(
         $loc,
         IntlDateFormatter::FULL,
@@ -111,7 +114,7 @@ $n1 = 10000.98765;
 printMoney($n1, $info);
 
 $d = new DateTime("12/25/2020", new DateTimeZone('America/Los_Angeles'));
-printCal($d);
+printCal($d, $locale);
 
 try {
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver", $uid, $pwd );
