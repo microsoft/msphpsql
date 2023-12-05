@@ -393,7 +393,7 @@ class BuildUtil(object):
         
         batch_file = self.create_local_batch_file(make_clean, cmd_line, log_file)
         
-        # Reference: https://github.com/OSTC/php-sdk-binary-tools
+        # Reference: https://github.com/php/php-sdk-binary-tools
         # Clone the master branch of PHP sdk if the directory does not exist 
         print('Downloading the latest php SDK...')
         
@@ -406,7 +406,7 @@ class BuildUtil(object):
 
         phpSDK = os.path.join(sdk_dir, 'php-sdk')
         if not os.path.exists( phpSDK ):
-            os.system('git clone https://github.com/OSTC/php-sdk-binary-tools.git --branch master --single-branch --depth 1 ' + phpSDK)
+            os.system('git clone https://github.com/php/php-sdk-binary-tools.git --branch master --single-branch --depth 1 ' + phpSDK)
         os.chdir(phpSDK)
         os.system('git pull ')
         print('Done cloning the latest php SDK...')

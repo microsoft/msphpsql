@@ -16,9 +16,12 @@ sqlsrv_close returns true even if an error happens.
         throw new TypeError($errstr);
     }
     
-    function compareMessages($err, $exp8x, $exp7x) 
+    function compareMessages($err, $exp8x, $exp7x, $exp83 = "") 
     {
         $expected = (PHP_MAJOR_VERSION == 8) ? $exp8x : $exp7x;
+        if($exp83 && version_compare(PHP_VERSION, "8.3", ">=")) {
+            $expected = $exp83;
+        }
         if (!fnmatch($expected, $err->getMessage())) {
             echo $err->getMessage() . PHP_EOL;
         }
@@ -40,7 +43,8 @@ sqlsrv_close returns true even if an error happens.
     } catch (TypeError $e) {
         compareMessages($e, 
                         "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, bool given", 
-                        "sqlsrv_close() expects parameter 1 to be resource, bool* given");       
+                        "sqlsrv_close() expects parameter 1 to be resource, bool* given",
+                        "sqlsrv_close(): Argument #1 (\$conn) must be of type resource, false given",);
     }
     
     $errors = sqlsrv_errors();
