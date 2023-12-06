@@ -19,8 +19,8 @@ Thank you for taking the time to participate in the [sentiment survey](https://g
 
 [av-image]: https://ci.appveyor.com/api/projects/status/vo4rfei6lxlamrnc?svg=true
 [av-site]: https://ci.appveyor.com/project/msphpsql/msphpsql/branch/dev
-[az-site]: https://dev.azure.com/sqlclientdrivers-ci/msphpsql/_build/latest?definitionId=6&branchName=dev
-[az-image]: https://dev.azure.com/sqlclientdrivers-ci/msphpsql/_apis/build/status/Microsoft.msphpsql?branchName=dev
+[az-site]: https://sqlclientdrivers.visualstudio.com/public/_build/latest?definitionId=1230&branchName=refs%2Fpull%2F1492%2Fmerge
+[az-image]: https://sqlclientdrivers.visualstudio.com/public/_apis/build/status%2FPHP%2Fmicrosoft.msphpsql?branchName=refs%2Fpull%2F1492%2Fmerge
 [Coverage Codecov]: https://codecov.io/gh/microsoft/msphpsql/branch/dev/graph/badge.svg
 [codecov-site]: https://codecov.io/gh/microsoft/msphpsql
 
@@ -37,7 +37,7 @@ Please follow the [Getting started](https://docs.microsoft.com/sql/connect/php/g
 For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
 
 On the client machine:
-- 8.0.x, 8.1.x, 8.2.x
+- 8.1.x, 8.2.x, 8.3.x
 - [Microsoft ODBC Driver 18, 17 or 13][odbcdoc]
 - If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
