@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Microsoft Drivers 5.11 for PHP for SQL Server
+// Microsoft Drivers 5.12 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -679,23 +679,18 @@ void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int
         strcpy_s(error_code, sizeof(pdo_error_type), reinterpret_cast<const char*>(error->sqlstate));
     }
     else {
-        bool result = core_sqlsrv_get_odbc_error(ctx, 1, error, SEV_ERROR, true);
-        if (result) {
-            // Check if there exist more errors
-            int rec_number = 2;
+        if(core_sqlsrv_get_odbc_error(ctx, 1, error, SEV_ERROR, true)) {
+            unsigned int rec_number = 2;
             sqlsrv_error_auto_ptr err;
             sqlsrv_error *p = error;
 
-            do {
-                result = core_sqlsrv_get_odbc_error(ctx, rec_number++, err, SEV_ERROR, true);
-                if (result) {
-                    p->next = err.get();
-                    err.transferred();
-                    p = p->next;
-                }
-            } while (result);
+            while(core_sqlsrv_get_odbc_error(ctx, rec_number++, err, SEV_ERROR, true)) {
+                p->next = err.get();
+                err.transferred();
+                p = p->next;
+            }
         }
-        
+
         // core_sqlsrv_get_odbc_error() returns the error_code of size SQL_SQLSTATE_BUFSIZE,
         // which is the same size as pdo_error_type
         strcpy_s(error_code, sizeof(pdo_error_type), reinterpret_cast<const char*>(error->sqlstate));

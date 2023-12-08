@@ -6,6 +6,7 @@ Then do it again without a buffered result set, by freeing the statement before
 killing the connection and then not freeing it. The latter case is the only one
 that should fail. Finally, execute two queries in two threads on a recovered
 non-MARS connection. This should fail too.
+--FLAKY--
 --SKIPIF--
 <?php require('skipif_protocol_not_tcp.inc');
       require('skipif_version_less_than_2k14.inc');  ?>

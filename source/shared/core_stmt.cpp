@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use statement handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 5.11 for PHP for SQL Server
+// Microsoft Drivers 5.12 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -2508,6 +2508,9 @@ void sqlsrv_param::bind_param(_Inout_ sqlsrv_stmt* stmt)
     }
 
     core::SQLBindParameter(stmt, param_pos + 1, direction, c_data_type, sql_data_type, column_size, decimal_digits, buffer, buffer_length, &strlen_or_indptr);
+    if (!stmt->conn->ce_option.enabled && !stmt->format_decimals) {
+        sql_data_type = SQL_UNKNOWN_TYPE;
+    }
 }
 
 void sqlsrv_param::init_data_from_zval(_Inout_ sqlsrv_stmt* stmt)

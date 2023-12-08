@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDO object for PDO_SQLSRV
 //
-// Microsoft Drivers 5.11 for PHP for SQL Server
+// Microsoft Drivers 5.12 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -151,16 +151,13 @@ struct pdo_encrypt_set_func
         if (found != std::string::npos)
             val_str.erase(found + 1);
 
-        const char TRUE_VALUE_1[] = "true";
-        const char TRUE_VALUE_2[] = "1";
-        const char FALSE_VALUE_1[] = "false";
-        const char FALSE_VALUE_2[] = "0";
+        transform(val_str.begin(), val_str.end(), val_str.begin(), ::tolower);
 
-        // For backward compatibility, convert true/1 to yes and false/0 to no
+        // For backward compatibility, convert true/1 to yes
         std::string attr;
-        if (!val_str.compare(TRUE_VALUE_1) || !val_str.compare(TRUE_VALUE_2)) {
+        if (!val_str.compare("true") || !val_str.compare("1") || !val_str.compare("yes")) {
             attr = "yes";
-        } else if (!val_str.compare(FALSE_VALUE_1) || !val_str.compare(FALSE_VALUE_2)) {
+        } else if (!val_str.compare("false") || !val_str.compare("0") || !val_str.compare("no")) {
             attr = "no";
         } else {
             // simply pass the attribute value to ODBC driver
@@ -978,7 +975,7 @@ zend_long pdo_sqlsrv_dbh_do(_Inout_ pdo_dbh_t *dbh, _In_ const zend_string *sql)
         // since the user can give us a compound statement, we return the row count for the last set, and since the row count
         // isn't guaranteed to be valid until all the results have been fetched, we fetch them all first.
 
-        if ( execReturn != SQL_NO_DATA && core_sqlsrv_has_any_result( driver_stmt )) {
+        if ( core_sqlsrv_has_any_result( driver_stmt )) {
 
             SQLRETURN r = SQL_SUCCESS;
 
@@ -990,7 +987,6 @@ zend_long pdo_sqlsrv_dbh_do(_Inout_ pdo_dbh_t *dbh, _In_ const zend_string *sql)
 
             } while ( r != SQL_NO_DATA );
         }
-
         // returning -1 forces PDO to return false, which signals an error occurred.  SQLRowCount returns -1 for a number of cases
         // naturally, so we override that here with no rows returned.
         if( rows == -1 ) {
@@ -1322,6 +1318,12 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             }
             break;
 #endif
+
+            case PDO_ATTR_STRINGIFY_FETCHES:
+            {
+                // do nothing
+            }
+            break;
 
             // Not supported
             case PDO_ATTR_FETCH_TABLE_NAMES:

@@ -3,7 +3,7 @@
 //
 // Contents: JScript build configuration used by buildconf.bat
 //
-// Microsoft Drivers 5.11 for PHP for SQL Server
+// Microsoft Drivers 5.12 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -34,6 +34,8 @@ if( PHP_PDO_SQLSRV != "no" ) {
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/EHsc" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/GS" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/Zi" );
+            ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/ZH:SHA_256 /sdl /W3" );
+            ADD_FLAG( "LDFLAGS_PDO_SQLSRV", "/CETCOMPAT" );
             if (PHP_DEBUG != "yes") ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/guard:cf /O2" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/D ZEND_WIN32_FORCE_INLINE" );
             if (VCVERS >= 1913) {

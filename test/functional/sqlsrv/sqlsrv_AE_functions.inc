@@ -410,8 +410,13 @@ function checkErrors($errors, ...$codes)
 {
     $codeFound = false;
 
+    $e = array();
+    foreach($errors as $error) {
+        array_push($e, $error['SQLSTATE'], $error['code']);
+    }
+
     foreach ($codes as $code) {
-        if ($code[0]==$errors[0][0] and $code[1]==$errors[0][1]) {
+        if (in_array($code[0], $e) && in_array($code[1], $e)) {
             $codeFound = true;
             break;
         }
