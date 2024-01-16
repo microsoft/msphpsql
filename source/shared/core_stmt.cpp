@@ -392,7 +392,12 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             } else {
                 SQLSRV_ASSERT(false, "sqlsrv_params_container::insert_param - Invalid parameter direction.");
             }
-            stmt->params_container.insert_param(param_num, new_param);
+            
+            sqlsrv_malloc_auto_ptr<sqlsrv_param> save_param;
+            save_param = new (sqlsrv_malloc(sizeof(sqlsrv_param))) sqlsrv_param(param_num, direction, encoding, sql_type, column_size, decimal_digits);
+            stmt->params_container.insert_param(param_num, save_param);
+            save_param.transferred();
+
             param_ptr = new_param;
             new_param.transferred();
         } else if (direction == SQL_PARAM_INPUT
