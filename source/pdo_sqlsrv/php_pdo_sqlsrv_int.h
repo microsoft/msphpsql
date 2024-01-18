@@ -87,6 +87,7 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_CURSOR_SCROLL_TYPE,
     SQLSRV_ATTR_CLIENT_BUFFER_MAX_KB_SIZE,
     SQLSRV_ATTR_FETCHES_NUMERIC_TYPE,
+    SQLSRV_ATTR_FETCHES_BIGNUMERIC_TYPE,
     SQLSRV_ATTR_FETCHES_DATETIME_TYPE,
     SQLSRV_ATTR_FORMAT_DECIMALS,
     SQLSRV_ATTR_DECIMAL_PLACES,
@@ -187,6 +188,7 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     long query_timeout;
     zend_long client_buffer_max_size;
     bool fetch_numeric;
+    bool fetch_bignumeric;
     bool fetch_datetime;
     bool format_decimals;
     short decimal_places;
@@ -241,11 +243,13 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         placeholders(NULL),
         bound_column_param_types( NULL ),
         fetch_numeric( false ),
+        fetch_bignumeric( false ),
         fetch_datetime( false )
     {
         pdo_sqlsrv_dbh* db = static_cast<pdo_sqlsrv_dbh*>( c );
         direct_query = db->direct_query;
         fetch_numeric = db->fetch_numeric;
+        fetch_bignumeric = db->fetch_bignumeric;
         fetch_datetime = db->fetch_datetime;
         format_decimals = db->format_decimals;
         decimal_places = db->decimal_places;
@@ -265,6 +269,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
 
     pdo_param_type* bound_column_param_types;
     bool fetch_numeric;
+    bool fetch_bignumeric;
     bool fetch_datetime;
 };
 
