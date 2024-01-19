@@ -9,24 +9,21 @@ HY104 Invalid precision value when reusing prepared statement
   sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 
   require_once('MsCommon.inc');
-
+ 
   $conn = connect(array('CharacterSet'=>'UTF-8'));
   if (!$conn) {
       fatalError("Failed to connect");
   }
 
-  $stmt = sqlsrv_query($conn, "IF OBJECT_ID('php_test_table', 'U') IS NOT NULL DROP TABLE [php_test_table]");
-  if ($stmt !== false) {
-      sqlsrv_free_stmt($stmt);
+  $tableName = 'php_test_table';
+  $column = array(new AE\ColumnMeta("VARCHAR(8000)", "TestColumn", "NULL"));
+  
+  $stmt = AE\createTable($conn, $tableName, $column);
+  if (!$stmt) {
+      fatalError("Failed to create table $tableName\n");
   }
 
-  $stmt = sqlsrv_query($conn, "CREATE TABLE [php_test_table] ( [TestColumn] VARCHAR (8000) NULL )");
-  if ($stmt === false) {
-      die(print_r(sqlsrv_errors(), true));
-  }
-  sqlsrv_free_stmt($stmt);
-
-  $query = "INSERT INTO [php_test_table] (TestColumn) VALUES (?)";
+  $query = "INSERT INTO $tableName (TestColumn) VALUES (?)";
   $parameterValue = "Test value.";
   $parameterReference[0] = [ & $parameterValue, SQLSRV_PARAM_IN, null, SQLSRV_SQLTYPE_VARCHAR('8000') ];
   $queryHandle = sqlsrv_prepare($conn, $query, $parameterReference);
@@ -41,8 +38,7 @@ HY104 Invalid precision value when reusing prepared statement
     print_r(sqlsrv_errors(SQLSRV_ERR_ALL));
   }
 
-  $stmt = sqlsrv_query($conn, "DROP TABLE [php_test_table]");
-  sqlsrv_free_stmt($stmt);
+  dropTable($conn, $tableName);
   sqlsrv_close($conn);
 
   echo "Done\n";
