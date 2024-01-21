@@ -227,6 +227,10 @@ struct stmt_option_fetch_numeric : public stmt_option_functor {
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
+struct stmt_option_fetch_bignumeric : public stmt_option_functor {
+    virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
+};
+
 struct stmt_option_fetch_datetime : public stmt_option_functor {
     virtual void operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
