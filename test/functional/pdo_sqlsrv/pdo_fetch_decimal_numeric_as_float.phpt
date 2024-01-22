@@ -55,9 +55,8 @@ function Test()
     $row = $stmt->fetchAll(PDO::FETCH_NUM);
 
     // Print out
-    for ($i=0; $i<$stmt->rowCount(); $i++) {
-        var_dump($row[$i][0]);
-    }
+    var_dump($row[0][0]);
+    var_dump($row[0][1]);
     
     // clean up
     dropTable( $conn, $tableName );

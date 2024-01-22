@@ -105,11 +105,11 @@ try {
     $tableName = "TestNullDateTime";
     $columns = array('c1', 'c2', 'c3', 'c4', 'c5', 'c6');
     $colMeta = array(new ColumnMeta('bigint', $columns[0]),
-                     new ColumnMeta('bigint', $columns[1]));
+                     new ColumnMeta('bigint', $columns[1]),
                      new ColumnMeta('decimal(5,2)', $columns[2]),
                      new ColumnMeta('numeric(5,2)', $columns[3]),
                      new ColumnMeta('decimal(38,4)', $columns[4]),
-                     new ColumnMeta('numeric(38,4)', $columns[5]),
+                     new ColumnMeta('numeric(38,4)', $columns[5]));
     createTable($conn, $tableName, $colMeta);
 
     $value = null;
