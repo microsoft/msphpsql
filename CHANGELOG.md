@@ -7,12 +7,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
+- Support for PHP 8.3
 - Support for Alpine 3.19
 
 ### Removed
+- Support for PHP 8.0
+- Support for Ubuntu 18.04
 - Support for Alpine 3.15
 
 ### Fixed
+- Update connection string keywords set function (#1484)
+- Fix error throw for multiple result sets (#1485)
 - Fix invalid precision error (#1497)
 
 ### Limitations
