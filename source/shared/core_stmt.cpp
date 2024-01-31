@@ -392,6 +392,7 @@ void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_
             } else {
                 SQLSRV_ASSERT(false, "sqlsrv_params_container::insert_param - Invalid parameter direction.");
             }
+            
             stmt->params_container.insert_param(param_num, new_param);
             param_ptr = new_param;
             new_param.transferred();
@@ -2508,9 +2509,6 @@ void sqlsrv_param::bind_param(_Inout_ sqlsrv_stmt* stmt)
     }
 
     core::SQLBindParameter(stmt, param_pos + 1, direction, c_data_type, sql_data_type, column_size, decimal_digits, buffer, buffer_length, &strlen_or_indptr);
-    if (!stmt->conn->ce_option.enabled && !stmt->format_decimals) {
-        sql_data_type = SQL_UNKNOWN_TYPE;
-    }
 }
 
 void sqlsrv_param::init_data_from_zval(_Inout_ sqlsrv_stmt* stmt)
