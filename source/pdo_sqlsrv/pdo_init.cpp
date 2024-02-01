@@ -249,7 +249,15 @@ PHP_RSHUTDOWN_FUNCTION(pdo_sqlsrv)
 {
     // SQLSRV_UNUSED( module_number );
     // SQLSRV_UNUSED( type );
-
+#if defined(_WIN32) && !defined(ZTS)
+    for (size_t current_token = 0; current_token < PDO_SQLSRV_G(access_tokens_size); current_token++) {
+        if (PDO_SQLSRV_G(access_tokens)[current_token]) {
+            memset(PDO_SQLSRV_G(access_tokens)[current_token]->data, 0, PDO_SQLSRV_G(access_tokens)[current_token]->dataSize);
+            sqlsrv_free(PDO_SQLSRV_G(access_tokens)[current_token]);
+        }
+    }
+    sqlsrv_free(PDO_SQLSRV_G(access_tokens));
+#endif
     PDO_LOG_NOTICE("pdo_sqlsrv: entering rshutdown");
 
     return SUCCESS;

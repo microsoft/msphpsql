@@ -27,10 +27,13 @@ if( PHP_PDO_SQLSRV != "no" ) {
     if (CHECK_LIB("odbc32.lib", "pdo_sqlsrv") && CHECK_LIB("odbccp32.lib", "pdo_sqlsrv") && 
         CHECK_LIB("version.lib", "pdo_sqlsrv") && CHECK_LIB("psapi.lib", "pdo_sqlsrv")&&
         CHECK_HEADER_ADD_INCLUDE( "core_sqlsrv.h", "CFLAGS_PDO_SQLSRV", configure_module_dirname + "\\shared")) {
+            CHECK_HEADER_ADD_INCLUDE("php_pdo_sqlsrv_int.h", "CFLAGS_PDO_SQLSRV", configure_module_dirname);
+            CHECK_HEADER_ADD_INCLUDE("php_pdo_sqlsrv.h", "CFLAGS_PDO_SQLSRV", configure_module_dirname);
             CHECK_HEADER_ADD_INCLUDE("sql.h", "CFLAGS_PDO_SQLSRV_ODBC");
             CHECK_HEADER_ADD_INCLUDE("sqlext.h", "CFLAGS_PDO_SQLSRV_ODBC");
             ADD_SOURCES( configure_module_dirname + "\\shared", shared_src_class, "pdo_sqlsrv" );
             ADD_FLAG( "LDFLAGS_PDO_SQLSRV", "/NXCOMPAT /DYNAMICBASE /debug /guard:cf" );
+            ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/D PDO_SQLSRV" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/EHsc" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/GS" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/Zi" );

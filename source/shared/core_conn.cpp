@@ -32,6 +32,18 @@
 #ifndef _WIN32
 #include <sys/utsname.h>
 #include <odbcinst.h>
+#else
+#ifdef PDO_SQLSRV
+extern "C" {
+#include "php_pdo_sqlsrv.h"
+}
+#include "php_pdo_sqlsrv_int.h"
+#elif SQLSRV
+extern "C" {
+#include "php_sqlsrv.h"
+}
+#include "php_sqlsrv_int.h"
+#endif
 #endif
 
 // *** internal variables and constants ***
@@ -222,12 +234,13 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         }
     }
 
+#ifdef ZTS
     // time to free the access token, if not null
     if (conn->azure_ad_access_token) {
         memset(conn->azure_ad_access_token->data, 0, conn->azure_ad_access_token->dataSize); // clear the memory
         conn->azure_ad_access_token.reset();
     }
-
+#endif
     CHECK_SQL_ERROR( r, conn ) {
         throw core::CoreException();
     }
@@ -1154,7 +1167,17 @@ size_t core_str_zval_is_true(_Inout_ zval* value_z)
     return 0; // false
 }
 
-void access_token_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str )
+#if defined(_WIN32) && !defined(ZTS)
+ACCESSTOKEN** get_access_tokens() {
+#ifdef PDO_SQLSRV
+    return PDO_SQLSRV_G(access_tokens);
+#elif SQLSRV
+    return SQLSRV_G(access_tokens);
+#endif
+}
+#endif
+
+void access_token_set_func::func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str)
 {
     SQLSRV_ASSERT(Z_TYPE_P(value) == IS_STRING, "An access token must be a byte string.");
 
@@ -1183,13 +1206,36 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     // similar to a UCS-2 string containing only ASCII characters
     //
     // See https://docs.microsoft.com/sql/connect/odbc/using-azure-active-directory#authenticating-with-an-access-token
+#if defined(_WIN32) && !defined(ZTS)
+    size_t next_token_position = 0;
+    bool same_token_used = false;
+    #ifdef PDO_SQLSRV
+    unsigned int& access_tokens_size = PDO_SQLSRV_G(access_tokens_size);
+    #elif SQLSRV
+    unsigned int& access_tokens_size = SQLSRV_G(access_tokens_size);
+    #endif
+
+    for (size_t current_token_index = 0; current_token_index < access_tokens_size; current_token_index++) {
+        std::string string_token;
+        for (size_t i = 0; i < get_access_tokens()[current_token_index]->dataSize; i += 2) {
+            string_token.push_back(get_access_tokens()[current_token_index]->data[i]);
+        }
+        if (string_token == std::string(value_str)) {
+            // Token already exists in access_toiens
+            memset(get_access_tokens()[current_token_index]->data, 0, get_access_tokens()[current_token_index]->dataSize);
+            sqlsrv_free(get_access_tokens()[current_token_index]);
+            next_token_position = current_token_index;
+            same_token_used = true;
+            break;
+        }
+    }
+#endif
 
     size_t dataSize = 2 * value_len;
-
     sqlsrv_malloc_auto_ptr<ACCESSTOKEN> accToken;
     accToken = reinterpret_cast<ACCESSTOKEN*>(sqlsrv_malloc(sizeof(ACCESSTOKEN) + dataSize));
 
-    ACCESSTOKEN *pAccToken = accToken.get();
+    ACCESSTOKEN* pAccToken = accToken.get();
     SQLSRV_ASSERT(pAccToken != NULL, "Something went wrong when trying to allocate memory for the access token.");
 
     pAccToken->dataSize = dataSize;
@@ -1197,7 +1243,7 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     // Expand access token with padding bytes
     for (size_t i = 0, j = 0; i < dataSize; i += 2, j++) {
         pAccToken->data[i] = value_str[j];
-        pAccToken->data[i+1] = 0;
+        pAccToken->data[i + 1] = 0;
     }
 
     core::SQLSetConnectAttr(conn, SQL_COPT_SS_ACCESS_TOKEN, reinterpret_cast<SQLPOINTER>(pAccToken), SQL_IS_POINTER);
@@ -1205,4 +1251,16 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     // Save the pointer because SQLDriverConnect() will use it to make connection to the server
     conn->azure_ad_access_token = pAccToken;
     accToken.transferred();
+#if defined(_WIN32) && !defined(ZTS)
+    if (!same_token_used) {
+        next_token_position = access_tokens_size;
+        access_tokens_size++;
+        #ifdef PDO_SQLSRV
+        PDO_SQLSRV_G(access_tokens) = reinterpret_cast<ACCESSTOKEN**>(sqlsrv_realloc(PDO_SQLSRV_G(access_tokens), access_tokens_size * sizeof(ACCESSTOKEN*)));
+        #elif SQLSRV
+        SQLSRV_G(access_tokens) = reinterpret_cast<ACCESSTOKEN**>(sqlsrv_realloc(SQLSRV_G(access_tokens), access_tokens_size * sizeof(ACCESSTOKEN*)));
+        #endif
+    }
+    get_access_tokens()[next_token_position] = conn->azure_ad_access_token;
+#endif
 }
