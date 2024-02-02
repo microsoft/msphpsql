@@ -26,6 +26,7 @@ import os.path
 import argparse
 import subprocess
 from buildtools import BuildUtil
+import subprocess
 
 class BuildDriver(object):
     """Build sqlsrv and/or pdo_sqlsrv drivers with PHP source with the following properties:
@@ -92,8 +93,9 @@ class BuildDriver(object):
             os.chdir(work_dir)  # change back to the working directory
 
     def get_local_source(self, source_path):
-        """This assumes interactive mode (not testing) and takes care of getting 
-        the user's input to the path of the local source files for the drivers
+        """
+        This assumes interactive mode (not testing) and takes care of getting 
+        the user's input to the path of the local source files for the drivers.
         """
         while True:
             if source_path is None:
@@ -103,15 +105,19 @@ class BuildDriver(object):
                 if len(source) == 0:
                     source = source_path
 
-            valid = True
-            if os.path.exists(source) and os.path.exists(os.path.join(source, 'shared')):
-                # Checking the existence of 'shared' folder only, assuming
-                # sqlsrv and/or pdo_sqlsrv are also present if it exists
-                self.source_path = source
-                break
-                
-            print("The path provided is invalid. Please re-enter.")
-        return source
+            try:
+                if not os.path.exists(source):
+                    raise FileNotFoundError(f"The specified path {source} does not exist.")
+
+                if not os.path.exists(os.path.join(source, 'shared')):
+                    raise FileNotFoundError(f"The 'shared' folder is missing in the specified path {source}.")
+
+                # Valid source folder found
+                return source  # Return the valid source path directly
+            except FileNotFoundError as e:
+                print(f"Error: {e}\nPlease re-enter a valid path.")
+
+
     
     def build_extensions(self, root_dir, logfile):
         """This takes care of getting the drivers' source files, building the drivers. 
