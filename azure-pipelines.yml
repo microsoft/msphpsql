@@ -7,7 +7,6 @@ variables:
   sqlsrv_db: 'sqlsrv_testdb'
   pdo_sqlsrv_db: 'pdo_sqlsrv_testdb'
   uid: 'sa'
-  pwd: 'Password456!'
 
 trigger:
 - dev
@@ -17,7 +16,13 @@ pr:
 - dev
 
 jobs:
+- job: Generate_Password
+steps:
+  - script: |
+      echo "##vso[task.setvariable variable=pwd;]$(openssl rand -hex 10)"
+
 - job: macOS
+  dependsOn: Generate_Password
   pool:
     vmImage: 'macos-latest'
   steps:
@@ -61,6 +66,7 @@ jobs:
     displayName: 'Build and install drivers'
 
 - job: Linux
+  dependsOn: Generate_Password
   variables:
     phpver: 8.1
   pool:
@@ -235,6 +241,7 @@ jobs:
     condition: always()
 
 - job: Windows
+  dependsOn: Generate_Password
   variables:
     phpVersion: 8.1
   pool:
