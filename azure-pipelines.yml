@@ -16,13 +16,8 @@ pr:
 - dev
 
 jobs:
-- job: Generate_Password
-steps:
-  - script: |
-      echo "##vso[task.setvariable variable=pwd;]$(openssl rand -hex 10)"
 
 - job: macOS
-  dependsOn: Generate_Password
   pool:
     vmImage: 'macos-latest'
   steps:
@@ -66,7 +61,6 @@ steps:
     displayName: 'Build and install drivers'
 
 - job: Linux
-  dependsOn: Generate_Password
   variables:
     phpver: 8.1
   pool:
@@ -80,6 +74,9 @@ steps:
     inputs:
       versionSpec: '3.x'
       architecture: 'x64'
+  - bash: |
+      password=`tr -dc A-Za-z0-9 </dev/random | head -c 10; echo`
+      echo "##vso[task.setvariable variable=pwd;]$password"
 
   - script: |
       sudo update-alternatives --set php /usr/bin/php$(phpver)
@@ -241,7 +238,6 @@ steps:
     condition: always()
 
 - job: Windows
-  dependsOn: Generate_Password
   variables:
     phpVersion: 8.1
   pool:
@@ -255,6 +251,9 @@ steps:
     inputs:
       versionSpec: '3.x'
       architecture: 'x64'
+  - bash: |
+      password=`tr -dc A-Za-z0-9 </dev/random | head -c 10; echo`
+      echo "##vso[task.setvariable variable=pwd;]$password"
 
   - script: |
       dir C:\tools\php\php*
