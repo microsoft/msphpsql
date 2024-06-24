@@ -763,6 +763,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
         case SQL_C_BINARY: return sqlsrv_buffered_result_set::to_binary_string(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_DOUBLE: return sqlsrv_buffered_result_set::string_to_double(field_index, buffer, buffer_length, out_buffer_length);
         case SQL_C_LONG: return sqlsrv_buffered_result_set::string_to_long(field_index, buffer, buffer_length, out_buffer_length);
+        case SQL_C_SBIGINT: return sqlsrv_buffered_result_set::string_to_long_long(field_index, buffer, buffer_length, out_buffer_length);
         default:
             break;
         }
@@ -1120,6 +1121,27 @@ SQLRETURN sqlsrv_buffered_result_set::string_to_long( _In_ SQLSMALLINT field_ind
     }
 
     *out_buffer_length = sizeof(LONG);
+    return SQL_SUCCESS;
+}
+
+SQLRETURN sqlsrv_buffered_result_set::string_to_long_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
+                                                      _Inout_ SQLLEN* out_buffer_length )
+{
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_CHAR, "Invalid conversion from string to long" );
+    SQLSRV_ASSERT( buffer_length >= sizeof( LONGLONG ), "Buffer needs to be big enough to hold a long" );
+
+    unsigned char* row = get_row();
+    char* string_data = reinterpret_cast<char*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
+
+    LONGLONG* number_data = reinterpret_cast<LONGLONG*>(buffer);
+    try {
+        *number_data = std::stol(std::string(string_data));
+    } catch (const std::logic_error& ) {
+        last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
+        return SQL_ERROR;
+    }
+
+    *out_buffer_length = sizeof(LONGLONG);
     return SQL_SUCCESS;
 }
 

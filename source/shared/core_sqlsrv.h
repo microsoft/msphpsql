@@ -198,6 +198,7 @@ enum SQLSRV_PHPTYPE {
     MIN_SQLSRV_PHPTYPE = 1, // lowest value for a php type
     SQLSRV_PHPTYPE_NULL = 1,
     SQLSRV_PHPTYPE_INT,
+    SQLSRV_PHPTYPE_LONG,
     SQLSRV_PHPTYPE_FLOAT,
     SQLSRV_PHPTYPE_STRING,
     SQLSRV_PHPTYPE_DATETIME,
@@ -1926,6 +1927,8 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
                                  _Inout_ SQLLEN* out_buffer_length );
     SQLRETURN string_to_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                               _Inout_ SQLLEN* out_buffer_length );
+    SQLRETURN string_to_long_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
+    _Inout_ SQLLEN* out_buffer_length );
     SQLRETURN wstring_to_double( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                  _Inout_ SQLLEN* out_buffer_length );
     SQLRETURN wstring_to_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,

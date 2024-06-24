@@ -1425,6 +1425,33 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
             break;
         }
 
+        case SQLSRV_PHPTYPE_LONG:
+        {
+            sqlsrv_malloc_auto_ptr<SQLLEN> field_value_temp;
+            field_value_temp = static_cast<SQLLEN*>( sqlsrv_malloc( sizeof( SQLLEN )));
+            *field_value_temp = 0;
+
+            SQLRETURN r = stmt->current_results->get_data( field_index + 1, SQL_C_SBIGINT, field_value_temp, sizeof( SQLLEN ),
+                                                           field_len, true /*handle_warning*/ );
+
+            CHECK_SQL_ERROR_OR_WARNING( r, stmt, NULL ) {
+                throw core::CoreException();
+            }
+
+            CHECK_CUSTOM_ERROR(( r == SQL_NO_DATA ), stmt, SQLSRV_ERROR_NO_DATA, field_index, NULL) {
+                throw core::CoreException();
+            }
+
+            if( *field_len == SQL_NULL_DATA ) {
+                field_value = NULL;
+                break;
+            }
+
+            field_value = field_value_temp;
+            field_value_temp.transferred();
+            break;
+        }
+
         case SQLSRV_PHPTYPE_FLOAT:
         {
             sqlsrv_malloc_auto_ptr<double> field_value_temp;

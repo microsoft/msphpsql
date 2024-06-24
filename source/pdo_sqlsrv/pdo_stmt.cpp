@@ -1556,7 +1556,7 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
             break;
         case SQL_BIGINT:
             if ( this->fetch_bignumeric ) {
-                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_LONG;
             }
             else {
                 sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
