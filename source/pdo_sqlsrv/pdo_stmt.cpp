@@ -220,13 +220,14 @@ zval convert_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_t
 
     case SQLSRV_PHPTYPE_INT:
     case SQLSRV_PHPTYPE_FLOAT:
+    case SQLSRV_PHPTYPE_LONG:
     {
         if (*in_val == NULL) {
             ZVAL_NULL(&out_zval);
         }
         else {
 
-            if (sqlsrv_php_type == SQLSRV_PHPTYPE_INT) {
+            if (sqlsrv_php_type == SQLSRV_PHPTYPE_INT || sqlsrv_php_type == SQLSRV_PHPTYPE_LONG) {
                 ZVAL_LONG(&out_zval, **(reinterpret_cast<int**>(in_val)));
             }
             else {
