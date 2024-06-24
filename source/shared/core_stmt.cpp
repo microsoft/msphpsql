@@ -1902,6 +1902,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
 
         case SQLSRV_PHPTYPE_NULL:
         case SQLSRV_PHPTYPE_INT:
+        case SQLSRV_PHPTYPE_LONG:
         case SQLSRV_PHPTYPE_FLOAT:
         case SQLSRV_PHPTYPE_DATETIME:
         case SQLSRV_PHPTYPE_TABLE:
