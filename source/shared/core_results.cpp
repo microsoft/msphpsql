@@ -1127,15 +1127,15 @@ SQLRETURN sqlsrv_buffered_result_set::string_to_long( _In_ SQLSMALLINT field_ind
 SQLRETURN sqlsrv_buffered_result_set::string_to_long_long( _In_ SQLSMALLINT field_index, _Out_writes_bytes_(*out_buffer_length) void* buffer, _In_ SQLLEN buffer_length,
                                                       _Inout_ SQLLEN* out_buffer_length )
 {
-    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_CHAR, "Invalid conversion from string to long" );
-    SQLSRV_ASSERT( buffer_length >= sizeof( LONGLONG ), "Buffer needs to be big enough to hold a long" );
+    SQLSRV_ASSERT( meta[field_index].c_type == SQL_C_CHAR, "Invalid conversion from string to long long" );
+    SQLSRV_ASSERT( buffer_length >= sizeof( LONGLONG ), "Buffer needs to be big enough to hold a long long" );
 
     unsigned char* row = get_row();
     char* string_data = reinterpret_cast<char*>( &row[meta[field_index].offset] ) + sizeof( SQLULEN );
 
     LONGLONG* number_data = reinterpret_cast<LONGLONG*>(buffer);
     try {
-        *number_data = std::stol(std::string(string_data));
+        *number_data = std::stoll(std::string(string_data));
     } catch (const std::logic_error& ) {
         last_error = new (sqlsrv_malloc(sizeof(sqlsrv_error))) sqlsrv_error((SQLCHAR*) "22003", (SQLCHAR*) "Numeric value out of range", 103);
         return SQL_ERROR;
