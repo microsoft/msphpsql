@@ -226,8 +226,10 @@ zval convert_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_t
             ZVAL_NULL(&out_zval);
         }
         else {
-
-            if (sqlsrv_php_type == SQLSRV_PHPTYPE_INT || sqlsrv_php_type == SQLSRV_PHPTYPE_LONG) {
+            if (sqlsrv_php_type == SQLSRV_PHPTYPE_LONG) {
+                ZVAL_LONG(&out_zval, **(reinterpret_cast<long long**>(in_val)));
+            }
+            else if (sqlsrv_php_type == SQLSRV_PHPTYPE_INT) {
                 ZVAL_LONG(&out_zval, **(reinterpret_cast<int**>(in_val)));
             }
             else {
