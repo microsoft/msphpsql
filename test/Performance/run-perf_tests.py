@@ -255,7 +255,7 @@ def get_sha1_file( filename ):
         sha1sum hash of the file
     """
     hash_size = 256
-    sha1 = hashlib.sha1()
+    sha1 = hashlib.sha256()
     with open( filename, 'rb' ) as f:
         while True:
             data = f.read( hash_size )
