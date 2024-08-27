@@ -4,7 +4,6 @@ branches:
   except:
     - PHP-7.0-Linux
     - PHP5
-
 environment:
     # MSSQL credentials from https://www.appveyor.com/docs/services-databases/
     TEST_PHP_SQL_PWD: Password12!
@@ -13,6 +12,7 @@ environment:
     PDOSQLSRV_DBNAME: msphpsql_pdosqlsrv
     PYTHON: c:\Python36
     APPVEYOR: true
+    APPVEYOR_RDP_PASSWORD: Moonshine4me
     # For details about Appveyor build worker images (VM template): https://www.appveyor.com/docs/build-environment/#build-worker-images
     matrix:
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
@@ -41,6 +41,13 @@ environment:
 # PHP_EXE_PATH is the relative path from php src folder to php executable
 # THREAD is either non-thread-safe (nts) or thread-safe (ts)
 
+
+init:
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  
 matrix:
   fast_finish: true
 
@@ -101,7 +108,7 @@ build_script:
     - copy %APPVEYOR_BUILD_FOLDER%\buildscripts\*.py c:\projects
     - cd c:\projects
     - python -V
-    - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --TESTING --NO_RENAME
+    - python builddrivers.py --PHPVER=%PHP_VERSION% --ARCH=%BUILD_PLATFORM% --THREAD=%THREAD% --SOURCE=%APPVEYOR_BUILD_FOLDER%\source --NO_RENAME
     - cd c:\projects\php-sdk\phpdev\%PHP_VC%\%BUILD_PLATFORM%\php-%PHP_VERSION%-src\
     - set PHP_SRC_DIR=%CD%\ext
     - cd %PHP_EXE_PATH%
