@@ -340,6 +340,12 @@ void stmt_option_fetch_numeric:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
     pdo_stmt->fetch_numeric = zend_is_true(value_z);
 }
 
+void stmt_option_fetch_bignumeric:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
+{
+    pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
+    pdo_stmt->fetch_bignumeric = zend_is_true(value_z);
+}
+
 void stmt_option_fetch_datetime:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
 {
     pdo_sqlsrv_stmt *pdo_stmt = static_cast<pdo_sqlsrv_stmt*>( stmt );
@@ -930,6 +936,10 @@ int pdo_sqlsrv_stmt_set_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
                 driver_stmt->fetch_numeric = zend_is_true(val);
                 break;
 
+            case SQLSRV_ATTR_FETCHES_BIGNUMERIC_TYPE:
+                driver_stmt->fetch_bignumeric = zend_is_true(val);
+                break;
+
             case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
                 driver_stmt->fetch_datetime = zend_is_true(val);
                 break;
@@ -1024,6 +1034,12 @@ int pdo_sqlsrv_stmt_get_attr( _Inout_ pdo_stmt_t *stmt, _In_ zend_long attr, _In
             case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
             {
                 ZVAL_BOOL( return_value, driver_stmt->fetch_numeric );
+                break;
+            }
+
+            case SQLSRV_ATTR_FETCHES_BIGNUMERIC_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_stmt->fetch_bignumeric );
                 break;
             }
 
@@ -1539,10 +1555,23 @@ sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, 
             }
             break;
         case SQL_BIGINT:
+            if ( this->fetch_bignumeric ) {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_INT;
+            }
+            else {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+                sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
+            }
+            break;
         case SQL_DECIMAL:
         case SQL_NUMERIC:
-            sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
-            sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
+            if ( this->fetch_bignumeric ) {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_FLOAT;
+            }
+            else {
+                sqlsrv_phptype.typeinfo.type = SQLSRV_PHPTYPE_STRING;
+                sqlsrv_phptype.typeinfo.encoding = SQLSRV_ENCODING_CHAR;
+            }
             break;
         case SQL_CHAR:
         case SQL_GUID:

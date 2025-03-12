@@ -87,6 +87,7 @@ enum PDO_STMT_OPTIONS {
     PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE,
     PDO_STMT_OPTION_EMULATE_PREPARES,
     PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE,
+    PDO_STMT_OPTION_FETCHES_BIGNUMERIC_TYPE,
     PDO_STMT_OPTION_FETCHES_DATETIME_TYPE,
     PDO_STMT_OPTION_FORMAT_DECIMALS,
     PDO_STMT_OPTION_DECIMAL_PLACES,
@@ -104,6 +105,7 @@ const stmt_option PDO_STMT_OPTS[] = {
     { NULL, 0, PDO_STMT_OPTION_CLIENT_BUFFER_MAX_KB_SIZE, std::unique_ptr<stmt_option_buffered_query_limit>( new stmt_option_buffered_query_limit ) },
     { NULL, 0, PDO_STMT_OPTION_EMULATE_PREPARES, std::unique_ptr<stmt_option_emulate_prepares>( new stmt_option_emulate_prepares ) },
     { NULL, 0, PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_numeric>( new stmt_option_fetch_numeric ) },
+    { NULL, 0, PDO_STMT_OPTION_FETCHES_BIGNUMERIC_TYPE, std::unique_ptr<stmt_option_fetch_bignumeric>( new stmt_option_fetch_bignumeric ) },
     { NULL, 0, PDO_STMT_OPTION_FETCHES_DATETIME_TYPE, std::unique_ptr<stmt_option_fetch_datetime>( new stmt_option_fetch_datetime ) },
     { NULL, 0, PDO_STMT_OPTION_FORMAT_DECIMALS, std::unique_ptr<stmt_option_format_decimals>( new stmt_option_format_decimals ) },
     { NULL, 0, PDO_STMT_OPTION_DECIMAL_PLACES, std::unique_ptr<stmt_option_decimal_places>( new stmt_option_decimal_places ) },
@@ -592,6 +594,7 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
     query_timeout( QUERY_TIMEOUT_INVALID ),
     client_buffer_max_size( PDO_SQLSRV_G( client_buffer_max_size )),
     fetch_numeric( false ),
+    fetch_bignumeric( false ),
     fetch_datetime( false ),
     format_decimals( false ),
     decimal_places( NO_CHANGE_DECIMAL_PLACES ),
@@ -1273,6 +1276,10 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 driver_dbh->fetch_numeric = zend_is_true(val);
                 break;
 
+            case SQLSRV_ATTR_FETCHES_BIGNUMERIC_TYPE:
+                driver_dbh->fetch_bignumeric = zend_is_true(val);
+                break;
+
             case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
                 driver_dbh->fetch_datetime = zend_is_true(val);
                 break;
@@ -1501,6 +1508,12 @@ int pdo_sqlsrv_dbh_get_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_
             case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
             {
                 ZVAL_BOOL( return_value, driver_dbh->fetch_numeric );
+                break;
+            }
+
+            case SQLSRV_ATTR_FETCHES_BIGNUMERIC_TYPE:
+            {
+                ZVAL_BOOL( return_value, driver_dbh->fetch_bignumeric );
                 break;
             }
 
@@ -1957,6 +1970,10 @@ void add_stmt_option_key(_Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ H
 
     case SQLSRV_ATTR_FETCHES_NUMERIC_TYPE:
         option_key = PDO_STMT_OPTION_FETCHES_NUMERIC_TYPE;
+        break;
+
+    case SQLSRV_ATTR_FETCHES_BIGNUMERIC_TYPE:
+        option_key = PDO_STMT_OPTION_FETCHES_BIGNUMERIC_TYPE;
         break;
 
     case SQLSRV_ATTR_FETCHES_DATETIME_TYPE:
