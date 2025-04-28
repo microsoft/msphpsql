@@ -5,7 +5,7 @@ specifies the fetch mode before fetching
 --FILE--
 <?php
    require('connect.inc');
-   $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+   $conn = getPdoConnection();
 
    $stmt1 = $conn->query( "select * from Person.ContactType where ContactTypeID < 5 " );
    while ( $row = $stmt1->fetch()) { 

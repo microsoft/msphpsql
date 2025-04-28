@@ -5,9 +5,7 @@ retrieves dates as strings by specifying UTF-8 when fetching the string.
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd", "ReturnDatesAsStrings" => false);
-$conn = sqlsrv_connect( $server, $connectionInfo);
-
+$conn = getSqlsrvConnection(array("ReturnDatesAsStrings" => false));
 
 if( $conn === false ) {
    echo "Could not connect.\n";

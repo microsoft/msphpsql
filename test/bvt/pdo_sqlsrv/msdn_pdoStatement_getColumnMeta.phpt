@@ -5,7 +5,7 @@ retrieves metadata for a column
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 
 $stmt = $conn->query("select * from Person.ContactType");
 $metadata = $stmt->getColumnMeta(2);

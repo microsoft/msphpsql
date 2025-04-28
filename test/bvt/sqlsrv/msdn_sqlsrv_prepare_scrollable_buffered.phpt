@@ -5,8 +5,7 @@ server side cursor specified when preparing
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if ( $conn === false ) {
    echo "Could not connect.\n";
    die( print_r( sqlsrv_errors(), true));

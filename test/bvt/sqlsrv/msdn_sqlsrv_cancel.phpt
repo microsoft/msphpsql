@@ -5,8 +5,7 @@ executes a query, then comsumes and counts results until reaches a specified amo
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if( $conn === false )
 {
      echo "Could not connect.\n";
