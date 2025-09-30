@@ -24,7 +24,7 @@ $tsql1 = "UPDATE Production.ProductReview
 // 
 $reviewID = 3;
 
-$comments = iconv("ISO-8859-1", "UTF-8//IGNORE", "testing 1, 2, 3, 4.  Testing.");
+$comments = iconv("ISO-8859-1", "UTF-8", "testing 1, 2, 3, 4.  Testing.");
 $params1 = array(
                   array( $comments, null ),
                   array( $reviewID, null )

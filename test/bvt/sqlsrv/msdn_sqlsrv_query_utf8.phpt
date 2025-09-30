@@ -26,7 +26,7 @@ $tsql1 = "UPDATE Production.ProductReview
 // utf8_encode to simulate an application that uses UTF-8 encoded data. 
 // 
 $reviewID = 3;
-$comments = iconv("ISO-8859-1", "UTF-8//IGNORE", "testing");
+$comments = iconv("ISO-8859-1", "UTF-8", "testing");
 $params1 = array(
                   array($comments,
                         SQLSRV_PARAM_IN,
