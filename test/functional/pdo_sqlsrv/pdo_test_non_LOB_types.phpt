@@ -36,7 +36,7 @@ function verifyResult($result)
 }
 
 try {
-    $conn = new PDO("sqlsrv:server=$server; Database = $databaseName", $uid, $pwd);
+    $conn = getPdoConnection();
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // test the allowed non LOB column types

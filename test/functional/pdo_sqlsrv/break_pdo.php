@@ -12,10 +12,10 @@ $tableName2 = "test_connres2";
 // Using generated tables will eventually allow us to put the
 // connection resiliency tests on Github, since the integrated testing
 // from AppVeyor does not have AdventureWorks.
-function generateTables($server, $uid, $pwd, $dbName, $tableName1, $tableName2)
+function generateTables($server, $uid, $pwd, $encrypt, $dbName, $tableName1, $tableName2)
 {
     try {
-        $conn = new PDO("sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd);
+        $conn = new PDO("sqlsrv:server = $server ; Database = $dbName ; Encrypt = $encrypt ;", $uid, $pwd);
 
         // Create table
         $sql = "CREATE TABLE $tableName1 (c1 INT, c2 VARCHAR(40))";
@@ -67,11 +67,11 @@ function breakConnection($conn, $conn_break)
 }
 
 // Remove any databases previously created by GenerateDatabase
-function dropTables($server, $uid, $pwd, $tableName1, $tableName2)
+function dropTables($server, $uid, $pwd, $encrypt, $tableName1, $tableName2)
 {
     global $dbName;
 
-    $conn = new PDO("sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server ; Database = $dbName ; Encrypt = $encrypt ;", $uid, $pwd);
 
     $query = "IF OBJECT_ID('$tableName1', 'U') IS NOT NULL DROP TABLE $tableName1";
     $stmt = $conn->query($query);
@@ -80,5 +80,5 @@ function dropTables($server, $uid, $pwd, $tableName1, $tableName2)
     $stmt = $conn->query($query);
 }
 
-dropTables($server, $uid, $pwd, $tableName1, $tableName2);
-generateTables($server, $uid, $pwd, $dbName, $tableName1, $tableName2);
+dropTables($server, $uid, $pwd, $encrypt, $tableName1, $tableName2);
+generateTables($server, $uid, $pwd, $encrypt, $dbName, $tableName1, $tableName2);

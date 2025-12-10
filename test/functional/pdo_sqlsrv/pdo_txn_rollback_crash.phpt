@@ -13,7 +13,7 @@ is necessary - this test should be run separately to verify no crash occurs.
 <?php
     require_once("MsSetup.inc");
 
-    $conn = new PDO("sqlsrv:Server=$server; database = $databaseName", $uid, $pwd);
+    $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName ; $connectOptions", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
     for ($i = 0; $i < 50; $i++) {

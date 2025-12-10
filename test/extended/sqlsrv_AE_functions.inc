@@ -284,6 +284,7 @@ function connect($attestationInfo)
     $options = array('database'=>$database,
                      'uid'=>$userName,
                      'pwd'=>$userPassword,
+                     'Encrypt'=>$encrypt,
                      'CharacterSet'=>'UTF-8',
                      'ColumnEncryption'=>$attestationInfo,
                      'TraceOn'=>true,

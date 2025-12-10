@@ -79,7 +79,7 @@ else
 sqlsrv_close( $conn );
 sqlsrv_close( $conn_break );
 
-DropTables( $server, $uid, $pwd, $tableName1, $tableName2 )
+DropTables( $server, $uid, $pwd, $encrypt, $tableName1, $tableName2 )
 
 ?>
 --EXPECTREGEX--

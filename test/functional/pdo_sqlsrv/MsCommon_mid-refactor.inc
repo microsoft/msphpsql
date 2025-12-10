@@ -52,7 +52,7 @@ function connect($keywords = '', $options=array(), $errmode = PDO::ERRMODE_EXCEP
         // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
         // which does not support switching databases
         require("MsSetup.inc");
-        $dsn = getDSN($server, $databaseName, $driver, $keywords, $disableCE);
+        $dsn = getDSN($server, $databaseName, $driver, $keywords, $disableCE, $encrypt);
         $conn = new PDO($dsn, $uid, $pwd, $options);
         if ($errmode == PDO::ERRMODE_EXCEPTION || $errmode == PDO::ERRMODE_WARNING || $errmode == PDO::ERRMODE_SILENT) {
             $conn->setAttribute(PDO::ATTR_ERRMODE, $errmode);
@@ -76,7 +76,7 @@ function connect($keywords = '', $options=array(), $errmode = PDO::ERRMODE_EXCEP
  * @param  bool  $disableCE : flag for disabling column encryption even when keystore is NOT none
  * @return string dsn string used for PDO constructor
  */
-function getDSN($sqlsrvserver, $database, $driver = null, $keywords = '', $disableCE = false)
+function getDSN($sqlsrvserver, $database, $driver = null, $keywords = '', $disableCE = false, $encryptOption = false)
 {
     require("MsSetup.inc");
     $dsn = "";
@@ -91,6 +91,9 @@ function getDSN($sqlsrvserver, $database, $driver = null, $keywords = '', $disab
     }
     if (!is_null($driver)) {
         $dsn .= "driver=$driver;";
+    }
+    if (!is_null($encryptOption)) {
+        $dsn .= "Encrypt=$encryptOption;";
     }
     if ($keystore != "none" && !$disableCE) {
         $dsn .= "ColumnEncryption=Enabled;";

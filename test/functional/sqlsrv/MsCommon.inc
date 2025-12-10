@@ -192,7 +192,7 @@ function connect($options = array())
     include('MsSetup.inc');
 
     if (!empty($options)) {
-        $connectionOptions = array_merge($connectionOptions, $options);
+        $connectionOptions = array_merge($connectionOptions, $options, array("Encrypt" => $encrypt));
     }
 
     trace("Attempting connection to $server...");

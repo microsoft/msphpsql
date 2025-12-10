@@ -16,7 +16,7 @@ function connect($options=array())
     // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
     // which does not support switching databases
     require  'MsSetup.inc';
-    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;ConnectionPooling=false;" , $uid, $pwd, $options); 
+    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;Encrypt=$encrypt;ConnectionPooling=false;" , $uid, $pwd, $options); 
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
     return $conn;
   }

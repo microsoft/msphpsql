@@ -368,6 +368,7 @@ function isQualified($conn)
 function connect($options = array(), $disableCE = false)
 {
     require('MsSetup.inc');
+    $connectionOptions = array("Encrypt" => $encrypt);
     if (!empty($options)) {
         $connectionOptions = array_merge($connectionOptions, $options);
     }

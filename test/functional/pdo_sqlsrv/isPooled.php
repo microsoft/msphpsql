@@ -1,11 +1,11 @@
 <?php
 include 'MsSetup.inc';
 
-$conn1 = new PDO("sqlsrv:Server=$server; database=$databaseName; driver=$driver", $uid, $pwd);
+$conn1 = new PDO("sqlsrv:Server=$server; database=$databaseName; driver=$driver; Encrypt = $encrypt", $uid, $pwd);
 $connId1 = connectionID($conn1);
 unset($conn1);
 
-$conn2 = new PDO("sqlsrv:Server=$server; database=$databaseName; driver=$driver", $uid, $pwd);
+$conn2 = new PDO("sqlsrv:Server=$server; database=$databaseName; driver=$driver; Encrypt = $encrypt", $uid, $pwd);
 $connId2 = connectionID($conn2);
 
 if ($connId1 === $connId2){

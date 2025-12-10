@@ -84,7 +84,7 @@ catch( PDOException $e )
 $conn = null;
 $conn_break = null;
 
-DropTables( $server, $uid, $pwd, $tableName1, $tableName2 );
+DropTables( $server, $uid, $pwd, $encrypt, $tableName1, $tableName2 );
 
 ?>
 --EXPECT--
