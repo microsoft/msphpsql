@@ -127,7 +127,7 @@ class BuildUtil(object):
         return os.path.join(phpsrc, build_dir)
 
     def remove_old_builds(self, sdk_dir):
-        """Remove the extensions, e.g. the driver subfolders in php-7.*-src\ext."""
+        """Remove the extensions, e.g. the driver subfolders in php-7.*-src\\ext."""
         if not os.path.exists(os.path.join(sdk_dir, 'php-sdk')):
             print('No old builds to be removed...')
             return
@@ -256,9 +256,9 @@ class BuildUtil(object):
             source = os.path.join(msphpsqlFolder, 'source')
             os.chdir(work_dir)
             
-            os.system('ROBOCOPY ' + source + '\shared ' + dest_folder + '\shared /xx /xo')
-            os.system('ROBOCOPY ' + source + '\pdo_sqlsrv ' + dest_folder + '\pdo_sqlsrv /xx /xo')
-            os.system('ROBOCOPY ' + source + '\sqlsrv ' + dest_folder + '\sqlsrv /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\shared ' + dest_folder + '\\shared /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\pdo_sqlsrv ' + dest_folder + '\\pdo_sqlsrv /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\sqlsrv ' + dest_folder + '\\sqlsrv /xx /xo')
                 
         except:
             print('Error occurred when downloading source')
