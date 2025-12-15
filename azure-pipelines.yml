@@ -263,6 +263,11 @@ jobs:
     displayName: 'Check PHP'
 
   - powershell: |
+      $guid = [guid]::NewGuid().ToString()
+      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
+    displayName: 'Generate Password'
+
+  - powershell: |
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
       (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
       Select-String $(host) .\MsSetup.inc
