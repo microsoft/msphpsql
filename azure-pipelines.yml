@@ -121,7 +121,7 @@ jobs:
       docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
       docker ps -a
       sleep 10
-      docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
+      docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -No -U $(uid) -P $(pwd) -Q 'select @@Version'
     displayName: 'Run SQL Server for Linux'
 
   - script: |
@@ -243,7 +243,7 @@ jobs:
   variables:
     phpVersion: 8.4
   pool:
-    vmImage: 'windows-2022'
+    vmImage: 'windows-2019'
   steps:
   - checkout: self
     clean: true
