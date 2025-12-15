@@ -7,7 +7,6 @@ variables:
   sqlsrv_db: 'sqlsrv_testdb'
   pdo_sqlsrv_db: 'pdo_sqlsrv_testdb'
   uid: 'sa'
-  pwd: 'Password456!'
 
 trigger:
 - dev
@@ -62,9 +61,9 @@ jobs:
 
 - job: Linux
   variables:
-    phpver: 8.1
+    phpver: 8.4
   pool:
-    vmImage: 'ubuntu-20.04'
+    vmImage: 'ubuntu-22.04'
   steps:
   - checkout: self
     clean: true
@@ -91,15 +90,16 @@ jobs:
       echo install ODBC and dependencies
       sudo apt-get purge unixodbc
       sudo apt autoremove
-      sudo curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-      curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > mssql-release.list
-      sudo mv mssql-release.list /etc/apt/sources.list.d/
+      # Download/Install the package to configure the Microsoft repo
+      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)/packages-microsoft-prod.deb
+      sudo dpkg -i packages-microsoft-prod.deb
+      rm packages-microsoft-prod.deb
       sudo apt-get update
-      sudo ACCEPT_EULA=Y apt-get install msodbcsql17 mssql-tools
+      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
       source ~/.bashrc
-      sudo apt-get install unixodbc-dev
+      sudo apt-get install -y unixodbc-dev
       odbcinst --j
       odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
     displayName: 'Install prerequisites'
@@ -111,9 +111,14 @@ jobs:
       python -m pip install cpp-coveralls
     displayName: 'Install coveralls (upgrade both pip and requests first)'
 
+  - powershell: |
+      $guid = [guid]::NewGuid().ToString()
+      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
+    displayName: 'Generate Password'
+
   - script: |
-      docker pull mcr.microsoft.com/mssql/server:2019-latest
-      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2019-latest
+      docker pull mcr.microsoft.com/mssql/server:2022-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
       docker ps -a
       sleep 10
       docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
@@ -236,9 +241,9 @@ jobs:
 
 - job: Windows
   variables:
-    phpVersion: 8.1
+    phpVersion: 8.4
   pool:
-    vmImage: 'windows-2019'
+    vmImage: 'windows-2022'
   steps:
   - checkout: self
     clean: true
@@ -271,7 +276,7 @@ jobs:
 
   - powershell: |
       $client = New-Object Net.WebClient
-      $client.DownloadFile('https://download.microsoft.com/download/a/e/b/aeb7d4ff-ca20-45db-86b8-8a8f774ce97b/en-US/17.8.1.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
+      $client.DownloadFile('https://download.microsoft.com/download/6/f/f/6ffefc73-39ab-4cc0-bb7c-4093d64c2669/en-US/17.10.6.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
       $client.DownloadFile('https://download.microsoft.com/download/0/e/6/0e63d835-3513-45a0-9cf0-0bc75fb4269e/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
       dir *.msi
     displayName: 'Download ODBC msi and sql tools msi'
