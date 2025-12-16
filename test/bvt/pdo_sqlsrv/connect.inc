@@ -5,7 +5,7 @@ function getPdoConnection($additionalOptions = array()) {
     $databaseName = 'TARGET_DATABASE';
     $uid = 'TARGET_USERNAME';
     $pwd = 'TARGET_PASSWORD';
-    $connectOptions = 'Encrypt=false';
+    $connectOptions = 'Encrypt=no';
 
     return new PDO( "sqlsrv:Server=$server ; Database = $databaseName ; $connectOptions", "$uid", "$pwd", $additionalOptions);
 }
