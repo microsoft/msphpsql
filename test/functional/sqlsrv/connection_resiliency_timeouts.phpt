@@ -11,14 +11,14 @@ Test connection resiliency timeouts
 <?php
 require_once( "break.php" );
 
-$conn_break = sqlsrv_connect( $server, array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd) );
+$conn_break = sqlsrv_connect( $server, array( "Database"=>$dbName, "Encrypt"=>$encrypt, "UID"=>$uid, "PWD"=>$pwd) );
 
 ///////////////////////////////////////////////////////////////////////////////
 // Part 1 
 // Expected to error out because ConnectRetryCount equals 0
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd,
+$connectionInfo = array( "Database"=>$dbName, "Encrypt"=>$encrypt, "UID"=>$uid, "PWD"=>$pwd,
                          "ConnectRetryCount"=>0 );
                          
 $conn = sqlsrv_connect( $server, $connectionInfo );
@@ -53,7 +53,7 @@ sqlsrv_close( $conn );
 // Expected to succeed with a single reconnection attempt
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd,
+$connectionInfo = array( "Database"=>$dbName, "Encrypt"=>$encrypt, "UID"=>$uid, "PWD"=>$pwd,
                          "ConnectRetryInterval"=>10 );
 
 $conn = sqlsrv_connect( $server, $connectionInfo );
@@ -79,7 +79,7 @@ else
 sqlsrv_close( $conn );
 sqlsrv_close( $conn_break );
 
-DropTables( $server, $uid, $pwd, $encrypt, $tableName1, $tableName2 )
+DropTables( $server, $uid, $pwd, $tableName1, $tableName2 )
 
 ?>
 --EXPECTREGEX--

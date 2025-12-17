@@ -14,7 +14,7 @@ $tableName2 = "test_connres2";
 // from AppVeyor does not have AdventureWorks.
 function GenerateTables($server, $uid, $pwd, $dbName, $tableName1, $tableName2)
 {
-    $connectionInfo = array("Database"=>$dbName, "uid"=>$uid, "pwd"=>$pwd);
+    $connectionInfo = array("Database"=>$dbName, "Encrypt"=>$encrypt, "uid"=>$uid, "pwd"=>$pwd);
 
     $conn = sqlsrv_connect($server, $connectionInfo);
     if ($conn === false) {
@@ -74,7 +74,7 @@ function DropTables($server, $uid, $pwd, $tableName1, $tableName2)
 {
     global $dbName;
     
-    $connectionInfo = array("Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd);
+    $connectionInfo = array("Database"=>$dbName, "Encrypt"=>$encrypt, "UID"=>$uid, "PWD"=>$pwd);
     $conn = sqlsrv_connect($server, $connectionInfo);
 
     $query = "IF OBJECT_ID('$tableName1', 'U') IS NOT NULL DROP TABLE $tableName1";
