@@ -35,7 +35,7 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
         
     echo "Test sqlsrv_connect with driver injection\n";
 
-    $conn = sqlsrv_connect( $server, array( "UID" => $userName, "PWD" => "$userPassword;Driver={SQL Server Native Client 11.0}}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => $userName, "PWD" => "$userPassword;Driver={ODBC Driver 17 for SQL Server}}" ));
     
     if (!$conn) {
         var_dump(sqlsrv_errors());
@@ -45,7 +45,7 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
     }
 
     echo "Test sqlsrv_connect with driver injection (2)\n";
-    $conn = sqlsrv_connect( $server, array( "UID" => $userName, "PWD" => "{$userPassword};Driver={SQL Server Native Client 11.0}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => $userName, "PWD" => "{$userPassword};Driver={ODBC Driver 17 for SQL Server}" ));
     
     if (!$conn) {
         var_dump(sqlsrv_errors());
@@ -55,7 +55,7 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
     }
 
     echo "Test sqlsrv_connect with driver injection (3)\n";
-    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "{$userPassword}};Driver={SQL Server Native Client 11.0}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "{$userPassword}};Driver={ODBC Driver 17 for SQL Server}" ));
     
     if (!$conn) {
         var_dump(sqlsrv_errors());

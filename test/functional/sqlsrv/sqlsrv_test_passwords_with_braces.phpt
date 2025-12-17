@@ -5,7 +5,12 @@ The first two cases should fail with a message about login failures. Only the la
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif.inc'); 
+require('MsSetup.inc');
+if (empty($userName)) {
+    die("skip - test requires SQL Authentication (Windows Authentication is configured)");
+}
+?>
 --FILE--
 <?php
 sqlsrv_configure('WarningsReturnAsErrors', 0);

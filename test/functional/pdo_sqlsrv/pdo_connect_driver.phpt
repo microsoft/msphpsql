@@ -92,9 +92,8 @@ function testValidValues()
 
 function testInvalidValues()
 {
-    $values = array("{SQL Server Native Client 11.0}",
-                    "SQL Server Native Client 11.0",
-                    "ODBC Driver 00 for SQL Server",
+    $values = array("ODBC Driver 00 for SQL Server",
+                    "{Invalid Driver Name}",
                     123,
                     false);
 

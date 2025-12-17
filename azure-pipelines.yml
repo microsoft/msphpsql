@@ -62,7 +62,7 @@ jobs:
 
 - job: Linux
   variables:
-    phpver: 8.1
+    phpver: 8.4
   pool:
     vmImage: 'ubuntu-20.04'
   steps:
@@ -236,7 +236,7 @@ jobs:
 
 - job: Windows
   variables:
-    phpVersion: 8.1
+    phpVersion: 8.4
   pool:
     vmImage: 'windows-2019'
   steps:

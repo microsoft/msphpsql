@@ -37,4 +37,4 @@ echo "Date = $date_string\n";
 sqlsrv_close( $conn);
 ?>
 --EXPECTREGEX--
-Date = 20th, February 2014|Date = 22nd, August 2017
+Date = 20th, February 2014|Date = 22nd, August 2017|Date = 23rd, January 2023

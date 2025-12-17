@@ -84,9 +84,8 @@ function testValidValues($msodbcsqlMaj, $server, $connectionOptions)
 
 function testInvalidValues($msodbcsqlMaj, $server, $connectionOptions)
 {
-    $values = array("{SQL Server Native Client 11.0}",
-                    "SQL Server Native Client 11.0",
-                    "ODBC Driver 00 for SQL Server");
+    $values = array("ODBC Driver 00 for SQL Server",
+                    "{Invalid Driver Name}");
 
     foreach ($values as $value) {
         $connectionOptions['Driver']=$value;
