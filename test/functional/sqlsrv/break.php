@@ -14,6 +14,8 @@ $tableName2 = "test_connres2";
 // from AppVeyor does not have AdventureWorks.
 function GenerateTables($server, $uid, $pwd, $dbName, $tableName1, $tableName2)
 {
+    global $encrypt;
+
     $connectionInfo = array("Database"=>$dbName, "Encrypt"=>$encrypt, "uid"=>$uid, "pwd"=>$pwd);
 
     $conn = sqlsrv_connect($server, $connectionInfo);
@@ -73,6 +75,7 @@ function BreakConnection($conn, $conn_break)
 function DropTables($server, $uid, $pwd, $tableName1, $tableName2)
 {
     global $dbName;
+    global $encrypt;
     
     $connectionInfo = array("Database"=>$dbName, "Encrypt"=>$encrypt, "UID"=>$uid, "PWD"=>$pwd);
     $conn = sqlsrv_connect($server, $connectionInfo);

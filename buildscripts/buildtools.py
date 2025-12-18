@@ -100,7 +100,10 @@ class BuildUtil(object):
             VC = 'vc15'
             version = self.version_label()
             if version[0] == '8':     # Compiler version for PHP 8.0 or above
-                VC = 'vs16'
+                if version[1] >= '4':
+                    VC = 'vs17'
+                else:
+                    VC = 'vs16'
             self.vc = VC
             print('Compiler: ' + self.vc)
         return self.vc
