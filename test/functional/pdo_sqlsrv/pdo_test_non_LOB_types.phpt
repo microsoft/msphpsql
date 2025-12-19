@@ -9,6 +9,7 @@ pre-populated tables [test_streamable_types] and [test_types]
 <?php
 
 require('MsSetup.inc');
+require_once('MsCommon.inc');
 
 function verifyResult($result)
 {
@@ -36,7 +37,7 @@ function verifyResult($result)
 }
 
 try {
-    $conn = getPdoConnection();
+    $conn = connect();
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // test the allowed non LOB column types

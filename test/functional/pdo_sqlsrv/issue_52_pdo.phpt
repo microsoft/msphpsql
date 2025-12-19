@@ -10,7 +10,7 @@ deprecated starting in SQL Server 2016.
 require_once 'MsCommon.inc';
 require_once 'MsSetup.inc';
 
-$conn = new PDO( "sqlsrv:server=$server;database=$databaseName;Encrypt=$encrypt", $uid, $pwd);
+$conn = connect();
 
 #=================check SQL Server version===============
 $attr = $conn->getAttribute(constant('PDO::ATTR_SERVER_VERSION'));
