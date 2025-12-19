@@ -34,6 +34,14 @@ jobs:
       brew tap homebrew/core
       brew reinstall autoconf automake libtool
       php -v
+      # Install 8.4
+      brew install php@8.4
+      # Make 8.4 the active CLI PHP
+      brew unlink php || true
+      brew link --overwrite --force php@8.4
+      # Confirm
+      php -v
+
     displayName: 'Install PHP prerequisites'
 
   - script: |

@@ -9,29 +9,39 @@
 */
 
 // TO BE DELETED
-function connect($options=array())
+function connect($options=array(), $catchErrors = true)
 {
-  try 
-  {
-    // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
-    // which does not support switching databases
-    require  'MsSetup.inc';
-    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;Encrypt=$encrypt;ConnectionPooling=false;" , $uid, $pwd, $options); 
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-    return $conn;
-  }
-  
-  catch( PDOException $e ) 
-  {
-    var_dump( $e );
-    exit;
-  }
-    
-  catch(Exception $e) 
-  {
-     var_dump( $e );
-     exit;
-  }
+    if ($catchErrors)
+    {
+        try 
+        {
+            // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
+            // which does not support switching databases
+            require  'MsSetup.inc';
+            $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;Encrypt=$encrypt;ConnectionPooling=false;" , $uid, $pwd, $options); 
+            $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+            return $conn;
+        }
+
+        catch( PDOException $e ) 
+        {
+            var_dump( $e );
+            exit;
+        }
+
+        catch(Exception $e) 
+        {
+            var_dump( $e );
+            exit;
+        }
+    }
+    else
+    {
+        require  'MsSetup.inc';
+        $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;Encrypt=$encrypt;ConnectionPooling=false;" , $uid, $pwd, $options); 
+        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+        return $conn;
+    }
 }
 
 /**

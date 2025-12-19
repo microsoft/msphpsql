@@ -24,11 +24,9 @@ function verifyErrorMessage($exception, $expectedError, $msg)
 
 function connectInvalidServer()
 {
-    global $server, $driver, $uid, $pwd;
-    
     try {
-        $conn = new PDO("sqlsrv:server = $server; driver=$driver;", $uid, $pwd);
-        
+        $conn = connect();
+
         $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
         $version = explode(".", $msodbcsqlVer);
 
@@ -56,11 +54,9 @@ function connectInvalidServer()
 
 function connectInvalidServerWithUser()
 {
-    global $server, $driver, $uid, $pwd;
-    
     try {
-        $conn = new PDO("sqlsrv:server = $server; driver=$driver;", $uid, $pwd);
-        
+        $conn = connect();
+
         $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)["DriverVer"];
         $version = explode(".", $msodbcsqlVer);
 
@@ -96,9 +92,9 @@ connectInvalidServerWithUser();
 
 echo "Done\n";
 ?>
---EXPECT--
+--EXPECTF--
 Failed to connect
-SQLSTATE[08001]: [Microsoft][ODBC Driver 17 for SQL Server]Named Pipes Provider: Could not open a connection to SQL Server [53]. 
+SQLSTATE[08001]: [Microsoft][ODBC Driver %s for SQL Server]Named Pipes Provider: Could not open a connection to SQL Server [53]. 
 Failed to connect
-SQLSTATE[08001]: [Microsoft][ODBC Driver 17 for SQL Server]Named Pipes Provider: Could not open a connection to SQL Server [53]. 
+SQLSTATE[08001]: [Microsoft][ODBC Driver %s for SQL Server]Named Pipes Provider: Could not open a connection to SQL Server [53]. 
 Done

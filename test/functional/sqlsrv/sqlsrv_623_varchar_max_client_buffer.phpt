@@ -8,7 +8,8 @@ sqlsrv_configure('WarningsReturnAsErrors', 1);
 
 // step 01: Connect without Always Encrypted feature
 require_once('MsSetup.inc');
-$conn = sqlsrv_connect($server, $connectionOptions);
+require_once("MsCommon.inc");
+$conn = connect(null, false);
 if (! $conn) {
     fatalError("Failed to connect\n");
 }

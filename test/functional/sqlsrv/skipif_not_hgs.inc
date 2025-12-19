@@ -8,14 +8,13 @@ if (!extension_loaded("sqlsrv")) {
 }
 
 require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
 if ($attestation == 'TARGET_ATTESTATION') {
     die("skip Not set up for testing with secure enclave.");
 }
 
-$connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword);
-
-$conn = sqlsrv_connect($server, $connectionInfo);
+$conn = connect(null, false);
 if ($conn === false) {
     die("skip Could not connect during SKIPIF.");
 }
