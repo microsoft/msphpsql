@@ -251,7 +251,7 @@ jobs:
   variables:
     phpVersion: 8.4
   pool:
-    vmImage: 'windows-2019'
+    vmImage: 'windows-2022'
   steps:
   - checkout: self
     clean: true
