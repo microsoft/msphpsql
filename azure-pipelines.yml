@@ -319,8 +319,8 @@ jobs:
       python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
       dir *sqlsrv*.dll
       python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
-      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs16\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv
-      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs16\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv
+      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
       dir *sqlsrv*.dll
       cp *sqlsrv*.dll C:\tools\php\ext\
     displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
