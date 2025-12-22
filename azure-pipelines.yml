@@ -7,6 +7,7 @@ variables:
   sqlsrv_db: 'sqlsrv_testdb'
   pdo_sqlsrv_db: 'pdo_sqlsrv_testdb'
   uid: 'sa'
+  pwd: 'Password456!'
 
 trigger:
 - dev
@@ -34,14 +35,6 @@ jobs:
       brew tap homebrew/core
       brew reinstall autoconf automake libtool
       php -v
-      # Install 8.4
-      brew install php@8.4
-      # Make 8.4 the active CLI PHP
-      brew unlink php || true
-      brew link --overwrite --force php@8.4
-      # Confirm
-      php -v
-
     displayName: 'Install PHP prerequisites'
 
   - script: |
@@ -67,11 +60,95 @@ jobs:
       php --ri pdo_sqlsrv
     displayName: 'Build and install drivers'
 
+  - script: |
+      brew install msodbcsql17 mssql-tools
+      echo 'export PATH="$PATH:/usr/local/opt/mssql-tools/bin"' >> ~/.bash_profile
+      source ~/.bash_profile
+    displayName: 'Install ODBC driver and SQL tools'
+
+  - script: |
+      docker pull mcr.microsoft.com/mssql/server:2019-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2019-latest
+      sleep 20
+      docker ps -a
+      docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
+    displayName: 'Run SQL Server for Linux in Docker'
+
+  - script: |
+      export TEST_PHP_SQL_SERVER='$(server)'
+      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_PWD='$(pwd)'
+      cd $(Build.SourcesDirectory)/test/functional/setup
+      python setup_dbs.py -dbname $(sqlsrv_db)
+      python setup_dbs.py -dbname $(pdo_sqlsrv_db)
+    displayName: 'Set up test databases'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
+    displayName: 'Run sqlsrv functional tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv functional tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/bvt/sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      cp $(Build.SourcesDirectory)/source/sqlsrv/run-tests.php .
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../../bvt_sqlsrv.log
+    displayName: 'Run sqlsrv BVT tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/bvt/pdo_sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      cp $(Build.SourcesDirectory)/source/pdo_sqlsrv/run-tests.php .
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../../bvt_pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv BVT tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/
+      for f in functional/sqlsrv/*.diff; do [ -f "$f" ] && ls $f && cat $f && echo ''; done || true
+      for f in functional/pdo_sqlsrv/*.diff; do [ -f "$f" ] && ls $f && cat $f && echo ''; done || true
+      for f in bvt/sqlsrv/*.diff; do [ -f "$f" ] && ls $f && cat $f && echo ''; done || true
+      for f in bvt/pdo_sqlsrv/*.diff; do [ -f "$f" ] && ls $f && cat $f && echo ''; done || true
+      python functional/output.py
+      ls -l functional/*.xml
+    displayName: 'Processing test results'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '*.xml'
+      failTaskOnFailedTests: true
+      searchFolder: '$(Build.SourcesDirectory)/test/functional/'
+
+  - script: |
+      docker stop $(host)
+      docker rm $(host)
+    displayName: 'Stop SQL Server for Linux'
+    condition: always()
+
 - job: Linux
   variables:
     phpver: 8.4
   pool:
-    vmImage: 'ubuntu-22.04'
+    vmImage: 'ubuntu-20.04'
   steps:
   - checkout: self
     clean: true
@@ -98,16 +175,15 @@ jobs:
       echo install ODBC and dependencies
       sudo apt-get purge unixodbc
       sudo apt autoremove
-      # Download/Install the package to configure the Microsoft repo
-      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)/packages-microsoft-prod.deb
-      sudo dpkg -i packages-microsoft-prod.deb
-      rm packages-microsoft-prod.deb
+      sudo curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+      curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > mssql-release.list
+      sudo mv mssql-release.list /etc/apt/sources.list.d/
       sudo apt-get update
-      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools
+      sudo ACCEPT_EULA=Y apt-get install msodbcsql17 mssql-tools
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
       source ~/.bashrc
-      sudo apt-get install -y unixodbc-dev
+      sudo apt-get install unixodbc-dev
       odbcinst --j
       odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
     displayName: 'Install prerequisites'
@@ -119,17 +195,12 @@ jobs:
       python -m pip install cpp-coveralls
     displayName: 'Install coveralls (upgrade both pip and requests first)'
 
-  - powershell: |
-      $guid = [guid]::NewGuid().ToString()
-      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-    displayName: 'Generate Password'
-
   - script: |
-      docker pull mcr.microsoft.com/mssql/server:2022-latest
-      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
+      docker pull mcr.microsoft.com/mssql/server:2019-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2019-latest
       docker ps -a
       sleep 10
-      docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -No -U $(uid) -P $(pwd) -Q 'select @@Version'
+      docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
     displayName: 'Run SQL Server for Linux'
 
   - script: |
@@ -198,7 +269,7 @@ jobs:
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
       export LC_ALL='en_US.UTF-8'
-      php run-tests.php -P ./*.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
   - script: |
@@ -209,8 +280,32 @@ jobs:
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
       export LC_ALL='en_US.UTF-8'
-      php run-tests.php -P ./*.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/bvt/sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+
+      export LC_ALL='en_US.UTF-8'
+      cp $(Build.SourcesDirectory)/source/sqlsrv/run-tests.php .
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../../bvt_sqlsrv.log
+    displayName: 'Run sqlsrv BVT tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/bvt/pdo_sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+
+      export LC_ALL='en_US.UTF-8'
+      cp $(Build.SourcesDirectory)/source/pdo_sqlsrv/run-tests.php .
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../../bvt_pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv BVT tests'
 
   - script: |
       cd $(Build.SourcesDirectory)
@@ -230,6 +325,10 @@ jobs:
       cd $(Build.SourcesDirectory)/test/functional/
       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
       for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      cd $(Build.SourcesDirectory)/test/bvt/
+      for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      cd $(Build.SourcesDirectory)/test/functional/
       python output.py
       ls -l *.xml
     displayName: 'Processing test results'
@@ -251,7 +350,7 @@ jobs:
   variables:
     phpVersion: 8.4
   pool:
-    vmImage: 'windows-2022'
+    vmImage: 'windows-2019'
   steps:
   - checkout: self
     clean: true
@@ -271,11 +370,6 @@ jobs:
     displayName: 'Check PHP'
 
   - powershell: |
-      $guid = [guid]::NewGuid().ToString()
-      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-    displayName: 'Generate Password'
-
-  - powershell: |
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
       (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
       Select-String $(host) .\MsSetup.inc
@@ -284,29 +378,29 @@ jobs:
       (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
       Select-String $(host) .\MsSetup.inc
       Select-String $(pdo_sqlsrv_db) .\MsSetup.inc
+      cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
+      (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
+      cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
+      (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
     displayName: 'Update connection credentials'
-    condition: false
 
   - powershell: |
       $client = New-Object Net.WebClient
-      $client.DownloadFile('https://download.microsoft.com/download/6/f/f/6ffefc73-39ab-4cc0-bb7c-4093d64c2669/en-US/17.10.6.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
+      $client.DownloadFile('https://download.microsoft.com/download/a/e/b/aeb7d4ff-ca20-45db-86b8-8a8f774ce97b/en-US/17.8.1.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
       $client.DownloadFile('https://download.microsoft.com/download/0/e/6/0e63d835-3513-45a0-9cf0-0bc75fb4269e/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
       dir *.msi
     displayName: 'Download ODBC msi and sql tools msi'
-    condition: false
 
   - script: |
       msiexec /i "msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
       reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
       dir %WINDIR%\System32\msodbcsql*.dll
     displayName: 'Install ODBC driver'
-    condition: false
 
   # FOR SOME REASON the set up did not set the PATH
   - script: |
       msiexec /i "MsSqlCmdLnUtils.msi" /qn IACCEPTMSSQLCMDLNUTILSLICENSETERMS=YES
     displayName: 'Install SQL command line utilities version 15'
-    condition: false
 
   - powershell: |
       $client = New-Object Net.WebClient
@@ -319,8 +413,8 @@ jobs:
       python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
       dir *sqlsrv*.dll
       python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
-      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv
-      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs16\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv
+      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs16\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
       dir *sqlsrv*.dll
       cp *sqlsrv*.dll C:\tools\php\ext\
     displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
@@ -331,14 +425,12 @@ jobs:
       php --ri sqlsrv
       php --ri pdo_sqlsrv
     displayName: 'Load drivers'
-    condition: false
 
   - script: |
       docker pull microsoft/mssql-server-windows-developer
       docker run -d --name sqlcontainer -h $(host) -p 1433:1433 -e sa_password=$(pwd) -e ACCEPT_EULA=Y microsoft/mssql-server-windows-developer
       docker ps -a
     displayName: 'Run SQL Server for Windows Server'
-    condition: false
 
   - script: |
       set path=C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;%path%
@@ -350,18 +442,50 @@ jobs:
       python setup_dbs.py -dbname $(sqlsrv_db)
       python setup_dbs.py -dbname $(pdo_sqlsrv_db)
     displayName: 'Set up test databases'
-    condition: false
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
-      php run-tests.php -P sqlsrv_client_info.phpt
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
+    displayName: 'Run sqlsrv functional tests'
+
+  - script: |
       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
-      php run-tests.php -P pdo_getAttribute_clientInfo.phpt
-    displayName: 'Smoke testing'
-    condition: false
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv functional tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
+      copy $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs16\x64\php-*-src\run-tests.php .
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\..\bvt_sqlsrv.log
+    displayName: 'Run sqlsrv BVT tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
+      copy $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs16\x64\php-*-src\run-tests.php .
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\..\bvt_pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv BVT tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)\test\functional\
+      dir sqlsrv\*.diff 2>nul && type sqlsrv\*.diff || echo No sqlsrv diff files
+      dir pdo_sqlsrv\*.diff 2>nul && type pdo_sqlsrv\*.diff || echo No pdo_sqlsrv diff files
+      cd $(Build.SourcesDirectory)\test\bvt\
+      dir sqlsrv\*.diff 2>nul && type sqlsrv\*.diff || echo No BVT sqlsrv diff files
+      dir pdo_sqlsrv\*.diff 2>nul && type pdo_sqlsrv\*.diff || echo No BVT pdo_sqlsrv diff files
+      cd $(Build.SourcesDirectory)\test\functional\
+      python output.py
+      dir *.xml
+    displayName: 'Processing test results'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '*.xml'
+      failTaskOnFailedTests: true
+      searchFolder: '$(Build.SourcesDirectory)\test\functional\'
 
   - script: |
       docker stop sqlcontainer
       docker rm sqlcontainer
     displayName: 'Stop SQL Server for Windows Server'
-    condition: false
+    condition: always()
