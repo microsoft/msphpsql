@@ -111,20 +111,20 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)/test/bvt/sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      sed -i -e "s/\$server = '.*';/\$server = '$(server)';/g" connect.inc
+      sed -i -e "s/\$databaseName = '.*';/\$databaseName = '$(sqlsrv_db)';/g" connect.inc
+      sed -i -e "s/\$uid = '.*';/\$uid = '$(uid)';/g" connect.inc
+      sed -i -e "s/\$pwd = '.*';/\$pwd = '$(pwd)';/g" connect.inc
       cp $(Build.SourcesDirectory)/source/sqlsrv/run-tests.php .
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../../bvt_sqlsrv.log
     displayName: 'Run sqlsrv BVT tests'
 
   - script: |
       cd $(Build.SourcesDirectory)/test/bvt/pdo_sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      sed -i -e "s/\$server = '.*';/\$server = '$(server)';/g" connect.inc
+      sed -i -e "s/\$databaseName = '.*';/\$databaseName = '$(pdo_sqlsrv_db)';/g" connect.inc
+      sed -i -e "s/\$uid = '.*';/\$uid = '$(uid)';/g" connect.inc
+      sed -i -e "s/\$pwd = '.*';/\$pwd = '$(pwd)';/g" connect.inc
       cp $(Build.SourcesDirectory)/source/pdo_sqlsrv/run-tests.php .
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../../bvt_pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv BVT tests'
@@ -299,10 +299,10 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)/test/bvt/sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      sed -i -e "s/\$server = '.*';/\$server = '$(server)';/g" connect.inc
+      sed -i -e "s/\$databaseName = '.*';/\$databaseName = '$(sqlsrv_db)';/g" connect.inc
+      sed -i -e "s/\$uid = '.*';/\$uid = '$(uid)';/g" connect.inc
+      sed -i -e "s/\$pwd = '.*';/\$pwd = '$(pwd)';/g" connect.inc
 
       export LC_ALL='en_US.UTF-8'
       cp $(Build.SourcesDirectory)/source/sqlsrv/run-tests.php .
@@ -311,10 +311,10 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)/test/bvt/pdo_sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      sed -i -e "s/\$server = '.*';/\$server = '$(server)';/g" connect.inc
+      sed -i -e "s/\$databaseName = '.*';/\$databaseName = '$(pdo_sqlsrv_db)';/g" connect.inc
+      sed -i -e "s/\$uid = '.*';/\$uid = '$(uid)';/g" connect.inc
+      sed -i -e "s/\$pwd = '.*';/\$pwd = '$(pwd)';/g" connect.inc
 
       export LC_ALL='en_US.UTF-8'
       cp $(Build.SourcesDirectory)/source/pdo_sqlsrv/run-tests.php .
@@ -398,9 +398,9 @@ jobs:
       Select-String $(host) .\MsSetup.inc
       Select-String $(pdo_sqlsrv_db) .\MsSetup.inc
       cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
-      (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
+      (Get-Content .\connect.inc) | ForEach-Object { $_ -replace "\$server = '.*';", "`$server = '$(host)';" -replace "\$databaseName = '.*';", "`$databaseName = '$(sqlsrv_db)';" -replace "\$uid = '.*';", "`$uid = '$(uid)';" -replace "\$pwd = '.*';", "`$pwd = '$(pwd)';" } | Set-Content .\connect.inc
       cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
-      (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
+      (Get-Content .\connect.inc) | ForEach-Object { $_ -replace "\$server = '.*';", "`$server = '$(host)';" -replace "\$databaseName = '.*';", "`$databaseName = '$(pdo_sqlsrv_db)';" -replace "\$uid = '.*';", "`$uid = '$(uid)';" -replace "\$pwd = '.*';", "`$pwd = '$(pwd)';" } | Set-Content .\connect.inc
     displayName: 'Update connection credentials'
 
   - powershell: |
