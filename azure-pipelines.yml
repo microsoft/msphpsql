@@ -398,9 +398,9 @@ jobs:
       Select-String $(host) .\MsSetup.inc
       Select-String $(pdo_sqlsrv_db) .\MsSetup.inc
       cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
-      (Get-Content .\connect.inc) | ForEach-Object { $_ -replace "\$server = '.*';", "`$server = '$(host)';" -replace "\$databaseName = '.*';", "`$databaseName = '$(sqlsrv_db)';" -replace "\$uid = '.*';", "`$uid = '$(uid)';" -replace "\$pwd = '.*';", "`$pwd = '$(pwd)';" } | Set-Content .\connect.inc
+      (Get-Content .\connect.inc) | ForEach-Object { $_ -replace '(\$server = )[^;]+;', "`$1'$(host)';" -replace '(\$databaseName = )[^;]+;', "`$1'$(sqlsrv_db)';" -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" } | Set-Content .\connect.inc
       cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
-      (Get-Content .\connect.inc) | ForEach-Object { $_ -replace "\$server = '.*';", "`$server = '$(host)';" -replace "\$databaseName = '.*';", "`$databaseName = '$(pdo_sqlsrv_db)';" -replace "\$uid = '.*';", "`$uid = '$(uid)';" -replace "\$pwd = '.*';", "`$pwd = '$(pwd)';" } | Set-Content .\connect.inc
+      (Get-Content .\connect.inc) | ForEach-Object { $_ -replace '(\$server = )[^;]+;', "`$1'$(host)';" -replace '(\$databaseName = )[^;]+;', "`$1'$(pdo_sqlsrv_db)';" -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" } | Set-Content .\connect.inc
     displayName: 'Update connection credentials'
 
   - powershell: |
