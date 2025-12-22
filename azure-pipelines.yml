@@ -148,7 +148,7 @@ jobs:
   variables:
     phpver: 8.4
   pool:
-    vmImage: 'ubuntu-20.04'
+    vmImage: 'ubuntu-22.02'
   steps:
   - checkout: self
     clean: true
