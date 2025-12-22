@@ -68,89 +68,9 @@ jobs:
       php --ri pdo_sqlsrv
     displayName: 'Build and install drivers'
 
-  - script: |
-      brew install msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/usr/local/opt/mssql-tools/bin"' >> ~/.bash_profile
-      source ~/.bash_profile
-    displayName: 'Install ODBC driver and SQL tools'
-
-  - script: |
-      docker pull mcr.microsoft.com/mssql/server:2019-latest
-      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2019-latest
-      sleep 20
-      docker ps -a
-      docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
-    displayName: 'Run SQL Server for Linux in Docker'
-
-  - script: |
-      export TEST_PHP_SQL_SERVER='$(server)'
-      export TEST_PHP_SQL_UID='$(uid)'
-      export TEST_PHP_SQL_PWD='$(pwd)'
-      cd $(Build.SourcesDirectory)/test/functional/setup
-      python setup_dbs.py -dbname $(sqlsrv_db)
-      python setup_dbs.py -dbname $(pdo_sqlsrv_db)
-    displayName: 'Set up test databases'
-
-  - script: |
-      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
-    displayName: 'Run sqlsrv functional tests'
-
-  - script: |
-      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
-    displayName: 'Run pdo_sqlsrv functional tests'
-
-  - script: |
-      cd $(Build.SourcesDirectory)/test/bvt/sqlsrv
-      sed -i -e "s/\$server = '.*';/\$server = '$(server)';/g" connect.inc
-      sed -i -e "s/\$databaseName = '.*';/\$databaseName = '$(sqlsrv_db)';/g" connect.inc
-      sed -i -e "s/\$uid = '.*';/\$uid = '$(uid)';/g" connect.inc
-      sed -i -e "s/\$pwd = '.*';/\$pwd = '$(pwd)';/g" connect.inc
-      cp $(Build.SourcesDirectory)/source/sqlsrv/run-tests.php .
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../../bvt_sqlsrv.log
-    displayName: 'Run sqlsrv BVT tests'
-
-  - script: |
-      cd $(Build.SourcesDirectory)/test/bvt/pdo_sqlsrv
-      sed -i -e "s/\$server = '.*';/\$server = '$(server)';/g" connect.inc
-      sed -i -e "s/\$databaseName = '.*';/\$databaseName = '$(pdo_sqlsrv_db)';/g" connect.inc
-      sed -i -e "s/\$uid = '.*';/\$uid = '$(uid)';/g" connect.inc
-      sed -i -e "s/\$pwd = '.*';/\$pwd = '$(pwd)';/g" connect.inc
-      cp $(Build.SourcesDirectory)/source/pdo_sqlsrv/run-tests.php .
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../../bvt_pdo_sqlsrv.log
-    displayName: 'Run pdo_sqlsrv BVT tests'
-
-  - script: |
-      cd $(Build.SourcesDirectory)/test/
-      for f in functional/sqlsrv/*.diff; do [ -f "$f" ] && ls $f && cat $f && echo ''; done || true
-      for f in functional/pdo_sqlsrv/*.diff; do [ -f "$f" ] && ls $f && cat $f && echo ''; done || true
-      for f in bvt/sqlsrv/*.diff; do [ -f "$f" ] && ls $f && cat $f && echo ''; done || true
-      for f in bvt/pdo_sqlsrv/*.diff; do [ -f "$f" ] && ls $f && cat $f && echo ''; done || true
-      python functional/output.py
-      ls -l functional/*.xml
-    displayName: 'Processing test results'
-
-  - task: PublishTestResults@2
-    inputs:
-      testResultsFormat: 'JUnit'
-      testResultsFiles: '*.xml'
-      failTaskOnFailedTests: true
-      searchFolder: '$(Build.SourcesDirectory)/test/functional/'
-
-  - script: |
-      docker stop $(host)
-      docker rm $(host)
-    displayName: 'Stop SQL Server for Linux'
-    condition: always()
+  # Note: Docker is not available on macOS Azure Pipeline agents
+  # macOS testing would require a remote SQL Server connection
+  # For now, macOS job only verifies drivers can be built successfully
 
 - job: Linux
   variables:
@@ -299,10 +219,10 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)/test/bvt/sqlsrv
-      sed -i -e "s/\$server = '.*';/\$server = '$(server)';/g" connect.inc
-      sed -i -e "s/\$databaseName = '.*';/\$databaseName = '$(sqlsrv_db)';/g" connect.inc
-      sed -i -e "s/\$uid = '.*';/\$uid = '$(uid)';/g" connect.inc
-      sed -i -e "s/\$pwd = '.*';/\$pwd = '$(pwd)';/g" connect.inc
+      sed -i "s|\$server = '[^']*';|\$server = '$(server)';|g" connect.inc
+      sed -i "s|\$databaseName = '[^']*';|\$databaseName = '$(sqlsrv_db)';|g" connect.inc
+      sed -i "s|\$uid = '[^']*';|\$uid = '$(uid)';|g" connect.inc
+      sed -i "s|\$pwd = '[^']*';|\$pwd = '$(pwd)';|g" connect.inc
 
       export LC_ALL='en_US.UTF-8'
       cp $(Build.SourcesDirectory)/source/sqlsrv/run-tests.php .
@@ -311,10 +231,10 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)/test/bvt/pdo_sqlsrv
-      sed -i -e "s/\$server = '.*';/\$server = '$(server)';/g" connect.inc
-      sed -i -e "s/\$databaseName = '.*';/\$databaseName = '$(pdo_sqlsrv_db)';/g" connect.inc
-      sed -i -e "s/\$uid = '.*';/\$uid = '$(uid)';/g" connect.inc
-      sed -i -e "s/\$pwd = '.*';/\$pwd = '$(pwd)';/g" connect.inc
+      sed -i "s|\$server = '[^']*';|\$server = '$(server)';|g" connect.inc
+      sed -i "s|\$databaseName = '[^']*';|\$databaseName = '$(pdo_sqlsrv_db)';|g" connect.inc
+      sed -i "s|\$uid = '[^']*';|\$uid = '$(uid)';|g" connect.inc
+      sed -i "s|\$pwd = '[^']*';|\$pwd = '$(pwd)';|g" connect.inc
 
       export LC_ALL='en_US.UTF-8'
       cp $(Build.SourcesDirectory)/source/pdo_sqlsrv/run-tests.php .
@@ -402,24 +322,6 @@ jobs:
       cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
       (Get-Content .\connect.inc) | ForEach-Object { $_ -replace '(\$server = )[^;]+;', "`$1'$(host)';" -replace '(\$databaseName = )[^;]+;', "`$1'$(pdo_sqlsrv_db)';" -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" } | Set-Content .\connect.inc
     displayName: 'Update connection credentials'
-
-  - powershell: |
-      $client = New-Object Net.WebClient
-      $client.DownloadFile('https://download.microsoft.com/download/6/f/f/6ffefc73-39ab-4cc0-bb7c-4093d64c2669/en-US/17.10.6.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
-      $client.DownloadFile('https://download.microsoft.com/download/0/e/6/0e63d835-3513-45a0-9cf0-0bc75fb4269e/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
-      dir *.msi
-    displayName: 'Download ODBC msi and sql tools msi'
-
-  - script: |
-      msiexec /i "msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
-      reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
-      dir %WINDIR%\System32\msodbcsql*.dll
-    displayName: 'Install ODBC driver'
-
-  # FOR SOME REASON the set up did not set the PATH
-  - script: |
-      msiexec /i "MsSqlCmdLnUtils.msi" /qn IACCEPTMSSQLCMDLNUTILSLICENSETERMS=YES
-    displayName: 'Install SQL command line utilities version 15'
 
   - powershell: |
       $client = New-Object Net.WebClient
