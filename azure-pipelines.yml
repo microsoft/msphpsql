@@ -214,6 +214,23 @@ jobs:
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
       export LC_ALL='en_US.UTF-8'
+      
+      # Test query timeout at PHP level before running full test suite
+      echo "Testing query timeout functionality..."
+      php -r "
+      \$conn = sqlsrv_connect('$(server)', array('Database' => '$(sqlsrv_db)', 'UID' => '$(uid)', 'PWD' => '$(pwd)'));
+      if (\$conn === false) { die('Connection failed: ' . print_r(sqlsrv_errors(), true)); }
+      echo 'Connected successfully\n';
+      \$stmt = sqlsrv_query(\$conn, 'WAITFOR DELAY \'00:00:03\'; SELECT 1', array(), array('QueryTimeout' => 1));
+      if (\$stmt === false) {
+          echo 'Query failed as expected with timeout\n';
+          print_r(sqlsrv_errors());
+      } else {
+          echo 'WARNING: Query did not timeout! This explains why tests hang.\n';
+      }
+      sqlsrv_close(\$conn);
+      " || echo "Query timeout test failed"
+      
       php run-tests.php -P ./*.phpt --no-color --show-diff --set-timeout 120 2>&1 | tee ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
