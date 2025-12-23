@@ -129,7 +129,23 @@ jobs:
       docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
       docker ps -a
       sleep 10
+      
+      # Wait for SQL Server to be fully ready
+      echo "Waiting for SQL Server to be ready..."
+      for i in {1..30}; do
+        if docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -No -U $(uid) -P $(pwd) -Q 'SELECT 1' &> /dev/null; then
+          echo "SQL Server is ready!"
+          break
+        fi
+        echo "Waiting... ($i/30)"
+        sleep 2
+      done
+      
       docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -No -U $(uid) -P $(pwd) -Q 'select @@Version'
+      
+      # Test if query timeout works at SQL level
+      echo "Testing WAITFOR DELAY..."
+      timeout 5 docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -No -U $(uid) -P $(pwd) -Q "WAITFOR DELAY '00:00:03'; SELECT 1" && echo "WAITFOR test passed" || echo "WAITFOR test timed out as expected"
     displayName: 'Run SQL Server for Linux'
 
   - script: |
