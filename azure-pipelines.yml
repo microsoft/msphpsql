@@ -17,6 +17,7 @@ pr:
 
 jobs:
 - job: macOS
+  timeoutInMinutes: 60
   pool:
     vmImage: 'macos-latest'
   steps:
@@ -88,7 +89,7 @@ jobs:
       docker ps
 
       # Wait for SQL Server to start (SQL Server 2022 uses mssql-tools18)
-      for i in {1..30}; do
+      for i in {1..20}; do
         docker exec $(host) \
           /opt/mssql-tools18/bin/sqlcmd \
           -S localhost \
@@ -96,7 +97,7 @@ jobs:
           -P "$(pwd)" \
           -C \
           -Q "SELECT @@VERSION" > /dev/null 2>&1 && break
-        echo "Waiting for SQL Server to be ready (attempt $i/30)..."
+        echo "Waiting for SQL Server to be ready (attempt $i/20)..."
         sleep 2
       done
       
@@ -105,12 +106,8 @@ jobs:
     displayName: 'Pull & start SQL Server (Docker)'
 
   - script: |
-      brew tap
-      brew tap homebrew/core
-      brew reinstall autoconf automake libtool
-      php -v
-      # Install PHP 8.4
-      brew install php@8.4
+      # Install PHP 8.4 and build tools
+      brew install php@8.4 autoconf automake libtool
       # Make 8.4 the active CLI PHP
       brew unlink php || true
       brew link --overwrite --force php@8.4
@@ -121,7 +118,6 @@ jobs:
   - script: |
       # Install ODBC Driver for SQL Server on macOS
       brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-      brew update
       HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql17 mssql-tools
       
       # Verify ODBC driver installation
@@ -184,7 +180,7 @@ jobs:
       sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
       export LC_ALL='en_US.UTF-8'
-      php run-tests.php -P ./*.phpt --no-color --show-diff --set-timeout 120 2>&1 | tee ../sqlsrv.log
+      php run-tests.php *.phpt --no-color --show-diff --set-timeout 60 2>&1 | tee ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
   - script: |
@@ -195,7 +191,7 @@ jobs:
       sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
       export LC_ALL='en_US.UTF-8'
-      php run-tests.php -P ./*.phpt --no-color --show-diff --set-timeout 120 2>&1 | tee ../pdo_sqlsrv.log
+      php run-tests.php *.phpt --no-color --show-diff --set-timeout 60 2>&1 | tee ../pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
@@ -224,187 +220,187 @@ jobs:
     condition: always()
 
 - job: Linux
-#   variables:
-#     phpver: 8.4
-#   pool:
-#     vmImage: 'ubuntu-22.04'
-#   steps:
-#   - checkout: self
-#     clean: true
-#     fetchDepth: 1
+  variables:
+    phpver: 8.4
+  pool:
+    vmImage: 'ubuntu-22.04'
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 1
 
-#   - task: UsePythonVersion@0
-#     inputs:
-#       versionSpec: '3.x'
-#       architecture: 'x64'
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      architecture: 'x64'
 
-#   - script: |
-#       sudo update-alternatives --set php /usr/bin/php$(phpver)
-#       sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
-#       sudo update-alternatives --set phar /usr/bin/phar$(phpver)
-#       sudo update-alternatives --set phpdbg /usr/bin/phpdbg$(phpver)
-#       sudo update-alternatives --set php-cgi /usr/bin/php-cgi$(phpver)
-#       sudo update-alternatives --set phar.phar /usr/bin/phar.phar$(phpver)
-#       sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
-#       sudo phpdismod xdebug
-#       php -version
-#     displayName: 'Use PHP version $(phpver)'
+  - script: |
+      sudo update-alternatives --set php /usr/bin/php$(phpver)
+      sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
+      sudo update-alternatives --set phar /usr/bin/phar$(phpver)
+      sudo update-alternatives --set phpdbg /usr/bin/phpdbg$(phpver)
+      sudo update-alternatives --set php-cgi /usr/bin/php-cgi$(phpver)
+      sudo update-alternatives --set phar.phar /usr/bin/phar.phar$(phpver)
+      sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
+      sudo phpdismod xdebug
+      php -version
+    displayName: 'Use PHP version $(phpver)'
 
-#   - script: |
-#       echo install ODBC and dependencies
-#       sudo apt-get purge unixodbc
-#       sudo apt autoremove
-#       # Download/Install the package to configure the Microsoft repo
-#       curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)/packages-microsoft-prod.deb
-#       sudo dpkg -i packages-microsoft-prod.deb
-#       rm packages-microsoft-prod.deb
-#       sudo apt-get update
-#       sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools
-#       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-#       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-#       source ~/.bashrc
-#       sudo apt-get install -y unixodbc-dev
-#       odbcinst --j
-#       odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
-#     displayName: 'Install prerequisites'
+  - script: |
+      echo install ODBC and dependencies
+      sudo apt-get purge unixodbc
+      sudo apt autoremove
+      # Download/Install the package to configure the Microsoft repo
+      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)/packages-microsoft-prod.deb
+      sudo dpkg -i packages-microsoft-prod.deb
+      rm packages-microsoft-prod.deb
+      sudo apt-get update
+      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      source ~/.bashrc
+      sudo apt-get install -y unixodbc-dev
+      odbcinst --j
+      odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
+    displayName: 'Install prerequisites'
 
-#   - script: |
-#       python -m pip install --upgrade pip
-#       python -m pip install --upgrade requests
-#       python -m pip install PyYAML
-#       python -m pip install cpp-coveralls
-#     displayName: 'Install coveralls (upgrade both pip and requests first)'
+  - script: |
+      python -m pip install --upgrade pip
+      python -m pip install --upgrade requests
+      python -m pip install PyYAML
+      python -m pip install cpp-coveralls
+    displayName: 'Install coveralls (upgrade both pip and requests first)'
 
-#   - powershell: |
-#       $guid = [guid]::NewGuid().ToString()
-#       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-#     displayName: 'Generate Password'
+  - powershell: |
+      $guid = [guid]::NewGuid().ToString()
+      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
+    displayName: 'Generate Password'
 
-#   - script: |
-#       docker pull mcr.microsoft.com/mssql/server:2022-latest
-#       docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
-#       docker ps -a
-#       sleep 10
+  - script: |
+      docker pull mcr.microsoft.com/mssql/server:2022-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
+      docker ps -a
+      sleep 10
       
-#       docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
-#     displayName: 'Run SQL Server for Linux'
+      docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
+    displayName: 'Run SQL Server for Linux'
 
-#   - script: |
-#       sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
-#       sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
-#       sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
-#       sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
-#       sudo sed -i 's/# zh_CN GB2312/zh_CN GB2312/g' /etc/locale.gen
-#       sudo sed -i 's/# zh_CN.GB18030 GB18030/zh_CN.GB18030 GB18030/g' /etc/locale.gen
-#       sudo locale-gen
-#       export LANG='en_US.UTF-8'
-#       export LANGUAGE='en_US:en'
-#       export LC_ALL='en_US.UTF-8'
-#     displayName: 'Generate locales for testing'
+  - script: |
+      sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
+      sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
+      sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo sed -i 's/# zh_CN GB2312/zh_CN GB2312/g' /etc/locale.gen
+      sudo sed -i 's/# zh_CN.GB18030 GB18030/zh_CN.GB18030 GB18030/g' /etc/locale.gen
+      sudo locale-gen
+      export LANG='en_US.UTF-8'
+      export LANGUAGE='en_US:en'
+      export LC_ALL='en_US.UTF-8'
+    displayName: 'Generate locales for testing'
 
-#   - script: |
-#       echo setting env variables
-#       export TEST_PHP_SQL_SERVER='$(server)'
-#       export TEST_PHP_SQL_UID='$(uid)'
-#       export TEST_PHP_SQL_PWD='$(pwd)'
+  - script: |
+      echo setting env variables
+      export TEST_PHP_SQL_SERVER='$(server)'
+      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_PWD='$(pwd)'
 
-#       cd $(Build.SourcesDirectory)/test/functional/setup
-#       python ./setup_dbs.py -dbname $(sqlsrv_db)
-#       python ./setup_dbs.py -dbname $(pdo_sqlsrv_db)
-#     displayName: 'Set up test databases'
+      cd $(Build.SourcesDirectory)/test/functional/setup
+      python ./setup_dbs.py -dbname $(sqlsrv_db)
+      python ./setup_dbs.py -dbname $(pdo_sqlsrv_db)
+    displayName: 'Set up test databases'
 
-#   - script: |
-#       echo ready to build extensions
-#       sudo apt-get install -y php$(phpver)-intl
-#       cd $(Build.SourcesDirectory)/source
-#       chmod a+x packagize.sh
-#       ./packagize.sh
+  - script: |
+      echo ready to build extensions
+      sudo apt-get install -y php$(phpver)-intl
+      cd $(Build.SourcesDirectory)/source
+      chmod a+x packagize.sh
+      ./packagize.sh
 
-#       dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
+      dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
 
-#       cd $(Build.SourcesDirectory)/source/sqlsrv
-#       ls -al
-#       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
-#       cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
-#       echo extension=sqlsrv.so >> 20-sqlsrv.ini
+      cd $(Build.SourcesDirectory)/source/sqlsrv
+      ls -al
+      phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
+      echo extension=sqlsrv.so >> 20-sqlsrv.ini
 
-#       echo copying sqlsrv to $dest
-#       sudo cp 20-sqlsrv.ini $dest
+      echo copying sqlsrv to $dest
+      sudo cp 20-sqlsrv.ini $dest
 
-#       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
-#       ls -al
-#       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
-#       cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-#       echo extension=pdo_sqlsrv.so >> 30-pdo_sqlsrv.ini
+      cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
+      ls -al
+      phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      echo extension=pdo_sqlsrv.so >> 30-pdo_sqlsrv.ini
 
-#       echo copying pdo_sqlsrv to $dest
-#       sudo cp 30-pdo_sqlsrv.ini $dest
+      echo copying pdo_sqlsrv to $dest
+      sudo cp 30-pdo_sqlsrv.ini $dest
 
-#       sudo touch $dest/99-overrides.ini
-#       sudo chmod 666 $dest/99-overrides.ini
+      sudo touch $dest/99-overrides.ini
+      sudo chmod 666 $dest/99-overrides.ini
 
-#       php --ri sqlsrv
-#       php --ri pdo_sqlsrv
-#     displayName: 'Build and install drivers'
+      php --ri sqlsrv
+      php --ri pdo_sqlsrv
+    displayName: 'Build and install drivers'
 
-#   - script: |
-#       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-#       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
-#       export LC_ALL='en_US.UTF-8'
-#       php run-tests.php -P ./*.phpt --no-color --show-diff --set-timeout 120 2>&1 | tee ../sqlsrv.log
-#     displayName: 'Run sqlsrv functional tests'
+      export LC_ALL='en_US.UTF-8'
+      php run-tests.php -P ./*.phpt --no-color --show-diff --set-timeout 120 2>&1 | tee ../sqlsrv.log
+    displayName: 'Run sqlsrv functional tests'
 
-#   - script: |
-#       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-#       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
-#       export LC_ALL='en_US.UTF-8'
-#       php run-tests.php -P ./*.phpt --no-color --show-diff --set-timeout 120 2>&1 | tee ../pdo_sqlsrv.log
-#     displayName: 'Run pdo_sqlsrv functional tests'
+      export LC_ALL='en_US.UTF-8'
+      php run-tests.php -P ./*.phpt --no-color --show-diff --set-timeout 120 2>&1 | tee ../pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv functional tests'
 
-#   - script: |
-#       cd $(Build.SourcesDirectory)
-#       echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
-#       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
-#         -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
-#     displayName: 'Invoke coveralls using repo token'
-#     condition: false
-#     env:
-#       COVERALLS_REPO_TOKEN: $(repo_token)
-#       TRAVIS_JOB_ID: $(Build.BuildId)
-#       TRAVIS_BRANCH: $(Build.SourceBranchName)
-#       PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
+  - script: |
+      cd $(Build.SourcesDirectory)
+      echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
+      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
+        -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
+    displayName: 'Invoke coveralls using repo token'
+    condition: false
+    env:
+      COVERALLS_REPO_TOKEN: $(repo_token)
+      TRAVIS_JOB_ID: $(Build.BuildId)
+      TRAVIS_BRANCH: $(Build.SourceBranchName)
+      PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
      
-#   - script: |
-#       docker logs -t $(host)
-#       cd $(Build.SourcesDirectory)/test/functional/
-#       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
-#       for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
-#       python output.py
-#       ls -l *.xml
-#     displayName: 'Processing test results'
+  - script: |
+      docker logs -t $(host)
+      cd $(Build.SourcesDirectory)/test/functional/
+      for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      python output.py
+      ls -l *.xml
+    displayName: 'Processing test results'
 
-#   - task: PublishTestResults@2
-#     inputs:
-#       testResultsFormat: 'JUnit'
-#       testResultsFiles: '*.xml'
-#       failTaskOnFailedTests: true
-#       searchFolder: '$(Build.SourcesDirectory)/test/functional/'
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '*.xml'
+      failTaskOnFailedTests: true
+      searchFolder: '$(Build.SourcesDirectory)/test/functional/'
 
-#   - script: |
-#       docker stop $(host)
-#       docker rm $(host)
-#     displayName: 'Stop SQL Server for Linux'
-#     condition: always()
+  - script: |
+      docker stop $(host)
+      docker rm $(host)
+    displayName: 'Stop SQL Server for Linux'
+    condition: always()
 
-# - job: Windows
+- job: Windows
   variables:
     phpVersion: 8.4
   pool:
