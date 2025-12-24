@@ -252,7 +252,7 @@ jobs:
   variables:
     phpVersion: 8.4
   pool:
-    vmImage: 'windows-2022'
+    vmImage: 'windows-latest'
   steps:
   - checkout: self
     clean: true
@@ -341,28 +341,67 @@ jobs:
       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
     displayName: 'Generate Password'
 
-  - script: |
-      docker pull microsoft/mssql-server-windows-developer
-      docker run -d --name sqlcontainer -h $(host) -p 1433:1433 -e sa_password=$(pwd) -e ACCEPT_EULA=Y microsoft/mssql-server-windows-developer
-      docker ps -a
-      timeout /t 30 /nobreak
-      echo Waiting for SQL Server to be ready...
-      sqlcmd -S $(host) -U $(uid) -P $(pwd) -Q "SELECT @@VERSION"
-    displayName: 'Run SQL Server for Windows Server'
+  - powershell: |
+      Write-Host "Starting SQL Server LocalDB..."
+      
+      # Create and start LocalDB instance
+      sqllocaldb create MSSQLLocalDB
+      sqllocaldb start MSSQLLocalDB
+      
+      # Wait for it to be ready
+      Start-Sleep -Seconds 3
+      
+      # Get instance info
+      sqllocaldb info MSSQLLocalDB
+      
+      # Test connection using Windows Authentication
+      Write-Host "Testing connection to LocalDB..."
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "SELECT @@VERSION"
+      
+      Write-Host "SQL Server LocalDB is ready"
+    displayName: 'Start SQL Server LocalDB'
 
   - powershell: |
+      # Update connection strings to use LocalDB
+      $server = "(localdb)\MSSQLLocalDB"
+      
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
-      (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
-      Select-String $(host) .\MsSetup.inc
-      Select-String $(sqlsrv_db) .\MsSetup.inc
+      (Get-Content .\MsSetup.inc) | ForEach-Object { 
+          $_ -replace "TARGET_SERVER", $server `
+             -replace "TARGET_DATABASE", "$(sqlsrv_db)" `
+             -replace "TARGET_USERNAME", "" `
+             -replace "TARGET_PASSWORD", "" 
+      } | Set-Content .\MsSetup.inc
+      
+      Write-Host "Updated sqlsrv MsSetup.inc:"
+      Select-String "server|Database" .\MsSetup.inc
+      
       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
-      (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
-      Select-String $(host) .\MsSetup.inc
-      Select-String $(pdo_sqlsrv_db) .\MsSetup.inc
+      (Get-Content .\MsSetup.inc) | ForEach-Object { 
+          $_ -replace "TARGET_SERVER", $server `
+             -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" `
+             -replace "TARGET_USERNAME", "" `
+             -replace "TARGET_PASSWORD", "" 
+      } | Set-Content .\MsSetup.inc
+      
+      Write-Host "Updated pdo_sqlsrv MsSetup.inc:"
+      Select-String "server|Database" .\MsSetup.inc
+      
       cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
-      (Get-Content .\connect.inc) | ForEach-Object { $_ -replace '(\$server = )[^;]+;', "`$1'$(host)';" -replace '(\$databaseName = )[^;]+;', "`$1'$(sqlsrv_db)';" -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" } | Set-Content .\connect.inc
+      (Get-Content .\connect.inc) | ForEach-Object { 
+          $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
+             -replace '(\$databaseName = )[^;]+;', "`$1'$(sqlsrv_db)';" `
+             -replace '(\$uid = )[^;]+;', "`$1'';" `
+             -replace '(\$pwd = )[^;]+;', "`$1'';" 
+      } | Set-Content .\connect.inc
+      
       cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
-      (Get-Content .\connect.inc) | ForEach-Object { $_ -replace '(\$server = )[^;]+;', "`$1'$(host)';" -replace '(\$databaseName = )[^;]+;', "`$1'$(pdo_sqlsrv_db)';" -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" } | Set-Content .\connect.inc
+      (Get-Content .\connect.inc) | ForEach-Object { 
+          $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
+             -replace '(\$databaseName = )[^;]+;', "`$1'$(pdo_sqlsrv_db)';" `
+             -replace '(\$uid = )[^;]+;', "`$1'';" `
+             -replace '(\$pwd = )[^;]+;', "`$1'';" 
+      } | Set-Content .\connect.inc
     displayName: 'Update connection credentials'
 
   - powershell: |
@@ -421,15 +460,57 @@ jobs:
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv -Verbose
     displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
 
-  - script: |
-      set path=C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;%path%
-      sqlcmd -S $(host) -U $(uid) -P $(pwd) -Q "SELECT @@Version"
-      set TEST_PHP_SQL_SERVER=$(host)
-      set TEST_PHP_SQL_UID=$(uid)
-      set TEST_PHP_SQL_PWD=$(pwd)
+  - powershell: |
+      Write-Host "Setting up test databases..."
+      
+      # Use Windows Authentication for LocalDB
+      $server = "(localdb)\MSSQLLocalDB"
+      
+      # Create databases directly using sqlcmd with Windows Auth (-E flag)
+      Write-Host "Creating $(sqlsrv_db) database..."
+      sqlcmd -S $server -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '$(sqlsrv_db)') CREATE DATABASE [$(sqlsrv_db)]"
+      
+      Write-Host "Creating $(pdo_sqlsrv_db) database..."
+      sqlcmd -S $server -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '$(pdo_sqlsrv_db)') CREATE DATABASE [$(pdo_sqlsrv_db)]"
+      
+      # Run setup scripts using sqlcmd with Windows Auth
+      Write-Host "Setting up test tables and data..."
       cd $(Build.SourcesDirectory)\test\functional\setup
-      python setup_dbs.py -dbname $(sqlsrv_db)
-      python setup_dbs.py -dbname $(pdo_sqlsrv_db)
+      
+      # Execute SQL setup scripts for sqlsrv
+      sqlcmd -S $server -d $(sqlsrv_db) -i test_types.sql
+      sqlcmd -S $server -d $(sqlsrv_db) -i 168256.sql
+      sqlcmd -S $server -d $(sqlsrv_db) -i cd_info.sql
+      sqlcmd -S $server -d $(sqlsrv_db) -i tracks.sql
+      
+      # Execute SQL setup scripts for pdo_sqlsrv
+      sqlcmd -S $server -d $(pdo_sqlsrv_db) -i test_types.sql
+      sqlcmd -S $server -d $(pdo_sqlsrv_db) -i 168256.sql
+      sqlcmd -S $server -d $(pdo_sqlsrv_db) -i cd_info.sql
+      sqlcmd -S $server -d $(pdo_sqlsrv_db) -i tracks.sql
+      
+      # Load data using bcp with Windows Auth (-T flag)
+      Write-Host "Loading test data..."
+      bcp $(sqlsrv_db)..cd_info in cd_info.dat -f cd_info.fmt -S $server -T -q
+      bcp $(sqlsrv_db)..tracks in tracks.dat -f tracks.fmt -S $server -T -q
+      bcp $(sqlsrv_db)..test_streamable_types in test_streamable_types.dat -f test_streamable_types.fmt -S $server -T -q
+      bcp $(sqlsrv_db)..[159137] in xml.dat -f xml.fmt -S $server -T -q
+      bcp $(sqlsrv_db)..[168256] in 168256.dat -f 168256.fmt -S $server -T -q
+      
+      bcp $(pdo_sqlsrv_db)..cd_info in cd_info.dat -f cd_info.fmt -S $server -T -q
+      bcp $(pdo_sqlsrv_db)..tracks in tracks.dat -f tracks.fmt -S $server -T -q
+      bcp $(pdo_sqlsrv_db)..test_streamable_types in test_streamable_types.dat -f test_streamable_types.fmt -S $server -T -q
+      bcp $(pdo_sqlsrv_db)..[159137] in xml.dat -f xml.fmt -S $server -T -q
+      bcp $(pdo_sqlsrv_db)..[168256] in 168256.dat -f 168256.fmt -S $server -T -q
+      
+      # Setup Always Encrypted (Windows only)
+      Write-Host "Setting up Always Encrypted certificates..."
+      certutil -user -p '' -importPFX My PHPcert.pfx NoRoot
+      certutil -user -p '' -importPFX My AEV2Cert.pfx NoRoot
+      sqlcmd -S $server -I -i ae_keys.sql -d $(sqlsrv_db)
+      sqlcmd -S $server -I -i ae_keys.sql -d $(pdo_sqlsrv_db)
+      
+      Write-Host "Database setup complete!"
     displayName: 'Set up test databases'
 
   - script: |
@@ -472,9 +553,3 @@ jobs:
       testResultsFiles: '*.xml'
       failTaskOnFailedTests: true
       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
-
-  - script: |
-      docker stop sqlcontainer
-      docker rm sqlcontainer
-    displayName: 'Stop SQL Server for Windows Server'
-    condition: always()
