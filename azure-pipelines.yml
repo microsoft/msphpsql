@@ -263,12 +263,38 @@ jobs:
       versionSpec: '3.x'
       architecture: 'x64'
 
+  - powershell: |
+      # Download and install PHP 8.4 to match the drivers we're building
+      $client = New-Object Net.WebClient
+      $client.Headers.Add("user-agent", "azure pipeline build")
+      $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
+      $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
+      $version = $jsondata.{$(phpVersion)}.version
+      Write-Host "Installing PHP $(phpVersion) version $version"
+      
+      # Download PHP NTS x64
+      $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-vs16-x64.zip"
+      Write-Host "Downloading from: $phpUrl"
+      $client.DownloadFile($phpUrl, "php.zip")
+      
+      # Extract to C:\tools\php
+      Expand-Archive -Path php.zip -DestinationPath C:\tools\php -Force
+      
+      # Configure php.ini
+      Copy-Item C:\tools\php\php.ini-development C:\tools\php\php.ini -Force
+      Add-Content C:\tools\php\php.ini "extension_dir=C:\tools\php\ext"
+      
+      php -v
+    displayName: 'Install PHP $(phpVersion)'
+
   - script: |
       dir C:\tools\php\php*
       dir C:\tools\php\ext\
       echo extension_dir=C:\tools\php\ext >> C:\tools\php\php.ini
       php --ini
       php -v
+      echo Checking PHP API version:
+      php -r "echo 'PHP API: ' . phpversion() . PHP_EOL; echo 'Thread Safety: ' . (PHP_ZTS ? 'enabled' : 'disabled') . PHP_EOL; echo 'Architecture: ' . PHP_INT_SIZE*8 . '-bit' . PHP_EOL;"
     displayName: 'Check PHP'
 
   - powershell: |
@@ -346,6 +372,8 @@ jobs:
       Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
       Write-Host "Verifying DLLs in destination:"
       dir C:\tools\php\ext\*sqlsrv*.dll
+      Write-Host "Checking DLL dependencies with dumpbin:"
+      & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" /dependents C:\tools\php\ext\php_sqlsrv.dll | Select-String -Pattern "dll"
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv -Verbose
     displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
