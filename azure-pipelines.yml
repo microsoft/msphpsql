@@ -266,7 +266,7 @@ jobs:
   - powershell: |
       # Download and install PHP 8.4 to match the drivers we're building
       $client = New-Object Net.WebClient
-      $client.Headers.Add("user-agent", "azure pipeline build")
+      $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
       $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
       $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
       
@@ -294,6 +294,8 @@ jobs:
       Write-Host "Downloading from: $phpUrl"
       
       try {
+          # Set user agent again for the PHP download
+          $client.Headers.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
           $client.DownloadFile($phpUrl, "php.zip")
           $fileSize = (Get-Item php.zip).Length
           Write-Host "Download completed. File size: $fileSize bytes"
@@ -393,7 +395,7 @@ jobs:
 
   - powershell: |
       $client = New-Object Net.WebClient
-      $client.Headers.Add("user-agent", "azure pipeline build")
+      $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
       $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
       $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
       $env:VERSION = $jsondata.{$(phpVersion)}.version
