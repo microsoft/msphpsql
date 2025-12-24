@@ -272,17 +272,32 @@ jobs:
       $version = $jsondata.{$(phpVersion)}.version
       Write-Host "Installing PHP $(phpVersion) version $version"
       
+      # PHP 8.4+ uses VS17, earlier versions use VS16
+      $vsVersion = if ([version]$version -ge [version]"8.4.0") { "vs17" } else { "vs16" }
+      
       # Download PHP NTS x64
-      $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-vs16-x64.zip"
+      $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$vsVersion-x64.zip"
       Write-Host "Downloading from: $phpUrl"
-      $client.DownloadFile($phpUrl, "php.zip")
+      
+      try {
+          $client.DownloadFile($phpUrl, "php.zip")
+          Write-Host "Download completed. File size: $((Get-Item php.zip).Length) bytes"
+      } catch {
+          Write-Host "##[error]Failed to download PHP: $_"
+          throw
+      }
       
       # Extract to C:\tools\php
+      if (Test-Path C:\tools\php) {
+          Remove-Item C:\tools\php -Recurse -Force
+      }
       Expand-Archive -Path php.zip -DestinationPath C:\tools\php -Force
       
       # Configure php.ini
-      Copy-Item C:\tools\php\php.ini-development C:\tools\php\php.ini -Force
-      Add-Content C:\tools\php\php.ini "extension_dir=C:\tools\php\ext"
+      if (Test-Path C:\tools\php\php.ini-development) {
+          Copy-Item C:\tools\php\php.ini-development C:\tools\php\php.ini -Force
+      }
+      Add-Content C:\tools\php\php.ini "`nextension_dir=C:\tools\php\ext"
       
       php -v
     displayName: 'Install PHP $(phpVersion)'
