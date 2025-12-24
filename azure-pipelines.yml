@@ -87,20 +87,21 @@ jobs:
       echo "Container started, waiting for SQL Server to be ready..."
       docker ps
 
-      # Wait for SQL Server to start (use correct path for mssql-tools)
+      # Wait for SQL Server to start (SQL Server 2022 uses mssql-tools18)
       for i in {1..30}; do
         docker exec $(host) \
-          /opt/mssql-tools/bin/sqlcmd \
+          /opt/mssql-tools18/bin/sqlcmd \
           -S localhost \
           -U $(uid) \
           -P "$(pwd)" \
+          -C \
           -Q "SELECT @@VERSION" > /dev/null 2>&1 && break
         echo "Waiting for SQL Server to be ready (attempt $i/30)..."
         sleep 2
       done
       
       echo "SQL Server is ready!"
-      docker exec $(host) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -Q "SELECT @@VERSION"
+      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "SELECT @@VERSION"
     displayName: 'Pull & start SQL Server (Docker)'
 
   - script: |
