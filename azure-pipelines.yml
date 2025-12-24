@@ -30,17 +30,16 @@ jobs:
       architecture: 'x64'
 
   - script: |
-      # Skip brew update to save time (runners have recent Homebrew)
-      # Install only Colima (docker CLI is pre-installed on macOS runners)
-      echo "Installing Colima..."
-      brew install colima
+      # Install Docker CLI and Colima
+      echo "Installing Docker and Colima..."
+      brew install docker colima
 
       # Start Colima with extra resources
       echo "Starting Colima..."
-      colima start --cpu 4 --memory 8 --disk 50 --verbose
+      colima start --cpu 4 --memory 8 --disk 50
 
-      # Set Docker context to use Colima
-      docker context use colima || true
+      # Set Docker context to use Colima (this persists in ~/.docker/config.json)
+      docker context use colima
 
       # Confirm Docker is operational
       echo "Verifying Docker setup..."
@@ -55,12 +54,8 @@ jobs:
     displayName: 'Generate Password'
 
   - script: |
-      # Ensure Docker context is set to Colima
-      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-      
-      # Verify Docker is working
-      echo "Verifying Docker connectivity..."
-      docker version
+      # Docker context should be set from previous step, but verify
+      docker context show
       docker ps
       
       # Pull and run SQL Server container
@@ -198,7 +193,6 @@ jobs:
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
-      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       docker logs -t $(host)
       cd $(Build.SourcesDirectory)/test/functional/
       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
@@ -215,7 +209,6 @@ jobs:
       searchFolder: '$(Build.SourcesDirectory)/test/functional/'
 
   - script: |
-      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       docker stop $(host)
       docker rm $(host)
       colima stop
