@@ -4,6 +4,13 @@ variety of connection parameters.
 <?php 
 require('skipif_unix.inc');
 require('skipif_azure.inc');
+require('MsSetup.inc');
+// This test expects connection attempts with empty passwords to fail,
+// which only works with Windows Authentication (empty default credentials).
+// Skip if using SQL Authentication (non-empty credentials).
+if (!empty($userName) || !empty($userPassword)) {
+    die("skip test requires Windows Authentication with empty credentials");
+}
 ?>
 --FILE--
 <?php
