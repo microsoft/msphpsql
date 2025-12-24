@@ -342,44 +342,39 @@ jobs:
     displayName: 'Generate Password'
 
   - powershell: |
-      Write-Host "Starting SQL Server in Docker..."
+      Write-Host "Starting SQL Server LocalDB..."
       
-      # Pull and run SQL Server 2022 Linux container
-      docker pull mcr.microsoft.com/mssql/server:2022-latest
-      docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$(pwd)" -p 1433:1433 --name sql1 -d mcr.microsoft.com/mssql/server:2022-latest
+      # Create and start LocalDB instance  
+      sqllocaldb create MSSQLLocalDB
+      sqllocaldb start MSSQLLocalDB
       
-      # Wait for SQL Server to be ready
-      Write-Host "Waiting for SQL Server to start..."
-      Start-Sleep -Seconds 15
+      # Wait for it to be ready
+      Start-Sleep -Seconds 5
       
-      # Test connection
-      Write-Host "Testing connection to SQL Server..."
-      $maxRetries = 10
-      $retryCount = 0
-      $connected = $false
+      # Get instance info
+      sqllocaldb info MSSQLLocalDB
       
-      while (-not $connected -and $retryCount -lt $maxRetries) {
-          try {
-              sqlcmd -S "$(server)" -U $(uid) -P "$(pwd)" -Q "SELECT @@VERSION" -C
-              $connected = $true
-              Write-Host "Successfully connected to SQL Server"
-          } catch {
-              $retryCount++
-              Write-Host "Connection attempt $retryCount failed, retrying..."
-              Start-Sleep -Seconds 3
-          }
-      }
+      # Enable SQL Authentication and set sa password
+      Write-Host "Configuring SQL Authentication..."
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "ALTER LOGIN sa WITH PASSWORD = N'$(pwd)'; ALTER LOGIN sa ENABLE;"
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "EXEC xp_instance_regwrite N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'LoginMode', REG_DWORD, 2"
       
-      if (-not $connected) {
-          throw "Failed to connect to SQL Server after $maxRetries attempts"
-      }
+      # Restart LocalDB to apply changes
+      Write-Host "Restarting LocalDB to apply authentication changes..."
+      sqllocaldb stop MSSQLLocalDB
+      sqllocaldb start MSSQLLocalDB
+      Start-Sleep -Seconds 5
       
-      Write-Host "SQL Server is ready"
-    displayName: 'Start SQL Server in Docker'
+      # Test connection with SQL Auth using named pipe
+      Write-Host "Testing connection to LocalDB with SQL Authentication..."
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -U $(uid) -P "$(pwd)" -Q "SELECT @@VERSION"
+      
+      Write-Host "SQL Server LocalDB is ready"
+    displayName: 'Start SQL Server LocalDB'
 
   - powershell: |
-      # Update connection strings to use Docker SQL Server
-      $server = "$(server)"
+      # Update connection strings to use LocalDB named pipe
+      $server = "(localdb)\MSSQLLocalDB"
       
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
       (Get-Content .\MsSetup.inc) | ForEach-Object { 
@@ -487,8 +482,8 @@ jobs:
   - powershell: |
       Write-Host "Setting up test databases..."
       
-      # Set environment variables for the Python script (same as Linux)
-      $env:TEST_PHP_SQL_SERVER = "$(server)"
+      # Set environment variables for the Python script
+      $env:TEST_PHP_SQL_SERVER = "(localdb)\MSSQLLocalDB"
       $env:TEST_PHP_SQL_UID = "$(uid)"
       $env:TEST_PHP_SQL_PWD = "$(pwd)"
       
@@ -553,8 +548,7 @@ jobs:
       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
 
   - powershell: |
-      Write-Host "Stopping and removing SQL Server container..."
-      docker stop sql1
-      docker rm sql1
-    displayName: 'Cleanup SQL Server container'
+      Write-Host "Stopping LocalDB..."
+      sqllocaldb stop MSSQLLocalDB
+    displayName: 'Cleanup LocalDB'
     condition: always()
