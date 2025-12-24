@@ -39,7 +39,7 @@ jobs:
       colima start --cpu 4 --memory 8 --disk 50
 
       # Set Docker context to use Colima (this persists in ~/.docker/config.json)
-      docker context use colima
+      docker context use colima >/dev/null || true
 
       # Confirm Docker is operational
       echo "Verifying Docker setup..."
@@ -54,8 +54,13 @@ jobs:
     displayName: 'Generate Password'
 
   - script: |
-      # Docker context should be set from previous step, but verify
+      # Set DOCKER_HOST to point to Colima socket
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+      
+      # Verify Docker is working
+      echo "Docker context:"
       docker context show
+      echo "Testing Docker connection:"
       docker ps
       
       # Pull and run SQL Server container
@@ -193,6 +198,7 @@ jobs:
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       docker logs -t $(host)
       cd $(Build.SourcesDirectory)/test/functional/
       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
@@ -209,6 +215,7 @@ jobs:
       searchFolder: '$(Build.SourcesDirectory)/test/functional/'
 
   - script: |
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       docker stop $(host)
       docker rm $(host)
       colima stop
