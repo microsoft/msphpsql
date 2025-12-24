@@ -349,28 +349,33 @@ jobs:
       sqllocaldb start MSSQLLocalDB
       
       # Wait for it to be ready
-      Start-Sleep -Seconds 3
+      Start-Sleep -Seconds 5
       
       # Get instance info
       sqllocaldb info MSSQLLocalDB
       
-      # Test connection using Windows Authentication
-      Write-Host "Testing connection to LocalDB..."
-      sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "SELECT @@VERSION"
+      # Enable SQL Authentication and create sa user with the generated password
+      Write-Host "Configuring SQL Authentication..."
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "ALTER LOGIN sa WITH PASSWORD = N'$(pwd)'; ALTER LOGIN sa ENABLE;"
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "EXEC xp_instance_regwrite N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'LoginMode', REG_DWORD, 2"
+      
+      # Test connection with SQL Auth
+      Write-Host "Testing connection to LocalDB with SQL Authentication..."
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -U $(uid) -P "$(pwd)" -Q "SELECT @@VERSION"
       
       Write-Host "SQL Server LocalDB is ready"
     displayName: 'Start SQL Server LocalDB'
 
   - powershell: |
-      # Update connection strings to use LocalDB
+      # Update connection strings to use LocalDB with SQL Auth
       $server = "(localdb)\MSSQLLocalDB"
       
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
       (Get-Content .\MsSetup.inc) | ForEach-Object { 
           $_ -replace "TARGET_SERVER", $server `
              -replace "TARGET_DATABASE", "$(sqlsrv_db)" `
-             -replace "TARGET_USERNAME", "" `
-             -replace "TARGET_PASSWORD", "" 
+             -replace "TARGET_USERNAME", "$(uid)" `
+             -replace "TARGET_PASSWORD", "$(pwd)" 
       } | Set-Content .\MsSetup.inc
       
       Write-Host "Updated sqlsrv MsSetup.inc:"
@@ -380,8 +385,8 @@ jobs:
       (Get-Content .\MsSetup.inc) | ForEach-Object { 
           $_ -replace "TARGET_SERVER", $server `
              -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" `
-             -replace "TARGET_USERNAME", "" `
-             -replace "TARGET_PASSWORD", "" 
+             -replace "TARGET_USERNAME", "$(uid)" `
+             -replace "TARGET_PASSWORD", "$(pwd)" 
       } | Set-Content .\MsSetup.inc
       
       Write-Host "Updated pdo_sqlsrv MsSetup.inc:"
@@ -391,16 +396,16 @@ jobs:
       (Get-Content .\connect.inc) | ForEach-Object { 
           $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
              -replace '(\$databaseName = )[^;]+;', "`$1'$(sqlsrv_db)';" `
-             -replace '(\$uid = )[^;]+;', "`$1'';" `
-             -replace '(\$pwd = )[^;]+;', "`$1'';" 
+             -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" `
+             -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
       } | Set-Content .\connect.inc
       
       cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
       (Get-Content .\connect.inc) | ForEach-Object { 
           $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
              -replace '(\$databaseName = )[^;]+;', "`$1'$(pdo_sqlsrv_db)';" `
-             -replace '(\$uid = )[^;]+;', "`$1'';" `
-             -replace '(\$pwd = )[^;]+;', "`$1'';" 
+             -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" `
+             -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
       } | Set-Content .\connect.inc
     displayName: 'Update connection credentials'
 
@@ -471,52 +476,14 @@ jobs:
   - powershell: |
       Write-Host "Setting up test databases..."
       
-      # Use Windows Authentication for LocalDB
-      $server = "(localdb)\MSSQLLocalDB"
+      # Set environment variables for the Python script (same as Linux)
+      $env:TEST_PHP_SQL_SERVER = "(localdb)\MSSQLLocalDB"
+      $env:TEST_PHP_SQL_UID = "$(uid)"
+      $env:TEST_PHP_SQL_PWD = "$(pwd)"
       
-      # Create databases directly using sqlcmd with Windows Auth (-E flag)
-      Write-Host "Creating $(sqlsrv_db) database..."
-      sqlcmd -S $server -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '$(sqlsrv_db)') CREATE DATABASE [$(sqlsrv_db)]"
-      
-      Write-Host "Creating $(pdo_sqlsrv_db) database..."
-      sqlcmd -S $server -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '$(pdo_sqlsrv_db)') CREATE DATABASE [$(pdo_sqlsrv_db)]"
-      
-      # Run setup scripts using sqlcmd with Windows Auth
-      Write-Host "Setting up test tables and data..."
       cd $(Build.SourcesDirectory)\test\functional\setup
-      
-      # Execute SQL setup scripts for sqlsrv
-      sqlcmd -S $server -d $(sqlsrv_db) -i test_types.sql
-      sqlcmd -S $server -d $(sqlsrv_db) -i 168256.sql
-      sqlcmd -S $server -d $(sqlsrv_db) -i cd_info.sql
-      sqlcmd -S $server -d $(sqlsrv_db) -i tracks.sql
-      
-      # Execute SQL setup scripts for pdo_sqlsrv
-      sqlcmd -S $server -d $(pdo_sqlsrv_db) -i test_types.sql
-      sqlcmd -S $server -d $(pdo_sqlsrv_db) -i 168256.sql
-      sqlcmd -S $server -d $(pdo_sqlsrv_db) -i cd_info.sql
-      sqlcmd -S $server -d $(pdo_sqlsrv_db) -i tracks.sql
-      
-      # Load data using bcp with Windows Auth (-T flag)
-      Write-Host "Loading test data..."
-      bcp $(sqlsrv_db)..cd_info in cd_info.dat -f cd_info.fmt -S $server -T -q
-      bcp $(sqlsrv_db)..tracks in tracks.dat -f tracks.fmt -S $server -T -q
-      bcp $(sqlsrv_db)..test_streamable_types in test_streamable_types.dat -f test_streamable_types.fmt -S $server -T -q
-      bcp $(sqlsrv_db)..[159137] in xml.dat -f xml.fmt -S $server -T -q
-      bcp $(sqlsrv_db)..[168256] in 168256.dat -f 168256.fmt -S $server -T -q
-      
-      bcp $(pdo_sqlsrv_db)..cd_info in cd_info.dat -f cd_info.fmt -S $server -T -q
-      bcp $(pdo_sqlsrv_db)..tracks in tracks.dat -f tracks.fmt -S $server -T -q
-      bcp $(pdo_sqlsrv_db)..test_streamable_types in test_streamable_types.dat -f test_streamable_types.fmt -S $server -T -q
-      bcp $(pdo_sqlsrv_db)..[159137] in xml.dat -f xml.fmt -S $server -T -q
-      bcp $(pdo_sqlsrv_db)..[168256] in 168256.dat -f 168256.fmt -S $server -T -q
-      
-      # Setup Always Encrypted (Windows only)
-      Write-Host "Setting up Always Encrypted certificates..."
-      certutil -user -p '' -importPFX My PHPcert.pfx NoRoot
-      certutil -user -p '' -importPFX My AEV2Cert.pfx NoRoot
-      sqlcmd -S $server -I -i ae_keys.sql -d $(sqlsrv_db)
-      sqlcmd -S $server -I -i ae_keys.sql -d $(pdo_sqlsrv_db)
+      python setup_dbs.py -dbname $(sqlsrv_db)
+      python setup_dbs.py -dbname $(pdo_sqlsrv_db)
       
       Write-Host "Database setup complete!"
     displayName: 'Set up test databases'
