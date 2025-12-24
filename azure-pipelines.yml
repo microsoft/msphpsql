@@ -342,13 +342,6 @@ jobs:
     displayName: 'Generate Password'
 
   - script: |
-      echo extension=php_sqlsrv.dll >> C:\tools\php\php.ini
-      echo extension=php_pdo_sqlsrv.dll >> C:\tools\php\php.ini
-      php --ri sqlsrv
-      php --ri pdo_sqlsrv
-    displayName: 'Load drivers'
-
-  - script: |
       docker pull microsoft/mssql-server-windows-developer
       docker run -d --name sqlcontainer -h $(host) -p 1433:1433 -e sa_password=$(pwd) -e ACCEPT_EULA=Y microsoft/mssql-server-windows-developer
       docker ps -a
@@ -411,6 +404,17 @@ jobs:
       Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
       Write-Host "Verifying DLLs in destination:"
       dir C:\tools\php\ext\*sqlsrv*.dll
+      
+      # Add extensions to php.ini
+      Write-Host "Adding extensions to php.ini"
+      Add-Content C:\tools\php\php.ini "extension=php_sqlsrv.dll"
+      Add-Content C:\tools\php\php.ini "extension=php_pdo_sqlsrv.dll"
+      
+      # Verify extensions are loaded
+      Write-Host "Verifying extensions:"
+      php --ri sqlsrv
+      php --ri pdo_sqlsrv
+      
       Write-Host "Checking DLL dependencies with dumpbin:"
       & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" /dependents C:\tools\php\ext\php_sqlsrv.dll | Select-String -Pattern "dll"
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
