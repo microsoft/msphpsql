@@ -30,18 +30,23 @@ jobs:
       architecture: 'x64'
 
   - script: |
-      brew update
-      brew install docker colima
+      # Skip brew update to save time (runners have recent Homebrew)
+      # Install only Colima (docker CLI is pre-installed on macOS runners)
+      echo "Installing Colima..."
+      brew install colima
 
       # Start Colima with extra resources
-      colima start --cpu 4 --memory 8 --disk 50
+      echo "Starting Colima..."
+      colima start --cpu 4 --memory 8 --disk 50 --verbose
 
-      # Optional: set Docker context (usually automatic)
-      docker context use colima >/dev/null || true
+      # Set Docker context to use Colima
+      docker context use colima || true
 
       # Confirm Docker is operational
+      echo "Verifying Docker setup..."
       docker version
       docker ps
+      echo "Docker is ready!"
     displayName: 'Install and start Colima-based Docker'
 
   - powershell: |
