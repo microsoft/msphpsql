@@ -454,8 +454,16 @@ jobs:
       php --ri sqlsrv
       php --ri pdo_sqlsrv
       
+      # Check DLL dependencies with dumpbin (optional, for diagnostics)
       Write-Host "Checking DLL dependencies with dumpbin:"
-      & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" /dependents C:\tools\php\ext\php_sqlsrv.dll | Select-String -Pattern "dll"
+      $dumpbinPath = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($dumpbinPath) {
+          & $dumpbinPath.FullName /dependents C:\tools\php\ext\php_sqlsrv.dll | Select-String -Pattern "dll"
+      } else {
+          Write-Host "dumpbin.exe not found - skipping DLL dependency check"
+      }
+      
+      # Copy run-tests.php to test directories
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv -Verbose
     displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
