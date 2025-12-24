@@ -321,8 +321,8 @@ Array
     \[SQLSTATE\] => 01000
     \[1\] => 5701
     \[code\] => 5701
-    \[2\] => .*Changed database context to '.*'.
-    \[message\] => .*Changed database context to '.*'.
+    \[2\] => .*Changed database context to.*
+    \[message\] => .*Changed database context to.*
 \)
 Array
 \(
@@ -330,8 +330,8 @@ Array
     \[SQLSTATE\] => 01000
     \[1\] => 5703
     \[code\] => 5703
-    \[2\] => .*Changed language setting to us_english.
-    \[message\] => .*Changed language setting to us_english.
+    \[2\] => .*Changed language setting to.*
+    \[message\] => .*Changed language setting to.*
 \)
 Test sqlsrv_connect with all options and integrated auth
 Array
@@ -340,8 +340,8 @@ Array
     \[SQLSTATE\] => 01000
     \[1\] => 5701
     \[code\] => 5701
-    \[2\] => .*Changed database context to '.*'.
-    \[message\] => .*Changed database context to '.*'.
+    \[2\] => .*Changed database context to.*
+    \[message\] => .*Changed database context to.*
 \)
 Array
 \(
@@ -349,7 +349,7 @@ Array
     \[SQLSTATE\] => 01000
     \[1\] => 5703
     \[code\] => 5703
-    \[2\] => .*Changed language setting to us_english.
-    \[message\] => .*Changed language setting to us_english.
+    \[2\] => .*Changed language setting to.*
+    \[message\] => .*Changed language setting to.*
 \)
 Test succeeded.

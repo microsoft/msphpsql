@@ -513,19 +513,6 @@ jobs:
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - powershell: |
-      Write-Host "Checking for sqlsrv_testConnection test diff..."
-      $diffFile = "$(Build.SourcesDirectory)\test\functional\sqlsrv\sqlsrv_testConnection.diff"
-      if (Test-Path $diffFile) {
-          Write-Host "=== sqlsrv_testConnection.diff content ==="
-          Get-Content $diffFile | Write-Host
-          Write-Host "=== End of diff ==="
-      } else {
-          Write-Host "No diff file found for sqlsrv_testConnection"
-      }
-    displayName: 'Debug sqlsrv_testConnection diff'
-    condition: always()
-
-  - powershell: |
       cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
       $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
       if ($runTestsPath) {
