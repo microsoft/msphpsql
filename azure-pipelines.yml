@@ -55,7 +55,16 @@ jobs:
     displayName: 'Generate Password'
 
   - script: |
+      # Ensure Docker context is set to Colima
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+      
+      # Verify Docker is working
+      echo "Verifying Docker connectivity..."
+      docker version
+      docker ps
+      
       # Pull and run SQL Server container
+      echo "Pulling SQL Server image..."
       docker pull mcr.microsoft.com/mssql/server:2022-latest
       
       # Run container with proper error handling
@@ -189,6 +198,7 @@ jobs:
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       docker logs -t $(host)
       cd $(Build.SourcesDirectory)/test/functional/
       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
@@ -205,6 +215,7 @@ jobs:
       searchFolder: '$(Build.SourcesDirectory)/test/functional/'
 
   - script: |
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       docker stop $(host)
       docker rm $(host)
       colima stop
