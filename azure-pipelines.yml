@@ -52,28 +52,41 @@ jobs:
   - script: |
       # Pull and run SQL Server container
       docker pull mcr.microsoft.com/mssql/server:2022-latest
+      
+      # Run container with proper error handling
+      echo "Starting SQL Server container $(host)..."
       docker run \
         --name $(host) \
         -e ACCEPT_EULA=Y \
         -e MSSQL_SA_PASSWORD="$(pwd)" \
+        -e MSSQL_PID=Developer \
         -p 1433:1433 \
         -d mcr.microsoft.com/mssql/server:2022-latest
+      
+      # Check if container started
+      if [ $? -ne 0 ]; then
+        echo "##[error]Failed to start SQL Server container"
+        docker ps -a
+        exit 1
+      fi
+      
+      echo "Container started, waiting for SQL Server to be ready..."
+      docker ps
 
-      # Wait for SQL Server to start
-      echo "Starting SQL Server container..."
+      # Wait for SQL Server to start (use correct path for mssql-tools)
       for i in {1..30}; do
         docker exec $(host) \
-          /opt/mssql-tools18/bin/sqlcmd \
+          /opt/mssql-tools/bin/sqlcmd \
           -S localhost \
           -U $(uid) \
           -P "$(pwd)" \
-          -C -Q "SELECT @@VERSION" && break
-        echo "Waiting for SQL Server to be ready..."
+          -Q "SELECT @@VERSION" > /dev/null 2>&1 && break
+        echo "Waiting for SQL Server to be ready (attempt $i/30)..."
         sleep 2
       done
       
       echo "SQL Server is ready!"
-      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "SELECT @@VERSION"
+      docker exec $(host) /opt/mssql-tools/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -Q "SELECT @@VERSION"
     displayName: 'Pull & start SQL Server (Docker)'
 
   - script: |
@@ -193,7 +206,7 @@ jobs:
     displayName: 'Stop SQL Server and Colima'
     condition: always()
 
-- job: Linux
+#- job: Linux
 #   variables:
 #     phpver: 8.4
 #   pool:
