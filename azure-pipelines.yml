@@ -206,7 +206,7 @@ jobs:
     displayName: 'Stop SQL Server and Colima'
     condition: always()
 
-# - job: Linux
+- job: Linux
 #   variables:
 #     phpver: 8.4
 #   pool:
