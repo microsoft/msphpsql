@@ -130,7 +130,7 @@ jobs:
 #       docker ps -a
 #       sleep 10
       
-#       docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -No -U $(uid) -P $(pwd) -Q 'select @@Version'
+#       docker exec -t $(host) /opt/mssql-tools/bin/sqlcmd -S $(server) -U $(uid) -P $(pwd) -Q 'select @@Version'
 #     displayName: 'Run SQL Server for Linux'
 
 #   - script: |
@@ -496,11 +496,19 @@ jobs:
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
+      set MSSQL_SERVER=(localdb)\MSSQLLocalDB
+      set MSSQL_USER=$(uid)
+      set MSSQL_PASSWORD=$(pwd)
+      set MSSQL_DATABASE_NAME=$(sqlsrv_db)
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      set MSSQL_SERVER=(localdb)\MSSQLLocalDB
+      set MSSQL_USER=$(uid)
+      set MSSQL_PASSWORD=$(pwd)
+      set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
