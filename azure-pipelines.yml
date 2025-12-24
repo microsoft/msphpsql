@@ -337,12 +337,17 @@ jobs:
       Write-Host "Latest PHP $(phpVersion) is ${env:VERSION}"
       cd $(Build.SourcesDirectory)\buildscripts\
       python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
-      dir *sqlsrv*.dll
+      if ($LASTEXITCODE -ne 0) { throw "sqlsrv build failed" }
       python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
-      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv
-      cp $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      if ($LASTEXITCODE -ne 0) { throw "pdo_sqlsrv build failed" }
+      Write-Host "Listing built DLLs:"
       dir *sqlsrv*.dll
-      cp *sqlsrv*.dll C:\tools\php\ext\
+      Write-Host "Copying DLLs to C:\tools\php\ext\"
+      Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
+      Write-Host "Verifying DLLs in destination:"
+      dir C:\tools\php\ext\*sqlsrv*.dll
+      Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
+      Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv -Verbose
     displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
 
   - script: |
