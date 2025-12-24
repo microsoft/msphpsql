@@ -276,6 +276,22 @@ jobs:
       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
     displayName: 'Generate Password'
 
+  - script: |
+      echo extension=php_sqlsrv.dll >> C:\tools\php\php.ini
+      echo extension=php_pdo_sqlsrv.dll >> C:\tools\php\php.ini
+      php --ri sqlsrv
+      php --ri pdo_sqlsrv
+    displayName: 'Load drivers'
+
+  - script: |
+      docker pull microsoft/mssql-server-windows-developer
+      docker run -d --name sqlcontainer -h $(host) -p 1433:1433 -e sa_password=$(pwd) -e ACCEPT_EULA=Y microsoft/mssql-server-windows-developer
+      docker ps -a
+      timeout /t 30 /nobreak
+      echo Waiting for SQL Server to be ready...
+      sqlcmd -S $(host) -U $(uid) -P $(pwd) -Q "SELECT @@VERSION"
+    displayName: 'Run SQL Server for Windows Server'
+
   - powershell: |
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
       (Get-Content .\MsSetup.inc) | ForEach-Object { $_ -replace "TARGET_SERVER", "$(host)" -replace "TARGET_DATABASE", "$(sqlsrv_db)" -replace "TARGET_USERNAME", "$(uid)" -replace "TARGET_PASSWORD", "$(pwd)" } | Set-Content .\MsSetup.inc
@@ -328,19 +344,6 @@ jobs:
       dir *sqlsrv*.dll
       cp *sqlsrv*.dll C:\tools\php\ext\
     displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
-
-  - script: |
-      echo extension=php_sqlsrv.dll >> C:\tools\php\php.ini
-      echo extension=php_pdo_sqlsrv.dll >> C:\tools\php\php.ini
-      php --ri sqlsrv
-      php --ri pdo_sqlsrv
-    displayName: 'Load drivers'
-
-  - script: |
-      docker pull microsoft/mssql-server-windows-developer
-      docker run -d --name sqlcontainer -h $(host) -p 1433:1433 -e sa_password=$(pwd) -e ACCEPT_EULA=Y microsoft/mssql-server-windows-developer
-      docker ps -a
-    displayName: 'Run SQL Server for Windows Server'
 
   - script: |
       set path=C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;%path%
