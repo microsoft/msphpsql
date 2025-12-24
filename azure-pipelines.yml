@@ -509,16 +509,28 @@ jobs:
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
-  - script: |
+  - powershell: |
       cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
-      copy $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php .
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\..\bvt_sqlsrv.log
+      $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
+      if ($runTestsPath) {
+          Copy-Item $runTestsPath.FullName . -Verbose
+          php run-tests.php *.phpt --no-color --show-diff 2>&1 | Tee-Object -FilePath ..\..\bvt_sqlsrv.log
+      } else {
+          Write-Host "##[error]run-tests.php not found"
+          exit 1
+      }
     displayName: 'Run sqlsrv BVT tests'
 
-  - script: |
+  - powershell: |
       cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
-      copy $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php .
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\..\bvt_pdo_sqlsrv.log
+      $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
+      if ($runTestsPath) {
+          Copy-Item $runTestsPath.FullName . -Verbose
+          php run-tests.php *.phpt --no-color --show-diff 2>&1 | Tee-Object -FilePath ..\..\bvt_pdo_sqlsrv.log
+      } else {
+          Write-Host "##[error]run-tests.php not found"
+          exit 1
+      }
     displayName: 'Run pdo_sqlsrv BVT tests'
 
   - script: |
