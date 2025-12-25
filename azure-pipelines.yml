@@ -263,6 +263,14 @@ jobs:
       
       echo "Docker image built successfully"
       docker images msphpsql-test
+      
+      # Extract run-tests.php from the built image
+      docker run --rm msphpsql-test cat /REPO/msphpsql-dev/test/functional/sqlsrv/run-tests.php > $(Build.SourcesDirectory)/test/functional/sqlsrv/run-tests.php
+      docker run --rm msphpsql-test cat /REPO/msphpsql-dev/test/functional/pdo_sqlsrv/run-tests.php > $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv/run-tests.php
+      
+      echo "Extracted run-tests.php files"
+      ls -la $(Build.SourcesDirectory)/test/functional/sqlsrv/run-tests.php
+      ls -la $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv/run-tests.php
     displayName: 'Build test environment from Dockerfile'
 
   - script: |
@@ -282,15 +290,13 @@ jobs:
     displayName: 'Set up test databases'
 
   - script: |
-      # Copy run-tests.php and update MsSetup.inc files
-      echo "Setting up test configuration..."
+      # Update MsSetup.inc files with correct database names and password
+      echo "Updating test configuration..."
       docker run --rm \
         --link $(host):sql \
         -v $(Build.SourcesDirectory):/REPO/msphpsql-dev \
         msphpsql-test \
-        bash -c "cp /REPO/msphpsql-dev/source/sqlsrv/run-tests.php /REPO/msphpsql-dev/test/functional/sqlsrv/ && \
-                 cp /REPO/msphpsql-dev/source/pdo_sqlsrv/run-tests.php /REPO/msphpsql-dev/test/functional/pdo_sqlsrv/ && \
-                 cd /REPO/msphpsql-dev/test/functional/sqlsrv && \
+        bash -c "cd /REPO/msphpsql-dev/test/functional/sqlsrv && \
                  sed -i -e 's/TARGET_SERVER/$(server)/g' MsSetup.inc && \
                  sed -i -e 's/TARGET_DATABASE/$(sqlsrv_db)/g' MsSetup.inc && \
                  sed -i -e 's/TARGET_USERNAME/$(uid)/g' MsSetup.inc && \
