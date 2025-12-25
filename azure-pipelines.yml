@@ -16,213 +16,9 @@ pr:
 - dev
 
 jobs:
-# - job: macOS
-#   pool:
-#     vmImage: 'macos-latest'
-#   steps:
-#   - checkout: self
-#     clean: true
-#     fetchDepth: 1
-
-#   - task: UsePythonVersion@0
-#     inputs:
-#       versionSpec: '3.x'
-#       architecture: 'x64'
-
-#   - script: |
-#       # Install Docker CLI and Colima
-#       echo "Installing Docker and Colima..."
-#       brew install docker colima
-
-#       # Start Colima with extra resources
-#       echo "Starting Colima..."
-#       colima start --cpu 4 --memory 8 --disk 50
-
-#       # Set Docker context to use Colima (this persists in ~/.docker/config.json)
-#       docker context use colima >/dev/null || true
-
-#       # Confirm Docker is operational
-#       echo "Verifying Docker setup..."
-#       docker version
-#       docker ps
-#       echo "Docker is ready!"
-#     displayName: 'Install and start Colima-based Docker'
-
-#   - powershell: |
-#       $guid = [guid]::NewGuid().ToString()
-#       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-#     displayName: 'Generate Password'
-
-#   - script: |
-#       # Set DOCKER_HOST to point to Colima socket
-#       export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-      
-#       # Verify Docker is working
-#       echo "Docker context:"
-#       docker context show
-#       echo "Testing Docker connection:"
-#       docker ps
-      
-#       # Pull and run SQL Server container
-#       echo "Pulling SQL Server image..."
-#       docker pull mcr.microsoft.com/mssql/server:2022-latest
-      
-#       # Run container with proper error handling
-#       echo "Starting SQL Server container $(host)..."
-#       docker run \
-#         --name $(host) \
-#         -e ACCEPT_EULA=Y \
-#         -e MSSQL_SA_PASSWORD="$(pwd)" \
-#         -e MSSQL_PID=Developer \
-#         -p 1433:1433 \
-#         -d mcr.microsoft.com/mssql/server:2022-latest
-      
-#       # Check if container started
-#       if [ $? -ne 0 ]; then
-#         echo "##[error]Failed to start SQL Server container"
-#         docker ps -a
-#         exit 1
-#       fi
-      
-#       echo "Container started, waiting for SQL Server to be ready..."
-#       docker ps
-
-#       # Wait for SQL Server to start (SQL Server 2022 uses mssql-tools18)
-#       for i in {1..20}; do
-#         docker exec $(host) \
-#           /opt/mssql-tools18/bin/sqlcmd \
-#           -S localhost \
-#           -U $(uid) \
-#           -P "$(pwd)" \
-#           -C \
-#           -Q "SELECT @@VERSION" > /dev/null 2>&1 && break
-#         echo "Waiting for SQL Server to be ready (attempt $i/20)..."
-#         sleep 2
-#       done
-      
-#       echo "SQL Server is ready!"
-#       docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "SELECT @@VERSION"
-#     displayName: 'Pull & start SQL Server (Docker)'
-
-#   - script: |
-#       # Install PHP 8.4 and build tools
-#       brew install php@8.4 autoconf automake libtool
-#       # Make 8.4 the active CLI PHP
-#       brew unlink php || true
-#       brew link --overwrite --force php@8.4
-#       # Confirm
-#       php -v
-#     displayName: 'Install PHP 8.4'
-
-#   - script: |
-#       # Install ODBC Driver for SQL Server on macOS
-#       brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-#       HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql17 mssql-tools
-      
-#       # Verify ODBC driver installation
-#       odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
-#     displayName: 'Install ODBC Driver 17 for SQL Server'
-
-#   - script: |
-#       # Set up locales for testing
-#       export LANG='en_US.UTF-8'
-#       export LANGUAGE='en_US:en'
-#       export LC_ALL='en_US.UTF-8'
-#     displayName: 'Set up locales'
-
-#   - script: |
-#       echo "Setting up test databases..."
-#       export TEST_PHP_SQL_SERVER='$(server)'
-#       export TEST_PHP_SQL_UID='$(uid)'
-#       export TEST_PHP_SQL_PWD='$(pwd)'
-
-#       cd $(Build.SourcesDirectory)/test/functional/setup
-#       python setup_dbs.py -dbname $(sqlsrv_db)
-#       python setup_dbs.py -dbname $(pdo_sqlsrv_db)
-      
-#       echo "Database setup complete!"
-#     displayName: 'Set up test databases'
-
-#   - script: |
-#       echo "Building PHP extensions..."
-#       cd $(Build.SourcesDirectory)/source
-#       chmod a+x packagize.sh
-#       ./packagize.sh
-
-#       dest=`php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/
-
-#       cd $(Build.SourcesDirectory)/source/sqlsrv
-#       ls -al
-#       phpize && ./configure && make && sudo make install
-#       cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
-#       echo "extension=sqlsrv.so" | sudo tee ${dest}20-sqlsrv.ini
-
-#       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
-#       ls -al
-#       phpize && ./configure && make && sudo make install
-#       cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-#       echo "extension=pdo_sqlsrv.so" | sudo tee ${dest}30-pdo_sqlsrv.ini
-
-#       # Create writable override ini file
-#       sudo touch ${dest}99-overrides.ini
-#       sudo chmod 666 ${dest}99-overrides.ini
-
-#       php --ri sqlsrv
-#       php --ri pdo_sqlsrv
-#     displayName: 'Build and install drivers'
-
-#   - script: |
-#       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-#       sed -i '' -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-#       sed -i '' -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-#       sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-#       sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-
-#       export LC_ALL='en_US.UTF-8'
-#       php run-tests.php *.phpt --no-color --show-diff --set-timeout 60 2>&1 | tee ../sqlsrv.log
-#     displayName: 'Run sqlsrv functional tests'
-
-#   - script: |
-#       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-#       sed -i '' -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-#       sed -i '' -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-#       sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-#       sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-
-#       export LC_ALL='en_US.UTF-8'
-#       php run-tests.php *.phpt --no-color --show-diff --set-timeout 60 2>&1 | tee ../pdo_sqlsrv.log
-#     displayName: 'Run pdo_sqlsrv functional tests'
-
-#   - script: |
-#       export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-#       docker logs -t $(host)
-#       cd $(Build.SourcesDirectory)/test/functional/
-#       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
-#       for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
-#       python output.py
-#       ls -l *.xml
-#     displayName: 'Processing test results'
-
-#   - task: PublishTestResults@2
-#     inputs:
-#       testResultsFormat: 'JUnit'
-#       testResultsFiles: '*.xml'
-#       failTaskOnFailedTests: true
-#       searchFolder: '$(Build.SourcesDirectory)/test/functional/'
-
-#   - script: |
-#       export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-#       docker stop $(host)
-#       docker rm $(host)
-#       colima stop
-#     displayName: 'Stop SQL Server and Colima'
-#     condition: always()
-
-- job: Linux
-  variables:
-    phpver: 8.4
+- job: macOS
   pool:
-    vmImage: 'ubuntu-22.04'
+    vmImage: 'macos-latest'
   steps:
   - checkout: self
     clean: true
@@ -234,51 +30,23 @@ jobs:
       architecture: 'x64'
 
   - script: |
-      echo "Installing PHP $(phpver) and dependencies..."
-      # Add ondrej/php PPA for PHP 8.4
-      sudo add-apt-repository ppa:ondrej/php -y
-      sudo apt-get update
-      
-      # Install PHP 8.4 and required extensions
-      sudo apt-get install -y php$(phpver)-cli php$(phpver)-dev php$(phpver)-xml php$(phpver)-intl
-      
-      # Set PHP 8.4 as default
-      sudo update-alternatives --set php /usr/bin/php$(phpver)
-      sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
-      sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
-      
-      # Disable xdebug if present
-      sudo phpdismod xdebug 2>/dev/null || true
-      
-      php -version
-    displayName: 'Install PHP $(phpver)'
+      # Install Docker CLI and Colima
+      echo "Installing Docker and Colima..."
+      brew install docker colima
 
-  - script: |
-      echo "Installing ODBC Driver 17 and dependencies..."
-      # Download/Install the package to configure the Microsoft repo
-      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
-      sudo dpkg -i packages-microsoft-prod.deb
-      rm packages-microsoft-prod.deb
-      sudo apt-get update
-      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev
-      
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-      
-      # Configure ODBC connection pooling for Linux
-      echo "Configuring ODBC connection pooling..."
-      echo "" | sudo tee -a /etc/odbcinst.ini
-      echo "[ODBC]" | sudo tee -a /etc/odbcinst.ini
-      echo "Pooling=Yes" | sudo tee -a /etc/odbcinst.ini
-      echo "" | sudo tee -a /etc/odbcinst.ini
-      echo "[ODBC Driver 17 for SQL Server]" | sudo tee -a /etc/odbcinst.ini
-      echo "CPTimeout=5" | sudo tee -a /etc/odbcinst.ini
-      
-      odbcinst -j
-      odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
-      echo "ODBC pooling configuration:"
-      cat /etc/odbcinst.ini
-    displayName: 'Install ODBC Driver 17'
+      # Start Colima with extra resources
+      echo "Starting Colima..."
+      colima start --cpu 4 --memory 8 --disk 50
+
+      # Set Docker context to use Colima (this persists in ~/.docker/config.json)
+      docker context use colima >/dev/null || true
+
+      # Confirm Docker is operational
+      echo "Verifying Docker setup..."
+      docker version
+      docker ps
+      echo "Docker is ready!"
+    displayName: 'Install and start Colima-based Docker'
 
   - powershell: |
       $guid = [guid]::NewGuid().ToString()
@@ -286,26 +54,81 @@ jobs:
     displayName: 'Generate Password'
 
   - script: |
-      # Start SQL Server container (only SQL Server in Docker, not tests)
-      docker pull mcr.microsoft.com/mssql/server:2022-latest
-      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
-      docker ps -a
-      sleep 10
+      # Set DOCKER_HOST to point to Colima socket
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       
-      # Verify SQL Server is running
-      docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -C -U $(uid) -P $(pwd) -Q 'SELECT @@VERSION'
-    displayName: 'Run SQL Server for Linux'
+      # Verify Docker is working
+      echo "Docker context:"
+      docker context show
+      echo "Testing Docker connection:"
+      docker ps
+      
+      # Pull and run SQL Server container
+      echo "Pulling SQL Server image..."
+      docker pull mcr.microsoft.com/mssql/server:2022-latest
+      
+      # Run container with proper error handling
+      echo "Starting SQL Server container $(host)..."
+      docker run \
+        --name $(host) \
+        -e ACCEPT_EULA=Y \
+        -e MSSQL_SA_PASSWORD="$(pwd)" \
+        -e MSSQL_PID=Developer \
+        -p 1433:1433 \
+        -d mcr.microsoft.com/mssql/server:2022-latest
+      
+      # Check if container started
+      if [ $? -ne 0 ]; then
+        echo "##[error]Failed to start SQL Server container"
+        docker ps -a
+        exit 1
+      fi
+      
+      echo "Container started, waiting for SQL Server to be ready..."
+      docker ps
+
+      # Wait for SQL Server to start (SQL Server 2022 uses mssql-tools18)
+      for i in {1..20}; do
+        docker exec $(host) \
+          /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost \
+          -U $(uid) \
+          -P "$(pwd)" \
+          -C \
+          -Q "SELECT @@VERSION" > /dev/null 2>&1 && break
+        echo "Waiting for SQL Server to be ready (attempt $i/20)..."
+        sleep 2
+      done
+      
+      echo "SQL Server is ready!"
+      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "SELECT @@VERSION"
+    displayName: 'Pull & start SQL Server (Docker)'
 
   - script: |
-      echo "Generating locales for testing..."
-      sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
-      sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
-      sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
-      sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
-      sudo sed -i 's/# zh_CN GB2312/zh_CN GB2312/g' /etc/locale.gen
-      sudo sed -i 's/# zh_CN.GB18030 GB18030/zh_CN.GB18030 GB18030/g' /etc/locale.gen
-      sudo locale-gen
-    displayName: 'Generate locales for testing'
+      # Install PHP 8.4 and build tools
+      brew install php@8.4 autoconf automake libtool
+      # Make 8.4 the active CLI PHP
+      brew unlink php || true
+      brew link --overwrite --force php@8.4
+      # Confirm
+      php -v
+    displayName: 'Install PHP 8.4'
+
+  - script: |
+      # Install ODBC Driver for SQL Server on macOS
+      brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+      HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql17 mssql-tools
+      
+      # Verify ODBC driver installation
+      odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
+    displayName: 'Install ODBC Driver 17 for SQL Server'
+
+  - script: |
+      # Set up locales for testing
+      export LANG='en_US.UTF-8'
+      export LANGUAGE='en_US:en'
+      export LC_ALL='en_US.UTF-8'
+    displayName: 'Set up locales'
 
   - script: |
       echo "Setting up test databases..."
@@ -314,8 +137,10 @@ jobs:
       export TEST_PHP_SQL_PWD='$(pwd)'
 
       cd $(Build.SourcesDirectory)/test/functional/setup
-      python3 ./setup_dbs.py -dbname $(sqlsrv_db)
-      python3 ./setup_dbs.py -dbname $(pdo_sqlsrv_db)
+      python setup_dbs.py -dbname $(sqlsrv_db)
+      python setup_dbs.py -dbname $(pdo_sqlsrv_db)
+      
+      echo "Database setup complete!"
     displayName: 'Set up test databases'
 
   - script: |
@@ -324,104 +149,52 @@ jobs:
       chmod a+x packagize.sh
       ./packagize.sh
 
-      dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
+      dest=`php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/
 
       cd $(Build.SourcesDirectory)/source/sqlsrv
-      phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
-      cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv/
-      echo extension=sqlsrv.so | sudo tee $dest/20-sqlsrv.ini
+      ls -al
+      phpize && ./configure && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
+      echo "extension=sqlsrv.so" | sudo tee ${dest}20-sqlsrv.ini
 
       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
-      phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
-      cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv/
-      echo extension=pdo_sqlsrv.so | sudo tee $dest/30-pdo_sqlsrv.ini
+      ls -al
+      phpize && ./configure && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      echo "extension=pdo_sqlsrv.so" | sudo tee ${dest}30-pdo_sqlsrv.ini
 
-      sudo touch $dest/99-overrides.ini
-      sudo chmod 666 $dest/99-overrides.ini
+      # Create writable override ini file
+      sudo touch ${dest}99-overrides.ini
+      sudo chmod 666 ${dest}99-overrides.ini
 
       php --ri sqlsrv
       php --ri pdo_sqlsrv
     displayName: 'Build and install drivers'
 
   - script: |
-      echo "Updating MsSetup.inc files..."
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
-      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-      
-      echo "MsSetup.inc files updated"
-    displayName: 'Update test configuration files'
-
-  # Temporary: Run only timeout tests for debugging
-  - script: |
-      echo "Running ONLY timeout tests for debugging..."
-      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-      export MSSQL_SERVER='$(server)'
-      export MSSQL_USER='$(uid)'
-      export MSSQL_PASSWORD='$(pwd)'
-      export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
       export LC_ALL='en_US.UTF-8'
-      echo "Testing sqlsrv test_timeout.phpt..."
-      php run-tests.php test_timeout.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv_timeout.log
-    displayName: 'Run sqlsrv timeout test (DEBUG)'
-
-  - script: |
-      echo "Running ONLY timeout tests for debugging..."
-      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-      export MSSQL_SERVER='$(server)'
-      export MSSQL_USER='$(uid)'
-      export MSSQL_PASSWORD='$(pwd)'
-      export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
-      export LC_ALL='en_US.UTF-8'
-      echo "Testing pdo_sqlsrv pdo_1100_query_timeout_disconnect.phpt..."
-      php run-tests.php pdo_1100_query_timeout_disconnect.phpt --no-color --show-diff 2>&1 | tee ../pdo_timeout.log
-    displayName: 'Run pdo_sqlsrv timeout test (DEBUG)'
-
-  # Full test runs - commented out for debugging
-  - script: |
-      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-      export MSSQL_SERVER='$(server)'
-      export MSSQL_USER='$(uid)'
-      export MSSQL_PASSWORD='$(pwd)'
-      export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
-      export LC_ALL='en_US.UTF-8'
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
+      php run-tests.php *.phpt --no-color --show-diff --set-timeout 60 2>&1 | tee ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
-    condition: false  # Disabled for debugging timeout tests
 
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-      export MSSQL_SERVER='$(server)'
-      export MSSQL_USER='$(uid)'
-      export MSSQL_PASSWORD='$(pwd)'
-      export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
+      sed -i '' -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+
       export LC_ALL='en_US.UTF-8'
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
+      php run-tests.php *.phpt --no-color --show-diff --set-timeout 60 2>&1 | tee ../pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
-    condition: false  # Disabled for debugging timeout tests
 
   - script: |
-      cd $(Build.SourcesDirectory)
-      echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
-      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
-        -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
-    displayName: 'Invoke coveralls using repo token'
-    condition: false
-    env:
-      COVERALLS_REPO_TOKEN: $(repo_token)
-      TRAVIS_JOB_ID: $(Build.BuildId)
-      TRAVIS_BRANCH: $(Build.SourceBranchName)
-      PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
-     
-  - script: |
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       docker logs -t $(host)
       cd $(Build.SourcesDirectory)/test/functional/
       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
@@ -438,10 +211,237 @@ jobs:
       searchFolder: '$(Build.SourcesDirectory)/test/functional/'
 
   - script: |
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
       docker stop $(host)
       docker rm $(host)
-    displayName: 'Stop SQL Server for Linux'
+      colima stop
+    displayName: 'Stop SQL Server and Colima'
     condition: always()
+
+# - job: Linux
+#   variables:
+#     phpver: 8.4
+#   pool:
+#     vmImage: 'ubuntu-22.04'
+#   steps:
+#   - checkout: self
+#     clean: true
+#     fetchDepth: 1
+
+#   - task: UsePythonVersion@0
+#     inputs:
+#       versionSpec: '3.x'
+#       architecture: 'x64'
+
+#   - script: |
+#       echo "Installing PHP $(phpver) and dependencies..."
+#       # Add ondrej/php PPA for PHP 8.4
+#       sudo add-apt-repository ppa:ondrej/php -y
+#       sudo apt-get update
+      
+#       # Install PHP 8.4 and required extensions
+#       sudo apt-get install -y php$(phpver)-cli php$(phpver)-dev php$(phpver)-xml php$(phpver)-intl
+      
+#       # Set PHP 8.4 as default
+#       sudo update-alternatives --set php /usr/bin/php$(phpver)
+#       sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
+#       sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
+      
+#       # Disable xdebug if present
+#       sudo phpdismod xdebug 2>/dev/null || true
+      
+#       php -version
+#     displayName: 'Install PHP $(phpver)'
+
+#   - script: |
+#       echo "Installing ODBC Driver 17 and dependencies..."
+#       # Download/Install the package to configure the Microsoft repo
+#       curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
+#       sudo dpkg -i packages-microsoft-prod.deb
+#       rm packages-microsoft-prod.deb
+#       sudo apt-get update
+#       sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev
+      
+#       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+#       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      
+#       # Configure ODBC connection pooling for Linux
+#       echo "Configuring ODBC connection pooling..."
+#       echo "" | sudo tee -a /etc/odbcinst.ini
+#       echo "[ODBC]" | sudo tee -a /etc/odbcinst.ini
+#       echo "Pooling=Yes" | sudo tee -a /etc/odbcinst.ini
+#       echo "" | sudo tee -a /etc/odbcinst.ini
+#       echo "[ODBC Driver 17 for SQL Server]" | sudo tee -a /etc/odbcinst.ini
+#       echo "CPTimeout=5" | sudo tee -a /etc/odbcinst.ini
+      
+#       odbcinst -j
+#       odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
+#       echo "ODBC pooling configuration:"
+#       cat /etc/odbcinst.ini
+#     displayName: 'Install ODBC Driver 17'
+
+#   - powershell: |
+#       $guid = [guid]::NewGuid().ToString()
+#       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
+#     displayName: 'Generate Password'
+
+#   - script: |
+#       # Start SQL Server container (only SQL Server in Docker, not tests)
+#       docker pull mcr.microsoft.com/mssql/server:2022-latest
+#       docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
+#       docker ps -a
+#       sleep 10
+      
+#       # Verify SQL Server is running
+#       docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -C -U $(uid) -P $(pwd) -Q 'SELECT @@VERSION'
+#     displayName: 'Run SQL Server for Linux'
+
+#   - script: |
+#       echo "Generating locales for testing..."
+#       sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
+#       sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
+#       sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+#       sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
+#       sudo sed -i 's/# zh_CN GB2312/zh_CN GB2312/g' /etc/locale.gen
+#       sudo sed -i 's/# zh_CN.GB18030 GB18030/zh_CN.GB18030 GB18030/g' /etc/locale.gen
+#       sudo locale-gen
+#     displayName: 'Generate locales for testing'
+
+#   - script: |
+#       echo "Setting up test databases..."
+#       export TEST_PHP_SQL_SERVER='$(server)'
+#       export TEST_PHP_SQL_UID='$(uid)'
+#       export TEST_PHP_SQL_PWD='$(pwd)'
+
+#       cd $(Build.SourcesDirectory)/test/functional/setup
+#       python3 ./setup_dbs.py -dbname $(sqlsrv_db)
+#       python3 ./setup_dbs.py -dbname $(pdo_sqlsrv_db)
+#     displayName: 'Set up test databases'
+
+#   - script: |
+#       echo "Building PHP extensions..."
+#       cd $(Build.SourcesDirectory)/source
+#       chmod a+x packagize.sh
+#       ./packagize.sh
+
+#       dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
+
+#       cd $(Build.SourcesDirectory)/source/sqlsrv
+#       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
+#       cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv/
+#       echo extension=sqlsrv.so | sudo tee $dest/20-sqlsrv.ini
+
+#       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
+#       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
+#       cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv/
+#       echo extension=pdo_sqlsrv.so | sudo tee $dest/30-pdo_sqlsrv.ini
+
+#       sudo touch $dest/99-overrides.ini
+#       sudo chmod 666 $dest/99-overrides.ini
+
+#       php --ri sqlsrv
+#       php --ri pdo_sqlsrv
+#     displayName: 'Build and install drivers'
+
+#   - script: |
+#       echo "Updating MsSetup.inc files..."
+#       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+#       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+#       sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
+#       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+#       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+
+#       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+#       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+#       sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+#       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+#       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      
+#       echo "MsSetup.inc files updated"
+#     displayName: 'Update test configuration files'
+
+#   # Temporary: Run only timeout tests for debugging
+#   - script: |
+#       echo "Running ONLY timeout tests for debugging..."
+#       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+#       export MSSQL_SERVER='$(server)'
+#       export MSSQL_USER='$(uid)'
+#       export MSSQL_PASSWORD='$(pwd)'
+#       export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
+#       export LC_ALL='en_US.UTF-8'
+#       echo "Testing sqlsrv test_timeout.phpt..."
+#       php run-tests.php test_timeout.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv_timeout.log
+#     displayName: 'Run sqlsrv timeout test (DEBUG)'
+
+#   - script: |
+#       echo "Running ONLY timeout tests for debugging..."
+#       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+#       export MSSQL_SERVER='$(server)'
+#       export MSSQL_USER='$(uid)'
+#       export MSSQL_PASSWORD='$(pwd)'
+#       export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
+#       export LC_ALL='en_US.UTF-8'
+#       echo "Testing pdo_sqlsrv pdo_1100_query_timeout_disconnect.phpt..."
+#       php run-tests.php pdo_1100_query_timeout_disconnect.phpt --no-color --show-diff 2>&1 | tee ../pdo_timeout.log
+#     displayName: 'Run pdo_sqlsrv timeout test (DEBUG)'
+
+#   # Full test runs - commented out for debugging
+#   - script: |
+#       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+#       export MSSQL_SERVER='$(server)'
+#       export MSSQL_USER='$(uid)'
+#       export MSSQL_PASSWORD='$(pwd)'
+#       export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
+#       export LC_ALL='en_US.UTF-8'
+#       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
+#     displayName: 'Run sqlsrv functional tests'
+#     condition: false  # Disabled for debugging timeout tests
+
+#   - script: |
+#       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+#       export MSSQL_SERVER='$(server)'
+#       export MSSQL_USER='$(uid)'
+#       export MSSQL_PASSWORD='$(pwd)'
+#       export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
+#       export LC_ALL='en_US.UTF-8'
+#       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
+#     displayName: 'Run pdo_sqlsrv functional tests'
+#     condition: false  # Disabled for debugging timeout tests
+
+#   - script: |
+#       cd $(Build.SourcesDirectory)
+#       echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
+#       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
+#         -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
+#     displayName: 'Invoke coveralls using repo token'
+#     condition: false
+#     env:
+#       COVERALLS_REPO_TOKEN: $(repo_token)
+#       TRAVIS_JOB_ID: $(Build.BuildId)
+#       TRAVIS_BRANCH: $(Build.SourceBranchName)
+#       PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
+     
+#   - script: |
+#       docker logs -t $(host)
+#       cd $(Build.SourcesDirectory)/test/functional/
+#       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+#       for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+#       python output.py
+#       ls -l *.xml
+#     displayName: 'Processing test results'
+
+#   - task: PublishTestResults@2
+#     inputs:
+#       testResultsFormat: 'JUnit'
+#       testResultsFiles: '*.xml'
+#       failTaskOnFailedTests: true
+#       searchFolder: '$(Build.SourcesDirectory)/test/functional/'
+
+#   - script: |
+#       docker stop $(host)
+#       docker rm $(host)
+#     displayName: 'Stop SQL Server for Linux'
+#     condition: always()
 
 # - job: Windows
 #   variables:
