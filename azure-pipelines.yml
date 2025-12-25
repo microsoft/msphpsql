@@ -17,7 +17,6 @@ pr:
 
 jobs:
 - job: macOS
-  timeoutInMinutes: 60
   pool:
     vmImage: 'macos-latest'
   steps:
@@ -235,36 +234,6 @@ jobs:
       architecture: 'x64'
 
   - script: |
-      sudo update-alternatives --set php /usr/bin/php$(phpver)
-      sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
-      sudo update-alternatives --set phar /usr/bin/phar$(phpver)
-      sudo update-alternatives --set phpdbg /usr/bin/phpdbg$(phpver)
-      sudo update-alternatives --set php-cgi /usr/bin/php-cgi$(phpver)
-      sudo update-alternatives --set phar.phar /usr/bin/phar.phar$(phpver)
-      sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
-      sudo phpdismod xdebug
-      php -version
-    displayName: 'Use PHP version $(phpver)'
-
-  - script: |
-      echo install ODBC and dependencies
-      sudo apt-get purge unixodbc
-      sudo apt autoremove
-      # Download/Install the package to configure the Microsoft repo
-      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)/packages-microsoft-prod.deb
-      sudo dpkg -i packages-microsoft-prod.deb
-      rm packages-microsoft-prod.deb
-      sudo apt-get update
-      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-      source ~/.bashrc
-      sudo apt-get install -y unixodbc-dev
-      odbcinst --j
-      odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
-    displayName: 'Install prerequisites'
-
-  - script: |
       python -m pip install --upgrade pip
       python -m pip install --upgrade requests
       python -m pip install PyYAML
@@ -277,91 +246,82 @@ jobs:
     displayName: 'Generate Password'
 
   - script: |
+      # Start SQL Server container
       docker pull mcr.microsoft.com/mssql/server:2022-latest
       docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
       docker ps -a
       sleep 10
-      docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -No -U $(uid) -P $(pwd) -Q 'select @@Version'
+      
+      # Verify SQL Server is running
+      docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -C -U $(uid) -P $(pwd) -Q 'SELECT @@VERSION'
     displayName: 'Run SQL Server for Linux'
 
   - script: |
-      sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
-      sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
-      sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
-      sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
-      sudo sed -i 's/# zh_CN GB2312/zh_CN GB2312/g' /etc/locale.gen
-      sudo sed -i 's/# zh_CN.GB18030 GB18030/zh_CN.GB18030 GB18030/g' /etc/locale.gen
-      sudo locale-gen
-      export LANG='en_US.UTF-8'
-      export LANGUAGE='en_US:en'
-      export LC_ALL='en_US.UTF-8'
-    displayName: 'Generate locales for testing'
+      # Build Docker image from Dockerfile-msphpsql (has PHP 8.4 and ODBC 17 pre-configured)
+      echo "Building Docker image with PHP $(phpver) and ODBC 17..."
+      docker build -t msphpsql-test -f Dockerfile-msphpsql .
+      
+      echo "Docker image built successfully"
+      docker images msphpsql-test
+    displayName: 'Build test environment from Dockerfile'
 
   - script: |
-      echo setting env variables
-      export TEST_PHP_SQL_SERVER='$(server)'
-      export TEST_PHP_SQL_UID='$(uid)'
-      export TEST_PHP_SQL_PWD='$(pwd)'
-
-      cd $(Build.SourcesDirectory)/test/functional/setup
-      python ./setup_dbs.py -dbname $(sqlsrv_db)
-      python ./setup_dbs.py -dbname $(pdo_sqlsrv_db)
+      # Create test databases using the custom Docker image
+      echo "Setting up test databases..."
+      docker run --rm \
+        --link $(host):sql \
+        -e TEST_PHP_SQL_SERVER=$(host) \
+        -e TEST_PHP_SQL_UID=$(uid) \
+        -e TEST_PHP_SQL_PWD=$(pwd) \
+        msphpsql-test \
+        bash -c "cd /REPO/msphpsql-dev/test/functional/setup && \
+                 python3 ./setup_dbs.py -dbname $(sqlsrv_db) && \
+                 python3 ./setup_dbs.py -dbname $(pdo_sqlsrv_db)"
+      
+      echo "Database setup complete!"
     displayName: 'Set up test databases'
 
   - script: |
-      echo ready to build extensions
-      sudo apt-get install -y php$(phpver)-intl
-      cd $(Build.SourcesDirectory)/source
-      chmod a+x packagize.sh
-      ./packagize.sh
-
-      dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
-
-      cd $(Build.SourcesDirectory)/source/sqlsrv
-      ls -al
-      phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
-      cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
-      echo extension=sqlsrv.so >> 20-sqlsrv.ini
-
-      echo copying sqlsrv to $dest
-      sudo cp 20-sqlsrv.ini $dest
-
-      cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
-      ls -al
-      phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
-      cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-      echo extension=pdo_sqlsrv.so >> 30-pdo_sqlsrv.ini
-
-      echo copying pdo_sqlsrv to $dest
-      sudo cp 30-pdo_sqlsrv.ini $dest
-
-      sudo touch $dest/99-overrides.ini
-      sudo chmod 666 $dest/99-overrides.ini
-
-      php --ri sqlsrv
-      php --ri pdo_sqlsrv
-    displayName: 'Build and install drivers'
+      # Update MsSetup.inc files with correct database names and password
+      echo "Updating test configuration..."
+      docker run --rm \
+        --link $(host):sql \
+        -v $(Build.SourcesDirectory):/REPO/msphpsql-dev \
+        msphpsql-test \
+        bash -c "cd /REPO/msphpsql-dev/test/functional/sqlsrv && \
+                 sed -i -e 's/TARGET_SERVER/$(server)/g' MsSetup.inc && \
+                 sed -i -e 's/TARGET_DATABASE/$(sqlsrv_db)/g' MsSetup.inc && \
+                 sed -i -e 's/TARGET_USERNAME/$(uid)/g' MsSetup.inc && \
+                 sed -i -e 's/TARGET_PASSWORD/$(pwd)/g' MsSetup.inc && \
+                 cd /REPO/msphpsql-dev/test/functional/pdo_sqlsrv && \
+                 sed -i -e 's/TARGET_SERVER/$(server)/g' MsSetup.inc && \
+                 sed -i -e 's/TARGET_DATABASE/$(pdo_sqlsrv_db)/g' MsSetup.inc && \
+                 sed -i -e 's/TARGET_USERNAME/$(uid)/g' MsSetup.inc && \
+                 sed -i -e 's/TARGET_PASSWORD/$(pwd)/g' MsSetup.inc"
+    displayName: 'Update test configuration'
 
   - script: |
-      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-
-      export LC_ALL='en_US.UTF-8'
-      php run-tests.php -P ./*.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
+      # Run sqlsrv functional tests
+      echo "Running sqlsrv functional tests..."
+      docker run --rm \
+        --link $(host):sql \
+        -v $(Build.SourcesDirectory):/REPO/msphpsql-dev \
+        msphpsql-test \
+        bash -c "export LC_ALL='en_US.UTF-8' && \
+                 cd /REPO/msphpsql-dev/test/functional/sqlsrv && \
+                 php run-tests.php -P ./*.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log"
     displayName: 'Run sqlsrv functional tests'
 
   - script: |
-      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-
-      export LC_ALL='en_US.UTF-8'
-      php run-tests.php -P ./*.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
+      # Run pdo_sqlsrv functional tests
+      echo "Running pdo_sqlsrv functional tests..."
+      docker run --rm \
+        --link $(host):sql \
+        -v $(Build.SourcesDirectory):/REPO/msphpsql-dev \
+        msphpsql-test \
+        bash -c "export LC_ALL='en_US.UTF-8' && \
+                 cd /REPO/msphpsql-dev/test/functional/pdo_sqlsrv && \
+                 php run-tests.php -P ./*.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log"
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
