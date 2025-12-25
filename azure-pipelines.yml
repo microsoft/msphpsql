@@ -17,6 +17,7 @@ pr:
 
 jobs:
 - job: macOS
+  timeoutInMinutes: 360
   pool:
     vmImage: 'macos-latest'
   steps:
