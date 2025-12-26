@@ -103,6 +103,19 @@ jobs:
       
       echo "SQL Server is ready!"
       docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "SELECT @@VERSION"
+      
+      # Test connectivity from host to container (macOS to Docker)
+      echo "Testing connectivity from host..."
+      for i in {1..30}; do
+        docker exec $(host) /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost \
+          -U $(uid) \
+          -P "$(pwd)" \
+          -C \
+          -Q "SELECT 1" > /dev/null 2>&1 && echo "Connection successful from host!" && break
+        echo "Waiting for SQL Server to accept connections from host (attempt $i/30)..."
+        sleep 2
+      done
     displayName: 'Pull & start SQL Server (Docker)'
 
   - script: |
@@ -171,6 +184,35 @@ jobs:
       php --ri sqlsrv
       php --ri pdo_sqlsrv
     displayName: 'Build and install drivers'
+
+  - script: |
+      echo "Testing SQL Server connectivity before running tests..."
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+      
+      # Try to connect using sqlcmd inside container
+      echo "Testing from inside container:"
+      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd \
+        -S localhost \
+        -U $(uid) \
+        -P "$(pwd)" \
+        -C \
+        -Q "SELECT @@VERSION, GETDATE() AS CurrentTime"
+      
+      # Test from host using PHP
+      echo "Testing from host using PHP sqlsrv extension:"
+      php -r "
+      \$serverName = '$(server)';
+      \$connectionInfo = array('UID'=>'$(uid)', 'PWD'=>'$(pwd)', 'Database'=>'master', 'LoginTimeout'=>30);
+      \$conn = sqlsrv_connect(\$serverName, \$connectionInfo);
+      if(\$conn === false) {
+        echo 'Connection failed: ';
+        print_r(sqlsrv_errors());
+        exit(1);
+      }
+      echo 'Connection successful!';
+      sqlsrv_close(\$conn);
+      "
+    displayName: 'Verify SQL Server connectivity'
 
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
