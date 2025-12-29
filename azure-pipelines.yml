@@ -224,10 +224,25 @@ jobs:
 
       export TZ=UTC
       export LC_ALL='en_US.UTF-8'
-      # DEBUGGING: Run only failing tests to validate fixes
+      
+      # DEBUGGING: Run each test individually with its own timeout to avoid cumulative timeouts
       # Skip srv_1063_locale_configs.phpt - macOS uses '€' symbol while test expects 'Eu' (Linux behavior)
-      php run-tests.php sqlsrv_ConnPool_Unix.phpt sqlsrv_ae_azure_key_vault_keywords.phpt sqlsrv_ae_datetimes_as_strings.phpt test_timeout.phpt --no-color --show-diff --set-timeout 300 2>&1 | tee ../sqlsrv.log
-    displayName: 'Run sqlsrv functional tests (DEBUG - 5 specific tests)'
+      
+      echo "=== Running sqlsrv_ConnPool_Unix.phpt ==="
+      time php run-tests.php sqlsrv_ConnPool_Unix.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv_pooling.log
+      
+      echo "=== Running sqlsrv_ae_azure_key_vault_keywords.phpt ==="
+      time php run-tests.php sqlsrv_ae_azure_key_vault_keywords.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv_akv.log
+      
+      echo "=== Running sqlsrv_ae_datetimes_as_strings.phpt ==="
+      time php run-tests.php sqlsrv_ae_datetimes_as_strings.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv_datetime.log
+      
+      echo "=== Running test_timeout.phpt ==="
+      time php run-tests.php test_timeout.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv_timeout.log
+      
+      # Combine all logs
+      cat ../sqlsrv_pooling.log ../sqlsrv_akv.log ../sqlsrv_datetime.log ../sqlsrv_timeout.log > ../sqlsrv.log
+    displayName: 'Run sqlsrv functional tests (DEBUG - individual test execution)'
 
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
@@ -238,9 +253,9 @@ jobs:
 
       export TZ=UTC
       export LC_ALL='en_US.UTF-8'
-      # DEBUGGING: Run only TC81_MemoryCheck test to validate timeout fix
-      php run-tests.php TC81_MemoryCheck.phpt --no-color --show-diff --set-timeout 300 2>&1 | tee ../pdo_sqlsrv.log
-    displayName: 'Run pdo_sqlsrv functional tests (DEBUG - 1 specific test)'
+      # DEBUGGING: Run only TC81_MemoryCheck test with extended timeout
+      php run-tests.php TC81_MemoryCheck.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv functional tests (DEBUG - TC81_MemoryCheck with 600s timeout)'
 
   - script: |
       export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
