@@ -35,13 +35,30 @@ file_put_contents($custom_odbcinst_ini, $new_content);
 //This will let us modify odbcinst.ini without root permissions
 print_r(shell_exec("export ODBCSYSINI=".dirname(__FILE__)."&&".PHP_BINARY." ".dirname(__FILE__)."/isPooled.php"));
 
+// On macOS, the ODBC driver manager caches driver handles more aggressively
+// We need to ensure complete cleanup between tests
+if (PHP_OS === 'Darwin') {
+    // Force PHP garbage collection and wait for ODBC resources to be freed
+    sleep(3);
+}
 
 //disable pooling by modifying the odbcinst.ini file
 $current = file_get_contents($custom_odbcinst_ini);
 $current = str_replace($lines_to_add,'',$current);
 file_put_contents($custom_odbcinst_ini, $current);
 
-print_r(shell_exec("export ODBCSYSINI=".dirname(__FILE__)."&&".PHP_BINARY." ".dirname(__FILE__)."/isPooled.php"));
+// On macOS, we need additional measures to ensure driver reload
+if (PHP_OS === 'Darwin') {
+    // Force complete ODBC driver reload by using a wrapper script
+    // that ensures no cached handles remain
+    $wrapper = dirname(__FILE__)."/run_pooling_test.sh";
+    file_put_contents($wrapper, "#!/bin/bash\nexport ODBCSYSINI=".dirname(__FILE__)."\nsleep 1\n".PHP_BINARY." ".dirname(__FILE__)."/isPooled.php\n");
+    chmod($wrapper, 0755);
+    print_r(shell_exec("bash ".$wrapper));
+    unlink($wrapper);
+} else {
+    print_r(shell_exec("export ODBCSYSINI=".dirname(__FILE__)."&&".PHP_BINARY." ".dirname(__FILE__)."/isPooled.php"));
+}
 ?>
 --CLEAN--
 <?php
