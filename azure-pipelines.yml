@@ -75,7 +75,7 @@ jobs:
         -e ACCEPT_EULA=Y \
         -e MSSQL_SA_PASSWORD="$(pwd)" \
         -e MSSQL_PID=Developer \
-        -e TZ=UTC \
+        -e TZ=Asia/Shanghai \
         -p 1433:1433 \
         -d mcr.microsoft.com/mssql/server:2022-latest
       
@@ -222,7 +222,7 @@ jobs:
       sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
       sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
-      export TZ=UTC
+      export TZ=Asia/Shanghai
       export LC_ALL='en_US.UTF-8'
       
       # DEBUGGING: Run each test individually with its own timeout to avoid cumulative timeouts
@@ -240,8 +240,11 @@ jobs:
       echo "=== Running test_timeout.phpt ==="
       time php run-tests.php test_timeout.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv_timeout.log
       
+      echo "=== Running TC81_MemoryCheck.phpt ==="
+      ls -la TC81_MemoryCheck.phpt || echo "File not found!"
+      time php run-tests.php TC81_MemoryCheck.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv_memory.log
       # Combine all logs
-      cat ../sqlsrv_pooling.log ../sqlsrv_akv.log ../sqlsrv_datetime.log ../sqlsrv_timeout.log > ../sqlsrv.log
+      cat ../sqlsrv_pooling.log ../sqlsrv_akv.log ../sqlsrv_datetime.log ../sqlsrv_timeout.log ../sqlsrv_memory.log > ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests (DEBUG - individual test execution)'
 
   - script: |
@@ -251,7 +254,7 @@ jobs:
       sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
       sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
-      export TZ=UTC
+      export TZ=Asia/Shanghai
       export LC_ALL='en_US.UTF-8'
       # DEBUGGING: Run only TC81_MemoryCheck test with extended timeout
       php run-tests.php TC81_MemoryCheck.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../pdo_sqlsrv.log
