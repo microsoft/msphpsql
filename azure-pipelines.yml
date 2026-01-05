@@ -267,540 +267,515 @@ jobs:
     displayName: 'Stop SQL Server and Colima'
     condition: always()
 
-# - job: Linux
-#   variables:
-#     phpver: 8.4
-#   pool:
-#     vmImage: 'ubuntu-22.04'
-#   steps:
-#   - checkout: self
-#     clean: true
-#     fetchDepth: 1
+- job: Linux
+  variables:
+    phpver: 8.4
+  pool:
+    vmImage: 'ubuntu-22.04'
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 1
 
-#   - task: UsePythonVersion@0
-#     inputs:
-#       versionSpec: '3.x'
-#       architecture: 'x64'
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      architecture: 'x64'
 
-#   - script: |
-#       echo "Installing PHP $(phpver) and dependencies..."
-#       # Add ondrej/php PPA for PHP 8.4
-#       sudo add-apt-repository ppa:ondrej/php -y
-#       sudo apt-get update
+  - script: |
+      echo "Installing PHP $(phpver) and dependencies..."
+      # Add ondrej/php PPA for PHP 8.4
+      sudo add-apt-repository ppa:ondrej/php -y
+      sudo apt-get update
       
-#       # Install PHP 8.4 and required extensions
-#       sudo apt-get install -y php$(phpver)-cli php$(phpver)-dev php$(phpver)-xml php$(phpver)-intl
+      # Install PHP 8.4 and required extensions
+      sudo apt-get install -y php$(phpver)-cli php$(phpver)-dev php$(phpver)-xml php$(phpver)-intl
       
-#       # Set PHP 8.4 as default
-#       sudo update-alternatives --set php /usr/bin/php$(phpver)
-#       sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
-#       sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
+      # Set PHP 8.4 as default
+      sudo update-alternatives --set php /usr/bin/php$(phpver)
+      sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
+      sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
       
-#       # Disable xdebug if present
-#       sudo phpdismod xdebug 2>/dev/null || true
+      # Disable xdebug if present
+      sudo phpdismod xdebug 2>/dev/null || true
       
-#       php -version
-#     displayName: 'Install PHP $(phpver)'
+      php -version
+    displayName: 'Install PHP $(phpver)'
 
-#   - script: |
-#       echo "Installing ODBC Driver 17 and dependencies..."
-#       # Download/Install the package to configure the Microsoft repo
-#       curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
-#       sudo dpkg -i packages-microsoft-prod.deb
-#       rm packages-microsoft-prod.deb
-#       sudo apt-get update
-#       sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev
+  - script: |
+      echo "Installing ODBC Driver 17 and dependencies..."
+      # Download/Install the package to configure the Microsoft repo
+      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
+      sudo dpkg -i packages-microsoft-prod.deb
+      rm packages-microsoft-prod.deb
+      sudo apt-get update
+      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev
       
-#       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-#       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
       
-#       # Configure ODBC connection pooling for Linux
-#       echo "Configuring ODBC connection pooling..."
-#       echo "" | sudo tee -a /etc/odbcinst.ini
-#       echo "[ODBC]" | sudo tee -a /etc/odbcinst.ini
-#       echo "Pooling=Yes" | sudo tee -a /etc/odbcinst.ini
-#       echo "" | sudo tee -a /etc/odbcinst.ini
-#       echo "[ODBC Driver 17 for SQL Server]" | sudo tee -a /etc/odbcinst.ini
-#       echo "CPTimeout=5" | sudo tee -a /etc/odbcinst.ini
+      # Configure ODBC connection pooling for Linux
+      echo "Configuring ODBC connection pooling..."
+      echo "" | sudo tee -a /etc/odbcinst.ini
+      echo "[ODBC]" | sudo tee -a /etc/odbcinst.ini
+      echo "Pooling=Yes" | sudo tee -a /etc/odbcinst.ini
+      echo "" | sudo tee -a /etc/odbcinst.ini
+      echo "[ODBC Driver 17 for SQL Server]" | sudo tee -a /etc/odbcinst.ini
+      echo "CPTimeout=5" | sudo tee -a /etc/odbcinst.ini
       
-#       odbcinst -j
-#       odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
-#       echo "ODBC pooling configuration:"
-#       cat /etc/odbcinst.ini
-#     displayName: 'Install ODBC Driver 17'
+      odbcinst -j
+      odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
+      echo "ODBC pooling configuration:"
+      cat /etc/odbcinst.ini
+    displayName: 'Install ODBC Driver 17'
 
-#   - powershell: |
-#       $guid = [guid]::NewGuid().ToString()
-#       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-#     displayName: 'Generate Password'
+  - powershell: |
+      $guid = [guid]::NewGuid().ToString()
+      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
+    displayName: 'Generate Password'
 
-#   - script: |
-#       # Start SQL Server container (only SQL Server in Docker, not tests)
-#       docker pull mcr.microsoft.com/mssql/server:2022-latest
-#       docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
-#       docker ps -a
-#       sleep 10
+  - script: |
+      # Start SQL Server container (only SQL Server in Docker, not tests)
+      docker pull mcr.microsoft.com/mssql/server:2022-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
+      docker ps -a
+      sleep 10
       
-#       # Verify SQL Server is running
-#       docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -C -U $(uid) -P $(pwd) -Q 'SELECT @@VERSION'
-#     displayName: 'Run SQL Server for Linux'
+      # Verify SQL Server is running
+      docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -C -U $(uid) -P $(pwd) -Q 'SELECT @@VERSION'
+    displayName: 'Run SQL Server for Linux'
 
-#   - script: |
-#       echo "Generating locales for testing..."
-#       sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
-#       sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
-#       sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
-#       sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
-#       sudo sed -i 's/# zh_CN GB2312/zh_CN GB2312/g' /etc/locale.gen
-#       sudo sed -i 's/# zh_CN.GB18030 GB18030/zh_CN.GB18030 GB18030/g' /etc/locale.gen
-#       sudo locale-gen
-#     displayName: 'Generate locales for testing'
+  - script: |
+      echo "Generating locales for testing..."
+      sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
+      sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
+      sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo sed -i 's/# zh_CN GB2312/zh_CN GB2312/g' /etc/locale.gen
+      sudo sed -i 's/# zh_CN.GB18030 GB18030/zh_CN.GB18030 GB18030/g' /etc/locale.gen
+      sudo locale-gen
+    displayName: 'Generate locales for testing'
 
-#   - script: |
-#       echo "Setting up test databases..."
-#       export TEST_PHP_SQL_SERVER='$(server)'
-#       export TEST_PHP_SQL_UID='$(uid)'
-#       export TEST_PHP_SQL_PWD='$(pwd)'
+  - script: |
+      echo "Setting up test databases..."
+      export TEST_PHP_SQL_SERVER='$(server)'
+      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_PWD='$(pwd)'
 
-#       cd $(Build.SourcesDirectory)/test/functional/setup
-#       python3 ./setup_dbs.py -dbname $(sqlsrv_db)
-#       python3 ./setup_dbs.py -dbname $(pdo_sqlsrv_db)
-#     displayName: 'Set up test databases'
+      cd $(Build.SourcesDirectory)/test/functional/setup
+      python3 ./setup_dbs.py -dbname $(sqlsrv_db)
+      python3 ./setup_dbs.py -dbname $(pdo_sqlsrv_db)
+    displayName: 'Set up test databases'
 
-#   - script: |
-#       echo "Building PHP extensions..."
-#       cd $(Build.SourcesDirectory)/source
-#       chmod a+x packagize.sh
-#       ./packagize.sh
+  - script: |
+      echo "Building PHP extensions..."
+      cd $(Build.SourcesDirectory)/source
+      chmod a+x packagize.sh
+      ./packagize.sh
 
-#       dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
+      dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
 
-#       cd $(Build.SourcesDirectory)/source/sqlsrv
-#       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
-#       cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv/
-#       echo extension=sqlsrv.so | sudo tee $dest/20-sqlsrv.ini
+      cd $(Build.SourcesDirectory)/source/sqlsrv
+      phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv/
+      echo extension=sqlsrv.so | sudo tee $dest/20-sqlsrv.ini
 
-#       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
-#       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
-#       cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv/
-#       echo extension=pdo_sqlsrv.so | sudo tee $dest/30-pdo_sqlsrv.ini
+      cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
+      phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
+      cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv/
+      echo extension=pdo_sqlsrv.so | sudo tee $dest/30-pdo_sqlsrv.ini
 
-#       sudo touch $dest/99-overrides.ini
-#       sudo chmod 666 $dest/99-overrides.ini
+      sudo touch $dest/99-overrides.ini
+      sudo chmod 666 $dest/99-overrides.ini
 
-#       php --ri sqlsrv
-#       php --ri pdo_sqlsrv
-#     displayName: 'Build and install drivers'
+      php --ri sqlsrv
+      php --ri pdo_sqlsrv
+    displayName: 'Build and install drivers'
 
-#   - script: |
-#       echo "Updating MsSetup.inc files..."
-#       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-#       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+  - script: |
+      echo "Updating MsSetup.inc files..."
+      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
-#       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-#       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-#       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
       
-#       echo "MsSetup.inc files updated"
-#     displayName: 'Update test configuration files'
+      echo "MsSetup.inc files updated"
+    displayName: 'Update test configuration files'
 
-#   # Temporary: Run only timeout tests for debugging
-#   - script: |
-#       echo "Running ONLY timeout tests for debugging..."
-#       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-#       export MSSQL_SERVER='$(server)'
-#       export MSSQL_USER='$(uid)'
-#       export MSSQL_PASSWORD='$(pwd)'
-#       export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
-#       export LC_ALL='en_US.UTF-8'
-#       echo "Testing sqlsrv test_timeout.phpt..."
-#       php run-tests.php test_timeout.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv_timeout.log
-#     displayName: 'Run sqlsrv timeout test (DEBUG)'
+  # Full test runs - commented out for debugging
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+      export MSSQL_SERVER='$(server)'
+      export MSSQL_USER='$(uid)'
+      export MSSQL_PASSWORD='$(pwd)'
+      export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
+      export LC_ALL='en_US.UTF-8'
+      php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv.log
+    displayName: 'Run sqlsrv functional tests'
 
-#   - script: |
-#       echo "Running ONLY timeout tests for debugging..."
-#       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-#       export MSSQL_SERVER='$(server)'
-#       export MSSQL_USER='$(uid)'
-#       export MSSQL_PASSWORD='$(pwd)'
-#       export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
-#       export LC_ALL='en_US.UTF-8'
-#       echo "Testing pdo_sqlsrv pdo_1100_query_timeout_disconnect.phpt..."
-#       php run-tests.php pdo_1100_query_timeout_disconnect.phpt --no-color --show-diff 2>&1 | tee ../pdo_timeout.log
-#     displayName: 'Run pdo_sqlsrv timeout test (DEBUG)'
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      export MSSQL_SERVER='$(server)'
+      export MSSQL_USER='$(uid)'
+      export MSSQL_PASSWORD='$(pwd)'
+      export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
+      export LC_ALL='en_US.UTF-8'
+      php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv functional tests'
 
-#   # Full test runs - commented out for debugging
-#   - script: |
-#       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-#       export MSSQL_SERVER='$(server)'
-#       export MSSQL_USER='$(uid)'
-#       export MSSQL_PASSWORD='$(pwd)'
-#       export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
-#       export LC_ALL='en_US.UTF-8'
-#       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../sqlsrv.log
-#     displayName: 'Run sqlsrv functional tests'
-
-#   - script: |
-#       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-#       export MSSQL_SERVER='$(server)'
-#       export MSSQL_USER='$(uid)'
-#       export MSSQL_PASSWORD='$(pwd)'
-#       export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
-#       export LC_ALL='en_US.UTF-8'
-#       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ../pdo_sqlsrv.log
-#     displayName: 'Run pdo_sqlsrv functional tests'
-
-#   - script: |
-#       cd $(Build.SourcesDirectory)
-#       echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
-#       coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
-#         -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
-#     displayName: 'Invoke coveralls using repo token'
-#     condition: false
-#     env:
-#       COVERALLS_REPO_TOKEN: $(repo_token)
-#       TRAVIS_JOB_ID: $(Build.BuildId)
-#       TRAVIS_BRANCH: $(Build.SourceBranchName)
-#       PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
+  - script: |
+      cd $(Build.SourcesDirectory)
+      echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
+      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
+        -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
+    displayName: 'Invoke coveralls using repo token'
+    condition: false
+    env:
+      COVERALLS_REPO_TOKEN: $(repo_token)
+      TRAVIS_JOB_ID: $(Build.BuildId)
+      TRAVIS_BRANCH: $(Build.SourceBranchName)
+      PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
      
-#   - script: |
-#       docker logs -t $(host)
-#       cd $(Build.SourcesDirectory)/test/functional/
-#       for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
-#       for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
-#       python output.py
-#       ls -l *.xml
-#     displayName: 'Processing test results'
+  - script: |
+      docker logs -t $(host)
+      cd $(Build.SourcesDirectory)/test/functional/
+      for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      python output.py
+      ls -l *.xml
+    displayName: 'Processing test results'
 
-#   - task: PublishTestResults@2
-#     inputs:
-#       testResultsFormat: 'JUnit'
-#       testResultsFiles: '*.xml'
-#       failTaskOnFailedTests: true
-#       searchFolder: '$(Build.SourcesDirectory)/test/functional/'
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '*.xml'
+      failTaskOnFailedTests: true
+      searchFolder: '$(Build.SourcesDirectory)/test/functional/'
 
-#   - script: |
-#       docker stop $(host)
-#       docker rm $(host)
-#     displayName: 'Stop SQL Server for Linux'
-#     condition: always()
+  - script: |
+      docker stop $(host)
+      docker rm $(host)
+    displayName: 'Stop SQL Server for Linux'
+    condition: always()
 
-# - job: Windows
-#   variables:
-#     phpVersion: 8.4
-#   pool:
-#     vmImage: 'windows-latest'
-#   steps:
-#   - checkout: self
-#     clean: true
-#     fetchDepth: 1
+- job: Windows
+  variables:
+    phpVersion: 8.4
+  pool:
+    vmImage: 'windows-latest'
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 1
 
-#   - task: UsePythonVersion@0
-#     inputs:
-#       versionSpec: '3.x'
-#       architecture: 'x64'
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      architecture: 'x64'
 
-#   - powershell: |
-#       # Download and install PHP 8.4 to match the drivers we're building
-#       $client = New-Object Net.WebClient
-#       $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
-#       $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
-#       $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
+  - powershell: |
+      # Download and install PHP 8.4 to match the drivers we're building
+      $client = New-Object Net.WebClient
+      $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
+      $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
+      $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
       
-#       # Get the PHP version string properly
-#       $phpVer = "$(phpVersion)"
-#       Write-Host "Looking for PHP version: $phpVer"
+      # Get the PHP version string properly
+      $phpVer = "$(phpVersion)"
+      Write-Host "Looking for PHP version: $phpVer"
       
-#       # Access the version property correctly
-#       $version = $jsondata.$phpVer.version
+      # Access the version property correctly
+      $version = $jsondata.$phpVer.version
       
-#       if (-not $version) {
-#           Write-Host "##[error]Could not find PHP $phpVer in releases.json"
-#           Write-Host "Available versions:"
-#           $jsondata.PSObject.Properties.Name | ForEach-Object { Write-Host "  $_" }
-#           throw "PHP version $phpVer not found"
-#       }
+      if (-not $version) {
+          Write-Host "##[error]Could not find PHP $phpVer in releases.json"
+          Write-Host "Available versions:"
+          $jsondata.PSObject.Properties.Name | ForEach-Object { Write-Host "  $_" }
+          throw "PHP version $phpVer not found"
+      }
       
-#       Write-Host "Installing PHP $(phpVersion) version $version"
+      Write-Host "Installing PHP $(phpVersion) version $version"
       
-#       # PHP 8.4+ uses VS17, earlier versions use VS16
-#       $vsVersion = if ([version]$version -ge [version]"8.4.0") { "vs17" } else { "vs16" }
+      # PHP 8.4+ uses VS17, earlier versions use VS16
+      $vsVersion = if ([version]$version -ge [version]"8.4.0") { "vs17" } else { "vs16" }
       
-#       # Download PHP NTS x64
-#       $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$vsVersion-x64.zip"
-#       Write-Host "Downloading from: $phpUrl"
+      # Download PHP NTS x64
+      $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$vsVersion-x64.zip"
+      Write-Host "Downloading from: $phpUrl"
       
-#       try {
-#           # Set user agent again for the PHP download
-#           $client.Headers.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
-#           $client.DownloadFile($phpUrl, "php.zip")
-#           $fileSize = (Get-Item php.zip).Length
-#           Write-Host "Download completed. File size: $fileSize bytes"
+      try {
+          # Set user agent again for the PHP download
+          $client.Headers.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
+          $client.DownloadFile($phpUrl, "php.zip")
+          $fileSize = (Get-Item php.zip).Length
+          Write-Host "Download completed. File size: $fileSize bytes"
           
-#           # Validate file size (should be at least 20MB for a valid PHP zip)
-#           if ($fileSize -lt 20000000) {
-#               Write-Host "##[error]Downloaded file is too small ($fileSize bytes). This is likely an error page."
-#               Get-Content php.zip | Select-Object -First 10 | Write-Host
-#               throw "Invalid PHP zip file downloaded"
-#           }
-#       } catch {
-#           Write-Host "##[error]Failed to download PHP: $_"
-#           throw
-#       }
+          # Validate file size (should be at least 20MB for a valid PHP zip)
+          if ($fileSize -lt 20000000) {
+              Write-Host "##[error]Downloaded file is too small ($fileSize bytes). This is likely an error page."
+              Get-Content php.zip | Select-Object -First 10 | Write-Host
+              throw "Invalid PHP zip file downloaded"
+          }
+      } catch {
+          Write-Host "##[error]Failed to download PHP: $_"
+          throw
+      }
       
-#       # Extract to C:\tools\php
-#       if (Test-Path C:\tools\php) {
-#           Remove-Item C:\tools\php -Recurse -Force
-#       }
-#       Expand-Archive -Path php.zip -DestinationPath C:\tools\php -Force
+      # Extract to C:\tools\php
+      if (Test-Path C:\tools\php) {
+          Remove-Item C:\tools\php -Recurse -Force
+      }
+      Expand-Archive -Path php.zip -DestinationPath C:\tools\php -Force
       
-#       # Configure php.ini
-#       if (Test-Path C:\tools\php\php.ini-development) {
-#           Copy-Item C:\tools\php\php.ini-development C:\tools\php\php.ini -Force
-#       }
-#       Add-Content C:\tools\php\php.ini "`nextension_dir=C:\tools\php\ext"
+      # Configure php.ini
+      if (Test-Path C:\tools\php\php.ini-development) {
+          Copy-Item C:\tools\php\php.ini-development C:\tools\php\php.ini -Force
+      }
+      Add-Content C:\tools\php\php.ini "`nextension_dir=C:\tools\php\ext"
       
-#       php -v
-#     displayName: 'Install PHP $(phpVersion)'
+      php -v
+    displayName: 'Install PHP $(phpVersion)'
 
-#   - script: |
-#       dir C:\tools\php\php*
-#       dir C:\tools\php\ext\
-#       echo extension_dir=C:\tools\php\ext >> C:\tools\php\php.ini
-#       php --ini
-#       php -v
-#       echo Checking PHP API version:
-#       php -r "echo 'PHP API: ' . phpversion() . PHP_EOL; echo 'Thread Safety: ' . (PHP_ZTS ? 'enabled' : 'disabled') . PHP_EOL; echo 'Architecture: ' . PHP_INT_SIZE*8 . '-bit' . PHP_EOL;"
-#     displayName: 'Check PHP'
+  - script: |
+      dir C:\tools\php\php*
+      dir C:\tools\php\ext\
+      echo extension_dir=C:\tools\php\ext >> C:\tools\php\php.ini
+      php --ini
+      php -v
+      echo Checking PHP API version:
+      php -r "echo 'PHP API: ' . phpversion() . PHP_EOL; echo 'Thread Safety: ' . (PHP_ZTS ? 'enabled' : 'disabled') . PHP_EOL; echo 'Architecture: ' . PHP_INT_SIZE*8 . '-bit' . PHP_EOL;"
+    displayName: 'Check PHP'
 
-#   - powershell: |
-#       $guid = [guid]::NewGuid().ToString()
-#       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-#     displayName: 'Generate Password'
+  - powershell: |
+      $guid = [guid]::NewGuid().ToString()
+      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
+    displayName: 'Generate Password'
 
-#   - powershell: |
-#       Write-Host "Starting SQL Server LocalDB..."
+  - powershell: |
+      Write-Host "Starting SQL Server LocalDB..."
       
-#       # Create and start LocalDB instance  
-#       sqllocaldb create MSSQLLocalDB
-#       sqllocaldb start MSSQLLocalDB
+      # Create and start LocalDB instance  
+      sqllocaldb create MSSQLLocalDB
+      sqllocaldb start MSSQLLocalDB
       
-#       # Wait for it to be ready
-#       Start-Sleep -Seconds 5
+      # Wait for it to be ready
+      Start-Sleep -Seconds 5
       
-#       # Get instance info
-#       sqllocaldb info MSSQLLocalDB
+      # Get instance info
+      sqllocaldb info MSSQLLocalDB
       
-#       # Enable SQL Authentication and set sa password
-#       Write-Host "Configuring SQL Authentication..."
-#       sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "ALTER LOGIN sa WITH PASSWORD = N'$(pwd)'; ALTER LOGIN sa ENABLE;"
-#       sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "EXEC xp_instance_regwrite N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'LoginMode', REG_DWORD, 2"
+      # Enable SQL Authentication and set sa password
+      Write-Host "Configuring SQL Authentication..."
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "ALTER LOGIN sa WITH PASSWORD = N'$(pwd)'; ALTER LOGIN sa ENABLE;"
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "EXEC xp_instance_regwrite N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'LoginMode', REG_DWORD, 2"
       
-#       # Restart LocalDB to apply changes
-#       Write-Host "Restarting LocalDB to apply authentication changes..."
-#       sqllocaldb stop MSSQLLocalDB
-#       sqllocaldb start MSSQLLocalDB
-#       Start-Sleep -Seconds 5
+      # Restart LocalDB to apply changes
+      Write-Host "Restarting LocalDB to apply authentication changes..."
+      sqllocaldb stop MSSQLLocalDB
+      sqllocaldb start MSSQLLocalDB
+      Start-Sleep -Seconds 5
       
-#       # Test connection with SQL Auth using named pipe
-#       Write-Host "Testing connection to LocalDB with SQL Authentication..."
-#       sqlcmd -S "(localdb)\MSSQLLocalDB" -U $(uid) -P "$(pwd)" -Q "SELECT @@VERSION"
+      # Test connection with SQL Auth using named pipe
+      Write-Host "Testing connection to LocalDB with SQL Authentication..."
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -U $(uid) -P "$(pwd)" -Q "SELECT @@VERSION"
       
-#       Write-Host "SQL Server LocalDB is ready"
-#     displayName: 'Start SQL Server LocalDB'
+      Write-Host "SQL Server LocalDB is ready"
+    displayName: 'Start SQL Server LocalDB'
 
-#   - powershell: |
-#       # Update connection strings to use LocalDB named pipe
-#       $server = "(localdb)\MSSQLLocalDB"
+  - powershell: |
+      # Update connection strings to use LocalDB named pipe
+      $server = "(localdb)\MSSQLLocalDB"
       
-#       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
-#       (Get-Content .\MsSetup.inc) | ForEach-Object { 
-#           $_ -replace "TARGET_SERVER", $server `
-#              -replace "TARGET_DATABASE", "$(sqlsrv_db)" `
-#              -replace "TARGET_USERNAME", "$(uid)" `
-#              -replace "TARGET_PASSWORD", "$(pwd)" 
-#       } | Set-Content .\MsSetup.inc
+      cd $(Build.SourcesDirectory)\test\functional\sqlsrv
+      (Get-Content .\MsSetup.inc) | ForEach-Object { 
+          $_ -replace "TARGET_SERVER", $server `
+             -replace "TARGET_DATABASE", "$(sqlsrv_db)" `
+             -replace "TARGET_USERNAME", "$(uid)" `
+             -replace "TARGET_PASSWORD", "$(pwd)" 
+      } | Set-Content .\MsSetup.inc
       
-#       Write-Host "Updated sqlsrv MsSetup.inc:"
-#       Select-String "server|Database" .\MsSetup.inc
+      Write-Host "Updated sqlsrv MsSetup.inc:"
+      Select-String "server|Database" .\MsSetup.inc
       
-#       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
-#       (Get-Content .\MsSetup.inc) | ForEach-Object { 
-#           $_ -replace "TARGET_SERVER", $server `
-#              -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" `
-#              -replace "TARGET_USERNAME", "$(uid)" `
-#              -replace "TARGET_PASSWORD", "$(pwd)" 
-#       } | Set-Content .\MsSetup.inc
+      cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      (Get-Content .\MsSetup.inc) | ForEach-Object { 
+          $_ -replace "TARGET_SERVER", $server `
+             -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" `
+             -replace "TARGET_USERNAME", "$(uid)" `
+             -replace "TARGET_PASSWORD", "$(pwd)" 
+      } | Set-Content .\MsSetup.inc
       
-#       Write-Host "Updated pdo_sqlsrv MsSetup.inc:"
-#       Select-String "server|Database" .\MsSetup.inc
+      Write-Host "Updated pdo_sqlsrv MsSetup.inc:"
+      Select-String "server|Database" .\MsSetup.inc
       
-#       cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
-#       (Get-Content .\connect.inc) | ForEach-Object { 
-#           $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
-#              -replace '(\$databaseName = )[^;]+;', "`$1'$(sqlsrv_db)';" `
-#              -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" `
-#              -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
-#       } | Set-Content .\connect.inc
+      cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
+      (Get-Content .\connect.inc) | ForEach-Object { 
+          $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
+             -replace '(\$databaseName = )[^;]+;', "`$1'$(sqlsrv_db)';" `
+             -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" `
+             -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
+      } | Set-Content .\connect.inc
       
-#       cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
-#       (Get-Content .\connect.inc) | ForEach-Object { 
-#           $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
-#              -replace '(\$databaseName = )[^;]+;', "`$1'$(pdo_sqlsrv_db)';" `
-#              -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" `
-#              -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
-#       } | Set-Content .\connect.inc
-#     displayName: 'Update connection credentials'
+      cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
+      (Get-Content .\connect.inc) | ForEach-Object { 
+          $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
+             -replace '(\$databaseName = )[^;]+;', "`$1'$(pdo_sqlsrv_db)';" `
+             -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" `
+             -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
+      } | Set-Content .\connect.inc
+    displayName: 'Update connection credentials'
 
-#   - powershell: |
-#       $client = New-Object Net.WebClient
-#       $client.DownloadFile('https://download.microsoft.com/download/6/f/f/6ffefc73-39ab-4cc0-bb7c-4093d64c2669/en-US/17.10.6.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
-#       $client.DownloadFile('https://download.microsoft.com/download/0/e/6/0e63d835-3513-45a0-9cf0-0bc75fb4269e/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
-#       dir *.msi
-#     displayName: 'Download ODBC msi and sql tools msi'
-#     condition: false
+  - powershell: |
+      $client = New-Object Net.WebClient
+      $client.DownloadFile('https://download.microsoft.com/download/6/f/f/6ffefc73-39ab-4cc0-bb7c-4093d64c2669/en-US/17.10.6.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
+      $client.DownloadFile('https://download.microsoft.com/download/0/e/6/0e63d835-3513-45a0-9cf0-0bc75fb4269e/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
+      dir *.msi
+    displayName: 'Download ODBC msi and sql tools msi'
+    condition: false
 
-#   - script: |
-#       msiexec /i "msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
-#       reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
-#       dir %WINDIR%\System32\msodbcsql*.dll
-#     displayName: 'Install ODBC driver'
-#     condition: false
+  - script: |
+      msiexec /i "msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
+      reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 17 for SQL Server"
+      dir %WINDIR%\System32\msodbcsql*.dll
+    displayName: 'Install ODBC driver'
+    condition: false
 
-#   # FOR SOME REASON the set up did not set the PATH
-#   - script: |
-#       msiexec /i "MsSqlCmdLnUtils.msi" /qn IACCEPTMSSQLCMDLNUTILSLICENSETERMS=YES
-#     displayName: 'Install SQL command line utilities version 15'
-#     condition: false
+  # FOR SOME REASON the set up did not set the PATH
+  - script: |
+      msiexec /i "MsSqlCmdLnUtils.msi" /qn IACCEPTMSSQLCMDLNUTILSLICENSETERMS=YES
+    displayName: 'Install SQL command line utilities version 15'
+    condition: false
 
-#   - powershell: |
-#       $client = New-Object Net.WebClient
-#       $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
-#       $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
-#       $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
-#       $env:VERSION = $jsondata.{$(phpVersion)}.version
-#       Write-Host "Latest PHP $(phpVersion) is ${env:VERSION}"
-#       cd $(Build.SourcesDirectory)\buildscripts\
-#       python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
-#       if ($LASTEXITCODE -ne 0) { throw "sqlsrv build failed" }
-#       python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
-#       if ($LASTEXITCODE -ne 0) { throw "pdo_sqlsrv build failed" }
-#       Write-Host "Listing built DLLs:"
-#       dir *sqlsrv*.dll
-#       Write-Host "Copying DLLs to C:\tools\php\ext\"
-#       Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
-#       Write-Host "Verifying DLLs in destination:"
-#       dir C:\tools\php\ext\*sqlsrv*.dll
+  - powershell: |
+      $client = New-Object Net.WebClient
+      $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
+      $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
+      $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
+      $env:VERSION = $jsondata.{$(phpVersion)}.version
+      Write-Host "Latest PHP $(phpVersion) is ${env:VERSION}"
+      cd $(Build.SourcesDirectory)\buildscripts\
+      python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
+      if ($LASTEXITCODE -ne 0) { throw "sqlsrv build failed" }
+      python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
+      if ($LASTEXITCODE -ne 0) { throw "pdo_sqlsrv build failed" }
+      Write-Host "Listing built DLLs:"
+      dir *sqlsrv*.dll
+      Write-Host "Copying DLLs to C:\tools\php\ext\"
+      Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
+      Write-Host "Verifying DLLs in destination:"
+      dir C:\tools\php\ext\*sqlsrv*.dll
       
-#       # Add extensions to php.ini
-#       Write-Host "Adding extensions to php.ini"
-#       Add-Content C:\tools\php\php.ini "extension=php_sqlsrv.dll"
-#       Add-Content C:\tools\php\php.ini "extension=php_pdo_sqlsrv.dll"
+      # Add extensions to php.ini
+      Write-Host "Adding extensions to php.ini"
+      Add-Content C:\tools\php\php.ini "extension=php_sqlsrv.dll"
+      Add-Content C:\tools\php\php.ini "extension=php_pdo_sqlsrv.dll"
       
-#       # Verify extensions are loaded
-#       Write-Host "Verifying extensions:"
-#       php --ri sqlsrv
-#       php --ri pdo_sqlsrv
+      # Verify extensions are loaded
+      Write-Host "Verifying extensions:"
+      php --ri sqlsrv
+      php --ri pdo_sqlsrv
       
-#       # Check DLL dependencies with dumpbin (optional, for diagnostics)
-#       Write-Host "Checking DLL dependencies with dumpbin:"
-#       $dumpbinPath = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-#       if ($dumpbinPath) {
-#           & $dumpbinPath.FullName /dependents C:\tools\php\ext\php_sqlsrv.dll | Select-String -Pattern "dll"
-#       } else {
-#           Write-Host "dumpbin.exe not found - skipping DLL dependency check"
-#       }
+      # Check DLL dependencies with dumpbin (optional, for diagnostics)
+      Write-Host "Checking DLL dependencies with dumpbin:"
+      $dumpbinPath = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($dumpbinPath) {
+          & $dumpbinPath.FullName /dependents C:\tools\php\ext\php_sqlsrv.dll | Select-String -Pattern "dll"
+      } else {
+          Write-Host "dumpbin.exe not found - skipping DLL dependency check"
+      }
       
-#       # Copy run-tests.php to test directories
-#       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
-#       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv -Verbose
-#     displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
+      # Copy run-tests.php to test directories
+      Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
+      Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv -Verbose
+    displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
 
-#   - powershell: |
-#       Write-Host "Setting up test databases..."
+  - powershell: |
+      Write-Host "Setting up test databases..."
       
-#       # Set environment variables for the Python script
-#       $env:TEST_PHP_SQL_SERVER = "(localdb)\MSSQLLocalDB"
-#       $env:TEST_PHP_SQL_UID = "$(uid)"
-#       $env:TEST_PHP_SQL_PWD = "$(pwd)"
+      # Set environment variables for the Python script
+      $env:TEST_PHP_SQL_SERVER = "(localdb)\MSSQLLocalDB"
+      $env:TEST_PHP_SQL_UID = "$(uid)"
+      $env:TEST_PHP_SQL_PWD = "$(pwd)"
       
-#       cd $(Build.SourcesDirectory)\test\functional\setup
-#       python setup_dbs.py -dbname $(sqlsrv_db)
-#       python setup_dbs.py -dbname $(pdo_sqlsrv_db)
+      cd $(Build.SourcesDirectory)\test\functional\setup
+      python setup_dbs.py -dbname $(sqlsrv_db)
+      python setup_dbs.py -dbname $(pdo_sqlsrv_db)
       
-#       Write-Host "Database setup complete!"
-#     displayName: 'Set up test databases'
+      Write-Host "Database setup complete!"
+    displayName: 'Set up test databases'
 
-#   - script: |
-#       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
-#       set MSSQL_SERVER=(localdb)\MSSQLLocalDB
-#       set MSSQL_USER=$(uid)
-#       set MSSQL_PASSWORD=$(pwd)
-#       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
-#       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
-#     displayName: 'Run sqlsrv functional tests'
+  - script: |
+      cd $(Build.SourcesDirectory)\test\functional\sqlsrv
+      set MSSQL_SERVER=(localdb)\MSSQLLocalDB
+      set MSSQL_USER=$(uid)
+      set MSSQL_PASSWORD=$(pwd)
+      set MSSQL_DATABASE_NAME=$(sqlsrv_db)
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
+    displayName: 'Run sqlsrv functional tests'
 
-#   - script: |
-#       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
-#       set MSSQL_SERVER=(localdb)\MSSQLLocalDB
-#       set MSSQL_USER=$(uid)
-#       set MSSQL_PASSWORD=$(pwd)
-#       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
-#       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
-#     displayName: 'Run pdo_sqlsrv functional tests'
+  - script: |
+      cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
+      set MSSQL_SERVER=(localdb)\MSSQLLocalDB
+      set MSSQL_USER=$(uid)
+      set MSSQL_PASSWORD=$(pwd)
+      set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
+      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv functional tests'
 
-#   - powershell: |
-#       cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
-#       $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
-#       if ($runTestsPath) {
-#           Copy-Item $runTestsPath.FullName . -Verbose
-#           php run-tests.php *.phpt --no-color --show-diff 2>&1 | Tee-Object -FilePath ..\..\bvt_sqlsrv.log
-#       } else {
-#           Write-Host "##[error]run-tests.php not found"
-#           exit 1
-#       }
-#     displayName: 'Run sqlsrv BVT tests'
-#     condition: false  # BVT tests require AdventureWorks database which is not available
+  - powershell: |
+      cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
+      $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
+      if ($runTestsPath) {
+          Copy-Item $runTestsPath.FullName . -Verbose
+          php run-tests.php *.phpt --no-color --show-diff 2>&1 | Tee-Object -FilePath ..\..\bvt_sqlsrv.log
+      } else {
+          Write-Host "##[error]run-tests.php not found"
+          exit 1
+      }
+    displayName: 'Run sqlsrv BVT tests'
+    condition: false  # BVT tests require AdventureWorks database which is not available
 
-#   - powershell: |
-#       cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
-#       $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
-#       if ($runTestsPath) {
-#           Copy-Item $runTestsPath.FullName . -Verbose
-#           php run-tests.php *.phpt --no-color --show-diff 2>&1 | Tee-Object -FilePath ..\..\bvt_pdo_sqlsrv.log
-#       } else {
-#           Write-Host "##[error]run-tests.php not found"
-#           exit 1
-#       }
-#     displayName: 'Run pdo_sqlsrv BVT tests'
-#     condition: false  # BVT tests require AdventureWorks database which is not available
+  - powershell: |
+      cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
+      $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
+      if ($runTestsPath) {
+          Copy-Item $runTestsPath.FullName . -Verbose
+          php run-tests.php *.phpt --no-color --show-diff 2>&1 | Tee-Object -FilePath ..\..\bvt_pdo_sqlsrv.log
+      } else {
+          Write-Host "##[error]run-tests.php not found"
+          exit 1
+      }
+    displayName: 'Run pdo_sqlsrv BVT tests'
+    condition: false  # BVT tests require AdventureWorks database which is not available
 
-#   - script: |
-#       cd $(Build.SourcesDirectory)\test\functional\
-#       dir sqlsrv\*.diff 2>nul && type sqlsrv\*.diff || echo No sqlsrv diff files
-#       dir pdo_sqlsrv\*.diff 2>nul && type pdo_sqlsrv\*.diff || echo No pdo_sqlsrv diff files
-#       cd $(Build.SourcesDirectory)\test\bvt\
-#       dir sqlsrv\*.diff 2>nul && type sqlsrv\*.diff || echo No BVT sqlsrv diff files
-#       dir pdo_sqlsrv\*.diff 2>nul && type pdo_sqlsrv\*.diff || echo No BVT pdo_sqlsrv diff files
-#       cd $(Build.SourcesDirectory)\test\functional\
-#       python output.py
-#       dir *.xml
-#     displayName: 'Processing test results'
+  - script: |
+      cd $(Build.SourcesDirectory)\test\functional\
+      dir sqlsrv\*.diff 2>nul && type sqlsrv\*.diff || echo No sqlsrv diff files
+      dir pdo_sqlsrv\*.diff 2>nul && type pdo_sqlsrv\*.diff || echo No pdo_sqlsrv diff files
+      cd $(Build.SourcesDirectory)\test\bvt\
+      dir sqlsrv\*.diff 2>nul && type sqlsrv\*.diff || echo No BVT sqlsrv diff files
+      dir pdo_sqlsrv\*.diff 2>nul && type pdo_sqlsrv\*.diff || echo No BVT pdo_sqlsrv diff files
+      cd $(Build.SourcesDirectory)\test\functional\
+      python output.py
+      dir *.xml
+    displayName: 'Processing test results'
 
-#   - task: PublishTestResults@2
-#     inputs:
-#       testResultsFormat: 'JUnit'
-#       testResultsFiles: '*.xml'
-#       failTaskOnFailedTests: true
-#       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '*.xml'
+      failTaskOnFailedTests: true
+      searchFolder: '$(Build.SourcesDirectory)\test\functional\'
 
-#   - powershell: |
-#       Write-Host "Stopping LocalDB..."
-#       sqllocaldb stop MSSQLLocalDB
-#     displayName: 'Cleanup LocalDB'
-#     condition: always()
+  - powershell: |
+      Write-Host "Stopping LocalDB..."
+      sqllocaldb stop MSSQLLocalDB
+    displayName: 'Cleanup LocalDB'
+    condition: always()

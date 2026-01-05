@@ -91,7 +91,8 @@ if (!empty($locale)) {
     
     // Currency symbol and thousands separator in Linux and macOS may be different
     if ($loc === 'de_DE.UTF-8') {
-        $symbol = strtoupper(PHP_OS) === 'LINUX' ? '€' : 'Eu';
+        // Both Linux and macOS return '€' for German locale currency symbol
+        $symbol = '€';
         $sep = strtoupper(PHP_OS) === 'LINUX' ? '.' : '';
         $english = false;
     } else {
