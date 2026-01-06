@@ -47,7 +47,9 @@ function testTimeout($conn, $timeout)
 }
 
 try {
-    $keywords = 'MultipleActiveResultSets=false;';
+    // Explicitly enable connection pooling, matching the sqlsrv test_timeout.phpt approach
+    // MARS is not required for this test
+    $keywords = 'MultipleActiveResultSets=false;ConnectionPooling=1;';
     $timeout = 1;
     
     $options = array(PDO::SQLSRV_ATTR_QUERY_TIMEOUT => $timeout);
