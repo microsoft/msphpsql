@@ -321,7 +321,7 @@ jobs:
       echo "Pooling=Yes" | sudo tee -a /etc/odbcinst.ini
       echo "" | sudo tee -a /etc/odbcinst.ini
       echo "[ODBC Driver 17 for SQL Server]" | sudo tee -a /etc/odbcinst.ini
-      echo "CPTimeout=5" | sudo tee -a /etc/odbcinst.ini
+      echo "CPTimeout=1" | sudo tee -a /etc/odbcinst.ini
       
       odbcinst -j
       odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
