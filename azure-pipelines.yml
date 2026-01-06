@@ -314,19 +314,14 @@ jobs:
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
       
-      # Configure ODBC connection pooling for Linux
-      echo "Configuring ODBC connection pooling..."
-      echo "" | sudo tee -a /etc/odbcinst.ini
-      echo "[ODBC]" | sudo tee -a /etc/odbcinst.ini
-      echo "Pooling=Yes" | sudo tee -a /etc/odbcinst.ini
-      echo "" | sudo tee -a /etc/odbcinst.ini
-      echo "[ODBC Driver 17 for SQL Server]" | sudo tee -a /etc/odbcinst.ini
-      echo "CPTimeout=1" | sudo tee -a /etc/odbcinst.ini
+      # Note: Not configuring system-wide ODBC connection pooling
+      # The system-wide pooling configuration (Pooling=Yes, CPTimeout) causes
+      # extreme overhead for tests that disconnect/reconnect frequently.
+      # Tests that need pooling (like sqlsrv_ConnPool_Unix.phpt) explicitly
+      # enable it in their connection strings with ConnectionPooling=1.
       
       odbcinst -j
       odbcinst -q -d -n "ODBC Driver 17 for SQL Server"
-      echo "ODBC pooling configuration:"
-      cat /etc/odbcinst.ini
     displayName: 'Install ODBC Driver 17'
 
   - powershell: |
