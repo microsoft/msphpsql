@@ -47,9 +47,11 @@ function testTimeout($conn, $timeout)
 }
 
 try {
-    // Explicitly enable connection pooling, matching the sqlsrv test_timeout.phpt approach
-    // MARS is not required for this test
-    $keywords = 'MultipleActiveResultSets=false;';
+    // On Linux, disable connection pooling to avoid extreme overhead from the
+    // disconnect/reconnect pattern with system-wide ODBC pooling configuration.
+    // On macOS and Windows, pooling is not configured system-wide, so no issue.
+    $pooling = (strtoupper(PHP_OS) === 'LINUX') ? 'ConnectionPooling=0;' : '';
+    $keywords = 'MultipleActiveResultSets=false;' . $pooling;
     $timeout = 1;
     
     $options = array(PDO::SQLSRV_ATTR_QUERY_TIMEOUT => $timeout);
