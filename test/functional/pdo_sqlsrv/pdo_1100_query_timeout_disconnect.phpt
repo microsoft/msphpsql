@@ -80,12 +80,11 @@ try {
 }
 
 ?>
---EXPECTF--
+--EXPECT--
 Test 1: Setting timeout in connection options
 Connected with options
 Starting testTimeout...
 Query timed out as expected
-%s secs elapsed
 Finished testTimeout
 Disconnecting...
 Disconnected
@@ -94,7 +93,6 @@ Connected without options
 Set timeout attribute
 Starting testTimeout...
 Query timed out as expected
-%s secs elapsed
 Finished testTimeout
 Disconnecting...
 Disconnected
