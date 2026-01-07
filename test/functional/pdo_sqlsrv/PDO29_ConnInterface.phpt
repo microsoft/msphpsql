@@ -53,6 +53,13 @@ function CheckInterface($conn)
         unset($expected['__wakeup']);
         unset($expected['__sleep']);
     }
+
+//change for 8.4
+if ($phpver >= '8.4') {
+    // PHP 8.4 introduced PDO::connect()
+    $expected['connect'] = true;
+}
+	
     
     $classname = get_class($conn);
     $methods = get_class_methods($classname);
