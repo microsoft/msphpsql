@@ -1,106 +1,61 @@
 --TEST--
-PDO Interface Test
---DESCRIPTION--
-Verifies the compliance of the PDO API Interface.
---ENV--
-PHPT_EXEC=true
+PDO Common Interface Check
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require __DIR__ . '/../skipif_pdo.inc'; ?>
 --FILE--
 <?php
-include 'MsCommon.inc';
+try {
+    require('MsSetup.inc');
 
-function ConnInfo()
-{
-    include 'MsSetup.inc';
-
-    $testName = "PDO - Interface";
-    StartTest($testName);
-
-    $conn1 = Connect();
-
-    CheckInterface($conn1);
-    $conn1 = null;
-
-    EndTest($testName);
-}
-
-function CheckInterface($conn)
-{
+    // Expected methods in the PDO class for pdo_sqlsrv
     $expected = array(
-        'getAvailableDrivers'   => true,
-        '__construct'       => true,
-        'errorCode'     => true,
-        'errorInfo'     => true,
-        'getAttribute'      => true,
-        'setAttribute'      => true,
-        'beginTransaction'  => true,
-        'commit'        => true,
-        'rollBack'      => true,
-        'exec'          => true,
-        'query'         => true,
-        'prepare'       => true,
-        'lastInsertId'      => true,
-        'quote'         => true,
-        '__wakeup'      => true,
-        '__sleep'       => true,
-        'inTransaction'     => true,
+        '__construct',
+        'beginTransaction',
+        'commit',
+        'errorCode',
+        'errorInfo',
+        'exec',
+        'getAttribute',
+        'getAvailableDrivers',
+        'inTransaction',
+        'lastInsertId',
+        'prepare',
+        'query',
+        'quote',
+        'rollBack',
+        'setAttribute',
     );
-    
-    $phpver = substr(phpversion(), 0, 3);
-    if ($phpver >= '7.4') {
-        // Reference: https://wiki.php.net/rfc/custom_object_serialization
-        unset($expected['__wakeup']);
-        unset($expected['__sleep']);
+
+    // Fix for PHP 8.4: The PDO class now includes a 'connect' method.
+    // We add it to the expected list if running on PHP 8.4+ (ID 80400)
+    if (PHP_VERSION_ID >= 80400) {
+        $expected[] = 'connect';
     }
-    
-    $classname = get_class($conn);
-    $methods = get_class_methods($classname);
-    foreach ($methods as $k => $method)
-    {
-        if (isset($expected[$method]))
-        {
-            unset($expected[$method]);
-            unset($methods[$k]);
-        }
-        if ($method == $classname)
-        {
-            unset($expected['__construct']);
-            unset($methods[$k]);
-        }
+
+    // Connect
+    $conn = new PDO("sqlsrv:server=$server; Database=$databaseName", $uid, $pwd);
+
+    // Get actual methods from the object
+    $actual = get_class_methods($conn);
+
+    // Compare
+    $diff = array_diff($actual, $expected);
+    if (!empty($diff)) {
+        echo "Found more methods than expected, dumping list:\n";
+        var_dump($diff);
     }
-    if (!empty($expected))
-    {
-        printf("Dumping missing class methods\n");
-        var_dump($expected);
+
+    $diff = array_diff($expected, $actual);
+    if (!empty($diff)) {
+        echo "Found fewer methods than expected, dumping list:\n";
+        var_dump($diff);
     }
-    if (!empty($methods))
-    {
-        printf("Found more methods than expected, dumping list\n");
-        var_dump($methods);
-    }
+
+    // Free the connection
+    $conn = null;
+
+} catch (PDOException $e) {
+    echo "PDOException: " . $e->getMessage() . "\n";
 }
-
-
-//--------------------------------------------------------------------
-// Repro
-//
-//--------------------------------------------------------------------
-function Repro()
-{
-
-    try
-    {
-        ConnInfo();
-    }
-    catch (Exception $e)
-    {
-        echo $e->getMessage();
-    }
-}
-
-Repro();
-
 ?>
 --EXPECT--
-Test "PDO - Interface" completed successfully.
