@@ -92,7 +92,7 @@ class BuildUtil(object):
         if vc == '15':
             return 'vc15'
         else: # For VS2019, it's 'vs' instead of 'vc'
-            return 'vs16'
+            return 'vs17'
         
     def compiler_version(self, sdk_dir):
         """Return the appropriate compiler version based on PHP version."""
@@ -100,7 +100,7 @@ class BuildUtil(object):
             VC = 'vc15'
             version = self.version_label()
             if version[0] == '8':     # Compiler version for PHP 8.0 or above
-                VC = 'vs16'
+                VC = 'vs17'
             self.vc = VC
             print('Compiler: ' + self.vc)
         return self.vc
