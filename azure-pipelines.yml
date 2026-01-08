@@ -582,23 +582,6 @@ jobs:
     displayName: 'Check PHP'
 
   - powershell: |
-      Write-Host "Checking installed ODBC Drivers..."
-      Get-OdbcDriver | Where-Object { $_.Name -like "*SQL Server*" } | Format-Table Name, Platform -AutoSize
-      
-      Write-Host "`nVerifying ODBC Driver 18 for SQL Server is installed:"
-      $driver18 = Get-OdbcDriver | Where-Object { $_.Name -eq "ODBC Driver 18 for SQL Server" }
-      if ($driver18) {
-          Write-Host "✓ ODBC Driver 18 for SQL Server is available" -ForegroundColor Green
-          Write-Host "  Platform: $($driver18.Platform)"
-      } else {
-          Write-Host "✗ ODBC Driver 18 for SQL Server NOT found!" -ForegroundColor Red
-          Write-Host "Available drivers:"
-          Get-OdbcDriver | Format-Table Name, Platform
-          exit 1
-      }
-    displayName: 'Verify ODBC Driver 18 is installed'
-
-  - powershell: |
       $guid = [guid]::NewGuid().ToString()
       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
     displayName: 'Generate Password'
@@ -698,6 +681,17 @@ jobs:
       reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 18 for SQL Server"
       dir %WINDIR%\System32\msodbcsql*.dll
     displayName: 'Install ODBC Driver 18'
+
+  - powershell: |
+      Write-Host "Verifying ODBC Driver 18 installation..."
+      Get-OdbcDriver | Where-Object { $_.Name -like "*SQL Server*" } | Format-Table Name, Platform -AutoSize
+      $driver18 = Get-OdbcDriver | Where-Object { $_.Name -eq "ODBC Driver 18 for SQL Server" }
+      if (-not $driver18) {
+          Write-Host "##[error]ODBC Driver 18 for SQL Server NOT found after installation!"
+          exit 1
+      }
+      Write-Host "✓ ODBC Driver 18 for SQL Server installed successfully"
+    displayName: 'Verify ODBC Driver 18 installation'
 
   - powershell: |
       $client = New-Object Net.WebClient
