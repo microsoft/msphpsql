@@ -20,7 +20,7 @@ $conn_break = connect();
 // statement has been prepared
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = array("ConnectRetryCount" => 10, "ConnectRetryInterval" => 10);
+$connectionInfo = "ConnectRetryCount=10;ConnectRetryInterval=10";
 
 try
 {
