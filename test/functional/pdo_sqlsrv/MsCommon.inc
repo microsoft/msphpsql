@@ -308,10 +308,12 @@ function is_col_enc()
         return true;
 }
 
+if (!function_exists('teardown')) {
 function teardown()
 {
     // TBD
 }
+} // end function_exists('teardown')
 
 
 function my_print_r( $to_print )
