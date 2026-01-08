@@ -683,26 +683,21 @@ jobs:
     displayName: 'Update connection credentials'
 
   - powershell: |
+      Write-Host "Downloading ODBC Driver 18 for SQL Server..."
       $client = New-Object Net.WebClient
-      $client.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2249006', 'c:\projects\msodbcsql.msi')
-      $client.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2249006', 'c:\projects\msodbcsql.msi')
-      $client.DownloadFile('https://download.microsoft.com/download/0/e/6/0e63d835-3513-45a0-9cf0-0bc75fb4269e/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
-      dir *.msi
-    displayName: 'Download ODBC msi and sql tools msi'
-    condition: false
+      # Download ODBC Driver 18 MSI
+      $client.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2249006', '$(Build.SourcesDirectory)\msodbcsql.msi')
+      Write-Host "Downloaded msodbcsql.msi"
+      dir $(Build.SourcesDirectory)\msodbcsql.msi
+    displayName: 'Download ODBC Driver 18 MSI'
 
   - script: |
+      cd $(Build.SourcesDirectory)
       msiexec /i "msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
+      echo "Verifying ODBC Driver 18 installation..."
       reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 18 for SQL Server"
       dir %WINDIR%\System32\msodbcsql*.dll
-    displayName: 'Install ODBC driver'
-    condition: false
-
-  # FOR SOME REASON the set up did not set the PATH
-  - script: |
-      msiexec /i "MsSqlCmdLnUtils.msi" /qn IACCEPTMSSQLCMDLNUTILSLICENSETERMS=YES
-    displayName: 'Install SQL command line utilities version 15'
-    condition: false
+    displayName: 'Install ODBC Driver 18'
 
   - powershell: |
       $client = New-Object Net.WebClient
