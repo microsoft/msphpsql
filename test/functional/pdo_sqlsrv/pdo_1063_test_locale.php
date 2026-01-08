@@ -119,7 +119,7 @@ $d = new DateTime("12/25/2020", new DateTimeZone('America/Los_Angeles'));
 printCal($d, $locale);
 
 try {
-    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver", $uid, $pwd );
+    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver; Encrypt=$encrypt", $uid, $pwd );
 
     $tableName = "[" . "pdo1063" . $locale . "]";
     

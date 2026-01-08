@@ -58,7 +58,7 @@ try {
     $tempDB = 'GB18030test' . rand(1, 100);
     require_once('MsSetup.inc');
     
-    $conn = new PDO("sqlsrv:server = $server;database=master;driver=$driver", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server;database=master;driver=$driver;Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     runTest($conn, $tempDB);
