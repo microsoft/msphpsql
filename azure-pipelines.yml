@@ -203,7 +203,7 @@ jobs:
       echo "Testing from host using PHP sqlsrv extension:"
       php -r "
       \$serverName = '$(server)';
-      \$connectionInfo = array('UID'=>'$(uid)', 'PWD'=>'$(pwd)', 'Database'=>'master', 'LoginTimeout'=>30);
+      \$connectionInfo = array('UID'=>'$(uid)', 'PWD'=>'$(pwd)', 'Database'=>'master', 'LoginTimeout'=>30, 'Encrypt'=>false, 'TrustServerCertificate'=>true);
       \$conn = sqlsrv_connect(\$serverName, \$connectionInfo);
       if(\$conn === false) {
         echo 'Connection failed: ';
@@ -360,13 +360,26 @@ jobs:
 
   - script: |
       echo "Generating locales for testing..."
+      # Enable required locales in locale.gen
       sudo sed -i 's/# en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
-      sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
+      sudo sed -i 's/# en_US.ISO-8859-1 ISO-8859-1/en_US.ISO-8859-1 ISO-8859-1/g' /etc/locale.gen
       sudo sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
       sudo sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo sed -i 's/# fr_FR.UTF-8 UTF-8/fr_FR.UTF-8 UTF-8/g' /etc/locale.gen
+      sudo sed -i 's/# fr_FR ISO-8859-1/fr_FR ISO-8859-1/g' /etc/locale.gen
+      sudo sed -i 's/# fr_FR@euro ISO-8859-15/fr_FR@euro ISO-8859-15/g' /etc/locale.gen
+      sudo sed -i 's/# fr_FR.ISO-8859-15 ISO-8859-15/fr_FR.ISO-8859-15 ISO-8859-15/g' /etc/locale.gen
       sudo sed -i 's/# zh_CN GB2312/zh_CN GB2312/g' /etc/locale.gen
       sudo sed -i 's/# zh_CN.GB18030 GB18030/zh_CN.GB18030 GB18030/g' /etc/locale.gen
+      sudo sed -i 's/# zh_CN.gb18030 GB18030/zh_CN.gb18030 GB18030/g' /etc/locale.gen
+      sudo sed -i 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/g' /etc/locale.gen
+      
+      # Generate all locales
       sudo locale-gen
+      
+      # Verify locales were generated
+      echo "Available locales:"
+      locale -a | grep -E "en_US|de_DE|fr_FR|zh_CN" || true
     displayName: 'Generate locales for testing'
 
   - script: |

@@ -8,7 +8,8 @@
 
 */
 
-// TO BE DELETED
+// TO BE DELETED - wrapped in function_exists to avoid redeclaration error
+if (!function_exists('connect')) {
 function connect($options=array(), $catchErrors = true)
 {
     if ($catchErrors)
@@ -43,6 +44,7 @@ function connect($options=array(), $catchErrors = true)
         return $conn;
     }
 }
+} // end function_exists('connect')
 
 /**
  * Create a table

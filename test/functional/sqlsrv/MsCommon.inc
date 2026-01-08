@@ -187,6 +187,8 @@ function configure($param, $expected)
     }
 }
 
+// Wrapped in function_exists to avoid redeclaration error with MsHelper.inc
+if (!function_exists('connect')) {
 function connect($options = array(), $trapError = true)
 {
     include('MsSetup.inc');
@@ -207,6 +209,7 @@ function connect($options = array(), $trapError = true)
     }
     return ($conn);
 }
+} // end function_exists('connect')
 
 function getTempTableName($table = '', $temporary = true)
 {
