@@ -470,7 +470,6 @@ jobs:
 - job: Windows
   variables:
     phpVersion: 8.4
-    phpVersion: 8.4
   pool:
     vmImage: 'windows-latest'
   steps:
