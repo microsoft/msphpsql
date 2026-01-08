@@ -19,8 +19,9 @@ $procName = "php_test_proc";
 $fileName = "php_test_file.dat";
 
 $driver = "ODBC Driver 17 for SQL Server";
+$encrypt = "no";
 
-$connectionOptions = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, "TraceOn" => false, "Driver" => $driver);
+$connectionOptions = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, "TraceOn" => false, "Driver" => $driver, "Encrypt" => $encrypt);
 $daasMode = false;
 $marsMode = true;
 

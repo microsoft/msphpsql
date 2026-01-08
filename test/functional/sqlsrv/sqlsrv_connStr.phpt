@@ -15,7 +15,7 @@ $userLoginFailed = array('28000', '18456', "*Login failed for user *");
 
 function connect($options=array())
 {
-    global $server, $uid, $pwd, $databaseName;
+    global $server, $uid, $pwd, $databaseName, $encrypt;
     
     if (!isset($options['UID']) && !isset($options['uid'])) {
         $options['uid'] = $uid;
@@ -25,6 +25,9 @@ function connect($options=array())
     }
     if (!isset($options['Database'])) {
         $options['database'] = $databaseName;
+    }
+    if (!isset($options['Encrypt'])) {
+        $options['encrypt'] = $encrypt;
     }
     return sqlsrv_connect($server, $options);
 }

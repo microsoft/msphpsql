@@ -329,6 +329,11 @@ jobs:
       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
     displayName: 'Generate Password'
 
+  - powershell: |
+      $guid = [guid]::NewGuid().ToString()
+      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
+    displayName: 'Generate Password'
+
   - script: |
       # Start SQL Server container (only SQL Server in Docker, not tests)
       docker pull mcr.microsoft.com/mssql/server:2022-latest
@@ -465,6 +470,7 @@ jobs:
 - job: Windows
   variables:
     phpVersion: 8.4
+    phpVersion: 8.4
   pool:
     vmImage: 'windows-latest'
   steps:
@@ -556,6 +562,11 @@ jobs:
     displayName: 'Generate Password'
 
   - powershell: |
+      $guid = [guid]::NewGuid().ToString()
+      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
+    displayName: 'Generate Password'
+
+  - powershell: |
       Write-Host "Starting SQL Server LocalDB..."
       
       # Create and start LocalDB instance  
@@ -631,6 +642,7 @@ jobs:
 
   - powershell: |
       $client = New-Object Net.WebClient
+      $client.DownloadFile('https://download.microsoft.com/download/6/f/f/6ffefc73-39ab-4cc0-bb7c-4093d64c2669/en-US/17.10.6.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
       $client.DownloadFile('https://download.microsoft.com/download/6/f/f/6ffefc73-39ab-4cc0-bb7c-4093d64c2669/en-US/17.10.6.1/x64/msodbcsql.msi', 'c:\projects\msodbcsql.msi')
       $client.DownloadFile('https://download.microsoft.com/download/0/e/6/0e63d835-3513-45a0-9cf0-0bc75fb4269e/EN/x64/MsSqlCmdLnUtils.msi', 'MsSqlCmdLnUtils.msi')
       dir *.msi

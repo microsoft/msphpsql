@@ -28,7 +28,7 @@ $connectionOptions['KeyStoreSecret'] = $AKVSecret;
 $tableName = "akv_comparison_table";
 
 // Connect to the AE-enabled database, insert the data, and verify
-$conn = sqlsrv_connect($server, $connectionOptions);
+$conn = connect($connectionOptions, false);
 if (!$conn) {
     $errors = sqlsrv_errors();
     fatalError("Connection failed while testing good credentials.\n");
