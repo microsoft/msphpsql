@@ -57,7 +57,8 @@ if __name__ == '__main__':
 
     current_working_dir=os.getcwd()
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
-    conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '
+    # Add -C flag to trust server certificate (required for ODBC 18 with self-signed certs)
+    conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' -C '
 
     # In Azure, assume an empty test database has been created using Azure portal
     if (args.AZURE.lower() == 'no'):
