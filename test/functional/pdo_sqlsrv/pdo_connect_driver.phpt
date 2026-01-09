@@ -7,7 +7,7 @@ Test new connection keyword Driver with valid and invalid values
 require_once('MsSetup.inc');
 
 try {
-    $conn = new PDO("sqlsrv:server = $server", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server; Encrypt = $encrypt", $uid, $pwd);
     $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)['DriverVer'];
     $msodbcsqlMaj = explode(".", $msodbcsqlVer)[0];
 } catch(PDOException $e) {

@@ -32,7 +32,7 @@ function readData($conn, $schema, $testTable)
 }
 
 try {
-    $conn = new PDO("sqlsrv:Server=$server;Database=$databaseName;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:Server=$server;Database=$databaseName;Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $tvpname = 'pdo_id_table2';

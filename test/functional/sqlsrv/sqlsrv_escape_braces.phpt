@@ -54,7 +54,7 @@ $testStrings = array(array("}", $braceError),
 
 foreach ($testStrings as $test) {
 
-    $conn = sqlsrv_connect($server, array('uid'=>$test[0], 'pwd'=>$password, 'LoginTimeout'=>1));
+    $conn = sqlsrv_connect($server, array('uid'=>$test[0], 'pwd'=>$password, 'LoginTimeout'=>1, 'Encrypt'=>$encrypt));
 
     if (strpos(sqlsrv_errors()[0][2], $test[1]) === false) {
         print_r("Wrong error message returned for test string ".$test[0].". Expected ".$test[1].", actual output:\n");

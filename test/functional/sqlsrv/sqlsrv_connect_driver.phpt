@@ -7,7 +7,7 @@ Test new connection keyword Driver with valid and invalid values
 sqlsrv_configure('WarningsReturnAsErrors', 0);
 require_once('MsSetup.inc');
 
-$connectionOptions = array("Database"=>$database, "UID"=>$userName, "PWD"=>$userPassword);
+$connectionOptions = array("Database"=>$database, "UID"=>$userName, "PWD"=>$userPassword, "Encrypt"=>$encrypt);
 $conn = sqlsrv_connect($server, $connectionOptions);
 if ($conn === false) {
     print_r(sqlsrv_errors());

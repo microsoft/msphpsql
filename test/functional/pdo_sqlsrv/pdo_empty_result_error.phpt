@@ -40,7 +40,7 @@ function NextResult($stmt, $error=NULL)
     CheckError($stmt, $error);
 }
 
-$conn = new PDO( "sqlsrv:Server = $server; Database = $databaseName; ", $uid, $pwd );
+$conn = new PDO( "sqlsrv:Server = $server; Database = $databaseName; Encrypt = $encrypt; ", $uid, $pwd );
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT );
 
 DropTable($conn, 'TestEmptySetTable');

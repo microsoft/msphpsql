@@ -56,17 +56,17 @@ function checkErrorMessages($conn, $testCase, $randomPwd)
 
 $randomPwd = generateRandomPassword(false);
 trace($randomPwd . PHP_EOL);
-$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd));
+$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd, "Encrypt" => $encrypt));
 checkErrorMessages($conn, 'Password without right braces', $randomPwd);
 
 $randomPwd = generateRandomPassword();
 trace($randomPwd . PHP_EOL);
-$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd));
+$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd, "Encrypt" => $encrypt));
 checkErrorMessages($conn, 'Password with right braces', $randomPwd);
 
 $randomPwd = generateRandomPassword(true, false);
 trace($randomPwd . PHP_EOL);
-$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd));
+$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd, "Encrypt" => $encrypt));
 if ($conn) {
     echo ("Shouldn't have connected without escaping braces!" . PHP_EOL);
 }

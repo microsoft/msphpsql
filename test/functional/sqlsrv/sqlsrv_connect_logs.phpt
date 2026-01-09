@@ -18,7 +18,7 @@ Similar to sqlsrv_connect.phpt but also test different settings of logging activ
     }
 
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_NOTICE);
-    $conn = sqlsrv_connect($server, array( "uid" => $uid , "pwd" => $pwd ));
+    $conn = sqlsrv_connect($server, array( "uid" => $uid , "pwd" => $pwd, "Encrypt" => $encrypt ));
 
     if ($conn === false) {
         fatalError("sqlsrv_connect should have connected.");

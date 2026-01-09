@@ -27,6 +27,9 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
         if (!isset($options['Database'])) {
             $options['database'] = $databaseName;
         }
+        if (!isset($options['Encrypt'])) {
+            $options['Encrypt'] = $encrypt;
+        }
         return sqlsrv_connect($server, $options);
     }
 

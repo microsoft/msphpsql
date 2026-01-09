@@ -22,7 +22,7 @@ if (empty($loc)) {
 
 require_once('MsSetup.inc');
 try {
-    $conn = new PDO("sqlsrv:server=$server", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server=$server;driver=$driver;Encrypt=$encrypt", $uid, $pwd);
     $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)['DriverVer'];
     $version = explode(".", $msodbcsqlVer);
 

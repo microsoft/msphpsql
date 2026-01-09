@@ -28,13 +28,13 @@ function invalidEncoding($binary)
 
 function invalidServer()
 {
-    global $uid, $pwd;
+    global $uid, $pwd, $encrypt;
     
     // Test an invalid server name in UTF-8
     try {
         $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
         $invalid = pack("H*", "ffc0");
-        $conn = new PDO("sqlsrv:server = $invalid;", $uid, $pwd, $options);
+        $conn = new PDO("sqlsrv:server = $invalid; Encrypt = $encrypt;", $uid, $pwd, $options);
         echo "Should have failed to connect to invalid server.\n";
     }  catch (PDOException $e) {
         $error1 = '*Login timeout expired';
@@ -64,7 +64,7 @@ function utf8APP()
 
 function invalidCredentials()
 {
-    global $server, $database;
+    global $server, $database, $encrypt;
     
     // Use valid UTF-8 
     $user = pack('H*', 'c59ec6a1d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
@@ -76,7 +76,7 @@ function invalidCredentials()
     $error3 = "*Could not open a connection to SQL Server*";
     
     try {
-        $conn = new PDO("sqlsrv:server = $server; database = $database;", $user, $passwd, $options);
+        $conn = new PDO("sqlsrv:server = $server; database = $database; Encrypt = $encrypt;", $user, $passwd, $options);
         echo "Should have failed to connect\n";
     } catch (PDOException $e) {
         if (fnmatch($error1, $e->getMessage()) || 
@@ -92,7 +92,7 @@ function invalidCredentials()
 
 function invalidPassword()
 {
-    global $server, $database;
+    global $server, $database, $encrypt;
     
     // Use valid UTF-8
     $user = pack('H*', 'c59ec6a1d0bcc49720c59bc3a4e1839dd180c580e1bb8120ce86c59ac488c4a8c4b02dc5a5e284aec397c5a7');
@@ -107,7 +107,7 @@ function invalidPassword()
     $error2 = "*Login timeout expired*";
 
     try {
-        $conn = new PDO("sqlsrv:server = $server; database = $database;", $user, $passwd, $options);
+        $conn = new PDO("sqlsrv:server = $server; database = $database; Encrypt = $encrypt;", $user, $passwd, $options);
         echo "Should have failed to connect\n";
     } catch (PDOException $e) {
         if (!fnmatch($error, $e->getMessage())) {

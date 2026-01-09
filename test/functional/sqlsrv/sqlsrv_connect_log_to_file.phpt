@@ -25,7 +25,7 @@ Similar to sqlsrv_connect_logs.phpt but this time test logging to a log file
     }
 
     ini_set("sqlsrv.LogSeverity", SQLSRV_LOG_SEVERITY_NOTICE);
-    $conn = sqlsrv_connect($server, array( "uid" => $uid , "pwd" => $pwd ));
+    $conn = sqlsrv_connect($server, array( "uid" => $uid , "pwd" => $pwd, "Encrypt" => $encrypt ));
 
     if ($conn === false) {
         fatalError("sqlsrv_connect should have connected.");

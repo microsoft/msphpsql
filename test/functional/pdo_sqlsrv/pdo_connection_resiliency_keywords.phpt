@@ -9,9 +9,9 @@ require_once( "MsSetup.inc" );
 
 function TryToConnect( $retryCount, $retryInterval, $number )
 {
-    global $server, $databaseName, $uid, $pwd;
+    global $server, $databaseName, $uid, $pwd, $encrypt;
     
-    $connectionInfo = "ConnectRetryCount = $retryCount; ConnectRetryInterval = $retryInterval;";
+    $connectionInfo = "ConnectRetryCount = $retryCount; ConnectRetryInterval = $retryInterval; Encrypt = $encrypt;";
 
     try
     {
@@ -35,7 +35,7 @@ TryToConnect( -1, 30, 'fifth');
 TryToConnect( 'thisisnotaninteger', 30, 'sixth');
 TryToConnect( 5, 3.14159, 'seventh');
 
-$connectionInfo = "ConnectRetryCount;";
+$connectionInfo = "ConnectRetryCount; Encrypt = $encrypt;";
 
 try
 {
@@ -50,7 +50,7 @@ catch( PDOException $e )
     echo "\n";
 }
 
-$connectionInfo = "ConnectRetryInterval;";
+$connectionInfo = "ConnectRetryInterval; Encrypt = $encrypt;";
 
 try
 {
