@@ -22,7 +22,7 @@ def populateTables(conn_options, dbname):
     executeBulkCopy(conn_options, dbname, '168256', '168256')
 
 def executeBulkCopy(conn_options, dbname, tblname, datafile):
-    redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q'
+    redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q -C'
     inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options
     executeCommmand(inst_command)
 

@@ -4,6 +4,8 @@ Test that right braces are escaped correctly and that error messages are correct
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
+require_once("MsSetup.inc");
+
 $server = 'fakeserver';
 $uid = 'sa';
 $password = 'fakepassword';
