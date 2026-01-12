@@ -28,6 +28,9 @@ if (!empty($userName) || !empty($userPassword)) {
         if (!isset($options['Database'])) {
             $options['database'] = $databaseName;   
         }
+        if (!isset($options['Encrypt'])) {
+            $options['Encrypt'] = $encrypt;
+        }
         return sqlsrv_connect($server, $options);
     }
 

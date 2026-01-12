@@ -19,7 +19,7 @@ Similar to sqlsrv_connect_logs.phpt but this time test logging to a log file
     ini_set("sqlsrv.LogSeverity", SQLSRV_LOG_SEVERITY_ALL);
     ini_set("sqlsrv.LogSubsystems", SQLSRV_LOG_SYSTEM_ALL);
 
-    $conn = sqlsrv_connect($server, array( "Driver" => "Wrong Driver" ));
+    $conn = sqlsrv_connect($server, array( "Driver" => "Wrong Driver", "Encrypt" => $encrypt ));
     if ($conn !== false) {
         fatalError("sqlsrv_connect should have returned false.");
     }
