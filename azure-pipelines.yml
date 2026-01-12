@@ -150,10 +150,25 @@ jobs:
       export TEST_PHP_SQL_SERVER='$(server)'
       export TEST_PHP_SQL_UID='$(uid)'
       export TEST_PHP_SQL_PWD='$(pwd)'
-
+      
+      # Add mssql-tools18 to PATH for bcp and sqlcmd
+      export PATH="/opt/homebrew/opt/mssql-tools18/bin:$PATH"
+      
+      # Debug: Check if bcp is available
+      echo "Checking bcp availability..."
+      which bcp || echo "bcp not found in PATH"
+      bcp -v || echo "bcp version check failed"
+      
       cd $(Build.SourcesDirectory)/test/functional/setup
       python setup_dbs.py -dbname $(sqlsrv_db)
       python setup_dbs.py -dbname $(pdo_sqlsrv_db)
+      
+      # Debug: Verify data was loaded
+      echo "Verifying test data was loaded..."
+      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as cd_info_count FROM cd_info"
+      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as tracks_count FROM tracks"
+      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as streamable_count FROM test_streamable_types"
       
       echo "Database setup complete!"
     displayName: 'Set up test databases'
@@ -238,22 +253,23 @@ jobs:
       export TZ=Asia/Shanghai
       export LC_ALL='en_US.UTF-8'
       
-      # Run all sqlsrv functional tests with extended timeout
-      php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv.log
+      # Run only the failing tests for debugging
+      php run-tests.php 0022.phpt fix_test_168256-2.phpt fix_test_168256.phpt sqlsrv_574_next_result.phpt sqlsrv_ConnPool_Unix.phpt sqlsrv_ae_azure_key_vault_keywords.phpt sqlsrv_data_to_str.phpt sqlsrv_readStream.phpt test_XML_retrieve.phpt test_fetch.phpt test_fetch2.phpt test_sqlsrv_phptype_stream.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
-  - script: |
-      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-      sed -i '' -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i '' -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-      sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
+  # Skip pdo_sqlsrv tests for now - debugging sqlsrv failures first
+  # - script: |
+  #     cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+  #     sed -i '' -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
+  #     sed -i '' -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
+  #     sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+  #     sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
-      export TZ=Asia/Shanghai
-      export LC_ALL='en_US.UTF-8'
-      # Run all pdo_sqlsrv functional tests with extended timeout
-      php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../pdo_sqlsrv.log
-    displayName: 'Run pdo_sqlsrv functional tests'
+  #     export TZ=Asia/Shanghai
+  #     export LC_ALL='en_US.UTF-8'
+  #     # Run all pdo_sqlsrv functional tests with extended timeout
+  #     php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../pdo_sqlsrv.log
+  #   displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
       export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
