@@ -147,25 +147,36 @@ jobs:
 
   - script: |
       echo "Setting up test databases..."
-      export TEST_PHP_SQL_SERVER='$(server)'
-      export TEST_PHP_SQL_UID='$(uid)'
-      export TEST_PHP_SQL_PWD='$(pwd)'
-      
-      # Add mssql-tools18 to PATH for bcp and sqlcmd
-      export PATH="/opt/homebrew/opt/mssql-tools18/bin:$PATH"
-      
-      # Debug: Check if bcp is available
-      echo "Checking bcp availability..."
-      which bcp || echo "bcp not found in PATH"
-      bcp -v || echo "bcp version check failed"
-      
-      cd $(Build.SourcesDirectory)/test/functional/setup
-      python setup_dbs.py -dbname $(sqlsrv_db)
-      python setup_dbs.py -dbname $(pdo_sqlsrv_db)
-      
-      # Debug: Verify data was loaded
-      echo "Verifying test data was loaded..."
       export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+      
+      # Create databases using sqlcmd inside container
+      echo "Creating databases..."
+      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '$(sqlsrv_db)') CREATE DATABASE [$(sqlsrv_db)]"
+      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '$(pdo_sqlsrv_db)') CREATE DATABASE [$(pdo_sqlsrv_db)]"
+      
+      # Copy setup files to container
+      echo "Copying setup files to container..."
+      docker cp $(Build.SourcesDirectory)/test/functional/setup $(host):/tmp/setup
+      
+      # Run SQL scripts inside container for both databases
+      for db in $(sqlsrv_db) $(pdo_sqlsrv_db); do
+        echo "Setting up $db..."
+        for sqlfile in test_types.sql 168256.sql cd_info.sql tracks.sql; do
+          echo "  Running $sqlfile..."
+          docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $db -i /tmp/setup/$sqlfile
+        done
+        
+        # Run bcp to load data inside container
+        echo "  Loading data with bcp..."
+        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..cd_info in cd_info.dat -f cd_info.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
+        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..tracks in tracks.dat -f tracks.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
+        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..test_streamable_types in test_streamable_types.dat -f test_streamable_types.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
+        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..[159137] in xml.dat -f xml.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
+        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..[168256] in 168256.dat -f 168256.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
+      done
+      
+      # Verify data was loaded
+      echo "Verifying test data was loaded..."
       docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as cd_info_count FROM cd_info"
       docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as tracks_count FROM tracks"
       docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as streamable_count FROM test_streamable_types"
