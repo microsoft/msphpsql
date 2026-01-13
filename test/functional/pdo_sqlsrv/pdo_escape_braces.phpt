@@ -4,6 +4,7 @@ Test that right braces are escaped correctly and that error messages are correct
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
+require_once('MsSetup.inc');
 $server = 'fakeserver';
 $uid = 'sa';
 $password = 'fakepassword';
@@ -59,7 +60,7 @@ foreach ($testStrings as $test) {
     } catch (PDOException $e) {
         if (strpos($e->getMessage(), $test[1]) === false) {
             print_r("Wrong error message returned for test string ".$test[0].". Expected ".$test[1].", actual output:\n");
-            print_r($e->getMessage);
+            print_r($e->getMessage());
             echo "\n";
         } 
     }

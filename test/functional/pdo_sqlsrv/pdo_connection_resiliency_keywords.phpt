@@ -80,6 +80,6 @@ SQLSTATE\[08001\]: (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Serv
 Could not connect on seventh attempt.
 SQLSTATE\[08001\]: (\[unixODBC\]|)\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval'
 Could not connect on eighth attempt.
-SQLSTATE\[IMSSP\]: The DSN string ended unexpectedly.
+SQLSTATE\[(IMSSP|08001)\]: (The DSN string ended unexpectedly.|An invalid keyword 'ConnectRetryCount; Encrypt' was specified in the DSN string.|\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryCount')
 Could not connect on ninth attempt.
-SQLSTATE\[IMSSP\]: The DSN string ended unexpectedly.
+SQLSTATE\[(IMSSP|08001)\]: (The DSN string ended unexpectedly.|An invalid keyword 'ConnectRetryInterval; Encrypt' was specified in the DSN string.|\[Microsoft\]\[ODBC Driver 1[1-9] for SQL Server\]Invalid value specified for connection string attribute 'ConnectRetryInterval')

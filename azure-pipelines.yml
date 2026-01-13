@@ -482,6 +482,7 @@ jobs:
       export MSSQL_USER='$(uid)'
       export MSSQL_PASSWORD='$(pwd)'
       export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
+      export MSSQL_DRIVER_NAME='ODBC Driver 18 for SQL Server'
       export TZ='Asia/Shanghai'
       export LC_ALL='en_US.UTF-8'
       php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv.log
@@ -493,6 +494,7 @@ jobs:
       export MSSQL_USER='$(uid)'
       export MSSQL_PASSWORD='$(pwd)'
       export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
+      export MSSQL_DRIVER_NAME='ODBC Driver 18 for SQL Server'
       export TZ='Asia/Shanghai'
       export LC_ALL='en_US.UTF-8'
       php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../pdo_sqlsrv.log
