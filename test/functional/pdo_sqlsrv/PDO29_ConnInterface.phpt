@@ -56,7 +56,7 @@ function CheckInterface($conn)
 
 //change for 8.4
 if ($phpver >= '8.4') {
-    // PHP 8.4 introduced PDO::connect(). UPDATED
+    // PHP 8.4 introduced PDO::connect(). 8.4+
     $expected['connect'] = true;
 }
 	
