@@ -46,27 +46,31 @@ function Extend()
     EndTest($testName);
 }
 
+#[AllowDynamicProperties]
 class ExPDO extends PDO
 {
     public function __construct()
     {
         $this->protocol();
         $args = func_get_args();
-        return (call_user_func_array(array($this, 'parent::__construct'), $args));
+        $callable = parent::class . '::__construct';
+        return (call_user_func_array($callable, $args));
     }
 
     public function exec(string $args1) : int|false
     {
         $this->protocol();
         $args = func_get_args();
-        return (call_user_func_array(array($this, 'parent::exec'), $args));
+        $callable = parent::class . '::exec';
+        return (call_user_func_array($callable, $args));
     }
 
     function query(string $sql, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
     {
         $this->protocol();
         $args = func_get_args();
-        return (call_user_func_array(array($this, 'parent::query'), $args));
+        $callable = parent::class . '::query';
+        return (call_user_func_array($callable, $args));
     }
 
     public function __call($method, $args)

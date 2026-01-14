@@ -5,7 +5,7 @@ default query; query for a column; query with a new class; query into an existin
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 $conn->setAttribute( PDO::SQLSRV_ATTR_QUERY_TIMEOUT, 1 );
 
@@ -26,9 +26,13 @@ while ( $row = $stmt->fetch() ){
 }
 
 echo "\n........ query with a new class ............\n";
-$query = 'select * from HumanResources.Department order by GroupName';
+$query = 'select DepartmentID, Name, GroupName from HumanResources.Department order by GroupName';
 // query with a class
 class cc {
+      public $DepartmentID;
+      public $Name;
+      public $GroupName;
+
    function __construct( $arg ) {
       echo "$arg";
    }

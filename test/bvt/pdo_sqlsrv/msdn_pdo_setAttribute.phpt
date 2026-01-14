@@ -5,7 +5,7 @@ sets to PDO::ATTR_ERRMODE
 --FILE--
 <?php
    require('connect.inc');	
-   $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+   $conn = getPdoConnection();
    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
    $attributes1 = array( "ERRMODE" );

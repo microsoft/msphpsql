@@ -53,7 +53,8 @@ $connectionOptions = array("CharacterSet"=>"UTF-8",
                            "database"=>$databaseName,
                            "uid"=>$uid,
                            "pwd"=>$pwd,
-                           "ConnectionPooling"=>0);
+                           "ConnectionPooling"=>0,
+                           "Encrypt"=>$encrypt);
 
 $conn = sqlsrv_connect($server, $connectionOptions);
 if (!$conn) {

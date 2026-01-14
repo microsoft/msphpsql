@@ -5,7 +5,7 @@ returns the number of columns in a result set for 3 queries
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 
 $query = "select * from Person.ContactType";
 $stmt = $conn->prepare( $query );

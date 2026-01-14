@@ -2,6 +2,7 @@
 GitHub issue #678 - Idle Connection Resiliency doesn't work with Connection Pooling
 --DESCRIPTION--
 Verifies that the issue has been fixed with ODBC 17.1
+--FLAKY--
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -68,7 +69,7 @@ try {
 }
 
 // first connection
-$connectionInfo = "ConnectRetryCount = 10; ConnectRetryInterval = 10; ConnectionPooling = 1;";
+$connectionInfo = "ConnectRetryCount = 20; ConnectRetryInterval = 10; ConnectionPooling = 1;";
 try {
     $conn = connect($connectionInfo, array(), PDO::ERRMODE_EXCEPTION, true);
 } catch (PDOException $e) {

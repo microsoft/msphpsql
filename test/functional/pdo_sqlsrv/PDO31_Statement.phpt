@@ -59,6 +59,7 @@ function ExecStmt()
     EndTest($testName);
 }
 
+#[AllowDynamicProperties]
 class Test
 {
     function __construct($name = 'N/A')

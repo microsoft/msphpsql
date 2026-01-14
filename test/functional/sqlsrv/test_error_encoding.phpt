@@ -31,7 +31,7 @@ function verifyErrorContents()
 
 require_once('MsSetup.inc');
 
-$connectionOptions = array('UID' => $userName, 'PWD' => $userPassword, 'CharacterSet' => 'UTF-8');
+$connectionOptions = array('UID' => $userName, 'PWD' => $userPassword, 'CharacterSet' => 'UTF-8', 'Encrypt' => $encrypt);
 $conn = sqlsrv_connect($server, $connectionOptions);
 if (!$conn) {
     die(print_r(sqlsrv_errors(), true));

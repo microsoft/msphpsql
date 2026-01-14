@@ -48,6 +48,7 @@ function Extend()
     EndTest($testName);
 }
 
+#[AllowDynamicProperties]
 class ExPDO extends PDO
 {
     public $test1 = 1;
@@ -74,6 +75,7 @@ class ExPDO extends PDO
     }
 }
 
+#[AllowDynamicProperties]
 class ExPDOStatement extends PDOStatement
 {
     protected function __construct()

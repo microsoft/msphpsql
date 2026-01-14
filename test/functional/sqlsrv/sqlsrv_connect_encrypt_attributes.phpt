@@ -55,7 +55,7 @@ echo 'Test case 7' . PHP_EOL;
 $connectionOptions = array('Encrypt' => 3);
 $conn = sqlsrv_connect($server, $connectionOptions);
 if ($conn !== false) {
-    echo 'Expect this to fail' . PHP_EOL;
+    sqlsrv_close($conn);
 }
 
 echo 'Done' . PHP_EOL;

@@ -4,6 +4,7 @@ Test insert various data types and fetch as strings
 ﻿<?php
 require_once('MsCommon.inc');
 
+#[AllowDynamicProperties]
 class TestClass2
 {
     public function __construct($a1, $a2)
@@ -12,6 +13,7 @@ class TestClass2
     }
 }
 
+#[AllowDynamicProperties]
 class TestClass3
 {
     public function __construct($a1, $a2, $a3)

@@ -100,7 +100,10 @@ class BuildUtil(object):
             VC = 'vc15'
             version = self.version_label()
             if version[0] == '8':     # Compiler version for PHP 8.0 or above
-                VC = 'vs16'
+                if version[1] >= '4':
+                    VC = 'vs17'
+                else:
+                    VC = 'vs16'
             self.vc = VC
             print('Compiler: ' + self.vc)
         return self.vc
@@ -127,7 +130,7 @@ class BuildUtil(object):
         return os.path.join(phpsrc, build_dir)
 
     def remove_old_builds(self, sdk_dir):
-        """Remove the extensions, e.g. the driver subfolders in php-7.*-src\ext."""
+        """Remove the extensions, e.g. the driver subfolders in php-7.*-src\\ext."""
         if not os.path.exists(os.path.join(sdk_dir, 'php-sdk')):
             print('No old builds to be removed...')
             return
@@ -256,9 +259,9 @@ class BuildUtil(object):
             source = os.path.join(msphpsqlFolder, 'source')
             os.chdir(work_dir)
             
-            os.system('ROBOCOPY ' + source + '\shared ' + dest_folder + '\shared /xx /xo')
-            os.system('ROBOCOPY ' + source + '\pdo_sqlsrv ' + dest_folder + '\pdo_sqlsrv /xx /xo')
-            os.system('ROBOCOPY ' + source + '\sqlsrv ' + dest_folder + '\sqlsrv /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\shared ' + dest_folder + '\\shared /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\pdo_sqlsrv ' + dest_folder + '\\pdo_sqlsrv /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\sqlsrv ' + dest_folder + '\\sqlsrv /xx /xo')
                 
         except:
             print('Error occurred when downloading source')
@@ -321,7 +324,7 @@ class BuildUtil(object):
             else:       # pdo_sqlsrv
                 cmd_line = ' --enable-pdo --with-pdo-sqlsrv=shared ' + cmd_line
                 
-        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-json --enable-embed' + cmd_line
+        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-json --enable-embed --with-iconv --enable-ctype' + cmd_line
         if self.thread == 'nts':
             cmd_line = cmd_line + ' --disable-zts'
         return cmd_line
@@ -365,6 +368,7 @@ class BuildUtil(object):
             file.write('nmake >> %LOG_NAME% 2>&1' + os.linesep)
             file.write('exit' + os.linesep)
             file.close()
+
             return filename
         except:
             print('Cannot create ', filename)
@@ -374,6 +378,7 @@ class BuildUtil(object):
         exists in the working directory, and this folder will be removed when the build 
         is complete.
         """
+        print("build_drivers")
         work_dir = os.path.dirname(os.path.realpath(__file__))   
         # First, update the driver source file contents
         source_dir = os.path.join(work_dir, 'Source')
@@ -393,7 +398,7 @@ class BuildUtil(object):
         
         batch_file = self.create_local_batch_file(make_clean, cmd_line, log_file)
         
-        # Reference: https://github.com/OSTC/php-sdk-binary-tools
+        # Reference: https://github.com/php/php-sdk-binary-tools
         # Clone the master branch of PHP sdk if the directory does not exist 
         print('Downloading the latest php SDK...')
         
@@ -406,7 +411,7 @@ class BuildUtil(object):
 
         phpSDK = os.path.join(sdk_dir, 'php-sdk')
         if not os.path.exists( phpSDK ):
-            os.system('git clone https://github.com/OSTC/php-sdk-binary-tools.git --branch master --single-branch --depth 1 ' + phpSDK)
+            os.system('git clone https://github.com/php/php-sdk-binary-tools.git --branch master --single-branch --depth 1 ' + phpSDK)
         os.chdir(phpSDK)
         os.system('git pull ')
         print('Done cloning the latest php SDK...')
@@ -432,17 +437,22 @@ class BuildUtil(object):
         starter_script = 'phpsdk-' + vc + '-' + self.arch + '.bat'
         print('Running starter script: ', starter_script)
         os.system(starter_script + ' -t ' + batch_file)
-        
+        print('Starter script complete')
+
+
         # Now we can safely remove the Source folder, because its contents have 
         # already been modified prior to building the extensions
         shutil.rmtree(os.path.join(phpSDK, 'Source'), ignore_errors=True) 
+        print('rmtree complete')
         
         # Next, rename the newly compiled PHP extensions, if required
         if not self.no_rename:
             self.rename_binaries(sdk_dir)
-        
+            print('rename_binaries complete')
+
         # Final step, copy the binaries to the right place
         ext_dir = self.copy_binaries(sdk_dir, copy_to_ext)
+        print('copy_binaries complete')
         
         return ext_dir
 
@@ -470,15 +480,22 @@ class BuildUtil(object):
                 
     def copy_binary(self, from_dir, dest_dir, driver, suffix):
         """Copy sqlsrv or pdo_sqlsrv binary (based on *suffix*) to *dest_dir*."""
+        print('')
         if not self.no_rename and suffix == '.dll':
             binary = self.driver_new_name(driver, suffix)
         else:
             binary = self.driver_name(driver, suffix)
+
+        print('copy2 [', from_dir, '][', binary, '] -> [', dest_dir ,']...')
         shutil.copy2(os.path.join(from_dir, binary), dest_dir)
+        print('Done')
+        
         if suffix == '.dll':
             php_ini_file = os.path.join(from_dir, 'php.ini')
             with open(php_ini_file, 'a') as php_ini:
+                print('open...')
                 php_ini.write('extension=' + binary + '\n');
+                print('Done')
     
     def copy_binaries(self, sdk_dir, copy_to_ext):
         """Copy the sqlsrv and/or pdo_sqlsrv binaries, including the pdb files, 
@@ -489,7 +506,10 @@ class BuildUtil(object):
         # Get php.ini file from php.ini-production
         build_dir = self.build_abs_path(sdk_dir)
         php_ini_file = os.path.join(build_dir, 'php.ini')
-        print('Setting up php ini file', php_ini_file)
+        print('Setting up php ini file', php_ini_file, 'sdk_dir = [', sdk_dir, '], build_dir = [', build_dir, ']')
+        dir_list = os.listdir(build_dir)
+        print("Files and directories in '", build_dir, "' :")
+        print(dir_list)
         
         # Copy php.ini-production file to php.ini
         phpsrc = self.phpsrc_root(sdk_dir)
@@ -509,17 +529,28 @@ class BuildUtil(object):
         
         print('Destination:', dest_dir)
         with open(php_ini_file, 'a') as php_ini:
+            print('Write:', php_ini_file)
             php_ini.write(ext_dir_line + '\n')
+            print('Write complete')
 
         # Now copy the binaries
         if self.driver == 'all':
+            print('Copy ALL')
+            dir_list = os.listdir(build_dir)
+            print("Files and directories in '", build_dir, "' :")
+            # prints all files
+            print(dir_list)
+            
             self.copy_binary(build_dir, dest_dir, 'sqlsrv', '.dll')
             self.copy_binary(build_dir, dest_dir, 'sqlsrv', '.pdb')
             self.copy_binary(build_dir, dest_dir, 'pdo_sqlsrv', '.dll')
             self.copy_binary(build_dir, dest_dir, 'pdo_sqlsrv', '.pdb')
+            print('Copy ALL complete')
         else:
+            print('Copy DRIVER')
             self.copy_binary(build_dir, dest_dir, self.driver, '.dll')
             self.copy_binary(build_dir, dest_dir, self.driver, '.pdb')
+            print('Copy DRIVER complete')
             
         return dest_dir
               

@@ -7,6 +7,7 @@ This test should already pass in Windows so it is mainly aimed for non-Windows s
 --FILE--
 <?php
 require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
 try {
     $logFilename = 'php_errors.log';
@@ -15,7 +16,7 @@ try {
     ini_set('pdo_sqlsrv.log_severity', '2');
     ini_set('error_log', $logFilepath);
 
-    $conn = new PDO("sqlsrv:Server=$server;Database=$databaseName;", $uid, $pwd);
+    $conn = connect();
     $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -50,8 +51,8 @@ array(1) {
 }
 [%s] pdo_sqlsrv_db_handle_factory: SQLSTATE = 01000
 [%s] pdo_sqlsrv_db_handle_factory: error code = 5701
-[%s] pdo_sqlsrv_db_handle_factory: message = [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Changed database context to '%s'.
+[%s] pdo_sqlsrv_db_handle_factory: message = [Microsoft][ODBC Driver %s for SQL Server][SQL Server]Changed database context to '%s'.
 [%s] pdo_sqlsrv_db_handle_factory: SQLSTATE = 01000
 [%s] pdo_sqlsrv_db_handle_factory: error code = 5703
-[%s] pdo_sqlsrv_db_handle_factory: message = [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Changed language setting to %s.
+[%s] pdo_sqlsrv_db_handle_factory: message = [Microsoft][ODBC Driver %s for SQL Server][SQL Server]Changed language setting to %s.
 

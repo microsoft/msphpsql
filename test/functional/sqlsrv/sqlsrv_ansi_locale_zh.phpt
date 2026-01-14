@@ -46,7 +46,7 @@ if ($msodbcsqlMaj == 17 && $msodbcsqlMin < 6) {
 require_once('MsSetup.inc');
 
 try {
-    $options = array("Database"=>"master", "UID"=>$userName, "PWD"=>$userPassword);
+    $options = array("Database"=>"master", "UID"=>$userName, "PWD"=>$userPassword, "Driver"=>$driver, "Encrypt"=>$encrypt);
     $conn = sqlsrv_connect($server, $options);
     if( $conn === false ) {
         throw new Error("Failed to connect");

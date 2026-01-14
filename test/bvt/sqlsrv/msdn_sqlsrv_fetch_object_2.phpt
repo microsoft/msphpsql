@@ -7,6 +7,8 @@ retrieves each row of a result set as an instance of the Product class defined i
 /* Define the Product class. */
 class Product
 {
+
+
      /* Constructor */
      public function ProductConstruct($ID)
      {
@@ -17,6 +19,8 @@ class Product
      public $StockedQty;
      public $SafetyStockLevel;
      private $UnitPrice;
+     public $Name;
+     public $Color;
      function getPrice()
      {
           return $this->UnitPrice;
@@ -26,8 +30,7 @@ class Product
 /* Connect to the local server using Windows Authentication, and
 specify the AdventureWorks database as the database in use. */
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if( $conn === false )
 {
      echo "Could not connect.\n";

@@ -1,9 +1,11 @@
 --TEST--
-Send a large amount (10MB) using encryption. In a Linux CI environment use a smaller size.
+Send a large amount (10MB) of data. In a Linux CI environment use a smaller size.
 --SKIPIF--
 <?php require('skipif_azure_dw.inc'); ?>
 --FILE--
 <?php
+
+#[AllowDynamicProperties]
 class my_stream
 {
     public $total_read = 0;
@@ -90,7 +92,7 @@ if (!$result) {
 
 require_once('MsCommon.inc');
 
-$conn = Connect(array( 'Encrypt' => true, 'TrustServerCertificate' => true ));
+$conn = Connect();
 if ($conn === false) {
     die(print_r(sqlsrv_errors(), true));
 }

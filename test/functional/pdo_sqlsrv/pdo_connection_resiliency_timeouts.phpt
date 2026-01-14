@@ -3,14 +3,16 @@ Test connection resiliency timeouts
 --DESCRIPTION--
 1. Connect with ConnectRetryCount equal to 0.
 2. Reconnect with the default value of ConnectRetryCount(1).
+--FLAKY--
 --SKIPIF--
 <?php require('skipif_protocol_not_tcp.inc');
       require('skipif_version_less_than_2k14.inc'); ?>
 --FILE--
 <?php
 require_once( "break_pdo.php" );
+require_once( "MsCommon_mid-refactor.inc" );
 
-$conn_break = new PDO( "sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd );
+$conn_break = connect();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Part 1 
@@ -21,7 +23,7 @@ $connectionInfo = "ConnectRetryCount = 0;";
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; Database = $dbName ; $connectionInfo", $uid, $pwd );
+    $conn = connect($connectionInfo);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 }
 catch( PDOException $e )
@@ -30,7 +32,7 @@ catch( PDOException $e )
     print_r( $e->getMessage() );
 }
 
-BreakConnection( $conn, $conn_break );
+breakConnection( $conn, $conn_break );
 
 try
 {
@@ -58,7 +60,7 @@ $connectionInfo = "ConnectRetryInterval = 10;";
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; Database = $dbName ; $connectionInfo", $uid, $pwd );
+    $conn = connect($connectionInfo);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 }
 catch( PDOException $e )
@@ -67,7 +69,7 @@ catch( PDOException $e )
     print_r( $e->getMessage() );
 }
 
-BreakConnection( $conn, $conn_break );
+breakConnection( $conn, $conn_break );
 
 try
 {
@@ -83,7 +85,7 @@ catch( PDOException $e )
 $conn = null;
 $conn_break = null;
 
-DropTables( $server, $uid, $pwd, $tableName1, $tableName2 );
+dropTables( $tableName1, $tableName2 );
 
 ?>
 --EXPECT--

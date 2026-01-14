@@ -5,8 +5,7 @@ retrieve date as PHP type with ReturnDatesAsStrings off by default.
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 
 if( $conn === false ) {
    echo "Could not connect.\n";
@@ -37,4 +36,4 @@ echo "Date = $date_string\n";
 sqlsrv_close( $conn);
 ?>
 --EXPECTREGEX--
-Date = 20th, February 2014|Date = 22nd, August 2017
+Date = 20th, February 2014|Date = 22nd, August 2017|Date = 23rd, January 2023

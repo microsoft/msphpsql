@@ -64,6 +64,7 @@ function FetchAll()
     EndTest($testName);
 }
 
+#[AllowDynamicProperties]
 class DerivedStatement extends PDOStatement
 {
     private function __construct($name, $conn)
@@ -78,6 +79,7 @@ class DerivedStatement extends PDOStatement
     }
 }
 
+#[AllowDynamicProperties]
 class Test1
 {
     public function __construct($id, $val)

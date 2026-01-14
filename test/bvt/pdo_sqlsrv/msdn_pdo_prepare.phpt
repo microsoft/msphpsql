@@ -5,7 +5,7 @@ prepares a statement with parameter markers and forward-only (server-side) curso
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
+$conn = getPdoConnection();
 
 $tableName = "pdoPrepare";
 dropTable($conn, $tableName);

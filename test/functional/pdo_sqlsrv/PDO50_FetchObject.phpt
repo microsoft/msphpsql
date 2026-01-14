@@ -10,6 +10,7 @@ PHPT_EXEC=true
 <?php
 include 'MsCommon.inc';
 
+#[AllowDynamicProperties]
 class TestClass
 {
     private $set_calls = 0;

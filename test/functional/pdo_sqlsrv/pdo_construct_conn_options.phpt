@@ -10,15 +10,12 @@ require_once("MsCommon_mid-refactor.inc");
 try {
     $dsn = "ConnectionPooling = false;" .
            "APP = whatever;" .
-           "LoginTimeout = 1;" .
            "ApplicationIntent = ReadOnly;" .
            "Encrypt = false;" .
            "Failover_Partner = whatever;" .
            "MultipleActiveResultSets = true;" .
            "MultiSubnetFailover = NO;" .
            "QuotedId = false;" .
-           "TraceFile = whatever;" .
-           "TraceOn = true;" .
            "TrustServerCertificate = false;" .
            "WSID = whatever;";
     $conn = connect($dsn);

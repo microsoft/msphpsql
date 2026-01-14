@@ -12,8 +12,9 @@ is necessary - this test should be run separately to verify no crash occurs.
 --FILE--
 <?php
     require_once("MsSetup.inc");
+    require_once("MsCommon.inc");
 
-    $conn = new PDO("sqlsrv:Server=$server; database = $databaseName", $uid, $pwd);
+    $conn = connect();
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
     for ($i = 0; $i < 50; $i++) {

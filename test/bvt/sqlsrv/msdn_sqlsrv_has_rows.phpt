@@ -5,8 +5,7 @@ indicate if the result set has one or more rows.
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 
 $stmt = sqlsrv_query( $conn, "select * from Person.Person where PersonType = 'EM'" , array());
 

@@ -7,7 +7,7 @@ Test new connection keyword Driver with valid and invalid values
 require_once('MsSetup.inc');
 
 try {
-    $conn = new PDO("sqlsrv:server = $server", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server; Encrypt = $encrypt", $uid, $pwd);
     $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)['DriverVer'];
     $msodbcsqlMaj = explode(".", $msodbcsqlVer)[0];
 } catch(PDOException $e) {
@@ -22,17 +22,16 @@ $conn = null;
 testValidValues();
 testInvalidValues();
 testEncryptedWithODBC();
-testWrongODBC();
 echo "Done" . PHP_EOL;
 // end test
 
 ///////////////////////////
 function connectVerifyOutput($connectionOptions, $testcase, $expected = null)
 {
-    global $server, $uid, $pwd;
+    global $server, $uid, $pwd, $encrypt;
 
     try {
-        $conn = new PDO("sqlsrv:server = $server ; $connectionOptions", $uid, $pwd);
+        $conn = new PDO("sqlsrv:server = $server ; Encrypt=$encrypt; $connectionOptions", $uid, $pwd);
         if (!is_null($expected)) {
             echo "'$testcase' is expected to fail!" . PHP_EOL;
         }
@@ -93,9 +92,8 @@ function testValidValues()
 
 function testInvalidValues()
 {
-    $values = array("{SQL Server Native Client 11.0}",
-                    "SQL Server Native Client 11.0",
-                    "ODBC Driver 00 for SQL Server",
+    $values = array("ODBC Driver 00 for SQL Server",
+                    "{Invalid Driver Name}",
                     123,
                     false);
 
@@ -116,17 +114,6 @@ function testEncryptedWithODBC()
     $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server";
 
     connectVerifyOutput($connectionOptions, "Using ODBC 13 for AE", $expected);
-}
-
-function testWrongODBC()
-{
-    global $msodbcsqlMaj;
-
-    $value = "ODBC Driver 18 for SQL Server";
-    $connectionOptions = "Driver = $value;";
-    $expected = "The specified ODBC Driver is not found.";
-
-    connectVerifyOutput($connectionOptions, "Connect with ODBC 18", $expected);
 }
 
 ?>

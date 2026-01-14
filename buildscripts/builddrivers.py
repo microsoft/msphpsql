@@ -66,7 +66,7 @@ class BuildDriver(object):
         already exists, this will prompt user whether to rebuild, clean, or superclean, the last option
         will remove the entire php source directory.
         
-        :param  root_dir: the C:\ drive
+        :param  root_dir: the C:\\ drive
         :param  work_dir: the directory of this script
         :outcome: the old binaries, if exist, will be removed
         """
@@ -139,10 +139,13 @@ class BuildDriver(object):
                 source = self.get_local_source(self.source_path)
             
             print('Copying source files from', source)
+
+            dir_list = os.listdir(source)
+            print("Files and directories in '", source, "' :")
                 
-            os.system('ROBOCOPY ' + source + '\shared ' + work_dir + '\Source\shared /xx /xo ')
-            os.system('ROBOCOPY ' + source + '\sqlsrv ' + work_dir + '\Source\sqlsrv /xx /xo ')
-            os.system('ROBOCOPY ' + source + '\pdo_sqlsrv ' + work_dir + '\Source\pdo_sqlsrv /xx /xo ')
+            os.system('ROBOCOPY ' + source + '\\shared ' + work_dir + '\\Source\\shared /xx /xo ')
+            os.system('ROBOCOPY ' + source + '\\sqlsrv ' + work_dir + '\\Source\\sqlsrv /xx /xo ')
+            os.system('ROBOCOPY ' + source + '\\pdo_sqlsrv ' + work_dir + '\\Source\\pdo_sqlsrv /xx /xo ')
                     
         print('Start building PHP with the extension...')
 
@@ -152,6 +155,8 @@ class BuildDriver(object):
         # ext_dir is the directory where we can find the built extension(s)
         ext_dir = self.util.build_drivers(self.make_clean, dest, logfile)
 
+        print('Build completed')
+        
         # Copy the binaries if a destination path is defined
         if self.dest_path is not None:
             dest_drivers = os.path.join(self.dest_path, self.util.major_version(), self.util.arch)
@@ -198,9 +203,16 @@ class BuildDriver(object):
                 print('Build Completed')
             except:
                 print('Something went wrong, launching log file', logfile)
-                # display log file only when not testing
-                if not self.testing:
-                    os.startfile(os.path.join(root_dir, 'php-sdk', logfile))
+
+                logfile_path = os.path.join(os.getcwd(), logfile)
+
+                if os.path.isfile(logfile_path):
+                    with open(logfile_path, 'r') as f:
+                        f.seek(0)
+                        print(f.read())
+                else:
+                    print('Unable to open logfile')
+                        
                 os.chdir(work_dir)
                 exit(1)
 
@@ -279,7 +291,7 @@ if __name__ == '__main__':
         driver = validate_input("Driver to build? ", "all/sqlsrv/pdo_sqlsrv")
         debug_mode = input("Debug enabled? [y/n]: ")
         
-        answer = input("Download source from a GitHub repo? [y/n]: ")
+        answer = input("Download driver source from a GitHub repo? [y/n]: ")
         if answer == 'yes' or answer == 'y' or answer == '':
             repo = input("Name of the repo (hit enter for 'Microsoft'): ")
             branch = input("Name of the branch or tag (hit enter for 'dev'): ")

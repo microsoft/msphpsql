@@ -3,7 +3,7 @@
 //
 // Contents: Core routines that use connection handles shared between sqlsrv and pdo_sqlsrv
 //
-// Microsoft Drivers 5.10 for PHP for SQL Server
+// Microsoft Drivers 5.12 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -172,10 +172,12 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
     // In Windows, we try to connect with ODBC driver first and rely on the returned error code to try connecting with other supported ODBC drivers
     if (conn->driver_version != ODBC_DRIVER::VER_UNKNOWN) {
         // if column encryption is enabled, must use ODBC driver 17 or above
-        CHECK_CUSTOM_ERROR(conn->ce_option.enabled && conn->driver_version == ODBC_DRIVER::VER_13, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch()) {
+        CHECK_CUSTOM_ERROR(conn->ce_option.enabled && conn->driver_version == ODBC_DRIVER::VER_13, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch(), NULL) {
             throw core::CoreException();
         }
-
+    if (conn->driver_version == ODBC_DRIVER::VER_13) {
+        zend_error(E_DEPRECATED, "ODBC driver version 13 is deprecated, please consider upgrading to the latest version.");
+    }
 #ifndef _WIN32
         // check if the ODBC driver actually exists, if not, throw an exception
         CHECK_CUSTOM_ERROR(!core_search_odbc_driver_unix(conn->driver_version), conn, SQLSRV_ERROR_SPECIFIED_DRIVER_NOT_FOUND) {
@@ -194,7 +196,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif
     }
     else {
-        // ODBC driver not specified, so check ODBC 17 first then ODBC 18 and/or ODBC 13 
+        // ODBC driver not specified, so check ODBC 17 first then ODBC 18 and/or ODBC 13
         // If column encryption is enabled, check up to ODBC 18
         ODBC_DRIVER drivers[] = { ODBC_DRIVER::VER_17, ODBC_DRIVER::VER_18, ODBC_DRIVER::VER_13 };
         ODBC_DRIVER last_version = (conn->ce_option.enabled) ? ODBC_DRIVER::VER_18 : ODBC_DRIVER::VER_13;
@@ -220,12 +222,12 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
 #endif
             else if (d == last_version) {
                 // if column encryption is enabled, throw the exception related to column encryption
-                CHECK_CUSTOM_ERROR(conn->ce_option.enabled, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch()) {
+                CHECK_CUSTOM_ERROR(conn->ce_option.enabled, conn, SQLSRV_ERROR_CE_DRIVER_REQUIRED, get_processor_arch(), NULL) {
                     throw core::CoreException();
                 }
 
-                // here it means that none of the supported ODBC drivers is found 
-                CHECK_CUSTOM_ERROR(true, conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch()) {
+                // here it means that none of the supported ODBC drivers is found
+                CHECK_CUSTOM_ERROR(true, conn, SQLSRV_ERROR_DRIVER_NOT_INSTALLED, get_processor_arch(), NULL) {
                     throw core::CoreException();
                 }
             }
@@ -243,7 +245,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         throw core::CoreException();
     }
 
-    CHECK_SQL_WARNING_AS_ERROR( r, conn ) {
+    CHECK_SQL_WARNING_AS_ERROR( r, conn, NULL ) {
         throw core::CoreException();
     }
 
@@ -337,7 +339,7 @@ SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& con
     // Convert our UTF-8 connection string to UTF-16 before connecting with SQLDriverConnnectW
     wconn_string = utf16_string_from_mbcs_string( SQLSRV_ENCODING_UTF8, conn_str.c_str(), static_cast<unsigned int>( conn_str.length() ), &wconn_len, true );
 
-    CHECK_CUSTOM_ERROR( wconn_string == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message())
+    CHECK_CUSTOM_ERROR( wconn_string == 0, conn, SQLSRV_ERROR_CONNECT_STRING_ENCODING_TRANSLATE, get_last_error_message(), NULL)
     {
         throw core::CoreException();
     }
@@ -500,7 +502,7 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
 
              SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding() );
              wsql_string = utf16_string_from_mbcs_string( encoding, reinterpret_cast<const char*>( sql ), static_cast<int>( sql_len ), &wsql_len );
-             CHECK_CUSTOM_ERROR( wsql_string == 0, stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message() ) {
+             CHECK_CUSTOM_ERROR( wsql_string == 0, stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message(), NULL) {
                  throw core::CoreException();
              }
         }
@@ -809,7 +811,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
             DEBUG_SQLSRV_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
 
             conn_opt = get_connection_option( conn, index, valid_conn_opts );
-
+            if (conn_opt == NULL) throw;
             if( index == SQLSRV_CONN_OPTION_MARS ) {
                 mars_mentioned = true;
             }
@@ -1064,7 +1066,7 @@ void driver_set_func::func(_In_ connection_option const* option, _In_ zval* valu
         }
     }
 
-    CHECK_CUSTOM_ERROR(conn->driver_version == ODBC_DRIVER::VER_UNKNOWN, conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, Z_STRVAL_P(value)) {
+    CHECK_CUSTOM_ERROR(conn->driver_version == ODBC_DRIVER::VER_UNKNOWN, conn, SQLSRV_ERROR_CONNECT_INVALID_DRIVER, Z_STRVAL_P(value), NULL) {
         throw core::CoreException();
     }
 
@@ -1158,9 +1160,8 @@ size_t core_str_zval_is_true(_Inout_ zval* value_z)
     if (found != std::string::npos)
         val_str.erase(found + 1);
 
-    const char TRUE_VALUE_1[] = "true";
-    const char TRUE_VALUE_2[] = "1";
-    if (!val_str.compare(TRUE_VALUE_1) || !val_str.compare(TRUE_VALUE_2)) {
+    transform(val_str.begin(), val_str.end(), val_str.begin(), ::tolower);
+    if (!val_str.compare("true") || !val_str.compare("1") || !val_str.compare("yes")) {
         return 1; // true
     }
     return 0; // false

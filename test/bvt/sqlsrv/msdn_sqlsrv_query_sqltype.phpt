@@ -7,13 +7,15 @@ sqlsrv types are specified for the parameters in query.
 /* Connect to the local server using Windows Authentication and 
 specify the AdventureWorks database as the database in use. */
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if( $conn === false )
 {
      echo "Could not connect.\n";
      die( print_r( sqlsrv_errors(), true));
 }
+
+$d_sql = "delete from HumanResources.EmployeePayHistory where BusinessEntityId=6 and RateChangeDate='2005-06-07 00:00:00.000'";
+$stmt = sqlsrv_query($conn, $d_sql);
 
 /* Define the query. */
 $tsql1 = "INSERT INTO HumanResources.EmployeePayHistory (BusinessEntityID,
@@ -72,7 +74,6 @@ echo "Rate: ".$row['Rate']."\n";
 echo "PayFrequency: ".$row['PayFrequency']."\n";
 
 /* Revert the insert */
-$d_sql = "delete from HumanResources.EmployeePayHistory where BusinessEntityId=6 and RateChangeDate='2005-06-07 00:00:00.000'";
 $stmt = sqlsrv_query($conn, $d_sql);
 
 /* Free statement and connection resources. */

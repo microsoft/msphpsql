@@ -4,7 +4,7 @@
 function connect($server, $attestation_info)
 {
     include("MsSetup.inc");
-    $options = "sqlsrv:Server=$server;Database=$databaseName;ColumnEncryption=$attestation_info";
+    $options = "sqlsrv:Server=$server;Database=$databaseName;Encrypt=$encrypt;ColumnEncryption=$attestation_info";
 
     if ($keystore == 'akv') {
 
@@ -403,8 +403,12 @@ function checkErrors($errors, ...$codes)
 {
     $codeFound = false;
 
+    if (is_array($errors[0])) {
+        $errors = array_merge($errors[0], $errors[1]);
+    }
+
     foreach ($codes as $code) {
-        if ($code[0]==$errors[0] and $code[1]==$errors[1]) {
+        if (in_array($code[0], $errors) && in_array($code[1], $errors)) {
             $codeFound = true;
             break;
         }

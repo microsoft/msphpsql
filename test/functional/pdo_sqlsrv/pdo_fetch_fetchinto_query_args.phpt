@@ -8,6 +8,8 @@ This test should not use temporary table as it might occasionally cause deadlock
 <?php
 
 include 'MsCommon.inc';
+
+#[AllowDynamicProperties]
 class PdoTestClass
 {
     function __construct ()
@@ -16,6 +18,7 @@ class PdoTestClass
     }
 }
 
+#[AllowDynamicProperties]
 class PdoTestClass2
 {
     function __construct ($a1, $a2)
@@ -31,7 +34,7 @@ function FetchInto_Query_Args()
     set_time_limit(0);
     $tableName = 'fetchinto_query_args';
     
-    $conn = new PDO( "sqlsrv:server=$server;database=$databaseName", $uid, $pwd);
+    $conn = new PDO( "sqlsrv:server=$server;database=$databaseName;Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
     
     dropTable($conn, $tableName);  

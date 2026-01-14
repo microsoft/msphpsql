@@ -5,7 +5,7 @@ fetches the rows in a result set in an array
 --FILE--
 <?php
    require('connect.inc');
-   $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+   $conn = getPdoConnection();
 
    print "-----------\n";
    $stmt = $conn->query( "select * from Person.ContactType where ContactTypeID < 5 " );
@@ -25,6 +25,10 @@ fetches the rows in a result set in an array
    print "\n-----------\n";
 
    class cc {
+      public $ContactTypeID;
+      public $Name;
+      public $ModifiedDate;
+
       function __construct( $arg ) {
          echo "$arg\n";
       }
@@ -34,7 +38,7 @@ fetches the rows in a result set in an array
       }
    };
 
-   $stmt = $conn->query( 'SELECT TOP(2) * FROM Person.ContactType' );
+   $stmt = $conn->query( 'SELECT TOP(2) ContactTypeID, Name, ModifiedDate FROM Person.ContactType' );
    $all = $stmt->fetchAll( PDO::FETCH_CLASS, 'cc', array( 'Hi!' ));
    var_dump( $all );
    

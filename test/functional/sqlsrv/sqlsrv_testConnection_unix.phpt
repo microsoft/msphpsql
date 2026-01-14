@@ -27,6 +27,9 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
         if (!isset($options['Database'])) {
             $options['database'] = $databaseName;
         }
+        if (!isset($options['Encrypt'])) {
+            $options['Encrypt'] = $encrypt;
+        }
         return sqlsrv_connect($server, $options);
     }
 
@@ -35,7 +38,7 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
         
     echo "Test sqlsrv_connect with driver injection\n";
 
-    $conn = sqlsrv_connect( $server, array( "UID" => $userName, "PWD" => "$userPassword;Driver={SQL Server Native Client 11.0}}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => $userName, "PWD" => "$userPassword;Driver={ODBC Driver 17 for SQL Server}}", "Encrypt" => $encrypt ));
     
     if (!$conn) {
         var_dump(sqlsrv_errors());
@@ -45,7 +48,7 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
     }
 
     echo "Test sqlsrv_connect with driver injection (2)\n";
-    $conn = sqlsrv_connect( $server, array( "UID" => $userName, "PWD" => "{$userPassword};Driver={SQL Server Native Client 11.0}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => $userName, "PWD" => "{$userPassword};Driver={ODBC Driver 17 for SQL Server}", "Encrypt" => $encrypt ));
     
     if (!$conn) {
         var_dump(sqlsrv_errors());
@@ -55,7 +58,7 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
     }
 
     echo "Test sqlsrv_connect with driver injection (3)\n";
-    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "{$userPassword}};Driver={SQL Server Native Client 11.0}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "{$userPassword}};Driver={ODBC Driver 17 for SQL Server}", "Encrypt" => $encrypt ));
     
     if (!$conn) {
         var_dump(sqlsrv_errors());
@@ -73,8 +76,6 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
                                "LoginTimeout" => 120,
                                "MultipleActiveResultSets" => false,
                                "QuotedId" => false,
-                               "TraceOn" => true,
-                               "TraceFile" => "trace.odbc",
                                "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
                                "TrustServerCertificate" => 1,
                                "WSID" => "JAYKINT1" );
@@ -85,8 +86,6 @@ if ((strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN')) {
                                "LoginTimeout" => 120,
                                "MultipleActiveResultSets" => false,
                                "QuotedId" => true,
-                               "TraceOn" => true,
-                               "TraceFile" => "trace.odbc",
                                "TransactionIsolation" => SQLSRV_TXN_READ_COMMITTED,
                                "TrustServerCertificate" => 1,
                                "WSID" => "JAYKINT1" );

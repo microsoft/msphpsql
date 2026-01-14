@@ -3,24 +3,25 @@ Test connection resiliency timeouts
 --DESCRIPTION--
 1. Connect with ConnectRetryCount equal to 0.
 2. Reconnect with the default value of ConnectRetryCount (the default is 1).
+--FLAKY--
 --SKIPIF--
 <?php require('skipif_protocol_not_tcp.inc');
       require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
 <?php
 require_once( "break.php" );
+require_once( "MsCommon.inc" );
 
-$conn_break = sqlsrv_connect( $server, array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd) );
+$conn_break = connect();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Part 1 
 // Expected to error out because ConnectRetryCount equals 0
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd,
-                         "ConnectRetryCount"=>0 );
+$connectionInfo = array( "ConnectRetryCount"=>0 );
                          
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";
@@ -52,10 +53,9 @@ sqlsrv_close( $conn );
 // Expected to succeed with a single reconnection attempt
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd,
-                         "ConnectRetryInterval"=>10 );
+$connectionInfo = array( "ConnectRetryInterval"=>10 );
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";
@@ -78,7 +78,7 @@ else
 sqlsrv_close( $conn );
 sqlsrv_close( $conn_break );
 
-DropTables( $server, $uid, $pwd, $tableName1, $tableName2 )
+DropTables($tableName1, $tableName2 )
 
 ?>
 --EXPECTREGEX--

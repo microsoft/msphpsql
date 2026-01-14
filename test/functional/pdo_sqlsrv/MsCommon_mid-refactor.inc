@@ -7,7 +7,7 @@
         Common functions (shared by all tests).
 
 */
-
+error_reporting( ~E_DEPRECATED );
 $tvpIncPath = dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'inc'.DIRECTORY_SEPARATOR;
 
 require_once($tvpIncPath. 'test_tvp_data.php');
@@ -81,7 +81,7 @@ function getDSN($sqlsrvserver, $database, $driver = null, $keywords = '', $disab
     require("MsSetup.inc");
     $dsn = "";
     if ($sqlsrvserver) {
-        $dsn .= "sqlsrv:Server=$sqlsrvserver;";
+        $dsn .= "sqlsrv:Server=$sqlsrvserver;Encrypt=$encrypt;";
     } else {
         printf("getDSN: the sqlsrvserver provided must not be null.\n");
         exit;

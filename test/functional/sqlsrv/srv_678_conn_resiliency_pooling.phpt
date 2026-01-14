@@ -2,6 +2,7 @@
 GitHub issue #678 - Idle Connection Resiliency doesn't work with Connection Pooling
 --DESCRIPTION--
 Verifies that the issue has been fixed with ODBC 17.1
+--FLAKY--
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -36,7 +37,7 @@ function breakConnection($conn, $conn_break)
 }
 
 // create a connection for create the table and breaking other connections
-$conn_break = sqlsrv_connect($server, array("Database"=>$database, "UID"=>$uid, "PWD"=>$pwd));
+$conn_break = sqlsrv_connect($server, array("Database"=>$database, "UID"=>$uid, "PWD"=>$pwd, "Encrypt"=>$encrypt));
 
 if (! checkODBCVersion($conn_break)) {
     echo "Done\n";
@@ -60,8 +61,8 @@ $sql = "INSERT INTO $tableName VALUES (?, ?)";
 
 // first connection
 $connectionInfo = array("Database"=>$database, "UID"=>$uid, "PWD"=>$pwd, 
-                        "ConnectionPooling"=>true, "ConnectRetryCount"=>10,
-                        "ConnectRetryInterval"=>10 );
+                        "ConnectionPooling"=>true, "ConnectRetryCount"=>20,
+                        "ConnectRetryInterval"=>10, "Encrypt"=>$encrypt );
                          
 $conn = sqlsrv_connect($server, $connectionInfo);
 

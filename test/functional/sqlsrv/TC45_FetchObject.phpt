@@ -12,6 +12,7 @@ require('skipif_versions_old.inc');
 <?php
 require_once('MsCommon.inc');
 
+#[AllowDynamicProperties]
 class TestClass
 {
     public function __construct($a1, $a2, $a3)

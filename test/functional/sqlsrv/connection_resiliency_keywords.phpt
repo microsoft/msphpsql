@@ -2,6 +2,7 @@
 Test the connection resiliency keywords 
 --DESCRIPTION--
 Test the connection resiliency keywords ConnectRetryCount and ConnectRetryInterval and their ranges of acceptable values
+--FLAKY--
 --SKIPIF--
 <?php require('skipif_version_less_than_2k14.inc');  ?>
 --FILE--
@@ -10,8 +11,9 @@ require_once( "MsSetup.inc" );
 
 function TryToConnect( $server, $userName, $userPassword, $retryCount, $retryInterval, $number )
 {
+    global $encrypt;
     $connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword,
-                             "ConnectRetryCount"=>$retryCount, "ConnectRetryInterval"=>$retryInterval );
+                             "ConnectRetryCount"=>$retryCount, "ConnectRetryInterval"=>$retryInterval, "Encrypt"=>$encrypt );
 
     $conn = sqlsrv_connect( $server, $connectionInfo );
     if( $conn === false )
@@ -34,7 +36,7 @@ TryToConnect( $server, $userName, $userPassword,  -1, 30, 'fifth');
 TryToConnect( $server, $userName, $userPassword, 'thisisnotaninteger', 30, 'sixth');
 TryToConnect( $server, $userName, $userPassword,   5, 3.14159, 'seventh');
 
-$connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword, "ConnectRetryCount" );
+$connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword, "ConnectRetryCount", "Encrypt"=>$encrypt );
 
 $conn = sqlsrv_connect( $server, $connectionInfo );
 if( $conn === false )
@@ -48,7 +50,7 @@ else
     sqlsrv_close( $conn );
 }
 
-$connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword, "ConnectRetryInterval" );
+$connectionInfo = array( "UID"=>$userName, "PWD"=>$userPassword, "ConnectRetryInterval", "Encrypt"=>$encrypt );
 
 $conn = sqlsrv_connect( $server, $connectionInfo );
 if( $conn === false )

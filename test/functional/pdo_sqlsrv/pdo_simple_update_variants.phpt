@@ -8,6 +8,7 @@ ORDER BY should work with sql_variants
 ﻿<?php
 require_once("MsCommon_mid-refactor.inc");
 
+#[AllowDynamicProperties]
 class Food
 {
     public function getFood()
