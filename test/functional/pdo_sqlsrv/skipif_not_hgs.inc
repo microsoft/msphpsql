@@ -13,7 +13,9 @@ if ($attestation == 'TARGET_ATTESTATION') {
     die("skip Not set up for testing with secure enclave.");
 }
 
-$conn = new PDO("sqlsrv:server = $server", $uid, $pwd);
+require_once("MsCommon.inc");
+
+$conn = connect(null, false);
 if (!$conn) {
     die("skip Could not connect during SKIPIF.");
 }

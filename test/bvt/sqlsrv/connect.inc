@@ -1,8 +1,30 @@
 <?php
-$server = 'TARGET_SERVER';
-$databaseName = 'TARGET_DATABASE';
-$uid = 'TARGET_USERNAME';
-$pwd = 'TARGET_PASSWORD';
+
+function getSqlsrvConnection($additionalOptions = array()) {
+    $server = 'TARGET_SERVER';
+    $databaseName = 'TARGET_DATABASE';
+    $uid = 'TARGET_USERNAME';
+    $pwd = 'TARGET_PASSWORD';
+    $connectOptions = 'Encrypt=false';
+
+    return sqlsrv_connect( $server, array_merge(
+     array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd"),
+     parseConnectOptions($connectOptions),
+     $additionalOptions));
+}
+
+/* Convert $connectionOptions string into an associative array for sqlsrv */
+function parseConnectOptions($connectionOptions) {
+    $optionsArray = array();
+    $pairs = $connectionOptions ? explode(';', $connectionOptions) : [];
+    foreach ($pairs as $pair) {
+        if (strpos($pair, '=') !== false) {
+            list($key, $value) = explode('=', $pair, 2);
+            $optionsArray[trim($key)] = trim($value);
+        }
+    }
+    return $optionsArray;
+}
 
 function dropTable($conn, $tableName)
 {

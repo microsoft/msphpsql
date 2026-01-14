@@ -7,7 +7,7 @@ Test new connection keyword Driver with valid and invalid values
 sqlsrv_configure('WarningsReturnAsErrors', 0);
 require_once('MsSetup.inc');
 
-$connectionOptions = array("Database"=>$database, "UID"=>$userName, "PWD"=>$userPassword);
+$connectionOptions = array("Database"=>$database, "UID"=>$userName, "PWD"=>$userPassword, "Encrypt"=>$encrypt);
 $conn = sqlsrv_connect($server, $connectionOptions);
 if ($conn === false) {
     print_r(sqlsrv_errors());
@@ -84,9 +84,8 @@ function testValidValues($msodbcsqlMaj, $server, $connectionOptions)
 
 function testInvalidValues($msodbcsqlMaj, $server, $connectionOptions)
 {
-    $values = array("{SQL Server Native Client 11.0}",
-                    "SQL Server Native Client 11.0",
-                    "ODBC Driver 00 for SQL Server");
+    $values = array("ODBC Driver 00 for SQL Server",
+                    "{Invalid Driver Name}");
 
     foreach ($values as $value) {
         $connectionOptions['Driver']=$value;

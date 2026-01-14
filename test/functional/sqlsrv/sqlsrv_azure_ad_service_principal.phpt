@@ -4,9 +4,9 @@ Test some basics of Azure AD Service Principal support
 <?php 
 require_once('skipif.inc');
 require_once('MsSetup.inc');
+require_once('MsCommon.inc');
 
-$connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword, "Driver" => $driver);
-$conn = sqlsrv_connect($server, $connectionInfo);
+$conn = connect(null, false);
 if ($conn === false) {
     die("skip: Failed to connect in skipif.");
 }
@@ -14,7 +14,7 @@ if ($conn === false) {
 $msodbcsqlVer = sqlsrv_client_info($conn)['DriverVer'];
 $version = explode(".", $msodbcsqlVer);
 
-if ($version[0] < 17 || $version[1] < 7) {
+if ($version[0] <= 17 && $version[1] < 7) {
     die("skip: Requires ODBC driver 17.7 or above");
 }
 ?>

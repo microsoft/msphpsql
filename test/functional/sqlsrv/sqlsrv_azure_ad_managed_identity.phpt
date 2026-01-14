@@ -21,10 +21,7 @@ function verifyErrorMessage($conn, $expectedError, $msg)
 
 function connectInvalidServer()
 {
-    global $server, $driver, $userName, $userPassword;
-    
-    $connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword, "Driver" => $driver);
-    $conn = sqlsrv_connect($server, $connectionInfo);
+    $conn = connect();
     if ($conn === false) {
         fatalError("Failed to connect in connectInvalidServer.");
     }

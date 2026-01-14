@@ -20,7 +20,17 @@ environment:
         TEST_PHP_SQL_SERVER: (local)\SQL2019
         SQL_INSTANCE: SQL2019
         PHP_VC: vs16
-        PHP_MAJOR_VER: 8.0
+        PHP_MAJOR_VER: 8.4
+        PHP_MINOR_VER: latest
+        PHP_EXE_PATH: Release
+        THREAD: nts
+        platform: x86
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+        BUILD_PLATFORM: x86
+        TEST_PHP_SQL_SERVER: (local)\SQL2019
+        SQL_INSTANCE: SQL2019
+        PHP_VC: vs16
+        PHP_MAJOR_VER: 8.2
         PHP_MINOR_VER: latest
         PHP_EXE_PATH: Release
         THREAD: nts

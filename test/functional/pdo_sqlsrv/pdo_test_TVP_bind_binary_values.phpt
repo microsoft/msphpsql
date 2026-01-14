@@ -21,7 +21,7 @@ require_once('MsSetup.inc');
 require_once('MsCommon_mid-refactor.inc');
 
 try {
-    $conn = new PDO("sqlsrv:server = $server; database=$databaseName;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     dropProc($conn, 'SelectTVP2');

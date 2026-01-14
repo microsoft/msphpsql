@@ -11,13 +11,12 @@ the error message of one test case is not the same.
 sqlsrv_configure('WarningsReturnAsErrors', 0);
 require('MsCommon.inc');
 
-$connectionOptions = array("Database"=>$database,"UID"=>$userName, "PWD"=>$userPassword);
-testColumnEncryption($server, $connectionOptions);
+testColumnEncryption();
 echo "Done";
 
-function testColumnEncryption($server, $connectionOptions)
+function testColumnEncryption()
 {
-    $conn = sqlsrv_connect($server, $connectionOptions);
+    $conn = connect(null, false);
     if ($conn === false) {
         print_r(sqlsrv_errors());
     }
@@ -29,7 +28,7 @@ function testColumnEncryption($server, $connectionOptions)
     
     // Only works for ODBC 17
     $connectionOptions['ColumnEncryption'] = 'Enabled';
-    $conn = sqlsrv_connect($server, $connectionOptions);
+    $conn = connect($connectionOptions, false);
     if ($conn === false) {
         if ($msodbcsqlMaj < 17) {
             $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
@@ -44,7 +43,7 @@ function testColumnEncryption($server, $connectionOptions)
 
     // Works for ODBC 17, ODBC 13
     $connectionOptions['ColumnEncryption']='Disabled';
-    $conn = sqlsrv_connect($server, $connectionOptions);
+    $conn = connect($connectionOptions, false);
     if ($conn === false) {
         if ($msodbcsqlMaj < 13) {
             $expected = "Invalid connection string attribute";
@@ -61,12 +60,12 @@ function testColumnEncryption($server, $connectionOptions)
 
     // Should fail for all ODBC drivers - but the error message returned depends on the server
     $expected = "Invalid value specified for connection string attribute 'ColumnEncryption'";
-    if ($hgsEnabled) {
+    if ($hgsEnabled || $msodbcsqlMaj >= 18) {
         $expected = "Requested attestation protocol is invalid.";
     }
     
     $connectionOptions['ColumnEncryption']='false';
-    $conn = sqlsrv_connect($server, $connectionOptions);
+    $conn = connect($connectionOptions, false);
     if ($conn === false) {
         if (strpos(sqlsrv_errors($conn)[0]['message'], $expected) === false) {
             echo "Test case 3 failed:\n";
@@ -78,7 +77,7 @@ function testColumnEncryption($server, $connectionOptions)
 
     // should fail for all ODBC drivers with the above error message
     $connectionOptions['ColumnEncryption']=true;
-    $conn = sqlsrv_connect($server, $connectionOptions);
+    $conn = connect($connectionOptions, false);
     if ($conn === false) {
         if (strpos(sqlsrv_errors($conn)[0]['message'], $expected) === false) {
             echo "Test case 4 failed:\n";
@@ -88,7 +87,7 @@ function testColumnEncryption($server, $connectionOptions)
     
     // should fail for all ODBC drivers with the above error message
     $connectionOptions['ColumnEncryption']=false;
-    $conn = sqlsrv_connect($server, $connectionOptions);
+    $conn = connect($connectionOptions, false);
     if ($conn === false) {
         if (strpos(sqlsrv_errors($conn)[0]['message'], $expected) === false) {
             echo "Test case 5 failed:\n";

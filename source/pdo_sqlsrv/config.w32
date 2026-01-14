@@ -36,6 +36,7 @@ if( PHP_PDO_SQLSRV != "no" ) {
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/Zi" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/ZH:SHA_256 /sdl /W3" );
             ADD_FLAG( "LDFLAGS_PDO_SQLSRV", "/CETCOMPAT" );
+            ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/wd4146" );
             if (PHP_DEBUG != "yes") ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/guard:cf /O2" );
             ADD_FLAG( "CFLAGS_PDO_SQLSRV", "/D ZEND_WIN32_FORCE_INLINE" );
             if (VCVERS >= 1913) {

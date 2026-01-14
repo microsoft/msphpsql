@@ -19,7 +19,7 @@ functions return FALSE for errors.
         fatalError("sqlsrv_connect should have returned false.");
     }
 
-    $conn = sqlsrv_connect($server, array( "uid" => $uid , "pwd" => $pwd ));
+    $conn = sqlsrv_connect($server, array( "uid" => $uid , "pwd" => $pwd, "Encrypt" => $encrypt ));
 
     if ($conn === false) {
         fatalError("sqlsrv_connect should have connected.");

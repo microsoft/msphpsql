@@ -39,6 +39,7 @@ if( PHP_SQLSRV != "no" ) {
             ADD_FLAG( "CFLAGS_SQLSRV", "/Zi" );
             ADD_FLAG( "CFLAGS_SQLSRV", "/ZH:SHA_256 /sdl /W3" );
             ADD_FLAG( "LDFLAGS_SQLSRV", "/CETCOMPAT" );
+            ADD_FLAG( "CFLAGS_SQLSRV", "/wd4146" );
             if (VCVERS >= 1913) {
                 ADD_FLAG("LDFLAGS_SQLSRV", "/d2:-guardspecload");
                 ADD_FLAG("CFLAGS_SQLSRV", "/Qspectre");

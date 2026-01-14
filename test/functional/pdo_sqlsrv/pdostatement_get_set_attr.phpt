@@ -129,7 +129,7 @@ function Test8($conn)
 try {
     include("MsSetup.inc");
    
-    $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName ", $uid, $pwd);
+    $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName; Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->exec("IF OBJECT_ID('temptb', 'U') IS NOT NULL DROP TABLE temptb");
     $conn->exec("CREATE TABLE temptb(id INT NOT NULL PRIMARY KEY, val VARCHAR(10)) ");

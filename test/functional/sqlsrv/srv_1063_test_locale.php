@@ -96,8 +96,10 @@ if (!empty($locale)) {
 
     // Currency symbol and thousands separator in Linux and macOS may be different
     if ($loc === 'de_DE.UTF-8') {
-        $symbol = strtoupper(PHP_OS) === 'LINUX' ? '€' : 'Eu';
-        $sep = strtoupper(PHP_OS) === 'LINUX' ? '.' : '';
+        // Both Linux and macOS return '€' for German locale currency symbol
+        $symbol = '€';
+        // macOS also uses dot as thousands separator like Linux
+        $sep = '.';
         $english = false;
     } else {
         $symbol = '$';
@@ -112,7 +114,7 @@ if ($symbol !== $info['currency_symbol']) {
     echo PHP_EOL;
 }
 if ($sep !== $info['thousands_sep']) {
-    echo "$locale: Expected thousands separator '$sep' but get '" . $info['currency_symbol'] . "'";
+    echo "$locale: Expected thousands separator '$sep' but get '" . $info['thousands_sep'] . "'";
     echo PHP_EOL;
 }
 

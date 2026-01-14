@@ -53,6 +53,10 @@ function CheckInterface($conn)
         unset($expected['__wakeup']);
         unset($expected['__sleep']);
     }
+    if ($phpver >= '8.4') {
+        // Reference: https://wiki.php.net/rfc/pdo_driver_specific_subclasses
+        $expected['connect'] = true;
+    }
     
     $classname = get_class($conn);
     $methods = get_class_methods($classname);

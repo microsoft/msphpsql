@@ -5,7 +5,7 @@ accesses an output parameter
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 
 $input1 = 'bb';
 
