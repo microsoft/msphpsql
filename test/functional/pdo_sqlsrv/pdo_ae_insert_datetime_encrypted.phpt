@@ -53,7 +53,7 @@ try {
         unset($conn);
 
         // Now connect with ColumnEncryption enabled
-        $connectionInfo = "ColumnEncryption = Enabled;";
+        $connectionInfo = "ColumnEncryption = Enabled; Encrypt = $encrypt;";
         $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
     }
 

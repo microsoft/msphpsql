@@ -12,13 +12,13 @@ Similar to sqlsrv_connect.phpt but also test different settings of logging activ
 
     require_once('MsSetup.inc');
 
-    $conn = sqlsrv_connect($server, array( "Driver" => "Wrong Driver" ));
+    $conn = sqlsrv_connect($server, array( "Driver" => "Wrong Driver", "Encrypt" => $encrypt ));
     if ($conn !== false) {
         fatalError("sqlsrv_connect should have returned false.");
     }
 
     sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_NOTICE);
-    $conn = sqlsrv_connect($server, array( "uid" => $uid , "pwd" => $pwd ));
+    $conn = sqlsrv_connect($server, array( "uid" => $uid , "pwd" => $pwd, "Encrypt" => $encrypt ));
 
     if ($conn === false) {
         fatalError("sqlsrv_connect should have connected.");

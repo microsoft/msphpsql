@@ -5,7 +5,12 @@ The first two cases should fail with a message about login failures. Only the la
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif.inc'); 
+require('MsSetup.inc');
+if (empty($userName)) {
+    die("skip - test requires SQL Authentication (Windows Authentication is configured)");
+}
+?>
 --FILE--
 <?php
 sqlsrv_configure('WarningsReturnAsErrors', 0);
@@ -51,17 +56,17 @@ function checkErrorMessages($conn, $testCase, $randomPwd)
 
 $randomPwd = generateRandomPassword(false);
 trace($randomPwd . PHP_EOL);
-$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd));
+$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd, "Encrypt" => $encrypt));
 checkErrorMessages($conn, 'Password without right braces', $randomPwd);
 
 $randomPwd = generateRandomPassword();
 trace($randomPwd . PHP_EOL);
-$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd));
+$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd, "Encrypt" => $encrypt));
 checkErrorMessages($conn, 'Password with right braces', $randomPwd);
 
 $randomPwd = generateRandomPassword(true, false);
 trace($randomPwd . PHP_EOL);
-$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd));
+$conn = sqlsrv_connect($server, array("UID" => $userName, "pwd" => $randomPwd, "Encrypt" => $encrypt));
 if ($conn) {
     echo ("Shouldn't have connected without escaping braces!" . PHP_EOL);
 }

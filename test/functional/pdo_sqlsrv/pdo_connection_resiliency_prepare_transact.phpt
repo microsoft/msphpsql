@@ -12,7 +12,7 @@ and in the middle of the transaction. The latter case should fail.
 <?php
 require_once( "break_pdo.php" );
 
-$conn_break = new PDO( "sqlsrv:server = $server ; Database = $dbName ;", $uid, $pwd );
+$conn_break = connect();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Part 1 
@@ -20,11 +20,11 @@ $conn_break = new PDO( "sqlsrv:server = $server ; Database = $dbName ;", $uid, $
 // statement has been prepared
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = "ConnectRetryCount = 10; ConnectRetryInterval = 10;";
+$connectionInfo = "ConnectRetryCount=10;ConnectRetryInterval=10";
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; Database = $dbName ; $connectionInfo", $uid, $pwd );
+    $conn = connect($connectionInfo);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 }
 catch( PDOException $e )
@@ -45,7 +45,7 @@ catch( PDOException $e )
     print_r( $e->getMessage() );
 }
 
-BreakConnection( $conn, $conn_break );
+breakConnection( $conn, $conn_break );
 
 try
 {
@@ -68,7 +68,7 @@ $conn = null;
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; Database = $dbName ; $connectionInfo", $uid, $pwd );
+    $conn = connect($connectionInfo);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 }
 catch( PDOException $e )
@@ -77,7 +77,7 @@ catch( PDOException $e )
     print_r( $e->getMessage() );
 }
 
-BreakConnection( $conn, $conn_break );
+breakConnection( $conn, $conn_break );
 
 try
 {
@@ -136,7 +136,7 @@ $conn = null;
 
 try
 {
-    $conn = new PDO( "sqlsrv:server = $server ; Database = $dbName ; $connectionInfo", $uid, $pwd );
+    $conn = connect($connectionInfo);
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 }
 catch( PDOException $e )
@@ -156,7 +156,7 @@ catch( PDOException $e )
     echo "Exception: could not begin transaction.\n";
 }
 
-BreakConnection( $conn, $conn_break );
+breakConnection( $conn, $conn_break );
 
 $tsql = "INSERT INTO $tableName1 VALUES ( 700, 'zyxwv' )";
 

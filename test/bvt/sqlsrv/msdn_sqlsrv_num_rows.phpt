@@ -5,8 +5,7 @@ num_rows with a ekyset cursor should work.
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if( $conn === false )
 {
      echo "Could not connect.\n";

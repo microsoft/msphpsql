@@ -4,9 +4,10 @@ if (!extension_loaded("pdo_sqlsrv")) {
 }
 
 require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
 try {
-    $conn = new PDO("sqlsrv:server = $server", $uid, $pwd);
+    $conn = connect(null, false);
 } catch (PDOException $e) {
     die("skip Could not connect during SKIPIF.");
 }

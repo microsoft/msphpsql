@@ -12,7 +12,7 @@ PHPT_EXEC=true
 require_once("MsSetup.inc");
 
 try {
-    $conn = new PDO("sqlsrv:server=$server; Database = $databaseName;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server=$server; Database = $databaseName; Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Issue 1310

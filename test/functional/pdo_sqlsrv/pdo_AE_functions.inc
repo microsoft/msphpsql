@@ -4,7 +4,7 @@
 function connect($server, $attestation_info)
 {
     include("MsSetup.inc");
-    $options = "sqlsrv:Server=$server;Database=$databaseName;ColumnEncryption=$attestation_info";
+    $options = "sqlsrv:Server=$server;Database=$databaseName;Encrypt=$encrypt;ColumnEncryption=$attestation_info";
 
     if ($keystore == 'akv') {
 
