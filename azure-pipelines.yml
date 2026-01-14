@@ -383,11 +383,6 @@ jobs:
     displayName: 'Generate Password'
 
   - powershell: |
-      $guid = [guid]::NewGuid().ToString()
-      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-    displayName: 'Generate Password'
-
-  - powershell: |
       Write-Host "Starting SQL Server LocalDB..."
       
       # Create and start LocalDB instance  
@@ -417,7 +412,6 @@ jobs:
       
       Write-Host "SQL Server LocalDB is ready"
     displayName: 'Start SQL Server LocalDB'
-    condition: false
 
   - powershell: |
       # Update connection strings to use LocalDB named pipe
@@ -461,7 +455,6 @@ jobs:
              -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
       } | Set-Content .\connect.inc
     displayName: 'Update connection credentials'
-    condition: false
 
   - powershell: |
       Write-Host "Downloading ODBC Driver 18 for SQL Server..."
@@ -471,7 +464,6 @@ jobs:
       Write-Host "Downloaded msodbcsql.msi"
       dir $(Build.SourcesDirectory)\msodbcsql.msi
     displayName: 'Download ODBC Driver 18 MSI'
-    condition: false
 
   - script: |
       cd $(Build.SourcesDirectory)
@@ -480,7 +472,6 @@ jobs:
       reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 18 for SQL Server"
       dir %WINDIR%\System32\msodbcsql*.dll
     displayName: 'Install ODBC Driver 18'
-    condition: false
 
   - powershell: |
       Write-Host "Verifying ODBC Driver 18 installation..."
@@ -492,7 +483,6 @@ jobs:
       }
       Write-Host "✓ ODBC Driver 18 for SQL Server installed successfully"
     displayName: 'Verify ODBC Driver 18 installation'
-    condition: false
 
   - powershell: |
       $client = New-Object Net.WebClient
@@ -551,7 +541,6 @@ jobs:
       
       Write-Host "Database setup complete!"
     displayName: 'Set up test databases'
-    condition: false
 
   - powershell: |
       Write-Host "=== ODBC Driver Configuration ==="
@@ -562,7 +551,6 @@ jobs:
       Select-String -Path "$(Build.SourcesDirectory)\test\functional\sqlsrv\MsSetup.inc" -Pattern '^\$driver'
       Write-Host "================================="
     displayName: 'Show ODBC Driver version being used'
-    condition: false
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
@@ -572,7 +560,6 @@ jobs:
       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
-    condition: false
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
@@ -582,33 +569,6 @@ jobs:
       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
-    condition: false
-
-  - powershell: |
-      cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
-      $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
-      if ($runTestsPath) {
-          Copy-Item $runTestsPath.FullName . -Verbose
-          php run-tests.php *.phpt --no-color --show-diff 2>&1 | Tee-Object -FilePath ..\..\bvt_sqlsrv.log
-      } else {
-          Write-Host "##[error]run-tests.php not found"
-          exit 1
-      }
-    displayName: 'Run sqlsrv BVT tests'
-    condition: false  # BVT tests require AdventureWorks database which is not available
-
-  - powershell: |
-      cd $(Build.SourcesDirectory)\test\bvt\pdo_sqlsrv
-      $runTestsPath = Get-ChildItem "$(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-*-src\run-tests.php" | Select-Object -First 1
-      if ($runTestsPath) {
-          Copy-Item $runTestsPath.FullName . -Verbose
-          php run-tests.php *.phpt --no-color --show-diff 2>&1 | Tee-Object -FilePath ..\..\bvt_pdo_sqlsrv.log
-      } else {
-          Write-Host "##[error]run-tests.php not found"
-          exit 1
-      }
-    displayName: 'Run pdo_sqlsrv BVT tests'
-    condition: false  # BVT tests require AdventureWorks database which is not available
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\
@@ -621,7 +581,6 @@ jobs:
       python output.py
       dir *.xml
     displayName: 'Processing test results'
-    condition: false
 
   - task: PublishTestResults@2
     inputs:
@@ -629,10 +588,9 @@ jobs:
       testResultsFiles: '*.xml'
       failTaskOnFailedTests: true
       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
-    condition: false
 
   - powershell: |
       Write-Host "Stopping LocalDB..."
       sqllocaldb stop MSSQLLocalDB
     displayName: 'Cleanup LocalDB'
-    condition: false
+    condition: always()
