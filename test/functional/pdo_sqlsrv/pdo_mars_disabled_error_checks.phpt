@@ -10,7 +10,7 @@ when multiple active row sets (MARS) is disabled.
 require_once("MsSetup.inc");
 
 try {
-    $conn = new PDO("sqlsrv:server=$server; MultipleActiveResultSets = false", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server=$server; MultipleActiveResultSets = false; Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     $sql1 = "SELECT 'ONE'";

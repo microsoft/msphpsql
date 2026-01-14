@@ -5,8 +5,7 @@ when there is a batch query, the number of rows is only available when use a cli
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 // $tsql = "select * from HumanResources.Department";
 
 // Client-side cursor and batch statements

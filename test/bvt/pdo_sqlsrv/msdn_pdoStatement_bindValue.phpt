@@ -5,7 +5,7 @@ after a value $contact is bound, changing the value does not change the value pa
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 
 $contact = "Sales Agent";
 $stmt = $conn->prepare("select * from Person.ContactType where name = ?");

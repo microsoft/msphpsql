@@ -5,7 +5,7 @@ connect to a server, specifying the database later
 --FILE--
 <?php
    require('connect.inc');
-   $c = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
+   $c = getPdoConnection();
 
    $query = 'SELECT * FROM Person.ContactType';
    $stmt = $c->query( $query );

@@ -5,7 +5,7 @@ moves the cursor to the next result set and fetches results
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 
 $query1 = "select AddressID from Person.Address where City = 'Bothell'";
 $query2 = "select Name from Person.ContactType";

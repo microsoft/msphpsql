@@ -15,7 +15,8 @@ $msodbcsqlMaj = "";
 $hgsEnabled = isServerHGSEnabled();
 
 try {
-    $conn = new PDO("sqlsrv:server = $server", $uid, $pwd);
+    $dsn = getDSN($server, $databaseName, $driver);
+    $conn = new PDO($dsn, $uid, $pwd);
     $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)['DriverVer'];
     $version = explode(".", $msodbcsqlVer);
     $msodbcsqlMaj = $version[0];
@@ -40,12 +41,16 @@ function verifyOutput($PDOerror, $expected, $caseNum)
 function testColumnEncryption($server, $uid, $pwd, $msodbcsqlMaj)
 {
     global $hgsEnabled;
+    global $server;
+    global $databaseName;
+    global $driver;
     
     // Only works for ODBC 17
     ////////////////////////////////////////
     $connectionInfo = "ColumnEncryption = Enabled;";
     try {
-        $conn = new PDO("sqlsrv:server = $server ; $connectionInfo", $uid, $pwd);
+        $dsn = getDSN($server, $databaseName, $driver, $connectionInfo);
+        $conn = new PDO($dsn, $uid, $pwd);
     } catch (PDOException $e) {
         if ($msodbcsqlMaj < 17) {
             $expected = "The Always Encrypted feature requires Microsoft ODBC Driver 17 for SQL Server.";
@@ -61,7 +66,8 @@ function testColumnEncryption($server, $uid, $pwd, $msodbcsqlMaj)
     ////////////////////////////////////////
     $connectionInfo = "ColumnEncryption = Disabled;";
     try {
-        $conn = new PDO("sqlsrv:server = $server ; $connectionInfo", $uid, $pwd);
+        $dsn = getDSN($server, $databaseName, $driver, $connectionInfo);
+        $conn = new PDO($dsn, $uid, $pwd);
     } catch (PDOException $e) {
         if ($msodbcsqlMaj < 13) {
             $expected = "Invalid connection string attribute";
@@ -75,14 +81,15 @@ function testColumnEncryption($server, $uid, $pwd, $msodbcsqlMaj)
 
     // should fail for all ODBC drivers
     $expected = "Invalid value specified for connection string attribute 'ColumnEncryption'";
-    if ($hgsEnabled) {
+    if ($hgsEnabled || $msodbcsqlMaj >= 18) {
         $expected = "Requested attestation protocol is invalid.";
     }
     
     ////////////////////////////////////////
     $connectionInfo = "ColumnEncryption = false;";
     try {
-        $conn = new PDO("sqlsrv:server = $server ; $connectionInfo", $uid, $pwd);
+        $dsn = getDSN($server, $databaseName, $driver, $connectionInfo);
+        $conn = new PDO($dsn, $uid, $pwd);
     } catch (PDOException $e) {
         verifyOutput($e, $expected, "3");
     }
@@ -91,7 +98,8 @@ function testColumnEncryption($server, $uid, $pwd, $msodbcsqlMaj)
     ////////////////////////////////////////
     $connectionInfo = "ColumnEncryption = 1;";
     try {
-        $conn = new PDO("sqlsrv:server = $server ; $connectionInfo", $uid, $pwd);
+        $dsn = getDSN($server, $databaseName, $driver, $connectionInfo);
+        $conn = new PDO($dsn, $uid, $pwd);
     } catch (PDOException $e) {
         verifyOutput($e, $expected, "4");
     }

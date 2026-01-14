@@ -4,10 +4,9 @@ if (!extension_loaded("sqlsrv")) {
 }
 
 require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
-$connectionInfo = array("UID"=>$userName, "PWD"=>$userPassword);
-
-$conn = sqlsrv_connect($server, $connectionInfo);
+$conn = connect(null, false);
 if ($conn === false) {
     die("skip Could not connect during SKIPIF.");
 }

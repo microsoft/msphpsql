@@ -23,7 +23,7 @@ try {
 
         // Now connect with ColumnEncryption enabled
         $connectionInfo = "ColumnEncryption = Enabled;";
-        $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
+        $conn = connect($connectionInfo);
     }
 
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

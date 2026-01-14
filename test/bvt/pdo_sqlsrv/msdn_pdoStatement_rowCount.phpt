@@ -5,7 +5,7 @@ returns the number of rows added to a table; returns the number of rows in a res
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
+$conn = getPdoConnection();
 
 $tableName = "pdoRowCount";
 dropTable($conn, $tableName);
@@ -29,7 +29,7 @@ dropTable($conn, $tableName, false);
 
 $conn = null;
 
-$conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
+$conn = getPdoConnection();
 
 $query = "SELECT * FROM Person.ContactType";
 $stmt = $conn->prepare( $query, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));

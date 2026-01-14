@@ -5,7 +5,7 @@ reports the error code of querying a misspelled column
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:Server=$server ; Database = $databaseName ", "$uid", "$pwd");
+$conn = getPdoConnection();
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 $query = "SELECT * FROM Person.Address where Cityx = 'Essen'";
 

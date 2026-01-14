@@ -5,7 +5,7 @@ fetches a column in a row
 --FILE--
 <?php
    require('connect.inc');
-   $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+   $conn = getPdoConnection();
 	
    $stmt = $conn->query( "select * from Person.ContactType where ContactTypeID < 5 " );
    while ( $result = $stmt->fetchColumn(1)) { 

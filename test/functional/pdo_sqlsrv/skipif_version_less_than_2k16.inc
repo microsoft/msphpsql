@@ -10,8 +10,9 @@ if (!extension_loaded("pdo_sqlsrv")) {
 $is_win = (strtoupper(substr(php_uname('s'),0,3)) === 'WIN');
 
 require_once("MsSetup.inc");
+require_once("MsCommon.inc");
 
-$conn = new PDO("sqlsrv:server = $server; driver=$driver;", $uid, $pwd);
+$conn = connect(null, false);
 if ($conn === false) {
     die( "skip Could not connect during SKIPIF." );
 }

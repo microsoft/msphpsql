@@ -5,7 +5,7 @@ sets to PDO::SQLSRV_ATTR_DIRECT_QUERY
 --FILE--
 <?php
     require('connect.inc');
-    $conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
+    $conn = getPdoConnection();
     $conn->setAttribute(PDO::SQLSRV_ATTR_DIRECT_QUERY, true);
 
     $tableName = 'pdo_direct_query';

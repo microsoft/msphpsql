@@ -187,7 +187,9 @@ function configure($param, $expected)
     }
 }
 
-function connect($options = array())
+// Wrapped in function_exists to avoid redeclaration error with MsHelper.inc
+if (!function_exists('connect')) {
+function connect($options = array(), $trapError = true)
 {
     include('MsSetup.inc');
 
@@ -197,12 +199,17 @@ function connect($options = array())
 
     trace("Attempting connection to $server...");
     $conn = sqlsrv_connect($server, $connectionOptions);
-    if ($conn === false) {
+    if ($trapError && $conn === false) {
+        print_r( sqlsrv_errors() );
         fatalError("Failed to connect to $server.");
     }
-    trace(" successfully connected.\n\n");
+
+    if ($conn != false) {
+        trace(" successfully connected.\n\n");
+    }
     return ($conn);
 }
+} // end function_exists('connect')
 
 function getTempTableName($table = '', $temporary = true)
 {
