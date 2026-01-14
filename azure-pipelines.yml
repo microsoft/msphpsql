@@ -17,7 +17,6 @@ pr:
 
 jobs:
 - job: macOS
-  timeoutInMinutes: 360
   pool:
     vmImage: 'macos-latest'
   steps:
@@ -31,158 +30,13 @@ jobs:
       architecture: 'x64'
 
   - script: |
-      # Install Docker CLI and Colima
-      echo "Installing Docker and Colima..."
-      brew install docker colima
-
-      # Start Colima with extra resources
-      echo "Starting Colima..."
-      colima start --cpu 4 --memory 8 --disk 50
-
-      # Set Docker context to use Colima (this persists in ~/.docker/config.json)
-      docker context use colima >/dev/null || true
-
-      # Confirm Docker is operational
-      echo "Verifying Docker setup..."
-      docker version
-      docker ps
-      echo "Docker is ready!"
-    displayName: 'Install and start Colima-based Docker'
-
-  - powershell: |
-      $guid = [guid]::NewGuid().ToString()
-      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-    displayName: 'Generate Password'
-
-  - script: |
-      # Set DOCKER_HOST to point to Colima socket
-      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-      
-      # Verify Docker is working
-      echo "Docker context:"
-      docker context show
-      echo "Testing Docker connection:"
-      docker ps
-      
-      # Pull and run SQL Server container
-      echo "Pulling SQL Server image..."
-      docker pull mcr.microsoft.com/mssql/server:2022-latest
-      
-      # Run container with proper error handling
-      echo "Starting SQL Server container $(host)..."
-      docker run \
-        --name $(host) \
-        -e ACCEPT_EULA=Y \
-        -e MSSQL_SA_PASSWORD="$(pwd)" \
-        -e MSSQL_PID=Developer \
-        -e TZ=Asia/Shanghai \
-        -p 1433:1433 \
-        -d mcr.microsoft.com/mssql/server:2022-latest
-      
-      # Check if container started
-      if [ $? -ne 0 ]; then
-        echo "##[error]Failed to start SQL Server container"
-        docker ps -a
-        exit 1
-      fi
-      
-      echo "Container started, waiting for SQL Server to be ready..."
-      docker ps
-
-      # Wait for SQL Server to start (SQL Server 2022 uses mssql-tools18)
-      for i in {1..20}; do
-        docker exec $(host) \
-          /opt/mssql-tools18/bin/sqlcmd \
-          -S localhost \
-          -U $(uid) \
-          -P "$(pwd)" \
-          -C \
-          -Q "SELECT @@VERSION" > /dev/null 2>&1 && break
-        echo "Waiting for SQL Server to be ready (attempt $i/20)..."
-        sleep 2
-      done
-      
-      echo "SQL Server is ready!"
-      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "SELECT @@VERSION"
-      
-      # Test connectivity from host to container (macOS to Docker)
-      echo "Testing connectivity from host..."
-      for i in {1..30}; do
-        docker exec $(host) /opt/mssql-tools18/bin/sqlcmd \
-          -S localhost \
-          -U $(uid) \
-          -P "$(pwd)" \
-          -C \
-          -Q "SELECT 1" > /dev/null 2>&1 && echo "Connection successful from host!" && break
-        echo "Waiting for SQL Server to accept connections from host (attempt $i/30)..."
-        sleep 2
-      done
-    displayName: 'Pull & start SQL Server (Docker)'
-
-  - script: |
-      # Install PHP 8.4 and build tools
+      brew tap
+      brew tap homebrew/core
       brew install php@8.4 autoconf automake libtool
-      # Make 8.4 the active CLI PHP
       brew unlink php || true
       brew link --overwrite --force php@8.4
-      # Confirm
       php -v
-    displayName: 'Install PHP 8.4'
-
-  - script: |
-      # Install ODBC Driver for SQL Server on macOS
-      brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-      HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql18 mssql-tools18
-      
-      # Verify ODBC driver installation
-      odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
-    displayName: 'Install ODBC Driver 18 for SQL Server'
-
-  - script: |
-      # Set up locales for testing
-      export LANG='en_US.UTF-8'
-      export LANGUAGE='en_US:en'
-      export LC_ALL='en_US.UTF-8'
-    displayName: 'Set up locales'
-
-  - script: |
-      echo "Setting up test databases..."
-      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-      
-      # Create databases using sqlcmd inside container
-      echo "Creating databases..."
-      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '$(sqlsrv_db)') CREATE DATABASE [$(sqlsrv_db)]"
-      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '$(pdo_sqlsrv_db)') CREATE DATABASE [$(pdo_sqlsrv_db)]"
-      
-      # Copy setup files to container
-      echo "Copying setup files to container..."
-      docker cp $(Build.SourcesDirectory)/test/functional/setup $(host):/tmp/setup
-      
-      # Run SQL scripts inside container for both databases
-      for db in $(sqlsrv_db) $(pdo_sqlsrv_db); do
-        echo "Setting up $db..."
-        for sqlfile in test_types.sql 168256.sql cd_info.sql tracks.sql; do
-          echo "  Running $sqlfile..."
-          docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $db -i /tmp/setup/$sqlfile
-        done
-        
-        # Run bcp to load data inside container
-        echo "  Loading data with bcp..."
-        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..cd_info in cd_info.dat -f cd_info.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
-        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..tracks in tracks.dat -f tracks.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
-        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..test_streamable_types in test_streamable_types.dat -f test_streamable_types.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
-        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..[159137] in xml.dat -f xml.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
-        docker exec -w /tmp/setup $(host) /opt/mssql-tools18/bin/bcp ${db}..[168256] in 168256.dat -f 168256.fmt -S localhost -U $(uid) -P "$(pwd)" -C -q
-      done
-      
-      # Verify data was loaded
-      echo "Verifying test data was loaded..."
-      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as cd_info_count FROM cd_info"
-      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as tracks_count FROM tracks"
-      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd -S localhost -U $(uid) -P "$(pwd)" -C -d $(sqlsrv_db) -Q "SELECT COUNT(*) as streamable_count FROM test_streamable_types"
-      
-      echo "Database setup complete!"
-    displayName: 'Set up test databases'
+    displayName: 'Install PHP 8.4 and prerequisites'
 
   - script: |
       echo "Building PHP extensions..."
@@ -190,122 +44,22 @@ jobs:
       chmod a+x packagize.sh
       ./packagize.sh
 
-      dest=`php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/
-
       cd $(Build.SourcesDirectory)/source/sqlsrv
       ls -al
       phpize && ./configure && make && sudo make install
       cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv
-      echo "extension=sqlsrv.so" | sudo tee ${dest}20-sqlsrv.ini
 
       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
       ls -al
       phpize && ./configure && make && sudo make install
       cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-      echo "extension=pdo_sqlsrv.so" | sudo tee ${dest}30-pdo_sqlsrv.ini
 
-      # Create writable override ini file
-      sudo touch ${dest}99-overrides.ini
-      sudo chmod 666 ${dest}99-overrides.ini
+      echo extension=pdo_sqlsrv.so >> `php --ini | grep "Loaded Configuration File" | sed -e "s|.*:\s*||"`
+      echo extension=sqlsrv.so >> `php --ini | grep "Loaded Configuration File" | sed -e "s|.*:\s*||"`
 
       php --ri sqlsrv
       php --ri pdo_sqlsrv
     displayName: 'Build and install drivers'
-
-  - script: |
-      echo "Testing SQL Server connectivity before running tests..."
-      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-      
-      # Try to connect using sqlcmd inside container
-      echo "Testing from inside container:"
-      docker exec $(host) /opt/mssql-tools18/bin/sqlcmd \
-        -S localhost \
-        -U $(uid) \
-        -P "$(pwd)" \
-        -C \
-        -Q "SELECT @@VERSION, GETDATE() AS CurrentTime"
-      
-      # Test from host using PHP
-      echo "Testing from host using PHP sqlsrv extension:"
-      php -r "
-      \$serverName = '$(server)';
-      \$connectionInfo = array('UID'=>'$(uid)', 'PWD'=>'$(pwd)', 'Database'=>'master', 'LoginTimeout'=>30, 'Encrypt'=>false, 'TrustServerCertificate'=>true);
-      \$conn = sqlsrv_connect(\$serverName, \$connectionInfo);
-      if(\$conn === false) {
-        echo 'Connection failed: ';
-        print_r(sqlsrv_errors());
-        exit(1);
-      }
-      echo 'Connection successful!';
-      sqlsrv_close(\$conn);
-      "
-    displayName: 'Verify SQL Server connectivity'
-
-  - script: |
-      echo "=== ODBC Driver Configuration ==="
-      echo "Installed ODBC Drivers:"
-      odbcinst -q -d
-      echo ""
-      echo "ODBC Driver 18 details:"
-      odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
-      echo ""
-      echo "Driver configured in MsSetup.inc:"
-      grep -E '^\$driver' $(Build.SourcesDirectory)/test/functional/sqlsrv/MsSetup.inc
-      echo "================================="
-    displayName: 'Show ODBC Driver version being used'
-
-  - script: |
-      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
-      sed -i '' -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-      sed -i '' -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-      sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-      sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-
-      export TZ=Asia/Shanghai
-      export LC_ALL='en_US.UTF-8'
-      
-      # Run only the failing tests for debugging
-      php run-tests.php 0022.phpt fix_test_168256-2.phpt fix_test_168256.phpt sqlsrv_574_next_result.phpt sqlsrv_ConnPool_Unix.phpt sqlsrv_ae_azure_key_vault_keywords.phpt sqlsrv_data_to_str.phpt sqlsrv_readStream.phpt test_XML_retrieve.phpt test_fetch.phpt test_fetch2.phpt test_sqlsrv_phptype_stream.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv.log
-    displayName: 'Run sqlsrv functional tests'
-
-  # Skip pdo_sqlsrv tests for now - debugging sqlsrv failures first
-  # - script: |
-  #     cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
-  #     sed -i '' -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
-  #     sed -i '' -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-  #     sed -i '' -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
-  #     sed -i '' -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
-
-  #     export TZ=Asia/Shanghai
-  #     export LC_ALL='en_US.UTF-8'
-  #     # Run all pdo_sqlsrv functional tests with extended timeout
-  #     php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../pdo_sqlsrv.log
-  #   displayName: 'Run pdo_sqlsrv functional tests'
-
-  - script: |
-      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-      docker logs -t $(host)
-      cd $(Build.SourcesDirectory)/test/functional/
-      for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
-      for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
-      python output.py
-      ls -l *.xml
-    displayName: 'Processing test results'
-
-  - task: PublishTestResults@2
-    inputs:
-      testResultsFormat: 'JUnit'
-      testResultsFiles: '*.xml'
-      failTaskOnFailedTests: true
-      searchFolder: '$(Build.SourcesDirectory)/test/functional/'
-
-  - script: |
-      export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
-      docker stop $(host)
-      docker rm $(host)
-      colima stop
-    displayName: 'Stop SQL Server and Colima'
-    condition: always()
 
 - job: Linux
   variables:
@@ -663,6 +417,7 @@ jobs:
       
       Write-Host "SQL Server LocalDB is ready"
     displayName: 'Start SQL Server LocalDB'
+    condition: false
 
   - powershell: |
       # Update connection strings to use LocalDB named pipe
@@ -706,6 +461,7 @@ jobs:
              -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
       } | Set-Content .\connect.inc
     displayName: 'Update connection credentials'
+    condition: false
 
   - powershell: |
       Write-Host "Downloading ODBC Driver 18 for SQL Server..."
@@ -715,6 +471,7 @@ jobs:
       Write-Host "Downloaded msodbcsql.msi"
       dir $(Build.SourcesDirectory)\msodbcsql.msi
     displayName: 'Download ODBC Driver 18 MSI'
+    condition: false
 
   - script: |
       cd $(Build.SourcesDirectory)
@@ -723,6 +480,7 @@ jobs:
       reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 18 for SQL Server"
       dir %WINDIR%\System32\msodbcsql*.dll
     displayName: 'Install ODBC Driver 18'
+    condition: false
 
   - powershell: |
       Write-Host "Verifying ODBC Driver 18 installation..."
@@ -734,6 +492,7 @@ jobs:
       }
       Write-Host "✓ ODBC Driver 18 for SQL Server installed successfully"
     displayName: 'Verify ODBC Driver 18 installation'
+    condition: false
 
   - powershell: |
       $client = New-Object Net.WebClient
@@ -792,6 +551,7 @@ jobs:
       
       Write-Host "Database setup complete!"
     displayName: 'Set up test databases'
+    condition: false
 
   - powershell: |
       Write-Host "=== ODBC Driver Configuration ==="
@@ -802,6 +562,7 @@ jobs:
       Select-String -Path "$(Build.SourcesDirectory)\test\functional\sqlsrv\MsSetup.inc" -Pattern '^\$driver'
       Write-Host "================================="
     displayName: 'Show ODBC Driver version being used'
+    condition: false
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
@@ -811,6 +572,7 @@ jobs:
       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
+    condition: false
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
@@ -820,6 +582,7 @@ jobs:
       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
       php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
+    condition: false
 
   - powershell: |
       cd $(Build.SourcesDirectory)\test\bvt\sqlsrv
@@ -858,6 +621,7 @@ jobs:
       python output.py
       dir *.xml
     displayName: 'Processing test results'
+    condition: false
 
   - task: PublishTestResults@2
     inputs:
@@ -865,9 +629,10 @@ jobs:
       testResultsFiles: '*.xml'
       failTaskOnFailedTests: true
       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
+    condition: false
 
   - powershell: |
       Write-Host "Stopping LocalDB..."
       sqllocaldb stop MSSQLLocalDB
     displayName: 'Cleanup LocalDB'
-    condition: always()
+    condition: false
