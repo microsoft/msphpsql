@@ -5,7 +5,7 @@ execute a delete and reports how many rows were deleted
 --FILE--
 <?php
     require('connect.inc');
-    $c = new PDO("sqlsrv:server=$server; Database = $databaseName", $uid, $pwd);
+    $c = getPdoConnection();
 
     $tableName = "pdoExec";
     dropTable($c, $tableName);

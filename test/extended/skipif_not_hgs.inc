@@ -9,7 +9,7 @@ if (!extension_loaded("sqlsrv")) {
 
 require_once("MsSetup.inc");
 
-$connectionInfo = array("UID"=>$uid, "PWD"=>$pwd, "Driver" => $driver);
+$connectionInfo = array("UID"=>$uid, "PWD"=>$pwd, "Driver" => $driver, "Encrypt" => $encrypt);
 
 $conn = sqlsrv_connect( $server, $connectionInfo );
 if ($conn === false) {

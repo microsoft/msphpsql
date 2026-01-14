@@ -19,8 +19,9 @@ non-MARS connection. This should fail too.
 // unnecessary complication, so I have left the code like this.
 
 require_once( "break.php" );
+require_once( "MsCommon.inc" );
 
-$conn_break = sqlsrv_connect( $server, array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd) );
+$conn_break = connect();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Part 1 
@@ -28,10 +29,9 @@ $conn_break = sqlsrv_connect( $server, array( "Database"=>$dbName, "UID"=>$uid, 
 // first query means connection is idle when broken
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd, "ConnectionPooling"=>false,
-                         "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10 );
+$connectionInfo = array( "ConnectionPooling"=>false, "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10 );
                          
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";
@@ -74,7 +74,7 @@ sqlsrv_close( $conn );
 // freed before breaking connection
 ///////////////////////////////////////////////////////////////////////////////
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";
@@ -119,7 +119,7 @@ sqlsrv_close( $conn );
 // query is still active when connection is broken
 ///////////////////////////////////////////////////////////////////////////////
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";
@@ -167,10 +167,9 @@ sqlsrv_close( $conn );
 // pending results and MARS is off
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd,
-                         "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10, "MultipleActiveResultSets"=>false );
+$connectionInfo = array( "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10, "MultipleActiveResultSets"=>false );
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";

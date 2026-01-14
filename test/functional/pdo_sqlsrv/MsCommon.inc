@@ -8,31 +8,43 @@
 
 */
 
-// TO BE DELETED
-function connect($options=array())
+// TO BE DELETED - wrapped in function_exists to avoid redeclaration error
+if (!function_exists('connect')) {
+function connect($options=array(), $catchErrors = true)
 {
-  try 
-  {
-    // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
-    // which does not support switching databases
-    require  'MsSetup.inc';
-    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;ConnectionPooling=false;" , $uid, $pwd, $options); 
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-    return $conn;
-  }
-  
-  catch( PDOException $e ) 
-  {
-    var_dump( $e );
-    exit;
-  }
-    
-  catch(Exception $e) 
-  {
-     var_dump( $e );
-     exit;
-  }
+    if ($catchErrors)
+    {
+        try 
+        {
+            // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
+            // which does not support switching databases
+            require  'MsSetup.inc';
+            $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;Encrypt=$encrypt;ConnectionPooling=false;" , $uid, $pwd, $options); 
+            $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+            return $conn;
+        }
+
+        catch( PDOException $e ) 
+        {
+            var_dump( $e );
+            exit;
+        }
+
+        catch(Exception $e) 
+        {
+            var_dump( $e );
+            exit;
+        }
+    }
+    else
+    {
+        require  'MsSetup.inc';
+        $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;Encrypt=$encrypt;ConnectionPooling=false;" , $uid, $pwd, $options); 
+        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+        return $conn;
+    }
 }
+} // end function_exists('connect')
 
 /**
  * Create a table
@@ -296,10 +308,12 @@ function is_col_enc()
         return true;
 }
 
+if (!function_exists('teardown')) {
 function teardown()
 {
     // TBD
 }
+} // end function_exists('teardown')
 
 
 function my_print_r( $to_print )

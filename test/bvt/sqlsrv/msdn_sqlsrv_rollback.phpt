@@ -5,8 +5,7 @@ Rolls back the current transaction on the specified connection and returns the c
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if( $conn === false )
 {
      echo "Could not connect.\n";

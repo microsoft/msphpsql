@@ -10,7 +10,7 @@ if (! extension_loaded("sqlsrv")) {
 }
 
 require_once('MsCommon.inc');
-$options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword);
+$options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, "Driver" => $driver, "Encrypt" => $encrypt);
 $conn = sqlsrv_connect($server, $options);
 if (! $conn) {
     die("Skip Could not connect during SKIPIF!");

@@ -24,7 +24,7 @@ function verifyPhoto($image, $photo)
 try {
     date_default_timezone_set('America/Los_Angeles');
 
-    $conn = new PDO("sqlsrv:server = $server; database=$databaseName;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $tvpType = 'TVPParam';
