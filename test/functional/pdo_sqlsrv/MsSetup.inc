@@ -28,7 +28,8 @@ $adSPClientId = 'TARGET_ADSP_CLIENT_ID';
 $adSPClientSecret = 'TARGET_ADSP_CLIENT_SECRET';
 
 $driverType = true;
-$driver = "ODBC Driver 17 for SQL Server";
+$driver = "ODBC Driver 18 for SQL Server";
+$encrypt = "no";
 
 $tableName = 'pdo_test_table';
 $tableIndex = 'php_test_table_idx';

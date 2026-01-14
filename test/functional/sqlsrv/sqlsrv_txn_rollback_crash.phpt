@@ -12,7 +12,7 @@ separately to verify no crash occurs.
 --FILE--
 <?php
     require_once("MsSetup.inc");
-    $connOptions = array("Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
+    $connOptions = array("Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd", "Encrypt"=>$encrypt);
 
     $conn = sqlsrv_connect($server, $connOptions);
 

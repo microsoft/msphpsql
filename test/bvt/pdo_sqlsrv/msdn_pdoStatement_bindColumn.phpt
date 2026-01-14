@@ -5,7 +5,7 @@ a variable bound to a column in a result set
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 
 $query = "SELECT Title, FirstName, EmailPromotion FROM Person.Person where LastName = 'Estes'";
 $stmt = $conn->prepare($query);

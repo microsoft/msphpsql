@@ -5,7 +5,7 @@ fetch with all fetch styles
 --FILE--
 <?php
    require('connect.inc');
-   $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+   $conn = getPdoConnection();
 
    print( "\n---------- PDO::FETCH_CLASS -------------\n" );
    $stmt = $conn->query( "select DepartmentID, Name, GroupName from HumanResources.Department order by GroupName" );

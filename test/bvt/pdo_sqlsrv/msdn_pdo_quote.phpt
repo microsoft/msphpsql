@@ -6,7 +6,7 @@ insert with quoted parameters
 <?php
 
 require('connect.inc');
-$conn = new PDO("sqlsrv:Server=$server; Database = $databaseName", $uid, $pwd);
+$conn = getPdoConnection();
 
 $tableName = "pdoQuote";
 dropTable($conn, $tableName);

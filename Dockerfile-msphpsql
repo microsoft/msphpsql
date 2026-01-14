@@ -1,10 +1,10 @@
-# Download base image ubuntu 18.04
+# Download base image ubuntu 22.04
 
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 # Update Ubuntu Software repository
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
-    apt-get install -y software-properties-common && \
+    apt-get install -y software-properties-common gnupg2 && \
     add-apt-repository ppa:ondrej/php -y && \
     apt-get -y install \
     apt-transport-https \
@@ -13,24 +13,24 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
     curl \
     libcurl4 \
     g++ \
-    gcc    \
+    gcc \
     git \
     lcov \
     libxml2-dev \
     locales \
     make \
-    php7.3 \
-    php7.3-dev \
-    php7.3-intl \
-    python-pip \
+    php8.4 \
+    php8.4-dev \
+    php8.4-intl \
+    python3-pip \
     re2c \
     unixodbc-dev \
     unzip && apt-get clean && \
     curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    curl https://packages.microsoft.com/config/ubuntu/18.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get -y update && \
     export ACCEPT_EULA=Y && apt-get -y install msodbcsql17 mssql-tools && \
-    update-alternatives --set php /usr/bin/php7.3
+    update-alternatives --set php /usr/bin/php8.4
 
 ARG PHPSQLDIR=/REPO/msphpsql-dev
 ENV TEST_PHP_SQL_SERVER sql
@@ -54,9 +54,9 @@ RUN locale-gen
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
 # install coveralls (upgrade both pip and requests first)
-RUN python -m pip install --upgrade pip
-RUN python -m pip install --upgrade requests
-RUN python -m pip install cpp-coveralls
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade requests
+RUN python3 -m pip install cpp-coveralls
 
 # Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
 #One option is to get source from zip file of repository.
@@ -68,8 +68,8 @@ WORKDIR $PHPSQLDIR/source/
 RUN chmod +x ./packagize.sh
 RUN /bin/bash -c "./packagize.sh"
 
-RUN echo "; priority=20\nextension=sqlsrv.so\n" > /etc/php/7.3/mods-available/sqlsrv.ini
-RUN echo "; priority=30\nextension=pdo_sqlsrv.so\n" > /etc/php/7.3/mods-available/pdo_sqlsrv.ini
+RUN echo "; priority=20\nextension=sqlsrv.so\n" > /etc/php/8.4/mods-available/sqlsrv.ini
+RUN echo "; priority=30\nextension=pdo_sqlsrv.so\n" > /etc/php/8.4/mods-available/pdo_sqlsrv.ini
 
 # create a writable ini file for testing locales
 RUN echo '' > `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/99-overrides.ini
@@ -77,9 +77,11 @@ RUN chmod 666 `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:
 
 WORKDIR $PHPSQLDIR/source/sqlsrv
 RUN /usr/bin/phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && make install
+RUN cp run-tests.php $PHPSQLDIR/test/functional/sqlsrv/
 
 WORKDIR $PHPSQLDIR/source/pdo_sqlsrv
 RUN /usr/bin/phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && make install
+RUN cp run-tests.php $PHPSQLDIR/test/functional/pdo_sqlsrv/
 
 RUN phpenmod sqlsrv pdo_sqlsrv
 RUN php --ri sqlsrv && php --ri pdo_sqlsrv

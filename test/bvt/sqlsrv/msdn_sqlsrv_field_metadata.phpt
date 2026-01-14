@@ -5,8 +5,7 @@ creates a statement resource then retrieves and displays the field metadata
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if( $conn === false )
 {
      echo "Could not connect.<br>";

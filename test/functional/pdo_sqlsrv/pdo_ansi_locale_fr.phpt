@@ -49,7 +49,7 @@ try {
         }
     }
     
-    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; driver=$driver; Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
     $tableName = "pdo_ansitest_FR";
 
@@ -58,10 +58,10 @@ try {
     $tsql = "CREATE TABLE $tableName([id] [int] NOT NULL, [phrase] [varchar](50) NULL)";
     $conn->exec($tsql);
     
-    $inputs = array("À tout à l'heure!", 
-                    "Je suis désolé.", 
-                    "À plus!", 
-                    " Je dois aller à l'école.");
+    $inputs = array("ï¿½ tout ï¿½ l'heure!", 
+                    "Je suis dï¿½solï¿½.", 
+                    "ï¿½ plus!", 
+                    " Je dois aller ï¿½ l'ï¿½cole.");
 
     // Next, insert the strings
     insertData($conn, $tableName, $inputs);

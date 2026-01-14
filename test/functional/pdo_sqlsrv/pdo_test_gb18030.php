@@ -21,7 +21,7 @@ $tempDB = ($_SERVER['argv'][1]);
 setlocale(LC_ALL, 'zh_CN.gb18030');
 
 try {
-    $conn = new PDO("sqlsrv:server = $server;database=$tempDB;driver=$driver", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server;database=$tempDB;driver=$driver;Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
 
@@ -29,7 +29,7 @@ try {
     $stmt = $conn->query($tsql);
 
     // Next, insert the strings
-    $inputs = array('ÖÐÎÄ', 'ÄãºÃ', 'Î´ÕÒµ½ÐÅÏ¢', '»ñÈ¡¸ü¶à');
+    $inputs = array('ï¿½ï¿½ï¿½ï¿½', 'ï¿½ï¿½ï¿½', 'Î´ï¿½Òµï¿½ï¿½ï¿½Ï¢', 'ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½');
     $hexValues = array('d6d0cec4', 'c4e3bac3', 'ceb4d5d2b5bdd0c5cfa2', 'bbf1c8a1b8fcb6e0');
     for ($i = 0; $i < 4; $i++) {
         insertText($conn, $inputs[$i], $hexValues[$i]);

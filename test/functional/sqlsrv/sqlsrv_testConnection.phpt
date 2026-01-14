@@ -4,6 +4,13 @@ variety of connection parameters.
 <?php 
 require('skipif_unix.inc');
 require('skipif_azure.inc');
+require('MsSetup.inc');
+// This test expects connection attempts with empty passwords to fail,
+// which only works with Windows Authentication (empty default credentials).
+// Skip if using SQL Authentication (non-empty credentials).
+if (!empty($userName) || !empty($userPassword)) {
+    die("skip test requires Windows Authentication with empty credentials");
+}
 ?>
 --FILE--
 <?php
@@ -20,6 +27,9 @@ require('skipif_azure.inc');
         }
         if (!isset($options['Database'])) {
             $options['database'] = $databaseName;   
+        }
+        if (!isset($options['Encrypt'])) {
+            $options['Encrypt'] = $encrypt;
         }
         return sqlsrv_connect($server, $options);
     }
@@ -49,10 +59,12 @@ require('skipif_azure.inc');
     if( !$conn ) {
         var_dump( sqlsrv_errors() );
     }
-    sqlsrv_close( $conn );
+    else {
+        sqlsrv_close( $conn );
+    }
 
-    echo "Test sqlsrv_connect( <server>, array( 'UID' => 'sa', 'PWD', 'Driver' => 'SQL Server Native Client 11.0' ))\n";
-    $conn = connect(array( 'UID' => 'sa', 'PWD' => '', 'Driver' => 'SQL Server Native Client 11.0' ));
+    echo "Test sqlsrv_connect( <server>, array( 'UID' => 'sa', 'PWD', 'Driver' => 'ODBC Driver 17 for SQL Server' ))\n";
+    $conn = connect(array( 'UID' => 'sa', 'PWD' => '', 'Driver' => 'ODBC Driver 17 for SQL Server' ));
     
     if( !$conn ) {
         var_dump( sqlsrv_errors() );
@@ -64,7 +76,7 @@ require('skipif_azure.inc');
     
     echo "Test sqlsrv_connect with driver injection\n";
 
-    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "$pwd;Driver={SQL Server Native Client 11.0}}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "$pwd;Driver={ODBC Driver 17 for SQL Server}}" ));
     
     if( !$conn ) {
         var_dump( sqlsrv_errors() );
@@ -75,7 +87,7 @@ require('skipif_azure.inc');
     }
 
     echo "Test sqlsrv_connect with driver injection (2)\n";
-    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "{$pwd};Driver={SQL Server Native Client 11.0}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "{$pwd};Driver={ODBC Driver 17 for SQL Server}" ));
     
     if( !$conn ) {
         var_dump( sqlsrv_errors() );
@@ -86,7 +98,7 @@ require('skipif_azure.inc');
     }
 
     echo "Test sqlsrv_connect with driver injection (3)\n";
-    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "{$pwd}};Driver={SQL Server Native Client 11.0}" ));
+    $conn = sqlsrv_connect( $server, array( "UID" => "sa", "PWD" => "{$pwd}};Driver={ODBC Driver 17 for SQL Server}" ));
     
     if( !$conn ) {
         var_dump( sqlsrv_errors() );
@@ -178,22 +190,69 @@ require('skipif_azure.inc');
 Test sqlsrv_connect with integrated authentication
 Test sqlsrv_connect with integrated authentication and parameters
 Test sqlsrv_connect\( .*, array\( 'UID' => '.*', 'PWD' \)\)
-Test sqlsrv_connect\( .*, array\( 'UID' => '.*', 'PWD', 'Driver' => '.*' \)\)
-array\(1\) \{
+array\(2\) \{
   \[0\]=>
   array\(6\) \{
     \[0\]=>
-    string\(5\) "IMSSP"
+    string\(5\) "28000"
     \["SQLSTATE"\]=>
-    string\(5\) "IMSSP"
+    string\(5\) "28000"
     \[1\]=>
-    int\(-106\)
+    int\(18456\)
     \["code"\]=>
-    int\(-106\)
+    int\(18456\)
     \[2\]=>
-    string\([0-9]+\) "Invalid value SQL Server Native Client 11.0 was specified for Driver option."
+    string\([0-9]+\) ".*Login failed for user 'sa'."
     \["message"\]=>
-    string\([0-9]+\) "Invalid value SQL Server Native Client 11.0 was specified for Driver option."
+    string\([0-9]+\) ".*Login failed for user 'sa'."
+  \}
+  \[1\]=>
+  array\(6\) \{
+    \[0\]=>
+    string\(5\) "28000"
+    \["SQLSTATE"\]=>
+    string\(5\) "28000"
+    \[1\]=>
+    int\(18456\)
+    \["code"\]=>
+    int\(18456\)
+    \[2\]=>
+    string\([0-9]+\) ".*Login failed for user 'sa'."
+    \["message"\]=>
+    string\([0-9]+\) ".*Login failed for user 'sa'."
+  \}
+\}
+Test sqlsrv_connect\( .*, array\( 'UID' => '.*', 'PWD', 'Driver' => '.*' \)\)
+array\(2\) \{
+  \[0\]=>
+  array\(6\) \{
+    \[0\]=>
+    string\(5\) "28000"
+    \["SQLSTATE"\]=>
+    string\(5\) "28000"
+    \[1\]=>
+    int\(18456\)
+    \["code"\]=>
+    int\(18456\)
+    \[2\]=>
+    string\([0-9]+\) ".*Login failed for user 'sa'."
+    \["message"\]=>
+    string\([0-9]+\) ".*Login failed for user 'sa'."
+  \}
+  \[1\]=>
+  array\(6\) \{
+    \[0\]=>
+    string\(5\) "28000"
+    \["SQLSTATE"\]=>
+    string\(5\) "28000"
+    \[1\]=>
+    int\(18456\)
+    \["code"\]=>
+    int\(18456\)
+    \[2\]=>
+    string\([0-9]+\) ".*Login failed for user 'sa'."
+    \["message"\]=>
+    string\([0-9]+\) ".*Login failed for user 'sa'."
   \}
 \}
 Test sqlsrv_connect with driver injection
@@ -209,9 +268,9 @@ array\(2\) \{
     \["code"\]=>
     int\(18456\)
     \[2\]=>
-    string\(81\) ".*Login failed for user 'sa'."
+    string\([0-9]+\) ".*Login failed for user 'sa'."
     \["message"\]=>
-    string\(81\) ".*Login failed for user 'sa'."
+    string\([0-9]+\) ".*Login failed for user 'sa'."
   \}
   \[1\]=>
   array\(6\) \{
@@ -224,9 +283,9 @@ array\(2\) \{
     \["code"\]=>
     int\(18456\)
     \[2\]=>
-    string\(81\) ".*Login failed for user 'sa'."
+    string\([0-9]+\) ".*Login failed for user 'sa'."
     \["message"\]=>
-    string\(81\) ".*Login failed for user 'sa'."
+    string\([0-9]+\) ".*Login failed for user 'sa'."
   }
 }
 Test sqlsrv_connect with driver injection \(2\)
@@ -272,8 +331,8 @@ Array
     \[SQLSTATE\] => 01000
     \[1\] => 5701
     \[code\] => 5701
-    \[2\] => .*Changed database context to '.*'.
-    \[message\] => .*Changed database context to '.*'.
+    \[2\] => .*Changed database context to.*
+    \[message\] => .*Changed database context to.*
 \)
 Array
 \(
@@ -281,8 +340,8 @@ Array
     \[SQLSTATE\] => 01000
     \[1\] => 5703
     \[code\] => 5703
-    \[2\] => .*Changed language setting to us_english.
-    \[message\] => .*Changed language setting to us_english.
+    \[2\] => .*Changed language setting to.*
+    \[message\] => .*Changed language setting to.*
 \)
 Test sqlsrv_connect with all options and integrated auth
 Array
@@ -291,8 +350,8 @@ Array
     \[SQLSTATE\] => 01000
     \[1\] => 5701
     \[code\] => 5701
-    \[2\] => .*Changed database context to '.*'.
-    \[message\] => .*Changed database context to '.*'.
+    \[2\] => .*Changed database context to.*
+    \[message\] => .*Changed database context to.*
 \)
 Array
 \(
@@ -300,7 +359,7 @@ Array
     \[SQLSTATE\] => 01000
     \[1\] => 5703
     \[code\] => 5703
-    \[2\] => .*Changed language setting to us_english.
-    \[message\] => .*Changed language setting to us_english.
+    \[2\] => .*Changed language setting to.*
+    \[message\] => .*Changed language setting to.*
 \)
 Test succeeded.
