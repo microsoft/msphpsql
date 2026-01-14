@@ -36,7 +36,7 @@ function verifyErrorContents($e)
 require_once("MsSetup.inc");
 
 try {
-    $conn = new PDO("sqlsrv:server=$server;Language = German", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server=$server;Language = German;Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     $tsql = "SELECT *, BadColumn FROM sys.syslanguages";

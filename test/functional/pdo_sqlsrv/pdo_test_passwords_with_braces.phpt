@@ -38,7 +38,7 @@ function generateRandomPassword($insertBraces = true, $escapeBraces = true)
 try {
     $randomPwd = generateRandomPassword(false);
     trace($randomPwd . PHP_EOL);
-    $conn = new PDO("sqlsrv:Server=$server;", $uid, $randomPwd);
+    $conn = new PDO("sqlsrv:Server=$server;Encrypt=$encrypt", $uid, $randomPwd);
     
     echo "Incorrect password '$randomPwd' without right braces should have failed!" . PHP_EOL;
 } catch (PDOException $e) {
@@ -52,7 +52,7 @@ try {
 try {
     $randomPwd = generateRandomPassword();
     trace($randomPwd . PHP_EOL);
-    $conn = new PDO("sqlsrv:Server=$server;", $uid, $randomPwd);
+    $conn = new PDO("sqlsrv:Server=$server;Encrypt=$encrypt", $uid, $randomPwd);
     
     echo "Incorrect password '$randomPwd' with right braces should have failed!" . PHP_EOL;
 } catch (PDOException $e) {
@@ -66,7 +66,7 @@ try {
 try {
     $randomPwd = generateRandomPassword(true, false);
     trace($randomPwd . PHP_EOL);
-    $conn = new PDO("sqlsrv:Server=$server;", $uid, $randomPwd);
+    $conn = new PDO("sqlsrv:Server=$server;Encrypt=$encrypt", $uid, $randomPwd);
 
     echo ("Shouldn't have connected without escaping braces!" . PHP_EOL);
 } catch (PDOException $e) {

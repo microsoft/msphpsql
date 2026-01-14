@@ -37,7 +37,7 @@ function cleanup($conn, $schema, $pre2016)
 }
 
 try {
-    $conn = new PDO("sqlsrv:server = $server; database=$databaseName;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server; database=$databaseName; Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $stmt = $conn->query("SELECT @@VERSION");

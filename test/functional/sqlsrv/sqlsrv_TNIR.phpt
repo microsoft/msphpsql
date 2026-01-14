@@ -16,9 +16,10 @@ require_once("MsSetup.inc");
 $GLOBALS['uid'] = $uid;
 $GLOBALS['pwd'] = $pwd;
 $GLOBALS['server'] = $server;
+$GLOBALS['encrypt'] = $encrypt;
 
 function test_tnir( $TNIRValue, $MSFValue ) {
-    $connectionInfo = ["UID" => $GLOBALS['uid'], "PWD" => $GLOBALS['pwd'], "TransparentNetworkIPResolution" => $TNIRValue, "MultiSubnetFailover" => $MSFValue];
+    $connectionInfo = ["UID" => $GLOBALS['uid'], "PWD" => $GLOBALS['pwd'], "TransparentNetworkIPResolution" => $TNIRValue, "MultiSubnetFailover" => $MSFValue, "Encrypt" => $GLOBALS['encrypt']];
     $MSFValueStr = ($MSFValue) ? 'true' : 'false';
     $start = microtime(true);
     $conn = sqlsrv_connect($GLOBALS['server'], $connectionInfo);

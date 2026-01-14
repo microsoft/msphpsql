@@ -66,7 +66,7 @@ class BuildDriver(object):
         already exists, this will prompt user whether to rebuild, clean, or superclean, the last option
         will remove the entire php source directory.
         
-        :param  root_dir: the C:\ drive
+        :param  root_dir: the C:\\ drive
         :param  work_dir: the directory of this script
         :outcome: the old binaries, if exist, will be removed
         """
@@ -143,9 +143,9 @@ class BuildDriver(object):
             dir_list = os.listdir(source)
             print("Files and directories in '", source, "' :")
                 
-            os.system('ROBOCOPY ' + source + '\shared ' + work_dir + '\Source\shared /xx /xo ')
-            os.system('ROBOCOPY ' + source + '\sqlsrv ' + work_dir + '\Source\sqlsrv /xx /xo ')
-            os.system('ROBOCOPY ' + source + '\pdo_sqlsrv ' + work_dir + '\Source\pdo_sqlsrv /xx /xo ')
+            os.system('ROBOCOPY ' + source + '\\shared ' + work_dir + '\\Source\\shared /xx /xo ')
+            os.system('ROBOCOPY ' + source + '\\sqlsrv ' + work_dir + '\\Source\\sqlsrv /xx /xo ')
+            os.system('ROBOCOPY ' + source + '\\pdo_sqlsrv ' + work_dir + '\\Source\\pdo_sqlsrv /xx /xo ')
                     
         print('Start building PHP with the extension...')
 
@@ -291,7 +291,7 @@ if __name__ == '__main__':
         driver = validate_input("Driver to build? ", "all/sqlsrv/pdo_sqlsrv")
         debug_mode = input("Debug enabled? [y/n]: ")
         
-        answer = input("Download source from a GitHub repo? [y/n]: ")
+        answer = input("Download driver source from a GitHub repo? [y/n]: ")
         if answer == 'yes' or answer == 'y' or answer == '':
             repo = input("Name of the repo (hit enter for 'Microsoft'): ")
             branch = input("Name of the branch or tag (hit enter for 'dev'): ")

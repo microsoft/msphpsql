@@ -100,7 +100,10 @@ class BuildUtil(object):
             VC = 'vc15'
             version = self.version_label()
             if version[0] == '8':     # Compiler version for PHP 8.0 or above
-                VC = 'vs16'
+                if version[1] >= '4':
+                    VC = 'vs17'
+                else:
+                    VC = 'vs16'
             self.vc = VC
             print('Compiler: ' + self.vc)
         return self.vc
@@ -127,7 +130,7 @@ class BuildUtil(object):
         return os.path.join(phpsrc, build_dir)
 
     def remove_old_builds(self, sdk_dir):
-        """Remove the extensions, e.g. the driver subfolders in php-7.*-src\ext."""
+        """Remove the extensions, e.g. the driver subfolders in php-7.*-src\\ext."""
         if not os.path.exists(os.path.join(sdk_dir, 'php-sdk')):
             print('No old builds to be removed...')
             return
@@ -256,9 +259,9 @@ class BuildUtil(object):
             source = os.path.join(msphpsqlFolder, 'source')
             os.chdir(work_dir)
             
-            os.system('ROBOCOPY ' + source + '\shared ' + dest_folder + '\shared /xx /xo')
-            os.system('ROBOCOPY ' + source + '\pdo_sqlsrv ' + dest_folder + '\pdo_sqlsrv /xx /xo')
-            os.system('ROBOCOPY ' + source + '\sqlsrv ' + dest_folder + '\sqlsrv /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\shared ' + dest_folder + '\\shared /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\pdo_sqlsrv ' + dest_folder + '\\pdo_sqlsrv /xx /xo')
+            os.system('ROBOCOPY ' + source + '\\sqlsrv ' + dest_folder + '\\sqlsrv /xx /xo')
                 
         except:
             print('Error occurred when downloading source')
@@ -321,7 +324,7 @@ class BuildUtil(object):
             else:       # pdo_sqlsrv
                 cmd_line = ' --enable-pdo --with-pdo-sqlsrv=shared ' + cmd_line
                 
-        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-json --enable-embed --enable-mbstring --enable-ctype' + cmd_line
+        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-json --enable-embed --with-iconv --enable-ctype' + cmd_line
         if self.thread == 'nts':
             cmd_line = cmd_line + ' --disable-zts'
         return cmd_line

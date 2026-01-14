@@ -5,7 +5,7 @@ uses an input/output parameter
 --FILE--
 <?php
    require('connect.inc');
-   $dbh = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+   $dbh = getPdoConnection();
 
    dropProc($dbh, 'sp_ReverseString');
    $dbh->query("CREATE PROCEDURE sp_ReverseString @String as VARCHAR(2048) OUTPUT as SELECT @String = REVERSE(@String)");

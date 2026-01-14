@@ -12,8 +12,9 @@ transaction should be rolled back).
 --FILE--
 <?php
 require_once( "break.php" );
+require_once( "MsCommon.inc" );
 
-$conn_break = sqlsrv_connect( $server, array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd) );
+$conn_break = connect();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Part 1 
@@ -21,10 +22,9 @@ $conn_break = sqlsrv_connect( $server, array( "Database"=>$dbName, "UID"=>$uid, 
 // statement has been prepared
 ///////////////////////////////////////////////////////////////////////////////
 
-$connectionInfo = array( "Database"=>$dbName, "UID"=>$uid, "PWD"=>$pwd, "ConnectionPooling"=>false,
-                         "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10 );
+$connectionInfo = array( "ConnectionPooling"=>false, "ConnectRetryCount"=>10, "ConnectRetryInterval"=>10 );
                          
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";
@@ -62,7 +62,7 @@ sqlsrv_close( $conn );
 // transaction begins
 ///////////////////////////////////////////////////////////////////////////////
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";
@@ -121,7 +121,7 @@ sqlsrv_close( $conn );
 // of a transaction
 ///////////////////////////////////////////////////////////////////////////////
 
-$conn = sqlsrv_connect( $server, $connectionInfo );
+$conn = connect( $connectionInfo );
 if( $conn === false )
 {
     echo "Could not connect.\n";

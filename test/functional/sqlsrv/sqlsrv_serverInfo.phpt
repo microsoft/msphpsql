@@ -28,5 +28,5 @@ array\(3\) {
   \[\"SQLServerVersion\"\]=>
   string\(10\) \"[0-9]{2}.[0-9]{2}.[0-9]{4}\"
   \[\"SQLServerName\"\]=>
-  string\([0-9]+\) \"[-A-Za-z0-9_\\]+"
+  string\([0-9]+\) \"[-A-Za-z0-9_\\#]+"
 }

@@ -5,7 +5,7 @@ shows the error code of a SQL query with a mispelled table
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 $stmt = $conn->prepare('SELECT * FROM Person.Addressx');
 

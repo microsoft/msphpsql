@@ -25,11 +25,48 @@ try {
         'rollBack',
         'setAttribute',
     );
+$phpver = substr(phpversion(), 0, 3);
 
-    // Fix for PHP 8.4: The PDO class now includes a 'connect' method.
-    // We add it to the expected list if running on PHP 8.4+ (ID 80400)
-    if (PHP_VERSION_ID >= 80400) {
-        $expected[] = 'connect';
+if ($phpver >= '7.4') {
+    // Reference: https://wiki.php.net/rfc/custom_object_serialization
+    unset($expected['__wakeup']);
+    unset($expected['__sleep']);
+}
+
+if ($phpver >= '8.4') {
+    // PHP 8.4+: PDO class exposes connect()
+    // Reference: https://wiki.php.net/rfc/pdo_driver_specific_subclasses
+    $expected['connect'] = true;
+}
+
+$classname = get_class($conn);
+$methods = get_class_methods($classname);
+foreach ($methods as $k => $method)
+{
+    if (isset($expected[$method]))
+    {
+        unset($expected[$method]);
+        unset($methods[$k]);
+    }
+    if ($method == $classname)
+    {
+        unset($expected['__construct']);
+        unset($methods[$k]);
+    }
+}
+
+if (!empty($expected))
+{
+    printf("Dumping missing class methods\n");
+    var_dump($expected);
+}
+
+if (!empty($methods))
+{
+    printf("Found more methods than expected, dumping list\n");
+    var_dump($methods);
+}
+
     }
 
     // Connect
