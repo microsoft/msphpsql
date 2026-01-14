@@ -416,7 +416,20 @@ $minute = '59';
 $second = '29';
 $frac = '049';
 $frac2 = '876';
-$tz_correction = '+08:00';
+
+// Dynamically detect SQL Server's timezone by querying SYSDATETIMEOFFSET()
+// This ensures the test works regardless of server timezone configuration
+$temp_conn = AE\connect();
+$query = "SELECT CONVERT(varchar(6), SYSDATETIMEOFFSET(), 114)";
+$stmt = sqlsrv_query($temp_conn, $query);
+if ($stmt === false) {
+    fatalError("Failed to query server timezone");
+}
+$row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+$tz_correction = $row[0]; // Will be like '+08:00' or '+00:00' etc.
+sqlsrv_free_stmt($stmt);
+sqlsrv_close($temp_conn);
+unset($temp_conn);
 
 // The datetime type is accurate to .000, .003, or .007 second, so adjust
 // $frac appropriately for that type. Do not use '999'

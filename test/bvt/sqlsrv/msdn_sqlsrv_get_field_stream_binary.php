@@ -2,8 +2,7 @@
 /* Connect to the local server using Windows Authentication and
 specify the AdventureWorks database as the database in use. */
 $serverName = $server2;
-$connectionInfo = array( "Database"=>$databaseName, "UID"=>$uid, "PWD"=>$pwd);
-$conn = sqlsrv_connect( $serverName, $connectionInfo);
+$conn = sqlsrv_connect( $serverName, getSqlsrvConnectionInfo());
 if( $conn === false )
 {
      echo "Could not connect.\n";

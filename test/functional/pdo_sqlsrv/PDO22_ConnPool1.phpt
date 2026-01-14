@@ -84,11 +84,12 @@ function DoConnect($options)
 
         if ($dsnMode)
         {
-            $conn = new PDO("sqlsrv:Server=$server;$options", $uid, $pwd);
+            $conn = new PDO("sqlsrv:Server=$server;Encrypt=$encrypt;$options", $uid, $pwd);
         }
         else
         {
-            $conn = new PDO("sqlsrv:Server=$server", $uid, $pwd, $options);
+            $options['Encrypt'] = $encrypt;
+            $conn = new PDO("sqlsrv:Server=$server;Encrypt=$encrypt", $uid, $pwd, $options);
         }
         $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
     }

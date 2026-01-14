@@ -112,7 +112,7 @@ try {
     ini_set('error_log', $logFilepath);
     ini_set('pdo_sqlsrv.log_severity', '2');    // warnings only
 
-    $conn = new PDO("sqlsrv:server=$server;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server=$server;Encrypt=$encrypt", $uid, $pwd);
     checkWarning($conn, 1);
     checkException($conn, 1);
     checkWarning($conn, 0);
