@@ -30,8 +30,9 @@ try {
             $stmt = $conn->query("");
             echo("Empty query was expected to fail!\n");
         } catch (ValueError $ve) {
-            $error = '*PDO::query(): Argument #1 ($query) cannot be empty';
-            $error2 = '*PDO::query(): Argument #1 ($query) must not be empty'; // PHP 8.4+
+            // PHP 8.3 says "cannot be empty", PHP 8.4 says "must not be empty"
+            // We use * wildcards to match both.
+            $error = '*PDO::query(): Argument #1 ($query) * be empty';
             if (!fnmatch($error, $ve->getMessage()) &&
                 !fnmatch($error2, $ve->getMessage())) {
                 var_dump($ve->getMessage());
