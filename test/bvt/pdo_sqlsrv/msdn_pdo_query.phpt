@@ -5,7 +5,7 @@ default query; query for a column; query with a new class; query into an existin
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 $conn->setAttribute( PDO::SQLSRV_ATTR_QUERY_TIMEOUT, 1 );
 

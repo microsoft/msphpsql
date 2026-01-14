@@ -12,7 +12,7 @@ require_once("MsSetup.inc");
 
 try {
     // Do not connect with AE enabled because otherwise this would have thrown a different exception
-    $conn = new PDO("sqlsrv:server=$server; Database = $databaseName;", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server=$server; Database = $databaseName; Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
 

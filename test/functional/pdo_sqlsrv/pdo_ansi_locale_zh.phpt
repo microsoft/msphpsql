@@ -22,7 +22,7 @@ if (empty($loc)) {
 
 require_once('MsSetup.inc');
 try {
-    $conn = new PDO("sqlsrv:server=$server", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server=$server;driver=$driver;Encrypt=$encrypt", $uid, $pwd);
     $msodbcsqlVer = $conn->getAttribute(PDO::ATTR_CLIENT_VERSION)['DriverVer'];
     $version = explode(".", $msodbcsqlVer);
 
@@ -58,7 +58,7 @@ try {
     $tempDB = 'GB18030test' . rand(1, 100);
     require_once('MsSetup.inc');
     
-    $conn = new PDO("sqlsrv:server = $server;database=master;driver=$driver", $uid, $pwd);
+    $conn = new PDO("sqlsrv:server = $server;database=master;driver=$driver;Encrypt=$encrypt", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     runTest($conn, $tempDB);

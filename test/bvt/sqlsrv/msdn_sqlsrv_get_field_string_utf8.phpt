@@ -5,9 +5,7 @@ retrieves dates as strings by specifying UTF-8 when fetching the string.
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd", "ReturnDatesAsStrings" => false);
-$conn = sqlsrv_connect( $server, $connectionInfo);
-
+$conn = getSqlsrvConnection(array("ReturnDatesAsStrings" => false));
 
 if( $conn === false ) {
    echo "Could not connect.\n";
@@ -37,4 +35,4 @@ echo $date;
 sqlsrv_close( $conn);
 ?>
 --EXPECTREGEX--
-2014-02-20 04:26:00.000|2017-08-22 19:39:35.643
+2014-02-20 04:26:00.000|2017-08-22 19:39:35.643|2023-01-23 13:08:53.190

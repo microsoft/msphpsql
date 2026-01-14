@@ -9,8 +9,7 @@ specify the UTF-8 character set when querying
 // specify the AdventureWorks database as the database in use. 
 // 
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if ( $conn === false ) {
    echo "Could not connect.<br>";
    die( print_r( sqlsrv_errors(), true));
@@ -27,7 +26,7 @@ $tsql1 = "UPDATE Production.ProductReview
 // utf8_encode to simulate an application that uses UTF-8 encoded data. 
 // 
 $reviewID = 3;
-$comments = mb_convert_encoding("testing", 'ISO-8859-1', 'UTF-8');
+$comments = iconv("ISO-8859-1", "UTF-8", "testing");
 $params1 = array(
                   array($comments,
                         SQLSRV_PARAM_IN,
