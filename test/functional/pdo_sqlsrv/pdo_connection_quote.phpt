@@ -31,7 +31,7 @@ try {
             echo("Empty query was expected to fail!\n");
         } catch (ValueError $ve) {
             // PHP 8.3 says "cannot be empty", PHP 8.4 says "must not be empty"
-            // We use * wildcards to match both.
+            // We use * wildcards to match both. UPDATED
             $error = '*PDO::query(): Argument #1 ($query) * be empty';
             if (!fnmatch($error, $ve->getMessage())) {
                 var_dump($ve->getMessage());
