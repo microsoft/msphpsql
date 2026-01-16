@@ -1,6 +1,6 @@
 set -e
 
-testConnection="/opt/mssql-tools/bin/sqlcmd -S sql -U sa -P Password123"
+testConnection="/opt/mssql-tools18/bin/sqlcmd -S sql -U sa -P Password123"
 
 for run in {1..10}; do
 
