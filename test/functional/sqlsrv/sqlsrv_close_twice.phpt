@@ -56,7 +56,7 @@ Repro();
 
 ?>
 --EXPECT--
-﻿sqlsrv_free_stmt(): FORCE FAIL TEST supplied resource is not a valid ss_sqlsrv_stmt resource
+﻿sqlsrv_free_stmt(): supplied resource is not a valid ss_sqlsrv_stmt resource
 
 Done
 Test "sqlsrv_close_twice" completed successfully.
