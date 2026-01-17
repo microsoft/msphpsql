@@ -18,6 +18,7 @@
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
+// Test NextChar with NULL pointer
 
 #include "localization.hpp"
 
@@ -1086,6 +1087,8 @@ char * SystemLocale::NextChar( UINT codepage, const char * start, size_t cchByte
 }
 
 char * SystemLocale::NextChar( UINT codepage, const char * start )
+if ( NULL == start )
+    return NULL;
 {
     // FIXED: Add NULL pointer check to prevent crash
     if ( NULL == start )
