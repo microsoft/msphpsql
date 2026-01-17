@@ -18,6 +18,7 @@
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
+#include <cctype>
 
 extern "C" {
   #include "php_pdo_sqlsrv.h"
@@ -30,19 +31,6 @@ namespace {
     const int MAX_KEY_LENGTH = 256;
     const int MAX_VALUE_LENGTH = 65536;
     const int MAX_DSN_LENGTH = 4096;
-}
-
-// Helper function for safe case-insensitive comparison
-static bool safe_strncasecmp(const char* s1, const char* s2, size_t n) {
-    if (s1 == nullptr || s2 == nullptr) return false;
-    
-    for (size_t i = 0; i < n; i++) {
-        if (std::tolower(static_cast<unsigned char>(s1[i])) != 
-            std::tolower(static_cast<unsigned char>(s2[i]))) {
-            return false;
-        }
-    }
-    return true;
 }
 
 // Constructor
@@ -59,7 +47,6 @@ conn_string_parser:: conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const ch
     this->pos = -1;
     this->ctx = &ctx;
     this->current_key = 0;
-    this->current_key_name = nullptr;
 }
 
 sql_string_parser:: sql_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* sql_str, _In_ int len, _In_ HashTable* placeholders_ht )
@@ -155,7 +142,7 @@ void string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ 
 {
     // Validate length
     if (len < 0 || len > MAX_VALUE_LENGTH) {
-        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, this->current_key_name, nullptr);
+        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, nullptr);
     }
     
     zval value_z;
@@ -189,14 +176,14 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
 {
     // Validate input parameters
     if (key == nullptr || key_len <= 0 || key_len > MAX_KEY_LENGTH) {
-        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_KEY_LENGTH);
+        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY);
     }
     
     int new_len = discard_trailing_white_spaces( key, key_len );
 
     // Validate trimmed length
     if (new_len <= 0 || new_len > MAX_KEY_LENGTH) {
-        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_KEY_LENGTH);
+        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY);
     }
 
     for( int i=0; PDO_CONN_OPTS[i].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
@@ -215,7 +202,6 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
             
             if (match) {
                 this->current_key = PDO_CONN_OPTS[i].conn_option_key;
-                this->current_key_name = PDO_CONN_OPTS[i].sqlsrv_name;
                 return;
             }
         }
@@ -289,7 +275,7 @@ void conn_string_parser:: parse_conn_string( void )
                     // Validate key length
                     int key_len = pos - start_pos;
                     if (key_len <= 0 || key_len > MAX_KEY_LENGTH) {
-                        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_KEY_LENGTH);
+                        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY);
                     }
                     
                     this->validate_key( &( this->orig_str[start_pos] ), key_len );
@@ -343,7 +329,7 @@ void conn_string_parser:: parse_conn_string( void )
                     while ( this->orig_str[pos] != '}' || escaped_brace ) {
                         
                         if ( ! next() ) {
-                            THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_RCB_MISSING_IN_DSN_VALUE, this->current_key_name, NULL );
+                            THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_RCB_MISSING_IN_DSN_VALUE, nullptr, nullptr );
                         }
                         
                         // Handle escaped braces ({{ and }})
@@ -367,13 +353,13 @@ void conn_string_parser:: parse_conn_string( void )
                 {
                     // Validate start_pos is within bounds
                     if (start_pos < 0 || start_pos >= len) {
-                        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, this->current_key_name, NULL);
+                        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, nullptr, nullptr);
                     }
                     
                     while( this->orig_str[pos] != ';' ) {
                         // FIXED: Validate characters in value content
                         if (this->orig_str[pos] == '{' || this->orig_str[pos] == '}') {
-                            THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, this->current_key_name, NULL);
+                            THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, nullptr, nullptr);
                         }
                         
                         if( ! next() ) {
@@ -392,7 +378,7 @@ void conn_string_parser:: parse_conn_string( void )
                         if (value_len >= 0 && value_len <= MAX_VALUE_LENGTH) {
                             add_key_value_pair( &( this->orig_str[start_pos] ), value_len );
                         } else {
-                            THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, this->current_key_name, NULL);
+                            THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, nullptr, nullptr);
                         }
                     }
 
@@ -406,7 +392,7 @@ void conn_string_parser:: parse_conn_string( void )
                 {
                     // Validate start_pos is within bounds
                     if (start_pos < 0 || start_pos >= len) {
-                        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, this->current_key_name, NULL);
+                        THROW_PDO_ERROR(this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, nullptr, nullptr);
                     }
 
                     // Read the next character after RCB.
@@ -425,7 +411,7 @@ void conn_string_parser:: parse_conn_string( void )
                     if( this->orig_str[pos] == '}' ) {
                         if( !next() ) {
                             // EOS after a second RCB is error
-                            THROW_PDO_ERROR( this->ctx, SQLSRV_ERROR_UNESCAPED_RIGHT_BRACE_IN_DSN, this->current_key_name, NULL );
+                            THROW_PDO_ERROR( this->ctx, SQLSRV_ERROR_UNESCAPED_RIGHT_BRACE_IN_DSN, nullptr, nullptr );
                         }
 
                         state = ValueContent1;
@@ -458,7 +444,7 @@ void conn_string_parser:: parse_conn_string( void )
                     }
 
                     // Non - (RCB, SP*, SC, EOS) character. Any other character after an RCB is an error.
-                    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, this->current_key_name, NULL );
+                    THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_INVALID_DSN_KEY, nullptr, nullptr );
                     break;
                 }
                 case NextKeyValuePair:
