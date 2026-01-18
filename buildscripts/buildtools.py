@@ -96,7 +96,7 @@ class BuildUtil(object):
         try:
             # Use subprocess instead of os.system to avoid race conditions
             result = subprocess.run(
-                [vswhere, '-version', f'[{vs_ver},{vs_ver + 1})', '-property', 'installationVersion'],
+                [vswhere, '-version', f'[{vs_ver},{vs_ver + 1})', '-property', 'installationVersion','-format', 'text'],
                 capture_output=True,
                 text=True,
                 check=True
@@ -180,11 +180,10 @@ class BuildUtil(object):
 
         phpsrc = self.phpsrc_root(sdk_dir)
         ext_path = os.path.join(phpsrc, 'ext')
-        if os.path.exists(ext_path):
-            for driver in ['sqlsrv', 'pdo_sqlsrv']:
-                driver_path = os.path.join(ext_path, driver)
-                if os.path.exists(driver_path):
-                    shutil.rmtree(driver_path, ignore_errors=True) 
+        for driver in ['sqlsrv', 'pdo_sqlsrv']:
+            driver_path = os.path.join(ext_path, driver)
+            if os.path.exists(driver_path):
+                shutil.rmtree(driver_path, ignore_errors=True) 
         
         if self.arch == 'x64':
             arch_path = os.path.join(phpsrc, self.arch)
@@ -257,7 +256,7 @@ class BuildUtil(object):
             
             # Replace all occurrences
             if search_str in content:
-                content = content.replace(search_str, new_str)
+                content = content.replace(search_str.replace('\r\n','\n').replace('\r','\n'), new_str.replace('\r\n','\n'))
                 
                 # Write back to file
                 with open(file, 'w', encoding='utf-8') as f:
@@ -337,7 +336,8 @@ class BuildUtil(object):
             # There is no need to remove tree - 
             # for Bamboo, it will be cleaned up eventually
             # for local development, this can act as a cached copy of the repo
-            if not os.path.exists(temppath):
+            if os.path.exists(temppath):
+                shutil.rmtree(temppath, ignore_errors=True)
                 os.makedirs(temppath)
             os.chdir(temppath)
             
@@ -583,7 +583,7 @@ class BuildUtil(object):
         
         # Use subprocess to run the starter script
         try:
-            subprocess.run([starter_script, '-t', batch_file], check=True, shell=True)
+            subprocess.run([starter_script, '-t', batch_file], check=True, shell=True, cwd=phpSDK)
         except subprocess.CalledProcessError as e:
             print(f"Starter script failed: {e}")
             # Check if log file exists and show last few lines
@@ -604,7 +604,7 @@ class BuildUtil(object):
         source_path = os.path.join(phpSDK, 'Source')
         if os.path.exists(source_path):
             shutil.rmtree(source_path, ignore_errors=True) 
-        print('rmtree complete')
+            print('rmtree complete')
         
         # Next, rename the newly compiled PHP extensions, if required
         if not self.no_rename:
@@ -663,20 +663,19 @@ class BuildUtil(object):
             shutil.copy2(source_path, dest_path)
             print('Done')
             
-            if suffix == '.dll':
-                php_ini_file = os.path.join(from_dir, 'php.ini')
-                if os.path.exists(php_ini_file):
+            php_ini_file = os.path.join(from_dir, 'php.ini')
+            if os.path.exists(php_ini_file):
                     # Check if extension already exists in php.ini
-                    extension_line = 'extension=' + binary
-                    with open(php_ini_file, 'r', encoding='utf-8') as php_ini:
-                        content = php_ini.read()
+                extension_line = 'extension=' + binary
+                with open(php_ini_file, 'r', encoding='utf-8') as php_ini:
+                    content = php_ini.read()
                     
-                    if extension_line not in content:
-                        with open(php_ini_file, 'a', encoding='utf-8') as php_ini:
-                            php_ini.write(extension_line + '\n')
-                            print(f'Added {extension_line} to php.ini')
-                    else:
-                        print(f'Extension {binary} already exists in php.ini')
+                if extension_line not in content:
+                    with open(php_ini_file, 'a', encoding='utf-8') as php_ini:
+                        php_ini.write(extension_line + '\n')
+                        print(f'Added {extension_line} to php.ini')
+                else:
+                    print(f'Extension {binary} already exists in php.ini')
         else:
             print(f'Warning: Source file not found: {source_path}')
     
