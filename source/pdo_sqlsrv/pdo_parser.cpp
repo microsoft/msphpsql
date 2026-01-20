@@ -329,7 +329,7 @@ void conn_string_parser:: parse_conn_string( void )
                     while ( this->orig_str[pos] != '}' || escaped_brace ) {
                         
                         if ( ! next() ) {
-                            THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_RCB_MISSING_IN_DSN_VALUE, nullptr, nullptr );
+                            THROW_PDO_ERROR( this->ctx, PDO_SQLSRV_ERROR_RCB_MISSING_IN_DSN_KEY, nullptr, nullptr );
                         }
                         
                         // Handle escaped braces ({{ and }})
