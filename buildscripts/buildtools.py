@@ -15,6 +15,7 @@
 #
 #############################################################################################
 
+import platform
 import shutil
 import os.path
 import stat
@@ -116,6 +117,8 @@ class BuildUtil(object):
                 return 'vc15'
             elif major_version == '16':
                 return 'vs16'
+            elif major_version == '17':
+                return 'vs17'
             else:
                 print(f"Unsupported Visual Studio version: {ver}")
                 exit(1)
@@ -132,7 +135,7 @@ class BuildUtil(object):
                 # Get the major version number (e.g., 7, 8, etc.)
                 major_version = int(self.phpver.split('.')[0])
                 if major_version >= 8:
-                    VC = 'vs16'
+                    VC = 'vs17'
                 else:
                     # For PHP 7.x, we need to check if VS2019 is available
                     # If not, fall back to vc15
@@ -517,6 +520,12 @@ class BuildUtil(object):
         Returns the directory where binaries were copied.
         """
         print("build_drivers")
+      
+         # Windows-only guard (required for CI)
+         if platform.system() != "Windows":
+             print(f"Skipping build: unsupported platform {platform.system()}")
+             return ""
+
         work_dir = os.path.dirname(os.path.realpath(__file__))   
         # First, update the driver source file contents
         source_dir = os.path.join(work_dir, 'Source')
@@ -578,7 +587,8 @@ class BuildUtil(object):
         
         # Invoke phpsdk-<vc>-<arch>.bat
         vc = self.compiler_version(sdk_dir)
-        starter_script = 'phpsdk-' + vc + '-' + self.arch + '.bat'
+        starter_script = f'phpsdk-{vc}-{self.arch}.bat'
+
         print('Running starter script: ', starter_script)
         
         # Use subprocess to run the starter script
