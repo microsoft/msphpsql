@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #########################################################################################
 #
 # Description:  This script helps to build drivers in a Windows environment for PHP 7+ (32-bit/64-bit)
@@ -20,6 +20,7 @@
 #
 #############################################################################################
 
+import os
 import sys
 import shutil
 import os.path
@@ -31,7 +32,7 @@ import re
 # Note: This assumes BuildUtil class is defined in buildutil.py
 # If it's in the same file, remove this import and include the class directly
 try:
-    from buildutil import BuildUtil
+    from buildtools import BuildUtil
 except ImportError:
     # If buildutil.py doesn't exist, we'll define a minimal version here
     # but for production, you should have the actual BuildUtil class
@@ -305,7 +306,11 @@ class BuildDriver(object):
         self.show_config()
     
         work_dir = os.path.dirname(os.path.realpath(__file__))
-        root_dir = 'C:' + os.sep
+        # Set root directory for builds; Windows uses C:, others use /
+        if os.name == 'nt':
+             root_dir = 'C:' + os.sep
+        else:
+             root_dir = os.sep
         
         quit_flag = False
         while not quit_flag:
