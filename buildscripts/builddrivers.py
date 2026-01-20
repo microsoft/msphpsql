@@ -308,10 +308,8 @@ class BuildDriver(object):
         work_dir = os.path.dirname(os.path.realpath(__file__))
         
         # Set root directory for builds; Windows uses C:, others use /
-        if os.name == 'nt':
-             root_dir = 'C:' + os.sep
-        else:
-             root_dir = os.sep
+        
+        root_dir = os.path.abspath(os.sep)
         
         quit_flag = False
         while not quit_flag:
