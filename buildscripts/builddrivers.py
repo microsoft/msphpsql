@@ -306,6 +306,7 @@ class BuildDriver(object):
         self.show_config()
     
         work_dir = os.path.dirname(os.path.realpath(__file__))
+        
         # Set root directory for builds; Windows uses C:, others use /
         if os.name == 'nt':
              root_dir = 'C:' + os.sep
