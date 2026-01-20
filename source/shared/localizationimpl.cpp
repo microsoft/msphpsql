@@ -1087,8 +1087,6 @@ char * SystemLocale::NextChar( UINT codepage, const char * start, size_t cchByte
 }
 
 char * SystemLocale::NextChar( UINT codepage, const char * start )
-if ( NULL == start )
-    return NULL;
 {
     // FIXED: Add NULL pointer check to prevent crash
     if ( NULL == start )
