@@ -37,7 +37,7 @@ Please follow the [Getting started](https://docs.microsoft.com/sql/connect/php/g
 For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
 
 On the client machine:
-- 8.1.x, 8.2.x, 8.3.x
+- 8.2.x, 8.3.x, 8.4.x
 - [Microsoft ODBC Driver 18, 17 or 13][odbcdoc]
 - If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
