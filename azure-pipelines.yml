@@ -144,8 +144,16 @@ jobs:
       
       cd $(Build.SourcesDirectory)/test/functional/setup
       
-      # Patch setup_dbs.py for ODBC 18 on macOS (remove -C code page flag from bcp)
+      # Patch setup_dbs.py for ODBC 18 on macOS
+      # 1. Remove -C code page flag from bcp redirect_string
       sed -i '' "s/redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q -C'/redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q'/g" setup_dbs.py || true
+      
+      # 2. Add -u flag to bcp command for trusting self-signed certificates (ODBC 18 requirement)
+      # BCP uses -u for SSL trust, not -C like sqlcmd
+      sed -i '' "s/inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options/inst_command = redirect_string.format(dbname, tblname, datafile) + ' -u ' + conn_options/g" setup_dbs.py || true
+      
+      echo "=== Patched setup_dbs.py bcp lines ==="
+      grep -n "redirect_string\|inst_command" setup_dbs.py | head -10 || true
       
       # Create databases
       sqlcmd -C -S 127.0.0.1 -U $(uid) -P "$(macpwd)" -Q "CREATE DATABASE [$(macOS_sqlsrv_db)]"
