@@ -31,7 +31,7 @@
 #define SQLVERSION_BUILD 0
 
 // For previews, set this constant to 1, 2 and so on. Otherwise, set it to 0
-#define PREVIEW 1
+#define PREVIEW 0
 #define SEMVER_PRERELEASE
 
 // Semantic versioning build metadata, build meta data is not counted in precedence order.
