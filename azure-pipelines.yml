@@ -19,6 +19,10 @@ jobs:
 - job: macOS
   pool:
     vmImage: 'macos-latest'
+  variables:
+    phpver: '8.4'
+    macOS_sqlsrv_db: 'macos_sqlsrv_testdb'
+    macOS_pdo_sqlsrv_db: 'macos_pdo_sqlsrv_testdb'
   steps:
   - checkout: self
     clean: true
@@ -36,7 +40,77 @@ jobs:
       brew unlink php || true
       brew link --overwrite --force php@8.4
       php -v
-    displayName: 'Install PHP 8.4 and prerequisites'
+    displayName: 'Install PHP $(phpver) and prerequisites'
+
+  - script: |
+      echo "Setting up Docker using Colima..."
+      brew install --cask docker || true
+      brew install colima
+      
+      echo "Starting Colima..."
+      colima start --cpu 2 --memory 4
+      
+      echo "Verifying Docker..."
+      docker ps
+      
+      echo "Docker setup complete!"
+    displayName: 'Setup Docker (Colima)'
+
+  - powershell: |
+      $guid = [guid]::NewGuid().ToString()
+      Write-Host "##vso[task.setvariable variable=macpwd;issecret=true]$guid"
+    displayName: 'Generate Password for macOS'
+
+  - script: |
+      echo "Starting SQL Server Docker container..."
+      docker run -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$(macpwd)" \
+        -p 1433:1433 --name sqlserver \
+        -d mcr.microsoft.com/mssql/server:2022-latest
+      
+      echo "Waiting for SQL Server to start..."
+      sleep 30
+      
+      docker ps -a
+      docker logs sqlserver || true
+      
+      echo "SQL Server container started!"
+    displayName: 'Start SQL Server in Docker'
+
+  - script: |
+      echo "Installing Microsoft ODBC Driver 18 for SQL Server..."
+      brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+      brew update
+      HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql18 mssql-tools18
+      
+      # Verify installation
+      if [[ $(brew list --verbose msodbcsql18) ]]; then
+         echo "ODBC driver is installed successfully"
+      else
+         echo "ODBC driver did not install properly"
+         exit 1
+      fi
+      
+      if [[ $(brew list --verbose mssql-tools18) ]]; then
+         echo "TOOLS installed successfully"
+      else
+         echo "TOOLS did not install properly"
+         exit 1
+      fi
+      
+      # Add tools to PATH
+      echo "##vso[task.prependpath]/opt/homebrew/opt/mssql-tools18/bin"
+      echo "##vso[task.prependpath]/usr/local/opt/mssql-tools18/bin"
+    displayName: 'Install ODBC Driver 18 and Tools'
+
+  - script: |
+      echo "Verifying SQL Server connection..."
+      sleep 10
+      
+      /opt/homebrew/opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1 -U $(uid) -P "$(macpwd)" -C -Q "SELECT @@Version" || \
+      /usr/local/opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1 -U $(uid) -P "$(macpwd)" -C -Q "SELECT @@Version"
+      
+      echo "SQL Server connection verified!"
+    displayName: 'Verify SQL Server Connection'
 
   - script: |
       echo "Building PHP extensions..."
@@ -60,6 +134,102 @@ jobs:
       php --ri sqlsrv
       php --ri pdo_sqlsrv
     displayName: 'Build and install drivers'
+
+  - script: |
+      echo "Setting up test databases..."
+      export PATH="/opt/homebrew/opt/mssql-tools18/bin:/usr/local/opt/mssql-tools18/bin:$PATH"
+      export TEST_PHP_SQL_SERVER='127.0.0.1'
+      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_PWD='$(macpwd)'
+      
+      cd $(Build.SourcesDirectory)/test/functional/setup
+      
+      # Patch setup_dbs.py for ODBC 18 on macOS (remove -C code page flag from bcp)
+      sed -i '' "s/redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q -C'/redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q'/g" setup_dbs.py || true
+      
+      # Create databases
+      sqlcmd -C -S 127.0.0.1 -U $(uid) -P "$(macpwd)" -Q "CREATE DATABASE [$(macOS_sqlsrv_db)]"
+      sqlcmd -C -S 127.0.0.1 -U $(uid) -P "$(macpwd)" -Q "CREATE DATABASE [$(macOS_pdo_sqlsrv_db)]"
+      
+      python3 ./setup_dbs.py -dbname $(macOS_sqlsrv_db) || echo "Warning: setup_dbs.py may have had issues"
+      python3 ./setup_dbs.py -dbname $(macOS_pdo_sqlsrv_db) || echo "Warning: setup_dbs.py may have had issues"
+      
+      echo "Test databases created!"
+    displayName: 'Set up test databases'
+
+  - script: |
+      echo "Updating MsSetup.inc files..."
+      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+      sed -i '' -e 's/TARGET_SERVER/127.0.0.1/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_DATABASE/$(macOS_sqlsrv_db)/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_USERNAME/$(uid)/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_PASSWORD/$(macpwd)/g' MsSetup.inc
+      
+      # Add TrustServerCertificate for ODBC 18
+      sed -i '' -e 's/"Encrypt" => \$encrypt)/"Encrypt" => \$encrypt, "TrustServerCertificate" => 1)/g' MsSetup.inc
+
+      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      sed -i '' -e 's/TARGET_SERVER/127.0.0.1/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_DATABASE/$(macOS_pdo_sqlsrv_db)/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_USERNAME/$(uid)/g' MsSetup.inc
+      sed -i '' -e 's/TARGET_PASSWORD/$(macpwd)/g' MsSetup.inc
+      
+      # Add TrustServerCertificate for PDO ODBC 18
+      sed -i '' -e 's/Encrypt=\$encrypt;/Encrypt=\$encrypt;TrustServerCertificate=1;/g' MsCommon.inc || true
+      sed -i '' -e 's/Database=\$databaseName"/Database=\$databaseName;TrustServerCertificate=1"/g' MsCommon.inc || true
+      
+      echo "MsSetup.inc files updated"
+    displayName: 'Update test configuration files'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/sqlsrv
+      export MSSQL_SERVER='127.0.0.1'
+      export MSSQL_USER='$(uid)'
+      export MSSQL_PASSWORD='$(macpwd)'
+      export MSSQL_DATABASE_NAME='$(macOS_sqlsrv_db)'
+      export MSSQL_DRIVER_NAME='ODBC Driver 18 for SQL Server'
+      export LC_ALL='en_US.UTF-8'
+      php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../sqlsrv_macos.log || true
+    displayName: 'Run sqlsrv functional tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
+      export MSSQL_SERVER='127.0.0.1'
+      export MSSQL_USER='$(uid)'
+      export MSSQL_PASSWORD='$(macpwd)'
+      export MSSQL_DATABASE_NAME='$(macOS_pdo_sqlsrv_db)'
+      export MSSQL_DRIVER_NAME='ODBC Driver 18 for SQL Server'
+      export LC_ALL='en_US.UTF-8'
+      php run-tests.php *.phpt --no-color --show-diff --set-timeout 600 2>&1 | tee ../pdo_sqlsrv_macos.log || true
+    displayName: 'Run pdo_sqlsrv functional tests'
+
+  - script: |
+      cd $(Build.SourcesDirectory)/test/functional/
+      for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      python3 output.py || true
+      ls -l *.xml 2>/dev/null || echo "No XML files generated"
+    displayName: 'Processing test results'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '*.xml'
+      failTaskOnFailedTests: false
+      searchFolder: '$(Build.SourcesDirectory)/test/functional/'
+    condition: always()
+
+  - script: |
+      echo "Stopping SQL Server container..."
+      docker stop sqlserver 2>/dev/null || true
+      docker rm sqlserver 2>/dev/null || true
+      
+      echo "Stopping Colima..."
+      colima stop 2>/dev/null || true
+      
+      echo "Cleanup complete!"
+    displayName: 'Cleanup Docker'
+    condition: always()
 
 - job: Linux
   variables:
