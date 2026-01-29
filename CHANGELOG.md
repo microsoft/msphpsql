@@ -8,12 +8,19 @@ Updated PECL release packages. Here is the list of updates:
 
 ### Added
 - Support for PHP 8.4
-- Support for ODBC Driver 18
+- Support for Windows Server 2025
 - Support for Ubuntu 24.04
+- Support for Debian 12 and 13
+- Support for Red Hat 9
+- Support for Alpine 3.21, 3.22, and 3.23
+- Support for macOS 14, 15, and 26
 
 ### Removed
 - Support for PHP 8.1
-- Removed mbstring dependency
+- Support for Windows 10, Server 2012, and Server 2012 R2
+- Support for Ubuntu 20.04
+- Support for Debian 10
+- Support for macOS 11 and 12
 
 ### Fixed
 - Fixed segfault when connecting to Fabric ([PR #1549](https://github.com/microsoft/msphpsql/pull/1549))
