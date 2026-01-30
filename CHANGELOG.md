@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## 5.13.0-beta1 - 2026-01-28
+## 5.13.0-beta1 - 2026-01-30
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
