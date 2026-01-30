@@ -1,0 +1,8 @@
+#! /bin/sh
+#
+# Created by configure
+
+CXXFLAGS='-O0 --coverage' \
+LDFLAGS='-lgcov' \
+'./configure' \
+"$@"
