@@ -2,19 +2,15 @@
 
 ## Prerequisites
 
-To build extensions for 
-1. PHP 7.0* or PHP 7.1*
-    * install Visual Studio 2015 and make sure C++ tools are enabled. 
-2. PHP 7.2* or above
-    * install Visual Studio 2017 (PHP 7.*) or Visual Studio 2019 (PHP 8.*), including Visual C++ toolset and the Windows SDK components. 
+To build extensions for PHP 8.2 or above, install Visual Studio 2019 or Visual Studio 2022, including Visual C++ toolset and the Windows SDK components. 
 
-To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x and Git for Windows (which comes with Visual Studio 2017 or 2019). If `git` is unrecognized in a regular command prompt, make sure the environment path is set up correctly.
+To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x and Git for Windows. If `git` is unrecognized in a regular command prompt, make sure the environment path is set up correctly.
 
 ## Compile the drivers 
 
-You must first be able to build PHP source without including our PHP extensions. For help with building PHP 7.0* or PHP 7.1* in Windows, see the [official PHP website](https://wiki.php.net/internals/windows/stepbystepbuild). For PHP 7.2 or above, visit [PHP SDK page](https://github.com/OSTC/php-sdk-binary-tools) for new instructions.
+You must first be able to build PHP source without including our PHP extensions. Visit [PHP SDK page](https://github.com/php/php-sdk-binary-tools) for instructions on building PHP in Windows.
 
-The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 7.3+ using Visual Studio 2017 and PHP 8.0+ using Visual Studio 2019. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode. It verifies the publisher's identity and prevents malicious actors from posing as legitimate developers.
+The Microsoft Drivers for PHP for SQL Server have been compiled and tested with PHP 8.2+ using Visual Studio 2019 or Visual Studio 2022. The drivers for Windows that are published for each release (including previews) are digitally signed. You are recommended to sign the binaries you have compiled locally for your own development or testing purposes, using tools like Authenticode. It verifies the publisher's identity and prevents malicious actors from posing as legitimate developers.
 
 ### Manually building from source 
 
@@ -68,8 +64,8 @@ PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably
 4. Use Command-line arguments
     * Type `py builddrivers.py -h` to get a list of options and their descriptions
     * For example, 
-        * `py builddrivers.py --PHPVER=7.4.10 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE=C:\local\source`
-        * `py builddrivers.py --PHPVER=8.1.0 --ARCH=x86 --THREAD=ts --DEBUG`
+        * `py builddrivers.py --PHPVER=8.4.0 --ARCH=x64 --THREAD=nts --DRIVER=sqlsrv --SOURCE=C:\local\source`
+        * `py builddrivers.py --PHPVER=8.3.0 --ARCH=x86 --THREAD=ts --DEBUG`
 
 5. Based on the given configuration, if the script detects the presence of the PHP source directory, you can choose whether to rebuild, clean or superclean:
     * `rebuild` to build again using the same configuration (32 bit, thread safe, etc.)
