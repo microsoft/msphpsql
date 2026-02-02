@@ -8,7 +8,9 @@ different attributes.
 require('skipif.inc');
 require_once 'MsSetup.inc';
 // Skip on LocalDB which doesn't support Force Encryption
-try {\n    $conn = new PDO(\"sqlsrv:server = $server;Encrypt=$encrypt\", $uid, $pwd);\n    $stmt = $conn->query(\"SELECT SERVERPROPERTY('Edition') AS Edition\");", "oldString": "try {\n    $conn = new PDO(\"sqlsrv:server = $server\", $uid, $pwd);\n    $stmt = $conn->query(\"SELECT SERVERPROPERTY('Edition') AS Edition\");
+try {
+    $conn = new PDO("sqlsrv:server = $server;Encrypt=$encrypt", $uid, $pwd);
+    $stmt = $conn->query("SELECT SERVERPROPERTY('Edition') AS Edition");
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($row && strpos($row['Edition'], 'Express') !== false) {
         die("skip LocalDB/Express Edition doesn't support Force Encryption");

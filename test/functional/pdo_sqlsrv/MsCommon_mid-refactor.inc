@@ -595,7 +595,7 @@ function teardown()
     // TBD
 }
 
-
+if (!function_exists('my_print_r')) {
 function my_print_r($to_print)
 {
     global $verbose;
@@ -603,6 +603,7 @@ function my_print_r($to_print)
         print_r($to_print);
     }
 }
+} // end function_exists('my_print_r')
 
 
 function TestMode()

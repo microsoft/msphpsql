@@ -16,9 +16,7 @@ pr:
 - dev
 
 jobs:
-# Commenting out macOS job for now - testing PHP 8.5 on Linux only
 - job: macOS
-  condition: false
   pool:
     vmImage: 'macos-latest'
   variables:
