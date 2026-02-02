@@ -957,9 +957,7 @@ jobs:
     displayName: 'Stop SQL Server for Linux'
     condition: always()
 
-# Commenting out Windows job for now - testing PHP 8.5 on Linux only
 - job: Windows
-  condition: false
   variables:
     phpVersion: 8.5
   pool:
