@@ -13,15 +13,17 @@ import os
 import stat
 import re
 import argparse
+import xml.sax.saxutils
 
-# This module appends an entry to the tests list, may include the test title.
+# This module appends an entry to the tests list, may include the test title and diff content.
 # Input:    search_pattern - pattern to look for in the line of the log file
 #           line - current line of the log file
 #           index - the current index of tests
 #           tests_list - a list of xml entries
 #           get_title - boolean flag to get the test title or not
+#           diff_content - the accumulated diff content from the log file
 # Output:   None
-def get_test_entry(search_pattern, line, index, tests_list, get_title = False):
+def get_test_entry(search_pattern, line, index, tests_list, get_title = False, diff_content = ""):
     # find the full path to the test name, enclosed by square brackets
     result = re.search(search_pattern, line)
     pos1 = result.group(1).find('[')
@@ -39,8 +41,17 @@ def get_test_entry(search_pattern, line, index, tests_list, get_title = False):
         entry = '\t<testcase name="' + test_name + '-' + index + '">'
         tests_list.append(entry)
         test_title = test_line[0:pos1]
-        entry = '\t\t<failure message=" Failed in ' + test_title + '"/>'
+        
+        # Escape the test title and diff content for XML
+        escaped_title = xml.sax.saxutils.escape(test_title)
+        escaped_diff = xml.sax.saxutils.escape(diff_content)
+        
+        # Create failure entry with diff content in the body
+        entry = '\t\t<failure message="Failed in ' + escaped_title + '">'
         tests_list.append(entry)
+        if diff_content:
+            tests_list.append(escaped_diff)
+        tests_list.append('\t\t</failure>')
         tests_list.append('\t</testcase>')
     else:
         entry = '\t<testcase name="' + test_name + '-' + index + '"/>'
@@ -57,15 +68,49 @@ def gen_XML(logfile, number, logfilename):
     print("\n" + filename + "\n" )
 
     tests_list = []
-    with open(os.path.dirname(os.path.realpath(__file__)) + os.sep + logfile) as f:
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    
+    # Auto-detect encoding - check for UTF-16 LE BOM
+    log_path = script_dir + os.sep + logfile
+    encoding = 'utf-8'
+    with open(log_path, 'rb') as fb:
+        first_bytes = fb.read(2)
+        if first_bytes == b'\xff\xfe':  # UTF-16 LE BOM
+            encoding = 'utf-16-le'
+        elif first_bytes.startswith(b'\xef\xbb'):  # UTF-8 BOM
+            encoding = 'utf-8-sig'
+    
+    with open(log_path, encoding=encoding, errors='replace') as f:
         num = 1
         failnum = 0
+        in_diff_section = False
+        diff_lines = []
+        
         for line in f:
+            # Check if we're entering a diff section
+            if "========DIFF========" in line:
+                in_diff_section = True
+                diff_lines = []
+                continue
+            
+            # Check if we're exiting a diff section
+            if "========DONE========" in line:
+                in_diff_section = False
+                continue
+            
+            # Accumulate diff lines
+            if in_diff_section:
+                diff_lines.append(line.rstrip('\n'))
+                continue
+            
+            # Process FAIL/PASS lines
             if "FAIL" in line or "PASS" in line:
                 if ".phpt" in line:
                     if "FAIL" in line:
                         failnum += 1
-                        get_test_entry('FAIL(.*).', line, str(num), tests_list, True)
+                        diff_content = '\n'.join(diff_lines) if diff_lines else ""
+                        get_test_entry('FAIL(.*).', line, str(num), tests_list, True, diff_content)
+                        diff_lines = []  # Reset for next test
                     else:
                         get_test_entry('PASS(.*).', line, str(num), tests_list)
                     num += 1
@@ -75,11 +120,11 @@ def gen_XML(logfile, number, logfilename):
 
     # Generating the xml report.
     if logfilename is True:
-        file = open(filename + '.xml', 'w')
+        file = open(filename + '.xml', 'w', encoding='utf-8')
         report = filename
     else:
-        file = open('nativeresult' + str(number) + '.xml', 'w')
-        report = 'Native Tests'
+        file = open('nativeresult' + str(number) + '.xml', 'w', encoding='utf-8')
+        report = filename + ' Tests'
     
     file.write('<?xml version="1.0" encoding="UTF-8" ?>' + os.linesep)
     file.write('<testsuite tests="' + str(num - 1) + '" failures="' + str(failnum) + '" name="' + report + '" >' + os.linesep)
