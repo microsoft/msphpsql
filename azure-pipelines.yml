@@ -747,6 +747,9 @@ jobs:
       sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
       sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
       
+      # Ensure conf.d directory exists for PHP 8.5
+      sudo mkdir -p /etc/php/$(phpver)/cli/conf.d
+      
       # Disable xdebug if present
       sudo phpdismod xdebug 2>/dev/null || true
       
@@ -837,20 +840,28 @@ jobs:
       chmod a+x packagize.sh
       ./packagize.sh
 
-      dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
+      # Get the PHP conf.d directory, removing any quotes and whitespace
+      dest=$(php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||" | tr -d '[:space:]"')
+      echo "PHP conf.d directory: $dest"
+      
+      # Verify the directory exists
+      if [ ! -d "$dest" ]; then
+          echo "Creating conf.d directory: $dest"
+          sudo mkdir -p "$dest"
+      fi
 
       cd $(Build.SourcesDirectory)/source/sqlsrv
       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
       cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv/
-      echo extension=sqlsrv.so | sudo tee $dest/20-sqlsrv.ini
+      echo extension=sqlsrv.so | sudo tee "$dest/20-sqlsrv.ini"
 
       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
       cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv/
-      echo extension=pdo_sqlsrv.so | sudo tee $dest/30-pdo_sqlsrv.ini
+      echo extension=pdo_sqlsrv.so | sudo tee "$dest/30-pdo_sqlsrv.ini"
 
-      sudo touch $dest/99-overrides.ini
-      sudo chmod 666 $dest/99-overrides.ini
+      sudo touch "$dest/99-overrides.ini"
+      sudo chmod 666 "$dest/99-overrides.ini"
 
       php --ri sqlsrv
       php --ri pdo_sqlsrv
