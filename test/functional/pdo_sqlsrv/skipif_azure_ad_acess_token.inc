@@ -8,7 +8,8 @@ if (!extension_loaded("pdo_sqlsrv")) {
 }
 
 require_once("MsSetup.inc");
-require_once("MsCommon.inc");
+// Use MsCommon_mid-refactor.inc to match what the test uses, avoiding function redeclaration
+require_once("MsCommon_mid-refactor.inc");
 
 $conn = connect(null, false);
 if ($conn === false) {
