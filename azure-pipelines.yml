@@ -20,7 +20,7 @@ jobs:
   pool:
     vmImage: 'macos-latest'
   variables:
-    phpver: '8.4'
+    phpver: '8.5'
     macOS_sqlsrv_db: 'macos_sqlsrv_testdb'
     macOS_pdo_sqlsrv_db: 'macos_pdo_sqlsrv_testdb'
     REPO_ROOT: $(Build.SourcesDirectory)
@@ -718,7 +718,7 @@ jobs:
 
 - job: Linux
   variables:
-    phpver: 8.4
+    phpver: 8.5
   pool:
     vmImage: 'ubuntu-22.04'
   steps:
@@ -733,17 +733,20 @@ jobs:
 
   - script: |
       echo "Installing PHP $(phpver) and dependencies..."
-      # Add ondrej/php PPA for PHP 8.4
+      # Add ondrej/php PPA for PHP 8.5
       sudo add-apt-repository ppa:ondrej/php -y
       sudo apt-get update
       
-      # Install PHP 8.4 and required extensions
+      # Install PHP 8.5 and required extensions
       sudo apt-get install -y php$(phpver)-cli php$(phpver)-dev php$(phpver)-xml php$(phpver)-intl
       
-      # Set PHP 8.4 as default
+      # Set PHP 8.5 as default
       sudo update-alternatives --set php /usr/bin/php$(phpver)
       sudo update-alternatives --set phpize /usr/bin/phpize$(phpver)
       sudo update-alternatives --set php-config /usr/bin/php-config$(phpver)
+      
+      # Ensure conf.d directory exists for PHP 8.5
+      sudo mkdir -p /etc/php/$(phpver)/cli/conf.d
       
       # Disable xdebug if present
       sudo phpdismod xdebug 2>/dev/null || true
@@ -835,20 +838,28 @@ jobs:
       chmod a+x packagize.sh
       ./packagize.sh
 
-      dest=`php --ini | grep "Scan for additional .ini files" | sudo sed -e "s|.*:\s*||"`/
+      # Get the PHP conf.d directory, removing any quotes and whitespace
+      dest=$(php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||" | tr -d '[:space:]"')
+      echo "PHP conf.d directory: $dest"
+      
+      # Verify the directory exists
+      if [ ! -d "$dest" ]; then
+          echo "Creating conf.d directory: $dest"
+          sudo mkdir -p "$dest"
+      fi
 
       cd $(Build.SourcesDirectory)/source/sqlsrv
       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
       cp run-tests.php $(Build.SourcesDirectory)/test/functional/sqlsrv/
-      echo extension=sqlsrv.so | sudo tee $dest/20-sqlsrv.ini
+      echo extension=sqlsrv.so | sudo tee "$dest/20-sqlsrv.ini"
 
       cd $(Build.SourcesDirectory)/source/pdo_sqlsrv
       phpize && ./configure LDFLAGS="-lgcov" CXXFLAGS="-O0 --coverage" && make && sudo make install
       cp run-tests.php $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv/
-      echo extension=pdo_sqlsrv.so | sudo tee $dest/30-pdo_sqlsrv.ini
+      echo extension=pdo_sqlsrv.so | sudo tee "$dest/30-pdo_sqlsrv.ini"
 
-      sudo touch $dest/99-overrides.ini
-      sudo chmod 666 $dest/99-overrides.ini
+      sudo touch "$dest/99-overrides.ini"
+      sudo chmod 666 "$dest/99-overrides.ini"
 
       php --ri sqlsrv
       php --ri pdo_sqlsrv
@@ -946,7 +957,7 @@ jobs:
 
 - job: Windows
   variables:
-    phpVersion: 8.4
+    phpVersion: 8.5
   pool:
     vmImage: 'windows-latest'
   steps:
@@ -960,7 +971,7 @@ jobs:
       architecture: 'x64'
 
   - powershell: |
-      # Download and install PHP 8.4 to match the drivers we're building
+      # Download and install PHP 8.5 to match the drivers we're building
       $client = New-Object Net.WebClient
       $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
       $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
@@ -982,8 +993,8 @@ jobs:
       
       Write-Host "Installing PHP $(phpVersion) version $version"
       
-      # PHP 8.4+ uses VS17, earlier versions use VS16
-      $vsVersion = if ([version]$version -ge [version]"8.4.0") { "vs17" } else { "vs16" }
+      # PHP 8.5+ uses VS17, earlier versions use VS16
+      $vsVersion = if ([version]$version -ge [version]"8.5.0") { "vs17" } else { "vs16" }
       
       # Download PHP NTS x64
       $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$vsVersion-x64.zip"
