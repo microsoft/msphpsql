@@ -595,7 +595,7 @@ function teardown()
     // TBD
 }
 
-
+if (!function_exists('my_print_r')) {
 function my_print_r($to_print)
 {
     global $verbose;
@@ -603,26 +603,31 @@ function my_print_r($to_print)
         print_r($to_print);
     }
 }
+} // end function_exists('my_print_r')
 
-
+if (!function_exists('TestMode')) {
 function TestMode()
 {
     $testMode = getenv('PHPT_EXEC');
     return ($testMode ? true : false);
 }
+} // end function_exists('TestMode')
 
+if (!function_exists('IsPdoMode')) {
 function IsPdoMode()
 {
     require  'MsSetup.inc';
     return (($driverType === true) ? true : false);
 }
+} // end function_exists('IsPdoMode')
 
-
+if (!function_exists('TraceMode')) {
 function TraceMode()
 {
     require  'MsSetup.inc';
     return ((!TestMode() && $traceEnabled) ? true : false);
 }
+} // end function_exists('TraceMode')
 
 function IsMarsSupported()
 {

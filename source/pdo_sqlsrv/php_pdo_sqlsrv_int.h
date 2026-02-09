@@ -6,7 +6,7 @@
 //
 // Contents: Internal declarations for the extension
 //
-// Microsoft Drivers 5.12 for PHP for SQL Server
+// Microsoft Drivers 5.13 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -301,7 +301,12 @@ inline void pdo_reset_dbh_error( _Inout_ pdo_dbh_t* dbh )
     // release the last statement from the dbh so that error handling won't have a statement passed to it
     if( dbh->query_stmt ) {
         dbh->query_stmt = NULL;
-        zval_ptr_dtor( &dbh->query_stmt_zval );
+        #if PHP_VERSION_ID < 80500
+            zval_ptr_dtor( &dbh->query_stmt_zval );
+        #else
+            OBJ_RELEASE( dbh->query_stmt_obj );
+            dbh->query_stmt_obj = NULL;
+        #endif
     }
 
     // if the driver isn't valid, just return (PDO calls close sometimes more than once?)

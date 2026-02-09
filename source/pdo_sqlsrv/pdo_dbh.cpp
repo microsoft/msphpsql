@@ -3,7 +3,7 @@
 //
 // Contents: Implements the PDO object for PDO_SQLSRV
 //
-// Microsoft Drivers 5.12 for PHP for SQL Server
+// Microsoft Drivers 5.13 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -625,7 +625,7 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     PDO_LOG_DBH_ENTRY;
 
     hash_auto_ptr pdo_conn_options_ht;
-    pdo_error_mode prev_err_mode = dbh->error_mode;
+    pdo_error_mode prev_err_mode = static_cast<pdo_error_mode>( dbh->error_mode );
 
     // must be done in all cases so that even a failed connection can query the
     // object for errors.
@@ -1604,7 +1604,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
     PDO_LOG_DBH_ENTRY;
 
     // turn off any error handling for last_id
-    pdo_error_mode prev_err_mode = dbh->error_mode;
+    pdo_error_mode prev_err_mode = static_cast<pdo_error_mode>( dbh->error_mode );
     dbh->error_mode = PDO_ERRMODE_SILENT;
 
     sqlsrv_malloc_auto_ptr<sqlsrv_stmt> driver_stmt;
