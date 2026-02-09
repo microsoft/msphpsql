@@ -24,6 +24,7 @@ jobs:
     macOS_sqlsrv_db: 'macos_sqlsrv_testdb'
     macOS_pdo_sqlsrv_db: 'macos_pdo_sqlsrv_testdb'
     REPO_ROOT: $(Build.SourcesDirectory)
+  timeoutInMinutes: 90
   steps:
   - checkout: self
     clean: true
