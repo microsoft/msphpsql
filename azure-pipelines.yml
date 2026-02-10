@@ -1256,4 +1256,3 @@ jobs:
       sqllocaldb stop MSSQLLocalDB
     displayName: 'Cleanup LocalDB'
     condition: always()
-
