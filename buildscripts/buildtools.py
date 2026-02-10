@@ -87,48 +87,8 @@ class BuildUtil(object):
         version = self.version_label()
         return 'php_' + driver + '_' + version + '_' + self.thread + suffix
 
-    def determine_compiler(self, sdk_dir: str, vs_ver: int) -> str:
-        """Return the compiler version using vswhere.exe."""
-        vswhere = os.path.join(sdk_dir, 'php-sdk', 'bin', 'vswhere.exe')
-        if not os.path.exists(vswhere):
-            print('Could not find ' + vswhere)
-            exit(1)
-        
-        try:
-            # Use subprocess instead of os.system to avoid race conditions
-            result = subprocess.run(
-                [vswhere, '-version', f'[{vs_ver},{vs_ver + 1})', '-property', 'installationVersion','-format', 'text'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            
-            versions = result.stdout.strip().split('\n')
-            if not versions or not versions[0]:
-                print(f"No Visual Studio version {vs_ver} found")
-                exit(1)
-                
-            ver = versions[0]
-            print('Version: ' + ver)
-            
-            # Extract major version (e.g., "15" from "15.9.28307.344")
-            major_version = ver.split('.')[0]
-            if major_version == '15':
-                return 'vc15'
-            elif major_version == '16':
-                return 'vs16'
-            elif major_version == '17':
-                return 'vs17'
-            else:
-                print(f"Unsupported Visual Studio version: {ver}")
-                exit(1)
-                
-        except subprocess.CalledProcessError as e:
-            print(f"Error running vswhere: {e}")
-            exit(1)
-
     def compiler_version(self, sdk_dir: str) -> str:
-        """Return the appropriate compiler version based on PHP version."""
+        """Return the compiler version. Always returns 'vs17' (Visual Studio 2022)."""
         if self.vc == '':
             self.vc = 'vs17'
             print('Compiler: ' + self.vc)
