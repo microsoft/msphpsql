@@ -116,7 +116,7 @@ class BuildUtil(object):
         return os.path.join(phpsrc, build_dir)
 
     def remove_old_builds(self, sdk_dir: str) -> None:
-        """Remove the extensions, e.g. the driver subfolders in php-7.*-src\ext."""
+        r"""Remove the extensions, e.g. the driver subfolders in php-7.*-src\ext."""
         if not os.path.exists(os.path.join(sdk_dir, 'php-sdk')):
             print('No old builds to be removed...')
             return
@@ -463,10 +463,10 @@ class BuildUtil(object):
         """
         print("build_drivers")
       
-         # Windows-only guard (required for CI)
-         if platform.system() != "Windows":
-             print(f"Skipping build: unsupported platform {platform.system()}")
-             return ""
+        # Windows-only guard (required for CI)
+        if platform.system() != "Windows":
+            print(f"Skipping build: unsupported platform {platform.system()}")
+            return ""
 
         work_dir = os.path.dirname(os.path.realpath(__file__))   
         # First, update the driver source file contents
