@@ -19,7 +19,7 @@ jobs:
 - job: macOS
   pool:
     vmImage: 'macos-latest'
-  timeoutInMinutes: 0
+  timeoutInMinutes: 90
   variables:
     phpver: '8.5'
     macOS_sqlsrv_db: 'macos_sqlsrv_testdb'
