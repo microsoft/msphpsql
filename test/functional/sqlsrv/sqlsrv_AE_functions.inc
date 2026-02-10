@@ -7,6 +7,7 @@ function connect($server, $attestation_info)
     $options = array('database'=>$database,
                      'uid'=>$userName,
                      'pwd'=>$userPassword,
+                     'Encrypt'=>$encrypt,
                      'CharacterSet'=>'UTF-8',
                      'ColumnEncryption'=>$attestation_info,
                      );

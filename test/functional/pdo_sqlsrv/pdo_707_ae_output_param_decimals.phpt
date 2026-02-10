@@ -85,7 +85,7 @@ function getHugeNumbers($conn, $outSql)
 
 try {
     // Check eligibility
-    $conn = new PDO( "sqlsrv:server = $server", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:server = $server; Encrypt = $encrypt", $uid, $pwd );
     if (!isAEQualified($conn)) {
         echo "Done\n";
         return;
@@ -93,7 +93,7 @@ try {
     unset($conn);
 
     // Connection with column encryption enabled
-    $connectionInfo = "ColumnEncryption = Enabled;";
+    $connectionInfo = "ColumnEncryption = Enabled; Encrypt = $encrypt;";
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     

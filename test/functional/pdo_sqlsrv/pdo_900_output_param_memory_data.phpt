@@ -50,8 +50,7 @@ function getOutputParam($conn, $storedProcName, $dataType, $inout)
 
 try {
     // This helper method sets PDO::ATTR_ERRMODE to PDO::ERRMODE_EXCEPTION
-    // $conn = connect();
-    $conn = new PDO( "sqlsrv:server=$server; Database = $databaseName", $uid, $pwd);
+    $conn = connect();
     $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
     $dataTypes = array("VARCHAR(256)", "VARCHAR(512)", "VARCHAR(max)", "NVARCHAR(256)", "NVARCHAR(512)", "NVARCHAR(max)");

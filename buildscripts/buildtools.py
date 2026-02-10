@@ -130,25 +130,7 @@ class BuildUtil(object):
     def compiler_version(self, sdk_dir: str) -> str:
         """Return the appropriate compiler version based on PHP version."""
         if self.vc == '':
-            VC = 'vc15'
-            try:
-                # Get the major version number (e.g., 7, 8, etc.)
-                major_version = int(self.phpver.split('.')[0])
-                if major_version >= 8:
-                    VC = 'vs17'
-                else:
-                    # For PHP 7.x, we need to check if VS2019 is available
-                    # If not, fall back to vc15
-                    try:
-                        self.determine_compiler(sdk_dir, 16)
-                        VC = 'vs16'
-                    except:
-                        VC = 'vc15'
-            except (ValueError, IndexError):
-                # If we can't parse the version, use default
-                VC = 'vc15'
-            
-            self.vc = VC
+            self.vc = 'vs17'
             print('Compiler: ' + self.vc)
         return self.vc
 
@@ -463,7 +445,7 @@ class BuildUtil(object):
             else:       # pdo_sqlsrv
                 cmd_line = ' --enable-pdo --with-pdo-sqlsrv=shared ' + cmd_line
                 
-        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-json --enable-embed --enable-mbstring --enable-ctype' + cmd_line
+        cmd_line = 'cscript configure.js --disable-all --enable-cli --enable-cgi --enable-json --enable-embed --with-iconv --enable-ctype' + cmd_line
         if self.thread == 'nts':
             cmd_line = cmd_line + ' --disable-zts'
         return cmd_line

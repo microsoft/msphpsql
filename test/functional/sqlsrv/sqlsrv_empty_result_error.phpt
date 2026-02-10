@@ -55,7 +55,7 @@ function NextResult($stmt, $errors)
     CheckError($errors);
 }
 
-$conn = sqlsrv_connect($server, array("Database"=>$databaseName, "uid"=>$uid, "pwd"=>$pwd));
+$conn = sqlsrv_connect($server, array("Database"=>$databaseName, "uid"=>$uid, "pwd"=>$pwd, "Encrypt"=>$encrypt));
 
 DropTable($conn, 'TestEmptySetTable');
 $stmt = sqlsrv_query($conn, "CREATE TABLE TestEmptySetTable ([c1] nvarchar(10),[c2] nvarchar(10))");

@@ -21,7 +21,7 @@ require_once('MsCommon.inc');
 
 // This test requires to connect with the Always Encrypted feature
 // First check if the system is qualified to run this test
-$options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword);
+$options = array("Database" => $database, "UID" => $userName, "PWD" => $userPassword, "Driver" => $driver, "Encrypt" => $encrypt);
 $conn = sqlsrv_connect($server, $options);
 if ($conn === false) {
     fatalError("Failed to connect to $server.");

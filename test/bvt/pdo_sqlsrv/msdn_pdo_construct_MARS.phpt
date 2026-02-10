@@ -8,7 +8,7 @@ require('connect.inc');
 // Connect to the local server using Windows Authentication and AdventureWorks database
 
 try {
-   $conn = new PDO( "sqlsrv:Server=$server ; Database = $databaseName ; MultipleActiveResultSets=false", "$uid", "$pwd");
+   $conn = getPdoConnection(array('MultipleActiveResultSets' => false));
    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION ); 
 }
 

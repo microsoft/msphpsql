@@ -5,7 +5,7 @@ fetches the rows in a result set in an array
 --FILE--
 <?php
    require('connect.inc');
-   $conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+   $conn = getPdoConnection();
 
    print "-----------\n";
    $stmt = $conn->query( "select * from Person.ContactType where ContactTypeID < 5 " );

@@ -15,7 +15,7 @@ require_once("MsCommon_mid-refactor.inc");
 
 try {
     // Connection with column encryption enabled
-    $connectionInfo = "ColumnEncryption = Enabled;";
+    $connectionInfo = "ColumnEncryption = Enabled; Encrypt = $encrypt;";
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
@@ -30,7 +30,7 @@ unset($conn);
 try {
     // Connection with column encryption enabled
     $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => true);
-    $connectionInfo = "ColumnEncryption = Enabled;";
+    $connectionInfo = "ColumnEncryption = Enabled; Encrypt = $encrypt;";
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd, $options);
 } catch (PDOException $e) {
     echo $e->getMessage() . "\n";
@@ -40,7 +40,7 @@ unset($conn);
 
 try {
     // Connection with column encryption enabled - PDO::ATTR_EMULATE_PREPARES is false by default
-    $connectionInfo = "ColumnEncryption = Enabled;";
+    $connectionInfo = "ColumnEncryption = Enabled; Encrypt = $encrypt;";
     $conn = new PDO("sqlsrv:server = $server; database=$databaseName; $connectionInfo", $uid, $pwd);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     

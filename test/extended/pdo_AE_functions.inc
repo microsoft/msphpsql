@@ -279,7 +279,7 @@ function runEncryptedTest($ceValues, $keys, $encryptionTypes,
 function connect($attestationInfo)
 {
     require("MsSetup.inc");
-    $options = "sqlsrv:Server=$server;Database=$databaseName;ColumnEncryption=$attestationInfo";
+    $options = "sqlsrv:Server=$server;Database=$databaseName;Encrypt=$encrypt;ColumnEncryption=$attestationInfo";
 
     if ($keystore == 'akv') {
 

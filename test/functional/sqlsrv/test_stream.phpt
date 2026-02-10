@@ -41,5 +41,5 @@ Test for stream zombifying.
     sqlsrv_close($conn);
 
 ?>
---EXPECT--
-fread(): supplied resource is not a valid stream resource
+--EXPECTREGEX--
+fread\(\): (supplied resource is not a valid stream resource|Argument #1 \(\$stream\) must be an open stream resource)

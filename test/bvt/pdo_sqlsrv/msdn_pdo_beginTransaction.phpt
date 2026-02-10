@@ -7,7 +7,7 @@ starts a transaction, insert 2 rows and commit the transaction
     require('connect.inc');
     
     //make connection and create a temporaty table
-    $conn = new PDO( "sqlsrv:Server=$server; Database = $databaseName ", "$uid", "$pwd");
+    $conn = getPdoConnection();
     $tableName = "pdoBeginTransaction";
     dropTable($conn, $tableName);
 

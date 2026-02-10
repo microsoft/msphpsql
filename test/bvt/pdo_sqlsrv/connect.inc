@@ -1,8 +1,14 @@
 <?php
-$server = 'TARGET_SERVER';
-$databaseName = 'TARGET_DATABASE';
-$uid = 'TARGET_USERNAME';
-$pwd = 'TARGET_PASSWORD';
+
+function getPdoConnection($additionalOptions = array()) {
+    $server = 'TARGET_SERVER';
+    $databaseName = 'TARGET_DATABASE';
+    $uid = 'TARGET_USERNAME';
+    $pwd = 'TARGET_PASSWORD';
+    $connectOptions = 'Encrypt=no';
+
+    return new PDO( "sqlsrv:Server=$server ; Database = $databaseName ; $connectOptions", "$uid", "$pwd", $additionalOptions);
+}
 
 function dropTable($conn, $tableName)
 {

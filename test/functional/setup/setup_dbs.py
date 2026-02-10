@@ -22,7 +22,7 @@ def populateTables(conn_options, dbname):
     executeBulkCopy(conn_options, dbname, '168256', '168256')
 
 def executeBulkCopy(conn_options, dbname, tblname, datafile):
-    redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q'
+    redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q -C'
     inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options
     executeCommmand(inst_command)
 
@@ -57,7 +57,8 @@ if __name__ == '__main__':
 
     current_working_dir=os.getcwd()
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
-    conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '
+    # Add -C flag to trust server certificate (required for ODBC 18 with self-signed certs)
+    conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' -C '
 
     # In Azure, assume an empty test database has been created using Azure portal
     if (args.AZURE.lower() == 'no'):

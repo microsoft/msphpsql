@@ -7,8 +7,7 @@ Query insert into a table
 /* Connect to the local server using Windows Authentication and
 specify the AdventureWorks database as the database in use. */
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection();
 if( $conn === false )
 {
      echo "Could not connect.\n";

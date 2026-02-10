@@ -73,7 +73,7 @@ zombied streams after sqlsrv_stmt_cancel.
 
 ?>
 --EXPECTREGEX--
-Source: Amazon.com \- As it turned out, Led Zeppelins infamous 1969 debut album w
+Source: Amazon.com -? As it turned out, Led Zeppelins infamous 1969 debut album w
 as indicative of the decade to come--one that, fittingly, this band helped defin
 e with its decadently exaggerated, bowdlerized blues-rock. In shrieker Robert Pl
 ant, ex-Yardbird Jimmy Page found a vocalist who could match his guitar pyrotech
@@ -81,7 +81,7 @@ nics, and the band pounded out its music with swaggering ferocity and Richter-sc
 ale-worthy volume. Pumping up blues classics such as Otis Rushs I Cant Quit You 
 Baby and Howlin Wolfs How Many More Times into near-cartoon parodies, the band a
 lso hinted at things to come with the manic Communication Breakdown and the lumb
-ering set stopper Dazed and Confused. \<I\>--Billy Altman\<\/I\>
-Source: Amazon.com essential recording - Most critics complain \<I\>Back in Black\<
-feof\(\): supplied resource is not a valid stream resource
-feof\(\): supplied resource is not a valid stream resource
+ering set stopper Dazed and Confused. (<I>|\<I\>)--Billy Altman(<\/I>|\<\/I\>)
+Source: Amazon.com essential recording - Most critics complain (<I>|\<I\>)Back in Black(<|\<)
+feof\(\): (supplied resource is not a valid stream resource|Argument #1 \(\$stream\) must be an open stream resource)
+feof\(\): (supplied resource is not a valid stream resource|Argument #1 \(\$stream\) must be an open stream resource)
