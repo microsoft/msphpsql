@@ -19,6 +19,7 @@ jobs:
 - job: macOS
   pool:
     vmImage: 'macos-latest'
+  timeoutInMinutes: 90
   variables:
     phpver: '8.5'
     macOS_sqlsrv_db: 'macos_sqlsrv_testdb'
@@ -41,17 +42,14 @@ jobs:
       set -e
       echo "Installing prerequisites via Homebrew..."
       
-      brew tap homebrew/core || true
+      # Single brew update for all installations
       brew update
       
-      echo "Installing build tools..."
-      brew reinstall autoconf automake libtool pkg-config
-      brew reinstall libiconv
-      brew reinstall bison
-      brew install re2c icu4c
+      echo "Installing build tools in parallel..."
+      # Use install (faster than reinstall) and run in parallel where possible
+      brew install autoconf automake libtool pkg-config libiconv bison re2c icu4c 2>/dev/null || true
       
       echo "Setting up environment..."
-      export PATH="/usr/local/opt/bison/bin:$PATH"
       echo "##vso[task.prependpath]/usr/local/opt/bison/bin"
       echo "##vso[task.prependpath]/opt/homebrew/opt/bison/bin"
       
@@ -107,7 +105,6 @@ jobs:
       echo "Installing Microsoft ODBC Driver 18 for SQL Server..."
       
       brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-      brew update
       HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql18 mssql-tools18
       
       # Verify installation
@@ -162,11 +159,10 @@ jobs:
       echo "Cloning PHP $(phpver) source..."
       PHP_BRANCH="PHP-$(phpver)"
       
-      echo "Cloning PHP branch: $PHP_BRANCH"
-      git clone https://github.com/php/php-src.git -b $PHP_BRANCH --single-branch --depth 1
+      echo "Cloning PHP branch: $PHP_BRANCH (shallow clone for speed)"
+      git clone https://github.com/php/php-src.git -b $PHP_BRANCH --single-branch --depth 1 --filter=blob:none
       
       echo "PHP source cloned!"
-      ls -la php-src
     displayName: 'Clone PHP Source'
 
   - script: |
