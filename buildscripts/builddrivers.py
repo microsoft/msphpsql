@@ -78,7 +78,7 @@ class BuildDriver(object):
         already exists, this will prompt user whether to rebuild, clean, or superclean, the last option
         will remove the entire php source directory.
         
-        :param  root_dir: the C:\ drive
+        :param  root_dir: the C:\\ drive
         :param  work_dir: the directory of this script
         :outcome: the old binaries, if exist, will be removed
         """

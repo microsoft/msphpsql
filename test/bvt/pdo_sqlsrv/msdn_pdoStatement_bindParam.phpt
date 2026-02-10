@@ -5,7 +5,7 @@ after a variable is bound, changing the value changes the value passed in the qu
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+$conn = getPdoConnection();
 
 $contact = "Sales Agent";
 $stmt = $conn->prepare("select * from Person.ContactType where name = ?");

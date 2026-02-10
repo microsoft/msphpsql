@@ -3,7 +3,7 @@
 //
 // Contents: Utility functions used by both connection or statement functions
 // 
-// Microsoft Drivers 5.12 for PHP for SQL Server
+// Microsoft Drivers 5.13 for PHP for SQL Server
 // Copyright(c) Microsoft Corporation
 // All rights reserved.
 // MIT License
@@ -689,6 +689,18 @@ void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int
                 err.transferred();
                 p = p->next;
             }
+        }
+        else {
+            // Failed to retrieve ODBC error - create a minimal error with HY000 (general error)
+            // This indicates that both SQLGetDiagRecW and SQLGetDiagFieldW failed to retrieve error information
+            error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
+            error->sqlstate = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_SQLSTATE_BUFSIZE));
+            error->native_message = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_MAX_ERROR_MESSAGE_LENGTH + 1));
+            strcpy_s(reinterpret_cast<char*>(error->sqlstate), SQL_SQLSTATE_BUFSIZE, "HY000");
+            strcpy_s(reinterpret_cast<char*>(error->native_message), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, 
+                     "The ODBC operation failed. Diagnostic information is not available from the driver.");
+            error->native_code = -1;
+            error->format = false;
         }
 
         // core_sqlsrv_get_odbc_error() returns the error_code of size SQL_SQLSTATE_BUFSIZE,

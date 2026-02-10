@@ -6,8 +6,7 @@ call a stored procedure (SQLSRV Driver) and retrieve the errorNumber that is ret
 <?php
 	// Connect to the database
 	require('connect.inc');
-	$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd");
-	$conn = sqlsrv_connect( $server, $connectionInfo);
+	$conn = getSqlsrvConnection();
 
 	if ($conn === false){
 		echo "Could not connect.\n";

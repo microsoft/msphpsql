@@ -5,7 +5,7 @@ call a stored procedure and retrieve the errorNumber that is returned
 --FILE--
 <?php
 	require('connect.inc');
-	$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd");
+	$conn = getPdoConnection();
 
 	dropProc($conn, 'sp_Test_Double');
 

@@ -5,7 +5,7 @@ sets the query timeout attribute
 --FILE--
 <?php
 require('connect.inc');
-$conn = new PDO( "sqlsrv:server=$server ; Database = $databaseName", "$uid", "$pwd", array('MultipleActiveResultSets'=>false )  );
+$conn = getPdoConnection(array('MultipleActiveResultSets'=>false));
 
 $stmt = $conn->prepare('SELECT * FROM Person.ContactType');
 

@@ -8,31 +8,43 @@
 
 */
 
-// TO BE DELETED
-function connect($options=array())
+// TO BE DELETED - wrapped in function_exists to avoid redeclaration error
+if (!function_exists('connect')) {
+function connect($options=array(), $catchErrors = true)
 {
-  try 
-  {
-    // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
-    // which does not support switching databases
-    require  'MsSetup.inc';
-    $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;ConnectionPooling=false;" , $uid, $pwd, $options); 
-    $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-    return $conn;
-  }
-  
-  catch( PDOException $e ) 
-  {
-    var_dump( $e );
-    exit;
-  }
-    
-  catch(Exception $e) 
-  {
-     var_dump( $e );
-     exit;
-  }
+    if ($catchErrors)
+    {
+        try 
+        {
+            // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
+            // which does not support switching databases
+            require  'MsSetup.inc';
+            $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;Encrypt=$encrypt;ConnectionPooling=false;" , $uid, $pwd, $options); 
+            $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+            return $conn;
+        }
+
+        catch( PDOException $e ) 
+        {
+            var_dump( $e );
+            exit;
+        }
+
+        catch(Exception $e) 
+        {
+            var_dump( $e );
+            exit;
+        }
+    }
+    else
+    {
+        require  'MsSetup.inc';
+        $conn = new PDO( "sqlsrv:Server=$server;database=$databaseName;Driver=$driver;Encrypt=$encrypt;ConnectionPooling=false;" , $uid, $pwd, $options); 
+        $conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+        return $conn;
+    }
 }
+} // end function_exists('connect')
 
 /**
  * Create a table
@@ -296,38 +308,45 @@ function is_col_enc()
         return true;
 }
 
+if (!function_exists('teardown')) {
 function teardown()
 {
     // TBD
 }
+} // end function_exists('teardown')
 
-
+if (!function_exists('my_print_r')) {
 function my_print_r( $to_print )
 {
    global $verbose;
    if($verbose)
       print_r($to_print);
 }
+} // end function_exists('my_print_r')
 
-
+if (!function_exists('TestMode')) {
 function TestMode()
 {
     $testMode = getenv('PHPT_EXEC');
     return ($testMode ? true : false);
 }
+} // end function_exists('TestMode')
 
+if (!function_exists('IsPdoMode')) {
 function IsPdoMode()
 {
     require  'MsSetup.inc';
     return (($driverType === true) ? true : false);
 }
+} // end function_exists('IsPdoMode')
 
-
+if (!function_exists('TraceMode')) {
 function TraceMode()
 {
     require  'MsSetup.inc';
     return ((!TestMode() && $traceEnabled) ? true : false);
 }
+} // end function_exists('TraceMode')
 
 function IsMarsSupported()
 {

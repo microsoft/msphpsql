@@ -5,8 +5,7 @@ retrieves UTF-8 encoded data by specifying the UTF-8 character set when making t
 --FILE--
 <?php
 require('connect.inc');
-$connectionInfo = array( "Database"=>"$databaseName", "UID"=>"$uid", "PWD"=>"$pwd", "CharacterSet" => 'UTF-8');
-$conn = sqlsrv_connect( $server, $connectionInfo);
+$conn = getSqlsrvConnection(array("CharacterSet" => 'UTF-8'));
 
 if ( $conn === false ) {
    echo "Could not connect.<br>";
@@ -25,7 +24,7 @@ $tsql1 = "UPDATE Production.ProductReview
 // 
 $reviewID = 3;
 
-$comments = mb_convert_encoding("testing 1, 2, 3, 4.  Testing.", 'ISO-8859-1', 'UTF-8');
+$comments = iconv("ISO-8859-1", "UTF-8", "testing 1, 2, 3, 4.  Testing.");
 $params1 = array(
                   array( $comments, null ),
                   array( $reviewID, null )

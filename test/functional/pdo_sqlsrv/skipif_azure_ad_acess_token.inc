@@ -8,8 +8,11 @@ if (!extension_loaded("pdo_sqlsrv")) {
 }
 
 require_once("MsSetup.inc");
+// Use MsCommon_mid-refactor.inc to match what the test uses, avoiding function redeclaration
+require_once("MsCommon_mid-refactor.inc");
 
-$conn = new PDO("sqlsrv:server = $server; driver=$driver;", $uid, $pwd);
+// MsCommon_mid-refactor.inc connect() signature: connect($keywords = '', $options=array(), $errmode, $disableCE)
+$conn = connect();
 if ($conn === false) {
     die("skip Could not connect during SKIPIF.");
 }
