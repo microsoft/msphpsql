@@ -18,6 +18,7 @@
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
+// Test NextChar with NULL pointer
 
 #include "localization.hpp"
 
@@ -160,7 +161,10 @@ class IConvCachePool
                 if ( INVALID_ICONV != pNewCache->GetIConv() )
                     pCache = pNewCache;
                 else
+                {
                     delete pNewCache;
+                    pCache = NULL;  // FIXED: Explicitly set to NULL to avoid returning uninitialized pointer
+                }
             }
         }
         return pCache;
@@ -1084,6 +1088,10 @@ char * SystemLocale::NextChar( UINT codepage, const char * start, size_t cchByte
 
 char * SystemLocale::NextChar( UINT codepage, const char * start )
 {
+    // FIXED: Add NULL pointer check to prevent crash
+    if ( NULL == start )
+        return NULL;
+    
     // Just assume some large max buffer size since caller is saying
     // start is null terminated.
     return NextChar( codepage, start, DWORD_MAX );
