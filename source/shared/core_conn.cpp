@@ -824,7 +824,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 const char* get_processor_arch( void )
 {
     // processor architectures
-    const char* PROCESSOR_ARCH[] = {"x86", "x64", "arm64"};
+    const char* PROCESSOR_ARCH[] = {"x86", "x64", "arm64", "aarch64"};
 #ifdef _WIN32
     SYSTEM_INFO sys_info;
     GetSystemInfo(&sys_info);
@@ -839,6 +839,8 @@ const char* get_processor_arch( void )
     }
 #elif defined(__arm64__)
     return PROCESSOR_ARCH[2];
+#elif defined(__aarch64__)
+    return PROCESSOR_ARCH[3];
 #elif defined(__x86_64__)
     return PROCESSOR_ARCH[1];
 #else

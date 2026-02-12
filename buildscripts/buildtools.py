@@ -88,10 +88,21 @@ class BuildUtil(object):
         return 'php_' + driver + '_' + version + '_' + self.thread + suffix
 
     def compiler_version(self, sdk_dir: str) -> str:
-        """Return the compiler version. Always returns 'vs17' (Visual Studio 2022)."""
+        """Return the compiler version based on PHP version.
+        PHP 8.4+ uses vs17 (Visual Studio 2022), PHP 8.3 and below use vs16 (Visual Studio 2019)."""
         if self.vc == '':
-            self.vc = 'vs17'
-            print('Compiler: ' + self.vc)
+            major_ver = self.major_version()
+            # Parse major.minor version (e.g., "8.4" -> 8.4)
+            try:
+                version_num = float(major_ver)
+                if version_num >= 8.4:
+                    self.vc = 'vs17'
+                else:
+                    self.vc = 'vs16'
+            except ValueError:
+                # Default to vs17 if parsing fails
+                self.vc = 'vs17'
+            print('Compiler: ' + self.vc + ' (PHP ' + major_ver + ')')
         return self.vc
 
     def phpsrc_root(self, sdk_dir: str) -> str:
