@@ -151,7 +151,7 @@ struct pdo_encrypt_set_func
         if (found != std::string::npos)
             val_str.erase(found + 1);
 
-        transform(val_str.begin(), val_str.end(), val_str.begin(), ::tolower);
+        transform(val_str.begin(), val_str.end(), val_str.begin(), [](unsigned char c) { return static_cast<char>(::tolower(c)); });
 
         // For backward compatibility, convert true/1 to yes
         std::string attr;

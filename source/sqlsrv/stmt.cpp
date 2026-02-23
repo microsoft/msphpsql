@@ -120,7 +120,7 @@ namespace SSCursorTypes {
 ss_sqlsrv_stmt::ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv ) :
     sqlsrv_stmt( c, handle, e, drv ),
     prepared( false ),
-    conn_index( -1 ),
+    conn_index( static_cast<zend_ulong>(-1) ),
     params_z( NULL ),
     fetch_field_names( NULL ),
     fetch_fields_count ( 0 )
@@ -526,7 +526,10 @@ PHP_FUNCTION( sqlsrv_field_metadata )
     }
 
     // return our built collection and transfer ownership
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from RETURN_ZVAL macro
     RETURN_ZVAL(&result_meta_data, 1, 1);
+#pragma warning(pop)
 
     }
     catch( core::CoreException& ) {
@@ -914,7 +917,10 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             }
 
          } //if( class_entry->constructor )
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from RETURN_ZVAL macro
 		RETURN_ZVAL( &retval_z, 1, 1 );
+#pragma warning(pop)
     }
 
     catch( core::CoreException& ) {
@@ -1101,7 +1107,10 @@ PHP_FUNCTION( sqlsrv_get_field )
                                &sqlsrv_php_type_out );
         convert_to_zval( stmt, sqlsrv_php_type_out, field_value, field_len, retval_z );
         sqlsrv_free( field_value );
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from RETURN_ZVAL macro
         RETURN_ZVAL( &retval_z, 1, 1 );
+#pragma warning(pop)
     }
 
     catch( core::CoreException& ) {
@@ -1808,7 +1817,7 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
     // get the numer of columns in the result set
     SQLSMALLINT num_cols = -1;
 
-    num_cols = stmt->current_meta_data.size();
+    num_cols = static_cast<SQLSMALLINT>(stmt->current_meta_data.size());
     bool getMetaData = false;
 
     if (num_cols == 0) {
@@ -1823,7 +1832,7 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
 
     try {
         if (getMetaData) {
-            for (int i = 0; i < num_cols; i++) {
+            for (SQLSMALLINT i = 0; i < num_cols; i++) {
                 sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
                 core_meta_data = core_sqlsrv_field_metadata(stmt, i);
                 stmt->current_meta_data.push_back(core_meta_data.get());
@@ -1834,7 +1843,7 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
         throw;
     }
 
-    SQLSRV_ASSERT(stmt->current_meta_data.size() == num_cols, "Meta data vector out of sync" );
+    SQLSRV_ASSERT(static_cast<SQLSMALLINT>(stmt->current_meta_data.size()) == num_cols, "Meta data vector out of sync" );
 
     return num_cols;
 }
@@ -1881,7 +1890,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
     for( int i = 0; i < num_cols; ++i ) {
         SQLLEN field_len = -1;
 
-        core_sqlsrv_get_field( stmt, i, sqlsrv_php_type, true /*prefer string*/,
+        core_sqlsrv_get_field( stmt, static_cast<SQLUSMALLINT>(i), sqlsrv_php_type, true /*prefer string*/,
                                     field_value, &field_len, false /*cache_field*/, &sqlsrv_php_type_out );
 
         zval field;

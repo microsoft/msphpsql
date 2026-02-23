@@ -1960,7 +1960,7 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 
 // Simple macro to alleviate unused variable warnings.  These are optimized out by the compiler.
 // We use this since the unused variables are buried in the PHP_FUNCTION macro.
-#define SQLSRV_UNUSED( var )   var;
+#define SQLSRV_UNUSED( var )   (void)(var);
 
 // do a heap check in debug mode, but only print errors, not all of the allocations
 #define MEMCHECK_SILENT 1

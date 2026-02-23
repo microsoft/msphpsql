@@ -565,7 +565,10 @@ PHP_FUNCTION( sqlsrv_errors )
 		zval_ptr_dtor(&err_z);
 		RETURN_NULL();
 	}
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from RETURN_ZVAL macro
 	RETURN_ZVAL( &err_z, 1, 1 );
+#pragma warning(pop)
 }
 
 // sqlsrv_configure( string $setting, mixed $value )

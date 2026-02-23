@@ -117,7 +117,7 @@ struct bool_conn_str_func {
         }
 
         attr = Z_STRVAL_P(value);
-        transform(attr.begin(), attr.end(), attr.begin(), ::tolower);
+        transform(attr.begin(), attr.end(), attr.begin(), [](unsigned char c) { return static_cast<char>(::tolower(c)); });
 
         char temp_str[MAX_CONN_VALSTRING_LEN];
         snprintf(temp_str,
