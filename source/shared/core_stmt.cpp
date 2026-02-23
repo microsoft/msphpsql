@@ -948,7 +948,7 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt )
     else {
         // Use SQLRowCount to determine if there is a rows status waiting
         rows_affected = core::SQLRowCount( stmt );
-        stmt->row_count = rows_affected;
+        stmt->row_count = static_cast<long>(rows_affected);
     }
 
     return (num_cols != 0) || (rows_affected > 0);
@@ -1606,7 +1606,7 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
 
     char buffer[50] = "  ";             // A buffer with TWO blank spaces, as leeway
     int offset = 1 + is_negative;       // for cases like 9.* to 10.* and the minus sign if needed
-    int src_length = strnlen_s(src);
+    int src_length = static_cast<int>(strnlen_s(src));
 
     if (add_leading_zero) {
         buffer[offset++] = '0';         // leading zero added
@@ -1618,10 +1618,10 @@ void format_decimal_numbers(_In_ SQLSMALLINT decimals_places, _In_ SQLSMALLINT f
 
     // If no need to adjust decimal places, skip formatting
     if (decimals_places != NO_CHANGE_DECIMAL_PLACES) {
-        int num_decimals = src_length - (pt - src) - 1;
+        int num_decimals = src_length - static_cast<int>(pt - src) - 1;
 
         if (num_decimals > scale) {
-            last_pos = round_up_decimal_numbers(buffer, (pt - src) + offset, scale, offset, last_pos);
+            last_pos = round_up_decimal_numbers(buffer, static_cast<int>(pt - src) + offset, scale, offset, last_pos);
         }
     }
 
@@ -1647,7 +1647,7 @@ void get_field_as_string(_Inout_ sqlsrv_stmt *stmt, _In_ SQLUSMALLINT field_inde
 {
     SQLRETURN r;
     SQLSMALLINT c_type;
-    SQLSMALLINT sql_field_type = 0;
+    SQLLEN sql_field_type = 0;
     SQLSMALLINT extra = 0;
     SQLLEN field_len_temp = 0;
     SQLLEN sql_display_size = 0;
@@ -1896,7 +1896,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
 void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits)
 {
     char* value = Z_STRVAL_P(param_z);
-    int value_len = Z_STRLEN_P(param_z);
+    int value_len = static_cast<int>(Z_STRLEN_P(param_z));
 
     // If the length is greater than maxDecimalStrLen, do not convert the string
     // 6 is derived from: 1 for the decimal point; 1 for sign of the number; 1 for 'e' or 'E' (scientific notation);
@@ -1943,14 +1943,14 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
 			return;		// decimal point not found
 		}
 
-        int src_length = strnlen_s(src);
-        int num_decimals = src_length - (pt - src) - 1;
+        int src_length = static_cast<int>(strnlen_s(src));
+        int num_decimals = src_length - static_cast<int>(pt - src) - 1;
 		if (num_decimals <= decimal_digits) {
 			return;     // no need to adjust number of decimals
 		}
 
         memcpy_s(buffer + offset, src_length, src, src_length);
-        round_up_decimal_numbers(buffer, (pt - src) + offset, decimal_digits, offset, src_length + offset);
+        round_up_decimal_numbers(buffer, static_cast<int>(pt - src) + offset, decimal_digits, offset, src_length + offset);
     }
     else {
         int power = atoi(exp+1);
@@ -1961,24 +1961,24 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
         int num_decimals = 0;
         if (power == 0) {
             // Simply chop off the exp part
-            int length = (exp - src);
+            int length = static_cast<int>(exp - src);
             memcpy_s(buffer + offset, length, src, length);
 
             if (pt != NULL) {
                 // Adjust decimal places only if decimal point is found and number of decimals more than decimal_digits
-                num_decimals = exp - pt - 1;
+                num_decimals = static_cast<int>(exp - pt) - 1;
                 if (num_decimals > decimal_digits) {
-                    round_up_decimal_numbers(buffer, (pt - src) + offset, decimal_digits, offset, length + offset);
+                    round_up_decimal_numbers(buffer, static_cast<int>(pt - src) + offset, decimal_digits, offset, length + offset);
                 }
             }
         } else {
             int oldpos = 0;
             if (pt == NULL) {
-                oldpos = exp - src;     // Decimal point not found, use the exp sign
+                oldpos = static_cast<int>(exp - src);     // Decimal point not found, use the exp sign
             }
             else {
-                oldpos = pt - src;
-                num_decimals = exp - pt - 1;
+                oldpos = static_cast<int>(pt - src);
+                num_decimals = static_cast<int>(exp - pt) - 1;
                 if (power > 0 && num_decimals <= power) {
                     return;             // The result will be a whole number, do nothing and return
                 }
@@ -3563,7 +3563,7 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
         // This is the table-valued parameter
         if (current_row < num_rows) {
             // Loop through the table parameter columns and populate each cell's placeholder whenever applicable
-            for (size_t i = 0; i < tvp_columns.size(); i++) {
+            for (SQLUSMALLINT i = 0; i < static_cast<SQLUSMALLINT>(tvp_columns.size()); i++) {
                 tvp_columns[i]->populate_cell_placeholder(stmt, current_row);
             }
 

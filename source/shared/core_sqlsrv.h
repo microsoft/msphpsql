@@ -32,11 +32,18 @@
 #endif
 
 // Suppress warnings from PHP headers
+// These are third-party headers we cannot modify, so we suppress warnings here
+// C4100: unreferenced formal parameter
+// C4127: conditional expression is constant
 // C4146: unary minus operator applied to unsigned type (PHP 8.5+ php_random_uint128.h)
-// C4244: conversion with possible loss of data (various PHP headers)
+// C4244: conversion with possible loss of data
+// C4267: conversion from 'size_t' to smaller type
+// C4456: declaration hides previous local declaration
+// C4457: declaration hides function parameter
+// C4706: assignment within conditional expression
 #if defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable: 4146 4244)
+#pragma warning(disable: 4100 4127 4146 4244 4267 4456 4457 4706)
 #endif
 
 #include "php.h"
