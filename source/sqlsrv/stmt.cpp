@@ -1441,7 +1441,7 @@ void stmt_option_ss_scrollable:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
     }
 
     const char* scroll_type = Z_STRVAL_P( value_z );
-    unsigned long cursor_type = -1;
+    unsigned long cursor_type = ULONG_MAX;
 
     // find which cursor type they would like and set the ODBC statement attribute as such
     if( !stricmp( scroll_type, SSCursorTypes::QUERY_OPTION_SCROLLABLE_STATIC )) {
