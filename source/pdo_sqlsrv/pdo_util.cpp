@@ -680,7 +680,7 @@ void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int
     }
     else {
         if(core_sqlsrv_get_odbc_error(ctx, 1, error, SEV_ERROR, true)) {
-            unsigned int rec_number = 2;
+            SQLSMALLINT rec_number = 2;
             sqlsrv_error_auto_ptr err;
             sqlsrv_error *p = error;
 

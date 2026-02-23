@@ -690,7 +690,7 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
 
     // set the driver_data and methods to complete creation of the PDO object
     dbh->driver_data = conn;
-    dbh->error_mode = prev_err_mode;    // reset the error mode
+    dbh->error_mode = static_cast<decltype(dbh->error_mode)>(prev_err_mode);    // reset the error mode
     dbh->alloc_own_columns = 1;         // we do our own memory management for columns
     dbh->native_case = PDO_CASE_NATURAL;// SQL Server supports mixed case types
 
@@ -700,7 +700,7 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
         if ( Z_TYPE( server_z ) == IS_STRING ) {
             zend_string_release( Z_STR( server_z ));
         }
-        dbh->error_mode = prev_err_mode;    // reset the error mode
+        dbh->error_mode = static_cast<decltype(dbh->error_mode)>(prev_err_mode);    // reset the error mode
         g_pdo_henv_cp->last_error().reset();    // reset the last error; callee will check if last_error exist before freeing it and setting it to NULL
 
         return 0;
@@ -774,8 +774,10 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
     PDO_LOG_DBH_ENTRY;
 
     hash_auto_ptr pdo_stmt_options_ht;
+#if PHP_VERSION_ID < 80100
     sqlsrv_malloc_auto_ptr<char> sql_rewrite;
     size_t sql_rewrite_len = 0;
+#endif
     sqlsrv_malloc_auto_ptr<pdo_sqlsrv_stmt> driver_stmt;
     hash_auto_ptr placeholders;
     sqlsrv_malloc_auto_ptr<sql_string_parser> sql_parser;
@@ -877,7 +879,7 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
                 static_cast<int>(stmt->query_stringlen), placeholders);
 #else
             sql_parser = new (sqlsrv_malloc(sizeof(sql_string_parser))) sql_string_parser(*driver_dbh, ZSTR_VAL(stmt->query_string),
-                ZSTR_LEN(stmt->query_string), placeholders);
+                static_cast<int>(ZSTR_LEN(stmt->query_string)), placeholders);
 #endif
             sql_parser->parse_sql_string();
             driver_stmt->placeholders = placeholders;
@@ -970,8 +972,9 @@ zend_long pdo_sqlsrv_dbh_do(_Inout_ pdo_dbh_t *dbh, _In_ const zend_string *sql)
 #if PHP_VERSION_ID < 80100
         SQLRETURN execReturn = core_sqlsrv_execute(driver_stmt, sql, static_cast<int>(sql_len));
 #else
-        SQLRETURN execReturn = core_sqlsrv_execute(driver_stmt, ZSTR_VAL(sql), ZSTR_LEN(sql));
+        SQLRETURN execReturn = core_sqlsrv_execute(driver_stmt, ZSTR_VAL(sql), static_cast<int>(ZSTR_LEN(sql)));
 #endif
+        (void)execReturn;
         // since the user can give us a compound statement, we return the row count for the last set, and since the row count
         // isn't guaranteed to be valid until all the results have been fetched, we fetch them all first.
 
@@ -1656,7 +1659,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         driver_stmt->~sqlsrv_stmt();
     } catch( core::CoreException& ) {
         // restore error handling to its previous mode
-        dbh->error_mode = prev_err_mode;
+        dbh->error_mode = static_cast<decltype(dbh->error_mode)>(prev_err_mode);
 
         // copy any errors on the statement to the connection so that the user sees them, since the statement is released
         // before this method returns
@@ -1678,7 +1681,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
     }
 
     // restore error handling to its previous mode
-    dbh->error_mode = prev_err_mode;
+    dbh->error_mode = static_cast<decltype(dbh->error_mode)>(prev_err_mode);
 
     // copy the last ID string and return it
     str = reinterpret_cast<char*>(sqlsrv_malloc(cbID, sizeof(char), 1));     // include space for null terminator
@@ -1898,7 +1901,7 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
 }
 
 // This method is not implemented by this driver.
-pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _Inout_ pdo_dbh_t *dbh, int kind )
+pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _Inout_ pdo_dbh_t *dbh, int /*kind*/ )
 {
     PDO_RESET_DBH_ERROR;
     PDO_VALIDATE_CONN;
@@ -1909,7 +1912,7 @@ pdo_sqlsrv_function_entry *pdo_sqlsrv_get_driver_methods( _Inout_ pdo_dbh_t *dbh
     // As per documentation, simply return false if the method does not exist
     // https://www.php.net/manual/en/function.is-callable.php
     // But user can call PDO::errorInfo() to check the error message if necessary
-    CHECK_CUSTOM_WARNING_AS_ERROR(true, driver_conn, PDO_SQLSRV_ERROR_FUNCTION_NOT_IMPLEMENTED, NULL);
+    CHECK_CUSTOM_WARNING_AS_ERROR(true, driver_conn, PDO_SQLSRV_ERROR_FUNCTION_NOT_IMPLEMENTED, NULL) {}
 
     return NULL;    // return NULL for PDO to take care of the rest
 }
@@ -2006,7 +2009,7 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
         if( stmt_options ) {
 
             HashTable* options_ht = Z_ARRVAL_P( stmt_options );
-            size_t int_key = -1;
+            size_t int_key = static_cast<size_t>(-1);
             zend_string *key = NULL;
             zval* data = NULL;
 
