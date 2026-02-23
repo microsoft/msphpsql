@@ -31,11 +31,23 @@
 #define _WCHART_DEFINED
 #endif
 
+// Suppress warnings from PHP headers
+// C4146: unary minus operator applied to unsigned type (PHP 8.5+ php_random_uint128.h)
+// C4244: conversion with possible loss of data (various PHP headers)
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4146 4244)
+#endif
+
 #include "php.h"
 #include "php_globals.h"
 #include "php_ini.h"
 #include "ext/standard/php_standard.h"
 #include "ext/standard/info.h"
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #ifndef _WIN32 // !_WIN32
 #include "FormattedPrint.h"
