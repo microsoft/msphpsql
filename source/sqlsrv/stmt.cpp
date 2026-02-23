@@ -120,7 +120,7 @@ namespace SSCursorTypes {
 ss_sqlsrv_stmt::ss_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv ) :
     sqlsrv_stmt( c, handle, e, drv ),
     prepared( false ),
-    conn_index( -1 ),
+    conn_index( static_cast<zend_ulong>(-1) ),
     params_z( NULL ),
     fetch_field_names( NULL ),
     fetch_fields_count ( 0 )
@@ -526,7 +526,10 @@ PHP_FUNCTION( sqlsrv_field_metadata )
     }
 
     // return our built collection and transfer ownership
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from RETURN_ZVAL macro
     RETURN_ZVAL(&result_meta_data, 1, 1);
+#pragma warning(pop)
 
     }
     catch( core::CoreException& ) {
@@ -870,6 +873,8 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 
 				int i = 0;
 				zval* value_z = NULL;
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
 				ZEND_HASH_FOREACH_VAL( ctor_params_ht, value_z ) {
 					zr = ( value_z ) ? SUCCESS : FAILURE;
 					CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name, NULL ) {
@@ -878,6 +883,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 					ZVAL_COPY_VALUE(&params_m[i], value_z);
 					i++;
 				} ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
             } //if( !Z_ISUNDEF( ctor_params_z ))
 
             // call the constructor function itself.
@@ -911,7 +917,10 @@ PHP_FUNCTION( sqlsrv_fetch_object )
             }
 
          } //if( class_entry->constructor )
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from RETURN_ZVAL macro
 		RETURN_ZVAL( &retval_z, 1, 1 );
+#pragma warning(pop)
     }
 
     catch( core::CoreException& ) {
@@ -1098,7 +1107,10 @@ PHP_FUNCTION( sqlsrv_get_field )
                                &sqlsrv_php_type_out );
         convert_to_zval( stmt, sqlsrv_php_type_out, field_value, field_len, retval_z );
         sqlsrv_free( field_value );
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from RETURN_ZVAL macro
         RETURN_ZVAL( &retval_z, 1, 1 );
+#pragma warning(pop)
     }
 
     catch( core::CoreException& ) {
@@ -1193,10 +1205,12 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
 
         HashTable* params_ht = Z_ARRVAL_P( params_z );
 
-        zend_ulong index = -1;
+        zend_ulong index = 0;
         zend_string *key = NULL;
         zval* param_z = NULL;
 
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
         ZEND_HASH_FOREACH_KEY_VAL( params_ht, index, key, param_z ) {
             // make sure it's an integer index
             int type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
@@ -1261,6 +1275,7 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
                 decimal_digits );
 
         } ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
     }
     catch( core::CoreException& ) {
         stmt->free_param_data();
@@ -1441,7 +1456,7 @@ void stmt_option_ss_scrollable:: operator()( _Inout_ sqlsrv_stmt* stmt, stmt_opt
     }
 
     const char* scroll_type = Z_STRVAL_P( value_z );
-    unsigned long cursor_type = -1;
+    unsigned long cursor_type = ULONG_MAX;
 
     // find which cursor type they would like and set the ODBC statement attribute as such
     if( !stricmp( scroll_type, SSCursorTypes::QUERY_OPTION_SCROLLABLE_STATIC )) {
@@ -1536,7 +1551,7 @@ void convert_to_zval( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_
 // put in the column size and scale/decimal digits of the sql server type
 // these values are taken from the MSDN page at http://msdn2.microsoft.com/en-us/library/ms711786(VS.85).aspx
 // for SQL_VARBINARY, SQL_VARCHAR, and SQL_WLONGVARCHAR types, see https://msdn.microsoft.com/en-CA/library/ms187993.aspx
-bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, _In_ sqlsrv_sqltype sqlsrv_type, _Inout_ SQLULEN* column_size,
+bool determine_column_size_or_precision( sqlsrv_stmt const* /*stmt*/, _In_ sqlsrv_sqltype sqlsrv_type, _Inout_ SQLULEN* column_size,
                                          _Out_ SQLSMALLINT* decimal_digits )
 {
     *decimal_digits = 0;
@@ -1802,7 +1817,7 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
     // get the numer of columns in the result set
     SQLSMALLINT num_cols = -1;
 
-    num_cols = stmt->current_meta_data.size();
+    num_cols = static_cast<SQLSMALLINT>(stmt->current_meta_data.size());
     bool getMetaData = false;
 
     if (num_cols == 0) {
@@ -1817,7 +1832,7 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
 
     try {
         if (getMetaData) {
-            for (int i = 0; i < num_cols; i++) {
+            for (SQLSMALLINT i = 0; i < num_cols; i++) {
                 sqlsrv_malloc_auto_ptr<field_meta_data> core_meta_data;
                 core_meta_data = core_sqlsrv_field_metadata(stmt, i);
                 stmt->current_meta_data.push_back(core_meta_data.get());
@@ -1828,7 +1843,7 @@ SQLSMALLINT get_resultset_meta_data(_Inout_ sqlsrv_stmt * stmt)
         throw;
     }
 
-    SQLSRV_ASSERT(stmt->current_meta_data.size() == num_cols, "Meta data vector out of sync" );
+    SQLSRV_ASSERT(static_cast<SQLSMALLINT>(stmt->current_meta_data.size()) == num_cols, "Meta data vector out of sync" );
 
     return num_cols;
 }
@@ -1875,7 +1890,7 @@ void fetch_fields_common( _Inout_ ss_sqlsrv_stmt* stmt, _In_ zend_long fetch_typ
     for( int i = 0; i < num_cols; ++i ) {
         SQLLEN field_len = -1;
 
-        core_sqlsrv_get_field( stmt, i, sqlsrv_php_type, true /*prefer string*/,
+        core_sqlsrv_get_field( stmt, static_cast<SQLUSMALLINT>(i), sqlsrv_php_type, true /*prefer string*/,
                                     field_value, &field_len, false /*cache_field*/, &sqlsrv_php_type_out );
 
         zval field;
@@ -2082,8 +2097,10 @@ bool is_valid_sqlsrv_sqltype( _In_ sqlsrv_sqltype sql_type )
 bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ sqlsrv_phptype& phptype_encoding )
 {
 	void* encoding_temp = NULL;
-	zend_ulong index = -1;
+	zend_ulong index = 0;
 	zend_string* key = NULL;
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
 	ZEND_HASH_FOREACH_KEY_PTR( g_ss_encodings_ht, index, key, encoding_temp ) {
         if (encoding_temp) {
             sqlsrv_encoding* encoding = reinterpret_cast<sqlsrv_encoding*>(encoding_temp);
@@ -2097,6 +2114,7 @@ bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ sqlsrv_p
             DIE("Fatal: Error retrieving encoding from encoding hash table.");
         }
 	} ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
 
     return false;
 }

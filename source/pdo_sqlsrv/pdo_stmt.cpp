@@ -434,7 +434,7 @@ int pdo_sqlsrv_stmt_describe_col( _Inout_ pdo_stmt_t *stmt, _In_ int colno)
 
     try {
 
-        core_meta_data = core_sqlsrv_field_metadata( reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data ), colno );
+        core_meta_data = core_sqlsrv_field_metadata( reinterpret_cast<sqlsrv_stmt*>( stmt->driver_data ), static_cast<SQLSMALLINT>(colno) );
     }
 
     catch( core::CoreException& ) {
@@ -562,7 +562,7 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
             query_len = static_cast<unsigned int>(stmt->active_query_stringlen);
 #else
             query = ZSTR_VAL(stmt->active_query_string);
-            query_len = ZSTR_LEN(stmt->active_query_string);
+            query_len = static_cast<unsigned int>(ZSTR_LEN(stmt->active_query_string));
 #endif
         }
 
@@ -582,7 +582,7 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
         else {
             if (driver_stmt->column_count == ACTIVE_NUM_COLS_INVALID) {
                 stmt->column_count = core::SQLNumResultCols( driver_stmt );
-                driver_stmt->column_count = stmt->column_count;
+                driver_stmt->column_count = static_cast<short>(stmt->column_count);
             }
             else {
                 stmt->column_count = driver_stmt->column_count;
@@ -591,7 +591,7 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
             if (driver_stmt->row_count == ACTIVE_NUM_ROWS_INVALID) {
                 // return the row count regardless if there are any rows or not
                 stmt->row_count = core::SQLRowCount( driver_stmt );
-                driver_stmt->row_count = stmt->row_count;
+                driver_stmt->row_count = static_cast<long>(stmt->row_count);
             }
             else {
                 stmt->row_count = driver_stmt->row_count;
@@ -716,7 +716,7 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
         if( driver_stmt->past_fetch_end || driver_stmt->cursor_type == SQL_CURSOR_DYNAMIC) {
 
             stmt->row_count = core::SQLRowCount( driver_stmt );
-            driver_stmt->row_count = stmt->row_count;
+            driver_stmt->row_count = static_cast<long>(stmt->row_count);
 
             // a row_count of -1 means no rows, but we change it to 0
             if( stmt->row_count == -1 ) {
@@ -763,7 +763,7 @@ int pdo_sqlsrv_stmt_fetch( _Inout_ pdo_stmt_t *stmt, _In_ enum pdo_fetch_orienta
 int pdo_sqlsrv_stmt_get_col_data( _Inout_ pdo_stmt_t *stmt, _In_ int colno,
                                  _Out_writes_bytes_opt_(*len) char **ptr, _Inout_ size_t *len, _Out_opt_ int *caller_frees)
 #else
-int pdo_sqlsrv_stmt_get_col_data(_Inout_ pdo_stmt_t *stmt, _In_ int colno, _Inout_ zval *result_z, _Inout_ enum pdo_param_type *type)
+int pdo_sqlsrv_stmt_get_col_data(_Inout_ pdo_stmt_t *stmt, _In_ int colno, _Inout_ zval *result_z, _Inout_ enum pdo_param_type * /*type*/)
 #endif
 
 {
@@ -864,7 +864,7 @@ int pdo_sqlsrv_stmt_get_col_data(_Inout_ pdo_stmt_t *stmt, _In_ int colno, _Inou
 #else
         SQLLEN len = 0;
         void *ptr = NULL;
-        core_sqlsrv_get_field(driver_stmt, colno, sqlsrv_php_type, false, ptr, &len, true, &sqlsrv_phptype_out);
+        core_sqlsrv_get_field(driver_stmt, static_cast<SQLUSMALLINT>(colno), sqlsrv_php_type, false, ptr, &len, true, &sqlsrv_phptype_out);
         if (ptr) {
             *result_z = convert_to_zval(driver_stmt, sqlsrv_phptype_out, &ptr, len);
         }
@@ -1108,7 +1108,7 @@ int pdo_sqlsrv_stmt_get_col_meta( _Inout_ pdo_stmt_t *stmt, _In_ zend_long colno
         field_meta_data* core_meta_data;
 
         // metadata should have been saved earlier
-        SQLSRV_ASSERT(colno < driver_stmt->current_meta_data.size(), "pdo_sqlsrv_stmt_get_col_meta: Metadata vector out of sync with column numbers");
+        SQLSRV_ASSERT(static_cast<size_t>(colno) < driver_stmt->current_meta_data.size(), "pdo_sqlsrv_stmt_get_col_meta: Metadata vector out of sync with column numbers");
         core_meta_data = driver_stmt->current_meta_data[colno];
 
         // add the following fields: flags, native_type, driver:decl_type, table
@@ -1223,8 +1223,8 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
         // return the row count regardless if there are any rows or not
         stmt->row_count = core::SQLRowCount( driver_stmt );
 
-        driver_stmt->column_count = stmt->column_count;
-        driver_stmt->row_count = stmt->row_count;
+        driver_stmt->column_count = static_cast<short>(stmt->column_count);
+        driver_stmt->row_count = static_cast<long>(stmt->row_count);
     }
     catch( core::CoreException& ) {
 
@@ -1454,7 +1454,7 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                     }
 
                     // and bind the parameter
-                    core_sqlsrv_bind_param( driver_stmt, static_cast<SQLUSMALLINT>( param->paramno ), direction, &(param->parameter) , php_out_type, encoding,
+                    core_sqlsrv_bind_param( driver_stmt, static_cast<SQLUSMALLINT>( param->paramno ), static_cast<SQLSMALLINT>(direction), &(param->parameter) , php_out_type, encoding,
                                             sql_type, column_size, decimal_digits);
                 }
                 break;
@@ -1491,7 +1491,7 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 
 
 // Returns a sqlsrv_phptype for a given SQL Server data type.
-sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_over_stream )
+sqlsrv_phptype pdo_sqlsrv_stmt::sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER /*size*/, _In_ bool /*prefer_string_over_stream*/ )
 {
     sqlsrv_phptype sqlsrv_phptype;
     int local_encoding = this->encoding();

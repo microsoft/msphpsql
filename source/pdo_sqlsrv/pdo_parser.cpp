@@ -91,17 +91,17 @@ inline bool string_parser::is_white_space( _In_ char c )
 }
 
 // Discard any trailing white spaces.
-int conn_string_parser::discard_trailing_white_spaces( _In_reads_(len) const char* str, _Inout_ int len )
+int conn_string_parser::discard_trailing_white_spaces( _In_reads_(buf_len) const char* str, _Inout_ int buf_len )
 {
-    const char* end = str + ( len - 1 );
+    const char* end = str + ( buf_len - 1 );
 
-    while(( this->is_white_space( *end ) ) && (len > 0) ) {
+    while(( this->is_white_space( *end ) ) && (buf_len > 0) ) {
 
-        len--;
+        buf_len--;
         end--;
     }
 
-    return len;
+    return buf_len;
 }
 
 // Discard white spaces.
@@ -122,18 +122,18 @@ bool string_parser::discard_white_spaces()
 }
 
 // Add a key-value pair to the hashtable
-void string_parser::add_key_value_pair( _In_reads_(len) const char* value, _In_ int len )
+void string_parser::add_key_value_pair( _In_reads_(val_len) const char* value, _In_ int val_len )
 {
     zval value_z;
     ZVAL_UNDEF( &value_z );
 
-    if( len == 0 ) {
+    if( val_len == 0 ) {
 
         ZVAL_STRINGL( &value_z, "", 0);
     }
     else {
 
-        ZVAL_STRINGL( &value_z, const_cast<char*>( value ), len );
+        ZVAL_STRINGL( &value_z, const_cast<char*>( value ), val_len );
     }
 
     core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z );
@@ -155,7 +155,7 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
     for( int i=0; PDO_CONN_OPTS[i].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++i )
     {
         // discard the null terminator.
-        if( new_len == ( PDO_CONN_OPTS[i].sqlsrv_len - 1 ) && !strncasecmp( key, PDO_CONN_OPTS[i].sqlsrv_name, new_len )) {
+        if( static_cast<size_t>(new_len) == ( PDO_CONN_OPTS[i].sqlsrv_len - 1 ) && !strncasecmp( key, PDO_CONN_OPTS[i].sqlsrv_name, new_len )) {
 
             this->current_key = PDO_CONN_OPTS[i].conn_option_key;
             this->current_key_name = PDO_CONN_OPTS[i].sqlsrv_name;

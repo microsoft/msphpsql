@@ -31,11 +31,30 @@
 #define _WCHART_DEFINED
 #endif
 
+// Suppress warnings from PHP headers
+// These are third-party headers we cannot modify, so we suppress warnings here
+// C4100: unreferenced formal parameter
+// C4127: conditional expression is constant
+// C4146: unary minus operator applied to unsigned type (PHP 8.5+ php_random_uint128.h)
+// C4244: conversion with possible loss of data
+// C4267: conversion from 'size_t' to smaller type
+// C4456: declaration hides previous local declaration
+// C4457: declaration hides function parameter
+// C4706: assignment within conditional expression
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4100 4127 4146 4244 4267 4456 4457 4706)
+#endif
+
 #include "php.h"
 #include "php_globals.h"
 #include "php_ini.h"
 #include "ext/standard/php_standard.h"
 #include "ext/standard/info.h"
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #ifndef _WIN32 // !_WIN32
 #include "FormattedPrint.h"
@@ -1509,7 +1528,7 @@ struct sqlsrv_param_tvp : public sqlsrv_param
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
 
     // The following methods are used to supply data to the server post execution
-    virtual void init_data_from_zval(_Inout_ sqlsrv_stmt* stmt) {}
+    virtual void init_data_from_zval(_Inout_ sqlsrv_stmt* /*stmt*/) {}
     virtual bool send_data_packet(_Inout_ sqlsrv_stmt* stmt);
 
     // Change the column encoding based on the sql data type
@@ -1812,7 +1831,7 @@ struct sqlsrv_odbc_result_set : public sqlsrv_result_set {
     explicit sqlsrv_odbc_result_set( _In_ sqlsrv_stmt* );
 	virtual ~sqlsrv_odbc_result_set( void );
 
-    virtual bool cached( int field_index ) { return false; }
+    virtual bool cached( int /*field_index*/ ) { return false; }
     virtual SQLRETURN fetch( _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset );
     virtual SQLRETURN get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                 _Out_writes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
@@ -1850,7 +1869,7 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
     explicit sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* odbc );
     virtual ~sqlsrv_buffered_result_set( void );
 
-    virtual bool cached( int field_index ) { return true; }
+    virtual bool cached( int /*field_index*/ ) { return true; }
     virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset );
     virtual SQLRETURN get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                 _Out_writes_bytes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
@@ -1941,7 +1960,7 @@ struct sqlsrv_buffered_result_set : public sqlsrv_result_set {
 
 // Simple macro to alleviate unused variable warnings.  These are optimized out by the compiler.
 // We use this since the unused variables are buried in the PHP_FUNCTION macro.
-#define SQLSRV_UNUSED( var )   var;
+#define SQLSRV_UNUSED( var )   (void)(var);
 
 // do a heap check in debug mode, but only print errors, not all of the allocations
 #define MEMCHECK_SILENT 1
@@ -2051,7 +2070,7 @@ enum error_handling_flags {
 // 2/code) driver specific error code
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
-bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error,
+bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ SQLSMALLINT record_number, _Inout_ sqlsrv_error_auto_ptr& error,
                                  _In_ logging_severity severity, _In_opt_ bool check_warning = false );
 
 // format and return a driver specfic error
@@ -2159,16 +2178,24 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
 #define CHECK_ZEND_ERROR( zr, ctx, error, ... )  \
     CHECK_ERROR_UNIQUE( __COUNTER__, ( zr == FAILURE ), ctx, error, ## __VA_ARGS__ )  \
 
-#define CHECK_SQL_ERROR_OR_WARNING( result, context, ... ) \
+#define CHECK_SQL_ERROR_OR_WARNING_EX( unique, result, context, ... ) \
     SQLSRV_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." );  \
-    bool ignored = true;                                   \
+    bool ignored##unique = true;                                   \
     if( result == SQL_ERROR ) {                            \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, 0, ##__VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, SQLSRV_ERROR_ODBC, 0, ##__VA_ARGS__ ); \
     }                                                      \
     else if( result == SQL_SUCCESS_WITH_INFO ) {           \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, 1, ##__VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, SQLSRV_ERROR_ODBC, 1, ##__VA_ARGS__ ); \
     }                                                      \
-    if( !ignored )
+    if( !ignored##unique )
+
+// Three-level indirection needed: with /Zc:preprocessor, arguments adjacent to ## are NOT expanded.
+// The middle layer forces __COUNTER__ expansion before it reaches ## in CHECK_SQL_ERROR_OR_WARNING_EX.
+#define CHECK_SQL_ERROR_OR_WARNING_UNIQUE( unique, result, context, ... ) \
+    CHECK_SQL_ERROR_OR_WARNING_EX( unique, result, context, ##__VA_ARGS__ )
+
+#define CHECK_SQL_ERROR_OR_WARNING( result, context, ... ) \
+    CHECK_SQL_ERROR_OR_WARNING_UNIQUE( __COUNTER__, result, context, ##__VA_ARGS__ )
 
 // throw an exception after it has been hooked into the custom error handler
 #define THROW_CORE_ERROR( ctx, custom, ... ) \
@@ -2718,7 +2745,7 @@ namespace core {
         }
     }
 
-    inline void sqlsrv_zend_hash_init(sqlsrv_context& ctx, _Inout_ HashTable* ht, _Inout_ uint32_t initial_size,
+    inline void sqlsrv_zend_hash_init(sqlsrv_context& /*ctx*/, _Inout_ HashTable* ht, _Inout_ uint32_t initial_size,
         _In_ dtor_func_t dtor_fn, _In_ zend_bool persistent )
     {
         ::zend_hash_init(ht, initial_size, NULL, dtor_fn, persistent);

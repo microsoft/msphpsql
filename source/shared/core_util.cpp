@@ -257,7 +257,7 @@ void convert_datetime_string_to_zval(_Inout_ sqlsrv_stmt* stmt, _In_opt_ char* i
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 
-bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ int record_number, _Inout_ sqlsrv_error_auto_ptr& error, _In_ logging_severity severity, _In_opt_ bool check_warning /* = false */)
+bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ SQLSMALLINT record_number, _Inout_ sqlsrv_error_auto_ptr& error, _In_ logging_severity severity, _In_opt_ bool check_warning /* = false */)
 {
     SQLHANDLE h = ctx.handle();
     SQLSMALLINT h_type = ctx.handle_type();
@@ -445,8 +445,11 @@ namespace {
 // to convert.
 unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encoding, _In_reads_bytes_(mbcs_len) char const* mbcs_in_string,
                                                    _In_ unsigned int mbcs_len, _Out_writes_(utf16_len) __transfer( mbcs_in_string ) SQLWCHAR* utf16_out_string,
-                                                   _In_ unsigned int utf16_len, bool use_strict_conversion )
+                                                   _In_ unsigned int utf16_len, _In_ bool use_strict_conversion )
 {
+#ifdef _WIN32
+    (void)use_strict_conversion;  // Not used on Windows
+#endif
     unsigned int win_encoding = CP_ACP;
     switch( php_encoding ) {
         case SQLSRV_ENCODING_CHAR:
@@ -549,7 +552,7 @@ namespace data_classification {
             namelen = *ptr++;
             nameptr = ptr;
 
-            pair->name_len = namelen;
+            pair->name_len = static_cast<UCHAR>(namelen);
             convert_sensivity_field(stmt, encoding, nameptr, namelen, (char**)&name, field_len);
             pair->name = name;
 
@@ -558,7 +561,7 @@ namespace data_classification {
             idptr = ptr;
             ptr += idlen * 2;
 
-            pair->id_len = idlen;
+            pair->id_len = static_cast<UCHAR>(idlen);
             convert_sensivity_field(stmt, encoding, idptr, idlen, (char**)&id, field_len);
             pair->id = id;
 

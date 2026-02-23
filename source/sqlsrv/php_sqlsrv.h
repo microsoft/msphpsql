@@ -22,7 +22,17 @@
 //  IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------------------
 
+// Suppress warnings from PHP headers that we cannot modify
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4100 4127 4146 4244 4267 4456 4457 4706)
+#endif
+
 #include "php.h"
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 //*********************************************************************************************************************************
 // Global variables
