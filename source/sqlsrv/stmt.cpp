@@ -1551,7 +1551,7 @@ void convert_to_zval( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSRV_PHPTYPE sqlsrv_php_
 // put in the column size and scale/decimal digits of the sql server type
 // these values are taken from the MSDN page at http://msdn2.microsoft.com/en-us/library/ms711786(VS.85).aspx
 // for SQL_VARBINARY, SQL_VARCHAR, and SQL_WLONGVARCHAR types, see https://msdn.microsoft.com/en-CA/library/ms187993.aspx
-bool determine_column_size_or_precision( sqlsrv_stmt const* stmt, _In_ sqlsrv_sqltype sqlsrv_type, _Inout_ SQLULEN* column_size,
+bool determine_column_size_or_precision( sqlsrv_stmt const* /*stmt*/, _In_ sqlsrv_sqltype sqlsrv_type, _Inout_ SQLULEN* column_size,
                                          _Out_ SQLSMALLINT* decimal_digits )
 {
     *decimal_digits = 0;
