@@ -1835,7 +1835,7 @@ void get_field_as_string(_Inout_ sqlsrv_stmt *stmt, _In_ SQLUSMALLINT field_inde
 // return the option from the stmt_opts array that matches the key.  If no option found,
 // NULL is returned.
 
-stmt_option const* get_stmt_option( sqlsrv_conn const* conn, _In_ zend_ulong key, _In_ const stmt_option stmt_opts[] )
+stmt_option const* get_stmt_option( sqlsrv_conn const* /*conn*/, _In_ zend_ulong key, _In_ const stmt_option stmt_opts[] )
 {
     for( int i = 0; stmt_opts[i].key != SQLSRV_STMT_OPTION_INVALID; ++i ) {
 

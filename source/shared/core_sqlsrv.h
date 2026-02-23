@@ -2189,8 +2189,13 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
     }                                                      \
     if( !ignored##unique )
 
+// Three-level indirection needed: with /Zc:preprocessor, arguments adjacent to ## are NOT expanded.
+// The middle layer forces __COUNTER__ expansion before it reaches ## in CHECK_SQL_ERROR_OR_WARNING_EX.
+#define CHECK_SQL_ERROR_OR_WARNING_UNIQUE( unique, result, context, ... ) \
+    CHECK_SQL_ERROR_OR_WARNING_EX( unique, result, context, ##__VA_ARGS__ )
+
 #define CHECK_SQL_ERROR_OR_WARNING( result, context, ... ) \
-    CHECK_SQL_ERROR_OR_WARNING_EX( __COUNTER__, result, context, ##__VA_ARGS__ )
+    CHECK_SQL_ERROR_OR_WARNING_UNIQUE( __COUNTER__, result, context, ##__VA_ARGS__ )
 
 // throw an exception after it has been hooked into the custom error handler
 #define THROW_CORE_ERROR( ctx, custom, ... ) \

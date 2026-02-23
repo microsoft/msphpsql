@@ -100,7 +100,7 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
                                   _In_ void* driver, _In_z_ const char* driver_func )
 
 {
-    SQLRETURN r;
+    SQLRETURN r = SQL_SUCCESS;
     std::string conn_str;
     conn_str.reserve( DEFAULT_CONN_STR_LEN );
     sqlsrv_malloc_auto_ptr<sqlsrv_conn> conn;
