@@ -865,7 +865,7 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
             invalid.typeinfo.type = SQLSRV_PHPTYPE_INVALID;
             for( int i = stmt->last_field_index + 1; i < field_index; ++i ) {
                SQLSRV_ASSERT( reinterpret_cast<field_cache*>( zend_hash_index_find_ptr( Z_ARRVAL( stmt->field_cache ), i )) == NULL, "Field already cached." );
-               core_sqlsrv_get_field( stmt, i, invalid, prefer_string, field_value, field_len, cache_field, sqlsrv_php_type_out );
+               core_sqlsrv_get_field( stmt, static_cast<SQLUSMALLINT>(i), invalid, prefer_string, field_value, field_len, cache_field, sqlsrv_php_type_out );
                // delete the value returned since we only want it cached, not the actual value
                if( field_value ) {
                    efree( field_value );
@@ -1691,7 +1691,7 @@ void get_field_as_string(_Inout_ sqlsrv_stmt *stmt, _In_ SQLUSMALLINT field_inde
             extra = sizeof(SQLCHAR);
 
             // For numbers, no need to convert
-            if (sqlsrv_php_type.typeinfo.encoding == CP_UTF8 && !is_a_numeric_type(sql_field_type)) {
+            if (sqlsrv_php_type.typeinfo.encoding == CP_UTF8 && !is_a_numeric_type(static_cast<SQLSMALLINT>(sql_field_type))) {
                 c_type = SQL_C_WCHAR;
                 extra = sizeof(SQLWCHAR);
 
@@ -2003,7 +2003,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
                 // Whether to pad zeroes depending on the original position of the decimal point pos.
                 if (newpos <= 0) {
                     // If newpos is negative or zero, pad zeroes (size of '0.' + places to move) in the buffer
-                    short numzeroes = 2 + abs(newpos);
+                    int numzeroes = 2 + abs(newpos);
                     memset(buffer + offset, '0', numzeroes);
                     newpos = offset + 1;                    // The new decimal position should be offset + '0'
                     buffer[newpos] = DECIMAL_POINT;			// Replace that '0' with the decimal point
@@ -2057,11 +2057,11 @@ int round_up_decimal_numbers(_Inout_ char* buffer, _In_ int decimal_pos, _In_ in
 
     int pos = decimal_pos + num_decimals + 1;
     if (pos < lastpos) {
-        short n = buffer[pos] - '0';
+        int n = buffer[pos] - '0';
         if (n >= 5) {
             // Start rounding up - starting from the digit left of pos all the way to the first digit
             bool carry_over = true;
-            for (short p = pos - 1; p >= offset && carry_over; p--) {
+            for (int p = pos - 1; p >= offset && carry_over; p--) {
                 if (buffer[p] == DECIMAL_POINT) {
                     continue;
                 }
@@ -2070,7 +2070,7 @@ int round_up_decimal_numbers(_Inout_ char* buffer, _In_ int decimal_pos, _In_ in
                 if (n == 10) {
                     n = 0;
                 }
-                buffer[p] = '0' + n;
+                buffer[p] = static_cast<char>('0' + n);
             }
             if (carry_over) {
                 buffer[offset - 1] = '1';
@@ -3418,7 +3418,7 @@ void sqlsrv_param_tvp::bind_param(_Inout_ sqlsrv_stmt* stmt)
 
     // Process the columns and bind each of them using the saved data
     for (int i = 0; i < num_columns; i++) {
-        sqlsrv_param* column_param = tvp_columns[i];
+        sqlsrv_param* column_param = tvp_columns[static_cast<SQLUSMALLINT>(i)];
 
         column_param->process_param(stmt, NULL);
         column_param->bind_param(stmt);

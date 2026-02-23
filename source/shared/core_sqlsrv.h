@@ -2178,16 +2178,19 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
 #define CHECK_ZEND_ERROR( zr, ctx, error, ... )  \
     CHECK_ERROR_UNIQUE( __COUNTER__, ( zr == FAILURE ), ctx, error, ## __VA_ARGS__ )  \
 
-#define CHECK_SQL_ERROR_OR_WARNING( result, context, ... ) \
+#define CHECK_SQL_ERROR_OR_WARNING_EX( unique, result, context, ... ) \
     SQLSRV_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." );  \
-    bool ignored = true;                                   \
+    bool ignored##unique = true;                                   \
     if( result == SQL_ERROR ) {                            \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, 0, ##__VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, SQLSRV_ERROR_ODBC, 0, ##__VA_ARGS__ ); \
     }                                                      \
     else if( result == SQL_SUCCESS_WITH_INFO ) {           \
-        ignored = call_error_handler( context, SQLSRV_ERROR_ODBC, 1, ##__VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, SQLSRV_ERROR_ODBC, 1, ##__VA_ARGS__ ); \
     }                                                      \
-    if( !ignored )
+    if( !ignored##unique )
+
+#define CHECK_SQL_ERROR_OR_WARNING( result, context, ... ) \
+    CHECK_SQL_ERROR_OR_WARNING_EX( __COUNTER__, result, context, ##__VA_ARGS__ )
 
 // throw an exception after it has been hooked into the custom error handler
 #define THROW_CORE_ERROR( ctx, custom, ... ) \

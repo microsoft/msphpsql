@@ -189,7 +189,6 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         ODBC_DRIVER drivers[] = { ODBC_DRIVER::VER_17, ODBC_DRIVER::VER_18, ODBC_DRIVER::VER_13 };
         ODBC_DRIVER last_version = (conn->ce_option.enabled) ? ODBC_DRIVER::VER_18 : ODBC_DRIVER::VER_13;
 
-        ODBC_DRIVER version = ODBC_DRIVER::VER_UNKNOWN;
         for (auto &d : drivers) {
             std::string driver_name = get_ODBC_driver_name(d);
 #ifndef _WIN32
@@ -342,6 +341,7 @@ SQLRETURN core_odbc_connect( _Inout_ sqlsrv_conn* conn, _Inout_ std::string& con
         r = SQLDriverConnectW( conn->handle(), NULL, wconn_string, static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
     }
 #else
+    (void)is_pooled;  // only used on non-Windows platforms
     r = SQLDriverConnectW( conn->handle(), NULL, wconn_string, static_cast<SQLSMALLINT>( wconn_len ), NULL, 0, &output_conn_size, SQL_DRIVER_NOPROMPT );
 #endif // !_WIN32
 
@@ -504,7 +504,7 @@ void core_sqlsrv_prepare( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) c
 
             for( int i = 0; i < num_params; i++ ) {
                 param_meta_data param;
-                core::SQLDescribeParam(stmt, i + 1, &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
+                core::SQLDescribeParam(stmt, static_cast<SQLUSMALLINT>(i + 1), &(param.sql_type), &(param.column_size), &(param.decimal_digits), &(param.nullable));
 
                 stmt->params_container.params_meta_ae.push_back(param);
             }
@@ -647,7 +647,7 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
 
 namespace {
 
-connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ SQLULEN key,
+connection_option const* get_connection_option( sqlsrv_conn* /*conn*/, _In_ SQLULEN key,
                                                      _In_ const connection_option conn_opts[] )
 {
     for( int opt_idx = 0; conn_opts[opt_idx].conn_option_key != SQLSRV_CONN_OPTION_INVALID; ++opt_idx ) {
@@ -669,7 +669,7 @@ connection_option const* get_connection_option( sqlsrv_conn* conn, _In_ SQLULEN 
 
 void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inout_z_ const char* server, _Inout_opt_z_  const char* uid, _Inout_opt_z_ const char* pwd,
                                                 _Inout_opt_ HashTable* options, _In_ const connection_option valid_conn_opts[],
-                                                void* driver, _Inout_ std::string& connection_string )
+                                                void* /*driver*/, _Inout_ std::string& connection_string )
 {
     bool mars_mentioned = false;
     connection_option const* conn_opt;
@@ -912,7 +912,7 @@ void load_azure_key_vault(_Inout_ sqlsrv_conn* conn)
     configure_azure_key_vault(conn, AKV_CONFIG_AUTHSECRET, akv_secret, key_size);
 }
 
-void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t key_size)
+void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const DWORD config_value, size_t /*key_size*/)
 {
     BYTE akv_data[sizeof(CEKEYSTOREDATA) + sizeof(DWORD) + 1];
     CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>(akv_data);
@@ -954,7 +954,7 @@ void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const char* 
     pData->name = (wchar_t *)wakv_name.get();
 
     pData->data[0] = config_attr;
-    pData->dataSize = 1 + key_size;
+    pData->dataSize = static_cast<unsigned int>(1 + key_size);
 
     memcpy_s(pData->data + 1, key_size * sizeof(char), config_value, key_size);
 
@@ -1034,7 +1034,7 @@ void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/,
 {
 }
 
-void driver_set_func::func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str)
+void driver_set_func::func(_In_ connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str)
 {
     const char* val_str = Z_STRVAL_P(value);
     size_t val_len = Z_STRLEN_P(value);
@@ -1086,7 +1086,7 @@ void column_encryption_set_func::func( _In_ connection_option const* option, _In
     conn_str += ";";
 }
 
-void ce_akv_str_set_func::func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str)
+void ce_akv_str_set_func::func(_In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& /*conn_str*/)
 {
     SQLSRV_ASSERT(Z_TYPE_P(value) == IS_STRING, "Azure Key Vault keywords accept only strings.");
 
@@ -1152,14 +1152,14 @@ size_t core_str_zval_is_true(_Inout_ zval* value_z)
     if (found != std::string::npos)
         val_str.erase(found + 1);
 
-    transform(val_str.begin(), val_str.end(), val_str.begin(), ::tolower);
+    transform(val_str.begin(), val_str.end(), val_str.begin(), [](unsigned char c) { return static_cast<char>(::tolower(c)); });
     if (!val_str.compare("true") || !val_str.compare("1") || !val_str.compare("yes")) {
         return 1; // true
     }
     return 0; // false
 }
 
-void access_token_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& conn_str )
+void access_token_set_func::func( _In_ connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, _Inout_ std::string& /*conn_str*/ )
 {
     SQLSRV_ASSERT(Z_TYPE_P(value) == IS_STRING, "An access token must be a byte string.");
 
@@ -1197,7 +1197,7 @@ void access_token_set_func::func( _In_ connection_option const* option, _In_ zva
     ACCESSTOKEN *pAccToken = accToken.get();
     SQLSRV_ASSERT(pAccToken != NULL, "Something went wrong when trying to allocate memory for the access token.");
 
-    pAccToken->dataSize = dataSize;
+    pAccToken->dataSize = static_cast<unsigned int>(dataSize);
 
     // Expand access token with padding bytes
     for (size_t i = 0, j = 0; i < dataSize; i += 2, j++) {

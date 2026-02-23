@@ -377,7 +377,7 @@ sqlsrv_buffered_result_set::sqlsrv_buffered_result_set( _Inout_ sqlsrv_stmt* stm
     cache(NULL),
     col_count(0),
     current(0),
-    last_field_index(-1),
+    last_field_index(static_cast<SQLUSMALLINT>(-1)),
     read_so_far(0),
     temp_length(0)
 {
