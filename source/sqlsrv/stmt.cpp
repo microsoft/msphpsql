@@ -870,6 +870,8 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 
 				int i = 0;
 				zval* value_z = NULL;
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
 				ZEND_HASH_FOREACH_VAL( ctor_params_ht, value_z ) {
 					zr = ( value_z ) ? SUCCESS : FAILURE;
 					CHECK_ZEND_ERROR( zr, stmt, SS_SQLSRV_ERROR_ZEND_OBJECT_FAILED, class_name, NULL ) {
@@ -878,6 +880,7 @@ PHP_FUNCTION( sqlsrv_fetch_object )
 					ZVAL_COPY_VALUE(&params_m[i], value_z);
 					i++;
 				} ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
             } //if( !Z_ISUNDEF( ctor_params_z ))
 
             // call the constructor function itself.
@@ -1193,10 +1196,12 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
 
         HashTable* params_ht = Z_ARRVAL_P( params_z );
 
-        zend_ulong index = -1;
+        zend_ulong index = 0;
         zend_string *key = NULL;
         zval* param_z = NULL;
 
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
         ZEND_HASH_FOREACH_KEY_VAL( params_ht, index, key, param_z ) {
             // make sure it's an integer index
             int type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
@@ -1261,6 +1266,7 @@ void bind_params( _Inout_ ss_sqlsrv_stmt* stmt )
                 decimal_digits );
 
         } ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
     }
     catch( core::CoreException& ) {
         stmt->free_param_data();
@@ -2082,8 +2088,10 @@ bool is_valid_sqlsrv_sqltype( _In_ sqlsrv_sqltype sql_type )
 bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ sqlsrv_phptype& phptype_encoding )
 {
 	void* encoding_temp = NULL;
-	zend_ulong index = -1;
+	zend_ulong index = 0;
 	zend_string* key = NULL;
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
 	ZEND_HASH_FOREACH_KEY_PTR( g_ss_encodings_ht, index, key, encoding_temp ) {
         if (encoding_temp) {
             sqlsrv_encoding* encoding = reinterpret_cast<sqlsrv_encoding*>(encoding_temp);
@@ -2097,6 +2105,7 @@ bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ sqlsrv_p
             DIE("Fatal: Error retrieving encoding from encoding hash table.");
         }
 	} ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
 
     return false;
 }

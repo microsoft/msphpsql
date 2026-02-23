@@ -931,10 +931,12 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
 // see RINIT in init.cpp for information about which errors are ignored.
 bool ignore_warning( _In_ char* sql_state, _In_ int native_code )
 {
-	zend_ulong index = -1;
+	zend_ulong index = 0;
 	zend_string* key = NULL;
 	void* error_temp = NULL;
 
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
 	ZEND_HASH_FOREACH_KEY_PTR( g_ss_warnings_to_ignore_ht, index, key, error_temp ) {
 		sqlsrv_error* error = static_cast<sqlsrv_error*>( error_temp );
 		if (NULL == error) {
@@ -946,6 +948,7 @@ bool ignore_warning( _In_ char* sql_state, _In_ int native_code )
 			return true;
 		}
 	} ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
 
     return false;
 }
@@ -968,10 +971,12 @@ bool sqlsrv_merge_zend_hash( _Inout_ zval* dest_z, zval const* src_z )
     }
 
     HashTable* src_ht = Z_ARRVAL_P( src_z );
-	zend_ulong index = -1;
+	zend_ulong index = 0;
 	zend_string* key = NULL;
 	zval* value_z = NULL;
 
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
 	ZEND_HASH_FOREACH_KEY_VAL( src_ht, index, key, value_z ) {
 		if ( !value_z ) {
 			zend_hash_apply( Z_ARRVAL_P(dest_z), sqlsrv_merge_zend_hash_dtor );
@@ -986,6 +991,7 @@ bool sqlsrv_merge_zend_hash( _Inout_ zval* dest_z, zval const* src_z )
 		}
 		Z_TRY_ADDREF_P( value_z );
 	} ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
 
     return true;
 }

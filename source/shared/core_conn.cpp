@@ -787,9 +787,11 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
         }
 
         zend_string *key = NULL;
-        zend_ulong index = -1;
+        zend_ulong index = 0;
         zval* data = NULL;
 
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
         ZEND_HASH_FOREACH_KEY_VAL( options, index, key, data ) {
             int type = HASH_KEY_NON_EXISTENT;
             type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
@@ -805,6 +807,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
 
             conn_opt->func( conn_opt, data, conn, connection_string );
         } ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
 
         // MARS on if not explicitly turned off
         if( !mars_mentioned ) {

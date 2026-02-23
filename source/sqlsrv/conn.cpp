@@ -81,10 +81,12 @@ struct conn_char_set_func {
          const char* encoding = Z_STRVAL_P( value );
          size_t encoding_len = Z_STRLEN_P( value );
 
-         zend_ulong index = -1;
+         zend_ulong index = 0;
          zend_string* key = NULL;
          void* ss_encoding_temp = NULL;
 
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
          ZEND_HASH_FOREACH_KEY_PTR( g_ss_encodings_ht, index, key, ss_encoding_temp ) {
              sqlsrv_encoding* ss_encoding = reinterpret_cast<sqlsrv_encoding*>( ss_encoding_temp );
              ss_encoding_temp = NULL;
@@ -98,6 +100,7 @@ struct conn_char_set_func {
                  return;
              }
          } ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
 
          THROW_SS_ERROR( conn, SS_SQLSRV_ERROR_CONNECT_ILLEGAL_ENCODING, encoding, NULL );
     }
@@ -1314,6 +1317,8 @@ void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn )
     // ODBC connection
 
     zval* rsrc_ptr = NULL;
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
     ZEND_HASH_FOREACH_VAL( conn->stmts, rsrc_ptr ) {
         try {
             int zr = ( rsrc_ptr ) != NULL ? SUCCESS : FAILURE;
@@ -1349,6 +1354,7 @@ void sqlsrv_conn_close_stmts( _Inout_ ss_sqlsrv_conn* conn )
         zend_list_close(Z_RES_P(rsrc_ptr));
 #endif
     } ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
 
     zend_hash_destroy( conn->stmts );
     FREE_HASHTABLE( conn->stmts );
@@ -1459,9 +1465,11 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
         if( stmt_options ) {
 
             HashTable* options_ht = Z_ARRVAL_P( stmt_options );
-            zend_ulong int_key = -1;
+            zend_ulong int_key = 0;
             zend_string *key = NULL;
             zval* data = NULL;
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
             ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
                 int type = HASH_KEY_NON_EXISTENT;
                 size_t key_len = 0;
@@ -1481,6 +1489,7 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
                     DIE( "validate_stmt_options: key was null." );
                 }
             } ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
         }
     }
     catch( core::CoreException& ) {
@@ -1500,9 +1509,11 @@ void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options
         if( user_options_z ) {
 
             HashTable* options_ht = Z_ARRVAL_P( user_options_z );
-            zend_ulong int_key = -1;
+            zend_ulong int_key = 0;
             zend_string *key = NULL;
             zval* data = NULL;
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
             ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
                 int type = HASH_KEY_NON_EXISTENT;
                 type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
@@ -1535,6 +1546,7 @@ void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options
                     DIE( "validate_conn_options: key was null." );
                 }
             } ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
         }
     }
     catch( core::CoreException& ) {

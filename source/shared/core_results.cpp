@@ -169,7 +169,7 @@ SQLRETURN number_to_string( _In_ Number* number_data, _Out_writes_bytes_to_opt_(
     std::locale loc;
     os.imbue(loc);
     std::use_facet< std::num_put< Char > >( loc ).put( std::basic_ostream<Char>::_Iter( os.rdbuf()), os, ' ', *number_data );
-    std::basic_string<Char>& str_num = os.str();
+    std::basic_string<Char> str_num = os.str();
 
     if ( os.fail() ) {
         last_error = new ( sqlsrv_malloc(sizeof( sqlsrv_error ))) sqlsrv_error(( SQLCHAR* ) "IMSSP", (SQLCHAR*) "Failed to convert number to string", -1 );
@@ -683,7 +683,7 @@ sqlsrv_buffered_result_set::~sqlsrv_buffered_result_set( void )
 SQLRETURN sqlsrv_buffered_result_set::fetch( _Inout_ SQLSMALLINT orientation, _Inout_opt_ SQLLEN offset )
 {
     last_error = NULL;
-    last_field_index = -1;
+    last_field_index = static_cast<SQLUSMALLINT>(-1);
     read_so_far = 0;
 
     switch( orientation ) {
@@ -735,7 +735,7 @@ SQLRETURN sqlsrv_buffered_result_set::fetch( _Inout_ SQLSMALLINT orientation, _I
 
 SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                                 _Out_writes_bytes_opt_(buffer_length) SQLPOINTER buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                                bool handle_warning )
+                                                bool /*handle_warning*/ )
 {
     last_error = NULL;
     field_index--;      // convert from 1 based to 0 based
@@ -819,7 +819,7 @@ SQLRETURN sqlsrv_buffered_result_set::get_data( _In_ SQLUSMALLINT field_index, _
 
 SQLRETURN sqlsrv_buffered_result_set::get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier,
                                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                                      _Inout_ SQLSMALLINT* out_buffer_length )
+                                                      _Inout_ SQLSMALLINT* /*out_buffer_length*/ )
 {
     SQLSRV_ASSERT( record_number == 1, "Only record number 1 can be fetched by sqlsrv_buffered_result_set::get_diag_field" );
     SQLSRV_ASSERT( diag_identifier == SQL_DIAG_SQLSTATE,

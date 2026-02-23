@@ -1921,7 +1921,7 @@ namespace {
 void add_stmt_option_key(_Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ HashTable* options_ht,
                             _Inout_ zval* data)
 {
-    zend_ulong option_key = -1;
+    zend_ulong option_key = 0;
     switch (key) {
 
     case PDO_ATTR_CURSOR:
@@ -1984,7 +1984,7 @@ void add_stmt_option_key(_Inout_ sqlsrv_context& ctx, _In_ size_t key, _Inout_ H
     }
 
     // if a PDO handled option makes it through (such as PDO_ATTR_STATEMENT_CLASS, just skip it
-    if (option_key != -1) {
+    if (option_key != 0) {
         zval_add_ref(data);
         core::sqlsrv_zend_hash_index_update(ctx, options_ht, option_key, data);
     }
@@ -2010,6 +2010,8 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
             zend_string *key = NULL;
             zval* data = NULL;
 
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant - from ZEND_HASH_FOREACH macro
             ZEND_HASH_FOREACH_KEY_VAL( options_ht, int_key, key, data ) {
                 int type = HASH_KEY_NON_EXISTENT;
                 type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
@@ -2019,6 +2021,7 @@ void validate_stmt_options( _Inout_ sqlsrv_context& ctx, _Inout_ zval* stmt_opti
 
                 add_stmt_option_key( ctx, int_key, pdo_stmt_options_ht, data );
             } ZEND_HASH_FOREACH_END();
+#pragma warning(pop)
         }
     }
     catch( core::CoreException& ) {
