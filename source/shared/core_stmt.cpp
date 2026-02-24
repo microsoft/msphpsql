@@ -1918,7 +1918,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
     catch (const std::logic_error& ) {
         return;		// invalid input caused the conversion to throw an exception
     }
-    if (index < value_len) {
+    if (index < static_cast<size_t>(value_len)) {
         return;		// the input contains something else apart from the numerical value
     }
 
@@ -3233,8 +3233,8 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
         }
 
         // Are all the TVP's rows the same size
-        num_columns = zend_hash_num_elements(Z_ARRVAL_P(row_z));
-        CHECK_CUSTOM_ERROR(num_columns != total_num_columns, stmt, SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE, param_pos + 1, total_num_columns, NULL) {
+        num_columns = static_cast<int>(zend_hash_num_elements(Z_ARRVAL_P(row_z)));
+        CHECK_CUSTOM_ERROR(static_cast<size_t>(num_columns) != total_num_columns, stmt, SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE, param_pos + 1, total_num_columns, NULL) {
             throw core::CoreException();
         }
     } ZEND_HASH_FOREACH_END();
