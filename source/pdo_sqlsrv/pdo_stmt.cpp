@@ -466,7 +466,7 @@ int pdo_sqlsrv_stmt_describe_col( _Inout_ pdo_stmt_t *stmt, _In_ int colno)
     pdo_sqlsrv_stmt* driver_stmt = reinterpret_cast<pdo_sqlsrv_stmt*>( stmt->driver_data );
     SQLSRV_ASSERT( driver_stmt != NULL, "Invalid driver statement in pdo_sqlsrv_stmt_describe_col" );
     driver_stmt->current_meta_data.push_back( core_meta_data.get() );
-    SQLSRV_ASSERT( driver_stmt->current_meta_data.size() == colno + 1, "Meta data vector out of sync with column numbers" );
+    SQLSRV_ASSERT( driver_stmt->current_meta_data.size() == static_cast<size_t>(colno + 1), "Meta data vector out of sync with column numbers" );
     core_meta_data.transferred();
 
     return 1;
