@@ -3211,7 +3211,7 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
     zend_ulong id = 0;
     zend_string *key = NULL;
     zval* row_z = NULL;
-    size_t num_columns = 0;
+    int num_columns = 0;
     int type = HASH_KEY_NON_EXISTENT;
 
     // Loop through the rows to check the number of columns
@@ -3233,8 +3233,8 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
         }
 
         // Are all the TVP's rows the same size
-        num_columns = zend_hash_num_elements(Z_ARRVAL_P(row_z));
-        CHECK_CUSTOM_ERROR(num_columns != total_num_columns, stmt, SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE, param_pos + 1, total_num_columns, NULL) {
+        num_columns = static_cast<int>(zend_hash_num_elements(Z_ARRVAL_P(row_z)));
+        CHECK_CUSTOM_ERROR(static_cast<size_t>(num_columns) != total_num_columns, stmt, SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE, param_pos + 1, total_num_columns, NULL) {
             throw core::CoreException();
         }
     } ZEND_HASH_FOREACH_END();
