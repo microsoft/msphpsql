@@ -1918,7 +1918,7 @@ void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digi
     catch (const std::logic_error& ) {
         return;		// invalid input caused the conversion to throw an exception
     }
-    if (index < value_len) {
+    if (index < static_cast<size_t>(value_len)) {
         return;		// the input contains something else apart from the numerical value
     }
 
@@ -3211,7 +3211,7 @@ int sqlsrv_param_tvp::parse_tv_param_arrays(_Inout_ sqlsrv_stmt* stmt, _Inout_ z
     zend_ulong id = 0;
     zend_string *key = NULL;
     zval* row_z = NULL;
-    int num_columns = 0;
+    size_t num_columns = 0;
     int type = HASH_KEY_NON_EXISTENT;
 
     // Loop through the rows to check the number of columns
