@@ -4,7 +4,7 @@
 
 The [Microsoft Drivers for PHP for Microsoft SQL Server][phpdoc] are PHP extensions that allow for the reading and writing of SQL Server data from within PHP scripts. The SQLSRV extension provides a procedural interface while the PDO_SQLSRV extension implements PHP Data Objects (PDO) for accessing data in all editions of SQL Server 2012 and later (including Azure SQL DB). These drivers rely on the [Microsoft ODBC Driver for SQL Server][odbcdoc] to handle the low-level communication with SQL Server.
 
-This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 8.2+ with improvements on both drivers and some limitations. Upcoming [releases][releases] will contain additional functionalities, bug fixes, and more.
+This release contains the SQLSRV and PDO_SQLSRV drivers for PHP 8.3+ with improvements on both drivers and some limitations. Upcoming [releases][releases] will contain additional functionalities, bug fixes, and more.
 
 ## Take our survey
 
@@ -37,8 +37,8 @@ Please follow the [Getting started](https://docs.microsoft.com/sql/connect/php/g
 For full details on the system requirements for the drivers, see the [system requirements](https://docs.microsoft.com/sql/connect/php/system-requirements-for-the-php-sql-driver) on Microsoft Docs.
 
 On the client machine:
-- 8.2.x, 8.3.x, 8.4.x, 8.5.x
-- [Microsoft ODBC Driver 18, 17 or 13][odbcdoc]
+- 8.3.x, 8.4.x, 8.5.x
+- [Microsoft ODBC Driver 18 or 17][odbcdoc]
 - If using a Web server such as Internet Information Services (IIS) or Apache, it must be configured to run PHP
 
 On the server side, Microsoft SQL Server 2012 and above on Windows are supported, as are Microsoft SQL Server 2016 and above on Linux.

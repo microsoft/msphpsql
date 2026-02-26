@@ -10,17 +10,20 @@ Updated PECL release packages. Here is the list of updates:
 - Support for PHP 8.4 and PHP 8.5
 - Support for Windows Server 2025
 - Support for Ubuntu 24.04
-- Support for Debian 12 and 13
-- Support for Red Hat 9
-- Support for Alpine 3.21, 3.22, and 3.23
-- Support for macOS 14, 15, and 26
+- Support for Debian 11, 12, and 13
+- Support for Red Hat 9 and 10
+- Support for Alpine 3.20, 3.21, 3.22, and 3.23
+- Support for macOS 15 and 26
 
 ### Removed
-- Support for PHP 8.1
+- Support for PHP 8.1 and 8.2
 - Support for Windows 10, Server 2012, and Server 2012 R2
 - Support for Ubuntu 20.04
 - Support for Debian 10
-- Support for macOS 11 and 12
+- Support for Red Hat 7
+- Support for SUSE Linux 12
+- Support for Alpine 3.16, 3.17, 3.18, and 3.19
+- Support for macOS 11, 12, and 13
 
 ### Changed
 - Refactored build scripts for safety, error handling, and command injection prevention ([PR #1551](https://github.com/microsoft/msphpsql/pull/1551), [PR #1552](https://github.com/microsoft/msphpsql/pull/1552))
