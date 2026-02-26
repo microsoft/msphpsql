@@ -3,28 +3,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## 5.13.0-beta1 - 2026-01-30
+## 5.13.0 - 2026-02-27
 Updated PECL release packages. Here is the list of updates:
 
 ### Added
-- Support for PHP 8.4
+- Support for PHP 8.4 and PHP 8.5
 - Support for Windows Server 2025
 - Support for Ubuntu 24.04
-- Support for Debian 12 and 13
-- Support for Red Hat 9
-- Support for Alpine 3.21, 3.22, and 3.23
-- Support for macOS 14, 15, and 26
+- Support for Debian 11, 12, and 13
+- Support for Red Hat 9 and 10
+- Support for Alpine 3.20, 3.21, 3.22, and 3.23
+- Support for macOS 15 and 26
 
 ### Removed
-- Support for PHP 8.1
+- Support for PHP 8.1 and 8.2
 - Support for Windows 10, Server 2012, and Server 2012 R2
 - Support for Ubuntu 20.04
 - Support for Debian 10
-- Support for macOS 11 and 12
+- Support for Red Hat 7
+- Support for SUSE Linux 12
+- Support for Alpine 3.16, 3.17, 3.18, and 3.19
+- Support for macOS 11, 12, and 13
+
+### Changed
+- Refactored build scripts for safety, error handling, and command injection prevention ([PR #1551](https://github.com/microsoft/msphpsql/pull/1551), [PR #1552](https://github.com/microsoft/msphpsql/pull/1552))
+
 
 ### Fixed
 - Fixed segfault when connecting to Fabric ([PR #1549](https://github.com/microsoft/msphpsql/pull/1549))
 - Enhanced error reporting in PDO driver when ODBC diagnostic retrieval fails ([PR #1549](https://github.com/microsoft/msphpsql/pull/1549))
+- Fixed critical memory safety bugs in encoding conversion - NULL pointer dereference and uninitialized pointer return ([PR #1555](https://github.com/microsoft/msphpsql/pull/1555))
+- Removed lingering error2 reference from failure block in CI pipeline ([PR #1568](https://github.com/microsoft/msphpsql/pull/1568))
+- Fixed PHP 8.5 compatibility issues in tests and CI pipeline ([PR #1569](https://github.com/microsoft/msphpsql/pull/1569))
 
 ### Limitations
 - No support for inout / output params when using sql_variant type
