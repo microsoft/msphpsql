@@ -8,6 +8,26 @@ import platform
 import argparse
 from exec_sql_scripts import *
 
+def _is_mssqltools_v18():
+    """Return True if mssql-tools >= 18 (encrypt mandatory by default)."""
+    import subprocess, re
+    try:
+        result = subprocess.run(['bcp', '-v'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        output = result.stdout + result.stderr
+        m = re.search(r'Version:\s*(\d+)', output)
+        if m and int(m.group(1)) >= 18:
+            return True
+    except Exception:
+        pass
+    return False
+
+# mssql-tools18 defaults to Encrypt=Mandatory.  The flags below add encrypt-
+# optional + trust-server-certificate so sqlcmd/bcp work against servers
+# without a valid TLS certificate. Empty strings for older tools.
+_v18 = _is_mssqltools_v18()
+_encrypt_opt_sqlcmd = ' -Yo -C' if _v18 else ''
+_encrypt_opt_bcp   = ' -Yo -u' if _v18 else ''
+
 def setupTestDatabase(conn_options, dbname, azure):
     sqlFiles = ['test_types.sql', '168256.sql', 'cd_info.sql', 'tracks.sql']
 
@@ -22,7 +42,7 @@ def populateTables(conn_options, dbname):
     executeBulkCopy(conn_options, dbname, '168256', '168256')
 
 def executeBulkCopy(conn_options, dbname, tblname, datafile):
-    redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q -C'
+    redirect_string = 'bcp {0}..{1} in {2}.dat -f {2}.fmt -q' + _encrypt_opt_bcp
     inst_command = redirect_string.format(dbname, tblname, datafile) + conn_options
     executeCommmand(inst_command)
 
@@ -57,8 +77,7 @@ if __name__ == '__main__':
 
     current_working_dir=os.getcwd()
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
-    # Add -C flag to trust server certificate (required for ODBC 18 with self-signed certs)
-    conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' -C '
+    conn_options = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + _encrypt_opt_sqlcmd + ' '
 
     # In Azure, assume an empty test database has been created using Azure portal
     if (args.AZURE.lower() == 'no'):
