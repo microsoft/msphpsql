@@ -844,7 +844,7 @@ function PDOConnect($className, $serverName, $user, $pwd, $exitMode)
     try {
         // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,
         // which does not support switching databases
-        $conn = new $className("sqlsrv:Server=$serverName;Database=$databaseName", $user, $pwd, $connectionOptions);
+        $conn = new $className("sqlsrv:Server=$serverName;Database=$databaseName;Driver=$driver;Encrypt=$encrypt", $user, $pwd, $connectionOptions);
         $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_SYSTEM);
     } catch (PDOException $e) {
         $conn = null;

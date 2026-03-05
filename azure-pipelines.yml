@@ -306,42 +306,6 @@ jobs:
       sed -i '' -e "s/TARGET_USERNAME/${SQL_USER}/g" pdo_sqlsrv/MsSetup.inc
       sed -i '' -e "s/TARGET_PASSWORD/${SQL_PWD}/g" pdo_sqlsrv/MsSetup.inc
       
-      # Add TrustServerCertificate for ODBC 18
-      echo "Adding TrustServerCertificate for ODBC 18 compatibility..."
-      
-      # sqlsrv: Add TrustServerCertificate => 1
-      sed -i '' -e 's/"Encrypt" => \$encrypt)/"Encrypt" => \$encrypt, "TrustServerCertificate" => 1)/g' sqlsrv/MsSetup.inc
-      
-      # pdo_sqlsrv: Add TrustServerCertificate=1 to DSN
-      sed -i '' -e 's/Encrypt=\$encrypt;/Encrypt=\$encrypt;TrustServerCertificate=1;/g' pdo_sqlsrv/MsCommon.inc
-      sed -i '' -e 's/Encrypt=\$encrypt;/Encrypt=\$encrypt;TrustServerCertificate=1;/g' pdo_sqlsrv/MsCommon_mid-refactor.inc
-      
-      # Update MsSetup.inc for PDO
-      sed -i '' -e "s/\$connectionOptions = array();/\$connectionOptions = array('TrustServerCertificate' => 1);/g" pdo_sqlsrv/MsSetup.inc
-      
-      # Additional TrustServerCertificate patterns
-      sed -i '' -e 's/Database=\$databaseName"/Database=\$databaseName;TrustServerCertificate=1"/g' pdo_sqlsrv/MsCommon.inc
-      sed -i '' -e 's/Database=\$databaseName"/Database=\$databaseName;TrustServerCertificate=1"/g' pdo_sqlsrv/MsCommon_mid-refactor.inc
-      
-      # Patch ALL PDO test files for TrustServerCertificate
-      echo "Patching all PDO test files for TrustServerCertificate..."
-      for f in pdo_sqlsrv/*.phpt pdo_sqlsrv/*.php pdo_sqlsrv/*.inc; do
-        if [[ -f "$f" ]]; then
-          sed -i '' -e 's/;Database=\([^;"]*\)"/;Database=\1;TrustServerCertificate=1"/g' "$f" 2>/dev/null || true
-          sed -i '' -e 's/sqlsrv:Server=/sqlsrv:TrustServerCertificate=1;Server=/g' "$f" 2>/dev/null || true
-          sed -i '' -e "s/sqlsrv:server=/sqlsrv:TrustServerCertificate=1;server=/gi" "$f" 2>/dev/null || true
-        fi
-      done
-      
-      # Patch sqlsrv test files
-      for f in sqlsrv/*.phpt sqlsrv/*.php sqlsrv/*.inc; do
-        if [[ -f "$f" ]]; then
-          sed -i '' -e "s/array(\"Database\"/array(\"TrustServerCertificate\" => 1, \"Database\"/g" "$f" 2>/dev/null || true
-          sed -i '' -e "s/array('Database'/array('TrustServerCertificate' => 1, 'Database'/g" "$f" 2>/dev/null || true
-        fi
-      done
-      
-      echo ""
       echo "=== sqlsrv/MsSetup.inc (first 50 lines) ==="
       head -50 sqlsrv/MsSetup.inc
       echo ""
@@ -478,7 +442,7 @@ jobs:
       echo "Verifying database connection before tests..."
       $PHP_BIN -c $PHP_INI -r "
       \$server = '127.0.0.1';
-      \$options = array('Database' => '$(macOS_sqlsrv_db)', 'UID' => '$(uid)', 'PWD' => '$(macpwd)', 'TrustServerCertificate' => 1, 'Encrypt' => 'no');
+      \$options = array('Database' => '$(macOS_sqlsrv_db)', 'UID' => '$(uid)', 'PWD' => '$(macpwd)', 'Encrypt' => 'no');
       \$conn = sqlsrv_connect(\$server, \$options);
       if (\$conn === false) {
           print_r(sqlsrv_errors());
@@ -539,12 +503,11 @@ jobs:
       
       cp *.log $(Build.SourcesDirectory)/out/Logs/ 2>/dev/null || true
       
+      for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
       # Generate JUnit XML
-      if [[ -f output.py ]]; then
-          python3 output.py || true
-      fi
-      
-      ls -l *.xml 2>/dev/null || echo "No XML files generated"
+      python3 output.py
+      ls -l *.xml
     displayName: 'Process Test Logs'
     condition: always()
 
@@ -769,7 +732,6 @@ jobs:
       echo "================================="
     displayName: 'Show ODBC Driver version being used'
 
-  # Full test runs - commented out for debugging
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
       export MSSQL_SERVER='$(server)'
