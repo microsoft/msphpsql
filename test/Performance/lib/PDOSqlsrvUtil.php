@@ -12,7 +12,7 @@ class PDOSqlsrvUtil
         require dirname(__FILE__).DIRECTORY_SEPARATOR.'connect.php';
         try
         {
-            $conn = new PDO( "sqlsrv:Server=$server; Database=$database; ConnectionPooling=$pooling; MultipleActiveResultSets=$mars" , $uid, $pwd );       
+            $conn = new PDO( "sqlsrv:Server=$server; Database=$database; Encrypt=$encrypt; ConnectionPooling=$pooling; MultipleActiveResultSets=$mars" , $uid, $pwd );       
             $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             return $conn;
         }

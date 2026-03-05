@@ -26,7 +26,7 @@ function Extend()
 
     // simply use $databaseName from MsSetup.inc to facilitate testing in Azure,  
     // which does not support switching databases
-    $conn2 = new ExPDO("sqlsrv:Server=$server;Database=$databaseName", $uid, $pwd);
+    $conn2 = new ExPDO("sqlsrv:Server=$server;Database=$databaseName;Encrypt=$encrypt", $uid, $pwd);
     // With PHP 8.0 the default is PDO::ERRMODE_EXCEPTION rather than PDO::ERRMODE_SILENT
     $conn2->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
     

@@ -12,7 +12,7 @@ $dataTypes = array("char(".SHORT_STRSIZE.")", "varchar(".SHORT_STRSIZE.")", "nva
                     "decimal", "float", "real", "bigint", "int", "bit"
                     );
 
-$connectionOptions = "sqlsrv:Server=$server;Database=$databaseName";
+$connectionOptions = "sqlsrv:Server=$server;Database=$databaseName;Encrypt=$encrypt";
 
 $connectionOptions .= ";ColumnEncryption=enabled";
 $connectionOptions .= ";KeyStoreAuthentication=KeyVaultPassword";
