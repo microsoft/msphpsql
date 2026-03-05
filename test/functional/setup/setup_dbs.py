@@ -14,6 +14,7 @@ def _is_mssqltools_v18():
     try:
         result = subprocess.run(['bcp', '-v'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         output = result.stdout + result.stderr
+        print("bcp version check:\n" + output)
         m = re.search(r'Version:\s*(\d+)', output)
         if m and int(m.group(1)) >= 18:
             return True
@@ -80,6 +81,8 @@ if __name__ == '__main__':
     base_conn = ' -S ' + server + ' -U ' + uid + ' -P ' + pwd + ' '
     conn_options_sqlcmd = base_conn + _encrypt_opt_sqlcmd
     conn_options_bcp = base_conn + _encrypt_opt_bcp
+    print("Connection options for sqlcmd: " + conn_options_sqlcmd)
+    print("Connection options for bcp: " + conn_options_bcp)
 
     # In Azure, assume an empty test database has been created using Azure portal
     if (args.AZURE.lower() == 'no'):
