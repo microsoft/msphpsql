@@ -45,7 +45,7 @@ function createTablePlainQuery($conn, $tableName, $columns)
 try {
     // This test requires to connect with the Always Encrypted feature
     // First check if the system is qualified to run this test
-    $dsn = "sqlsrv:Server=$server; Database=$databaseName;";
+    $dsn = "sqlsrv:Server=$server; Database=$databaseName;Encrypt=$encrypt;";
     $conn = new PDO($dsn, $uid, $pwd);
     $qualified = isAEQualified($conn) && (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
 

@@ -306,42 +306,6 @@ jobs:
       sed -i '' -e "s/TARGET_USERNAME/${SQL_USER}/g" pdo_sqlsrv/MsSetup.inc
       sed -i '' -e "s/TARGET_PASSWORD/${SQL_PWD}/g" pdo_sqlsrv/MsSetup.inc
       
-      # Add TrustServerCertificate for ODBC 18
-      echo "Adding TrustServerCertificate for ODBC 18 compatibility..."
-      
-      # sqlsrv: Add TrustServerCertificate => 1
-      sed -i '' -e 's/"Encrypt" => \$encrypt)/"Encrypt" => \$encrypt, "TrustServerCertificate" => 1)/g' sqlsrv/MsSetup.inc
-      
-      # pdo_sqlsrv: Add TrustServerCertificate=1 to DSN
-      sed -i '' -e 's/Encrypt=\$encrypt;/Encrypt=\$encrypt;TrustServerCertificate=1;/g' pdo_sqlsrv/MsCommon.inc
-      sed -i '' -e 's/Encrypt=\$encrypt;/Encrypt=\$encrypt;TrustServerCertificate=1;/g' pdo_sqlsrv/MsCommon_mid-refactor.inc
-      
-      # Update MsSetup.inc for PDO
-      sed -i '' -e "s/\$connectionOptions = array();/\$connectionOptions = array('TrustServerCertificate' => 1);/g" pdo_sqlsrv/MsSetup.inc
-      
-      # Additional TrustServerCertificate patterns
-      sed -i '' -e 's/Database=\$databaseName"/Database=\$databaseName;TrustServerCertificate=1"/g' pdo_sqlsrv/MsCommon.inc
-      sed -i '' -e 's/Database=\$databaseName"/Database=\$databaseName;TrustServerCertificate=1"/g' pdo_sqlsrv/MsCommon_mid-refactor.inc
-      
-      # Patch ALL PDO test files for TrustServerCertificate
-      echo "Patching all PDO test files for TrustServerCertificate..."
-      for f in pdo_sqlsrv/*.phpt pdo_sqlsrv/*.php pdo_sqlsrv/*.inc; do
-        if [[ -f "$f" ]]; then
-          sed -i '' -e 's/;Database=\([^;"]*\)"/;Database=\1;TrustServerCertificate=1"/g' "$f" 2>/dev/null || true
-          sed -i '' -e 's/sqlsrv:Server=/sqlsrv:TrustServerCertificate=1;Server=/g' "$f" 2>/dev/null || true
-          sed -i '' -e "s/sqlsrv:server=/sqlsrv:TrustServerCertificate=1;server=/gi" "$f" 2>/dev/null || true
-        fi
-      done
-      
-      # Patch sqlsrv test files
-      for f in sqlsrv/*.phpt sqlsrv/*.php sqlsrv/*.inc; do
-        if [[ -f "$f" ]]; then
-          sed -i '' -e "s/array(\"Database\"/array(\"TrustServerCertificate\" => 1, \"Database\"/g" "$f" 2>/dev/null || true
-          sed -i '' -e "s/array('Database'/array('TrustServerCertificate' => 1, 'Database'/g" "$f" 2>/dev/null || true
-        fi
-      done
-      
-      echo ""
       echo "=== sqlsrv/MsSetup.inc (first 50 lines) ==="
       head -50 sqlsrv/MsSetup.inc
       echo ""
@@ -376,15 +340,6 @@ jobs:
       
       echo "Configuring skip files for tests that require unavailable features..."
       
-      # Skip HGS/enclave tests (secure enclaves not available in Docker)
-      for skipfile in sqlsrv/skipif_not_hgs.inc pdo_sqlsrv/skipif_not_hgs.inc; do
-        if [[ -f "$skipfile" ]]; then
-          cp "$skipfile" "${skipfile}.bak"
-          echo '<?php die("skip Secure enclave not configured for macOS CI environment"); ?>' > "$skipfile"
-          echo "Modified $skipfile to always skip"
-        fi
-      done
-      
       # Skip Chinese locale test (has macOS-specific encoding issues)
       if [[ -f "pdo_sqlsrv/pdo_ansi_locale_zh.phpt" ]]; then
         mv pdo_sqlsrv/pdo_ansi_locale_zh.phpt pdo_sqlsrv/pdo_ansi_locale_zh.phpt.skip || true
@@ -405,14 +360,6 @@ jobs:
         echo "Skipped test_stream_large_data.phpt (times out on macOS CI)"
       fi
       
-      # Skip tests with ODBC 18-specific pattern mismatches
-      for skiptest in pdo_sqlsrv/pdo_construct_dsn_error.phpt pdo_sqlsrv/pdo_utf8_conn.phpt; do
-        if [[ -f "$skiptest" ]]; then
-          mv "$skiptest" "${skiptest}.skip" || true
-          echo "Skipped $skiptest (ODBC 18 pattern mismatch)"
-        fi
-      done
-      
       # Skip tests that cause BORKED errors
       for borktest in pdo_sqlsrv/pdo_azure_ad_access_token.phpt pdo_sqlsrv/pdo_connect_encrypt_attributes.phpt; do
         if [[ -f "$borktest" ]]; then
@@ -428,20 +375,6 @@ jobs:
           echo "Skipped $pooltest (requires ODBC pooling config)"
         fi
       done
-      
-      # Skip Azure Key Vault tests (require AKV credentials)
-      for akvtest in pdo_sqlsrv/pdo_ae_azure_key_vault_keywords.phpt pdo_sqlsrv/pdo_ae_insert_datetime_encrypted.phpt sqlsrv/sqlsrv_ae_azure_key_vault_keywords.phpt; do
-        if [[ -f "$akvtest" ]]; then
-          mv "$akvtest" "${akvtest}.skip" || true
-          echo "Skipped $akvtest (requires AKV credentials)"
-        fi
-      done
-      
-      # Skip PDO95_Extend2 test
-      if [[ -f "pdo_sqlsrv/PDO95_Extend2.phpt" ]]; then
-        mv pdo_sqlsrv/PDO95_Extend2.phpt pdo_sqlsrv/PDO95_Extend2.phpt.skip || true
-        echo "Skipped PDO95_Extend2.phpt"
-      fi
       
       echo "Skip files configured"
     displayName: 'Configure Test Skip Files'
@@ -478,7 +411,7 @@ jobs:
       echo "Verifying database connection before tests..."
       $PHP_BIN -c $PHP_INI -r "
       \$server = '127.0.0.1';
-      \$options = array('Database' => '$(macOS_sqlsrv_db)', 'UID' => '$(uid)', 'PWD' => '$(macpwd)', 'TrustServerCertificate' => 1, 'Encrypt' => 'no');
+      \$options = array('Database' => '$(macOS_sqlsrv_db)', 'UID' => '$(uid)', 'PWD' => '$(macpwd)', 'Encrypt' => 'no');
       \$conn = sqlsrv_connect(\$server, \$options);
       if (\$conn === false) {
           print_r(sqlsrv_errors());
@@ -539,12 +472,11 @@ jobs:
       
       cp *.log $(Build.SourcesDirectory)/out/Logs/ 2>/dev/null || true
       
+      for f in sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
+      for f in pdo_sqlsrv/*.diff; do ls $f 2>/dev/null; cat $f 2>/dev/null; echo ''; done || true
       # Generate JUnit XML
-      if [[ -f output.py ]]; then
-          python3 output.py || true
-      fi
-      
-      ls -l *.xml 2>/dev/null || echo "No XML files generated"
+      python3 output.py
+      ls -l *.xml
     displayName: 'Process Test Logs'
     condition: always()
 
@@ -769,7 +701,6 @@ jobs:
       echo "================================="
     displayName: 'Show ODBC Driver version being used'
 
-  # Full test runs - commented out for debugging
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
       export MSSQL_SERVER='$(server)'

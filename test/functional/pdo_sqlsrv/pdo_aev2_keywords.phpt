@@ -17,7 +17,7 @@ require_once("AE_v2_values.inc");
 require_once("pdo_AE_functions.inc");
 
 // Test with random nonsense. Connection should fail.
-$options = "sqlsrv:Server=$server;database=$databaseName;ColumnEncryption=xyz";
+$options = "sqlsrv:Server=$server;database=$databaseName;Encrypt=$encrypt;ColumnEncryption=xyz";
 
 try {
     $conn = new PDO($options, $uid, $pwd);
@@ -31,7 +31,7 @@ try {
 // Insert a rogue 'x' into the protocol part of the attestation.
 $comma = strpos($attestation, ',');
 $badProtocol = substr_replace($attestation, 'x', $comma, 0);
-$options = "sqlsrv:Server=$server;database=$databaseName;ColumnEncryption=$badProtocol";
+$options = "sqlsrv:Server=$server;database=$databaseName;Encrypt=$encrypt;ColumnEncryption=$badProtocol";
 
 try {
     $conn = new PDO($options, $uid, $pwd);
@@ -44,7 +44,7 @@ try {
 // Test with good protocol and incorrect attestation URL. Connection should succeed
 // because the URL is only checked when an enclave computation is attempted.
 $badURL = substr_replace($attestation, 'x', $comma+1, 0);
-$options = "sqlsrv:Server=$server;database=$databaseName;ColumnEncryption=$badURL";
+$options = "sqlsrv:Server=$server;database=$databaseName;Encrypt=$encrypt;ColumnEncryption=$badURL";
 
 try {
     $conn = new PDO($options, $uid, $pwd);

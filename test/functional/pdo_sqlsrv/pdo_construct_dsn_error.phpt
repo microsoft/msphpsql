@@ -11,7 +11,7 @@ require_once("MsSetup.inc");
 //dsn with 2 consecutive semicolons
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server = $server;;", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:Server = $server;Encrypt=$encrypt;;", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -21,7 +21,7 @@ catch( PDOException $e ) {
 //dsn with double right curly braces
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}}", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:Server =$server;Encrypt=$encrypt; database = {tempdb}}", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -31,7 +31,7 @@ catch( PDOException $e ) {
 //dsn with double right curly braces and semicolon
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}};", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:Server =$server;Encrypt=$encrypt; database = {tempdb}};", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -41,7 +41,7 @@ catch( PDOException $e ) {
 //dsn with right curly braces and other symbol
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}?", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:Server =$server;Encrypt=$encrypt; database = {tempdb}?", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -51,7 +51,7 @@ catch( PDOException $e ) {
 //dsn with no equal sign in one option
 try 
 {   
-    $conn = new PDO( "sqlsrv:Server =$server; database", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:Server =$server;Encrypt=$encrypt; database", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -72,7 +72,7 @@ catch( PDOException $e ) {
 try 
 {   
     $databaseName = "tempdb";
-    @$conn = new PDO( "sqlsrv:database = $databaseName", $uid, $pwd );
+    @$conn = new PDO( "sqlsrv:database = $databaseName;Encrypt=$encrypt", $uid, $pwd );
 }
 catch( PDOException $e ) {
     print_r( ($e->errorInfo)[2] );
@@ -85,19 +85,19 @@ echo "\n";
 try 
 {   
     //dsn with curly braces
-    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:Server =$server; database = {tempdb};Encrypt=$encrypt", $uid, $pwd );
     echo "value in curly braces OK\n";
     
     //dsn with curly braces and semicolon
-    @$conn = new PDO( "sqlsrv:Server =$server; database = {tempdb};", $uid, $pwd );
+    @$conn = new PDO( "sqlsrv:Server =$server; database = {tempdb};Encrypt=$encrypt;", $uid, $pwd );
     echo "value in curly braces followed by a semicolon OK\n";
     
     //dsn with curly braces and trailing spaces
-    @$conn = new PDO( "sqlsrv:Server =$server; database = {tempdb}    ", $uid, $pwd );
+    @$conn = new PDO( "sqlsrv:Server =$server;Encrypt=$encrypt; database = {tempdb}    ", $uid, $pwd );
     echo "value in curly braces followed by trailing spaces OK\n";
     
     //dsn with no value specified and ends with semicolon
-    $conn = new PDO( "sqlsrv:Server =$server; database = ;", $uid, $pwd );
+    $conn = new PDO( "sqlsrv:Server =$server;Encrypt=$encrypt; database = ;", $uid, $pwd );
     echo "dsn with no value specified and ends with semicolon OK\n";
 }
 catch( PDOException $e ) {

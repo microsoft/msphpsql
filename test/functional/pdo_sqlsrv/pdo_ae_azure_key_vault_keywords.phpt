@@ -50,7 +50,7 @@ $tableName = "akv_comparison_table";
 
 // First determine if the server is AE v2 enabled
 $isEnclaveEnabled = false;
-$connectionOptions = "sqlsrv:Server=$server;Database=$databaseName";
+$connectionOptions = "sqlsrv:Server=$server;Database=$databaseName;Encrypt=$encrypt";
 
 $conn = new PDO($connectionOptions, $uid, $pwd);
 if (!$conn) {
@@ -79,7 +79,7 @@ for ($i = 0; $i < sizeof($columnEncryption); ++$i) {
     for ($j = 0; $j < sizeof($keyStoreAuthentication); ++$j) {
         for ($k = 0; $k < sizeof($keyStorePrincipalId); ++$k) {
             for ($m = 0; $m < sizeof($keyStoreSecret); ++$m) {
-                $connectionOptions = "sqlsrv:Server=$server;Database=$databaseName";
+                $connectionOptions = "sqlsrv:Server=$server;Database=$databaseName;Encrypt=$encrypt";
 
                 if (!empty($columnEncryption[$i])) {
                     $connectionOptions .= ";ColumnEncryption=".$columnEncryption[$i];
