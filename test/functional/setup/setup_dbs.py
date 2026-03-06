@@ -11,16 +11,14 @@ from exec_sql_scripts import *
 def _is_mssqltools_v18():
     """Return True if mssql-tools >= 18 (encrypt mandatory by default)."""
     import subprocess, re
-    try:
-        result = subprocess.run(['bcp', '-v'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        output = result.stdout + result.stderr
-        print("bcp version check:\n" + output)
-        m = re.search(r'Version:\s*(\d+)', output)
-        if m and int(m.group(1)) >= 18:
-            return True
-    except Exception:
-        pass
-    return False
+    result = subprocess.run(['bcp', '-v'], stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, universal_newlines=True)
+    output = result.stdout + result.stderr
+    print("bcp version check:\n" + output)
+    m = re.search(r'Version:\s*(\d+)', output)
+    if m:
+        return int(m.group(1)) >= 18
+    raise RuntimeError("Failed to parse bcp version from output: " + output)
 
 # mssql-tools18 defaults to Encrypt=Mandatory.  The flags below add encrypt-
 # optional + trust-server-certificate so sqlcmd/bcp work against servers
