@@ -202,6 +202,7 @@ void conn_string_parser::validate_key( _In_reads_(key_len) const char *key, _Ino
             
             if (match) {
                 this->current_key = PDO_CONN_OPTS[i].conn_option_key;
+                this->current_key_name = PDO_CONN_OPTS[i].sqlsrv_name;
                 return;
             }
         }
