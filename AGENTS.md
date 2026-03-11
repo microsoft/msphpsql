@@ -29,7 +29,7 @@ This document provides guidance for AI coding agents working with the msphpsql G
 | Windows build scripts | `buildscripts/` | `builddrivers.py`, `buildtools.py` |
 | Samples | `sample/` | `sqlsrv_sample.php`, `pdo_sqlsrv_sample.php` |
 | CI (Linux/Mac) | [azure-pipelines.yml](azure-pipelines.yml) | Azure Pipelines — builds PHP from source, runs tests |
-| CI (Windows) | [appveyor.yml](appveyor.yml) | (unused) AppVeyor — PHP SDK build matrix |
+| CI (Windows) | [appveyor.yml](appveyor.yml) | AppVeyor — PHP SDK build matrix |
 | Docker | [Dockerfile-msphpsql](Dockerfile-msphpsql) | Ubuntu 24.04 dev environment image |
 
 ## Architecture
@@ -103,7 +103,7 @@ The `config.m4` includes logic to avoid double-compiling shared sources when bot
 Each extension has a `config.w32` (JScript) for the PHP Windows SDK build:
 
 - **Visual Studio**: VS2019 for PHP 8.3, VS2022 for PHP 8.4+
-- **Security flags**: `/NXCOMPAT`, `/DYNAMICBASE`, `/guard:cf`, `/ZH:SHA_256`, `/sdl`, `/W4`, `/WX`, `/CETCOMPAT`, `/Qspectre` (for VCVERS >= 1913)
+- **Security flags**: `/NXCOMPAT`, `/DYNAMICBASE`, `/guard:cf`, `/ZH:SHA_256`, `/W4`, `/WX`, `/CETCOMPAT`, `/Qspectre` (for VCVERS >= 1913)
 - **Scripted builds**: `buildscripts/builddrivers.py` automates downloading PHP SDK, source, and building both extensions
 
 ### PECL Packaging
