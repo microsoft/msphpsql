@@ -1095,18 +1095,22 @@ jobs:
       pip install gcovr
       
       # Use Python to merge the Cobertura XML files
+      # Note: use forward slashes to avoid Python escape sequence issues (\a = bell, etc.)
+      $srcDir = "$(Build.SourcesDirectory)" -replace '\\','/'
       python -c @"
       import xml.etree.ElementTree as ET
       import sys, os
       
-      files = [f for f in ['$(Build.SourcesDirectory)\coverage-sqlsrv.xml', '$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.xml'] if os.path.exists(f)]
+      src = '$srcDir'
+      files = [f for f in [src + '/coverage-sqlsrv.xml', src + '/coverage-pdo_sqlsrv.xml'] if os.path.exists(f)]
       if not files:
           print('No coverage files found')
           sys.exit(1)
       
+      out = src + '/coverage.xml'
       if len(files) == 1:
           import shutil
-          shutil.copy(files[0], '$(Build.SourcesDirectory)\coverage.xml')
+          shutil.copy(files[0], out)
       else:
           # Simple merge: take first file as base, append packages from second
           tree1 = ET.parse(files[0])
@@ -1121,7 +1125,7 @@ jobs:
           if packages2 is not None and packages1 is not None:
               for pkg in packages2:
                   packages1.append(pkg)
-          tree1.write('$(Build.SourcesDirectory)\coverage.xml', xml_declaration=True, encoding='utf-8')
+          tree1.write(out, xml_declaration=True, encoding='utf-8')
       
       print('Merged coverage written to coverage.xml')
       "@
