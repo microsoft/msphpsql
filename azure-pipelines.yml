@@ -524,11 +524,12 @@ jobs:
     condition: always()
 
 - job: Linux
-  condition: false
   variables:
     phpver: 8.5
   pool:
-    vmImage: 'ubuntu-22.04'
+    name: 'PHP-1ES-Public'
+    demands:
+      - ImageOverride -equals AzurePipelines-ubuntu-22.04
   steps:
   - checkout: self
     clean: true
@@ -733,24 +734,6 @@ jobs:
       echo "Coverage report generated:"
       ls -la $(Build.SourcesDirectory)/coverage.xml
     displayName: 'Collect code coverage'
-
-  - task: PublishCodeCoverageResults@2
-    displayName: 'Publish Code Coverage'
-    inputs:
-      summaryFileLocation: '$(Build.SourcesDirectory)/coverage.xml'
-
-  - script: |
-      curl -Os https://cli.codecov.io/latest/linux/codecov
-      chmod +x codecov
-      ./codecov --verbose upload-process \
-        --fail-on-error \
-        -t $(codecov_token) \
-        -n "Linux-PHP$(phpver)" \
-        -F linux \
-        -f $(Build.SourcesDirectory)/coverage.xml
-    displayName: 'Upload coverage to Codecov'
-    env:
-      CODECOV_TOKEN: $(codecov_token)
 
   - script: |
       docker logs -t $(host)
@@ -1111,25 +1094,6 @@ jobs:
       dir $(Build.SourcesDirectory)\coverage*
     displayName: 'Merge coverage reports'
 
-  - task: PublishCodeCoverageResults@2
-    displayName: 'Publish Code Coverage'
-    inputs:
-      summaryFileLocation: '$(Build.SourcesDirectory)\coverage.xml'
-
-  - powershell: |
-      Write-Host "Uploading coverage to Codecov..."
-      $ProgressPreference = 'SilentlyContinue'
-      Invoke-WebRequest -Uri 'https://cli.codecov.io/latest/windows/codecov.exe' -OutFile codecov.exe
-      .\codecov.exe --verbose upload-process `
-        --fail-on-error `
-        -t $(codecov_token) `
-        -n "Windows-PHP$(phpVersion)" `
-        -F windows `
-        -f $(Build.SourcesDirectory)\coverage.xml
-    displayName: 'Upload coverage to Codecov'
-    env:
-      CODECOV_TOKEN: $(codecov_token)
-
   - powershell: |
       $artifactDir = "$(Build.SourcesDirectory)\coverage-artifacts"
       New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
@@ -1151,4 +1115,235 @@ jobs:
       Write-Host "Stopping LocalDB..."
       sqllocaldb stop MSSQLLocalDB
     displayName: 'Cleanup LocalDB'
+    condition: always()
+
+- job: MergeCoverage
+  displayName: 'Merge Coverage Reports'
+  dependsOn:
+    - Linux
+    - Windows
+  condition: succeededOrFailed()
+  pool:
+    name: 'PHP-1ES-Public'
+    demands:
+      - ImageOverride -equals AzurePipelines-ubuntu-22.04
+  steps:
+  - checkout: none
+
+  - task: DownloadPipelineArtifact@2
+    displayName: 'Download Linux coverage'
+    inputs:
+      artifact: 'coverage-linux'
+      targetPath: '$(Pipeline.Workspace)/coverage-linux'
+    continueOnError: true
+
+  - task: DownloadPipelineArtifact@2
+    displayName: 'Download Windows coverage'
+    inputs:
+      artifact: 'coverage-windows'
+      targetPath: '$(Pipeline.Workspace)/coverage-windows'
+    continueOnError: true
+
+  - script: |
+      echo "=== Linux coverage artifacts ==="
+      ls -la $(Pipeline.Workspace)/coverage-linux/ 2>/dev/null || echo "No Linux coverage"
+      echo ""
+      echo "=== Windows coverage artifacts ==="
+      ls -la $(Pipeline.Workspace)/coverage-windows/ 2>/dev/null || echo "No Windows coverage"
+    displayName: 'List downloaded artifacts'
+
+  - script: |
+      pip install gcovr
+      python3 << 'PYEOF'
+      import xml.etree.ElementTree as ET
+      import os, sys, re, copy
+
+      workspace = os.environ['PIPELINE_WORKSPACE']
+      linux_xml = os.path.join(workspace, 'coverage-linux', 'coverage.xml')
+      windows_xml = os.path.join(workspace, 'coverage-windows', 'coverage.xml')
+
+      files = []
+      if os.path.exists(linux_xml):
+          files.append(('linux', linux_xml))
+          print(f'Found Linux coverage: {linux_xml}')
+      if os.path.exists(windows_xml):
+          files.append(('windows', windows_xml))
+          print(f'Found Windows coverage: {windows_xml}')
+
+      if not files:
+          print('No coverage files found')
+          sys.exit(1)
+
+      if len(files) == 1:
+          # Only one platform produced coverage - use it directly
+          import shutil
+          shutil.copy(files[0][1], os.path.join(workspace, 'coverage.xml'))
+          print(f'Using {files[0][0]} coverage as final report')
+          sys.exit(0)
+
+      def normalize_windows_path(filename):
+          """Normalize Windows absolute PDB paths to match Linux relative paths.
+          Windows: D:\\...\\ext\\sqlsrv\\conn.cpp -> sqlsrv/conn.cpp
+          Windows: D:\\...\\ext\\sqlsrv\\shared\\core_conn.cpp -> shared/core_conn.cpp
+          Windows: D:\\...\\ext\\pdo_sqlsrv\\shared\\core_conn.cpp -> shared/core_conn.cpp
+          """
+          # Normalize separators
+          f = filename.replace('\\', '/')
+          # Extract path after ext/ (the PHP extension build directory)
+          m = re.search(r'/ext/((?:pdo_)?sqlsrv)/(.*)', f)
+          if m:
+              ext_name = m.group(1)  # sqlsrv or pdo_sqlsrv
+              rest = m.group(2)      # conn.cpp or shared/core_conn.cpp
+              # If it's under shared/, normalize to top-level shared/
+              if rest.startswith('shared/'):
+                  return rest
+              return ext_name + '/' + rest
+          return f
+
+      def normalize_class(cls, platform):
+          """Normalize class elements which contain the filename paths."""
+          if platform == 'windows':
+              filename = cls.get('filename', '')
+              cls.set('filename', normalize_windows_path(filename))
+          return cls
+
+      # Parse both files
+      linux_tree = ET.parse(linux_xml)
+      win_tree = ET.parse(windows_xml)
+
+      # Build a dict of filename -> class element from Linux (base)
+      linux_root = linux_tree.getroot()
+      coverage_data = {}  # filename -> {lines: {lineno: hits}}
+
+      for pkg in linux_root.iter('package'):
+          for cls in pkg.iter('class'):
+              fname = cls.get('filename', '')
+              if fname not in coverage_data:
+                  coverage_data[fname] = {}
+              for line in cls.iter('line'):
+                  num = line.get('number')
+                  hits = int(line.get('hits', '0'))
+                  coverage_data[fname][num] = coverage_data[fname].get(num, 0) + hits
+
+      # Add Windows data with normalized paths
+      for pkg in win_tree.getroot().iter('package'):
+          for cls in pkg.iter('class'):
+              fname = normalize_windows_path(cls.get('filename', ''))
+              if fname not in coverage_data:
+                  coverage_data[fname] = {}
+              for line in cls.iter('line'):
+                  num = line.get('number')
+                  hits = int(line.get('hits', '0'))
+                  coverage_data[fname][num] = coverage_data[fname].get(num, 0) + hits
+
+      # Build merged Cobertura XML
+      root = ET.Element('coverage')
+      root.set('version', '1')
+      root.set('timestamp', '0')
+      sources = ET.SubElement(root, 'sources')
+      source = ET.SubElement(sources, 'source')
+      source.text = '.'
+      packages = ET.SubElement(root, 'packages')
+
+      total_lines = 0
+      covered_lines = 0
+
+      # Group by directory (package)
+      pkg_data = {}
+      for fname, lines in sorted(coverage_data.items()):
+          pkg_name = os.path.dirname(fname) or '.'
+          if pkg_name not in pkg_data:
+              pkg_data[pkg_name] = {}
+          pkg_data[pkg_name][fname] = lines
+
+      for pkg_name, file_data in sorted(pkg_data.items()):
+          pkg_elem = ET.SubElement(packages, 'package')
+          pkg_elem.set('name', pkg_name)
+          classes = ET.SubElement(pkg_elem, 'classes')
+
+          pkg_lines = 0
+          pkg_covered = 0
+
+          for fname, lines in sorted(file_data.items()):
+              cls_elem = ET.SubElement(classes, 'class')
+              cls_elem.set('name', os.path.basename(fname))
+              cls_elem.set('filename', fname)
+              cls_elem.set('line-rate', '0')
+              cls_elem.set('branch-rate', '0')
+              cls_elem.set('complexity', '0')
+              lines_elem = ET.SubElement(cls_elem, 'lines')
+
+              file_lines = 0
+              file_covered = 0
+              for num, hits in sorted(lines.items(), key=lambda x: int(x[0])):
+                  line_elem = ET.SubElement(lines_elem, 'line')
+                  line_elem.set('number', str(num))
+                  line_elem.set('hits', str(hits))
+                  file_lines += 1
+                  if hits > 0:
+                      file_covered += 1
+
+              if file_lines > 0:
+                  cls_elem.set('line-rate', f'{file_covered / file_lines:.4f}')
+
+              pkg_lines += file_lines
+              pkg_covered += file_covered
+
+          if pkg_lines > 0:
+              pkg_elem.set('line-rate', f'{pkg_covered / pkg_lines:.4f}')
+          else:
+              pkg_elem.set('line-rate', '0')
+
+          total_lines += pkg_lines
+          covered_lines += pkg_covered
+
+      if total_lines > 0:
+          root.set('line-rate', f'{covered_lines / total_lines:.4f}')
+      else:
+          root.set('line-rate', '0')
+      root.set('lines-valid', str(total_lines))
+      root.set('lines-covered', str(covered_lines))
+
+      out = os.path.join(workspace, 'coverage.xml')
+      tree = ET.ElementTree(root)
+      tree.write(out, xml_declaration=True, encoding='utf-8')
+
+      print(f'Merged coverage: {covered_lines}/{total_lines} lines covered '
+            f'({covered_lines/total_lines*100:.1f}%)' if total_lines > 0 else 'No lines')
+      print(f'Files: {len(coverage_data)}')
+      print(f'Written to: {out}')
+      PYEOF
+    displayName: 'Merge coverage reports'
+    env:
+      PIPELINE_WORKSPACE: $(Pipeline.Workspace)
+
+  - script: |
+      ls -la $(Pipeline.Workspace)/coverage.xml
+      echo "=== First 50 lines of merged report ==="
+      head -50 $(Pipeline.Workspace)/coverage.xml
+    displayName: 'Inspect merged coverage'
+
+  - task: PublishCodeCoverageResults@2
+    displayName: 'Publish Code Coverage'
+    inputs:
+      summaryFileLocation: '$(Pipeline.Workspace)/coverage.xml'
+
+  - script: |
+      curl -Os https://cli.codecov.io/latest/linux/codecov
+      chmod +x codecov
+      ./codecov --verbose upload-process \
+        --fail-on-error \
+        -t $(codecov_token) \
+        -n "merged" \
+        -f $(Pipeline.Workspace)/coverage.xml
+    displayName: 'Upload coverage to Codecov'
+    env:
+      CODECOV_TOKEN: $(codecov_token)
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish merged coverage artifact'
+    inputs:
+      targetPath: '$(Pipeline.Workspace)/coverage.xml'
+      artifact: 'coverage-merged'
+      publishLocation: 'pipeline'
     condition: always()
