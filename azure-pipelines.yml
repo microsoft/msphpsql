@@ -774,6 +774,21 @@ jobs:
     displayName: 'Stop SQL Server for Linux'
     condition: always()
 
+  - script: |
+      mkdir -p $(Build.SourcesDirectory)/coverage-artifacts
+      cp $(Build.SourcesDirectory)/coverage*.xml $(Build.SourcesDirectory)/coverage-artifacts/ 2>/dev/null || true
+      ls -la $(Build.SourcesDirectory)/coverage-artifacts/
+    displayName: 'Stage coverage artifacts'
+    condition: always()
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish coverage artifacts'
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)/coverage-artifacts'
+      artifact: 'coverage-linux'
+      publishLocation: 'pipeline'
+    condition: always()
+
 - job: Windows
   variables:
     phpVersion: 8.5
@@ -1058,7 +1073,7 @@ jobs:
       set MSSQL_USER=$(uid)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
-      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
+      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --cover_children --export_type binary:$(Build.SourcesDirectory)\coverage-sqlsrv.cov -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
     displayName: 'Run sqlsrv functional tests with coverage'
 
   - script: |
@@ -1068,7 +1083,7 @@ jobs:
       set MSSQL_USER=$(uid)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
-      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
+      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --cover_children --export_type binary:$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.cov -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests with coverage'
 
   - script: |
@@ -1090,47 +1105,10 @@ jobs:
       failTaskOnFailedTests: true
       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
 
-  - powershell: |
-      Write-Host "Merging coverage reports..."
-      pip install gcovr
-      
-      # Use Python to merge the Cobertura XML files
-      # Note: use forward slashes to avoid Python escape sequence issues (\a = bell, etc.)
-      $srcDir = "$(Build.SourcesDirectory)" -replace '\\','/'
-      python -c @"
-      import xml.etree.ElementTree as ET
-      import sys, os
-      
-      src = '$srcDir'
-      files = [f for f in [src + '/coverage-sqlsrv.xml', src + '/coverage-pdo_sqlsrv.xml'] if os.path.exists(f)]
-      if not files:
-          print('No coverage files found')
-          sys.exit(1)
-      
-      out = src + '/coverage.xml'
-      if len(files) == 1:
-          import shutil
-          shutil.copy(files[0], out)
-      else:
-          # Simple merge: take first file as base, append packages from second
-          tree1 = ET.parse(files[0])
-          tree2 = ET.parse(files[1])
-          root1 = tree1.getroot()
-          packages1 = root1.find('.//packages')
-          if packages1 is None:
-              packages1 = root1.find('packages')
-          packages2 = tree2.getroot().find('.//packages')
-          if packages2 is None:
-              packages2 = tree2.getroot().find('packages')
-          if packages2 is not None and packages1 is not None:
-              for pkg in packages2:
-                  packages1.append(pkg)
-          tree1.write(out, xml_declaration=True, encoding='utf-8')
-      
-      print('Merged coverage written to coverage.xml')
-      "@
-      
-      dir $(Build.SourcesDirectory)\coverage*.xml
+  - script: |
+      set PATH=C:\Program Files\OpenCppCoverage;%PATH%
+      OpenCppCoverage --input_coverage=$(Build.SourcesDirectory)\coverage-sqlsrv.cov --input_coverage=$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.cov --export_type cobertura:$(Build.SourcesDirectory)\coverage.xml
+      dir $(Build.SourcesDirectory)\coverage*
     displayName: 'Merge coverage reports'
 
   - task: PublishCodeCoverageResults@2
@@ -1151,6 +1129,23 @@ jobs:
     displayName: 'Upload coverage to Codecov'
     env:
       CODECOV_TOKEN: $(codecov_token)
+
+  - powershell: |
+      $artifactDir = "$(Build.SourcesDirectory)\coverage-artifacts"
+      New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
+      Copy-Item "$(Build.SourcesDirectory)\coverage*.xml" $artifactDir -ErrorAction SilentlyContinue
+      Copy-Item "$(Build.SourcesDirectory)\coverage*.cov" $artifactDir -ErrorAction SilentlyContinue
+      dir $artifactDir
+    displayName: 'Stage coverage artifacts'
+    condition: always()
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish coverage artifacts'
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)\coverage-artifacts'
+      artifact: 'coverage-windows'
+      publishLocation: 'pipeline'
+    condition: always()
 
   - powershell: |
       Write-Host "Stopping LocalDB..."
