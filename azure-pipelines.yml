@@ -524,6 +524,7 @@ jobs:
     condition: always()
 
 - job: Linux
+  condition: false
   variables:
     phpver: 8.5
   pool:
@@ -582,11 +583,6 @@ jobs:
       odbcinst -j
       odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
     displayName: 'Install ODBC Driver 18'
-
-  - powershell: |
-      $guid = [guid]::NewGuid().ToString()
-      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-    displayName: 'Generate Password'
 
   - powershell: |
       $guid = [guid]::NewGuid().ToString()
@@ -779,7 +775,6 @@ jobs:
     condition: always()
 
 - job: Windows
-  condition: false
   variables:
     phpVersion: 8.5
   pool:
@@ -1042,23 +1037,33 @@ jobs:
       Write-Host "================================="
     displayName: 'Show ODBC Driver version being used'
 
+  - powershell: |
+      Write-Host "Installing OpenCppCoverage..."
+      choco install opencppcoverage -y
+      $env:Path = "C:\Program Files\OpenCppCoverage;$env:Path"
+      OpenCppCoverage --help | Select-Object -First 3
+      Write-Host "OpenCppCoverage installed successfully"
+    displayName: 'Install OpenCppCoverage'
+
   - script: |
+      set PATH=C:\Program Files\OpenCppCoverage;%PATH%
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
       set MSSQL_SERVER=(localdb)\MSSQLLocalDB
       set MSSQL_USER=$(uid)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
-    displayName: 'Run sqlsrv functional tests'
+      OpenCppCoverage --sources $(Build.SourcesDirectory)\source --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
+    displayName: 'Run sqlsrv functional tests with coverage'
 
   - script: |
+      set PATH=C:\Program Files\OpenCppCoverage;%PATH%
       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
       set MSSQL_SERVER=(localdb)\MSSQLLocalDB
       set MSSQL_USER=$(uid)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
-    displayName: 'Run pdo_sqlsrv functional tests'
+      OpenCppCoverage --sources $(Build.SourcesDirectory)\source --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
+    displayName: 'Run pdo_sqlsrv functional tests with coverage'
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\
@@ -1078,6 +1083,64 @@ jobs:
       testResultsFiles: '*.xml'
       failTaskOnFailedTests: true
       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
+
+  - powershell: |
+      Write-Host "Merging coverage reports..."
+      pip install gcovr
+      
+      # Use Python to merge the Cobertura XML files
+      python -c @"
+      import xml.etree.ElementTree as ET
+      import sys, os
+      
+      files = [f for f in ['$(Build.SourcesDirectory)\coverage-sqlsrv.xml', '$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.xml'] if os.path.exists(f)]
+      if not files:
+          print('No coverage files found')
+          sys.exit(1)
+      
+      if len(files) == 1:
+          import shutil
+          shutil.copy(files[0], '$(Build.SourcesDirectory)\coverage.xml')
+      else:
+          # Simple merge: take first file as base, append packages from second
+          tree1 = ET.parse(files[0])
+          tree2 = ET.parse(files[1])
+          root1 = tree1.getroot()
+          packages1 = root1.find('.//packages')
+          if packages1 is None:
+              packages1 = root1.find('packages')
+          packages2 = tree2.getroot().find('.//packages')
+          if packages2 is None:
+              packages2 = tree2.getroot().find('packages')
+          if packages2 is not None and packages1 is not None:
+              for pkg in packages2:
+                  packages1.append(pkg)
+          tree1.write('$(Build.SourcesDirectory)\coverage.xml', xml_declaration=True, encoding='utf-8')
+      
+      print('Merged coverage written to coverage.xml')
+      "@
+      
+      dir $(Build.SourcesDirectory)\coverage*.xml
+    displayName: 'Merge coverage reports'
+
+  - task: PublishCodeCoverageResults@2
+    displayName: 'Publish Code Coverage'
+    inputs:
+      summaryFileLocation: '$(Build.SourcesDirectory)\coverage.xml'
+
+  - powershell: |
+      Write-Host "Uploading coverage to Codecov..."
+      $ProgressPreference = 'SilentlyContinue'
+      Invoke-WebRequest -Uri 'https://cli.codecov.io/latest/windows/codecov.exe' -OutFile codecov.exe
+      .\codecov.exe --verbose upload-process `
+        --fail-on-error `
+        -t $(codecov_token) `
+        -n "Windows-PHP$(phpVersion)" `
+        -F windows `
+        -f $(Build.SourcesDirectory)\coverage.xml
+    displayName: 'Upload coverage to Codecov'
+    env:
+      CODECOV_TOKEN: $(codecov_token)
 
   - powershell: |
       Write-Host "Stopping LocalDB..."
