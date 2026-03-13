@@ -1056,7 +1056,7 @@ jobs:
       set MSSQL_USER=$(uid)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
-      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --cover_children --export_type binary:$(Build.SourcesDirectory)\coverage-sqlsrv.cov -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
+      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
     displayName: 'Run sqlsrv functional tests with coverage'
 
   - script: |
@@ -1066,7 +1066,7 @@ jobs:
       set MSSQL_USER=$(uid)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
-      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --modules php_pdo_sqlsrv.dll --cover_children --export_type binary:$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.cov -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
+      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_pdo_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests with coverage'
 
   - script: |
@@ -1088,17 +1088,10 @@ jobs:
       failTaskOnFailedTests: true
       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
 
-  - script: |
-      set PATH=C:\Program Files\OpenCppCoverage;%PATH%
-      OpenCppCoverage --input_coverage=$(Build.SourcesDirectory)\coverage-sqlsrv.cov --input_coverage=$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.cov --export_type cobertura:$(Build.SourcesDirectory)\coverage.xml
-      dir $(Build.SourcesDirectory)\coverage*
-    displayName: 'Merge coverage reports'
-
   - powershell: |
       $artifactDir = "$(Build.SourcesDirectory)\coverage-artifacts"
       New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
       Copy-Item "$(Build.SourcesDirectory)\coverage*.xml" $artifactDir -ErrorAction SilentlyContinue
-      Copy-Item "$(Build.SourcesDirectory)\coverage*.cov" $artifactDir -ErrorAction SilentlyContinue
       dir $artifactDir
     displayName: 'Stage coverage artifacts'
     condition: always()
@@ -1156,29 +1149,34 @@ jobs:
       pip install gcovr
       python3 << 'PYEOF'
       import xml.etree.ElementTree as ET
-      import os, sys, re, copy
+      import os, sys, re, glob
 
       workspace = os.environ['PIPELINE_WORKSPACE']
+
+      # Collect all coverage XML files from both platforms
+      coverage_files = []
+      
+      # Linux: single coverage.xml
       linux_xml = os.path.join(workspace, 'coverage-linux', 'coverage.xml')
-      windows_xml = os.path.join(workspace, 'coverage-windows', 'coverage.xml')
-
-      files = []
       if os.path.exists(linux_xml):
-          files.append(('linux', linux_xml))
+          coverage_files.append(('linux', linux_xml))
           print(f'Found Linux coverage: {linux_xml}')
-      if os.path.exists(windows_xml):
-          files.append(('windows', windows_xml))
-          print(f'Found Windows coverage: {windows_xml}')
 
-      if not files:
+      # Windows: separate per-driver XMLs (coverage-sqlsrv.xml, coverage-pdo_sqlsrv.xml)
+      win_dir = os.path.join(workspace, 'coverage-windows')
+      if os.path.isdir(win_dir):
+          for f in sorted(glob.glob(os.path.join(win_dir, 'coverage*.xml'))):
+              coverage_files.append(('windows', f))
+              print(f'Found Windows coverage: {f}')
+
+      if not coverage_files:
           print('No coverage files found')
           sys.exit(1)
 
-      if len(files) == 1:
-          # Only one platform produced coverage - use it directly
+      if len(coverage_files) == 1:
           import shutil
-          shutil.copy(files[0][1], os.path.join(workspace, 'coverage.xml'))
-          print(f'Using {files[0][0]} coverage as final report')
+          shutil.copy(coverage_files[0][1], os.path.join(workspace, 'coverage.xml'))
+          print(f'Using {coverage_files[0][0]} coverage as final report')
           sys.exit(0)
 
       def normalize_windows_path(filename):
@@ -1187,54 +1185,46 @@ jobs:
           Windows: D:\\...\\ext\\sqlsrv\\shared\\core_conn.cpp -> shared/core_conn.cpp
           Windows: D:\\...\\ext\\pdo_sqlsrv\\shared\\core_conn.cpp -> shared/core_conn.cpp
           """
-          # Normalize separators
           f = filename.replace('\\', '/')
-          # Extract path after ext/ (the PHP extension build directory)
           m = re.search(r'/ext/((?:pdo_)?sqlsrv)/(.*)', f)
           if m:
-              ext_name = m.group(1)  # sqlsrv or pdo_sqlsrv
-              rest = m.group(2)      # conn.cpp or shared/core_conn.cpp
-              # If it's under shared/, normalize to top-level shared/
+              ext_name = m.group(1)
+              rest = m.group(2)
               if rest.startswith('shared/'):
                   return rest
               return ext_name + '/' + rest
           return f
 
-      def normalize_class(cls, platform):
-          """Normalize class elements which contain the filename paths."""
-          if platform == 'windows':
-              filename = cls.get('filename', '')
-              cls.set('filename', normalize_windows_path(filename))
-          return cls
+      # Merge all files into a single coverage dict: filename -> {lineno: hits}
+      # Also track which input files contributed to each source file
+      coverage_data = {}
+      file_sources = {}  # filename -> set of input xml basenames
 
-      # Parse both files
-      linux_tree = ET.parse(linux_xml)
-      win_tree = ET.parse(windows_xml)
+      for platform, xml_path in coverage_files:
+          input_label = f'{platform}:{os.path.basename(xml_path)}'
+          print(f'Processing: {xml_path}')
+          tree = ET.parse(xml_path)
+          for pkg in tree.getroot().iter('package'):
+              for cls in pkg.iter('class'):
+                  fname = cls.get('filename', '')
+                  if platform == 'windows':
+                      fname = normalize_windows_path(fname)
+                  if fname not in coverage_data:
+                      coverage_data[fname] = {}
+                      file_sources[fname] = set()
+                  file_sources[fname].add(input_label)
+                  for line in cls.iter('line'):
+                      num = line.get('number')
+                      hits = int(line.get('hits', '0'))
+                      coverage_data[fname][num] = coverage_data[fname].get(num, 0) + hits
 
-      # Build a dict of filename -> class element from Linux (base)
-      linux_root = linux_tree.getroot()
-      coverage_data = {}  # filename -> {lines: {lineno: hits}}
-
-      for pkg in linux_root.iter('package'):
-          for cls in pkg.iter('class'):
-              fname = cls.get('filename', '')
-              if fname not in coverage_data:
-                  coverage_data[fname] = {}
-              for line in cls.iter('line'):
-                  num = line.get('number')
-                  hits = int(line.get('hits', '0'))
-                  coverage_data[fname][num] = coverage_data[fname].get(num, 0) + hits
-
-      # Add Windows data with normalized paths
-      for pkg in win_tree.getroot().iter('package'):
-          for cls in pkg.iter('class'):
-              fname = normalize_windows_path(cls.get('filename', ''))
-              if fname not in coverage_data:
-                  coverage_data[fname] = {}
-              for line in cls.iter('line'):
-                  num = line.get('number')
-                  hits = int(line.get('hits', '0'))
-                  coverage_data[fname][num] = coverage_data[fname].get(num, 0) + hits
+      # Print per-file source summary for verification
+      print(f'\n=== Coverage merge summary: {len(coverage_data)} files ===')
+      for fname in sorted(coverage_data.keys()):
+          sources = ', '.join(sorted(file_sources[fname]))
+          lines_covered = sum(1 for h in coverage_data[fname].values() if h > 0)
+          lines_total = len(coverage_data[fname])
+          print(f'  {fname}: {lines_covered}/{lines_total} lines from [{sources}]')
 
       # Build merged Cobertura XML
       root = ET.Element('coverage')
@@ -1248,7 +1238,6 @@ jobs:
       total_lines = 0
       covered_lines = 0
 
-      # Group by directory (package)
       pkg_data = {}
       for fname, lines in sorted(coverage_data.items()):
           pkg_name = os.path.dirname(fname) or '.'
