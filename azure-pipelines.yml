@@ -778,7 +778,9 @@ jobs:
   variables:
     phpVersion: 8.5
   pool:
-    vmImage: 'windows-latest'
+    name: 'PHP-1ES-Public'
+    demands:
+      - ImageOverride -equals AzurePipelines-Windows-latest
   steps:
   - checkout: self
     clean: true
@@ -1041,7 +1043,8 @@ jobs:
       Write-Host "Installing OpenCppCoverage..."
       choco install opencppcoverage -y
       $env:Path = "C:\Program Files\OpenCppCoverage;$env:Path"
-      OpenCppCoverage --help | Select-Object -First 3
+      # Use & operator because --help returns non-zero exit code
+      & OpenCppCoverage --help 2>&1 | Select-Object -First 3
       Write-Host "OpenCppCoverage installed successfully"
     displayName: 'Install OpenCppCoverage'
 
