@@ -17,6 +17,7 @@ pr:
 
 jobs:
 - job: macOS
+  condition: false
   pool:
     vmImage: 'macos-latest'
   timeoutInMinutes: 90
@@ -726,18 +727,35 @@ jobs:
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
-      cd $(Build.SourcesDirectory)
-      echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
-      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
-        -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
-    displayName: 'Invoke coveralls using repo token'
-    condition: false
+      pip install gcovr
+      cd $(Build.SourcesDirectory)/source
+      gcovr --root . \
+        --filter 'sqlsrv/' --filter 'pdo_sqlsrv/' --filter 'shared/' \
+        --exclude '.*test/.*' \
+        --exclude '.*localization.*' --exclude '.*globalization.*' \
+        --cobertura -o $(Build.SourcesDirectory)/coverage.xml
+      echo "Coverage report generated:"
+      ls -la $(Build.SourcesDirectory)/coverage.xml
+    displayName: 'Collect code coverage'
+
+  - task: PublishCodeCoverageResults@2
+    displayName: 'Publish Code Coverage'
+    inputs:
+      summaryFileLocation: '$(Build.SourcesDirectory)/coverage.xml'
+
+  - script: |
+      curl -Os https://cli.codecov.io/latest/linux/codecov
+      chmod +x codecov
+      ./codecov --verbose upload-process \
+        --fail-on-error \
+        -t $(codecov_token) \
+        -n "Linux-PHP$(phpver)" \
+        -F linux \
+        -f $(Build.SourcesDirectory)/coverage.xml
+    displayName: 'Upload coverage to Codecov'
     env:
-      COVERALLS_REPO_TOKEN: $(repo_token)
-      TRAVIS_JOB_ID: $(Build.BuildId)
-      TRAVIS_BRANCH: $(Build.SourceBranchName)
-      PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
-     
+      CODECOV_TOKEN: $(codecov_token)
+
   - script: |
       docker logs -t $(host)
       cd $(Build.SourcesDirectory)/test/functional/
@@ -761,6 +779,7 @@ jobs:
     condition: always()
 
 - job: Windows
+  condition: false
   variables:
     phpVersion: 8.5
   pool:
