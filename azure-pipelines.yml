@@ -1043,9 +1043,12 @@ jobs:
       Write-Host "Installing OpenCppCoverage..."
       choco install opencppcoverage -y
       $env:Path = "C:\Program Files\OpenCppCoverage;$env:Path"
-      # Use & operator because --help returns non-zero exit code
-      & OpenCppCoverage --help 2>&1 | Select-Object -First 3
-      Write-Host "OpenCppCoverage installed successfully"
+      # Verify install by checking the executable exists
+      if (Test-Path "C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe") {
+          Write-Host "OpenCppCoverage installed successfully"
+      } else {
+          throw "OpenCppCoverage executable not found"
+      }
     displayName: 'Install OpenCppCoverage'
 
   - script: |
