@@ -564,20 +564,26 @@ jobs:
     displayName: 'Install PHP $(phpver)'
 
   - script: |
-      echo "Installing ODBC Driver 18 and dependencies..."
-      # Only install packages-microsoft-prod if not already present
-      if ! dpkg -s packages-microsoft-prod &>/dev/null; then
-        curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
-        sudo dpkg -i packages-microsoft-prod.deb
-        rm packages-microsoft-prod.deb
-        sudo apt-get update
-      fi
-      # Install unixodbc-dev first so libodbc2 (2.3.9 on Ubuntu 22.04) is present before
-      # msodbcsql18. When libodbc2 is already installed, apt can resolve
-      # msodbcsql18's libodbc1 dependency without pulling in the conflicting
-      # 2.3.7 package.
-      sudo apt-get install -y unixodbc-dev
-      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev
+      echo "=== Diagnosing ODBC/unixODBC state ==="
+      echo "--- packages-microsoft-prod ---"
+      dpkg -s packages-microsoft-prod 2>&1 || true
+      echo "--- Installed ODBC-related packages ---"
+      dpkg -l | grep -iE 'odbc|unixodbc' || true
+      echo "--- Microsoft repo list files ---"
+      ls -la /etc/apt/sources.list.d/ || true
+      cat /etc/apt/sources.list.d/microsoft-prod.list 2>/dev/null || true
+      cat /etc/apt/sources.list.d/*.list 2>/dev/null || true
+      echo "--- APT policy for unixodbc-related packages ---"
+      apt-cache policy unixodbc-dev unixodbc unixodbc-common libodbc1 libodbc2 libodbcinst2 odbcinst1debian2 2>&1 || true
+      echo "--- APT policy for msodbcsql18 ---"
+      apt-cache policy msodbcsql18 2>&1 || true
+      echo "--- msodbcsql18 dependencies ---"
+      apt-cache show msodbcsql18 2>&1 | grep -iE '^Package:|^Version:|^Depends:|^Pre-Depends:' || true
+      echo "--- Simulate install ---"
+      sudo apt-get install -y --simulate unixodbc-dev 2>&1 || true
+      echo "--- Simulate msodbcsql18 install ---"
+      sudo ACCEPT_EULA=Y apt-get install -y --simulate msodbcsql18 mssql-tools18 unixodbc-dev 2>&1 || true
+      echo "=== End diagnostics ==="
       
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
