@@ -565,16 +565,18 @@ jobs:
 
   - script: |
       echo "Installing ODBC Driver 18 and dependencies..."
-      # Only install packages-microsoft-prod if not already present at a newer
-      # version. The 1ES image ships with v1.2 which configures repos compatible
-      # with unixODBC 2.3.9; downloading v1.0 downgrades it and breaks the repo
-      # config, causing dependency conflicts between libodbc2 and libodbc1.
+      # Only install packages-microsoft-prod if not already present
       if ! dpkg -s packages-microsoft-prod &>/dev/null; then
         curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
         sudo dpkg -i packages-microsoft-prod.deb
         rm packages-microsoft-prod.deb
+        sudo apt-get update
       fi
-      sudo apt-get update
+      # Install unixodbc-dev first so libodbc2 (2.3.9 on Ubuntu 22.04) is present before
+      # msodbcsql18. When libodbc2 is already installed, apt can resolve
+      # msodbcsql18's libodbc1 dependency without pulling in the conflicting
+      # 2.3.7 package.
+      sudo apt-get install -y unixodbc-dev
       sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev
       
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bash_profile
