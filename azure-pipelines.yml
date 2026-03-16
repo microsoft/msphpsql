@@ -564,26 +564,22 @@ jobs:
     displayName: 'Install PHP $(phpver)'
 
   - script: |
-      echo "=== Diagnosing ODBC/unixODBC state ==="
-      echo "--- packages-microsoft-prod ---"
-      dpkg -s packages-microsoft-prod 2>&1 || true
-      echo "--- Installed ODBC-related packages ---"
-      dpkg -l | grep -iE 'odbc|unixodbc' || true
-      echo "--- Microsoft repo list files ---"
-      ls -la /etc/apt/sources.list.d/ || true
-      cat /etc/apt/sources.list.d/microsoft-prod.list 2>/dev/null || true
-      cat /etc/apt/sources.list.d/*.list 2>/dev/null || true
-      echo "--- APT policy for unixodbc-related packages ---"
-      apt-cache policy unixodbc-dev unixodbc unixodbc-common libodbc1 libodbc2 libodbcinst2 odbcinst1debian2 2>&1 || true
-      echo "--- APT policy for msodbcsql18 ---"
-      apt-cache policy msodbcsql18 2>&1 || true
-      echo "--- msodbcsql18 dependencies ---"
-      apt-cache show msodbcsql18 2>&1 | grep -iE '^Package:|^Version:|^Depends:|^Pre-Depends:' || true
-      echo "--- Simulate install ---"
-      sudo apt-get install -y --simulate unixodbc-dev 2>&1 || true
-      echo "--- Simulate msodbcsql18 install ---"
-      sudo ACCEPT_EULA=Y apt-get install -y --simulate msodbcsql18 mssql-tools18 unixodbc-dev 2>&1 || true
-      echo "=== End diagnostics ==="
+      echo "Installing ODBC Driver 18 and dependencies..."
+      # 1ES images' Microsoft repos have priority 1001, causing apt to prefer
+      # unixodbc 2.3.7 from Microsoft over 2.3.9 from Ubuntu. Pin unixODBC
+      # packages to prefer Ubuntu's versions.
+      printf '%s\n' \
+        'Package: unixodbc unixodbc-dev unixodbc-common libodbc1 libodbc2 libodbcinst2 odbcinst odbcinst1debian2' \
+        'Pin: origin packages.microsoft.com' \
+        'Pin-Priority: 100' \
+        | sudo tee /etc/apt/preferences.d/unixodbc-pin
+      if ! dpkg -s packages-microsoft-prod &>/dev/null; then
+        curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
+        sudo dpkg -i packages-microsoft-prod.deb
+        rm packages-microsoft-prod.deb
+      fi
+      sudo apt-get update
+      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev
       
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
