@@ -982,14 +982,24 @@ jobs:
       cd $(Build.SourcesDirectory)\buildscripts\
       python -u builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
       if ($LASTEXITCODE -ne 0) { throw "sqlsrv build failed" }
+      Write-Host "List DLLs and PDBs:"
+      dir *.dll
+      dir *.pdb
+      # Copy sqlsrv DLL and PDB immediately (before pdo_sqlsrv build overwrites the build tree)
+      Write-Host "Copying sqlsrv DLL and PDB to C:\tools\php\ext\"
+      Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
+      Copy-Item *sqlsrv*.pdb C:\tools\php\ext\ -Verbose -ErrorAction SilentlyContinue
       python -u builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
       if ($LASTEXITCODE -ne 0) { throw "pdo_sqlsrv build failed" }
-      Write-Host "Listing built DLLs:"
-      dir *sqlsrv*.dll
-      Write-Host "Copying DLLs to C:\tools\php\ext\"
-      Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
-      Write-Host "Verifying DLLs in destination:"
-      dir C:\tools\php\ext\*sqlsrv*.dll
+      Write-Host "List DLLs and PDBs:"
+      dir *.dll
+      dir *.pdb
+      # Copy pdo_sqlsrv DLL and PDB
+      Write-Host "Copying pdo_sqlsrv DLL and PDB to C:\tools\php\ext\"
+      Copy-Item *pdo_sqlsrv*.dll C:\tools\php\ext\ -Verbose
+      Copy-Item *pdo_sqlsrv*.pdb C:\tools\php\ext\ -Verbose -ErrorAction SilentlyContinue
+      Write-Host "Verifying DLLs and PDBs in destination:"
+      dir C:\tools\php\ext\*sqlsrv*
       
       # Add extensions to php.ini
       Write-Host "Adding extensions to php.ini"
@@ -1182,13 +1192,15 @@ jobs:
           print(f'Using {coverage_files[0][0]} coverage as final report')
           sys.exit(0)
 
-      def normalize_windows_path(filename):
-          """Normalize Windows absolute PDB paths to match Linux relative paths.
+      def normalize_path(filename):
+          """Normalize paths so shared files from different drivers merge together.
           Windows: D:\\...\\ext\\sqlsrv\\conn.cpp -> sqlsrv/conn.cpp
           Windows: D:\\...\\ext\\sqlsrv\\shared\\core_conn.cpp -> shared/core_conn.cpp
-          Windows: D:\\...\\ext\\pdo_sqlsrv\\shared\\core_conn.cpp -> shared/core_conn.cpp
+          Linux:   pdo_sqlsrv/shared/core_conn.cpp -> shared/core_conn.cpp
+          Linux:   sqlsrv/shared/core_conn.cpp -> shared/core_conn.cpp
           """
           f = filename.replace('\\', '/')
+          # Handle Windows absolute PDB paths
           m = re.search(r'/ext/((?:pdo_)?sqlsrv)/(.*)', f)
           if m:
               ext_name = m.group(1)
@@ -1196,6 +1208,10 @@ jobs:
               if rest.startswith('shared/'):
                   return rest
               return ext_name + '/' + rest
+          # Handle Linux relative paths: pdo_sqlsrv/shared/X or sqlsrv/shared/X -> shared/X
+          m = re.match(r'(?:pdo_)?sqlsrv/(shared/.*)', f)
+          if m:
+              return m.group(1)
           return f
 
       # Merge all files into a single coverage dict: filename -> {lineno: hits}
@@ -1210,8 +1226,7 @@ jobs:
           for pkg in tree.getroot().iter('package'):
               for cls in pkg.iter('class'):
                   fname = cls.get('filename', '')
-                  if platform == 'windows':
-                      fname = normalize_windows_path(fname)
+                  fname = normalize_path(fname)
                   if fname not in coverage_data:
                       coverage_data[fname] = {}
                       file_sources[fname] = set()
@@ -1325,6 +1340,7 @@ jobs:
       chmod +x codecov
       ./codecov --verbose upload-process \
         --fail-on-error \
+        --git-service github \
         -t $(codecov_token) \
         -n "merged" \
         -f $(Pipeline.Workspace)/coverage.xml
