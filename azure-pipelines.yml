@@ -541,6 +541,14 @@ jobs:
       architecture: 'x64'
 
   - script: |
+      echo "Configuring the Microsoft Package Repository (PMC)..."
+      # Download/Install the package to configure the Microsoft repo before installing PHP or the ODBC driver
+      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
+      sudo dpkg -i packages-microsoft-prod.deb
+      rm packages-microsoft-prod.deb
+      sudo apt-get update
+
+  - script: |
       echo "Installing PHP $(phpver) and dependencies..."
       # Add ondrej/php PPA for PHP 8.5
       sudo add-apt-repository ppa:ondrej/php -y
@@ -565,11 +573,6 @@ jobs:
 
   - script: |
       echo "Installing ODBC Driver 18 and dependencies..."
-      # Download/Install the package to configure the Microsoft repo
-      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
-      sudo dpkg -i packages-microsoft-prod.deb
-      rm packages-microsoft-prod.deb
-      sudo apt-get update
       sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev
       
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bash_profile
