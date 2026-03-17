@@ -1189,7 +1189,7 @@ jobs:
 
       if len(coverage_files) == 1:
           import shutil
-          shutil.copy(coverage_files[0][1], os.path.join(workspace, 'coverage.xml'))
+          shutil.copy(coverage_files[0][1], os.path.join(os.environ['BUILD_SOURCESDIRECTORY'], 'coverage.xml'))
           print(f'Using {coverage_files[0][0]} coverage as final report')
           sys.exit(0)
 
@@ -1316,7 +1316,7 @@ jobs:
       root.set('lines-valid', str(total_lines))
       root.set('lines-covered', str(covered_lines))
 
-      out = os.path.join(workspace, 'coverage.xml')
+      out = os.path.join(os.environ['BUILD_SOURCESDIRECTORY'], 'coverage.xml')
       tree = ET.ElementTree(root)
       ET.indent(tree, space='  ')
       tree.write(out, xml_declaration=True, encoding='utf-8')
@@ -1329,17 +1329,18 @@ jobs:
     displayName: 'Merge coverage reports'
     env:
       PIPELINE_WORKSPACE: $(Pipeline.Workspace)
+      BUILD_SOURCESDIRECTORY: $(Build.SourcesDirectory)
 
   - script: |
-      ls -la $(Pipeline.Workspace)/coverage.xml
+      ls -la $(Build.SourcesDirectory)/coverage.xml
       echo "=== First 50 lines of merged report ==="
-      head -50 $(Pipeline.Workspace)/coverage.xml
+      head -50 $(Build.SourcesDirectory)/coverage.xml
     displayName: 'Inspect merged coverage'
 
   - task: PublishCodeCoverageResults@2
     displayName: 'Publish Code Coverage'
     inputs:
-      summaryFileLocation: '$(Pipeline.Workspace)/coverage.xml'
+      summaryFileLocation: '$(Build.SourcesDirectory)/coverage.xml'
 
   - script: |
       curl -Os https://cli.codecov.io/latest/linux/codecov
@@ -1349,7 +1350,7 @@ jobs:
         --git-service github \
         -t $(codecov_token) \
         -n "merged" \
-        -f $(Pipeline.Workspace)/coverage.xml
+        -f $(Build.SourcesDirectory)/coverage.xml
     displayName: 'Upload coverage to Codecov'
     env:
       CODECOV_TOKEN: $(codecov_token)
@@ -1357,7 +1358,7 @@ jobs:
   - task: PublishPipelineArtifact@1
     displayName: 'Publish merged coverage artifact'
     inputs:
-      targetPath: '$(Pipeline.Workspace)/coverage.xml'
+      targetPath: '$(Build.SourcesDirectory)/coverage.xml'
       artifact: 'coverage-merged'
       publishLocation: 'pipeline'
     condition: always()
