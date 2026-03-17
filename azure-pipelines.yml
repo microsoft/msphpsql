@@ -1347,11 +1347,13 @@ jobs:
       chmod +x codecov
       ./codecov --verbose upload-process \
         --fail-on-error \
+        --disable-search \
         --git-service github \
         -t $(codecov_token) \
         -n "merged" \
-        -f $(Build.SourcesDirectory)/coverage.xml
+        -f coverage.xml
     displayName: 'Upload coverage to Codecov'
+    workingDirectory: '$(Build.SourcesDirectory)'
     env:
       CODECOV_TOKEN: $(codecov_token)
 
