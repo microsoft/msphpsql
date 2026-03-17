@@ -1193,11 +1193,12 @@ jobs:
           sys.exit(0)
 
       def normalize_path(filename):
-          """Normalize paths so shared files from different drivers merge together.
-          Windows: D:\\...\\ext\\sqlsrv\\conn.cpp -> sqlsrv/conn.cpp
-          Windows: D:\\...\\ext\\sqlsrv\\shared\\core_conn.cpp -> shared/core_conn.cpp
-          Linux:   pdo_sqlsrv/shared/core_conn.cpp -> shared/core_conn.cpp
-          Linux:   sqlsrv/shared/core_conn.cpp -> shared/core_conn.cpp
+          """Normalize paths so shared files from different drivers merge together,
+          and prefix with source/ to match the repo layout.
+          Windows: D:\\...\\ext\\sqlsrv\\conn.cpp -> source/sqlsrv/conn.cpp
+          Windows: D:\\...\\ext\\sqlsrv\\shared\\core_conn.cpp -> source/shared/core_conn.cpp
+          Linux:   pdo_sqlsrv/shared/core_conn.cpp -> source/shared/core_conn.cpp
+          Linux:   sqlsrv/shared/core_conn.cpp -> source/shared/core_conn.cpp
           """
           f = filename.replace('\\', '/')
           # Handle Windows absolute PDB paths
@@ -1206,12 +1207,15 @@ jobs:
               ext_name = m.group(1)
               rest = m.group(2)
               if rest.startswith('shared/'):
-                  return rest
-              return ext_name + '/' + rest
-          # Handle Linux relative paths: pdo_sqlsrv/shared/X or sqlsrv/shared/X -> shared/X
+                  return 'source/' + rest
+              return 'source/' + ext_name + '/' + rest
+          # Handle Linux relative paths: pdo_sqlsrv/shared/X or sqlsrv/shared/X -> source/shared/X
           m = re.match(r'(?:pdo_)?sqlsrv/(shared/.*)', f)
           if m:
-              return m.group(1)
+              return 'source/' + m.group(1)
+          # Already has a driver prefix like sqlsrv/ or pdo_sqlsrv/
+          if re.match(r'(?:pdo_)?sqlsrv/', f):
+              return 'source/' + f
           return f
 
       # Merge all files into a single coverage dict: filename -> {lineno: hits}
@@ -1313,6 +1317,7 @@ jobs:
 
       out = os.path.join(workspace, 'coverage.xml')
       tree = ET.ElementTree(root)
+      ET.indent(tree, space='  ')
       tree.write(out, xml_declaration=True, encoding='utf-8')
 
       print(f'Merged coverage: {covered_lines}/{total_lines} lines covered '
