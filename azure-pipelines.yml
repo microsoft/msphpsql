@@ -17,7 +17,6 @@ pr:
 
 jobs:
 - job: macOS
-  condition: false
   pool:
     vmImage: 'macos-latest'
   timeoutInMinutes: 90
@@ -690,19 +689,6 @@ jobs:
     displayName: 'Update test configuration files'
 
   - script: |
-      echo "=== ODBC Driver Configuration ==="
-      echo "Installed ODBC Drivers:"
-      odbcinst -q -d
-      echo ""
-      echo "ODBC Driver 18 details:"
-      odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
-      echo ""
-      echo "Driver configured in MsSetup.inc:"
-      grep -E '^\$driver' $(Build.SourcesDirectory)/test/functional/sqlsrv/MsSetup.inc
-      echo "================================="
-    displayName: 'Show ODBC Driver version being used'
-
-  - script: |
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
       export MSSQL_SERVER='$(server)'
       export MSSQL_USER='$(uid)'
@@ -855,16 +841,6 @@ jobs:
       php -v
     displayName: 'Install PHP $(phpVersion)'
 
-  - script: |
-      dir C:\tools\php\php*
-      dir C:\tools\php\ext\
-      echo extension_dir=C:\tools\php\ext >> C:\tools\php\php.ini
-      php --ini
-      php -v
-      echo Checking PHP API version:
-      php -r "echo 'PHP API: ' . phpversion() . PHP_EOL; echo 'Thread Safety: ' . (PHP_ZTS ? 'enabled' : 'disabled') . PHP_EOL; echo 'Architecture: ' . PHP_INT_SIZE*8 . '-bit' . PHP_EOL;"
-    displayName: 'Check PHP'
-
   - powershell: |
       $guid = [guid]::NewGuid().ToString()
       Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
@@ -982,18 +958,16 @@ jobs:
       cd $(Build.SourcesDirectory)\buildscripts\
       python -u builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
       if ($LASTEXITCODE -ne 0) { throw "sqlsrv build failed" }
-      Write-Host "List DLLs and PDBs:"
-      dir *.dll
-      dir *.pdb
+      Write-Host "Listing built DLLs and PDBs:"
+      dir *.dll,*.pdb
       # Copy sqlsrv DLL and PDB immediately (before pdo_sqlsrv build overwrites the build tree)
       Write-Host "Copying sqlsrv DLL and PDB to C:\tools\php\ext\"
       Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
       Copy-Item *sqlsrv*.pdb C:\tools\php\ext\ -Verbose -ErrorAction SilentlyContinue
       python -u builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
       if ($LASTEXITCODE -ne 0) { throw "pdo_sqlsrv build failed" }
-      Write-Host "List DLLs and PDBs:"
-      dir *.dll
-      dir *.pdb
+      Write-Host "Listing built DLLs and PDBs:"
+      dir *.dll,*.pdb
       # Copy pdo_sqlsrv DLL and PDB
       Write-Host "Copying pdo_sqlsrv DLL and PDB to C:\tools\php\ext\"
       Copy-Item *pdo_sqlsrv*.dll C:\tools\php\ext\ -Verbose
@@ -1010,15 +984,6 @@ jobs:
       Write-Host "Verifying extensions:"
       php --ri sqlsrv
       php --ri pdo_sqlsrv
-      
-      # Check DLL dependencies with dumpbin (optional, for diagnostics)
-      Write-Host "Checking DLL dependencies with dumpbin:"
-      $dumpbinPath = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-      if ($dumpbinPath) {
-          & $dumpbinPath.FullName /dependents C:\tools\php\ext\php_sqlsrv.dll | Select-String -Pattern "dll"
-      } else {
-          Write-Host "dumpbin.exe not found - skipping DLL dependency check"
-      }
       
       # Copy run-tests.php to test directories
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
@@ -1041,16 +1006,6 @@ jobs:
     displayName: 'Set up test databases'
 
   - powershell: |
-      Write-Host "=== ODBC Driver Configuration ==="
-      Write-Host "Installed SQL Server ODBC Drivers:"
-      Get-OdbcDriver | Where-Object { $_.Name -like "*SQL Server*" } | Format-Table Name, Platform -AutoSize
-      Write-Host ""
-      Write-Host "Driver configured in MsSetup.inc:"
-      Select-String -Path "$(Build.SourcesDirectory)\test\functional\sqlsrv\MsSetup.inc" -Pattern '^\$driver'
-      Write-Host "================================="
-    displayName: 'Show ODBC Driver version being used'
-
-  - powershell: |
       Write-Host "Installing OpenCppCoverage..."
       choco install opencppcoverage -y
       $env:Path = "C:\Program Files\OpenCppCoverage;$env:Path"
@@ -1070,7 +1025,7 @@ jobs:
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
       OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
-    displayName: 'Run sqlsrv functional tests with coverage'
+    displayName: 'Run sqlsrv functional tests'
 
   - script: |
       set PATH=C:\Program Files\OpenCppCoverage;%PATH%
@@ -1080,7 +1035,7 @@ jobs:
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
       OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_pdo_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
-    displayName: 'Run pdo_sqlsrv functional tests with coverage'
+    displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
       cd $(Build.SourcesDirectory)\test\functional\
@@ -1152,190 +1107,10 @@ jobs:
     continueOnError: true
 
   - script: |
-      echo "=== Linux coverage artifacts ==="
-      ls -la $(Pipeline.Workspace)/coverage-linux/ 2>/dev/null || echo "No Linux coverage"
-      echo ""
-      echo "=== Windows coverage artifacts ==="
-      ls -la $(Pipeline.Workspace)/coverage-windows/ 2>/dev/null || echo "No Windows coverage"
-    displayName: 'List downloaded artifacts'
-
-  - script: |
-      pip install gcovr
-      python3 << 'PYEOF'
-      import xml.etree.ElementTree as ET
-      import os, sys, re, glob
-
-      workspace = os.environ['PIPELINE_WORKSPACE']
-
-      # Collect all coverage XML files from both platforms
-      coverage_files = []
-      
-      # Linux: single coverage.xml
-      linux_xml = os.path.join(workspace, 'coverage-linux', 'coverage.xml')
-      if os.path.exists(linux_xml):
-          coverage_files.append(('linux', linux_xml))
-          print(f'Found Linux coverage: {linux_xml}')
-
-      # Windows: separate per-driver XMLs (coverage-sqlsrv.xml, coverage-pdo_sqlsrv.xml)
-      win_dir = os.path.join(workspace, 'coverage-windows')
-      if os.path.isdir(win_dir):
-          for f in sorted(glob.glob(os.path.join(win_dir, 'coverage*.xml'))):
-              coverage_files.append(('windows', f))
-              print(f'Found Windows coverage: {f}')
-
-      if not coverage_files:
-          print('No coverage files found')
-          sys.exit(1)
-
-      if len(coverage_files) == 1:
-          import shutil
-          shutil.copy(coverage_files[0][1], os.path.join(os.environ['BUILD_SOURCESDIRECTORY'], 'coverage.xml'))
-          print(f'Using {coverage_files[0][0]} coverage as final report')
-          sys.exit(0)
-
-      def normalize_path(filename):
-          """Normalize paths so shared files from different drivers merge together,
-          and prefix with source/ to match the repo layout.
-          Windows: D:\\...\\ext\\sqlsrv\\conn.cpp -> source/sqlsrv/conn.cpp
-          Windows: D:\\...\\ext\\sqlsrv\\shared\\core_conn.cpp -> source/shared/core_conn.cpp
-          Linux:   pdo_sqlsrv/shared/core_conn.cpp -> source/shared/core_conn.cpp
-          Linux:   sqlsrv/shared/core_conn.cpp -> source/shared/core_conn.cpp
-          """
-          f = filename.replace('\\', '/')
-          # Handle Windows absolute PDB paths
-          m = re.search(r'/ext/((?:pdo_)?sqlsrv)/(.*)', f)
-          if m:
-              ext_name = m.group(1)
-              rest = m.group(2)
-              if rest.startswith('shared/'):
-                  return 'source/' + rest
-              return 'source/' + ext_name + '/' + rest
-          # Handle Linux relative paths: pdo_sqlsrv/shared/X or sqlsrv/shared/X -> source/shared/X
-          m = re.match(r'(?:pdo_)?sqlsrv/(shared/.*)', f)
-          if m:
-              return 'source/' + m.group(1)
-          # Already has a driver prefix like sqlsrv/ or pdo_sqlsrv/
-          if re.match(r'(?:pdo_)?sqlsrv/', f):
-              return 'source/' + f
-          return f
-
-      # Merge all files into a single coverage dict: filename -> {lineno: hits}
-      # Also track which input files contributed to each source file
-      coverage_data = {}
-      file_sources = {}  # filename -> set of input xml basenames
-
-      for platform, xml_path in coverage_files:
-          input_label = f'{platform}:{os.path.basename(xml_path)}'
-          print(f'Processing: {xml_path}')
-          tree = ET.parse(xml_path)
-          for pkg in tree.getroot().iter('package'):
-              for cls in pkg.iter('class'):
-                  fname = cls.get('filename', '')
-                  fname = normalize_path(fname)
-                  if fname not in coverage_data:
-                      coverage_data[fname] = {}
-                      file_sources[fname] = set()
-                  file_sources[fname].add(input_label)
-                  for line in cls.iter('line'):
-                      num = line.get('number')
-                      hits = int(line.get('hits', '0'))
-                      coverage_data[fname][num] = coverage_data[fname].get(num, 0) + hits
-
-      # Print per-file source summary for verification
-      print(f'\n=== Coverage merge summary: {len(coverage_data)} files ===')
-      for fname in sorted(coverage_data.keys()):
-          sources = ', '.join(sorted(file_sources[fname]))
-          lines_covered = sum(1 for h in coverage_data[fname].values() if h > 0)
-          lines_total = len(coverage_data[fname])
-          print(f'  {fname}: {lines_covered}/{lines_total} lines from [{sources}]')
-
-      # Build merged Cobertura XML
-      root = ET.Element('coverage')
-      root.set('version', '1')
-      root.set('timestamp', '0')
-      sources = ET.SubElement(root, 'sources')
-      source = ET.SubElement(sources, 'source')
-      source.text = '.'
-      packages = ET.SubElement(root, 'packages')
-
-      total_lines = 0
-      covered_lines = 0
-
-      pkg_data = {}
-      for fname, lines in sorted(coverage_data.items()):
-          pkg_name = os.path.dirname(fname) or '.'
-          if pkg_name not in pkg_data:
-              pkg_data[pkg_name] = {}
-          pkg_data[pkg_name][fname] = lines
-
-      for pkg_name, file_data in sorted(pkg_data.items()):
-          pkg_elem = ET.SubElement(packages, 'package')
-          pkg_elem.set('name', pkg_name)
-          classes = ET.SubElement(pkg_elem, 'classes')
-
-          pkg_lines = 0
-          pkg_covered = 0
-
-          for fname, lines in sorted(file_data.items()):
-              cls_elem = ET.SubElement(classes, 'class')
-              cls_elem.set('name', os.path.basename(fname))
-              cls_elem.set('filename', fname)
-              cls_elem.set('line-rate', '0')
-              cls_elem.set('branch-rate', '0')
-              cls_elem.set('complexity', '0')
-              lines_elem = ET.SubElement(cls_elem, 'lines')
-
-              file_lines = 0
-              file_covered = 0
-              for num, hits in sorted(lines.items(), key=lambda x: int(x[0])):
-                  line_elem = ET.SubElement(lines_elem, 'line')
-                  line_elem.set('number', str(num))
-                  line_elem.set('hits', str(hits))
-                  file_lines += 1
-                  if hits > 0:
-                      file_covered += 1
-
-              if file_lines > 0:
-                  cls_elem.set('line-rate', f'{file_covered / file_lines:.4f}')
-
-              pkg_lines += file_lines
-              pkg_covered += file_covered
-
-          if pkg_lines > 0:
-              pkg_elem.set('line-rate', f'{pkg_covered / pkg_lines:.4f}')
-          else:
-              pkg_elem.set('line-rate', '0')
-
-          total_lines += pkg_lines
-          covered_lines += pkg_covered
-
-      if total_lines > 0:
-          root.set('line-rate', f'{covered_lines / total_lines:.4f}')
-      else:
-          root.set('line-rate', '0')
-      root.set('lines-valid', str(total_lines))
-      root.set('lines-covered', str(covered_lines))
-
-      out = os.path.join(os.environ['BUILD_SOURCESDIRECTORY'], 'coverage.xml')
-      tree = ET.ElementTree(root)
-      ET.indent(tree, space='  ')
-      tree.write(out, xml_declaration=True, encoding='utf-8')
-
-      print(f'Merged coverage: {covered_lines}/{total_lines} lines covered '
-            f'({covered_lines/total_lines*100:.1f}%)' if total_lines > 0 else 'No lines')
-      print(f'Files: {len(coverage_data)}')
-      print(f'Written to: {out}')
-      PYEOF
+      python3 $(Build.SourcesDirectory)/buildscripts/merge_coverage.py \
+        '$(Pipeline.Workspace)' \
+        '$(Build.SourcesDirectory)'
     displayName: 'Merge coverage reports'
-    env:
-      PIPELINE_WORKSPACE: $(Pipeline.Workspace)
-      BUILD_SOURCESDIRECTORY: $(Build.SourcesDirectory)
-
-  - script: |
-      ls -la $(Build.SourcesDirectory)/coverage.xml
-      echo "=== First 50 lines of merged report ==="
-      head -50 $(Build.SourcesDirectory)/coverage.xml
-    displayName: 'Inspect merged coverage'
 
   - task: PublishCodeCoverageResults@2
     displayName: 'Publish Code Coverage'
@@ -1345,7 +1120,7 @@ jobs:
   - script: |
       curl -Os https://cli.codecov.io/latest/linux/codecov
       chmod +x codecov
-      ./codecov --verbose upload-process \
+      ./codecov upload-process \
         --fail-on-error \
         --disable-search \
         --git-service github \
@@ -1356,11 +1131,3 @@ jobs:
     workingDirectory: '$(Build.SourcesDirectory)'
     env:
       CODECOV_TOKEN: $(codecov_token)
-
-  - task: PublishPipelineArtifact@1
-    displayName: 'Publish merged coverage artifact'
-    inputs:
-      targetPath: '$(Build.SourcesDirectory)/coverage.xml'
-      artifact: 'coverage-merged'
-      publishLocation: 'pipeline'
-    condition: always()
