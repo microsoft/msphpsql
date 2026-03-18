@@ -920,21 +920,16 @@ jobs:
       Write-Host "Downloading ODBC Driver 18 for SQL Server..."
       $client = New-Object Net.WebClient
       # Download ODBC Driver 18 MSI
-      $client.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2249006', '$(Build.SourcesDirectory)\msodbcsql.msi')
+      $client.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2345415', '$(Build.SourcesDirectory)\msodbcsql.msi')
       Write-Host "Downloaded msodbcsql.msi"
-      dir $(Build.SourcesDirectory)\msodbcsql.msi
-    displayName: 'Download ODBC Driver 18 MSI'
 
-  - script: |
       cd $(Build.SourcesDirectory)
+      dir msodbcsql.msi
       msiexec /i "msodbcsql.msi" /q IACCEPTMSODBCSQLLICENSETERMS=YES ADDLOCAL=ALL
+
       echo "Verifying ODBC Driver 18 installation..."
       reg query "HKLM\SOFTWARE\ODBC\odbcinst.ini\ODBC Driver 18 for SQL Server"
       dir %WINDIR%\System32\msodbcsql*.dll
-    displayName: 'Install ODBC Driver 18'
-
-  - powershell: |
-      Write-Host "Verifying ODBC Driver 18 installation..."
       Get-OdbcDriver | Where-Object { $_.Name -like "*SQL Server*" } | Format-Table Name, Platform -AutoSize
       $driver18 = Get-OdbcDriver | Where-Object { $_.Name -eq "ODBC Driver 18 for SQL Server" }
       if (-not $driver18) {
@@ -942,7 +937,7 @@ jobs:
           exit 1
       }
       Write-Host "✓ ODBC Driver 18 for SQL Server installed successfully"
-    displayName: 'Verify ODBC Driver 18 installation'
+    displayName: 'Install ODBC Driver 18'
 
   - powershell: |
       $client = New-Object Net.WebClient
@@ -984,7 +979,7 @@ jobs:
       # Copy run-tests.php to test directories
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv -Verbose
-    displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
+    displayName: 'Build drivers for PHP $(phpVersion)'
 
   - powershell: |
       Write-Host "Setting up test databases..."
