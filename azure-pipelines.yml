@@ -526,9 +526,7 @@ jobs:
   variables:
     phpver: 8.5
   pool:
-    name: 'PHP-1ES-Public'
-    demands:
-      - ImageOverride -equals AzurePipelines-ubuntu-22.04
+    vmImage: 'ubuntu-22.04'
   steps:
   - checkout: self
     clean: true
@@ -765,9 +763,7 @@ jobs:
   variables:
     phpVersion: 8.5
   pool:
-    name: 'PHP-1ES-Public'
-    demands:
-      - ImageOverride -equals AzurePipelines-Windows-latest
+    vmImage: 'windows-latest'
   steps:
   - checkout: self
     clean: true
@@ -1085,9 +1081,7 @@ jobs:
     - Windows
   condition: succeededOrFailed()
   pool:
-    name: 'PHP-1ES-Public'
-    demands:
-      - ImageOverride -equals AzurePipelines-ubuntu-22.04
+    vmImage: 'ubuntu-22.04'
   steps:
   - checkout: self
     fetchDepth: 1
