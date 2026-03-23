@@ -562,30 +562,28 @@ jobs:
 
   - script: |
       echo "Installing ODBC Driver 18 and dependencies..."
-      # Download/Install the package to configure the Microsoft repo
-      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
-      sudo dpkg -i packages-microsoft-prod.deb
-      rm packages-microsoft-prod.deb
+      # 1ES images' Microsoft repos have priority 1001, causing apt to prefer
+      # unixodbc 2.3.7 from Microsoft over 2.3.9 from Ubuntu. Pin unixODBC
+      # packages to prefer Ubuntu's versions.
+      printf '%s\n' \
+        'Package: unixodbc unixodbc-dev unixodbc-common libodbc1 libodbc2 libodbcinst2 odbcinst odbcinst1debian2' \
+        'Pin: origin packages.microsoft.com' \
+        'Pin-Priority: 100' \
+        | sudo tee /etc/apt/preferences.d/unixodbc-pin
+      if ! dpkg -s packages-microsoft-prod &>/dev/null; then
+        curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
+        sudo dpkg -i packages-microsoft-prod.deb
+        rm packages-microsoft-prod.deb
+      fi
       sudo apt-get update
       sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev
       
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
       
-      # Note: Not configuring system-wide ODBC connection pooling
-      # The system-wide pooling configuration (Pooling=Yes, CPTimeout) causes
-      # extreme overhead for tests that disconnect/reconnect frequently.
-      # Tests that need pooling (like sqlsrv_ConnPool_Unix.phpt) explicitly
-      # enable it in their connection strings with ConnectionPooling=1.
-      
       odbcinst -j
       odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
     displayName: 'Install ODBC Driver 18'
-
-  - powershell: |
-      $guid = [guid]::NewGuid().ToString()
-      Write-Host "##vso[task.setvariable variable=pwd;issecret=true]$guid"
-    displayName: 'Generate Password'
 
   - powershell: |
       $guid = [guid]::NewGuid().ToString()
@@ -689,19 +687,6 @@ jobs:
     displayName: 'Update test configuration files'
 
   - script: |
-      echo "=== ODBC Driver Configuration ==="
-      echo "Installed ODBC Drivers:"
-      odbcinst -q -d
-      echo ""
-      echo "ODBC Driver 18 details:"
-      odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
-      echo ""
-      echo "Driver configured in MsSetup.inc:"
-      grep -E '^\$driver' $(Build.SourcesDirectory)/test/functional/sqlsrv/MsSetup.inc
-      echo "================================="
-    displayName: 'Show ODBC Driver version being used'
-
-  - script: |
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
       export MSSQL_SERVER='$(server)'
       export MSSQL_USER='$(uid)'
@@ -726,18 +711,17 @@ jobs:
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
-      cd $(Build.SourcesDirectory)
-      echo -e "service_name: Azure Pipelines\n" > .coveralls.yml
-      coveralls -i ./source/ -e ./source/shared/ -e ./test/ -e ./source/pdo_sqlsrv/shared/core_stream.cpp \
-        -E r'.*localization*' -E r'.*globalization*' --gcov-options '\-lp'
-    displayName: 'Invoke coveralls using repo token'
-    condition: false
-    env:
-      COVERALLS_REPO_TOKEN: $(repo_token)
-      TRAVIS_JOB_ID: $(Build.BuildId)
-      TRAVIS_BRANCH: $(Build.SourceBranchName)
-      PYTHONWARNINGS: ignore::yaml.YAMLLoadWarning
-     
+      pip install gcovr
+      cd $(Build.SourcesDirectory)/source
+      gcovr --root . \
+        --filter 'sqlsrv/' --filter 'pdo_sqlsrv/' --filter 'shared/' \
+        --exclude '.*test/.*' \
+        --exclude '.*localization.*' --exclude '.*globalization.*' \
+        --cobertura -o $(Build.SourcesDirectory)/coverage.xml
+      echo "Coverage report generated:"
+      ls -la $(Build.SourcesDirectory)/coverage.xml
+    displayName: 'Collect code coverage'
+
   - script: |
       docker logs -t $(host)
       cd $(Build.SourcesDirectory)/test/functional/
@@ -758,6 +742,21 @@ jobs:
       docker stop $(host)
       docker rm $(host)
     displayName: 'Stop SQL Server for Linux'
+    condition: always()
+
+  - script: |
+      mkdir -p $(Build.SourcesDirectory)/coverage-artifacts
+      cp $(Build.SourcesDirectory)/coverage*.xml $(Build.SourcesDirectory)/coverage-artifacts/ 2>/dev/null || true
+      ls -la $(Build.SourcesDirectory)/coverage-artifacts/
+    displayName: 'Stage coverage artifacts'
+    condition: always()
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish coverage artifacts'
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)/coverage-artifacts'
+      artifact: 'coverage-linux'
+      publishLocation: 'pipeline'
     condition: always()
 
 - job: Windows
@@ -837,16 +836,6 @@ jobs:
       
       php -v
     displayName: 'Install PHP $(phpVersion)'
-
-  - script: |
-      dir C:\tools\php\php*
-      dir C:\tools\php\ext\
-      echo extension_dir=C:\tools\php\ext >> C:\tools\php\php.ini
-      php --ini
-      php -v
-      echo Checking PHP API version:
-      php -r "echo 'PHP API: ' . phpversion() . PHP_EOL; echo 'Thread Safety: ' . (PHP_ZTS ? 'enabled' : 'disabled') . PHP_EOL; echo 'Architecture: ' . PHP_INT_SIZE*8 . '-bit' . PHP_EOL;"
-    displayName: 'Check PHP'
 
   - powershell: |
       $guid = [guid]::NewGuid().ToString()
@@ -931,7 +920,7 @@ jobs:
       Write-Host "Downloading ODBC Driver 18 for SQL Server..."
       $client = New-Object Net.WebClient
       # Download ODBC Driver 18 MSI
-      $client.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2249006', '$(Build.SourcesDirectory)\msodbcsql.msi')
+      $client.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2345415', '$(Build.SourcesDirectory)\msodbcsql.msi')
       Write-Host "Downloaded msodbcsql.msi"
       dir $(Build.SourcesDirectory)\msodbcsql.msi
     displayName: 'Download ODBC Driver 18 MSI'
@@ -963,16 +952,24 @@ jobs:
       $env:VERSION = $jsondata.{$(phpVersion)}.version
       Write-Host "Latest PHP $(phpVersion) is ${env:VERSION}"
       cd $(Build.SourcesDirectory)\buildscripts\
-      python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
+      python -u builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
       if ($LASTEXITCODE -ne 0) { throw "sqlsrv build failed" }
-      python builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
-      if ($LASTEXITCODE -ne 0) { throw "pdo_sqlsrv build failed" }
-      Write-Host "Listing built DLLs:"
-      dir *sqlsrv*.dll
-      Write-Host "Copying DLLs to C:\tools\php\ext\"
+      Write-Host "Listing built DLLs and PDBs:"
+      dir *.dll,*.pdb
+      # Copy sqlsrv DLL and PDB immediately (before pdo_sqlsrv build overwrites the build tree)
+      Write-Host "Copying sqlsrv DLL and PDB to C:\tools\php\ext\"
       Copy-Item *sqlsrv*.dll C:\tools\php\ext\ -Verbose
-      Write-Host "Verifying DLLs in destination:"
-      dir C:\tools\php\ext\*sqlsrv*.dll
+      Copy-Item *sqlsrv*.pdb C:\tools\php\ext\ -Verbose -ErrorAction SilentlyContinue
+      python -u builddrivers.py --PHPVER=${env:VERSION} --DRIVER=pdo_sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
+      if ($LASTEXITCODE -ne 0) { throw "pdo_sqlsrv build failed" }
+      Write-Host "Listing built DLLs and PDBs:"
+      dir *.dll,*.pdb
+      # Copy pdo_sqlsrv DLL and PDB
+      Write-Host "Copying pdo_sqlsrv DLL and PDB to C:\tools\php\ext\"
+      Copy-Item *pdo_sqlsrv*.dll C:\tools\php\ext\ -Verbose
+      Copy-Item *pdo_sqlsrv*.pdb C:\tools\php\ext\ -Verbose -ErrorAction SilentlyContinue
+      Write-Host "Verifying DLLs and PDBs in destination:"
+      dir C:\tools\php\ext\*sqlsrv*
       
       # Add extensions to php.ini
       Write-Host "Adding extensions to php.ini"
@@ -984,19 +981,10 @@ jobs:
       php --ri sqlsrv
       php --ri pdo_sqlsrv
       
-      # Check DLL dependencies with dumpbin (optional, for diagnostics)
-      Write-Host "Checking DLL dependencies with dumpbin:"
-      $dumpbinPath = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-      if ($dumpbinPath) {
-          & $dumpbinPath.FullName /dependents C:\tools\php\ext\php_sqlsrv.dll | Select-String -Pattern "dll"
-      } else {
-          Write-Host "dumpbin.exe not found - skipping DLL dependency check"
-      }
-      
       # Copy run-tests.php to test directories
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\sqlsrv -Verbose
       Copy-Item $(Build.SourcesDirectory)\buildscripts\php-sdk\phpdev\vs17\x64\php-${env:VERSION}-src\run-tests.php $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv -Verbose
-    displayName: 'Build drivers (separately) for the latest version of PHP $(phpVersion)'
+    displayName: 'Build drivers for PHP $(phpVersion)'
 
   - powershell: |
       Write-Host "Setting up test databases..."
@@ -1014,31 +1002,35 @@ jobs:
     displayName: 'Set up test databases'
 
   - powershell: |
-      Write-Host "=== ODBC Driver Configuration ==="
-      Write-Host "Installed SQL Server ODBC Drivers:"
-      Get-OdbcDriver | Where-Object { $_.Name -like "*SQL Server*" } | Format-Table Name, Platform -AutoSize
-      Write-Host ""
-      Write-Host "Driver configured in MsSetup.inc:"
-      Select-String -Path "$(Build.SourcesDirectory)\test\functional\sqlsrv\MsSetup.inc" -Pattern '^\$driver'
-      Write-Host "================================="
-    displayName: 'Show ODBC Driver version being used'
+      Write-Host "Installing OpenCppCoverage..."
+      choco install opencppcoverage -y
+      $env:Path = "C:\Program Files\OpenCppCoverage;$env:Path"
+      # Verify install by checking the executable exists
+      if (Test-Path "C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe") {
+          Write-Host "OpenCppCoverage installed successfully"
+      } else {
+          throw "OpenCppCoverage executable not found"
+      }
+    displayName: 'Install OpenCppCoverage'
 
   - script: |
+      set PATH=C:\Program Files\OpenCppCoverage;%PATH%
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
       set MSSQL_SERVER=(localdb)\MSSQLLocalDB
       set MSSQL_USER=$(uid)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
+      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
     displayName: 'Run sqlsrv functional tests'
 
   - script: |
+      set PATH=C:\Program Files\OpenCppCoverage;%PATH%
       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
       set MSSQL_SERVER=(localdb)\MSSQLLocalDB
       set MSSQL_USER=$(uid)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
-      php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
+      OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_pdo_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
     displayName: 'Run pdo_sqlsrv functional tests'
 
   - script: |
@@ -1061,7 +1053,75 @@ jobs:
       searchFolder: '$(Build.SourcesDirectory)\test\functional\'
 
   - powershell: |
+      $artifactDir = "$(Build.SourcesDirectory)\coverage-artifacts"
+      New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
+      Copy-Item "$(Build.SourcesDirectory)\coverage*.xml" $artifactDir -ErrorAction SilentlyContinue
+      dir $artifactDir
+    displayName: 'Stage coverage artifacts'
+    condition: always()
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish coverage artifacts'
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)\coverage-artifacts'
+      artifact: 'coverage-windows'
+      publishLocation: 'pipeline'
+    condition: always()
+
+  - powershell: |
       Write-Host "Stopping LocalDB..."
       sqllocaldb stop MSSQLLocalDB
     displayName: 'Cleanup LocalDB'
     condition: always()
+
+- job: MergeCoverage
+  displayName: 'Merge Coverage Reports'
+  dependsOn:
+    - Linux
+    - Windows
+  condition: succeededOrFailed()
+  pool:
+    vmImage: 'ubuntu-22.04'
+  steps:
+  - checkout: self
+    fetchDepth: 1
+
+  - task: DownloadPipelineArtifact@2
+    displayName: 'Download Linux coverage'
+    inputs:
+      artifact: 'coverage-linux'
+      targetPath: '$(Pipeline.Workspace)/coverage-linux'
+    continueOnError: true
+
+  - task: DownloadPipelineArtifact@2
+    displayName: 'Download Windows coverage'
+    inputs:
+      artifact: 'coverage-windows'
+      targetPath: '$(Pipeline.Workspace)/coverage-windows'
+    continueOnError: true
+
+  - script: |
+      python3 $(Build.SourcesDirectory)/buildscripts/merge_coverage.py \
+        '$(Pipeline.Workspace)' \
+        '$(Build.SourcesDirectory)'
+    displayName: 'Merge coverage reports'
+
+  - task: PublishCodeCoverageResults@2
+    displayName: 'Publish Code Coverage'
+    inputs:
+      summaryFileLocation: '$(Build.SourcesDirectory)/coverage.xml'
+
+  - script: |
+      curl -Os https://cli.codecov.io/latest/linux/codecov
+      chmod +x codecov
+      ./codecov upload-process \
+        --fail-on-error \
+        --disable-search \
+        --git-service github \
+        -t $(codecov_token) \
+        -n "merged" \
+        -f coverage.xml
+    displayName: 'Upload coverage to Codecov'
+    workingDirectory: '$(Build.SourcesDirectory)'
+    env:
+      CODECOV_TOKEN: $(codecov_token)
