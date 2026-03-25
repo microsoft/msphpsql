@@ -4,6 +4,10 @@ Test access token identity with connection pooling via mock TDS server (pdo_sqls
 Uses the Python mock TDS server to verify that:
 1. Two connections with the SAME access token get the SAME USER_NAME()
 2. Two connections with DIFFERENT access tokens get DIFFERENT USER_NAME()
+3. Same token reuses the pooled connection (same @@SPID)
+4. Different tokens get separate connections (different @@SPID)
+5. Custom APP option with different tokens still get separate connections
+6. Custom APP value is preserved in the Login7 app_name (not overwritten by token hash)
 On Linux/macOS, pooling is enabled via a custom odbcinst.ini with CPTimeout on
 each driver section and the test runs in a subprocess with ODBCSYSINI set.
 On Windows, pooling is controlled by the ConnectionPooling option.
@@ -53,7 +57,11 @@ foreach (glob(sys_get_temp_dir() . '/mock_tds_pool_*') as $d) {
     @rmdir($d);
 }
 ?>
---EXPECT--
+--EXPECTF--
 PASS: Same token produces same username: alice
 PASS: Different tokens produce different usernames: alice vs bob
+PASS: Same token reuses pooled connection (SPID %d)
+PASS: Different tokens use different connections (SPIDs %d vs %d)
+PASS: Custom APP with different tokens use different connections (SPIDs %d vs %d)
+PASS: Custom APP value preserved: MyCustomApp
 Done.

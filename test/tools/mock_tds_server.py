@@ -967,6 +967,10 @@ class ConnectionHandler:
         self._server = server
         self._authenticated = False
         self._username = ""  # SQL auth username or token-derived name
+        self._app_name = ""  # app_name from Login7 packet
+        with server._spid_lock:
+            self._spid = server._next_spid
+            server._next_spid += 1
         self._log = logging.getLogger(f"mock_tds.conn.{addr[0]}:{addr[1]}")
 
     def handle(self):
@@ -1032,6 +1036,9 @@ class ConnectionHandler:
             login_info.has_fedauth,
             f"{len(login_info.access_token)} chars" if login_info.access_token else "none",
         )
+
+        # Save app_name from Login7 for APP_NAME() queries
+        self._app_name = login_info.app_name
 
         # Determine the authenticated identity
         if login_info.has_fedauth and login_info.access_token:
@@ -1111,7 +1118,10 @@ class ConnectionHandler:
             )
 
         if sql_upper.startswith("SELECT @@SPID"):
-            return build_int_result("", 1)
+            return build_int_result("", self._spid)
+
+        if "APP_NAME()" in sql_upper:
+            return build_nvarchar_result("", self._app_name)
 
         # Default: return empty DONE
         self._log.debug("No handler for query, returning empty DONE")
@@ -1133,6 +1143,8 @@ class MockTdsServer:
         self._token_username_map = {}
         self._server_socket = None
         self._shutdown = threading.Event()
+        self._next_spid = 100  # per-connection SPID counter
+        self._spid_lock = threading.Lock()
 
         if cert_file and key_file:
             self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

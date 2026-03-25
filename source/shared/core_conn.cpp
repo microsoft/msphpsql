@@ -221,12 +221,6 @@ sqlsrv_conn* core_sqlsrv_connect( _In_ sqlsrv_context& henv_cp, _In_ sqlsrv_cont
         }
     }
 
-    // time to free the access token, if not null
-    if (conn->azure_ad_access_token) {
-        memset(conn->azure_ad_access_token->data, 0, conn->azure_ad_access_token->dataSize); // clear the memory
-        conn->azure_ad_access_token.reset();
-    }
-
     CHECK_SQL_ERROR( r, conn ) {
         throw core::CoreException();
     }
@@ -452,6 +446,15 @@ void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn )
     SQLRETURN r = SQLDisconnect( conn->handle() );
     if( !SQL_SUCCEEDED( r )) {
         LOG( SEV_ERROR, "Disconnect failed when closing the connection." );
+    }
+
+    // Securely clear the access token now that the connection handle has been
+    // disconnected.  We keep the token alive until after SQLDisconnect so that
+    // the ODBC Driver Manager can use its address as part of the pool-match key
+    // while the connection is in the pool.
+    if (conn->azure_ad_access_token) {
+        memset(conn->azure_ad_access_token->data, 0, conn->azure_ad_access_token->dataSize);
+        conn->azure_ad_access_token.reset();
     }
 
     // free the connection handle
@@ -812,6 +815,30 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
         // MARS on if not explicitly turned off
         if( !mars_mentioned ) {
             connection_string += CONNECTION_OPTION_MARS_ON;
+        }
+
+        // When an access token is used, inject a token-derived fingerprint
+        // into the connection string so that the ODBC Driver Manager uses a
+        // distinct pool key for each unique token.  The DM matches pooled
+        // connections by connection string but does not compare driver-
+        // specific attributes such as SQL_COPT_SS_ACCESS_TOKEN.  Without
+        // this, connections to the same server with different access tokens
+        // would share the same pool entry, returning the wrong identity.
+        // We use APP because it is a well-known keyword that won't cause
+        // warnings.  If the user already set APP, the first occurrence wins
+        // for the server-side program_name, but the DM still sees the full
+        // string (including our duplicate) for pool-key matching.
+        if (access_token_used && conn->azure_ad_access_token) {
+            ACCESSTOKEN* tok = conn->azure_ad_access_token.get();
+            // FNV-1a hash of the expanded token data
+            unsigned int h = 2166136261u;
+            for (unsigned int i = 0; i < tok->dataSize; i++) {
+                h ^= static_cast<unsigned char>(tok->data[i]);
+                h *= 16777619u;
+            }
+            char pool_key[64];
+            snprintf(pool_key, sizeof(pool_key), "APP={AT-%08x};", h);
+            connection_string += pool_key;
         }
 
     }
@@ -1207,7 +1234,10 @@ void access_token_set_func::func( _In_ connection_option const* /*option*/, _In_
 
     core::SQLSetConnectAttr(conn, SQL_COPT_SS_ACCESS_TOKEN, reinterpret_cast<SQLPOINTER>(pAccToken), SQL_IS_POINTER);
 
-    // Save the pointer because SQLDriverConnect() will use it to make connection to the server
+    // Save the pointer — the token must stay allocated until SQLDisconnect
+    // as it may be referenced by the ODBC driver during idle connection recovery.
+    // The token buffer is securely cleared in core_sqlsrv_close() after
+    // SQLDisconnect.
     conn->azure_ad_access_token = pAccToken;
     accToken.transferred();
 }
