@@ -4,7 +4,14 @@ Test various encrypt attributes
 This test does not test if any connection is successful but mainly test if the Encrypt keyword takes
 different attributes.
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
+<?php require('skipif_mid-refactor.inc');
+$conn = connect();
+$stmt = $conn->query("SELECT SERVERPROPERTY('Edition') AS Edition");
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+if ($row && strpos($row['Edition'], 'Express') !== false) {
+    die("skip LocalDB/Express Edition doesn't support Force Encryption");
+}
+?>
 --FILE--
 <?php
 require_once 'MsSetup.inc';
