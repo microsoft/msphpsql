@@ -15,6 +15,9 @@ PHPT_EXEC=true
 --SKIPIF--
 <?php 
 require('skipif_unix_ansitests.inc'); 
+if (PHP_OS === 'Darwin') {
+    die("skip Test has encoding issues on macOS");
+}
 $loc = setlocale(LC_ALL, 'zh_CN.gb18030');
 if (empty($loc)) {
     die("skip required gb18030 locale not available");

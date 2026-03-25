@@ -7,6 +7,9 @@ This test assumes the default odbcinst.ini has not been modified.
 if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
     die("Skip test for Linux and Mac only.");
 }
+if (extension_loaded('pdo_odbc')) {
+    die('skip pdo_odbc extension forces ODBC pooling, interfering with this test');
+}
 ?>
 --FILE--
 <?php

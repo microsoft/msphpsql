@@ -332,54 +332,6 @@ jobs:
     displayName: 'Get run-tests.php'
 
   #########################################
-  # Configure Test Skip Files
-  #########################################
-  - script: |
-      set -e
-      cd $(REPO_ROOT)/test/functional
-      
-      echo "Configuring skip files for tests that require unavailable features..."
-      
-      # Skip Chinese locale test (has macOS-specific encoding issues)
-      if [[ -f "pdo_sqlsrv/pdo_ansi_locale_zh.phpt" ]]; then
-        mv pdo_sqlsrv/pdo_ansi_locale_zh.phpt pdo_sqlsrv/pdo_ansi_locale_zh.phpt.skip || true
-        echo "Skipped pdo_ansi_locale_zh.phpt"
-      fi
-      
-      # Skip MemoryCheck tests (timeout on macOS CI)
-      for memtest in sqlsrv/TC81_MemoryCheck.phpt pdo_sqlsrv/PDO81_MemoryCheck.phpt; do
-        if [[ -f "$memtest" ]]; then
-          mv "$memtest" "${memtest}.skip" || true
-          echo "Skipped $memtest (times out on macOS CI)"
-        fi
-      done
-      
-      # Skip large data streaming test (timeout on macOS CI)
-      if [[ -f "sqlsrv/test_stream_large_data.phpt" ]]; then
-        mv sqlsrv/test_stream_large_data.phpt sqlsrv/test_stream_large_data.phpt.skip || true
-        echo "Skipped test_stream_large_data.phpt (times out on macOS CI)"
-      fi
-      
-      # Skip tests that cause BORKED errors
-      for borktest in pdo_sqlsrv/pdo_azure_ad_access_token.phpt pdo_sqlsrv/pdo_connect_encrypt_attributes.phpt; do
-        if [[ -f "$borktest" ]]; then
-          mv "$borktest" "${borktest}.skip" || true
-          echo "Skipped $borktest (causes BORKED error)"
-        fi
-      done
-      
-      # Skip Connection Pooling tests
-      for pooltest in sqlsrv/sqlsrv_ConnPool_Unix.phpt pdo_sqlsrv/PDO_ConnPool_Unix.phpt; do
-        if [[ -f "$pooltest" ]]; then
-          mv "$pooltest" "${pooltest}.skip" || true
-          echo "Skipped $pooltest (requires ODBC pooling config)"
-        fi
-      done
-      
-      echo "Skip files configured"
-    displayName: 'Configure Test Skip Files'
-
-  #########################################
   # Run PHP Functional Tests
   #########################################
   - script: |
