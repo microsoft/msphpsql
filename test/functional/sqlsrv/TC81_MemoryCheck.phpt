@@ -8,6 +8,7 @@ PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 <?php require('skipif_azure_dw.inc'); ?>
+<?php if (PHP_OS === 'Darwin') die('skip Memory check test times out on macOS CI'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');

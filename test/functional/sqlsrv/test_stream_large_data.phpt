@@ -2,6 +2,7 @@
 streaming large amounts of data into a database and getting it out as a string exactly the same.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
+<?php if (PHP_OS === 'Darwin') die('skip Test times out on macOS CI'); ?>
 --FILE--
 <?php
 
