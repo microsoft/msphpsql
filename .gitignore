@@ -22,3 +22,5 @@ source/**/configure*
 source/**/libtool
 source/**/Makefile*
 source/**/run-tests.php
+buildscripts/php*.dll
+buildscripts/php*.pdb

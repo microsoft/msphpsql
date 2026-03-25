@@ -73,6 +73,7 @@ function start_mock_tds_server($extra_args = [], $timeout = 10)
     }
     $cert = $tmpdir . DIRECTORY_SEPARATOR . 'server.pem';
     $key  = $tmpdir . DIRECTORY_SEPARATOR . 'server.key';
+    $logfile = $tmpdir . DIRECTORY_SEPARATOR . 'server.log';
 
     $python = find_python();
     if ($python === null) {
@@ -87,6 +88,7 @@ function start_mock_tds_server($extra_args = [], $timeout = 10)
         '--cert', $cert,
         '--key', $key,
         '--log-level', 'DEBUG',
+        '--log-file', $logfile,
     ];
     $cmd_args = array_merge($cmd_args, $extra_args);
 
@@ -385,10 +387,11 @@ function stop_mock_tds_server($mock)
     if (isset($mock['pidfile'])) {
         @unlink($mock['pidfile']);
     }
-    // Clean up temp cert files
+    // Clean up temp cert and log files
     if (isset($mock['tmpdir']) && is_dir($mock['tmpdir'])) {
         @unlink($mock['tmpdir'] . DIRECTORY_SEPARATOR . 'server.pem');
         @unlink($mock['tmpdir'] . DIRECTORY_SEPARATOR . 'server.key');
+        @unlink($mock['tmpdir'] . DIRECTORY_SEPARATOR . 'server.log');
         @rmdir($mock['tmpdir']);
     }
 }
