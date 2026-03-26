@@ -1350,9 +1350,12 @@ void __cdecl sqlsrv_stmt_dtor( _Inout_ zend_resource *rsrc )
     // uncommitted implicit transactions, leading to silent data loss.
     try {
         if (stmt->executed && !stmt->past_next_result_end) {
-            while (!stmt->past_next_result_end) {
-                core_sqlsrv_next_result(stmt, false, false);
+            close_active_stream(stmt);
+            SQLRETURN r = SQL_SUCCESS;
+            while (r == SQL_SUCCESS || r == SQL_SUCCESS_WITH_INFO) {
+                r = SQLMoreResults(stmt->handle());
             }
+            stmt->past_next_result_end = true;
         }
     }
     catch (...) {
