@@ -26,6 +26,7 @@
 #include <windows.h>
 #include <winver.h>
 #endif // _WIN32
+#include <cinttypes>
 #include <mutex>
 #include <sstream>
 #include <vector>
@@ -106,7 +107,7 @@ struct TokenCacheEntry {
     ACCESSTOKEN* token;      // persistently allocated (malloc), UCS-2 expanded
     char* raw_content;       // copy of the original token string for exact comparison
     size_t raw_len;          // length of raw_content
-    unsigned int hash;       // FNV-1a hash for fast rejection
+    uint64_t hash;           // FNV-1a 64-bit hash for fast rejection
     time_t last_used;        // updated on each disconnect
     TokenCacheEntry* next;
 };
@@ -119,14 +120,25 @@ static std::mutex s_token_cache_mutex;
 // tokens alive for at least this long to account for in-flight recoveries.
 static const time_t TOKEN_CACHE_TTL_FLOOR = 120;
 
-static unsigned int token_fnv1a(const char* data, size_t len)
+// Securely zero memory before freeing to scrub token secrets.
+// Plain memset can be optimized away by the compiler when the buffer
+// is not read afterward; these platform calls are guaranteed to persist.
+static void secure_zero(_Out_writes_bytes_(len) void* ptr, size_t len)
 {
-    unsigned int h = 2166136261u;
-    for (size_t i = 0; i < len; i++) {
-        h ^= static_cast<unsigned char>(data[i]);
-        h *= 16777619u;
-    }
-    return h;
+#ifdef _WIN32
+    SecureZeroMemory(ptr, len);
+#else
+    explicit_bzero(ptr, len);
+#endif
+}
+
+static void token_cache_free_entry(TokenCacheEntry* e)
+{
+    secure_zero(e->token->data, e->token->dataSize);
+    free(e->token);
+    secure_zero(e->raw_content, e->raw_len);
+    free(e->raw_content);
+    free(e);
 }
 
 // Remove entries whose last_used is older than the TTL.
@@ -139,11 +151,7 @@ static void token_cache_cleanup_expired()
         if (now - (*pp)->last_used > s_token_cache_ttl) {
             TokenCacheEntry* expired = *pp;
             *pp = expired->next;
-            memset(expired->token->data, 0, expired->token->dataSize);
-            free(expired->token);
-            memset(expired->raw_content, 0, expired->raw_len);
-            free(expired->raw_content);
-            free(expired);
+            token_cache_free_entry(expired);
         } else {
             pp = &(*pp)->next;
         }
@@ -159,7 +167,7 @@ static ACCESSTOKEN* token_cache_get(const char* raw_str, size_t raw_len)
     // Expire stale entries on each lookup
     token_cache_cleanup_expired();
 
-    unsigned int h = token_fnv1a(raw_str, raw_len);
+    uint64_t h = core_sqlsrv_hash_fnv1a_64(raw_str, raw_len);
 
     // Search for an existing entry with matching content
     for (TokenCacheEntry* e = s_token_cache; e; e = e->next) {
@@ -220,11 +228,7 @@ static void token_cache_destroy_all()
     TokenCacheEntry* e = s_token_cache;
     while (e) {
         TokenCacheEntry* next = e->next;
-        memset(e->token->data, 0, e->token->dataSize);
-        free(e->token);
-        memset(e->raw_content, 0, e->raw_len);
-        free(e->raw_content);
-        free(e);
+        token_cache_free_entry(e);
         e = next;
     }
     s_token_cache = nullptr;
@@ -253,10 +257,12 @@ static void token_cache_init_ttl()
         if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, regPath, 0,
                           KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD size = sizeof(buf);
-            RegQueryValueExA(hKey, "CPTimeout", NULL, NULL,
-                             reinterpret_cast<LPBYTE>(buf), &size);
+            LONG ret = RegQueryValueExA(hKey, "CPTimeout", NULL, NULL,
+                                        reinterpret_cast<LPBYTE>(buf), &size);
             RegCloseKey(hKey);
-        }
+            if (ret != ERROR_SUCCESS) {
+                buf[0] = '\0';
+            }
 #else
         SQLGetPrivateProfileString(section, "CPTimeout", "0",
                                    buf, sizeof(buf), "ODBCINST.INI");
@@ -645,20 +651,20 @@ void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn )
         LOG( SEV_ERROR, "Transaction rollback failed when closing the connection." );
     }
 
+    // Touch the token cache BEFORE SQLDisconnect.  SQLDisconnect returns
+    // the physical connection to the DM pool, and in a ZTS build the DM
+    // may immediately hand it to another thread whose token_cache_get()
+    // could run cleanup.  Touching first ensures the entry's timestamp is
+    // current before the connection re-enters the pool.
+    if (conn->azure_ad_access_token) {
+        token_cache_touch(conn->azure_ad_access_token);
+        conn->azure_ad_access_token = nullptr;
+    }
+
     // disconnect from the server
     SQLRETURN r = SQLDisconnect( conn->handle() );
     if( !SQL_SUCCEEDED( r )) {
         LOG( SEV_ERROR, "Disconnect failed when closing the connection." );
-    }
-
-    // Update the token cache timestamp so the cached allocation stays
-    // alive for TOKEN_CACHE_TTL_SECONDS after this disconnect.  The
-    // physical connection may remain in the DM pool (with the ODBC
-    // driver still holding a pointer to this token) until CPTimeout
-    // expires, so the cache must outlive that window.
-    if (conn->azure_ad_access_token) {
-        token_cache_touch(conn->azure_ad_access_token);
-        conn->azure_ad_access_token = nullptr;
     }
 
     // free the connection handle
@@ -1034,14 +1040,11 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
         // string (including our duplicate) for pool-key matching.
         if (access_token_used && conn->azure_ad_access_token) {
             ACCESSTOKEN* tok = conn->azure_ad_access_token;
-            // FNV-1a hash of the expanded token data
-            unsigned int h = 2166136261u;
-            for (unsigned int i = 0; i < tok->dataSize; i++) {
-                h ^= static_cast<unsigned char>(tok->data[i]);
-                h *= 16777619u;
-            }
+            uint64_t h = core_sqlsrv_hash_fnv1a_64(
+                tok->data, static_cast<size_t>(tok->dataSize));
             char pool_key[64];
-            snprintf(pool_key, sizeof(pool_key), "APP={AT-%08x};", h);
+            snprintf(pool_key, sizeof(pool_key),
+                     "APP={AT-%016" PRIx64 "};", h);
             connection_string += pool_key;
         }
 

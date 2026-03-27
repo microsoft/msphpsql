@@ -171,6 +171,8 @@ OACR_WARNING_POP
 #include <algorithm>
 #include <limits>
 #include <cassert>
+#include <cinttypes>
+#include <cstdint>
 #include <memory>
 #include <vector>
 // included for SQL Server specific constants
@@ -1054,6 +1056,17 @@ void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_contex
 void core_sqlsrv_mshutdown( _Inout_ sqlsrv_context& henv_cp, _Inout_ sqlsrv_context& henv_ncp );
 void core_sqlsrv_init_token_cache();
 void core_sqlsrv_cleanup_token_cache();
+
+// FNV-1a 64-bit hash used by both the token cache and APP pool-key generation.
+inline uint64_t core_sqlsrv_hash_fnv1a_64(const char* data, size_t len)
+{
+    uint64_t h = 14695981039346656037ULL;
+    for (size_t i = 0; i < len; i++) {
+        h ^= static_cast<unsigned char>(data[i]);
+        h *= 1099511628211ULL;
+    }
+    return h;
+}
 
 // environment context used by sqlsrv_connect for when a connection error occurs.
 struct sqlsrv_henv {
