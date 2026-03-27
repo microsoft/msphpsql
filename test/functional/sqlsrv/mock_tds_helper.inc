@@ -16,12 +16,12 @@ function is_windows()
 }
 
 /**
- * Find a working Python interpreter (python3 on Linux/macOS, python on Windows).
+ * Find a working Python 3 interpreter.
  * Returns the command name, or null if not found.
  */
 function find_python()
 {
-    $candidates = is_windows() ? ['python', 'python3'] : ['python3', 'python'];
+    $candidates = ['python3', 'python'];
     foreach ($candidates as $python) {
         $ret = null;
         $output = [];
