@@ -163,7 +163,7 @@ try {
 } catch (PDOException $e) {
     echo "Error executing statement 6.\n";
     $err = $e->getMessage();
-    if (strpos($err, 'SQLSTATE[08S02]')===false or (strpos($err, 'TCP Provider')===false and strpos($err, 'SMux Provider')===false)) {
+    if (strpos($err, 'SQLSTATE[08S02]')===false or (strpos($err, 'TCP Provider')===false and strpos($err, 'SMux Provider')===false and strpos($err, 'SSL Provider')===false)) {
         echo "Error: Wrong error message.\n";
         print_r($err);
     }
