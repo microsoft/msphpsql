@@ -26,6 +26,7 @@
 #include <windows.h>
 #include <winver.h>
 #endif // _WIN32
+#include <mutex>
 #include <sstream>
 #include <vector>
 
@@ -77,6 +78,191 @@ std::string get_ODBC_driver_name(_In_ ODBC_DRIVER driver);
 bool core_search_odbc_driver_unix(_In_ ODBC_DRIVER driver);
 #endif
 
+}
+
+// ----------------------------------------------------------------
+// Access Token Cache
+//
+// The ODBC Driver Manager does not include the SQL_COPT_SS_ACCESS_TOKEN
+// pointer in pool-key matching, and the ODBC driver stores only the raw
+// pointer — it never copies the token data.  When a PHP connection is
+// closed, the DM returns the physical connection to the pool while the
+// driver still holds the token pointer.  If we freed the token at that
+// point, the driver's pointer would dangle, causing a use-after-free if
+// idle connection recovery fires.
+//
+// This cache ensures pointer stability: the same token content always
+// resolves to the same ACCESSTOKEN allocation.  Tokens are allocated
+// with malloc (not emalloc) so they survive across PHP requests.  A
+// time-based TTL removes entries that have not been used by any
+// connection for TOKEN_CACHE_TTL_SECONDS, which must exceed the DM's
+// CPTimeout to guarantee the physical connection has been closed before
+// the memory is reclaimed.
+// ----------------------------------------------------------------
+
+namespace {
+
+struct TokenCacheEntry {
+    ACCESSTOKEN* token;      // persistently allocated (malloc), UCS-2 expanded
+    char* raw_content;       // copy of the original token string for exact comparison
+    size_t raw_len;          // length of raw_content
+    unsigned int hash;       // FNV-1a hash for fast rejection
+    time_t last_used;        // updated on each disconnect
+    TokenCacheEntry* next;
+};
+
+static TokenCacheEntry* s_token_cache = nullptr;
+static time_t s_token_cache_ttl = 120; // default floor; updated by token_cache_init_ttl()
+static std::mutex s_token_cache_mutex;
+
+// Minimum TTL floor (seconds).  Even if CPTimeout is very small, we keep
+// tokens alive for at least this long to account for in-flight recoveries.
+static const time_t TOKEN_CACHE_TTL_FLOOR = 120;
+
+static unsigned int token_fnv1a(const char* data, size_t len)
+{
+    unsigned int h = 2166136261u;
+    for (size_t i = 0; i < len; i++) {
+        h ^= static_cast<unsigned char>(data[i]);
+        h *= 16777619u;
+    }
+    return h;
+}
+
+// Remove entries whose last_used is older than the TTL.
+// Caller must hold s_token_cache_mutex.
+static void token_cache_cleanup_expired()
+{
+    time_t now = time(nullptr);
+    TokenCacheEntry** pp = &s_token_cache;
+    while (*pp) {
+        if (now - (*pp)->last_used > s_token_cache_ttl) {
+            TokenCacheEntry* expired = *pp;
+            *pp = expired->next;
+            memset(expired->token->data, 0, expired->token->dataSize);
+            free(expired->token);
+            memset(expired->raw_content, 0, expired->raw_len);
+            free(expired->raw_content);
+            free(expired);
+        } else {
+            pp = &(*pp)->next;
+        }
+    }
+}
+
+// Look up or create a cached ACCESSTOKEN for the given raw token string.
+// The returned pointer is owned by the cache — callers must not free it.
+static ACCESSTOKEN* token_cache_get(const char* raw_str, size_t raw_len)
+{
+    std::lock_guard<std::mutex> lock(s_token_cache_mutex);
+
+    // Expire stale entries on each lookup
+    token_cache_cleanup_expired();
+
+    unsigned int h = token_fnv1a(raw_str, raw_len);
+
+    // Search for an existing entry with matching content
+    for (TokenCacheEntry* e = s_token_cache; e; e = e->next) {
+        if (e->hash == h && e->raw_len == raw_len &&
+            memcmp(e->raw_content, raw_str, raw_len) == 0) {
+            e->last_used = time(nullptr);
+            return e->token;
+        }
+    }
+
+    // Not found — allocate a new persistent entry
+    size_t data_size = raw_len * 2;  // UCS-2 expansion
+    ACCESSTOKEN* tok = static_cast<ACCESSTOKEN*>(malloc(sizeof(ACCESSTOKEN) + data_size));
+    if (!tok) return nullptr;
+    tok->dataSize = static_cast<unsigned int>(data_size);
+    for (size_t i = 0; i < raw_len; i++) {
+        tok->data[i * 2]     = raw_str[i];
+        tok->data[i * 2 + 1] = 0;
+    }
+
+    char* raw_copy = static_cast<char*>(malloc(raw_len));
+    if (!raw_copy) { free(tok); return nullptr; }
+    memcpy(raw_copy, raw_str, raw_len);
+
+    TokenCacheEntry* entry = static_cast<TokenCacheEntry*>(malloc(sizeof(TokenCacheEntry)));
+    if (!entry) { free(tok); free(raw_copy); return nullptr; }
+    entry->token = tok;
+    entry->raw_content = raw_copy;
+    entry->raw_len = raw_len;
+    entry->hash = h;
+    entry->last_used = time(nullptr);
+    entry->next = s_token_cache;
+    s_token_cache = entry;
+
+    return tok;
+}
+
+// Update the last_used timestamp for the cache entry holding this token.
+// Called from core_sqlsrv_close() after SQLDisconnect so the TTL countdown
+// restarts from the moment the connection is returned to the DM pool.
+static void token_cache_touch(ACCESSTOKEN* tok)
+{
+    if (!tok) return;
+    std::lock_guard<std::mutex> lock(s_token_cache_mutex);
+    time_t now = time(nullptr);
+    for (TokenCacheEntry* e = s_token_cache; e; e = e->next) {
+        if (e->token == tok) {
+            e->last_used = now;
+            return;
+        }
+    }
+}
+
+// Destroy all cache entries. Called from core_sqlsrv_mshutdown.
+static void token_cache_destroy_all()
+{
+    std::lock_guard<std::mutex> lock(s_token_cache_mutex);
+    TokenCacheEntry* e = s_token_cache;
+    while (e) {
+        TokenCacheEntry* next = e->next;
+        memset(e->token->data, 0, e->token->dataSize);
+        free(e->token);
+        memset(e->raw_content, 0, e->raw_len);
+        free(e->raw_content);
+        free(e);
+        e = next;
+    }
+    s_token_cache = nullptr;
+}
+
+// Read CPTimeout for each known ODBC driver section from ODBCINST.INI,
+// take the maximum, and set the token cache TTL to 2x that value (with
+// a floor).  This ensures tokens outlive any pooled physical connection.
+// On Windows SQLGetPrivateProfileString reads from the registry.
+static void token_cache_init_ttl()
+{
+    time_t max_cp = 0;
+    const int drivers[] = { 13, 17, 18 };
+    for (int ver : drivers) {
+        char section[64];
+        snprintf(section, sizeof(section), ODBC_DRIVER_NAME, ver);
+        char buf[32] = {'\0'};
+        SQLGetPrivateProfileString(section, "CPTimeout", "0",
+                                   buf, sizeof(buf), "ODBCINST.INI");
+        time_t val = static_cast<time_t>(atol(buf));
+        if (val > max_cp) max_cp = val;
+    }
+    // TTL = 2 * CPTimeout, but at least TOKEN_CACHE_TTL_FLOOR
+    time_t ttl = max_cp * 2;
+    if (ttl < TOKEN_CACHE_TTL_FLOOR) ttl = TOKEN_CACHE_TTL_FLOOR;
+    s_token_cache_ttl = ttl;
+}
+
+} // anonymous namespace
+
+void core_sqlsrv_init_token_cache()
+{
+    token_cache_init_ttl();
+}
+
+void core_sqlsrv_cleanup_token_cache()
+{
+    token_cache_destroy_all();
 }
 
 // core_sqlsrv_connect
@@ -448,13 +634,14 @@ void core_sqlsrv_close( _Inout_opt_ sqlsrv_conn* conn )
         LOG( SEV_ERROR, "Disconnect failed when closing the connection." );
     }
 
-    // Securely clear the access token now that the connection handle has been
-    // disconnected.  We keep the token alive until after SQLDisconnect so that
-    // the ODBC Driver Manager can use its address as part of the pool-match key
-    // while the connection is in the pool.
+    // Update the token cache timestamp so the cached allocation stays
+    // alive for TOKEN_CACHE_TTL_SECONDS after this disconnect.  The
+    // physical connection may remain in the DM pool (with the ODBC
+    // driver still holding a pointer to this token) until CPTimeout
+    // expires, so the cache must outlive that window.
     if (conn->azure_ad_access_token) {
-        memset(conn->azure_ad_access_token->data, 0, conn->azure_ad_access_token->dataSize);
-        conn->azure_ad_access_token.reset();
+        token_cache_touch(conn->azure_ad_access_token);
+        conn->azure_ad_access_token = nullptr;
     }
 
     // free the connection handle
@@ -829,7 +1016,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
         // for the server-side program_name, but the DM still sees the full
         // string (including our duplicate) for pool-key matching.
         if (access_token_used && conn->azure_ad_access_token) {
-            ACCESSTOKEN* tok = conn->azure_ad_access_token.get();
+            ACCESSTOKEN* tok = conn->azure_ad_access_token;
             // FNV-1a hash of the expanded token data
             unsigned int h = 2166136261u;
             for (unsigned int i = 0; i < tok->dataSize; i++) {
@@ -1218,26 +1405,17 @@ void access_token_set_func::func( _In_ connection_option const* /*option*/, _In_
 
     size_t dataSize = 2 * value_len;
 
-    sqlsrv_malloc_auto_ptr<ACCESSTOKEN> accToken;
-    accToken = reinterpret_cast<ACCESSTOKEN*>(sqlsrv_malloc(sizeof(ACCESSTOKEN) + dataSize));
-
-    ACCESSTOKEN *pAccToken = accToken.get();
-    SQLSRV_ASSERT(pAccToken != NULL, "Something went wrong when trying to allocate memory for the access token.");
-
-    pAccToken->dataSize = static_cast<unsigned int>(dataSize);
-
-    // Expand access token with padding bytes
-    for (size_t i = 0, j = 0; i < dataSize; i += 2, j++) {
-        pAccToken->data[i] = value_str[j];
-        pAccToken->data[i+1] = 0;
-    }
+    // Retrieve a persistent ACCESSTOKEN from the cache.  The cache ensures
+    // that the same raw token always returns the same pointer, so the ODBC
+    // driver's internal pFedAuthToken remains valid even after this PHP
+    // connection is closed and the physical connection sits in the DM pool.
+    ACCESSTOKEN* pAccToken = token_cache_get(value_str, value_len);
+    SQLSRV_ASSERT(pAccToken != NULL, "Failed to allocate access token in cache.");
 
     core::SQLSetConnectAttr(conn, SQL_COPT_SS_ACCESS_TOKEN, reinterpret_cast<SQLPOINTER>(pAccToken), SQL_IS_POINTER);
 
-    // Save the pointer — the token must stay allocated until SQLDisconnect
-    // as it may be referenced by the ODBC driver during idle connection recovery.
-    // The token buffer is securely cleared in core_sqlsrv_close() after
-    // SQLDisconnect.
+    // Store a non-owning reference.  The token cache manages the memory
+    // lifetime, keeping it alive until TOKEN_CACHE_TTL_SECONDS after the
+    // last connection using this token is closed.
     conn->azure_ad_access_token = pAccToken;
-    accToken.transferred();
 }

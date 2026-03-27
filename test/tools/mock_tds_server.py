@@ -16,6 +16,7 @@ import argparse
 import hashlib
 import logging
 import os
+import re
 import socket
 import ssl
 import struct
@@ -67,6 +68,7 @@ ENCRYPT_ON = 0x01
 ENCRYPT_NOT_SUP = 0x02
 
 # FedAuth constants
+FEATURE_EXT_SESSIONRECOVERY = 0x01
 FEATURE_EXT_FEDAUTH = 0x02
 FEATURE_EXT_TERMINATOR = 0xFF
 FEDAUTH_LIBRARY_SECURITYTOKEN = 0x01
@@ -583,12 +585,17 @@ def build_login_ack():
     return bytes(buf)
 
 
-def build_feature_ext_ack_fedauth():
-    """Build FeatureExtAck token acknowledging FedAuth."""
+def build_feature_ext_ack_fedauth(include_session_recovery=False):
+    """Build FeatureExtAck token acknowledging FedAuth (and optionally session recovery)."""
     buf = bytearray()
     buf.append(TK_FEATUREEXTACK)
+    # FedAuth acknowledgement
     buf.append(FEATURE_EXT_FEDAUTH)       # Feature ID
     buf.extend(struct.pack("<I", 0))       # Feature data length = 0
+    # Session recovery acknowledgement (enables ConnectRetryCount-based recovery)
+    if include_session_recovery:
+        buf.append(FEATURE_EXT_SESSIONRECOVERY)  # Feature ID = 0x01
+        buf.extend(struct.pack("<I", 0))          # Feature data length = 0
     buf.append(FEATURE_EXT_TERMINATOR)     # Terminator
     return bytes(buf)
 
@@ -1053,7 +1060,8 @@ class ConnectionHandler:
         response = bytearray()
         response.extend(build_login_ack())
         if login_info.has_fedauth:
-            response.extend(build_feature_ext_ack_fedauth())
+            response.extend(build_feature_ext_ack_fedauth(
+                include_session_recovery=self._server.enable_session_recovery))
         response.extend(build_done_token(0))
 
         write_tds_packet(self._sock, PKT_TABULAR_RESULT, bytes(response))
@@ -1123,6 +1131,17 @@ class ConnectionHandler:
         if "APP_NAME()" in sql_upper:
             return build_nvarchar_result("", self._app_name)
 
+        # KILL <spid> — forcibly close another connection's TCP socket
+        kill_match = re.match(r"KILL\s+(\d+)", sql_upper)
+        if kill_match:
+            target_spid = int(kill_match.group(1))
+            if self._server.kill_spid(target_spid):
+                self._log.info("Killed SPID %d", target_spid)
+                return build_done_token(0)
+            else:
+                self._log.warning("KILL: SPID %d not found", target_spid)
+                return build_done_token(0)
+
         # Default: return empty DONE
         self._log.debug("No handler for query, returning empty DONE")
         return build_done_token(0)
@@ -1145,6 +1164,9 @@ class MockTdsServer:
         self._shutdown = threading.Event()
         self._next_spid = 100  # per-connection SPID counter
         self._spid_lock = threading.Lock()
+        self._connections = {}  # spid -> ConnectionHandler (for KILL support)
+        self._connections_lock = threading.Lock()
+        self.enable_session_recovery = False  # include session recovery in FeatureExtAck
 
         if cert_file and key_file:
             self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -1227,9 +1249,43 @@ class MockTdsServer:
             except OSError:
                 pass
 
+    def kill_spid(self, spid):
+        """Forcibly close the TCP connection for the given SPID.
+
+        Returns True if the connection was found and killed, False otherwise.
+        This is used by the KILL <spid> SQL command handler and can also
+        be called programmatically from tests.
+        """
+        with self._connections_lock:
+            handler = self._connections.get(spid)
+        if handler is None:
+            return False
+        log.info("Killing SPID %d", spid)
+        try:
+            handler._raw_sock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+        try:
+            handler._raw_sock.close()
+        except OSError:
+            pass
+        return True
+
+    def _register_connection(self, handler):
+        with self._connections_lock:
+            self._connections[handler._spid] = handler
+
+    def _unregister_connection(self, handler):
+        with self._connections_lock:
+            self._connections.pop(handler._spid, None)
+
     def _handle_client(self, client_sock, addr):
         handler = ConnectionHandler(client_sock, addr, self)
-        handler.handle()
+        self._register_connection(handler)
+        try:
+            handler.handle()
+        finally:
+            self._unregister_connection(handler)
 
 
 # ---------------------------------------------------------------------------
@@ -1327,6 +1383,10 @@ def main():
         metavar="TOKEN=USERNAME",
         help="Map access token to username (repeatable)",
     )
+    parser.add_argument(
+        "--session-recovery", action="store_true",
+        help="Include session recovery in FeatureExtAck (enables ConnectRetryCount recovery)",
+    )
     args = parser.parse_args()
 
     # Configure logging
@@ -1353,6 +1413,7 @@ def main():
         cert_file=args.cert,
         key_file=args.key,
     )
+    server.enable_session_recovery = args.session_recovery
 
     # Register token-username mappings from CLI
     for mapping in args.map_token:
