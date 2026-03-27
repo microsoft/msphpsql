@@ -1045,7 +1045,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ sqlsrv_conn* conn, _Inou
                 tok->data, static_cast<size_t>(tok->dataSize));
             char pool_key[64];
             snprintf(pool_key, sizeof(pool_key),
-                     "APP={AT-%016" PRIx64 "};", h);
+                     "APP={MSPHPSQL AT-%016" PRIx64 "};", h);
             connection_string += pool_key;
         }
 
