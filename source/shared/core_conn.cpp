@@ -263,6 +263,7 @@ static void token_cache_init_ttl()
             if (ret != ERROR_SUCCESS) {
                 buf[0] = '\0';
             }
+        }
 #else
         SQLGetPrivateProfileString(section, "CPTimeout", "0",
                                    buf, sizeof(buf), "ODBCINST.INI");
