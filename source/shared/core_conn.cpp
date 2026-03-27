@@ -230,10 +230,13 @@ static void token_cache_destroy_all()
     s_token_cache = nullptr;
 }
 
-// Read CPTimeout for each known ODBC driver section from ODBCINST.INI,
+// Read CPTimeout for each known ODBC driver from ODBCINST.INI / registry,
 // take the maximum, and set the token cache TTL to 2x that value (with
 // a floor).  This ensures tokens outlive any pooled physical connection.
-// On Windows SQLGetPrivateProfileString reads from the registry.
+// On Windows we read the registry directly (ODBCINST.INI data lives
+// under HKLM\SOFTWARE\ODBC\ODBCINST.INI) to avoid pulling in
+// odbccp32.lib's transitive CRT dependencies.
+// On other platforms we use SQLGetPrivateProfileString from libodbcinst.
 static void token_cache_init_ttl()
 {
     time_t max_cp = 0;
@@ -242,8 +245,22 @@ static void token_cache_init_ttl()
         char section[64];
         snprintf(section, sizeof(section), ODBC_DRIVER_NAME, ver);
         char buf[32] = {'\0'};
+#ifdef _WIN32
+        char regPath[256];
+        snprintf(regPath, sizeof(regPath),
+                 "SOFTWARE\\ODBC\\ODBCINST.INI\\%s", section);
+        HKEY hKey;
+        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, regPath, 0,
+                          KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD size = sizeof(buf);
+            RegQueryValueExA(hKey, "CPTimeout", NULL, NULL,
+                             reinterpret_cast<LPBYTE>(buf), &size);
+            RegCloseKey(hKey);
+        }
+#else
         SQLGetPrivateProfileString(section, "CPTimeout", "0",
                                    buf, sizeof(buf), "ODBCINST.INI");
+#endif
         time_t val = static_cast<time_t>(atol(buf));
         if (val > max_cp) max_cp = val;
     }
@@ -1402,8 +1419,6 @@ void access_token_set_func::func( _In_ connection_option const* /*option*/, _In_
     // similar to a UCS-2 string containing only ASCII characters
     //
     // See https://docs.microsoft.com/sql/connect/odbc/using-azure-active-directory#authenticating-with-an-access-token
-
-    size_t dataSize = 2 * value_len;
 
     // Retrieve a persistent ACCESSTOKEN from the cache.  The cache ensures
     // that the same raw token always returns the same pointer, so the ODBC
