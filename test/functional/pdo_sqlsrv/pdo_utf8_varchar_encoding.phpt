@@ -85,12 +85,16 @@ try {
 
     // ===== Test 3: Per-parameter encoding via bindParam =====
     echo "=== Test 3: Per-parameter SQLSRV_ENCODING_UTF8_VARCHAR ===\n";
+    // Set connection encoding to UTF8_VARCHAR so that reads also use the correct encoding
+    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
     $conn->exec("TRUNCATE TABLE $tbname");
 
     foreach ($testCases as $case) {
+        $name = $case['name'];
+        $data = $case['data'];
         $stmt = $conn->prepare("INSERT INTO $tbname (name, data) VALUES (:name, :data)");
-        $stmt->bindParam(':name', $case['name'], PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
-        $stmt->bindParam(':data', $case['data'], PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+        $stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+        $stmt->bindParam(':data', $data, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
         $stmt->execute();
         $id = $conn->lastInsertId();
 
