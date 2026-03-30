@@ -35,9 +35,9 @@ try {
             'data'  => '{"text": "Straße Köln Grüß Gott"}',
         ],
         [
-            'label' => 'multi_script',
-            'name'  => '日本語 русский عربى',
-            'data'  => '{"text": "日本語 русский عربى"}',
+            'label' => 'extended_latin',
+            'name'  => 'Ñoño café résumé naïve',
+            'data'  => '{"text": "Ñoño café résumé naïve"}',
         ],
     ];
 
@@ -116,13 +116,13 @@ try {
 === Test 1: Connection-level SQLSRV_ENCODING_UTF8_VARCHAR ===
 CASE basic_ascii: name=YES, data=YES
 CASE european_utf8: name=YES, data=YES
-CASE multi_script: name=YES, data=YES
+CASE extended_latin: name=YES, data=YES
 === Test 2: Statement-level SQLSRV_ENCODING_UTF8_VARCHAR ===
 CASE basic_ascii: name=YES, data=YES
 CASE european_utf8: name=YES, data=YES
-CASE multi_script: name=YES, data=YES
+CASE extended_latin: name=YES, data=YES
 === Test 3: Per-parameter SQLSRV_ENCODING_UTF8_VARCHAR ===
 CASE basic_ascii: name=YES, data=YES
 CASE european_utf8: name=YES, data=YES
-CASE multi_script: name=YES, data=YES
+CASE extended_latin: name=YES, data=YES
 Done

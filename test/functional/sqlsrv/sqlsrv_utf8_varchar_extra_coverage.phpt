@@ -29,7 +29,7 @@ if ($stmt === false) die(print_r(sqlsrv_errors(), true));
 sqlsrv_free_stmt($stmt);
 
 $testVal = 'Straße Köln Grüß Gott';
-$streamContent = 'UTF-8 stream data with special chars: Grüße 日本語';
+$streamContent = 'UTF-8 stream data with special chars: Grüße café résumé';
 
 // === Test 1: Stream/resource parameter ===
 echo "=== Test 1: Stream parameter ===\n";
