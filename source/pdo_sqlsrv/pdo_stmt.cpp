@@ -508,15 +508,13 @@ int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt )
     // uncommitted implicit transactions, leading to silent data loss.
     // This can occur when triggers, SET STATISTICS, or SET NOCOUNT OFF
     // generate additional result sets beyond the primary result.
-    try {
-        if (driver_stmt->executed && !driver_stmt->past_next_result_end) {
-            while (!driver_stmt->past_next_result_end) {
-                core_sqlsrv_next_result(driver_stmt, false, false);
-            }
+    if (driver_stmt->executed && !driver_stmt->past_next_result_end) {
+        close_active_stream(driver_stmt);
+        SQLRETURN r = SQL_SUCCESS;
+        while (r == SQL_SUCCESS || r == SQL_SUCCESS_WITH_INFO) {
+            r = SQLMoreResults(driver_stmt->handle());
         }
-    }
-    catch (...) {
-        LOG(SEV_WARNING, "pdo_sqlsrv_stmt_dtor: failed to consume pending result sets");
+        driver_stmt->past_next_result_end = true;
     }
 
     (( sqlsrv_stmt* )driver_stmt )->~sqlsrv_stmt();

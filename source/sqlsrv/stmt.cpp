@@ -1348,18 +1348,13 @@ void __cdecl sqlsrv_stmt_dtor( _Inout_ zend_resource *rsrc )
     // When MARS is enabled, freeing a statement with unconsumed results causes
     // the ODBC driver to cancel the batch execution, which can roll back
     // uncommitted implicit transactions, leading to silent data loss.
-    try {
-        if (stmt->executed && !stmt->past_next_result_end) {
-            close_active_stream(stmt);
-            SQLRETURN r = SQL_SUCCESS;
-            while (r == SQL_SUCCESS || r == SQL_SUCCESS_WITH_INFO) {
-                r = SQLMoreResults(stmt->handle());
-            }
-            stmt->past_next_result_end = true;
+    if (stmt->executed && !stmt->past_next_result_end) {
+        close_active_stream(stmt);
+        SQLRETURN r = SQL_SUCCESS;
+        while (r == SQL_SUCCESS || r == SQL_SUCCESS_WITH_INFO) {
+            r = SQLMoreResults(stmt->handle());
         }
-    }
-    catch (...) {
-        LOG(SEV_WARNING, "sqlsrv_stmt_dtor: failed to consume pending result sets");
+        stmt->past_next_result_end = true;
     }
 
     stmt->~ss_sqlsrv_stmt();
