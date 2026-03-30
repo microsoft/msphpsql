@@ -2044,7 +2044,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
         case SQLSRV_PHPTYPE_STREAM:
         {
             if( type.typeinfo.encoding == SQLSRV_ENCODING_BINARY || type.typeinfo.encoding == SQLSRV_ENCODING_CHAR
-                || type.typeinfo.encoding == CP_UTF8 || type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
+                || type.typeinfo.encoding == CP_UTF8 || type.typeinfo.encoding == SQLSRV_ENCODING_UTF8_VARCHAR || type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
                 return true;
             }
             break;

@@ -1886,7 +1886,7 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type )
         case SQLSRV_PHPTYPE_STREAM:
         {
             if( type.typeinfo.encoding == SQLSRV_ENCODING_BINARY || type.typeinfo.encoding == SQLSRV_ENCODING_CHAR
-                || type.typeinfo.encoding == CP_UTF8 || type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
+                || type.typeinfo.encoding == CP_UTF8 || type.typeinfo.encoding == SQLSRV_ENCODING_UTF8_VARCHAR || type.typeinfo.encoding == SQLSRV_ENCODING_DEFAULT ) {
                 return true;
             }
             break;
@@ -2253,7 +2253,7 @@ void sqlsrv_param::process_double_param(_Inout_ zval* param_z)
 
 bool sqlsrv_param::derive_string_types_sizes(_In_ zval* /*param_z*/)
 {
-    SQLSRV_ASSERT(encoding == SQLSRV_ENCODING_CHAR || encoding == SQLSRV_ENCODING_UTF8 || encoding == SQLSRV_ENCODING_BINARY, "Invalid encoding in sqlsrv_param::derive_string_types_sizes");
+    SQLSRV_ASSERT(encoding == SQLSRV_ENCODING_CHAR || encoding == SQLSRV_ENCODING_UTF8 || encoding == SQLSRV_ENCODING_UTF8_VARCHAR || encoding == SQLSRV_ENCODING_BINARY, "Invalid encoding in sqlsrv_param::derive_string_types_sizes");
 
     // Derive the param SQL type only if it is unknown
     if (sql_data_type == SQL_UNKNOWN_TYPE) {
@@ -2266,6 +2266,9 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* /*param_z*/)
             break;
         case SQLSRV_ENCODING_UTF8:
             sql_data_type = SQL_WVARCHAR;
+            break;
+        case SQLSRV_ENCODING_UTF8_VARCHAR:
+            sql_data_type = SQL_VARCHAR;
             break;
         default:
             break;
@@ -2284,6 +2287,9 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* /*param_z*/)
         break;
     case SQLSRV_ENCODING_UTF8:
         c_data_type = is_numeric ? SQL_C_CHAR : SQL_C_WCHAR;
+        break;
+    case SQLSRV_ENCODING_UTF8_VARCHAR:
+        c_data_type = SQL_C_CHAR;
         break;
     default:
         break;
@@ -2330,6 +2336,7 @@ void sqlsrv_param::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
 
     if (!is_numeric && encoding == CP_UTF8) {
         // Convert the input param value to wide string and save it for later
+        // Note: SQLSRV_ENCODING_UTF8_VARCHAR skips this — data stays as UTF-8 bytes
         if (Z_STRLEN_P(param_z) > INT_MAX) {
             LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
             throw core::CoreException();
@@ -2353,7 +2360,7 @@ void sqlsrv_param::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
 
 void sqlsrv_param::process_resource_param(_Inout_ zval* param_z)
 {
-    SQLSRV_ASSERT(encoding == SQLSRV_ENCODING_CHAR || encoding == SQLSRV_ENCODING_UTF8 || encoding == SQLSRV_ENCODING_BINARY, "Invalid encoding in sqlsrv_param::get_resource_param_info");
+    SQLSRV_ASSERT(encoding == SQLSRV_ENCODING_CHAR || encoding == SQLSRV_ENCODING_UTF8 || encoding == SQLSRV_ENCODING_UTF8_VARCHAR || encoding == SQLSRV_ENCODING_BINARY, "Invalid encoding in sqlsrv_param::get_resource_param_info");
 
     // Derive the param SQL type only if it is unknown
     if (sql_data_type == SQL_UNKNOWN_TYPE) {
@@ -2366,6 +2373,9 @@ void sqlsrv_param::process_resource_param(_Inout_ zval* param_z)
             break;
         case SQLSRV_ENCODING_UTF8:
             sql_data_type = SQL_WVARCHAR;
+            break;
+        case SQLSRV_ENCODING_UTF8_VARCHAR:
+            sql_data_type = SQL_VARCHAR;
             break;
         default:
             break;
@@ -2386,6 +2396,9 @@ void sqlsrv_param::process_resource_param(_Inout_ zval* param_z)
         break;
     case SQLSRV_ENCODING_UTF8:
         c_data_type = SQL_C_WCHAR;
+        break;
+    case SQLSRV_ENCODING_UTF8_VARCHAR:
+        c_data_type = SQL_C_CHAR;
         break;
     default:
         break;
@@ -2861,6 +2874,7 @@ void sqlsrv_param_inout::finalize_output_string()
         null_size = sizeof(SQLWCHAR);  // The string isn't yet converted to UTF-8, still UTF-16
         break;
     case SQLSRV_ENCODING_SYSTEM:
+    case SQLSRV_ENCODING_UTF8_VARCHAR:
         null_size = sizeof(SQLCHAR);
         break;
     case SQLSRV_ENCODING_BINARY:
@@ -2893,7 +2907,7 @@ void sqlsrv_param_inout::finalize_output_string()
         core::sqlsrv_zval_stringl(value_z, str, str_len);
     }
     else {
-        if (encoding != SQLSRV_ENCODING_CHAR) {
+        if (encoding != SQLSRV_ENCODING_CHAR && encoding != SQLSRV_ENCODING_UTF8_VARCHAR) {
             char* outString = NULL;
             SQLLEN outLen = 0;
 

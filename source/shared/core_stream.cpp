@@ -66,6 +66,7 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
 
         switch( ss->encoding ) {
             case SQLSRV_ENCODING_CHAR:
+            case SQLSRV_ENCODING_UTF8_VARCHAR:
                 c_type = SQL_C_CHAR;
                 break;
 

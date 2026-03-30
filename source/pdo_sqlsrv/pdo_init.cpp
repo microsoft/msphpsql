@@ -314,6 +314,7 @@ namespace {
         { "SQLSRV_ENCODING_SYSTEM"          , SQLSRV_ENCODING_SYSTEM },
         { "SQLSRV_ENCODING_BINARY"          , SQLSRV_ENCODING_BINARY },
         { "SQLSRV_ENCODING_UTF8"            , SQLSRV_ENCODING_UTF8 },
+        { "SQLSRV_ENCODING_UTF8_VARCHAR"    , SQLSRV_ENCODING_UTF8_VARCHAR },
 
         // cursor types (can be assigned to SQLSRV_ATTR_CURSOR_SCROLL_TYPE
         { "SQLSRV_CURSOR_STATIC"            , SQL_CURSOR_STATIC },
