@@ -1,17 +1,18 @@
 --TEST--
-Prepared statement insert with additional result sets should not silently lose data
+Verify stmt dtor drains unconsumed result sets to prevent silent data loss (sqlsrv)
 --DESCRIPTION--
-When SET STATISTICS PROFILE ON or triggers produce extra result sets, executing a
-prepared statement insert should still persist data. Previously, unconsumed result
-sets left pending on the ODBC statement handle could be cancelled during statement
-destruction, causing an implicit rollback of the insert.
+When triggers, SET STATISTICS PROFILE ON, or multi-result batches produce extra
+result sets, the statement destructor must drain them before freeing the ODBC
+handle. Otherwise, with MARS enabled, freeing the handle cancels the batch and
+silently rolls back uncommitted implicit transactions.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
 
-$tableName = 'sqlsrv_insert_extra_results_test';
+$tableName = getTempTableName('sqlsrv_drain_results', false);
+$triggerName = 'trg_' . $tableName;
 
 $conn = connect();
 if ($conn === false) {
@@ -21,33 +22,18 @@ if ($conn === false) {
 // Create test table
 dropTable($conn, $tableName);
 $stmt = sqlsrv_query($conn, "CREATE TABLE $tableName (id INT IDENTITY(1,1) PRIMARY KEY, val VARCHAR(50))");
-if ($stmt === false) {
-    die(print_r(sqlsrv_errors(), true));
-}
+if ($stmt === false) die(print_r(sqlsrv_errors(), true));
 sqlsrv_free_stmt($stmt);
 
-// Test 1: sqlsrv_prepare + execute with STATISTICS PROFILE generating extra result sets
+// Test 1: sqlsrv_prepare + execute with STATISTICS PROFILE
 $stmt = sqlsrv_prepare($conn, "SET STATISTICS PROFILE ON; INSERT INTO $tableName (val) VALUES ('row1'), ('row2'), ('row3')");
-if ($stmt === false) {
-    die(print_r(sqlsrv_errors(), true));
-}
-if (!sqlsrv_execute($stmt)) {
-    die(print_r(sqlsrv_errors(), true));
-}
-// Free the statement without consuming all result sets
+if ($stmt === false) die(print_r(sqlsrv_errors(), true));
+if (!sqlsrv_execute($stmt)) die(print_r(sqlsrv_errors(), true));
 sqlsrv_free_stmt($stmt);
 
-// Verify data persisted
 $stmt = sqlsrv_query($conn, "SELECT COUNT(*) AS cnt FROM $tableName");
-if ($stmt === false) {
-    die(print_r(sqlsrv_errors(), true));
-}
 $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-if ($row['cnt'] != 3) {
-    echo "FAIL: Expected 3 rows after prepared insert with STATISTICS PROFILE, got " . $row['cnt'] . "\n";
-} else {
-    echo "Test 1 passed: " . $row['cnt'] . " rows inserted via sqlsrv_prepare with STATISTICS PROFILE.\n";
-}
+echo "Test 1 (STATISTICS PROFILE): " . ($row['cnt'] == 3 ? "PASS" : "FAIL (got {$row['cnt']})") . "\n";
 sqlsrv_free_stmt($stmt);
 
 // Test 2: sqlsrv_query with STATISTICS PROFILE + NOCOUNT OFF
@@ -55,71 +41,64 @@ $stmt = sqlsrv_query($conn, "DELETE FROM $tableName");
 sqlsrv_free_stmt($stmt);
 
 $stmt = sqlsrv_query($conn, "SET STATISTICS PROFILE ON; SET NOCOUNT OFF; INSERT INTO $tableName (val) VALUES ('a'), ('b'), ('c'), ('d'), ('e')");
-if ($stmt === false) {
-    die(print_r(sqlsrv_errors(), true));
-}
-// Free without consuming extra result sets
+if ($stmt === false) die(print_r(sqlsrv_errors(), true));
 sqlsrv_free_stmt($stmt);
 
 $stmt = sqlsrv_query($conn, "SELECT COUNT(*) AS cnt FROM $tableName");
 $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-if ($row['cnt'] != 5) {
-    echo "FAIL: Expected 5 rows after query with STATISTICS PROFILE + NOCOUNT OFF, got " . $row['cnt'] . "\n";
-} else {
-    echo "Test 2 passed: " . $row['cnt'] . " rows inserted via sqlsrv_query with STATISTICS PROFILE + NOCOUNT OFF.\n";
-}
+echo "Test 2 (STATISTICS + NOCOUNT): " . ($row['cnt'] == 5 ? "PASS" : "FAIL (got {$row['cnt']})") . "\n";
 sqlsrv_free_stmt($stmt);
 
-// Test 3: Insert with trigger producing extra result sets
+// Test 3: Trigger producing extra result sets
 $stmt = sqlsrv_query($conn, "SET STATISTICS PROFILE OFF");
 sqlsrv_free_stmt($stmt);
-
 $stmt = sqlsrv_query($conn, "DELETE FROM $tableName");
 sqlsrv_free_stmt($stmt);
 
+sqlsrv_query($conn, "IF OBJECT_ID('$triggerName', 'TR') IS NOT NULL DROP TRIGGER $triggerName");
 $stmt = sqlsrv_query($conn, "
-    IF OBJECT_ID('trg_insert_$tableName', 'TR') IS NOT NULL DROP TRIGGER trg_insert_$tableName
-");
-if ($stmt !== false) sqlsrv_free_stmt($stmt);
-
-$stmt = sqlsrv_query($conn, "
-    CREATE TRIGGER trg_insert_$tableName ON $tableName
+    CREATE TRIGGER $triggerName ON $tableName
     AFTER INSERT AS
     BEGIN
         SELECT COUNT(*) AS trigger_count FROM $tableName
     END
 ");
-if ($stmt === false) {
-    die(print_r(sqlsrv_errors(), true));
-}
+if ($stmt === false) die(print_r(sqlsrv_errors(), true));
 sqlsrv_free_stmt($stmt);
 
 $stmt = sqlsrv_prepare($conn, "INSERT INTO $tableName (val) VALUES ('t1'), ('t2'), ('t3')");
-if (!sqlsrv_execute($stmt)) {
-    die(print_r(sqlsrv_errors(), true));
-}
-// Free without consuming trigger result set
+if (!sqlsrv_execute($stmt)) die(print_r(sqlsrv_errors(), true));
 sqlsrv_free_stmt($stmt);
 
 $stmt = sqlsrv_query($conn, "SELECT COUNT(*) AS cnt FROM $tableName");
 $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-if ($row['cnt'] != 3) {
-    echo "FAIL: Expected 3 rows after insert with trigger, got " . $row['cnt'] . "\n";
-} else {
-    echo "Test 3 passed: " . $row['cnt'] . " rows inserted via prepared statement with trigger.\n";
-}
+echo "Test 3 (trigger): " . ($row['cnt'] == 3 ? "PASS" : "FAIL (got {$row['cnt']})") . "\n";
 sqlsrv_free_stmt($stmt);
 
-// Cleanup
-$stmt = sqlsrv_query($conn, "DROP TRIGGER trg_insert_$tableName");
-if ($stmt !== false) sqlsrv_free_stmt($stmt);
+// Test 4: Multi-result SELECT batch with partial consumption
+$stmt = sqlsrv_query($conn, "SELECT 1 AS a; SELECT 2 AS b; SELECT 3 AS c");
+sqlsrv_fetch($stmt);
+$first = sqlsrv_get_field($stmt, 0);
+echo "Test 4 (multi-result first): " . ($first == 1 ? "PASS" : "FAIL") . "\n";
+sqlsrv_free_stmt($stmt);
+
+$stmt = sqlsrv_query($conn, "SELECT 42 AS answer");
+sqlsrv_fetch($stmt);
+$answer = sqlsrv_get_field($stmt, 0);
+echo "Test 4 (after drain): " . ($answer == 42 ? "PASS" : "FAIL") . "\n";
+sqlsrv_free_stmt($stmt);
+
+// Cleanup — runs regardless of test outcome
+sqlsrv_query($conn, "IF OBJECT_ID('$triggerName', 'TR') IS NOT NULL DROP TRIGGER $triggerName");
 dropTable($conn, $tableName);
 sqlsrv_close($conn);
 
 echo "Done.\n";
 ?>
 --EXPECT--
-Test 1 passed: 3 rows inserted via sqlsrv_prepare with STATISTICS PROFILE.
-Test 2 passed: 5 rows inserted via sqlsrv_query with STATISTICS PROFILE + NOCOUNT OFF.
-Test 3 passed: 3 rows inserted via prepared statement with trigger.
+Test 1 (STATISTICS PROFILE): PASS
+Test 2 (STATISTICS + NOCOUNT): PASS
+Test 3 (trigger): PASS
+Test 4 (multi-result first): PASS
+Test 4 (after drain): PASS
 Done.
