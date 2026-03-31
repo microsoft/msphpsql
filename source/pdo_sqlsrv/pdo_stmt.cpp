@@ -502,6 +502,21 @@ int pdo_sqlsrv_stmt_dtor( _Inout_ pdo_stmt_t *stmt )
         driver_stmt->placeholders = NULL;
     }
 
+    // Consume all pending result sets before freeing the statement handle.
+    // When MARS is enabled, freeing a statement with unconsumed results causes
+    // the ODBC driver to cancel the batch execution, which can roll back
+    // uncommitted implicit transactions, leading to silent data loss.
+    // This can occur when triggers, SET STATISTICS, or SET NOCOUNT OFF
+    // generate additional result sets beyond the primary result.
+    if (driver_stmt->executed && !driver_stmt->past_next_result_end) {
+        close_active_stream(driver_stmt);
+        SQLRETURN r = SQL_SUCCESS;
+        while (r == SQL_SUCCESS || r == SQL_SUCCESS_WITH_INFO) {
+            r = SQLMoreResults(driver_stmt->handle());
+        }
+        driver_stmt->past_next_result_end = true;
+    }
+
     (( sqlsrv_stmt* )driver_stmt )->~sqlsrv_stmt();
 
     sqlsrv_free( driver_stmt );
