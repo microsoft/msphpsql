@@ -45,10 +45,15 @@ function kill_process_tree($pid)
     if (is_windows()) {
         // /T kills process tree, /F forces termination
         exec("taskkill /F /T /PID $pid 2>NUL");
-    } else {
+    } elseif (function_exists('posix_kill')) {
         @posix_kill($pid, 15); // SIGTERM
         usleep(200000);
         @posix_kill($pid, 9);  // SIGKILL
+    } else {
+        // posix extension not available (e.g. macOS CI) — fall back to shell kill
+        exec("kill -15 $pid 2>/dev/null");
+        usleep(200000);
+        exec("kill -9 $pid 2>/dev/null");
     }
 }
 
