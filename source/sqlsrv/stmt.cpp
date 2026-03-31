@@ -1344,6 +1344,19 @@ void __cdecl sqlsrv_stmt_dtor( _Inout_ zend_resource *rsrc )
         }
     }
 
+    // Consume all pending result sets before freeing the statement handle.
+    // When MARS is enabled, freeing a statement with unconsumed results causes
+    // the ODBC driver to cancel the batch execution, which can roll back
+    // uncommitted implicit transactions, leading to silent data loss.
+    if (stmt->executed && !stmt->past_next_result_end) {
+        close_active_stream(stmt);
+        SQLRETURN r = SQL_SUCCESS;
+        while (r == SQL_SUCCESS || r == SQL_SUCCESS_WITH_INFO) {
+            r = SQLMoreResults(stmt->handle());
+        }
+        stmt->past_next_result_end = true;
+    }
+
     stmt->~ss_sqlsrv_stmt();
     sqlsrv_free( stmt );
     rsrc->ptr = NULL;
