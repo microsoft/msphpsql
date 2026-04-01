@@ -89,6 +89,11 @@ void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_contex
     core:: SQLSetEnvAttr( **henv_cp, SQL_ATTR_CONNECTION_POOLING, reinterpret_cast<SQLPOINTER>( SQL_CP_ONE_PER_HENV ), 
                               SQL_IS_UINTEGER );
 
+    // Read CPTimeout from ODBCINST.INI to set the access token cache TTL.
+    // Must be called after ODBC environment setup because SQLGetPrivateProfileString
+    // may rely on the DM being initialized.
+    core_sqlsrv_init_token_cache();
+
     }
     catch( core::CoreException& e ) {
 
@@ -138,6 +143,10 @@ void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_contex
 // henv_ncp - Non-pooled environment handle.
 void core_sqlsrv_mshutdown( _Inout_ sqlsrv_context& henv_cp, _Inout_ sqlsrv_context& henv_ncp )
 {
+    // Destroy cached access tokens before freeing ODBC environment handles.
+    // Tokens are allocated with malloc (persistent) and must be explicitly freed.
+    core_sqlsrv_cleanup_token_cache();
+
     if( henv_ncp != SQL_NULL_HANDLE ) {
 
         henv_ncp.invalidate();
