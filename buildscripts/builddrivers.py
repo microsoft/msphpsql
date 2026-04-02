@@ -408,7 +408,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--PHPVER', help="PHP version, e.g. 7.4.* etc.")
     parser.add_argument('--ARCH', choices=['x64', 'x86'])
-    parser.add_argument('--THREAD', choices=['nts', 'ts'])
+    parser.add_argument('--THREAD', choices=['nts', 'ts'], type=str.lower)
     parser.add_argument('--DRIVER', default='all', choices=['all', 'sqlsrv', 'pdo_sqlsrv'], help="driver to build (default: all)")
     parser.add_argument('--DEBUG', action='store_true', help="enable debug mode (default: False)")
     parser.add_argument('--REPO', default='Microsoft', help="GitHub repository (default: Microsoft)")

@@ -171,6 +171,8 @@ OACR_WARNING_POP
 #include <algorithm>
 #include <limits>
 #include <cassert>
+#include <cinttypes>
+#include <cstdint>
 #include <memory>
 #include <vector>
 // included for SQL Server specific constants
@@ -1053,6 +1055,19 @@ extern HashTable* g_encodings;                    // encodings supported by this
 
 void core_sqlsrv_minit( _Outptr_ sqlsrv_context** henv_cp, _Inout_ sqlsrv_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func );
 void core_sqlsrv_mshutdown( _Inout_ sqlsrv_context& henv_cp, _Inout_ sqlsrv_context& henv_ncp );
+void core_sqlsrv_init_token_cache();
+void core_sqlsrv_cleanup_token_cache();
+
+// FNV-1a 64-bit hash used by both the token cache and APP pool-key generation.
+inline uint64_t core_sqlsrv_hash_fnv1a_64(const char* data, size_t len)
+{
+    uint64_t h = 14695981039346656037ULL;
+    for (size_t i = 0; i < len; i++) {
+        h ^= static_cast<unsigned char>(data[i]);
+        h *= 1099511628211ULL;
+    }
+    return h;
+}
 
 // environment context used by sqlsrv_connect for when a connection error occurs.
 struct sqlsrv_henv {
@@ -1122,7 +1137,7 @@ struct sqlsrv_conn : public sqlsrv_context {
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
     ODBC_DRIVER driver_version;         // version of ODBC driver
 
-    sqlsrv_malloc_auto_ptr<ACCESSTOKEN> azure_ad_access_token;
+    ACCESSTOKEN* azure_ad_access_token;  // non-owning; managed by token cache
 
     // initialize with default values
     sqlsrv_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ SQLSRV_ENCODING encoding ) :
@@ -1130,6 +1145,7 @@ struct sqlsrv_conn : public sqlsrv_context {
     {
         server_version = SERVER_VERSION_UNKNOWN;
         driver_version = ODBC_DRIVER::VER_UNKNOWN;
+        azure_ad_access_token = nullptr;
     }
 
     // sqlsrv_conn has no destructor since its allocated using placement new, which requires that the destructor be

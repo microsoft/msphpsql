@@ -384,8 +384,24 @@ jobs:
       # Set TEST_PHP_ARGS
       export TEST_PHP_ARGS="-c $PHP_INI"
       
+      # Track test failures and borked tests
+      sqlsrv_failed=0
+      pdo_failed=0
+      sqlsrv_borked=0
+      pdo_borked=0
+      
       echo "Running sqlsrv tests..."
       $PHP_BIN run-tests.php -p $PHP_BIN -c $PHP_INI -P sqlsrv/*.phpt --no-color 2>&1 | tee sqlsrv-macos.log || true
+      
+      # Check for test failures and borked tests
+      if grep -q "Tests failed.*[1-9]" sqlsrv-macos.log; then
+          sqlsrv_failed=$(grep "Tests failed" sqlsrv-macos.log | grep -oE '[0-9]+' | head -1)
+          echo "sqlsrv tests failed: $sqlsrv_failed"
+      fi
+      if grep -q "Tests borked.*[1-9]" sqlsrv-macos.log; then
+          sqlsrv_borked=$(grep "Tests borked" sqlsrv-macos.log | grep -oE '[0-9]+' | head -1)
+          echo "sqlsrv tests borked: $sqlsrv_borked"
+      fi
       
       # Show diff files
       for f in sqlsrv/*.diff; do
@@ -401,6 +417,16 @@ jobs:
       echo "Running pdo_sqlsrv tests..."
       $PHP_BIN run-tests.php -p $PHP_BIN -c $PHP_INI -P pdo_sqlsrv/*.phpt --no-color 2>&1 | tee pdo_sqlsrv-macos.log || true
       
+      # Check for test failures and borked tests
+      if grep -q "Tests failed.*[1-9]" pdo_sqlsrv-macos.log; then
+          pdo_failed=$(grep "Tests failed" pdo_sqlsrv-macos.log | grep -oE '[0-9]+' | head -1)
+          echo "pdo_sqlsrv tests failed: $pdo_failed"
+      fi
+      if grep -q "Tests borked.*[1-9]" pdo_sqlsrv-macos.log; then
+          pdo_borked=$(grep "Tests borked" pdo_sqlsrv-macos.log | grep -oE '[0-9]+' | head -1)
+          echo "pdo_sqlsrv tests borked: $pdo_borked"
+      fi
+      
       # Show diff files
       for f in pdo_sqlsrv/*.diff; do
           if [[ -f "$f" ]]; then
@@ -409,7 +435,16 @@ jobs:
           fi
       done
       
-      echo "Tests completed!"
+      # Fail if there are test failures or borked tests
+      total_failed=$((${sqlsrv_failed:-0} + ${pdo_failed:-0}))
+      total_borked=$((${sqlsrv_borked:-0} + ${pdo_borked:-0}))
+      if [[ $total_failed -gt 0 || $total_borked -gt 0 ]]; then
+          echo "Total test failures: $total_failed (sqlsrv: ${sqlsrv_failed:-0}, pdo_sqlsrv: ${pdo_failed:-0})"
+          echo "Total borked tests: $total_borked (sqlsrv: ${sqlsrv_borked:-0}, pdo_sqlsrv: ${pdo_borked:-0})"
+          exit 1
+      else
+          echo "All tests passed!"
+      fi
     displayName: 'Run PHP Functional Tests'
 
   #########################################
@@ -439,7 +474,7 @@ jobs:
       testResultsFormat: 'JUnit'
       testResultsFiles: '**/*.xml'
       searchFolder: '$(REPO_ROOT)/test/functional/'
-      failTaskOnFailedTests: false
+      failTaskOnFailedTests: true
       testRunTitle: 'macOS-PHP$(phpver)'
 
   #########################################
