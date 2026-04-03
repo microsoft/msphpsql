@@ -473,6 +473,10 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
         { IMSSP, (SQLCHAR*) "You cannot return data in a table-valued parameter. Table-valued parameters are input-only.", -130, false }
     },
+    {
+        SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE,
+        { IMSSP, (SQLCHAR*) "The ODBC operation failed. Diagnostic information is not available from the driver.", -131, false }
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
@@ -902,17 +906,9 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
 
     // If the ODBC operation failed but no diagnostic record was available (e.g. the ODBC driver
     // returned SQL_ERROR without setting a diagnostic), report a generic error so that
-    // sqlsrv_errors() does not return NULL for a failed call.  The pdo_sqlsrv extension already
-    // handles this case; this brings the sqlsrv extension to parity.
+    // sqlsrv_errors() does not return NULL for a failed call.
     if( sqlsrv_error_code == SQLSRV_ERROR_ODBC && !odbc_error_found && !warning ) {
-        error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
-        error->sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
-        error->native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
-        strcpy_s( reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_BUFSIZE, "HY000" );
-        strcpy_s( reinterpret_cast<char*>( error->native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH + 1,
-                  "The ODBC operation failed. Diagnostic information is not available from the driver." );
-        error->native_code = -1;
-        error->format = false;
+        core_sqlsrv_format_driver_error( ctx, get_error_message( SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE ), error, SEV_ERROR, NULL );
         copy_error_to_zval( &error_z, error, reported_chain, ignored_chain, warning );
     }
 

@@ -489,6 +489,10 @@ pdo_error PDO_ERRORS[] = {
         SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
         { IMSSP, (SQLCHAR*) "You cannot return data in a table-valued parameter. Table-valued parameters are input-only.", -106, false }
     },
+    {
+        SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE,
+        { IMSSP, (SQLCHAR*) "The ODBC operation failed. Diagnostic information is not available from the driver.", -107, false }
+    },
 
     { UINT_MAX, {} }
 };
@@ -691,16 +695,9 @@ void format_or_get_all_errors(_Inout_ sqlsrv_context& ctx, _In_opt_ unsigned int
             }
         }
         else {
-            // Failed to retrieve ODBC error - create a minimal error with HY000 (general error)
+            // Failed to retrieve ODBC error - create a fallback error
             // This indicates that both SQLGetDiagRecW and SQLGetDiagFieldW failed to retrieve error information
-            error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
-            error->sqlstate = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_SQLSTATE_BUFSIZE));
-            error->native_message = reinterpret_cast<SQLCHAR*>(sqlsrv_malloc(SQL_MAX_ERROR_MESSAGE_LENGTH + 1));
-            strcpy_s(reinterpret_cast<char*>(error->sqlstate), SQL_SQLSTATE_BUFSIZE, "HY000");
-            strcpy_s(reinterpret_cast<char*>(error->native_message), SQL_MAX_ERROR_MESSAGE_LENGTH + 1, 
-                     "The ODBC operation failed. Diagnostic information is not available from the driver.");
-            error->native_code = -1;
-            error->format = false;
+            core_sqlsrv_format_driver_error(ctx, get_error_message(SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE), error, SEV_ERROR, NULL);
         }
 
         // core_sqlsrv_get_odbc_error() returns the error_code of size SQL_SQLSTATE_BUFSIZE,
