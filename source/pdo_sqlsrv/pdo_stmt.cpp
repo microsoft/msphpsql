@@ -588,6 +588,14 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
 
         SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt, query, query_len );
 
+        // On re-execution, free stale PDO column descriptors so that PDO will
+        // re-describe columns for the new result set.  Without this, re-executing
+        // a prepared statement that returns multiple result sets with different
+        // column layouts causes crashes or data corruption (GH#1466).
+        if ( stmt->columns ) {
+            php_pdo_stmt_set_column_count( stmt, 0 );
+        }
+
         if ( execReturn == SQL_NO_DATA ) {
             stmt->column_count = 0;
             stmt->row_count = 0;
