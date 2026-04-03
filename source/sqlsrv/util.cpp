@@ -890,13 +890,31 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
     }
 
     SQLSMALLINT record_number = 0;
+    bool odbc_error_found = false;
     do {
 
         result = core_sqlsrv_get_odbc_error( ctx, ++record_number, error, log_severity );
         if( result ) {
+            odbc_error_found = true;
             copy_error_to_zval( &error_z, error, reported_chain, ignored_chain, warning );
         }
     } while( result );
+
+    // If the ODBC operation failed but no diagnostic record was available (e.g. the ODBC driver
+    // returned SQL_ERROR without setting a diagnostic), report a generic error so that
+    // sqlsrv_errors() does not return NULL for a failed call.  The pdo_sqlsrv extension already
+    // handles this case; this brings the sqlsrv extension to parity.
+    if( sqlsrv_error_code == SQLSRV_ERROR_ODBC && !odbc_error_found && !warning ) {
+        error = new ( sqlsrv_malloc( sizeof( sqlsrv_error ))) sqlsrv_error();
+        error->sqlstate = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_SQLSTATE_BUFSIZE ));
+        error->native_message = reinterpret_cast<SQLCHAR*>( sqlsrv_malloc( SQL_MAX_ERROR_MESSAGE_LENGTH + 1 ));
+        strcpy_s( reinterpret_cast<char*>( error->sqlstate ), SQL_SQLSTATE_BUFSIZE, "HY000" );
+        strcpy_s( reinterpret_cast<char*>( error->native_message ), SQL_MAX_ERROR_MESSAGE_LENGTH + 1,
+                  "The ODBC operation failed. Diagnostic information is not available from the driver." );
+        error->native_code = -1;
+        error->format = false;
+        copy_error_to_zval( &error_z, error, reported_chain, ignored_chain, warning );
+    }
 
     // If it were a warning, we report that warnings where ignored except if warnings_return_as_errors
     // was true and we added some warnings to the reported_chain.
