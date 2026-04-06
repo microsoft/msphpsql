@@ -311,25 +311,48 @@ function build_worker_command($worker_script, $pooldir, $args = [])
     }
     $php_cmd = escapeshellarg(PHP_BINARY);
 
-    // Forward PHP INI configuration so the worker subprocess loads the same
-    // extensions (sqlsrv / pdo_sqlsrv) as the parent process.  When run via
-    // run-tests.php the parent is typically invoked with "-c <ini>" and the
-    // worker would otherwise start with no extensions.
+    // Forward PHP INI / extension configuration so the worker subprocess
+    // loads the same extensions (sqlsrv / pdo_sqlsrv) as the parent.
+    //
+    // IMPORTANT: run-tests.php launches tests with "2>&1", so the worker's
+    // stderr is inherited through to the test output that gets compared
+    // against --EXPECT--. We must NOT cause a "Module already loaded"
+    // warning (by adding -d extension=X when conf.d already loads it),
+    // as that would pollute the output and fail the test.
+    //
+    // Extensions can be loaded from three sources:
+    //   1. Main php.ini file (macOS CI — custom php.ini with extension= lines)
+    //   2. Scan directory / conf.d (Linux/Redhat — e.g. /etc/php.d/20-sqlsrv.ini)
+    //   3. CLI -d flags (run-tests.php forwarding, or manual invocation)
     $ini = php_ini_loaded_file();
-    if ($ini !== false) {
-        $php_cmd .= ' -c ' . escapeshellarg($ini);
-    } else {
-        // No ini file loaded (e.g. run-tests.php used -n) — forward
-        // extension settings via -d flags so the worker can find them.
-        $ext_dir = ini_get('extension_dir');
-        if ($ext_dir) {
-            $php_cmd .= ' -d extension_dir=' . escapeshellarg($ext_dir);
+    $extInIni = false;
+
+    // Case 1: extensions are in the main INI file — forward it with -c
+    if ($ini !== false && $ini !== '') {
+        $content = @file_get_contents($ini);
+        if ($content !== false && preg_match('/^\s*extension\s*=.*sqlsrv/mi', $content)) {
+            $php_cmd .= ' -c ' . escapeshellarg($ini);
+            $extInIni = true;
         }
-        if (extension_loaded('sqlsrv')) {
-            $php_cmd .= ' -d extension=sqlsrv';
-        }
-        if (extension_loaded('pdo_sqlsrv')) {
-            $php_cmd .= ' -d extension=pdo_sqlsrv';
+    }
+
+    // Case 2: extensions in conf.d scan directory — the worker subprocess
+    // will find them automatically (same binary, same compile-time scan dir)
+    // so no flags needed at all
+    if (!$extInIni) {
+        $scanned = php_ini_scanned_files();
+        if ($scanned === false || stripos($scanned, 'sqlsrv') === false) {
+            // Case 3: extensions loaded some other way — forward explicitly
+            $ext_dir = ini_get('extension_dir');
+            if ($ext_dir) {
+                $php_cmd .= ' -d extension_dir=' . escapeshellarg($ext_dir);
+            }
+            if (extension_loaded('sqlsrv')) {
+                $php_cmd .= ' -d extension=sqlsrv';
+            }
+            if (extension_loaded('pdo_sqlsrv')) {
+                $php_cmd .= ' -d extension=pdo_sqlsrv';
+            }
         }
     }
 
