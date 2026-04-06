@@ -473,6 +473,10 @@ ss_error SS_ERRORS[] = {
         SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
         { IMSSP, (SQLCHAR*) "You cannot return data in a table-valued parameter. Table-valued parameters are input-only.", -130, false }
     },
+    {
+        SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE,
+        { IMSSP, (SQLCHAR*) "The ODBC operation failed. Diagnostic information is not available from the driver.", -131, false }
+    },
 
     // terminate the list of errors/warnings
     { UINT_MAX, {} }
@@ -890,13 +894,23 @@ bool handle_errors_and_warnings( _Inout_ sqlsrv_context& ctx, _Inout_ zval* repo
     }
 
     SQLSMALLINT record_number = 0;
+    bool odbc_error_found = false;
     do {
 
         result = core_sqlsrv_get_odbc_error( ctx, ++record_number, error, log_severity );
         if( result ) {
+            odbc_error_found = true;
             copy_error_to_zval( &error_z, error, reported_chain, ignored_chain, warning );
         }
     } while( result );
+
+    // If the ODBC operation failed but no diagnostic record was available (e.g. the ODBC driver
+    // returned SQL_ERROR without setting a diagnostic), report a generic error so that
+    // sqlsrv_errors() does not return NULL for a failed call.
+    if( sqlsrv_error_code == SQLSRV_ERROR_ODBC && !odbc_error_found && !warning ) {
+        core_sqlsrv_format_driver_error( ctx, get_error_message( SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE ), error, SEV_ERROR, NULL );
+        copy_error_to_zval( &error_z, error, reported_chain, ignored_chain, warning );
+    }
 
     // If it were a warning, we report that warnings where ignored except if warnings_return_as_errors
     // was true and we added some warnings to the reported_chain.
