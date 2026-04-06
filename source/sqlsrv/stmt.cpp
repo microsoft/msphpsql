@@ -571,11 +571,9 @@ PHP_FUNCTION( sqlsrv_next_result )
 
         core_sqlsrv_next_result( stmt, true );
 
-        // clear the current meta data since the new result will generate new meta data
-        stmt->clean_up_results_metadata();
-
         if( stmt->past_next_result_end ) {
-
+            // Clean up remaining metadata since new_result_set() was not called
+            stmt->clean_up_results_metadata();
             RETURN_NULL();
         }
 
