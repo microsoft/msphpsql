@@ -309,7 +309,31 @@ function build_worker_command($worker_script, $pooldir, $args = [])
     if (!is_windows() && $pooldir !== null) {
         $parts[] = "export ODBCSYSINI=" . escapeshellarg($pooldir);
     }
-    $php_cmd = escapeshellarg(PHP_BINARY) . " " . escapeshellarg($worker_script);
+    $php_cmd = escapeshellarg(PHP_BINARY);
+
+    // Forward PHP INI configuration so the worker subprocess loads the same
+    // extensions (sqlsrv / pdo_sqlsrv) as the parent process.  When run via
+    // run-tests.php the parent is typically invoked with "-c <ini>" and the
+    // worker would otherwise start with no extensions.
+    $ini = php_ini_loaded_file();
+    if ($ini !== false) {
+        $php_cmd .= ' -c ' . escapeshellarg($ini);
+    } else {
+        // No ini file loaded (e.g. run-tests.php used -n) — forward
+        // extension settings via -d flags so the worker can find them.
+        $ext_dir = ini_get('extension_dir');
+        if ($ext_dir) {
+            $php_cmd .= ' -d extension_dir=' . escapeshellarg($ext_dir);
+        }
+        if (extension_loaded('sqlsrv')) {
+            $php_cmd .= ' -d extension=sqlsrv';
+        }
+        if (extension_loaded('pdo_sqlsrv')) {
+            $php_cmd .= ' -d extension=pdo_sqlsrv';
+        }
+    }
+
+    $php_cmd .= " " . escapeshellarg($worker_script);
     foreach ($args as $arg) {
         $php_cmd .= " " . escapeshellarg($arg);
     }
