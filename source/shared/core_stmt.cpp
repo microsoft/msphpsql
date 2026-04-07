@@ -132,7 +132,8 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     decimal_places(NO_CHANGE_DECIMAL_PLACES),     // the default is no formatting to resultset required
     data_classification(false),
     buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
-    send_streams_at_exec( true )
+    send_streams_at_exec( true ),
+    zend_res( NULL )
 {
     ZVAL_UNDEF( &active_stream );
 
@@ -1521,6 +1522,14 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
             ss->field_index = field_index;
             ss->sql_type = static_cast<SQLUSMALLINT>( sql_type );
             ss->encoding = static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding );
+
+            // If the statement has a zend_resource, hold a reference to it.
+            // This prevents the statement from being destroyed while the stream
+            // is still alive (e.g. when $stmt goes out of scope but $stream is returned).
+            if( stmt->zend_res != NULL ) {
+                ss->stmt_res = stmt->zend_res;
+                GC_ADDREF( ss->stmt_res );
+            }
 
             zval_auto_ptr return_value_z;
             return_value_z = ( zval * )sqlsrv_malloc( sizeof( zval ));
