@@ -206,11 +206,9 @@ void sqlsrv_stmt::new_result_set( void )
     // delete sensivity data
     clean_up_sensitivity_metadata();
 
-    // reset sqlsrv php type in meta data
-    size_t num_fields = this->current_meta_data.size();
-    for (size_t f = 0; f < num_fields; f++) {
-        this->current_meta_data[f]->reset_php_type();
-    }
+    // delete results metadata from the previous result set
+    // to avoid stale metadata when re-executing a prepared statement
+    clean_up_results_metadata();
 
     // create a new result set
     if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {

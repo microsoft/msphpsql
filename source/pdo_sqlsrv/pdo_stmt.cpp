@@ -588,6 +588,15 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
 
         SQLRETURN execReturn = core_sqlsrv_execute( driver_stmt, query, query_len );
 
+        // On re-execution, free stale PDO column descriptors and reset the
+        // executed flag so that PDO re-describes columns for the new result
+        // set (see GH#1466). Setting executed = 0 works around a PDO driver
+        // manager optimization that otherwise skips the describe_col call.
+        if ( stmt->columns ) {
+            php_pdo_stmt_set_column_count( stmt, 0 );
+        }
+        stmt->executed = 0;
+
         if ( execReturn == SQL_NO_DATA ) {
             stmt->column_count = 0;
             stmt->row_count = 0;
@@ -611,21 +620,6 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
             else {
                 stmt->row_count = driver_stmt->row_count;
             }
-        }
-
-        // workaround for a bug in the PDO driver manager.  It is fairly simple to crash the PDO driver manager with
-        // the following sequence:
-        // 1) Prepare and execute a statement (that has some results with it)
-        // 2) call PDOStatement::nextRowset until there are no more results
-        // 3) execute the statement again
-        // 4) call PDOStatement::getColumnMeta
-        // It crashes from what I can tell because there is no metadata because there was no call to
-        // pdo_stmt_sqlsrv_describe_col and stmt->columns is NULL on the second call to
-        // PDO::execute.  My guess is that because stmt->executed is true, it optimizes away a necessary call to
-        // pdo_sqlsrv_stmt_describe_col.  By setting the stmt->executed flag to 0, this call is not optimized away
-        // and the crash disappears.
-        if( stmt->columns == NULL ) {
-            stmt->executed = 0;
         }
     }
     catch( core::CoreException& /*e*/ ) {
@@ -1225,11 +1219,9 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
 
         core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ) );
 
-        // clear the current meta data since the new result will generate new meta data
-        driver_stmt->clean_up_results_metadata();
-
-        // if there are no more result sets, return that it failed.
         if( driver_stmt->past_next_result_end == true ) {
+            // Clean up remaining metadata since new_result_set() was not called
+            driver_stmt->clean_up_results_metadata();
             return 0;
         }
 
