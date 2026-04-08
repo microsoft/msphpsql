@@ -4,6 +4,8 @@ GitHub issue 1443 - stream remains valid after statement goes out of scope
 When a stream is returned from a function where the statement variable goes out
 of scope, the stream should remain valid as long as it has references. Previously
 the statement destructor would close the stream, making it invalid.
+Also validates that both the stream and statement are properly cleaned up after use,
+with no resource leaks detected via memory_get_usage over repeated iterations.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
@@ -106,6 +108,46 @@ if (strlen($allData) === 1000 && $allData === str_repeat('A', 1000)) {
 
 fclose($stream3);
 
+// Test 4: Verify cleanup - no resource leak over repeated iterations.
+// Run the stream-outlives-stmt pattern in a loop and check that memory
+// usage stabilizes, confirming the statement is freed when the stream closes.
+$leakDetected = false;
+for ($i = 0; $i < 20; $i++) {
+    $s = getStream($conn);
+    $d = fread($s, 100);
+    fclose($s);
+    unset($s);
+    unset($d);
+
+    if ($i === 0) {
+        $memBaseline = memory_get_usage();
+    }
+}
+$memAfter = memory_get_usage();
+// Allow a small tolerance (32 KB) for PHP internal allocations.
+// A real leak would grow ~proportionally to iteration count.
+if (($memAfter - $memBaseline) < 32768) {
+    echo "Test 4 passed: no resource leak detected over repeated iterations.\n";
+} else {
+    echo "Test 4 FAILED: possible leak, memory grew by " . ($memAfter - $memBaseline) . " bytes.\n";
+}
+
+// Test 5: After all streams are closed, the connection should still be
+// fully functional — proving statements were cleaned up properly.
+$stmt = sqlsrv_query($conn, "SELECT 1 AS alive");
+if ($stmt === false) {
+    echo "Test 5 FAILED: connection unusable after cleanup.\n";
+} else {
+    sqlsrv_fetch($stmt);
+    $val = sqlsrv_get_field($stmt, 0);
+    if ($val == 1) {
+        echo "Test 5 passed: connection works after all streams and statements cleaned up.\n";
+    } else {
+        echo "Test 5 FAILED: unexpected value $val.\n";
+    }
+    sqlsrv_free_stmt($stmt);
+}
+
 sqlsrv_close($conn);
 echo "Done.\n";
 ?>
@@ -113,4 +155,6 @@ echo "Done.\n";
 Test 1 passed: stream data read correctly after stmt out of scope.
 Test 2 passed: stream from prepared stmt works after stmt out of scope.
 Test 3 passed: large stream data read correctly.
+Test 4 passed: no resource leak detected over repeated iterations.
+Test 5 passed: connection works after all streams and statements cleaned up.
 Done.
