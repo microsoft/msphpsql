@@ -30,8 +30,6 @@ Updated PECL release packages. Here is the list of updates:
 
 
 ### Fixed
-- Fixed binary stream becoming invalid when the statement goes out of scope while the stream is still referenced ([GH#1443](https://github.com/microsoft/msphpsql/issues/1443))
-- Fixed fatal error and data corruption when re-executing a prepared statement with multiple result sets ([GH#1466](https://github.com/microsoft/msphpsql/issues/1466))
 - Fixed segfault when connecting to Fabric ([PR #1549](https://github.com/microsoft/msphpsql/pull/1549))
 - Enhanced error reporting in PDO driver when ODBC diagnostic retrieval fails ([PR #1549](https://github.com/microsoft/msphpsql/pull/1549))
 - Fixed critical memory safety bugs in encoding conversion - NULL pointer dereference and uninitialized pointer return ([PR #1555](https://github.com/microsoft/msphpsql/pull/1555))
