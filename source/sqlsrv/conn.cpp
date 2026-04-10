@@ -1131,6 +1131,9 @@ PHP_FUNCTION( sqlsrv_prepare )
         // register the statement with the PHP runtime
         ss::zend_register_resource( stmt_z, stmt, ss_sqlsrv_stmt::descriptor, ss_sqlsrv_stmt::resource_name );
 
+        // store the zend_resource on the statement so streams can prevent premature stmt destruction
+        stmt->zend_res = Z_RES(stmt_z);
+
         // store the resource id with the connection so the connection
         // can release this statement when it closes.
         zend_long next_index = zend_hash_next_free_element( conn->stmts );
@@ -1255,6 +1258,10 @@ PHP_FUNCTION( sqlsrv_query )
 
         // register the statement with the PHP runtime
         ss::zend_register_resource(stmt_z, stmt, ss_sqlsrv_stmt::descriptor, ss_sqlsrv_stmt::resource_name);
+
+        // store the zend_resource on the statement so streams can prevent premature stmt destruction
+        stmt->zend_res = Z_RES(stmt_z);
+
         // store the resource id with the connection so the connection
         // can release this statement when it closes.
         zend_ulong next_index = zend_hash_next_free_element( conn->stmts );

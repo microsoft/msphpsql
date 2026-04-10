@@ -34,8 +34,17 @@ int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ )
     // UNDEF the stream zval and delete our reference count to it.
     ZVAL_UNDEF( &( ss->stmt->active_stream ) );
 
+    // Save stmt_res before freeing ss, then release the statement reference.
+    // This may trigger the statement destructor if this was the last reference,
+    // which is safe because active_stream was already set to UNDEF above.
+    zend_resource* saved_stmt_res = ss->stmt_res;
+
     sqlsrv_free( ss );
     stream->abstract = NULL;
+
+    if( saved_stmt_res != NULL ) {
+        zend_list_delete( saved_stmt_res );
+    }
 
     return 0;
 }

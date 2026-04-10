@@ -1390,13 +1390,14 @@ struct sqlsrv_stream {
     SQLUSMALLINT field_index;
     SQLSMALLINT sql_type;
     sqlsrv_stmt* stmt;
+    zend_resource* stmt_res;     // prevent statement from being freed while stream is active
 
     sqlsrv_stream( _In_opt_ zval* str_z, _In_ SQLSRV_ENCODING enc ) :
-        stream_z( str_z ), encoding( enc ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL )
+        stream_z( str_z ), encoding( enc ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL ), stmt_res( NULL )
     {
     }
 
-    sqlsrv_stream() : stream_z( NULL ), encoding( SQLSRV_ENCODING_INVALID ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL )
+    sqlsrv_stream() : stream_z( NULL ), encoding( SQLSRV_ENCODING_INVALID ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL ), stmt_res( NULL )
     {
     }
 };
@@ -1724,6 +1725,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     zval field_cache;                     // cache for a single row of fields, to allow multiple and out of order retrievals
     zval col_cache;                       // Used by get_field_as_string not to call SQLColAttribute()  after every fetch.
     zval active_stream;                   // the currently active stream reading data from the database
+    zend_resource* zend_res;              // the zend_resource for this statement (used by streams to prevent premature stmt destruction)
 
     sqlsrv_params_container params_container;       // holds all parameters and references used for SQLBindParameter
 
