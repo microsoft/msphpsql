@@ -309,79 +309,10 @@ function build_worker_command($worker_script, $pooldir, $args = [])
     if (!is_windows() && $pooldir !== null) {
         $parts[] = "export ODBCSYSINI=" . escapeshellarg($pooldir);
     }
-    $php_cmd = escapeshellarg(PHP_BINARY);
-
-    // Forward PHP INI / extension configuration so the worker subprocess
-    // loads the same extensions (sqlsrv / pdo_sqlsrv) as the parent.
-    //
-    // run-tests.php captures the test process with "2>&1", merging stderr
-    // into stdout. Since shell_exec() inherits stderr, any PHP startup
-    // warnings (e.g. "Module already loaded") from the subprocess would
-    // leak into the captured output and cause an --EXPECT-- mismatch.
-    // We append 2>/dev/null (or 2>NUL on Windows) to suppress this.
-    //
-    // Extensions can reach the parent process from three sources:
-    //   1. Main php.ini loaded with -c (macOS CI — custom php.ini with
-    //      extension=<full_path> lines; or prebuilt/PECL modes)
-    //   2. Scan directory / conf.d (Linux — e.g. /etc/php.d/20-sqlsrv.ini)
-    //   3. CLI -d flags from run-tests.php forwarding
-    //
-    // Strategy: try to detect HOW the extensions are loaded and replicate
-    // that for the subprocess. When in doubt, forward -d extension= flags
-    // and rely on stderr suppression to hide any double-load warnings.
-
-    $extForwarded = false;
-
-    // Case 1: A php.ini is loaded and it contains extension=…sqlsrv lines.
-    // Forward it with -c so the subprocess gets the same directives.
-    $ini = php_ini_loaded_file();
-    if ($ini !== false && $ini !== '') {
-        $content = @file_get_contents($ini);
-        if ($content !== false && preg_match('/^\s*extension\s*=.*sqlsrv/mi', $content)) {
-            $php_cmd .= ' -c ' . escapeshellarg($ini);
-            $extForwarded = true;
-        }
-    }
-
-    // Case 2: Extensions live in conf.d / scan directory (typical Linux
-    // package installs). The subprocess uses the same PHP binary, so it
-    // will discover the same scan directory automatically — no flags needed.
-    if (!$extForwarded) {
-        $scanned = php_ini_scanned_files();
-        if ($scanned !== false && stripos($scanned, 'sqlsrv') !== false) {
-            $extForwarded = true;
-        }
-    }
-
-    // Case 3: Extensions were loaded via CLI -d flags or some other means.
-    // Forward them explicitly.
-    if (!$extForwarded) {
-        $ext_dir = ini_get('extension_dir');
-        if ($ext_dir !== false && $ext_dir !== '') {
-            $php_cmd .= ' -d extension_dir=' . escapeshellarg($ext_dir);
-        }
-        if (extension_loaded('sqlsrv')) {
-            $php_cmd .= ' -d extension=sqlsrv';
-        }
-        if (extension_loaded('pdo_sqlsrv')) {
-            $php_cmd .= ' -d extension=pdo_sqlsrv';
-        }
-    }
-
-    $php_cmd .= " " . escapeshellarg($worker_script);
+    $php_cmd = escapeshellarg(PHP_BINARY) . " " . escapeshellarg($worker_script);
     foreach ($args as $arg) {
         $php_cmd .= " " . escapeshellarg($arg);
     }
-
-    // Suppress stderr from the subprocess so that PHP startup warnings
-    // (e.g. "Module already loaded") don't pollute the test output that
-    // run-tests.php compares against --EXPECT--.
-    if (is_windows()) {
-        $php_cmd .= ' 2>NUL';
-    } else {
-        $php_cmd .= ' 2>/dev/null';
-    }
-
     $parts[] = $php_cmd;
 
     // On Windows use & as command separator; on Unix use &&

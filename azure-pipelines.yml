@@ -381,10 +381,8 @@ jobs:
       export PHPRC=$(dirname $PHP_INI)
       echo "PHPRC set to: $PHPRC"
       
-      # Set TEST_PHP_ARGS — use -n to ignore default system INI files,
-      # then -c to load our custom php.ini. This matches the internal
-      # OneBranch pipeline invocation and ensures reproducible behavior.
-      export TEST_PHP_ARGS="-n -c $PHP_INI"
+      # Set TEST_PHP_ARGS
+      export TEST_PHP_ARGS="-c $PHP_INI"
       
       # Track test failures and borked tests
       sqlsrv_failed=0
@@ -393,7 +391,7 @@ jobs:
       pdo_borked=0
       
       echo "Running sqlsrv tests..."
-      $PHP_BIN run-tests.php -p $PHP_BIN -n -c $PHP_INI -P sqlsrv/*.phpt --no-color 2>&1 | tee sqlsrv-macos.log || true
+      $PHP_BIN run-tests.php -p $PHP_BIN -c $PHP_INI -P sqlsrv/*.phpt --no-color 2>&1 | tee sqlsrv-macos.log || true
       
       # Check for test failures and borked tests
       if grep -q "Tests failed.*[1-9]" sqlsrv-macos.log; then
@@ -417,7 +415,7 @@ jobs:
       export MSSQL_DATABASE_NAME='$(macOS_pdo_sqlsrv_db)'
       
       echo "Running pdo_sqlsrv tests..."
-      $PHP_BIN run-tests.php -p $PHP_BIN -n -c $PHP_INI -P pdo_sqlsrv/*.phpt --no-color 2>&1 | tee pdo_sqlsrv-macos.log || true
+      $PHP_BIN run-tests.php -p $PHP_BIN -c $PHP_INI -P pdo_sqlsrv/*.phpt --no-color 2>&1 | tee pdo_sqlsrv-macos.log || true
       
       # Check for test failures and borked tests
       if grep -q "Tests failed.*[1-9]" pdo_sqlsrv-macos.log; then
