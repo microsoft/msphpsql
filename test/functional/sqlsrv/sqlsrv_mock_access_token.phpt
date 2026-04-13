@@ -16,6 +16,12 @@ On Windows, pooling is controlled by the ConnectionPooling option.
 if (!extension_loaded("sqlsrv")) {
     die("skip sqlsrv extension not loaded");
 }
+if (PHP_OS === 'Darwin') {
+    die("skip mock TDS server TLS handshake not supported on macOS");
+}
+if (file_exists('/etc/redhat-release')) {
+    die("skip mock TDS server TLS handshake not supported on RHEL");
+}
 require_once('mock_tds_helper.inc');
 $mock = start_mock_tds_server();
 stop_mock_tds_server($mock);
