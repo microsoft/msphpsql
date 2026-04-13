@@ -303,7 +303,7 @@ function cleanup_pooling_odbcinst($pooldir)
  * @param array       $args           Additional CLI arguments for the worker
  * @return string     Shell command ready for shell_exec()
  */
-function build_worker_command($worker_script, $pooldir, $args = [], $stderr_file = null)
+function build_worker_command($worker_script, $pooldir, $args = [])
 {
     $parts = [];
     if (!is_windows() && $pooldir !== null) {
@@ -373,12 +373,10 @@ function build_worker_command($worker_script, $pooldir, $args = [], $stderr_file
         $php_cmd .= " " . escapeshellarg($arg);
     }
 
-    // Redirect stderr: either to a specific file for diagnosis, or to
-    // /dev/null (NUL on Windows) to suppress PHP startup warnings like
-    // "Module already loaded" that would break --EXPECT-- comparison.
-    if ($stderr_file !== null) {
-        $php_cmd .= ' 2>' . escapeshellarg($stderr_file);
-    } elseif (is_windows()) {
+    // Suppress stderr from the subprocess so that PHP startup warnings
+    // (e.g. "Module already loaded") don't pollute the test output that
+    // run-tests.php compares against --EXPECT--.
+    if (is_windows()) {
         $php_cmd .= ' 2>NUL';
     } else {
         $php_cmd .= ' 2>/dev/null';
@@ -387,7 +385,7 @@ function build_worker_command($worker_script, $pooldir, $args = [], $stderr_file
     $parts[] = $php_cmd;
 
     // On Windows use & as command separator; on Unix use &&
-    $sep = is_windows() ? ' & ' : ' && ';
+    $sep = is_windows() ? '&' : '&&';
     return implode($sep, $parts);
 }
 
