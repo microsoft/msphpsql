@@ -14,6 +14,16 @@ if ($argc < 4) {
     exit(1);
 }
 
+// Ensure the sqlsrv extension is loaded — produce diagnostic output to
+// stdout if missing, because stderr may be suppressed by the parent.
+if (!extension_loaded('sqlsrv')) {
+    echo "FAIL: sqlsrv extension is not loaded in the worker subprocess.\n";
+    echo "Loaded extensions: " . implode(', ', get_loaded_extensions()) . "\n";
+    echo "extension_dir: " . ini_get('extension_dir') . "\n";
+    echo "php.ini: " . (php_ini_loaded_file() ?: '(none)') . "\n";
+    exit(1);
+}
+
 $server = $argv[1];
 $tokenA = $argv[2];
 $tokenB = $argv[3];
@@ -23,6 +33,7 @@ function connectWithToken($server, $token, $extraOpts = []) {
         "AccessToken" => $token,
         "TrustServerCertificate" => true,
         "ConnectionPooling" => true,
+        "LoginTimeout" => 10,
     ], $extraOpts);
     $conn = sqlsrv_connect($server, $opts);
     if ($conn === false) {

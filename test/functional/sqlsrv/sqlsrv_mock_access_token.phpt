@@ -39,10 +39,35 @@ $server = "127.0.0.1,{$mock['port']}";
 $pooldir = create_pooling_odbcinst();
 
 $subprocess = dirname(__FILE__) . '/sqlsrv_mock_access_token_worker.php';
-$cmd = build_worker_command($subprocess, $pooldir, [$server, $tokenA, $tokenB]);
+$stderr_file = sys_get_temp_dir() . '/mock_tds_worker_' . getmypid() . '.stderr';
+$cmd = build_worker_command($subprocess, $pooldir, [$server, $tokenA, $tokenB], $stderr_file);
 
 $output = shell_exec($cmd);
-echo $output;
+if (empty(trim($output ?? ''))) {
+    echo "FAIL: Worker subprocess produced no output.\n";
+    // Dump worker stderr for diagnosis
+    if (file_exists($stderr_file)) {
+        $stderr = trim(file_get_contents($stderr_file));
+        if ($stderr !== '') {
+            echo "Worker stderr:\n$stderr\n";
+        }
+    }
+    // Dump mock server log for diagnosis
+    $logfile = $mock['tmpdir'] . DIRECTORY_SEPARATOR . 'server.log';
+    if (file_exists($logfile)) {
+        $log = trim(file_get_contents($logfile));
+        if ($log !== '') {
+            $lines = explode("\n", $log);
+            echo "Server log (last 30 lines):\n";
+            echo implode("\n", array_slice($lines, -30)) . "\n";
+        }
+    }
+    // Dump the constructed command for debugging
+    echo "Command: $cmd\n";
+} else {
+    echo $output;
+}
+@unlink($stderr_file);
 
 cleanup_pooling_odbcinst($pooldir);
 stop_mock_tds_server($mock);
@@ -55,6 +80,10 @@ cleanup_orphaned_mock_servers();
 foreach (glob(sys_get_temp_dir() . '/mock_tds_pool_*') as $d) {
     @unlink($d . '/odbcinst.ini');
     @rmdir($d);
+}
+// Clean up worker stderr files
+foreach (glob(sys_get_temp_dir() . '/mock_tds_worker_*.stderr') as $f) {
+    @unlink($f);
 }
 ?>
 --EXPECTF--
