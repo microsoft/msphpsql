@@ -18,6 +18,7 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "core_sqlsrv.h"
+#include "zend_exceptions.h"
 
 #include <sstream>
 #include <vector>
@@ -982,11 +983,40 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
         zend_hash_clean( Z_ARRVAL( stmt->col_cache ));
 
         SQLRETURN r;
+
         if( throw_on_errors ) {
+            // Use the throwing wrapper.  This is the default path used by
+            // internal flush loops (re-execute, closeCursor, param binding)
+            // where SQL_ERROR should abort the loop via exception.
             r = core::SQLMoreResults( stmt );
         }
         else {
-            r = SQLMoreResults( stmt->handle() );
+            // User-facing path (sqlsrv_next_result / PDO::nextRowset).
+            // The ODBC driver may return SQL_ERROR instead of
+            // SQL_SUCCESS_WITH_INFO for a failed statement that is not the
+            // last in a non-aborted batch (e.g. divide-by-zero with
+            // XACT_ABORT OFF).  In that case the statement handle is still
+            // valid and subsequent result sets remain reachable.  We report
+            // the error through the normal handler but do NOT throw, so the
+            // caller sees success and the user can keep advancing.
+            r = ::SQLMoreResults( stmt->handle() );
+
+            SQLSRV_ASSERT( r != SQL_INVALID_HANDLE, "Invalid handle returned from SQLMoreResults." );
+
+            if( r == SQL_ERROR ) {
+                // Report the ODBC error so it is visible via
+                // sqlsrv_errors() / PDOStatement::errorInfo().
+                call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/0 );
+                // The PDO error handler may set a pending zend exception
+                // when the error mode is PDO::ERRMODE_EXCEPTION.  Clear it
+                // so execution continues to new_result_set() and the batch
+                // remains navigable.  The error is still available via
+                // errorInfo().
+                zend_clear_exception();
+            }
+            else if( r == SQL_SUCCESS_WITH_INFO ) {
+                call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/1 );
+            }
         }
 
         if( r == SQL_NO_DATA ) {
@@ -1005,7 +1035,11 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
     }
     catch( core::CoreException& e ) {
 
-        SQLCancel( stmt->handle() );
+        // Do not call SQLCancel here.  When SQLMoreResults returns SQL_ERROR
+        // for a mid-batch statement failure (e.g. divide-by-zero with
+        // XACT_ABORT OFF), the statement handle is still valid and the user
+        // should be able to call next_result again to reach subsequent result
+        // sets.  Calling SQLCancel would abort the entire remaining batch.
         throw e;
     }
 }

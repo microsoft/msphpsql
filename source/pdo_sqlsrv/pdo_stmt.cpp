@@ -1217,7 +1217,7 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
 
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
-        core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ) );
+        core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ), true, false );
 
         if( driver_stmt->past_next_result_end == true ) {
             // Clean up remaining metadata since new_result_set() was not called
