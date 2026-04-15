@@ -28,6 +28,12 @@ SQL;
 $stmt = sqlsrv_query($conn, $tsql, [true,false,true,true,true,false,true]);
 $row = sqlsrv_fetch_object($stmt);
 
+// Normalize bool to int for consistent output across PHP versions
+foreach (get_object_vars($row) as $key => $value) {
+    if (is_bool($value)) {
+        $row->$key = (int)$value;
+    }
+}
 var_dump($row);
 
 sqlsrv_free_stmt($stmt);

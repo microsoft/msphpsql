@@ -9,7 +9,7 @@ Bind params using sqlsrv_prepare with all sql_type
 require_once('MsCommon.inc');
 require_once('AEData.inc');
 
-date_default_timezone_set("Canada/Pacific");
+date_default_timezone_set("America/Vancouver");
 $dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
 
 // this is a list of implicit datatype conversion that SQL Server allows (https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-type-conversion-database-engine)
