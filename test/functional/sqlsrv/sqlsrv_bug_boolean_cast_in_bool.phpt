@@ -27,11 +27,20 @@ SELECT 'bit_true'=@bit_true, 'bit_false'=@bit_false, 'bit_cast_true'=@bit_cast_t
 SQL;
 $stmt = sqlsrv_query($conn, $tsql, [true,false,true,true,true,false,true]);
 if ($stmt === false) {
-    fatalError("Query failed: " . print_r(sqlsrv_errors(), true));
+    echo "Query failed:\n";
+    print_r(sqlsrv_errors());
+    exit(1);
 }
 $row = sqlsrv_fetch_object($stmt);
-if ($row === false) {
-    fatalError("Fetch failed: " . print_r(sqlsrv_errors(), true));
+if ($row === false || $row === null) {
+    echo "Fetch failed (" . gettype($row) . "):\n";
+    print_r(sqlsrv_errors());
+    exit(1);
+}
+
+// Debug: show raw types and values
+foreach (get_object_vars($row) as $key => $value) {
+    echo "DEBUG: $key = " . var_export($value, true) . " (" . gettype($value) . ")\n";
 }
 
 // Validate each field's value (cast to int for consistent comparison
@@ -61,5 +70,12 @@ if ($passed) {
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
 ?>
---EXPECT--
+--EXPECTF--
+DEBUG: bit_true = %s (%s)
+DEBUG: bit_false = %s (%s)
+DEBUG: bit_cast_true = %s (%s)
+DEBUG: int_true = %s (%s)
+DEBUG: direct_true = %s (%s)
+DEBUG: direct_false = %s (%s)
+DEBUG: direct_bit_cast_true = %s (%s)
 Test passed.
