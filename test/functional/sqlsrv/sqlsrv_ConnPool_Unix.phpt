@@ -20,7 +20,6 @@ $lines_to_add="CPTimeout=5\n[ODBC]\nPooling=Yes\n";
 
 //get default odbcinst.ini location
 $output = shell_exec("odbcinst -j 2>/dev/null");
-echo "DEBUG odbcinst -j output:\n$output\n";
 $odbcinst_ini = '';
 if ($output) {
     foreach (explode("\n", $output) as $line) {
@@ -28,7 +27,6 @@ if ($output) {
             // Handle both "DRIVERS: /path" and "DRIVERS............: /path" formats
             $parts = explode(":", $line, 2);
             $path = trim($parts[1] ?? '');
-            echo "DEBUG DRIVERS line: '$line' => path: '$path'\n";
             if ($path && file_exists($path)) {
                 $odbcinst_ini = $path;
                 break;
@@ -40,12 +38,10 @@ if ($output) {
 if (empty($odbcinst_ini) || !file_exists($odbcinst_ini)) {
     if (file_exists('/etc/odbcinst.ini')) {
         $odbcinst_ini = '/etc/odbcinst.ini';
-        echo "DEBUG using fallback: $odbcinst_ini\n";
     } else {
         die("Could not determine odbcinst.ini location");
     }
 }
-echo "DEBUG odbcinst_ini: $odbcinst_ini\n";
 $custom_odbcinst_ini = dirname(__FILE__)."/odbcinst.ini";
 
 //copy the default odbcinst.ini into the current folder
@@ -54,13 +50,12 @@ copy( $odbcinst_ini, $custom_odbcinst_ini);
 //enable pooling by modifying the odbcinst.ini file
 $current = file_get_contents($custom_odbcinst_ini);
 $new_content = findODBCDriver($current, $lines_to_add);
-echo "DEBUG modified ini differs from original: " . ($new_content !== $current ? 'yes' : 'NO - findODBCDriver failed') . "\n";
 file_put_contents($custom_odbcinst_ini, $new_content);
 
 //Creating a new php process, because for changes in odbcinst.ini file to affect pooling, drivers must be reloaded.
 //Also setting the odbcini path to the current folder for the same process.
 //This will let us modify odbcinst.ini without root permissions
-print_r(shell_exec("export ODBCSYSINI=".dirname(__FILE__)."&&".PHP_BINARY." ".dirname(__FILE__)."/isPooled.php"));
+print_r(shell_exec("export ODBCSYSINI=".dirname(__FILE__)." && ".PHP_BINARY." ".dirname(__FILE__)."/isPooled.php 2>/dev/null"));
 
 
 //disable pooling by modifying the odbcinst.ini file
@@ -68,7 +63,7 @@ $current = file_get_contents($custom_odbcinst_ini);
 $current = str_replace($lines_to_add,'',$current);
 file_put_contents($custom_odbcinst_ini, $current);
 
-print_r(shell_exec("export ODBCSYSINI=".dirname(__FILE__)."&&".PHP_BINARY." ".dirname(__FILE__)."/isPooled.php"));
+print_r(shell_exec("export ODBCSYSINI=".dirname(__FILE__)." && ".PHP_BINARY." ".dirname(__FILE__)."/isPooled.php 2>/dev/null"));
 ?>
 --CLEAN--
 <?php
@@ -78,7 +73,6 @@ unlink($custom_odbcinst_ini);
 shell_exec("unset ODBCSYSINI");
 
 ?>
---EXPECTF--
-%aDEBUG%a
+--EXPECT--
 Pooled
 Not Pooled
