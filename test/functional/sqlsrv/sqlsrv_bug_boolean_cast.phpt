@@ -26,33 +26,40 @@ SELECT 'bit_true'=@bit_true, 'bit_false'=@bit_false, 'bit_cast_true'=@bit_cast_t
    'direct_bit_cast_true'=CAST(? AS bit)
 SQL;
 $stmt = sqlsrv_query($conn, $tsql, [true,false,true,true,true,false,true]);
+if ($stmt === false) {
+    fatalError("Query failed: " . print_r(sqlsrv_errors(), true));
+}
 $row = sqlsrv_fetch_object($stmt);
+if ($row === false) {
+    fatalError("Fetch failed: " . print_r(sqlsrv_errors(), true));
+}
 
-// Normalize bool to int for consistent output across PHP versions
-foreach (get_object_vars($row) as $key => $value) {
-    if (is_bool($value)) {
-        $row->$key = (int)$value;
+// Validate each field's value (cast to int for consistent comparison
+// across PHP versions and platforms where bool vs int return types vary)
+$expected = [
+    'bit_true' => 1,
+    'bit_false' => 0,
+    'bit_cast_true' => 1,
+    'int_true' => 1,
+    'direct_true' => 1,
+    'direct_false' => 0,
+    'direct_bit_cast_true' => 1,
+];
+
+$passed = true;
+foreach ($expected as $key => $expectedVal) {
+    $actual = (int)$row->$key;
+    if ($actual !== $expectedVal) {
+        echo "FAIL: $key expected $expectedVal got $actual\n";
+        $passed = false;
     }
 }
-var_dump($row);
+if ($passed) {
+    echo "Test passed.\n";
+}
 
 sqlsrv_free_stmt($stmt);
 sqlsrv_close($conn);
 ?>
 --EXPECT--
-object(stdClass)#1 (7) {
-  ["bit_true"]=>
-  int(1)
-  ["bit_false"]=>
-  int(0)
-  ["bit_cast_true"]=>
-  int(1)
-  ["int_true"]=>
-  int(1)
-  ["direct_true"]=>
-  int(1)
-  ["direct_false"]=>
-  int(0)
-  ["direct_bit_cast_true"]=>
-  int(1)
-}
+Test passed.

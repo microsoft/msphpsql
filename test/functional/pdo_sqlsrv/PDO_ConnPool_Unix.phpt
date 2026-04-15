@@ -25,16 +25,28 @@ function findODBCDriver($content, $lines_to_add)
 $lines_to_add="CPTimeout=5\n[ODBC]\nPooling=Yes\n";
 
 //get default odbcinst.ini location
-$output = shell_exec("odbcinst -j");
+$output = shell_exec("odbcinst -j 2>/dev/null");
 $odbcinst_ini = '';
-foreach (explode("\n", $output) as $line) {
-    if (stripos($line, 'DRIVERS') !== false && strpos($line, ':') !== false) {
-        $odbcinst_ini = trim(substr($line, strpos($line, ':') + 1));
-        break;
+if ($output) {
+    foreach (explode("\n", $output) as $line) {
+        if (stripos($line, 'DRIVERS') !== false) {
+            // Handle both "DRIVERS: /path" and "DRIVERS............: /path" formats
+            $parts = explode(":", $line, 2);
+            $path = trim($parts[1] ?? '');
+            if ($path && file_exists($path)) {
+                $odbcinst_ini = $path;
+                break;
+            }
+        }
     }
 }
+// Fallback to well-known default path
 if (empty($odbcinst_ini) || !file_exists($odbcinst_ini)) {
-    die("Could not determine odbcinst.ini location from odbcinst -j output");
+    if (file_exists('/etc/odbcinst.ini')) {
+        $odbcinst_ini = '/etc/odbcinst.ini';
+    } else {
+        die("Could not determine odbcinst.ini location");
+    }
 }
 $custom_odbcinst_ini = dirname(__FILE__)."/odbcinst.ini";
 
