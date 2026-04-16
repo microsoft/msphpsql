@@ -13,6 +13,10 @@ if (extension_loaded('pdo_odbc')) {
 ?>
 --FILE--
 <?php
+// Prevent 'sh: warning: setlocale: LC_ALL: cannot change locale' on systems
+// where en_US.UTF-8 is not installed (e.g., Red Hat containers)
+putenv('LC_ALL=C');
+
 function findODBCDriver($content, $lines_to_add)
 {
     require_once('MsSetup.inc');
