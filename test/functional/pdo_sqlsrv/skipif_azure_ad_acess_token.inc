@@ -12,8 +12,12 @@ require_once("MsSetup.inc");
 require_once("MsCommon_mid-refactor.inc");
 
 // MsCommon_mid-refactor.inc connect() signature: connect($keywords = '', $options=array(), $errmode, $disableCE)
-$conn = connect();
-if ($conn === false) {
+try {
+    $conn = connect();
+} catch (Exception $e) {
+    $conn = false;
+}
+if (!$conn) {
     die("skip Could not connect during SKIPIF.");
 }
 
