@@ -306,27 +306,10 @@ function cleanup_pooling_odbcinst($pooldir)
 function build_worker_command($worker_script, $pooldir, $args = [])
 {
     $parts = [];
-    if (!is_windows()) {
-        // Prevent 'sh: warning: setlocale: LC_ALL: cannot change locale' on
-        // systems where en_US.UTF-8 is not installed (e.g., Red Hat containers).
-        // Must be set in the shell command itself, not via putenv(), because sh
-        // reads LC_ALL at startup before executing any commands.
-        $parts[] = "export LC_ALL=C";
-        if ($pooldir !== null) {
-            $parts[] = "export ODBCSYSINI=" . escapeshellarg($pooldir);
-        }
+    if (!is_windows() && $pooldir !== null) {
+        $parts[] = "export ODBCSYSINI=" . escapeshellarg($pooldir);
     }
-
-    // Pass -d extension= flags so the subprocess loads the required extensions.
-    // When run-tests.php uses -P, the parent has extensions loaded but the
-    // child process (via shell_exec) doesn't inherit those flags.
-    $php_cmd = escapeshellarg(PHP_BINARY);
-    foreach (['sqlsrv', 'pdo_sqlsrv'] as $ext) {
-        if (extension_loaded($ext)) {
-            $php_cmd .= " -d extension=$ext";
-        }
-    }
-    $php_cmd .= " " . escapeshellarg($worker_script);
+    $php_cmd = escapeshellarg(PHP_BINARY) . " " . escapeshellarg($worker_script);
     foreach ($args as $arg) {
         $php_cmd .= " " . escapeshellarg($arg);
     }
