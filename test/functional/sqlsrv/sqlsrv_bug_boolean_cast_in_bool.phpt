@@ -9,9 +9,8 @@ and a true directly cast to a bit.
 PHPT_EXEC=true
 --SKIPIF--
 <?php require('skipif.inc');
-// This test causes a segfault in the sqlsrv extension on CentOS/Red Hat
-// when passing boolean parameters (Termsig=11). Skip until the C extension
-// bug is fixed. See: https://github.com/microsoft/msphpsql/issues/XXXX
+// This test causes a segfault (Termsig=11) in the sqlsrv extension on
+// CentOS/Red Hat when passing boolean parameters to parameterized queries.
 if (PHP_OS === 'Linux') {
     $release = @file_get_contents('/etc/os-release');
     if ($release && preg_match('/\b(centos|rhel|red\s*hat)\b/i', $release)) {
