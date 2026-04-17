@@ -544,7 +544,7 @@ for ($i=0; $i<$SZ_DATE_all; $i++)
     }
 }
 
-date_default_timezone_set('Canada/Pacific');
+date_default_timezone_set('America/Vancouver');
 sqlsrv_configure('WarningsReturnAsErrors', 1);
 sqlsrv_configure('LogSeverity', SQLSRV_LOG_SEVERITY_ALL);
 sqlsrv_configure('LogSubsystems', SQLSRV_LOG_SYSTEM_OFF);

@@ -22,6 +22,10 @@ stop_mock_tds_server($mock);
 ?>
 --FILE--
 <?php
+// Prevent 'sh: warning: setlocale: LC_ALL: cannot change locale' on systems
+// where en_US.UTF-8 is not installed (e.g., Red Hat containers)
+putenv('LC_ALL=C');
+
 require_once('mock_tds_helper.inc');
 
 $tokenA = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.mocktokenA';

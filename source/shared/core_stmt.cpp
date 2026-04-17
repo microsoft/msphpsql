@@ -1035,11 +1035,15 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
     }
     catch( core::CoreException& e ) {
 
-        // Do not call SQLCancel here.  When SQLMoreResults returns SQL_ERROR
-        // for a mid-batch statement failure (e.g. divide-by-zero with
-        // XACT_ABORT OFF), the statement handle is still valid and the user
-        // should be able to call next_result again to reach subsequent result
-        // sets.  Calling SQLCancel would abort the entire remaining batch.
+        // For internal callers (throw_on_errors=true — flush loops,
+        // closeCursor, param binding) we still call SQLCancel to clean up
+        // the ODBC handle on error.  For user-facing callers
+        // (throw_on_errors=false — sqlsrv_next_result / PDO::nextRowset)
+        // we must NOT cancel because the handle is still valid and the
+        // batch remains navigable after a mid-batch statement failure.
+        if( throw_on_errors ) {
+            SQLCancel( stmt->handle() );
+        }
         throw e;
     }
 }
