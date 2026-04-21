@@ -200,11 +200,15 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
                throw core::CoreException();
            }
 
+// When encoding is UTF-8, SQLGetData fills temp_buf with UTF-16 wide character data (SQL_C_WCHAR).
+            // The buffer is allocated as char* but contains properly aligned UTF-16 data from ODBC.
+            // Reinterpret as LPCWSTR for conversion functions. This is safe because ODBC guarantees proper alignment.
+            const LPCWSTR wide_buffer = reinterpret_cast<LPCWSTR>( temp_buf.get() );
 #ifndef _WIN32
-            int enc_len = SystemLocale::FromUtf16( ss->encoding, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
+            int enc_len = SystemLocale::FromUtf16( ss->encoding, wide_buffer,
                                                    static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 #else
-            int enc_len = WideCharToMultiByte( ss->encoding, flags, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
+            int enc_len = WideCharToMultiByte( ss->encoding, flags, wide_buffer,
                                                static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 #endif // !_WIN32
             if( enc_len == 0 ) {
