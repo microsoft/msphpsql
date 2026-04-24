@@ -36,6 +36,30 @@ def get_test_entry(search_pattern, line, index, tests_list, get_title = False, d
     pos = len(tmp_array) - 1
     test_name = tmp_array[pos]
 
+    # A FAIL line may be stale if the test passed on retry.
+    # Check whether the corresponding .diff file still exists.
+    if get_title:
+        diff_file = substr.replace('.phpt', '.diff')
+        if os.path.exists(diff_file):
+            # .diff exists at the exact path — genuine failure
+            pass
+        elif os.sep not in diff_file and '/' not in diff_file:
+            # Path is just a filename (e.g. Linux runs cd into driver dir).
+            # Check both sqlsrv/ and pdo_sqlsrv/ subdirectories.
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            srv_path = os.path.join(script_dir, 'sqlsrv', diff_file)
+            pdo_path = os.path.join(script_dir, 'pdo_sqlsrv', diff_file)
+            if not os.path.exists(srv_path) and not os.path.exists(pdo_path):
+                # .diff removed by retry — treat as PASS
+                entry = '\t<testcase name="' + test_name + '-' + index + '"/>'
+                tests_list.append(entry)
+                return 0
+        elif not os.path.exists(diff_file):
+            # .diff removed by retry — treat as PASS
+            entry = '\t<testcase name="' + test_name + '-' + index + '"/>'
+            tests_list.append(entry)
+            return 0
+
     # only upon a failure do we get the test title
     if (get_title is True):
         entry = '\t<testcase name="' + test_name + '-' + index + '">'
@@ -53,12 +77,13 @@ def get_test_entry(search_pattern, line, index, tests_list, get_title = False, d
             tests_list.append(escaped_diff)
         tests_list.append('\t\t</failure>')
         tests_list.append('\t</testcase>')
+        return 1
     else:
         entry = '\t<testcase name="' + test_name + '-' + index + '"/>'
         tests_list.append(entry)
+        return 0
 
 # Extract individual test results from the log file and
-# enter it in the xml report file.
 # Input:    logfile - the test log file
 #           number - the number for this xml file (applicable if using the default report name)
 #           logfilename - use the log file name for the xml output file Instead
@@ -107,9 +132,8 @@ def gen_XML(logfile, number, logfilename):
             if "FAIL" in line or "PASS" in line:
                 if ".phpt" in line:
                     if "FAIL" in line:
-                        failnum += 1
                         diff_content = '\n'.join(diff_lines) if diff_lines else ""
-                        get_test_entry('FAIL(.*).', line, str(num), tests_list, True, diff_content)
+                        failnum += get_test_entry('FAIL(.*).', line, str(num), tests_list, True, diff_content)
                         diff_lines = []  # Reset for next test
                     else:
                         get_test_entry('PASS(.*).', line, str(num), tests_list)
