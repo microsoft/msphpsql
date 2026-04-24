@@ -3,6 +3,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 5.13.1 - 2026-04-24
+Updated PECL release packages. Here is the list of updates:
+
+### Fixed
+- Fixed access token identity leaking across pooled connections — connections with different tokens could share the same pool entry, causing identity cross-contamination and use-after-free ([PR #1592](https://github.com/microsoft/msphpsql/pull/1592))
+- Fixed prepared statement silently failing on insert when triggers or SET NOCOUNT OFF produce extra result sets, causing implicit transaction rollback with MARS enabled ([PR #1590](https://github.com/microsoft/msphpsql/pull/1590))
+- Fixed fatal error when re-executing a prepared statement that returns multiple result sets with different column layouts ([PR #1596](https://github.com/microsoft/msphpsql/pull/1596))
+- Fixed sqlsrv_errors() returning null after a failed connection when ODBC provides no diagnostic records ([PR #1595](https://github.com/microsoft/msphpsql/pull/1595))
+- Fixed binary stream becoming invalid when the originating statement goes out of scope ([PR #1598](https://github.com/microsoft/msphpsql/pull/1598))
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+
 ## 5.13.0 - 2026-02-27
 Updated PECL release packages. Here is the list of updates:
 
