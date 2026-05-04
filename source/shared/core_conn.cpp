@@ -36,7 +36,7 @@
 #include <odbcinst.h>
 #endif
 
-// *** internal variables and constants ***
+// *** internal variables and constants TEST ***
 
 namespace {
 
