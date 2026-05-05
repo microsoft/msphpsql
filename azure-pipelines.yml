@@ -567,6 +567,7 @@ jobs:
       
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+      echo "##vso[task.prependpath]/opt/mssql-tools18/bin"
       
       odbcinst -j
       odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
