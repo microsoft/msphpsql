@@ -14,6 +14,9 @@ permissions:
   issues: read
   pull-requests: read
 
+engine:
+  id: claude
+
 network: defaults
 
 tools:
