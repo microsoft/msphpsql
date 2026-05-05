@@ -513,7 +513,7 @@ jobs:
   variables:
     phpver: 8.5
   pool:
-    vmImage: 'ubuntu-22.04'
+    vmImage: 'ubuntu-24.04'
   steps:
   - checkout: self
     clean: true
@@ -567,6 +567,7 @@ jobs:
       
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+      echo "##vso[task.prependpath]/opt/mssql-tools18/bin"
       
       odbcinst -j
       odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
@@ -579,8 +580,8 @@ jobs:
 
   - script: |
       # Start SQL Server container (only SQL Server in Docker, not tests)
-      docker pull mcr.microsoft.com/mssql/server:2022-latest
-      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
+      docker pull mcr.microsoft.com/mssql/server:2025-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2025-latest
       docker ps -a
       sleep 10
       
@@ -1068,7 +1069,7 @@ jobs:
     - Windows
   condition: succeededOrFailed()
   pool:
-    vmImage: 'ubuntu-22.04'
+    vmImage: 'ubuntu-24.04'
   steps:
   - checkout: self
     fetchDepth: 1
