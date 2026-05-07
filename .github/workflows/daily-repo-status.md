@@ -42,13 +42,24 @@ Create an upbeat daily status report for the repo as a GitHub issue.
 - Recent repository activity (issues, PRs, discussions, releases, code changes)
 - Progress tracking, goal reminders and highlights
 - Project status and recommendations
-- Actionable next steps for maintainers
 
 ## Style
 
 - Be positive, encouraging, and helpful 🌟
 - Use emojis moderately for engagement
 - Keep it concise - adjust length based on actual activity
+
+## Actionable Next Steps to Focus on
+
+- PRs idle >3 days awaiting review (list each with link and last activity)
+- Issues idle >3 days awaiting review (list each with link and last activity)
+- Issues with 5+ reactions and no assignee
+- Failing CI runs on the default branch in the last 24h
+
+Avoid:
+
+- Generic advice (e.g., "improve documentation")
+- Suggestions requiring info not in the data above
 
 ## Process
 
