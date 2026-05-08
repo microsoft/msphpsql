@@ -106,9 +106,11 @@ bool convert_string_from_utf16_inplace( _In_ SQLSRV_ENCODING encoding, _Inout_up
     char* outString = NULL;
     SQLLEN outLen = 0;
 
-    // The string buffer contains UTF-16 encoded data. Reinterpret as SQLWCHAR* for conversion.
-    // This is safe because the caller ensures the buffer contains valid UTF-16 data.
-    const SQLWCHAR* wide_str = reinterpret_cast<const SQLWCHAR*>(*string);
+    // The buffer contains UTF-16 data written by the ODBC driver via SQLGetData with SQL_C_WCHAR.
+    // The only caller (get_field_as_string in core_stmt.cpp) guards this call with
+    // "if (c_type == SQL_C_WCHAR)", ensuring the buffer was populated as UTF-16 by the driver.
+    // The reinterpret_cast is necessary because the ODBC API uses a generic char* buffer.
+    const SQLWCHAR* wide_str = reinterpret_cast<const SQLWCHAR*>(*string); // CodeQL [SM02986] buffer is ensured to contain UTF-16 data
     bool result = convert_string_from_utf16( encoding, wide_str, int(len / sizeof(SQLWCHAR)), &outString, outLen );
 
     if (result)

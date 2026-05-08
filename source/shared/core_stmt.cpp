@@ -2911,9 +2911,10 @@ void sqlsrv_param_inout::finalize_output_string()
             char* outString = NULL;
             SQLLEN outLen = 0;
 
-            // When encoding is UTF-8 or SYSTEM, ODBC returns data as UTF-16 wide characters
-            // in the output parameter buffer. ODBC guarantees proper alignment and valid UTF-16 data.
-            const SQLWCHAR* wide_str = reinterpret_cast<const SQLWCHAR*>(str);
+            // For UTF-8/SYSTEM encoding, the output parameter buffer was bound with SQL_C_WCHAR via
+            // SQLBindParameter, so ODBC wrote UTF-16 data into it. The reinterpret_cast is necessary
+            // because the ODBC API binds output params to a generic char* buffer.
+            const SQLWCHAR* wide_str = reinterpret_cast<const SQLWCHAR*>(str); // CodeQL [SM02986] buffer contains UTF-16 data from ODBC output parameter bound with SQL_C_WCHAR
             bool result = convert_string_from_utf16(encoding, wide_str, int(str_len / sizeof(SQLWCHAR)), &outString, outLen);
             CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message(), NULL) {
                 throw core::CoreException();
