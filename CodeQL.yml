@@ -1,3 +1,9 @@
+path_classifiers:
+  generated:
+    - "buildscripts/php-sdk"
+  test:
+    - "test"
+
 queries:
   # Exclude all external PHP SDK source code
   - exclude:
