@@ -37,7 +37,7 @@ function connectInvalidServer()
         unset($conn);
 
         // Try connecting to an invalid server, should get an exception from ODBC
-        $connectionInfo = "Authentication = ActiveDirectoryMsi; LoginTimeout = 1;";
+        $connectionInfo = "Authentication = ActiveDirectoryMsi; LoginTimeout = 3;";
         $testCase = 'invalidServer';
         try {
             $conn = new PDO("sqlsrv:server = invalidServer; $connectionInfo", null, null);
@@ -67,7 +67,7 @@ function connectInvalidServerWithUser()
         unset($conn);
 
         // Try connecting to an invalid server, should get an exception from ODBC
-        $connectionInfo = "Authentication = ActiveDirectoryMsi; LoginTimeout = 1;";
+        $connectionInfo = "Authentication = ActiveDirectoryMsi; LoginTimeout = 3;";
         $user = "user";
         $testCase = 'invalidServer';
         try {
