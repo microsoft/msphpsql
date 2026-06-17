@@ -1462,7 +1462,7 @@ struct sqlsrv_param
 
     void copy_param_meta_ae(_Inout_ zval* param_z, _In_ param_meta_data& meta);            // Only used when Always Encrypted is enabled
 
-    virtual ~sqlsrv_param(){ release_data(); }
+    virtual ~sqlsrv_param(){ sqlsrv_param::release_data(); }
     virtual void release_data();
 
     bool derive_string_types_sizes(_In_ zval* param_z);
@@ -1539,7 +1539,7 @@ struct sqlsrv_param_tvp : public sqlsrv_param
     {
         ZVAL_UNDEF(&placeholder_z);
     }
-    virtual ~sqlsrv_param_tvp() { release_data(); }
+    virtual ~sqlsrv_param_tvp() { sqlsrv_param_tvp::release_data(); }
     virtual void release_data();
     virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);

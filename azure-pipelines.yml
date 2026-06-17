@@ -105,6 +105,11 @@ jobs:
       echo "Installing Microsoft ODBC Driver 18 for SQL Server..."
       
       brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+      # Homebrew now requires explicit trust for third-party taps/formulae in CI.
+      if brew help trust >/dev/null 2>&1; then
+        brew trust microsoft/mssql-release || \
+        brew trust --formula microsoft/mssql-release/msodbcsql18
+      fi
       HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql18 mssql-tools18
       
       # Verify installation
@@ -513,7 +518,7 @@ jobs:
   variables:
     phpver: 8.5
   pool:
-    vmImage: 'ubuntu-22.04'
+    vmImage: 'ubuntu-24.04'
   steps:
   - checkout: self
     clean: true
@@ -567,6 +572,7 @@ jobs:
       
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bash_profile
       echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+      echo "##vso[task.prependpath]/opt/mssql-tools18/bin"
       
       odbcinst -j
       odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
@@ -579,8 +585,8 @@ jobs:
 
   - script: |
       # Start SQL Server container (only SQL Server in Docker, not tests)
-      docker pull mcr.microsoft.com/mssql/server:2022-latest
-      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2022-latest
+      docker pull mcr.microsoft.com/mssql/server:2025-latest
+      docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$(pwd)' -p 1433:1433 -h $(host) --name=$(host) -d mcr.microsoft.com/mssql/server:2025-latest
       docker ps -a
       sleep 10
       
@@ -1068,7 +1074,7 @@ jobs:
     - Windows
   condition: succeededOrFailed()
   pool:
-    vmImage: 'ubuntu-22.04'
+    vmImage: 'ubuntu-24.04'
   steps:
   - checkout: self
     fetchDepth: 1

@@ -10,6 +10,9 @@ on:
     paths:
       - 'source/**'
 
+permissions:
+  contents: read
+
 jobs:
   cppcheck:
     name: Cppcheck
