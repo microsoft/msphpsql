@@ -2347,11 +2347,14 @@ bool sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* /*stmt*/, _In
         sqlsrv_malloc_auto_ptr<SQLWCHAR> wide_buffer;
         unsigned int wchar_size = 0;
 
-        wide_buffer = utf16_string_from_mbcs_string(encoding, reinterpret_cast<const char*>(str), static_cast<int>(str_length), &wchar_size, true);
+        // Convert input string to UTF-16. 'str' is already char* so no recast needed here.
+        wide_buffer = utf16_string_from_mbcs_string(encoding, str, static_cast<int>(str_length), &wchar_size, true);
         if (wide_buffer == 0) {
             return false;
         }
         wide_buffer[wchar_size] = L'\0';
+        // Store UTF-16 data as binary in zval. Casting SQLWCHAR* to char* is intentional for storing
+        // raw binary wide character data with length in bytes (wchar_size * sizeof(SQLWCHAR)).
         core::sqlsrv_zval_stringl(&placeholder_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
     } else {
         // If the string is empty, then nothing needs to be done
@@ -2785,11 +2788,15 @@ void sqlsrv_param_inout::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_
             sqlsrv_malloc_auto_ptr<SQLWCHAR> wide_buffer;
             unsigned int wchar_size = 0;
 
-            wide_buffer = utf16_string_from_mbcs_string(SQLSRV_ENCODING_UTF8, reinterpret_cast<const char*>(buffer), static_cast<int>(buffer_length), &wchar_size);
+            // buffer is SQLPOINTER (void*) holding UTF-8 char data from Z_STRVAL_P. Cast to const char* is safe here.
+            const char* char_buffer = reinterpret_cast<const char*>(buffer);
+            wide_buffer = utf16_string_from_mbcs_string(SQLSRV_ENCODING_UTF8, char_buffer, static_cast<int>(buffer_length), &wchar_size);
             CHECK_CUSTOM_ERROR(wide_buffer == 0, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, param_pos + 1, get_last_error_message(), NULL) {
                 throw core::CoreException();
             }
             wide_buffer[wchar_size] = L'\0';
+            // Store UTF-16 data as binary in zval. Casting SQLWCHAR* to char* is intentional for storing
+            // raw binary wide character data with length in bytes (wchar_size * sizeof(SQLWCHAR)).
             core::sqlsrv_zval_stringl(param_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
             buffer = Z_STRVAL_P(param_z);
             buffer_length = Z_STRLEN_P(param_z);
@@ -2942,7 +2949,11 @@ void sqlsrv_param_inout::finalize_output_string()
             char* outString = NULL;
             SQLLEN outLen = 0;
 
-            bool result = convert_string_from_utf16(encoding, reinterpret_cast<const SQLWCHAR*>(str), int(str_len / sizeof(SQLWCHAR)), &outString, outLen);
+            // For UTF-8/SYSTEM encoding, the output parameter buffer was bound with SQL_C_WCHAR via
+            // SQLBindParameter, so ODBC wrote UTF-16 data into it. The reinterpret_cast is necessary
+            // because the ODBC API binds output params to a generic char* buffer.
+            const SQLWCHAR* wide_str = reinterpret_cast<const SQLWCHAR*>(str); // CodeQL [SM02986] buffer contains UTF-16 data from ODBC output parameter bound with SQL_C_WCHAR
+            bool result = convert_string_from_utf16(encoding, wide_str, int(str_len / sizeof(SQLWCHAR)), &outString, outLen);
             CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message(), NULL) {
                 throw core::CoreException();
             }

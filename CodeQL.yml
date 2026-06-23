@@ -1,0 +1,16 @@
+path_classifiers:
+  generated:
+    - "buildscripts/php-sdk"
+  test:
+    - "test"
+
+queries:
+  # Exclude all external PHP SDK source code
+  - exclude:
+      path:
+        - "buildscripts/php-sdk"
+  # Include only the SQLSRV and PDO_SQLSRV source files within the PHP SDK, where we drop them for compilation
+  - include:
+      path:
+        - "buildscripts/php-sdk/**/sqlsrv"
+        - "buildscripts/php-sdk/**/pdo_sqlsrv"

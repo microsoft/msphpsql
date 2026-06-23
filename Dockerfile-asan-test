@@ -1,0 +1,99 @@
+# Dockerfile for reproducing the ASAN ODR violation (GitHub Issue #1632)
+#
+# This builds PHP from source with AddressSanitizer enabled, then builds
+# both sqlsrv and pdo_sqlsrv extensions and attempts to load them together.
+#
+# Usage:
+#   docker build -f Dockerfile-asan-test -t msphpsql-asan-test .
+#   docker run --rm msphpsql-asan-test
+#
+# Expected results:
+#   BEFORE fix: ASAN aborts with "odr-violation" on g_sqlsrv_stream_wrapper / isVistaOrGreater
+#   AFTER fix:  php -v succeeds, both extensions load cleanly
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PHP_VERSION=8.4.8
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    autoconf \
+    bison \
+    build-essential \
+    curl \
+    libcurl4-openssl-dev \
+    libonig-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libssl-dev \
+    libxml2-dev \
+    pkg-config \
+    re2c \
+    unixodbc-dev \
+    zlib1g-dev \
+    && apt-get clean
+
+# Download and build PHP from source with ASAN
+WORKDIR /tmp
+RUN curl -fSL https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz -o php.tar.gz \
+    && tar xzf php.tar.gz \
+    && cd php-${PHP_VERSION} \
+    && ./configure \
+        --prefix=/usr/local \
+        --enable-debug \
+        --enable-address-sanitizer \
+        --enable-pdo \
+        --with-pdo-odbc=unixODBC,/usr \
+        --without-pear \
+        --disable-cgi \
+        --disable-phpdbg \
+    && make -j$(nproc) \
+    && make install \
+    && cd / && rm -rf /tmp/php*
+
+# Verify PHP was built with ASAN
+RUN php -v 2>&1 | head -5 || true
+
+# Copy extension source and clean any build artifacts
+WORKDIR /build
+COPY source/ /build/source/
+RUN cd /build/source/sqlsrv && rm -rf .libs build modules *.lo *.la *.dep Makefile* config.h config.log config.nice config.status configure configure~ libtool run-tests.php acinclude.m4 aclocal.m4 autom4te.cache 2>/dev/null; true
+RUN cd /build/source/pdo_sqlsrv && rm -rf .libs build modules *.lo *.la *.dep Makefile* config.h config.log config.nice config.status configure configure~ libtool run-tests.php acinclude.m4 aclocal.m4 autom4te.cache 2>/dev/null; true
+
+# Run packagize to copy shared/ into each extension dir
+WORKDIR /build/source
+RUN sed -i 's/\r$//' packagize.sh && chmod +x packagize.sh && bash packagize.sh
+
+# Build sqlsrv extension (with ASAN flags to match PHP)
+WORKDIR /build/source/sqlsrv
+RUN phpize \
+    && ./configure CXXFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" LDFLAGS="-fsanitize=address" \
+    && make -j$(nproc) \
+    && make install
+
+# Build pdo_sqlsrv extension (with ASAN flags to match PHP)
+WORKDIR /build/source/pdo_sqlsrv
+RUN phpize \
+    && ./configure CXXFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" LDFLAGS="-fsanitize=address" \
+    && make -j$(nproc) \
+    && make install
+
+# Test: try to load both extensions together
+# This is the step that triggers the ODR violation under ASAN
+WORKDIR /
+RUN echo "=== Testing: load both extensions ===" \
+    && echo "If ASAN is working, this will either succeed (fix works) or abort (ODR violation):" \
+    && ASAN_OPTIONS=detect_odr_violation=2 php -d extension=sqlsrv.so -d extension=pdo_sqlsrv.so -v 2>&1; \
+    echo "Exit code: $?"
+
+# Also test each extension individually (should always work)
+RUN echo "=== Testing: sqlsrv only ===" \
+    && php -d extension=sqlsrv.so -r "echo 'sqlsrv loaded OK' . PHP_EOL;" 2>&1; \
+    echo "Exit code: $?"
+
+RUN echo "=== Testing: pdo_sqlsrv only ===" \
+    && php -d extension=pdo_sqlsrv.so -r "echo 'pdo_sqlsrv loaded OK' . PHP_EOL;" 2>&1; \
+    echo "Exit code: $?"
+
+CMD ["bash", "-c", "echo 'ASAN ODR test complete. Check build output above.'"]

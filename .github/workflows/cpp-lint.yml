@@ -1,0 +1,54 @@
+name: C++ Lint
+
+on:
+  push:
+    branches: [ "dev", "release" ]
+    paths:
+      - 'source/**'
+  pull_request:
+    branches: [ "dev", "release" ]
+    paths:
+      - 'source/**'
+
+permissions:
+  contents: read
+
+jobs:
+  cppcheck:
+    name: Cppcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck \
+            --enable=warning,performance,portability \
+            --error-exitcode=1 \
+            --suppress=missingIncludeSystem \
+            --suppress=missingInclude \
+            --suppress=unknownMacro \
+            --suppress=varFuncNullUB \
+            --suppress=dangerousTypeCast \
+            --suppress=nullPointerRedundantCheck \
+            --suppress=nullPointerArithmeticRedundantCheck \
+            --suppress=duplInheritedMember \
+            --suppress=invalidPointerCast \
+            --suppress=rethrowNoCurrentException \
+            --suppress=identicalInnerCondition \
+            --suppress=containerOutOfBounds \
+            --suppress=negativeContainerIndex \
+            --suppress=uninitMemberVar \
+            --suppress=uninitDerivedMemberVar \
+            --suppress=useInitializationList \
+            --std=c++11 \
+            --force \
+            --inline-suppr \
+            -I source/shared \
+            source/shared \
+            source/sqlsrv \
+            source/pdo_sqlsrv
