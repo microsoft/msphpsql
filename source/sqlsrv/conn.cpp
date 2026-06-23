@@ -72,6 +72,14 @@ struct decimal_places_func
     }
 };
 
+struct batch_error_continue_func
+{
+    static void func(connection_option const* /*option*/, _In_ zval* value, _Inout_ sqlsrv_conn* conn, std::string& /*conn_str*/)
+    {
+        conn->batch_error_continue = zend_is_true(value);
+    }
+};
+
 
 struct conn_char_set_func {
 
@@ -231,6 +239,7 @@ const char DecimalPlaces[] = "DecimalPlaces";
 const char FormatDecimals[] = "FormatDecimals";
 const char DateAsString[] = "ReturnDatesAsStrings";
 const char Driver[] = "Driver";
+const char BatchErrorContinue[] = "BatchErrorContinue";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
 const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
@@ -256,6 +265,7 @@ const char HostNameInCertificate[] = "HostNameInCertificate";
 enum SS_CONN_OPTIONS {
 
     SS_CONN_OPTION_DATE_AS_STRING = SQLSRV_CONN_OPTION_DRIVER_SPECIFIC,
+    SS_CONN_OPTION_BATCH_ERROR_CONTINUE,
     SS_CONN_OPTION_FORMAT_DECIMALS,
     SS_CONN_OPTION_DECIMAL_PLACES,
 };
@@ -576,6 +586,15 @@ const connection_option SS_CONN_OPTS[] = {
         sizeof( SSConnOptionNames::DateAsString ),
         CONN_ATTR_BOOL,
         date_as_string_func::func
+    },
+    {
+        SSConnOptionNames::BatchErrorContinue,
+        sizeof( SSConnOptionNames::BatchErrorContinue ),
+        SS_CONN_OPTION_BATCH_ERROR_CONTINUE,
+        SSConnOptionNames::BatchErrorContinue,
+        sizeof( SSConnOptionNames::BatchErrorContinue ),
+        CONN_ATTR_BOOL,
+        batch_error_continue_func::func
     },
     {
         SSConnOptionNames::FormatDecimals,

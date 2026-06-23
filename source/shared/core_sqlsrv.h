@@ -1135,6 +1135,7 @@ struct sqlsrv_conn : public sqlsrv_context {
 
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
     ODBC_DRIVER driver_version;         // version of ODBC driver
+    bool batch_error_continue;          // opt-in to continue past mid-batch SQLMoreResults errors
 
     ACCESSTOKEN* azure_ad_access_token;  // non-owning; managed by token cache
 
@@ -1144,6 +1145,7 @@ struct sqlsrv_conn : public sqlsrv_context {
     {
         server_version = SERVER_VERSION_UNKNOWN;
         driver_version = ODBC_DRIVER::VER_UNKNOWN;
+        batch_error_continue = false;
         azure_ad_access_token = nullptr;
     }
 
