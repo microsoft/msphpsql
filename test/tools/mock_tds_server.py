@@ -1304,7 +1304,7 @@ def generate_self_signed_cert(cert_path, key_path):
                 "openssl", "req", "-x509", "-newkey", "rsa:2048",
                 "-keyout", key_path,
                 "-out", cert_path,
-                "-days", "365",
+                "-days", "30",
                 "-nodes",
                 "-subj", "/CN=localhost",
             ],
