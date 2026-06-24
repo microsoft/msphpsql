@@ -964,7 +964,7 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt )
 // Returns
 // Nothing, exception thrown if problem occurs
 
-void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params, _In_ bool throw_on_errors )
+void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params, _In_ bool throw_on_errors, _In_ bool report_errors )
 {
     try {
 
@@ -985,37 +985,41 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
         SQLRETURN r;
 
         if( throw_on_errors ) {
-            // Use the throwing wrapper.  This is the default path used by
-            // internal flush loops (re-execute, closeCursor, param binding)
-            // where SQL_ERROR should abort the loop via exception.
+            // Use the throwing wrapper for callers that require fail-fast
+            // behavior on SQL_ERROR.
             r = core::SQLMoreResults( stmt );
         }
         else {
-            // User-facing path (sqlsrv_next_result / PDO::nextRowset).
-            // The ODBC driver may return SQL_ERROR instead of
-            // SQL_SUCCESS_WITH_INFO for a failed statement that is not the
-            // last in a non-aborted batch (e.g. divide-by-zero with
-            // XACT_ABORT OFF).  In that case the statement handle is still
-            // valid and subsequent result sets remain reachable.  We report
-            // the error through the normal handler but do NOT throw, so the
-            // caller sees success and the user can keep advancing.
+            // Non-throwing paths are split into two semantics:
+            // 1. Silent internal drain (report_errors=false): do not throw and
+            //    do not push diagnostics to the PHP error queues.
+            // 2. User-facing opt-in continuation (report_errors=true): report
+            //    SQL_ERROR / SQL_SUCCESS_WITH_INFO without throwing so callers
+            //    can continue to subsequent rowsets.
             r = ::SQLMoreResults( stmt->handle() );
 
             SQLSRV_ASSERT( r != SQL_INVALID_HANDLE, "Invalid handle returned from SQLMoreResults." );
 
-            if( r == SQL_ERROR ) {
-                // Report the ODBC error so it is visible via
-                // sqlsrv_errors() / PDOStatement::errorInfo().
-                call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/0 );
-                // The PDO error handler may set a pending zend exception
-                // when the error mode is PDO::ERRMODE_EXCEPTION.  Clear it
-                // so execution continues to new_result_set() and the batch
-                // remains navigable.  The error is still available via
-                // errorInfo().
-                zend_clear_exception();
-            }
-            else if( r == SQL_SUCCESS_WITH_INFO ) {
-                call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/1 );
+            if( report_errors ) {
+                if( r == SQL_ERROR ) {
+                    // In opt-in continuation mode we surface diagnostics and
+                    // keep rowset navigation alive. Depending on server/session
+                    // state, SQL_ERROR can represent either a recoverable
+                    // mid-batch statement failure or a fatal transport-level
+                    // condition.
+                    call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/0 );
+
+                    // The PDO error handler may set a pending zend exception
+                    // in ERRMODE_EXCEPTION. Clear it so next-result traversal
+                    // can continue and the error remains observable via
+                    // errorInfo()/sqlsrv_errors().
+                    if( EG(exception) != NULL ) {
+                        zend_clear_exception();
+                    }
+                }
+                else if( r == SQL_SUCCESS_WITH_INFO ) {
+                    call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/1 );
+                }
             }
         }
 

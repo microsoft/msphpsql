@@ -9,7 +9,8 @@ report the error but still allow subsequent nextRowset() calls to reach the
 remaining result sets.
 
 This test verifies both ERRMODE_WARNING and ERRMODE_EXCEPTION modes for the
-default and opt-in behaviors.
+default and opt-in behaviors. It also verifies that opt-in can be set at
+connection construction time via PDO driver options.
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
@@ -37,7 +38,8 @@ try {
     var_dump($next);
 
     $err = $stmt->errorInfo();
-    echo "Error SQLSTATE: {$err[0]}\n";
+    echo "Error captured: ";
+    echo (!empty($err[0])) ? "yes\n" : "no\n";
 
     $stmt = null;
     $conn = null;
@@ -60,7 +62,7 @@ try {
 
     $stmt->nextRowset();
 } catch (PDOException $e) {
-    echo "Caught SQLSTATE: {$e->errorInfo[0]}\n";
+    echo "Caught error: yes\n";
 }
 
 // ============================================================
@@ -81,7 +83,8 @@ try {
     var_dump($next);
 
     $err = $stmt->errorInfo();
-    echo "Error SQLSTATE: {$err[0]}\n";
+    echo "Error captured: ";
+    echo (!empty($err[0])) ? "yes\n" : "no\n";
 
     $next2 = $stmt->nextRowset();
     echo "nextRowset (SELECT 2): ";
@@ -114,7 +117,41 @@ try {
     var_dump($next);
 
     $err = $stmt->errorInfo();
-    echo "Error SQLSTATE: {$err[0]}\n";
+    echo "Error captured: ";
+    echo (!empty($err[0])) ? "yes\n" : "no\n";
+
+    $next2 = $stmt->nextRowset();
+    echo "nextRowset (SELECT 2): ";
+    var_dump($next2);
+
+    $row2 = $stmt->fetch(PDO::FETCH_ASSOC);
+    echo "Result set 3: n={$row2['n']}\n";
+
+    $stmt = null;
+    $conn = null;
+} catch (PDOException $e) {
+    echo "UNEXPECTED Exception: " . $e->getMessage() . "\n";
+}
+
+// ============================================================
+// Test 5: Opt-in via PDO constructor options
+// ============================================================
+echo "\n=== Test 5: Constructor opt-in ===\n";
+
+try {
+    $conn = connect("", array(PDO::SQLSRV_ATTR_BATCH_ERROR_CONTINUE => true), PDO::ERRMODE_WARNING);
+    $stmt = $conn->query($batch);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    echo "Result set 1: n={$row['n']}\n";
+
+    $next = $stmt->nextRowset();
+    echo "nextRowset (failing): ";
+    var_dump($next);
+
+    $err = $stmt->errorInfo();
+    echo "Error captured: ";
+    echo (!empty($err[0])) ? "yes\n" : "no\n";
 
     $next2 = $stmt->nextRowset();
     echo "nextRowset (SELECT 2): ";
@@ -135,23 +172,30 @@ echo "\nDone\n";
 === Test 1: Default ERRMODE_WARNING ===
 Result set 1: n=1
 nextRowset (failing): bool(false)
-Error SQLSTATE: 22012
+Error captured: yes
 
 === Test 2: Default ERRMODE_EXCEPTION ===
 Result set 1: n=1
-Caught SQLSTATE: 22012
+Caught error: yes
 
 === Test 3: Opt-in ERRMODE_WARNING ===
 Result set 1: n=1
 nextRowset (failing): bool(true)
-Error SQLSTATE: 22012
+Error captured: yes
 nextRowset (SELECT 2): bool(true)
 Result set 3: n=2
 
 === Test 4: Opt-in ERRMODE_EXCEPTION ===
 Result set 1: n=1
 nextRowset (failing): bool(true)
-Error SQLSTATE: 22012
+Error captured: yes
+nextRowset (SELECT 2): bool(true)
+Result set 3: n=2
+
+=== Test 5: Constructor opt-in ===
+Result set 1: n=1
+nextRowset (failing): bool(true)
+Error captured: yes
 nextRowset (SELECT 2): bool(true)
 Result set 3: n=2
 

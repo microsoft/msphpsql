@@ -1807,7 +1807,8 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                             _Outref_result_bytebuffer_maybenull_(*field_length) void*& field_value, _Inout_ SQLLEN* field_length, _In_ bool cache_field,
                             _Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out);
 bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt );
-void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
+void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true,
+                              _In_ bool report_errors = false );
 void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type );
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z );
 bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool get_all = false);

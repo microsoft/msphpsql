@@ -14,7 +14,9 @@ Updated PECL release packages. Here is the list of updates:
 - Support for Red Hat 9 and 10
 - Support for Alpine 3.20, 3.21, 3.22, and 3.23
 - Support for macOS 15 and 26
-- Added opt-in batch error continuation controls for sqlsrv and PDO next-result APIs
+- Added opt-in batch error continuation controls for sqlsrv and PDO next-result APIs ([#1599](https://github.com/microsoft/msphpsql/issues/1599))
+  - Applies only when set at connection scope (`BatchErrorContinue` or `PDO::SQLSRV_ATTR_BATCH_ERROR_CONTINUE`)
+  - In opt-in mode, next-result APIs may return success while reporting `SQL_ERROR` diagnostics, allowing callers to continue traversing rowsets
 
 ### Removed
 - Support for PHP 8.1 and 8.2
