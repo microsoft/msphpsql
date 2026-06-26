@@ -38,7 +38,7 @@ try {
     echo "Result set 1: n={$row['n']}\n";
 
     // Default behavior: advance past RAISERROR returns false
-    $next = $stmt->nextRowset();
+    $next = @$stmt->nextRowset();
     echo "nextRowset (failing): ";
     var_dump($next);
 
@@ -83,7 +83,7 @@ try {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     echo "Result set 1: n={$row['n']}\n";
 
-    $next = $stmt->nextRowset();
+    $next = @$stmt->nextRowset();
     echo "nextRowset (failing): ";
     var_dump($next);
 
@@ -150,7 +150,7 @@ try {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     echo "Result set 1: n={$row['n']}\n";
 
-    $next = $stmt->nextRowset();
+    $next = @$stmt->nextRowset();
     echo "nextRowset (failing): ";
     var_dump($next);
 

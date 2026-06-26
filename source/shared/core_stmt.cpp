@@ -1016,6 +1016,27 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
                     if( EG(exception) != NULL ) {
                         zend_clear_exception();
                     }
+
+                    // SQL_ERROR from a non-result-producing statement (e.g.
+                    // RAISERROR) leaves no active ODBC cursor. Clean up the
+                    // previous result set but do NOT create a new one — calling
+                    // SQLNumResultCols/SQLRowCount would fail with "Invalid
+                    // cursor state". The batch remains navigable via subsequent
+                    // next-result calls.
+                    if( stmt->current_results ) {
+                        stmt->current_results->~sqlsrv_result_set();
+                        efree( stmt->current_results );
+                        stmt->current_results = NULL;
+                    }
+                    stmt->fetch_called = false;
+                    stmt->has_rows = false;
+                    stmt->past_fetch_end = false;
+                    stmt->last_field_index = -1;
+                    stmt->column_count = 0;
+                    stmt->row_count = 0;
+                    stmt->clean_up_sensitivity_metadata();
+                    stmt->clean_up_results_metadata();
+                    return;
                 }
                 else if( r == SQL_SUCCESS_WITH_INFO ) {
                     call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/1 );

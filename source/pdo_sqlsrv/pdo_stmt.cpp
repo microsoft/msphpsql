@@ -1232,13 +1232,22 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
             return 0;
         }
 
-        stmt->column_count = core::SQLNumResultCols( driver_stmt );
-
-        // return the row count regardless if there are any rows or not
-        stmt->row_count = core::SQLRowCount( driver_stmt );
-
-        driver_stmt->column_count = static_cast<short>(stmt->column_count);
-        driver_stmt->row_count = static_cast<long>(stmt->row_count);
+        // When positioned on an error marker (opt-in batch error continuation
+        // after SQL_ERROR from a non-result-producing statement like RAISERROR),
+        // there is no active ODBC cursor. Skip SQLNumResultCols/SQLRowCount
+        // which would fail with "Invalid cursor state".
+        if( driver_stmt->current_results != NULL ) {
+            stmt->column_count = core::SQLNumResultCols( driver_stmt );
+            stmt->row_count = core::SQLRowCount( driver_stmt );
+            driver_stmt->column_count = static_cast<short>(stmt->column_count);
+            driver_stmt->row_count = static_cast<long>(stmt->row_count);
+        }
+        else {
+            stmt->column_count = 0;
+            stmt->row_count = 0;
+            driver_stmt->column_count = 0;
+            driver_stmt->row_count = 0;
+        }
     }
     catch( core::CoreException& ) {
 
