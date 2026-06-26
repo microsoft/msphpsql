@@ -154,12 +154,7 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
         close_active_stream( this );
     }
 
-    // delete any current results
-    if( current_results ) {
-        current_results->~sqlsrv_result_set();
-        efree( current_results );
-        current_results = NULL;
-    }
+    free_current_results();
 
     // delete sensivity data
     clean_up_sensitivity_metadata();
@@ -184,6 +179,16 @@ void sqlsrv_stmt::free_param_data( void )
     zend_hash_clean( Z_ARRVAL( field_cache ));
 }
 
+// free the current result set object without creating a new one.
+void sqlsrv_stmt::free_current_results( void )
+{
+    if( current_results ) {
+        current_results->~sqlsrv_result_set();
+        efree( current_results );
+        current_results = NULL;
+    }
+}
+
 
 // to be called whenever a new result set is created, such as after an
 // execute or next_result.  Resets the state variables.
@@ -198,12 +203,7 @@ void sqlsrv_stmt::new_result_set( void )
     this->column_count = ACTIVE_NUM_COLS_INVALID;
     this->row_count = ACTIVE_NUM_ROWS_INVALID;
 
-    // delete any current results
-    if( current_results ) {
-        current_results->~sqlsrv_result_set();
-        efree( current_results );
-        current_results = NULL;
-    }
+    free_current_results();
 
     // delete sensivity data
     clean_up_sensitivity_metadata();
@@ -1023,17 +1023,11 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
                     // SQLNumResultCols/SQLRowCount would fail with "Invalid
                     // cursor state". The batch remains navigable via subsequent
                     // next-result calls.
-                    if( stmt->current_results ) {
-                        stmt->current_results->~sqlsrv_result_set();
-                        efree( stmt->current_results );
-                        stmt->current_results = NULL;
-                    }
+                    stmt->free_current_results();
                     stmt->fetch_called = false;
                     stmt->has_rows = false;
                     stmt->past_fetch_end = false;
                     stmt->last_field_index = -1;
-                    stmt->column_count = 0;
-                    stmt->row_count = 0;
                     stmt->clean_up_sensitivity_metadata();
                     stmt->clean_up_results_metadata();
                     return;

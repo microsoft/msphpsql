@@ -1698,6 +1698,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
     // free sensitivity classification metadata
     void clean_up_sensitivity_metadata();
 
+    // free the current result set object (if any)
+    void free_current_results();
+
     // free resultset metadata
     void clean_up_results_metadata();
 
