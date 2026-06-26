@@ -171,6 +171,35 @@ try {
     echo "UNEXPECTED Exception: " . $e->getMessage() . "\n";
 }
 
+// ============================================================
+// Test 6: Opt-in re-execute after partial batch navigation
+// ============================================================
+echo "\n=== Test 6: Opt-in re-execute ===\n";
+
+try {
+    $conn = connect("", array(PDO::SQLSRV_ATTR_BATCH_ERROR_CONTINUE => true), PDO::ERRMODE_WARNING);
+    $stmt = $conn->prepare($batch);
+
+    // First execution — consume only the first result set
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    echo "First execute, result set 1: n={$row['n']}\n";
+
+    // Re-execute — the internal flush loop must handle remaining
+    // results (including the SQL_ERROR from RAISERROR) silently.
+    $ok = $stmt->execute();
+    echo "Re-execute: ";
+    var_dump($ok);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    echo "Second execute, result set 1: n={$row['n']}\n";
+
+    $stmt = null;
+    $conn = null;
+} catch (PDOException $e) {
+    echo "UNEXPECTED Exception: " . $e->getMessage() . "\n";
+}
+
 echo "\nDone\n";
 ?>
 --EXPECTF--
@@ -203,5 +232,10 @@ nextRowset (failing): bool(true)
 Error captured: yes
 nextRowset (SELECT 2): bool(true)
 Result set 3: n=2
+
+=== Test 6: Opt-in re-execute ===
+First execute, result set 1: n=1
+Re-execute: bool(true)
+Second execute, result set 1: n=1
 
 Done

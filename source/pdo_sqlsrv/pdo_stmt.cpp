@@ -549,7 +549,12 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
 
             while( driver_stmt->past_next_result_end == false ) {
 
-                core_sqlsrv_next_result( driver_stmt, false );
+                // When batch_error_continue is enabled, use silent drain
+                // (throw_on_errors=false) so remaining mid-batch errors
+                // don't prevent re-execution.  Without opt-in, preserve
+                // legacy throwing behavior.
+                core_sqlsrv_next_result( driver_stmt, false,
+                    !driver_stmt->conn->batch_error_continue );
             }
         }
 
@@ -1307,7 +1312,10 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 
                         while( driver_stmt->past_next_result_end == false ) {
 
-                            core_sqlsrv_next_result( driver_stmt, false );
+                            // Match execute flush: silent drain when opt-in is
+                            // enabled, legacy throw otherwise.
+                            core_sqlsrv_next_result( driver_stmt, false,
+                                !driver_stmt->conn->batch_error_continue );
                         }
                     }
 
