@@ -1,7 +1,7 @@
 --TEST--
 PDO nextRowset continues after mid-batch error with XACT_ABORT OFF
 --DESCRIPTION--
-When a multi-statement batch contains a failing statement (e.g. divide-by-zero)
+When a multi-statement batch contains a failing statement (RAISERROR severity 16)
 with XACT_ABORT OFF, legacy behavior should remain the default so that
 nextRowset() fails in warning mode and throws in exception mode.  When
 SQLSRV_ATTR_BATCH_ERROR_CONTINUE is enabled explicitly, nextRowset() should
@@ -11,13 +11,18 @@ remaining result sets.
 This test verifies both ERRMODE_WARNING and ERRMODE_EXCEPTION modes for the
 default and opt-in behaviors. It also verifies that opt-in can be set at
 connection construction time via PDO driver options.
+
+Note: We use RAISERROR (severity 16) instead of SELECT 1/0 because
+divide-by-zero with ANSI_WARNINGS ON (the default) produces
+SQL_SUCCESS_WITH_INFO rather than SQL_ERROR, making it unreliable as a
+cross-environment SQL_ERROR trigger.
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
 require_once("MsCommon_mid-refactor.inc");
 
-$batch = "SET XACT_ABORT OFF; SELECT 1 AS n; SELECT 1/0 AS boom; SELECT 2 AS n;";
+$batch = "SET XACT_ABORT OFF; SELECT 1 AS n; RAISERROR('batch_error_test', 16, 1); SELECT 2 AS n;";
 
 // ============================================================
 // Test 1: Default ERRMODE_WARNING behavior
@@ -32,7 +37,7 @@ try {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     echo "Result set 1: n={$row['n']}\n";
 
-    // Default behavior: advance past failing SELECT 1/0 returns false
+    // Default behavior: advance past RAISERROR returns false
     $next = $stmt->nextRowset();
     echo "nextRowset (failing): ";
     var_dump($next);

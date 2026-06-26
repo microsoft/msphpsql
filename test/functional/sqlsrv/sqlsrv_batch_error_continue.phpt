@@ -1,7 +1,7 @@
 --TEST--
 sqlsrv_next_result continues after mid-batch error with XACT_ABORT OFF
 --DESCRIPTION--
-When a multi-statement batch contains a failing statement (e.g. divide-by-zero)
+When a multi-statement batch contains a failing statement (RAISERROR severity 16)
 with XACT_ABORT OFF, legacy behavior should remain the default so that
 sqlsrv_next_result() fails on the mid-batch error.  When BatchErrorContinue is
 enabled explicitly, the driver should report the error but still allow the user
@@ -9,8 +9,12 @@ to advance to subsequent result sets.
 
 This test also verifies:
 - Error information is available via sqlsrv_errors()
-- Re-executing the statement (flush loop) works after batch errors when the
-    opt-in behavior is enabled
+- Re-executing the statement (flush loop) works after batch errors
+
+Note: We use RAISERROR (severity 16) instead of SELECT 1/0 because
+divide-by-zero with ANSI_WARNINGS ON (the default) produces
+SQL_SUCCESS_WITH_INFO rather than SQL_ERROR, making it unreliable as a
+cross-environment SQL_ERROR trigger.
 --SKIPIF--
 <?php require('skipif.inc'); ?>
 --FILE--
@@ -23,7 +27,7 @@ if ($conn === false) {
     fatalError("Could not connect.\n");
 }
 
-$batch = "SET XACT_ABORT OFF; SELECT 1 AS n; SELECT 1/0 AS boom; SELECT 2 AS n;";
+$batch = "SET XACT_ABORT OFF; SELECT 1 AS n; RAISERROR('batch_error_test', 16, 1); SELECT 2 AS n;";
 
 // ============================================================
 // Test 1: Default behavior remains unchanged
@@ -39,7 +43,7 @@ if ($stmt === false) {
 $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
 echo "Result set 1: n={$row['n']}\n";
 
-// Advance past failing SELECT 1/0 — legacy behavior returns false
+// Advance past RAISERROR — legacy behavior returns false
 $next = sqlsrv_next_result($stmt);
 echo "next_result (failing): ";
 var_dump($next);
@@ -106,7 +110,7 @@ $row = sqlsrv_fetch_array($stmt2, SQLSRV_FETCH_ASSOC);
 echo "First execute, result set 1: n={$row['n']}\n";
 
 // Re-execute — the internal flush loop must handle the remaining
-// results (including the SQL_ERROR from SELECT 1/0) without failing and
+// results (including the SQL_ERROR from RAISERROR) without failing and
 // without pushing diagnostics to sqlsrv_errors().
 $ok = sqlsrv_execute($stmt2);
 echo "Re-execute: ";
