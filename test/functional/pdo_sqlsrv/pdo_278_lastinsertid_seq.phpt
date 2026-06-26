@@ -55,7 +55,22 @@ try {
         // defaults to $tableName2 -- because it returns the last inserted row id value
         $lastRow = $conn->lastInsertId();
 
-        if ($lastSeq == 3 && $lastRow == 1) {
+        // The sequence name passed to lastInsertId() is bound as a parameter. Verify
+        // a sequence whose name contains non-ASCII (Unicode) characters resolves
+        // correctly -- previously the name was interpreted using the system code page
+        // and such lookups could fail to match.
+        $unicodeSeq = 'séquence_Ñ_日本';
+        $conn->exec("IF OBJECT_ID(N'$unicodeSeq', 'SO') IS NOT NULL DROP SEQUENCE [$unicodeSeq]");
+        $conn->exec("CREATE SEQUENCE [$unicodeSeq] AS INTEGER START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 100");
+        $conn->query("SELECT NEXT VALUE FOR [$unicodeSeq]")->fetchColumn();
+        $lastUnicodeSeq = $conn->lastInsertId($unicodeSeq);
+
+        // Because the name is parameterized, a SQL-injection payload is treated as a
+        // literal sequence name: it matches no sequence and returns an empty string
+        // instead of altering the query.
+        $lastInjection = $conn->lastInsertId("x' UNION ALL SELECT DB_NAME()--");
+
+        if ($lastSeq == 3 && $lastRow == 1 && $lastUnicodeSeq == 1 && $lastInjection === '') {
             echo "Done\n";
         } else {
             echo "sequence value or identity does not match as expected\n";
@@ -63,6 +78,7 @@ try {
         dropTable($conn, $tableName1);
         dropTable($conn, $tableName2);
         $conn->exec("DROP SEQUENCE $sequenceName");
+        $conn->exec("DROP SEQUENCE [$unicodeSeq]");
         unset($stmt);
     }
     unset($conn);
