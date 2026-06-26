@@ -569,7 +569,7 @@ PHP_FUNCTION( sqlsrv_next_result )
 
     try {
 
-        core_sqlsrv_next_result( stmt, true );
+        core_sqlsrv_next_result( stmt, true, !stmt->conn->batch_error_continue, stmt->conn->batch_error_continue );
 
         if( stmt->past_next_result_end ) {
             // Clean up remaining metadata since new_result_set() was not called

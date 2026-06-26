@@ -14,6 +14,9 @@ Updated PECL release packages. Here is the list of updates:
 - Support for Red Hat 9 and 10
 - Support for Alpine 3.20, 3.21, 3.22, and 3.23
 - Support for macOS 15 and 26
+- Added opt-in batch error continuation controls for sqlsrv and PDO next-result APIs ([#1599](https://github.com/microsoft/msphpsql/issues/1599))
+  - Applies only when set at connection scope (`BatchErrorContinue` or `PDO::SQLSRV_ATTR_BATCH_ERROR_CONTINUE`)
+  - In opt-in mode, next-result APIs may return success while reporting `SQL_ERROR` diagnostics, allowing callers to continue traversing rowsets
 
 ### Removed
 - Support for PHP 8.1 and 8.2
@@ -35,6 +38,7 @@ Updated PECL release packages. Here is the list of updates:
 - Fixed critical memory safety bugs in encoding conversion - NULL pointer dereference and uninitialized pointer return ([PR #1555](https://github.com/microsoft/msphpsql/pull/1555))
 - Removed lingering error2 reference from failure block in CI pipeline ([PR #1568](https://github.com/microsoft/msphpsql/pull/1568))
 - Fixed PHP 8.5 compatibility issues in tests and CI pipeline ([PR #1569](https://github.com/microsoft/msphpsql/pull/1569))
+- Preserved legacy next-result error semantics by default while allowing opt-in continuation after mid-batch statement errors
 
 ### Limitations
 - No support for inout / output params when using sql_variant type

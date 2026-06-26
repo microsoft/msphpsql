@@ -1301,6 +1301,11 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             }
             break;
 
+            case SQLSRV_ATTR_BATCH_ERROR_CONTINUE:
+                // Connection-level option: applies to all statements created by this DBH.
+                driver_dbh->batch_error_continue = zend_is_true(val);
+                break;
+
 #if PHP_VERSION_ID >= 70200
             case PDO_ATTR_DEFAULT_STR_PARAM:
             {
@@ -1522,6 +1527,13 @@ int pdo_sqlsrv_dbh_get_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_
             case SQLSRV_ATTR_DECIMAL_PLACES:
             {
                 ZVAL_LONG( return_value, driver_dbh->decimal_places );
+                break;
+            }
+
+            case SQLSRV_ATTR_BATCH_ERROR_CONTINUE:
+            {
+                // Connection-level option value.
+                ZVAL_BOOL(return_value, driver_dbh->batch_error_continue);
                 break;
             }
 

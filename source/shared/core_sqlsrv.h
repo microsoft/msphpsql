@@ -1135,6 +1135,7 @@ struct sqlsrv_conn : public sqlsrv_context {
 
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
     ODBC_DRIVER driver_version;         // version of ODBC driver
+    bool batch_error_continue;          // opt-in to continue past mid-batch SQLMoreResults errors
 
     ACCESSTOKEN* azure_ad_access_token;  // non-owning; managed by token cache
 
@@ -1144,6 +1145,7 @@ struct sqlsrv_conn : public sqlsrv_context {
     {
         server_version = SERVER_VERSION_UNKNOWN;
         driver_version = ODBC_DRIVER::VER_UNKNOWN;
+        batch_error_continue = false;
         azure_ad_access_token = nullptr;
     }
 
@@ -1696,6 +1698,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
     // free sensitivity classification metadata
     void clean_up_sensitivity_metadata();
 
+    // free the current result set object (if any)
+    void free_current_results();
+
     // free resultset metadata
     void clean_up_results_metadata();
 
@@ -1805,7 +1810,8 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                             _Outref_result_bytebuffer_maybenull_(*field_length) void*& field_value, _Inout_ SQLLEN* field_length, _In_ bool cache_field,
                             _Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out);
 bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt );
-void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
+void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true,
+                              _In_ bool report_errors = false );
 void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type );
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z );
 bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool get_all = false);

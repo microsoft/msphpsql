@@ -18,6 +18,7 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "core_sqlsrv.h"
+#include "zend_exceptions.h"
 
 #include <sstream>
 #include <vector>
@@ -153,12 +154,7 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
         close_active_stream( this );
     }
 
-    // delete any current results
-    if( current_results ) {
-        current_results->~sqlsrv_result_set();
-        efree( current_results );
-        current_results = NULL;
-    }
+    free_current_results();
 
     // delete sensivity data
     clean_up_sensitivity_metadata();
@@ -183,6 +179,16 @@ void sqlsrv_stmt::free_param_data( void )
     zend_hash_clean( Z_ARRVAL( field_cache ));
 }
 
+// free the current result set object without creating a new one.
+void sqlsrv_stmt::free_current_results( void )
+{
+    if( current_results ) {
+        current_results->~sqlsrv_result_set();
+        efree( current_results );
+        current_results = NULL;
+    }
+}
+
 
 // to be called whenever a new result set is created, such as after an
 // execute or next_result.  Resets the state variables.
@@ -197,12 +203,7 @@ void sqlsrv_stmt::new_result_set( void )
     this->column_count = ACTIVE_NUM_COLS_INVALID;
     this->row_count = ACTIVE_NUM_ROWS_INVALID;
 
-    // delete any current results
-    if( current_results ) {
-        current_results->~sqlsrv_result_set();
-        efree( current_results );
-        current_results = NULL;
-    }
+    free_current_results();
 
     // delete sensivity data
     clean_up_sensitivity_metadata();
@@ -963,7 +964,7 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt )
 // Returns
 // Nothing, exception thrown if problem occurs
 
-void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params, _In_ bool throw_on_errors )
+void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params, _In_ bool throw_on_errors, _In_ bool report_errors )
 {
     try {
 
@@ -982,11 +983,59 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
         zend_hash_clean( Z_ARRVAL( stmt->col_cache ));
 
         SQLRETURN r;
+
         if( throw_on_errors ) {
+            // Use the throwing wrapper for callers that require fail-fast
+            // behavior on SQL_ERROR.
             r = core::SQLMoreResults( stmt );
         }
         else {
-            r = SQLMoreResults( stmt->handle() );
+            // Non-throwing paths are split into two semantics:
+            // 1. Silent internal drain (report_errors=false): do not throw and
+            //    do not push diagnostics to the PHP error queues.
+            // 2. User-facing opt-in continuation (report_errors=true): report
+            //    SQL_ERROR / SQL_SUCCESS_WITH_INFO without throwing so callers
+            //    can continue to subsequent rowsets.
+            r = ::SQLMoreResults( stmt->handle() );
+
+            SQLSRV_ASSERT( r != SQL_INVALID_HANDLE, "Invalid handle returned from SQLMoreResults." );
+
+            if( report_errors ) {
+                if( r == SQL_ERROR ) {
+                    // In opt-in continuation mode we surface diagnostics and
+                    // keep rowset navigation alive. Depending on server/session
+                    // state, SQL_ERROR can represent either a recoverable
+                    // mid-batch statement failure or a fatal transport-level
+                    // condition.
+                    call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/0 );
+
+                    // The PDO error handler may set a pending zend exception
+                    // in ERRMODE_EXCEPTION. Clear it so next-result traversal
+                    // can continue and the error remains observable via
+                    // errorInfo()/sqlsrv_errors().
+                    if( EG(exception) != NULL ) {
+                        zend_clear_exception();
+                    }
+
+                    // SQL_ERROR from a non-result-producing statement (e.g.
+                    // RAISERROR) leaves no active ODBC cursor. Clean up the
+                    // previous result set but do NOT create a new one — calling
+                    // SQLNumResultCols/SQLRowCount would fail with "Invalid
+                    // cursor state". The batch remains navigable via subsequent
+                    // next-result calls.
+                    stmt->free_current_results();
+                    stmt->fetch_called = false;
+                    stmt->has_rows = false;
+                    stmt->past_fetch_end = false;
+                    stmt->last_field_index = -1;
+                    stmt->clean_up_sensitivity_metadata();
+                    stmt->clean_up_results_metadata();
+                    return;
+                }
+                else if( r == SQL_SUCCESS_WITH_INFO ) {
+                    call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/1 );
+                }
+            }
         }
 
         if( r == SQL_NO_DATA ) {
@@ -1005,7 +1054,15 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
     }
     catch( core::CoreException& e ) {
 
-        SQLCancel( stmt->handle() );
+        // For internal callers (throw_on_errors=true — flush loops,
+        // closeCursor, param binding) we still call SQLCancel to clean up
+        // the ODBC handle on error.  For user-facing callers
+        // (throw_on_errors=false — sqlsrv_next_result / PDO::nextRowset)
+        // we must NOT cancel because the handle is still valid and the
+        // batch remains navigable after a mid-batch statement failure.
+        if( throw_on_errors ) {
+            SQLCancel( stmt->handle() );
+        }
         throw e;
     }
 }

@@ -549,7 +549,12 @@ int pdo_sqlsrv_stmt_execute( _Inout_ pdo_stmt_t *stmt )
 
             while( driver_stmt->past_next_result_end == false ) {
 
-                core_sqlsrv_next_result( driver_stmt, false );
+                // When batch_error_continue is enabled, use silent drain
+                // (throw_on_errors=false) so remaining mid-batch errors
+                // don't prevent re-execution.  Without opt-in, preserve
+                // legacy throwing behavior.
+                core_sqlsrv_next_result( driver_stmt, false,
+                    !driver_stmt->conn->batch_error_continue );
             }
         }
 
@@ -1217,7 +1222,9 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
 
         SQLSRV_ASSERT( driver_stmt != NULL, "pdo_sqlsrv_stmt_next_rowset: driver_data object was null" );
 
-        core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ) );
+        core_sqlsrv_next_result( static_cast<sqlsrv_stmt*>( stmt->driver_data ), true,
+                 !static_cast<sqlsrv_stmt*>( stmt->driver_data )->conn->batch_error_continue,
+                 static_cast<sqlsrv_stmt*>( stmt->driver_data )->conn->batch_error_continue );
 
         if( driver_stmt->past_next_result_end == true ) {
             // Clean up remaining metadata since new_result_set() was not called
@@ -1225,13 +1232,22 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
             return 0;
         }
 
-        stmt->column_count = core::SQLNumResultCols( driver_stmt );
-
-        // return the row count regardless if there are any rows or not
-        stmt->row_count = core::SQLRowCount( driver_stmt );
-
-        driver_stmt->column_count = static_cast<short>(stmt->column_count);
-        driver_stmt->row_count = static_cast<long>(stmt->row_count);
+        // When positioned on an error marker (opt-in batch error continuation
+        // after SQL_ERROR from a non-result-producing statement like RAISERROR),
+        // there is no active ODBC cursor. Skip SQLNumResultCols/SQLRowCount
+        // which would fail with "Invalid cursor state".
+        if( driver_stmt->current_results != NULL ) {
+            stmt->column_count = core::SQLNumResultCols( driver_stmt );
+            stmt->row_count = core::SQLRowCount( driver_stmt );
+            driver_stmt->column_count = static_cast<short>(stmt->column_count);
+            driver_stmt->row_count = static_cast<long>(stmt->row_count);
+        }
+        else {
+            stmt->column_count = 0;
+            stmt->row_count = 0;
+            driver_stmt->column_count = 0;
+            driver_stmt->row_count = 0;
+        }
     }
     catch( core::CoreException& ) {
 
@@ -1305,7 +1321,10 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
 
                         while( driver_stmt->past_next_result_end == false ) {
 
-                            core_sqlsrv_next_result( driver_stmt, false );
+                            // Match execute flush: silent drain when opt-in is
+                            // enabled, legacy throw otherwise.
+                            core_sqlsrv_next_result( driver_stmt, false,
+                                !driver_stmt->conn->batch_error_continue );
                         }
                     }
 
