@@ -59,6 +59,10 @@ try {
         // a sequence whose name contains non-ASCII (Unicode) characters resolves
         // correctly -- previously the name was interpreted using the system code page
         // and such lookups could fail to match.
+        // The name literal below is UTF-8, so ensure the connection encoding is UTF-8
+        // for the Unicode DDL/DML and the lastInsertId() lookup regardless of the
+        // platform's system code page.
+        $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
         $unicodeSeq = 'séquence_Ñ_日本';
         $conn->exec("IF OBJECT_ID(N'$unicodeSeq', 'SO') IS NOT NULL DROP SEQUENCE [$unicodeSeq]");
         $conn->exec("CREATE SEQUENCE [$unicodeSeq] AS INTEGER START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 100");
