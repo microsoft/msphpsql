@@ -34,8 +34,7 @@ namespace {
 
 const char LAST_INSERT_ID_QUERY[] = "SELECT @@IDENTITY;";
 const size_t LAST_INSERT_ID_BUFF_LEN = 50;    // size of the buffer to hold the string value of the last inserted id, which may be an int, bigint, decimal(p,0) or numeric(p,0)
-const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT current_value FROM sys.sequences WHERE name=N'%s'";
-const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( SEQUENCE_CURRENT_VALUE_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
+const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT current_value FROM sys.sequences WHERE name=?";
 
 // List of PDO supported connection options.
 namespace PDOConnOptionNames {
@@ -1630,6 +1629,8 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
     char    idSTR[LAST_INSERT_ID_BUFF_LEN] = { '\0' };
     char*   str = NULL;
     SQLLEN  cbID = 0;
+    zval    name_z;
+    ZVAL_UNDEF(&name_z);
 
     try {
         sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
@@ -1638,13 +1639,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         if (name == NULL) {
             wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, LAST_INSERT_ID_QUERY, sizeof(LAST_INSERT_ID_QUERY), &wsql_len);
         } else {
-            char buffer[LAST_INSERT_ID_QUERY_MAX_LEN] = { '\0' };
-#if PHP_VERSION_ID < 80100
-            snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
-#else
-            snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, ZSTR_VAL(name));
-#endif
-            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, buffer, sizeof(buffer), &wsql_len);
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, SEQUENCE_CURRENT_VALUE_QUERY, sizeof(SEQUENCE_CURRENT_VALUE_QUERY), &wsql_len);
         }
         CHECK_CUSTOM_ERROR(wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message(), NULL) {
             throw core::CoreException();
@@ -1658,6 +1653,17 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         driver_stmt = core_sqlsrv_create_stmt( driver_dbh, core::allocate_stmt<pdo_sqlsrv_stmt>, NULL /*options_ht*/, NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt );
         driver_stmt->set_func( __FUNCTION__ );
 
+        // Bind the sequence name using a character parameter with the application-defined encoding
+        if (name != NULL) {
+#if PHP_VERSION_ID < 80100
+            ZVAL_STRING(&name_z, name);
+#else
+            ZVAL_STRINGL(&name_z, ZSTR_VAL(name), ZSTR_LEN(name));
+#endif
+            core_sqlsrv_bind_param( driver_stmt, 0 /*param_num*/, SQL_PARAM_INPUT, &name_z, SQLSRV_PHPTYPE_INVALID,
+                                    driver_dbh->encoding(), SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0 );
+        }
+
         // execute the last insert id query
         core::SQLExecDirectW( driver_stmt, wsql_string );
         core::SQLFetchScroll( driver_stmt, SQL_FETCH_NEXT, 0 );
@@ -1669,6 +1675,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         }
 
         driver_stmt->~sqlsrv_stmt();
+        zval_ptr_dtor(&name_z);
     } catch( core::CoreException& ) {
         // restore error handling to its previous mode
         dbh->error_mode = static_cast<decltype(dbh->error_mode)>(prev_err_mode);
@@ -1682,6 +1689,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         if( driver_stmt ) {
             driver_stmt->~sqlsrv_stmt();
         }
+        zval_ptr_dtor(&name_z);
 #if PHP_VERSION_ID < 80100
         *len = 0;
         str = reinterpret_cast<char*>(sqlsrv_malloc(0, sizeof(char), 1));     // return an empty string with a null terminator
