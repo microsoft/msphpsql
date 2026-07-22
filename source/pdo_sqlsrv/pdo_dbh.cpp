@@ -1820,7 +1820,9 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
         (*quoted)[pos++] = '0';
         (*quoted)[pos++] = 'x';
 
-        for (size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index) {
+        // Binary data may contain embedded NUL (0x00) bytes, so the loop must not
+        // stop at the first NUL; encode all unquoted_len bytes (CWE-626 truncation fix)
+        for (size_t index = 0; index < unquoted_len; ++index) {
             // On success, snprintf returns the total number of characters written
             // On failure, a negative number is returned
             // The generated string has a length of at most len - 1, so
@@ -1849,7 +1851,9 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
         quoted[pos++] = 'x';
 
         char *p = quoted;
-        for (size_t index = 0; index < unquoted_len && unquoted_str[index] != '\0'; ++index) {
+        // Binary data may contain embedded NUL (0x00) bytes, so the loop must not
+        // stop at the first NUL; encode all unquoted_len bytes (CWE-626 truncation fix)
+        for (size_t index = 0; index < unquoted_len; ++index) {
             // On success, snprintf returns the total number of characters written
             // On failure, a negative number is returned
             // The generated string has a length of at most len - 1, so

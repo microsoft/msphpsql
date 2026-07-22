@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [Unreleased]
+
+### Security
+- Fixed silent truncation of binary parameters containing embedded NUL (0x00) bytes when using PDO emulated prepares with `PDO::SQLSRV_ENCODING_BINARY` (CWE-626). The hex-encoding loops in `pdo_sqlsrv_dbh_quote` treated binary data as a C string and stopped at the first NUL, causing only the pre-NUL prefix to be sent to the server. All bytes are now encoded.
+
 ## 5.13.0 - 2026-02-27
 Updated PECL release packages. Here is the list of updates:
 
