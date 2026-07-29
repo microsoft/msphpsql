@@ -5,8 +5,37 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 ## [Unreleased]
 
+## 5.13.2 - 2026-07-29
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- The drivers can now be installed with [PIE](https://github.com/php/pie) (the PHP Installer for Extensions), the official replacement for the now-deprecated PECL: `pie install microsoft/sqlsrv` and `pie install microsoft/pdo_sqlsrv`.
+
 ### Security
-- Fixed silent truncation of binary parameters containing embedded NUL (0x00) bytes when using PDO emulated prepares with `PDO::SQLSRV_ENCODING_BINARY` (CWE-626). The hex-encoding loops in `pdo_sqlsrv_dbh_quote` treated binary data as a C string and stopped at the first NUL, causing only the pre-NUL prefix to be sent to the server. All bytes are now encoded.
+- Fixed SQL injection in `PDO::lastInsertId($name)` (CWE-89). The sequence-name lookup in `pdo_sqlsrv_dbh_last_id` previously interpolated the caller-supplied `$name` directly into the query text with `snprintf` (`WHERE name=N'%s'`), allowing a crafted name to break out of the string literal and inject arbitrary Transact-SQL. The name is now passed to a parameterized query (`WHERE name=?`) and bound with the connection encoding, so it is always treated as a literal value. This also fixes lookups for sequence names containing non-ASCII characters ([#1673](https://github.com/microsoft/msphpsql/pull/1673)).
+- Fixed silent truncation of binary parameters containing embedded NUL (0x00) bytes when using PDO emulated prepares with `PDO::SQLSRV_ENCODING_BINARY` (CWE-626). The hex-encoding loops in `pdo_sqlsrv_dbh_quote` treated binary data as a C string and stopped at the first NUL, causing only the pre-NUL prefix to be sent to the server. All bytes are now encoded ([#1675](https://github.com/microsoft/msphpsql/pull/1675)).
+
+### Fixed
+- Fixed a Windows thread-safe (ZTS) shared build link failure (unresolved external symbol LNK2001 on `_tsrm_ls_cache`) when building the extensions as shared DLLs ([#1674](https://github.com/microsoft/msphpsql/pull/1674)).
+- Fixed stale unixODBC INI caching on Linux and macOS by clearing the unixODBC INI cache at module shutdown ([#1667](https://github.com/microsoft/msphpsql/pull/1667)).
+- Fixed an AddressSanitizer One Definition Rule (ODR) violation reported when both the `sqlsrv` and `pdo_sqlsrv` extensions are loaded together ([#1659](https://github.com/microsoft/msphpsql/pull/1659)).
+- Addressed CodeQL static-analysis findings ([#1615](https://github.com/microsoft/msphpsql/pull/1615)).
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
 
 ## 5.13.0 - 2026-02-27
 Updated PECL release packages. Here is the list of updates:
