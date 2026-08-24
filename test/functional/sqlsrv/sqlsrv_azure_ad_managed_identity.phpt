@@ -36,7 +36,7 @@ function connectInvalidServer()
     sqlsrv_close($conn);
 
     // Try connecting to an invalid server, should get an exception from ODBC
-    $connectionInfo = array("Authentication"=>"ActiveDirectoryMsi");
+    $connectionInfo = array("Authentication"=>"ActiveDirectoryMsi", "LoginTimeout" => 1);
     $conn = sqlsrv_connect('invalidServer', $connectionInfo);
     if ($conn) {
         fatalError("AzureAD Managed Identity test: expected to fail with invalidServer\n");

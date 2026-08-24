@@ -19,7 +19,7 @@ function connectionTest()
     setup();
 
     // Invalid connection attempt => errors are expected
-    $conn1 = sqlsrv_connect('InvalidServerName');
+    $conn1 = sqlsrv_connect('InvalidServerName', array('LoginTimeout' => 1));
     if ($conn1 === false) {
         handleErrors();
     } else {

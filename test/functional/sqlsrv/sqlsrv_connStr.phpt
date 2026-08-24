@@ -67,7 +67,7 @@ sqlsrv_close($c);
 
 // test an invalid server name in UTF-8
 $server_invalid = pack("H*", "ffc0");
-$c = sqlsrv_connect($server_invalid, array( 'Database' => 'test', 'CharacterSet' => 'utf-8' ));
+$c = sqlsrv_connect($server_invalid, array( 'Database' => 'test', 'CharacterSet' => 'utf-8', 'LoginTimeout' => 1 ));
 if ($c !== false) {
     fatalError("sqlsrv_connect(1) should have failed");
 }
