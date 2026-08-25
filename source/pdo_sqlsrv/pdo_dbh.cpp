@@ -1242,6 +1242,7 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                         break;
                     case SQLSRV_ENCODING_SYSTEM:
                     case SQLSRV_ENCODING_UTF8:
+                    case SQLSRV_ENCODING_UTF8_VARCHAR:
                         driver_dbh->set_encoding( static_cast<SQLSRV_ENCODING>( attr_value ));
                         break;
                     default:
@@ -1801,6 +1802,7 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
     }
 
     use_national_char_set = (driver_dbh->use_national_characters == 1 || encoding == SQLSRV_ENCODING_UTF8);
+    // SQLSRV_ENCODING_UTF8_VARCHAR intentionally does NOT set use_national_char_set
 #if PHP_VERSION_ID >= 70200
     if ((paramtype & PDO_PARAM_STR_NATL) == PDO_PARAM_STR_NATL) {
         use_national_char_set = true;

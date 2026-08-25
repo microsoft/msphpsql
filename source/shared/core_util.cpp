@@ -144,6 +144,11 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     SQLSRV_ASSERT( outString != NULL, "Output buffer pointer must be specified" );
     SQLSRV_ASSERT( *outString == NULL, "Output buffer pointer must not be set" );
 
+    // SQLSRV_ENCODING_UTF8_VARCHAR uses the same UTF-8 codepage for string conversion
+    if (encoding == SQLSRV_ENCODING_UTF8_VARCHAR) {
+        encoding = SQLSRV_ENCODING_UTF8;
+    }
+
     if (cchInLen == 0 && inString[0] == L'\0') {
         *outString = reinterpret_cast<char*>( sqlsrv_malloc ( 1 ) );
         *outString[0] = '\0';
@@ -465,6 +470,9 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
         // this shouldn't ever be set
         case SQLSRV_ENCODING_BINARY:
             DIE( "Invalid encoding." );
+            break;
+        case SQLSRV_ENCODING_UTF8_VARCHAR:
+            win_encoding = CP_UTF8;
             break;
         default:
             win_encoding = php_encoding;
