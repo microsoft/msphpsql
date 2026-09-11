@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 ## [Unreleased]
 
+### Added
+- Connection option aliases `ConnectTimeout` for `LoginTimeout`, `FailoverPartner` for `Failover_Partner`, and `WorkstationID` for `WSID` in both drivers. Existing ODBC keywords and attributes are retained for compatibility with older supported ODBC drivers. Names are case-insensitive, and the last occurrence of an option or its alias wins.
+- The `Password` alias for `PWD` in SQLSRV connection options, and `PWD`/`Password` in PDO_SQLSRV DSNs. A non-null PDO constructor password takes precedence (including an empty string); otherwise the DSN password is used. The username still comes from the PDO constructor. Password aliases retain existing authentication restrictions and brace-escaping rules. Prefer constructor credentials when a DSN might be logged or shared.
+
+### Fixed
+- Bounded connection-option brace validation to the supplied value length, avoiding reads past the terminator of brace-quoted values.
+
 ## 5.13.3 - 2026-08-07
 Updated PECL release packages. Here is the list of updates:
 

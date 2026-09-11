@@ -50,16 +50,20 @@ const char ConnectionPooling[] = "ConnectionPooling";
 const char Language[] = "Language";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
+const char ConnectTimeout[] = "ConnectTimeout";
 const char Database[] = "Database";
 const char Driver[] = "Driver";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char FailoverPartner[] = "FailoverPartner";
 const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
 const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
 const char KeyStoreSecret[] = "KeyStoreSecret";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
+const char PWD[] = "PWD";
+const char Password[] = "Password";
 const char QuotedId[] = "QuotedId";
 const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
@@ -67,6 +71,7 @@ const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
 const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char WSID[] = "WSID";
+const char WorkstationID[] = "WorkstationID";
 const char ComputePool[] = "ComputePool";
 const char HostNameInCertificate[] = "HostNameInCertificate";
 
@@ -75,6 +80,7 @@ const char HostNameInCertificate[] = "HostNameInCertificate";
 enum PDO_CONN_OPTIONS {
 
     PDO_CONN_OPTION_SERVER = SQLSRV_CONN_OPTION_DRIVER_SPECIFIC,
+    PDO_CONN_OPTION_PASSWORD,
 
 };
 
@@ -223,6 +229,25 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         conn_str_append_func::func
     },
+    // Like Server, credentials are extracted by the factory before core option dispatch.
+    {
+        PDOConnOptionNames::PWD,
+        sizeof( PDOConnOptionNames::PWD ),
+        PDO_CONN_OPTION_PASSWORD,
+        NULL,
+        0,
+        CONN_ATTR_STRING,
+        conn_null_func::func
+    },
+    {
+        PDOConnOptionNames::Password,
+        sizeof( PDOConnOptionNames::Password ),
+        PDO_CONN_OPTION_PASSWORD,
+        NULL,
+        0,
+        CONN_ATTR_STRING,
+        conn_null_func::func
+    },
     {
         PDOConnOptionNames::APP,
         sizeof( PDOConnOptionNames::APP ),
@@ -350,6 +375,15 @@ const connection_option PDO_CONN_OPTS[] = {
         conn_str_append_func::func
     },
     {
+        PDOConnOptionNames::FailoverPartner,
+        sizeof( PDOConnOptionNames::FailoverPartner ),
+        SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
+        ODBCConnOptions::Failover_Partner,
+        sizeof( ODBCConnOptions::Failover_Partner ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
         PDOConnOptionNames::KeyStoreAuthentication,
         sizeof( PDOConnOptionNames::KeyStoreAuthentication ),
         SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
@@ -379,6 +413,15 @@ const connection_option PDO_CONN_OPTS[] = {
     {
         PDOConnOptionNames::LoginTimeout,
         sizeof( PDOConnOptionNames::LoginTimeout ),
+        SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
+        ODBCConnOptions::LoginTimeout,
+        sizeof( ODBCConnOptions::LoginTimeout ),
+        CONN_ATTR_INT,
+        pdo_int_conn_attr_func<SQL_ATTR_LOGIN_TIMEOUT>::func
+    },
+    {
+        PDOConnOptionNames::ConnectTimeout,
+        sizeof( PDOConnOptionNames::ConnectTimeout ),
         SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
         ODBCConnOptions::LoginTimeout,
         sizeof( ODBCConnOptions::LoginTimeout ),
@@ -460,6 +503,15 @@ const connection_option PDO_CONN_OPTS[] = {
     {
         PDOConnOptionNames::WSID,
         sizeof( PDOConnOptionNames::WSID ),
+        SQLSRV_CONN_OPTION_WSID,
+        ODBCConnOptions::WSID,
+        sizeof( ODBCConnOptions::WSID ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::WorkstationID,
+        sizeof( PDOConnOptionNames::WorkstationID ),
         SQLSRV_CONN_OPTION_WSID,
         ODBCConnOptions::WSID,
         sizeof( ODBCConnOptions::WSID ),
@@ -634,6 +686,10 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     sqlsrv_malloc_auto_ptr<conn_string_parser> dsn_parser;
     zval server_z;
     ZVAL_UNDEF( &server_z );
+    zval dsn_password_z;
+    ZVAL_UNDEF( &dsn_password_z );
+    zval_auto_ptr dsn_password_guard;
+    dsn_password_guard = &dsn_password_z;
 
     try {
 
@@ -678,8 +734,26 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     zval_add_ref( &server_z );
     zend_hash_index_del( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
 
+    // Preserve constructor credentials, including an explicitly empty password.
+    // The DSN is a fallback only when the constructor password is NULL.
+    const char* password = dbh->password;
+    zval* temp_password_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_PASSWORD );
+    if (temp_password_z != NULL) {
+        ZVAL_COPY( &dsn_password_z, temp_password_z );
+        zend_hash_index_del( pdo_conn_options_ht, PDO_CONN_OPTION_PASSWORD );
+
+        CHECK_CUSTOM_ERROR( memchr( Z_STRVAL( dsn_password_z ), '\0', Z_STRLEN( dsn_password_z )) != NULL,
+                            g_pdo_henv_cp, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, PDOConnOptionNames::PWD, NULL ) {
+            throw pdo::PDOException();
+        }
+
+        if (password == NULL) {
+            password = Z_STRVAL( dsn_password_z );
+        }
+    }
+
     sqlsrv_conn* conn = core_sqlsrv_connect( *g_pdo_henv_cp, *g_pdo_henv_ncp, core::allocate_conn<pdo_sqlsrv_dbh>, Z_STRVAL( server_z ),
-                                             dbh->username, dbh->password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error,
+                                             dbh->username, password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error,
                                              PDO_CONN_OPTS, dbh, "pdo_sqlsrv_db_handle_factory" );
 
     // Free the string in server_z after being used

@@ -834,24 +834,20 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
         return (value[0] != '}');
     }
 
-    const char *pstr = value;
     if (value_len > 0 && value[0] == '{' && value[value_len - 1] == '}') {
-        pstr = ++value;
+        ++value;
         value_len -= 2;
     }
 
-    const char *pch = strchr(pstr, '}');
-    size_t i = 0;
-
-    while (pch != NULL && i < value_len) {
-        i = pch - pstr + 1;
-
-        if (i == value_len || (i < value_len && pstr[i] != '}')) {
-            return false;
+    // Search only the value, not the closing wrapper or bytes past its terminator.
+    // A credential parsed from a PDO DSN can retain its enclosing braces.
+    for (size_t i = 0; i < value_len; ++i) {
+        if (value[i] == '}') {
+            if (i + 1 == value_len || value[i + 1] != '}') {
+                return false;
+            }
+            ++i;    // skip the escaped brace
         }
-
-        i++;    // skip the brace
-        pch = strchr(pch + 2, '}'); // continue searching
     }
 
     return true;

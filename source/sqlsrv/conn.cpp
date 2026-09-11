@@ -221,8 +221,7 @@ namespace SSStmtOptionNames {
 
 namespace SSConnOptionNames {
 
-// most of these strings are the same for both the sqlsrv_connect connection option
-// and the name put into the connection string. MARS is the only one that's different.
+// PHP-facing aliases share an internal option key and the existing ODBC mapping.
 const char APP[] = "APP";
 const char AccessToken[] = "AccessToken";
 const char ApplicationIntent[] = "ApplicationIntent";
@@ -234,6 +233,7 @@ const char ConnectionPooling[] = "ConnectionPooling";
 const char Language[] = "Language";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
+const char ConnectTimeout[] = "ConnectTimeout";
 const char Database[] = "Database";
 const char DecimalPlaces[] = "DecimalPlaces";
 const char FormatDecimals[] = "FormatDecimals";
@@ -242,6 +242,7 @@ const char Driver[] = "Driver";
 const char BatchErrorContinue[] = "BatchErrorContinue";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char FailoverPartner[] = "FailoverPartner";
 const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
 const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
 const char KeyStoreSecret[] = "KeyStoreSecret";
@@ -249,6 +250,7 @@ const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
 const char PWD[] = "PWD";
+const char Password[] = "Password";
 const char QuotedId[] = "QuotedId";
 const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
@@ -257,6 +259,7 @@ const char TransactionIsolation[] = "TransactionIsolation";
 const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char UID[] = "UID";
 const char WSID[] = "WSID";
+const char WorkstationID[] = "WorkstationID";
 const char ComputePool[] = "ComputePool";
 const char HostNameInCertificate[] = "HostNameInCertificate";
 
@@ -462,6 +465,15 @@ const connection_option SS_CONN_OPTS[] = {
         conn_str_append_func::func
     },
     {
+        SSConnOptionNames::FailoverPartner,
+        sizeof( SSConnOptionNames::FailoverPartner ),
+        SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
+        ODBCConnOptions::Failover_Partner,
+        sizeof( ODBCConnOptions::Failover_Partner ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
         SSConnOptionNames::KeyStoreAuthentication,
         sizeof( SSConnOptionNames::KeyStoreAuthentication ),
         SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
@@ -491,6 +503,15 @@ const connection_option SS_CONN_OPTS[] = {
     {
         SSConnOptionNames::LoginTimeout,
         sizeof( SSConnOptionNames::LoginTimeout ),
+        SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
+        ODBCConnOptions::LoginTimeout,
+        sizeof( ODBCConnOptions::LoginTimeout ),
+        CONN_ATTR_INT,
+        int_conn_attr_func<SQL_ATTR_LOGIN_TIMEOUT>::func
+    },
+    {
+        SSConnOptionNames::ConnectTimeout,
+        sizeof( SSConnOptionNames::ConnectTimeout ),
         SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
         ODBCConnOptions::LoginTimeout,
         sizeof( ODBCConnOptions::LoginTimeout ),
@@ -572,6 +593,15 @@ const connection_option SS_CONN_OPTS[] = {
     {
         SSConnOptionNames::WSID,
         sizeof( SSConnOptionNames::WSID ),
+        SQLSRV_CONN_OPTION_WSID,
+        ODBCConnOptions::WSID,
+        sizeof( ODBCConnOptions::WSID ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        SSConnOptionNames::WorkstationID,
+        sizeof( SSConnOptionNames::WorkstationID ),
         SQLSRV_CONN_OPTION_WSID,
         ODBCConnOptions::WSID,
         sizeof( ODBCConnOptions::WSID ),
@@ -1544,7 +1574,8 @@ void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options
                 int type = HASH_KEY_NON_EXISTENT;
                 type = key ? HASH_KEY_IS_STRING : HASH_KEY_IS_LONG;
 
-                CHECK_CUSTOM_ERROR(( Z_TYPE_P( data ) == IS_NULL || Z_TYPE_P( data ) == IS_UNDEF ), ctx, SS_SQLSRV_ERROR_INVALID_OPTION, key, NULL) {
+                CHECK_CUSTOM_ERROR(( Z_TYPE_P( data ) == IS_NULL || Z_TYPE_P( data ) == IS_UNDEF ), ctx, SS_SQLSRV_ERROR_INVALID_OPTION,
+                                    key ? ZSTR_VAL( key ) : "", NULL) {
                     throw ss::SSException();
                 }
 
@@ -1559,7 +1590,21 @@ void validate_conn_options( _Inout_ sqlsrv_context& ctx, _In_ zval* user_options
                         *uid = Z_STRVAL_P( data );
                     }
 
-                    else if ( key_len == sizeof( SSConnOptionNames::PWD ) && !stricmp( ZSTR_VAL( key ), SSConnOptionNames::PWD )) {
+                    else if (( key_len == sizeof( SSConnOptionNames::PWD ) && !stricmp( ZSTR_VAL( key ), SSConnOptionNames::PWD )) ||
+                             ( key_len == sizeof( SSConnOptionNames::Password ) && !stricmp( ZSTR_VAL( key ), SSConnOptionNames::Password ))) {
+
+                        ZVAL_DEREF( data );
+                        CHECK_CUSTOM_ERROR( Z_TYPE_P( data ) != IS_STRING, ctx, SQLSRV_ERROR_INVALID_OPTION_TYPE_STRING,
+                                            ZSTR_VAL( key ), NULL ) {
+                            throw ss::SSException();
+                        }
+
+                        // Credentials are passed to the core as NUL-terminated strings.
+                        // Reject embedded NULs rather than silently using a truncated password.
+                        CHECK_CUSTOM_ERROR( memchr( Z_STRVAL_P( data ), '\0', Z_STRLEN_P( data )) != NULL,
+                                            ctx, SS_SQLSRV_ERROR_INVALID_OPTION, ZSTR_VAL( key ), NULL ) {
+                            throw ss::SSException();
+                        }
 
                         *pwd = Z_STRVAL_P( data );
                     }
