@@ -2,7 +2,17 @@
 
 ## Prerequisites
 
-To build extensions for PHP 8.2 or above, install Visual Studio 2019 or Visual Studio 2022, including Visual C++ toolset and the Windows SDK components. 
+Install the Visual Studio version appropriate to your PHP version, including the Visual C++ toolset and Windows SDK components. The sample scripts select the following compiler and PHP SDK launcher:
+
+| PHP version | Compiler | Visual Studio | SDK launcher |
+|-------------|----------|---------------|--------------|
+| 7.x through 8.3 (preserved mapping) | `vs16` | 2019 | `phpsdk-vs16-<arch>.bat` |
+| 8.4 and 8.5 | `vs17` | 2022 | `phpsdk-vs17-<arch>.bat` |
+| 8.6 and later | `vs18` | 2026 | `phpsdk-vs18-<arch>.bat` |
+
+Here `<arch>` is `x64` or `x86`. Compiler selection uses integer major/minor components, including for prereleases. PHP sources and build outputs use the corresponding `php-sdk\phpdev\<compiler>\<arch>` directory.
+
+PHP 8.6 / Visual Studio 2026 handling is **initial development compatibility**, not a claim of production support or completed toolchain validation. It requires a PHP SDK with the matching `vs18` launcher and compatible dependencies. The preserved older mappings describe script behavior, not the driver's current supported PHP versions.
 
 To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x and Git for Windows. If `git` is unrecognized in a regular command prompt, make sure the environment path is set up correctly.
 
@@ -41,7 +51,17 @@ The sample build scripts, `builddrivers.py` and `buildtools.py`, can be used to 
 
 #### Overview
 
-When asked to provide the PHP version, you should enter values like `7.4.27`. If it's alpha, beta, or RC version, make sure the name you provide matches the PHP tag name without the prefix `php-`. For example, for PHP 8.0.0 beta 3, the tag name is `php-8.0.0beta3`, so you will enter `8.0.0beta3`. Visit [PHP SRC]( https://github.com/php/php-src) to find the appropriate tag names.
+The shared version validator accepts PHP 7 or later in `major.minor` or `major.minor.patch` form, plus prereleases. For an alpha, beta, or RC version, use the exact PHP tag name without the `php-` prefix:
+
+| Input | Generated PHP source tag |
+|-------|--------------------------|
+| `8.6.0alpha1` | `php-8.6.0alpha1` |
+| `8.6.0beta3` | `php-8.6.0beta3` |
+| `8.6.0RC1` | `php-8.6.0RC1` |
+
+Legacy hyphen/dot prerelease separators are also accepted: `8.6.0-beta3` and `8.6.0.beta3` both generate `php-8.6.0beta3`. Only the separator before the suffix is removed; numeric version dots and suffix case are preserved. The local source directory retains the original input (for example, `php-8.6.0.beta3-src`). Stable inputs are unchanged (`8.6.0` generates `php-8.6.0`, and `8.6` generates `php-8.6`).
+
+Validation does not check that a tag exists. Visit [PHP SRC](https://github.com/php/php-src) to select an available exact tag before building.
 
 PHP recommends to unzip the PHP SDK into the shortest possible path, preferrably somewhere near the root drive. Therefore, this script will, by default, create a `php-sdk` folder in the C:\ drive, and this `php-sdk` directory tree will remain unless you remove it yourself. For ongoing development, we suggest you keep it around. The build scripts will handle updating the PHP SDK if a new version is available. 
 
@@ -82,6 +102,16 @@ If something went wrong or the build failed, the log file will be launched (you 
 
 In addition to the log files in `C:\php-sdk`, you can examine the contents of `C:\php-sdk\phpsdk-build-task.bat`, which is overwritten every time you run the build scripts.
 
+#### Local script tests
+
+From the repository root, run the focused standard-library tests:
+
+```powershell
+py -B -m unittest discover -s buildscripts -p "test_buildtools.py" -v
+```
+
+These offline tests cover shared CLI validation, compiler/output paths, generated batch tags, and SDK launcher selection. External build and filesystem side effects are mocked; no downloads, Visual Studio installation, SQL Server, or PHP build are required. They do not replace compiling and testing the drivers with the actual PHP SDK and toolchain.
+
 #### Testing mode and/or setting alternative destination 
 
 If your main goal is to build the drivers for testing, and/or there is no need to keep the `php-sdk` directory around, you can invoke `py builddrivers.py` with the necessary command-line arguments plus `--TESTING`, which turns on the *testing* mode (it is False by default).
@@ -89,7 +119,6 @@ If your main goal is to build the drivers for testing, and/or there is no need t
 Setting the testing mode automatically turns off the looping mechanism. When the build is finished, you will find a copy of the drivers (unless the build failed) and the `php-sdk` folder in the same directory of these Python scripts. 
 
 In addition, you can set an alternative destination using `--DESTPATH=<some valid path>`, which is **None** by default. Note that these two options are *not* available in the interactive mode. However, they are particularly useful for testing purposes (such as testing in a virtual machine) in which these build scripts are copied to a temporary folder. After the drivers have been successfully compiled and copied to the designated location, the temporary folder can be safely removed. 
-
 
 
 

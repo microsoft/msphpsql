@@ -27,6 +27,16 @@ import re
 import fileinput
 from typing import Optional
 
+
+def validate_php_version(version: str) -> bool:
+    """Accept PHP 7+ versions, including official and legacy prerelease forms."""
+    if not isinstance(version, str):
+        return False
+    pattern = r'(\d+)\.\d+(?:\.\d+)?(?:[-.]?(?:RC\d+|beta\d+|alpha\d+)|[-.][a-zA-Z]+)?'
+    match = re.fullmatch(pattern, version)
+    return match is not None and int(match.group(1)) >= 7
+
+
 class BuildUtil(object):
     """Build sqlsrv and/or pdo_sqlsrv drivers with PHP source with the following properties:
     
@@ -59,9 +69,8 @@ class BuildUtil(object):
         self.vc = ''
 
     def _validate_php_version(self, version: str) -> bool:
-        """Validate PHP version format."""
-        pattern = r'^\d+\.\d+(\.\d+)?([-\.](RC\d+|beta\d+|alpha\d+|[a-zA-Z]+))?$'
-        return bool(re.match(pattern, version))
+        """Use the same PHP version validation as the build CLI."""
+        return validate_php_version(version)
 
     def major_version(self) -> str:
         """Return the major version number based on the PHP version."""
@@ -89,19 +98,18 @@ class BuildUtil(object):
 
     def compiler_version(self, sdk_dir: str) -> str:
         """Return the compiler version based on PHP version.
-        PHP 8.4+ uses vs17 (Visual Studio 2022), PHP 8.3 and below use vs16 (Visual Studio 2019)."""
+        PHP 8.6+ uses vs18 (Visual Studio 2026), PHP 8.4/8.5 uses vs17
+        (Visual Studio 2022), and PHP 8.3 and below uses vs16 (Visual Studio 2019).
+        """
         if self.vc == '':
             major_ver = self.major_version()
-            # Parse major.minor version (e.g., "8.4" -> 8.4)
-            try:
-                version_num = float(major_ver)
-                if version_num >= 8.4:
-                    self.vc = 'vs17'
-                else:
-                    self.vc = 'vs16'
-            except ValueError:
-                # Default to vs17 if parsing fails
+            version_num = tuple(int(part) for part in major_ver.split('.'))
+            if version_num >= (8, 6):
+                self.vc = 'vs18'
+            elif version_num >= (8, 4):
                 self.vc = 'vs17'
+            else:
+                self.vc = 'vs16'
             print('Compiler: ' + self.vc + ' (PHP ' + major_ver + ')')
         return self.vc
 
@@ -432,11 +440,8 @@ class BuildUtil(object):
             file.write('SET LOG_NAME=%currDir%\\' + log_file + os.linesep)       
             file.write('@CALL phpsdk_buildtree phpdev > "%LOG_NAME%" 2>&1' + os.linesep)
             
-            # for PHP version with release tags, such as 'RC', 'beta', etc. 
-            # we need to remove the hyphen '-' between the version number and tag
-            # because in https://github.com/php/php-src the released tags have no hyphens
-            
-            php_tag = 'php-' + self.phpver.replace('-', '')
+            # PHP tags omit legacy prerelease separators, but retain numeric dots.
+            php_tag = 'php-' + re.sub(r'(?<=\d)[-.](?=[a-zA-Z])', '', self.phpver)
             php_src = 'php-' + self.phpver +'-src'
             
             # if not exists, check out the specified tag
