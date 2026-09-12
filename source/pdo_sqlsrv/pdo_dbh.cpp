@@ -77,13 +77,6 @@ const char HostNameInCertificate[] = "HostNameInCertificate";
 
 }
 
-enum PDO_CONN_OPTIONS {
-
-    PDO_CONN_OPTION_SERVER = SQLSRV_CONN_OPTION_DRIVER_SPECIFIC,
-    PDO_CONN_OPTION_PASSWORD,
-
-};
-
 enum PDO_STMT_OPTIONS {
 
     PDO_STMT_OPTION_ENCODING = SQLSRV_STMT_OPTION_DRIVER_SPECIFIC,
@@ -229,7 +222,7 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         conn_str_append_func::func
     },
-    // Like Server, credentials are extracted by the factory before core option dispatch.
+    // Passwords use the parser's separate secure buffer, not core option dispatch.
     {
         PDOConnOptionNames::PWD,
         sizeof( PDOConnOptionNames::PWD ),
@@ -683,13 +676,9 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     dbh->methods = &pdo_sqlsrv_dbh_methods;
     dbh->driver_data = NULL;
     zval* temp_server_z = NULL;
-    sqlsrv_malloc_auto_ptr<conn_string_parser> dsn_parser;
     zval server_z;
     ZVAL_UNDEF( &server_z );
-    zval dsn_password_z;
-    ZVAL_UNDEF( &dsn_password_z );
-    zval_auto_ptr dsn_password_guard;
-    dsn_password_guard = &dsn_password_z;
+    pdo_secure_password dsn_password;
 
     try {
 
@@ -716,9 +705,9 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
                                  ZVAL_PTR_DTOR, 0 /*persistent*/ );
 
     // Either of g_pdo_henv_cp or g_pdo_henv_ncp can be used to propogate the error.
-    dsn_parser = new ( sqlsrv_malloc( sizeof( conn_string_parser ))) conn_string_parser( *g_pdo_henv_cp, dbh->data_source,
-                                                                                          static_cast<int>( dbh->data_source_len ), pdo_conn_options_ht );
-    dsn_parser->parse_conn_string();
+    conn_string_parser dsn_parser( *g_pdo_henv_cp, dbh->data_source,
+                                   static_cast<int>( dbh->data_source_len ), pdo_conn_options_ht, dsn_password );
+    dsn_parser.parse_conn_string();
 
     // Extract the server name
     temp_server_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
@@ -737,18 +726,14 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     // Preserve constructor credentials, including an explicitly empty password.
     // The DSN is a fallback only when the constructor password is NULL.
     const char* password = dbh->password;
-    zval* temp_password_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_PASSWORD );
-    if (temp_password_z != NULL) {
-        ZVAL_COPY( &dsn_password_z, temp_password_z );
-        zend_hash_index_del( pdo_conn_options_ht, PDO_CONN_OPTION_PASSWORD );
-
-        CHECK_CUSTOM_ERROR( memchr( Z_STRVAL( dsn_password_z ), '\0', Z_STRLEN( dsn_password_z )) != NULL,
+    if (dsn_password.get() != NULL) {
+        CHECK_CUSTOM_ERROR( memchr( dsn_password.get(), '\0', dsn_password.size() ) != NULL,
                             g_pdo_henv_cp, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, PDOConnOptionNames::PWD, NULL ) {
             throw pdo::PDOException();
         }
 
         if (password == NULL) {
-            password = Z_STRVAL( dsn_password_z );
+            password = dsn_password.get();
         }
     }
 

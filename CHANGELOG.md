@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 ### Fixed
 - Bounded connection-option brace validation to the supplied value length, avoiding reads past the terminator of brace-quoted values.
+- Securely erase driver-owned PDO DSN password copies before releasing or replacing them, including parser errors and connection failures. Original PDO/caller-owned strings and exception trace behavior are unchanged.
 
 ## 5.13.3 - 2026-08-07
 Updated PECL release packages. Here is the list of updates:

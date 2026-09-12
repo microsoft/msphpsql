@@ -120,23 +120,11 @@ static std::mutex s_token_cache_mutex;
 // tokens alive for at least this long to account for in-flight recoveries.
 static const time_t TOKEN_CACHE_TTL_FLOOR = 120;
 
-// Securely zero memory before freeing to scrub token secrets.
-// Plain memset can be optimized away by the compiler when the buffer
-// is not read afterward; these platform calls are guaranteed to persist.
-static void secure_zero(_Out_writes_bytes_(len) void* ptr, size_t len)
-{
-#ifdef _WIN32
-    SecureZeroMemory(ptr, len);
-#else
-    explicit_bzero(ptr, len);
-#endif
-}
-
 static void token_cache_free_entry(TokenCacheEntry* e)
 {
-    secure_zero(e->token->data, e->token->dataSize);
+    core_sqlsrv_secure_zero(e->token->data, e->token->dataSize);
     free(e->token);
-    secure_zero(e->raw_content, e->raw_len);
+    core_sqlsrv_secure_zero(e->raw_content, e->raw_len);
     free(e->raw_content);
     free(e);
 }
