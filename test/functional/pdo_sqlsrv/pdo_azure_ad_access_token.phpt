@@ -38,7 +38,7 @@ function connectWithEmptyAccessToken($server)
 function connectWithInvalidOptions($server)
 {
     $dummyToken = 'abcde';
-    $expectedError = 'When using Azure AD Access Token, the connection string must not contain UID, PWD, or Authentication keywords.';
+    $expectedError = 'When using Azure AD Access Token, the connection string must not contain UID, PWD, Password, or Authentication keywords.';
     $message = 'AzureAD access token test: expected to fail with ';
     
     $uid = '';

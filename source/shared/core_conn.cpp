@@ -120,23 +120,11 @@ static std::mutex s_token_cache_mutex;
 // tokens alive for at least this long to account for in-flight recoveries.
 static const time_t TOKEN_CACHE_TTL_FLOOR = 120;
 
-// Securely zero memory before freeing to scrub token secrets.
-// Plain memset can be optimized away by the compiler when the buffer
-// is not read afterward; these platform calls are guaranteed to persist.
-static void secure_zero(_Out_writes_bytes_(len) void* ptr, size_t len)
-{
-#ifdef _WIN32
-    SecureZeroMemory(ptr, len);
-#else
-    explicit_bzero(ptr, len);
-#endif
-}
-
 static void token_cache_free_entry(TokenCacheEntry* e)
 {
-    secure_zero(e->token->data, e->token->dataSize);
+    core_sqlsrv_secure_zero(e->token->data, e->token->dataSize);
     free(e->token);
-    secure_zero(e->raw_content, e->raw_len);
+    core_sqlsrv_secure_zero(e->raw_content, e->raw_len);
     free(e->raw_content);
     free(e);
 }
@@ -834,24 +822,20 @@ bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t v
         return (value[0] != '}');
     }
 
-    const char *pstr = value;
     if (value_len > 0 && value[0] == '{' && value[value_len - 1] == '}') {
-        pstr = ++value;
+        ++value;
         value_len -= 2;
     }
 
-    const char *pch = strchr(pstr, '}');
-    size_t i = 0;
-
-    while (pch != NULL && i < value_len) {
-        i = pch - pstr + 1;
-
-        if (i == value_len || (i < value_len && pstr[i] != '}')) {
-            return false;
+    // Search only the value, not the closing wrapper or bytes past its terminator.
+    // A credential parsed from a PDO DSN can retain its enclosing braces.
+    for (size_t i = 0; i < value_len; ++i) {
+        if (value[i] == '}') {
+            if (i + 1 == value_len || value[i + 1] != '}') {
+                return false;
+            }
+            ++i;    // skip the escaped brace
         }
-
-        i++;    // skip the brace
-        pch = strchr(pch + 2, '}'); // continue searching
     }
 
     return true;

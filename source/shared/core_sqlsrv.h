@@ -437,6 +437,9 @@ inline void sqlsrv_free( _Inout_ void* ptr )
 
 #endif
 
+// Wipe owned secret storage with a platform primitive that cannot be optimized away.
+void core_sqlsrv_secure_zero( _Out_writes_bytes_(len) void* ptr, _In_ size_t len );
+
 // trait class that allows us to assign const types to an auto_ptr
 template <typename T>
 struct remove_const {
