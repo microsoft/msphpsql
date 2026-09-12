@@ -256,8 +256,12 @@ php_stream_ops sqlsrv_stream_ops = {
 // return value.  There is only one valid way to open a stream, using sqlsrv_get_field on
 // certain field types.  A sqlsrv stream may only be opened in read mode.
 static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _In_ const char*, _In_ const char* mode,
-                                         _In_opt_ int options, _In_ zend_string **, php_stream_context* STREAMS_DC )
+                                         _In_opt_ int options, _In_ zend_string **, php_stream_context* context STREAMS_DC )
 {
+
+#if PHP_VERSION_ID < 80600
+    SQLSRV_UNUSED( context );
+#endif
 
 #if ZEND_DEBUG
     SQLSRV_UNUSED( __zend_orig_lineno );
@@ -277,7 +281,12 @@ static php_stream* sqlsrv_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _
     // the argument "options" will be zero.
     // For details check this pull request: https://github.com/php/php-src/pull/6190
     if (options != 0) {
+#if PHP_VERSION_ID >= 80600
+        php_stream_wrapper_log_error(wrapper, context, options, E_WARNING, true, ZEND_ENUM_StreamErrorCode_Generic,
+            "Invalid option: no options except REPORT_ERRORS may be specified with a sqlsrv stream");
+#else
         php_stream_wrapper_log_error(wrapper, options, "Invalid option: no options except REPORT_ERRORS may be specified with a sqlsrv stream");
+#endif
         return NULL;
     }
 

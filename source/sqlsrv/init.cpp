@@ -645,22 +645,20 @@ PHP_RINIT_FUNCTION(sqlsrv)
    
     LOG_FUNCTION( "PHP_RINIT for php_sqlsrv" );
 
-    // read INI settings
-    // need to convert const char[] to char[] to avoid converting string to char* warnings
-    // cannot simply cast const char[] to char* since INI_INT needs the sizeof(param) and the size of char* is always 4 / 8 bytes
-    char warnings_as_errors[] = INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS;
-    char severity[] = INI_PREFIX INI_LOG_SEVERITY;
-    char subsystems[] = INI_PREFIX INI_LOG_SUBSYSTEMS;
-    char buffered_limit[] = INI_PREFIX INI_BUFFERED_QUERY_LIMIT;
+    // Preserve numeric INI parsing, including base-0 conversion for boolean settings.
+    const char warnings_as_errors[] = INI_PREFIX INI_WARNINGS_RETURN_AS_ERRORS;
+    const char severity[] = INI_PREFIX INI_LOG_SEVERITY;
+    const char subsystems[] = INI_PREFIX INI_LOG_SUBSYSTEMS;
+    const char buffered_limit[] = INI_PREFIX INI_BUFFERED_QUERY_LIMIT;
     
-    SQLSRV_G( warnings_return_as_errors ) = INI_BOOL( warnings_as_errors );
-    SQLSRV_G( log_severity ) = INI_INT( severity );
-    SQLSRV_G( log_subsystems ) = INI_INT( subsystems );
-    SQLSRV_G( buffered_query_limit ) = INI_INT( buffered_limit );
+    SQLSRV_G( warnings_return_as_errors ) = static_cast<bool>(zend_ini_long(warnings_as_errors, sizeof(warnings_as_errors) - 1, false));
+    SQLSRV_G( log_severity ) = zend_ini_long(severity, sizeof(severity) - 1, false);
+    SQLSRV_G( log_subsystems ) = zend_ini_long(subsystems, sizeof(subsystems) - 1, false);
+    SQLSRV_G( buffered_query_limit ) = zend_ini_long(buffered_limit, sizeof(buffered_limit) - 1, false);
 
 #ifndef _WIN32
-    char set_locale_info[] = INI_PREFIX INI_SET_LOCALE_INFO;
-    SQLSRV_G(set_locale_info) = INI_INT(set_locale_info);
+    const char set_locale_info[] = INI_PREFIX INI_SET_LOCALE_INFO;
+    SQLSRV_G(set_locale_info) = zend_ini_long(set_locale_info, sizeof(set_locale_info) - 1, false);
 
     // if necessary, set locale from the environment for ODBC, which MUST be done before any connection
     int set_locale = SQLSRV_G(set_locale_info);
