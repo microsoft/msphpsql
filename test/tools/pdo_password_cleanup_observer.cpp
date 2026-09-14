@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 // Linked only into the disposable Linux test module. Never ship this observer.
 // GNU ld --wrap intercepts erasure and Zend release in the real driver objects.
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 
@@ -85,12 +86,12 @@ __attribute__((visibility("default"))) void cleanup_probe_reset()
 
 __attribute__((visibility("default"))) void cleanup_probe_expect(const char* value, size_t length)
 {
-    if (expected_count == MAX_EXPECTED || length >= MAX_VALUE) {
+    if (value == NULL || expected_count == MAX_EXPECTED || length >= MAX_VALUE) {
         ++failures;
         return;
     }
     expected_release& entry = expected[expected_count++];
-    std::memcpy(entry.value, value, length);
+    std::copy_n(value, length, entry.value);
     entry.value[length] = '\0';
     entry.length = length + 1; // include the owned buffer's NUL terminator
 }

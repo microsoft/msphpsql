@@ -50,7 +50,8 @@ function checkCleanup($label, $dsn, $username, $password, $values, $expectedCode
 
 $first = 'cleanup-first-value-17';
 $second = 'cleanup-second-value-18';
-$prefix = 'sqlsrv:Server=127.0.0.1;Driver=CleanupInvalidDriver;';
+// Invalid Driver rejects these cases before any network connection is attempted.
+$prefix = 'sqlsrv:Server=unused.invalid;Driver=CleanupInvalidDriver;';
 $cases = array(
     array('factory failure', $prefix . "PWD=$first", 'cleanup-user', null, array($first), -79),
     array('parser error', $prefix . "Password=$first;UnknownKeyword=1", null, null, array($first), -42),
@@ -90,7 +91,8 @@ if (getenv('MSPHPSQL_CLEANUP_NO_SERVER') === '1') {
     $dsn = 'sqlsrv:Server={' . str_replace('}', '}}', $server) . '};Driver={' . $driver . '};Encrypt=no;';
     $quoted = '{' . str_replace('}', '}}', $password) . '}';
     $passed = checkCleanup('factory success', $dsn . "Password=$quoted", $username, null, array($quoted), null) && $passed;
-    $passed = checkCleanup('success with constructor override', $dsn . "PWD=$first", $username, $password, array($first), null) && $passed;
+    // Constructor credentials use the driver's existing brace-escaping rules too.
+    $passed = checkCleanup('success with constructor override', $dsn . "PWD=$first", $username, $quoted, array($first), null) && $passed;
     $passed = checkCleanup('ODBC authentication failure', $dsn . "Password=$first", 'cleanup-nonexistent-user', null, array($first), 18456) && $passed;
 }
 $probe->cleanup_probe_reset();

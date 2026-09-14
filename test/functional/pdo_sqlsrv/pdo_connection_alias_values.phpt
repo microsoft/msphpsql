@@ -29,6 +29,9 @@ function verifyAliasConnection($keywords, $password, $expectedHost, $label)
     } catch (PDOException $e) {
         // A failure must not dump the DSN or constructor arguments.
         echo $label, ': FAIL (connect)', PHP_EOL;
+        if (isset($e->errorInfo[0], $e->errorInfo[1])) {
+            echo 'SQLSTATE: ', $e->errorInfo[0], ', code: ', $e->errorInfo[1], PHP_EOL;
+        }
     }
 }
 
@@ -37,8 +40,9 @@ $dsnPassword = $pwd;
 if (strlen($dsnPassword) < 2 || $dsnPassword[0] !== '{' || substr($dsnPassword, -1) !== '}') {
     $dsnPassword = '{' . $dsnPassword . '}';
 }
+// Allow LocalDB cold starts under coverage; these are not timing assertions.
 foreach (array('PWD', 'Password', 'pAsSwOrD') as $key) {
-    verifyAliasConnection("$key=$dsnPassword;WorkstationID=alias-test;ConnectTimeout=5", null, 'alias-test', $key);
+    verifyAliasConnection("$key=$dsnPassword;WorkstationID=alias-test;ConnectTimeout=30", null, 'alias-test', $key);
 }
 verifyAliasConnection('Password=bad};WorkstationID=alias-test', $pwd, 'alias-test', 'constructor wins');
 verifyAliasConnection("PWD=bad};Password=$dsnPassword;WSID=alias-test", null, 'alias-test', 'Password last');
@@ -47,8 +51,8 @@ verifyAliasConnection('WSID=old;WorkstationID=new', $pwd, 'new', 'WorkstationID 
 verifyAliasConnection('WorkstationID=old;WSID=new', $pwd, 'new', 'WSID last');
 verifyAliasConnection('WorkstationID={alias;=}}test}', $pwd, 'alias;=}test', 'workstation delimiters');
 // These check acceptance in both orders, not elapsed-time precedence.
-verifyAliasConnection('LoginTimeout=2;ConnectTimeout=5;WSID=alias-test', $pwd, 'alias-test', 'ConnectTimeout last');
-verifyAliasConnection('ConnectTimeout=2;LoginTimeout=5;WSID=alias-test', $pwd, 'alias-test', 'LoginTimeout last');
+verifyAliasConnection('LoginTimeout=20;ConnectTimeout=30;WSID=alias-test', $pwd, 'alias-test', 'ConnectTimeout last');
+verifyAliasConnection('ConnectTimeout=20;LoginTimeout=30;WSID=alias-test', $pwd, 'alias-test', 'LoginTimeout last');
 ?>
 --EXPECT--
 PWD: OK

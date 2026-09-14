@@ -42,7 +42,7 @@ trap 'rm -rf -- "$work"' EXIT
 mkdir -p "$work/pdo_sqlsrv/shared"
 cp "$root"/source/pdo_sqlsrv/*.{cpp,h,m4} "$work/pdo_sqlsrv/"
 cp "$root"/source/shared/*.{cpp,h,hpp} "$work/pdo_sqlsrv/shared/"
-cp "$root/test/native/pdo_password_cleanup_observer.cpp" "$work/observer.cpp"
+cp "$root/test/tools/pdo_password_cleanup_observer.cpp" "$work/observer.cpp"
 
 # This observer wraps only calls originating in the disposable test module.
 # The production secure erase is still called; zeroed bytes are then inspected
@@ -61,4 +61,4 @@ export MSPHPSQL_CLEANUP_MODULE="$work/pdo_sqlsrv/modules/pdo_sqlsrv.so"
 php -n -d extension=pdo -d extension=ffi -d ffi.enable=1 \
     -d zend.exception_ignore_args=1 \
     -d "extension=$MSPHPSQL_CLEANUP_MODULE" \
-    "$root/test/native/pdo_password_cleanup.php"
+    "$root/test/tools/pdo_password_cleanup.php"

@@ -21,6 +21,10 @@ function verifyAliasConnection($options, $expectedHost, $label)
     $conn = sqlsrv_connect($server, $base + $options);
     if ($conn === false) {
         echo $label, ': FAIL (connect)', PHP_EOL;
+        // Report only diagnostic codes, never connection strings or credentials.
+        foreach (sqlsrv_errors(SQLSRV_ERR_ERRORS) ?? array() as $error) {
+            echo 'SQLSTATE: ', $error['SQLSTATE'], ', code: ', $error['code'], PHP_EOL;
+        }
         return;
     }
     $stmt = sqlsrv_query($conn, 'SELECT HOST_NAME()');
@@ -34,8 +38,10 @@ function verifyAliasConnection($options, $expectedHost, $label)
     sqlsrv_close($conn);
 }
 
+// Test alias behavior, not connection speed. LocalDB cold starts under coverage
+// can exceed five seconds before the first connection is established.
 foreach (array('PWD', 'Password', 'pAsSwOrD') as $key) {
-    verifyAliasConnection(array($key => $pwd, 'WorkstationID' => 'alias-test', 'ConnectTimeout' => 5), 'alias-test', $key);
+    verifyAliasConnection(array($key => $pwd, 'WorkstationID' => 'alias-test', 'ConnectTimeout' => 30), 'alias-test', $key);
 }
 verifyAliasConnection(array('PWD' => $pwd, 'WSID' => 'old', 'WorkstationID' => 'new'), 'new', 'WorkstationID last');
 verifyAliasConnection(array('PWD' => $pwd, 'WorkstationID' => 'old', 'WSID' => 'new'), 'new', 'WSID last');
@@ -43,8 +49,8 @@ verifyAliasConnection(array('PWD' => $pwd, 'WorkstationID' => '{alias;=}}test}')
 verifyAliasConnection(array('PWD' => 'bad}', 'Password' => $pwd, 'WSID' => 'alias-test'), 'alias-test', 'Password last');
 verifyAliasConnection(array('Password' => 'bad}', 'PWD' => $pwd, 'WSID' => 'alias-test'), 'alias-test', 'PWD last');
 // These check acceptance in both orders, not elapsed-time precedence.
-verifyAliasConnection(array('PWD' => $pwd, 'LoginTimeout' => 2, 'ConnectTimeout' => 5, 'WSID' => 'alias-test'), 'alias-test', 'ConnectTimeout last');
-verifyAliasConnection(array('PWD' => $pwd, 'ConnectTimeout' => 2, 'LoginTimeout' => 5, 'WSID' => 'alias-test'), 'alias-test', 'LoginTimeout last');
+verifyAliasConnection(array('PWD' => $pwd, 'LoginTimeout' => 20, 'ConnectTimeout' => 30, 'WSID' => 'alias-test'), 'alias-test', 'ConnectTimeout last');
+verifyAliasConnection(array('PWD' => $pwd, 'ConnectTimeout' => 20, 'LoginTimeout' => 30, 'WSID' => 'alias-test'), 'alias-test', 'LoginTimeout last');
 ?>
 --EXPECT--
 PWD: OK

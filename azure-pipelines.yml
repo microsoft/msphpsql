@@ -665,7 +665,7 @@ jobs:
 
   - script: |
       set -e
-      bash "$(Build.SourcesDirectory)/test/native/test_pdo_password_cleanup.sh"
+      bash "$(Build.SourcesDirectory)/test/tools/test_pdo_password_cleanup.sh"
     displayName: 'Verify native PDO password erasure'
     env:
       MSSQL_SERVER: $(server)
