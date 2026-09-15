@@ -6,7 +6,8 @@ variables:
   host: 'sql1'
   sqlsrv_db: 'sqlsrv_testdb'
   pdo_sqlsrv_db: 'pdo_sqlsrv_testdb'
-  uid: 'sa'
+  # Azure uppercases environment variable names; UID would shadow Bash's user ID.
+  sqlUser: 'sa'
 
 trigger:
 - dev
@@ -146,10 +147,10 @@ jobs:
       
       # Try to connect
       /opt/homebrew/opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1 \
-        -U $(uid) -P "$(macpwd)" -No -C \
+        -U $(sqlUser) -P "$(macpwd)" -No -C \
         -Q "SELECT @@Version" || \
       /usr/local/opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1 \
-        -U $(uid) -P "$(macpwd)" -No -C \
+        -U $(sqlUser) -P "$(macpwd)" -No -C \
         -Q "SELECT @@Version"
       
       echo "SQL Server connection verified!"
@@ -272,7 +273,7 @@ jobs:
       set -e
       cd $(REPO_ROOT)/test/functional/setup
       export TEST_PHP_SQL_SERVER='127.0.0.1'
-      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_UID='$(sqlUser)'
       export TEST_PHP_SQL_PWD='$(macpwd)'
       
       # Add sqlcmd and bcp tools to PATH
@@ -295,7 +296,7 @@ jobs:
       cd $(REPO_ROOT)/test/functional
       
       SQL_SERVER="127.0.0.1"
-      SQL_USER="$(uid)"
+      SQL_USER="$(sqlUser)"
       SQL_PWD="$(macpwd)"
       SRV_DB="$(macOS_sqlsrv_db)"
       PDO_DB="$(macOS_pdo_sqlsrv_db)"
@@ -357,19 +358,19 @@ jobs:
       
       # Connection environment variables
       export MSSQL_SERVER='127.0.0.1'
-      export MSSQL_USER='$(uid)'
+      export MSSQL_USER='$(sqlUser)'
       export MSSQL_PASSWORD='$(macpwd)'
       export MSSQL_DATABASE_NAME='$(macOS_sqlsrv_db)'
       export MSSQL_DRIVER_NAME='ODBC Driver 18 for SQL Server'
       export TEST_PHP_SQL_SERVER='127.0.0.1'
-      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_UID='$(sqlUser)'
       export TEST_PHP_SQL_PWD='$(macpwd)'
       
       # Verify connection before running tests
       echo "Verifying database connection before tests..."
       $PHP_BIN -c $PHP_INI -r "
       \$server = '127.0.0.1';
-      \$options = array('Database' => '$(macOS_sqlsrv_db)', 'UID' => '$(uid)', 'PWD' => '$(macpwd)', 'Encrypt' => 'no');
+      \$options = array('Database' => '$(macOS_sqlsrv_db)', 'UID' => '$(sqlUser)', 'PWD' => '$(macpwd)', 'Encrypt' => 'no');
       \$conn = sqlsrv_connect(\$server, \$options);
       if (\$conn === false) {
           print_r(sqlsrv_errors());
@@ -494,7 +495,7 @@ jobs:
 
   - script: |
       export TEST_PHP_SQL_SERVER='127.0.0.1'
-      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_UID='$(sqlUser)'
       export TEST_PHP_SQL_PWD='$(macpwd)'
       
       echo "Dropping test databases..."
@@ -592,7 +593,7 @@ jobs:
       sleep 10
       
       # Verify SQL Server is running
-      docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -C -U $(uid) -P $(pwd) -Q 'SELECT @@VERSION'
+      docker exec -t $(host) /opt/mssql-tools18/bin/sqlcmd -S $(server) -C -U $(sqlUser) -P $(pwd) -Q 'SELECT @@VERSION'
     displayName: 'Run SQL Server for Linux'
 
   - script: |
@@ -622,7 +623,7 @@ jobs:
   - script: |
       echo "Setting up test databases..."
       export TEST_PHP_SQL_SERVER='$(server)'
-      export TEST_PHP_SQL_UID='$(uid)'
+      export TEST_PHP_SQL_UID='$(sqlUser)'
       export TEST_PHP_SQL_PWD='$(pwd)'
 
       cd $(Build.SourcesDirectory)/test/functional/setup
@@ -669,7 +670,7 @@ jobs:
     displayName: 'Verify native PDO password erasure'
     env:
       MSSQL_SERVER: $(server)
-      MSSQL_USER: $(uid)
+      MSSQL_USER: $(sqlUser)
       MSSQL_PASSWORD: $(pwd)
       MSSQL_DRIVER_NAME: 'ODBC Driver 18 for SQL Server'
       LANG: 'en_US.UTF-8'
@@ -680,13 +681,13 @@ jobs:
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_DATABASE/'"$(sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(sqlUser)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
 
       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
       sed -i -e 's/TARGET_SERVER/'"$(server)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_DATABASE/'"$(pdo_sqlsrv_db)"'/g' MsSetup.inc
-      sed -i -e 's/TARGET_USERNAME/'"$(uid)"'/g' MsSetup.inc
+      sed -i -e 's/TARGET_USERNAME/'"$(sqlUser)"'/g' MsSetup.inc
       sed -i -e 's/TARGET_PASSWORD/'"$(pwd)"'/g' MsSetup.inc
       
       echo "MsSetup.inc files updated"
@@ -695,7 +696,7 @@ jobs:
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/sqlsrv
       export MSSQL_SERVER='$(server)'
-      export MSSQL_USER='$(uid)'
+      export MSSQL_USER='$(sqlUser)'
       export MSSQL_PASSWORD='$(pwd)'
       export MSSQL_DATABASE_NAME='$(sqlsrv_db)'
       export MSSQL_DRIVER_NAME='ODBC Driver 18 for SQL Server'
@@ -707,7 +708,7 @@ jobs:
   - script: |
       cd $(Build.SourcesDirectory)/test/functional/pdo_sqlsrv
       export MSSQL_SERVER='$(server)'
-      export MSSQL_USER='$(uid)'
+      export MSSQL_USER='$(sqlUser)'
       export MSSQL_PASSWORD='$(pwd)'
       export MSSQL_DATABASE_NAME='$(pdo_sqlsrv_db)'
       export MSSQL_DRIVER_NAME='ODBC Driver 18 for SQL Server'
@@ -874,7 +875,7 @@ jobs:
       
       # Test connection with SQL Auth using named pipe
       Write-Host "Testing connection to LocalDB with SQL Authentication..."
-      sqlcmd -S "(localdb)\MSSQLLocalDB" -U $(uid) -P "$(pwd)" -Q "SELECT @@VERSION"
+      sqlcmd -S "(localdb)\MSSQLLocalDB" -U $(sqlUser) -P "$(pwd)" -Q "SELECT @@VERSION"
       
       Write-Host "SQL Server LocalDB is ready"
     displayName: 'Start SQL Server LocalDB'
@@ -887,7 +888,7 @@ jobs:
       (Get-Content .\MsSetup.inc) | ForEach-Object { 
           $_ -replace "TARGET_SERVER", $server `
              -replace "TARGET_DATABASE", "$(sqlsrv_db)" `
-             -replace "TARGET_USERNAME", "$(uid)" `
+             -replace "TARGET_USERNAME", "$(sqlUser)" `
              -replace "TARGET_PASSWORD", "$(pwd)" 
       } | Set-Content .\MsSetup.inc
       
@@ -898,7 +899,7 @@ jobs:
       (Get-Content .\MsSetup.inc) | ForEach-Object { 
           $_ -replace "TARGET_SERVER", $server `
              -replace "TARGET_DATABASE", "$(pdo_sqlsrv_db)" `
-             -replace "TARGET_USERNAME", "$(uid)" `
+             -replace "TARGET_USERNAME", "$(sqlUser)" `
              -replace "TARGET_PASSWORD", "$(pwd)" 
       } | Set-Content .\MsSetup.inc
       
@@ -909,7 +910,7 @@ jobs:
       (Get-Content .\connect.inc) | ForEach-Object { 
           $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
              -replace '(\$databaseName = )[^;]+;', "`$1'$(sqlsrv_db)';" `
-             -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" `
+             -replace '(\$uid = )[^;]+;', "`$1'$(sqlUser)';" `
              -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
       } | Set-Content .\connect.inc
       
@@ -917,7 +918,7 @@ jobs:
       (Get-Content .\connect.inc) | ForEach-Object { 
           $_ -replace '(\$server = )[^;]+;', "`$1'$server';" `
              -replace '(\$databaseName = )[^;]+;', "`$1'$(pdo_sqlsrv_db)';" `
-             -replace '(\$uid = )[^;]+;', "`$1'$(uid)';" `
+             -replace '(\$uid = )[^;]+;', "`$1'$(sqlUser)';" `
              -replace '(\$pwd = )[^;]+;', "`$1'$(pwd)';" 
       } | Set-Content .\connect.inc
     displayName: 'Update connection credentials'
@@ -997,7 +998,7 @@ jobs:
       
       # Set environment variables for the Python script
       $env:TEST_PHP_SQL_SERVER = "(localdb)\MSSQLLocalDB"
-      $env:TEST_PHP_SQL_UID = "$(uid)"
+      $env:TEST_PHP_SQL_UID = "$(sqlUser)"
       $env:TEST_PHP_SQL_PWD = "$(pwd)"
       
       cd $(Build.SourcesDirectory)\test\functional\setup
@@ -1023,7 +1024,7 @@ jobs:
       set PATH=C:\Program Files\OpenCppCoverage;%PATH%
       cd $(Build.SourcesDirectory)\test\functional\sqlsrv
       set MSSQL_SERVER=(localdb)\MSSQLLocalDB
-      set MSSQL_USER=$(uid)
+      set MSSQL_USER=$(sqlUser)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(sqlsrv_db)
       OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\sqlsrv.log
@@ -1033,7 +1034,7 @@ jobs:
       set PATH=C:\Program Files\OpenCppCoverage;%PATH%
       cd $(Build.SourcesDirectory)\test\functional\pdo_sqlsrv
       set MSSQL_SERVER=(localdb)\MSSQLLocalDB
-      set MSSQL_USER=$(uid)
+      set MSSQL_USER=$(sqlUser)
       set MSSQL_PASSWORD=$(pwd)
       set MSSQL_DATABASE_NAME=$(pdo_sqlsrv_db)
       OpenCppCoverage --sources $(Build.SourcesDirectory)\buildscripts --modules php_pdo_sqlsrv.dll --cover_children --export_type cobertura:$(Build.SourcesDirectory)\coverage-pdo_sqlsrv.xml -- php run-tests.php *.phpt --no-color --show-diff 2>&1 | tee ..\pdo_sqlsrv.log
