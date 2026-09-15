@@ -131,6 +131,56 @@ class string_parser
 // PDO DSN Parser
 //*********************************************************************************************************************************
 
+enum PDO_CONN_OPTIONS {
+    PDO_CONN_OPTION_SERVER = SQLSRV_CONN_OPTION_DRIVER_SPECIFIC,
+    PDO_CONN_OPTION_PASSWORD,
+};
+
+// The factory owns this buffer throughout parsing and connection establishment.
+// Never retain password copies in Zend strings (including interned empty strings)
+// or the ordinary options hash, whose destructor does not erase secret bytes.
+class pdo_secure_password
+{
+    private:
+        char* value;
+        size_t length;
+
+    public:
+        pdo_secure_password() : value(NULL), length(0) {}
+        pdo_secure_password(const pdo_secure_password&) = delete;
+        pdo_secure_password& operator=(const pdo_secure_password&) = delete;
+
+        ~pdo_secure_password()
+        {
+            reset();
+        }
+
+        void reset()
+        {
+            if (value != NULL) {
+                core_sqlsrv_secure_zero(value, length + 1);
+                sqlsrv_free(value);
+                value = NULL;
+                length = 0;
+            }
+        }
+
+        // Input is a borrowed slice of the original DSN, never this buffer.
+        void assign(_In_reads_bytes_(len) const char* input, _In_ size_t len)
+        {
+            reset(); // wipe superseded aliases before allocating their replacement
+            value = static_cast<char*>(sqlsrv_malloc(len, sizeof(char), 1));
+            length = len;
+            if (len != 0) {
+                memcpy(value, input, len);
+            }
+            value[len] = '\0';
+        }
+
+        const char* get() const { return value; }
+        size_t size() const { return length; }
+};
+
 // Parser class used to parse DSN connection string.
 class conn_string_parser : private string_parser
 {
@@ -147,11 +197,14 @@ class conn_string_parser : private string_parser
 
     private:
         const char* current_key_name;
+        pdo_secure_password& password;
+        void add_conn_option( _In_reads_(val_len) const char* value, _In_ int val_len );
         int discard_trailing_white_spaces( _In_reads_(buf_len) const char* str, _Inout_ int buf_len );
         void validate_key( _In_reads_(key_len) const char *key, _Inout_ int key_len);
 
     public:
-        conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len, _In_ HashTable* conn_options_ht );
+        conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len,
+                            _In_ HashTable* conn_options_ht, _Inout_ pdo_secure_password& dsn_password );
         void parse_conn_string( void );
 };
 

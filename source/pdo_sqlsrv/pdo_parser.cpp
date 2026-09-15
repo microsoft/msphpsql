@@ -26,7 +26,9 @@ extern "C" {
 #include "php_pdo_sqlsrv_int.h"
 
 // Constructor
-conn_string_parser:: conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len, _In_ HashTable* conn_options_ht )
+conn_string_parser:: conn_string_parser( _In_ sqlsrv_context& ctx, _In_ const char* dsn, _In_ int len,
+                                        _In_ HashTable* conn_options_ht, _Inout_ pdo_secure_password& dsn_password ) :
+    password(dsn_password)
 {
     this->orig_str = dsn;
     this->len = len;
@@ -139,6 +141,18 @@ void string_parser::add_key_value_pair( _In_reads_(val_len) const char* value, _
     core::sqlsrv_zend_hash_index_update( *ctx, this->element_ht, this->current_key, &value_z );
 }
 
+// Intercept password values before the ordinary helper makes a Zend string copy.
+// The factory's secure owner also covers parser failures and overwritten aliases.
+void conn_string_parser::add_conn_option( _In_reads_(val_len) const char* value, _In_ int val_len )
+{
+    if (this->current_key == PDO_CONN_OPTION_PASSWORD) {
+        this->password.assign(value, static_cast<size_t>(val_len));
+    }
+    else {
+        add_key_value_pair(value, val_len);
+    }
+}
+
 // Add a key-value pair to the hashtable with int value
 void sql_string_parser::add_key_int_value_pair( _In_ unsigned int value ) {
     zval value_z;
@@ -236,7 +250,7 @@ void conn_string_parser:: parse_conn_string( void )
                     // if EOS encountered after 0 or more spaces OR semi-colon encountered.
                     if( !discard_white_spaces() || this->orig_str[pos] == ';' ) {
 
-                        add_key_value_pair( NULL, 0 );
+                        add_conn_option( NULL, 0 );
 
                         if( this->is_eos() ) {
 
@@ -298,7 +312,7 @@ void conn_string_parser:: parse_conn_string( void )
                         state = NextKeyValuePair;
                     }
 
-                    add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos );
+                    add_conn_option( &( this->orig_str[start_pos] ), this->pos - start_pos );
 
                     SQLSRV_ASSERT((( state == NextKeyValuePair ) || ( this->is_eos() )),
                                   "conn_string_parser::parse_conn_string: Invalid state encountered " );
@@ -313,7 +327,7 @@ void conn_string_parser:: parse_conn_string( void )
                     if( !next() ) {
 
                         // EOS
-                        add_key_value_pair( &( this->orig_str[start_pos] ), this->pos - start_pos );
+                        add_conn_option( &( this->orig_str[start_pos] ), this->pos - start_pos );
                         break;
                     }
 
@@ -340,7 +354,7 @@ void conn_string_parser:: parse_conn_string( void )
                         if( ! this->discard_white_spaces() ) {
 
                             //EOS
-                            add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos );
+                            add_conn_option( &( this->orig_str[start_pos] ), end_pos - start_pos );
                             break;
                         }
                     }
@@ -348,7 +362,7 @@ void conn_string_parser:: parse_conn_string( void )
                     // if semi-colon than go to next key-value pair
                     if ( this->orig_str[pos] == ';' ) {
 
-                        add_key_value_pair( &( this->orig_str[start_pos] ), end_pos - start_pos );
+                        add_conn_option( &( this->orig_str[start_pos] ), end_pos - start_pos );
                         state = NextKeyValuePair;
                         break;
                     }

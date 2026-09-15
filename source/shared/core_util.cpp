@@ -21,6 +21,21 @@
 
 #include "core_sqlsrv.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <string.h>
+#endif
+
+void core_sqlsrv_secure_zero( _Out_writes_bytes_(len) void* ptr, _In_ size_t len )
+{
+#ifdef _WIN32
+    SecureZeroMemory(ptr, len);
+#else
+    explicit_bzero(ptr, len);
+#endif
+}
+
 namespace {
 
 severity_callback g_driver_severity;
