@@ -59,6 +59,7 @@ struct cp_iconv
 
 const cp_iconv cp_iconv::g_cp_iconv[] = {
     { 65001, "UTF-8" },
+    { 65002, "UTF-8" },
     {  1200, "UTF-16LE" },
     {     3, "UTF-8" },
     {     2, "" },
