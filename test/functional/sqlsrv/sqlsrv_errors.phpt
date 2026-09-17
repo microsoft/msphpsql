@@ -34,7 +34,7 @@ sqlsrv_close returns true even if an error happens.
 
     require('MsCommon.inc');
 
-    $conn = sqlsrv_connect("InvalidServerName", array( "Database" => "test" ));
+    $conn = sqlsrv_connect("InvalidServerName", array( "Database" => "test", "LoginTimeout" => 1 ));
     try {
         $result = sqlsrv_close($conn);
         if ($result !== false) {
