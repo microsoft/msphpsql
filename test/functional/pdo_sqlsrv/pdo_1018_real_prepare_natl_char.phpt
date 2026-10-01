@@ -1,10 +1,11 @@
 --TEST--
 GitHub issue 1018 - Test real prepared statements with the extended string types 
 --DESCRIPTION--
-This test verifies the extended string types, PDO::ATTR_DEFAULT_STR_PARAM, PDO::PARAM_STR_NATL and
-PDO::PARAM_STR_CHAR will NOT affect real prepared statements. Unlike emulate prepared statements,
-real prepared statements will only be affected by the parameter encoding. If not set, it will use
-the statement encoding or the connection one, which is by default UTF-8.
+This test verifies how the extended string types, PDO::PARAM_STR_NATL and PDO::PARAM_STR_CHAR,
+affect real prepared statements. A UTF-8 parameter marked PDO::PARAM_STR_CHAR is declared as varchar,
+as in emulated prepared statements, so characters outside the server code page are replaced. Otherwise
+only the parameter encoding matters. If not set, it will use the statement encoding or the connection
+one, which is by default UTF-8. See pdo_1587_real_prepare_param_str_char.phpt for the declared types.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
@@ -61,19 +62,20 @@ function insertRead($conn, $pdoStrParam, $value, $testCase, $id, $encoding = fal
 
 function testUTF8encoding($conn)
 {
-    global $p, $tableName;
+    global $p, $p1, $tableName;
 
     // Create a NVARCHAR column
     $sql = "CREATE TABLE $tableName (ID int identity(1,1), Col1 NVARCHAR(100))";
     $conn->query($sql);
 
-    // The extended string types PDO::PARAM_STR_NATL and PDO::PARAM_STR_CHAR
-    // will be ignored in the following test cases. Only the statement or
-    // the connection encoding matters.
+    // A UTF-8 parameter marked PDO::PARAM_STR_CHAR is declared as varchar,
+    // so the characters outside the server code page are replaced (expect $p1),
+    // just as with emulated prepared statements. PDO::PARAM_STR_NATL and the
+    // default keep the nvarchar binding.
 
-    // Test case 1: PDO::PARAM_STR_CHAR
+    // Test case 1: PDO::PARAM_STR_CHAR (expect $p1)
     $testCase = 'UTF-8 case 1: no default but specifies PDO::PARAM_STR_CHAR';
-    insertRead($conn, PDO::PARAM_STR | PDO::PARAM_STR_CHAR, $p, $testCase, 1);
+    insertRead($conn, PDO::PARAM_STR | PDO::PARAM_STR_CHAR, $p1, $testCase, 1);
 
     // Test case 2: PDO::PARAM_STR_NATL
     $testCase = 'UTF-8 case 2: no default but specifies PDO::PARAM_STR_NATL';
@@ -99,8 +101,8 @@ function testNonUTF8encoding($conn)
     $conn->query($sql);
 
     // The extended string types PDO::PARAM_STR_NATL and PDO::PARAM_STR_CHAR
-    // will be ignored in the following test cases. Only the statement or
-    // the connection encoding matters.
+    // only affect UTF-8 parameters. With the system encoding the parameter is
+    // already declared as varchar, so only the encoding matters here.
 
     // Test case 1: PDO::PARAM_STR_CHAR (expect $p1)
     $testCase = 'System case 1: no default but specifies PDO::PARAM_STR_CHAR';
