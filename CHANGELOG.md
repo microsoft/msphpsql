@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ### Fixed
 - Bounded connection-option brace validation to the supplied value length, avoiding reads past the terminator of brace-quoted values.
 - Securely erase driver-owned PDO DSN password copies before releasing or replacing them, including parser errors and connection failures. Original PDO/caller-owned strings and exception trace behavior are unchanged.
+- Issue [#1685](https://github.com/microsoft/msphpsql/issues/1685) - PDO_SQLSRV fetches no longer slow down with the number of bound parameters. The driver now opts out of the PDO `FETCH_PRE`, `FETCH_POST` and `NORMALIZE` parameter events, which its parameter hook ignores, so PDO no longer calls the hook for every bound parameter on every fetched row.
 
 ## 5.13.3 - 2026-08-07
 Updated PECL release packages. Here is the list of updates:
