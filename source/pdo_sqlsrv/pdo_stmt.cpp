@@ -1267,7 +1267,8 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
 // This function pulls several duties for binding parameters and columns.
 // It takes an event as a parameter that explains what the function should do on
 // behalf of a parameter or column.  We only use one of these events,
-// PDO_PARAM_EVT_EXEC_PRE, the remainder simply return.
+// PDO_PARAM_EVT_EXEC_PRE, the remainder simply return. The FETCH_PRE, FETCH_POST and
+// NORMALIZE events are skipped via dbh->skip_param_evt (see pdo_sqlsrv_db_handle_factory).
 // Paramters:
 // stmt - PDO Statement object to bind a parameter.
 // param - paramter to bind.
