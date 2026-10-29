@@ -5,11 +5,15 @@ on:
     branches: [ "dev" ]
     paths:
       - 'test/Performance/setup_env_windows*.ps1'
+      - 'buildscripts/php_release.Tests.ps1'
+      - 'azure-pipelines.yml'
       - '.github/workflows/windows-performance-setup.yml'
   push:
     branches: [ "dev" ]
     paths:
       - 'test/Performance/setup_env_windows*.ps1'
+      - 'buildscripts/php_release.Tests.ps1'
+      - 'azure-pipelines.yml'
       - '.github/workflows/windows-performance-setup.yml'
 
 permissions:
@@ -25,7 +29,7 @@ jobs:
         shell: powershell
         run: |
           Import-Module Pester -RequiredVersion 3.4.0
-          $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1 -PassThru
+          $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1, .\buildscripts\php_release.Tests.ps1 -PassThru
           if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) {
               throw "Windows setup regression tests failed or did not execute."
           }
@@ -34,7 +38,7 @@ jobs:
         run: |
           $command = @'
           Import-Module Pester -RequiredVersion 3.4.0
-          $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1 -PassThru
+          $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1, .\buildscripts\php_release.Tests.ps1 -PassThru
           if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) {
               throw 'Windows setup regression tests failed or did not execute.'
           }
