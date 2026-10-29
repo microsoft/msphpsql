@@ -20,7 +20,9 @@ jobs:
 - job: macOS
   pool:
     vmImage: 'macos-latest'
-  timeoutInMinutes: 90
+  # Homebrew no longer provides Intel bottles; source-built setup can take over 80 minutes.
+  # Allow PHP compilation and both complete functional suites to run after provisioning.
+  timeoutInMinutes: 150
   variables:
     phpver: '8.5'
     macOS_sqlsrv_db: 'macos_sqlsrv_testdb'
