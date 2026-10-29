@@ -804,8 +804,8 @@ jobs:
       
       Write-Host "Installing PHP $(phpVersion) version $version"
       
-      # PHP 8.5+ uses VS17, earlier versions use VS16
-      $vsVersion = if ([version]$version -ge [version]"8.5.0") { "vs17" } else { "vs16" }
+      # Compare the PHP version without a Windows packaging revision (e.g. 8.5.12-1).
+      $vsVersion = if ([version]($version -split '-', 2)[0] -ge [version]"8.5.0") { "vs17" } else { "vs16" }
       
       # Download PHP NTS x64
       $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$vsVersion-x64.zip"
