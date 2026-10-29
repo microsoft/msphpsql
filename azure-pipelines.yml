@@ -956,7 +956,8 @@ jobs:
       $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
       $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
       $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
-      $env:VERSION = $jsondata.{$(phpVersion)}.version
+      # builddrivers.py uses upstream php-src tags, not Windows packaging revisions.
+      $env:VERSION = ($jsondata.{$(phpVersion)}.version -split '-', 2)[0]
       Write-Host "Latest PHP $(phpVersion) is ${env:VERSION}"
       cd $(Build.SourcesDirectory)\buildscripts\
       python -u builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME

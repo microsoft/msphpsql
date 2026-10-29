@@ -2,9 +2,11 @@ $ErrorActionPreference = 'Stop'
 $pipeline = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\azure-pipelines.yml') -Raw
 $selection = [regex]::Match($pipeline, '(?m)^\s*\$vsVersion = if .+$').Value.Trim()
 $download = [regex]::Match($pipeline, '(?m)^\s*\$phpUrl = "https://windows\.php\.net/downloads/releases/php-.+$').Value.Trim()
-if (-not $selection -or -not $download) {
+$buildVersion = [regex]::Match($pipeline, '(?m)^\s*\$env:VERSION = .+$').Value.Trim()
+if (-not $selection -or -not $download -or -not $buildVersion) {
     throw 'Could not locate Windows PHP release selection in azure-pipelines.yml.'
 }
+$buildVersion = $buildVersion.Replace('$(phpVersion)', '8.5').Replace('$env:VERSION', '$sourceVersion')
 
 # Evaluate only the two assignments under test, never the provisioning steps.
 Describe 'Windows PHP release selection' {
@@ -32,5 +34,18 @@ Describe 'Windows PHP release selection' {
     It 'does not choose a compiler silently for malformed version data' {
         $version = 'invalid-1'
         { . ([scriptblock]::Create($selection)) } | Should Throw
+    }
+
+    It 'uses the upstream Git tag version for a repackaged PHP build' {
+        $jsondata = '{"8.5":{"version":"8.5.12-1"}}' | ConvertFrom-Json
+        . ([scriptblock]::Create($buildVersion))
+        $sourceVersion | Should Be '8.5.12'
+        ('php-' + $sourceVersion.Replace('-', '')) | Should Be 'php-8.5.12'
+    }
+
+    It 'preserves an ordinary upstream source version' {
+        $jsondata = '{"8.5":{"version":"8.5.0"}}' | ConvertFrom-Json
+        . ([scriptblock]::Create($buildVersion))
+        $sourceVersion | Should Be '8.5.0'
     }
 }
