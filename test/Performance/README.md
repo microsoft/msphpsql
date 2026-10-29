@@ -11,6 +11,46 @@ Run `Windows PowerShell` as administrator.
     Set-ExecutionPolicy Unrestricted
     .\setup_env_windows.ps1 <absolute path to the PHP zip file> <absolute path to the SQLSRV driver DLL> <absolute path to the PDO_SQLSRV driver DLL>
 
+The Windows setup script is intended for a clean benchmark machine using Windows
+PowerShell 5.1, not PowerShell Core. It keeps PHP in `C:\php` and
+preserves the existing Machine PATH, including installer-added entries. It adds
+only the verified PHP and Git `cmd` directories to Machine PATH so that
+`run-perf_tests.py` can still invoke `php` in fresh shells. Process-only and user
+PATH entries are not copied into Machine PATH; existing machine entries are not
+removed or reordered.
+
+Setup stops on failed native installers or unsafe installation state. Tool
+directories must be on local fixed drives. They, their executable/library
+descendants, and ancestors must have trusted ownership (Administrators, SYSTEM,
+or TrustedInstaller) and must not grant
+other principals write or replacement rights. Reparse points are rejected. An
+existing `C:\php` must pass these checks before replacement, and its replacement
+is created with an administrator-owned DACL granting Administrators/SYSTEM full
+control and Users read/execute access. Setup does not repair or delete an
+untrusted installation: use a clean machine or have its administrator investigate
+the reported path.
+
+After Chocolatey successfully installs Python, setup requires exactly one
+distinct machine-wide Python 3 installation registered under HKLM. Missing,
+ambiguous, inaccessible, or unsafe installations cause an explicit error rather
+than a wildcard or PATH fallback. The selected interpreter runs `-I -m pip` to
+keep the working directory and user Python module paths out of pip module
+selection. Package versions and the requested `pyodbc` dependency are unchanged.
+Composer uses the fully qualified `C:\php\php.exe`.
+
+To run the setup regression checks in Windows PowerShell with Pester 3.4, use an
+environment whose script-signing policy permits these repository tests. Do not
+relax a shared host's execution policy to run them.
+
+    Invoke-Pester -Script .\setup_env_windows.Tests.ps1 -EnableExit
+
+These checks load only the setup functions, use in-memory security descriptors
+and mocked filesystem/registry operations, and run harmless `cmd.exe` exit-code
+probes. They never run provisioning or change Machine PATH or filesystem ACLs.
+An elevated end-to-end installation and effective-permission checks still
+require a disposable Windows benchmark machine; unit checks do not establish
+that an existing host's installation is safe.
+
 ### Ubuntu 16
     sudo env "PATH=$PATH" bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
 ### RedHat 7
