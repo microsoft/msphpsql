@@ -61,18 +61,18 @@ Describe 'Windows setup native exit handling' {
 Describe 'Installed Chocolatey Python selection' {
     BeforeEach {
         $script:pythonDirectory = 'C:\Python312'
+        Mock Test-Path { $true }
+        Mock Get-Content {
+            '<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"><metadata><id>python3</id><version>3.12.9</version></metadata></package>'
+        }
+        Mock Open-SetupPythonRegistry {
+            $key = [pscustomobject]@{ Directory = $script:pythonDirectory }
+            $key | Add-Member ScriptMethod GetValue { param($Name) $this.Directory }
+            $key | Add-Member ScriptMethod Dispose {}
+            $key
+        }
+        Mock Assert-TrustedSetupPath {}
     }
-    Mock Test-Path { $true }
-    Mock Get-Content {
-        '<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"><metadata><id>python3</id><version>3.12.9</version></metadata></package>'
-    }
-    Mock Open-SetupPythonRegistry {
-        $key = [pscustomobject]@{ Directory = $script:pythonDirectory }
-        $key | Add-Member ScriptMethod GetValue { param($Name) $this.Directory }
-        $key | Add-Member ScriptMethod Dispose {}
-        $key
-    }
-    Mock Assert-TrustedSetupPath {}
 
     It 'returns the registered interpreter, not pip or a PATH match' {
         Get-SetupPython 'C:\ProgramData\chocolatey' | Should Be 'C:\Python312\python.exe'
@@ -187,6 +187,13 @@ Describe 'Setup directory security descriptors' {
         { Assert-TrustedSetupItem $item } | Should Not Throw
     }
 
+    It 'accepts ProgramData-style ancestor write rights without delete or permission-control rights' {
+        $item.FullName = 'C:\ProgramData'
+        $acl.SetSecurityDescriptorSddlForm('O:SYD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;FW;;;BU)')
+        { Assert-TrustedSetupItem $item -Ancestor } | Should Not Throw
+        { Assert-TrustedSetupItem $item } | Should Throw 'must not grant write or replacement rights'
+    }
+
     It 'still rejects volume-root delete-child rights' {
         $item.FullName = 'C:\'
         $acl.SetSecurityDescriptorSddlForm('O:BAD:(A;;FA;;;BA)(A;;0x40;;;AU)')
@@ -206,16 +213,18 @@ Describe 'Setup directory security descriptors' {
 }
 
 Describe 'Setup path and descendant validation' {
-    Mock Get-Item {
-        [pscustomobject]@{ FullName = $LiteralPath; Attributes = [IO.FileAttributes]::Directory; PSIsContainer = $true }
-    }
-    Mock Get-Acl { New-SetupDirectoryAcl }
-    Mock Get-ChildItem {
-        if ($LiteralPath -eq 'C:\php') {
-            [pscustomobject]@{ FullName = 'C:\php\ext'; Attributes = [IO.FileAttributes]::Directory; PSIsContainer = $true }
+    BeforeEach {
+        Mock Get-Item {
+            [pscustomobject]@{ FullName = $LiteralPath; Attributes = [IO.FileAttributes]::Directory; PSIsContainer = $true }
         }
-        elseif ($LiteralPath -eq 'C:\php\ext') {
-            [pscustomobject]@{ FullName = 'C:\php\ext\php_sqlsrv.dll'; Attributes = [IO.FileAttributes]::Normal; PSIsContainer = $false }
+        Mock Get-Acl { New-SetupDirectoryAcl }
+        Mock Get-ChildItem {
+            if ($LiteralPath -eq 'C:\php') {
+                [pscustomobject]@{ FullName = 'C:\php\ext'; Attributes = [IO.FileAttributes]::Directory; PSIsContainer = $true }
+            }
+            elseif ($LiteralPath -eq 'C:\php\ext') {
+                [pscustomobject]@{ FullName = 'C:\php\ext\php_sqlsrv.dll'; Attributes = [IO.FileAttributes]::Normal; PSIsContainer = $false }
+            }
         }
     }
 
@@ -270,11 +279,13 @@ Describe 'Setup path and descendant validation' {
 }
 
 Describe 'PHP replacement failure handling' {
-    Mock Test-Path { $true }
-    Mock Assert-TrustedSetupPath {}
-    Mock Remove-Item {}
-    # These cases must stop before the real Directory.CreateDirectory call.
-    Mock New-SetupDirectoryAcl { throw 'Unexpected directory creation' }
+    BeforeEach {
+        Mock Test-Path { $true }
+        Mock Assert-TrustedSetupPath {}
+        Mock Remove-Item {}
+        # These cases must stop before the real Directory.CreateDirectory call.
+        Mock New-SetupDirectoryAcl { throw 'Unexpected directory creation' }
+    }
 
     It 'refuses to remove an untrusted existing installation' {
         Mock Assert-TrustedSetupPath {

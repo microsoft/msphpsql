@@ -14,7 +14,7 @@ if ($PSVersionTable.PSEdition -eq 'Core') {
 }
 
 function Assert-TrustedSetupItem {
-    param($Item)
+    param($Item, [switch]$Ancestor)
 
     if ($Item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
         throw "Reparse points are not supported for setup tools: $($Item.FullName)"
@@ -34,15 +34,14 @@ function Assert-TrustedSetupItem {
         throw "Setup tool paths must be owned by Administrators, SYSTEM or TrustedInstaller: $($Item.FullName)"
     }
 
-    $writeRights = [int64][Security.AccessControl.FileSystemRights]::Write -bor
-        [int64][Security.AccessControl.FileSystemRights]::Delete -bor
+    $writeRights = [int64][Security.AccessControl.FileSystemRights]::Delete -bor
         [int64][Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor
         [int64][Security.AccessControl.FileSystemRights]::ChangePermissions -bor
         [int64][Security.AccessControl.FileSystemRights]::TakeOwnership -bor
-        0x10000000 -bor 0x40000000 # GENERIC_ALL and GENERIC_WRITE
-    if ($Item.FullName -eq [IO.Path]::GetPathRoot($Item.FullName)) {
-        # Creating siblings on a volume does not permit replacing an existing protected directory.
-        $writeRights = $writeRights -band (-bnot 6)
+        0x10000000 # GENERIC_ALL
+    if (-not $Ancestor -and $Item.FullName -ne [IO.Path]::GetPathRoot($Item.FullName)) {
+        # Ancestor write/create rights alone do not permit replacing an existing protected child.
+        $writeRights = $writeRights -bor [int64][Security.AccessControl.FileSystemRights]::Write -bor 0x40000000
     }
 
     foreach ($rule in $acl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
@@ -65,7 +64,7 @@ function Assert-TrustedSetupPath {
     Assert-TrustedSetupItem $item
     $parent = Split-Path -Path $item.FullName -Parent
     while ($parent) {
-        Assert-TrustedSetupItem (Get-Item -LiteralPath $parent -Force -ErrorAction Stop)
+        Assert-TrustedSetupItem (Get-Item -LiteralPath $parent -Force -ErrorAction Stop) -Ancestor
         $parent = Split-Path -Path $parent -Parent
     }
 

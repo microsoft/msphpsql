@@ -25,6 +25,8 @@ reparse points. Recursive checks cover the selected Python/PHP installations
 (including executable and extension/module files) and the Git `cmd` directory,
 not all installed Chocolatey packages or the entire Git installation.
 Administrators, SYSTEM, and TrustedInstaller are trusted owners/writers.
+Ancestor checks reject replacement and permission-control rights, not ordinary
+sibling-creation rights such as the default permissions on `C:\ProgramData`.
 An existing `C:\php` must be trusted before replacement; failed cleanup stops
 setup. The replacement directory grants Administrators/SYSTEM full control and
 Users read/execute through an administrator-owned protected DACL.
@@ -47,8 +49,8 @@ relax a shared host's execution policy to run them.
 These checks load only the setup functions, use in-memory security descriptors
 and mocked filesystem/registry operations, and run harmless `cmd.exe` exit-code
 probes. They never run provisioning or change Machine PATH or filesystem ACLs.
-The Windows performance setup tests workflow runs them on a GitHub-hosted Windows
-runner for changes to the setup scripts.
+The Windows performance setup tests workflow runs them in both 32-bit and 64-bit
+Windows PowerShell on a GitHub-hosted Windows runner for changes to the setup scripts.
 An elevated end-to-end installation and effective-permission checks still
 require a disposable Windows benchmark machine; unit checks do not establish
 that an existing host's installation is safe.
