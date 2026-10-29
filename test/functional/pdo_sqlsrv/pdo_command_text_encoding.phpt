@@ -79,8 +79,9 @@ foreach (['default UTF-8', 'explicit UTF-8', 'SYSTEM'] as $mode) {
         foreach ([PDO::SQLSRV_ENCODING_DEFAULT, $mode === 'SYSTEM'
             ? PDO::SQLSRV_ENCODING_SYSTEM : PDO::SQLSRV_ENCODING_UTF8] as $encoding) {
             foreach (['array', 'bindValue', 'bindParam'] as $binding) {
+                // The emulation parser reserves a placeholder followed by '=' for output assignment.
                 $stmt = $conn->prepare(
-                    "SELECT CASE WHEN $placeholder = $expected THEN 1 ELSE 0 END",
+                    "SELECT CASE WHEN $expected = $placeholder THEN 1 ELSE 0 END",
                     [PDO::ATTR_EMULATE_PREPARES => true, PDO::SQLSRV_ATTR_ENCODING => $encoding]
                 );
                 $value = $legacy['lead'] . "'text";

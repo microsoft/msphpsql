@@ -6,10 +6,11 @@ validates the outcome reported by "sqlsrv_rows_affected".
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
+<?php require('skipif_ansi_fixture.inc'); require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
+setUSAnsiLocale();
 
 function deleteQuery()
 {
