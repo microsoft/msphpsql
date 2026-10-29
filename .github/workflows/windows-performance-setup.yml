@@ -19,17 +19,18 @@ jobs:
   setup-tests:
     runs-on: windows-2022
     timeout-minutes: 10
-    strategy:
-      matrix:
-        include:
-          - architecture: x64
-            shell: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -File {0}'
-          - architecture: x86
-            shell: 'C:\Windows\SysWOW64\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -File {0}'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - name: Run isolated setup regression tests (no provisioning)
-        shell: ${{ matrix.shell }}
+      - name: Run setup regression tests in 64-bit Windows PowerShell (no provisioning)
+        shell: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -File {0}'
+        run: |
+          Import-Module Pester -RequiredVersion 3.4.0
+          $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1 -PassThru
+          if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) {
+              throw "Windows setup regression tests failed or did not execute."
+          }
+      - name: Run setup regression tests in 32-bit Windows PowerShell (no provisioning)
+        shell: 'C:\Windows\SysWOW64\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -File {0}'
         run: |
           Import-Module Pester -RequiredVersion 3.4.0
           $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1 -PassThru
