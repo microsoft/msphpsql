@@ -770,7 +770,8 @@ jobs:
   variables:
     phpVersion: 8.5
   pool:
-    vmImage: 'windows-latest'
+    # PHP's vs17 SDK requires Visual Studio 2022, not the latest VS2026 image.
+    vmImage: 'windows-2022'
   steps:
   - checkout: self
     clean: true
