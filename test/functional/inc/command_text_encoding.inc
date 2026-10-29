@@ -9,7 +9,8 @@ function commandTextLocale()
     // Set LC_CTYPE before the first connection initializes the driver's locale.
     $locales = array_unique([
         setlocale(LC_CTYPE, 0),
-        'zh_CN.gbk', 'zh_CN.GBK', 'zh_TW.BIG5', 'zh_TW.big5', 'ja_JP.CP932',
+        'zh_CN.gbk', 'zh_CN.GBK', 'zh_CN.gb2312',
+        'zh_TW.BIG5', 'zh_TW.big5', 'ja_JP.CP932',
     ]);
     foreach ($locales as $locale) {
         if (preg_match('/\.(gbk|gb2312|CP936)$/i', $locale)) {
