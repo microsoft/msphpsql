@@ -129,9 +129,19 @@ jobs:
          exit 1
       fi
       
-      # OpenSSL workaround for ODBC driver compatibility
-      echo "Configuring OpenSSL..."
-      brew reinstall openssl@1.1 || true
+      # ODBC 18 loads opt/openssl, but Homebrew's alias now resolves to unsupported OpenSSL 4.
+      # Keep the compatibility alias on this disposable runner for sqlcmd and PHP child processes.
+      brew install openssl@3
+      openssl_prefix="$(brew --prefix openssl@3)"
+      test -r "$openssl_prefix/lib/libssl.3.dylib"
+      test -r "$openssl_prefix/lib/libcrypto.3.dylib"
+      openssl_link="$(brew --prefix)/opt/openssl"
+      if [[ -e "$openssl_link" && ! -L "$openssl_link" ]]; then
+        echo "##[error]Expected a Homebrew symlink at $openssl_link"
+        exit 1
+      fi
+      ln -sfn "$openssl_prefix" "$openssl_link"
+      "$openssl_link/bin/openssl" version | grep '^OpenSSL 3\.'
       
       # Add tools to PATH
       echo "##vso[task.prependpath]/opt/homebrew/opt/mssql-tools18/bin"
