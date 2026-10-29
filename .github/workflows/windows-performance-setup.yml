@@ -1,0 +1,31 @@
+name: Windows performance setup tests
+
+on:
+  pull_request:
+    branches: [ "dev" ]
+    paths:
+      - 'test/Performance/setup_env_windows*.ps1'
+      - '.github/workflows/windows-performance-setup.yml'
+  push:
+    branches: [ "dev" ]
+    paths:
+      - 'test/Performance/setup_env_windows*.ps1'
+      - '.github/workflows/windows-performance-setup.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  setup-tests:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Run isolated setup regression tests (no provisioning)
+        shell: powershell
+        run: |
+          Import-Module Pester -RequiredVersion 3.4.0
+          $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1 -PassThru
+          if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) {
+              throw "Windows setup regression tests failed or did not execute."
+          }

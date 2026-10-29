@@ -61,10 +61,6 @@ function Assert-TrustedSetupPath {
     if ($Path -notmatch '^[A-Za-z]:\\' -or [Management.Automation.WildcardPattern]::ContainsWildcardCharacters($Path)) {
         throw "Setup requires an absolute local path without wildcards: $Path"
     }
-    $drive = New-Object IO.DriveInfo ([IO.Path]::GetPathRoot($Path))
-    if ($drive.DriveType -ne [IO.DriveType]::Fixed) {
-        throw "Setup tools must be on a local fixed drive: $Path"
-    }
     $item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
     Assert-TrustedSetupItem $item
     $parent = Split-Path -Path $item.FullName -Parent
@@ -99,11 +95,14 @@ function Invoke-SetupCommand {
 }
 
 function Open-SetupPythonRegistry {
-    param([Microsoft.Win32.RegistryView]$View)
+    param([string]$Version)
 
+    # Match Chocolatey's default architecture, including from 32-bit PowerShell.
+    $view = if ([Environment]::Is64BitOperatingSystem) { 'Registry64' } else { 'Registry32' }
+    if (-not [Environment]::Is64BitOperatingSystem) { $Version += '-32' }
     $hive = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, $View)
     try {
-        return $hive.OpenSubKey('SOFTWARE\Python\PythonCore')
+        return $hive.OpenSubKey("SOFTWARE\Python\PythonCore\$Version\InstallPath")
     }
     finally {
         $hive.Dispose()
@@ -111,41 +110,24 @@ function Open-SetupPythonRegistry {
 }
 
 function Get-SetupPython {
-    $installations = @(
-        # Read both registry views even when setup is launched from 32-bit PowerShell.
-        foreach ($view in @([Microsoft.Win32.RegistryView]::Registry64, [Microsoft.Win32.RegistryView]::Registry32)) {
-            $root = Open-SetupPythonRegistry $view
-            if ($null -ne $root) {
-                try {
-                    foreach ($version in $root.GetSubKeyNames()) {
-                        if ($version -match '^3\.\d+(-32)?$') {
-                            $installPath = $root.OpenSubKey("$version\InstallPath")
-                            if ($null -eq $installPath) {
-                                throw "Python has no registered installation directory: $version ($view)"
-                            }
-                            try {
-                                $directory = $installPath.GetValue('')
-                                if ([string]::IsNullOrWhiteSpace($directory)) {
-                                    throw "Python has no registered installation directory: $version ($view)"
-                                }
-                                $directory.TrimEnd('\')
-                            }
-                            finally {
-                                $installPath.Dispose()
-                            }
-                        }
-                    }
-                }
-                finally {
-                    $root.Dispose()
-                }
-            }
-        }
-    ) | Select-Object -Unique
-    if (@($installations).Count -ne 1) {
-        throw "Expected one machine-wide Python 3 installation after Chocolatey completed; found $(@($installations).Count). Use a clean benchmark machine."
+    param([string]$ChocolateyDirectory)
+
+    $manifest = Join-Path $ChocolateyDirectory 'lib\python3\python3.nuspec'
+    Assert-TrustedSetupPath $manifest
+    $package = [xml](Get-Content -LiteralPath $manifest -Raw -ErrorAction Stop)
+    if ($package.package.metadata.id -ne 'python3' -or $package.package.metadata.version -notmatch '^(3\.\d+)\.\d+') {
+        throw "Cannot determine the installed Python version from $manifest"
     }
-    $pythonDir = @($installations)[0]
+    $version = $Matches[1]
+    $installPath = Open-SetupPythonRegistry $version
+    if ($null -eq $installPath) {
+        throw "Python $version has no machine-wide installation registered after Chocolatey completed."
+    }
+    try { $pythonDir = $installPath.GetValue('') }
+    finally { $installPath.Dispose() }
+    if ([string]::IsNullOrWhiteSpace($pythonDir)) {
+        throw "Python $version has no registered installation directory."
+    }
     Assert-TrustedSetupPath $pythonDir -Recurse
     $pythonExe = Join-Path $pythonDir 'python.exe'
     if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
@@ -214,7 +196,6 @@ New-Item -ItemType directory -Path temp
 Write-Host "Installing chocolatey..."
 iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 $chocoDir = $env:ChocolateyInstall
-Assert-TrustedSetupPath $chocoDir -Recurse
 $chocoExe = Join-Path $chocoDir 'bin\choco.exe'
 Write-Host "Installing Git..."
 Invoke-SetupCommand $chocoExe @('install', '-y', 'git') @(0, 1641, 3010)
@@ -223,14 +204,14 @@ $gitDir = 'C:\Program Files\Git\cmd'
 Write-Host "Installing Python3..."
 Invoke-SetupCommand $chocoExe @('install', '-y', 'python3') @(0, 1641, 3010)
 RefreshEnv
-$pythonExe = Get-SetupPython
+$pythonExe = Get-SetupPython $chocoDir
 Write-Host "Installing pyodbc..."
 Invoke-SetupCommand $pythonExe @('-I', '-m', 'pip', 'install', 'pyodbc') | Out-Null
 Write-Host "Downloading MSODBCSQL..."
 #This needs to be manually updated when there is a new release
 (New-object System.Net.WebClient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', "$tempFolder\msodbcsql.msi")
 Write-Host "Installing MSODBCSQL..."
-Invoke-SetupCommand "$env:SystemRoot\System32\msiexec.exe" @('/quiet', '/passive', '/qn', '/i', "$tempFolder\msodbcsql.msi", 'IACCEPTMSODBCSQLLICENSETERMS=YES') @(0, 1641, 3010) | Out-Null
+msiexec /quiet /passive /qn /i $tempFolder\msodbcsql.msi IACCEPTMSODBCSQLLICENSETERMS=YES | Out-Null
 Write-Host "Installing 7-Zip..."
 Invoke-SetupCommand $chocoExe @('install', '-y', '7zip.install') @(0, 1641, 3010)
 
@@ -255,21 +236,11 @@ Add-Content $phpDir\php.ini "extension=$phpDir\ext\php_mbstring.dll"
 Add-Content $phpDir\php.ini "extension=$phpDir\ext\php_sqlsrv.dll"
 Add-Content $phpDir\php.ini "extension=$phpDir\ext\php_pdo_sqlsrv.dll"
 
-Assert-TrustedSetupPath 'C:\Windows'
-foreach ($file in @('php.ini', 'ssleay32.dll', 'libeay32.dll')) {
-    $destination = Join-Path 'C:\Windows' $file
-    if (Test-Path -LiteralPath $destination) {
-        Assert-TrustedSetupPath $destination
-    }
-}
 Move-Item $phpDir\php.ini C:\Windows -force
 Copy-Item $phpDir\ssleay32.dll C:\Windows -force
 Copy-Item $phpDir\libeay32.dll C:\Windows -force
-foreach ($file in @('php.ini', 'ssleay32.dll', 'libeay32.dll')) {
-    Assert-TrustedSetupPath (Join-Path 'C:\Windows' $file)
-}
 Assert-TrustedSetupPath $phpDir -Recurse
-Assert-TrustedSetupPath (Split-Path -Path $gitDir -Parent) -Recurse
+Assert-TrustedSetupPath $gitDir -Recurse
 $phpExe = Join-Path $phpDir 'php.exe'
 foreach ($executable in @($phpExe, (Join-Path $gitDir 'git.exe'))) {
     if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {

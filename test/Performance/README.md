@@ -19,24 +19,24 @@ only the verified PHP and Git `cmd` directories to Machine PATH so that
 PATH entries are not copied into Machine PATH; existing machine entries are not
 removed or reordered.
 
-Setup stops on failed native installers or unsafe installation state. Tool
-directories must be on local fixed drives. They, their executable/library
-descendants, and ancestors must have trusted ownership (Administrators, SYSTEM,
-or TrustedInstaller) and must not grant
-other principals write or replacement rights. Reparse points are rejected. An
-existing `C:\php` must pass these checks before replacement, and its replacement
-is created with an administrator-owned DACL granting Administrators/SYSTEM full
-control and Users read/execute access. Setup does not repair or delete an
-untrusted installation: use a clean machine or have its administrator investigate
-the reported path.
+Setup checks Chocolatey, pip, and Composer exit codes. Before using the selected
+tools, it checks their ownership, write/replacement permissions, ancestors, and
+reparse points. Recursive checks cover the selected Python/PHP installations
+(including executable and extension/module files) and the Git `cmd` directory,
+not all installed Chocolatey packages or the entire Git installation.
+Administrators, SYSTEM, and TrustedInstaller are trusted owners/writers.
+An existing `C:\php` must be trusted before replacement; failed cleanup stops
+setup. The replacement directory grants Administrators/SYSTEM full control and
+Users read/execute through an administrator-owned protected DACL.
 
-After Chocolatey successfully installs Python, setup requires exactly one
-distinct machine-wide Python 3 installation registered under HKLM. Missing,
-ambiguous, inaccessible, or unsafe installations cause an explicit error rather
-than a wildcard or PATH fallback. The selected interpreter runs `-I -m pip` to
-keep the working directory and user Python module paths out of pip module
-selection. Package versions and the requested `pyodbc` dependency are unchanged.
-Composer uses the fully qualified `C:\php\php.exe`.
+After Chocolatey successfully installs Python, setup reads its installed
+`python3.nuspec` version and resolves that version's machine-wide registration,
+using Chocolatey's default OS architecture. Other Python versions may coexist;
+a protected installation outside `C:\Python*` is supported. Missing metadata,
+registration, or interpreter causes an explicit error, not a wildcard/PATH
+fallback. The interpreter runs `-I -m pip` to exclude working-directory and user
+Python modules. Composer uses `C:\php\php.exe`. Package versions, the ODBC MSI
+command, and Windows configuration/library copies are unchanged.
 
 To run the setup regression checks in Windows PowerShell with Pester 3.4, use an
 environment whose script-signing policy permits these repository tests. Do not
@@ -47,6 +47,8 @@ relax a shared host's execution policy to run them.
 These checks load only the setup functions, use in-memory security descriptors
 and mocked filesystem/registry operations, and run harmless `cmd.exe` exit-code
 probes. They never run provisioning or change Machine PATH or filesystem ACLs.
+The Windows performance setup tests workflow runs them on a GitHub-hosted Windows
+runner for changes to the setup scripts.
 An elevated end-to-end installation and effective-permission checks still
 require a disposable Windows benchmark machine; unit checks do not establish
 that an existing host's installation is safe.

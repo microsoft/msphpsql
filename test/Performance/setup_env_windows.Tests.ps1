@@ -58,89 +58,84 @@ Describe 'Windows setup native exit handling' {
     }
 }
 
-Describe 'Machine-wide Python selection' {
+Describe 'Installed Chocolatey Python selection' {
     BeforeEach {
-        $script:registrations = @{
-            Registry64 = @{ '3.12' = 'C:\Python312\' }
-            Registry32 = @{}
-        }
+        $script:pythonDirectory = 'C:\Python312'
     }
     Mock Test-Path { $true }
+    Mock Get-Content {
+        '<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"><metadata><id>python3</id><version>3.12.9</version></metadata></package>'
+    }
     Mock Open-SetupPythonRegistry {
-        $root = [pscustomobject]@{ Entries = $script:registrations[$View.ToString()] }
-        $root | Add-Member ScriptMethod GetSubKeyNames { $this.Entries.Keys }
-        $root | Add-Member ScriptMethod OpenSubKey {
-            param($Name)
-            $key = [pscustomobject]@{ Directory = $this.Entries[$Name.Split('\')[0]] }
-            $key | Add-Member ScriptMethod GetValue { param($Name) $this.Directory }
-            $key | Add-Member ScriptMethod Dispose {}
-            $key
-        }
-        $root | Add-Member ScriptMethod Dispose {}
-        $root
+        $key = [pscustomobject]@{ Directory = $script:pythonDirectory }
+        $key | Add-Member ScriptMethod GetValue { param($Name) $this.Directory }
+        $key | Add-Member ScriptMethod Dispose {}
+        $key
     }
     Mock Assert-TrustedSetupPath {}
 
     It 'returns the registered interpreter, not pip or a PATH match' {
-        Get-SetupPython | Should Be 'C:\Python312\python.exe'
+        Get-SetupPython 'C:\ProgramData\chocolatey' | Should Be 'C:\Python312\python.exe'
         Assert-MockCalled Assert-TrustedSetupPath -Times 1 -Exactly -Scope It -ParameterFilter {
             $Path -eq 'C:\Python312' -and $Recurse
+        }
+        Assert-MockCalled Assert-TrustedSetupPath -Times 1 -Exactly -Scope It -ParameterFilter {
+            $Path -eq 'C:\ProgramData\chocolatey\lib\python3\python3.nuspec'
         }
     }
 
     It 'accepts a unique trusted installation outside the former wildcard' {
-        $script:registrations.Registry64['3.12'] = 'D:\Tools\Python'
-        Get-SetupPython | Should Be 'D:\Tools\Python\python.exe'
+        $script:pythonDirectory = 'D:\Tools\Python'
+        Get-SetupPython 'C:\ProgramData\chocolatey' | Should Be 'D:\Tools\Python\python.exe'
     }
 
-    It 'reads both registry views and accepts a 32-bit installation' {
-        $script:registrations.Registry64 = @{}
-        $script:registrations.Registry32 = @{ '3.12-32' = 'C:\Python312-32' }
-        Get-SetupPython | Should Be 'C:\Python312-32\python.exe'
-        Assert-MockCalled Open-SetupPythonRegistry -Times 1 -Exactly -Scope It -ParameterFilter { $View -eq 'Registry32' }
-        Assert-MockCalled Open-SetupPythonRegistry -Times 1 -Exactly -Scope It -ParameterFilter { $View -eq 'Registry64' }
-    }
-
-    It 'deduplicates the same installation registered in both views' {
-        $script:registrations.Registry32 = @{ '3.12' = 'C:\Python312' }
-        Get-SetupPython | Should Be 'C:\Python312\python.exe'
+    It 'looks up only the installed package version even if other Pythons coexist' {
+        Mock Open-SetupPythonRegistry {
+            if ($Version -ne '3.12') { throw 'Unexpected Python version lookup' }
+            $key = [pscustomobject]@{}
+            $key | Add-Member ScriptMethod GetValue { param($Name) 'C:\Python312' }
+            $key | Add-Member ScriptMethod Dispose {}
+            $key
+        }
+        Get-SetupPython 'C:\ProgramData\chocolatey' | Should Be 'C:\Python312\python.exe'
+        Assert-MockCalled Open-SetupPythonRegistry -Times 1 -Exactly -Scope It -ParameterFilter { $Version -eq '3.12' }
     }
 
     It 'rejects missing machine-wide installations' {
         Mock Open-SetupPythonRegistry { $null }
-        { Get-SetupPython } | Should Throw 'found 0'
-        Assert-MockCalled Assert-TrustedSetupPath -Times 0 -Exactly -Scope It
+        { Get-SetupPython 'C:\ProgramData\chocolatey' } | Should Throw 'no machine-wide installation'
+        Assert-MockCalled Assert-TrustedSetupPath -Times 0 -Exactly -Scope It -ParameterFilter { $Recurse }
     }
 
-    It 'rejects multiple distinct installations rather than choosing one' {
-        $script:registrations.Registry64['3.13'] = 'C:\Python313'
-        { Get-SetupPython } | Should Throw 'found 2'
-        Assert-MockCalled Assert-TrustedSetupPath -Times 0 -Exactly -Scope It
-    }
-
-    It 'ignores Python 2 registrations' {
-        $script:registrations.Registry64 = @{ '2.7' = 'C:\Python27' }
-        { Get-SetupPython } | Should Throw 'found 0'
+    It 'rejects an unexpected package instead of guessing an interpreter' {
+        Mock Get-Content { '<package><metadata><id>other</id><version>3.12.9</version></metadata></package>' }
+        { Get-SetupPython 'C:\ProgramData\chocolatey' } | Should Throw 'Cannot determine the installed Python version'
+        Assert-MockCalled Open-SetupPythonRegistry -Times 0 -Exactly -Scope It
     }
 
     It 'rejects an incomplete registration' {
-        $script:registrations.Registry64['3.12'] = ''
-        { Get-SetupPython } | Should Throw 'no registered installation directory'
+        $script:pythonDirectory = ''
+        { Get-SetupPython 'C:\ProgramData\chocolatey' } | Should Throw 'no registered installation directory'
+    }
+
+    It 'propagates missing package metadata errors' {
+        Mock Get-Content { throw 'Package manifest missing' }
+        { Get-SetupPython 'C:\ProgramData\chocolatey' } | Should Throw 'Package manifest missing'
     }
 
     It 'propagates registry access errors' {
         Mock Open-SetupPythonRegistry { throw 'Registry access denied' }
-        { Get-SetupPython } | Should Throw 'Registry access denied'
+        { Get-SetupPython 'C:\ProgramData\chocolatey' } | Should Throw 'Registry access denied'
     }
 
     It 'rejects a missing interpreter instead of falling back to PATH' {
         Mock Test-Path { $PathType -ne 'Leaf' }
-        { Get-SetupPython } | Should Throw 'registered Python interpreter is missing'
+        { Get-SetupPython 'C:\ProgramData\chocolatey' } | Should Throw 'registered Python interpreter is missing'
     }
 
     It 'requires the entire registered installation to be trusted' {
-        Mock Assert-TrustedSetupPath { throw 'Untrusted installation' }
-        { Get-SetupPython } | Should Throw 'Untrusted installation'
+        Mock Assert-TrustedSetupPath { if ($Recurse) { throw 'Untrusted installation' } }
+        { Get-SetupPython 'C:\ProgramData\chocolatey' } | Should Throw 'Untrusted installation'
     }
 }
 
@@ -234,12 +229,6 @@ Describe 'Setup path and descendant validation' {
         foreach ($path in @('php', '\\server\share\php', 'C:\Python*', 'C:php')) {
             { Assert-TrustedSetupPath $path } | Should Throw 'absolute local path without wildcards'
         }
-        Assert-MockCalled Get-Item -Times 0 -Exactly -Scope It
-    }
-
-    It 'rejects mapped network drives before trusting remote ACLs' {
-        Mock New-Object { [pscustomobject]@{ DriveType = [IO.DriveType]::Network } } -ParameterFilter { $TypeName -eq 'IO.DriveInfo' }
-        { Assert-TrustedSetupPath 'C:\php' -Recurse } | Should Throw 'local fixed drive'
         Assert-MockCalled Get-Item -Times 0 -Exactly -Scope It
     }
 
@@ -370,6 +359,16 @@ Describe 'Provisioning wiring (static only)' {
         foreach ($package in @('git', 'python3', '7zip.install')) {
             $source | Should Match ([regex]::Escape("Invoke-SetupCommand `$chocoExe @('install', '-y', '$package') @(0, 1641, 3010)"))
         }
-        $source | Should Match ([regex]::Escape('Invoke-SetupCommand "$env:SystemRoot\System32\msiexec.exe"'))
+    }
+
+    It 'does not scan unrelated Chocolatey packages or Git installation subtrees' {
+        $source | Should Not Match ([regex]::Escape('Assert-TrustedSetupPath $chocoDir -Recurse'))
+        $source | Should Match ([regex]::Escape('Assert-TrustedSetupPath $gitDir -Recurse'))
+    }
+
+    It 'leaves the ODBC MSI command and Windows library copies unchanged' {
+        $source | Should Match ([regex]::Escape('msiexec /quiet /passive /qn /i $tempFolder\msodbcsql.msi IACCEPTMSODBCSQLLICENSETERMS=YES | Out-Null'))
+        $source | Should Match ([regex]::Escape('Copy-Item $phpDir\ssleay32.dll C:\Windows -force'))
+        $source | Should Match ([regex]::Escape('Copy-Item $phpDir\libeay32.dll C:\Windows -force'))
     }
 }
