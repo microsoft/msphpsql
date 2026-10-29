@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 - The `Password` alias for `PWD` in SQLSRV connection options, and `PWD`/`Password` in PDO_SQLSRV DSNs. A non-null PDO constructor password takes precedence (including an empty string); otherwise the DSN password is used. The username still comes from the PDO constructor. Password aliases retain existing authentication restrictions and brace-escaping rules. Prefer constructor credentials when a DSN might be logged or shared.
 
 ### Fixed
+- Reject malformed command text through the existing query-encoding error path before preparation or execution in both drivers. Valid command text, supported encodings, parameter binding, and data/result conversion policies are unchanged; malformed legacy-encoded commands are no longer converted with replacement characters.
 - Bounded connection-option brace validation to the supplied value length, avoiding reads past the terminator of brace-quoted values.
 - Securely erase driver-owned PDO DSN password copies before releasing or replacing them, including parser errors and connection failures. Original PDO/caller-owned strings and exception trace behavior are unchanged.
 
