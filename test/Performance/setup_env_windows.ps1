@@ -14,7 +14,7 @@ if ($PSVersionTable.PSEdition -eq 'Core') {
 }
 
 function Assert-TrustedSetupItem {
-    param($Item, [switch]$Ancestor)
+    param($Item, [switch]$Ancestor, [switch]$CheckFileCreation)
 
     if ($Item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
         throw "Reparse points are not supported for setup tools: $($Item.FullName)"
@@ -42,6 +42,9 @@ function Assert-TrustedSetupItem {
     if (-not $Ancestor) {
         # Ancestor write/create rights alone do not permit replacing an existing protected child.
         $writeRights = $writeRights -bor [int64][Security.AccessControl.FileSystemRights]::Write -bor 0x40000000
+    }
+    if ($CheckFileCreation) {
+        $writeRights = $writeRights -bor [int64][Security.AccessControl.FileSystemRights]::WriteData -bor 0x40000000
     }
 
     foreach ($rule in $acl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
@@ -101,11 +104,28 @@ function Invoke-SetupPip {
     try {
         # Python -I isolates imports; pip separately requires os.devnull to disable config files.
         $env:PIP_CONFIG_FILE = 'nul'
+        Assert-SetupPythonStartup $Executable
         Invoke-SetupCommand $Executable (@('-I', '-m', 'pip') + $Arguments)
     }
     finally {
         [Environment]::SetEnvironmentVariable('PIP_CONFIG_FILE', $previousConfig, 'Process')
     }
+}
+
+function Assert-SetupPythonStartup {
+    param([string]$Executable)
+
+    $directory = Split-Path -Path $Executable -Parent
+    $parent = Split-Path -Path $directory -Parent
+    if (-not $parent) { $parent = $directory }
+    foreach ($location in @($directory, $parent)) {
+        $config = Join-Path $location 'pyvenv.cfg'
+        if (Test-Path -LiteralPath $config -ErrorAction Stop) {
+            throw "Setup requires a standalone Python installation without virtual-environment configuration: $config"
+        }
+    }
+    # -I still detects parent pyvenv.cfg. Prevent creating that file, not unrelated sibling directories.
+    Assert-TrustedSetupItem (Get-Item -LiteralPath $parent -Force -ErrorAction Stop) -Ancestor -CheckFileCreation
 }
 
 function Open-SetupPythonRegistry {
@@ -261,7 +281,7 @@ New-Item -ItemType directory -Path temp
 Write-Host "Installing chocolatey..."
 iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 $chocoDir = $env:ChocolateyInstall
-$chocoExe = Join-Path $chocoDir 'bin\choco.exe'
+$chocoExe = Join-Path $chocoDir 'choco.exe'
 Write-Host "Installing Git..."
 Invoke-SetupCommand $chocoExe @('install', '-y', 'git') @(0, 1641, 3010)
 

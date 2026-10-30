@@ -32,6 +32,8 @@ Ancestor checks reject replacement and permission-control rights, not ordinary
 sibling-creation rights such as the default permissions on `C:\ProgramData`.
 The executable's immediate containing directory uses the stricter target rules,
 so it cannot admit non-administrator-created DLLs or configuration files.
+Chocolatey is invoked through its real `choco.exe` in the installation directory,
+not the `bin\choco.exe` shim.
 An existing `C:\php` must be trusted before replacement; failed cleanup stops
 setup. The replacement directory grants Administrators/SYSTEM full control and
 Users read/execute through an administrator-owned protected DACL.
@@ -42,7 +44,13 @@ using Chocolatey's default OS architecture. Other Python versions may coexist;
 a protected installation outside `C:\Python*` is supported. Missing metadata,
 registration, or interpreter causes an explicit error, not a wildcard/PATH
 fallback. The interpreter runs `-I -m pip` to exclude working-directory and user
-Python modules. Because `-I` does not disable pip configuration, setup also sets
+Python modules. Because `-I` still detects virtual environments, setup requires
+the registered standalone installation to have no `pyvenv.cfg` beside the
+interpreter or one directory above it. That parent's ACL must prevent
+non-administrator file creation; harmless sibling-directory creation is allowed.
+This also prevents an absent configuration file from redirecting startup into
+an unvalidated parent `Lib\site-packages` directory.
+Because `-I` does not disable pip configuration, setup also sets
 `PIP_CONFIG_FILE=nul` only for the pip invocation, restoring the previous process
 value (or its absence) even on failure. Global, user, and site pip configuration
 files are therefore not used; other explicit pip environment settings are unchanged.

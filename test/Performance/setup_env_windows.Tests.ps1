@@ -68,6 +68,7 @@ Describe 'Windows setup native exit handling' {
 Describe 'Scoped pip configuration' {
     BeforeEach {
         $script:originalPipConfig = [Environment]::GetEnvironmentVariable('PIP_CONFIG_FILE', 'Process')
+        Mock Assert-SetupPythonStartup {}
         Mock Invoke-SetupCommand {
             if ($env:PIP_CONFIG_FILE -ne 'nul' -or $Executable -ne 'C:\Python312\python.exe' -or
                 ($Arguments -join ' ') -ne '-I -m pip install pyodbc') {
@@ -78,6 +79,14 @@ Describe 'Scoped pip configuration' {
     }
     AfterEach {
         [Environment]::SetEnvironmentVariable('PIP_CONFIG_FILE', $script:originalPipConfig, 'Process')
+    }
+
+    It 'restores configuration and never invokes Python when startup validation fails' {
+        $env:PIP_CONFIG_FILE = 'C:\Previous\pip.ini'
+        Mock Assert-SetupPythonStartup { throw 'Unsafe Python startup configuration' }
+        { Invoke-SetupPip 'C:\Python312\python.exe' @('install', 'pyodbc') } | Should Throw 'Unsafe Python startup'
+        $env:PIP_CONFIG_FILE | Should Be 'C:\Previous\pip.ini'
+        Assert-MockCalled Invoke-SetupCommand -Times 0 -Exactly -Scope It
     }
 
     foreach ($previous in @($null, 'C:\Previous\pip.ini')) {
@@ -127,6 +136,76 @@ print('pip configuration isolation verified')
         $output = & python.exe -I -c $probe
         $LASTEXITCODE | Should Be 0
         $output | Should Be 'pip configuration isolation verified'
+    }
+}
+
+Describe 'Standalone Python startup trust' {
+    BeforeEach {
+        Mock Test-Path { $false }
+        Mock Get-Item {
+            [pscustomobject]@{ FullName = $LiteralPath; Attributes = [IO.FileAttributes]::Directory; PSIsContainer = $true }
+        }
+        Mock Get-Acl { New-SetupDirectoryAcl }
+    }
+
+    foreach ($config in @('C:\Tools\Python312\pyvenv.cfg', 'C:\Tools\pyvenv.cfg')) {
+        It "rejects existing virtual-environment configuration at $config" {
+            Mock Test-Path { $LiteralPath -eq $config }
+            { Assert-SetupPythonStartup 'C:\Tools\Python312\python.exe' } | Should Throw 'standalone Python'
+        }
+    }
+
+    It 'rejects parent file creation even when pyvenv.cfg is absent' {
+        Mock Get-Acl {
+            $acl = New-SetupDirectoryAcl
+            $acl.SetSecurityDescriptorSddlForm('O:BAD:(A;;FA;;;BA)(A;;0x2;;;BU)')
+            $acl
+        }
+        { Assert-SetupPythonStartup 'C:\Tools\Python312\python.exe' } |
+            Should Throw 'must not grant write or replacement rights'
+    }
+
+    It 'rejects generic write rights on the configuration parent' {
+        Mock Get-Acl {
+            $acl = New-SetupDirectoryAcl
+            $acl.SetSecurityDescriptorSddlForm('O:BAD:(A;;GA;;;BA)(A;;GW;;;BU)')
+            $acl
+        }
+        { Assert-SetupPythonStartup 'C:\Tools\Python312\python.exe' } |
+            Should Throw 'must not grant write or replacement rights'
+    }
+
+    It 'allows root sibling-directory creation without file creation' {
+        Mock Get-Acl {
+            $acl = New-SetupDirectoryAcl
+            $acl.SetSecurityDescriptorSddlForm('O:BAD:(A;;FA;;;BA)(A;;0x4;;;BU)')
+            $acl
+        }
+        { Assert-SetupPythonStartup 'C:\Python312\python.exe' } | Should Not Throw
+        Assert-MockCalled Get-Acl -Times 1 -Exactly -Scope It -ParameterFilter { $LiteralPath -eq 'C:\' }
+    }
+
+    It 'keeps alternate protected standalone installation layouts supported' {
+        { Assert-SetupPythonStartup 'D:\Tools\Python\python.exe' } | Should Not Throw
+        Assert-MockCalled Get-Acl -Times 1 -Exactly -Scope It -ParameterFilter { $LiteralPath -eq 'D:\Tools' }
+    }
+
+    It 'does not treat inaccessible configuration as absent' {
+        Mock Test-Path { throw 'Configuration access denied' }
+        { Assert-SetupPythonStartup 'C:\Python312\python.exe' } | Should Throw 'Configuration access denied'
+    }
+}
+
+Describe 'Python virtual-environment detection under isolation' {
+    It 'detects and rejects a real parent pyvenv.cfg without executing site payloads' {
+        $fixture = Join-Path $TestDrive 'parent-config'
+        & python.exe -I -m venv --without-pip $fixture
+        $LASTEXITCODE | Should Be 0
+        $interpreter = Join-Path $fixture 'Scripts\python.exe'
+        $prefix = & $interpreter -I -c 'import sys; print(sys.prefix)'
+        $LASTEXITCODE | Should Be 0
+        $prefix | Should Be $fixture
+        { Assert-SetupPythonStartup $interpreter } | Should Throw 'standalone Python'
     }
 }
 
@@ -340,13 +419,28 @@ Describe 'Setup path and descendant validation' {
     It 'rejects a protected executable with a sibling-writable immediate directory' {
         Mock Get-Acl {
             $acl = New-SetupDirectoryAcl
-            if ($LiteralPath -eq 'C:\ProgramData\chocolatey\bin') {
+            if ($LiteralPath -eq 'C:\ProgramData\chocolatey') {
                 $acl.SetSecurityDescriptorSddlForm('O:BAD:(A;;FA;;;BA)(A;;FW;;;BU)')
             }
             $acl
         }
-        { Invoke-SetupCommand 'C:\ProgramData\chocolatey\bin\choco.exe' @() } |
+        { Invoke-SetupCommand 'C:\ProgramData\chocolatey\choco.exe' @() } |
             Should Throw 'must not grant write or replacement rights'
+    }
+
+    It 'rejects an unsafe real Chocolatey executable independently of its bin shim' {
+        Mock Get-Acl {
+            $acl = New-SetupDirectoryAcl
+            if ($LiteralPath -eq 'C:\ProgramData\chocolatey\choco.exe') {
+                $acl.SetSecurityDescriptorSddlForm('O:BAD:(A;;FA;;;BA)(A;;FW;;;BU)')
+            }
+            $acl
+        }
+        { Invoke-SetupCommand 'C:\ProgramData\chocolatey\choco.exe' @() } |
+            Should Throw 'must not grant write or replacement rights'
+        Assert-MockCalled Get-Acl -Times 0 -Exactly -Scope It -ParameterFilter {
+            $LiteralPath -eq 'C:\ProgramData\chocolatey\bin\choco.exe'
+        }
     }
 
     It 'allows harmless sibling creation on a more distant ancestor' {
@@ -357,7 +451,7 @@ Describe 'Setup path and descendant validation' {
             }
             $acl
         }
-        { Assert-TrustedSetupPath 'C:\ProgramData\chocolatey\bin' } | Should Not Throw
+        { Assert-TrustedSetupPath 'C:\ProgramData\chocolatey' } | Should Not Throw
         Assert-MockCalled Get-ChildItem -Times 0 -Exactly -Scope It
     }
 
@@ -625,6 +719,8 @@ Describe 'Provisioning wiring (static only)' {
     }
 
     It 'keeps installer failures on the checked native-command path' {
+        $source | Should Match ([regex]::Escape("`$chocoExe = Join-Path `$chocoDir 'choco.exe'"))
+        $source | Should Not Match ([regex]::Escape("Join-Path `$chocoDir 'bin\choco.exe'"))
         foreach ($package in @('git', 'python3', '7zip.install')) {
             $source | Should Match ([regex]::Escape("Invoke-SetupCommand `$chocoExe @('install', '-y', '$package') @(0, 1641, 3010)"))
         }
