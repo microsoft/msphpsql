@@ -35,3 +35,16 @@ function checkCommandText($condition, $message)
         throw new RuntimeException($message);
     }
 }
+
+function checkCommandEncodingMessage($message)
+{
+    checkCommandText(is_string($message) && $message !== '', 'Missing encoding error message');
+    if (PHP_OS_FAMILY !== 'Windows') {
+        // The Unix formatter exposes ERROR_NO_UNICODE_TRANSLATION (1113), not errno.
+        checkCommandText(
+            preg_match('/\b0x([0-9a-f]+)\b/i', $message, $match) === 1
+                && hexdec($match[1]) === 1113,
+            'Expected the converter error code, got ' . $message
+        );
+    }
+}
