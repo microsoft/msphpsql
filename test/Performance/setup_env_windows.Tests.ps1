@@ -148,10 +148,11 @@ Describe 'Standalone Python startup trust' {
         Mock Get-Acl { New-SetupDirectoryAcl }
     }
 
-    foreach ($config in @('C:\Tools\Python312\pyvenv.cfg', 'C:\Tools\pyvenv.cfg')) {
-        It "rejects existing virtual-environment configuration at $config" {
-            Mock Test-Path { $LiteralPath -eq $config }
-            { Assert-SetupPythonStartup 'C:\Tools\Python312\python.exe' } | Should Throw 'standalone Python'
+    foreach ($expectedConfigPath in @('C:\Tools\Python312\pyvenv.cfg', 'C:\Tools\pyvenv.cfg')) {
+        It "rejects existing virtual-environment configuration at $expectedConfigPath" {
+            $script:expectedStartupConfig = $expectedConfigPath
+            Mock Test-Path { $LiteralPath -eq $script:expectedStartupConfig }
+            { Assert-SetupPythonStartup 'C:\Tools\Python312\python.exe' } | Should Throw $script:expectedStartupConfig
         }
     }
 
