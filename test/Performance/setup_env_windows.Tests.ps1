@@ -69,9 +69,10 @@ Describe 'Scoped pip configuration' {
     BeforeEach {
         $script:originalPipConfig = [Environment]::GetEnvironmentVariable('PIP_CONFIG_FILE', 'Process')
         Mock Invoke-SetupCommand {
-            $env:PIP_CONFIG_FILE | Should Be 'nul'
-            $Executable | Should Be 'C:\Python312\python.exe'
-            ($Arguments -join ' ') | Should Be '-I -m pip install pyodbc'
+            if ($env:PIP_CONFIG_FILE -ne 'nul' -or $Executable -ne 'C:\Python312\python.exe' -or
+                ($Arguments -join ' ') -ne '-I -m pip install pyodbc') {
+                throw 'Unexpected pip invocation or configuration'
+            }
             'pip completed'
         }
     }
@@ -522,7 +523,7 @@ Describe 'Raw machine PATH registry persistence' {
     foreach ($operation in @('Read', 'Write')) {
         It "propagates registry $operation errors and disposes the key" {
             $environmentKey."Fail$operation" = $true
-            { Add-SetupMachinePath @('C:\php') } | Should Throw "Registry $operation denied"
+            { Add-SetupMachinePath @('C:\php') } | Should Throw "Registry $($operation.ToLowerInvariant()) denied"
             $environmentKey.Disposed | Should Be $true
             Assert-MockCalled Send-SetupEnvironmentChange -Times 0 -Exactly -Scope It
         }
