@@ -1,7 +1,7 @@
 --TEST--
 using an already closed connection.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_ansi_fixture.inc'); require('skipif.inc'); ?>
 --FILE--
 <?php
     // When testing with PHP 8.0 it throws a TypeError instead of a warning. Thus implement a custom 
@@ -17,6 +17,7 @@ using an already closed connection.
     sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
 
     require( 'MsCommon.inc' );
+    setUSAnsiLocale();
 
     $conn1 = Connect();
     sqlsrv_close($conn1);

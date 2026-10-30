@@ -835,6 +835,8 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
 #if PHP_VERSION_ID < 80100
     sqlsrv_malloc_auto_ptr<char> sql_rewrite;
     size_t sql_rewrite_len = 0;
+#else
+    std::unique_ptr<zend_string, decltype(&zend_string_release)> sql_rewrite_zstr(NULL, zend_string_release);
 #endif
     sqlsrv_malloc_auto_ptr<pdo_sqlsrv_stmt> driver_stmt;
     hash_auto_ptr placeholders;
@@ -871,7 +873,6 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         }
 
 #if PHP_VERSION_ID >= 80100
-        zend_string* sql_rewrite_zstr = NULL;
         const char* sql = ZSTR_VAL(sql_zstr);
         size_t sql_len = ZSTR_LEN(sql_zstr);
 #endif
@@ -893,15 +894,17 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
                 sql_len = sql_rewrite_len;
             }
 #else
-            int zr = pdo_parse_params(stmt, sql_zstr, &sql_rewrite_zstr);
+            zend_string* rewritten_sql = NULL;
+            int zr = pdo_parse_params(stmt, sql_zstr, &rewritten_sql);
+            sql_rewrite_zstr.reset(rewritten_sql);
             CHECK_ZEND_ERROR(zr, driver_dbh, PDO_SQLSRV_ERROR_PARAM_PARSE) {
                 throw core::CoreException();
             }
 
             // if parameter substitution happened, use that query instead of the original
-            if (sql_rewrite_zstr != NULL) {
-                sql = ZSTR_VAL(sql_rewrite_zstr);
-                sql_len = ZSTR_LEN(sql_rewrite_zstr);
+            if (sql_rewrite_zstr) {
+                sql = ZSTR_VAL(sql_rewrite_zstr.get());
+                sql_len = ZSTR_LEN(sql_rewrite_zstr.get());
             }
 #endif
         }
@@ -921,9 +924,7 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         }
 
 #if PHP_VERSION_ID >= 80100
-        if (sql_rewrite_zstr != NULL) {
-            zend_string_release(sql_rewrite_zstr);
-        }
+        sql_rewrite_zstr.reset();
 #endif
 
         // else if stmt->support_placeholders == PDO_PLACEHOLDER_NONE means that stmt->active_query_string will be
