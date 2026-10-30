@@ -8,7 +8,7 @@ Uses only table-free SELECT statements against the configured test database.
 PHPT_EXEC=true
 --SKIPIF--
 <?php
-require('skipif.inc');
+require('skipif_unix_ansitests.inc');
 require(__DIR__ . '/../inc/command_text_encoding.inc');
 if (commandTextLocale() === false) {
     die('skip requires Linux with an installed GBK/GB2312, Big5 or CP932 locale');

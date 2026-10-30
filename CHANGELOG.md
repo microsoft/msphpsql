@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 ### Fixed
 - Reject malformed command text through the existing query-encoding error path before preparation or execution in both drivers, preserving the converter's diagnostic code. Valid command text, supported encodings, parameter binding, and data/result conversion policies are unchanged; malformed commands are no longer converted with replacement characters.
+- Release PDO named-parameter query rewrites when native preparation fails.
 - Bounded connection-option brace validation to the supplied value length, avoiding reads past the terminator of brace-quoted values.
 - Securely erase driver-owned PDO DSN password copies before releasing or replacing them, including parser errors and connection failures. Original PDO/caller-owned strings and exception trace behavior are unchanged.
 

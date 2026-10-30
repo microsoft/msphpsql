@@ -58,6 +58,20 @@ foreach ($modes as $mode) {
         $conn->prepare($truncated);
     });
 
+    // Named native parameters allocate a rewritten query before command conversion.
+    $namedSql = 'SELECT :value, ' . $conn->quote($invalidValues[0]) . ' -- ' . str_repeat('x', 65536);
+    $rejectNamed = function () use ($conn, $namedSql) {
+        $conn->prepare($namedSql);
+    };
+    expectCommandEncodingError($rejectNamed);
+    $memoryBefore = memory_get_usage();
+    for ($i = 0; $i < 16; ++$i) {
+        expectCommandEncodingError($rejectNamed);
+    }
+    $memoryGrowth = memory_get_usage() - $memoryBefore;
+    checkCommandText($memoryGrowth < strlen($namedSql), 'Failed native prepares retained query memory');
+    unset($rejectNamed, $namedSql);
+
     foreach ([false, true] as $named) {
         $placeholder = $named ? ':value' : '?';
         $key = $named ? ':value' : 1;
@@ -102,6 +116,11 @@ foreach ($modes as $mode) {
     // Native parameters retain their own encoding, independent of command text.
     $stmt = $conn->prepare("SELECT CASE WHEN CAST(? AS nvarchar(20)) = $expected THEN 1 ELSE 0 END");
     $stmt->bindParam(1, $utf8, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+    $stmt->execute();
+    checkCommandResult($stmt);
+
+    $stmt = $conn->prepare("SELECT CASE WHEN CAST(:value AS nvarchar(20)) = $expected THEN 1 ELSE 0 END");
+    $stmt->bindParam(':value', $utf8, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
     $stmt->execute();
     checkCommandResult($stmt);
 
