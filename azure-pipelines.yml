@@ -789,6 +789,27 @@ jobs:
     clean: true
     fetchDepth: 1
 
+  - powershell: |
+      $ErrorActionPreference = 'Stop'
+      Set-StrictMode -Version Latest
+      $moduleRoot = Join-Path $env:AGENT_TEMPDIRECTORY 'php-release-pester'
+      New-Item -ItemType Directory -Path $moduleRoot -Force | Out-Null
+      Save-Module -Name Pester -RequiredVersion 4.10.1 -Repository PSGallery -Path $moduleRoot -Force
+      Import-Module (Join-Path $moduleRoot 'Pester\4.10.1\Pester.psd1') -Force
+      if ((Get-Module Pester).Version -ne [version]'4.10.1') {
+          throw 'PHP release tests require Pester 4.10.1.'
+      }
+      $results = @(Invoke-Pester -Script .\buildscripts\php_release.Tests.ps1 -PassThru)
+      if ($results.Count -ne 1 -or $null -eq $results[0]) {
+          throw 'Pester did not return exactly one test result.'
+      }
+      $result = $results[0]
+      Write-Host "PHP release tests: total=$($result.TotalCount), passed=$($result.PassedCount), failed=$($result.FailedCount), skipped=$($result.SkippedCount)"
+      if ($result.TotalCount -lt 7 -or $result.PassedCount -ne $result.TotalCount -or $result.FailedCount -ne 0 -or $result.SkippedCount -ne 0) {
+          throw 'PHP release tests were missing, skipped, or failed.'
+      }
+    displayName: 'Test Windows PHP release selection (Pester 4.10.1)'
+
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.x'

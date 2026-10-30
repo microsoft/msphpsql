@@ -8,7 +8,7 @@ if (-not $selection -or -not $download -or -not $buildVersion) {
 }
 $buildVersion = $buildVersion.Replace('$(phpVersion)', '8.5').Replace('$env:VERSION', '$sourceVersion')
 
-# Evaluate only the two assignments under test, never the provisioning steps.
+# Evaluate only the assignments under test, never the provisioning steps.
 Describe 'Windows PHP release selection' {
     It 'uses a hosted image with the VS17 compiler required by PHP' {
         $windowsJob = [regex]::Match($pipeline, '(?s)- job: Windows\r?\n.*?\r?\n  steps:').Value
