@@ -52,9 +52,80 @@ Describe 'Windows setup native exit handling' {
         (Invoke-SetupCommand $commandProcessor @('/d', '/c', 'echo setup-output')) | Should Be 'setup-output'
     }
 
+    It 'checks the immediate executable directory as a target without recursion' {
+        Invoke-SetupCommand $commandProcessor @('/d', '/c', 'exit', '/b', '0')
+        Assert-MockCalled Assert-TrustedSetupPath -Times 1 -Exactly -Scope It -ParameterFilter {
+            $Path -eq (Split-Path $commandProcessor -Parent) -and -not $Ancestor -and -not $Recurse
+        }
+    }
+
     It 'rejects an untrusted executable before invocation' {
         Mock Assert-TrustedSetupPath { throw 'Unsafe executable' }
         { Invoke-SetupCommand 'C:\NotExecuted.exe' @() } | Should Throw 'Unsafe executable'
+    }
+}
+
+Describe 'Scoped pip configuration' {
+    BeforeEach {
+        $script:originalPipConfig = [Environment]::GetEnvironmentVariable('PIP_CONFIG_FILE', 'Process')
+        Mock Invoke-SetupCommand {
+            $env:PIP_CONFIG_FILE | Should Be 'nul'
+            $Executable | Should Be 'C:\Python312\python.exe'
+            ($Arguments -join ' ') | Should Be '-I -m pip install pyodbc'
+            'pip completed'
+        }
+    }
+    AfterEach {
+        [Environment]::SetEnvironmentVariable('PIP_CONFIG_FILE', $script:originalPipConfig, 'Process')
+    }
+
+    foreach ($previous in @($null, 'C:\Previous\pip.ini')) {
+        It "restores prior pip configuration '$previous' after success" {
+            [Environment]::SetEnvironmentVariable('PIP_CONFIG_FILE', $previous, 'Process')
+            Invoke-SetupPip 'C:\Python312\python.exe' @('install', 'pyodbc') | Should Be 'pip completed'
+            [Environment]::GetEnvironmentVariable('PIP_CONFIG_FILE', 'Process') | Should Be $previous
+            (Test-Path Env:\PIP_CONFIG_FILE) | Should Be ($null -ne $previous)
+        }
+
+        It "restores prior pip configuration '$previous' after failure" {
+            [Environment]::SetEnvironmentVariable('PIP_CONFIG_FILE', $previous, 'Process')
+            Mock Invoke-SetupCommand {
+                $env:PIP_CONFIG_FILE | Should Be 'nul'
+                throw 'pip failed with exit code 17'
+            }
+            { Invoke-SetupPip 'C:\Python312\python.exe' @('install', 'pyodbc') } | Should Throw 'exit code 17'
+            [Environment]::GetEnvironmentVariable('PIP_CONFIG_FILE', 'Process') | Should Be $previous
+            (Test-Path Env:\PIP_CONFIG_FILE) | Should Be ($null -ne $previous)
+        }
+    }
+
+    It 'verifies real pip skips global user and site files with Windows os.devnull' {
+        $probe = @'
+import os
+import sys
+from unittest.mock import patch
+from pip._internal import configuration
+
+assert sys.flags.isolated and os.devnull == 'nul'
+kinds = getattr(configuration, 'kinds', None) or configuration.Kind
+Configuration = configuration.Configuration
+files = {kinds.GLOBAL: ['global.ini'], kinds.USER: ['user.ini'], kinds.SITE: ['site.ini']}
+with patch('pip._internal.configuration.get_configuration_files', return_value=files):
+    with patch.dict(os.environ, {}, clear=True):
+        config = Configuration(isolated=False)
+        with patch.object(config, '_load_file') as load:
+            config.load()
+            assert load.call_count == 3, load.call_args_list
+    with patch.dict(os.environ, {'PIP_CONFIG_FILE': 'nul'}, clear=True):
+        config = Configuration(isolated=False)
+        with patch.object(config, '_load_file') as load:
+            config.load()
+            assert load.call_count == 0, load.call_args_list
+print('pip configuration isolation verified')
+'@
+        $output = & python.exe -I -c $probe
+        $LASTEXITCODE | Should Be 0
+        $output | Should Be 'pip configuration isolation verified'
     }
 }
 
@@ -184,7 +255,8 @@ Describe 'Setup directory security descriptors' {
     It 'does not mistake volume-root child creation for replacement rights' {
         $item.FullName = 'C:\'
         $acl.SetSecurityDescriptorSddlForm('O:BAD:(A;;FA;;;BA)(A;;0x4;;;AU)')
-        { Assert-TrustedSetupItem $item } | Should Not Throw
+        { Assert-TrustedSetupItem $item -Ancestor } | Should Not Throw
+        { Assert-TrustedSetupItem $item } | Should Throw 'must not grant write or replacement rights'
     }
 
     It 'accepts ProgramData-style ancestor write rights without delete or permission-control rights' {
@@ -264,6 +336,30 @@ Describe 'Setup path and descendant validation' {
         Assert-MockCalled Get-ChildItem -Times 0 -Exactly -Scope It
     }
 
+    It 'rejects a protected executable with a sibling-writable immediate directory' {
+        Mock Get-Acl {
+            $acl = New-SetupDirectoryAcl
+            if ($LiteralPath -eq 'C:\ProgramData\chocolatey\bin') {
+                $acl.SetSecurityDescriptorSddlForm('O:BAD:(A;;FA;;;BA)(A;;FW;;;BU)')
+            }
+            $acl
+        }
+        { Invoke-SetupCommand 'C:\ProgramData\chocolatey\bin\choco.exe' @() } |
+            Should Throw 'must not grant write or replacement rights'
+    }
+
+    It 'allows harmless sibling creation on a more distant ancestor' {
+        Mock Get-Acl {
+            $acl = New-SetupDirectoryAcl
+            if ($LiteralPath -eq 'C:\ProgramData') {
+                $acl.SetSecurityDescriptorSddlForm('O:SYD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;FW;;;BU)')
+            }
+            $acl
+        }
+        { Assert-TrustedSetupPath 'C:\ProgramData\chocolatey\bin' } | Should Not Throw
+        Assert-MockCalled Get-ChildItem -Times 0 -Exactly -Scope It
+    }
+
     It 'rejects descendant junctions without enumerating through them' {
         Mock Get-ChildItem {
             [pscustomobject]@{ FullName = 'C:\php\ext'; Attributes = [IO.FileAttributes]::ReparsePoint; PSIsContainer = $true }
@@ -339,11 +435,171 @@ Describe 'Persistent benchmark PATH composition' {
     }
 }
 
+Describe 'Raw machine PATH registry persistence' {
+    BeforeEach {
+        $script:environmentKey = [pscustomobject]@{
+            Path = '%JAVA_HOME%\bin;%SystemRoot%\System32'
+            Kind = [Microsoft.Win32.RegistryValueKind]::ExpandString
+            WrittenPath = $null
+            WrittenKind = $null
+            ReadOptions = $null
+            Disposed = $false
+            FailRead = $false
+            FailWrite = $false
+        }
+        $environmentKey | Add-Member ScriptMethod GetValue {
+            param($Name, $Default, $Options)
+            if ($this.FailRead) { throw 'Registry read denied' }
+            $this.ReadOptions = $Options
+            if ($Options -ne [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) {
+                throw 'Machine PATH must not be expanded'
+            }
+            $this.Path
+        }
+        $environmentKey | Add-Member ScriptMethod GetValueKind { param($Name) $this.Kind }
+        $environmentKey | Add-Member ScriptMethod SetValue {
+            param($Name, $Value, $Kind)
+            if ($this.FailWrite) { throw 'Registry write denied' }
+            $this.WrittenPath = $Value
+            $this.WrittenKind = $Kind
+        }
+        $environmentKey | Add-Member ScriptMethod Dispose { $this.Disposed = $true }
+        Mock Open-SetupEnvironmentRegistry { $script:environmentKey }
+        Mock Send-SetupEnvironmentChange {
+            $script:environmentKey.Disposed | Should Be $true
+            $script:environmentKey.WrittenPath | Should Not BeNullOrEmpty
+        }
+    }
+
+    It 'preserves raw references and REG_EXPAND_SZ despite a conflicting process value' {
+        $previous = $env:JAVA_HOME
+        try {
+            $env:JAVA_HOME = 'C:\UntrustedProcessOverride'
+            Add-SetupMachinePath @('C:\php', 'C:\Program Files\Git\cmd')
+        }
+        finally { $env:JAVA_HOME = $previous }
+        $environmentKey.WrittenPath | Should Be '%JAVA_HOME%\bin;%SystemRoot%\System32;C:\php;C:\Program Files\Git\cmd'
+        $environmentKey.WrittenKind | Should Be ([Microsoft.Win32.RegistryValueKind]::ExpandString)
+        Assert-MockCalled Send-SetupEnvironmentChange -Times 1 -Exactly -Scope It
+    }
+
+    It 'preserves REG_SZ without interpreting its percent references' {
+        $environmentKey.Kind = [Microsoft.Win32.RegistryValueKind]::String
+        Add-SetupMachinePath @('C:\php')
+        $environmentKey.WrittenPath | Should Be '%JAVA_HOME%\bin;%SystemRoot%\System32;C:\php'
+        $environmentKey.WrittenKind | Should Be ([Microsoft.Win32.RegistryValueKind]::String)
+    }
+
+    It 'initializes a missing PATH as REG_EXPAND_SZ' {
+        $environmentKey.Path = $null
+        Add-SetupMachinePath @('C:\php')
+        $environmentKey.WrittenPath | Should Be 'C:\php'
+        $environmentKey.WrittenKind | Should Be ([Microsoft.Win32.RegistryValueKind]::ExpandString)
+    }
+
+    It 'preserves an existing empty REG_SZ value kind' {
+        $environmentKey.Path = ''
+        $environmentKey.Kind = [Microsoft.Win32.RegistryValueKind]::String
+        Add-SetupMachinePath @('C:\php')
+        $environmentKey.WrittenPath | Should Be 'C:\php'
+        $environmentKey.WrittenKind | Should Be ([Microsoft.Win32.RegistryValueKind]::String)
+    }
+
+    It 'rejects unexpected registry value kinds without writing or notifying' {
+        $environmentKey.Kind = [Microsoft.Win32.RegistryValueKind]::MultiString
+        { Add-SetupMachinePath @('C:\php') } | Should Throw 'must be a string registry value'
+        $environmentKey.WrittenPath | Should BeNullOrEmpty
+        $environmentKey.Disposed | Should Be $true
+        Assert-MockCalled Send-SetupEnvironmentChange -Times 0 -Exactly -Scope It
+    }
+
+    It 'reports a missing environment key' {
+        Mock Open-SetupEnvironmentRegistry { $null }
+        { Add-SetupMachinePath @('C:\php') } | Should Throw 'Cannot open'
+        Assert-MockCalled Send-SetupEnvironmentChange -Times 0 -Exactly -Scope It
+    }
+
+    foreach ($operation in @('Read', 'Write')) {
+        It "propagates registry $operation errors and disposes the key" {
+            $environmentKey."Fail$operation" = $true
+            { Add-SetupMachinePath @('C:\php') } | Should Throw "Registry $operation denied"
+            $environmentKey.Disposed | Should Be $true
+            Assert-MockCalled Send-SetupEnvironmentChange -Times 0 -Exactly -Scope It
+        }
+    }
+
+    It 'does not hide notification failure after a successful write' {
+        Mock Send-SetupEnvironmentChange { throw 'Environment notification failed' }
+        { Add-SetupMachinePath @('C:\php') } | Should Throw 'Environment notification failed'
+        $environmentKey.Disposed | Should Be $true
+        $environmentKey.WrittenPath | Should Not BeNullOrEmpty
+    }
+
+    It 'compiles the Unicode notification signature without broadcasting on the test host' {
+        $definition = $setupAst.Find({
+            param($node)
+            $node -is [Management.Automation.Language.CommandAst] -and $node.GetCommandName() -eq 'Add-Type'
+        }, $true)
+        $code = $definition.CommandElements[-1].Value
+        Add-Type -TypeDefinition $code
+        $method = [SetupEnvironmentNotification].GetMethod('SendMessageTimeout')
+        $method.ReturnType | Should Be ([IntPtr])
+        $method.GetParameters()[-1].ParameterType | Should Be ([UIntPtr].MakeByRefType())
+    }
+}
+
+Describe 'Hosted test runner failure handling' {
+    $workflowFile = Join-Path $PSScriptRoot '..\..\.github\workflows\windows-performance-setup.yml'
+    $workflow = Get-Content -LiteralPath $workflowFile -Raw
+    $blocks = [regex]::Matches($workflow, '(?m)^        run: \|\r?\n((?:          .*(?:\r?\n|$))+)')
+    if ($blocks.Count -ne 2) { throw 'Expected both Windows test runner blocks' }
+    $nativeShell = Join-Path $PSHOME 'powershell.exe'
+    $direct = [regex]::Replace($blocks[0].Groups[1].Value, '(?m)^          ', '')
+    $outer = [regex]::Replace($blocks[1].Groups[1].Value, '(?m)^          ', '')
+
+    foreach ($runner in @($direct, $outer)) {
+        foreach ($case in @('load-error', 'invoke-error', 'null', 'missing-counts', 'zero', 'failed', 'success')) {
+            It "fails closed for $case (32-bit wrapper: $($runner -eq $outer))" {
+                $stub = @"
+function Import-Module {
+    if ('$case' -eq 'load-error') { Write-Error 'Simulated Pester load failure' }
+}
+function Invoke-Pester {
+    if ('$case' -eq 'invoke-error') { Write-Error 'Simulated test discovery failure'; return }
+    if ('$case' -eq 'null') { return }
+    if ('$case' -eq 'missing-counts') { return [pscustomobject]@{} }
+    if ('$case' -eq 'zero') { return [pscustomobject]@{ PassedCount = 0; FailedCount = 0 } }
+    if ('$case' -eq 'failed') { return [pscustomobject]@{ PassedCount = 1; FailedCount = 1 } }
+    return [pscustomobject]@{ PassedCount = 1; FailedCount = 0 }
+}
+"@
+                if ($runner -eq $outer) {
+                    $command = $runner.Replace("`$command = @'`n", "`$command = @'`n$stub`n")
+                    $command = $command.Replace("`$command = @'`r`n", "`$command = @'`r`n$stub`r`n")
+                }
+                else { $command = $stub + "`n" + $runner }
+                $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
+                $previousPreference = $ErrorActionPreference
+                try {
+                    # Inspect expected child failures without turning native stderr into a parent exception.
+                    $ErrorActionPreference = 'Continue'
+                    $output = & $nativeShell -NoProfile -NonInteractive -EncodedCommand $encoded 2>&1
+                    $exitCode = $LASTEXITCODE
+                }
+                finally { $ErrorActionPreference = $previousPreference }
+                if ($case -eq 'success') { $exitCode | Should Be 0 }
+                else { $exitCode | Should Not Be 0 }
+            }
+        }
+    }
+}
+
 Describe 'Provisioning wiring (static only)' {
     $source = $setupAst.Extent.Text
 
     It 'uses isolated module lookup with the selected Python interpreter' {
-        $source | Should Match ([regex]::Escape("Invoke-SetupCommand `$pythonExe @('-I', '-m', 'pip', 'install', 'pyodbc')"))
+        $source | Should Match ([regex]::Escape("Invoke-SetupPip `$pythonExe @('install', 'pyodbc')"))
+        $source | Should Match ([regex]::Escape("Invoke-SetupCommand `$Executable (@('-I', '-m', 'pip') + `$Arguments)"))
         $source | Should Not Match ([regex]::Escape('C:\Python*\Scripts\pip3.exe'))
     }
 
@@ -353,8 +609,9 @@ Describe 'Provisioning wiring (static only)' {
     }
 
     It 'persists machine PATH plus only the PHP and Git directories' {
-        $source | Should Match ([regex]::Escape('$machinePath = [Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)'))
-        $source | Should Match ([regex]::Escape('[Environment]::SetEnvironmentVariable("Path", (Add-SetupPath $machinePath @($phpDir, $gitDir)), [System.EnvironmentVariableTarget]::Machine)'))
+        $source | Should Match ([regex]::Escape('Add-SetupMachinePath @($phpDir, $gitDir)'))
+        $source | Should Not Match 'GetEnvironmentVariable\("Path".*Machine'
+        $source | Should Not Match 'SetEnvironmentVariable\("Path".*Machine'
         $source | Should Match ([regex]::Escape("`$gitDir = 'C:\Program Files\Git\cmd'"))
         $source | Should Match ([regex]::Escape('$env:Path = Add-SetupPath $env:Path @($phpDir, $gitDir)'))
     }
@@ -363,7 +620,7 @@ Describe 'Provisioning wiring (static only)' {
         $source | Should Match ([regex]::Escape('[IO.Directory]::CreateDirectory($Path, $acl)'))
         $source | Should Match 'New-SetupPhpDirectory \$phpDir\s+Expand-Archive.*\r?\nAssert-TrustedSetupPath \$phpDir -Recurse'
         $source.LastIndexOf('Assert-TrustedSetupPath $phpDir -Recurse') |
-            Should BeLessThan $source.IndexOf('[Environment]::SetEnvironmentVariable')
+            Should BeLessThan $source.IndexOf('Add-SetupMachinePath @($phpDir, $gitDir)')
     }
 
     It 'keeps installer failures on the checked native-command path' {

@@ -18,6 +18,9 @@ only the verified PHP and Git `cmd` directories to Machine PATH so that
 `run-perf_tests.py` can still invoke `php` in fresh shells. Process-only and user
 PATH entries are not copied into Machine PATH; existing machine entries are not
 removed or reordered.
+Expandable references such as `%JAVA_HOME%\bin` are read without expansion and
+retain their registry value kind when saved. Setup broadcasts the Windows
+environment-change notification after writing Machine PATH.
 
 Setup checks Chocolatey, pip, and Composer exit codes. Before using the selected
 tools, it checks their ownership, write/replacement permissions, ancestors, and
@@ -27,6 +30,8 @@ not all installed Chocolatey packages or the entire Git installation.
 Administrators, SYSTEM, and TrustedInstaller are trusted owners/writers.
 Ancestor checks reject replacement and permission-control rights, not ordinary
 sibling-creation rights such as the default permissions on `C:\ProgramData`.
+The executable's immediate containing directory uses the stricter target rules,
+so it cannot admit non-administrator-created DLLs or configuration files.
 An existing `C:\php` must be trusted before replacement; failed cleanup stops
 setup. The replacement directory grants Administrators/SYSTEM full control and
 Users read/execute through an administrator-owned protected DACL.
@@ -37,7 +42,11 @@ using Chocolatey's default OS architecture. Other Python versions may coexist;
 a protected installation outside `C:\Python*` is supported. Missing metadata,
 registration, or interpreter causes an explicit error, not a wildcard/PATH
 fallback. The interpreter runs `-I -m pip` to exclude working-directory and user
-Python modules. Composer uses `C:\php\php.exe`. Package versions, the ODBC MSI
+Python modules. Because `-I` does not disable pip configuration, setup also sets
+`PIP_CONFIG_FILE=nul` only for the pip invocation, restoring the previous process
+value (or its absence) even on failure. Global, user, and site pip configuration
+files are therefore not used; other explicit pip environment settings are unchanged.
+Composer uses `C:\php\php.exe`. Package versions, the ODBC MSI
 command, and Windows configuration/library copies are unchanged.
 
 To run the setup regression checks in Windows PowerShell with Pester 3.4, use an
@@ -51,6 +60,7 @@ and mocked filesystem/registry operations, and run harmless `cmd.exe` exit-code
 probes. They never run provisioning or change Machine PATH or filesystem ACLs.
 The Windows performance setup tests workflow runs them in both 32-bit and 64-bit
 Windows PowerShell on a GitHub-hosted Windows runner for changes to the setup scripts.
+Both runners stop on Pester load errors and reject missing or zero-test results.
 An elevated end-to-end installation and effective-permission checks still
 require a disposable Windows benchmark machine; unit checks do not establish
 that an existing host's installation is safe.

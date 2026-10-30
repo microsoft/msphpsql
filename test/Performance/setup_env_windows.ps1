@@ -39,7 +39,7 @@ function Assert-TrustedSetupItem {
         [int64][Security.AccessControl.FileSystemRights]::ChangePermissions -bor
         [int64][Security.AccessControl.FileSystemRights]::TakeOwnership -bor
         0x10000000 # GENERIC_ALL
-    if (-not $Ancestor -and $Item.FullName -ne [IO.Path]::GetPathRoot($Item.FullName)) {
+    if (-not $Ancestor) {
         # Ancestor write/create rights alone do not permit replacing an existing protected child.
         $writeRights = $writeRights -bor [int64][Security.AccessControl.FileSystemRights]::Write -bor 0x40000000
     }
@@ -55,13 +55,13 @@ function Assert-TrustedSetupItem {
 }
 
 function Assert-TrustedSetupPath {
-    param([string]$Path, [switch]$Recurse)
+    param([string]$Path, [switch]$Recurse, [switch]$Ancestor)
 
     if ($Path -notmatch '^[A-Za-z]:\\' -or [Management.Automation.WildcardPattern]::ContainsWildcardCharacters($Path)) {
         throw "Setup requires an absolute local path without wildcards: $Path"
     }
     $item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
-    Assert-TrustedSetupItem $item
+    Assert-TrustedSetupItem $item -Ancestor:$Ancestor
     $parent = Split-Path -Path $item.FullName -Parent
     while ($parent) {
         Assert-TrustedSetupItem (Get-Item -LiteralPath $parent -Force -ErrorAction Stop) -Ancestor
@@ -86,10 +86,25 @@ function Invoke-SetupCommand {
     param([string]$Executable, [string[]]$Arguments, [int[]]$SuccessExitCodes = @(0))
 
     Assert-TrustedSetupPath $Executable
+    Assert-TrustedSetupPath (Split-Path -Path $Executable -Parent)
     # A pipeline also waits for GUI installers in Windows PowerShell.
     & $Executable @Arguments | Write-Output
     if ($LASTEXITCODE -notin $SuccessExitCodes) {
         throw "$Executable failed with exit code $LASTEXITCODE."
+    }
+}
+
+function Invoke-SetupPip {
+    param([string]$Executable, [string[]]$Arguments)
+
+    $previousConfig = [Environment]::GetEnvironmentVariable('PIP_CONFIG_FILE', 'Process')
+    try {
+        # Python -I isolates imports; pip separately requires os.devnull to disable config files.
+        $env:PIP_CONFIG_FILE = 'nul'
+        Invoke-SetupCommand $Executable (@('-I', '-m', 'pip') + $Arguments)
+    }
+    finally {
+        [Environment]::SetEnvironmentVariable('PIP_CONFIG_FILE', $previousConfig, 'Process')
     }
 }
 
@@ -153,7 +168,7 @@ function New-SetupDirectoryAcl {
 function New-SetupPhpDirectory {
     param([string]$Path)
 
-    Assert-TrustedSetupPath (Split-Path -Path $Path -Parent)
+    Assert-TrustedSetupPath (Split-Path -Path $Path -Parent) -Ancestor
     if (Test-Path -LiteralPath $Path) {
         if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
             throw "Expected a PHP installation directory: $Path"
@@ -186,6 +201,57 @@ function Add-SetupPath {
     return $Path
 }
 
+function Open-SetupEnvironmentRegistry {
+    return [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
+        'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', $true)
+}
+
+function Send-SetupEnvironmentChange {
+    if (-not ('SetupEnvironmentNotification' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class SetupEnvironmentNotification
+{
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr SendMessageTimeout(
+        IntPtr window, uint message, UIntPtr wParam, string lParam,
+        uint flags, uint timeout, out UIntPtr result);
+}
+'@
+    }
+    $result = [UIntPtr]::Zero
+    $sent = [SetupEnvironmentNotification]::SendMessageTimeout(
+        [IntPtr]0xffff, 0x001a, [UIntPtr]::Zero, 'Environment', 2, 5000, [ref]$result)
+    if ($sent -eq [IntPtr]::Zero) {
+        throw "Machine PATH was saved, but the environment-change notification failed (Win32 error $([Runtime.InteropServices.Marshal]::GetLastWin32Error()))."
+    }
+}
+
+function Add-SetupMachinePath {
+    param([string[]]$Directories)
+
+    $key = Open-SetupEnvironmentRegistry
+    if ($null -eq $key) {
+        throw 'Cannot open the machine environment registry key for writing.'
+    }
+    try {
+        $path = $key.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+        $kind = [Microsoft.Win32.RegistryValueKind]::ExpandString
+        if ($null -ne $path) {
+            $kind = $key.GetValueKind('Path')
+            if ($kind -notin @([Microsoft.Win32.RegistryValueKind]::String, [Microsoft.Win32.RegistryValueKind]::ExpandString)) {
+                throw "Machine PATH must be a string registry value, not $kind."
+            }
+        }
+        $key.SetValue('Path', (Add-SetupPath $path $Directories), $kind)
+    }
+    finally {
+        $key.Dispose()
+    }
+    Send-SetupEnvironmentChange
+}
+
 $startingDir=$pwd.Path
 $tempFolder=Join-Path $startingDir "temp"
 
@@ -205,7 +271,7 @@ Invoke-SetupCommand $chocoExe @('install', '-y', 'python3') @(0, 1641, 3010)
 RefreshEnv
 $pythonExe = Get-SetupPython $chocoDir
 Write-Host "Installing pyodbc..."
-Invoke-SetupCommand $pythonExe @('-I', '-m', 'pip', 'install', 'pyodbc') | Out-Null
+Invoke-SetupPip $pythonExe @('install', 'pyodbc') | Out-Null
 Write-Host "Downloading MSODBCSQL..."
 #This needs to be manually updated when there is a new release
 (New-object System.Net.WebClient).DownloadFile('https://download.microsoft.com/download/D/5/E/D5EEF288-A277-45C8-855B-8E2CB7E25B96/x64/msodbcsql.msi', "$tempFolder\msodbcsql.msi")
@@ -247,8 +313,7 @@ foreach ($executable in @($phpExe, (Join-Path $gitDir 'git.exe'))) {
     }
 }
 cd $startingDir
-$machinePath = [Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
-[Environment]::SetEnvironmentVariable("Path", (Add-SetupPath $machinePath @($phpDir, $gitDir)), [System.EnvironmentVariableTarget]::Machine)
+Add-SetupMachinePath @($phpDir, $gitDir)
 $env:Path = Add-SetupPath $env:Path @($phpDir, $gitDir)
 RefreshEnv
 

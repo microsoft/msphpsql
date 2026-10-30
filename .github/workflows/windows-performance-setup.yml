@@ -28,18 +28,20 @@ jobs:
       - name: Run setup regression tests in 64-bit Windows PowerShell (no provisioning)
         shell: powershell
         run: |
+          $ErrorActionPreference = 'Stop'
           Import-Module Pester -RequiredVersion 3.4.0
           $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1, .\buildscripts\php_release.Tests.ps1 -PassThru
-          if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) {
+          if ($null -eq $result -or $result.FailedCount -gt 0 -or -not ($result.PassedCount -gt 0)) {
               throw "Windows setup regression tests failed or did not execute."
           }
       - name: Run setup regression tests in 32-bit Windows PowerShell (no provisioning)
         shell: powershell
         run: |
           $command = @'
+          $ErrorActionPreference = 'Stop'
           Import-Module Pester -RequiredVersion 3.4.0
           $result = Invoke-Pester -Script .\test\Performance\setup_env_windows.Tests.ps1, .\buildscripts\php_release.Tests.ps1 -PassThru
-          if ($result.FailedCount -gt 0 -or $result.PassedCount -eq 0) {
+          if ($null -eq $result -or $result.FailedCount -gt 0 -or -not ($result.PassedCount -gt 0)) {
               throw 'Windows setup regression tests failed or did not execute.'
           }
           '@
