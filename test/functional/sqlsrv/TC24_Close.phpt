@@ -6,11 +6,13 @@ that resources are invalidated when connection is closed.
 --ENV--
 PHPT_EXEC=true
 --SKIPIF--
-<?php require('skipif_ansi_fixture.inc'); require('skipif_versions_old.inc'); ?>
+<?php require('skipif_ansi_ae_fixture.inc'); require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
 require_once('MsCommon.inc');
-setUSAnsiLocale();
+if (!AE\isColEncrypted()) {
+    setUSAnsiLocale();
+}
 
 // When testing with PHP 8.0 it throws a TypeError instead of a warning. Thus implement a custom 
 // warning handler such that with PHP 7.x the warning would be handled to throw a TypeError.
