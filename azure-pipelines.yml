@@ -20,7 +20,9 @@ jobs:
 - job: macOS
   pool:
     vmImage: 'macos-latest'
-  timeoutInMinutes: 90
+  # Homebrew no longer provides Intel bottles; source-built setup can take over 80 minutes.
+  # Allow PHP compilation and both complete functional suites to run after provisioning.
+  timeoutInMinutes: 150
   variables:
     phpver: '8.5'
     macOS_sqlsrv_db: 'macos_sqlsrv_testdb'
@@ -129,9 +131,19 @@ jobs:
          exit 1
       fi
       
-      # OpenSSL workaround for ODBC driver compatibility
-      echo "Configuring OpenSSL..."
-      brew reinstall openssl@1.1 || true
+      # ODBC 18 loads opt/openssl, but Homebrew's alias now resolves to unsupported OpenSSL 4.
+      # Keep the compatibility alias on this disposable runner for sqlcmd and PHP child processes.
+      brew install openssl@3
+      openssl_prefix="$(brew --prefix openssl@3)"
+      test -r "$openssl_prefix/lib/libssl.3.dylib"
+      test -r "$openssl_prefix/lib/libcrypto.3.dylib"
+      openssl_link="$(brew --prefix)/opt/openssl"
+      if [[ -e "$openssl_link" && ! -L "$openssl_link" ]]; then
+        echo "##[error]Expected a Homebrew symlink at $openssl_link"
+        exit 1
+      fi
+      ln -sfn "$openssl_prefix" "$openssl_link"
+      "$openssl_link/bin/openssl" version | grep '^OpenSSL 3\.'
       
       # Add tools to PATH
       echo "##vso[task.prependpath]/opt/homebrew/opt/mssql-tools18/bin"
@@ -770,7 +782,8 @@ jobs:
   variables:
     phpVersion: 8.5
   pool:
-    vmImage: 'windows-latest'
+    # PHP's vs17 SDK requires Visual Studio 2022, not the latest VS2026 image.
+    vmImage: 'windows-2022'
   steps:
   - checkout: self
     clean: true
@@ -804,8 +817,8 @@ jobs:
       
       Write-Host "Installing PHP $(phpVersion) version $version"
       
-      # PHP 8.5+ uses VS17, earlier versions use VS16
-      $vsVersion = if ([version]$version -ge [version]"8.5.0") { "vs17" } else { "vs16" }
+      # Compare the PHP version without a Windows packaging revision (e.g. 8.5.12-1).
+      $vsVersion = if ([version]($version -split '-', 2)[0] -ge [version]"8.5.0") { "vs17" } else { "vs16" }
       
       # Download PHP NTS x64
       $phpUrl = "https://windows.php.net/downloads/releases/php-$version-nts-Win32-$vsVersion-x64.zip"
@@ -956,7 +969,8 @@ jobs:
       $client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0")
       $client.DownloadFile("http://windows.php.net/downloads/releases/releases.json", "releases.json");
       $jsondata = Get-Content -Path .\releases.json | ConvertFrom-Json
-      $env:VERSION = $jsondata.{$(phpVersion)}.version
+      # builddrivers.py uses upstream php-src tags, not Windows packaging revisions.
+      $env:VERSION = ($jsondata.{$(phpVersion)}.version -split '-', 2)[0]
       Write-Host "Latest PHP $(phpVersion) is ${env:VERSION}"
       cd $(Build.SourcesDirectory)\buildscripts\
       python -u builddrivers.py --PHPVER=${env:VERSION} --DRIVER=sqlsrv --ARCH=x64 --THREAD=nts --SOURCE=$(Build.SourcesDirectory)\source --TESTING --NO_RENAME
