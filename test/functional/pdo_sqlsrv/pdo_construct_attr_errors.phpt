@@ -34,7 +34,7 @@ function invalidServer()
     try {
         $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
         $invalid = pack("H*", "ffc0");
-        $conn = new PDO("sqlsrv:server = $invalid; Encrypt = $encrypt;", $uid, $pwd, $options);
+        $conn = new PDO("sqlsrv:server = $invalid; Encrypt = $encrypt; LoginTimeout = 1;", $uid, $pwd, $options);
         echo "Should have failed to connect to invalid server.\n";
     }  catch (PDOException $e) {
         $error1 = '*Login timeout expired';
