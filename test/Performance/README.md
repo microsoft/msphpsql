@@ -11,6 +11,68 @@ Run `Windows PowerShell` as administrator.
     Set-ExecutionPolicy Unrestricted
     .\setup_env_windows.ps1 <absolute path to the PHP zip file> <absolute path to the SQLSRV driver DLL> <absolute path to the PDO_SQLSRV driver DLL>
 
+The Windows setup script is intended for a clean benchmark machine using Windows
+PowerShell 5.1, not PowerShell Core. It keeps PHP in `C:\php` and
+preserves the existing Machine PATH, including installer-added entries. It adds
+only the verified PHP and Git `cmd` directories to Machine PATH so that
+`run-perf_tests.py` can still invoke `php` in fresh shells. Process-only and user
+PATH entries are not copied into Machine PATH; existing machine entries are not
+removed or reordered.
+Expandable references such as `%JAVA_HOME%\bin` are read without expansion and
+retain their registry value kind when saved. Setup broadcasts the Windows
+environment-change notification after writing Machine PATH.
+
+Setup checks Chocolatey, pip, and Composer exit codes. Before using the selected
+tools, it checks their ownership, write/replacement permissions, ancestors, and
+reparse points. Recursive checks cover the selected Python/PHP installations
+(including executable and extension/module files) and the Git `cmd` directory,
+not all installed Chocolatey packages or the entire Git installation.
+Administrators, SYSTEM, and TrustedInstaller are trusted owners/writers.
+Ancestor checks reject replacement and permission-control rights, not ordinary
+sibling-creation rights such as the default permissions on `C:\ProgramData`.
+The executable's immediate containing directory uses the stricter target rules,
+so it cannot admit non-administrator-created DLLs or configuration files.
+Chocolatey is invoked through its real `choco.exe` in the installation directory,
+not the `bin\choco.exe` shim.
+An existing `C:\php` must be trusted before replacement; failed cleanup stops
+setup. The replacement directory grants Administrators/SYSTEM full control and
+Users read/execute through an administrator-owned protected DACL.
+
+After Chocolatey successfully installs Python, setup reads its installed
+`python3.nuspec` version and resolves that version's machine-wide registration,
+using Chocolatey's default OS architecture. Other Python versions may coexist;
+a protected installation outside `C:\Python*` is supported. Missing metadata,
+registration, or interpreter causes an explicit error, not a wildcard/PATH
+fallback. The interpreter runs `-I -m pip` to exclude working-directory and user
+Python modules. Because `-I` still detects virtual environments, setup requires
+the registered standalone installation to have no `pyvenv.cfg` beside the
+interpreter or one directory above it. That parent's ACL must prevent
+non-administrator file creation; harmless sibling-directory creation is allowed.
+This also prevents an absent configuration file from redirecting startup into
+an unvalidated parent `Lib\site-packages` directory.
+Because `-I` does not disable pip configuration, setup also sets
+`PIP_CONFIG_FILE=nul` only for the pip invocation, restoring the previous process
+value (or its absence) even on failure. Global, user, and site pip configuration
+files are therefore not used; other explicit pip environment settings are unchanged.
+Composer uses `C:\php\php.exe`. Package versions, the ODBC MSI
+command, and Windows configuration/library copies are unchanged.
+
+To run the setup regression checks in Windows PowerShell with Pester 3.4, use an
+environment whose script-signing policy permits these repository tests. Do not
+relax a shared host's execution policy to run them.
+
+    Invoke-Pester -Script .\setup_env_windows.Tests.ps1 -EnableExit
+
+These checks load only the setup functions, use in-memory security descriptors
+and mocked filesystem/registry operations, and run harmless `cmd.exe` exit-code
+probes. They never run provisioning or change Machine PATH or filesystem ACLs.
+The Windows performance setup tests workflow runs them in both 32-bit and 64-bit
+Windows PowerShell on a GitHub-hosted Windows runner for changes to the setup scripts.
+Both runners stop on Pester load errors and reject missing or zero-test results.
+An elevated end-to-end installation and effective-permission checks still
+require a disposable Windows benchmark machine; unit checks do not establish
+that an existing host's installation is safe.
+
 ### Ubuntu 16
     sudo env "PATH=$PATH" bash setup_env_unix.sh Ubuntu16 <PHP_VERSION - 7.x.y> <PHP_THREAD - ts or nts> <absolute path to the SQLSRV driver so> <absolute path to the PDO_SQLSRV driver so>
 ### RedHat 7
