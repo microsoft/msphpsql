@@ -751,6 +751,11 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     dbh->error_mode = static_cast<decltype(dbh->error_mode)>(prev_err_mode);    // reset the error mode
     dbh->alloc_own_columns = 1;         // we do our own memory management for columns
     dbh->native_case = PDO_CASE_NATURAL;// SQL Server supports mixed case types
+    // skip the param events pdo_sqlsrv_stmt_param_hook ignores, so PDO doesn't call
+    // the hook for every bound parameter on every fetched row
+    dbh->skip_param_evt = 1 << PDO_PARAM_EVT_FETCH_PRE |
+                          1 << PDO_PARAM_EVT_FETCH_POST |
+                          1 << PDO_PARAM_EVT_NORMALIZE;
 
     }
     catch( core::CoreException& ) {
