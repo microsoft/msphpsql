@@ -1354,15 +1354,18 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                         }
                     }
 
-                    // check if the user has specified the character set to use, take it off but ignore
+                    // check if the user has specified the character set to use, and take it off the type.
+                    // It is applied below, once the encoding of the parameter is known.
 #if PHP_VERSION_ID >= 70200
+                    bool str_natl_requested = false;
+                    bool str_char_requested = false;
                     if ((pdo_type & PDO_PARAM_STR_NATL) == PDO_PARAM_STR_NATL) {
                         pdo_type = pdo_type & ~PDO_PARAM_STR_NATL;
-                        LOG(SEV_NOTICE, "PHP Extended String type PDO_PARAM_STR_NATL set but is ignored.");
+                        str_natl_requested = true;
                     }
                     if ((pdo_type & PDO_PARAM_STR_CHAR) == PDO_PARAM_STR_CHAR) {
                         pdo_type = pdo_type & ~PDO_PARAM_STR_CHAR;
-                        LOG(SEV_NOTICE, "PHP Extended String type PDO_PARAM_STR_CHAR set but is ignored.");
+                        str_char_requested = true;
                     }
 #endif
 
@@ -1453,9 +1456,9 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                         encoding = driver_stmt->conn->encoding();
                     }
 
-                    // Beginning with PHP7.2 the user can specify whether to use PDO_PARAM_STR_CHAR or PDO_PARAM_STR_NATL
-                    // But this extended type will be ignored in real prepared statements, so the encoding deliberately
-                    // set in the statement or driver options will still take precedence
+                    // An encoding set in the parameter's driver options takes precedence over the statement's
+                    // and the connection's. The extended string types (PDO_PARAM_STR_CHAR / PDO_PARAM_STR_NATL)
+                    // only affect UTF-8 parameters; see below.
                     if( !Z_ISUNDEF(param->driver_params) ) {
                         CHECK_CUSTOM_ERROR( Z_TYPE( param->driver_params ) != IS_LONG, driver_stmt,
                                             PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM ) {
@@ -1478,6 +1481,29 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                                 break;
                         }
                     }
+
+#if PHP_VERSION_ID >= 70200
+                    // A UTF-8 string parameter is bound as nvarchar by default. When the application declares it a
+                    // non-national string, with PDO_PARAM_STR_CHAR or with PDO::ATTR_DEFAULT_STR_PARAM set to
+                    // PDO_PARAM_STR_CHAR and not overridden by PDO_PARAM_STR_NATL, declare it as varchar instead,
+                    // which is what emulated prepares and PDO::quote() already do. The value is still sent as UTF-16
+                    // and the ODBC driver converts it to the server code page, so characters the code page cannot
+                    // represent are replaced, exactly as in the emulated case.
+                    //
+                    // Comparing an nvarchar parameter with a varchar column makes SQL Server convert the column
+                    // (CONVERT_IMPLICIT), which prevents index seeks on it and hides its statistics from the
+                    // optimizer. Applications that never set either option keep the existing nvarchar binding.
+                    if( direction == SQL_PARAM_INPUT && pdo_type == PDO_PARAM_STR && encoding == SQLSRV_ENCODING_UTF8 ) {
+                        zval* value_z = &(param->parameter);
+                        ZVAL_DEREF( value_z );
+                        pdo_sqlsrv_dbh* driver_dbh = reinterpret_cast<pdo_sqlsrv_dbh*>( stmt->dbh->driver_data );
+                        bool str_char_by_default = !str_natl_requested && driver_dbh->use_national_characters == 0;
+                        if( Z_TYPE_P( value_z ) == IS_STRING && ( str_char_requested || str_char_by_default )) {
+                            sql_type = SQL_VARCHAR;
+                            LOG( SEV_NOTICE, "pdo_sqlsrv_stmt_param_hook: binding parameter %1!d! as varchar (PDO_PARAM_STR_CHAR)", static_cast<int>( param->paramno + 1 ));
+                        }
+                    }
+#endif
 
                     // and bind the parameter
                     core_sqlsrv_bind_param( driver_stmt, static_cast<SQLUSMALLINT>( param->paramno ), static_cast<SQLSMALLINT>(direction), &(param->parameter) , php_out_type, encoding,
