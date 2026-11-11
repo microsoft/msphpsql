@@ -339,9 +339,11 @@ PHP_MINIT_FUNCTION(sqlsrv)
 
     std::string bin = "binary";
     std::string chr = "char";
+    std::string utf8varchar = "utf-8-varchar";
 
     REGISTER_STRING_CONSTANT( "SQLSRV_ENC_BINARY", &bin[0], CONST_PERSISTENT | CONST_CS );
     REGISTER_STRING_CONSTANT( "SQLSRV_ENC_CHAR",   &chr[0], CONST_PERSISTENT | CONST_CS );
+    REGISTER_STRING_CONSTANT( "SQLSRV_ENC_UTF8_VARCHAR", &utf8varchar[0], CONST_PERSISTENT | CONST_CS );
     
     REGISTER_LONG_CONSTANT( "SQLSRV_NULLABLE_NO",      0, CONST_PERSISTENT | CONST_CS );
     REGISTER_LONG_CONSTANT( "SQLSRV_NULLABLE_YES",     1, CONST_PERSISTENT | CONST_CS );
@@ -534,6 +536,11 @@ PHP_MINIT_FUNCTION(sqlsrv)
 
         sqlsrv_encoding sql_enc_utf8( "utf-8", CP_UTF8 );
         if (NULL == zend_hash_next_index_insert_mem( g_ss_encodings_ht, (void*)&sql_enc_utf8, sizeof( sqlsrv_encoding ))) {
+            throw ss::SSException();     
+        }
+
+        sqlsrv_encoding sql_enc_utf8_varchar( "utf-8-varchar", SQLSRV_ENCODING_UTF8_VARCHAR );
+        if (NULL == zend_hash_next_index_insert_mem( g_ss_encodings_ht, (void*)&sql_enc_utf8_varchar, sizeof( sqlsrv_encoding ))) {
             throw ss::SSException();     
         }
     }

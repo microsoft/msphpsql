@@ -237,7 +237,13 @@ enum SQLSRV_ENCODING {
     SQLSRV_ENCODING_CHAR,           // use SQL_C_CHAR when using SQLGetData
     SQLSRV_ENCODING_SYSTEM = SQLSRV_ENCODING_CHAR,
     SQLSRV_ENCODING_UTF8 = CP_UTF8,
+    SQLSRV_ENCODING_UTF8_VARCHAR = CP_UTF8 + 1,  // UTF-8 data bound as SQL_VARCHAR (not NVARCHAR)
 };
+
+inline bool is_utf8_encoding(unsigned int encoding)
+{
+    return encoding == SQLSRV_ENCODING_UTF8 || encoding == SQLSRV_ENCODING_UTF8_VARCHAR;
+}
 
 // the array keys used when returning a row via sqlsrv_fetch_array and sqlsrv_fetch_object.
 enum SQLSRV_FETCH_TYPE {
