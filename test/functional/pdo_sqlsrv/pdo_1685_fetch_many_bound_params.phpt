@@ -4,7 +4,7 @@ GitHub issue 1685 - fetch time should not grow with the number of bound paramete
 PDO calls the driver's param hook for every bound parameter on every fetched row
 unless the driver skips the FETCH_PRE and FETCH_POST events. Compare the time to
 fetch the same rows with 1 and with 2000 unused bound parameters. Before the fix
-the ratio was 12-19x on a local test machine; with identical workloads it is
+the ratio was about 170x on a local test machine; with identical workloads it is
 about 1x. The threshold is generous to avoid failing on noisy machines.
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
@@ -28,13 +28,14 @@ function fetchTime($conn, $paramCount)
         FROM sys.all_objects a CROSS JOIN sys.all_objects b WHERE 1 = 1'
         . str_repeat(' OR ? IS NULL', $paramCount);
 
+    // a client-buffered cursor retrieves all rows during execute(), so server and
+    // network waits are excluded and only local fetch overhead is timed
     $stmt = $conn->prepare($sql, [
         PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL,
         PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED,
     ]);
     $stmt->execute(array_fill(0, $paramCount, 'x'));
 
-    // only the fetch is timed
     $start = hrtime(true);
     $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
     $elapsed = hrtime(true) - $start;
