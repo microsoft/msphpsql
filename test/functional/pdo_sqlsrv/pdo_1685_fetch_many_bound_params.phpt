@@ -47,7 +47,9 @@ function fetchTime($conn, $paramCount)
 }
 
 try {
-    $conn = connect();
+    // with Column Encryption, the standalone `? IS NULL` parameters are described
+    // as int and the string values fail to convert, so disable it
+    $conn = connect('', [], PDO::ERRMODE_EXCEPTION, true);
 
     // warm up, then interleave the two cases so drift affects both equally
     fetchTime($conn, 1);
