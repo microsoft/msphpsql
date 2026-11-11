@@ -28,7 +28,10 @@ function fetchTime($conn, $paramCount)
         FROM sys.all_objects a CROSS JOIN sys.all_objects b WHERE 1 = 1'
         . str_repeat(' OR ? IS NULL', $paramCount);
 
-    $stmt = $conn->prepare($sql);
+    $stmt = $conn->prepare($sql, [
+        PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL,
+        PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED,
+    ]);
     $stmt->execute(array_fill(0, $paramCount, 'x'));
 
     // only the fetch is timed
