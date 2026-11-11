@@ -1,122 +1,144 @@
 --TEST--
-Test SQLSRV_ENC_UTF8_VARCHAR with stream params and output params
---DESCRIPTION--
-Covers additional code paths for SQLSRV_ENCODING_UTF8_VARCHAR:
-- Stream/resource parameters (process_resource_param and core_stream.cpp)
-- Output parameters from stored procedures (process_output_string)
+SQLSRV UTF8_VARCHAR Unicode input, streams and output parameters
 --SKIPIF--
-<?php require('skipif_versions_old.inc'); ?>
---FILE--
 <?php
-sqlsrv_configure('WarningsReturnAsErrors', 0);
-require_once('MsCommon.inc');
-
-$conn = connect(array('CharacterSet' => SQLSRV_ENC_UTF8_VARCHAR));
-if ($conn === false) {
+require('skipif_versions_old.inc');
+$conn = connect();
+$stmt = sqlsrv_query($conn, "SELECT COLLATIONPROPERTY(CAST(DATABASEPROPERTYEX(DB_NAME(), 'Collation') AS nvarchar(128)), 'CodePage')");
+if ($stmt === false) {
     die(print_r(sqlsrv_errors(), true));
 }
+sqlsrv_fetch($stmt);
+if (sqlsrv_get_field($stmt, 0) != 65001) {
+    die('skip requires a database with a UTF-8 default collation (SQL Server 2019+)');
+}
+?>
+--FILE--
+<?php
+require_once('MsCommon.inc');
 
-$tbname = '#utf8vc_extra_' . rand(0, 1000);
-$procName = '#sp_utf8vc_out_' . rand(0, 1000);
-
-// Create table
-$stmt = sqlsrv_query($conn, "CREATE TABLE $tbname (
-    id int IDENTITY(1,1) NOT NULL,
-    name varchar(255) COLLATE Latin1_General_100_CI_AS_SC_UTF8 NULL,
-    content varchar(max) COLLATE Latin1_General_100_CI_AS_SC_UTF8 NULL
-)");
-if ($stmt === false) die(print_r(sqlsrv_errors(), true));
-sqlsrv_free_stmt($stmt);
-
-$testVal = 'Straße Köln Grüß Gott';
-$streamContent = 'UTF-8 stream data with special chars: Grüße café résumé';
-
-// === Test 1: Stream/resource parameter ===
-echo "=== Test 1: Stream parameter ===\n";
-
-// Create a temp file with UTF-8 content
-$tmpFile = tempnam(sys_get_temp_dir(), 'utf8');
-file_put_contents($tmpFile, $streamContent);
-
-$fp = fopen($tmpFile, 'r');
-$stmt = sqlsrv_query($conn,
-    "INSERT INTO $tbname (name, content) VALUES (?, ?)",
-    [$testVal, &$fp],
-    array('SendStreamParamsAtExec' => 1)
-);
-if ($stmt === false) {
-    echo "Stream insert failed:\n";
-    print_r(sqlsrv_errors());
-} else {
-    sqlsrv_free_stmt($stmt);
-
-    // Read back and verify
-    $stmt = sqlsrv_query($conn, "SELECT name, content FROM $tbname WHERE id = 1");
-    if (sqlsrv_fetch($stmt)) {
-        $name = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_UTF8_VARCHAR));
-        $content = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_UTF8_VARCHAR));
-        echo "name: " . (($name === $testVal) ? 'PASS' : 'FAIL') . "\n";
-        echo "content: " . (($content === $streamContent) ? 'PASS' : 'FAIL') . "\n";
+function checkedQuery($conn, $sql, $params = [], $options = [])
+{
+    $stmt = sqlsrv_query($conn, $sql, $params, $options);
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
     }
+    return $stmt;
+}
+
+$conn = connect(['CharacterSet' => SQLSRV_ENC_UTF8_VARCHAR]);
+$value = "\u{65E5}\u{672C}\u{8A9E}\u{1F600}";
+sqlsrv_free_stmt(checkedQuery($conn, "CREATE TABLE #utf8_varchar (value varchar(max) COLLATE Latin1_General_100_CI_AS_SC_UTF8)"));
+foreach ([7999, 8000, 8001, 20000] as $length) {
+    $long = str_repeat('a', $length - strlen($value)) . $value;
+    sqlsrv_free_stmt(checkedQuery($conn, "INSERT INTO #utf8_varchar VALUES (?)", [$long]));
+    $stmt = checkedQuery($conn, "SELECT value FROM #utf8_varchar");
+    sqlsrv_fetch($stmt);
+    $actual = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING('UTF-8'));
+    echo "length $length: ", ($actual === $long ? 'PASS' : 'FAIL'), "\n";
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_free_stmt(checkedQuery($conn, "DELETE FROM #utf8_varchar"));
+}
+
+$long = str_repeat('a', 8189) . str_repeat($value, 1000);
+$stream = fopen('php://temp', 'w+b');
+fwrite($stream, $long);
+rewind($stream);
+sqlsrv_free_stmt(checkedQuery($conn, "INSERT INTO #utf8_varchar VALUES (?)",
+    [[$stream, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_UTF8_VARCHAR)]],
+    ['SendStreamParamsAtExec' => true]));
+fclose($stream);
+
+foreach ([SQLSRV_CURSOR_FORWARD, SQLSRV_CURSOR_CLIENT_BUFFERED] as $cursor) {
+    $stmt = checkedQuery($conn, "SELECT value, CAST(value AS nvarchar(max)) FROM #utf8_varchar",
+        [], ['Scrollable' => $cursor]);
+    sqlsrv_fetch($stmt);
+    $actual = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING('UTF-8'));
+    $stream = sqlsrv_get_field($stmt, 1, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_UTF8_VARCHAR));
+    if ($stream === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+    $fromStream = stream_get_contents($stream);
+    fclose($stream);
+    echo "stream: ", ($actual === $long && $fromStream === $long ? 'PASS' : 'FAIL'), "\n";
     sqlsrv_free_stmt($stmt);
 }
-fclose($fp);
-unlink($tmpFile);
 
-// === Test 2: Output parameter ===
-echo "=== Test 2: Output parameter ===\n";
-
-$stmt = sqlsrv_query($conn, "CREATE PROCEDURE $procName @id INT, @out_name VARCHAR(255) OUTPUT
-AS
-BEGIN
-    SELECT @out_name = name FROM $tbname WHERE id = @id
-END");
-if ($stmt === false) die(print_r(sqlsrv_errors(), true));
-sqlsrv_free_stmt($stmt);
-
-$outName = str_repeat(' ', 255);
-$stmt = sqlsrv_prepare($conn, "EXEC $procName ?, ?",
-    array(
-        array(1, SQLSRV_PARAM_IN),
-        array(&$outName, SQLSRV_PARAM_INOUT, null, SQLSRV_SQLTYPE_VARCHAR(255))
-    )
-);
-if ($stmt === false) die(print_r(sqlsrv_errors(), true));
-sqlsrv_execute($stmt);
-// Consume all result sets to finalize output params
-while (sqlsrv_next_result($stmt) !== false);
-sqlsrv_free_stmt($stmt);
-
-$outName = rtrim($outName);
-echo "output: " . (($outName === $testVal) ? 'PASS' : 'FAIL') . "\n";
-
-// === Test 3: Fetch as stream ===
-echo "=== Test 3: Fetch as stream ===\n";
-$stmt = sqlsrv_query($conn, "SELECT content FROM $tbname WHERE id = 1");
-if (sqlsrv_fetch($stmt)) {
-    $stream = sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_UTF8_VARCHAR));
-    if ($stream !== false) {
-        $data = stream_get_contents($stream);
-        fclose($stream);
-        echo "stream: " . (($data === $streamContent) ? 'PASS' : 'FAIL') . "\n";
-    } else {
-        echo "stream: FAIL (get_field returned false)\n";
-    }
+$out = 'before';
+$stmt = checkedQuery($conn, "SET NOCOUNT ON; SET ? = ?;", [
+    [&$out, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_UTF8_VARCHAR), SQLSRV_SQLTYPE_VARCHAR(255)],
+    [$value, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('UTF-8')]
+]);
+while (($next = sqlsrv_next_result($stmt)) === true) {
 }
+if ($next === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+echo "output: ", ($out === $value ? 'PASS' : 'FAIL'), "\n";
 sqlsrv_free_stmt($stmt);
 
-// Cleanup
-sqlsrv_query($conn, "DROP PROCEDURE $procName");
-sqlsrv_query($conn, "DROP TABLE $tbname");
+$out = '';
+$stmt = checkedQuery($conn, "SET NOCOUNT ON; SET ? = ?;", [
+    [&$out, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_UTF8_VARCHAR), SQLSRV_SQLTYPE_VARCHAR(255)],
+    [$value, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('UTF-8')]
+]);
+while (($next = sqlsrv_next_result($stmt)) === true) {
+}
+if ($next === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+echo "output only: ", ($out === $value ? 'PASS' : 'FAIL'), "\n";
+sqlsrv_free_stmt($stmt);
+
+$stream = fopen('php://temp', 'w+b');
+fwrite($stream, "invalid\xff");
+rewind($stream);
+$stmt = sqlsrv_query($conn, "INSERT INTO #utf8_varchar VALUES (?)",
+    [[$stream, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_UTF8_VARCHAR)]]);
+$errors = sqlsrv_errors();
+echo "invalid stream: ", ($stmt === false && $errors[0]['SQLSTATE'] === 'IMSSP' ? 'PASS' : 'FAIL'), "\n";
+if ($stmt !== false) {
+    sqlsrv_free_stmt($stmt);
+}
+fclose($stream);
+$nul = $value . "\0" . $value;
+$stream = fopen('php://temp', 'w+b');
+fwrite($stream, $nul);
+rewind($stream);
+sqlsrv_free_stmt(checkedQuery($conn, "DELETE FROM #utf8_varchar"));
+sqlsrv_free_stmt(checkedQuery($conn, "INSERT INTO #utf8_varchar VALUES (?)",
+    [[$stream, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_UTF8_VARCHAR)]]));
+fclose($stream);
+$stmt = checkedQuery($conn, "SELECT CONVERT(varbinary(max), value) FROM #utf8_varchar");
+sqlsrv_fetch($stmt);
+echo "NUL stream storage: ", (sqlsrv_get_field($stmt, 0, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_BINARY)) === $nul ? 'PASS' : 'FAIL'), "\n";
+sqlsrv_free_stmt($stmt);
+
+$type = uniqid('srv_utf8_varchar_');
+sqlsrv_free_stmt(checkedQuery($conn, "CREATE TYPE $type AS TABLE (
+    narrow_value varchar(max) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+    wide_value nvarchar(max), binary_value varbinary(max))"));
+try {
+    $tvp = [$type => [[$long, $long, "binary\0data"]]];
+    $stmt = checkedQuery($conn, "SELECT * FROM ?", [[$tvp]]);
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+    echo "TVP: ", ($row === [$long, $long, "binary\0data"] ? 'PASS' : 'FAIL'), "\n";
+    sqlsrv_free_stmt($stmt);
+} finally {
+    sqlsrv_free_stmt(checkedQuery($conn, "DROP TYPE $type"));
+}
+sqlsrv_free_stmt(checkedQuery($conn, "DROP TABLE #utf8_varchar"));
 sqlsrv_close($conn);
-echo "Done\n";
 ?>
 --EXPECT--
-=== Test 1: Stream parameter ===
-name: PASS
-content: PASS
-=== Test 2: Output parameter ===
-output: PASS
-=== Test 3: Fetch as stream ===
+length 7999: PASS
+length 8000: PASS
+length 8001: PASS
+length 20000: PASS
 stream: PASS
-Done
+stream: PASS
+output: PASS
+output only: PASS
+invalid stream: PASS
+NUL stream storage: PASS
+TVP: PASS

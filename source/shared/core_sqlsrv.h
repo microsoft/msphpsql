@@ -240,6 +240,11 @@ enum SQLSRV_ENCODING {
     SQLSRV_ENCODING_UTF8_VARCHAR = CP_UTF8 + 1,  // UTF-8 data bound as SQL_VARCHAR (not NVARCHAR)
 };
 
+inline bool is_utf8_encoding(unsigned int encoding)
+{
+    return encoding == SQLSRV_ENCODING_UTF8 || encoding == SQLSRV_ENCODING_UTF8_VARCHAR;
+}
+
 // the array keys used when returning a row via sqlsrv_fetch_array and sqlsrv_fetch_object.
 enum SQLSRV_FETCH_TYPE {
     MIN_SQLSRV_FETCH = 1,        // lowest value for fetch type

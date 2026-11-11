@@ -111,6 +111,12 @@ bool is_valid_sqlsrv_phptype( _In_ sqlsrv_phptype type );
 void adjustDecimalPrecision(_Inout_ zval* param_z, _In_ SQLSMALLINT decimal_digits);
 bool is_a_numeric_type(_In_ SQLSMALLINT sql_type);
 bool is_a_string_type(_In_ SQLSMALLINT sql_type);
+
+bool use_utf8_varchar_bytes(SQLSRV_ENCODING encoding, SQLSMALLINT sql_type)
+{
+    return encoding == SQLSRV_ENCODING_UTF8_VARCHAR &&
+        (sql_type == SQL_CHAR || sql_type == SQL_VARCHAR || sql_type == SQL_LONGVARCHAR);
+}
 }
 
 // constructor for sqlsrv_stmt.  Here so that we can use functions declared earlier.
@@ -1755,7 +1761,7 @@ void get_field_as_string(_Inout_ sqlsrv_stmt *stmt, _In_ SQLUSMALLINT field_inde
             extra = sizeof(SQLCHAR);
 
             // For numbers, no need to convert
-            if (sqlsrv_php_type.typeinfo.encoding == CP_UTF8 && !is_a_numeric_type(static_cast<SQLSMALLINT>(sql_field_type))) {
+            if (is_utf8_encoding(sqlsrv_php_type.typeinfo.encoding) && !is_a_numeric_type(static_cast<SQLSMALLINT>(sql_field_type))) {
                 c_type = SQL_C_WCHAR;
                 extra = sizeof(SQLWCHAR);
 
@@ -2350,10 +2356,8 @@ bool sqlsrv_param::derive_string_types_sizes(_In_ zval* /*param_z*/)
         c_data_type = SQL_C_BINARY;
         break;
     case SQLSRV_ENCODING_UTF8:
-        c_data_type = is_numeric ? SQL_C_CHAR : SQL_C_WCHAR;
-        break;
     case SQLSRV_ENCODING_UTF8_VARCHAR:
-        c_data_type = SQL_C_CHAR;
+        c_data_type = is_numeric ? SQL_C_CHAR : SQL_C_WCHAR;
         break;
     default:
         break;
@@ -2401,9 +2405,8 @@ void sqlsrv_param::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval*
         adjustDecimalPrecision(param_z, decimal_digits);
     }
 
-    if (!is_numeric && encoding == CP_UTF8) {
+    if (!is_numeric && is_utf8_encoding(encoding)) {
         // Convert the input param value to wide string and save it for later
-        // Note: SQLSRV_ENCODING_UTF8_VARCHAR skips this — data stays as UTF-8 bytes
         if (Z_STRLEN_P(param_z) > INT_MAX) {
             LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
             throw core::CoreException();
@@ -2465,7 +2468,9 @@ void sqlsrv_param::process_resource_param(_Inout_ zval* param_z)
         c_data_type = SQL_C_WCHAR;
         break;
     case SQLSRV_ENCODING_UTF8_VARCHAR:
-        c_data_type = SQL_C_CHAR;
+        // Binary C buffers preserve UTF-8 bytes for narrow SQL streams without ANSI conversion.
+        // SQLPutData's WCHAR-to-VARCHAR conversion can corrupt multi-packet UTF-8 values.
+        c_data_type = use_utf8_varchar_bytes(encoding, sql_data_type) ? SQL_C_BINARY : SQL_C_WCHAR;
         break;
     default:
         break;
@@ -2642,7 +2647,7 @@ bool sqlsrv_param::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
             // If we support other encondings in the future, we'll simply need to read a single byte and then retry the conversion
             // since all other MBCS supported by SQL Server are 2 byte maximum size.
 
-            if (encoding == CP_UTF8) {
+            if (is_utf8_encoding(encoding)) {
                 // The size of wbuffer is set for the worst case of UTF-8 to UTF-16 conversion, which is an
                 // expansion of 2x the UTF-8 size.
                 SQLWCHAR wbuffer[PHP_STREAM_BUFFER_SIZE + 1] = { L'\0' };
@@ -2651,9 +2656,9 @@ bool sqlsrv_param::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
 
                 // The buffer_size is the # of wchars.  Set to buffer_size / 2
 #ifndef _WIN32
-                int wsize = SystemLocale::ToUtf16Strict(encoding, buffer, static_cast<int>(read), wbuffer, wbuffer_size, &last_error_code);
+                int wsize = SystemLocale::ToUtf16Strict(CP_UTF8, buffer, static_cast<int>(read), wbuffer, wbuffer_size, &last_error_code);
 #else
-                int wsize = MultiByteToWideChar(encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>(read), wbuffer, wbuffer_size);
+                int wsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, buffer, static_cast<int>(read), wbuffer, wbuffer_size);
                 last_error_code = GetLastError();
 #endif // !_WIN32
 
@@ -2670,16 +2675,21 @@ bool sqlsrv_param::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
 
                     // Try the conversion again with the complete character
 #ifndef _WIN32
-                    wsize = SystemLocale::ToUtf16Strict(encoding, buffer, static_cast<int>(read + new_read), wbuffer, static_cast<int>(sizeof(wbuffer) / sizeof(SQLWCHAR)));
+                    wsize = SystemLocale::ToUtf16Strict(CP_UTF8, buffer, static_cast<int>(read + new_read), wbuffer, static_cast<int>(sizeof(wbuffer) / sizeof(SQLWCHAR)));
 #else
-                    wsize = MultiByteToWideChar(encoding, MB_ERR_INVALID_CHARS, buffer, static_cast<int>(read + new_read), wbuffer, static_cast<int>(sizeof(wbuffer) / sizeof(wchar_t)));
+                    wsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, buffer, static_cast<int>(read + new_read), wbuffer, static_cast<int>(sizeof(wbuffer) / sizeof(wchar_t)));
 #endif //!_WIN32
                     // something else must be wrong if it failed
                     CHECK_CUSTOM_ERROR(wsize == 0, stmt, SQLSRV_ERROR_INPUT_STREAM_ENCODING_TRANSLATE, get_last_error_message(ERROR_NO_UNICODE_TRANSLATION), NULL) {
                         throw core::CoreException();
                     }
+                    read += new_read;
                 }
-                core::SQLPutData(stmt, wbuffer, wsize * sizeof(SQLWCHAR));
+                if (c_data_type == SQL_C_BINARY) {
+                    core::SQLPutData(stmt, buffer, read);
+                } else {
+                    core::SQLPutData(stmt, wbuffer, wsize * sizeof(SQLWCHAR));
+                }
             }
             else {
                 core::SQLPutData(stmt, buffer, read);
@@ -2942,10 +2952,10 @@ void sqlsrv_param_inout::finalize_output_string()
 
     switch (encoding) {
     case SQLSRV_ENCODING_UTF8:
+    case SQLSRV_ENCODING_UTF8_VARCHAR:
         null_size = sizeof(SQLWCHAR);  // The string isn't yet converted to UTF-8, still UTF-16
         break;
     case SQLSRV_ENCODING_SYSTEM:
-    case SQLSRV_ENCODING_UTF8_VARCHAR:
         null_size = sizeof(SQLCHAR);
         break;
     case SQLSRV_ENCODING_BINARY:
@@ -2978,7 +2988,7 @@ void sqlsrv_param_inout::finalize_output_string()
         core::sqlsrv_zval_stringl(value_z, str, str_len);
     }
     else {
-        if (encoding != SQLSRV_ENCODING_CHAR && encoding != SQLSRV_ENCODING_UTF8_VARCHAR) {
+        if (encoding != SQLSRV_ENCODING_CHAR) {
             char* outString = NULL;
             SQLLEN outLen = 0;
 
@@ -3356,6 +3366,9 @@ void sqlsrv_param_tvp::process_param_column_value(_Inout_ sqlsrv_stmt* stmt)
     case IS_OBJECT:
         if (param_php_type == IS_STRING) {
             derive_string_types_sizes(data_z);
+            if (use_utf8_varchar_bytes(encoding, sql_data_type)) {
+                c_data_type = SQL_C_BINARY;
+            }
         } else {
             // If preprocessing a datetime object fails, throw an error of invalid php type
             bool succeeded = preprocess_datetime_object(stmt, data_z);
@@ -3641,7 +3654,7 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
                         // If it's an empty string
                         core::SQLPutData(stmt, Z_STRVAL_P(value_z), 0);
                     } else {
-                        if (encoding == CP_UTF8 && !is_a_numeric_type(sql_data_type)) {
+                        if (is_utf8_encoding(encoding) && !is_a_numeric_type(sql_data_type)) {
                             if (value_len > INT_MAX) {
                                 LOG(SEV_ERROR, "Convert input parameter to utf16: buffer length exceeded.");
                                 throw core::CoreException();
@@ -3652,7 +3665,7 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
                                 throw core::CoreException();
                             }
 
-                            send_string_data_in_batches(stmt, &placeholder_z);
+                            send_string_data_in_batches(stmt, c_data_type == SQL_C_BINARY ? value_z : &placeholder_z);
                         } else {
                             send_string_data_in_batches(stmt, value_z);
                         }
@@ -3690,7 +3703,8 @@ bool sqlsrv_param_tvp::send_data_packet(_Inout_ sqlsrv_stmt* stmt)
 void sqlsrv_param_tvp::send_string_data_in_batches(_Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z)
 {
     SQLLEN len = Z_STRLEN_P(value_z);
-    SQLLEN batch = (encoding == CP_UTF8) ? PHP_STREAM_BUFFER_SIZE / sizeof(SQLWCHAR) : PHP_STREAM_BUFFER_SIZE;
+    SQLLEN batch = (is_utf8_encoding(encoding) && c_data_type != SQL_C_BINARY)
+        ? PHP_STREAM_BUFFER_SIZE / sizeof(SQLWCHAR) : PHP_STREAM_BUFFER_SIZE;
 
     char* p = Z_STRVAL_P(value_z);
     while (len > batch) {

@@ -1,132 +1,82 @@
 --TEST--
-Test SQLSRV_ENCODING_UTF8_VARCHAR binds parameters as VARCHAR with UTF-8 data
---DESCRIPTION--
-Verifies that SQLSRV_ENCODING_UTF8_VARCHAR sends string parameters as SQL_VARCHAR/SQL_C_CHAR
-(not SQL_WVARCHAR/SQL_C_WCHAR), allowing efficient use of VARCHAR columns with _UTF8 collations
-without implicit NVARCHAR conversion.
+PDO UTF8_VARCHAR parameter types, encoding overrides and Unicode reads
 --SKIPIF--
 <?php require('skipif_mid-refactor.inc'); ?>
 --FILE--
 <?php
-require_once("MsCommon_mid-refactor.inc");
+require_once('MsCommon_mid-refactor.inc');
+$conn = connect();
+$typeSql = "SELECT SQL_VARIANT_PROPERTY(?, 'BaseType')";
 
-try {
-    $conn = connect();
-    $tbname = getTableName('utf8_varchar_test');
+$stmt = $conn->prepare($typeSql);
+$stmt->execute(['ascii']);
+echo "legacy: ", $stmt->fetchColumn(), "\n";
+$stmt->closeCursor();
 
-    // Create table with VARCHAR columns using UTF-8 collation
-    $conn->exec("IF OBJECT_ID('$tbname', 'U') IS NOT NULL DROP TABLE $tbname");
-    $conn->exec("CREATE TABLE $tbname (
-        id int IDENTITY(1,1) NOT NULL,
-        name varchar(255) COLLATE Latin1_General_100_CI_AS_SC_UTF8 NULL,
-        data varchar(max) COLLATE Latin1_General_100_BIN2_UTF8 NOT NULL,
-        CONSTRAINT PK_$tbname PRIMARY KEY (id)
-    )");
+$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+$stmt = $conn->prepare($typeSql);
+$stmt->execute(['ascii']);
+echo "connection: ", $stmt->fetchColumn(), "\n";
+$stmt->closeCursor();
 
-    $testCases = [
-        [
-            'label' => 'basic_ascii',
-            'name'  => 'Hello World',
-            'data'  => '{"text": "Hello World"}',
-        ],
-        [
-            'label' => 'european_utf8',
-            'name'  => 'Straße Köln Grüß Gott',
-            'data'  => '{"text": "Straße Köln Grüß Gott"}',
-        ],
-        [
-            'label' => 'extended_latin',
-            'name'  => 'Ñoño café résumé naïve',
-            'data'  => '{"text": "Ñoño café résumé naïve"}',
-        ],
-    ];
+$stmt = $conn->prepare($typeSql);
+$value = 'ascii';
+$stmt->bindParam(1, $value, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+$stmt->execute();
+echo "legacy override: ", $stmt->fetchColumn(), "\n";
+$stmt->closeCursor();
 
-    // ===== Test 1: Connection-level encoding =====
-    echo "=== Test 1: Connection-level SQLSRV_ENCODING_UTF8_VARCHAR ===\n";
-    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
+$stmt = $conn->prepare($typeSql, [PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8_VARCHAR]);
+$stmt->execute(['ascii']);
+echo "statement: ", $stmt->fetchColumn(), "\n";
+$stmt->closeCursor();
 
-    foreach ($testCases as $case) {
-        $stmt = $conn->prepare("INSERT INTO $tbname (name, data) VALUES (?, ?)");
-        $stmt->execute([$case['name'], $case['data']]);
-        $id = $conn->lastInsertId();
+$stmt = $conn->prepare($typeSql);
+$stmt->bindParam(1, $value, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+$stmt->execute();
+echo "parameter: ", $stmt->fetchColumn(), "\n";
+$stmt->closeCursor();
 
-        $stmt = $conn->prepare("SELECT name, data FROM $tbname WHERE id = ?");
-        $stmt->execute([$id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $nameMatch = ($case['name'] === $row['name']) ? 'YES' : 'NO';
-        $dataMatch = ($case['data'] === $row['data']) ? 'YES' : 'NO';
-
-        echo "CASE {$case['label']}: name={$nameMatch}, data={$dataMatch}\n";
-    }
-
-    // ===== Test 2: Statement-level encoding =====
-    echo "=== Test 2: Statement-level SQLSRV_ENCODING_UTF8_VARCHAR ===\n";
-    // Reset connection encoding to default UTF-8
-    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
-    $conn->exec("TRUNCATE TABLE $tbname");
-
-    foreach ($testCases as $case) {
-        $stmt = $conn->prepare("INSERT INTO $tbname (name, data) VALUES (?, ?)",
-            [PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8_VARCHAR]);
-        $stmt->execute([$case['name'], $case['data']]);
-        $id = $conn->lastInsertId();
-
-        $stmt = $conn->prepare("SELECT name, data FROM $tbname WHERE id = ?",
-            [PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8_VARCHAR]);
-        $stmt->execute([$id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $nameMatch = ($case['name'] === $row['name']) ? 'YES' : 'NO';
-        $dataMatch = ($case['data'] === $row['data']) ? 'YES' : 'NO';
-
-        echo "CASE {$case['label']}: name={$nameMatch}, data={$dataMatch}\n";
-    }
-
-    // ===== Test 3: Per-parameter encoding via bindParam =====
-    echo "=== Test 3: Per-parameter SQLSRV_ENCODING_UTF8_VARCHAR ===\n";
-    // Set connection encoding to UTF8_VARCHAR so that reads also use the correct encoding
-    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
-    $conn->exec("TRUNCATE TABLE $tbname");
-
-    foreach ($testCases as $case) {
-        $name = $case['name'];
-        $data = $case['data'];
-        $stmt = $conn->prepare("INSERT INTO $tbname (name, data) VALUES (:name, :data)");
-        $stmt->bindParam(':name', $name, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
-        $stmt->bindParam(':data', $data, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
-        $stmt->execute();
-        $id = $conn->lastInsertId();
-
-        $stmt = $conn->prepare("SELECT name, data FROM $tbname WHERE id = ?");
-        $stmt->execute([$id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $nameMatch = ($case['name'] === $row['name']) ? 'YES' : 'NO';
-        $dataMatch = ($case['data'] === $row['data']) ? 'YES' : 'NO';
-
-        echo "CASE {$case['label']}: name={$nameMatch}, data={$dataMatch}\n";
-    }
-
-    // Cleanup
-    $conn->exec("DROP TABLE $tbname");
-    echo "Done\n";
-
-} catch (PDOException $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+// Extended string flags must keep their existing native-prepare behavior.
+foreach ([PDO::PARAM_STR_CHAR, PDO::PARAM_STR_NATL] as $flag) {
+    $stmt = $conn->prepare($typeSql);
+    $stmt->bindValue(1, 'ascii', PDO::PARAM_STR | $flag);
+    $stmt->execute();
+    echo "legacy flag: ", $stmt->fetchColumn(), "\n";
+    $stmt->closeCursor();
 }
+$conn->setAttribute(PDO::ATTR_DEFAULT_STR_PARAM, PDO::PARAM_STR_CHAR);
+$stmt = $conn->prepare($typeSql);
+$stmt->execute(['ascii']);
+echo "legacy default: ", $stmt->fetchColumn(), "\n";
+$stmt->closeCursor();
+
+// Server-generated Unicode independently exercises command text and fetch conversion.
+$value = "\u{65E5}\u{672C}\u{8A9E}\u{1F600}";
+$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+foreach ([PDO::CURSOR_FWDONLY, PDO::CURSOR_SCROLL] as $cursor) {
+    $options = [PDO::ATTR_CURSOR => $cursor];
+    if ($cursor == PDO::CURSOR_SCROLL) {
+        $options[PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE] = PDO::SQLSRV_CURSOR_BUFFERED;
+    }
+    $stmt = $conn->prepare("SELECT N'$value' AS unicode_value,
+        CAST('ascii' AS varchar(20)) AS narrow_value, CAST(12.5 AS decimal(4,1)) AS number_value", $options);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_NUM);
+    echo "fetch: ", ($row === [$value, 'ascii', '12.5'] ? 'PASS' : 'FAIL'), "\n";
+    $stmt->closeCursor();
+}
+$conn = null;
 ?>
 --EXPECT--
-=== Test 1: Connection-level SQLSRV_ENCODING_UTF8_VARCHAR ===
-CASE basic_ascii: name=YES, data=YES
-CASE european_utf8: name=YES, data=YES
-CASE extended_latin: name=YES, data=YES
-=== Test 2: Statement-level SQLSRV_ENCODING_UTF8_VARCHAR ===
-CASE basic_ascii: name=YES, data=YES
-CASE european_utf8: name=YES, data=YES
-CASE extended_latin: name=YES, data=YES
-=== Test 3: Per-parameter SQLSRV_ENCODING_UTF8_VARCHAR ===
-CASE basic_ascii: name=YES, data=YES
-CASE european_utf8: name=YES, data=YES
-CASE extended_latin: name=YES, data=YES
-Done
+legacy: nvarchar
+connection: varchar
+legacy override: nvarchar
+statement: varchar
+parameter: varchar
+legacy flag: nvarchar
+legacy flag: nvarchar
+legacy default: nvarchar
+fetch: PASS
+fetch: PASS

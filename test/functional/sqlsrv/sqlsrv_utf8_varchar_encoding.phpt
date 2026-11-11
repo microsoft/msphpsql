@@ -1,85 +1,75 @@
 --TEST--
-Test SQLSRV_ENC_UTF8_VARCHAR binds parameters as VARCHAR with UTF-8 data
---DESCRIPTION--
-Verifies that using CharacterSet utf-8-varchar sends string parameters as
-SQL_VARCHAR/SQL_C_CHAR (not SQL_WVARCHAR/SQL_C_WCHAR), allowing efficient
-use of VARCHAR columns with _UTF8 collations without implicit NVARCHAR conversion.
+SQLSRV UTF8_VARCHAR parameter types, encoding overrides and Unicode reads
 --SKIPIF--
 <?php require('skipif_versions_old.inc'); ?>
 --FILE--
 <?php
-sqlsrv_configure('WarningsReturnAsErrors', 0);
 require_once('MsCommon.inc');
 
-$conn = connect(array('CharacterSet' => SQLSRV_ENC_UTF8_VARCHAR));
-if ($conn === false) {
-    die(print_r(sqlsrv_errors(), true));
+function parameterType($conn, $params)
+{
+    $stmt = sqlsrv_query($conn, "SELECT SQL_VARIANT_PROPERTY(?, 'BaseType')", $params);
+    if ($stmt === false || sqlsrv_fetch($stmt) !== true) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+    $type = sqlsrv_get_field($stmt, 0);
+    sqlsrv_free_stmt($stmt);
+    return $type;
 }
 
-$tbname = '#utf8_varchar_test_' . rand(0, 1000);
+$conn = connect(['CharacterSet' => SQLSRV_ENC_UTF8_VARCHAR]);
+echo "connection: ", parameterType($conn, ['ascii']), "\n";
+echo "legacy override: ", parameterType($conn, [
+    ['ascii', SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING('UTF-8')]
+]), "\n";
+echo "explicit SQL type: ", parameterType($conn, [
+    ['ascii', SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_UTF8_VARCHAR), SQLSRV_SQLTYPE_NVARCHAR(20)]
+]), "\n";
 
-// Create table with VARCHAR columns using UTF-8 collation
-$sql = "CREATE TABLE $tbname (
-    id int IDENTITY(1,1) NOT NULL,
-    name varchar(255) COLLATE Latin1_General_100_CI_AS_SC_UTF8 NULL,
-    data varchar(max) COLLATE Latin1_General_100_BIN2_UTF8 NOT NULL
-)";
-$stmt = sqlsrv_query($conn, $sql);
-if ($stmt === false) {
+$value = "\u{65E5}\u{672C}\u{8A9E}\u{1F600}";
+$stmt = sqlsrv_query($conn, "SELECT ?", [
+    [$value, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_UTF8_VARCHAR), SQLSRV_SQLTYPE_NVARCHAR(20)]
+]);
+if ($stmt === false || sqlsrv_fetch($stmt) !== true) {
     die(print_r(sqlsrv_errors(), true));
 }
+echo "explicit Unicode: ", (sqlsrv_get_field($stmt, 0) === $value ? 'PASS' : 'FAIL'), "\n";
+sqlsrv_free_stmt($stmt);
 
-$testCases = [
-    [
-        'label' => 'basic_ascii',
-        'name'  => 'Hello World',
-        'data'  => '{"text": "Hello World"}',
-    ],
-    [
-        'label' => 'european_utf8',
-        'name'  => 'Straße Köln Grüß Gott',
-        'data'  => '{"text": "Straße Köln Grüß Gott"}',
-    ],
-    [
-        'label' => 'extended_latin',
-        'name'  => 'Ñoño café résumé naïve',
-        'data'  => '{"text": "Ñoño café résumé naïve"}',
-    ],
-];
+$stream = fopen('php://temp', 'w+b');
+fwrite($stream, 'ascii');
+rewind($stream);
+echo "stream type: ", parameterType($conn, [
+    [$stream, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STREAM(SQLSRV_ENC_UTF8_VARCHAR), SQLSRV_SQLTYPE_VARCHAR(100)]
+]), "\n";
+fclose($stream);
 
-echo "=== Insert and roundtrip with SQLSRV_ENC_UTF8_VARCHAR ===\n";
-
-foreach ($testCases as $case) {
-    $stmt = sqlsrv_query($conn,
-        "INSERT INTO $tbname (name, data) VALUES (?, ?)",
-        [$case['name'], $case['data']]
-    );
+foreach ([SQLSRV_CURSOR_FORWARD, SQLSRV_CURSOR_CLIENT_BUFFERED] as $cursor) {
+    $stmt = sqlsrv_query($conn, "SELECT N'$value', CAST('ascii' AS varchar(20)),
+        CAST(12.5 AS decimal(4,1))", [], ['Scrollable' => $cursor]);
     if ($stmt === false) {
         die(print_r(sqlsrv_errors(), true));
     }
-
-    $stmt = sqlsrv_query($conn,
-        "SELECT name, data FROM $tbname WHERE name = ?",
-        [$case['name']]
-    );
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
-
-    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    $nameMatch = ($case['name'] === $row['name']) ? 'YES' : 'NO';
-    $dataMatch = ($case['data'] === $row['data']) ? 'YES' : 'NO';
-
-    echo "CASE {$case['label']}: name={$nameMatch}, data={$dataMatch}\n";
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+    echo "fetch: ", ($row === [$value, 'ascii', '12.5'] ? 'PASS' : 'FAIL'), "\n";
+    sqlsrv_free_stmt($stmt);
 }
-
-sqlsrv_query($conn, "DROP TABLE $tbname");
 sqlsrv_close($conn);
-echo "Done\n";
+
+$conn = connect(['CharacterSet' => 'UTF-8']);
+echo "legacy: ", parameterType($conn, ['ascii']), "\n";
+echo "parameter: ", parameterType($conn, [
+    ['ascii', SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_UTF8_VARCHAR)]
+]), "\n";
+sqlsrv_close($conn);
 ?>
 --EXPECT--
-=== Insert and roundtrip with SQLSRV_ENC_UTF8_VARCHAR ===
-CASE basic_ascii: name=YES, data=YES
-CASE european_utf8: name=YES, data=YES
-CASE extended_latin: name=YES, data=YES
-Done
+connection: varchar
+legacy override: nvarchar
+explicit SQL type: nvarchar
+explicit Unicode: PASS
+stream type: varchar
+fetch: PASS
+fetch: PASS
+legacy: nvarchar
+parameter: varchar

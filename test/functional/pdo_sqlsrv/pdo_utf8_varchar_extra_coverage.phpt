@@ -1,93 +1,156 @@
 --TEST--
-Test SQLSRV_ENCODING_UTF8_VARCHAR with bound columns, emulate prepares, and output params
---DESCRIPTION--
-Covers additional code paths for SQLSRV_ENCODING_UTF8_VARCHAR:
-- bindColumn with the new encoding
-- Emulate prepares (PDO::ATTR_EMULATE_PREPARES)
-- Output parameters from stored procedures
+PDO UTF8_VARCHAR Unicode input, streams, output parameters and emulated prepares
 --SKIPIF--
-<?php require('skipif_mid-refactor.inc'); ?>
---FILE--
 <?php
-require_once("MsCommon_mid-refactor.inc");
-
-try {
-    $conn = connect();
-    $tbname = getTableName('utf8vc_extra');
-    $procName = getTableName('sp_utf8vc_out');
-
-    $conn->exec("IF OBJECT_ID('$tbname', 'U') IS NOT NULL DROP TABLE $tbname");
-    $conn->exec("CREATE TABLE $tbname (
-        id int IDENTITY(1,1) NOT NULL,
-        name varchar(255) COLLATE Latin1_General_100_CI_AS_SC_UTF8 NULL,
-        CONSTRAINT PK_$tbname PRIMARY KEY (id)
-    )");
-
-    $testVal = 'Straße Köln Grüß Gott';
-
-    // Insert test data using the new encoding
-    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
-    $stmt = $conn->prepare("INSERT INTO $tbname (name) VALUES (?)");
-    $stmt->execute([$testVal]);
-
-    // === Test 1: bindColumn with SQLSRV_ENCODING_UTF8_VARCHAR ===
-    echo "=== Test 1: bindColumn ===\n";
-    $stmt = $conn->prepare("SELECT name FROM $tbname WHERE id = 1");
-    $stmt->execute();
-    $stmt->bindColumn('name', $nameOut, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
-    $stmt->fetch(PDO::FETCH_BOUND);
-    echo "bindColumn: " . (($nameOut === $testVal) ? 'PASS' : 'FAIL') . "\n";
-
-    // === Test 2: emulate prepares (ASCII data — emulate prepares with non-ASCII ===
-    // data requires the database default collation to be UTF-8)
-    echo "=== Test 2: Emulate prepares ===\n";
-    $asciiVal = 'Hello World Test';
-    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
-    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
-
-    $stmt = $conn->prepare("INSERT INTO $tbname (name) VALUES (?)");
-    $stmt->execute([$asciiVal]);
-    $id = $conn->lastInsertId();
-
-    // Read back (turn off emulate for SELECT)
-    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-    $stmt = $conn->prepare("SELECT name FROM $tbname WHERE id = ?");
-    $stmt->execute([$id]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    echo "emulate: " . (($row['name'] === $asciiVal) ? 'PASS' : 'FAIL') . "\n";
-
-    // === Test 3: output parameter ===
-    echo "=== Test 3: Output param ===\n";
-    $conn->exec("IF OBJECT_ID('$procName', 'P') IS NOT NULL DROP PROCEDURE $procName");
-    $conn->exec("CREATE PROCEDURE $procName @id INT, @out_name VARCHAR(255) OUTPUT
-    AS
-    BEGIN
-        SELECT @out_name = name FROM $tbname WHERE id = @id
-    END");
-
-    $outName = str_repeat(' ', 255);
-    $stmt = $conn->prepare("EXEC $procName ?, ?");
-    $stmt->bindValue(1, 1, PDO::PARAM_INT);
-    $stmt->bindParam(2, $outName, PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT, 255, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
-    $stmt->execute();
-
-    $outName = rtrim($outName);
-    echo "output: " . (($outName === $testVal) ? 'PASS' : 'FAIL') . "\n";
-
-    // Cleanup
-    $conn->exec("DROP PROCEDURE $procName");
-    $conn->exec("DROP TABLE $tbname");
-    echo "Done\n";
-
-} catch (PDOException $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+require('skipif_mid-refactor.inc');
+$conn = connect();
+$codepage = $conn->query("SELECT COLLATIONPROPERTY(CAST(DATABASEPROPERTYEX(DB_NAME(), 'Collation') AS nvarchar(128)), 'CodePage')")->fetchColumn();
+if ($codepage != 65001) {
+    die('skip requires a database with a UTF-8 default collation (SQL Server 2019+)');
 }
 ?>
+--FILE--
+<?php
+require_once('MsCommon_mid-refactor.inc');
+$conn = connect();
+$value = "\u{65E5}\u{672C}\u{8A9E}\u{1F600}";
+$table = '#utf8_varchar';
+$conn->exec("CREATE TABLE $table (id int, value varchar(max) COLLATE Latin1_General_100_CI_AS_SC_UTF8)");
+
+foreach (['connection', 'statement', 'parameter'] as $scope) {
+    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, $scope === 'connection'
+        ? PDO::SQLSRV_ENCODING_UTF8_VARCHAR : PDO::SQLSRV_ENCODING_UTF8);
+    $options = $scope === 'statement'
+        ? [PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8_VARCHAR] : [];
+    $stmt = $conn->prepare("INSERT INTO $table VALUES (1, ?)", $options);
+    if ($scope === 'parameter') {
+        $stmt->bindParam(1, $value, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+        $stmt->execute();
+    } else {
+        $stmt->execute([$value]);
+    }
+    $stmt->closeCursor();
+    // Read through the existing UTF-8 path, not through the encoding under test.
+    $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
+    $stmt = $conn->query("SELECT value FROM $table");
+    echo "$scope: ", ($stmt->fetchColumn() === $value ? 'PASS' : 'FAIL'), "\n";
+    $stmt->closeCursor();
+    $conn->exec("DELETE FROM $table");
+}
+
+$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+// Exercise the 8000-byte VARCHAR boundary, MAX promotion and packet boundaries.
+foreach ([7999, 8000, 8001, 20000] as $length) {
+    $long = str_repeat('a', $length - strlen($value)) . $value;
+    $stmt = $conn->prepare("INSERT INTO $table VALUES (2, ?)");
+    $stmt->execute([$long]);
+    $stmt->closeCursor();
+    $stmt = $conn->prepare("SELECT value FROM $table",
+        [PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8]);
+    $stmt->execute();
+    echo "length $length: ", ($stmt->fetchColumn() === $long ? 'PASS' : 'FAIL'), "\n";
+    $stmt->closeCursor();
+    $conn->exec("DELETE FROM $table");
+}
+
+$long = str_repeat('a', 8189) . str_repeat($value, 1000);
+$stream = fopen('php://temp', 'w+b');
+fwrite($stream, $long);
+rewind($stream);
+$stmt = $conn->prepare("INSERT INTO $table VALUES (3, ?)");
+$stmt->bindParam(1, $stream, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+$stmt->execute();
+$stmt->closeCursor();
+fclose($stream);
+$stmt = $conn->prepare("SELECT value FROM $table",
+    [PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8]);
+$stmt->execute();
+echo "stream storage: ", ($stmt->fetchColumn() === $long ? 'PASS' : 'FAIL'), "\n";
+$stmt->closeCursor();
+$stmt = $conn->prepare("SELECT value, CAST(value AS nvarchar(max)) FROM $table", [
+    PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL,
+    PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED
+]);
+$stmt->execute();
+$stmt->bindColumn(1, $bound, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+$stmt->bindColumn(2, $wide, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+$stmt->fetch(PDO::FETCH_BOUND);
+echo "stream and bound columns: ", ($bound === $long && $wide === $long ? 'PASS' : 'FAIL'), "\n";
+$stmt->closeCursor();
+
+// A batch assignment exercises output finalization without requiring a persistent procedure.
+$out = 'before';
+$stmt = $conn->prepare("SET NOCOUNT ON; SET ? = ?;");
+$stmt->bindParam(1, $out, PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT, 255, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+$stmt->bindParam(2, $value, PDO::PARAM_STR, 0, PDO::SQLSRV_ENCODING_UTF8);
+$stmt->execute();
+$stmt->closeCursor();
+echo "output: ", ($out === $value ? 'PASS' : 'FAIL'), "\n";
+
+$stream = fopen('php://temp', 'w+b');
+fwrite($stream, "invalid\xff");
+rewind($stream);
+$stmt = $conn->prepare("INSERT INTO $table VALUES (4, ?)");
+$stmt->bindParam(1, $stream, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+try {
+    $stmt->execute();
+    echo "invalid stream: FAIL\n";
+} catch (PDOException $e) {
+    echo "invalid stream: ", ($e->getCode() === 'IMSSP' ? 'PASS' : 'FAIL'), "\n";
+}
+$stmt->closeCursor();
+fclose($stream);
+
+$nul = $value . "\0" . $value;
+$stream = fopen('php://temp', 'w+b');
+fwrite($stream, $nul);
+rewind($stream);
+$stmt = $conn->prepare("INSERT INTO $table VALUES (5, ?)");
+$stmt->bindParam(1, $stream, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+$stmt->execute();
+$stmt->closeCursor();
+fclose($stream);
+$stmt = $conn->query("SELECT CONVERT(varbinary(max), value) FROM $table WHERE id = 5");
+echo "NUL stream storage: ", ($stmt->fetchColumn() === $nul ? 'PASS' : 'FAIL'), "\n";
+$stmt->closeCursor();
+
+$type = uniqid('pdo_utf8_varchar_');
+$conn->exec("CREATE TYPE $type AS TABLE (narrow_value varchar(max) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+    wide_value nvarchar(max), binary_value varbinary(max))");
+try {
+    $tvp = [$type => [[$long, $long, "binary\0data"]]];
+    $stmt = $conn->prepare("SELECT * FROM ?");
+    $stmt->bindParam(1, $tvp, PDO::PARAM_LOB);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_NUM);
+    echo "TVP: ", ($row === [$long, $long, "binary\0data"] ? 'PASS' : 'FAIL'), "\n";
+    $stmt->closeCursor();
+    $stmt = null;
+} finally {
+    $conn->exec("DROP TYPE $type");
+}
+
+$conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+$stmt = $conn->prepare("SELECT SQL_VARIANT_PROPERTY(?, 'BaseType'), ?");
+$stmt->execute(['ascii', $value]);
+$row = $stmt->fetch(PDO::FETCH_NUM);
+echo "emulate: ", ($row === ['varchar', $value] ? 'PASS' : 'FAIL'), "\n";
+$stmt->closeCursor();
+$conn->exec("DROP TABLE $table");
+$conn = null;
+?>
 --EXPECT--
-=== Test 1: bindColumn ===
-bindColumn: PASS
-=== Test 2: Emulate prepares ===
-emulate: PASS
-=== Test 3: Output param ===
+connection: PASS
+statement: PASS
+parameter: PASS
+length 7999: PASS
+length 8000: PASS
+length 8001: PASS
+length 20000: PASS
+stream storage: PASS
+stream and bound columns: PASS
 output: PASS
-Done
+invalid stream: PASS
+NUL stream storage: PASS
+TVP: PASS
+emulate: PASS
