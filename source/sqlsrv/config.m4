@@ -55,6 +55,7 @@ if test "$PHP_SQLSRV" != "no"; then
   CXXFLAGS="$CXXFLAGS -std=c++11"
   CXXFLAGS="$CXXFLAGS -D_FORTIFY_SOURCE=2 -O2"
   CXXFLAGS="$CXXFLAGS -fstack-protector"
+  CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
 
   HOST_OS_ARCH=`uname`
   if test "${HOST_OS_ARCH}" = "Darwin"; then

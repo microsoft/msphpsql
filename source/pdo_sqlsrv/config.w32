@@ -49,7 +49,11 @@ if( PHP_PDO_SQLSRV != "no" ) {
                 }
             }
             ADD_EXTENSION_DEP('pdo_sqlsrv', 'pdo');
-            EXTENSION("pdo_sqlsrv", pdo_sqlsrv_src_class, PHP_PDO_SQLSRV_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
+            // Do NOT pass /DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 here. On ZTS (thread-safe) shared
+            // builds it makes pdo_init.cpp define _tsrm_ls_cache with C linkage while the shared
+            // core_*.cpp reference it with C++ linkage, causing LNK2001. Omitting it matches the
+            // Linux/macOS (config.m4) builds, which resolve the cache through the engine.
+            EXTENSION("pdo_sqlsrv", pdo_sqlsrv_src_class, PHP_PDO_SQLSRV_SHARED);
     } else {
         WARNING("pdo-sqlsrv not enabled; libraries and headers not found");
     }

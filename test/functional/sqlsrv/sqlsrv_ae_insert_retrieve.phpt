@@ -8,7 +8,7 @@ Retrieving SQL query contains encrypted filter
 <?php
 require_once('MsCommon.inc');
 
-date_default_timezone_set("Canada/Pacific");
+date_default_timezone_set("America/Vancouver");
 $conn = AE\connect();
 
 // Create the table
@@ -73,7 +73,7 @@ Retrieving plaintext data:
 SSN: 795-73-9838
 FirstName: Catherine
 LastName: Abel
-BirthDate: 1996-10-19 00:00:00.000000 Canada/Pacific
+BirthDate: 1996-10-19 00:00:00.000000 America/Vancouver
 
 Checking ciphertext data:
 Done

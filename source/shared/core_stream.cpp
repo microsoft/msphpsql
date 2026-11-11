@@ -34,8 +34,17 @@ int sqlsrv_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ )
     // UNDEF the stream zval and delete our reference count to it.
     ZVAL_UNDEF( &( ss->stmt->active_stream ) );
 
+    // Save stmt_res before freeing ss, then release the statement reference.
+    // This may trigger the statement destructor if this was the last reference,
+    // which is safe because active_stream was already set to UNDEF above.
+    zend_resource* saved_stmt_res = ss->stmt_res;
+
     sqlsrv_free( ss );
     stream->abstract = NULL;
+
+    if( saved_stmt_res != NULL ) {
+        zend_list_delete( saved_stmt_res );
+    }
 
     return 0;
 }
@@ -192,11 +201,15 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
                throw core::CoreException();
            }
 
+            // temp_buf contains UTF-16 data written by the ODBC driver via SQLGetData with SQL_C_WCHAR
+            // (set at line 88 when ss->encoding == CP_UTF8). The char* buffer is a generic allocation;
+            // the reinterpret_cast is necessary because the ODBC API uses SQLPOINTER (void*) buffers.
+            const LPCWSTR wide_buffer = reinterpret_cast<LPCWSTR>( temp_buf.get() ); // CodeQL [SM02986] buffer contains UTF-16 data from ODBC SQLGetData with SQL_C_WCHAR
 #ifndef _WIN32
-            int enc_len = SystemLocale::FromUtf16( ss->encoding, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
+            int enc_len = SystemLocale::FromUtf16( ss->encoding, wide_buffer,
                                                    static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 #else
-            int enc_len = WideCharToMultiByte( ss->encoding, flags, reinterpret_cast<LPCWSTR>( temp_buf.get() ),
+            int enc_len = WideCharToMultiByte( ss->encoding, flags, wide_buffer,
                                                static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 #endif // !_WIN32
             if( enc_len == 0 ) {

@@ -10,7 +10,7 @@ Test Integer types MAX, MIN, ZERO values.
 
     $conn = Connect();
 
-    date_default_timezone_set('Canada/Pacific');
+    date_default_timezone_set('America/Vancouver');
     // drop an old table if exists, create a new one
     $stmt = sqlsrv_query($conn, "IF OBJECT_ID('$tableUniqueName', 'U') IS NOT NULL DROP TABLE$tableUniqueName");
 
@@ -81,7 +81,7 @@ Array
         (
             [date] => 1968-12-12 16:20:00.000000
             [timezone_type] => 3
-            [timezone] => Canada/Pacific
+            [timezone] => America/Vancouver
         )
 
     [9] => 
@@ -100,7 +100,7 @@ Array
         (
             [date] => 1968-12-12 16:20:00.000000
             [timezone_type] => 3
-            [timezone] => Canada/Pacific
+            [timezone] => America/Vancouver
         )
 
     [smalldatetime_type] => 
@@ -127,14 +127,14 @@ Array
         (
             [date] => 1968-12-12 16:20:00.000000
             [timezone_type] => 3
-            [timezone] => Canada/Pacific
+            [timezone] => America/Vancouver
         )
 
     [datetime_type] => DateTime Object
         (
             [date] => 1968-12-12 16:20:00.000000
             [timezone_type] => 3
-            [timezone] => Canada/Pacific
+            [timezone] => America/Vancouver
         )
 
     [9] => 

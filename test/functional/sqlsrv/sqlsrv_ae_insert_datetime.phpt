@@ -9,7 +9,7 @@ Bind params using sqlsrv_prepare without any sql_type specified
 require_once('MsCommon.inc');
 require_once('AEData.inc');
 
-date_default_timezone_set("Canada/Pacific");
+date_default_timezone_set("America/Vancouver");
 $dataTypes = array( "date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset" );
 $conn = AE\connect();
 
@@ -53,23 +53,23 @@ sqlsrv_close($conn);
 
 Testing date: 
 ****Encrypted default type is compatible with encrypted date****
-c_det: 0001-01-01 00:00:00.000000 Canada/Pacific
-c_rand: 9999-12-31 00:00:00.000000 Canada/Pacific
+c_det: 0001-01-01 00:00:00.000000 America/Vancouver
+c_rand: 9999-12-31 00:00:00.000000 America/Vancouver
 
 Testing datetime: 
 ****Encrypted default type is compatible with encrypted datetime****
-c_det: 1753-01-01 00:00:00.000000 Canada/Pacific
-c_rand: 9999-12-31 23:59:59.997000 Canada/Pacific
+c_det: 1753-01-01 00:00:00.000000 America/Vancouver
+c_rand: 9999-12-31 23:59:59.997000 America/Vancouver
 
 Testing datetime2: 
 ****Encrypted default type is compatible with encrypted datetime2****
-c_det: 0001-01-01 00:00:00.000000 Canada/Pacific
-c_rand: 9999-12-31 23:59:59.123456 Canada/Pacific
+c_det: 0001-01-01 00:00:00.000000 America/Vancouver
+c_rand: 9999-12-31 23:59:59.123456 America/Vancouver
 
 Testing smalldatetime: 
 ****Encrypted default type is compatible with encrypted smalldatetime****
-c_det: 1900-01-01 00:00:00.000000 Canada/Pacific
-c_rand: 2079-06-05 23:59:00.000000 Canada/Pacific
+c_det: 1900-01-01 00:00:00.000000 America/Vancouver
+c_rand: 2079-06-05 23:59:00.000000 America/Vancouver
 
 Testing time: 
 ****Encrypted default type is compatible with encrypted time****

@@ -50,7 +50,11 @@ if( PHP_SQLSRV != "no" ) {
                 }
             }
             if (PHP_DEBUG != "yes") ADD_FLAG( "CFLAGS_SQLSRV", "/guard:cf /O2" );
-            EXTENSION("sqlsrv", sqlsrv_src_class , PHP_SQLSRV_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
+            // Do NOT pass /DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 here. On ZTS (thread-safe) shared
+            // builds it makes init.cpp define _tsrm_ls_cache with C linkage while the shared
+            // core_*.cpp reference it with C++ linkage, causing LNK2001. Omitting it matches the
+            // Linux/macOS (config.m4) builds, which resolve the cache through the engine.
+            EXTENSION("sqlsrv", sqlsrv_src_class , PHP_SQLSRV_SHARED);
     } else {
         WARNING("sqlsrv not enabled; libraries and headers not found");
     }

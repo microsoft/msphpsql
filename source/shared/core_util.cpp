@@ -21,6 +21,21 @@
 
 #include "core_sqlsrv.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <string.h>
+#endif
+
+void core_sqlsrv_secure_zero( _Out_writes_bytes_(len) void* ptr, _In_ size_t len )
+{
+#ifdef _WIN32
+    SecureZeroMemory(ptr, len);
+#else
+    explicit_bzero(ptr, len);
+#endif
+}
+
 namespace {
 
 severity_callback g_driver_severity;
@@ -106,7 +121,12 @@ bool convert_string_from_utf16_inplace( _In_ SQLSRV_ENCODING encoding, _Inout_up
     char* outString = NULL;
     SQLLEN outLen = 0;
 
-    bool result = convert_string_from_utf16( encoding, reinterpret_cast<const SQLWCHAR*>(*string), int(len / sizeof(SQLWCHAR)), &outString, outLen );
+    // The buffer contains UTF-16 data written by the ODBC driver via SQLGetData with SQL_C_WCHAR.
+    // The only caller (get_field_as_string in core_stmt.cpp) guards this call with
+    // "if (c_type == SQL_C_WCHAR)", ensuring the buffer was populated as UTF-16 by the driver.
+    // The reinterpret_cast is necessary because the ODBC API uses a generic char* buffer.
+    const SQLWCHAR* wide_str = reinterpret_cast<const SQLWCHAR*>(*string); // CodeQL [SM02986] buffer is ensured to contain UTF-16 data
+    bool result = convert_string_from_utf16( encoding, wide_str, int(len / sizeof(SQLWCHAR)), &outString, outLen );
 
     if (result)
     {
@@ -207,6 +227,7 @@ SQLWCHAR* utf16_string_from_mbcs_string( _In_ SQLSRV_ENCODING php_encoding, _In_
                                         _Out_ unsigned int* utf16_len, bool use_strict_conversion )
 {
     *utf16_len = (mbcs_len + 1);
+    // Allocate buffer for UTF-16 string. Cast from void* (malloc result) to SQLWCHAR* is safe as it's freshly allocated memory.
     SQLWCHAR* utf16_string = reinterpret_cast<SQLWCHAR*>( sqlsrv_malloc( *utf16_len * sizeof( SQLWCHAR )));
     *utf16_len = convert_string_from_default_encoding( php_encoding, mbcs_string, mbcs_len, utf16_string, *utf16_len, use_strict_conversion );
 
@@ -323,6 +344,7 @@ bool core_sqlsrv_get_odbc_error( _Inout_ sqlsrv_context& ctx, _In_ SQLSMALLINT r
                 SQLSMALLINT expected_len = wmessage_len * sizeof(SQLWCHAR);
                 SQLSMALLINT returned_len = 0;
 
+                // Allocate buffer for ODBC error message in UTF-16. Cast from void* to SQLWCHAR* is safe for freshly allocated memory.
                 wnative_message_str = reinterpret_cast<SQLWCHAR*>(sqlsrv_malloc(expected_len));
                 memset(wnative_message_str, '\0', expected_len);
 
@@ -474,7 +496,11 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
 #ifndef _WIN32
     unsigned int required_len;
     if (use_strict_conversion) {
-        required_len = SystemLocale::ToUtf16Strict( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
+        DWORD last_error = ERROR_SUCCESS;
+        required_len = SystemLocale::ToUtf16Strict( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len, &last_error );
+        if (required_len == 0 && last_error != ERROR_SUCCESS) {
+            SetLastError( last_error );
+        }
     }
     else {
         required_len = SystemLocale::ToUtf16( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );

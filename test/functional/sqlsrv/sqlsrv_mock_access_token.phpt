@@ -16,12 +16,22 @@ On Windows, pooling is controlled by the ConnectionPooling option.
 if (!extension_loaded("sqlsrv")) {
     die("skip sqlsrv extension not loaded");
 }
+if (PHP_OS === 'Darwin') {
+    die("skip mock TDS server TLS handshake not supported on macOS");
+}
+if (file_exists('/etc/redhat-release')) {
+    die("skip mock TDS server TLS handshake not supported on RHEL");
+}
 require_once('mock_tds_helper.inc');
 $mock = start_mock_tds_server();
 stop_mock_tds_server($mock);
 ?>
 --FILE--
 <?php
+// Prevent 'sh: warning: setlocale: LC_ALL: cannot change locale' on systems
+// where en_US.UTF-8 is not installed (e.g., Red Hat containers)
+putenv('LC_ALL=C');
+
 require_once('mock_tds_helper.inc');
 
 $tokenA = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.mocktokenA';

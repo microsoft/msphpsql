@@ -18,6 +18,7 @@
 //---------------------------------------------------------------------------------------------------------------------------------
 
 #include "core_sqlsrv.h"
+#include "zend_exceptions.h"
 
 #include <sstream>
 #include <vector>
@@ -132,7 +133,8 @@ sqlsrv_stmt::sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error
     decimal_places(NO_CHANGE_DECIMAL_PLACES),     // the default is no formatting to resultset required
     data_classification(false),
     buffered_query_limit( sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_INVALID ),
-    send_streams_at_exec( true )
+    send_streams_at_exec( true ),
+    zend_res( NULL )
 {
     ZVAL_UNDEF( &active_stream );
 
@@ -152,12 +154,7 @@ sqlsrv_stmt::~sqlsrv_stmt( void )
         close_active_stream( this );
     }
 
-    // delete any current results
-    if( current_results ) {
-        current_results->~sqlsrv_result_set();
-        efree( current_results );
-        current_results = NULL;
-    }
+    free_current_results();
 
     // delete sensivity data
     clean_up_sensitivity_metadata();
@@ -182,6 +179,16 @@ void sqlsrv_stmt::free_param_data( void )
     zend_hash_clean( Z_ARRVAL( field_cache ));
 }
 
+// free the current result set object without creating a new one.
+void sqlsrv_stmt::free_current_results( void )
+{
+    if( current_results ) {
+        current_results->~sqlsrv_result_set();
+        efree( current_results );
+        current_results = NULL;
+    }
+}
+
 
 // to be called whenever a new result set is created, such as after an
 // execute or next_result.  Resets the state variables.
@@ -196,21 +203,14 @@ void sqlsrv_stmt::new_result_set( void )
     this->column_count = ACTIVE_NUM_COLS_INVALID;
     this->row_count = ACTIVE_NUM_ROWS_INVALID;
 
-    // delete any current results
-    if( current_results ) {
-        current_results->~sqlsrv_result_set();
-        efree( current_results );
-        current_results = NULL;
-    }
+    free_current_results();
 
     // delete sensivity data
     clean_up_sensitivity_metadata();
 
-    // reset sqlsrv php type in meta data
-    size_t num_fields = this->current_meta_data.size();
-    for (size_t f = 0; f < num_fields; f++) {
-        this->current_meta_data[f]->reset_php_type();
-    }
+    // delete results metadata from the previous result set
+    // to avoid stale metadata when re-executing a prepared statement
+    clean_up_results_metadata();
 
     // create a new result set
     if( cursor_type == SQLSRV_CURSOR_BUFFERED ) {
@@ -491,7 +491,7 @@ SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_l
         else {
             SQLSRV_ENCODING encoding = (( stmt->encoding() == SQLSRV_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding() );
             wsql_string = utf16_string_from_mbcs_string( encoding, reinterpret_cast<const char*>( sql ),
-                                                         sql_len, &wsql_len );
+                                                         sql_len, &wsql_len, true );
             CHECK_CUSTOM_ERROR( wsql_string == 0, stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE,
                                 get_last_error_message(), NULL) {
                 throw core::CoreException();
@@ -964,7 +964,7 @@ bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt )
 // Returns
 // Nothing, exception thrown if problem occurs
 
-void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params, _In_ bool throw_on_errors )
+void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params, _In_ bool throw_on_errors, _In_ bool report_errors )
 {
     try {
 
@@ -983,11 +983,59 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
         zend_hash_clean( Z_ARRVAL( stmt->col_cache ));
 
         SQLRETURN r;
+
         if( throw_on_errors ) {
+            // Use the throwing wrapper for callers that require fail-fast
+            // behavior on SQL_ERROR.
             r = core::SQLMoreResults( stmt );
         }
         else {
-            r = SQLMoreResults( stmt->handle() );
+            // Non-throwing paths are split into two semantics:
+            // 1. Silent internal drain (report_errors=false): do not throw and
+            //    do not push diagnostics to the PHP error queues.
+            // 2. User-facing opt-in continuation (report_errors=true): report
+            //    SQL_ERROR / SQL_SUCCESS_WITH_INFO without throwing so callers
+            //    can continue to subsequent rowsets.
+            r = ::SQLMoreResults( stmt->handle() );
+
+            SQLSRV_ASSERT( r != SQL_INVALID_HANDLE, "Invalid handle returned from SQLMoreResults." );
+
+            if( report_errors ) {
+                if( r == SQL_ERROR ) {
+                    // In opt-in continuation mode we surface diagnostics and
+                    // keep rowset navigation alive. Depending on server/session
+                    // state, SQL_ERROR can represent either a recoverable
+                    // mid-batch statement failure or a fatal transport-level
+                    // condition.
+                    call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/0 );
+
+                    // The PDO error handler may set a pending zend exception
+                    // in ERRMODE_EXCEPTION. Clear it so next-result traversal
+                    // can continue and the error remains observable via
+                    // errorInfo()/sqlsrv_errors().
+                    if( EG(exception) != NULL ) {
+                        zend_clear_exception();
+                    }
+
+                    // SQL_ERROR from a non-result-producing statement (e.g.
+                    // RAISERROR) leaves no active ODBC cursor. Clean up the
+                    // previous result set but do NOT create a new one — calling
+                    // SQLNumResultCols/SQLRowCount would fail with "Invalid
+                    // cursor state". The batch remains navigable via subsequent
+                    // next-result calls.
+                    stmt->free_current_results();
+                    stmt->fetch_called = false;
+                    stmt->has_rows = false;
+                    stmt->past_fetch_end = false;
+                    stmt->last_field_index = -1;
+                    stmt->clean_up_sensitivity_metadata();
+                    stmt->clean_up_results_metadata();
+                    return;
+                }
+                else if( r == SQL_SUCCESS_WITH_INFO ) {
+                    call_error_handler( stmt, SQLSRV_ERROR_ODBC, /*warning*/1 );
+                }
+            }
         }
 
         if( r == SQL_NO_DATA ) {
@@ -1006,7 +1054,15 @@ void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_outp
     }
     catch( core::CoreException& e ) {
 
-        SQLCancel( stmt->handle() );
+        // For internal callers (throw_on_errors=true — flush loops,
+        // closeCursor, param binding) we still call SQLCancel to clean up
+        // the ODBC handle on error.  For user-facing callers
+        // (throw_on_errors=false — sqlsrv_next_result / PDO::nextRowset)
+        // we must NOT cancel because the handle is still valid and the
+        // batch remains navigable after a mid-batch statement failure.
+        if( throw_on_errors ) {
+            SQLCancel( stmt->handle() );
+        }
         throw e;
     }
 }
@@ -1523,6 +1579,14 @@ void core_get_field_common( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
             ss->field_index = field_index;
             ss->sql_type = static_cast<SQLUSMALLINT>( sql_type );
             ss->encoding = static_cast<SQLSRV_ENCODING>( sqlsrv_php_type.typeinfo.encoding );
+
+            // If the statement has a zend_resource, hold a reference to it.
+            // This prevents the statement from being destroyed while the stream
+            // is still alive (e.g. when $stmt goes out of scope but $stream is returned).
+            if( stmt->zend_res != NULL ) {
+                ss->stmt_res = stmt->zend_res;
+                GC_ADDREF( ss->stmt_res );
+            }
 
             zval_auto_ptr return_value_z;
             return_value_z = ( zval * )sqlsrv_malloc( sizeof( zval ));
@@ -2308,11 +2372,14 @@ bool sqlsrv_param::convert_input_str_to_utf16(_Inout_ sqlsrv_stmt* /*stmt*/, _In
         sqlsrv_malloc_auto_ptr<SQLWCHAR> wide_buffer;
         unsigned int wchar_size = 0;
 
-        wide_buffer = utf16_string_from_mbcs_string(encoding, reinterpret_cast<const char*>(str), static_cast<int>(str_length), &wchar_size, true);
+        // Convert input string to UTF-16. 'str' is already char* so no recast needed here.
+        wide_buffer = utf16_string_from_mbcs_string(encoding, str, static_cast<int>(str_length), &wchar_size, true);
         if (wide_buffer == 0) {
             return false;
         }
         wide_buffer[wchar_size] = L'\0';
+        // Store UTF-16 data as binary in zval. Casting SQLWCHAR* to char* is intentional for storing
+        // raw binary wide character data with length in bytes (wchar_size * sizeof(SQLWCHAR)).
         core::sqlsrv_zval_stringl(&placeholder_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
     } else {
         // If the string is empty, then nothing needs to be done
@@ -2753,11 +2820,15 @@ void sqlsrv_param_inout::process_string_param(_Inout_ sqlsrv_stmt* stmt, _Inout_
             sqlsrv_malloc_auto_ptr<SQLWCHAR> wide_buffer;
             unsigned int wchar_size = 0;
 
-            wide_buffer = utf16_string_from_mbcs_string(SQLSRV_ENCODING_UTF8, reinterpret_cast<const char*>(buffer), static_cast<int>(buffer_length), &wchar_size);
+            // buffer is SQLPOINTER (void*) holding UTF-8 char data from Z_STRVAL_P. Cast to const char* is safe here.
+            const char* char_buffer = reinterpret_cast<const char*>(buffer);
+            wide_buffer = utf16_string_from_mbcs_string(SQLSRV_ENCODING_UTF8, char_buffer, static_cast<int>(buffer_length), &wchar_size);
             CHECK_CUSTOM_ERROR(wide_buffer == 0, stmt, SQLSRV_ERROR_INPUT_PARAM_ENCODING_TRANSLATE, param_pos + 1, get_last_error_message(), NULL) {
                 throw core::CoreException();
             }
             wide_buffer[wchar_size] = L'\0';
+            // Store UTF-16 data as binary in zval. Casting SQLWCHAR* to char* is intentional for storing
+            // raw binary wide character data with length in bytes (wchar_size * sizeof(SQLWCHAR)).
             core::sqlsrv_zval_stringl(param_z, reinterpret_cast<char*>(wide_buffer.get()), wchar_size * sizeof(SQLWCHAR));
             buffer = Z_STRVAL_P(param_z);
             buffer_length = Z_STRLEN_P(param_z);
@@ -2911,7 +2982,11 @@ void sqlsrv_param_inout::finalize_output_string()
             char* outString = NULL;
             SQLLEN outLen = 0;
 
-            bool result = convert_string_from_utf16(encoding, reinterpret_cast<const SQLWCHAR*>(str), int(str_len / sizeof(SQLWCHAR)), &outString, outLen);
+            // For UTF-8/SYSTEM encoding, the output parameter buffer was bound with SQL_C_WCHAR via
+            // SQLBindParameter, so ODBC wrote UTF-16 data into it. The reinterpret_cast is necessary
+            // because the ODBC API binds output params to a generic char* buffer.
+            const SQLWCHAR* wide_str = reinterpret_cast<const SQLWCHAR*>(str); // CodeQL [SM02986] buffer contains UTF-16 data from ODBC output parameter bound with SQL_C_WCHAR
+            bool result = convert_string_from_utf16(encoding, wide_str, int(str_len / sizeof(SQLWCHAR)), &outString, outLen);
             CHECK_CUSTOM_ERROR(!result, stmt, SQLSRV_ERROR_OUTPUT_PARAM_ENCODING_TRANSLATE, get_last_error_message(), NULL) {
                 throw core::CoreException();
             }

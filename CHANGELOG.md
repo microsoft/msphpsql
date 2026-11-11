@@ -3,6 +3,72 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [Unreleased]
+
+### Added
+- Connection option aliases `ConnectTimeout` for `LoginTimeout`, `FailoverPartner` for `Failover_Partner`, and `WorkstationID` for `WSID` in both drivers. Existing ODBC keywords and attributes are retained for compatibility with older supported ODBC drivers. Names are case-insensitive, and the last occurrence of an option or its alias wins.
+- The `Password` alias for `PWD` in SQLSRV connection options, and `PWD`/`Password` in PDO_SQLSRV DSNs. A non-null PDO constructor password takes precedence (including an empty string); otherwise the DSN password is used. The username still comes from the PDO constructor. Password aliases retain existing authentication restrictions and brace-escaping rules. Prefer constructor credentials when a DSN might be logged or shared.
+
+### Fixed
+- Reject malformed command text through the existing query-encoding error path before preparation or execution in both drivers, preserving the converter's diagnostic code. Valid command text, supported encodings, parameter binding, and data/result conversion policies are unchanged; malformed commands are no longer converted with replacement characters.
+- Release PDO named-parameter query rewrites when native preparation fails.
+- Bounded connection-option brace validation to the supplied value length, avoiding reads past the terminator of brace-quoted values.
+- Securely erase driver-owned PDO DSN password copies before releasing or replacing them, including parser errors and connection failures. Original PDO/caller-owned strings and exception trace behavior are unchanged.
+
+## 5.13.3 - 2026-08-07
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- Windows support for installing the drivers with [PIE](https://github.com/php/pie) (the PHP Installer for Extensions). PIE-based installation, introduced for Linux and macOS in 5.13.2, is now also available on Windows: `pie install microsoft/sqlsrv` and `pie install microsoft/pdo_sqlsrv`.
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+
+## 5.13.2 - 2026-07-29
+Updated PECL release packages. Here is the list of updates:
+
+### Added
+- The drivers can now be installed with [PIE](https://github.com/php/pie) (the PHP Installer for Extensions), the official replacement for the now-deprecated PECL: `pie install microsoft/sqlsrv` and `pie install microsoft/pdo_sqlsrv`.
+
+### Security
+- Fixed SQL injection in `PDO::lastInsertId($name)` (CWE-89). The sequence-name lookup in `pdo_sqlsrv_dbh_last_id` previously interpolated the caller-supplied `$name` directly into the query text with `snprintf` (`WHERE name=N'%s'`), allowing a crafted name to break out of the string literal and inject arbitrary Transact-SQL. The name is now passed to a parameterized query (`WHERE name=?`) and bound with the connection encoding, so it is always treated as a literal value. This also fixes lookups for sequence names containing non-ASCII characters ([#1673](https://github.com/microsoft/msphpsql/pull/1673)).
+- Fixed silent truncation of binary parameters containing embedded NUL (0x00) bytes when using PDO emulated prepares with `PDO::SQLSRV_ENCODING_BINARY` (CWE-626). The hex-encoding loops in `pdo_sqlsrv_dbh_quote` treated binary data as a C string and stopped at the first NUL, causing only the pre-NUL prefix to be sent to the server. All bytes are now encoded ([#1675](https://github.com/microsoft/msphpsql/pull/1675)).
+
+### Fixed
+- Fixed a Windows thread-safe (ZTS) shared build link failure (unresolved external symbol LNK2001 on `_tsrm_ls_cache`) when building the extensions as shared DLLs ([#1674](https://github.com/microsoft/msphpsql/pull/1674)).
+- Fixed stale unixODBC INI caching on Linux and macOS by clearing the unixODBC INI cache at module shutdown ([#1667](https://github.com/microsoft/msphpsql/pull/1667)).
+- Fixed an AddressSanitizer One Definition Rule (ODR) violation reported when both the `sqlsrv` and `pdo_sqlsrv` extensions are loaded together ([#1659](https://github.com/microsoft/msphpsql/pull/1659)).
+- Addressed CodeQL static-analysis findings ([#1615](https://github.com/microsoft/msphpsql/pull/1615)).
+
+### Limitations
+- No support for inout / output params when using sql_variant type
+- No support for inout / output params when formatting decimal values
+- In Linux and macOS, setlocale() only takes effect if it is invoked before the first connection. Attempting to set the locale after connecting will not work
+- Always Encrypted requires [MS ODBC Driver 17+](https://docs.microsoft.com/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server)
+  - Only Windows Certificate Store and Azure Key Vault are supported. Custom Keystores are not yet supported
+  - Issue [#716](https://github.com/Microsoft/msphpsql/issues/716) - With Always Encrypted enabled, named parameters in subqueries are not supported
+  - Issue [#1050](https://github.com/microsoft/msphpsql/issues/1050) - With Always Encrypted enabled, insertion requires the column list for any tables with identity columns
+  - [Always Encrypted limitations](https://docs.microsoft.com/sql/connect/php/using-always-encrypted-php-drivers#limitations-of-the-php-drivers-when-using-always-encrypted)
+
+### Known Issues
+- Connection pooling on Linux or macOS is not recommended with [unixODBC](http://www.unixodbc.org/) < 2.3.7
+- When pooling is enabled in Linux or macOS
+  - unixODBC <= 2.3.4 (Linux and macOS) might not return proper diagnostic information, such as error messages, warnings and informative messages
+  - due to this unixODBC bug, fetch large data (such as xml, binary) as streams as a workaround. See the examples [here](https://github.com/Microsoft/msphpsql/wiki/Features#pooling)
+
 ## 5.13.0 - 2026-02-27
 Updated PECL release packages. Here is the list of updates:
 
@@ -14,6 +80,9 @@ Updated PECL release packages. Here is the list of updates:
 - Support for Red Hat 9 and 10
 - Support for Alpine 3.20, 3.21, 3.22, and 3.23
 - Support for macOS 15 and 26
+- Added opt-in batch error continuation controls for sqlsrv and PDO next-result APIs ([#1599](https://github.com/microsoft/msphpsql/issues/1599))
+  - Applies only when set at connection scope (`BatchErrorContinue` or `PDO::SQLSRV_ATTR_BATCH_ERROR_CONTINUE`)
+  - In opt-in mode, next-result APIs may return success while reporting `SQL_ERROR` diagnostics, allowing callers to continue traversing rowsets
 
 ### Removed
 - Support for PHP 8.1 and 8.2
@@ -35,6 +104,7 @@ Updated PECL release packages. Here is the list of updates:
 - Fixed critical memory safety bugs in encoding conversion - NULL pointer dereference and uninitialized pointer return ([PR #1555](https://github.com/microsoft/msphpsql/pull/1555))
 - Removed lingering error2 reference from failure block in CI pipeline ([PR #1568](https://github.com/microsoft/msphpsql/pull/1568))
 - Fixed PHP 8.5 compatibility issues in tests and CI pipeline ([PR #1569](https://github.com/microsoft/msphpsql/pull/1569))
+- Preserved legacy next-result error semantics by default while allowing opt-in continuation after mid-batch statement errors
 
 ### Limitations
 - No support for inout / output params when using sql_variant type

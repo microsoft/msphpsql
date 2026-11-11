@@ -438,6 +438,9 @@ inline void sqlsrv_free( _Inout_ void* ptr )
 
 #endif
 
+// Wipe owned secret storage with a platform primitive that cannot be optimized away.
+void core_sqlsrv_secure_zero( _Out_writes_bytes_(len) void* ptr, _In_ size_t len );
+
 // trait class that allows us to assign const types to an auto_ptr
 template <typename T>
 struct remove_const {
@@ -1136,6 +1139,7 @@ struct sqlsrv_conn : public sqlsrv_context {
 
     col_encryption_option ce_option;    // holds the details of what are required to enable column encryption
     ODBC_DRIVER driver_version;         // version of ODBC driver
+    bool batch_error_continue;          // opt-in to continue past mid-batch SQLMoreResults errors
 
     ACCESSTOKEN* azure_ad_access_token;  // non-owning; managed by token cache
 
@@ -1145,6 +1149,7 @@ struct sqlsrv_conn : public sqlsrv_context {
     {
         server_version = SERVER_VERSION_UNKNOWN;
         driver_version = ODBC_DRIVER::VER_UNKNOWN;
+        batch_error_continue = false;
         azure_ad_access_token = nullptr;
     }
 
@@ -1391,13 +1396,14 @@ struct sqlsrv_stream {
     SQLUSMALLINT field_index;
     SQLSMALLINT sql_type;
     sqlsrv_stmt* stmt;
+    zend_resource* stmt_res;     // prevent statement from being freed while stream is active
 
     sqlsrv_stream( _In_opt_ zval* str_z, _In_ SQLSRV_ENCODING enc ) :
-        stream_z( str_z ), encoding( enc ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL )
+        stream_z( str_z ), encoding( enc ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL ), stmt_res( NULL )
     {
     }
 
-    sqlsrv_stream() : stream_z( NULL ), encoding( SQLSRV_ENCODING_INVALID ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL )
+    sqlsrv_stream() : stream_z( NULL ), encoding( SQLSRV_ENCODING_INVALID ), field_index( 0 ), sql_type( SQL_UNKNOWN_TYPE ), stmt( NULL ), stmt_res( NULL )
     {
     }
 };
@@ -1462,7 +1468,7 @@ struct sqlsrv_param
 
     void copy_param_meta_ae(_Inout_ zval* param_z, _In_ param_meta_data& meta);            // Only used when Always Encrypted is enabled
 
-    virtual ~sqlsrv_param(){ release_data(); }
+    virtual ~sqlsrv_param(){ sqlsrv_param::release_data(); }
     virtual void release_data();
 
     bool derive_string_types_sizes(_In_ zval* param_z);
@@ -1539,7 +1545,7 @@ struct sqlsrv_param_tvp : public sqlsrv_param
     {
         ZVAL_UNDEF(&placeholder_z);
     }
-    virtual ~sqlsrv_param_tvp() { release_data(); }
+    virtual ~sqlsrv_param_tvp() { sqlsrv_param_tvp::release_data(); }
     virtual void release_data();
     virtual void bind_param(_Inout_ sqlsrv_stmt* stmt);
     virtual void process_param(_Inout_ sqlsrv_stmt* stmt, _Inout_ zval* param_z);
@@ -1696,6 +1702,9 @@ struct sqlsrv_stmt : public sqlsrv_context {
     // free sensitivity classification metadata
     void clean_up_sensitivity_metadata();
 
+    // free the current result set object (if any)
+    void free_current_results();
+
     // free resultset metadata
     void clean_up_results_metadata();
 
@@ -1725,6 +1734,7 @@ struct sqlsrv_stmt : public sqlsrv_context {
     zval field_cache;                     // cache for a single row of fields, to allow multiple and out of order retrievals
     zval col_cache;                       // Used by get_field_as_string not to call SQLColAttribute()  after every fetch.
     zval active_stream;                   // the currently active stream reading data from the database
+    zend_resource* zend_res;              // the zend_resource for this statement (used by streams to prevent premature stmt destruction)
 
     sqlsrv_params_container params_container;       // holds all parameters and references used for SQLBindParameter
 
@@ -1804,7 +1814,8 @@ void core_sqlsrv_get_field( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT field_i
                             _Outref_result_bytebuffer_maybenull_(*field_length) void*& field_value, _Inout_ SQLLEN* field_length, _In_ bool cache_field,
                             _Out_ SQLSRV_PHPTYPE *sqlsrv_php_type_out);
 bool core_sqlsrv_has_any_result( _Inout_ sqlsrv_stmt* stmt );
-void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
+void core_sqlsrv_next_result( _Inout_ sqlsrv_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true,
+                              _In_ bool report_errors = false );
 void core_sqlsrv_set_scrollable( _Inout_ sqlsrv_stmt* stmt, _In_ unsigned long cursor_type );
 void core_sqlsrv_set_query_timeout( _Inout_ sqlsrv_stmt* stmt, _Inout_ zval* value_z );
 bool core_sqlsrv_send_stream_packet( _Inout_ sqlsrv_stmt* stmt, _In_opt_ bool get_all = false);
@@ -2061,6 +2072,7 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_TVP_ROW_NOT_ARRAY,
     SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE,
     SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
+    SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,

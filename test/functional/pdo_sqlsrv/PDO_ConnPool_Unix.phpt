@@ -13,6 +13,10 @@ if (extension_loaded('pdo_odbc')) {
 ?>
 --FILE--
 <?php
+// Prevent 'sh: warning: setlocale: LC_ALL: cannot change locale' on systems
+// where en_US.UTF-8 is not installed (e.g., Red Hat containers)
+putenv('LC_ALL=C');
+
 function findODBCDriver($content, $lines_to_add)
 {
     require_once('MsSetup.inc');
@@ -25,8 +29,29 @@ function findODBCDriver($content, $lines_to_add)
 $lines_to_add="CPTimeout=5\n[ODBC]\nPooling=Yes\n";
 
 //get default odbcinst.ini location
-$lines = explode("\n", shell_exec("odbcinst -j"));
-$odbcinst_ini = explode(" ", $lines[1])[1];
+$output = shell_exec("odbcinst -j 2>/dev/null");
+$odbcinst_ini = '';
+if ($output) {
+    foreach (explode("\n", $output) as $line) {
+        if (stripos($line, 'DRIVERS') !== false) {
+            // Handle both "DRIVERS: /path" and "DRIVERS............: /path" formats
+            $parts = explode(":", $line, 2);
+            $path = trim($parts[1] ?? '');
+            if ($path && file_exists($path)) {
+                $odbcinst_ini = $path;
+                break;
+            }
+        }
+    }
+}
+// Fallback to well-known default path
+if (empty($odbcinst_ini) || !file_exists($odbcinst_ini)) {
+    if (file_exists('/etc/odbcinst.ini')) {
+        $odbcinst_ini = '/etc/odbcinst.ini';
+    } else {
+        die("Could not determine odbcinst.ini location");
+    }
+}
 $custom_odbcinst_ini = dirname(__FILE__)."/odbcinst.ini";
 
 //copy the default odbcinst.ini into the current folder

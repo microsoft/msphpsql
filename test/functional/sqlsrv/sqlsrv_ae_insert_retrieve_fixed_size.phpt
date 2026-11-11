@@ -6,7 +6,7 @@ Test for inserting encrypted fixed size types data and retrieve both encrypted a
 <?php
 require_once('MsCommon.inc');
 
-date_default_timezone_set("Canada/Pacific");
+date_default_timezone_set("America/Vancouver");
 $conn = AE\connect();
 $testPass = true;
 
@@ -88,6 +88,6 @@ IntData: 2147483647
 BigIntData: 92233720368547
 DecimalData: 79228162514264
 BitData: 1
-DateTimeData: 9999-12-31 23:59:59.997000 Canada/Pacific
-DateTime2Data: 9999-12-31 23:59:59.123456 Canada/Pacific
+DateTimeData: 9999-12-31 23:59:59.997000 America/Vancouver
+DateTime2Data: 9999-12-31 23:59:59.123456 America/Vancouver
 Done

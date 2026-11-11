@@ -19,6 +19,10 @@
 
 #include "core_sqlsrv.h"
 
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
+
 // module global variables (initialized in minit and freed in mshutdown)
 HMODULE g_sqlsrv_hmodule = NULL;
 bool isVistaOrGreater;
@@ -158,6 +162,23 @@ void core_sqlsrv_mshutdown( _Inout_ sqlsrv_context& henv_cp, _Inout_ sqlsrv_cont
         henv_cp.invalidate();
     }
 	delete &henv_cp;
+
+#ifndef _WIN32
+    // Release the ini file cache allocated by libodbcinst when we called
+    // SQLGetPrivateProfileString during MINIT (token_cache_init_ttl).
+    // The ODBC installer library caches parsed ini data internally and
+    // never frees it, which is reported as a leak by AddressSanitizer.
+    // __clear_ini_cache is a unixODBC-specific export, so we load it
+    // dynamically and call it only if available.
+    void* hInst = dlopen( "libodbcinst.so.2", RTLD_NOW | RTLD_NOLOAD );
+    if( hInst ) {
+        void (*clear_cache)(void) = reinterpret_cast<void(*)(void)>( dlsym( hInst, "__clear_ini_cache" ) );
+        if( clear_cache ) {
+            clear_cache();
+        }
+        dlclose( hInst );
+    }
+#endif
 
     return;
 }

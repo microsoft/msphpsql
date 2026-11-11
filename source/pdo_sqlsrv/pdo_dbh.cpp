@@ -34,8 +34,7 @@ namespace {
 
 const char LAST_INSERT_ID_QUERY[] = "SELECT @@IDENTITY;";
 const size_t LAST_INSERT_ID_BUFF_LEN = 50;    // size of the buffer to hold the string value of the last inserted id, which may be an int, bigint, decimal(p,0) or numeric(p,0)
-const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT current_value FROM sys.sequences WHERE name=N'%s'";
-const int LAST_INSERT_ID_QUERY_MAX_LEN = sizeof( SEQUENCE_CURRENT_VALUE_QUERY ) + SQL_MAX_SQLSERVERNAME + 2; // include the quotes
+const char SEQUENCE_CURRENT_VALUE_QUERY[] = "SELECT current_value FROM sys.sequences WHERE name=?";
 
 // List of PDO supported connection options.
 namespace PDOConnOptionNames {
@@ -51,16 +50,20 @@ const char ConnectionPooling[] = "ConnectionPooling";
 const char Language[] = "Language";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
+const char ConnectTimeout[] = "ConnectTimeout";
 const char Database[] = "Database";
 const char Driver[] = "Driver";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char FailoverPartner[] = "FailoverPartner";
 const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
 const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
 const char KeyStoreSecret[] = "KeyStoreSecret";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
+const char PWD[] = "PWD";
+const char Password[] = "Password";
 const char QuotedId[] = "QuotedId";
 const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
@@ -68,16 +71,11 @@ const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
 const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char WSID[] = "WSID";
+const char WorkstationID[] = "WorkstationID";
 const char ComputePool[] = "ComputePool";
 const char HostNameInCertificate[] = "HostNameInCertificate";
 
 }
-
-enum PDO_CONN_OPTIONS {
-
-    PDO_CONN_OPTION_SERVER = SQLSRV_CONN_OPTION_DRIVER_SPECIFIC,
-
-};
 
 enum PDO_STMT_OPTIONS {
 
@@ -224,6 +222,25 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         conn_str_append_func::func
     },
+    // Passwords use the parser's separate secure buffer, not core option dispatch.
+    {
+        PDOConnOptionNames::PWD,
+        sizeof( PDOConnOptionNames::PWD ),
+        PDO_CONN_OPTION_PASSWORD,
+        NULL,
+        0,
+        CONN_ATTR_STRING,
+        conn_null_func::func
+    },
+    {
+        PDOConnOptionNames::Password,
+        sizeof( PDOConnOptionNames::Password ),
+        PDO_CONN_OPTION_PASSWORD,
+        NULL,
+        0,
+        CONN_ATTR_STRING,
+        conn_null_func::func
+    },
     {
         PDOConnOptionNames::APP,
         sizeof( PDOConnOptionNames::APP ),
@@ -351,6 +368,15 @@ const connection_option PDO_CONN_OPTS[] = {
         conn_str_append_func::func
     },
     {
+        PDOConnOptionNames::FailoverPartner,
+        sizeof( PDOConnOptionNames::FailoverPartner ),
+        SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
+        ODBCConnOptions::Failover_Partner,
+        sizeof( ODBCConnOptions::Failover_Partner ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
         PDOConnOptionNames::KeyStoreAuthentication,
         sizeof( PDOConnOptionNames::KeyStoreAuthentication ),
         SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
@@ -380,6 +406,15 @@ const connection_option PDO_CONN_OPTS[] = {
     {
         PDOConnOptionNames::LoginTimeout,
         sizeof( PDOConnOptionNames::LoginTimeout ),
+        SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
+        ODBCConnOptions::LoginTimeout,
+        sizeof( ODBCConnOptions::LoginTimeout ),
+        CONN_ATTR_INT,
+        pdo_int_conn_attr_func<SQL_ATTR_LOGIN_TIMEOUT>::func
+    },
+    {
+        PDOConnOptionNames::ConnectTimeout,
+        sizeof( PDOConnOptionNames::ConnectTimeout ),
         SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
         ODBCConnOptions::LoginTimeout,
         sizeof( ODBCConnOptions::LoginTimeout ),
@@ -461,6 +496,15 @@ const connection_option PDO_CONN_OPTS[] = {
     {
         PDOConnOptionNames::WSID,
         sizeof( PDOConnOptionNames::WSID ),
+        SQLSRV_CONN_OPTION_WSID,
+        ODBCConnOptions::WSID,
+        sizeof( ODBCConnOptions::WSID ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::WorkstationID,
+        sizeof( PDOConnOptionNames::WorkstationID ),
         SQLSRV_CONN_OPTION_WSID,
         ODBCConnOptions::WSID,
         sizeof( ODBCConnOptions::WSID ),
@@ -632,9 +676,9 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     dbh->methods = &pdo_sqlsrv_dbh_methods;
     dbh->driver_data = NULL;
     zval* temp_server_z = NULL;
-    sqlsrv_malloc_auto_ptr<conn_string_parser> dsn_parser;
     zval server_z;
     ZVAL_UNDEF( &server_z );
+    pdo_secure_password dsn_password;
 
     try {
 
@@ -661,9 +705,9 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
                                  ZVAL_PTR_DTOR, 0 /*persistent*/ );
 
     // Either of g_pdo_henv_cp or g_pdo_henv_ncp can be used to propogate the error.
-    dsn_parser = new ( sqlsrv_malloc( sizeof( conn_string_parser ))) conn_string_parser( *g_pdo_henv_cp, dbh->data_source,
-                                                                                          static_cast<int>( dbh->data_source_len ), pdo_conn_options_ht );
-    dsn_parser->parse_conn_string();
+    conn_string_parser dsn_parser( *g_pdo_henv_cp, dbh->data_source,
+                                   static_cast<int>( dbh->data_source_len ), pdo_conn_options_ht, dsn_password );
+    dsn_parser.parse_conn_string();
 
     // Extract the server name
     temp_server_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
@@ -679,8 +723,22 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     zval_add_ref( &server_z );
     zend_hash_index_del( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
 
+    // Preserve constructor credentials, including an explicitly empty password.
+    // The DSN is a fallback only when the constructor password is NULL.
+    const char* password = dbh->password;
+    if (dsn_password.get() != NULL) {
+        CHECK_CUSTOM_ERROR( memchr( dsn_password.get(), '\0', dsn_password.size() ) != NULL,
+                            g_pdo_henv_cp, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, PDOConnOptionNames::PWD, NULL ) {
+            throw pdo::PDOException();
+        }
+
+        if (password == NULL) {
+            password = dsn_password.get();
+        }
+    }
+
     sqlsrv_conn* conn = core_sqlsrv_connect( *g_pdo_henv_cp, *g_pdo_henv_ncp, core::allocate_conn<pdo_sqlsrv_dbh>, Z_STRVAL( server_z ),
-                                             dbh->username, dbh->password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error,
+                                             dbh->username, password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error,
                                              PDO_CONN_OPTS, dbh, "pdo_sqlsrv_db_handle_factory" );
 
     // Free the string in server_z after being used
@@ -777,6 +835,8 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
 #if PHP_VERSION_ID < 80100
     sqlsrv_malloc_auto_ptr<char> sql_rewrite;
     size_t sql_rewrite_len = 0;
+#else
+    std::unique_ptr<zend_string, decltype(&zend_string_release)> sql_rewrite_zstr(NULL, zend_string_release);
 #endif
     sqlsrv_malloc_auto_ptr<pdo_sqlsrv_stmt> driver_stmt;
     hash_auto_ptr placeholders;
@@ -813,7 +873,6 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         }
 
 #if PHP_VERSION_ID >= 80100
-        zend_string* sql_rewrite_zstr = NULL;
         const char* sql = ZSTR_VAL(sql_zstr);
         size_t sql_len = ZSTR_LEN(sql_zstr);
 #endif
@@ -835,15 +894,17 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
                 sql_len = sql_rewrite_len;
             }
 #else
-            int zr = pdo_parse_params(stmt, sql_zstr, &sql_rewrite_zstr);
+            zend_string* rewritten_sql = NULL;
+            int zr = pdo_parse_params(stmt, sql_zstr, &rewritten_sql);
+            sql_rewrite_zstr.reset(rewritten_sql);
             CHECK_ZEND_ERROR(zr, driver_dbh, PDO_SQLSRV_ERROR_PARAM_PARSE) {
                 throw core::CoreException();
             }
 
             // if parameter substitution happened, use that query instead of the original
-            if (sql_rewrite_zstr != NULL) {
-                sql = ZSTR_VAL(sql_rewrite_zstr);
-                sql_len = ZSTR_LEN(sql_rewrite_zstr);
+            if (sql_rewrite_zstr) {
+                sql = ZSTR_VAL(sql_rewrite_zstr.get());
+                sql_len = ZSTR_LEN(sql_rewrite_zstr.get());
             }
 #endif
         }
@@ -863,9 +924,7 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         }
 
 #if PHP_VERSION_ID >= 80100
-        if (sql_rewrite_zstr != NULL) {
-            zend_string_release(sql_rewrite_zstr);
-        }
+        sql_rewrite_zstr.reset();
 #endif
 
         // else if stmt->support_placeholders == PDO_PLACEHOLDER_NONE means that stmt->active_query_string will be
@@ -1302,6 +1361,11 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             }
             break;
 
+            case SQLSRV_ATTR_BATCH_ERROR_CONTINUE:
+                // Connection-level option: applies to all statements created by this DBH.
+                driver_dbh->batch_error_continue = zend_is_true(val);
+                break;
+
 #if PHP_VERSION_ID >= 70200
             case PDO_ATTR_DEFAULT_STR_PARAM:
             {
@@ -1526,6 +1590,13 @@ int pdo_sqlsrv_dbh_get_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_
                 break;
             }
 
+            case SQLSRV_ATTR_BATCH_ERROR_CONTINUE:
+            {
+                // Connection-level option value.
+                ZVAL_BOOL(return_value, driver_dbh->batch_error_continue);
+                break;
+            }
+
 #if PHP_VERSION_ID >= 70200
             case PDO_ATTR_DEFAULT_STR_PARAM:
             {
@@ -1619,6 +1690,8 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
     char    idSTR[LAST_INSERT_ID_BUFF_LEN] = { '\0' };
     char*   str = NULL;
     SQLLEN  cbID = 0;
+    zval    name_z;
+    ZVAL_UNDEF(&name_z);
 
     try {
         sqlsrv_malloc_auto_ptr<SQLWCHAR> wsql_string;
@@ -1627,13 +1700,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         if (name == NULL) {
             wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, LAST_INSERT_ID_QUERY, sizeof(LAST_INSERT_ID_QUERY), &wsql_len);
         } else {
-            char buffer[LAST_INSERT_ID_QUERY_MAX_LEN] = { '\0' };
-#if PHP_VERSION_ID < 80100
-            snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, name);
-#else
-            snprintf(buffer, LAST_INSERT_ID_QUERY_MAX_LEN, SEQUENCE_CURRENT_VALUE_QUERY, ZSTR_VAL(name));
-#endif
-            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, buffer, sizeof(buffer), &wsql_len);
+            wsql_string = utf16_string_from_mbcs_string(SQLSRV_ENCODING_CHAR, SEQUENCE_CURRENT_VALUE_QUERY, sizeof(SEQUENCE_CURRENT_VALUE_QUERY), &wsql_len);
         }
         CHECK_CUSTOM_ERROR(wsql_string == 0, driver_stmt, SQLSRV_ERROR_QUERY_STRING_ENCODING_TRANSLATE, get_last_error_message(), NULL) {
             throw core::CoreException();
@@ -1647,6 +1714,17 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         driver_stmt = core_sqlsrv_create_stmt( driver_dbh, core::allocate_stmt<pdo_sqlsrv_stmt>, NULL /*options_ht*/, NULL /*valid_stmt_opts*/, pdo_sqlsrv_handle_stmt_error, &temp_stmt );
         driver_stmt->set_func( __FUNCTION__ );
 
+        // Bind the sequence name using a character parameter with the application-defined encoding
+        if (name != NULL) {
+#if PHP_VERSION_ID < 80100
+            ZVAL_STRING(&name_z, name);
+#else
+            ZVAL_STRINGL(&name_z, ZSTR_VAL(name), ZSTR_LEN(name));
+#endif
+            core_sqlsrv_bind_param( driver_stmt, 0 /*param_num*/, SQL_PARAM_INPUT, &name_z, SQLSRV_PHPTYPE_INVALID,
+                                    driver_dbh->encoding(), SQL_UNKNOWN_TYPE, SQLSRV_UNKNOWN_SIZE, 0 );
+        }
+
         // execute the last insert id query
         core::SQLExecDirectW( driver_stmt, wsql_string );
         core::SQLFetchScroll( driver_stmt, SQL_FETCH_NEXT, 0 );
@@ -1658,6 +1736,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         }
 
         driver_stmt->~sqlsrv_stmt();
+        zval_ptr_dtor(&name_z);
     } catch( core::CoreException& ) {
         // restore error handling to its previous mode
         dbh->error_mode = static_cast<decltype(dbh->error_mode)>(prev_err_mode);
@@ -1671,6 +1750,7 @@ zend_string * pdo_sqlsrv_dbh_last_id(_Inout_ pdo_dbh_t *dbh, _In_ const zend_str
         if( driver_stmt ) {
             driver_stmt->~sqlsrv_stmt();
         }
+        zval_ptr_dtor(&name_z);
 #if PHP_VERSION_ID < 80100
         *len = 0;
         str = reinterpret_cast<char*>(sqlsrv_malloc(0, sizeof(char), 1));     // return an empty string with a null terminator
@@ -1802,7 +1882,9 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
         (*quoted)[pos++] = '0';
         (*quoted)[pos++] = 'x';
 
-        for (size_t index = 0; index < unquoted_len && unquoted[index] != '\0'; ++index) {
+        // Binary data may contain embedded NUL (0x00) bytes, so the loop must not
+        // stop at the first NUL; encode all unquoted_len bytes (CWE-626 truncation fix)
+        for (size_t index = 0; index < unquoted_len; ++index) {
             // On success, snprintf returns the total number of characters written
             // On failure, a negative number is returned
             // The generated string has a length of at most len - 1, so
@@ -1831,7 +1913,9 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
         quoted[pos++] = 'x';
 
         char *p = quoted;
-        for (size_t index = 0; index < unquoted_len && unquoted_str[index] != '\0'; ++index) {
+        // Binary data may contain embedded NUL (0x00) bytes, so the loop must not
+        // stop at the first NUL; encode all unquoted_len bytes (CWE-626 truncation fix)
+        for (size_t index = 0; index < unquoted_len; ++index) {
             // On success, snprintf returns the total number of characters written
             // On failure, a negative number is returned
             // The generated string has a length of at most len - 1, so
