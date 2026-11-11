@@ -3157,6 +3157,11 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string
         throw core::CoreException();
     }
 
+    SQLSRV_ENCODING tvp_encoding = encoding;
+    if (tvp_encoding == SQLSRV_ENCODING_INVALID || tvp_encoding == SQLSRV_ENCODING_DEFAULT) {
+        tvp_encoding = (stmt->encoding() == SQLSRV_ENCODING_DEFAULT) ? stmt->conn->encoding() : stmt->encoding();
+    }
+
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
         SQLBindCol(chstmt, 5, SQL_C_SSHORT, &data_type, 0, &cb_data_type);
         SQLBindCol(chstmt, 7, SQL_C_SLONG, &col_size, 0, &cb_col_size);
@@ -3175,7 +3180,7 @@ void sqlsrv_param_tvp::get_tvp_metadata(_In_ sqlsrv_stmt* stmt, _In_ zend_string
             sqlsrv_malloc_auto_ptr<sqlsrv_param_tvp> param_ptr;
 
             // The SQL data type is used to derive the column encoding
-            SQLSRV_ENCODING column_encoding = encoding;
+            SQLSRV_ENCODING column_encoding = tvp_encoding;
             sql_type_to_encoding(data_type, &column_encoding);
 
             param_ptr = new (sqlsrv_malloc(sizeof(sqlsrv_param_tvp))) sqlsrv_param_tvp(pos, column_encoding, data_type, col_size, dec_digits, this);

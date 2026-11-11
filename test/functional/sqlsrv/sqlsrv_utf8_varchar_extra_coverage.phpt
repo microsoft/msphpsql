@@ -125,6 +125,13 @@ try {
     echo "TVP connection: ", ($row === [$long, $long, "binary\0data", 42] ? 'PASS' : 'FAIL'), "\n";
     sqlsrv_free_stmt($stmt);
 
+    $stmt = checkedQuery($conn, "SELECT * FROM ?", [
+        [$tvp, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE]
+    ]);
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+    echo "TVP explicit table: ", ($row === [$long, $long, "binary\0data", 42] ? 'PASS' : 'FAIL'), "\n";
+    sqlsrv_free_stmt($stmt);
+
     $legacy = connect(['CharacterSet' => 'UTF-8']);
     try {
         $stmt = checkedQuery($legacy, "SELECT * FROM ?", [
@@ -132,6 +139,14 @@ try {
         ]);
         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
         echo "TVP parameter: ", ($row === [$long, $long, "binary\0data", 42] ? 'PASS' : 'FAIL'), "\n";
+        sqlsrv_free_stmt($stmt);
+
+        $tvp = [$type => [['ascii', $value, "binary\0data", 42]]];
+        $stmt = checkedQuery($legacy, "SELECT * FROM ?", [
+            [$tvp, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_TABLE, SQLSRV_SQLTYPE_TABLE]
+        ]);
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+        echo "TVP legacy explicit table: ", ($row === ['ascii', $value, "binary\0data", 42] ? 'PASS' : 'FAIL'), "\n";
         sqlsrv_free_stmt($stmt);
     } finally {
         sqlsrv_close($legacy);
@@ -154,4 +169,6 @@ output only: PASS
 invalid stream: PASS
 NUL stream storage: PASS
 TVP connection: PASS
+TVP explicit table: PASS
 TVP parameter: PASS
+TVP legacy explicit table: PASS
