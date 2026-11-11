@@ -1,13 +1,14 @@
 --TEST--
 Simple concurrent transaction tests on two connections.
 --SKIPIF--
-<?php require('skipif.inc'); ?>
+<?php require('skipif_ansi_fixture.inc'); require('skipif.inc'); ?>
 --FILE--
 <?php
     sqlsrv_configure( 'WarningsReturnAsErrors', 0 );
     sqlsrv_configure( 'LogSeverity', SQLSRV_LOG_SEVERITY_ALL );
 
     require( 'MsCommon.inc' );
+    setUSAnsiLocale();
     $conn1 = Connect();
     if( $conn1 === false) {
        die( print_r( sqlsrv_errors(), true ));

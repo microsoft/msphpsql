@@ -488,7 +488,11 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
 #ifndef _WIN32
     unsigned int required_len;
     if (use_strict_conversion) {
-        required_len = SystemLocale::ToUtf16Strict( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
+        DWORD last_error = ERROR_SUCCESS;
+        required_len = SystemLocale::ToUtf16Strict( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len, &last_error );
+        if (required_len == 0 && last_error != ERROR_SUCCESS) {
+            SetLastError( last_error );
+        }
     }
     else {
         required_len = SystemLocale::ToUtf16( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
