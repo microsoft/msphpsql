@@ -5,7 +5,7 @@ PDO UTF8_VARCHAR parameter types, encoding overrides and Unicode reads
 --FILE--
 <?php
 require_once('MsCommon_mid-refactor.inc');
-$conn = connect();
+$conn = connect('', [], PDO::ERRMODE_EXCEPTION, true);
 $typeSql = "SELECT SQL_VARIANT_PROPERTY(?, 'BaseType')";
 
 $stmt = $conn->prepare($typeSql);

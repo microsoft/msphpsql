@@ -117,13 +117,25 @@ sqlsrv_free_stmt($stmt);
 $type = uniqid('srv_utf8_varchar_');
 sqlsrv_free_stmt(checkedQuery($conn, "CREATE TYPE $type AS TABLE (
     narrow_value varchar(max) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
-    wide_value nvarchar(max), binary_value varbinary(max))"));
+    wide_value nvarchar(max), binary_value varbinary(max), number_value int)"));
 try {
-    $tvp = [$type => [[$long, $long, "binary\0data"]]];
+    $tvp = [$type => [[$long, $long, "binary\0data", 42]]];
     $stmt = checkedQuery($conn, "SELECT * FROM ?", [[$tvp]]);
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
-    echo "TVP: ", ($row === [$long, $long, "binary\0data"] ? 'PASS' : 'FAIL'), "\n";
+    echo "TVP connection: ", ($row === [$long, $long, "binary\0data", 42] ? 'PASS' : 'FAIL'), "\n";
     sqlsrv_free_stmt($stmt);
+
+    $legacy = connect(['CharacterSet' => 'UTF-8']);
+    try {
+        $stmt = checkedQuery($legacy, "SELECT * FROM ?", [
+            [$tvp, SQLSRV_PARAM_IN, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_UTF8_VARCHAR)]
+        ]);
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+        echo "TVP parameter: ", ($row === [$long, $long, "binary\0data", 42] ? 'PASS' : 'FAIL'), "\n";
+        sqlsrv_free_stmt($stmt);
+    } finally {
+        sqlsrv_close($legacy);
+    }
 } finally {
     sqlsrv_free_stmt(checkedQuery($conn, "DROP TYPE $type"));
 }
@@ -141,4 +153,5 @@ output: PASS
 output only: PASS
 invalid stream: PASS
 NUL stream storage: PASS
-TVP: PASS
+TVP connection: PASS
+TVP parameter: PASS

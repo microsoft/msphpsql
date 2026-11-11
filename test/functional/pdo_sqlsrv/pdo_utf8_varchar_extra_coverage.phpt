@@ -3,7 +3,7 @@ PDO UTF8_VARCHAR Unicode input, streams, output parameters and emulated prepares
 --SKIPIF--
 <?php
 require('skipif_mid-refactor.inc');
-$conn = connect();
+$conn = connect('', [], PDO::ERRMODE_EXCEPTION, true);
 $codepage = $conn->query("SELECT COLLATIONPROPERTY(CAST(DATABASEPROPERTYEX(DB_NAME(), 'Collation') AS nvarchar(128)), 'CodePage')")->fetchColumn();
 if ($codepage != 65001) {
     die('skip requires a database with a UTF-8 default collation (SQL Server 2019+)');
@@ -12,7 +12,7 @@ if ($codepage != 65001) {
 --FILE--
 <?php
 require_once('MsCommon_mid-refactor.inc');
-$conn = connect();
+$conn = connect('', [], PDO::ERRMODE_EXCEPTION, true);
 $value = "\u{65E5}\u{672C}\u{8A9E}\u{1F600}";
 $table = '#utf8_varchar';
 $conn->exec("CREATE TABLE $table (id int, value varchar(max) COLLATE Latin1_General_100_CI_AS_SC_UTF8)");
@@ -116,20 +116,29 @@ $stmt->closeCursor();
 
 $type = uniqid('pdo_utf8_varchar_');
 $conn->exec("CREATE TYPE $type AS TABLE (narrow_value varchar(max) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
-    wide_value nvarchar(max), binary_value varbinary(max))");
+    wide_value nvarchar(max), binary_value varbinary(max), number_value int)");
 try {
-    $tvp = [$type => [[$long, $long, "binary\0data"]]];
-    $stmt = $conn->prepare("SELECT * FROM ?");
-    $stmt->bindParam(1, $tvp, PDO::PARAM_LOB);
-    $stmt->execute();
-    $row = $stmt->fetch(PDO::FETCH_NUM);
-    echo "TVP: ", ($row === [$long, $long, "binary\0data"] ? 'PASS' : 'FAIL'), "\n";
-    $stmt->closeCursor();
-    $stmt = null;
+    foreach (['connection', 'parameter'] as $scope) {
+        $conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, $scope === 'connection'
+            ? PDO::SQLSRV_ENCODING_UTF8_VARCHAR : PDO::SQLSRV_ENCODING_UTF8);
+        $tvp = [$type => [[$long, $long, "binary\0data", 42]]];
+        $stmt = $conn->prepare("SELECT * FROM ?");
+        if ($scope === 'parameter') {
+            $stmt->bindParam(1, $tvp, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
+        } else {
+            $stmt->bindParam(1, $tvp, PDO::PARAM_LOB);
+        }
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_NUM);
+        echo "TVP $scope: ", ($row === [$long, $long, "binary\0data", '42'] ? 'PASS' : 'FAIL'), "\n";
+        $stmt->closeCursor();
+        $stmt = null;
+    }
 } finally {
     $conn->exec("DROP TYPE $type");
 }
 
+$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8_VARCHAR);
 $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
 $stmt = $conn->prepare("SELECT SQL_VARIANT_PROPERTY(?, 'BaseType'), ?");
 $stmt->execute(['ascii', $value]);
@@ -152,5 +161,6 @@ stream and bound columns: PASS
 output: PASS
 invalid stream: PASS
 NUL stream storage: PASS
-TVP: PASS
+TVP connection: PASS
+TVP parameter: PASS
 emulate: PASS
