@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 - The `Password` alias for `PWD` in SQLSRV connection options, and `PWD`/`Password` in PDO_SQLSRV DSNs. A non-null PDO constructor password takes precedence (including an empty string); otherwise the DSN password is used. The username still comes from the PDO constructor. Password aliases retain existing authentication restrictions and brace-escaping rules. Prefer constructor credentials when a DSN might be logged or shared.
 
 ### Fixed
+- PDO connection-resiliency tests check the physical transport so MARS logical sessions are not mistaken for non-TCP connections.
+- Initial PHP 8.6 development compatibility: adapt stream opener error reporting to the new PHP API and replace removed INI macros while preserving numeric parsing and earlier PHP behavior. Qualification against PHP 8.6 prereleases is ongoing; this is not a production support announcement.
+- Windows build scripts recognize official PHP prerelease version tags and select Visual Studio 2026 for PHP 8.6, retaining Visual Studio 2022 for PHP 8.4/8.5 and Visual Studio 2019 for PHP 8.3.
 - Honor per-parameter UTF-8 VARCHAR encoding overrides for TVP columns, falling back to the statement/connection encoding when unspecified (including `SQLSRV_PHPTYPE_TABLE`), while retaining numeric and binary column encodings derived from SQL metadata.
 - Reject malformed command text through the existing query-encoding error path before preparation or execution in both drivers, preserving the converter's diagnostic code. Valid command text, supported encodings, parameter binding, and data/result conversion policies are unchanged; malformed commands are no longer converted with replacement characters.
 - Release PDO named-parameter query rewrites when native preparation fails.

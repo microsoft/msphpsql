@@ -501,7 +501,7 @@ function simplifyDataArray($data, $metadata, $row)
         } else {
             // only need the first element of each array
             $value = $data[$j - $skipCount][0];
-            if (is_a($value, 'DateTime')) {
+            if ($value instanceof \DateTime) {
                 $value = date_format($value, 'Y-m-d H:i:s');
             }
 

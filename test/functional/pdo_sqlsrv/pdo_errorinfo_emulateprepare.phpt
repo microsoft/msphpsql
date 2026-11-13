@@ -6,10 +6,42 @@ Test errorInfo when prepare with and without emulate prepare
 <?php
 require_once("MsCommon_mid-refactor.inc");
 
+function checkParameterWarnings($operation, $methods)
+{
+    $warnings = array();
+    set_error_handler(function ($severity, $message) use (&$warnings) {
+        $warnings[] = $message;
+        return true;
+    }, E_WARNING);
+    try {
+        $operation();
+    } finally {
+        restore_error_handler();
+    }
+
+    // PHP 8.6 honors ERRMODE_SILENT for PDO implementation errors.
+    $expectedCount = PHP_VERSION_ID < 80600 ? 1 : 0;
+    $expectedMessages = array();
+    foreach ($methods as $method) {
+        $expectedMessages[] = "PDOStatement::$method(): SQLSTATE[HY093]: Invalid parameter number: parameter was not defined";
+    }
+    $valid = count($warnings) === $expectedCount;
+    foreach ($warnings as $warning) {
+        $valid = in_array($warning, $expectedMessages, true) && $valid;
+    }
+    if (!$valid) {
+        echo "Expected $expectedCount matching HY093 warning(s); received:\n";
+        var_dump($warnings);
+    }
+}
+
 try {
     // connection with and without column encryption returns different warning since column encryption cannot use emulate prepare
     // turn ERRMODE to silent to compare the errorCode in the test
     $conn = connect("", array(), PDO::ERRMODE_SILENT);
+    if ($conn->getAttribute(PDO::ATTR_ERRMODE) !== PDO::ERRMODE_SILENT) {
+        echo "Connection error mode should be ERRMODE_SILENT.\n";
+    }
 
     //drop, create and insert
     $tbname = "test_table";
@@ -28,8 +60,10 @@ try {
 
     $int_col = 1;
     //bind param with the wrong parameter name to test for errorInfo
-    $stmt->bindParam(':in', $int_col);
-    $stmt->execute();
+    checkParameterWarnings(function () use ($stmt, &$int_col) {
+        $stmt->bindParam(':in', $int_col);
+        $stmt->execute();
+    }, array("bindParam", "execute"));
 
     $stmt_error = $stmt->errorInfo();
     if (!isAEConnected()) {
@@ -55,8 +89,10 @@ try {
 
     $int_col = 2;
     //bind param with the wrong parameter name to test for errorInfo
-    $stmt2->bindParam(':it', $int_col);
-    $stmt2->execute();
+    checkParameterWarnings(function () use ($stmt2, &$int_col) {
+        $stmt2->bindParam(':it', $int_col);
+        $stmt2->execute();
+    }, array("bindParam"));
 
     $stmt_error = $stmt2->errorInfo();
     if ($stmt_error[0] != "07002") {
@@ -78,11 +114,7 @@ try {
     var_dump($e->errorInfo);
 }
 ?>
---EXPECTREGEX--
-\*\*\*\*testing with emulate prepare\*\*\*\*
+--EXPECT--
+****testing with emulate prepare****
 
-Warning: PDOStatement::(bindParam|execute)\(\): SQLSTATE\[HY093\]: Invalid parameter number: parameter was not defined in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
-
-\*\*\*\*testing without emulate prepare\*\*\*\*
-
-Warning: PDOStatement::bindParam\(\): SQLSTATE\[HY093\]: Invalid parameter number: parameter was not defined in .+(\/|\\)pdo_errorinfo_emulateprepare\.php on line [0-9]+
+****testing without emulate prepare****

@@ -26,17 +26,11 @@ import shutil
 import os.path
 import argparse
 import subprocess
-import re
 
-# Import BuildUtil from the fixed version we created earlier
-# Note: This assumes BuildUtil class is defined in buildutil.py
-# If it's in the same file, remove this import and include the class directly
 try:
-    from buildtools import BuildUtil
+    from buildtools import BuildUtil, validate_php_version
 except ImportError:
-    # If buildutil.py doesn't exist, we'll define a minimal version here
-    # but for production, you should have the actual BuildUtil class
-    print("Error: BuildUtil class not found. Please ensure buildutil.py exists.")
+    print("Error: BuildUtil class not found. Please ensure buildtools.py exists.")
     sys.exit(1)
 
 class BuildDriver(object):
@@ -391,18 +385,6 @@ def validate_input(question, values):
             break
     return value
 
-def validate_php_version(version):
-    """Validate PHP version format."""
-    if not version:
-        return False
-    # Pattern for PHP versions like 7.0.22, 7.4, 8.0.3, etc.
-    pattern = r'^(\d+)\.(\d+)(\.\d+)?([-\.](RC\d+|beta\d+|alpha\d+|[a-zA-Z]+))?$'
-    match = re.match(pattern, version)
-    if not match:
-        return False
-    major = int(match.group(1))
-    return major >= 7
-
 ################################### Main Function ###################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -444,16 +426,6 @@ if __name__ == '__main__':
                 
             if not validate_php_version(phpver):
                 print(f'Invalid PHP version format: {phpver}. Must be 7.0 or above (e.g., 7.0.22, 7.4, 8.0.3).')
-                continue
-                
-            # Check major version
-            try:
-                major_version = int(phpver.split('.')[0])
-                if major_version < 7:
-                    print('Only PHP 7.0 or above is supported. Please try again.')
-                    continue
-            except (ValueError, IndexError):
-                print('Invalid version format. Please try again.')
                 continue
                 
             break

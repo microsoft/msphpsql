@@ -54,7 +54,7 @@ class ExPDO extends PDO
         $this->protocol();
         $args = func_get_args();
         $callable = parent::class . '::__construct';
-        return (call_user_func_array($callable, $args));
+        call_user_func_array($callable, $args);
     }
 
     public function exec(string $args1) : int|false
