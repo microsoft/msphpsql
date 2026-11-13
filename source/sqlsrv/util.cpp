@@ -415,7 +415,7 @@ ss_error SS_ERRORS[] = {
     },
     {
         SQLSRV_ERROR_INVALID_OPTION_WITH_ACCESS_TOKEN,
-        { IMSSP, (SQLCHAR*) "When using Azure AD Access Token, the connection string must not contain UID, PWD, or Authentication keywords.", -115, false}
+        { IMSSP, (SQLCHAR*) "When using Azure AD Access Token, the connection string must not contain UID, PWD, Password, or Authentication keywords.", -115, false}
     },
     {
         SQLSRV_ERROR_EMPTY_ACCESS_TOKEN,

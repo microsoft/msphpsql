@@ -102,16 +102,6 @@ If something went wrong or the build failed, the log file will be launched (you 
 
 In addition to the log files in `C:\php-sdk`, you can examine the contents of `C:\php-sdk\phpsdk-build-task.bat`, which is overwritten every time you run the build scripts.
 
-#### Local script tests
-
-From the repository root, run the focused standard-library tests:
-
-```powershell
-py -B -m unittest discover -s buildscripts -p "test_buildtools.py" -v
-```
-
-These offline tests cover shared CLI validation, compiler/output paths, generated batch tags, and SDK launcher selection. External build and filesystem side effects are mocked; no downloads, Visual Studio installation, SQL Server, or PHP build are required. They do not replace compiling and testing the drivers with the actual PHP SDK and toolchain.
-
 #### Testing mode and/or setting alternative destination 
 
 If your main goal is to build the drivers for testing, and/or there is no need to keep the `php-sdk` directory around, you can invoke `py builddrivers.py` with the necessary command-line arguments plus `--TESTING`, which turns on the *testing* mode (it is False by default).

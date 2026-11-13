@@ -34,7 +34,7 @@ function connectWithEmptyAccessToken($server)
 function connectWithInvalidOptions($server)
 {
     $dummyToken = 'abcde';
-    $expectedError = 'When using Azure AD Access Token, the connection string must not contain UID, PWD, or Authentication keywords.';
+    $expectedError = 'When using Azure AD Access Token, the connection string must not contain UID, PWD, Password, or Authentication keywords.';
     
     $connectionInfo = array("UID"=>"", "AccessToken" => "$dummyToken");
     $conn = sqlsrv_connect($server, $connectionInfo);

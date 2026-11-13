@@ -83,6 +83,7 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
                 break;
 
             case CP_UTF8:
+            case SQLSRV_ENCODING_UTF8_VARCHAR:
             {
                 c_type = SQL_C_WCHAR;
                 count /= 2;    // divide the number of bytes we read by 2 since converting to UTF-8 can cause an increase in bytes
@@ -201,14 +202,14 @@ size_t sqlsrv_stream_read(_Inout_ php_stream* stream, _Out_writes_bytes_(count) 
            }
 
             // temp_buf contains UTF-16 data written by the ODBC driver via SQLGetData with SQL_C_WCHAR
-            // (set at line 88 when ss->encoding == CP_UTF8). The char* buffer is a generic allocation;
+            // for either UTF-8 encoding. The char* buffer is a generic allocation;
             // the reinterpret_cast is necessary because the ODBC API uses SQLPOINTER (void*) buffers.
             const LPCWSTR wide_buffer = reinterpret_cast<LPCWSTR>( temp_buf.get() ); // CodeQL [SM02986] buffer contains UTF-16 data from ODBC SQLGetData with SQL_C_WCHAR
 #ifndef _WIN32
-            int enc_len = SystemLocale::FromUtf16( ss->encoding, wide_buffer,
+            int enc_len = SystemLocale::FromUtf16( CP_UTF8, wide_buffer,
                                                    static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 #else
-            int enc_len = WideCharToMultiByte( ss->encoding, flags, wide_buffer,
+            int enc_len = WideCharToMultiByte( CP_UTF8, flags, wide_buffer,
                                                static_cast<int>(read >> 1), buf, static_cast<int>(count), NULL, NULL );
 #endif // !_WIN32
             if( enc_len == 0 ) {

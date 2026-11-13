@@ -50,16 +50,20 @@ const char ConnectionPooling[] = "ConnectionPooling";
 const char Language[] = "Language";
 const char ConnectRetryCount[] = "ConnectRetryCount";
 const char ConnectRetryInterval[] = "ConnectRetryInterval";
+const char ConnectTimeout[] = "ConnectTimeout";
 const char Database[] = "Database";
 const char Driver[] = "Driver";
 const char Encrypt[] = "Encrypt";
 const char Failover_Partner[] = "Failover_Partner";
+const char FailoverPartner[] = "FailoverPartner";
 const char KeyStoreAuthentication[] = "KeyStoreAuthentication";
 const char KeyStorePrincipalId[] = "KeyStorePrincipalId";
 const char KeyStoreSecret[] = "KeyStoreSecret";
 const char LoginTimeout[] = "LoginTimeout";
 const char MARS_Option[] = "MultipleActiveResultSets";
 const char MultiSubnetFailover[] = "MultiSubnetFailover";
+const char PWD[] = "PWD";
+const char Password[] = "Password";
 const char QuotedId[] = "QuotedId";
 const char TraceFile[] = "TraceFile";
 const char TraceOn[] = "TraceOn";
@@ -67,16 +71,11 @@ const char TrustServerCertificate[] = "TrustServerCertificate";
 const char TransactionIsolation[] = "TransactionIsolation";
 const char TransparentNetworkIPResolution[] = "TransparentNetworkIPResolution";
 const char WSID[] = "WSID";
+const char WorkstationID[] = "WorkstationID";
 const char ComputePool[] = "ComputePool";
 const char HostNameInCertificate[] = "HostNameInCertificate";
 
 }
-
-enum PDO_CONN_OPTIONS {
-
-    PDO_CONN_OPTION_SERVER = SQLSRV_CONN_OPTION_DRIVER_SPECIFIC,
-
-};
 
 enum PDO_STMT_OPTIONS {
 
@@ -223,6 +222,25 @@ const connection_option PDO_CONN_OPTS[] = {
         CONN_ATTR_STRING,
         conn_str_append_func::func
     },
+    // Passwords use the parser's separate secure buffer, not core option dispatch.
+    {
+        PDOConnOptionNames::PWD,
+        sizeof( PDOConnOptionNames::PWD ),
+        PDO_CONN_OPTION_PASSWORD,
+        NULL,
+        0,
+        CONN_ATTR_STRING,
+        conn_null_func::func
+    },
+    {
+        PDOConnOptionNames::Password,
+        sizeof( PDOConnOptionNames::Password ),
+        PDO_CONN_OPTION_PASSWORD,
+        NULL,
+        0,
+        CONN_ATTR_STRING,
+        conn_null_func::func
+    },
     {
         PDOConnOptionNames::APP,
         sizeof( PDOConnOptionNames::APP ),
@@ -350,6 +368,15 @@ const connection_option PDO_CONN_OPTS[] = {
         conn_str_append_func::func
     },
     {
+        PDOConnOptionNames::FailoverPartner,
+        sizeof( PDOConnOptionNames::FailoverPartner ),
+        SQLSRV_CONN_OPTION_FAILOVER_PARTNER,
+        ODBCConnOptions::Failover_Partner,
+        sizeof( ODBCConnOptions::Failover_Partner ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
         PDOConnOptionNames::KeyStoreAuthentication,
         sizeof( PDOConnOptionNames::KeyStoreAuthentication ),
         SQLSRV_CONN_OPTION_KEYSTORE_AUTHENTICATION,
@@ -379,6 +406,15 @@ const connection_option PDO_CONN_OPTS[] = {
     {
         PDOConnOptionNames::LoginTimeout,
         sizeof( PDOConnOptionNames::LoginTimeout ),
+        SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
+        ODBCConnOptions::LoginTimeout,
+        sizeof( ODBCConnOptions::LoginTimeout ),
+        CONN_ATTR_INT,
+        pdo_int_conn_attr_func<SQL_ATTR_LOGIN_TIMEOUT>::func
+    },
+    {
+        PDOConnOptionNames::ConnectTimeout,
+        sizeof( PDOConnOptionNames::ConnectTimeout ),
         SQLSRV_CONN_OPTION_LOGIN_TIMEOUT,
         ODBCConnOptions::LoginTimeout,
         sizeof( ODBCConnOptions::LoginTimeout ),
@@ -460,6 +496,15 @@ const connection_option PDO_CONN_OPTS[] = {
     {
         PDOConnOptionNames::WSID,
         sizeof( PDOConnOptionNames::WSID ),
+        SQLSRV_CONN_OPTION_WSID,
+        ODBCConnOptions::WSID,
+        sizeof( ODBCConnOptions::WSID ),
+        CONN_ATTR_STRING,
+        conn_str_append_func::func
+    },
+    {
+        PDOConnOptionNames::WorkstationID,
+        sizeof( PDOConnOptionNames::WorkstationID ),
         SQLSRV_CONN_OPTION_WSID,
         ODBCConnOptions::WSID,
         sizeof( ODBCConnOptions::WSID ),
@@ -631,9 +676,9 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     dbh->methods = &pdo_sqlsrv_dbh_methods;
     dbh->driver_data = NULL;
     zval* temp_server_z = NULL;
-    sqlsrv_malloc_auto_ptr<conn_string_parser> dsn_parser;
     zval server_z;
     ZVAL_UNDEF( &server_z );
+    pdo_secure_password dsn_password;
 
     try {
 
@@ -660,9 +705,9 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
                                  ZVAL_PTR_DTOR, 0 /*persistent*/ );
 
     // Either of g_pdo_henv_cp or g_pdo_henv_ncp can be used to propogate the error.
-    dsn_parser = new ( sqlsrv_malloc( sizeof( conn_string_parser ))) conn_string_parser( *g_pdo_henv_cp, dbh->data_source,
-                                                                                          static_cast<int>( dbh->data_source_len ), pdo_conn_options_ht );
-    dsn_parser->parse_conn_string();
+    conn_string_parser dsn_parser( *g_pdo_henv_cp, dbh->data_source,
+                                   static_cast<int>( dbh->data_source_len ), pdo_conn_options_ht, dsn_password );
+    dsn_parser.parse_conn_string();
 
     // Extract the server name
     temp_server_z = zend_hash_index_find( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
@@ -678,8 +723,22 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     zval_add_ref( &server_z );
     zend_hash_index_del( pdo_conn_options_ht, PDO_CONN_OPTION_SERVER );
 
+    // Preserve constructor credentials, including an explicitly empty password.
+    // The DSN is a fallback only when the constructor password is NULL.
+    const char* password = dbh->password;
+    if (dsn_password.get() != NULL) {
+        CHECK_CUSTOM_ERROR( memchr( dsn_password.get(), '\0', dsn_password.size() ) != NULL,
+                            g_pdo_henv_cp, PDO_SQLSRV_ERROR_INVALID_DSN_VALUE, PDOConnOptionNames::PWD, NULL ) {
+            throw pdo::PDOException();
+        }
+
+        if (password == NULL) {
+            password = dsn_password.get();
+        }
+    }
+
     sqlsrv_conn* conn = core_sqlsrv_connect( *g_pdo_henv_cp, *g_pdo_henv_ncp, core::allocate_conn<pdo_sqlsrv_dbh>, Z_STRVAL( server_z ),
-                                             dbh->username, dbh->password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error,
+                                             dbh->username, password, pdo_conn_options_ht, pdo_sqlsrv_handle_dbh_error,
                                              PDO_CONN_OPTS, dbh, "pdo_sqlsrv_db_handle_factory" );
 
     // Free the string in server_z after being used
@@ -692,6 +751,11 @@ int pdo_sqlsrv_db_handle_factory( _Inout_ pdo_dbh_t *dbh, _In_opt_ zval *driver_
     dbh->error_mode = static_cast<decltype(dbh->error_mode)>(prev_err_mode);    // reset the error mode
     dbh->alloc_own_columns = 1;         // we do our own memory management for columns
     dbh->native_case = PDO_CASE_NATURAL;// SQL Server supports mixed case types
+    // skip the param events pdo_sqlsrv_stmt_param_hook ignores, so PDO doesn't call
+    // the hook for every bound parameter on every fetched row
+    dbh->skip_param_evt = 1 << PDO_PARAM_EVT_FETCH_PRE |
+                          1 << PDO_PARAM_EVT_FETCH_POST |
+                          1 << PDO_PARAM_EVT_NORMALIZE;
 
     }
     catch( core::CoreException& ) {
@@ -776,6 +840,8 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
 #if PHP_VERSION_ID < 80100
     sqlsrv_malloc_auto_ptr<char> sql_rewrite;
     size_t sql_rewrite_len = 0;
+#else
+    std::unique_ptr<zend_string, decltype(&zend_string_release)> sql_rewrite_zstr(NULL, zend_string_release);
 #endif
     sqlsrv_malloc_auto_ptr<pdo_sqlsrv_stmt> driver_stmt;
     hash_auto_ptr placeholders;
@@ -812,7 +878,6 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         }
 
 #if PHP_VERSION_ID >= 80100
-        zend_string* sql_rewrite_zstr = NULL;
         const char* sql = ZSTR_VAL(sql_zstr);
         size_t sql_len = ZSTR_LEN(sql_zstr);
 #endif
@@ -834,15 +899,17 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
                 sql_len = sql_rewrite_len;
             }
 #else
-            int zr = pdo_parse_params(stmt, sql_zstr, &sql_rewrite_zstr);
+            zend_string* rewritten_sql = NULL;
+            int zr = pdo_parse_params(stmt, sql_zstr, &rewritten_sql);
+            sql_rewrite_zstr.reset(rewritten_sql);
             CHECK_ZEND_ERROR(zr, driver_dbh, PDO_SQLSRV_ERROR_PARAM_PARSE) {
                 throw core::CoreException();
             }
 
             // if parameter substitution happened, use that query instead of the original
-            if (sql_rewrite_zstr != NULL) {
-                sql = ZSTR_VAL(sql_rewrite_zstr);
-                sql_len = ZSTR_LEN(sql_rewrite_zstr);
+            if (sql_rewrite_zstr) {
+                sql = ZSTR_VAL(sql_rewrite_zstr.get());
+                sql_len = ZSTR_LEN(sql_rewrite_zstr.get());
             }
 #endif
         }
@@ -862,9 +929,7 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         }
 
 #if PHP_VERSION_ID >= 80100
-        if (sql_rewrite_zstr != NULL) {
-            zend_string_release(sql_rewrite_zstr);
-        }
+        sql_rewrite_zstr.reset();
 #endif
 
         // else if stmt->support_placeholders == PDO_PLACEHOLDER_NONE means that stmt->active_query_string will be
@@ -1242,6 +1307,7 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                         break;
                     case SQLSRV_ENCODING_SYSTEM:
                     case SQLSRV_ENCODING_UTF8:
+                    case SQLSRV_ENCODING_UTF8_VARCHAR:
                         driver_dbh->set_encoding( static_cast<SQLSRV_ENCODING>( attr_value ));
                         break;
                     default:
@@ -1801,6 +1867,7 @@ zend_string* pdo_sqlsrv_dbh_quote(_Inout_ pdo_dbh_t* dbh, _In_ const zend_string
     }
 
     use_national_char_set = (driver_dbh->use_national_characters == 1 || encoding == SQLSRV_ENCODING_UTF8);
+    // SQLSRV_ENCODING_UTF8_VARCHAR intentionally does NOT set use_national_char_set
 #if PHP_VERSION_ID >= 70200
     if ((paramtype & PDO_PARAM_STR_NATL) == PDO_PARAM_STR_NATL) {
         use_national_char_set = true;

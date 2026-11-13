@@ -202,6 +202,7 @@ void set_stmt_encoding( _Inout_ sqlsrv_stmt* stmt, _In_ zval* value_z )
         case SQLSRV_ENCODING_BINARY:
         case SQLSRV_ENCODING_SYSTEM:
         case SQLSRV_ENCODING_UTF8:
+        case SQLSRV_ENCODING_UTF8_VARCHAR:
             stmt->set_encoding( static_cast<SQLSRV_ENCODING>( attr_value ));
             break;
 
@@ -853,6 +854,7 @@ int pdo_sqlsrv_stmt_get_col_data(_Inout_ pdo_stmt_t *stmt, _In_ int colno, _Inou
                 case SQLSRV_ENCODING_SYSTEM:
                 case SQLSRV_ENCODING_BINARY:
                 case SQLSRV_ENCODING_UTF8:
+                case SQLSRV_ENCODING_UTF8_VARCHAR:
                     break;
                 default:
                     THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_INVALID_DRIVER_COLUMN_ENCODING, colno, NULL);
@@ -1267,7 +1269,8 @@ int pdo_sqlsrv_stmt_next_rowset( _Inout_ pdo_stmt_t *stmt )
 // This function pulls several duties for binding parameters and columns.
 // It takes an event as a parameter that explains what the function should do on
 // behalf of a parameter or column.  We only use one of these events,
-// PDO_PARAM_EVT_EXEC_PRE, the remainder simply return.
+// PDO_PARAM_EVT_EXEC_PRE, the remainder simply return. The FETCH_PRE, FETCH_POST and
+// NORMALIZE events are skipped via dbh->skip_param_evt (see pdo_sqlsrv_db_handle_factory).
 // Paramters:
 // stmt - PDO Statement object to bind a parameter.
 // param - paramter to bind.
@@ -1471,6 +1474,7 @@ int pdo_sqlsrv_stmt_param_hook( _Inout_ pdo_stmt_t *stmt,
                             case SQLSRV_ENCODING_SYSTEM:
                             case SQLSRV_ENCODING_BINARY:
                             case SQLSRV_ENCODING_UTF8:
+                            case SQLSRV_ENCODING_UTF8_VARCHAR:
                                 break;
                             default:
                                 THROW_PDO_ERROR( driver_stmt, PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM_ENCODING,

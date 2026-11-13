@@ -21,6 +21,21 @@
 
 #include "core_sqlsrv.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <string.h>
+#endif
+
+void core_sqlsrv_secure_zero( _Out_writes_bytes_(len) void* ptr, _In_ size_t len )
+{
+#ifdef _WIN32
+    SecureZeroMemory(ptr, len);
+#else
+    explicit_bzero(ptr, len);
+#endif
+}
+
 namespace {
 
 severity_callback g_driver_severity;
@@ -143,6 +158,11 @@ bool convert_string_from_utf16( _In_ SQLSRV_ENCODING encoding, _In_reads_bytes_(
     SQLSRV_ASSERT( inString != NULL, "Input string must be specified" );
     SQLSRV_ASSERT( outString != NULL, "Output buffer pointer must be specified" );
     SQLSRV_ASSERT( *outString == NULL, "Output buffer pointer must not be set" );
+
+    // SQLSRV_ENCODING_UTF8_VARCHAR uses the same UTF-8 codepage for string conversion
+    if (encoding == SQLSRV_ENCODING_UTF8_VARCHAR) {
+        encoding = SQLSRV_ENCODING_UTF8;
+    }
 
     if (cchInLen == 0 && inString[0] == L'\0') {
         *outString = reinterpret_cast<char*>( sqlsrv_malloc ( 1 ) );
@@ -466,6 +486,9 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
         case SQLSRV_ENCODING_BINARY:
             DIE( "Invalid encoding." );
             break;
+        case SQLSRV_ENCODING_UTF8_VARCHAR:
+            win_encoding = CP_UTF8;
+            break;
         default:
             win_encoding = php_encoding;
             break;
@@ -473,7 +496,11 @@ unsigned int convert_string_from_default_encoding( _In_ unsigned int php_encodin
 #ifndef _WIN32
     unsigned int required_len;
     if (use_strict_conversion) {
-        required_len = SystemLocale::ToUtf16Strict( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
+        DWORD last_error = ERROR_SUCCESS;
+        required_len = SystemLocale::ToUtf16Strict( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len, &last_error );
+        if (required_len == 0 && last_error != ERROR_SUCCESS) {
+            SetLastError( last_error );
+        }
     }
     else {
         required_len = SystemLocale::ToUtf16( win_encoding, mbcs_in_string, mbcs_len, utf16_out_string, utf16_len );
