@@ -14,7 +14,7 @@ Here `<arch>` is `x64` or `x86`. Compiler selection uses integer major/minor com
 
 PHP 8.6 / Visual Studio 2026 handling is **initial development compatibility**, not a claim of production support or completed toolchain validation. It requires a PHP SDK with the matching `vs18` launcher and compatible dependencies. The preserved older mappings describe script behavior, not the driver's current supported PHP versions.
 
-The current compatibility qualification targets are PHP **8.3.36**, **8.4.27**, **8.5.12**, and **8.6.0RC7**. Pass the exact target through `--PHPVER`; this list does not configure the repository CI matrices or imply completed cross-platform qualification. Rebuild both extensions against the target PHP headers: PHP 8.6.0RC7 uses module API `20261112`, so binaries built for RC5's module API `20260924` cannot be reused.
+The current compatibility qualification campaign targets PHP **8.4.27**, **8.5.12**, and **8.6.0RC7**. PHP **8.3.36** was included in earlier campaigns; its compiler mapping and compatibility paths remain unchanged. Pass the exact target through `--PHPVER`; this list does not configure the repository CI matrices or imply completed cross-platform qualification. Rebuild both extensions against the target PHP headers: PHP 8.6.0RC7 uses module API `20261112`, so binaries built for RC5's module API `20260924` cannot be reused.
 
 To use the sample build scripts `builddrivers.py` and `buildtools.py`, install Python 3.x and Git for Windows. If `git` is unrecognized in a regular command prompt, make sure the environment path is set up correctly.
 
