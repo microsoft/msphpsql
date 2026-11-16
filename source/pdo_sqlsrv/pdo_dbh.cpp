@@ -640,7 +640,8 @@ pdo_sqlsrv_dbh::pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ vo
     format_decimals( false ),
     decimal_places( NO_CHANGE_DECIMAL_PLACES ),
     use_national_characters(CHARSET_PREFERENCE_NOT_SPECIFIED),
-    emulate_prepare(false)
+    emulate_prepare(false),
+    default_str_length(0)
 {
     if( client_buffer_max_size < 0 ) {
         client_buffer_max_size = sqlsrv_buffered_result_set::BUFFERED_QUERY_LIMIT_DEFAULT;
@@ -869,6 +870,11 @@ bool pdo_sqlsrv_dbh_prepare(_Inout_ pdo_dbh_t *dbh, _In_ zend_string *sql_zstr, 
         driver_stmt = static_cast<pdo_sqlsrv_stmt*>( core_sqlsrv_create_stmt( driver_dbh, core::allocate_stmt<pdo_sqlsrv_stmt>,
                                                                               pdo_stmt_options_ht, PDO_STMT_OPTS,
                                                                               pdo_sqlsrv_handle_stmt_error, stmt ));
+
+        if (driver_stmt->default_str_length != 0 &&
+            (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE || driver_dbh->ce_option.enabled)) {
+            THROW_PDO_ERROR(driver_dbh, PDO_SQLSRV_ERROR_PARAM_METADATA_UNSUPPORTED);
+        }
 
         // if the user didn't set anything in the prepare options, then set the buffer limit
         // to the value set on the connection.
@@ -1371,6 +1377,13 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
                 driver_dbh->batch_error_continue = zend_is_true(val);
                 break;
 
+            case SQLSRV_ATTR_DEFAULT_STR_LENGTH:
+                if (Z_TYPE_P(val) != IS_LONG || Z_LVAL_P(val) < 0 || Z_LVAL_P(val) > SQL_SERVER_MAX_FIELD_SIZE) {
+                    THROW_PDO_ERROR(driver_dbh, PDO_SQLSRV_ERROR_INVALID_DEFAULT_STR_LENGTH);
+                }
+                driver_dbh->default_str_length = Z_LVAL_P(val);
+                break;
+
 #if PHP_VERSION_ID >= 70200
             case PDO_ATTR_DEFAULT_STR_PARAM:
             {
@@ -1433,6 +1446,7 @@ bool pdo_sqlsrv_dbh_set_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout
             case PDO_ATTR_CURSOR:
             case SQLSRV_ATTR_CURSOR_SCROLL_TYPE:
             case SQLSRV_ATTR_DATA_CLASSIFICATION:
+            case SQLSRV_ATTR_PARAM_METADATA:
             {
                 THROW_PDO_ERROR( driver_dbh, PDO_SQLSRV_ERROR_STMT_LEVEL_ATTR );
             }
@@ -1601,6 +1615,10 @@ int pdo_sqlsrv_dbh_get_attr(_Inout_ pdo_dbh_t *dbh, _In_ zend_long attr, _Inout_
                 ZVAL_BOOL(return_value, driver_dbh->batch_error_continue);
                 break;
             }
+
+            case SQLSRV_ATTR_DEFAULT_STR_LENGTH:
+                ZVAL_LONG(return_value, driver_dbh->default_str_length);
+                break;
 
 #if PHP_VERSION_ID >= 70200
             case PDO_ATTR_DEFAULT_STR_PARAM:

@@ -209,9 +209,21 @@ pdo_error PDO_ERRORS[] = {
         { IMSSP, (SQLCHAR*) "An invalid encoding was specified for SQLSRV_ATTR_ENCODING.", -35, false }
     },
     {
+        PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA,
+        { IMSSP, (SQLCHAR*) "Invalid parameter metadata. Specify a VARCHAR or NVARCHAR type and an integer length (1..8000 or 1..4000 respectively, or SQLSRV_PARAM_DECLARED_STR_LENGTH_MAX), with an optional character encoding.", -108, false }
+    },
+    {
+        PDO_SQLSRV_ERROR_PARAM_METADATA_UNSUPPORTED,
+        { IMSSP, (SQLCHAR*) "String parameter declarations require native, non-encrypted input string or null parameters. Streams, binary encoding, output parameters and emulated prepares are not supported.", -109, false }
+    },
+    {
+        PDO_SQLSRV_ERROR_INVALID_DEFAULT_STR_LENGTH,
+        { IMSSP, (SQLCHAR*) "SQLSRV_ATTR_DEFAULT_STR_LENGTH must be an integer between 0 (disabled) and 8000.", -110, false }
+    },
+    {
         PDO_SQLSRV_ERROR_INVALID_DRIVER_PARAM,
         { IMSSP, (SQLCHAR*) "An invalid type or value was given for the parameter driver data.  Only encoding constants "
-          "such as PDO::SQLSRV_ENCODING_UTF8 may be used as parameter driver options.", -36, false }
+          "or string declaration option arrays may be used as parameter driver options.", -36, false }
     },
     {
         PDO_SQLSRV_ERROR_PDO_STMT_UNSUPPORTED,
@@ -492,6 +504,10 @@ pdo_error PDO_ERRORS[] = {
     {
         SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE,
         { IMSSP, (SQLCHAR*) "The ODBC operation failed. Diagnostic information is not available from the driver.", -107, false }
+    },
+    {
+        SQLSRV_ERROR_STRING_DECLARATION_UNSUPPORTED,
+        { IMSSP, (SQLCHAR*) "Bounded VARCHAR declarations currently support ASCII input only. Use NVARCHAR, VARCHAR(MAX), or automatic sizing for non-ASCII input.", -111, false }
     },
 
     { UINT_MAX, {} }

@@ -91,7 +91,11 @@ enum PDO_SQLSRV_ATTR {
     SQLSRV_ATTR_FORMAT_DECIMALS,
     SQLSRV_ATTR_DECIMAL_PLACES,
     SQLSRV_ATTR_DATA_CLASSIFICATION,
-    SQLSRV_ATTR_BATCH_ERROR_CONTINUE
+    SQLSRV_ATTR_BATCH_ERROR_CONTINUE,
+    SQLSRV_ATTR_PARAM_METADATA,
+    SQLSRV_ATTR_DEFAULT_STR_LENGTH,
+    SQLSRV_PARAM_DECLARED_STR_TYPE,
+    SQLSRV_PARAM_DECLARED_STR_LENGTH
 };
 
 // valid set of values for TransactionIsolation connection option
@@ -246,6 +250,7 @@ struct pdo_sqlsrv_dbh : public sqlsrv_conn {
     short decimal_places;
     short use_national_characters;
     bool emulate_prepare;
+    zend_long default_str_length;
 
     pdo_sqlsrv_dbh( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver );
 };
@@ -285,6 +290,12 @@ struct stmt_option_fetch_datetime : public stmt_option_functor {
 
 extern struct pdo_stmt_methods pdo_sqlsrv_stmt_methods;
 
+struct pdo_sqlsrv_param_metadata
+{
+    sqlsrv_string_declaration declaration;
+    SQLSRV_ENCODING encoding = SQLSRV_ENCODING_DEFAULT;
+};
+
 // a core layer pdo stmt object. This object inherits and overrides the callbacks necessary
 struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     pdo_sqlsrv_stmt( _In_ sqlsrv_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv ) :
@@ -304,6 +315,7 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
         format_decimals = db->format_decimals;
         decimal_places = db->decimal_places;
         query_timeout = db->query_timeout;
+        default_str_length = db->default_str_length;
     }
 
     virtual ~pdo_sqlsrv_stmt( void );
@@ -320,6 +332,9 @@ struct pdo_sqlsrv_stmt : public sqlsrv_stmt {
     pdo_param_type* bound_column_param_types;
     bool fetch_numeric;
     bool fetch_datetime;
+    zend_long default_str_length;
+    std::map<SQLUSMALLINT, pdo_sqlsrv_param_metadata> parameter_metadata;
+    std::map<SQLUSMALLINT, sqlsrv_string_declaration> parameter_sizes;
 };
 
 
@@ -449,7 +464,10 @@ enum PDO_ERROR_CODES {
     PDO_SQLSRV_ERROR_EMULATE_INOUT_UNSUPPORTED,
     PDO_SQLSRV_ERROR_CE_DIRECT_QUERY_UNSUPPORTED,
     PDO_SQLSRV_ERROR_CE_EMULATE_PREPARE_UNSUPPORTED,
-    PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID
+    PDO_SQLSRV_ERROR_EXTENDED_STRING_TYPE_INVALID,
+    PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA,
+    PDO_SQLSRV_ERROR_PARAM_METADATA_UNSUPPORTED,
+    PDO_SQLSRV_ERROR_INVALID_DEFAULT_STR_LENGTH
 };
 
 extern pdo_error PDO_ERRORS[];

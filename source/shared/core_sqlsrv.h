@@ -1444,6 +1444,16 @@ struct param_meta_data
     SQLULEN get_column_size() { return column_size; }
 };
 
+struct sqlsrv_string_declaration
+{
+    SQLSMALLINT sql_type;
+    SQLULEN size;
+    bool grow;
+
+    sqlsrv_string_declaration(SQLSMALLINT type = SQL_UNKNOWN_TYPE, SQLULEN length = 0, bool allow_growth = false) :
+        sql_type(type), size(length), grow(allow_growth) {}
+};
+
 // *** parameter struct used for SQLBindParameter ***
 struct sqlsrv_param
 {
@@ -1463,6 +1473,7 @@ struct sqlsrv_param
     zval*           param_ptr_z;    // NULL by default - points to the original parameter or its reference
     std::size_t     num_bytes_read; // 0 by default - number of bytes processed so far (for an empty PHP stream, an empty string is sent to the server)
     php_stream*     param_stream;   // NULL by default - used to send stream data from an input parameter to the server
+    bool            declaration_overridden = false;
 
     sqlsrv_param(_In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT dir, _In_ SQLSRV_ENCODING enc, _In_ SQLSMALLINT sql_type, _In_ SQLULEN col_size, _In_ SQLSMALLINT dec_digits) :
         c_data_type(0), buffer(NULL), buffer_length(0), strlen_or_indptr(0), param_pos(param_num), direction(dir), encoding(enc), sql_data_type(sql_type),
@@ -1811,7 +1822,7 @@ sqlsrv_stmt* core_sqlsrv_create_stmt( _Inout_ sqlsrv_conn* conn, _In_ driver_stm
                                       _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver );
 void core_sqlsrv_bind_param( _Inout_ sqlsrv_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
                              _In_ SQLSRV_PHPTYPE php_out_type, _Inout_ SQLSRV_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
-                             _Inout_ SQLSMALLINT decimal_digits);
+                             _Inout_ SQLSMALLINT decimal_digits, _Inout_opt_ sqlsrv_string_declaration* declaration = NULL);
 SQLRETURN core_sqlsrv_execute( _Inout_ sqlsrv_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
 field_meta_data* core_sqlsrv_field_metadata( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT colno );
 bool core_sqlsrv_fetch( _Inout_ sqlsrv_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset );
@@ -2078,6 +2089,7 @@ enum SQLSRV_ERROR_CODES {
     SQLSRV_ERROR_TVP_ROWS_UNEXPECTED_SIZE,
     SQLSRV_ERROR_TVP_INPUT_PARAM_ONLY,
     SQLSRV_ERROR_ODBC_DIAGNOSTICS_UNAVAILABLE,
+    SQLSRV_ERROR_STRING_DECLARATION_UNSUPPORTED,
 
     // Driver specific error codes starts from here.
     SQLSRV_ERROR_DRIVER_SPECIFIC = 1000,
