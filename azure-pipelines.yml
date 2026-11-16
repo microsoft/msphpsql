@@ -678,6 +678,13 @@ jobs:
 
   - script: |
       set -e
+      python3 "$(Build.SourcesDirectory)/test/tools/test_akv_credentials.py" --sanitize
+      python3 "$(Build.SourcesDirectory)/test/tools/test_akv_credentials.py" \
+        --coverage --build-dir "$(Build.SourcesDirectory)/source/.akv-credentials"
+    displayName: 'Verify native Azure Key Vault credential payloads'
+
+  - script: |
+      set -e
       bash "$(Build.SourcesDirectory)/test/tools/test_pdo_password_cleanup.sh"
     displayName: 'Verify native PDO password erasure'
     env:

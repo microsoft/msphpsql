@@ -26,6 +26,7 @@
 #include <windows.h>
 #include <winver.h>
 #endif // _WIN32
+#include <cstddef>
 #include <cinttypes>
 #include <mutex>
 #include <sstream>
@@ -46,9 +47,6 @@ const int DEFAULT_CONN_STR_LEN = 2048;
 
 // length of buffer used to retrieve information for client and server info buffers
 const int INFO_BUFFER_LEN = 256;
-
-// length for name of keystore used in CEKeyStoreData
-const int MAX_CE_NAME_LEN = 260;
 
 // ODBC driver name
 const char ODBC_DRIVER_NAME[] = "ODBC Driver %d for SQL Server";
@@ -1157,8 +1155,16 @@ void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const DWORD 
 
 void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const char* config_value, size_t key_size)
 {
-    BYTE akv_data[sizeof(CEKEYSTOREDATA) + MAX_CE_NAME_LEN];
-    CEKEYSTOREDATA *pData = reinterpret_cast<CEKEYSTOREDATA*>(akv_data);
+    const size_t header_size = sizeof(CEKEYSTOREDATA) + sizeof(config_attr);
+    CHECK_CUSTOM_ERROR(key_size > UINT_MAX - sizeof(config_attr) || key_size > SIZE_MAX - header_size,
+                       conn, SQLSRV_ERROR_KEYSTORE_INVALID_VALUE) {
+        throw core::CoreException();
+    }
+
+    const size_t buffer_size = header_size + key_size;
+    sqlsrv_malloc_auto_ptr<CEKEYSTOREDATA> akv_data;
+    akv_data = static_cast<CEKEYSTOREDATA*>(sqlsrv_malloc(buffer_size));
+    CEKEYSTOREDATA *pData = akv_data.get();
 
     char akv_name[] = "AZURE_KEY_VAULT";
     unsigned int name_len = 15;
@@ -1175,7 +1181,8 @@ void configure_azure_key_vault(sqlsrv_conn* conn, BYTE config_attr, const char* 
     pData->data[0] = config_attr;
     pData->dataSize = static_cast<unsigned int>(1 + key_size);
 
-    memcpy_s(pData->data + 1, key_size * sizeof(char), config_value, key_size);
+    const size_t credential_capacity = buffer_size - offsetof(CEKEYSTOREDATA, data) - sizeof(config_attr);
+    memcpy_s(pData->data + sizeof(config_attr), credential_capacity, config_value, key_size);
 
     core::SQLSetConnectAttr(conn, SQL_COPT_SS_CEKEYSTOREDATA, reinterpret_cast<SQLPOINTER>(pData), SQL_IS_POINTER);
 }
