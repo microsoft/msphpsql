@@ -979,6 +979,25 @@ void set_parameter_metadata(pdo_stmt_t* stmt, zval* value)
         (stmt->supports_placeholders == PDO_PLACEHOLDER_NONE || driver_stmt->conn->ce_option.enabled)) {
         THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_PARAM_METADATA_UNSUPPORTED);
     }
+    std::map<std::string, zend_ulong> named_positions;
+    if (stmt->bound_param_map != NULL && zend_hash_num_elements(Z_ARRVAL_P(value)) != 0) {
+        zend_ulong position;
+        HashPosition map_iterator;
+        zval* mapped;
+        for (zend_hash_internal_pointer_reset_ex(stmt->bound_param_map, &map_iterator);
+             (mapped = zend_hash_get_current_data_ex(stmt->bound_param_map, &map_iterator)) != NULL;
+             zend_hash_move_forward_ex(stmt->bound_param_map, &map_iterator)) {
+            zend_string* unused;
+            zend_hash_get_current_key_ex(stmt->bound_param_map, &unused, &position, &map_iterator);
+            zend_string* parameter_name = static_cast<zend_string*>(Z_PTR_P(mapped));
+            auto inserted = named_positions.emplace(
+                std::string(ZSTR_VAL(parameter_name), ZSTR_LEN(parameter_name)), position + 1);
+            if (!inserted.second) {
+                // Zero marks a name that cannot identify a unique parameter.
+                inserted.first->second = 0;
+            }
+        }
+    }
     std::map<SQLUSMALLINT, pdo_sqlsrv_param_metadata> replacement;
     zend_ulong key;
     zend_string* name;
@@ -994,29 +1013,11 @@ void set_parameter_metadata(pdo_stmt_t* stmt, zval* value)
             if (canonical.empty() || canonical[0] != ':') {
                 canonical.insert(0, ":");
             }
-            bool found = false;
-            if (stmt->bound_param_map != NULL) {
-                zend_ulong position;
-                HashPosition map_iterator;
-                zval* mapped;
-                for (zend_hash_internal_pointer_reset_ex(stmt->bound_param_map, &map_iterator);
-                     (mapped = zend_hash_get_current_data_ex(stmt->bound_param_map, &map_iterator)) != NULL;
-                     zend_hash_move_forward_ex(stmt->bound_param_map, &map_iterator)) {
-                    zend_string* unused;
-                    zend_hash_get_current_key_ex(stmt->bound_param_map, &unused, &position, &map_iterator);
-                    zend_string* parameter_name = static_cast<zend_string*>(Z_PTR_P(mapped));
-                    if (canonical == std::string(ZSTR_VAL(parameter_name), ZSTR_LEN(parameter_name))) {
-                        if (found) {
-                            THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
-                        }
-                        key = position + 1;
-                        found = true;
-                    }
-                }
-            }
-            if (!found) {
+            auto found = named_positions.find(canonical);
+            if (found == named_positions.end() || found->second == 0) {
                 THROW_PDO_ERROR(driver_stmt, PDO_SQLSRV_ERROR_INVALID_PARAM_METADATA);
             }
+            key = found->second;
         }
         if (key < 1 || key > SQL_SERVER_MAX_PARAMS ||
             replacement.count(static_cast<SQLUSMALLINT>(key - 1)) != 0) {

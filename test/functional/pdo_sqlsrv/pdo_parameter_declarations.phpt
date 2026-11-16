@@ -99,6 +99,27 @@ if ($row[0] !== 'varchar' || (int)$row[1] !== 7 || $row[2] !== 'nvarchar' || (in
 }
 echo "multiple named declarations: PASS\n";
 
+$placeholders = $values = $metadata = $expected = [];
+for ($i = 0; $i < 838; ++$i) {
+    $name = "p$i";
+    $placeholders[] = ":$name";
+    $values[$name] = "v$i";
+    $entry = declaration(PDO::SQLSRV_PARAM_DECLARED_STR_TYPE_NVARCHAR, 8 + $i % 3);
+    $metadata[$i % 2 ? ":$name" : $name] = $entry;
+    $expected[$i + 1] = $entry;
+}
+$stmt = $conn->prepare('SELECT ' . implode(', ', $placeholders));
+$stmt->setAttribute(PDO::SQLSRV_ATTR_PARAM_METADATA, array_reverse($metadata, true));
+if ($stmt->getAttribute(PDO::SQLSRV_ATTR_PARAM_METADATA) !== $expected) {
+    throw new Exception('Large named metadata map used insertion order');
+}
+$stmt->execute($values);
+if ($stmt->fetch(PDO::FETCH_NUM) !== array_values($values)) {
+    throw new Exception('Large named parameter round trip failed');
+}
+$stmt->closeCursor();
+echo "838 named declarations and reversed mixed aliases: PASS\n";
+
 $conn->setAttribute(PDO::SQLSRV_ATTR_DEFAULT_STR_LENGTH, 100);
 $stmt = $conn->prepare($sql);
 $stmt->setAttribute(PDO::SQLSRV_ATTR_PARAM_METADATA,
@@ -138,5 +159,6 @@ bindValue, execute, null and UTF-16: PASS
 reset and legacy integer options: PASS
 named mapping and replacement: PASS
 multiple named declarations: PASS
+838 named declarations and reversed mixed aliases: PASS
 binding declaration takes precedence: PASS
 bounded maximum and MAX: PASS
