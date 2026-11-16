@@ -6,9 +6,9 @@
 #include <climits>
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -49,10 +49,7 @@ void require(bool condition, const char* message)
 
 void* sqlsrv_malloc(size_t size)
 {
-    void* memory = std::malloc(size);
-    if (!memory) {
-        throw std::bad_alloc();
-    }
+    void* memory = ::operator new(size);
     ++live_allocations;
     return memory;
 }
@@ -67,7 +64,7 @@ public:
     ~sqlsrv_malloc_auto_ptr()
     {
         if (pointer) {
-            std::free(pointer);
+            ::operator delete(pointer);
             --live_allocations;
         }
     }
@@ -138,7 +135,7 @@ SQLWCHAR* utf16_string_from_mbcs_string(int, const char*, unsigned int, unsigned
     }
     const SQLWCHAR name[] = L"AZURE_KEY_VAULT";
     SQLWCHAR* memory = static_cast<SQLWCHAR*>(sqlsrv_malloc(sizeof(name)));
-    std::memcpy(memory, name, sizeof(name));
+    std::copy_n(name, sizeof(name) / sizeof(name[0]), memory);
     return memory;
 }
 
@@ -163,7 +160,8 @@ std::vector<BYTE> payload(BYTE attribute, const std::string& value)
 void set_credential(sqlsrv_malloc_auto_ptr<char>& destination, const std::string& value)
 {
     destination = static_cast<char*>(sqlsrv_malloc(value.size() + 1));
-    std::memcpy(destination.get(), value.c_str(), value.size() + 1);
+    std::copy(value.begin(), value.end(), destination.get());
+    destination.get()[value.size()] = '\0';
 }
 
 void test_configuration(DWORD mode, const std::string& principal, const std::string& secret)
@@ -174,7 +172,7 @@ void test_configuration(DWORD mode, const std::string& principal, const std::str
     set_credential(conn.ce_option.akv_secret, secret);
     std::vector<BYTE> flags(1 + sizeof(mode));
     flags[0] = AKV_CONFIG_FLAGS;
-    std::memcpy(flags.data() + 1, &mode, sizeof(mode));
+    std::copy_n(reinterpret_cast<const BYTE*>(&mode), sizeof(mode), flags.begin() + 1);
     expected_payloads = {flags, payload(AKV_CONFIG_PRINCIPALID, principal),
                          payload(AKV_CONFIG_AUTHSECRET, secret)};
     observed_calls = 0;
